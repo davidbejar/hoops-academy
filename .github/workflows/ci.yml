@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  backend:
+    runs-on: ubuntu-latest
+    # Testcontainers works with the runner's Docker; locally we use Podman (see scripts/env.sh).
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build and verify
+        run: ./mvnw -B -ntp verify
+
+  flutter:
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('apps/web/pubspec.yaml') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: apps/web
+      - run: flutter analyze
+        working-directory: apps/web
+      - run: flutter test
+        working-directory: apps/web
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('deploy/helm/**/Chart.yaml') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: for c in deploy/helm/*/; do helm lint "$c"; done

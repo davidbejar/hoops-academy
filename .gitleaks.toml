@@ -1,0 +1,15 @@
+title = "hoops-academy gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders and test fixtures"
+paths = [
+  '''\.env\.example$''',
+  '''docs/.*\.md$''',
+  '''\.claude/skills/.*''',
+]
+regexes = [
+  '''change-me-[a-z0-9-]+''',
+]

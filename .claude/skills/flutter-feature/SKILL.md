@@ -1,0 +1,37 @@
+---
+name: flutter-feature
+description: Conventions for adding a screen or feature to the Hoops Academy Flutter Web PWA (apps/web): folder layout, Riverpod providers, generated API clients, localisation (es/en/id), offline rules and the tests each feature needs. Use when changing anything under apps/web.
+---
+
+# Adding a feature to apps/web
+
+## Layout
+```
+lib/
+├── app/            router (go_router), theme, shell scaffold, auth guard, tenant switcher
+├── core/           api client setup (Dio + interceptors), auth (oidc), tenancy, error mapping, l10n helpers
+├── api/            GENERATED (just gen-api) — never edit by hand
+├── features/<name>/
+│   ├── data/       repositories wrapping generated clients (+ Drift tables for offline features)
+│   ├── domain/     plain Dart models/value objects when the API DTO is not enough
+│   ├── application/ Riverpod providers / notifiers (state, commands)
+│   └── presentation/ screens + widgets (mobile-first, bottom nav, large tap targets)
+└── l10n/           app_es.arb (template), app_en.arb, app_id.arb
+```
+
+## Rules
+- **Contract first**: if the API changes, regenerate clients from `libs/contracts` (`just gen-api`).
+- **Every user-visible string** goes through `AppLocalizations` (ARB keys in all three files; Spanish is the
+  template, English and Indonesian must have the same keys — the `l10n_keys_test` enforces it).
+- **Role-aware UI**: hide actions the role cannot perform (from `AuthzContext` in `/me`), and still handle a
+  server 403/404 gracefully.
+- **Errors**: map Problem+JSON to `AppError` once (core/errors); screens show localized messages.
+- **Offline** (live match only): write to Drift first, sync in background; never block the UI on network.
+- **Mobile-first**: design for 360 px width; test goldens at 360×780 and 1024×768.
+
+## Tests per feature (TDD)
+1. Provider/notifier unit tests with mocked repositories.
+2. Widget tests for each screen: loading, empty, error, populated, and role variants.
+3. Golden test for the main screen (both breakpoints).
+4. If offline: Drift repository tests + sync worker tests using WP7 JSON vectors in `test/fixtures/`.
+Run `flutter analyze && flutter test` before claiming done.

@@ -1,0 +1,39 @@
+# --- secrets: never commit ---
+.env
+.env.*
+!.env.example
+*-secret*.yaml
+*-secrets*.yaml
+values-local.yaml
+*.pem
+*.p12
+*.jks
+*.key
+infra/keycloak/*credentials*
+
+# --- java / maven ---
+target/
+*.class
+*.log
+.mvn/wrapper/maven-wrapper.jar
+dependency-check-report.*
+
+# --- flutter / dart ---
+apps/web/.dart_tool/
+apps/web/build/
+apps/web/.flutter-plugins*
+apps/web/.packages
+apps/web/pubspec.lock.bak
+apps/web/lib/api/**/.openapi-generator/
+apps/web/coverage/
+
+# --- tooling ---
+.idea/
+*.iml
+.vscode/
+.DS_Store
+.tilt-cache/
+tilt_modules/
+.pre-commit-cache/
+*.swp
+/tmp/
