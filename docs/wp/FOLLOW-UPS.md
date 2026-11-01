@@ -15,7 +15,12 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
 - **Nightly jobs on multiple replicas** (athlete materialisation, core eligibility): add a Postgres advisory lock
   helper in common (`TenantScope.runExclusive`) before WP16 scales replicas.
 - **`/internal/usage` for unknown tenant** returns zeros in game/athlete (contract says 404) — align contract.
-- **Keycloak web origins** for Flutter dev server port (5173) — WP1 realm follow-up once WP11 lands.
+- **Keycloak client `web`**: add `http://localhost:5173/*` redirect/post-logout URIs and web origin for the Flutter dev
+  server; API CORS for the dev origin in nginx (WP11). Realm import runs once → needs volume reset.
+- **Browser smoke tests**: chromedriver not installed (download was blocked by the environment); `flutter drive`
+  smoke and the Lighthouse installability check are manual for now (apps/web/README.md).
+- **Product question**: a super_admin who also holds tenant memberships gets tenant navigation only (no Platform
+  entry) — decide in WP14 (suggest: Platform entry in Profile menu when realm role present).
 - **allOf + swagger-request-validator additionalProperties** quirk — document in contracts README (WP8).
 
 ## Resolved
