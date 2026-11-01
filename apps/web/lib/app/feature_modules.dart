@@ -10,7 +10,10 @@ import '../features/admin/presentation/admin_screen.dart' deferred as admin;
 import '../features/admin/presentation/age_categories_screen.dart' deferred as admin_categories;
 import '../features/admin/presentation/members_screen.dart' deferred as admin_members;
 import '../features/admin/presentation/seasons_screen.dart' deferred as admin_seasons;
-import '../features/matches/presentation/matches_screen.dart' deferred as matches;
+import '../features/match/presentation/live_match_screen.dart' deferred as match_live;
+import '../features/match/presentation/match_setup_screen.dart' deferred as match_setup;
+import '../features/match/presentation/matches_screen.dart' deferred as matches;
+import '../features/match/presentation/season_stats_screen.dart' deferred as match_stats;
 import '../features/me/presentation/me_screen.dart' deferred as me;
 import '../features/my_players/presentation/my_players_screen.dart' deferred as my_players;
 import '../features/platform/presentation/platform_screen.dart' deferred as platform;
@@ -75,7 +78,16 @@ final Map<AppDestination, FeatureModule> featureModules = {
       ModulePage(':teamId', teams.loadLibrary, (p) => teams.TeamDetailScreen(teamId: p['teamId']!)),
     ],
   ),
-  AppDestination.matches: FeatureModule(matches.loadLibrary, () => matches.MatchesScreen()),
+  AppDestination.matches: FeatureModule(
+    matches.loadLibrary,
+    () => matches.MatchesScreen(),
+    subPages: [
+      // Season stats of a player; WP14 links Me / My players here.
+      ModulePage('stats/:playerId', match_stats.loadLibrary, (p) => match_stats.SeasonStatsScreen(playerId: p['playerId']!)),
+      ModulePage(':matchId/setup', match_setup.loadLibrary, (p) => match_setup.MatchSetupScreen(matchId: p['matchId']!)),
+      ModulePage(':matchId', match_live.loadLibrary, (p) => match_live.LiveMatchScreen(matchId: p['matchId']!)),
+    ],
+  ),
   AppDestination.training: FeatureModule(training.loadLibrary, () => training.TrainingScreen()),
   AppDestination.players: FeatureModule(
     players.loadLibrary,

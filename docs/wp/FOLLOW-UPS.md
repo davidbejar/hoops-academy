@@ -51,6 +51,14 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
   (FITNESSGRAM HFZ, ALPHA-Fit/Eurofit percentiles, published youth vertical-jump/T-test norms) and verify the Cooper
   1968 figures; update `R__physical_test_norms.sql` + `docs/domain/norms.md`.
 
+- **PWA cold-start offline (WP13 finding)**: Flutter 3.47's generated `flutter_service_worker.js` unregisters
+  itself and caches nothing (`--pwa-strategy` deprecated). Add a custom caching service worker (app shell +
+  `sqlite3.wasm` + `drift_worker.js` + deferred parts precache, network-first for `/api`) in WP14 or WP17; verify
+  with airplane-mode reload. Until then offline works only while the tab stays open.
+- **Contracts (/me)**: expose the caller's own `playerId` per membership (PLAYER role) so Me → season stats and the
+  "own line" highlight work (WP13).
+- **Same-device two-tab clientSeq race** (WP13): acceptable for now (second event is CLIENT_SEQ_CONFLICT and visible).
+
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
 - Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0 (requires realm re-import: `just down && podman volume rm hoops_pgdata`).

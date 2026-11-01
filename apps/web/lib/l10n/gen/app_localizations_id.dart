@@ -817,4 +817,423 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get back => 'Kembali';
+
+  @override
+  String get matchListEmpty => 'Belum ada pertandingan';
+
+  @override
+  String get matchAllTeams => 'Semua tim';
+
+  @override
+  String get matchTeam => 'Tim';
+
+  @override
+  String get matchStatusScheduled => 'Terjadwal';
+
+  @override
+  String get matchStatusLive => 'Berlangsung';
+
+  @override
+  String get matchStatusFinished => 'Selesai';
+
+  @override
+  String get matchStatusCancelled => 'Dibatalkan';
+
+  @override
+  String matchVs(String opponent) {
+    return 'vs $opponent';
+  }
+
+  @override
+  String get matchHome => 'Kandang';
+
+  @override
+  String get matchAway => 'Tandang';
+
+  @override
+  String get matchUs => 'Kami';
+
+  @override
+  String get matchCachedData => 'Luring: data yang tersimpan di perangkat ini';
+
+  @override
+  String get matchNew => 'Pertandingan baru';
+
+  @override
+  String get matchOpponent => 'Lawan';
+
+  @override
+  String get matchDate => 'Tanggal';
+
+  @override
+  String get matchCreated => 'Pertandingan dibuat';
+
+  @override
+  String get matchSetup => 'Daftar pemain';
+
+  @override
+  String get matchSetupHint => 'Pilih pemain, starter, dan nomor punggung';
+
+  @override
+  String get matchStarter => 'Starter';
+
+  @override
+  String get matchJersey => 'Nomor';
+
+  @override
+  String get matchSetupSaved => 'Daftar pemain disimpan';
+
+  @override
+  String get matchSetupNoPlayers => 'Tim belum memiliki pemain';
+
+  @override
+  String get matchSetupNeedStarter => 'Tandai minimal satu starter';
+
+  @override
+  String matchSetupSummary(int selected, int starters) {
+    return '$selected dipilih · $starters starter';
+  }
+
+  @override
+  String get matchSetupAction => 'Atur daftar pemain';
+
+  @override
+  String get matchNoRoster => 'Pertandingan ini belum punya daftar pemain';
+
+  @override
+  String get matchTabCourt => 'Lapangan';
+
+  @override
+  String get matchTabLog => 'Catatan';
+
+  @override
+  String get matchTabBox => 'Statistik';
+
+  @override
+  String matchPeriodShort(int period) {
+    return 'B$period';
+  }
+
+  @override
+  String matchOvertimeShort(int number) {
+    return 'OT$number';
+  }
+
+  @override
+  String get matchBeforeStart => 'Belum mulai';
+
+  @override
+  String matchStartPeriod(String period) {
+    return 'Mulai $period';
+  }
+
+  @override
+  String matchEndPeriod(String period) {
+    return 'Akhiri $period';
+  }
+
+  @override
+  String get matchClockStart => 'Jalankan jam';
+
+  @override
+  String get matchClockPause => 'Hentikan jam';
+
+  @override
+  String get matchClockMinus => 'Kurangi 10 detik';
+
+  @override
+  String get matchClockPlus => 'Tambah 10 detik';
+
+  @override
+  String get matchOnCourt => 'Di lapangan';
+
+  @override
+  String get matchBench => 'Cadangan';
+
+  @override
+  String matchOpponentPoints(int points) {
+    return 'Lawan +$points';
+  }
+
+  @override
+  String get matchTimeoutOwn => 'Time-out';
+
+  @override
+  String get matchTimeoutOpponent => 'Time-out lawan';
+
+  @override
+  String get matchUndo => 'Batalkan';
+
+  @override
+  String get matchUndone => 'Catatan terakhir dibatalkan';
+
+  @override
+  String get matchNothingToUndo => 'Tidak ada yang bisa dibatalkan';
+
+  @override
+  String matchSubFor(String name) {
+    return '$name masuk menggantikan…';
+  }
+
+  @override
+  String matchStatsFor(String name) {
+    return 'Statistik $name';
+  }
+
+  @override
+  String matchRecorded(String action, String name) {
+    return '$action · $name';
+  }
+
+  @override
+  String get matchAction2ptMade => '2 PT ✓';
+
+  @override
+  String get matchAction2ptMissed => '2 PT ✗';
+
+  @override
+  String get matchAction3ptMade => '3 PT ✓';
+
+  @override
+  String get matchAction3ptMissed => '3 PT ✗';
+
+  @override
+  String get matchActionFtMade => 'LB ✓';
+
+  @override
+  String get matchActionFtMissed => 'LB ✗';
+
+  @override
+  String get matchActionAssist => 'Asis';
+
+  @override
+  String get matchActionOreb => 'Rebound serang';
+
+  @override
+  String get matchActionDreb => 'Rebound bertahan';
+
+  @override
+  String get matchActionSteal => 'Curi bola';
+
+  @override
+  String get matchActionBlock => 'Blok';
+
+  @override
+  String get matchActionTurnover => 'Turnover';
+
+  @override
+  String get matchActionFoulPersonal => 'Pelanggaran pribadi';
+
+  @override
+  String get matchActionFoulTechnical => 'Pelanggaran teknis';
+
+  @override
+  String get matchActionFoulUnsportsmanlike => 'Tidak sportif';
+
+  @override
+  String matchEvPeriodStart(String period) {
+    return '$period dimulai';
+  }
+
+  @override
+  String matchEvPeriodEnd(String period) {
+    return '$period berakhir';
+  }
+
+  @override
+  String matchEvSubIn(String name) {
+    return '$name masuk';
+  }
+
+  @override
+  String matchEvSubOut(String name) {
+    return '$name keluar';
+  }
+
+  @override
+  String matchEvVoid(String target) {
+    return 'Membatalkan: $target';
+  }
+
+  @override
+  String get matchEvVoidUnknown => 'Membatalkan catatan';
+
+  @override
+  String matchEvNote(String text) {
+    return 'Catatan: $text';
+  }
+
+  @override
+  String get matchSyncPending => 'Menunggu';
+
+  @override
+  String get matchSyncSent => 'Mengirim';
+
+  @override
+  String get matchSyncDone => 'Tersinkron';
+
+  @override
+  String matchSyncRejected(String reason) {
+    return 'Ditolak: $reason';
+  }
+
+  @override
+  String get matchVoided => 'Dibatalkan';
+
+  @override
+  String matchRecordedBy(String name) {
+    return 'oleh $name';
+  }
+
+  @override
+  String get matchReasonSchema => 'data tidak valid';
+
+  @override
+  String get matchReasonNotAuthorized => 'tidak diizinkan';
+
+  @override
+  String get matchReasonCancelled => 'pertandingan dibatalkan';
+
+  @override
+  String get matchReasonSeqConflict => 'konflik urutan';
+
+  @override
+  String get matchReasonOther => 'ditolak server';
+
+  @override
+  String get matchVoidEvent => 'Batalkan';
+
+  @override
+  String get matchVoidConfirm =>
+      'Batalkan catatan ini? Peristiwa VOID akan dicatat.';
+
+  @override
+  String get matchDiscard => 'Buang';
+
+  @override
+  String get matchDiscardConfirm =>
+      'Buang catatan yang ditolak ini? Tidak akan dikirim lagi.';
+
+  @override
+  String matchUnsynced(int count) {
+    return '$count belum tersinkron';
+  }
+
+  @override
+  String matchRejectedCount(int count) {
+    return '$count ditolak';
+  }
+
+  @override
+  String get matchSyncPausedAuth =>
+      'Masuk lagi untuk sinkronisasi; data tetap tersimpan';
+
+  @override
+  String get matchSyncing => 'Menyinkronkan…';
+
+  @override
+  String get matchParentMode => 'Mode keluarga: hanya pemain Anda';
+
+  @override
+  String get matchReadOnly => 'Hanya baca';
+
+  @override
+  String get matchStart => 'Mulai pertandingan';
+
+  @override
+  String get matchFinish => 'Selesaikan pertandingan';
+
+  @override
+  String get matchFinishConfirm =>
+      'Selesaikan pertandingan? Koreksi tetap bisa dilakukan.';
+
+  @override
+  String get matchColMin => 'MNT';
+
+  @override
+  String get matchColPts => 'PTS';
+
+  @override
+  String get matchColReb => 'REB';
+
+  @override
+  String get matchColAst => 'AST';
+
+  @override
+  String get matchColStl => 'CUR';
+
+  @override
+  String get matchColBlk => 'BLK';
+
+  @override
+  String get matchColTov => 'TO';
+
+  @override
+  String get matchColPf => 'PF';
+
+  @override
+  String get matchColFg => 'FG';
+
+  @override
+  String get matchCol3p => '3P';
+
+  @override
+  String get matchColFt => 'LB';
+
+  @override
+  String get matchTotals => 'Total tim';
+
+  @override
+  String get matchPeriodScores => 'Per babak';
+
+  @override
+  String matchWarnings(int count) {
+    return '$count peringatan konsistensi (perbaiki dengan Batalkan)';
+  }
+
+  @override
+  String get matchCopy => 'Salin hasil';
+
+  @override
+  String get matchCopied => 'Hasil disalin';
+
+  @override
+  String matchShareLine(String name, int points, int rebounds, int assists) {
+    return '$name: $points poin, $rebounds reb, $assists asis';
+  }
+
+  @override
+  String get seasonStatsTitle => 'Statistik musim';
+
+  @override
+  String seasonStatsGames(int played, int started) {
+    return '$played pertandingan · $started sebagai starter';
+  }
+
+  @override
+  String get seasonStatsAverages => 'Rata-rata per pertandingan';
+
+  @override
+  String get seasonStatsTotals => 'Total';
+
+  @override
+  String get seasonStatsMatches => 'Pertandingan';
+
+  @override
+  String get seasonStatsEmpty => 'Belum ada pertandingan musim ini';
+
+  @override
+  String get seasonStatsPoints => 'Poin';
+
+  @override
+  String get seasonStatsRebounds => 'Rebound';
+
+  @override
+  String get seasonStatsAssists => 'Asis';
+
+  @override
+  String get seasonStatsMinutes => 'Menit';
+
+  @override
+  String get seasonStatsSeason => 'Musim';
 }

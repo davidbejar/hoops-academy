@@ -99,6 +99,44 @@ Shared building blocks for later modules: `core/session/capabilities.dart`, `cor
 form_dialog,page_scaffold,labels}.dart`, `core/api/api.dart` (client + `Date`), `features/roster/presentation/
 eligibility_widgets.dart` (eligibility badge / panel, play-up badge).
 
+### Live match & offline queue (WP13)
+Routes (Matches module, all roles): `/matches` (list by team, status chips, "N unsynced" banner, new match for
+staff), `/matches/:matchId` (live view: score / period / local game clock, court panel, action sheet, substitutions,
+opponent points, timeouts, undo = VOID, event log with per-event sync state, live box score; FINISHED opens on the
+box score with "copy result"), `/matches/:matchId/setup` (match roster from the team roster: players, starters,
+jerseys; staff only), `/matches/stats/:playerId` (season statistics; linked from the player detail, **WP14 links Me /
+My players here**). PARENT gets the restricted mode (linked players only, no clock / period / opponent / roster,
+VOID of own events only); other non-staff roles are read-only.
+
+Code: `lib/features/match/` - `domain/` (events = contract JSON, `projector/` = Dart mirror of the server projection,
+`scoring_rights.dart`), `data/` (Drift store `local/`, repositories over `hoops_game_api`, `mock_game_api.dart`),
+`application/` (`live_match_controller.dart`, `match_providers.dart`, `sync/` worker + backoff + status,
+`game_clock.dart`), `presentation/`.
+
+Offline: every event is written to Drift first (`pending_events`, UUIDv7 id, per-match `clientSeq` from
+`client_sequences`, `device` id generated once) and synced in the background (`events:batch` in clientSeq order,
+<= 500 per batch, per-event ACCEPTED / DUPLICATE / REJECTED, feed `events?after=` merged into `synced_events`).
+Triggers: connectivity regained, app resumed, sign-in completed, every 15 s while a match screen is open, retry
+with exponential backoff (1 s -> 60 s, jitter). A 401 (after the Dio layer's refresh failed) pauses the queue until the
+next sign-in; REJECTED events stay visible with their reason until the user discards them. Matches and rosters
+are cached when loaded online, so a match can be scored with the network off.
+
+**Offline storage assets (web).** Drift runs on `web/sqlite3.wasm` + `web/drift_worker.js` (both committed).
+No Node: `tool/fetch_web_db_assets.sh` downloads `sqlite3.wasm` from the sqlite3.dart GitHub release matching the
+resolved `sqlite3` version and compiles `tool/drift_worker.dart` with `dart compile js`. Re-run it after upgrading
+drift / sqlite3. Storage choice (`data/local/connection/web_connection.dart`): `opfsLocks` only if the page is
+cross-origin isolated (it is not: no COOP/COEP, ADR-0004), otherwise IndexedDB in the page (`unsafeIndexedDb`, no
+shared worker), else in-memory. Tests use the native in-memory executor (`NativeDatabase.memory()`).
+
+Projection vectors: `tool/sync_vectors.sh` copies `libs/contracts/vectors/*.json` to `test/fixtures/vectors/`;
+`test/features/match/domain/projector_vectors_test.dart` fails if the copies differ. After changing the Drift schema
+run `dart run build_runner build` (generates `match_database.g.dart`, committed).
+
+Demo: `flutter run -d chrome --web-port 5173 --dart-define=HOOPS_MOCK_API=true --dart-define=HOOPS_MOCK_ROLES=COACH`
+(team Mini A: a LIVE match vs Tigres, a SCHEDULED one to set up, a FINISHED one with a box score) or
+`HOOPS_MOCK_ROLES=PARENT` (linked to Ana Ruiz: family mode). Switch the browser offline in DevTools to watch the
+queue grow and drain.
+
 ## Generated API clients
 ```bash
 just gen-api            # = scripts/gen-api.sh, writes apps/web/packages/{core,game,athlete}

@@ -823,4 +823,424 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get back => 'Atrás';
+
+  @override
+  String get matchListEmpty => 'No hay partidos';
+
+  @override
+  String get matchAllTeams => 'Todos los equipos';
+
+  @override
+  String get matchTeam => 'Equipo';
+
+  @override
+  String get matchStatusScheduled => 'Programado';
+
+  @override
+  String get matchStatusLive => 'En juego';
+
+  @override
+  String get matchStatusFinished => 'Finalizado';
+
+  @override
+  String get matchStatusCancelled => 'Cancelado';
+
+  @override
+  String matchVs(String opponent) {
+    return 'vs $opponent';
+  }
+
+  @override
+  String get matchHome => 'Local';
+
+  @override
+  String get matchAway => 'Visitante';
+
+  @override
+  String get matchUs => 'Nosotros';
+
+  @override
+  String get matchCachedData =>
+      'Sin conexión: datos guardados en este dispositivo';
+
+  @override
+  String get matchNew => 'Nuevo partido';
+
+  @override
+  String get matchOpponent => 'Rival';
+
+  @override
+  String get matchDate => 'Fecha';
+
+  @override
+  String get matchCreated => 'Partido creado';
+
+  @override
+  String get matchSetup => 'Convocatoria';
+
+  @override
+  String get matchSetupHint => 'Elige jugadores, titulares y dorsales';
+
+  @override
+  String get matchStarter => 'Titular';
+
+  @override
+  String get matchJersey => 'Dorsal';
+
+  @override
+  String get matchSetupSaved => 'Convocatoria guardada';
+
+  @override
+  String get matchSetupNoPlayers => 'El equipo no tiene jugadores';
+
+  @override
+  String get matchSetupNeedStarter => 'Marca al menos un titular';
+
+  @override
+  String matchSetupSummary(int selected, int starters) {
+    return '$selected convocados · $starters titulares';
+  }
+
+  @override
+  String get matchSetupAction => 'Preparar convocatoria';
+
+  @override
+  String get matchNoRoster => 'Este partido aún no tiene convocatoria';
+
+  @override
+  String get matchTabCourt => 'Pista';
+
+  @override
+  String get matchTabLog => 'Jugadas';
+
+  @override
+  String get matchTabBox => 'Estadísticas';
+
+  @override
+  String matchPeriodShort(int period) {
+    return 'P$period';
+  }
+
+  @override
+  String matchOvertimeShort(int number) {
+    return 'PR$number';
+  }
+
+  @override
+  String get matchBeforeStart => 'Sin empezar';
+
+  @override
+  String matchStartPeriod(String period) {
+    return 'Iniciar $period';
+  }
+
+  @override
+  String matchEndPeriod(String period) {
+    return 'Terminar $period';
+  }
+
+  @override
+  String get matchClockStart => 'Poner en marcha el reloj';
+
+  @override
+  String get matchClockPause => 'Parar el reloj';
+
+  @override
+  String get matchClockMinus => 'Restar 10 segundos';
+
+  @override
+  String get matchClockPlus => 'Sumar 10 segundos';
+
+  @override
+  String get matchOnCourt => 'En pista';
+
+  @override
+  String get matchBench => 'Banquillo';
+
+  @override
+  String matchOpponentPoints(int points) {
+    return 'Rival +$points';
+  }
+
+  @override
+  String get matchTimeoutOwn => 'Tiempo muerto';
+
+  @override
+  String get matchTimeoutOpponent => 'Tiempo muerto rival';
+
+  @override
+  String get matchUndo => 'Deshacer';
+
+  @override
+  String get matchUndone => 'Última jugada anulada';
+
+  @override
+  String get matchNothingToUndo => 'Nada que deshacer';
+
+  @override
+  String matchSubFor(String name) {
+    return 'Entra $name por…';
+  }
+
+  @override
+  String matchStatsFor(String name) {
+    return 'Estadística de $name';
+  }
+
+  @override
+  String matchRecorded(String action, String name) {
+    return '$action · $name';
+  }
+
+  @override
+  String get matchAction2ptMade => '2 PT ✓';
+
+  @override
+  String get matchAction2ptMissed => '2 PT ✗';
+
+  @override
+  String get matchAction3ptMade => '3 PT ✓';
+
+  @override
+  String get matchAction3ptMissed => '3 PT ✗';
+
+  @override
+  String get matchActionFtMade => 'TL ✓';
+
+  @override
+  String get matchActionFtMissed => 'TL ✗';
+
+  @override
+  String get matchActionAssist => 'Asistencia';
+
+  @override
+  String get matchActionOreb => 'Rebote ofensivo';
+
+  @override
+  String get matchActionDreb => 'Rebote defensivo';
+
+  @override
+  String get matchActionSteal => 'Robo';
+
+  @override
+  String get matchActionBlock => 'Tapón';
+
+  @override
+  String get matchActionTurnover => 'Pérdida';
+
+  @override
+  String get matchActionFoulPersonal => 'Falta personal';
+
+  @override
+  String get matchActionFoulTechnical => 'Falta técnica';
+
+  @override
+  String get matchActionFoulUnsportsmanlike => 'Antideportiva';
+
+  @override
+  String matchEvPeriodStart(String period) {
+    return 'Empieza $period';
+  }
+
+  @override
+  String matchEvPeriodEnd(String period) {
+    return 'Termina $period';
+  }
+
+  @override
+  String matchEvSubIn(String name) {
+    return 'Entra $name';
+  }
+
+  @override
+  String matchEvSubOut(String name) {
+    return 'Sale $name';
+  }
+
+  @override
+  String matchEvVoid(String target) {
+    return 'Anula: $target';
+  }
+
+  @override
+  String get matchEvVoidUnknown => 'Anula una jugada';
+
+  @override
+  String matchEvNote(String text) {
+    return 'Nota: $text';
+  }
+
+  @override
+  String get matchSyncPending => 'Pendiente';
+
+  @override
+  String get matchSyncSent => 'Enviando';
+
+  @override
+  String get matchSyncDone => 'Sincronizada';
+
+  @override
+  String matchSyncRejected(String reason) {
+    return 'Rechazada: $reason';
+  }
+
+  @override
+  String get matchVoided => 'Anulada';
+
+  @override
+  String matchRecordedBy(String name) {
+    return 'por $name';
+  }
+
+  @override
+  String get matchReasonSchema => 'datos no válidos';
+
+  @override
+  String get matchReasonNotAuthorized => 'sin permiso';
+
+  @override
+  String get matchReasonCancelled => 'partido cancelado';
+
+  @override
+  String get matchReasonSeqConflict => 'conflicto de secuencia';
+
+  @override
+  String get matchReasonOther => 'rechazada por el servidor';
+
+  @override
+  String get matchVoidEvent => 'Anular';
+
+  @override
+  String get matchVoidConfirm =>
+      '¿Anular esta jugada? Se registrará una anulación.';
+
+  @override
+  String get matchDiscard => 'Descartar';
+
+  @override
+  String get matchDiscardConfirm =>
+      '¿Descartar esta jugada rechazada? No se enviará más.';
+
+  @override
+  String matchUnsynced(int count) {
+    return '$count sin sincronizar';
+  }
+
+  @override
+  String matchRejectedCount(int count) {
+    return '$count rechazadas';
+  }
+
+  @override
+  String get matchSyncPausedAuth =>
+      'Inicia sesión de nuevo para sincronizar; los datos se conservan';
+
+  @override
+  String get matchSyncing => 'Sincronizando…';
+
+  @override
+  String get matchParentMode => 'Modo familia: solo tus jugadores';
+
+  @override
+  String get matchReadOnly => 'Solo lectura';
+
+  @override
+  String get matchStart => 'Empezar partido';
+
+  @override
+  String get matchFinish => 'Finalizar partido';
+
+  @override
+  String get matchFinishConfirm =>
+      '¿Finalizar el partido? Las correcciones seguirán siendo posibles.';
+
+  @override
+  String get matchColMin => 'MIN';
+
+  @override
+  String get matchColPts => 'PTS';
+
+  @override
+  String get matchColReb => 'REB';
+
+  @override
+  String get matchColAst => 'AST';
+
+  @override
+  String get matchColStl => 'ROB';
+
+  @override
+  String get matchColBlk => 'TAP';
+
+  @override
+  String get matchColTov => 'PÉR';
+
+  @override
+  String get matchColPf => 'FP';
+
+  @override
+  String get matchColFg => 'TC';
+
+  @override
+  String get matchCol3p => 'T3';
+
+  @override
+  String get matchColFt => 'TL';
+
+  @override
+  String get matchTotals => 'Total equipo';
+
+  @override
+  String get matchPeriodScores => 'Parciales';
+
+  @override
+  String matchWarnings(int count) {
+    return '$count avisos de coherencia (corrige con Anular)';
+  }
+
+  @override
+  String get matchCopy => 'Copiar resultado';
+
+  @override
+  String get matchCopied => 'Resultado copiado';
+
+  @override
+  String matchShareLine(String name, int points, int rebounds, int assists) {
+    return '$name: $points pts, $rebounds reb, $assists ast';
+  }
+
+  @override
+  String get seasonStatsTitle => 'Estadísticas de temporada';
+
+  @override
+  String seasonStatsGames(int played, int started) {
+    return '$played partidos · $started de titular';
+  }
+
+  @override
+  String get seasonStatsAverages => 'Promedios por partido';
+
+  @override
+  String get seasonStatsTotals => 'Totales';
+
+  @override
+  String get seasonStatsMatches => 'Partidos';
+
+  @override
+  String get seasonStatsEmpty => 'Sin partidos en esta temporada';
+
+  @override
+  String get seasonStatsPoints => 'Puntos';
+
+  @override
+  String get seasonStatsRebounds => 'Rebotes';
+
+  @override
+  String get seasonStatsAssists => 'Asistencias';
+
+  @override
+  String get seasonStatsMinutes => 'Minutos';
+
+  @override
+  String get seasonStatsSeason => 'Temporada';
 }

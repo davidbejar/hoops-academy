@@ -1611,6 +1611,744 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Atrás'**
   String get back;
+
+  /// No description provided for @matchListEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay partidos'**
+  String get matchListEmpty;
+
+  /// No description provided for @matchAllTeams.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los equipos'**
+  String get matchAllTeams;
+
+  /// No description provided for @matchTeam.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipo'**
+  String get matchTeam;
+
+  /// No description provided for @matchStatusScheduled.
+  ///
+  /// In es, this message translates to:
+  /// **'Programado'**
+  String get matchStatusScheduled;
+
+  /// No description provided for @matchStatusLive.
+  ///
+  /// In es, this message translates to:
+  /// **'En juego'**
+  String get matchStatusLive;
+
+  /// No description provided for @matchStatusFinished.
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizado'**
+  String get matchStatusFinished;
+
+  /// No description provided for @matchStatusCancelled.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelado'**
+  String get matchStatusCancelled;
+
+  /// No description provided for @matchVs.
+  ///
+  /// In es, this message translates to:
+  /// **'vs {opponent}'**
+  String matchVs(String opponent);
+
+  /// No description provided for @matchHome.
+  ///
+  /// In es, this message translates to:
+  /// **'Local'**
+  String get matchHome;
+
+  /// No description provided for @matchAway.
+  ///
+  /// In es, this message translates to:
+  /// **'Visitante'**
+  String get matchAway;
+
+  /// No description provided for @matchUs.
+  ///
+  /// In es, this message translates to:
+  /// **'Nosotros'**
+  String get matchUs;
+
+  /// No description provided for @matchCachedData.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin conexión: datos guardados en este dispositivo'**
+  String get matchCachedData;
+
+  /// No description provided for @matchNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo partido'**
+  String get matchNew;
+
+  /// No description provided for @matchOpponent.
+  ///
+  /// In es, this message translates to:
+  /// **'Rival'**
+  String get matchOpponent;
+
+  /// No description provided for @matchDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha'**
+  String get matchDate;
+
+  /// No description provided for @matchCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Partido creado'**
+  String get matchCreated;
+
+  /// No description provided for @matchSetup.
+  ///
+  /// In es, this message translates to:
+  /// **'Convocatoria'**
+  String get matchSetup;
+
+  /// No description provided for @matchSetupHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige jugadores, titulares y dorsales'**
+  String get matchSetupHint;
+
+  /// No description provided for @matchStarter.
+  ///
+  /// In es, this message translates to:
+  /// **'Titular'**
+  String get matchStarter;
+
+  /// No description provided for @matchJersey.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsal'**
+  String get matchJersey;
+
+  /// No description provided for @matchSetupSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Convocatoria guardada'**
+  String get matchSetupSaved;
+
+  /// No description provided for @matchSetupNoPlayers.
+  ///
+  /// In es, this message translates to:
+  /// **'El equipo no tiene jugadores'**
+  String get matchSetupNoPlayers;
+
+  /// No description provided for @matchSetupNeedStarter.
+  ///
+  /// In es, this message translates to:
+  /// **'Marca al menos un titular'**
+  String get matchSetupNeedStarter;
+
+  /// No description provided for @matchSetupSummary.
+  ///
+  /// In es, this message translates to:
+  /// **'{selected} convocados · {starters} titulares'**
+  String matchSetupSummary(int selected, int starters);
+
+  /// No description provided for @matchSetupAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparar convocatoria'**
+  String get matchSetupAction;
+
+  /// No description provided for @matchNoRoster.
+  ///
+  /// In es, this message translates to:
+  /// **'Este partido aún no tiene convocatoria'**
+  String get matchNoRoster;
+
+  /// No description provided for @matchTabCourt.
+  ///
+  /// In es, this message translates to:
+  /// **'Pista'**
+  String get matchTabCourt;
+
+  /// No description provided for @matchTabLog.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugadas'**
+  String get matchTabLog;
+
+  /// No description provided for @matchTabBox.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas'**
+  String get matchTabBox;
+
+  /// No description provided for @matchPeriodShort.
+  ///
+  /// In es, this message translates to:
+  /// **'P{period}'**
+  String matchPeriodShort(int period);
+
+  /// No description provided for @matchOvertimeShort.
+  ///
+  /// In es, this message translates to:
+  /// **'PR{number}'**
+  String matchOvertimeShort(int number);
+
+  /// No description provided for @matchBeforeStart.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin empezar'**
+  String get matchBeforeStart;
+
+  /// No description provided for @matchStartPeriod.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar {period}'**
+  String matchStartPeriod(String period);
+
+  /// No description provided for @matchEndPeriod.
+  ///
+  /// In es, this message translates to:
+  /// **'Terminar {period}'**
+  String matchEndPeriod(String period);
+
+  /// No description provided for @matchClockStart.
+  ///
+  /// In es, this message translates to:
+  /// **'Poner en marcha el reloj'**
+  String get matchClockStart;
+
+  /// No description provided for @matchClockPause.
+  ///
+  /// In es, this message translates to:
+  /// **'Parar el reloj'**
+  String get matchClockPause;
+
+  /// No description provided for @matchClockMinus.
+  ///
+  /// In es, this message translates to:
+  /// **'Restar 10 segundos'**
+  String get matchClockMinus;
+
+  /// No description provided for @matchClockPlus.
+  ///
+  /// In es, this message translates to:
+  /// **'Sumar 10 segundos'**
+  String get matchClockPlus;
+
+  /// No description provided for @matchOnCourt.
+  ///
+  /// In es, this message translates to:
+  /// **'En pista'**
+  String get matchOnCourt;
+
+  /// No description provided for @matchBench.
+  ///
+  /// In es, this message translates to:
+  /// **'Banquillo'**
+  String get matchBench;
+
+  /// No description provided for @matchOpponentPoints.
+  ///
+  /// In es, this message translates to:
+  /// **'Rival +{points}'**
+  String matchOpponentPoints(int points);
+
+  /// No description provided for @matchTimeoutOwn.
+  ///
+  /// In es, this message translates to:
+  /// **'Tiempo muerto'**
+  String get matchTimeoutOwn;
+
+  /// No description provided for @matchTimeoutOpponent.
+  ///
+  /// In es, this message translates to:
+  /// **'Tiempo muerto rival'**
+  String get matchTimeoutOpponent;
+
+  /// No description provided for @matchUndo.
+  ///
+  /// In es, this message translates to:
+  /// **'Deshacer'**
+  String get matchUndo;
+
+  /// No description provided for @matchUndone.
+  ///
+  /// In es, this message translates to:
+  /// **'Última jugada anulada'**
+  String get matchUndone;
+
+  /// No description provided for @matchNothingToUndo.
+  ///
+  /// In es, this message translates to:
+  /// **'Nada que deshacer'**
+  String get matchNothingToUndo;
+
+  /// No description provided for @matchSubFor.
+  ///
+  /// In es, this message translates to:
+  /// **'Entra {name} por…'**
+  String matchSubFor(String name);
+
+  /// No description provided for @matchStatsFor.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadística de {name}'**
+  String matchStatsFor(String name);
+
+  /// No description provided for @matchRecorded.
+  ///
+  /// In es, this message translates to:
+  /// **'{action} · {name}'**
+  String matchRecorded(String action, String name);
+
+  /// No description provided for @matchAction2ptMade.
+  ///
+  /// In es, this message translates to:
+  /// **'2 PT ✓'**
+  String get matchAction2ptMade;
+
+  /// No description provided for @matchAction2ptMissed.
+  ///
+  /// In es, this message translates to:
+  /// **'2 PT ✗'**
+  String get matchAction2ptMissed;
+
+  /// No description provided for @matchAction3ptMade.
+  ///
+  /// In es, this message translates to:
+  /// **'3 PT ✓'**
+  String get matchAction3ptMade;
+
+  /// No description provided for @matchAction3ptMissed.
+  ///
+  /// In es, this message translates to:
+  /// **'3 PT ✗'**
+  String get matchAction3ptMissed;
+
+  /// No description provided for @matchActionFtMade.
+  ///
+  /// In es, this message translates to:
+  /// **'TL ✓'**
+  String get matchActionFtMade;
+
+  /// No description provided for @matchActionFtMissed.
+  ///
+  /// In es, this message translates to:
+  /// **'TL ✗'**
+  String get matchActionFtMissed;
+
+  /// No description provided for @matchActionAssist.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia'**
+  String get matchActionAssist;
+
+  /// No description provided for @matchActionOreb.
+  ///
+  /// In es, this message translates to:
+  /// **'Rebote ofensivo'**
+  String get matchActionOreb;
+
+  /// No description provided for @matchActionDreb.
+  ///
+  /// In es, this message translates to:
+  /// **'Rebote defensivo'**
+  String get matchActionDreb;
+
+  /// No description provided for @matchActionSteal.
+  ///
+  /// In es, this message translates to:
+  /// **'Robo'**
+  String get matchActionSteal;
+
+  /// No description provided for @matchActionBlock.
+  ///
+  /// In es, this message translates to:
+  /// **'Tapón'**
+  String get matchActionBlock;
+
+  /// No description provided for @matchActionTurnover.
+  ///
+  /// In es, this message translates to:
+  /// **'Pérdida'**
+  String get matchActionTurnover;
+
+  /// No description provided for @matchActionFoulPersonal.
+  ///
+  /// In es, this message translates to:
+  /// **'Falta personal'**
+  String get matchActionFoulPersonal;
+
+  /// No description provided for @matchActionFoulTechnical.
+  ///
+  /// In es, this message translates to:
+  /// **'Falta técnica'**
+  String get matchActionFoulTechnical;
+
+  /// No description provided for @matchActionFoulUnsportsmanlike.
+  ///
+  /// In es, this message translates to:
+  /// **'Antideportiva'**
+  String get matchActionFoulUnsportsmanlike;
+
+  /// No description provided for @matchEvPeriodStart.
+  ///
+  /// In es, this message translates to:
+  /// **'Empieza {period}'**
+  String matchEvPeriodStart(String period);
+
+  /// No description provided for @matchEvPeriodEnd.
+  ///
+  /// In es, this message translates to:
+  /// **'Termina {period}'**
+  String matchEvPeriodEnd(String period);
+
+  /// No description provided for @matchEvSubIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Entra {name}'**
+  String matchEvSubIn(String name);
+
+  /// No description provided for @matchEvSubOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Sale {name}'**
+  String matchEvSubOut(String name);
+
+  /// No description provided for @matchEvVoid.
+  ///
+  /// In es, this message translates to:
+  /// **'Anula: {target}'**
+  String matchEvVoid(String target);
+
+  /// No description provided for @matchEvVoidUnknown.
+  ///
+  /// In es, this message translates to:
+  /// **'Anula una jugada'**
+  String get matchEvVoidUnknown;
+
+  /// No description provided for @matchEvNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota: {text}'**
+  String matchEvNote(String text);
+
+  /// No description provided for @matchSyncPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get matchSyncPending;
+
+  /// No description provided for @matchSyncSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviando'**
+  String get matchSyncSent;
+
+  /// No description provided for @matchSyncDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronizada'**
+  String get matchSyncDone;
+
+  /// No description provided for @matchSyncRejected.
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazada: {reason}'**
+  String matchSyncRejected(String reason);
+
+  /// No description provided for @matchVoided.
+  ///
+  /// In es, this message translates to:
+  /// **'Anulada'**
+  String get matchVoided;
+
+  /// No description provided for @matchRecordedBy.
+  ///
+  /// In es, this message translates to:
+  /// **'por {name}'**
+  String matchRecordedBy(String name);
+
+  /// No description provided for @matchReasonSchema.
+  ///
+  /// In es, this message translates to:
+  /// **'datos no válidos'**
+  String get matchReasonSchema;
+
+  /// No description provided for @matchReasonNotAuthorized.
+  ///
+  /// In es, this message translates to:
+  /// **'sin permiso'**
+  String get matchReasonNotAuthorized;
+
+  /// No description provided for @matchReasonCancelled.
+  ///
+  /// In es, this message translates to:
+  /// **'partido cancelado'**
+  String get matchReasonCancelled;
+
+  /// No description provided for @matchReasonSeqConflict.
+  ///
+  /// In es, this message translates to:
+  /// **'conflicto de secuencia'**
+  String get matchReasonSeqConflict;
+
+  /// No description provided for @matchReasonOther.
+  ///
+  /// In es, this message translates to:
+  /// **'rechazada por el servidor'**
+  String get matchReasonOther;
+
+  /// No description provided for @matchVoidEvent.
+  ///
+  /// In es, this message translates to:
+  /// **'Anular'**
+  String get matchVoidEvent;
+
+  /// No description provided for @matchVoidConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Anular esta jugada? Se registrará una anulación.'**
+  String get matchVoidConfirm;
+
+  /// No description provided for @matchDiscard.
+  ///
+  /// In es, this message translates to:
+  /// **'Descartar'**
+  String get matchDiscard;
+
+  /// No description provided for @matchDiscardConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Descartar esta jugada rechazada? No se enviará más.'**
+  String get matchDiscardConfirm;
+
+  /// No description provided for @matchUnsynced.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} sin sincronizar'**
+  String matchUnsynced(int count);
+
+  /// No description provided for @matchRejectedCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} rechazadas'**
+  String matchRejectedCount(int count);
+
+  /// No description provided for @matchSyncPausedAuth.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicia sesión de nuevo para sincronizar; los datos se conservan'**
+  String get matchSyncPausedAuth;
+
+  /// No description provided for @matchSyncing.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronizando…'**
+  String get matchSyncing;
+
+  /// No description provided for @matchParentMode.
+  ///
+  /// In es, this message translates to:
+  /// **'Modo familia: solo tus jugadores'**
+  String get matchParentMode;
+
+  /// No description provided for @matchReadOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo lectura'**
+  String get matchReadOnly;
+
+  /// No description provided for @matchStart.
+  ///
+  /// In es, this message translates to:
+  /// **'Empezar partido'**
+  String get matchStart;
+
+  /// No description provided for @matchFinish.
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizar partido'**
+  String get matchFinish;
+
+  /// No description provided for @matchFinishConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Finalizar el partido? Las correcciones seguirán siendo posibles.'**
+  String get matchFinishConfirm;
+
+  /// No description provided for @matchColMin.
+  ///
+  /// In es, this message translates to:
+  /// **'MIN'**
+  String get matchColMin;
+
+  /// No description provided for @matchColPts.
+  ///
+  /// In es, this message translates to:
+  /// **'PTS'**
+  String get matchColPts;
+
+  /// No description provided for @matchColReb.
+  ///
+  /// In es, this message translates to:
+  /// **'REB'**
+  String get matchColReb;
+
+  /// No description provided for @matchColAst.
+  ///
+  /// In es, this message translates to:
+  /// **'AST'**
+  String get matchColAst;
+
+  /// No description provided for @matchColStl.
+  ///
+  /// In es, this message translates to:
+  /// **'ROB'**
+  String get matchColStl;
+
+  /// No description provided for @matchColBlk.
+  ///
+  /// In es, this message translates to:
+  /// **'TAP'**
+  String get matchColBlk;
+
+  /// No description provided for @matchColTov.
+  ///
+  /// In es, this message translates to:
+  /// **'PÉR'**
+  String get matchColTov;
+
+  /// No description provided for @matchColPf.
+  ///
+  /// In es, this message translates to:
+  /// **'FP'**
+  String get matchColPf;
+
+  /// No description provided for @matchColFg.
+  ///
+  /// In es, this message translates to:
+  /// **'TC'**
+  String get matchColFg;
+
+  /// No description provided for @matchCol3p.
+  ///
+  /// In es, this message translates to:
+  /// **'T3'**
+  String get matchCol3p;
+
+  /// No description provided for @matchColFt.
+  ///
+  /// In es, this message translates to:
+  /// **'TL'**
+  String get matchColFt;
+
+  /// No description provided for @matchTotals.
+  ///
+  /// In es, this message translates to:
+  /// **'Total equipo'**
+  String get matchTotals;
+
+  /// No description provided for @matchPeriodScores.
+  ///
+  /// In es, this message translates to:
+  /// **'Parciales'**
+  String get matchPeriodScores;
+
+  /// No description provided for @matchWarnings.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} avisos de coherencia (corrige con Anular)'**
+  String matchWarnings(int count);
+
+  /// No description provided for @matchCopy.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiar resultado'**
+  String get matchCopy;
+
+  /// No description provided for @matchCopied.
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado copiado'**
+  String get matchCopied;
+
+  /// No description provided for @matchShareLine.
+  ///
+  /// In es, this message translates to:
+  /// **'{name}: {points} pts, {rebounds} reb, {assists} ast'**
+  String matchShareLine(String name, int points, int rebounds, int assists);
+
+  /// No description provided for @seasonStatsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas de temporada'**
+  String get seasonStatsTitle;
+
+  /// No description provided for @seasonStatsGames.
+  ///
+  /// In es, this message translates to:
+  /// **'{played} partidos · {started} de titular'**
+  String seasonStatsGames(int played, int started);
+
+  /// No description provided for @seasonStatsAverages.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedios por partido'**
+  String get seasonStatsAverages;
+
+  /// No description provided for @seasonStatsTotals.
+  ///
+  /// In es, this message translates to:
+  /// **'Totales'**
+  String get seasonStatsTotals;
+
+  /// No description provided for @seasonStatsMatches.
+  ///
+  /// In es, this message translates to:
+  /// **'Partidos'**
+  String get seasonStatsMatches;
+
+  /// No description provided for @seasonStatsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin partidos en esta temporada'**
+  String get seasonStatsEmpty;
+
+  /// No description provided for @seasonStatsPoints.
+  ///
+  /// In es, this message translates to:
+  /// **'Puntos'**
+  String get seasonStatsPoints;
+
+  /// No description provided for @seasonStatsRebounds.
+  ///
+  /// In es, this message translates to:
+  /// **'Rebotes'**
+  String get seasonStatsRebounds;
+
+  /// No description provided for @seasonStatsAssists.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencias'**
+  String get seasonStatsAssists;
+
+  /// No description provided for @seasonStatsMinutes.
+  ///
+  /// In es, this message translates to:
+  /// **'Minutos'**
+  String get seasonStatsMinutes;
+
+  /// No description provided for @seasonStatsSeason.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporada'**
+  String get seasonStatsSeason;
 }
 
 class _AppLocalizationsDelegate

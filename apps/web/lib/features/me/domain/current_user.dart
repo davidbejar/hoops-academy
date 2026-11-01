@@ -11,6 +11,7 @@ class TenantMembership {
     required this.roles,
     this.personId,
     this.staffTeamIds = const {},
+    this.linkedPlayerIds = const {},
   });
 
   final String tenantId;
@@ -24,6 +25,9 @@ class TenantMembership {
 
   /// Teams the caller is staff of (coach / assistant), from `/me.authz`.
   final Set<String> staffTeamIds;
+
+  /// Players the caller is guardian of (PARENT), from `/me.authz`.
+  final Set<String> linkedPlayerIds;
 }
 
 /// The caller as returned by `GET /api/core/me`, without transport types.

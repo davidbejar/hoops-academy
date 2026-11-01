@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
+import 'fake_game.dart';
 import 'fake_repos.dart';
 import 'fixtures.dart';
 import 'harness.dart';
@@ -14,16 +15,19 @@ Future<Harness> pumpAs(
   required FakeCore core,
   String? location,
   Set<String> staffTeamIds = const {},
+  Set<String> linkedPlayerIds = const {},
   Size size = const Size(360, 780),
   bool settle = true,
   FakeTenantRepository? tenant,
+  FakeGame? game,
   List<Override> overrides = const [],
 }) async {
   final h = Harness(
     me: FakeMeRepository(
-      userWith([membershipWithRoles(roles, staffTeamIds: staffTeamIds)]),
+      userWith([membershipWithRoles(roles, staffTeamIds: staffTeamIds, linkedPlayerIds: linkedPlayerIds)]),
     ),
     core: core,
+    game: game,
     tenant: tenant,
     extraOverrides: overrides,
   );

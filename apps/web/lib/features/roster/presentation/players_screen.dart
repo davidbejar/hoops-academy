@@ -302,6 +302,16 @@ class _PlayerDetailBody extends ConsumerWidget {
             statusChip(player.status, l),
           ],
         ),
+        const SizedBox(height: AppTokens.spaceSm),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const Key('player-season-stats'),
+            onPressed: () => context.go('/matches/stats/${player.id}'),
+            icon: const Icon(Icons.bar_chart),
+            label: Text(l.seasonStatsTitle),
+          ),
+        ),
         const SizedBox(height: AppTokens.spaceLg),
         Text(l.playerBasics, style: theme.textTheme.titleMedium),
         const SizedBox(height: AppTokens.spaceSm),

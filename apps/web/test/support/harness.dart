@@ -24,6 +24,7 @@ import 'package:hoops_app/features/tenant/data/tenant_repository.dart';
 import 'package:hoops_app/features/tenant/domain/tenant_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'fake_game.dart';
 import 'fake_repos.dart';
 
 class FakeMeRepository implements MeRepository {
@@ -74,8 +75,10 @@ class Harness {
     Map<String, Object> prefs = const {},
     bool signedIn = true,
     this.core,
+    FakeGame? game,
     this.extraOverrides = const [],
-  }) : auth =
+  }) : game = game ?? FakeGame(),
+       auth =
            auth ??
            MockAuthService(
              initial: signedIn
@@ -92,6 +95,10 @@ class Harness {
 
   /// In-memory admin / roster repositories (null: not needed by the test).
   final FakeCore? core;
+
+  /// In-memory game side (matches, events, Drift store); empty by default so
+  /// every screen that opens the match module works without a backend.
+  final FakeGame game;
   final List<Override> extraOverrides;
   final online = StreamController<bool>.broadcast();
   late SharedPreferences prefs;
@@ -150,6 +157,7 @@ class Harness {
           approvalsRepositoryProvider.overrideWithValue(core!.approvals),
           casesRepositoryProvider.overrideWithValue(core!.cases),
         ],
+        ...game.overrides,
         ...extraOverrides,
         // Deferred libraries load in real time; make them instant in tests.
         libraryLoaderProvider.overrideWithValue((_) => SynchronousFuture<void>(null)),

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import '../../features/match/data/mock_game_api.dart';
 import '../mock/mock_core_api.dart';
 
 const mockTenantAId = '11111111-1111-4111-8111-111111111111';
@@ -23,7 +24,8 @@ final _logoPng = base64Decode(
 class MockApiAdapter implements HttpClientAdapter {
   MockApiAdapter({List<String>? roles})
     : _roles = roles ?? _rolesFromEnvironment(),
-      _core = MockCoreApi(initialLogo: _logoPng, roles: roles ?? _rolesFromEnvironment());
+      _core = MockCoreApi(initialLogo: _logoPng, roles: roles ?? _rolesFromEnvironment()),
+      _game = MockGameApi(roles: roles ?? _rolesFromEnvironment());
 
   /// `--dart-define=HOOPS_MOCK_ROLES=COACH` (comma separated) switches the
   /// demo user's roles in the first academy to try the role variants.
@@ -34,6 +36,7 @@ class MockApiAdapter implements HttpClientAdapter {
 
   final List<String> _roles;
   final MockCoreApi _core;
+  final MockGameApi _game;
   String _locale = 'es';
 
   @override
@@ -64,6 +67,27 @@ class MockApiAdapter implements HttpClientAdapter {
     }
 
     final tenant = options.headers['X-Tenant-Id'] as String?;
+    if (path.startsWith('/api/game/')) {
+      if (tenant != mockTenantAId) {
+        return _problem(tenant == null ? 400 : 404, tenant == null ? 'X-Tenant-Id is required' : 'Not found');
+      }
+      final data = options.data;
+      final result = _game.handle(
+        method: method,
+        path: path,
+        query: options.queryParameters,
+        body: data is String && data.isNotEmpty ? jsonDecode(data) : data,
+      );
+      if (result != null) {
+        return ResponseBody.fromBytes(
+          MockCoreApi.encode(result),
+          result.status,
+          headers: {
+            Headers.contentTypeHeader: [result.status >= 400 ? 'application/problem+json' : 'application/json'],
+          },
+        );
+      }
+    }
     if (path.startsWith('/api/core/')) {
       if (tenant != mockTenantAId && tenant != mockTenantBId) {
         return _problem(
@@ -149,7 +173,7 @@ class MockApiAdapter implements HttpClientAdapter {
       'staffTeamIds': roles.contains('COACH') || roles.contains('ASSISTANT_COACH')
           ? <String>[MockCoreApi.ownTeamId]
           : <String>[],
-      'linkedPlayerIds': <String>[],
+      'linkedPlayerIds': id == mockTenantAId && roles.contains('PARENT') ? <String>['p-ana'] : <String>[],
     },
   };
 
