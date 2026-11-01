@@ -19,13 +19,13 @@ unit:
 
 # Start the local stack (Postgres, Keycloak, proxy, mail)
 up:
-    podman compose -f infra/compose/compose.yaml up -d --wait
+    podman compose --env-file .env -f infra/compose/compose.yaml up -d --wait
 
 down:
-    podman compose -f infra/compose/compose.yaml down
+    podman compose --env-file .env -f infra/compose/compose.yaml down
 
 logs *ARGS:
-    podman compose -f infra/compose/compose.yaml logs -f {{ARGS}}
+    podman compose --env-file .env -f infra/compose/compose.yaml logs -f {{ARGS}}
 
 # Seed Keycloak dev users (needs stack up)
 seed-users:

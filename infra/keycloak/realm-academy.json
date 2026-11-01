@@ -1,0 +1,179 @@
+{
+  "realm": "academy",
+  "displayName": "Hoops Academy",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "verifyEmail": false,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 14400,
+  "ssoSessionMaxLifespan": 43200,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "maxFailureWaitSeconds": 900,
+  "waitIncrementSeconds": 60,
+  "permanentLockout": false,
+  "maxDeltaTimeSeconds": 43200,
+  "passwordPolicy": "length(12)",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "en",
+    "es",
+    "id"
+  ],
+  "defaultLocale": "en",
+  "smtpServer": {
+    "host": "mailhog",
+    "port": "1025",
+    "from": "no-reply@hoops.local",
+    "fromDisplayName": "Hoops Academy",
+    "auth": "false",
+    "ssl": "false",
+    "starttls": "false"
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "super_admin",
+        "description": "Platform administrator (all tenants, platform endpoints)"
+      },
+      {
+        "name": "service",
+        "description": "Service-to-service calls to /internal endpoints"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "web",
+      "name": "Hoops Academy web",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:8080",
+      "baseUrl": "/",
+      "redirectUris": [
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8080/*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ]
+    },
+    {
+      "clientId": "core-service",
+      "name": "core-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${CORE_SERVICE_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "game-service",
+      "name": "game-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${GAME_SERVICE_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "athlete-service",
+      "name": "athlete-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${ATHLETE_SERVICE_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": []
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-core-service",
+      "enabled": true,
+      "serviceAccountClientId": "core-service",
+      "realmRoles": [
+        "service"
+      ]
+    },
+    {
+      "username": "service-account-game-service",
+      "enabled": true,
+      "serviceAccountClientId": "game-service",
+      "realmRoles": [
+        "service"
+      ]
+    },
+    {
+      "username": "service-account-athlete-service",
+      "enabled": true,
+      "serviceAccountClientId": "athlete-service",
+      "realmRoles": [
+        "service"
+      ]
+    }
+  ]
+}

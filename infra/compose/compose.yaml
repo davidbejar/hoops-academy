@@ -1,0 +1,101 @@
+# Hoops Academy local stack. Run via `just up` (reads ../../.env). Services (Quarkus) run on the host in dev
+# and are reached by nginx through host.containers.internal.
+name: hoops
+
+services:
+  postgres:
+    image: docker.io/library/postgres:17
+    container_name: hoops-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set in .env}
+      POSTGRES_DB: hoops
+      CORE_MIGRATOR_PASSWORD: ${CORE_MIGRATOR_PASSWORD:?set in .env}
+      CORE_APP_PASSWORD: ${CORE_APP_PASSWORD:?set in .env}
+      CORE_PLATFORM_PASSWORD: ${CORE_PLATFORM_PASSWORD:?set in .env}
+      GAME_MIGRATOR_PASSWORD: ${GAME_MIGRATOR_PASSWORD:?set in .env}
+      GAME_APP_PASSWORD: ${GAME_APP_PASSWORD:?set in .env}
+      ATHLETE_MIGRATOR_PASSWORD: ${ATHLETE_MIGRATOR_PASSWORD:?set in .env}
+      ATHLETE_APP_PASSWORD: ${ATHLETE_APP_PASSWORD:?set in .env}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?set in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../db/init/01_roles_schemas.sql:/docker-entrypoint-initdb.d/01_roles_schemas.sql:ro
+      - ../db/init/02_passwords.sh:/docker-entrypoint-initdb.d/02_passwords.sh:ro
+      - ./postgres-keycloak-init.sh:/docker-entrypoint-initdb.d/03_keycloak_db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hoops"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    container_name: hoops-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:?set in .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set in .env}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?set in .env}
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HOSTNAME: http://localhost:8080/auth
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      # Substituted into realm-academy.json at import time (no literal secrets in git).
+      CORE_SERVICE_CLIENT_SECRET: ${CORE_SERVICE_CLIENT_SECRET:?set in .env}
+      GAME_SERVICE_CLIENT_SECRET: ${GAME_SERVICE_CLIENT_SECRET:?set in .env}
+      ATHLETE_SERVICE_CLIENT_SECRET: ${ATHLETE_SERVICE_CLIENT_SECRET:?set in .env}
+    volumes:
+      - ../keycloak/realm-academy.json:/opt/keycloak/data/import/realm-academy.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # No curl in the image: raw HTTP over bash /dev/tcp against the management port (9000).
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /auth/health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    restart: unless-stopped
+
+  mailhog:
+    image: docker.io/mailhog/mailhog:latest
+    container_name: hoops-mailhog
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8025/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  nginx:
+    image: docker.io/library/nginx:1.27-alpine
+    container_name: hoops-nginx
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./web-placeholder:/usr/share/nginx/html:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:
