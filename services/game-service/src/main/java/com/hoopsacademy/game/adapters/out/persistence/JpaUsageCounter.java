@@ -1,9 +1,12 @@
 package com.hoopsacademy.game.adapters.out.persistence;
 
+import com.hoopsacademy.game.application.MatchEventRepository;
 import com.hoopsacademy.game.application.UsageCounter;
 import com.hoopsacademy.game.domain.MatchStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,9 +16,13 @@ import java.util.Map;
 class JpaUsageCounter implements UsageCounter {
 
     private final EntityManager em;
+    private final MatchEventRepository events;
+    private final Clock clock;
 
-    JpaUsageCounter(EntityManager em) {
+    JpaUsageCounter(EntityManager em, MatchEventRepository events, Clock clock) {
         this.em = em;
+        this.events = events;
+        this.clock = clock;
     }
 
     @Override
@@ -31,9 +38,8 @@ class JpaUsageCounter implements UsageCounter {
         counters.put("liveMatches", byStatus.getOrDefault(MatchStatus.LIVE, 0L));
         counters.put("finishedMatches", byStatus.getOrDefault(MatchStatus.FINISHED, 0L));
         counters.put("cancelledMatches", byStatus.getOrDefault(MatchStatus.CANCELLED, 0L));
-        // events arrive with WP7; the contract already names these counters
-        counters.put("matchEvents", 0L);
-        counters.put("matchEventsLast30Days", 0L);
+        counters.put("matchEvents", events.count());
+        counters.put("matchEventsLast30Days", events.countReceivedSince(clock.instant().minus(Duration.ofDays(30))));
         Instant last = em.createQuery("select max(m.updatedAt) from MatchEntity m", Instant.class).getSingleResult();
         return new Usage(counters, last);
     }

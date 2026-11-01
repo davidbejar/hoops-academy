@@ -10,7 +10,18 @@ statistics on top of the same packages. Port 8082, schema `game`, contract `libs
 | createMatch, updateMatch, startMatch, finishMatch, cancelMatch, replaceMatchRoster | `POST/PATCH/PUT /api/game/matches[...]` | ADMIN, or COACH / ASSISTANT_COACH who is staff of the match's team (otherwise 403) |
 | getGameUsage | `GET /internal/usage/{tenantId}` | realm role `service` |
 
-Not yet implemented (WP7): `submitMatchEvents`, event feed, box score, season statistics.
+
+## Implemented (WP7)
+| Operation | Path | Who |
+|---|---|---|
+| submitMatchEvents | `POST /api/game/matches/{id}/events:batch` | per event: ADMIN / team staff any type; PARENT stat events of linked players + VOID of own events; others `NOT_AUTHORIZED` |
+| listMatchEvents | `GET /api/game/matches/{id}/events?after=&limit=` | any tenant member |
+| getBoxScore | `GET /api/game/matches/{id}/box-score` | any member; player lines: ADMIN/team staff all, PARENT linked, PLAYER self |
+| getPlayerSeasonStats | `GET /api/game/players/{id}/season-stats?seasonId=` | ADMIN, COACH, ASSISTANT_COACH, linked PARENT, PLAYER self; others 404 |
+
+Ingest and projection semantics: ADR-0014. The projector is pure domain code (`domain/events`, `domain/projection`);
+shared test vectors live in `src/test/resources/vectors` and are copied to `libs/contracts/vectors`
+(`-Dvectors.write=true` on `ProjectionVectorsTest` regenerates both).
 
 State machine: `SCHEDULED -> LIVE -> FINISHED`; `CANCELLED` from `SCHEDULED` or `LIVE`. Illegal transitions are 409
 (`INVALID_STATE`); starting needs a roster with a starter (422 `NO_STARTERS`), starting a LIVE match is idempotent.
@@ -24,8 +35,12 @@ adapters/in/internal/    UsageResource (/internal/usage/{tenantId})
 adapters/out/persistence JPA entities (@TenantId), JpaMatchRepository, JpaUsageCounter
 adapters/out/client/     RestRosterPort (core /internal/**, Caffeine 30 s, 2 s timeout), RosterAuthzResolver
 ```
-WP7 adds `domain/event`, `application/` event use cases, `adapters/in/rest/MatchEventResource`,
-`adapters/out/persistence/*Event*` and a Flyway `V2__match_event.sql`; `sync_receipt` already exists.
+WP7: `domain/events` (MatchEvent sealed hierarchy, EventOrdering), `domain/projection` (BoxScoreProjector, SeasonStats),
+`application/` (IngestEventBatch, EventAuthorization, MatchReprojection, GetMatchEvents, GetBoxScore,
+GetPlayerSeasonStats; ports MatchEventRepository, ProjectionRepository), `adapters/json` (MatchEventJson codec),
+`adapters/in/rest` (MatchEventResource, BoxScoreResource, SeasonStatsResource, MatchEventDecoder = JSON Schema
+validation, OptimisticLockExceptionMapper 409), `adapters/out/persistence` (JDBC repositories on the transaction's
+connection) and Flyway `V2__events.sql` (`match_event`, `match_player_stats`, `match_summary`).
 
 ## Talking to core-service (ADR-0008)
 `RestRosterPort` implements `RosterPort{teamRoster, players, authzContext}` against core `/internal/**` with a
@@ -43,6 +58,7 @@ SUSPENDED / WITHDRAWN tenant yields no membership (404).
 | `KEYCLOAK_URL` | `http://localhost:8180` | realm `academy` |
 | `GAME_SERVICE_CLIENT_SECRET` | `change-me` | OIDC client `game-service` (also used for service tokens) |
 | `hoops.core.url` | `http://localhost:8081` | core-service base URL |
+| `hoops.game.overtime-minutes` | `5` | length of overtime periods (period > periodCount) |
 
 ## Tests
 ```
@@ -50,5 +66,6 @@ source scripts/env.sh && ./mvnw -pl services/game-service verify
 ```
 Needs Podman for the Postgres Testcontainer; core-service and Keycloak's token endpoint are WireMock
 (`support/CoreWireMockResource`, wiremock-standalone). REST tests use `@TenantUser` (the common test-jar resolver) and
-validate every response against `/openapi/game.yaml`. `RealAuthzResolverTest` runs the production resolver by excluding
+validate every response against `/openapi/game.yaml` (event payloads: see `support/Contract.BATCH/FEED` and
+`support/EventSchema`). Tests use a random HTTP port (`%test.quarkus.http.test-port=0`). `RealAuthzResolverTest` runs the production resolver by excluding
 `TestAuthzContextResolver` through a `QuarkusTestProfile` (`quarkus.arc.exclude-types`).

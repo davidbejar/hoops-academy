@@ -7,26 +7,36 @@ import com.hoopsacademy.game.domain.JerseyNumber;
 import com.hoopsacademy.game.domain.Match;
 import com.hoopsacademy.game.domain.MatchId;
 import com.hoopsacademy.game.domain.MatchRoster;
+import com.hoopsacademy.game.domain.MatchScore;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.RosterEntry;
 import com.hoopsacademy.game.domain.SeasonId;
 import com.hoopsacademy.game.domain.TeamId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.TypedQuery;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /** JPA adapter: tenant isolation comes from Hibernate's discriminator filter plus Postgres RLS. */
 @ApplicationScoped
-class JpaMatchRepository implements MatchRepository {
+class JpaMatchRepository extends JdbcRepository implements MatchRepository {
 
     private final EntityManager em;
 
     JpaMatchRepository(EntityManager em) {
         this.em = em;
+    }
+
+    @Override
+    EntityManager entityManager() {
+        return em;
     }
 
     @Override
@@ -61,7 +71,12 @@ class JpaMatchRepository implements MatchRepository {
 
     @Override
     public Optional<Match> findById(MatchId id) {
-        return Optional.ofNullable(em.find(MatchEntity.class, id.value())).map(JpaMatchRepository::toDomain);
+        return Optional.ofNullable(em.find(MatchEntity.class, id.value())).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Match> lockById(MatchId id) {
+        return Optional.ofNullable(em.find(MatchEntity.class, id.value(), LockModeType.PESSIMISTIC_WRITE)).map(this::toDomain);
     }
 
     @Override
@@ -95,8 +110,9 @@ class JpaMatchRepository implements MatchRepository {
             count.setParameter((String) param[0], param[1]);
             select.setParameter((String) param[0], param[1]);
         }
-        List<Match> items = select.setFirstResult(page * size).setMaxResults(size).getResultList().stream()
-                .map(JpaMatchRepository::toDomain).toList();
+        List<MatchEntity> entities = select.setFirstResult(page * size).setMaxResults(size).getResultList();
+        Map<UUID, MatchScore> scores = scores(entities.stream().map(e -> e.id).toList());
+        List<Match> items = entities.stream().map(e -> toDomain(e, scores.getOrDefault(e.id, MatchScore.NONE))).toList();
         return new MatchPage(items, page, size, count.getSingleResult());
     }
 
@@ -130,9 +146,26 @@ class JpaMatchRepository implements MatchRepository {
         em.flush();
     }
 
-    private static Match toDomain(MatchEntity e) {
+    private Match toDomain(MatchEntity e) {
+        return toDomain(e, scores(List.of(e.id)).getOrDefault(e.id, MatchScore.NONE));
+    }
+
+    private static Match toDomain(MatchEntity e, MatchScore score) {
         return Match.restore(MatchId.of(e.id), TeamId.of(e.teamId), SeasonId.of(e.seasonId), e.opponentName, e.homeAway,
                 e.scheduledAt, e.venue, e.status, e.periodCount, e.periodMinutes, e.startedAt, e.finishedAt,
-                e.cancelledAt, e.cancelReason, e.createdByPersonId, e.version);
+                e.cancelledAt, e.cancelReason, e.createdByPersonId, e.version, score);
+    }
+
+    /** Projected scores (game.match_summary) of the given matches; matches never projected are absent. */
+    private Map<UUID, MatchScore> scores(List<UUID> matchIds) {
+        if (matchIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, MatchScore> scores = new HashMap<>();
+        query("select match_id, our_score, opp_score, last_server_seq from game.match_summary where match_id = any(?)",
+                s -> s.setArray(1, s.getConnection().createArrayOf("uuid", matchIds.toArray())),
+                row -> scores.put(uuid(row, "match_id"),
+                        new MatchScore(row.getInt("our_score"), row.getInt("opp_score"), row.getLong("last_server_seq"))));
+        return scores;
     }
 }

@@ -31,6 +31,7 @@ public final class Match {
     private Instant finishedAt;
     private Instant cancelledAt;
     private String cancelReason;
+    private MatchScore score = MatchScore.NONE;
 
     private Match(MatchId id, TeamId teamId, SeasonId seasonId, UUID createdByPersonId, long version) {
         this.id = Objects.requireNonNull(id, "id");
@@ -56,12 +57,13 @@ public final class Match {
         return match;
     }
 
-    /** Rebuilds a stored match (persistence adapter only). */
+    /** Rebuilds a stored match with its projected score (persistence adapter only). */
     public static Match restore(
             MatchId id, TeamId teamId, SeasonId seasonId, String opponentName, HomeAway homeAway, Instant scheduledAt,
             String venue, MatchStatus status, int periodCount, int periodMinutes, Instant startedAt, Instant finishedAt,
-            Instant cancelledAt, String cancelReason, UUID createdByPersonId, long version) {
+            Instant cancelledAt, String cancelReason, UUID createdByPersonId, long version, MatchScore score) {
         Match match = new Match(id, teamId, seasonId, createdByPersonId, version);
+        match.score = Objects.requireNonNull(score, "score");
         match.opponentName = opponentName;
         match.homeAway = homeAway;
         match.scheduledAt = scheduledAt;
@@ -191,4 +193,5 @@ public final class Match {
     public String cancelReason() { return cancelReason; }
     public UUID createdByPersonId() { return createdByPersonId; }
     public long version() { return version; }
+    public MatchScore score() { return score; }
 }

@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.game.domain.MatchStatus;
+import com.hoopsacademy.game.domain.events.Script;
 import com.hoopsacademy.game.support.Contract;
 import com.hoopsacademy.game.support.CoreWireMockResource;
 import com.hoopsacademy.game.support.MatchSeed;
@@ -49,6 +50,20 @@ class UsageResourceTest {
                 .body("counters.finishedMatches", equalTo(1))
                 .body("counters.cancelledMatches", equalTo(1))
                 .body("counters.matchEvents", equalTo(0));
+    }
+
+    @Test
+    @TestSecurity(user = "platform", roles = "service")
+    void countsTheTenantsMatchEvents() {
+        String tenant = "cccccccc-cccc-4ccc-8ccc-ccccccccccc7";
+        java.util.UUID match = seed.match(tenant, TEAM, MatchStatus.LIVE);
+        seed.events(tenant, match, java.util.UUID.randomUUID(), Script.unique().start(1, 600).end(1, 0).note(2, 600, "x").events());
+        seed.events(USAGE_TENANT.replace('c', 'f'), seed.match(USAGE_TENANT.replace('c', 'f'), TEAM, MatchStatus.LIVE),
+                java.util.UUID.randomUUID(), Script.unique().start(1, 600).events());
+
+        given().filter(Contract.FILTER).get("/internal/usage/" + tenant).then().statusCode(200)
+                .body("counters.matchEvents", equalTo(3))
+                .body("counters.matchEventsLast30Days", equalTo(3));
     }
 
     @Test

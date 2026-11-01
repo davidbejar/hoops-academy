@@ -2,7 +2,10 @@ package com.hoopsacademy.game.support;
 
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
+import com.hoopsacademy.game.application.MatchEventRepository;
+import com.hoopsacademy.game.application.MatchReprojection;
 import com.hoopsacademy.game.application.MatchRepository;
+import com.hoopsacademy.game.application.Recorder;
 import com.hoopsacademy.game.domain.HomeAway;
 import com.hoopsacademy.game.domain.JerseyNumber;
 import com.hoopsacademy.game.domain.Match;
@@ -13,6 +16,7 @@ import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.RosterEntry;
 import com.hoopsacademy.game.domain.SeasonId;
 import com.hoopsacademy.game.domain.TeamId;
+import com.hoopsacademy.game.domain.events.RecordedEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
 import java.util.List;
@@ -24,10 +28,52 @@ public class MatchSeed {
 
     private final TenantScope tenantScope;
     private final MatchRepository matches;
+    private final MatchEventRepository events;
+    private final MatchReprojection reprojection;
 
-    public MatchSeed(TenantScope tenantScope, MatchRepository matches) {
+    public MatchSeed(TenantScope tenantScope, MatchRepository matches, MatchEventRepository events,
+            MatchReprojection reprojection) {
         this.tenantScope = tenantScope;
         this.matches = matches;
+        this.events = events;
+        this.reprojection = reprojection;
+    }
+
+    /** Persists a match of {@code season} with the given roster (it needs a starter for LIVE and FINISHED). */
+    public UUID match(String tenant, String team, String season, MatchStatus status, Instant scheduledAt,
+            List<RosterEntry> entries) {
+        MatchId id = MatchId.random();
+        tenantScope.runAs(TenantId.parse(tenant), () -> {
+            Match match = Match.schedule(id, TeamId.of(UUID.fromString(team)), SeasonId.of(UUID.fromString(season)),
+                    "Rivals " + scheduledAt, HomeAway.AWAY, scheduledAt, null, null, null, UUID.randomUUID());
+            MatchRoster roster = new MatchRoster(id, entries);
+            moveTo(match, status, roster);
+            matches.save(match);
+            matches.replaceRoster(roster);
+        });
+        return id.value();
+    }
+
+    /** Stores events directly (no authz) as {@code recordedBy} and re-projects the match. */
+    public void events(String tenant, UUID matchId, UUID recordedBy, List<RecordedEvent> recorded) {
+        tenantScope.runAs(TenantId.parse(tenant), () -> {
+            MatchId id = MatchId.of(matchId);
+            recorded.forEach(e -> events.append(id, e.event(), new Recorder(recordedBy, "Seeder")));
+            reprojection.reproject(matches.findById(id).orElseThrow());
+        });
+    }
+
+    private static void moveTo(Match match, MatchStatus status, MatchRoster roster) {
+        Instant now = Instant.parse("2026-12-01T11:00:00Z");
+        if (status == MatchStatus.LIVE || status == MatchStatus.FINISHED) {
+            match.start(roster, now);
+        }
+        if (status == MatchStatus.FINISHED) {
+            match.finish(now);
+        }
+        if (status == MatchStatus.CANCELLED) {
+            match.cancel("seeded", now);
+        }
     }
 
     public UUID match(String tenant, String team, MatchStatus status) {

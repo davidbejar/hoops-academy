@@ -8,7 +8,7 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
   and the adapters in game/athlete. Until then athlete uses `hoops.athlete.default-timezone` and parent/player list
   calls require `teamId`. → consolidation pass after WP3/WP4 (call it WP2c).
 - **503 `ServiceUnavailable` response** in `common.yaml` + referenced by game/athlete operations (WP6, WP8).
-- **OptimisticLockException → 409 Problem** mapper in common-quarkus (WP6 reports 500 today). WP7 may add a local one.
+- **OptimisticLockException → 409 Problem** mapper: WP7 added a game-local `CONCURRENT_MODIFICATION` mapper; move to common in WP2c.
 - **`swagger-request-validator-restassured` relocated** to `openapi-request-validator-restassured` — rename in root pom.
 - **RosterPort adapter duplication** (game, athlete): move to `libs/common-quarkus` (`client` package) in WP2c; keep
   service-specific resolvers thin.
@@ -36,6 +36,13 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
 - **common test-jar**: add a `nullableTenantTables()` hook so templates can keep a `tenant_id` column (WP9 used
   `owner_tenant_id` to satisfy the meta-test); RLS lesson learned: use separate select/insert/update/delete policies
   when USING and WITH CHECK differ (FOR ALL lets DELETE through) — fold into `app.enable_tenant_rls` docs/skill.
+
+- **Contracts (game, WP7)**: per-event-type `type` const so request validators can discriminate MatchEvent; add
+  rejection reason for "event id reused in another match" (currently CLIENT_SEQ_CONFLICT) and optionally
+  `MATCH_NOT_STARTED`; `StatLine` technical/unsportsmanlike foul counts; `BoxScore.opponentFouls` has no source
+  event type (drop or add OPPONENT_FOUL).
+- **Ingress/nginx**: must pass `events:batch` paths through unchanged (percent-encoded colon → 404) (WP7, WP16).
+- **Rate limiting** for `events:batch` and `/auth` at the proxy/ingress (WP17).
 
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.

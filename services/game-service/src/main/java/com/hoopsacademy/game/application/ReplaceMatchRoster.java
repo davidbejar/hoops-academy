@@ -25,15 +25,17 @@ public class ReplaceMatchRoster {
     private final RosterPort rosterPort;
     private final MatchRepository matches;
     private final CurrentCaller caller;
+    private final MatchReprojection reprojection;
 
     ReplaceMatchRoster(
             MatchLookup lookup, MatchPermissions permissions, RosterPort rosterPort, MatchRepository matches,
-            CurrentCaller caller) {
+            CurrentCaller caller, MatchReprojection reprojection) {
         this.lookup = lookup;
         this.permissions = permissions;
         this.rosterPort = rosterPort;
         this.matches = matches;
         this.caller = caller;
+        this.reprojection = reprojection;
     }
 
     /** @param jerseyNumber overrides the team jersey for this match, null keeps the team's */
@@ -56,6 +58,7 @@ public class ReplaceMatchRoster {
         List<RosterEntry> entries = requested.stream().map(entry -> snapshot(team, entry)).toList();
         MatchRoster roster = new MatchRoster(id, entries);
         matches.replaceRoster(roster);
+        reprojection.reproject(match); // starters and player lines come from the roster
         return roster;
     }
 

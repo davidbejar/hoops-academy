@@ -26,10 +26,18 @@ class GameRlsIsolationTest extends GenericRlsIsolationTest {
                 "home_away", (c, t) -> "HOME",
                 "status", (c, t) -> "SCHEDULED");
         Map<String, ColumnFixture> parentMatch = Map.of("match_id", GameRlsIsolationTest::insertMatch);
+        Map<String, ColumnFixture> eventColumns = Map.of(
+                "match_id", GameRlsIsolationTest::insertMatch,
+                "type", (c, t) -> "NOTE",
+                "period", (c, t) -> 1,
+                "clock_seconds_remaining", (c, t) -> 0);
         return Map.of(
                 "game.match", matchColumns,
                 "game.match_roster", parentMatch,
-                "game.sync_receipt", parentMatch);
+                "game.sync_receipt", parentMatch,
+                "game.match_event", eventColumns,
+                "game.match_player_stats", parentMatch,
+                "game.match_summary", parentMatch);
     }
 
     /** Parent match in the same tenant (the migrator connection has app.tenant_id set). */

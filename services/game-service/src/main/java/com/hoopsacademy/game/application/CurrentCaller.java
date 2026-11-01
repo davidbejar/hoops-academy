@@ -1,5 +1,6 @@
 package com.hoopsacademy.game.application;
 
+import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantId;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,5 +22,9 @@ public class CurrentCaller {
 
     public UUID personId() {
         return tenantContext.requireAuthz().personId();
+    }
+
+    public AuthzContext authz() {
+        return tenantContext.requireAuthz();
     }
 }

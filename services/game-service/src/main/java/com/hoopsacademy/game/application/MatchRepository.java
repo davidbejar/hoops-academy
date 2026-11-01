@@ -12,6 +12,9 @@ public interface MatchRepository {
 
     Optional<Match> findById(MatchId id);
 
+    /** Loads the match and locks its row until the transaction ends (serialises event ingest per match). */
+    Optional<Match> lockById(MatchId id);
+
     MatchPage list(MatchFilter filter, int page, int size);
 
     MatchRoster roster(MatchId id);

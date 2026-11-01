@@ -1,0 +1,619 @@
+{
+  "name" : "simple-game",
+  "description" : "Four full periods, starters only, every statistic type once or more; 10-9 final.",
+  "match" : {
+    "periodCount" : 4,
+    "periodMinutes" : 10,
+    "overtimeMinutes" : 5
+  },
+  "roster" : [ {
+    "playerId" : "0190b6a0-0000-4000-8000-000000000101",
+    "displayName" : "Ana",
+    "jerseyNumber" : "4",
+    "isStarter" : true
+  }, {
+    "playerId" : "0190b6a0-0000-4000-8000-000000000102",
+    "displayName" : "Bo",
+    "jerseyNumber" : "5",
+    "isStarter" : true
+  }, {
+    "playerId" : "0190b6a0-0000-4000-8000-000000000103",
+    "displayName" : "Cai",
+    "jerseyNumber" : "6",
+    "isStarter" : true
+  }, {
+    "playerId" : "0190b6a0-0000-4000-8000-000000000104",
+    "displayName" : "Dee",
+    "jerseyNumber" : "7",
+    "isStarter" : true
+  }, {
+    "playerId" : "0190b6a0-0000-4000-8000-000000000105",
+    "displayName" : "Eli",
+    "jerseyNumber" : "8",
+    "isStarter" : true
+  } ],
+  "events" : [ {
+    "serverSeq" : 1,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000001",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 1,
+      "type" : "PERIOD_START",
+      "period" : 1,
+      "clockSecondsRemaining" : 600,
+      "recordedAtClient" : "2026-11-01T10:00:07Z"
+    }
+  }, {
+    "serverSeq" : 2,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000002",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 2,
+      "type" : "SHOT",
+      "period" : 1,
+      "clockSecondsRemaining" : 570,
+      "recordedAtClient" : "2026-11-01T10:00:14Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000101",
+      "payload" : {
+        "points" : 2,
+        "made" : true
+      }
+    }
+  }, {
+    "serverSeq" : 3,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000003",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 3,
+      "type" : "ASSIST",
+      "period" : 1,
+      "clockSecondsRemaining" : 570,
+      "recordedAtClient" : "2026-11-01T10:00:21Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000102"
+    }
+  }, {
+    "serverSeq" : 4,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000004",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 4,
+      "type" : "OPPONENT_SCORE",
+      "period" : 1,
+      "clockSecondsRemaining" : 540,
+      "recordedAtClient" : "2026-11-01T10:00:28Z",
+      "payload" : {
+        "points" : 2
+      }
+    }
+  }, {
+    "serverSeq" : 5,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000005",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 5,
+      "type" : "SHOT",
+      "period" : 1,
+      "clockSecondsRemaining" : 500,
+      "recordedAtClient" : "2026-11-01T10:00:35Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000103",
+      "payload" : {
+        "points" : 3,
+        "made" : false
+      }
+    }
+  }, {
+    "serverSeq" : 6,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000006",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 6,
+      "type" : "REBOUND",
+      "period" : 1,
+      "clockSecondsRemaining" : 498,
+      "recordedAtClient" : "2026-11-01T10:00:42Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000104",
+      "payload" : {
+        "kind" : "OFFENSIVE"
+      }
+    }
+  }, {
+    "serverSeq" : 7,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000007",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 7,
+      "type" : "SHOT",
+      "period" : 1,
+      "clockSecondsRemaining" : 495,
+      "recordedAtClient" : "2026-11-01T10:00:49Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000104",
+      "payload" : {
+        "points" : 2,
+        "made" : true
+      }
+    }
+  }, {
+    "serverSeq" : 8,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000008",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 8,
+      "type" : "SHOT",
+      "period" : 1,
+      "clockSecondsRemaining" : 400,
+      "recordedAtClient" : "2026-11-01T10:00:56Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000105",
+      "payload" : {
+        "points" : 1,
+        "made" : true
+      }
+    }
+  }, {
+    "serverSeq" : 9,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000009",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 9,
+      "type" : "SHOT",
+      "period" : 1,
+      "clockSecondsRemaining" : 400,
+      "recordedAtClient" : "2026-11-01T10:01:03Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000105",
+      "payload" : {
+        "points" : 1,
+        "made" : false
+      }
+    }
+  }, {
+    "serverSeq" : 10,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000010",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 10,
+      "type" : "FOUL",
+      "period" : 1,
+      "clockSecondsRemaining" : 300,
+      "recordedAtClient" : "2026-11-01T10:01:10Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000102",
+      "payload" : {
+        "kind" : "PERSONAL"
+      }
+    }
+  }, {
+    "serverSeq" : 11,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000011",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 11,
+      "type" : "OPPONENT_SCORE",
+      "period" : 1,
+      "clockSecondsRemaining" : 250,
+      "recordedAtClient" : "2026-11-01T10:01:17Z",
+      "payload" : {
+        "points" : 3
+      }
+    }
+  }, {
+    "serverSeq" : 12,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000012",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 12,
+      "type" : "STEAL",
+      "period" : 1,
+      "clockSecondsRemaining" : 200,
+      "recordedAtClient" : "2026-11-01T10:01:24Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000101"
+    }
+  }, {
+    "serverSeq" : 13,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000013",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 13,
+      "type" : "TURNOVER",
+      "period" : 1,
+      "clockSecondsRemaining" : 150,
+      "recordedAtClient" : "2026-11-01T10:01:31Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000103"
+    }
+  }, {
+    "serverSeq" : 14,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000014",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 14,
+      "type" : "BLOCK",
+      "period" : 1,
+      "clockSecondsRemaining" : 100,
+      "recordedAtClient" : "2026-11-01T10:01:38Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000105"
+    }
+  }, {
+    "serverSeq" : 15,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000015",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 15,
+      "type" : "PERIOD_END",
+      "period" : 1,
+      "clockSecondsRemaining" : 0,
+      "recordedAtClient" : "2026-11-01T10:01:45Z"
+    }
+  }, {
+    "serverSeq" : 16,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000016",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 16,
+      "type" : "PERIOD_START",
+      "period" : 2,
+      "clockSecondsRemaining" : 600,
+      "recordedAtClient" : "2026-11-01T10:01:52Z"
+    }
+  }, {
+    "serverSeq" : 17,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000017",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 17,
+      "type" : "SHOT",
+      "period" : 2,
+      "clockSecondsRemaining" : 500,
+      "recordedAtClient" : "2026-11-01T10:01:59Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000102",
+      "payload" : {
+        "points" : 3,
+        "made" : true
+      }
+    }
+  }, {
+    "serverSeq" : 18,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000018",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 18,
+      "type" : "OPPONENT_SCORE",
+      "period" : 2,
+      "clockSecondsRemaining" : 450,
+      "recordedAtClient" : "2026-11-01T10:02:06Z",
+      "payload" : {
+        "points" : 2
+      }
+    }
+  }, {
+    "serverSeq" : 19,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000019",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 19,
+      "type" : "REBOUND",
+      "period" : 2,
+      "clockSecondsRemaining" : 449,
+      "recordedAtClient" : "2026-11-01T10:02:13Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000105",
+      "payload" : {
+        "kind" : "DEFENSIVE"
+      }
+    }
+  }, {
+    "serverSeq" : 20,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000020",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 20,
+      "type" : "PERIOD_END",
+      "period" : 2,
+      "clockSecondsRemaining" : 0,
+      "recordedAtClient" : "2026-11-01T10:02:20Z"
+    }
+  }, {
+    "serverSeq" : 21,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000021",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 21,
+      "type" : "PERIOD_START",
+      "period" : 3,
+      "clockSecondsRemaining" : 600,
+      "recordedAtClient" : "2026-11-01T10:02:27Z"
+    }
+  }, {
+    "serverSeq" : 22,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000022",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 22,
+      "type" : "SHOT",
+      "period" : 3,
+      "clockSecondsRemaining" : 300,
+      "recordedAtClient" : "2026-11-01T10:02:34Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000101",
+      "payload" : {
+        "points" : 2,
+        "made" : false
+      }
+    }
+  }, {
+    "serverSeq" : 23,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000023",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 23,
+      "type" : "OPPONENT_SCORE",
+      "period" : 3,
+      "clockSecondsRemaining" : 280,
+      "recordedAtClient" : "2026-11-01T10:02:41Z",
+      "payload" : {
+        "points" : 2
+      }
+    }
+  }, {
+    "serverSeq" : 24,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000024",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 24,
+      "type" : "PERIOD_END",
+      "period" : 3,
+      "clockSecondsRemaining" : 0,
+      "recordedAtClient" : "2026-11-01T10:02:48Z"
+    }
+  }, {
+    "serverSeq" : 25,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000025",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 25,
+      "type" : "PERIOD_START",
+      "period" : 4,
+      "clockSecondsRemaining" : 600,
+      "recordedAtClient" : "2026-11-01T10:02:55Z"
+    }
+  }, {
+    "serverSeq" : 26,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000026",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 26,
+      "type" : "SHOT",
+      "period" : 4,
+      "clockSecondsRemaining" : 120,
+      "recordedAtClient" : "2026-11-01T10:03:02Z",
+      "playerId" : "0190b6a0-0000-4000-8000-000000000103",
+      "payload" : {
+        "points" : 2,
+        "made" : true
+      }
+    }
+  }, {
+    "serverSeq" : 27,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000027",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 27,
+      "type" : "TIMEOUT",
+      "period" : 4,
+      "clockSecondsRemaining" : 60,
+      "recordedAtClient" : "2026-11-01T10:03:09Z",
+      "payload" : {
+        "side" : "OWN"
+      }
+    }
+  }, {
+    "serverSeq" : 28,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000028",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 28,
+      "type" : "NOTE",
+      "period" : 4,
+      "clockSecondsRemaining" : 30,
+      "recordedAtClient" : "2026-11-01T10:03:16Z",
+      "payload" : {
+        "text" : "Great comeback defence"
+      }
+    }
+  }, {
+    "serverSeq" : 29,
+    "recordedByPersonId" : "0190b6a0-0000-4000-8000-0000000002aa",
+    "event" : {
+      "id" : "0190b6a0-0001-7000-8000-000000000029",
+      "deviceId" : "bench-tablet",
+      "clientSeq" : 29,
+      "type" : "PERIOD_END",
+      "period" : 4,
+      "clockSecondsRemaining" : 0,
+      "recordedAtClient" : "2026-11-01T10:03:23Z"
+    }
+  } ],
+  "expected" : {
+    "playerStats" : [ {
+      "playerId" : "0190b6a0-0000-4000-8000-000000000101",
+      "wasStarter" : true,
+      "stats" : {
+        "points" : 2,
+        "fg1Made" : 0,
+        "fg1Attempted" : 0,
+        "fg2Made" : 1,
+        "fg2Attempted" : 2,
+        "fg3Made" : 0,
+        "fg3Attempted" : 0,
+        "assists" : 0,
+        "offensiveRebounds" : 0,
+        "defensiveRebounds" : 0,
+        "turnovers" : 0,
+        "steals" : 1,
+        "blocks" : 0,
+        "personalFouls" : 0,
+        "technicalFouls" : 0,
+        "unsportsmanlikeFouls" : 0,
+        "secondsPlayed" : 2400
+      },
+      "warnings" : [ ]
+    }, {
+      "playerId" : "0190b6a0-0000-4000-8000-000000000102",
+      "wasStarter" : true,
+      "stats" : {
+        "points" : 3,
+        "fg1Made" : 0,
+        "fg1Attempted" : 0,
+        "fg2Made" : 0,
+        "fg2Attempted" : 0,
+        "fg3Made" : 1,
+        "fg3Attempted" : 1,
+        "assists" : 1,
+        "offensiveRebounds" : 0,
+        "defensiveRebounds" : 0,
+        "turnovers" : 0,
+        "steals" : 0,
+        "blocks" : 0,
+        "personalFouls" : 1,
+        "technicalFouls" : 0,
+        "unsportsmanlikeFouls" : 0,
+        "secondsPlayed" : 2400
+      },
+      "warnings" : [ ]
+    }, {
+      "playerId" : "0190b6a0-0000-4000-8000-000000000103",
+      "wasStarter" : true,
+      "stats" : {
+        "points" : 2,
+        "fg1Made" : 0,
+        "fg1Attempted" : 0,
+        "fg2Made" : 1,
+        "fg2Attempted" : 1,
+        "fg3Made" : 0,
+        "fg3Attempted" : 1,
+        "assists" : 0,
+        "offensiveRebounds" : 0,
+        "defensiveRebounds" : 0,
+        "turnovers" : 1,
+        "steals" : 0,
+        "blocks" : 0,
+        "personalFouls" : 0,
+        "technicalFouls" : 0,
+        "unsportsmanlikeFouls" : 0,
+        "secondsPlayed" : 2400
+      },
+      "warnings" : [ ]
+    }, {
+      "playerId" : "0190b6a0-0000-4000-8000-000000000104",
+      "wasStarter" : true,
+      "stats" : {
+        "points" : 2,
+        "fg1Made" : 0,
+        "fg1Attempted" : 0,
+        "fg2Made" : 1,
+        "fg2Attempted" : 1,
+        "fg3Made" : 0,
+        "fg3Attempted" : 0,
+        "assists" : 0,
+        "offensiveRebounds" : 1,
+        "defensiveRebounds" : 0,
+        "turnovers" : 0,
+        "steals" : 0,
+        "blocks" : 0,
+        "personalFouls" : 0,
+        "technicalFouls" : 0,
+        "unsportsmanlikeFouls" : 0,
+        "secondsPlayed" : 2400
+      },
+      "warnings" : [ ]
+    }, {
+      "playerId" : "0190b6a0-0000-4000-8000-000000000105",
+      "wasStarter" : true,
+      "stats" : {
+        "points" : 1,
+        "fg1Made" : 1,
+        "fg1Attempted" : 2,
+        "fg2Made" : 0,
+        "fg2Attempted" : 0,
+        "fg3Made" : 0,
+        "fg3Attempted" : 0,
+        "assists" : 0,
+        "offensiveRebounds" : 0,
+        "defensiveRebounds" : 1,
+        "turnovers" : 0,
+        "steals" : 0,
+        "blocks" : 1,
+        "personalFouls" : 0,
+        "technicalFouls" : 0,
+        "unsportsmanlikeFouls" : 0,
+        "secondsPlayed" : 2400
+      },
+      "warnings" : [ ]
+    } ],
+    "summary" : {
+      "teamScore" : 10,
+      "opponentScore" : 9,
+      "periodScores" : [ {
+        "period" : 1,
+        "team" : 5,
+        "opponent" : 5
+      }, {
+        "period" : 2,
+        "team" : 3,
+        "opponent" : 2
+      }, {
+        "period" : 3,
+        "team" : 0,
+        "opponent" : 2
+      }, {
+        "period" : 4,
+        "team" : 2,
+        "opponent" : 0
+      } ],
+      "lastServerSeq" : 29
+    },
+    "teamTotals" : {
+      "points" : 10,
+      "fg1Made" : 1,
+      "fg1Attempted" : 2,
+      "fg2Made" : 3,
+      "fg2Attempted" : 4,
+      "fg3Made" : 1,
+      "fg3Attempted" : 2,
+      "assists" : 1,
+      "offensiveRebounds" : 1,
+      "defensiveRebounds" : 1,
+      "turnovers" : 1,
+      "steals" : 1,
+      "blocks" : 1,
+      "personalFouls" : 1,
+      "technicalFouls" : 0,
+      "unsportsmanlikeFouls" : 0,
+      "secondsPlayed" : 12000
+    },
+    "warnings" : [ ],
+    "voidedBy" : { }
+  }
+}

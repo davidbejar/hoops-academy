@@ -159,9 +159,16 @@ class MatchTest {
     @Test
     void restoreKeepsAllFields() {
         Match m = Match.restore(MatchId.random(), TeamId.of(UUID.randomUUID()), SeasonId.of(UUID.randomUUID()), "O",
-                HomeAway.AWAY, NOW, "V", MatchStatus.FINISHED, 3, 8, NOW, LATER, null, null, UUID.randomUUID(), 5);
+                HomeAway.AWAY, NOW, "V", MatchStatus.FINISHED, 3, 8, NOW, LATER, null, null, UUID.randomUUID(), 5,
+                new MatchScore(61, 58, 140));
         assertThat(m.status()).isEqualTo(MatchStatus.FINISHED);
+        assertThat(m.score()).isEqualTo(new MatchScore(61, 58, 140));
         assertThat(m.version()).isEqualTo(5);
         assertThat(m.finishedAt()).isEqualTo(LATER);
+    }
+
+    @Test
+    void aNewMatchHasNoScoreYet() {
+        assertThat(scheduled().score()).isEqualTo(MatchScore.NONE);
     }
 }
