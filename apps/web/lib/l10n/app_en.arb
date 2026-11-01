@@ -374,5 +374,533 @@
   "seasonStatsRebounds": "Rebounds",
   "seasonStatsAssists": "Assists",
   "seasonStatsMinutes": "Minutes",
-  "seasonStatsSeason": "Season"
+  "seasonStatsSeason": "Season",
+  "trainingTitle": "Training",
+  "trainingWeekOf": "Week of {range}",
+  "@trainingWeekOf": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "trainingToday": "Today",
+  "trainingPrevWeek": "Previous week",
+  "trainingNextWeek": "Next week",
+  "trainingAllTeams": "All teams",
+  "trainingNoSessions": "No training sessions this week",
+  "trainingNoSessionsDay": "No sessions",
+  "trainingMenuPlans": "Plans",
+  "trainingMenuSchedules": "Schedules",
+  "trainingMenuAbsences": "Absences",
+  "trainingMenuAssignments": "Assignments",
+  "sessionStatusPlanned": "Planned",
+  "sessionStatusDone": "Done",
+  "sessionStatusCancelled": "Cancelled",
+  "sessionDetailTitle": "Training session",
+  "sessionTimeRange": "{start} – {end}",
+  "@sessionTimeRange": {
+    "placeholders": {
+      "end": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionLocation": "Location",
+  "sessionNoLocation": "No location",
+  "sessionPlan": "Plan",
+  "sessionNoPlan": "No plan attached",
+  "sessionNotes": "Notes",
+  "sessionCancelReasonLine": "Cancelled: {reason}",
+  "@sessionCancelReasonLine": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionNew": "New session",
+  "sessionEdit": "Edit session",
+  "sessionTeam": "Team",
+  "sessionDate": "Date",
+  "sessionStartTime": "Start time",
+  "sessionDuration": "Duration (min)",
+  "sessionDurationMinutes": "{minutes} min",
+  "@sessionDurationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionCancel": "Cancel session",
+  "sessionCancelReason": "Reason for cancelling",
+  "sessionCreated": "Session created",
+  "sessionCancelled": "Session cancelled",
+  "attendanceTitle": "Attendance",
+  "attendancePresent": "Present",
+  "attendanceLate": "Late",
+  "attendanceAbsent": "Absent",
+  "attendanceExcused": "Excused",
+  "attendanceMinutesLate": "Minutes late",
+  "attendanceExpectedAbsent": "Planned absence",
+  "attendanceInjured": "Injured",
+  "attendanceNotRecorded": "Not recorded",
+  "attendanceSave": "Save attendance",
+  "attendanceSaved": "Attendance saved",
+  "attendanceEmpty": "The team has no players",
+  "attendanceMinutesInvalid": "Minutes between 1 and 180",
+  "scheduleTitle": "Training schedules",
+  "scheduleNew": "New schedule",
+  "scheduleEdit": "Edit schedule",
+  "scheduleEmpty": "No schedules yet",
+  "scheduleDay": "Weekday",
+  "scheduleTime": "Time (HH:MM)",
+  "scheduleTimeInvalid": "Use the HH:MM format",
+  "scheduleValidFrom": "Valid from",
+  "scheduleValidUntil": "Valid until",
+  "scheduleNoEnd": "No end date",
+  "scheduleDatesInvalid": "The end date must not be before the start",
+  "scheduleLine": "{day} {time} · {minutes} min",
+  "@scheduleLine": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleValidity": "From {from}",
+  "@scheduleValidity": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleValidityRange": "{from} to {to}",
+  "@scheduleValidityRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDeleteConfirm": "Delete this schedule? Future unchanged sessions will be removed.",
+  "dayMonday": "Monday",
+  "dayTuesday": "Tuesday",
+  "dayWednesday": "Wednesday",
+  "dayThursday": "Thursday",
+  "dayFriday": "Friday",
+  "daySaturday": "Saturday",
+  "daySunday": "Sunday",
+  "absenceTitle": "Planned absences",
+  "absenceNew": "New absence",
+  "absencePlayer": "Player",
+  "absenceFrom": "From",
+  "absenceTo": "To",
+  "absenceReason": "Reason (optional)",
+  "absenceEmpty": "No planned absences",
+  "absenceDatesInvalid": "The end date cannot be before the start",
+  "absenceDeleteConfirm": "Delete this absence?",
+  "absenceRange": "{from} → {to}",
+  "@absenceRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "absenceSaved": "Absence saved",
+  "planLibraryTitle": "Training plans",
+  "planTemplates": "Templates",
+  "planMine": "Our plans",
+  "planSearchHint": "Search plans",
+  "planEmptyTemplates": "No templates",
+  "planEmptyMine": "No plans yet. Create one or use a template.",
+  "planSummary": "{count} exercises · {minutes} min",
+  "@planSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "planNew": "New plan",
+  "planName": "Plan name",
+  "planDescription": "Description (optional)",
+  "planUse": "Use template",
+  "planCopied": "Template copied to your plans",
+  "planTemplateReadOnly": "Read-only template: copy it to edit.",
+  "planItems": "Exercises",
+  "planNoItems": "This plan has no exercises yet",
+  "planItemAdd": "Add exercise",
+  "planItemEdit": "Edit exercise",
+  "planItemTitle": "Title",
+  "planItemDuration": "Duration (min)",
+  "planItemSets": "Sets",
+  "planItemReps": "Reps",
+  "planItemVideo": "Video link (https)",
+  "planItemVideoInvalid": "Must start with https://",
+  "planItemSetsReps": "{sets} × {reps}",
+  "@planItemSetsReps": {
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      },
+      "sets": {
+        "type": "int"
+      }
+    }
+  },
+  "planItemMoveUp": "Move up",
+  "planItemMoveDown": "Move down",
+  "planItemDeleteConfirm": "Remove this exercise?",
+  "planDeleteConfirm": "Delete this plan?",
+  "planAssign": "Assign",
+  "planWatchVideo": "Watch video",
+  "assignTitle": "Assign plan",
+  "assignTarget": "Assign to",
+  "assignToTeam": "A team",
+  "assignToPlayer": "A player",
+  "assignDue": "Due date",
+  "assignDone": "Plan assigned",
+  "assignmentsTitle": "Assigned plans",
+  "assignmentsEmpty": "No assigned plans",
+  "assignmentDue": "Due {date}",
+  "@assignmentDue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentProgress": "{done} done · {partial} partial · {notDone} not done",
+  "@assignmentProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "notDone": {
+        "type": "int"
+      },
+      "partial": {
+        "type": "int"
+      }
+    }
+  },
+  "assignmentDeleteConfirm": "Remove this assignment and its completions?",
+  "assignmentProgressTitle": "Progress",
+  "assignmentTeamTarget": "Team: {name}",
+  "@assignmentTeamTarget": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentPlayerTarget": "Player",
+  "completionDone": "Done",
+  "completionPartial": "Partial",
+  "completionNotDone": "Not done",
+  "completionNone": "Not marked",
+  "completionComment": "Comment (optional)",
+  "completionMark": "Mark",
+  "completionSaved": "Marked",
+  "healthTitle": "Health and fitness",
+  "healthInjuries": "Injuries",
+  "healthGrowth": "Growth",
+  "healthTests": "Physical tests",
+  "injuryNew": "Record injury",
+  "injuryBodyPart": "Body part",
+  "injurySeverity": "Severity",
+  "severityMinor": "Minor",
+  "severityModerate": "Moderate",
+  "severitySevere": "Severe",
+  "injuryOccurredOn": "Injury date",
+  "injuryExpectedReturn": "Expected return",
+  "injuryDescription": "Description (optional)",
+  "injuryStatusOpen": "Open",
+  "injuryStatusRecovered": "Recovered",
+  "injuryRecover": "Mark recovered",
+  "injuryRecoveredOn": "Return date",
+  "injuryUpdateReturn": "Change expected return",
+  "injuryEmpty": "No injuries recorded",
+  "injuryReturnLine": "Expected return: {date}",
+  "@injuryReturnLine": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "injuryRecoveredLine": "Recovered on {date}",
+  "@injuryRecoveredLine": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "injurySaved": "Injury saved",
+  "availabilityAvailable": "Available",
+  "availabilityInjured": "Injured: {bodyPart}",
+  "@availabilityInjured": {
+    "placeholders": {
+      "bodyPart": {
+        "type": "String"
+      }
+    }
+  },
+  "growthHeight": "Height (cm)",
+  "growthWeight": "Weight (kg)",
+  "growthAdd": "Add measurement",
+  "growthMeasuredOn": "Measurement date",
+  "growthEmpty": "No measurements yet",
+  "growthNeedOne": "Enter height, weight or both",
+  "growthShowTable": "Show table",
+  "growthHideTable": "Hide table",
+  "growthDeleteConfirm": "Delete this measurement?",
+  "chartSummary": "Chart of {name}: {count} points, latest {value}",
+  "@chartSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chartNoData": "No data for the chart",
+  "chartDate": "Date",
+  "chartValue": "Value",
+  "testAdd": "Record result",
+  "testType": "Test",
+  "testValue": "Value",
+  "testNotes": "Notes (optional)",
+  "testMeasuredOn": "Test date",
+  "bandPoor": "Poor",
+  "bandBelowAverage": "Below average",
+  "bandAverage": "Average",
+  "bandAboveAverage": "Above average",
+  "bandExcellent": "Excellent",
+  "testExpectedBand": "Expected band: {band}",
+  "@testExpectedBand": {
+    "placeholders": {
+      "band": {
+        "type": "String"
+      }
+    }
+  },
+  "testNoBand": "No norm for this age and gender",
+  "testReferencePending": "Reference pending",
+  "testSavedBand": "Result saved. Band: {band}",
+  "@testSavedBand": {
+    "placeholders": {
+      "band": {
+        "type": "String"
+      }
+    }
+  },
+  "testSavedNoBand": "Result saved (no applicable norm)",
+  "testEmpty": "No test results yet",
+  "testChartLegend": "Expected bands",
+  "testAtAge": "age {age}",
+  "@testAtAge": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "testResultLine": "{value} {unit}",
+  "@testResultLine": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "testDeleteConfirm": "Delete this result?",
+  "testTypesTitle": "Test types",
+  "testTypeNew": "New custom test",
+  "testTypeCode": "Code",
+  "testTypeName": "Name",
+  "testTypeUnit": "Unit",
+  "testTypeHigher": "Higher is better",
+  "testTypeGlobal": "Global",
+  "testTypeCustom": "Academy",
+  "testTypesEmpty": "No test types",
+  "testTypeHigherYes": "Higher is better",
+  "testTypeHigherNo": "Lower is better",
+  "normsTitle": "Reference norms",
+  "normsScopeEffective": "Effective",
+  "normsScopeGlobal": "Global",
+  "normsScopeTenant": "Academy",
+  "normNew": "New norm",
+  "normEdit": "Edit norm",
+  "normGender": "Gender",
+  "normMinAge": "Minimum age",
+  "normMaxAge": "Maximum age",
+  "normBand": "Band",
+  "normMinValue": "Minimum value",
+  "normMaxValue": "Maximum value",
+  "normSource": "Source",
+  "normAges": "ages {min}–{max}",
+  "@normAges": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "normValues": "{low} to {high}",
+  "@normValues": {
+    "placeholders": {
+      "low": {
+        "type": "String"
+      },
+      "high": {
+        "type": "String"
+      }
+    }
+  },
+  "normValuesFrom": "from {low}",
+  "@normValuesFrom": {
+    "placeholders": {
+      "low": {
+        "type": "String"
+      }
+    }
+  },
+  "normValuesUpTo": "up to {high}",
+  "@normValuesUpTo": {
+    "placeholders": {
+      "high": {
+        "type": "String"
+      }
+    }
+  },
+  "normGlobalReadOnly": "Global (read only)",
+  "normOverride": "Academy override",
+  "normEmpty": "No norms for this filter",
+  "normDeleteConfirm": "Delete this norm?",
+  "normAgesInvalid": "Maximum age must be at least the minimum",
+  "normAllTests": "All tests",
+  "healthMenuTests": "Test types",
+  "healthMenuNorms": "Norms",
+  "meTitle": "My sports profile",
+  "meSeasonStats": "Season statistics",
+  "meUpcoming": "Upcoming training",
+  "meNoUpcoming": "No upcoming training",
+  "meTabTraining": "Training",
+  "meTabPlans": "Plans",
+  "meNoPlayer": "Your account is not linked to a player yet",
+  "myPlayersTitle": "My players",
+  "myPlayersEmpty": "You have no linked players",
+  "profilePlatform": "Platform console",
+  "mePlansEmpty": "No assigned plans",
+  "platformTitle": "Platform",
+  "platformSearchHint": "Search by name or slug",
+  "platformEmpty": "No academies match",
+  "platformNew": "New academy",
+  "tenantName": "Academy name",
+  "tenantSlug": "Identifier (slug)",
+  "tenantSlugInvalid": "Lowercase letters, numbers and hyphens (3-50)",
+  "tenantTimezone": "Time zone",
+  "tenantLocale": "Language",
+  "tenantAdminEmail": "First admin email",
+  "tenantAdminGivenName": "Admin first name",
+  "tenantAdminFamilyName": "Admin last name",
+  "tenantStatusActive": "Active",
+  "tenantStatusSuspended": "Suspended",
+  "tenantStatusWithdrawn": "Withdrawn",
+  "tenantCreated": "Academy created",
+  "tenantSuspend": "Suspend",
+  "tenantWithdraw": "Withdraw",
+  "tenantReactivate": "Reactivate",
+  "tenantReason": "Reason",
+  "tenantSuspendTitle": "Suspend the academy",
+  "tenantWithdrawTitle": "Withdraw the academy",
+  "tenantWithdrawWarning": "Withdrawing an academy starts its data retention period.",
+  "tenantUpdated": "Status updated",
+  "tenantCreatedOn": "Created {date}",
+  "@tenantCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantRetainUntil": "Data retained until {date}",
+  "@tenantRetainUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "usageTitle": "Usage",
+  "usageUnavailable": "No data from: {services}",
+  "@usageUnavailable": {
+    "placeholders": {
+      "services": {
+        "type": "String"
+      }
+    }
+  },
+  "usageLastActivity": "Last activity: {date}",
+  "@usageLastActivity": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "usageFailed": "Usage could not be loaded",
+  "usageServiceCore": "Core",
+  "usageServiceGame": "Matches",
+  "usageServiceAthlete": "Athletes",
+  "usageCounter_members": "Members",
+  "usageCounter_players": "Players",
+  "usageCounter_activePlayers": "Active players",
+  "usageCounter_teams": "Teams",
+  "usageCounter_seasons": "Seasons",
+  "usageCounter_matches": "Matches",
+  "usageCounter_liveMatches": "Live matches",
+  "usageCounter_matchEvents": "Match events",
+  "usageCounter_matchEventsLast30Days": "Events (30 days)",
+  "usageCounter_trainingSessions": "Training sessions",
+  "usageCounter_attendanceRecords": "Attendance records",
+  "usageCounter_trainingPlans": "Plans",
+  "usageCounter_physicalTestResults": "Test results",
+  "usageCounter_injuries": "Injuries",
+  "usageCounter_bodyMeasurements": "Body measurements"
 }

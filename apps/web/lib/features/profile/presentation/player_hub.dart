@@ -1,0 +1,149 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/theme.dart';
+import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/session/capabilities.dart';
+import '../../../core/ui/async_body.dart';
+import '../../../l10n/gen/app_localizations.dart';
+import '../../health/presentation/player_health_view.dart';
+import '../../training/application/training_providers.dart';
+import '../../training/presentation/assignment_widgets.dart';
+import '../../training/presentation/assignments_screen.dart' show AssignmentCard;
+import '../../training/presentation/player_picker.dart' show playerNameProvider;
+import '../../training/presentation/training_screen.dart' show SessionTile;
+
+enum HubTab { training, plans, health }
+
+/// Everything about one player for the player themself or a guardian:
+/// season stats link, upcoming trainings, assigned plans with completion
+/// and the health views.
+class PlayerHub extends ConsumerStatefulWidget {
+  const PlayerHub({super.key, required this.playerId});
+  final String playerId;
+
+  @override
+  ConsumerState<PlayerHub> createState() => _PlayerHubState();
+}
+
+class _PlayerHubState extends ConsumerState<PlayerHub> {
+  HubTab _tab = HubTab.training;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final id = widget.playerId;
+    final labels = {HubTab.training: l.meTabTraining, HubTab.plans: l.meTabPlans, HubTab.health: l.healthTitle};
+    return ListView(
+      padding: const EdgeInsets.all(AppTokens.spaceMd),
+      children: [
+        Text(ref.watch(playerNameProvider(id)) ?? '', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppTokens.spaceSm),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const Key('hub-season-stats'),
+            icon: const Icon(Icons.bar_chart),
+            label: Text(l.meSeasonStats),
+            onPressed: () => context.go('/matches/stats/$id'),
+          ),
+        ),
+        const SizedBox(height: AppTokens.spaceSm),
+        Wrap(
+          spacing: AppTokens.spaceSm,
+          children: [
+            for (final t in HubTab.values)
+              ChoiceChip(
+                key: Key('hub-tab-${t.name}'),
+                label: Text(labels[t]!),
+                selected: _tab == t,
+                onSelected: (_) => setState(() => _tab = t),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppTokens.spaceSm),
+        switch (_tab) {
+          HubTab.training => _Upcoming(playerId: id),
+          HubTab.plans => _Plans(playerId: id),
+          HubTab.health => PlayerHealthView(playerId: id),
+        },
+      ],
+    );
+  }
+}
+
+class _Upcoming extends ConsumerWidget {
+  const _Upcoming({required this.playerId});
+  final String playerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final caps = ref.watch(capabilitiesProvider);
+    final names = ref.watch(teamNamesProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.meUpcoming, style: Theme.of(context).textTheme.titleMedium),
+        AsyncBody<List<ath.TrainingSession>>(
+          value: ref.watch(upcomingSessionsProvider(playerId)),
+          onRetry: () => ref.invalidate(upcomingSessionsProvider(playerId)),
+          isEmpty: (d) => d.isEmpty,
+          emptyMessage: l.meNoUpcoming,
+          builder: (context, data) => Column(
+            children: [for (final s in data) SessionTile(session: s, teamName: names[s.teamId])],
+          ),
+        ),
+        if (caps.canFileAbsenceFor(playerId))
+          TextButton.icon(
+            key: const Key('hub-absences'),
+            icon: const Icon(Icons.event_busy_outlined),
+            label: Text(l.trainingMenuAbsences),
+            onPressed: () => context.go('/training/absences'),
+          ),
+      ],
+    );
+  }
+}
+
+class _Plans extends ConsumerWidget {
+  const _Plans({required this.playerId});
+  final String playerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final caps = ref.watch(capabilitiesProvider);
+    return AsyncBody<AssignmentsView>(
+      value: ref.watch(assignmentsProvider(playerId)),
+      onRetry: () => ref.invalidate(assignmentsProvider(playerId)),
+      isEmpty: (d) => d.assignments.isEmpty,
+      emptyMessage: l.mePlansEmpty,
+      builder: (context, view) => Column(
+        children: [
+          for (final a in view.assignments)
+            Column(
+              key: Key('hub-assignment-${a.id}'),
+              children: [
+                AssignmentCard(assignment: a, view: view),
+                Padding(
+                  padding: const EdgeInsets.only(left: AppTokens.spaceSm, bottom: AppTokens.spaceSm),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: CompletionControl(
+                      assignmentId: a.id,
+                      playerId: playerId,
+                      completion: view.completionOf(a.id, playerId),
+                      canMark: caps.canMarkCompletion(playerId),
+                      scope: playerId,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}

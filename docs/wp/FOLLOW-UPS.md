@@ -74,6 +74,11 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
 - **Problem `instance` double slash** in game 503 responses (`//api/game/...`).
 - **Production ingress choice** (ingress-nginx retiring upstream) and External Secrets Operator manifests.
 
+- **Web polish (WP14)**: nginx/ingress must serve `sw.js` with `Cache-Control: no-cache`; add a "new version
+  available, reload" prompt (SKIP_WAITING); mock mode lacks `/api/athlete/*` and `/platform/*`; calendar shows
+  device timezone (use tenant timezone once AuthzContext carries it); availability badge not yet in roster/match
+  setup; usage history chart once the regenerated package exposes `getTenantUsageHistory`.
+
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
 - Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0 (requires realm re-import: `just down && podman volume rm hoops_pgdata`).

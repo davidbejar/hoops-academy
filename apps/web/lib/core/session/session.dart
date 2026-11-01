@@ -68,6 +68,12 @@ String? redirectFor(SessionState session, String location) {
         superAdmin: user.superAdmin,
       );
       if (destinations.isEmpty) return go('/no-access');
+      // A super_admin may open the platform console even with memberships
+      // (WP14 decision); the Profile menu links to it.
+      if (user.superAdmin &&
+          (location == '/platform' || location.startsWith('/platform/'))) {
+        return null;
+      }
       final allowed = destinations.map((d) => d.path).toSet();
       // A destination owns its sub-routes (`/teams/<id>`, `/admin/members`).
       if (allowed.any((p) => location == p || location.startsWith('$p/'))) {

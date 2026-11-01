@@ -33,11 +33,13 @@ TenantMembership membershipWithRoles(
   Set<String> staffTeamIds = const {},
   Set<String> linkedPlayerIds = const {},
   String personId = 'person-me',
+  String? ownPlayerId,
 }) =>
     TenantMembership(
       personId: personId,
       staffTeamIds: staffTeamIds,
       linkedPlayerIds: linkedPlayerIds,
+      ownPlayerId: ownPlayerId,
       tenantId: '33333333-3333-4333-8333-333333333333',
       tenantName: 'Role Test',
       slug: 'role-test',

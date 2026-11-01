@@ -1243,4 +1243,918 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get seasonStatsSeason => 'Temporada';
+
+  @override
+  String get trainingTitle => 'Entrenamientos';
+
+  @override
+  String trainingWeekOf(String range) {
+    return 'Semana del $range';
+  }
+
+  @override
+  String get trainingToday => 'Hoy';
+
+  @override
+  String get trainingPrevWeek => 'Semana anterior';
+
+  @override
+  String get trainingNextWeek => 'Semana siguiente';
+
+  @override
+  String get trainingAllTeams => 'Todos los equipos';
+
+  @override
+  String get trainingNoSessions => 'No hay entrenamientos esta semana';
+
+  @override
+  String get trainingNoSessionsDay => 'Sin sesiones';
+
+  @override
+  String get trainingMenuPlans => 'Planes';
+
+  @override
+  String get trainingMenuSchedules => 'Horarios';
+
+  @override
+  String get trainingMenuAbsences => 'Ausencias';
+
+  @override
+  String get trainingMenuAssignments => 'Asignaciones';
+
+  @override
+  String get sessionStatusPlanned => 'Prevista';
+
+  @override
+  String get sessionStatusDone => 'Realizada';
+
+  @override
+  String get sessionStatusCancelled => 'Cancelada';
+
+  @override
+  String get sessionDetailTitle => 'Sesión de entrenamiento';
+
+  @override
+  String sessionTimeRange(String end, String start) {
+    return '$start – $end';
+  }
+
+  @override
+  String get sessionLocation => 'Lugar';
+
+  @override
+  String get sessionNoLocation => 'Sin lugar indicado';
+
+  @override
+  String get sessionPlan => 'Plan';
+
+  @override
+  String get sessionNoPlan => 'Sin plan asignado';
+
+  @override
+  String get sessionNotes => 'Notas';
+
+  @override
+  String sessionCancelReasonLine(String reason) {
+    return 'Cancelada: $reason';
+  }
+
+  @override
+  String get sessionNew => 'Nueva sesión';
+
+  @override
+  String get sessionEdit => 'Editar sesión';
+
+  @override
+  String get sessionTeam => 'Equipo';
+
+  @override
+  String get sessionDate => 'Fecha';
+
+  @override
+  String get sessionStartTime => 'Hora de inicio';
+
+  @override
+  String get sessionDuration => 'Duración (min)';
+
+  @override
+  String sessionDurationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get sessionCancel => 'Cancelar sesión';
+
+  @override
+  String get sessionCancelReason => 'Motivo de la cancelación';
+
+  @override
+  String get sessionCreated => 'Sesión creada';
+
+  @override
+  String get sessionCancelled => 'Sesión cancelada';
+
+  @override
+  String get attendanceTitle => 'Asistencia';
+
+  @override
+  String get attendancePresent => 'Presente';
+
+  @override
+  String get attendanceLate => 'Tarde';
+
+  @override
+  String get attendanceAbsent => 'Ausente';
+
+  @override
+  String get attendanceExcused => 'Justificada';
+
+  @override
+  String get attendanceMinutesLate => 'Minutos de retraso';
+
+  @override
+  String get attendanceExpectedAbsent => 'Ausencia prevista';
+
+  @override
+  String get attendanceInjured => 'Lesionado';
+
+  @override
+  String get attendanceNotRecorded => 'Sin registrar';
+
+  @override
+  String get attendanceSave => 'Guardar asistencia';
+
+  @override
+  String get attendanceSaved => 'Asistencia guardada';
+
+  @override
+  String get attendanceEmpty => 'El equipo no tiene jugadores';
+
+  @override
+  String get attendanceMinutesInvalid => 'Minutos entre 1 y 180';
+
+  @override
+  String get scheduleTitle => 'Horarios de entrenamiento';
+
+  @override
+  String get scheduleNew => 'Nuevo horario';
+
+  @override
+  String get scheduleEdit => 'Editar horario';
+
+  @override
+  String get scheduleEmpty => 'Aún no hay horarios';
+
+  @override
+  String get scheduleDay => 'Día de la semana';
+
+  @override
+  String get scheduleTime => 'Hora (HH:MM)';
+
+  @override
+  String get scheduleTimeInvalid => 'Usa el formato HH:MM';
+
+  @override
+  String get scheduleValidFrom => 'Válido desde';
+
+  @override
+  String get scheduleValidUntil => 'Válido hasta';
+
+  @override
+  String get scheduleNoEnd => 'Sin fecha de fin';
+
+  @override
+  String get scheduleDatesInvalid =>
+      'La fecha final debe ser posterior a la inicial';
+
+  @override
+  String scheduleLine(String day, int minutes, String time) {
+    return '$day $time · $minutes min';
+  }
+
+  @override
+  String scheduleValidity(String from) {
+    return 'Desde $from';
+  }
+
+  @override
+  String scheduleValidityRange(String from, String to) {
+    return '$from a $to';
+  }
+
+  @override
+  String get scheduleDeleteConfirm =>
+      '¿Eliminar este horario? Se quitarán las sesiones futuras sin cambios.';
+
+  @override
+  String get dayMonday => 'Lunes';
+
+  @override
+  String get dayTuesday => 'Martes';
+
+  @override
+  String get dayWednesday => 'Miércoles';
+
+  @override
+  String get dayThursday => 'Jueves';
+
+  @override
+  String get dayFriday => 'Viernes';
+
+  @override
+  String get daySaturday => 'Sábado';
+
+  @override
+  String get daySunday => 'Domingo';
+
+  @override
+  String get absenceTitle => 'Ausencias previstas';
+
+  @override
+  String get absenceNew => 'Nueva ausencia';
+
+  @override
+  String get absencePlayer => 'Jugador';
+
+  @override
+  String get absenceFrom => 'Desde';
+
+  @override
+  String get absenceTo => 'Hasta';
+
+  @override
+  String get absenceReason => 'Motivo (opcional)';
+
+  @override
+  String get absenceEmpty => 'No hay ausencias previstas';
+
+  @override
+  String get absenceDatesInvalid =>
+      'La fecha final no puede ser anterior a la inicial';
+
+  @override
+  String get absenceDeleteConfirm => '¿Eliminar esta ausencia?';
+
+  @override
+  String absenceRange(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
+  String get absenceSaved => 'Ausencia registrada';
+
+  @override
+  String get planLibraryTitle => 'Planes de entrenamiento';
+
+  @override
+  String get planTemplates => 'Plantillas';
+
+  @override
+  String get planMine => 'Mis planes';
+
+  @override
+  String get planSearchHint => 'Buscar planes';
+
+  @override
+  String get planEmptyTemplates => 'No hay plantillas';
+
+  @override
+  String get planEmptyMine =>
+      'Aún no hay planes propios. Crea uno o usa una plantilla.';
+
+  @override
+  String planSummary(int count, int minutes) {
+    return '$count ejercicios · $minutes min';
+  }
+
+  @override
+  String get planNew => 'Nuevo plan';
+
+  @override
+  String get planName => 'Nombre del plan';
+
+  @override
+  String get planDescription => 'Descripción (opcional)';
+
+  @override
+  String get planUse => 'Usar plantilla';
+
+  @override
+  String get planCopied => 'Plantilla copiada a tus planes';
+
+  @override
+  String get planTemplateReadOnly =>
+      'Plantilla de solo lectura: cópiala para editarla.';
+
+  @override
+  String get planItems => 'Ejercicios';
+
+  @override
+  String get planNoItems => 'Este plan aún no tiene ejercicios';
+
+  @override
+  String get planItemAdd => 'Añadir ejercicio';
+
+  @override
+  String get planItemEdit => 'Editar ejercicio';
+
+  @override
+  String get planItemTitle => 'Título';
+
+  @override
+  String get planItemDuration => 'Duración (min)';
+
+  @override
+  String get planItemSets => 'Series';
+
+  @override
+  String get planItemReps => 'Repeticiones';
+
+  @override
+  String get planItemVideo => 'Enlace de vídeo (https)';
+
+  @override
+  String get planItemVideoInvalid => 'Debe empezar por https://';
+
+  @override
+  String planItemSetsReps(int reps, int sets) {
+    return '$sets × $reps';
+  }
+
+  @override
+  String get planItemMoveUp => 'Subir';
+
+  @override
+  String get planItemMoveDown => 'Bajar';
+
+  @override
+  String get planItemDeleteConfirm => '¿Quitar este ejercicio?';
+
+  @override
+  String get planDeleteConfirm => '¿Eliminar este plan?';
+
+  @override
+  String get planAssign => 'Asignar';
+
+  @override
+  String get planWatchVideo => 'Ver vídeo';
+
+  @override
+  String get assignTitle => 'Asignar plan';
+
+  @override
+  String get assignTarget => 'Destinatario';
+
+  @override
+  String get assignToTeam => 'Un equipo';
+
+  @override
+  String get assignToPlayer => 'Un jugador';
+
+  @override
+  String get assignDue => 'Fecha límite';
+
+  @override
+  String get assignDone => 'Plan asignado';
+
+  @override
+  String get assignmentsTitle => 'Planes asignados';
+
+  @override
+  String get assignmentsEmpty => 'No hay planes asignados';
+
+  @override
+  String assignmentDue(String date) {
+    return 'Vence el $date';
+  }
+
+  @override
+  String assignmentProgress(int done, int notDone, int partial) {
+    return '$done hechos · $partial parciales · $notDone no hechos';
+  }
+
+  @override
+  String get assignmentDeleteConfirm => '¿Quitar esta asignación y sus marcas?';
+
+  @override
+  String get assignmentProgressTitle => 'Progreso';
+
+  @override
+  String assignmentTeamTarget(String name) {
+    return 'Equipo: $name';
+  }
+
+  @override
+  String get assignmentPlayerTarget => 'Jugador';
+
+  @override
+  String get completionDone => 'Hecho';
+
+  @override
+  String get completionPartial => 'Parcial';
+
+  @override
+  String get completionNotDone => 'No hecho';
+
+  @override
+  String get completionNone => 'Sin marcar';
+
+  @override
+  String get completionComment => 'Comentario (opcional)';
+
+  @override
+  String get completionMark => 'Marcar';
+
+  @override
+  String get completionSaved => 'Marca guardada';
+
+  @override
+  String get healthTitle => 'Salud y forma';
+
+  @override
+  String get healthInjuries => 'Lesiones';
+
+  @override
+  String get healthGrowth => 'Crecimiento';
+
+  @override
+  String get healthTests => 'Pruebas físicas';
+
+  @override
+  String get injuryNew => 'Registrar lesión';
+
+  @override
+  String get injuryBodyPart => 'Zona del cuerpo';
+
+  @override
+  String get injurySeverity => 'Gravedad';
+
+  @override
+  String get severityMinor => 'Leve';
+
+  @override
+  String get severityModerate => 'Moderada';
+
+  @override
+  String get severitySevere => 'Grave';
+
+  @override
+  String get injuryOccurredOn => 'Fecha de la lesión';
+
+  @override
+  String get injuryExpectedReturn => 'Regreso previsto';
+
+  @override
+  String get injuryDescription => 'Descripción (opcional)';
+
+  @override
+  String get injuryStatusOpen => 'Abierta';
+
+  @override
+  String get injuryStatusRecovered => 'Recuperada';
+
+  @override
+  String get injuryRecover => 'Marcar recuperada';
+
+  @override
+  String get injuryRecoveredOn => 'Fecha de regreso';
+
+  @override
+  String get injuryUpdateReturn => 'Cambiar regreso previsto';
+
+  @override
+  String get injuryEmpty => 'Sin lesiones registradas';
+
+  @override
+  String injuryReturnLine(String date) {
+    return 'Regreso previsto: $date';
+  }
+
+  @override
+  String injuryRecoveredLine(String date) {
+    return 'Recuperada el $date';
+  }
+
+  @override
+  String get injurySaved => 'Lesión guardada';
+
+  @override
+  String get availabilityAvailable => 'Disponible';
+
+  @override
+  String availabilityInjured(String bodyPart) {
+    return 'Lesionado: $bodyPart';
+  }
+
+  @override
+  String get growthHeight => 'Altura (cm)';
+
+  @override
+  String get growthWeight => 'Peso (kg)';
+
+  @override
+  String get growthAdd => 'Añadir medida';
+
+  @override
+  String get growthMeasuredOn => 'Fecha de la medida';
+
+  @override
+  String get growthEmpty => 'Sin medidas todavía';
+
+  @override
+  String get growthNeedOne => 'Indica altura, peso o ambos';
+
+  @override
+  String get growthShowTable => 'Ver tabla';
+
+  @override
+  String get growthHideTable => 'Ocultar tabla';
+
+  @override
+  String get growthDeleteConfirm => '¿Eliminar esta medida?';
+
+  @override
+  String chartSummary(int count, String name, String value) {
+    return 'Gráfico de $name: $count medidas, la última $value';
+  }
+
+  @override
+  String get chartNoData => 'Sin datos para el gráfico';
+
+  @override
+  String get chartDate => 'Fecha';
+
+  @override
+  String get chartValue => 'Valor';
+
+  @override
+  String get testAdd => 'Registrar resultado';
+
+  @override
+  String get testType => 'Prueba';
+
+  @override
+  String get testValue => 'Valor';
+
+  @override
+  String get testNotes => 'Notas (opcional)';
+
+  @override
+  String get testMeasuredOn => 'Fecha de la prueba';
+
+  @override
+  String get bandPoor => 'Muy bajo';
+
+  @override
+  String get bandBelowAverage => 'Bajo la media';
+
+  @override
+  String get bandAverage => 'Medio';
+
+  @override
+  String get bandAboveAverage => 'Sobre la media';
+
+  @override
+  String get bandExcellent => 'Excelente';
+
+  @override
+  String testExpectedBand(String band) {
+    return 'Banda esperada: $band';
+  }
+
+  @override
+  String get testNoBand => 'Sin norma para esta edad y género';
+
+  @override
+  String get testReferencePending => 'Referencia pendiente';
+
+  @override
+  String testSavedBand(String band) {
+    return 'Resultado guardado. Banda: $band';
+  }
+
+  @override
+  String get testSavedNoBand => 'Resultado guardado (sin norma aplicable)';
+
+  @override
+  String get testEmpty => 'Sin resultados de pruebas';
+
+  @override
+  String get testChartLegend => 'Bandas esperadas';
+
+  @override
+  String testAtAge(int age) {
+    return '$age años';
+  }
+
+  @override
+  String testResultLine(String unit, String value) {
+    return '$value $unit';
+  }
+
+  @override
+  String get testDeleteConfirm => '¿Eliminar este resultado?';
+
+  @override
+  String get testTypesTitle => 'Tipos de prueba';
+
+  @override
+  String get testTypeNew => 'Nueva prueba personalizada';
+
+  @override
+  String get testTypeCode => 'Código';
+
+  @override
+  String get testTypeName => 'Nombre';
+
+  @override
+  String get testTypeUnit => 'Unidad';
+
+  @override
+  String get testTypeHigher => 'Un valor mayor es mejor';
+
+  @override
+  String get testTypeGlobal => 'Global';
+
+  @override
+  String get testTypeCustom => 'De la academia';
+
+  @override
+  String get testTypesEmpty => 'No hay tipos de prueba';
+
+  @override
+  String get testTypeHigherYes => 'Más es mejor';
+
+  @override
+  String get testTypeHigherNo => 'Menos es mejor';
+
+  @override
+  String get normsTitle => 'Normas de referencia';
+
+  @override
+  String get normsScopeEffective => 'Efectivas';
+
+  @override
+  String get normsScopeGlobal => 'Globales';
+
+  @override
+  String get normsScopeTenant => 'De la academia';
+
+  @override
+  String get normNew => 'Nueva norma';
+
+  @override
+  String get normEdit => 'Editar norma';
+
+  @override
+  String get normGender => 'Género';
+
+  @override
+  String get normMinAge => 'Edad mínima';
+
+  @override
+  String get normMaxAge => 'Edad máxima';
+
+  @override
+  String get normBand => 'Banda';
+
+  @override
+  String get normMinValue => 'Valor mínimo';
+
+  @override
+  String get normMaxValue => 'Valor máximo';
+
+  @override
+  String get normSource => 'Fuente';
+
+  @override
+  String normAges(int max, int min) {
+    return '$min–$max años';
+  }
+
+  @override
+  String normValues(String low, String high) {
+    return '$low a $high';
+  }
+
+  @override
+  String normValuesFrom(String low) {
+    return 'desde $low';
+  }
+
+  @override
+  String normValuesUpTo(String high) {
+    return 'hasta $high';
+  }
+
+  @override
+  String get normGlobalReadOnly => 'Global (solo lectura)';
+
+  @override
+  String get normOverride => 'Propia de la academia';
+
+  @override
+  String get normEmpty => 'No hay normas con este filtro';
+
+  @override
+  String get normDeleteConfirm => '¿Eliminar esta norma?';
+
+  @override
+  String get normAgesInvalid =>
+      'La edad máxima debe ser mayor o igual que la mínima';
+
+  @override
+  String get normAllTests => 'Todas las pruebas';
+
+  @override
+  String get healthMenuTests => 'Tipos de prueba';
+
+  @override
+  String get healthMenuNorms => 'Normas';
+
+  @override
+  String get meTitle => 'Mi perfil deportivo';
+
+  @override
+  String get meSeasonStats => 'Estadísticas de la temporada';
+
+  @override
+  String get meUpcoming => 'Próximos entrenamientos';
+
+  @override
+  String get meNoUpcoming => 'No hay entrenamientos próximos';
+
+  @override
+  String get meTabTraining => 'Entrenos';
+
+  @override
+  String get meTabPlans => 'Planes';
+
+  @override
+  String get meNoPlayer => 'Tu cuenta aún no está vinculada a un jugador';
+
+  @override
+  String get myPlayersTitle => 'Mis jugadores';
+
+  @override
+  String get myPlayersEmpty => 'No tienes jugadores vinculados';
+
+  @override
+  String get profilePlatform => 'Consola de plataforma';
+
+  @override
+  String get mePlansEmpty => 'Sin planes asignados';
+
+  @override
+  String get platformTitle => 'Plataforma';
+
+  @override
+  String get platformSearchHint => 'Buscar por nombre o identificador';
+
+  @override
+  String get platformEmpty => 'No hay academias con este filtro';
+
+  @override
+  String get platformNew => 'Nueva academia';
+
+  @override
+  String get tenantName => 'Nombre de la academia';
+
+  @override
+  String get tenantSlug => 'Identificador (slug)';
+
+  @override
+  String get tenantSlugInvalid => 'Solo minúsculas, números y guiones (3-50)';
+
+  @override
+  String get tenantTimezone => 'Zona horaria';
+
+  @override
+  String get tenantLocale => 'Idioma';
+
+  @override
+  String get tenantAdminEmail => 'Correo del primer administrador';
+
+  @override
+  String get tenantAdminGivenName => 'Nombre del administrador';
+
+  @override
+  String get tenantAdminFamilyName => 'Apellidos del administrador';
+
+  @override
+  String get tenantStatusActive => 'Activa';
+
+  @override
+  String get tenantStatusSuspended => 'Suspendida';
+
+  @override
+  String get tenantStatusWithdrawn => 'Retirada';
+
+  @override
+  String get tenantCreated => 'Academia creada';
+
+  @override
+  String get tenantSuspend => 'Suspender';
+
+  @override
+  String get tenantWithdraw => 'Retirar';
+
+  @override
+  String get tenantReactivate => 'Reactivar';
+
+  @override
+  String get tenantReason => 'Motivo';
+
+  @override
+  String get tenantSuspendTitle => 'Suspender la academia';
+
+  @override
+  String get tenantWithdrawTitle => 'Retirar la academia';
+
+  @override
+  String get tenantWithdrawWarning =>
+      'Al retirar una academia comienza el plazo de conservación de datos.';
+
+  @override
+  String get tenantUpdated => 'Estado actualizado';
+
+  @override
+  String tenantCreatedOn(String date) {
+    return 'Creada el $date';
+  }
+
+  @override
+  String tenantRetainUntil(String date) {
+    return 'Datos conservados hasta $date';
+  }
+
+  @override
+  String get usageTitle => 'Uso';
+
+  @override
+  String usageUnavailable(String services) {
+    return 'Sin datos de: $services';
+  }
+
+  @override
+  String usageLastActivity(String date) {
+    return 'Última actividad: $date';
+  }
+
+  @override
+  String get usageFailed => 'No se pudo cargar el uso';
+
+  @override
+  String get usageServiceCore => 'Núcleo';
+
+  @override
+  String get usageServiceGame => 'Partidos';
+
+  @override
+  String get usageServiceAthlete => 'Deportistas';
+
+  @override
+  String get usageCounter_members => 'Miembros';
+
+  @override
+  String get usageCounter_players => 'Jugadores';
+
+  @override
+  String get usageCounter_activePlayers => 'Jugadores activos';
+
+  @override
+  String get usageCounter_teams => 'Equipos';
+
+  @override
+  String get usageCounter_seasons => 'Temporadas';
+
+  @override
+  String get usageCounter_matches => 'Partidos';
+
+  @override
+  String get usageCounter_liveMatches => 'Partidos en vivo';
+
+  @override
+  String get usageCounter_matchEvents => 'Eventos de partido';
+
+  @override
+  String get usageCounter_matchEventsLast30Days => 'Eventos (30 días)';
+
+  @override
+  String get usageCounter_trainingSessions => 'Sesiones de entreno';
+
+  @override
+  String get usageCounter_attendanceRecords => 'Registros de asistencia';
+
+  @override
+  String get usageCounter_trainingPlans => 'Planes';
+
+  @override
+  String get usageCounter_physicalTestResults => 'Resultados de pruebas';
+
+  @override
+  String get usageCounter_injuries => 'Lesiones';
+
+  @override
+  String get usageCounter_bodyMeasurements => 'Medidas corporales';
 }

@@ -108,3 +108,6 @@ TenantRole? domainRole(api.TenantRole r) {
 
 String formatDate(api.Date d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+String formatAthDate(dynamic d) =>
+    '${(d.year as int).toString().padLeft(4, '0')}-${(d.month as int).toString().padLeft(2, '0')}-${(d.day as int).toString().padLeft(2, '0')}';

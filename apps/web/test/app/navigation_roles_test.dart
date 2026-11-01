@@ -74,7 +74,8 @@ void main() {
     final h = Harness(me: FakeMeRepository(userWith([], superAdmin: true)));
     await h.pump(tester);
 
-    expect(find.byKey(const Key('module-platform')), findsOneWidget);
+    // WP14: the placeholder became the platform console (tenants list, create button).
+    expect(find.byKey(const Key('tenant-new')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
 

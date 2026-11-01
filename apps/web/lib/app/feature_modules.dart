@@ -14,6 +14,8 @@ import '../features/match/presentation/live_match_screen.dart' deferred as match
 import '../features/match/presentation/match_setup_screen.dart' deferred as match_setup;
 import '../features/match/presentation/matches_screen.dart' deferred as matches;
 import '../features/match/presentation/season_stats_screen.dart' deferred as match_stats;
+import '../features/health/presentation/fitness_screens.dart' deferred as fitness;
+import '../features/health/presentation/player_health_view.dart' deferred as health;
 import '../features/me/presentation/me_screen.dart' deferred as me;
 import '../features/my_players/presentation/my_players_screen.dart' deferred as my_players;
 import '../features/platform/presentation/platform_screen.dart' deferred as platform;
@@ -21,6 +23,12 @@ import '../features/roster/presentation/approvals_screen.dart' deferred as appro
 import '../features/roster/presentation/cases_screen.dart' deferred as cases;
 import '../features/roster/presentation/players_screen.dart' deferred as players;
 import '../features/roster/presentation/teams_screen.dart' deferred as teams;
+import '../features/platform/presentation/tenant_detail_screen.dart' deferred as tenant_detail;
+import '../features/training/presentation/absences_screen.dart' deferred as absences;
+import '../features/training/presentation/assignments_screen.dart' deferred as assignments;
+import '../features/training/presentation/plans_screen.dart' deferred as plans;
+import '../features/training/presentation/schedules_screen.dart' deferred as schedules;
+import '../features/training/presentation/session_screen.dart' deferred as session;
 import '../features/training/presentation/training_screen.dart' deferred as training;
 
 /// A lazily loaded feature screen behind a bottom-navigation destination.
@@ -88,17 +96,40 @@ final Map<AppDestination, FeatureModule> featureModules = {
       ModulePage(':matchId', match_live.loadLibrary, (p) => match_live.LiveMatchScreen(matchId: p['matchId']!)),
     ],
   ),
-  AppDestination.training: FeatureModule(training.loadLibrary, () => training.TrainingScreen()),
+  AppDestination.training: FeatureModule(
+    training.loadLibrary,
+    () => training.TrainingScreen(),
+    subPages: [
+      ModulePage('session/:sessionId', session.loadLibrary, (p) => session.SessionDetailScreen(sessionId: p['sessionId']!)),
+      ModulePage('schedules', schedules.loadLibrary, (_) => schedules.SchedulesScreen()),
+      ModulePage('absences', absences.loadLibrary, (_) => absences.AbsencesScreen()),
+      ModulePage('plans', plans.loadLibrary, (_) => plans.PlanLibraryScreen()),
+      ModulePage('plans/:planId', plans.loadLibrary, (p) => plans.PlanEditorScreen(planId: p['planId']!)),
+      ModulePage('assignments', assignments.loadLibrary, (_) => assignments.AssignmentsScreen()),
+      ModulePage(
+        'assignments/:assignmentId',
+        assignments.loadLibrary,
+        (p) => assignments.AssignmentProgressScreen(assignmentId: p['assignmentId']!),
+      ),
+    ],
+  ),
   AppDestination.players: FeatureModule(
     players.loadLibrary,
     () => players.PlayersScreen(),
     subPages: [
       ModulePage('requests', approvals.loadLibrary, (_) => approvals.ApprovalsScreen()),
       ModulePage('new', players.loadLibrary, (_) => players.PlayerFormScreen()),
+      ModulePage('tests', fitness.loadLibrary, (_) => fitness.TestTypesScreen()),
+      ModulePage('norms', fitness.loadLibrary, (_) => fitness.NormsScreen()),
+      ModulePage(':playerId/health', health.loadLibrary, (p) => health.PlayerHealthScreen(playerId: p['playerId']!)),
       ModulePage(':playerId', players.loadLibrary, (p) => players.PlayerDetailScreen(playerId: p['playerId']!)),
     ],
   ),
   AppDestination.myPlayers: FeatureModule(my_players.loadLibrary, () => my_players.MyPlayersScreen()),
   AppDestination.me: FeatureModule(me.loadLibrary, () => me.MePageScreen()),
-  AppDestination.platform: FeatureModule(platform.loadLibrary, () => platform.PlatformScreen()),
+  AppDestination.platform: FeatureModule(
+    platform.loadLibrary,
+    () => platform.PlatformScreen(),
+    subPages: [ModulePage(':tenantId', tenant_detail.loadLibrary, (p) => tenant_detail.TenantDetailScreen(tenantId: p['tenantId']!))],
+  ),
 };

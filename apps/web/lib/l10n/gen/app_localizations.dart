@@ -2349,6 +2349,1704 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Temporada'**
   String get seasonStatsSeason;
+
+  /// No description provided for @trainingTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrenamientos'**
+  String get trainingTitle;
+
+  /// No description provided for @trainingWeekOf.
+  ///
+  /// In es, this message translates to:
+  /// **'Semana del {range}'**
+  String trainingWeekOf(String range);
+
+  /// No description provided for @trainingToday.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy'**
+  String get trainingToday;
+
+  /// No description provided for @trainingPrevWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Semana anterior'**
+  String get trainingPrevWeek;
+
+  /// No description provided for @trainingNextWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Semana siguiente'**
+  String get trainingNextWeek;
+
+  /// No description provided for @trainingAllTeams.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los equipos'**
+  String get trainingAllTeams;
+
+  /// No description provided for @trainingNoSessions.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay entrenamientos esta semana'**
+  String get trainingNoSessions;
+
+  /// No description provided for @trainingNoSessionsDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin sesiones'**
+  String get trainingNoSessionsDay;
+
+  /// No description provided for @trainingMenuPlans.
+  ///
+  /// In es, this message translates to:
+  /// **'Planes'**
+  String get trainingMenuPlans;
+
+  /// No description provided for @trainingMenuSchedules.
+  ///
+  /// In es, this message translates to:
+  /// **'Horarios'**
+  String get trainingMenuSchedules;
+
+  /// No description provided for @trainingMenuAbsences.
+  ///
+  /// In es, this message translates to:
+  /// **'Ausencias'**
+  String get trainingMenuAbsences;
+
+  /// No description provided for @trainingMenuAssignments.
+  ///
+  /// In es, this message translates to:
+  /// **'Asignaciones'**
+  String get trainingMenuAssignments;
+
+  /// No description provided for @sessionStatusPlanned.
+  ///
+  /// In es, this message translates to:
+  /// **'Prevista'**
+  String get sessionStatusPlanned;
+
+  /// No description provided for @sessionStatusDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Realizada'**
+  String get sessionStatusDone;
+
+  /// No description provided for @sessionStatusCancelled.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelada'**
+  String get sessionStatusCancelled;
+
+  /// No description provided for @sessionDetailTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión de entrenamiento'**
+  String get sessionDetailTitle;
+
+  /// No description provided for @sessionTimeRange.
+  ///
+  /// In es, this message translates to:
+  /// **'{start} – {end}'**
+  String sessionTimeRange(String end, String start);
+
+  /// No description provided for @sessionLocation.
+  ///
+  /// In es, this message translates to:
+  /// **'Lugar'**
+  String get sessionLocation;
+
+  /// No description provided for @sessionNoLocation.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin lugar indicado'**
+  String get sessionNoLocation;
+
+  /// No description provided for @sessionPlan.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan'**
+  String get sessionPlan;
+
+  /// No description provided for @sessionNoPlan.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin plan asignado'**
+  String get sessionNoPlan;
+
+  /// No description provided for @sessionNotes.
+  ///
+  /// In es, this message translates to:
+  /// **'Notas'**
+  String get sessionNotes;
+
+  /// No description provided for @sessionCancelReasonLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelada: {reason}'**
+  String sessionCancelReasonLine(String reason);
+
+  /// No description provided for @sessionNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva sesión'**
+  String get sessionNew;
+
+  /// No description provided for @sessionEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar sesión'**
+  String get sessionEdit;
+
+  /// No description provided for @sessionTeam.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipo'**
+  String get sessionTeam;
+
+  /// No description provided for @sessionDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha'**
+  String get sessionDate;
+
+  /// No description provided for @sessionStartTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora de inicio'**
+  String get sessionStartTime;
+
+  /// No description provided for @sessionDuration.
+  ///
+  /// In es, this message translates to:
+  /// **'Duración (min)'**
+  String get sessionDuration;
+
+  /// No description provided for @sessionDurationMinutes.
+  ///
+  /// In es, this message translates to:
+  /// **'{minutes} min'**
+  String sessionDurationMinutes(int minutes);
+
+  /// No description provided for @sessionCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar sesión'**
+  String get sessionCancel;
+
+  /// No description provided for @sessionCancelReason.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo de la cancelación'**
+  String get sessionCancelReason;
+
+  /// No description provided for @sessionCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión creada'**
+  String get sessionCreated;
+
+  /// No description provided for @sessionCancelled.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión cancelada'**
+  String get sessionCancelled;
+
+  /// No description provided for @attendanceTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia'**
+  String get attendanceTitle;
+
+  /// No description provided for @attendancePresent.
+  ///
+  /// In es, this message translates to:
+  /// **'Presente'**
+  String get attendancePresent;
+
+  /// No description provided for @attendanceLate.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarde'**
+  String get attendanceLate;
+
+  /// No description provided for @attendanceAbsent.
+  ///
+  /// In es, this message translates to:
+  /// **'Ausente'**
+  String get attendanceAbsent;
+
+  /// No description provided for @attendanceExcused.
+  ///
+  /// In es, this message translates to:
+  /// **'Justificada'**
+  String get attendanceExcused;
+
+  /// No description provided for @attendanceMinutesLate.
+  ///
+  /// In es, this message translates to:
+  /// **'Minutos de retraso'**
+  String get attendanceMinutesLate;
+
+  /// No description provided for @attendanceExpectedAbsent.
+  ///
+  /// In es, this message translates to:
+  /// **'Ausencia prevista'**
+  String get attendanceExpectedAbsent;
+
+  /// No description provided for @attendanceInjured.
+  ///
+  /// In es, this message translates to:
+  /// **'Lesionado'**
+  String get attendanceInjured;
+
+  /// No description provided for @attendanceNotRecorded.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin registrar'**
+  String get attendanceNotRecorded;
+
+  /// No description provided for @attendanceSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar asistencia'**
+  String get attendanceSave;
+
+  /// No description provided for @attendanceSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia guardada'**
+  String get attendanceSaved;
+
+  /// No description provided for @attendanceEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'El equipo no tiene jugadores'**
+  String get attendanceEmpty;
+
+  /// No description provided for @attendanceMinutesInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Minutos entre 1 y 180'**
+  String get attendanceMinutesInvalid;
+
+  /// No description provided for @scheduleTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Horarios de entrenamiento'**
+  String get scheduleTitle;
+
+  /// No description provided for @scheduleNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo horario'**
+  String get scheduleNew;
+
+  /// No description provided for @scheduleEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar horario'**
+  String get scheduleEdit;
+
+  /// No description provided for @scheduleEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay horarios'**
+  String get scheduleEmpty;
+
+  /// No description provided for @scheduleDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Día de la semana'**
+  String get scheduleDay;
+
+  /// No description provided for @scheduleTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora (HH:MM)'**
+  String get scheduleTime;
+
+  /// No description provided for @scheduleTimeInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Usa el formato HH:MM'**
+  String get scheduleTimeInvalid;
+
+  /// No description provided for @scheduleValidFrom.
+  ///
+  /// In es, this message translates to:
+  /// **'Válido desde'**
+  String get scheduleValidFrom;
+
+  /// No description provided for @scheduleValidUntil.
+  ///
+  /// In es, this message translates to:
+  /// **'Válido hasta'**
+  String get scheduleValidUntil;
+
+  /// No description provided for @scheduleNoEnd.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin fecha de fin'**
+  String get scheduleNoEnd;
+
+  /// No description provided for @scheduleDatesInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'La fecha final debe ser posterior a la inicial'**
+  String get scheduleDatesInvalid;
+
+  /// No description provided for @scheduleLine.
+  ///
+  /// In es, this message translates to:
+  /// **'{day} {time} · {minutes} min'**
+  String scheduleLine(String day, int minutes, String time);
+
+  /// No description provided for @scheduleValidity.
+  ///
+  /// In es, this message translates to:
+  /// **'Desde {from}'**
+  String scheduleValidity(String from);
+
+  /// No description provided for @scheduleValidityRange.
+  ///
+  /// In es, this message translates to:
+  /// **'{from} a {to}'**
+  String scheduleValidityRange(String from, String to);
+
+  /// No description provided for @scheduleDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar este horario? Se quitarán las sesiones futuras sin cambios.'**
+  String get scheduleDeleteConfirm;
+
+  /// No description provided for @dayMonday.
+  ///
+  /// In es, this message translates to:
+  /// **'Lunes'**
+  String get dayMonday;
+
+  /// No description provided for @dayTuesday.
+  ///
+  /// In es, this message translates to:
+  /// **'Martes'**
+  String get dayTuesday;
+
+  /// No description provided for @dayWednesday.
+  ///
+  /// In es, this message translates to:
+  /// **'Miércoles'**
+  String get dayWednesday;
+
+  /// No description provided for @dayThursday.
+  ///
+  /// In es, this message translates to:
+  /// **'Jueves'**
+  String get dayThursday;
+
+  /// No description provided for @dayFriday.
+  ///
+  /// In es, this message translates to:
+  /// **'Viernes'**
+  String get dayFriday;
+
+  /// No description provided for @daySaturday.
+  ///
+  /// In es, this message translates to:
+  /// **'Sábado'**
+  String get daySaturday;
+
+  /// No description provided for @daySunday.
+  ///
+  /// In es, this message translates to:
+  /// **'Domingo'**
+  String get daySunday;
+
+  /// No description provided for @absenceTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ausencias previstas'**
+  String get absenceTitle;
+
+  /// No description provided for @absenceNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva ausencia'**
+  String get absenceNew;
+
+  /// No description provided for @absencePlayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador'**
+  String get absencePlayer;
+
+  /// No description provided for @absenceFrom.
+  ///
+  /// In es, this message translates to:
+  /// **'Desde'**
+  String get absenceFrom;
+
+  /// No description provided for @absenceTo.
+  ///
+  /// In es, this message translates to:
+  /// **'Hasta'**
+  String get absenceTo;
+
+  /// No description provided for @absenceReason.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo (opcional)'**
+  String get absenceReason;
+
+  /// No description provided for @absenceEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay ausencias previstas'**
+  String get absenceEmpty;
+
+  /// No description provided for @absenceDatesInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'La fecha final no puede ser anterior a la inicial'**
+  String get absenceDatesInvalid;
+
+  /// No description provided for @absenceDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar esta ausencia?'**
+  String get absenceDeleteConfirm;
+
+  /// No description provided for @absenceRange.
+  ///
+  /// In es, this message translates to:
+  /// **'{from} → {to}'**
+  String absenceRange(String from, String to);
+
+  /// No description provided for @absenceSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Ausencia registrada'**
+  String get absenceSaved;
+
+  /// No description provided for @planLibraryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Planes de entrenamiento'**
+  String get planLibraryTitle;
+
+  /// No description provided for @planTemplates.
+  ///
+  /// In es, this message translates to:
+  /// **'Plantillas'**
+  String get planTemplates;
+
+  /// No description provided for @planMine.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis planes'**
+  String get planMine;
+
+  /// No description provided for @planSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar planes'**
+  String get planSearchHint;
+
+  /// No description provided for @planEmptyTemplates.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay plantillas'**
+  String get planEmptyTemplates;
+
+  /// No description provided for @planEmptyMine.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay planes propios. Crea uno o usa una plantilla.'**
+  String get planEmptyMine;
+
+  /// No description provided for @planSummary.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} ejercicios · {minutes} min'**
+  String planSummary(int count, int minutes);
+
+  /// No description provided for @planNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo plan'**
+  String get planNew;
+
+  /// No description provided for @planName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre del plan'**
+  String get planName;
+
+  /// No description provided for @planDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Descripción (opcional)'**
+  String get planDescription;
+
+  /// No description provided for @planUse.
+  ///
+  /// In es, this message translates to:
+  /// **'Usar plantilla'**
+  String get planUse;
+
+  /// No description provided for @planCopied.
+  ///
+  /// In es, this message translates to:
+  /// **'Plantilla copiada a tus planes'**
+  String get planCopied;
+
+  /// No description provided for @planTemplateReadOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Plantilla de solo lectura: cópiala para editarla.'**
+  String get planTemplateReadOnly;
+
+  /// No description provided for @planItems.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejercicios'**
+  String get planItems;
+
+  /// No description provided for @planNoItems.
+  ///
+  /// In es, this message translates to:
+  /// **'Este plan aún no tiene ejercicios'**
+  String get planNoItems;
+
+  /// No description provided for @planItemAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir ejercicio'**
+  String get planItemAdd;
+
+  /// No description provided for @planItemEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar ejercicio'**
+  String get planItemEdit;
+
+  /// No description provided for @planItemTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Título'**
+  String get planItemTitle;
+
+  /// No description provided for @planItemDuration.
+  ///
+  /// In es, this message translates to:
+  /// **'Duración (min)'**
+  String get planItemDuration;
+
+  /// No description provided for @planItemSets.
+  ///
+  /// In es, this message translates to:
+  /// **'Series'**
+  String get planItemSets;
+
+  /// No description provided for @planItemReps.
+  ///
+  /// In es, this message translates to:
+  /// **'Repeticiones'**
+  String get planItemReps;
+
+  /// No description provided for @planItemVideo.
+  ///
+  /// In es, this message translates to:
+  /// **'Enlace de vídeo (https)'**
+  String get planItemVideo;
+
+  /// No description provided for @planItemVideoInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Debe empezar por https://'**
+  String get planItemVideoInvalid;
+
+  /// No description provided for @planItemSetsReps.
+  ///
+  /// In es, this message translates to:
+  /// **'{sets} × {reps}'**
+  String planItemSetsReps(int reps, int sets);
+
+  /// No description provided for @planItemMoveUp.
+  ///
+  /// In es, this message translates to:
+  /// **'Subir'**
+  String get planItemMoveUp;
+
+  /// No description provided for @planItemMoveDown.
+  ///
+  /// In es, this message translates to:
+  /// **'Bajar'**
+  String get planItemMoveDown;
+
+  /// No description provided for @planItemDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Quitar este ejercicio?'**
+  String get planItemDeleteConfirm;
+
+  /// No description provided for @planDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar este plan?'**
+  String get planDeleteConfirm;
+
+  /// No description provided for @planAssign.
+  ///
+  /// In es, this message translates to:
+  /// **'Asignar'**
+  String get planAssign;
+
+  /// No description provided for @planWatchVideo.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver vídeo'**
+  String get planWatchVideo;
+
+  /// No description provided for @assignTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Asignar plan'**
+  String get assignTitle;
+
+  /// No description provided for @assignTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Destinatario'**
+  String get assignTarget;
+
+  /// No description provided for @assignToTeam.
+  ///
+  /// In es, this message translates to:
+  /// **'Un equipo'**
+  String get assignToTeam;
+
+  /// No description provided for @assignToPlayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Un jugador'**
+  String get assignToPlayer;
+
+  /// No description provided for @assignDue.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha límite'**
+  String get assignDue;
+
+  /// No description provided for @assignDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan asignado'**
+  String get assignDone;
+
+  /// No description provided for @assignmentsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Planes asignados'**
+  String get assignmentsTitle;
+
+  /// No description provided for @assignmentsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay planes asignados'**
+  String get assignmentsEmpty;
+
+  /// No description provided for @assignmentDue.
+  ///
+  /// In es, this message translates to:
+  /// **'Vence el {date}'**
+  String assignmentDue(String date);
+
+  /// No description provided for @assignmentProgress.
+  ///
+  /// In es, this message translates to:
+  /// **'{done} hechos · {partial} parciales · {notDone} no hechos'**
+  String assignmentProgress(int done, int notDone, int partial);
+
+  /// No description provided for @assignmentDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Quitar esta asignación y sus marcas?'**
+  String get assignmentDeleteConfirm;
+
+  /// No description provided for @assignmentProgressTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Progreso'**
+  String get assignmentProgressTitle;
+
+  /// No description provided for @assignmentTeamTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipo: {name}'**
+  String assignmentTeamTarget(String name);
+
+  /// No description provided for @assignmentPlayerTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador'**
+  String get assignmentPlayerTarget;
+
+  /// No description provided for @completionDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Hecho'**
+  String get completionDone;
+
+  /// No description provided for @completionPartial.
+  ///
+  /// In es, this message translates to:
+  /// **'Parcial'**
+  String get completionPartial;
+
+  /// No description provided for @completionNotDone.
+  ///
+  /// In es, this message translates to:
+  /// **'No hecho'**
+  String get completionNotDone;
+
+  /// No description provided for @completionNone.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin marcar'**
+  String get completionNone;
+
+  /// No description provided for @completionComment.
+  ///
+  /// In es, this message translates to:
+  /// **'Comentario (opcional)'**
+  String get completionComment;
+
+  /// No description provided for @completionMark.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcar'**
+  String get completionMark;
+
+  /// No description provided for @completionSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Marca guardada'**
+  String get completionSaved;
+
+  /// No description provided for @healthTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Salud y forma'**
+  String get healthTitle;
+
+  /// No description provided for @healthInjuries.
+  ///
+  /// In es, this message translates to:
+  /// **'Lesiones'**
+  String get healthInjuries;
+
+  /// No description provided for @healthGrowth.
+  ///
+  /// In es, this message translates to:
+  /// **'Crecimiento'**
+  String get healthGrowth;
+
+  /// No description provided for @healthTests.
+  ///
+  /// In es, this message translates to:
+  /// **'Pruebas físicas'**
+  String get healthTests;
+
+  /// No description provided for @injuryNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar lesión'**
+  String get injuryNew;
+
+  /// No description provided for @injuryBodyPart.
+  ///
+  /// In es, this message translates to:
+  /// **'Zona del cuerpo'**
+  String get injuryBodyPart;
+
+  /// No description provided for @injurySeverity.
+  ///
+  /// In es, this message translates to:
+  /// **'Gravedad'**
+  String get injurySeverity;
+
+  /// No description provided for @severityMinor.
+  ///
+  /// In es, this message translates to:
+  /// **'Leve'**
+  String get severityMinor;
+
+  /// No description provided for @severityModerate.
+  ///
+  /// In es, this message translates to:
+  /// **'Moderada'**
+  String get severityModerate;
+
+  /// No description provided for @severitySevere.
+  ///
+  /// In es, this message translates to:
+  /// **'Grave'**
+  String get severitySevere;
+
+  /// No description provided for @injuryOccurredOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de la lesión'**
+  String get injuryOccurredOn;
+
+  /// No description provided for @injuryExpectedReturn.
+  ///
+  /// In es, this message translates to:
+  /// **'Regreso previsto'**
+  String get injuryExpectedReturn;
+
+  /// No description provided for @injuryDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Descripción (opcional)'**
+  String get injuryDescription;
+
+  /// No description provided for @injuryStatusOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'Abierta'**
+  String get injuryStatusOpen;
+
+  /// No description provided for @injuryStatusRecovered.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperada'**
+  String get injuryStatusRecovered;
+
+  /// No description provided for @injuryRecover.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcar recuperada'**
+  String get injuryRecover;
+
+  /// No description provided for @injuryRecoveredOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de regreso'**
+  String get injuryRecoveredOn;
+
+  /// No description provided for @injuryUpdateReturn.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar regreso previsto'**
+  String get injuryUpdateReturn;
+
+  /// No description provided for @injuryEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin lesiones registradas'**
+  String get injuryEmpty;
+
+  /// No description provided for @injuryReturnLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Regreso previsto: {date}'**
+  String injuryReturnLine(String date);
+
+  /// No description provided for @injuryRecoveredLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperada el {date}'**
+  String injuryRecoveredLine(String date);
+
+  /// No description provided for @injurySaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Lesión guardada'**
+  String get injurySaved;
+
+  /// No description provided for @availabilityAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponible'**
+  String get availabilityAvailable;
+
+  /// No description provided for @availabilityInjured.
+  ///
+  /// In es, this message translates to:
+  /// **'Lesionado: {bodyPart}'**
+  String availabilityInjured(String bodyPart);
+
+  /// No description provided for @growthHeight.
+  ///
+  /// In es, this message translates to:
+  /// **'Altura (cm)'**
+  String get growthHeight;
+
+  /// No description provided for @growthWeight.
+  ///
+  /// In es, this message translates to:
+  /// **'Peso (kg)'**
+  String get growthWeight;
+
+  /// No description provided for @growthAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir medida'**
+  String get growthAdd;
+
+  /// No description provided for @growthMeasuredOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de la medida'**
+  String get growthMeasuredOn;
+
+  /// No description provided for @growthEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin medidas todavía'**
+  String get growthEmpty;
+
+  /// No description provided for @growthNeedOne.
+  ///
+  /// In es, this message translates to:
+  /// **'Indica altura, peso o ambos'**
+  String get growthNeedOne;
+
+  /// No description provided for @growthShowTable.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver tabla'**
+  String get growthShowTable;
+
+  /// No description provided for @growthHideTable.
+  ///
+  /// In es, this message translates to:
+  /// **'Ocultar tabla'**
+  String get growthHideTable;
+
+  /// No description provided for @growthDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar esta medida?'**
+  String get growthDeleteConfirm;
+
+  /// No description provided for @chartSummary.
+  ///
+  /// In es, this message translates to:
+  /// **'Gráfico de {name}: {count} medidas, la última {value}'**
+  String chartSummary(int count, String name, String value);
+
+  /// No description provided for @chartNoData.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos para el gráfico'**
+  String get chartNoData;
+
+  /// No description provided for @chartDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha'**
+  String get chartDate;
+
+  /// No description provided for @chartValue.
+  ///
+  /// In es, this message translates to:
+  /// **'Valor'**
+  String get chartValue;
+
+  /// No description provided for @testAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar resultado'**
+  String get testAdd;
+
+  /// No description provided for @testType.
+  ///
+  /// In es, this message translates to:
+  /// **'Prueba'**
+  String get testType;
+
+  /// No description provided for @testValue.
+  ///
+  /// In es, this message translates to:
+  /// **'Valor'**
+  String get testValue;
+
+  /// No description provided for @testNotes.
+  ///
+  /// In es, this message translates to:
+  /// **'Notas (opcional)'**
+  String get testNotes;
+
+  /// No description provided for @testMeasuredOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de la prueba'**
+  String get testMeasuredOn;
+
+  /// No description provided for @bandPoor.
+  ///
+  /// In es, this message translates to:
+  /// **'Muy bajo'**
+  String get bandPoor;
+
+  /// No description provided for @bandBelowAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Bajo la media'**
+  String get bandBelowAverage;
+
+  /// No description provided for @bandAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Medio'**
+  String get bandAverage;
+
+  /// No description provided for @bandAboveAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Sobre la media'**
+  String get bandAboveAverage;
+
+  /// No description provided for @bandExcellent.
+  ///
+  /// In es, this message translates to:
+  /// **'Excelente'**
+  String get bandExcellent;
+
+  /// No description provided for @testExpectedBand.
+  ///
+  /// In es, this message translates to:
+  /// **'Banda esperada: {band}'**
+  String testExpectedBand(String band);
+
+  /// No description provided for @testNoBand.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin norma para esta edad y género'**
+  String get testNoBand;
+
+  /// No description provided for @testReferencePending.
+  ///
+  /// In es, this message translates to:
+  /// **'Referencia pendiente'**
+  String get testReferencePending;
+
+  /// No description provided for @testSavedBand.
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado guardado. Banda: {band}'**
+  String testSavedBand(String band);
+
+  /// No description provided for @testSavedNoBand.
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado guardado (sin norma aplicable)'**
+  String get testSavedNoBand;
+
+  /// No description provided for @testEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin resultados de pruebas'**
+  String get testEmpty;
+
+  /// No description provided for @testChartLegend.
+  ///
+  /// In es, this message translates to:
+  /// **'Bandas esperadas'**
+  String get testChartLegend;
+
+  /// No description provided for @testAtAge.
+  ///
+  /// In es, this message translates to:
+  /// **'{age} años'**
+  String testAtAge(int age);
+
+  /// No description provided for @testResultLine.
+  ///
+  /// In es, this message translates to:
+  /// **'{value} {unit}'**
+  String testResultLine(String unit, String value);
+
+  /// No description provided for @testDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar este resultado?'**
+  String get testDeleteConfirm;
+
+  /// No description provided for @testTypesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipos de prueba'**
+  String get testTypesTitle;
+
+  /// No description provided for @testTypeNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva prueba personalizada'**
+  String get testTypeNew;
+
+  /// No description provided for @testTypeCode.
+  ///
+  /// In es, this message translates to:
+  /// **'Código'**
+  String get testTypeCode;
+
+  /// No description provided for @testTypeName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre'**
+  String get testTypeName;
+
+  /// No description provided for @testTypeUnit.
+  ///
+  /// In es, this message translates to:
+  /// **'Unidad'**
+  String get testTypeUnit;
+
+  /// No description provided for @testTypeHigher.
+  ///
+  /// In es, this message translates to:
+  /// **'Un valor mayor es mejor'**
+  String get testTypeHigher;
+
+  /// No description provided for @testTypeGlobal.
+  ///
+  /// In es, this message translates to:
+  /// **'Global'**
+  String get testTypeGlobal;
+
+  /// No description provided for @testTypeCustom.
+  ///
+  /// In es, this message translates to:
+  /// **'De la academia'**
+  String get testTypeCustom;
+
+  /// No description provided for @testTypesEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay tipos de prueba'**
+  String get testTypesEmpty;
+
+  /// No description provided for @testTypeHigherYes.
+  ///
+  /// In es, this message translates to:
+  /// **'Más es mejor'**
+  String get testTypeHigherYes;
+
+  /// No description provided for @testTypeHigherNo.
+  ///
+  /// In es, this message translates to:
+  /// **'Menos es mejor'**
+  String get testTypeHigherNo;
+
+  /// No description provided for @normsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Normas de referencia'**
+  String get normsTitle;
+
+  /// No description provided for @normsScopeEffective.
+  ///
+  /// In es, this message translates to:
+  /// **'Efectivas'**
+  String get normsScopeEffective;
+
+  /// No description provided for @normsScopeGlobal.
+  ///
+  /// In es, this message translates to:
+  /// **'Globales'**
+  String get normsScopeGlobal;
+
+  /// No description provided for @normsScopeTenant.
+  ///
+  /// In es, this message translates to:
+  /// **'De la academia'**
+  String get normsScopeTenant;
+
+  /// No description provided for @normNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva norma'**
+  String get normNew;
+
+  /// No description provided for @normEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar norma'**
+  String get normEdit;
+
+  /// No description provided for @normGender.
+  ///
+  /// In es, this message translates to:
+  /// **'Género'**
+  String get normGender;
+
+  /// No description provided for @normMinAge.
+  ///
+  /// In es, this message translates to:
+  /// **'Edad mínima'**
+  String get normMinAge;
+
+  /// No description provided for @normMaxAge.
+  ///
+  /// In es, this message translates to:
+  /// **'Edad máxima'**
+  String get normMaxAge;
+
+  /// No description provided for @normBand.
+  ///
+  /// In es, this message translates to:
+  /// **'Banda'**
+  String get normBand;
+
+  /// No description provided for @normMinValue.
+  ///
+  /// In es, this message translates to:
+  /// **'Valor mínimo'**
+  String get normMinValue;
+
+  /// No description provided for @normMaxValue.
+  ///
+  /// In es, this message translates to:
+  /// **'Valor máximo'**
+  String get normMaxValue;
+
+  /// No description provided for @normSource.
+  ///
+  /// In es, this message translates to:
+  /// **'Fuente'**
+  String get normSource;
+
+  /// No description provided for @normAges.
+  ///
+  /// In es, this message translates to:
+  /// **'{min}–{max} años'**
+  String normAges(int max, int min);
+
+  /// No description provided for @normValues.
+  ///
+  /// In es, this message translates to:
+  /// **'{low} a {high}'**
+  String normValues(String low, String high);
+
+  /// No description provided for @normValuesFrom.
+  ///
+  /// In es, this message translates to:
+  /// **'desde {low}'**
+  String normValuesFrom(String low);
+
+  /// No description provided for @normValuesUpTo.
+  ///
+  /// In es, this message translates to:
+  /// **'hasta {high}'**
+  String normValuesUpTo(String high);
+
+  /// No description provided for @normGlobalReadOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Global (solo lectura)'**
+  String get normGlobalReadOnly;
+
+  /// No description provided for @normOverride.
+  ///
+  /// In es, this message translates to:
+  /// **'Propia de la academia'**
+  String get normOverride;
+
+  /// No description provided for @normEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay normas con este filtro'**
+  String get normEmpty;
+
+  /// No description provided for @normDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar esta norma?'**
+  String get normDeleteConfirm;
+
+  /// No description provided for @normAgesInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'La edad máxima debe ser mayor o igual que la mínima'**
+  String get normAgesInvalid;
+
+  /// No description provided for @normAllTests.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas las pruebas'**
+  String get normAllTests;
+
+  /// No description provided for @healthMenuTests.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipos de prueba'**
+  String get healthMenuTests;
+
+  /// No description provided for @healthMenuNorms.
+  ///
+  /// In es, this message translates to:
+  /// **'Normas'**
+  String get healthMenuNorms;
+
+  /// No description provided for @meTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mi perfil deportivo'**
+  String get meTitle;
+
+  /// No description provided for @meSeasonStats.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas de la temporada'**
+  String get meSeasonStats;
+
+  /// No description provided for @meUpcoming.
+  ///
+  /// In es, this message translates to:
+  /// **'Próximos entrenamientos'**
+  String get meUpcoming;
+
+  /// No description provided for @meNoUpcoming.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay entrenamientos próximos'**
+  String get meNoUpcoming;
+
+  /// No description provided for @meTabTraining.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrenos'**
+  String get meTabTraining;
+
+  /// No description provided for @meTabPlans.
+  ///
+  /// In es, this message translates to:
+  /// **'Planes'**
+  String get meTabPlans;
+
+  /// No description provided for @meNoPlayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta aún no está vinculada a un jugador'**
+  String get meNoPlayer;
+
+  /// No description provided for @myPlayersTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis jugadores'**
+  String get myPlayersTitle;
+
+  /// No description provided for @myPlayersEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes jugadores vinculados'**
+  String get myPlayersEmpty;
+
+  /// No description provided for @profilePlatform.
+  ///
+  /// In es, this message translates to:
+  /// **'Consola de plataforma'**
+  String get profilePlatform;
+
+  /// No description provided for @mePlansEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin planes asignados'**
+  String get mePlansEmpty;
+
+  /// No description provided for @platformTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Plataforma'**
+  String get platformTitle;
+
+  /// No description provided for @platformSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por nombre o identificador'**
+  String get platformSearchHint;
+
+  /// No description provided for @platformEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay academias con este filtro'**
+  String get platformEmpty;
+
+  /// No description provided for @platformNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva academia'**
+  String get platformNew;
+
+  /// No description provided for @tenantName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre de la academia'**
+  String get tenantName;
+
+  /// No description provided for @tenantSlug.
+  ///
+  /// In es, this message translates to:
+  /// **'Identificador (slug)'**
+  String get tenantSlug;
+
+  /// No description provided for @tenantSlugInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo minúsculas, números y guiones (3-50)'**
+  String get tenantSlugInvalid;
+
+  /// No description provided for @tenantTimezone.
+  ///
+  /// In es, this message translates to:
+  /// **'Zona horaria'**
+  String get tenantTimezone;
+
+  /// No description provided for @tenantLocale.
+  ///
+  /// In es, this message translates to:
+  /// **'Idioma'**
+  String get tenantLocale;
+
+  /// No description provided for @tenantAdminEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo del primer administrador'**
+  String get tenantAdminEmail;
+
+  /// No description provided for @tenantAdminGivenName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre del administrador'**
+  String get tenantAdminGivenName;
+
+  /// No description provided for @tenantAdminFamilyName.
+  ///
+  /// In es, this message translates to:
+  /// **'Apellidos del administrador'**
+  String get tenantAdminFamilyName;
+
+  /// No description provided for @tenantStatusActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Activa'**
+  String get tenantStatusActive;
+
+  /// No description provided for @tenantStatusSuspended.
+  ///
+  /// In es, this message translates to:
+  /// **'Suspendida'**
+  String get tenantStatusSuspended;
+
+  /// No description provided for @tenantStatusWithdrawn.
+  ///
+  /// In es, this message translates to:
+  /// **'Retirada'**
+  String get tenantStatusWithdrawn;
+
+  /// No description provided for @tenantCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Academia creada'**
+  String get tenantCreated;
+
+  /// No description provided for @tenantSuspend.
+  ///
+  /// In es, this message translates to:
+  /// **'Suspender'**
+  String get tenantSuspend;
+
+  /// No description provided for @tenantWithdraw.
+  ///
+  /// In es, this message translates to:
+  /// **'Retirar'**
+  String get tenantWithdraw;
+
+  /// No description provided for @tenantReactivate.
+  ///
+  /// In es, this message translates to:
+  /// **'Reactivar'**
+  String get tenantReactivate;
+
+  /// No description provided for @tenantReason.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo'**
+  String get tenantReason;
+
+  /// No description provided for @tenantSuspendTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Suspender la academia'**
+  String get tenantSuspendTitle;
+
+  /// No description provided for @tenantWithdrawTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Retirar la academia'**
+  String get tenantWithdrawTitle;
+
+  /// No description provided for @tenantWithdrawWarning.
+  ///
+  /// In es, this message translates to:
+  /// **'Al retirar una academia comienza el plazo de conservación de datos.'**
+  String get tenantWithdrawWarning;
+
+  /// No description provided for @tenantUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'Estado actualizado'**
+  String get tenantUpdated;
+
+  /// No description provided for @tenantCreatedOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Creada el {date}'**
+  String tenantCreatedOn(String date);
+
+  /// No description provided for @tenantRetainUntil.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos conservados hasta {date}'**
+  String tenantRetainUntil(String date);
+
+  /// No description provided for @usageTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Uso'**
+  String get usageTitle;
+
+  /// No description provided for @usageUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos de: {services}'**
+  String usageUnavailable(String services);
+
+  /// No description provided for @usageLastActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Última actividad: {date}'**
+  String usageLastActivity(String date);
+
+  /// No description provided for @usageFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el uso'**
+  String get usageFailed;
+
+  /// No description provided for @usageServiceCore.
+  ///
+  /// In es, this message translates to:
+  /// **'Núcleo'**
+  String get usageServiceCore;
+
+  /// No description provided for @usageServiceGame.
+  ///
+  /// In es, this message translates to:
+  /// **'Partidos'**
+  String get usageServiceGame;
+
+  /// No description provided for @usageServiceAthlete.
+  ///
+  /// In es, this message translates to:
+  /// **'Deportistas'**
+  String get usageServiceAthlete;
+
+  /// No description provided for @usageCounter_members.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembros'**
+  String get usageCounter_members;
+
+  /// No description provided for @usageCounter_players.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugadores'**
+  String get usageCounter_players;
+
+  /// No description provided for @usageCounter_activePlayers.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugadores activos'**
+  String get usageCounter_activePlayers;
+
+  /// No description provided for @usageCounter_teams.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipos'**
+  String get usageCounter_teams;
+
+  /// No description provided for @usageCounter_seasons.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporadas'**
+  String get usageCounter_seasons;
+
+  /// No description provided for @usageCounter_matches.
+  ///
+  /// In es, this message translates to:
+  /// **'Partidos'**
+  String get usageCounter_matches;
+
+  /// No description provided for @usageCounter_liveMatches.
+  ///
+  /// In es, this message translates to:
+  /// **'Partidos en vivo'**
+  String get usageCounter_liveMatches;
+
+  /// No description provided for @usageCounter_matchEvents.
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos de partido'**
+  String get usageCounter_matchEvents;
+
+  /// No description provided for @usageCounter_matchEventsLast30Days.
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos (30 días)'**
+  String get usageCounter_matchEventsLast30Days;
+
+  /// No description provided for @usageCounter_trainingSessions.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesiones de entreno'**
+  String get usageCounter_trainingSessions;
+
+  /// No description provided for @usageCounter_attendanceRecords.
+  ///
+  /// In es, this message translates to:
+  /// **'Registros de asistencia'**
+  String get usageCounter_attendanceRecords;
+
+  /// No description provided for @usageCounter_trainingPlans.
+  ///
+  /// In es, this message translates to:
+  /// **'Planes'**
+  String get usageCounter_trainingPlans;
+
+  /// No description provided for @usageCounter_physicalTestResults.
+  ///
+  /// In es, this message translates to:
+  /// **'Resultados de pruebas'**
+  String get usageCounter_physicalTestResults;
+
+  /// No description provided for @usageCounter_injuries.
+  ///
+  /// In es, this message translates to:
+  /// **'Lesiones'**
+  String get usageCounter_injuries;
+
+  /// No description provided for @usageCounter_bodyMeasurements.
+  ///
+  /// In es, this message translates to:
+  /// **'Medidas corporales'**
+  String get usageCounter_bodyMeasurements;
 }
 
 class _AppLocalizationsDelegate

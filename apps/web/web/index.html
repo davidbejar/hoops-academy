@@ -43,5 +43,19 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+  <!--
+    Caching service worker (see sw.js and README "Offline cold start").
+    Flutter's generated flutter_service_worker.js is not registered: our
+    flutter_bootstrap.js passes no serviceWorkerSettings.
+  -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function (e) {
+          console.warn('Service worker registration failed', e);
+        });
+      });
+    }
+  </script>
 </body>
 </html>

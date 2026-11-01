@@ -1236,4 +1236,917 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get seasonStatsSeason => 'Musim';
+
+  @override
+  String get trainingTitle => 'Latihan';
+
+  @override
+  String trainingWeekOf(String range) {
+    return 'Minggu $range';
+  }
+
+  @override
+  String get trainingToday => 'Hari ini';
+
+  @override
+  String get trainingPrevWeek => 'Minggu sebelumnya';
+
+  @override
+  String get trainingNextWeek => 'Minggu berikutnya';
+
+  @override
+  String get trainingAllTeams => 'Semua tim';
+
+  @override
+  String get trainingNoSessions => 'Tidak ada sesi latihan minggu ini';
+
+  @override
+  String get trainingNoSessionsDay => 'Tidak ada sesi';
+
+  @override
+  String get trainingMenuPlans => 'Rencana';
+
+  @override
+  String get trainingMenuSchedules => 'Jadwal';
+
+  @override
+  String get trainingMenuAbsences => 'Ketidakhadiran';
+
+  @override
+  String get trainingMenuAssignments => 'Tugas';
+
+  @override
+  String get sessionStatusPlanned => 'Direncanakan';
+
+  @override
+  String get sessionStatusDone => 'Selesai';
+
+  @override
+  String get sessionStatusCancelled => 'Dibatalkan';
+
+  @override
+  String get sessionDetailTitle => 'Sesi latihan';
+
+  @override
+  String sessionTimeRange(String end, String start) {
+    return '$start – $end';
+  }
+
+  @override
+  String get sessionLocation => 'Lokasi';
+
+  @override
+  String get sessionNoLocation => 'Tanpa lokasi';
+
+  @override
+  String get sessionPlan => 'Rencana';
+
+  @override
+  String get sessionNoPlan => 'Tanpa rencana';
+
+  @override
+  String get sessionNotes => 'Catatan';
+
+  @override
+  String sessionCancelReasonLine(String reason) {
+    return 'Dibatalkan: $reason';
+  }
+
+  @override
+  String get sessionNew => 'Sesi baru';
+
+  @override
+  String get sessionEdit => 'Ubah sesi';
+
+  @override
+  String get sessionTeam => 'Tim';
+
+  @override
+  String get sessionDate => 'Tanggal';
+
+  @override
+  String get sessionStartTime => 'Jam mulai';
+
+  @override
+  String get sessionDuration => 'Durasi (menit)';
+
+  @override
+  String sessionDurationMinutes(int minutes) {
+    return '$minutes menit';
+  }
+
+  @override
+  String get sessionCancel => 'Batalkan sesi';
+
+  @override
+  String get sessionCancelReason => 'Alasan pembatalan';
+
+  @override
+  String get sessionCreated => 'Sesi dibuat';
+
+  @override
+  String get sessionCancelled => 'Sesi dibatalkan';
+
+  @override
+  String get attendanceTitle => 'Kehadiran';
+
+  @override
+  String get attendancePresent => 'Hadir';
+
+  @override
+  String get attendanceLate => 'Terlambat';
+
+  @override
+  String get attendanceAbsent => 'Absen';
+
+  @override
+  String get attendanceExcused => 'Izin';
+
+  @override
+  String get attendanceMinutesLate => 'Menit terlambat';
+
+  @override
+  String get attendanceExpectedAbsent => 'Absen terencana';
+
+  @override
+  String get attendanceInjured => 'Cedera';
+
+  @override
+  String get attendanceNotRecorded => 'Belum dicatat';
+
+  @override
+  String get attendanceSave => 'Simpan kehadiran';
+
+  @override
+  String get attendanceSaved => 'Kehadiran disimpan';
+
+  @override
+  String get attendanceEmpty => 'Tim belum memiliki pemain';
+
+  @override
+  String get attendanceMinutesInvalid => 'Menit antara 1 dan 180';
+
+  @override
+  String get scheduleTitle => 'Jadwal latihan';
+
+  @override
+  String get scheduleNew => 'Jadwal baru';
+
+  @override
+  String get scheduleEdit => 'Ubah jadwal';
+
+  @override
+  String get scheduleEmpty => 'Belum ada jadwal';
+
+  @override
+  String get scheduleDay => 'Hari';
+
+  @override
+  String get scheduleTime => 'Jam (HH:MM)';
+
+  @override
+  String get scheduleTimeInvalid => 'Gunakan format HH:MM';
+
+  @override
+  String get scheduleValidFrom => 'Berlaku mulai';
+
+  @override
+  String get scheduleValidUntil => 'Berlaku sampai';
+
+  @override
+  String get scheduleNoEnd => 'Tanpa tanggal akhir';
+
+  @override
+  String get scheduleDatesInvalid =>
+      'Tanggal akhir tidak boleh sebelum tanggal mulai';
+
+  @override
+  String scheduleLine(String day, int minutes, String time) {
+    return '$day $time · $minutes menit';
+  }
+
+  @override
+  String scheduleValidity(String from) {
+    return 'Mulai $from';
+  }
+
+  @override
+  String scheduleValidityRange(String from, String to) {
+    return '$from sampai $to';
+  }
+
+  @override
+  String get scheduleDeleteConfirm =>
+      'Hapus jadwal ini? Sesi mendatang yang tidak diubah akan dihapus.';
+
+  @override
+  String get dayMonday => 'Senin';
+
+  @override
+  String get dayTuesday => 'Selasa';
+
+  @override
+  String get dayWednesday => 'Rabu';
+
+  @override
+  String get dayThursday => 'Kamis';
+
+  @override
+  String get dayFriday => 'Jumat';
+
+  @override
+  String get daySaturday => 'Sabtu';
+
+  @override
+  String get daySunday => 'Minggu';
+
+  @override
+  String get absenceTitle => 'Ketidakhadiran terencana';
+
+  @override
+  String get absenceNew => 'Ketidakhadiran baru';
+
+  @override
+  String get absencePlayer => 'Pemain';
+
+  @override
+  String get absenceFrom => 'Dari';
+
+  @override
+  String get absenceTo => 'Sampai';
+
+  @override
+  String get absenceReason => 'Alasan (opsional)';
+
+  @override
+  String get absenceEmpty => 'Tidak ada ketidakhadiran terencana';
+
+  @override
+  String get absenceDatesInvalid =>
+      'Tanggal akhir tidak boleh sebelum tanggal mulai';
+
+  @override
+  String get absenceDeleteConfirm => 'Hapus ketidakhadiran ini?';
+
+  @override
+  String absenceRange(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
+  String get absenceSaved => 'Ketidakhadiran disimpan';
+
+  @override
+  String get planLibraryTitle => 'Rencana latihan';
+
+  @override
+  String get planTemplates => 'Templat';
+
+  @override
+  String get planMine => 'Rencana kami';
+
+  @override
+  String get planSearchHint => 'Cari rencana';
+
+  @override
+  String get planEmptyTemplates => 'Tidak ada templat';
+
+  @override
+  String get planEmptyMine =>
+      'Belum ada rencana. Buat satu atau gunakan templat.';
+
+  @override
+  String planSummary(int count, int minutes) {
+    return '$count latihan · $minutes menit';
+  }
+
+  @override
+  String get planNew => 'Rencana baru';
+
+  @override
+  String get planName => 'Nama rencana';
+
+  @override
+  String get planDescription => 'Deskripsi (opsional)';
+
+  @override
+  String get planUse => 'Gunakan templat';
+
+  @override
+  String get planCopied => 'Templat disalin ke rencana Anda';
+
+  @override
+  String get planTemplateReadOnly =>
+      'Templat hanya baca: salin untuk mengubah.';
+
+  @override
+  String get planItems => 'Latihan';
+
+  @override
+  String get planNoItems => 'Rencana ini belum memiliki latihan';
+
+  @override
+  String get planItemAdd => 'Tambah latihan';
+
+  @override
+  String get planItemEdit => 'Ubah latihan';
+
+  @override
+  String get planItemTitle => 'Judul';
+
+  @override
+  String get planItemDuration => 'Durasi (menit)';
+
+  @override
+  String get planItemSets => 'Set';
+
+  @override
+  String get planItemReps => 'Pengulangan';
+
+  @override
+  String get planItemVideo => 'Tautan video (https)';
+
+  @override
+  String get planItemVideoInvalid => 'Harus diawali https://';
+
+  @override
+  String planItemSetsReps(int reps, int sets) {
+    return '$sets × $reps';
+  }
+
+  @override
+  String get planItemMoveUp => 'Naikkan';
+
+  @override
+  String get planItemMoveDown => 'Turunkan';
+
+  @override
+  String get planItemDeleteConfirm => 'Hapus latihan ini?';
+
+  @override
+  String get planDeleteConfirm => 'Hapus rencana ini?';
+
+  @override
+  String get planAssign => 'Tugaskan';
+
+  @override
+  String get planWatchVideo => 'Tonton video';
+
+  @override
+  String get assignTitle => 'Tugaskan rencana';
+
+  @override
+  String get assignTarget => 'Ditugaskan ke';
+
+  @override
+  String get assignToTeam => 'Satu tim';
+
+  @override
+  String get assignToPlayer => 'Satu pemain';
+
+  @override
+  String get assignDue => 'Batas waktu';
+
+  @override
+  String get assignDone => 'Rencana ditugaskan';
+
+  @override
+  String get assignmentsTitle => 'Rencana yang ditugaskan';
+
+  @override
+  String get assignmentsEmpty => 'Tidak ada rencana yang ditugaskan';
+
+  @override
+  String assignmentDue(String date) {
+    return 'Batas $date';
+  }
+
+  @override
+  String assignmentProgress(int done, int notDone, int partial) {
+    return '$done selesai · $partial sebagian · $notDone belum';
+  }
+
+  @override
+  String get assignmentDeleteConfirm => 'Hapus tugas ini beserta catatannya?';
+
+  @override
+  String get assignmentProgressTitle => 'Kemajuan';
+
+  @override
+  String assignmentTeamTarget(String name) {
+    return 'Tim: $name';
+  }
+
+  @override
+  String get assignmentPlayerTarget => 'Pemain';
+
+  @override
+  String get completionDone => 'Selesai';
+
+  @override
+  String get completionPartial => 'Sebagian';
+
+  @override
+  String get completionNotDone => 'Belum';
+
+  @override
+  String get completionNone => 'Belum ditandai';
+
+  @override
+  String get completionComment => 'Komentar (opsional)';
+
+  @override
+  String get completionMark => 'Tandai';
+
+  @override
+  String get completionSaved => 'Tanda disimpan';
+
+  @override
+  String get healthTitle => 'Kesehatan dan kebugaran';
+
+  @override
+  String get healthInjuries => 'Cedera';
+
+  @override
+  String get healthGrowth => 'Pertumbuhan';
+
+  @override
+  String get healthTests => 'Tes fisik';
+
+  @override
+  String get injuryNew => 'Catat cedera';
+
+  @override
+  String get injuryBodyPart => 'Bagian tubuh';
+
+  @override
+  String get injurySeverity => 'Tingkat keparahan';
+
+  @override
+  String get severityMinor => 'Ringan';
+
+  @override
+  String get severityModerate => 'Sedang';
+
+  @override
+  String get severitySevere => 'Berat';
+
+  @override
+  String get injuryOccurredOn => 'Tanggal cedera';
+
+  @override
+  String get injuryExpectedReturn => 'Perkiraan kembali';
+
+  @override
+  String get injuryDescription => 'Deskripsi (opsional)';
+
+  @override
+  String get injuryStatusOpen => 'Terbuka';
+
+  @override
+  String get injuryStatusRecovered => 'Pulih';
+
+  @override
+  String get injuryRecover => 'Tandai pulih';
+
+  @override
+  String get injuryRecoveredOn => 'Tanggal kembali';
+
+  @override
+  String get injuryUpdateReturn => 'Ubah perkiraan kembali';
+
+  @override
+  String get injuryEmpty => 'Tidak ada cedera tercatat';
+
+  @override
+  String injuryReturnLine(String date) {
+    return 'Perkiraan kembali: $date';
+  }
+
+  @override
+  String injuryRecoveredLine(String date) {
+    return 'Pulih pada $date';
+  }
+
+  @override
+  String get injurySaved => 'Cedera disimpan';
+
+  @override
+  String get availabilityAvailable => 'Tersedia';
+
+  @override
+  String availabilityInjured(String bodyPart) {
+    return 'Cedera: $bodyPart';
+  }
+
+  @override
+  String get growthHeight => 'Tinggi (cm)';
+
+  @override
+  String get growthWeight => 'Berat (kg)';
+
+  @override
+  String get growthAdd => 'Tambah pengukuran';
+
+  @override
+  String get growthMeasuredOn => 'Tanggal pengukuran';
+
+  @override
+  String get growthEmpty => 'Belum ada pengukuran';
+
+  @override
+  String get growthNeedOne => 'Isi tinggi, berat atau keduanya';
+
+  @override
+  String get growthShowTable => 'Tampilkan tabel';
+
+  @override
+  String get growthHideTable => 'Sembunyikan tabel';
+
+  @override
+  String get growthDeleteConfirm => 'Hapus pengukuran ini?';
+
+  @override
+  String chartSummary(int count, String name, String value) {
+    return 'Grafik $name: $count data, terbaru $value';
+  }
+
+  @override
+  String get chartNoData => 'Tidak ada data untuk grafik';
+
+  @override
+  String get chartDate => 'Tanggal';
+
+  @override
+  String get chartValue => 'Nilai';
+
+  @override
+  String get testAdd => 'Catat hasil';
+
+  @override
+  String get testType => 'Tes';
+
+  @override
+  String get testValue => 'Nilai';
+
+  @override
+  String get testNotes => 'Catatan (opsional)';
+
+  @override
+  String get testMeasuredOn => 'Tanggal tes';
+
+  @override
+  String get bandPoor => 'Buruk';
+
+  @override
+  String get bandBelowAverage => 'Di bawah rata-rata';
+
+  @override
+  String get bandAverage => 'Rata-rata';
+
+  @override
+  String get bandAboveAverage => 'Di atas rata-rata';
+
+  @override
+  String get bandExcellent => 'Sangat baik';
+
+  @override
+  String testExpectedBand(String band) {
+    return 'Pita yang diharapkan: $band';
+  }
+
+  @override
+  String get testNoBand => 'Tidak ada norma untuk usia dan jenis kelamin ini';
+
+  @override
+  String get testReferencePending => 'Rujukan menyusul';
+
+  @override
+  String testSavedBand(String band) {
+    return 'Hasil disimpan. Pita: $band';
+  }
+
+  @override
+  String get testSavedNoBand => 'Hasil disimpan (tanpa norma)';
+
+  @override
+  String get testEmpty => 'Belum ada hasil tes';
+
+  @override
+  String get testChartLegend => 'Pita yang diharapkan';
+
+  @override
+  String testAtAge(int age) {
+    return 'usia $age';
+  }
+
+  @override
+  String testResultLine(String unit, String value) {
+    return '$value $unit';
+  }
+
+  @override
+  String get testDeleteConfirm => 'Hapus hasil ini?';
+
+  @override
+  String get testTypesTitle => 'Jenis tes';
+
+  @override
+  String get testTypeNew => 'Tes kustom baru';
+
+  @override
+  String get testTypeCode => 'Kode';
+
+  @override
+  String get testTypeName => 'Nama';
+
+  @override
+  String get testTypeUnit => 'Satuan';
+
+  @override
+  String get testTypeHigher => 'Nilai lebih tinggi lebih baik';
+
+  @override
+  String get testTypeGlobal => 'Global';
+
+  @override
+  String get testTypeCustom => 'Akademi';
+
+  @override
+  String get testTypesEmpty => 'Tidak ada jenis tes';
+
+  @override
+  String get testTypeHigherYes => 'Lebih tinggi lebih baik';
+
+  @override
+  String get testTypeHigherNo => 'Lebih rendah lebih baik';
+
+  @override
+  String get normsTitle => 'Norma rujukan';
+
+  @override
+  String get normsScopeEffective => 'Berlaku';
+
+  @override
+  String get normsScopeGlobal => 'Global';
+
+  @override
+  String get normsScopeTenant => 'Akademi';
+
+  @override
+  String get normNew => 'Norma baru';
+
+  @override
+  String get normEdit => 'Ubah norma';
+
+  @override
+  String get normGender => 'Jenis kelamin';
+
+  @override
+  String get normMinAge => 'Usia minimum';
+
+  @override
+  String get normMaxAge => 'Usia maksimum';
+
+  @override
+  String get normBand => 'Pita';
+
+  @override
+  String get normMinValue => 'Nilai minimum';
+
+  @override
+  String get normMaxValue => 'Nilai maksimum';
+
+  @override
+  String get normSource => 'Sumber';
+
+  @override
+  String normAges(int max, int min) {
+    return 'usia $min–$max';
+  }
+
+  @override
+  String normValues(String low, String high) {
+    return '$low sampai $high';
+  }
+
+  @override
+  String normValuesFrom(String low) {
+    return 'mulai $low';
+  }
+
+  @override
+  String normValuesUpTo(String high) {
+    return 'sampai $high';
+  }
+
+  @override
+  String get normGlobalReadOnly => 'Global (hanya baca)';
+
+  @override
+  String get normOverride => 'Penggantian akademi';
+
+  @override
+  String get normEmpty => 'Tidak ada norma untuk filter ini';
+
+  @override
+  String get normDeleteConfirm => 'Hapus norma ini?';
+
+  @override
+  String get normAgesInvalid => 'Usia maksimum minimal sama dengan minimum';
+
+  @override
+  String get normAllTests => 'Semua tes';
+
+  @override
+  String get healthMenuTests => 'Jenis tes';
+
+  @override
+  String get healthMenuNorms => 'Norma';
+
+  @override
+  String get meTitle => 'Profil olahraga saya';
+
+  @override
+  String get meSeasonStats => 'Statistik musim';
+
+  @override
+  String get meUpcoming => 'Latihan mendatang';
+
+  @override
+  String get meNoUpcoming => 'Tidak ada latihan mendatang';
+
+  @override
+  String get meTabTraining => 'Latihan';
+
+  @override
+  String get meTabPlans => 'Rencana';
+
+  @override
+  String get meNoPlayer => 'Akun Anda belum terhubung ke pemain';
+
+  @override
+  String get myPlayersTitle => 'Pemain saya';
+
+  @override
+  String get myPlayersEmpty => 'Anda belum memiliki pemain terhubung';
+
+  @override
+  String get profilePlatform => 'Konsol platform';
+
+  @override
+  String get mePlansEmpty => 'Tidak ada rencana ditugaskan';
+
+  @override
+  String get platformTitle => 'Platform';
+
+  @override
+  String get platformSearchHint => 'Cari nama atau slug';
+
+  @override
+  String get platformEmpty => 'Tidak ada akademi yang cocok';
+
+  @override
+  String get platformNew => 'Akademi baru';
+
+  @override
+  String get tenantName => 'Nama akademi';
+
+  @override
+  String get tenantSlug => 'Pengenal (slug)';
+
+  @override
+  String get tenantSlugInvalid => 'Huruf kecil, angka, dan tanda hubung (3-50)';
+
+  @override
+  String get tenantTimezone => 'Zona waktu';
+
+  @override
+  String get tenantLocale => 'Bahasa';
+
+  @override
+  String get tenantAdminEmail => 'Email admin pertama';
+
+  @override
+  String get tenantAdminGivenName => 'Nama depan admin';
+
+  @override
+  String get tenantAdminFamilyName => 'Nama belakang admin';
+
+  @override
+  String get tenantStatusActive => 'Aktif';
+
+  @override
+  String get tenantStatusSuspended => 'Ditangguhkan';
+
+  @override
+  String get tenantStatusWithdrawn => 'Ditarik';
+
+  @override
+  String get tenantCreated => 'Akademi dibuat';
+
+  @override
+  String get tenantSuspend => 'Tangguhkan';
+
+  @override
+  String get tenantWithdraw => 'Tarik';
+
+  @override
+  String get tenantReactivate => 'Aktifkan kembali';
+
+  @override
+  String get tenantReason => 'Alasan';
+
+  @override
+  String get tenantSuspendTitle => 'Tangguhkan akademi';
+
+  @override
+  String get tenantWithdrawTitle => 'Tarik akademi';
+
+  @override
+  String get tenantWithdrawWarning =>
+      'Menarik akademi memulai masa retensi data.';
+
+  @override
+  String get tenantUpdated => 'Status diperbarui';
+
+  @override
+  String tenantCreatedOn(String date) {
+    return 'Dibuat $date';
+  }
+
+  @override
+  String tenantRetainUntil(String date) {
+    return 'Data disimpan hingga $date';
+  }
+
+  @override
+  String get usageTitle => 'Penggunaan';
+
+  @override
+  String usageUnavailable(String services) {
+    return 'Tidak ada data dari: $services';
+  }
+
+  @override
+  String usageLastActivity(String date) {
+    return 'Aktivitas terakhir: $date';
+  }
+
+  @override
+  String get usageFailed => 'Penggunaan tidak dapat dimuat';
+
+  @override
+  String get usageServiceCore => 'Inti';
+
+  @override
+  String get usageServiceGame => 'Pertandingan';
+
+  @override
+  String get usageServiceAthlete => 'Atlet';
+
+  @override
+  String get usageCounter_members => 'Anggota';
+
+  @override
+  String get usageCounter_players => 'Pemain';
+
+  @override
+  String get usageCounter_activePlayers => 'Pemain aktif';
+
+  @override
+  String get usageCounter_teams => 'Tim';
+
+  @override
+  String get usageCounter_seasons => 'Musim';
+
+  @override
+  String get usageCounter_matches => 'Pertandingan';
+
+  @override
+  String get usageCounter_liveMatches => 'Pertandingan langsung';
+
+  @override
+  String get usageCounter_matchEvents => 'Peristiwa pertandingan';
+
+  @override
+  String get usageCounter_matchEventsLast30Days => 'Peristiwa (30 hari)';
+
+  @override
+  String get usageCounter_trainingSessions => 'Sesi latihan';
+
+  @override
+  String get usageCounter_attendanceRecords => 'Catatan kehadiran';
+
+  @override
+  String get usageCounter_trainingPlans => 'Rencana';
+
+  @override
+  String get usageCounter_physicalTestResults => 'Hasil tes';
+
+  @override
+  String get usageCounter_injuries => 'Cedera';
+
+  @override
+  String get usageCounter_bodyMeasurements => 'Pengukuran tubuh';
 }

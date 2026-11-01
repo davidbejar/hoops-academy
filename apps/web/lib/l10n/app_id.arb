@@ -374,5 +374,533 @@
   "seasonStatsRebounds": "Rebound",
   "seasonStatsAssists": "Asis",
   "seasonStatsMinutes": "Menit",
-  "seasonStatsSeason": "Musim"
+  "seasonStatsSeason": "Musim",
+  "trainingTitle": "Latihan",
+  "trainingWeekOf": "Minggu {range}",
+  "@trainingWeekOf": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "trainingToday": "Hari ini",
+  "trainingPrevWeek": "Minggu sebelumnya",
+  "trainingNextWeek": "Minggu berikutnya",
+  "trainingAllTeams": "Semua tim",
+  "trainingNoSessions": "Tidak ada sesi latihan minggu ini",
+  "trainingNoSessionsDay": "Tidak ada sesi",
+  "trainingMenuPlans": "Rencana",
+  "trainingMenuSchedules": "Jadwal",
+  "trainingMenuAbsences": "Ketidakhadiran",
+  "trainingMenuAssignments": "Tugas",
+  "sessionStatusPlanned": "Direncanakan",
+  "sessionStatusDone": "Selesai",
+  "sessionStatusCancelled": "Dibatalkan",
+  "sessionDetailTitle": "Sesi latihan",
+  "sessionTimeRange": "{start} – {end}",
+  "@sessionTimeRange": {
+    "placeholders": {
+      "end": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionLocation": "Lokasi",
+  "sessionNoLocation": "Tanpa lokasi",
+  "sessionPlan": "Rencana",
+  "sessionNoPlan": "Tanpa rencana",
+  "sessionNotes": "Catatan",
+  "sessionCancelReasonLine": "Dibatalkan: {reason}",
+  "@sessionCancelReasonLine": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionNew": "Sesi baru",
+  "sessionEdit": "Ubah sesi",
+  "sessionTeam": "Tim",
+  "sessionDate": "Tanggal",
+  "sessionStartTime": "Jam mulai",
+  "sessionDuration": "Durasi (menit)",
+  "sessionDurationMinutes": "{minutes} menit",
+  "@sessionDurationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionCancel": "Batalkan sesi",
+  "sessionCancelReason": "Alasan pembatalan",
+  "sessionCreated": "Sesi dibuat",
+  "sessionCancelled": "Sesi dibatalkan",
+  "attendanceTitle": "Kehadiran",
+  "attendancePresent": "Hadir",
+  "attendanceLate": "Terlambat",
+  "attendanceAbsent": "Absen",
+  "attendanceExcused": "Izin",
+  "attendanceMinutesLate": "Menit terlambat",
+  "attendanceExpectedAbsent": "Absen terencana",
+  "attendanceInjured": "Cedera",
+  "attendanceNotRecorded": "Belum dicatat",
+  "attendanceSave": "Simpan kehadiran",
+  "attendanceSaved": "Kehadiran disimpan",
+  "attendanceEmpty": "Tim belum memiliki pemain",
+  "attendanceMinutesInvalid": "Menit antara 1 dan 180",
+  "scheduleTitle": "Jadwal latihan",
+  "scheduleNew": "Jadwal baru",
+  "scheduleEdit": "Ubah jadwal",
+  "scheduleEmpty": "Belum ada jadwal",
+  "scheduleDay": "Hari",
+  "scheduleTime": "Jam (HH:MM)",
+  "scheduleTimeInvalid": "Gunakan format HH:MM",
+  "scheduleValidFrom": "Berlaku mulai",
+  "scheduleValidUntil": "Berlaku sampai",
+  "scheduleNoEnd": "Tanpa tanggal akhir",
+  "scheduleDatesInvalid": "Tanggal akhir tidak boleh sebelum tanggal mulai",
+  "scheduleLine": "{day} {time} · {minutes} menit",
+  "@scheduleLine": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleValidity": "Mulai {from}",
+  "@scheduleValidity": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleValidityRange": "{from} sampai {to}",
+  "@scheduleValidityRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDeleteConfirm": "Hapus jadwal ini? Sesi mendatang yang tidak diubah akan dihapus.",
+  "dayMonday": "Senin",
+  "dayTuesday": "Selasa",
+  "dayWednesday": "Rabu",
+  "dayThursday": "Kamis",
+  "dayFriday": "Jumat",
+  "daySaturday": "Sabtu",
+  "daySunday": "Minggu",
+  "absenceTitle": "Ketidakhadiran terencana",
+  "absenceNew": "Ketidakhadiran baru",
+  "absencePlayer": "Pemain",
+  "absenceFrom": "Dari",
+  "absenceTo": "Sampai",
+  "absenceReason": "Alasan (opsional)",
+  "absenceEmpty": "Tidak ada ketidakhadiran terencana",
+  "absenceDatesInvalid": "Tanggal akhir tidak boleh sebelum tanggal mulai",
+  "absenceDeleteConfirm": "Hapus ketidakhadiran ini?",
+  "absenceRange": "{from} → {to}",
+  "@absenceRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "absenceSaved": "Ketidakhadiran disimpan",
+  "planLibraryTitle": "Rencana latihan",
+  "planTemplates": "Templat",
+  "planMine": "Rencana kami",
+  "planSearchHint": "Cari rencana",
+  "planEmptyTemplates": "Tidak ada templat",
+  "planEmptyMine": "Belum ada rencana. Buat satu atau gunakan templat.",
+  "planSummary": "{count} latihan · {minutes} menit",
+  "@planSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "planNew": "Rencana baru",
+  "planName": "Nama rencana",
+  "planDescription": "Deskripsi (opsional)",
+  "planUse": "Gunakan templat",
+  "planCopied": "Templat disalin ke rencana Anda",
+  "planTemplateReadOnly": "Templat hanya baca: salin untuk mengubah.",
+  "planItems": "Latihan",
+  "planNoItems": "Rencana ini belum memiliki latihan",
+  "planItemAdd": "Tambah latihan",
+  "planItemEdit": "Ubah latihan",
+  "planItemTitle": "Judul",
+  "planItemDuration": "Durasi (menit)",
+  "planItemSets": "Set",
+  "planItemReps": "Pengulangan",
+  "planItemVideo": "Tautan video (https)",
+  "planItemVideoInvalid": "Harus diawali https://",
+  "planItemSetsReps": "{sets} × {reps}",
+  "@planItemSetsReps": {
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      },
+      "sets": {
+        "type": "int"
+      }
+    }
+  },
+  "planItemMoveUp": "Naikkan",
+  "planItemMoveDown": "Turunkan",
+  "planItemDeleteConfirm": "Hapus latihan ini?",
+  "planDeleteConfirm": "Hapus rencana ini?",
+  "planAssign": "Tugaskan",
+  "planWatchVideo": "Tonton video",
+  "assignTitle": "Tugaskan rencana",
+  "assignTarget": "Ditugaskan ke",
+  "assignToTeam": "Satu tim",
+  "assignToPlayer": "Satu pemain",
+  "assignDue": "Batas waktu",
+  "assignDone": "Rencana ditugaskan",
+  "assignmentsTitle": "Rencana yang ditugaskan",
+  "assignmentsEmpty": "Tidak ada rencana yang ditugaskan",
+  "assignmentDue": "Batas {date}",
+  "@assignmentDue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentProgress": "{done} selesai · {partial} sebagian · {notDone} belum",
+  "@assignmentProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "notDone": {
+        "type": "int"
+      },
+      "partial": {
+        "type": "int"
+      }
+    }
+  },
+  "assignmentDeleteConfirm": "Hapus tugas ini beserta catatannya?",
+  "assignmentProgressTitle": "Kemajuan",
+  "assignmentTeamTarget": "Tim: {name}",
+  "@assignmentTeamTarget": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentPlayerTarget": "Pemain",
+  "completionDone": "Selesai",
+  "completionPartial": "Sebagian",
+  "completionNotDone": "Belum",
+  "completionNone": "Belum ditandai",
+  "completionComment": "Komentar (opsional)",
+  "completionMark": "Tandai",
+  "completionSaved": "Tanda disimpan",
+  "healthTitle": "Kesehatan dan kebugaran",
+  "healthInjuries": "Cedera",
+  "healthGrowth": "Pertumbuhan",
+  "healthTests": "Tes fisik",
+  "injuryNew": "Catat cedera",
+  "injuryBodyPart": "Bagian tubuh",
+  "injurySeverity": "Tingkat keparahan",
+  "severityMinor": "Ringan",
+  "severityModerate": "Sedang",
+  "severitySevere": "Berat",
+  "injuryOccurredOn": "Tanggal cedera",
+  "injuryExpectedReturn": "Perkiraan kembali",
+  "injuryDescription": "Deskripsi (opsional)",
+  "injuryStatusOpen": "Terbuka",
+  "injuryStatusRecovered": "Pulih",
+  "injuryRecover": "Tandai pulih",
+  "injuryRecoveredOn": "Tanggal kembali",
+  "injuryUpdateReturn": "Ubah perkiraan kembali",
+  "injuryEmpty": "Tidak ada cedera tercatat",
+  "injuryReturnLine": "Perkiraan kembali: {date}",
+  "@injuryReturnLine": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "injuryRecoveredLine": "Pulih pada {date}",
+  "@injuryRecoveredLine": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "injurySaved": "Cedera disimpan",
+  "availabilityAvailable": "Tersedia",
+  "availabilityInjured": "Cedera: {bodyPart}",
+  "@availabilityInjured": {
+    "placeholders": {
+      "bodyPart": {
+        "type": "String"
+      }
+    }
+  },
+  "growthHeight": "Tinggi (cm)",
+  "growthWeight": "Berat (kg)",
+  "growthAdd": "Tambah pengukuran",
+  "growthMeasuredOn": "Tanggal pengukuran",
+  "growthEmpty": "Belum ada pengukuran",
+  "growthNeedOne": "Isi tinggi, berat atau keduanya",
+  "growthShowTable": "Tampilkan tabel",
+  "growthHideTable": "Sembunyikan tabel",
+  "growthDeleteConfirm": "Hapus pengukuran ini?",
+  "chartSummary": "Grafik {name}: {count} data, terbaru {value}",
+  "@chartSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chartNoData": "Tidak ada data untuk grafik",
+  "chartDate": "Tanggal",
+  "chartValue": "Nilai",
+  "testAdd": "Catat hasil",
+  "testType": "Tes",
+  "testValue": "Nilai",
+  "testNotes": "Catatan (opsional)",
+  "testMeasuredOn": "Tanggal tes",
+  "bandPoor": "Buruk",
+  "bandBelowAverage": "Di bawah rata-rata",
+  "bandAverage": "Rata-rata",
+  "bandAboveAverage": "Di atas rata-rata",
+  "bandExcellent": "Sangat baik",
+  "testExpectedBand": "Pita yang diharapkan: {band}",
+  "@testExpectedBand": {
+    "placeholders": {
+      "band": {
+        "type": "String"
+      }
+    }
+  },
+  "testNoBand": "Tidak ada norma untuk usia dan jenis kelamin ini",
+  "testReferencePending": "Rujukan menyusul",
+  "testSavedBand": "Hasil disimpan. Pita: {band}",
+  "@testSavedBand": {
+    "placeholders": {
+      "band": {
+        "type": "String"
+      }
+    }
+  },
+  "testSavedNoBand": "Hasil disimpan (tanpa norma)",
+  "testEmpty": "Belum ada hasil tes",
+  "testChartLegend": "Pita yang diharapkan",
+  "testAtAge": "usia {age}",
+  "@testAtAge": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "testResultLine": "{value} {unit}",
+  "@testResultLine": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "testDeleteConfirm": "Hapus hasil ini?",
+  "testTypesTitle": "Jenis tes",
+  "testTypeNew": "Tes kustom baru",
+  "testTypeCode": "Kode",
+  "testTypeName": "Nama",
+  "testTypeUnit": "Satuan",
+  "testTypeHigher": "Nilai lebih tinggi lebih baik",
+  "testTypeGlobal": "Global",
+  "testTypeCustom": "Akademi",
+  "testTypesEmpty": "Tidak ada jenis tes",
+  "testTypeHigherYes": "Lebih tinggi lebih baik",
+  "testTypeHigherNo": "Lebih rendah lebih baik",
+  "normsTitle": "Norma rujukan",
+  "normsScopeEffective": "Berlaku",
+  "normsScopeGlobal": "Global",
+  "normsScopeTenant": "Akademi",
+  "normNew": "Norma baru",
+  "normEdit": "Ubah norma",
+  "normGender": "Jenis kelamin",
+  "normMinAge": "Usia minimum",
+  "normMaxAge": "Usia maksimum",
+  "normBand": "Pita",
+  "normMinValue": "Nilai minimum",
+  "normMaxValue": "Nilai maksimum",
+  "normSource": "Sumber",
+  "normAges": "usia {min}–{max}",
+  "@normAges": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "normValues": "{low} sampai {high}",
+  "@normValues": {
+    "placeholders": {
+      "low": {
+        "type": "String"
+      },
+      "high": {
+        "type": "String"
+      }
+    }
+  },
+  "normValuesFrom": "mulai {low}",
+  "@normValuesFrom": {
+    "placeholders": {
+      "low": {
+        "type": "String"
+      }
+    }
+  },
+  "normValuesUpTo": "sampai {high}",
+  "@normValuesUpTo": {
+    "placeholders": {
+      "high": {
+        "type": "String"
+      }
+    }
+  },
+  "normGlobalReadOnly": "Global (hanya baca)",
+  "normOverride": "Penggantian akademi",
+  "normEmpty": "Tidak ada norma untuk filter ini",
+  "normDeleteConfirm": "Hapus norma ini?",
+  "normAgesInvalid": "Usia maksimum minimal sama dengan minimum",
+  "normAllTests": "Semua tes",
+  "healthMenuTests": "Jenis tes",
+  "healthMenuNorms": "Norma",
+  "meTitle": "Profil olahraga saya",
+  "meSeasonStats": "Statistik musim",
+  "meUpcoming": "Latihan mendatang",
+  "meNoUpcoming": "Tidak ada latihan mendatang",
+  "meTabTraining": "Latihan",
+  "meTabPlans": "Rencana",
+  "meNoPlayer": "Akun Anda belum terhubung ke pemain",
+  "myPlayersTitle": "Pemain saya",
+  "myPlayersEmpty": "Anda belum memiliki pemain terhubung",
+  "profilePlatform": "Konsol platform",
+  "mePlansEmpty": "Tidak ada rencana ditugaskan",
+  "platformTitle": "Platform",
+  "platformSearchHint": "Cari nama atau slug",
+  "platformEmpty": "Tidak ada akademi yang cocok",
+  "platformNew": "Akademi baru",
+  "tenantName": "Nama akademi",
+  "tenantSlug": "Pengenal (slug)",
+  "tenantSlugInvalid": "Huruf kecil, angka, dan tanda hubung (3-50)",
+  "tenantTimezone": "Zona waktu",
+  "tenantLocale": "Bahasa",
+  "tenantAdminEmail": "Email admin pertama",
+  "tenantAdminGivenName": "Nama depan admin",
+  "tenantAdminFamilyName": "Nama belakang admin",
+  "tenantStatusActive": "Aktif",
+  "tenantStatusSuspended": "Ditangguhkan",
+  "tenantStatusWithdrawn": "Ditarik",
+  "tenantCreated": "Akademi dibuat",
+  "tenantSuspend": "Tangguhkan",
+  "tenantWithdraw": "Tarik",
+  "tenantReactivate": "Aktifkan kembali",
+  "tenantReason": "Alasan",
+  "tenantSuspendTitle": "Tangguhkan akademi",
+  "tenantWithdrawTitle": "Tarik akademi",
+  "tenantWithdrawWarning": "Menarik akademi memulai masa retensi data.",
+  "tenantUpdated": "Status diperbarui",
+  "tenantCreatedOn": "Dibuat {date}",
+  "@tenantCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantRetainUntil": "Data disimpan hingga {date}",
+  "@tenantRetainUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "usageTitle": "Penggunaan",
+  "usageUnavailable": "Tidak ada data dari: {services}",
+  "@usageUnavailable": {
+    "placeholders": {
+      "services": {
+        "type": "String"
+      }
+    }
+  },
+  "usageLastActivity": "Aktivitas terakhir: {date}",
+  "@usageLastActivity": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "usageFailed": "Penggunaan tidak dapat dimuat",
+  "usageServiceCore": "Inti",
+  "usageServiceGame": "Pertandingan",
+  "usageServiceAthlete": "Atlet",
+  "usageCounter_members": "Anggota",
+  "usageCounter_players": "Pemain",
+  "usageCounter_activePlayers": "Pemain aktif",
+  "usageCounter_teams": "Tim",
+  "usageCounter_seasons": "Musim",
+  "usageCounter_matches": "Pertandingan",
+  "usageCounter_liveMatches": "Pertandingan langsung",
+  "usageCounter_matchEvents": "Peristiwa pertandingan",
+  "usageCounter_matchEventsLast30Days": "Peristiwa (30 hari)",
+  "usageCounter_trainingSessions": "Sesi latihan",
+  "usageCounter_attendanceRecords": "Catatan kehadiran",
+  "usageCounter_trainingPlans": "Rencana",
+  "usageCounter_physicalTestResults": "Hasil tes",
+  "usageCounter_injuries": "Cedera",
+  "usageCounter_bodyMeasurements": "Pengukuran tubuh"
 }

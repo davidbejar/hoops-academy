@@ -63,6 +63,13 @@ class ProfileScreen extends ConsumerWidget {
                     title: Text(l.switchAcademy),
                     onTap: () => context.go('/tenants'),
                   ),
+                if (user != null && user.superAdmin)
+                  ListTile(
+                    key: const Key('open-platform'),
+                    leading: const Icon(Icons.apartment_outlined),
+                    title: Text(l.profilePlatform),
+                    onTap: () => context.go('/platform'),
+                  ),
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.symmetric(

@@ -24,7 +24,9 @@ import 'package:hoops_app/features/tenant/data/tenant_repository.dart';
 import 'package:hoops_app/features/tenant/domain/tenant_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'fake_athlete.dart';
 import 'fake_game.dart';
+import 'fake_platform.dart';
 import 'fake_repos.dart';
 
 class FakeMeRepository implements MeRepository {
@@ -76,8 +78,12 @@ class Harness {
     bool signedIn = true,
     this.core,
     FakeGame? game,
+    FakeAthlete? athlete,
+    FakePlatform? platform,
     this.extraOverrides = const [],
   }) : game = game ?? FakeGame(),
+       athlete = athlete ?? FakeAthlete(),
+       platform = platform ?? FakePlatform(),
        auth =
            auth ??
            MockAuthService(
@@ -99,6 +105,12 @@ class Harness {
   /// In-memory game side (matches, events, Drift store); empty by default so
   /// every screen that opens the match module works without a backend.
   final FakeGame game;
+
+  /// In-memory athlete-service side (training, plans, health, fitness).
+  final FakeAthlete athlete;
+
+  /// In-memory platform console repository.
+  final FakePlatform platform;
   final List<Override> extraOverrides;
   final online = StreamController<bool>.broadcast();
   late SharedPreferences prefs;
@@ -158,6 +170,8 @@ class Harness {
           casesRepositoryProvider.overrideWithValue(core!.cases),
         ],
         ...game.overrides,
+        ...athlete.overrides,
+        ...platform.overrides,
         ...extraOverrides,
         // Deferred libraries load in real time; make them instant in tests.
         libraryLoaderProvider.overrideWithValue((_) => SynchronousFuture<void>(null)),

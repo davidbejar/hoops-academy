@@ -1,14 +1,22 @@
 {
   "@@locale": "es",
   "appName": "Hoops Academy",
-  "@appName": {"description": "Nombre de la aplicación"},
+  "@appName": {
+    "description": "Nombre de la aplicación"
+  },
   "loading": "Cargando…",
   "retry": "Reintentar",
   "signIn": "Iniciar sesión",
   "signInSubtitle": "Accede con tu cuenta de la academia",
   "signOut": "Cerrar sesión",
   "signedInAs": "Sesión iniciada como {name}",
-  "@signedInAs": {"placeholders": {"name": {"type": "String"}}},
+  "@signedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "offlineBanner": "Sin conexión. Los datos pueden no estar actualizados.",
   "mockModeBanner": "Modo demo: datos de ejemplo, sin servidor",
   "navAdmin": "Admin",
@@ -20,7 +28,13 @@
   "navMe": "Yo",
   "navPlatform": "Plataforma",
   "placeholderModule": "{module}: próximamente",
-  "@placeholderModule": {"placeholders": {"module": {"type": "String"}}},
+  "@placeholderModule": {
+    "placeholders": {
+      "module": {
+        "type": "String"
+      }
+    }
+  },
   "profileTitle": "Perfil",
   "language": "Idioma",
   "languageName_es": "Español",
@@ -31,7 +45,13 @@
   "chooseAcademyTitle": "Elige tu academia",
   "chooseAcademySubtitle": "Perteneces a varias academias. ¿Con cuál quieres trabajar?",
   "rolesInAcademy": "Roles: {roles}",
-  "@rolesInAcademy": {"placeholders": {"roles": {"type": "String"}}},
+  "@rolesInAcademy": {
+    "placeholders": {
+      "roles": {
+        "type": "String"
+      }
+    }
+  },
   "roleAdmin": "Administrador",
   "roleCoach": "Entrenador",
   "roleAssistantCoach": "Entrenador asistente",
@@ -50,7 +70,13 @@
   "errorServer": "El servidor ha tenido un problema. Inténtalo más tarde.",
   "errorUnknown": "Ha ocurrido un error inesperado.",
   "errorReference": "Referencia: {traceId}",
-  "@errorReference": {"placeholders": {"traceId": {"type": "String"}}},
+  "@errorReference": {
+    "placeholders": {
+      "traceId": {
+        "type": "String"
+      }
+    }
+  },
   "emptyTitle": "Nada por aquí todavía",
   "save": "Guardar",
   "cancel": "Cancelar",
@@ -113,7 +139,13 @@
   "memberEditRoles": "Editar roles",
   "memberDeactivate": "Desactivar",
   "memberDeactivateConfirm": "¿Desactivar a {name}? Perderá el acceso a la academia.",
-  "@memberDeactivateConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@memberDeactivateConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "memberDeactivated": "Miembro desactivado",
   "memberInactive": "Inactivo",
   "memberInvitationPending": "Invitación pendiente",
@@ -121,7 +153,13 @@
   "memberGuardianNone": "Sin jugadores vinculados",
   "memberGuardianAdd": "Vincular jugador",
   "memberGuardianRemoveConfirm": "¿Quitar el vínculo con {name}?",
-  "@memberGuardianRemoveConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@memberGuardianRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "memberGuardianOnlyParents": "Los vínculos solo se editan para miembros con el rol Familia.",
   "seasonsEmpty": "Aún no hay temporadas",
   "seasonNew": "Nueva temporada",
@@ -135,20 +173,47 @@
   "seasonRollover": "Pasar a nueva temporada",
   "rolloverTitle": "Cambio de temporada",
   "rolloverIntro": "Se creará la temporada siguiente a partir de {name}: se copian los equipos y se vuelven a comprobar los jugadores.",
-  "@rolloverIntro": {"placeholders": {"name": {"type": "String"}}},
+  "@rolloverIntro": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "rolloverCloneStaff": "Copiar el cuerpo técnico",
   "rolloverClonePlayers": "Copiar las plantillas",
   "rolloverConfirm": "Ejecutar cambio de temporada",
   "rolloverDone": "Cambio de temporada completado",
   "rolloverClonedTeams": "Equipos copiados: {count}",
-  "@rolloverClonedTeams": {"placeholders": {"count": {"type": "String"}}},
+  "@rolloverClonedTeams": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "rolloverOrphansTitle": "Jugadores sin equipo válido",
   "rolloverNoOrphans": "Todos los jugadores siguen siendo elegibles.",
   "rolloverOrphanLine": "{player} (antes: {team})",
-  "@rolloverOrphanLine": {"placeholders": {"player": {"type": "String"}, "team": {"type": "String"}}},
+  "@rolloverOrphanLine": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
   "rolloverGoToCases": "Ir a los casos de elegibilidad",
   "rolloverCasesOpened": "Casos abiertos: {count}",
-  "@rolloverCasesOpened": {"placeholders": {"count": {"type": "String"}}},
+  "@rolloverCasesOpened": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "categoryNew": "Nueva categoría",
   "categoryEdit": "Editar categoría",
   "categoriesEmpty": "Aún no hay categorías",
@@ -158,9 +223,21 @@
   "categoryRank": "Orden",
   "categoryNoLimit": "Sin límite de edad",
   "categoryUpTo": "Hasta {age} años",
-  "@categoryUpTo": {"placeholders": {"age": {"type": "String"}}},
+  "@categoryUpTo": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
   "categoryDeleteConfirm": "¿Eliminar la categoría {name}?",
-  "@categoryDeleteConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@categoryDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "teamsEmpty": "No hay equipos en esta temporada",
   "teamsNoSeason": "Crea primero una temporada",
   "teamsSeason": "Temporada",
@@ -174,12 +251,24 @@
   "genderPolicyFemale": "Femenino",
   "genderPolicyMixed": "Mixto",
   "teamPlayerCount": "{count} jugadores",
-  "@teamPlayerCount": {"placeholders": {"count": {"type": "String"}}},
+  "@teamPlayerCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "teamStaff": "Cuerpo técnico",
   "teamStaffAdd": "Añadir entrenador",
   "teamStaffNone": "Sin cuerpo técnico",
   "teamStaffRemoveConfirm": "¿Quitar a {name} del equipo?",
-  "@teamStaffRemoveConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@teamStaffRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "teamStaffPick": "Persona",
   "teamStaffRole": "Función",
   "teamRoster": "Plantilla",
@@ -188,7 +277,13 @@
   "rosterSearchPlayer": "Buscar jugador",
   "rosterUnassign": "Quitar de la plantilla",
   "rosterUnassignConfirm": "¿Quitar a {name} de la plantilla?",
-  "@rosterUnassignConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@rosterUnassignConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "rosterJersey": "Dorsal",
   "rosterJerseyEdit": "Cambiar dorsal",
   "rosterAssigned": "Jugador asignado",
@@ -196,10 +291,22 @@
   "rosterEligibilityPending": "Comprobando elegibilidad…",
   "eligibilityEligible": "Elegible",
   "eligibilityPlayUp": "Juega en categoría superior (+{levels})",
-  "@eligibilityPlayUp": {"placeholders": {"levels": {"type": "String"}}},
+  "@eligibilityPlayUp": {
+    "placeholders": {
+      "levels": {
+        "type": "String"
+      }
+    }
+  },
   "eligibilityIneligible": "No elegible",
   "playUpBadge": "+{levels}",
-  "@playUpBadge": {"placeholders": {"levels": {"type": "String"}}},
+  "@playUpBadge": {
+    "placeholders": {
+      "levels": {
+        "type": "String"
+      }
+    }
+  },
   "reasonCategoryTooLow": "Es demasiado mayor para esta categoría",
   "reasonPlayUpLimit": "Supera el máximo de niveles de categoría superior",
   "reasonGenderPolicy": "No cumple la política de género del equipo",
@@ -240,7 +347,13 @@
   "playerNoEligibleTeams": "No hay equipos elegibles en la temporada",
   "playerWithdraw": "Dar de baja",
   "playerWithdrawConfirm": "¿Dar de baja a {name}?",
-  "@playerWithdrawConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "@playerWithdrawConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "playerWithdrawReason": "Motivo (opcional)",
   "playerWithdrawn": "Jugador dado de baja",
   "playerWithdrawRequested": "Solicitud de baja enviada",
@@ -254,22 +367,46 @@
   "approvalStatusRejected": "Rechazada",
   "approvalStatusCancelled": "Cancelada",
   "approvalRequestedBy": "Solicitada por {name}",
-  "@approvalRequestedBy": {"placeholders": {"name": {"type": "String"}}},
+  "@approvalRequestedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "approvalApprove": "Aprobar",
   "approvalReject": "Rechazar",
   "approvalCancel": "Cancelar solicitud",
   "approvalCancelConfirm": "¿Cancelar esta solicitud?",
   "approvalDecisionNote": "Nota de la decisión: {note}",
-  "@approvalDecisionNote": {"placeholders": {"note": {"type": "String"}}},
+  "@approvalDecisionNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
   "approvalApproved": "Solicitud aprobada",
   "approvalRejected": "Solicitud rechazada",
   "approvalCancelled": "Solicitud cancelada",
   "casesEmpty": "No hay casos abiertos",
   "caseTeam": "Equipo invalidado: {team}",
-  "@caseTeam": {"placeholders": {"team": {"type": "String"}}},
+  "@caseTeam": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
   "caseReassign": "Reasignar",
   "caseReassignTitle": "Reasignar a {player}",
-  "@caseReassignTitle": {"placeholders": {"player": {"type": "String"}}},
+  "@caseReassignTitle": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
   "caseRemoveFromTeam": "Quitar del equipo",
   "caseDismiss": "Descartar caso",
   "caseResolved": "Caso resuelto",
@@ -283,7 +420,13 @@
   "matchStatusFinished": "Finalizado",
   "matchStatusCancelled": "Cancelado",
   "matchVs": "vs {opponent}",
-  "@matchVs": {"placeholders": {"opponent": {"type": "String"}}},
+  "@matchVs": {
+    "placeholders": {
+      "opponent": {
+        "type": "String"
+      }
+    }
+  },
   "matchHome": "Local",
   "matchAway": "Visitante",
   "matchUs": "Nosotros",
@@ -300,21 +443,54 @@
   "matchSetupNoPlayers": "El equipo no tiene jugadores",
   "matchSetupNeedStarter": "Marca al menos un titular",
   "matchSetupSummary": "{selected} convocados · {starters} titulares",
-  "@matchSetupSummary": {"placeholders": {"selected": {"type": "int"}, "starters": {"type": "int"}}},
+  "@matchSetupSummary": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "starters": {
+        "type": "int"
+      }
+    }
+  },
   "matchSetupAction": "Preparar convocatoria",
   "matchNoRoster": "Este partido aún no tiene convocatoria",
   "matchTabCourt": "Pista",
   "matchTabLog": "Jugadas",
   "matchTabBox": "Estadísticas",
   "matchPeriodShort": "P{period}",
-  "@matchPeriodShort": {"placeholders": {"period": {"type": "int"}}},
+  "@matchPeriodShort": {
+    "placeholders": {
+      "period": {
+        "type": "int"
+      }
+    }
+  },
   "matchOvertimeShort": "PR{number}",
-  "@matchOvertimeShort": {"placeholders": {"number": {"type": "int"}}},
+  "@matchOvertimeShort": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "matchBeforeStart": "Sin empezar",
   "matchStartPeriod": "Iniciar {period}",
-  "@matchStartPeriod": {"placeholders": {"period": {"type": "String"}}},
+  "@matchStartPeriod": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
   "matchEndPeriod": "Terminar {period}",
-  "@matchEndPeriod": {"placeholders": {"period": {"type": "String"}}},
+  "@matchEndPeriod": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
   "matchClockStart": "Poner en marcha el reloj",
   "matchClockPause": "Parar el reloj",
   "matchClockMinus": "Restar 10 segundos",
@@ -322,18 +498,45 @@
   "matchOnCourt": "En pista",
   "matchBench": "Banquillo",
   "matchOpponentPoints": "Rival +{points}",
-  "@matchOpponentPoints": {"placeholders": {"points": {"type": "int"}}},
+  "@matchOpponentPoints": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
   "matchTimeoutOwn": "Tiempo muerto",
   "matchTimeoutOpponent": "Tiempo muerto rival",
   "matchUndo": "Deshacer",
   "matchUndone": "Última jugada anulada",
   "matchNothingToUndo": "Nada que deshacer",
   "matchSubFor": "Entra {name} por…",
-  "@matchSubFor": {"placeholders": {"name": {"type": "String"}}},
+  "@matchSubFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchStatsFor": "Estadística de {name}",
-  "@matchStatsFor": {"placeholders": {"name": {"type": "String"}}},
+  "@matchStatsFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchRecorded": "{action} · {name}",
-  "@matchRecorded": {"placeholders": {"action": {"type": "String"}, "name": {"type": "String"}}},
+  "@matchRecorded": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchAction2ptMade": "2 PT ✓",
   "matchAction2ptMissed": "2 PT ✗",
   "matchAction3ptMade": "3 PT ✓",
@@ -350,26 +553,74 @@
   "matchActionFoulTechnical": "Falta técnica",
   "matchActionFoulUnsportsmanlike": "Antideportiva",
   "matchEvPeriodStart": "Empieza {period}",
-  "@matchEvPeriodStart": {"placeholders": {"period": {"type": "String"}}},
+  "@matchEvPeriodStart": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
   "matchEvPeriodEnd": "Termina {period}",
-  "@matchEvPeriodEnd": {"placeholders": {"period": {"type": "String"}}},
+  "@matchEvPeriodEnd": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
   "matchEvSubIn": "Entra {name}",
-  "@matchEvSubIn": {"placeholders": {"name": {"type": "String"}}},
+  "@matchEvSubIn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchEvSubOut": "Sale {name}",
-  "@matchEvSubOut": {"placeholders": {"name": {"type": "String"}}},
+  "@matchEvSubOut": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchEvVoid": "Anula: {target}",
-  "@matchEvVoid": {"placeholders": {"target": {"type": "String"}}},
+  "@matchEvVoid": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
   "matchEvVoidUnknown": "Anula una jugada",
   "matchEvNote": "Nota: {text}",
-  "@matchEvNote": {"placeholders": {"text": {"type": "String"}}},
+  "@matchEvNote": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "matchSyncPending": "Pendiente",
   "matchSyncSent": "Enviando",
   "matchSyncDone": "Sincronizada",
   "matchSyncRejected": "Rechazada: {reason}",
-  "@matchSyncRejected": {"placeholders": {"reason": {"type": "String"}}},
+  "@matchSyncRejected": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "matchVoided": "Anulada",
   "matchRecordedBy": "por {name}",
-  "@matchRecordedBy": {"placeholders": {"name": {"type": "String"}}},
+  "@matchRecordedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "matchReasonSchema": "datos no válidos",
   "matchReasonNotAuthorized": "sin permiso",
   "matchReasonCancelled": "partido cancelado",
@@ -380,9 +631,21 @@
   "matchDiscard": "Descartar",
   "matchDiscardConfirm": "¿Descartar esta jugada rechazada? No se enviará más.",
   "matchUnsynced": "{count} sin sincronizar",
-  "@matchUnsynced": {"placeholders": {"count": {"type": "int"}}},
+  "@matchUnsynced": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "matchRejectedCount": "{count} rechazadas",
-  "@matchRejectedCount": {"placeholders": {"count": {"type": "int"}}},
+  "@matchRejectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "matchSyncPausedAuth": "Inicia sesión de nuevo para sincronizar; los datos se conservan",
   "matchSyncing": "Sincronizando…",
   "matchParentMode": "Modo familia: solo tus jugadores",
@@ -404,14 +667,44 @@
   "matchTotals": "Total equipo",
   "matchPeriodScores": "Parciales",
   "matchWarnings": "{count} avisos de coherencia (corrige con Anular)",
-  "@matchWarnings": {"placeholders": {"count": {"type": "int"}}},
+  "@matchWarnings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "matchCopy": "Copiar resultado",
   "matchCopied": "Resultado copiado",
   "matchShareLine": "{name}: {points} pts, {rebounds} reb, {assists} ast",
-  "@matchShareLine": {"placeholders": {"name": {"type": "String"}, "points": {"type": "int"}, "rebounds": {"type": "int"}, "assists": {"type": "int"}}},
+  "@matchShareLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "points": {
+        "type": "int"
+      },
+      "rebounds": {
+        "type": "int"
+      },
+      "assists": {
+        "type": "int"
+      }
+    }
+  },
   "seasonStatsTitle": "Estadísticas de temporada",
   "seasonStatsGames": "{played} partidos · {started} de titular",
-  "@seasonStatsGames": {"placeholders": {"played": {"type": "int"}, "started": {"type": "int"}}},
+  "@seasonStatsGames": {
+    "placeholders": {
+      "played": {
+        "type": "int"
+      },
+      "started": {
+        "type": "int"
+      }
+    }
+  },
   "seasonStatsAverages": "Promedios por partido",
   "seasonStatsTotals": "Totales",
   "seasonStatsMatches": "Partidos",
@@ -420,5 +713,533 @@
   "seasonStatsRebounds": "Rebotes",
   "seasonStatsAssists": "Asistencias",
   "seasonStatsMinutes": "Minutos",
-  "seasonStatsSeason": "Temporada"
+  "seasonStatsSeason": "Temporada",
+  "trainingTitle": "Entrenamientos",
+  "trainingWeekOf": "Semana del {range}",
+  "@trainingWeekOf": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "trainingToday": "Hoy",
+  "trainingPrevWeek": "Semana anterior",
+  "trainingNextWeek": "Semana siguiente",
+  "trainingAllTeams": "Todos los equipos",
+  "trainingNoSessions": "No hay entrenamientos esta semana",
+  "trainingNoSessionsDay": "Sin sesiones",
+  "trainingMenuPlans": "Planes",
+  "trainingMenuSchedules": "Horarios",
+  "trainingMenuAbsences": "Ausencias",
+  "trainingMenuAssignments": "Asignaciones",
+  "sessionStatusPlanned": "Prevista",
+  "sessionStatusDone": "Realizada",
+  "sessionStatusCancelled": "Cancelada",
+  "sessionDetailTitle": "Sesión de entrenamiento",
+  "sessionTimeRange": "{start} – {end}",
+  "@sessionTimeRange": {
+    "placeholders": {
+      "end": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionLocation": "Lugar",
+  "sessionNoLocation": "Sin lugar indicado",
+  "sessionPlan": "Plan",
+  "sessionNoPlan": "Sin plan asignado",
+  "sessionNotes": "Notas",
+  "sessionCancelReasonLine": "Cancelada: {reason}",
+  "@sessionCancelReasonLine": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionNew": "Nueva sesión",
+  "sessionEdit": "Editar sesión",
+  "sessionTeam": "Equipo",
+  "sessionDate": "Fecha",
+  "sessionStartTime": "Hora de inicio",
+  "sessionDuration": "Duración (min)",
+  "sessionDurationMinutes": "{minutes} min",
+  "@sessionDurationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionCancel": "Cancelar sesión",
+  "sessionCancelReason": "Motivo de la cancelación",
+  "sessionCreated": "Sesión creada",
+  "sessionCancelled": "Sesión cancelada",
+  "attendanceTitle": "Asistencia",
+  "attendancePresent": "Presente",
+  "attendanceLate": "Tarde",
+  "attendanceAbsent": "Ausente",
+  "attendanceExcused": "Justificada",
+  "attendanceMinutesLate": "Minutos de retraso",
+  "attendanceExpectedAbsent": "Ausencia prevista",
+  "attendanceInjured": "Lesionado",
+  "attendanceNotRecorded": "Sin registrar",
+  "attendanceSave": "Guardar asistencia",
+  "attendanceSaved": "Asistencia guardada",
+  "attendanceEmpty": "El equipo no tiene jugadores",
+  "attendanceMinutesInvalid": "Minutos entre 1 y 180",
+  "scheduleTitle": "Horarios de entrenamiento",
+  "scheduleNew": "Nuevo horario",
+  "scheduleEdit": "Editar horario",
+  "scheduleEmpty": "Aún no hay horarios",
+  "scheduleDay": "Día de la semana",
+  "scheduleTime": "Hora (HH:MM)",
+  "scheduleTimeInvalid": "Usa el formato HH:MM",
+  "scheduleValidFrom": "Válido desde",
+  "scheduleValidUntil": "Válido hasta",
+  "scheduleNoEnd": "Sin fecha de fin",
+  "scheduleDatesInvalid": "La fecha final debe ser posterior a la inicial",
+  "scheduleLine": "{day} {time} · {minutes} min",
+  "@scheduleLine": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleValidity": "Desde {from}",
+  "@scheduleValidity": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleValidityRange": "{from} a {to}",
+  "@scheduleValidityRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDeleteConfirm": "¿Eliminar este horario? Se quitarán las sesiones futuras sin cambios.",
+  "dayMonday": "Lunes",
+  "dayTuesday": "Martes",
+  "dayWednesday": "Miércoles",
+  "dayThursday": "Jueves",
+  "dayFriday": "Viernes",
+  "daySaturday": "Sábado",
+  "daySunday": "Domingo",
+  "absenceTitle": "Ausencias previstas",
+  "absenceNew": "Nueva ausencia",
+  "absencePlayer": "Jugador",
+  "absenceFrom": "Desde",
+  "absenceTo": "Hasta",
+  "absenceReason": "Motivo (opcional)",
+  "absenceEmpty": "No hay ausencias previstas",
+  "absenceDatesInvalid": "La fecha final no puede ser anterior a la inicial",
+  "absenceDeleteConfirm": "¿Eliminar esta ausencia?",
+  "absenceRange": "{from} → {to}",
+  "@absenceRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "absenceSaved": "Ausencia registrada",
+  "planLibraryTitle": "Planes de entrenamiento",
+  "planTemplates": "Plantillas",
+  "planMine": "Mis planes",
+  "planSearchHint": "Buscar planes",
+  "planEmptyTemplates": "No hay plantillas",
+  "planEmptyMine": "Aún no hay planes propios. Crea uno o usa una plantilla.",
+  "planSummary": "{count} ejercicios · {minutes} min",
+  "@planSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "planNew": "Nuevo plan",
+  "planName": "Nombre del plan",
+  "planDescription": "Descripción (opcional)",
+  "planUse": "Usar plantilla",
+  "planCopied": "Plantilla copiada a tus planes",
+  "planTemplateReadOnly": "Plantilla de solo lectura: cópiala para editarla.",
+  "planItems": "Ejercicios",
+  "planNoItems": "Este plan aún no tiene ejercicios",
+  "planItemAdd": "Añadir ejercicio",
+  "planItemEdit": "Editar ejercicio",
+  "planItemTitle": "Título",
+  "planItemDuration": "Duración (min)",
+  "planItemSets": "Series",
+  "planItemReps": "Repeticiones",
+  "planItemVideo": "Enlace de vídeo (https)",
+  "planItemVideoInvalid": "Debe empezar por https://",
+  "planItemSetsReps": "{sets} × {reps}",
+  "@planItemSetsReps": {
+    "placeholders": {
+      "reps": {
+        "type": "int"
+      },
+      "sets": {
+        "type": "int"
+      }
+    }
+  },
+  "planItemMoveUp": "Subir",
+  "planItemMoveDown": "Bajar",
+  "planItemDeleteConfirm": "¿Quitar este ejercicio?",
+  "planDeleteConfirm": "¿Eliminar este plan?",
+  "planAssign": "Asignar",
+  "planWatchVideo": "Ver vídeo",
+  "assignTitle": "Asignar plan",
+  "assignTarget": "Destinatario",
+  "assignToTeam": "Un equipo",
+  "assignToPlayer": "Un jugador",
+  "assignDue": "Fecha límite",
+  "assignDone": "Plan asignado",
+  "assignmentsTitle": "Planes asignados",
+  "assignmentsEmpty": "No hay planes asignados",
+  "assignmentDue": "Vence el {date}",
+  "@assignmentDue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentProgress": "{done} hechos · {partial} parciales · {notDone} no hechos",
+  "@assignmentProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "notDone": {
+        "type": "int"
+      },
+      "partial": {
+        "type": "int"
+      }
+    }
+  },
+  "assignmentDeleteConfirm": "¿Quitar esta asignación y sus marcas?",
+  "assignmentProgressTitle": "Progreso",
+  "assignmentTeamTarget": "Equipo: {name}",
+  "@assignmentTeamTarget": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentPlayerTarget": "Jugador",
+  "completionDone": "Hecho",
+  "completionPartial": "Parcial",
+  "completionNotDone": "No hecho",
+  "completionNone": "Sin marcar",
+  "completionComment": "Comentario (opcional)",
+  "completionMark": "Marcar",
+  "completionSaved": "Marca guardada",
+  "healthTitle": "Salud y forma",
+  "healthInjuries": "Lesiones",
+  "healthGrowth": "Crecimiento",
+  "healthTests": "Pruebas físicas",
+  "injuryNew": "Registrar lesión",
+  "injuryBodyPart": "Zona del cuerpo",
+  "injurySeverity": "Gravedad",
+  "severityMinor": "Leve",
+  "severityModerate": "Moderada",
+  "severitySevere": "Grave",
+  "injuryOccurredOn": "Fecha de la lesión",
+  "injuryExpectedReturn": "Regreso previsto",
+  "injuryDescription": "Descripción (opcional)",
+  "injuryStatusOpen": "Abierta",
+  "injuryStatusRecovered": "Recuperada",
+  "injuryRecover": "Marcar recuperada",
+  "injuryRecoveredOn": "Fecha de regreso",
+  "injuryUpdateReturn": "Cambiar regreso previsto",
+  "injuryEmpty": "Sin lesiones registradas",
+  "injuryReturnLine": "Regreso previsto: {date}",
+  "@injuryReturnLine": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "injuryRecoveredLine": "Recuperada el {date}",
+  "@injuryRecoveredLine": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "injurySaved": "Lesión guardada",
+  "availabilityAvailable": "Disponible",
+  "availabilityInjured": "Lesionado: {bodyPart}",
+  "@availabilityInjured": {
+    "placeholders": {
+      "bodyPart": {
+        "type": "String"
+      }
+    }
+  },
+  "growthHeight": "Altura (cm)",
+  "growthWeight": "Peso (kg)",
+  "growthAdd": "Añadir medida",
+  "growthMeasuredOn": "Fecha de la medida",
+  "growthEmpty": "Sin medidas todavía",
+  "growthNeedOne": "Indica altura, peso o ambos",
+  "growthShowTable": "Ver tabla",
+  "growthHideTable": "Ocultar tabla",
+  "growthDeleteConfirm": "¿Eliminar esta medida?",
+  "chartSummary": "Gráfico de {name}: {count} medidas, la última {value}",
+  "@chartSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "chartNoData": "Sin datos para el gráfico",
+  "chartDate": "Fecha",
+  "chartValue": "Valor",
+  "testAdd": "Registrar resultado",
+  "testType": "Prueba",
+  "testValue": "Valor",
+  "testNotes": "Notas (opcional)",
+  "testMeasuredOn": "Fecha de la prueba",
+  "bandPoor": "Muy bajo",
+  "bandBelowAverage": "Bajo la media",
+  "bandAverage": "Medio",
+  "bandAboveAverage": "Sobre la media",
+  "bandExcellent": "Excelente",
+  "testExpectedBand": "Banda esperada: {band}",
+  "@testExpectedBand": {
+    "placeholders": {
+      "band": {
+        "type": "String"
+      }
+    }
+  },
+  "testNoBand": "Sin norma para esta edad y género",
+  "testReferencePending": "Referencia pendiente",
+  "testSavedBand": "Resultado guardado. Banda: {band}",
+  "@testSavedBand": {
+    "placeholders": {
+      "band": {
+        "type": "String"
+      }
+    }
+  },
+  "testSavedNoBand": "Resultado guardado (sin norma aplicable)",
+  "testEmpty": "Sin resultados de pruebas",
+  "testChartLegend": "Bandas esperadas",
+  "testAtAge": "{age} años",
+  "@testAtAge": {
+    "placeholders": {
+      "age": {
+        "type": "int"
+      }
+    }
+  },
+  "testResultLine": "{value} {unit}",
+  "@testResultLine": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "testDeleteConfirm": "¿Eliminar este resultado?",
+  "testTypesTitle": "Tipos de prueba",
+  "testTypeNew": "Nueva prueba personalizada",
+  "testTypeCode": "Código",
+  "testTypeName": "Nombre",
+  "testTypeUnit": "Unidad",
+  "testTypeHigher": "Un valor mayor es mejor",
+  "testTypeGlobal": "Global",
+  "testTypeCustom": "De la academia",
+  "testTypesEmpty": "No hay tipos de prueba",
+  "testTypeHigherYes": "Más es mejor",
+  "testTypeHigherNo": "Menos es mejor",
+  "normsTitle": "Normas de referencia",
+  "normsScopeEffective": "Efectivas",
+  "normsScopeGlobal": "Globales",
+  "normsScopeTenant": "De la academia",
+  "normNew": "Nueva norma",
+  "normEdit": "Editar norma",
+  "normGender": "Género",
+  "normMinAge": "Edad mínima",
+  "normMaxAge": "Edad máxima",
+  "normBand": "Banda",
+  "normMinValue": "Valor mínimo",
+  "normMaxValue": "Valor máximo",
+  "normSource": "Fuente",
+  "normAges": "{min}–{max} años",
+  "@normAges": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "normValues": "{low} a {high}",
+  "@normValues": {
+    "placeholders": {
+      "low": {
+        "type": "String"
+      },
+      "high": {
+        "type": "String"
+      }
+    }
+  },
+  "normValuesFrom": "desde {low}",
+  "@normValuesFrom": {
+    "placeholders": {
+      "low": {
+        "type": "String"
+      }
+    }
+  },
+  "normValuesUpTo": "hasta {high}",
+  "@normValuesUpTo": {
+    "placeholders": {
+      "high": {
+        "type": "String"
+      }
+    }
+  },
+  "normGlobalReadOnly": "Global (solo lectura)",
+  "normOverride": "Propia de la academia",
+  "normEmpty": "No hay normas con este filtro",
+  "normDeleteConfirm": "¿Eliminar esta norma?",
+  "normAgesInvalid": "La edad máxima debe ser mayor o igual que la mínima",
+  "normAllTests": "Todas las pruebas",
+  "healthMenuTests": "Tipos de prueba",
+  "healthMenuNorms": "Normas",
+  "meTitle": "Mi perfil deportivo",
+  "meSeasonStats": "Estadísticas de la temporada",
+  "meUpcoming": "Próximos entrenamientos",
+  "meNoUpcoming": "No hay entrenamientos próximos",
+  "meTabTraining": "Entrenos",
+  "meTabPlans": "Planes",
+  "meNoPlayer": "Tu cuenta aún no está vinculada a un jugador",
+  "myPlayersTitle": "Mis jugadores",
+  "myPlayersEmpty": "No tienes jugadores vinculados",
+  "profilePlatform": "Consola de plataforma",
+  "mePlansEmpty": "Sin planes asignados",
+  "platformTitle": "Plataforma",
+  "platformSearchHint": "Buscar por nombre o identificador",
+  "platformEmpty": "No hay academias con este filtro",
+  "platformNew": "Nueva academia",
+  "tenantName": "Nombre de la academia",
+  "tenantSlug": "Identificador (slug)",
+  "tenantSlugInvalid": "Solo minúsculas, números y guiones (3-50)",
+  "tenantTimezone": "Zona horaria",
+  "tenantLocale": "Idioma",
+  "tenantAdminEmail": "Correo del primer administrador",
+  "tenantAdminGivenName": "Nombre del administrador",
+  "tenantAdminFamilyName": "Apellidos del administrador",
+  "tenantStatusActive": "Activa",
+  "tenantStatusSuspended": "Suspendida",
+  "tenantStatusWithdrawn": "Retirada",
+  "tenantCreated": "Academia creada",
+  "tenantSuspend": "Suspender",
+  "tenantWithdraw": "Retirar",
+  "tenantReactivate": "Reactivar",
+  "tenantReason": "Motivo",
+  "tenantSuspendTitle": "Suspender la academia",
+  "tenantWithdrawTitle": "Retirar la academia",
+  "tenantWithdrawWarning": "Al retirar una academia comienza el plazo de conservación de datos.",
+  "tenantUpdated": "Estado actualizado",
+  "tenantCreatedOn": "Creada el {date}",
+  "@tenantCreatedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantRetainUntil": "Datos conservados hasta {date}",
+  "@tenantRetainUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "usageTitle": "Uso",
+  "usageUnavailable": "Sin datos de: {services}",
+  "@usageUnavailable": {
+    "placeholders": {
+      "services": {
+        "type": "String"
+      }
+    }
+  },
+  "usageLastActivity": "Última actividad: {date}",
+  "@usageLastActivity": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "usageFailed": "No se pudo cargar el uso",
+  "usageServiceCore": "Núcleo",
+  "usageServiceGame": "Partidos",
+  "usageServiceAthlete": "Deportistas",
+  "usageCounter_members": "Miembros",
+  "usageCounter_players": "Jugadores",
+  "usageCounter_activePlayers": "Jugadores activos",
+  "usageCounter_teams": "Equipos",
+  "usageCounter_seasons": "Temporadas",
+  "usageCounter_matches": "Partidos",
+  "usageCounter_liveMatches": "Partidos en vivo",
+  "usageCounter_matchEvents": "Eventos de partido",
+  "usageCounter_matchEventsLast30Days": "Eventos (30 días)",
+  "usageCounter_trainingSessions": "Sesiones de entreno",
+  "usageCounter_attendanceRecords": "Registros de asistencia",
+  "usageCounter_trainingPlans": "Planes",
+  "usageCounter_physicalTestResults": "Resultados de pruebas",
+  "usageCounter_injuries": "Lesiones",
+  "usageCounter_bodyMeasurements": "Medidas corporales"
 }

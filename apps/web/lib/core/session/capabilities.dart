@@ -13,6 +13,7 @@ class Capabilities {
     this.staffTeamIds = const {},
     this.linkedPlayerIds = const {},
     this.personId,
+    this.ownPlayerId,
   });
 
   static const none = Capabilities(roles: {});
@@ -24,7 +25,12 @@ class Capabilities {
   final Set<String> linkedPlayerIds;
   final String? personId;
 
+  /// The caller's own player id (PLAYER role).
+  final String? ownPlayerId;
+
   bool get _admin => roles.contains(TenantRole.admin);
+
+  bool get isAdmin => _admin;
   bool get _coach => roles.contains(TenantRole.coach);
   bool get _assistant => roles.contains(TenantRole.assistantCoach);
 
@@ -65,6 +71,42 @@ class Capabilities {
   /// PARENT may enter stat events of linked players only.
   bool isLinkedTo(String playerId) => roles.contains(TenantRole.parent) && linkedPlayerIds.contains(playerId);
 
+  // ------------------------------------------------- training & health (WP14)
+
+  bool get _staff => _admin || _coach || _assistant;
+
+  /// Schedules, sessions, attendance of [teamId]: ADMIN or team staff.
+  bool canManageTraining(String teamId) => _admin || (_staff && isStaffOf(teamId));
+
+  /// Any team the caller can schedule for (create buttons on the calendar).
+  bool get canManageAnyTraining => _admin || (_staff && staffTeamIds.isNotEmpty);
+
+  /// Plan library write access (ADMIN, COACH, ASSISTANT_COACH).
+  bool get canEditPlans => _staff;
+
+  /// Assign plans: ADMIN or team staff.
+  bool get canAssignPlans => _admin || (_staff && staffTeamIds.isNotEmpty);
+
+  /// Planned absence: staff for anyone, PARENT for linked, PLAYER for self.
+  bool canFileAbsenceFor(String playerId) => _staff || isLinkedTo(playerId) || isSelf(playerId);
+
+  bool get canFileAbsences => _staff || linkedPlayerIds.isNotEmpty || ownPlayerId != null;
+
+  bool isSelf(String playerId) => roles.contains(TenantRole.player) && ownPlayerId == playerId;
+
+  /// Mark a plan completion: staff, linked parent, the player themself.
+  bool canMarkCompletion(String playerId) => _staff || isLinkedTo(playerId) || isSelf(playerId);
+
+  /// Injuries and body measurements: staff and linked parents write; the
+  /// player only reads.
+  bool canWriteHealth(String playerId) => _staff || isLinkedTo(playerId);
+
+  /// Test results entry (staff only; parents / players read).
+  bool get canEnterTestResults => _staff;
+
+  /// Custom test types and tenant norm overrides (ADMIN).
+  bool get canAdminFitness => _admin;
+
   /// Any team the caller runs matches for (create button on the list).
   bool get canCreateMatches => _admin || ((_coach || _assistant) && staffTeamIds.isNotEmpty);
 }
@@ -78,5 +120,6 @@ final capabilitiesProvider = Provider<Capabilities>((ref) {
     staffTeamIds: m?.staffTeamIds ?? const {},
     linkedPlayerIds: m?.linkedPlayerIds ?? const {},
     personId: m?.personId,
+    ownPlayerId: m?.ownPlayerId,
   );
 });

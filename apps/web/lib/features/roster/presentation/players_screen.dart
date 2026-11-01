@@ -83,6 +83,20 @@ class PlayersScreen extends ConsumerWidget {
                         },
                       ),
                     ),
+                    if (caps.canSeeModule)
+                      IconButton(
+                        key: const Key('open-tests'),
+                        tooltip: l.healthMenuTests,
+                        icon: const Icon(Icons.science_outlined),
+                        onPressed: () => context.go('/players/tests'),
+                      ),
+                    if (caps.canSeeModule)
+                      IconButton(
+                        key: const Key('open-norms'),
+                        tooltip: l.healthMenuNorms,
+                        icon: const Icon(Icons.tune),
+                        onPressed: () => context.go('/players/norms'),
+                      ),
                     if (caps.canSeeApprovals)
                       IconButton(
                         key: const Key('open-requests'),
@@ -303,14 +317,24 @@ class _PlayerDetailBody extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: AppTokens.spaceSm),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton.icon(
-            key: const Key('player-season-stats'),
-            onPressed: () => context.go('/matches/stats/${player.id}'),
-            icon: const Icon(Icons.bar_chart),
-            label: Text(l.seasonStatsTitle),
-          ),
+        Row(
+          children: [
+            Flexible(
+              child: OutlinedButton.icon(
+                key: const Key('player-season-stats'),
+                onPressed: () => context.go('/matches/stats/${player.id}'),
+                icon: const Icon(Icons.bar_chart),
+                label: Text(l.seasonStatsTitle, overflow: TextOverflow.ellipsis),
+              ),
+            ),
+            const SizedBox(width: AppTokens.spaceSm),
+            IconButton.outlined(
+              key: const Key('player-health'),
+              tooltip: l.healthTitle,
+              onPressed: () => context.go('/players/${player.id}/health'),
+              icon: const Icon(Icons.monitor_heart_outlined),
+            ),
+          ],
         ),
         const SizedBox(height: AppTokens.spaceLg),
         Text(l.playerBasics, style: theme.textTheme.titleMedium),

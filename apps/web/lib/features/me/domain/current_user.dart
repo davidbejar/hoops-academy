@@ -12,6 +12,7 @@ class TenantMembership {
     this.personId,
     this.staffTeamIds = const {},
     this.linkedPlayerIds = const {},
+    this.ownPlayerId,
   });
 
   final String tenantId;
@@ -28,6 +29,9 @@ class TenantMembership {
 
   /// Players the caller is guardian of (PARENT), from `/me.authz`.
   final Set<String> linkedPlayerIds;
+
+  /// The caller's own player (PLAYER role), from `/me.authz.ownPlayerId`.
+  final String? ownPlayerId;
 }
 
 /// The caller as returned by `GET /api/core/me`, without transport types.

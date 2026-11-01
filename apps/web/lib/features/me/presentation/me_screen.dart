@@ -1,14 +1,11 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../core/navigation/destinations.dart';
-import '../../../core/ui/module_placeholder.dart';
+import '../../profile/presentation/me_player_screen.dart';
 
-/// Placeholder; the real screens arrive with the owning work package.
-/// Loaded through a deferred import (see `app/router.dart`).
+/// Player's own sports profile (deferred, behind the Me tab).
 class MePageScreen extends StatelessWidget {
   const MePageScreen({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      const ModulePlaceholder(destination: AppDestination.me);
+  Widget build(BuildContext context) => const MePlayerScreen();
 }

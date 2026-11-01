@@ -61,10 +61,42 @@ package (re-copy it when upgrading the package).
 
 ### Release build
 ```bash
-flutter build web --pwa-strategy=offline-first    # standard CanvasKit renderer; no COOP/COEP, no wasm
+tool/build_web.sh [--dart-define=HOOPS_API_BASE=...]   # flutter build web --release + stamps web/sw.js (see below)
 ```
-Output in `build/web` (service worker, manifest, deferred `main.dart.js_N.part.js` per feature module).
-`--pwa-strategy` is deprecated in Flutter 3.47 (still honoured and prints a notice).
+Output in `build/web` (our caching `sw.js`, manifest, deferred `main.dart.js_N.part.js` per feature module).
+Standard CanvasKit renderer; no COOP/COEP, no wasm. `flutter build web` alone also works but then `build/web/sw.js`
+still contains its `__BUILD_ID__` placeholder and would not cache anything useful: always release with the script.
+
+### Offline cold start: caching service worker (WP14)
+Flutter 3.47 generates a `flutter_service_worker.js` that caches nothing and unregisters itself, so reopening the
+installed PWA without network failed. We ship our own worker:
+
+| File | Role |
+|---|---|
+| `web/sw.js` | hand-written worker: precache of the app shell, cache-first, network-only for `/api/**` and `/auth/**` |
+| `web/flutter_bootstrap.js` | custom bootstrap **without** `serviceWorkerSettings`, so Flutter never registers its own worker (two workers cannot share a scope; they would replace each other on every load) |
+| `web/index.html` | registers `sw.js` on `load` |
+| `tool/sw_manifest.dart` | after the build, replaces `__BUILD_ID__` (hash of every shipped file) and `/*__PRECACHE_MANIFEST__*/[]` (the file list) in `build/web/sw.js`; unit tested in `test/tool/sw_manifest_test.dart` |
+| `tool/build_web.sh` | `flutter build web --release` then `dart run tool/sw_manifest.dart build/web` |
+
+Precached: `index.html`, `main.dart.js` + every `main.dart.js_N.part.js`, `flutter.js`, `flutter_bootstrap.js`,
+`manifest.json`, icons, `redirect.html`, `sqlite3.wasm`, `drift_worker.js`, `assets/**` and the CanvasKit files
+(not `skwasm*`, `wimp*`, `webparagraph/`, `*.map`, `*.symbols`; a file that is not listed is still cached the first
+time it is fetched). About 22 MB, downloaded once per build.
+Rules: navigations inside the scope get the cached `index.html` (the app uses hash URLs); `redirect.html` is matched
+ignoring its OIDC `?code=...` query; `/api/**`, `/auth/**`, non-GET and cross-origin requests are never touched.
+A new build installs next to the old one and activates when all tabs of the old build are closed (so lazily loaded
+parts always match the running `main.dart.js`); the page can force it with
+`registration.waiting.postMessage({type: 'SKIP_WAITING'})`. The `flutter_service_worker.js` that Flutter still
+emits is excluded from the precache and never registered; a stale page that registered it in the past replaces
+our worker once and our `register('sw.js')` takes the scope back on the next load.
+
+**Manual check (airplane mode):** `tool/build_web.sh`, serve `build/web` over `http://localhost` (any static
+server), open it once online and wait for DevTools -> Application -> Service Workers to show `sw.js` *activated*
+and Cache Storage -> `hoops-shell-<build id>` to hold the files. Reload once (the first page load is not
+controlled). Tick *Offline* (or turn Wi-Fi off) and hard-reload: the app must start (login screen or, when signed
+in, the last view with the offline banner); `/api` calls fail with the network error state, the match scorer keeps
+working from IndexedDB. Rebuild and repeat to see the new cache version replace the old one after closing the tabs.
 
 ## Layout
 ```
@@ -98,6 +130,17 @@ guardian links), `/admin/seasons[/:id/rollover]`, `/admin/age-categories`; `/tea
 Shared building blocks for later modules: `core/session/capabilities.dart`, `core/ui/{async_body,actions,
 form_dialog,page_scaffold,labels}.dart`, `core/api/api.dart` (client + `Date`), `features/roster/presentation/
 eligibility_widgets.dart` (eligibility badge / panel, play-up badge).
+
+### Training, health, profile and platform (WP14)
+Routes: `/training` (week calendar; staff create ad-hoc sessions) -> `session/:id` (detail, attendance sheet for
+team staff), `schedules`, `absences`, `plans` + `plans/:planId` (library: own plans / templates, copy-on-use,
+editor), `assignments[/:id]` (staff progress); `/players/:id/health` (injuries, growth, tests),
+`/players/tests` (test types), `/players/norms` (norm admin); `/me` (PLAYER) and `/my-players` (PARENT,
+child switcher) share `features/profile/presentation/player_hub.dart`; `/platform[/:tenantId]` (super_admin
+console, also reachable from Profile when the user has memberships). Charts (`fl_chart`) follow the dataviz
+tokens in `core/ui/chart_tokens.dart`. Test doubles: `test/support/fake_athlete.dart` (`FakeAthlete`),
+`fake_platform.dart` (`FakePlatform`), both plugged into `Harness`/`pumpAs`. The demo mock (`HOOPS_MOCK_API`) does
+not serve `/api/athlete/*` or `/platform/*` yet (those screens show the error state in demo mode).
 
 ### Live match & offline queue (WP13)
 Routes (Matches module, all roles): `/matches` (list by team, status chips, "N unsynced" banner, new match for
