@@ -23,6 +23,15 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
   entry) — decide in WP14 (suggest: Platform entry in Profile menu when realm role present).
 - **allOf + swagger-request-validator additionalProperties** quirk — document in contracts README (WP8).
 
+- **common `TenantScopedPaths`**: exempt `/api/core/me` (no X-Tenant-Id) so core can drop its reroute filter; add an
+  `UnauthorizedException` → 401 Problem mapper to common (WP3).
+- **Contracts**: declare 502 (identity provider failure) on createTenant/inviteMember; document the allOf request-body
+  validator quirk (WP3).
+- **Core onboarding crash window**: tenant row without settings/admin if the process dies mid-saga → add a repair job or
+  make the platform insert last (WP3 open point); member e-mail changes not synced to Keycloak.
+- **Uploads > 2 MB** return a plain 413 from the HTTP layer (no Problem body) — configure `quarkus.http.limits` + mapper.
+
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
+- Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0 (requires realm re-import: `just down && podman volume rm hoops_pgdata`).
 - `Problem.code` alignment between contracts and common — done in WP2a.
