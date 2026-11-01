@@ -1,21 +1,83 @@
 # Hoops Academy
 
-Multitenant web platform (mobile-first PWA) for basketball academies: rosters and age-category eligibility,
-live match statistics with offline entry, training calendar and attendance, athlete health and fitness
-tracking with age norms. Spanish, English and Indonesian UI.
+Multitenant web platform (mobile-first PWA) for basketball academies. Each academy is a fully isolated tenant. The UI is
+available in Spanish, English and Indonesian.
 
-- Plan and architecture: `docs/PLAN.md`, decisions in `docs/adr/`
-- Agent conventions: `CLAUDE.md`
-- Setup: `scripts/bootstrap.sh`, then `source scripts/env.sh && just doctor`
-- Run locally: `just up` then `./mvnw -pl services/core-service quarkus:dev`
+- **Roster and eligibility**: seasons, age categories, teams, players, play-up rules, approvals, season rollover.
+- **Live match statistics**: box-score entry that keeps working offline and syncs later, several scorers per match.
+- **Training**: calendar, attendance, planned absences, plans and completion.
+- **Athlete health and fitness**: injuries and availability, height/weight growth, physical tests against age norms.
+
+## Features by role
+| Role | What they do |
+|---|---|
+| Super admin | create, suspend, reactivate and withdraw academies; see usage per service |
+| Administrator | academy profile and logo, members and invitations, guardian links, seasons, categories, teams and staff, player approvals, eligibility cases, rollover, age rule and play-up limit |
+| Coach | match setup and live scoring, training calendar, attendance, plans, health and fitness entries, requests to add or withdraw players |
+| Assistant coach | the same for matches, training and health; read-only on roster, no player requests |
+| Parent | linked children: stats during matches, absences, plan completion, injuries and measurements |
+| Player | own profile, season stats, plans, absences, health history (read-only) |
+
+## Stack
+Java 21, Quarkus 3 (three services: `core`, `game`, `athlete`), PostgreSQL 17 with row-level security (one database, one
+schema per service), Keycloak (authentication only), Flutter Web PWA (Riverpod, Drift offline store), OpenAPI contracts
+with generated Dart clients, Podman, kind + Helm + Tilt, CloudNativePG. No Node anywhere.
+
+## Quick start
+Prerequisites are installed by the bootstrap script (macOS with Homebrew; Podman machine running).
+```bash
+scripts/bootstrap.sh                 # toolchain (JDK 21, Maven wrapper, Podman, Flutter, just, ...)
+source scripts/env.sh && just doctor # JDK 21 + Podman socket for Testcontainers; toolchain check
+cp .env.example .env                 # replace every change-me-* value (git-ignored)
+just up                              # Postgres, Keycloak, MailHog, nginx on http://localhost:8080
+just seed-users                      # superadmin, admin1, coach1, assistant1, parent1, player1 (DEV_USER_PASSWORD)
+```
+Start the backend services (host mode; nginx reaches them on 8081 to 8083):
+```bash
+set -a; source .env; set +a
+./mvnw -pl services/core-service    quarkus:dev     # :8081  (one terminal each)
+./mvnw -pl services/game-service    quarkus:dev     # :8082
+./mvnw -pl services/athlete-service quarkus:dev     # :8083
+# or: just services-up   (builds jars, starts all three in the background; just services-down to stop)
+```
+Start the web app against the stack:
+```bash
+cd apps/web && flutter pub get
+flutter run -d chrome --web-port 5173 --dart-define=HOOPS_API_BASE=http://localhost:8080
+```
+A demo without any backend: `flutter run -d chrome --web-port 5173 --dart-define=HOOPS_MOCK_API=true`.
+After pulling realm changes, reset Keycloak: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
+Create your first academy as `superadmin`: `docs/runbooks/onboard-tenant.md`.
+
+Common commands: `just test` (backend verify with coverage and RLS gates), `just web-test`, `just e2e`, `just scan`,
+`just gen-api` (regenerate Dart clients), `just kind-up` and `just tilt` (Kubernetes on kind).
 
 ## Layout
 ```
 libs/common-quarkus   tenancy, RLS, authz, Problem+JSON, shared test fixtures
 libs/contracts        OpenAPI specs + event JSON Schemas (source of truth for clients)
 services/*            core-service, game-service, athlete-service (Quarkus)
-apps/web              Flutter Web PWA
+apps/web              Flutter Web PWA (generated API clients in apps/web/packages)
 infra/                compose stack, DB init SQL, Keycloak realm
-deploy/               Helm charts, kind scripts, Tiltfile
+deploy/               Helm charts, container files, kind scripts; Tiltfile at the root
 e2e/                  journey tests against the running stack
+docs/                 guides, runbooks, architecture, ADRs, security, work packages
 ```
+
+## Documentation
+| | |
+|---|---|
+| User guides (es / en / id) | [`docs/guides/`](docs/guides): `admin`, `coach`, `parent`, `player`, `super-admin` as `<role>.<lang>.md` |
+| Architecture and diagrams | [`docs/architecture.md`](docs/architecture.md) |
+| Plan and original requirements | [`docs/PLAN.md`](docs/PLAN.md), [`docs/SPEC.md`](docs/SPEC.md) |
+| Decisions | [`docs/adr/`](docs/adr) |
+| Domain rules | [`docs/domain/`](docs/domain): authz matrix, glossary, norms |
+| Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [e2e](docs/runbooks/e2e.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
+| Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md) |
+| Roadmap and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) |
+| Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
+
+## Project status
+Work packages WP0 to WP18 have handovers in `docs/wp/` (the e2e journey was only partly verified when WP18 was written); the optional events/Redpanda package (WP19) and billing
+are not built. Known gaps: the browser-level checks and CI workflows have not been run, and parts of the norms table are
+placeholders marked "reference pending". See the roadmap.
