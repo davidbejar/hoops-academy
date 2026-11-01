@@ -47,10 +47,101 @@ jobs:
       - run: flutter test
         working-directory: apps/web
 
-  helm-lint:
+  helm-chart-tests:
     runs-on: ubuntu-latest
     if: ${{ hashFiles('deploy/helm/**/Chart.yaml') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
-      - run: for c in deploy/helm/*/; do helm lint "$c"; done
+      - name: Install kubeconform + gitleaks
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin kubeconform
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | sudo tar -xz -C /usr/local/bin gitleaks
+      # chart-file drift (realm JSON / init SQL copies), lint, snapshots, kubeconform, policy asserts, gitleaks
+      - run: deploy/helm/tests/run.sh
+      - name: helm package (no symlinks in the charts)
+        run: helm package deploy/helm/hoops -d "$RUNNER_TEMP"
+
+  # OWASP dependency-check: fails on any unsuppressed CVSS >= 7 (failBuildOnCVSS in the root pom; suppressions only
+  # with justification + expiry in .dependency-check-suppressions.xml). NVD API key: repository secret NVD_API_KEY
+  # (without it the first NVD download takes hours and is throttled).
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Restore NVD data
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: nvd-${{ runner.os }}-
+      - name: dependency-check (aggregate)
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        # the security-scan profile binds dependency-check:aggregate to verify (whole reactor, one report)
+        run: |
+          ./mvnw -B -ntp -Psecurity-scan verify -DskipTests -Djacoco.skip=true \
+            -DnvdApiKey="$NVD_API_KEY" -DossindexAnalyzerEnabled=false -Dformats=HTML,JSON
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.*
+
+  # Repository scan: vulnerable lockfile/pom dependencies, IaC misconfigurations (Helm, Containerfiles, compose,
+  # workflows) and committed secrets. Fails on HIGH/CRITICAL (fixable vulnerabilities only).
+  trivy-fs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: trivy fs
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src aquasec/trivy:0.76.1 fs \
+            --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
+            --skip-dirs apps/web/build --skip-dirs '**/target' --skip-dirs apps/web/.dart_tool \
+            --ignorefile .trivyignore.yaml .
+
+  # OWASP ZAP baseline (passive) against the compose stack: nginx + Keycloak + core-service. Fails on any
+  # High/Medium alert not accepted (IGNORE + justification) in .zap/baseline.conf (scripts/zap-gate.py).
+  zap-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Placeholder .env (CI only; values are the documented change-me placeholders)
+        run: cp .env.example .env
+      - name: Start Postgres, Keycloak, MailHog, nginx
+        run: docker compose --env-file .env -f infra/compose/compose.yaml up -d --wait
+      - name: Build and start core-service on the host (nginx reaches it via host.containers.internal)
+        run: |
+          ./mvnw -B -ntp -pl services/core-service -am package -DskipTests -Djacoco.skip=true
+          set -a; . ./.env; set +a
+          nohup java -jar services/core-service/target/quarkus-app/quarkus-run.jar > core.log 2>&1 &
+          for i in $(seq 1 60); do curl -fs http://localhost:8081/q/health/ready && break; sleep 2; done
+          curl -fs http://localhost:8080/healthz
+      - name: ZAP baseline
+        run: |
+          mkdir -p zap && cp .zap/baseline.conf zap/ && chmod -R 777 zap
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://localhost:8080/ -c baseline.conf -J zap.json -r zap.html -I
+      - name: Gate (High/Medium not accepted in .zap/baseline.conf)
+        run: python3 scripts/zap-gate.py zap/zap.json .zap/baseline.conf
+      - name: Upload report + logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline
+          path: |
+            zap/zap.html
+            zap/zap.json
+            core.log

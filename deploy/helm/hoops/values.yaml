@@ -1,6 +1,10 @@
 # Hoops Academy umbrella defaults. Environment overlays: values-kind.yaml (committed), values-local.yaml (git-ignored).
 # No secret values here: every credential is referenced by Secret name (see ADR-0012).
 
+# Public base URL as the browser sees it (services' CORS allow-list). Keep equal to keycloak.publicUrl.
+global:
+  publicUrl: http://localhost:8090
+
 databases:
   enabled: true
 
@@ -19,6 +23,11 @@ core:
     health: {enabled: true, prefix: /api/core}
   env:
     CORE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
+    # Browser origin allowed by the services' CORS filter (same-origin through the ingress needs none; keep it
+    # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
+    # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
+    HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
+    QUARKUS_OTEL_SDK_DISABLED: "true"
     OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
     KEYCLOAK_URL: http://keycloak:8080/auth
     GAME_SERVICE_URL: http://game-service:8082
@@ -37,11 +46,17 @@ game:
   ingress:
     paths: [/api/game]
     health: {enabled: true, prefix: /api/game}
-  # game-service does not depend on quarkus-smallrye-health yet (no /q/health) -> TCP probes until it does
-  # (WP16 open point; then remove this block).
-  probes: {mode: tcp}
+    # Offline devices flush their outbox in bursts; 120/min per IP with burst x5 covers a reconnect storm of a
+    # bench, but not a flood. The colon path is matched literally (no rewrite / normalisation, WP16 follow-up).
+    rateLimits:
+      - {name: events-batch, path: "/api/game/matches/[^/]+/events:batch", rpm: 120, burstMultiplier: 5}
   env:
     GAME_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
+    # Browser origin allowed by the services' CORS filter (same-origin through the ingress needs none; keep it
+    # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
+    # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
+    HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
+    QUARKUS_OTEL_SDK_DISABLED: "true"
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
   secretEnv:
@@ -57,11 +72,13 @@ athlete:
   ingress:
     paths: [/api/athlete]
     health: {enabled: true, prefix: /api/athlete}
-  # athlete-service does not depend on quarkus-smallrye-health yet (no /q/health) -> TCP probes until it does
-  # (WP16 open point; then remove this block).
-  probes: {mode: tcp}
   env:
     ATHLETE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
+    # Browser origin allowed by the services' CORS filter (same-origin through the ingress needs none; keep it
+    # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
+    # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
+    HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
+    QUARKUS_OTEL_SDK_DISABLED: "true"
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
   secretEnv:
@@ -71,3 +88,8 @@ athlete:
 
 web:
   enabled: true
+
+# Local SMTP sink named `mailhog` (the realm's SMTP host). Enabled in values-kind.yaml only.
+mailpit:
+  enabled: false
+  image: {repository: docker.io/axllent/mailpit, tag: v1.32.0}

@@ -51,6 +51,13 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- WP17: CVE-2026-102554 (HIGH) in guava 33.6.0-jre from the Quarkus BOM; managed before the BOM so it wins.
+           Drop when the Quarkus platform ships >= 33.7.2. -->
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>33.7.2-jre</version>
+      </dependency>
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>${quarkus.platform.artifact-id}</artifactId>

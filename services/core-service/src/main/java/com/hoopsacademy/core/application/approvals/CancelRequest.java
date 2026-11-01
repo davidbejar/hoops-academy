@@ -24,15 +24,17 @@ public class CancelRequest {
     private final PlayerRepository players;
     private final ApprovalViews views;
     private final PlayerAccess access;
+    private final ApprovalOutbox events;
     private final Clock clock;
 
     CancelRequest(ApprovalQueries queries, DecideRequest decisions, PlayerRepository players, ApprovalViews views,
-            PlayerAccess access, Clock clock) {
+            PlayerAccess access, ApprovalOutbox events, Clock clock) {
         this.queries = queries;
         this.decisions = decisions;
         this.players = players;
         this.views = views;
         this.access = access;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -43,6 +45,7 @@ public class CancelRequest {
         if (decided.action() == ApprovalAction.ADD_PLAYER) {
             players.updateStatus(decided.player(), PlayerStatus.WITHDRAWN);
         }
+        events.cancelled(decided);
         return views.of(decided);
     }
 }

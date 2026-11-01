@@ -1,7 +1,7 @@
 {{- $sql := .Files.Get "files/01_roles_schemas.sql" -}}
-{{- if not $sql }}{{ fail "files/01_roles_schemas.sql missing (symlink to infra/db/init/01_roles_schemas.sql)" }}{{ end -}}
+{{- if not $sql }}{{ fail "files/01_roles_schemas.sql missing (run scripts/sync-chart-files.sh)" }}{{ end -}}
 {{- with .Values.hoopsDb }}
-# infra/db/init/01_roles_schemas.sql (symlinked into the chart). Delivered as a ConfigMap reference, NOT inline
+# infra/db/init/01_roles_schemas.sql (copied into the chart by scripts/sync-chart-files.sh). Delivered as a ConfigMap reference, NOT inline
 # postInitApplicationSQL: CNPG hands inline queries to the initdb Pod as container args, where Kubernetes $(VAR)
 # expansion turns the `$$` of plpgsql bodies into `$` (observed: syntax error at or near "$").
 apiVersion: v1

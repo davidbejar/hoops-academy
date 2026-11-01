@@ -19,6 +19,11 @@ spec:
         {{- include "hoops-service.labels" . | nindent 8 }}
       annotations:
         checksum/env: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.metrics.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/path: {{ .Values.metrics.path | quote }}
+        prometheus.io/port: {{ .Values.port | quote }}
+        {{- end }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

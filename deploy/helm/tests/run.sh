@@ -2,8 +2,8 @@
 # Helm chart tests (WP16): lint, golden snapshots, schema validation, policy assertions, secret scan.
 #   deploy/helm/tests/run.sh            verify
 #   deploy/helm/tests/run.sh --update   re-record snapshots after an intended change (review the diff!)
-# Snapshots include infra/keycloak/realm-academy.json and infra/db/init/01_roles_schemas.sql (symlinked into the
-# charts), so a change there shows up here on purpose.
+# Snapshots include infra/keycloak/realm-academy.json and infra/db/init/01_roles_schemas.sql (copied into the charts
+# by scripts/sync-chart-files.sh; a stale copy fails the drift check), so a change there shows up here on purpose.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 CHART=deploy/helm/hoops
@@ -13,7 +13,11 @@ WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
 fail=0
 ok()  { printf '  ok   %s\n' "$*"; }
 bad() { printf '  FAIL %s\n' "$*"; fail=1; }
-quiet_helm() { helm "$@" 2> >(grep -v 'found symbolic link' >&2); }
+quiet_helm() { helm "$@"; }
+
+echo "== chart file copies (no symlinks, identical to their sources)"
+if scripts/sync-chart-files.sh --check; then ok "realm JSON + init SQL copies in sync"
+else bad "chart copies drifted: run scripts/sync-chart-files.sh"; fi
 
 echo "== helm lint"
 for c in "$CHART" "$CHART"/charts/*/; do
@@ -62,6 +66,28 @@ grep -q 'value: "http://localhost:8090/auth"' "$R" && ok "Keycloak hostname = in
 grep -B2 -A6 'path: /internal' "$R" | grep -q 'name: web' && ok "/internal routed to the web 403 location" || bad "/internal route"
 ! grep -q 'localhost:8080' "$R" && ok "no compose URL (localhost:8080) left in the realm" || bad "realm still references localhost:8080"
 grep -q 'name: hoops-db-core-app' "$R" && grep -q 'postInitApplicationSQLRefs' "$R" && ok "CNPG managed roles + postInitApplicationSQLRefs" || bad CNPG
+# WP17 hardening
+doc() { # print the YAML document containing "name: $1" (first match) of kind $2
+  awk -v n="  name: $1" -v k="kind: $2" 'BEGIN{RS="\n---\n"} index($0,k) && index($0,n"\n") {print; exit}' "$R"; }
+doc keycloak-admin-deny Ingress | grep -q 'path: /auth/admin' && doc keycloak-admin-deny Ingress | grep -q 'path: /auth/realms/master' \
+  && doc keycloak-admin-deny Ingress | grep -q 'name: web' && ok "/auth/admin + master realm routed to the web 403 location" || bad "admin console deny route"
+# every Ingress that routes /auth/admin or the master realm must send it to the web 403 location, never to Keycloak
+[ -z "$(awk 'BEGIN{RS="\n---\n"} /kind: Ingress/ && /path: \/auth\/(admin|realms\/master)/' "$R" | grep -A2 'service:' | grep -E '^ +name:' | grep -v 'name: web$')" ] \
+  && ok "no Ingress proxies /auth/admin or the master realm to Keycloak" || bad "/auth/admin exposed"
+doc keycloak-ratelimited Ingress | grep -q 'limit-rpm: "60"' && doc keycloak-ratelimited Ingress | grep -q 'path: /auth/realms/academy/protocol/openid-connect/token' \
+  && ok "token endpoint + login form rate-limited (limit-rpm)" || bad "keycloak rate limit"
+doc game-service-events-batch Ingress | grep -q 'limit-rpm: "120"' && doc game-service-events-batch Ingress | grep -q 'path: "\?/api/game/matches/\[^/\]+/events:batch' \
+  && ! doc game-service-events-batch Ingress | grep -q rewrite-target && ok "events:batch rate-limited, colon path not rewritten" || bad "events:batch rate limit"
+for s in core game athlete; do
+  d=$(doc "$s-service" Deployment)
+  echo "$d" | grep -q 'path: /q/health/ready' && ! echo "$d" | grep -q tcpSocket && echo "$d" | grep -q 'prometheus.io/scrape: "true"' \
+    && ok "$s-service: http health probes, metrics annotations" || bad "$s-service probes/metrics"
+  doc "$s-service-env" ConfigMap | grep -q 'HOOPS_CORS_ORIGINS: "http://localhost:8090"' && ok "$s-service CORS allow-list = public URL" || bad "$s-service CORS env"
+done
+! grep -q 'localhost:5173' "$R" && ok "Flutter dev-server origin rewritten out of the cluster realm" || bad "realm still allows localhost:5173"
+grep -q '"passwordPolicy": "length(12)' "$R" && grep -q '"bruteForceProtected": true' "$R" && ok "realm: password policy + brute-force protection" || bad "realm hardening"
+doc mailhog Service | grep -q 'port: 1025' && ok "kind: SMTP sink Service mailhog:1025 (realm smtpServer)" || bad "mailhog in kind"
+! grep -q 'name: mailhog' "$WORK/umbrella-default.yaml" && ok "SMTP sink disabled outside kind" || bad "mailpit enabled by default"
 
 echo "== gitleaks (rendered manifests)"
 if command -v gitleaks >/dev/null; then

@@ -127,6 +127,63 @@ spec:
                 name: {{ $fullname }}
                 port: {name: http}
 {{- end }}
+{{- if and .Values.ingress.enabled .Values.ingress.rateLimit.enabled }}
+---
+# Rate-limited auth endpoints (regex paths; ingress-nginx limits are per Ingress object, per client IP).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-ratelimited
+  labels:
+    {{- include "keycloak.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/limit-rpm: {{ .Values.ingress.rateLimit.rpm | quote }}
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: {{ .Values.ingress.rateLimit.burstMultiplier | quote }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - {{- with .Values.ingress.host }}
+      host: {{ . | quote }}
+      {{- end }}
+      http:
+        paths:
+          {{- range .Values.ingress.rateLimit.paths }}
+          - path: {{ . }}
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ $fullname }}
+                port: {name: http}
+          {{- end }}
+{{- end }}
+{{- if and .Values.ingress.enabled (not .Values.exposeAdminConsole) }}
+---
+# Admin console, Admin REST API and master realm -> the web nginx's 403 location (never proxied to Keycloak).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-admin-deny
+  labels:
+    {{- include "keycloak.labels" . | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - {{- with .Values.ingress.host }}
+      host: {{ . | quote }}
+      {{- end }}
+      http:
+        paths:
+          {{- range .Values.adminDenyPaths }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $.Values.denyBackend.service }}
+                port: {name: {{ $.Values.denyBackend.port }}}
+          {{- end }}
+{{- end }}
 {{- if .Values.networkPolicy.enabled }}
 ---
 # The management port (9000, health) is reachable only by the kubelet (probes are not subject to policies).

@@ -1,5 +1,7 @@
 package com.hoopsacademy.core.application.approvals;
 
+import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.port.OutboxEvent;
 import com.hoopsacademy.core.application.port.OutboxWriter;
@@ -8,16 +10,27 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.HashMap;
 import java.util.Map;
 
-/** The integration events of the player lifecycle: player.requested / approved / rejected / withdrawn. */
+/**
+ * The integration events of the player lifecycle (player.requested / approved / rejected / withdrawn) — each also
+ * recorded in the audit trail with the same action name. Notes are free text and stay out of both.
+ */
 @ApplicationScoped
 public class ApprovalOutbox {
 
     private final TenantContext tenantContext;
     private final OutboxWriter outbox;
+    private final AuditLog audit;
 
-    public ApprovalOutbox(TenantContext tenantContext, OutboxWriter outbox) {
+    public ApprovalOutbox(TenantContext tenantContext, OutboxWriter outbox, AuditLog audit) {
         this.tenantContext = tenantContext;
         this.outbox = outbox;
+        this.audit = audit;
+    }
+
+    /** A requester withdrew their own PENDING request (audit only, no integration event). */
+    public void cancelled(ApprovalRequest request) {
+        audit.record(AuditEvent.of("approval.cancelled", "approval_request", request.id().value(), Map.of(
+                "action", request.action().name(), "playerId", request.player().value().toString())));
     }
 
     public void requested(ApprovalRequest request) {
@@ -49,5 +62,6 @@ public class ApprovalOutbox {
         }
         outbox.write(new OutboxEvent(tenantContext.requireTenantId(), type, "player",
                 request.player().value().toString(), payload));
+        audit.record(AuditEvent.of(type, "player", request.player().value(), payload));
     }
 }

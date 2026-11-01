@@ -25,6 +25,13 @@ ingress:
   health:
     enabled: false
     prefix: ""
+  # Extra rate-limited Ingresses: [{name, path (regex), rpm, burstMultiplier (default 5)}].
+  rateLimits: []
+
+# Prometheus scrape annotations on the pod (/q/metrics on the service port; never routed by the ingress).
+metrics:
+  enabled: true
+  path: /q/metrics
 
 probes:
   # http = SmallRye Health endpoints (needs quarkus-smallrye-health); tcp = port check only (fallback).

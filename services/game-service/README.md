@@ -51,6 +51,17 @@ member" are not cached; 404 -> `NotFoundException`, timeout / connection error /
 `RosterAuthzResolver` (`@DefaultBean` for the common tenant filter; SUSPENDED / WITHDRAWN tenant -> no membership, 404).
 `RestRosterPort` implements game's `RosterPort{teamRoster, players}` by mapping the shared client's DTOs.
 
+## Operations (WP17)
+- `/q/health/live`, `/q/health/ready` (datasource check + `core-service` indicator), `/q/health/started`
+  (`quarkus-smallrye-health`). The core indicator (`adapters.out.client.CoreReachabilityCheck`) is always UP and only
+  reports `data.core = reachable|unreachable` from core's `/q/health/live` (timeout `hoops.core.health-timeout`, 1 s;
+  cached `hoops.core.health-cache-ttl`, 10 s): a core outage must not take this service out of rotation, requests
+  answer 503 Problems on their own. Helm probes use the http paths.
+- `/q/metrics` (Prometheus), OpenTelemetry (SDK off unless `QUARKUS_OTEL_SDK_DISABLED=false`), JSON logs in prod with
+  `tenantId`/`traceId` MDC, security headers, CORS allow-list and the 2 MB body limit come from common-quarkus defaults.
+- Credentials have no fallback values: `*_PASSWORD` / `*_CLIENT_SECRET` must be set in the environment (a missing
+  variable fails the start; `NoBuiltInCredentialsTest`).
+
 ## Configuration
 | Key / env | Default | |
 |---|---|---|

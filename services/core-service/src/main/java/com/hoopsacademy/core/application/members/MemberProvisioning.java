@@ -1,5 +1,7 @@
 package com.hoopsacademy.core.application.members;
 
+import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.authz.AuthzCache;
@@ -36,10 +38,11 @@ public class MemberProvisioning {
     private final OutboxWriter outbox;
     private final IdentityProviderPort identityProvider;
     private final AuthzCache authzCache;
+    private final AuditLog audit;
 
     public MemberProvisioning(TenantContext tenantContext, PersonRepository persons, PlayerRepository players,
             AppUserRepository appUsers, MembershipRepository memberships, OutboxWriter outbox,
-            IdentityProviderPort identityProvider, AuthzCache authzCache) {
+            IdentityProviderPort identityProvider, AuthzCache authzCache, AuditLog audit) {
         this.tenantContext = tenantContext;
         this.persons = persons;
         this.players = players;
@@ -48,6 +51,7 @@ public class MemberProvisioning {
         this.outbox = outbox;
         this.identityProvider = identityProvider;
         this.authzCache = authzCache;
+        this.audit = audit;
     }
 
     /** Fails fast (before any identity-provider call) when the e-mail already belongs to a member. */
@@ -72,9 +76,27 @@ public class MemberProvisioning {
                 Map.of("personId", person.id().value().toString(), "roles", person.roles().stream().map(Enum::name).sorted().toList(),
                         "login", login.isPresent())));
         authzCache.invalidate(tenantContext.requireTenantId());
+        audit.record(AuditEvent.of("member.invited", "person", person.id().value(), Map.of(
+                "roles", person.roles().stream().map(Enum::name).sorted().toList(), "login", login.isPresent())));
+        sendSetupEmail(login);
+        return person;
+    }
+
+    /** The last step of a provisioning transaction: the setup e-mail for a login this request created. */
+    public void sendSetupEmail(Optional<ProvisionedIdentity> login) {
         login.filter(ProvisionedIdentity::created)
                 .ifPresent(identity -> identityProvider.sendAccountSetupEmail(identity.subject()));
-        return person;
+    }
+
+    /** Links {@code identity} to the draft (409 when that login is already a member) and indexes the membership. */
+    public Person attachLogin(Person draft, ProvisionedIdentity identity) {
+        Person linked = linkLogin(draft, identity);
+        return linked;
+    }
+
+    /** Registers the membership index row of a login linked by {@link #attachLogin} (after the person insert). */
+    public void indexMembership(ProvisionedIdentity identity, Person person) {
+        memberships.register(identity.subject(), person.id());
     }
 
     private Person linkLogin(Person draft, ProvisionedIdentity identity) {

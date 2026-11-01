@@ -1,5 +1,9 @@
 package com.hoopsacademy.core.application.tenant;
 
+import java.util.Map;
+import com.hoopsacademy.common.tenancy.TenantContext;
+import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.application.port.TenantSettingsRepository;
 import com.hoopsacademy.core.domain.tenant.TenantSettings;
@@ -13,10 +17,15 @@ public class TenantSettingsService {
 
     private final TenantSettingsRepository settings;
     private final Instance<TenantSettingsListener> listeners;
+    private final AuditLog audit;
+    private final TenantContext tenantContext;
 
-    public TenantSettingsService(TenantSettingsRepository settings, Instance<TenantSettingsListener> listeners) {
+    public TenantSettingsService(TenantSettingsRepository settings, Instance<TenantSettingsListener> listeners,
+            AuditLog audit, TenantContext tenantContext) {
         this.settings = settings;
         this.listeners = listeners;
+        this.audit = audit;
+        this.tenantContext = tenantContext;
     }
 
     @Transactional
@@ -31,6 +40,8 @@ public class TenantSettingsService {
         if (before.eligibilityRulesDifferFrom(next)) {
             listeners.forEach(listener -> listener.onEligibilityRulesChanged(before, next));
         }
+        audit.record(AuditEvent.of("tenant.settings_changed", "tenant", tenantContext.requireTenantId(),
+                Map.of("eligibilityRulesChanged", before.eligibilityRulesDifferFrom(next))));
         return next;
     }
 }

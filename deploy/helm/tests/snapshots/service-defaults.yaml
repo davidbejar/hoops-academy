@@ -104,6 +104,9 @@ spec:
         helm.sh/chart: hoops-service-0.1.0
       annotations:
         checksum/env: 00b5a13fbe604713f14c04895cd21c97df7754d86571d44b03f35b4d644f6081
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/q/metrics"
+        prometheus.io/port: "8080"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false

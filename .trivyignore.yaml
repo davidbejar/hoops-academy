@@ -1,0 +1,11 @@
+# Accepted Trivy findings (trivy fs/config --ignorefile .trivyignore.yaml). Each entry: why, and until when.
+misconfigurations:
+  - id: KSV-0014
+    paths:
+      - "**/helm/tests/snapshots/umbrella-default.yaml"
+      - "**/helm/tests/snapshots/umbrella-kind.yaml"
+    statement: >-
+      Keycloak only: `start` (non-optimized) re-augments into /opt/keycloak/lib at boot, so its root FS must be
+      writable (WP16). Every other container is read-only, enforced by deploy/helm/tests/run.sh
+      ("readOnlyRootFilesystem (all but keycloak)"). Fix: pre-built `kc.sh build` image + `start --optimized`.
+    expired_at: 2027-03-31

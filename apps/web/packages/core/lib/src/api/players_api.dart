@@ -28,7 +28,7 @@ class PlayersApi {
   const PlayersApi(this._dio, this._serializers);
 
   /// Add a player (ADMIN directly, COACH via approval request)
-  /// ADMIN: the player is created ACTIVE (and assigned to &#x60;teamId&#x60; if given, eligibility-checked → 422), an auto-approved audit request is recorded; answers **201**. COACH without ADMIN: the player is created PENDING_APPROVAL with a PENDING ADD_PLAYER request; answers **202**. Assistant coaches cannot add (403). Entitlement-checked (billing seam). Authz: ADMIN; COACH (for own teams). 
+  /// ADMIN: the player is created ACTIVE (and assigned to &#x60;teamId&#x60; if given, eligibility-checked → 422), an auto-approved audit request is recorded; answers **201**. COACH without ADMIN: the player is created PENDING_APPROVAL with a PENDING ADD_PLAYER request; answers **202**. Assistant coaches cannot add (403). Entitlement-checked (billing seam). Authz: ADMIN; COACH (for own teams). With an &#x60;email&#x60; the ADMIN-added player gets a login (Keycloak user + setup e-mail, as &#x60;inviteMember&#x60;; 502 when Keycloak fails — nothing is created); a COACH-requested player gets it when the request is approved. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

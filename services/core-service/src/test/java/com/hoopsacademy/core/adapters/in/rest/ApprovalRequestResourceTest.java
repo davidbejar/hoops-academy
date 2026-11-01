@@ -1,5 +1,8 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
+import com.hoopsacademy.core.testsupport.KeycloakStubs;
+import com.hoopsacademy.core.testsupport.InjectWireMock;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -62,6 +65,9 @@ class ApprovalRequestResourceTest {
     @Inject
     ApprovalRepository repository;
 
+    @InjectWireMock
+    WireMockServer keycloak;
+
     private String tenant;
     private Approvals api;
     private UUID season;
@@ -72,6 +78,7 @@ class ApprovalRequestResourceTest {
 
     @BeforeEach
     void anAcademyWithAnU12TeamAndItsCoach() {
+        KeycloakStubs.installDefaults(keycloak);
         tenant = Members.newTenant();
         api = new Approvals(tenant);
         season = RosterDb.currentSeason(tenant);
@@ -122,6 +129,62 @@ class ApprovalRequestResourceTest {
                 .body("teams[0].jerseyNumber", equalTo("4"));
         assertThat(api.outbox("player.approved")).isEqualTo(1);
         api.getRequest(ids[1]).statusCode(200).body("status", equalTo("APPROVED"));
+        assertThat(CoreDb.auditActions(tenant)).containsExactly("player.requested", "player.approved");
+        assertThat(CoreDb.auditRow(tenant, "player.approved")).containsEntry("targetType", "player")
+                .containsEntry("targetId", ids[0].toString())
+                .containsEntry("actorPersonId", admin.toString());
+        keycloak.verify(0, KeycloakStubs.userCreated());
+    }
+
+    @Test
+    void approvingTheAddOfAPlayerWithAnEmailInvitesTheirLogin() {
+        String sub = UUID.randomUUID().toString();
+        KeycloakStubs.createdUserGets(keycloak, sub);
+        signInCoach();
+        var response = api.create(Approvals.playerJson("Eva", "FEMALE", 11, ",\"email\":\"eva@example.org\""))
+                .statusCode(202);
+        UUID player = UUID.fromString(response.extract().path("player.id"));
+        UUID request = UUID.fromString(response.extract().path("approvalRequest.id"));
+        keycloak.verify(0, KeycloakStubs.userCreated());
+        signInAdmin();
+
+        api.decide(request, "approve", null).statusCode(200).body("status", equalTo("APPROVED"));
+
+        keycloak.verify(1, KeycloakStubs.userCreated());
+        keycloak.verify(1, KeycloakStubs.setupEmailSent(sub));
+        assertThat(CoreDb.count(tenant, "select count(*) from core.player p join core.person s on s.id = p.person_id "
+                + "join core.app_user u on u.id = s.user_id where p.id = ? and u.keycloak_sub = ? "
+                + "and s.invitation_status = 'PENDING'", player, sub)).isEqualTo(1);
+        assertThat(CoreDb.count(tenant, "select count(*) from core.user_membership_index where keycloak_sub = ?", sub))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void aFailingInvitationKeepsTheAddPendingAndRemovesTheNewLogin() {
+        String sub = UUID.randomUUID().toString();
+        KeycloakStubs.createdUserGets(keycloak, sub);
+        KeycloakStubs.setupEmailFails(keycloak);
+        signInCoach();
+        var response = api.create(Approvals.playerJson("Eva", "FEMALE", 11, ",\"email\":\"eva2@example.org\""))
+                .statusCode(202);
+        UUID request = UUID.fromString(response.extract().path("approvalRequest.id"));
+        signInAdmin();
+
+        api.decide(request, "approve", null).statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
+
+        api.getRequest(request).body("status", equalTo("PENDING"));
+        keycloak.verify(1, KeycloakStubs.userDeleted(sub));
+        assertThat(CoreDb.auditActions(tenant)).containsExactly("player.requested");
+    }
+
+    @Test
+    void rejectingTheAddOfAPlayerWithAnEmailNeverTouchesKeycloak() {
+        signInCoach();
+        UUID request = UUID.fromString(api.create(Approvals.playerJson("Eva", "FEMALE", 11,
+                ",\"email\":\"eva3@example.org\"")).statusCode(202).extract().path("approvalRequest.id"));
+        signInAdmin();
+        api.decide(request, "reject", "no").statusCode(200);
+        keycloak.verify(0, KeycloakStubs.userCreated());
     }
 
     @Test
@@ -160,6 +223,8 @@ class ApprovalRequestResourceTest {
         api.getPlayer(ids[0]).body("status", equalTo("REJECTED")).body("teams", empty());
         assertThat(api.outbox("player.rejected")).isEqualTo(1);
         assertThat(RosterDb.playerStatus(tenant, ids[0])).isEqualTo("REJECTED");
+        assertThat(CoreDb.auditRow(tenant, "player.rejected").get("metadata")).contains("ADD_PLAYER")
+                .doesNotContain("no capacity");
     }
 
     @Test
@@ -213,6 +278,8 @@ class ApprovalRequestResourceTest {
 
         api.cancel(ids[1]).statusCode(200).body("status", equalTo("CANCELLED"))
                 .body("decidedBy.personId", equalTo(coach.toString()));
+        assertThat(CoreDb.auditRow(tenant, "approval.cancelled")).containsEntry("actorPersonId", coach.toString())
+                .containsEntry("targetType", "approval_request").containsEntry("targetId", ids[1].toString());
 
         api.getPlayer(ids[0]).body("status", equalTo("WITHDRAWN"));
         signInAdmin();

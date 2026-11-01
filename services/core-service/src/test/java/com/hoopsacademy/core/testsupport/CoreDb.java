@@ -147,6 +147,44 @@ public final class CoreDb {
         });
     }
 
+    /** The audit actions of {@code tenant} in insertion order (core.audit_event, ADR-0017). */
+    public static java.util.List<String> auditActions(String tenant) {
+        return inTenant(tenant, c -> {
+            java.util.List<String> actions = new java.util.ArrayList<>();
+            try (PreparedStatement statement = c.prepareStatement(
+                    "select action from core.audit_event order by seq");
+                    ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    actions.add(rs.getString(1));
+                }
+            }
+            return actions;
+        });
+    }
+
+    /** The newest audit row of {@code action}: actorSub, actorPersonId, targetType, targetId, metadata (json text). */
+    public static java.util.Map<String, String> auditRow(String tenant, String action) {
+        return inTenant(tenant, c -> {
+            try (PreparedStatement statement = c.prepareStatement("select actor_sub, actor_person_id::text, "
+                    + "target_type, target_id, metadata::text from core.audit_event where action = ? "
+                    + "order by seq desc limit 1")) {
+                statement.setString(1, action);
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new AssertionError("no audit event " + action + " in tenant " + tenant);
+                    }
+                    java.util.Map<String, String> row = new java.util.HashMap<>();
+                    row.put("actorSub", rs.getString(1));
+                    row.put("actorPersonId", rs.getString(2));
+                    row.put("targetType", rs.getString(3));
+                    row.put("targetId", rs.getString(4));
+                    row.put("metadata", rs.getString(5));
+                    return row;
+                }
+            }
+        });
+    }
+
     /** Count over the tenant registry / billing tables as {@code core_platform}. */
     public static long countAsPlatform(String sql, Object... params) {
         try (Connection c = TestDatabases.openAsPlatform();

@@ -30,6 +30,14 @@ class TenantHeaderFilterTest {
     }
 
     @Test
+    @TenantUser(tenant = TENANT_A, roles = TenantRole.COACH)
+    void theBoundTenantIsInTheLoggingMdcOfTheRequest() {
+        given().header("X-Tenant-Id", TENANT_A).get("/api/probe/mdc").then()
+                .statusCode(200)
+                .body(equalTo(TENANT_A));
+    }
+
+    @Test
     @TenantUser(tenant = TENANT_A)
     void missingHeaderIsBadRequest() {
         given().get(WHOAMI).then()

@@ -124,6 +124,9 @@ class JpaPersonRepository implements PersonRepository {
     public PageResult<Person> list(MemberFilter filter, PageRequest page) {
         List<String> conditions = new ArrayList<>();
         Map<String, Object> parameters = new HashMap<>();
+        // players awaiting approval or rejected are not members yet (WP5 follow-up); they live in /approval-requests
+        conditions.add("not exists (select 1 from PlayerEntity pl where pl.personId = p.id"
+                + " and pl.status in ('PENDING_APPROVAL', 'REJECTED'))");
         filter.role().ifPresent(role -> {
             conditions.add("exists (select 1 from MembershipRoleEntity r where r.personId = p.id and r.role = :role)");
             parameters.put("role", role.name());
@@ -137,7 +140,7 @@ class JpaPersonRepository implements PersonRepository {
                     + " or lower(p.email) like :q escape '\\')");
             parameters.put("q", pattern);
         });
-        String where = conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions);
+        String where = " where " + String.join(" and ", conditions);
         TypedQuery<PersonEntity> items = em.createQuery(
                 "select p from PersonEntity p" + where + " order by lower(p.familyName), lower(p.givenName), p.id",
                 PersonEntity.class);

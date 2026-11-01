@@ -22,6 +22,9 @@ public interface TenantRepository {
 
     PageResult<Tenant> list(Optional<TenantStatus> status, Optional<String> query, PageRequest page);
 
+    /** Ids of the tenants registered in {@code [from, to)} (onboarding repair). */
+    java.util.List<TenantId> createdBetween(java.time.Instant from, java.time.Instant to);
+
     /** Compensation of a failed onboarding; impossible once the tenant's settings exist (FK). */
     void deleteUnprovisioned(TenantId id);
 }

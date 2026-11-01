@@ -91,6 +91,9 @@ class PlatformTenantResourceTest {
                 .isEqualTo(2);
         assertThat(CoreDb.countAsPlatform("select count(*) from billing.tenant_subscription where tenant_id = ?::uuid "
                 + "and plan_code = 'FREE'", id)).isEqualTo(1);
+        assertThat(CoreDb.auditActions(id)).containsExactly("tenant.created", "member.invited");
+        assertThat(CoreDb.auditRow(id, "tenant.created")).containsEntry("targetId", id)
+                .containsEntry("actorSub", "platform-admin");
     }
 
     @Test
@@ -206,6 +209,7 @@ class PlatformTenantResourceTest {
                 .body("name", equalTo("Renamed Academy"))
                 .body("defaultLocale", equalTo("id"))
                 .body("timezone", equalTo("Europe/Madrid"));
+        assertThat(CoreDb.auditRow(id, "tenant.master_data_changed").get("metadata")).contains("name", "defaultLocale");
         given().filter(Contract.CORE).get(TENANTS + "/" + UUID.randomUUID()).then().statusCode(404);
     }
 
@@ -230,6 +234,9 @@ class PlatformTenantResourceTest {
 
         assertThat(CoreDb.count(id, "select count(*) from core.outbox where event_type in "
                 + "('tenant.suspended', 'tenant.reactivated', 'tenant.withdrawn')")).isEqualTo(3);
+        assertThat(CoreDb.auditActions(id)).as("failed transitions are not audited")
+                .endsWith("tenant.suspended", "tenant.reactivated", "tenant.withdrawn");
+        assertThat(CoreDb.auditRow(id, "tenant.suspended").get("metadata")).contains("unpaid invoice");
     }
 
     @Test

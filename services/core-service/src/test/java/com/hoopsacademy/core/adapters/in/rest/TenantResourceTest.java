@@ -11,6 +11,7 @@ import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
+import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RecordingSettingsListener;
 import com.hoopsacademy.core.testsupport.WireMockResource;
@@ -70,6 +71,8 @@ class TenantResourceTest {
                 .body("timezone", equalTo("Asia/Jakarta"))
                 .body("defaultLocale", equalTo("id"))
                 .body("contactEmail", equalTo("info@example.com"));
+        assertThat(CoreDb.auditRow(tenant, "tenant.profile_changed").get("metadata"))
+                .contains("name", "timezone", "contactEmail").doesNotContain("info@example.com");
         patchProfile("{\"contactEmail\":null}").statusCode(200)
                 .body("contactEmail", nullValue())
                 .body("websiteUrl", equalTo("https://hoops.example.com"))
@@ -99,6 +102,7 @@ class TenantResourceTest {
         putSettings("{\"ageRule\":\"BIRTH_YEAR\",\"maxPlayUpLevels\":null,\"attendanceLateThresholdMinutes\":15}")
                 .statusCode(200).body("attendanceLateThresholdMinutes", equalTo(15));
         assertThat(settingsListener.calls()).isEqualTo(before);
+        assertThat(CoreDb.auditActions(tenant)).containsOnlyOnce("tenant.settings_changed");
         putSettings("{\"ageRule\":\"BIRTHDAY\",\"maxPlayUpLevels\":1}")
                 .statusCode(200).body("ageRule", equalTo("BIRTHDAY")).body("maxPlayUpLevels", equalTo(1))
                 .body("attendanceLateThresholdMinutes", equalTo(10));

@@ -55,3 +55,35 @@ spec:
                 name: {{ $fullname }}
                 port: {name: http}
 {{- end }}
+{{- if .Values.ingress.enabled }}
+{{- $root := . }}
+{{- range .Values.ingress.rateLimits }}
+---
+# Rate-limited path (ingress-nginx per-IP limit; a separate Ingress because limits apply per Ingress object).
+# The regex path is matched against the request URI; no rewrite, so the colon of ":batch" reaches the service as-is.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ printf "%s-%s" (include "hoops-service.fullname" $root) .name }}
+  labels:
+    {{- include "hoops-service.labels" $root | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/limit-rpm: {{ required "ingress.rateLimits[].rpm is required" .rpm | quote }}
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: {{ default 5 .burstMultiplier | quote }}
+spec:
+  ingressClassName: {{ $root.Values.ingress.className }}
+  rules:
+    - {{- with $root.Values.ingress.host }}
+      host: {{ . | quote }}
+      {{- end }}
+      http:
+        paths:
+          - path: {{ required "ingress.rateLimits[].path is required" .path }}
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ include "hoops-service.fullname" $root }}
+                port: {name: http}
+{{- end }}
+{{- end }}

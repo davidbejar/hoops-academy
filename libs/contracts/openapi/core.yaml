@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 2.0.0
+  version: 2.1.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -1191,6 +1191,8 @@ paths:
         auto-approved audit request is recorded; answers **201**. COACH without ADMIN: the player is created
         PENDING_APPROVAL with a PENDING ADD_PLAYER request; answers **202**. Assistant coaches cannot add (403).
         Entitlement-checked (billing seam). Authz: ADMIN; COACH (for own teams).
+        With an `email` the ADMIN-added player gets a login (Keycloak user + setup e-mail, as `inviteMember`; 502
+        when Keycloak fails — nothing is created); a COACH-requested player gets it when the request is approved.
       requestBody:
         required: true
         content:
@@ -1213,6 +1215,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /api/core/players/{playerId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -1369,6 +1372,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /api/core/approval-requests/{approvalRequestId}/reject:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'

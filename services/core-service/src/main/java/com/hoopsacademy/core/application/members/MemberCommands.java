@@ -1,5 +1,8 @@
 package com.hoopsacademy.core.application.members;
 
+import com.hoopsacademy.core.application.shared.ChangedFields;
+import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -32,11 +35,12 @@ public class MemberCommands {
     private final MemberQueries queries;
     private final OutboxWriter outbox;
     private final AuthzCache authzCache;
+    private final AuditLog audit;
     private final Clock clock;
 
     public MemberCommands(TenantContext tenantContext, PersonRepository persons, PlayerRepository players,
             MembershipRepository memberships, MemberQueries queries, OutboxWriter outbox, AuthzCache authzCache,
-            Clock clock) {
+            AuditLog audit, Clock clock) {
         this.tenantContext = tenantContext;
         this.persons = persons;
         this.players = players;
@@ -44,6 +48,7 @@ public class MemberCommands {
         this.queries = queries;
         this.outbox = outbox;
         this.authzCache = authzCache;
+        this.audit = audit;
         this.clock = clock;
     }
 
@@ -55,6 +60,11 @@ public class MemberCommands {
             throw new ConflictException("A member with this e-mail already exists", "EMAIL_TAKEN");
         }
         persons.update(changed);
+        audit.record(AuditEvent.of("member.updated", "person", id.value(), Map.of("fields", new ChangedFields()
+                .field("givenName", changes.givenName()).field("familyName", changes.familyName())
+                .field("email", changes.email()).field("phone", changes.phone())
+                .field("birthDate", changes.birthDate()).field("gender", changes.gender())
+                .field("locale", changes.locale()).names())));
         return queries.view(changed);
     }
 
@@ -70,6 +80,8 @@ public class MemberCommands {
             players.create(id, PlayerStatus.ACTIVE);
         }
         membershipChanged(changed, "ROLES_REPLACED");
+        audit.record(AuditEvent.of("member.roles_replaced", "person", id.value(), Map.of(
+                "before", roleNames(current), "after", roleNames(changed))));
         return queries.view(changed);
     }
 
@@ -84,7 +96,12 @@ public class MemberCommands {
         persons.update(changed);
         memberships.unregister(id);
         membershipChanged(changed, "DEACTIVATED");
+        audit.record(AuditEvent.of("member.deactivated", "person", id.value(), Map.of("roles", roleNames(changed))));
         return queries.view(changed);
+    }
+
+    private static java.util.List<String> roleNames(Person person) {
+        return person.roles().stream().map(Enum::name).sorted().toList();
     }
 
     private void membershipChanged(Person person, String change) {

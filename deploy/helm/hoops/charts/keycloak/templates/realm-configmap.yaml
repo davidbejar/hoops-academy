@@ -1,13 +1,17 @@
-{{- /* files/realm-academy.json is a symlink to infra/keycloak/realm-academy.json (single source of truth).
-       It contains only ${..._CLIENT_SECRET} placeholders, never secret values. */ -}}
+{{- /* files/realm-academy.json is a copy of infra/keycloak/realm-academy.json (single source of truth), kept in sync
+       by scripts/sync-chart-files.sh (drift checked by the chart tests). It contains only ${..._CLIENT_SECRET}
+       placeholders, never secret values. */ -}}
 {{- $realm := .Files.Get "files/realm-academy.json" -}}
-{{- if not $realm }}{{ fail "files/realm-academy.json missing (symlink to infra/keycloak/realm-academy.json)" }}{{ end -}}
+{{- if not $realm }}{{ fail "files/realm-academy.json missing (run scripts/sync-chart-files.sh)" }}{{ end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "keycloak.fullname" . }}-realm
   labels:
     {{- include "keycloak.labels" . | nindent 4 }}
+{{- $realm = replace .Values.realmSourceUrl .Values.publicUrl $realm -}}
+{{- /* The Flutter dev server origin (redirect URI, post-logout URI, web origin) only exists for the compose stack. */ -}}
+{{- if not .Values.allowDevServer }}{{ $realm = replace .Values.devServerUrl .Values.publicUrl $realm }}{{ end }}
 data:
   realm-academy.json: |
-    {{- replace .Values.realmSourceUrl .Values.publicUrl $realm | nindent 4 }}
+    {{- $realm | nindent 4 }}

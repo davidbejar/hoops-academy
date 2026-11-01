@@ -1,5 +1,7 @@
 # kind (deploy/kind): ingress-nginx on host ports 8090 (http) / 8453 (https, optional self-signed).
 # Keep requests small: the Podman machine is 2 CPU / 8 GiB and also runs the compose stack.
+global:
+  publicUrl: http://localhost:8090
 keycloak:
   publicUrl: http://localhost:8090
   resources:
@@ -14,3 +16,6 @@ athlete:
 databases:
   hoopsDb:
     storage: {size: 2Gi}
+# Invitation / password-setup e-mails need an SMTP server (core rolls an invite back when the e-mail fails).
+mailpit:
+  enabled: true

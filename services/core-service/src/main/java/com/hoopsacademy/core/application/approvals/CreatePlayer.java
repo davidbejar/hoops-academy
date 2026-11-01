@@ -21,6 +21,9 @@ import com.hoopsacademy.core.domain.roster.TeamId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
+import com.hoopsacademy.core.application.members.MemberProvisioning;
+import com.hoopsacademy.core.application.port.NewIdentity;
+import com.hoopsacademy.core.application.port.ProvisionedIdentity;
 import java.util.Optional;
 
 /**
@@ -43,11 +46,13 @@ public class CreatePlayer {
     private final ApprovalViews approvalViews;
     private final PlayerViews playerViews;
     private final PlayerRepository players;
+    private final PlayerLogin playerLogin;
+    private final MemberProvisioning provisioning;
     private final Clock clock;
 
     public CreatePlayer(PlayerAccess access, RosterAuthz rosterAuthz, TeamRepository teams, PlayerLifecycle lifecycle,
             ApprovalRepository approvals, ApprovalOutbox outbox, ApprovalViews approvalViews, PlayerViews playerViews,
-            PlayerRepository players, Clock clock) {
+            PlayerRepository players, PlayerLogin playerLogin, MemberProvisioning provisioning, Clock clock) {
         this.access = access;
         this.rosterAuthz = rosterAuthz;
         this.teams = teams;
@@ -57,13 +62,27 @@ public class CreatePlayer {
         this.approvalViews = approvalViews;
         this.playerViews = playerViews;
         this.players = players;
+        this.playerLogin = playerLogin;
+        this.provisioning = provisioning;
         this.clock = clock;
     }
 
-    @Transactional
+    /**
+     * An ADMIN-added player with an e-mail gets a login right away (saga: Keycloak, then the transaction); a requested
+     * player gets it on approval ({@link ApproveRequest}).
+     */
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
     public PlayerCommandResult handle(Command command) {
         boolean needsApproval = ApprovalPolicy.requiresApproval(access.roles(), ApprovalAction.ADD_PLAYER);
+        Optional<NewIdentity> identity = needsApproval ? Optional.empty() : PlayerLogin.identityOf(command.data());
+        if (identity.isPresent()) {
+            provisioning.requireEmailAvailable(identity.get().email());
+        }
+        return playerLogin.around(identity, login -> create(command, needsApproval, login));
+    }
+
+    @Transactional
+    PlayerCommandResult create(Command command, boolean needsApproval, Optional<ProvisionedIdentity> login) {
         command.team().ifPresent(team -> {
             teams.find(team).orElseThrow(() -> new NotFoundException("Team not found"));
             rosterAuthz.requireCoachOf(team);
@@ -83,8 +102,12 @@ public class CreatePlayer {
                     clock.instant());
             approvals.insert(request);
             outbox.approved(request);
+            login.ifPresent(identity -> playerLogin.link(player, identity));
         }
-        return new PlayerCommandResult(playerViews.of(players.find(player).orElseThrow()), approvalViews.of(request));
+        PlayerCommandResult result = new PlayerCommandResult(playerViews.of(players.find(player).orElseThrow()),
+                approvalViews.of(request));
+        playerLogin.sendSetupEmail(login);
+        return result;
     }
 
     private static String blankToNull(String text) {

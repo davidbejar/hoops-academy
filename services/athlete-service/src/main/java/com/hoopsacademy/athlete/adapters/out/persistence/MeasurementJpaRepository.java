@@ -6,14 +6,19 @@ import com.hoopsacademy.athlete.domain.BodyMeasurement;
 import com.hoopsacademy.athlete.domain.BodyMeasurementId;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
+import com.hoopsacademy.common.problem.ConflictException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
 class MeasurementJpaRepository implements MeasurementRepository {
+
+    /** Postgres' name for {@code unique (tenant_id, player_id, measured_on)} in V3__health.sql. */
+    static final String ONE_PER_DAY_CONSTRAINT = "body_measurement_tenant_id_player_id_measured_on_key";
 
     private final EntityManager em;
 
@@ -40,6 +45,33 @@ class MeasurementJpaRepository implements MeasurementRepository {
         if (created) {
             em.persist(entity);
         }
+        flushGuardingTheOnePerDayRule(measurement);
+    }
+
+    /**
+     * The use case checks for a free day first, but two concurrent writes can both pass that check; the unique
+     * constraint then decides, and the loser gets the same 409 as the sequential case instead of a 500.
+     */
+    private void flushGuardingTheOnePerDayRule(BodyMeasurement measurement) {
+        try {
+            em.flush();
+        } catch (PersistenceException e) {
+            if (violates(e, ONE_PER_DAY_CONSTRAINT)) {
+                throw new ConflictException("The player already has a measurement on " + measurement.measuredOn(),
+                        "MEASUREMENT_EXISTS_FOR_DATE");
+            }
+            throw e;
+        }
+    }
+
+    private static boolean violates(Throwable e, String constraint) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause() == cause ? null : cause.getCause()) {
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException violation
+                    && constraint.equals(violation.getConstraintName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

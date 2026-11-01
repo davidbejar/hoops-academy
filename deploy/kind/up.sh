@@ -47,6 +47,9 @@ step "CloudNativePG operator $CNPG_VERSION"
 
 step "waiting for ingress-nginx and CNPG (first run pulls images; slow links take minutes)"
 "${K[@]}" -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=900s
+# rate-limited Ingresses (WP17) answer 429 instead of ingress-nginx' default 503
+"${K[@]}" -n ingress-nginx patch configmap ingress-nginx-controller --type merge \
+  -p '{"data":{"limit-req-status-code":"429","limit-conn-status-code":"429"}}'
 "${K[@]}" -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=900s
 
 step "namespace $NS + secrets from .env"
@@ -57,6 +60,7 @@ if [ "$DEPLOY" = 1 ]; then
   step "images -> kind"
   KIND_CLUSTER="$CLUSTER" scripts/build-images.sh "${BUILD_FLAGS[@]}" --kind-load
   step "helm upgrade --install hoops"
+  scripts/sync-chart-files.sh   # realm JSON + init SQL copies inside the charts (no symlinks; helm package works)
   VALUES=(-f deploy/helm/hoops/values-kind.yaml)
   [ ! -f deploy/helm/hoops/values-local.yaml ] || VALUES+=(-f deploy/helm/hoops/values-local.yaml)
   helm --kube-context "kind-$CLUSTER" upgrade --install hoops deploy/helm/hoops -n "$NS" "${VALUES[@]}" \

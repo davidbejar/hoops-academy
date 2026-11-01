@@ -8,6 +8,7 @@ public enum ProblemType {
     FORBIDDEN(403, "Forbidden", "forbidden"),
     NOT_FOUND(404, "Not Found", "not-found"),
     CONFLICT(409, "Conflict", "conflict"),
+    PAYLOAD_TOO_LARGE(413, "Payload Too Large", "payload-too-large"),
     DOMAIN_RULE_VIOLATION(422, "Domain Rule Violation", "domain-rule-violation"),
     INTERNAL_ERROR(500, "Internal Server Error", "internal-error"),
     UPSTREAM_UNAVAILABLE(503, "Service Unavailable", "upstream-unavailable");

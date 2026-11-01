@@ -17,7 +17,7 @@
   "waitIncrementSeconds": 60,
   "permanentLockout": false,
   "maxDeltaTimeSeconds": 43200,
-  "passwordPolicy": "length(12)",
+  "passwordPolicy": "length(12) and maxLength(128) and notUsername and notEmail",
   "internationalizationEnabled": true,
   "supportedLocales": [
     "en",
@@ -60,16 +60,19 @@
       "rootUrl": "http://localhost:8080",
       "baseUrl": "/",
       "redirectUris": [
-        "http://localhost:8080/*"
+        "http://localhost:8080/*",
+        "http://localhost:5173/*"
       ],
       "webOrigins": [
-        "http://localhost:8080"
+        "http://localhost:8080",
+        "http://localhost:5173"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:8080/*"
+        "post.logout.redirect.uris": "http://localhost:8080/*##http://localhost:5173/*"
       },
       "defaultClientScopes": [
+        "basic",
         "web-origins",
         "acr",
         "profile",
@@ -95,6 +98,7 @@
       "redirectUris": [],
       "webOrigins": [],
       "defaultClientScopes": [
+        "basic",
         "web-origins",
         "acr",
         "profile",
@@ -118,6 +122,7 @@
       "redirectUris": [],
       "webOrigins": [],
       "defaultClientScopes": [
+        "basic",
         "web-origins",
         "acr",
         "profile",
@@ -141,6 +146,7 @@
       "redirectUris": [],
       "webOrigins": [],
       "defaultClientScopes": [
+        "basic",
         "web-origins",
         "acr",
         "profile",

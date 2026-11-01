@@ -85,6 +85,11 @@ class MemberResourceTest {
                 .isEqualTo(1);
         assertThat(CoreDb.count(tenant, "select count(*) from core.outbox where event_type = 'member.invited'"))
                 .isEqualTo(1);
+        var audit = CoreDb.auditRow(tenant, "member.invited");
+        String personId = response.path("personId");
+        assertThat(audit).containsEntry("actorSub", TenantUser.SUBJECT).containsEntry("targetType", "person")
+                .containsEntry("targetId", personId).containsEntry("actorPersonId", Members.callerPersonId(tenant).toString());
+        assertThat(audit.get("metadata")).contains("COACH", "PARENT").doesNotContain("carla@example.com", "Carla");
     }
 
     @Test
@@ -183,6 +188,9 @@ class MemberResourceTest {
                 .body("givenName", equalTo("Leon")).body("phone", equalTo("+34 600 000 000"))
                 .body("locale", equalTo("en"));
         patch(kid, "{\"phone\":null}").statusCode(200).body("phone", nullValue()).body("givenName", equalTo("Leon"));
+        assertThat(CoreDb.auditActions(tenant)).filteredOn("member.updated"::equals).hasSize(2);
+        assertThat(CoreDb.auditRow(tenant, "member.updated").get("metadata")).contains("phone")
+                .doesNotContain("+34 600 000 000");
         patch(kid, "{\"birthDate\":null}").statusCode(422).body("code", equalTo("PLAYER_REQUIRES_BIRTH_AND_GENDER"));
         patch(kid, "{\"email\":\"ada@example.com\"}").statusCode(409).body("code", equalTo("EMAIL_TAKEN"));
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
@@ -204,6 +212,7 @@ class MemberResourceTest {
         roles(admin, "[\"COACH\"]").statusCode(200).body("roles", contains("COACH"));
         assertThat(CoreDb.count(tenant, "select count(*) from core.outbox where event_type = 'membership.changed'"))
                 .as("three successful role changes; the rejected ones rolled back").isEqualTo(3);
+        assertThat(CoreDb.auditActions(tenant)).filteredOn("member.roles_replaced"::equals).hasSize(3);
     }
 
     @Test
@@ -216,6 +225,9 @@ class MemberResourceTest {
                 .isZero();
         deactivate(admin).statusCode(409).body("code", equalTo("LAST_ADMIN"));
         member(parent).statusCode(200);
+        assertThat(CoreDb.auditActions(tenant)).as("the idempotent repeat is not audited")
+                .containsOnlyOnce("member.deactivated");
+        assertThat(CoreDb.auditRow(tenant, "member.deactivated")).containsEntry("targetId", parent.toString());
     }
 
     // ------------------------------------------------------------------ authorization
@@ -233,6 +245,26 @@ class MemberResourceTest {
         patch(coach, "{\"givenName\":\"Matrix\"}").statusCode(read);
         roles(coach, "[\"ASSISTANT_COACH\"]").statusCode(read);
         deactivate(coach).statusCode(read);
+    }
+
+    @Test
+    void pendingAndRejectedPlayersAreNotListedAsMembers() {
+        java.util.Map<String, UUID> people = new java.util.HashMap<>();
+        for (String status : java.util.List.of("ACTIVE", "PENDING_APPROVAL", "REJECTED", "WITHDRAWN")) {
+            UUID player = com.hoopsacademy.core.testsupport.RosterDb.playerAged(tenant, "P" + status, 11, "MALE");
+            CoreDb.inTenant(tenant, c -> CoreDb.update(c, "update core.player set status = ? where id = ?", status, player));
+            people.put(status, UUID.fromString(com.hoopsacademy.core.testsupport.RosterDb.text(tenant,
+                    "select person_id::text from core.player where id = ?", player)));
+        }
+
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("size", 200).get(MEMBERS).then()
+                .statusCode(200)
+                .body("items.personId", hasItems(people.get("ACTIVE").toString(), people.get("WITHDRAWN").toString()))
+                .body("items.personId", everyItem(org.hamcrest.Matchers.not(org.hamcrest.Matchers.oneOf(
+                        people.get("PENDING_APPROVAL").toString(), people.get("REJECTED").toString()))))
+                .body("page.totalElements", equalTo(3));
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("role", "PLAYER").get(MEMBERS).then()
+                .body("page.totalElements", equalTo(2));
     }
 
     @Test

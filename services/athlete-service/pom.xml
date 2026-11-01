@@ -64,6 +64,11 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-oidc-client</artifactId>
     </dependency>
+    <!-- /q/health/live|ready|started for Kubernetes probes (datasource readiness + core reachability data) -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-health</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-scheduler</artifactId>

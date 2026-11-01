@@ -9,6 +9,12 @@ import com.hoopsacademy.core.domain.approvals.ApprovalRequestId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
+import com.hoopsacademy.core.application.port.NewIdentity;
+import com.hoopsacademy.core.application.port.PersonRepository;
+import com.hoopsacademy.core.application.port.PlayerRepository;
+import com.hoopsacademy.core.application.port.ProvisionedIdentity;
+import com.hoopsacademy.core.domain.approvals.ApprovalAction;
+import com.hoopsacademy.core.domain.approvals.ApprovalStatus;
 import java.util.Optional;
 
 /**
@@ -24,21 +30,47 @@ public class ApproveRequest {
     private final ApprovalOutbox outbox;
     private final ApprovalViews views;
     private final PlayerAccess access;
+    private final PlayerLogin playerLogin;
+    private final PersonRepository persons;
+    private final PlayerRepository players;
     private final Clock clock;
 
     ApproveRequest(DecideRequest decisions, PlayerLifecycle lifecycle, ApprovalOutbox outbox, ApprovalViews views,
-            PlayerAccess access, Clock clock) {
+            PlayerAccess access, PlayerLogin playerLogin, PersonRepository persons, PlayerRepository players,
+            Clock clock) {
         this.decisions = decisions;
         this.lifecycle = lifecycle;
         this.outbox = outbox;
         this.views = views;
         this.access = access;
+        this.playerLogin = playerLogin;
+        this.persons = persons;
+        this.players = players;
         this.clock = clock;
     }
 
-    @Transactional
+    /**
+     * Approving the ADD of a player with an e-mail and no login provisions the login first (saga, see
+     * {@link PlayerLogin}); a failing invitation leaves the request PENDING.
+     */
     @RequiresTenantRole(TenantRole.ADMIN)
     public ApprovalView handle(ApprovalRequestId id, String note) {
+        return playerLogin.around(loginToInvite(id), login -> decide(id, note, login));
+    }
+
+    @Transactional
+    Optional<NewIdentity> loginToInvite(ApprovalRequestId id) {
+        ApprovalRequest request = decisions.load(id);
+        if (request.action() != ApprovalAction.ADD_PLAYER || request.status() != ApprovalStatus.PENDING) {
+            return Optional.empty();
+        }
+        return players.personOf(request.player()).flatMap(persons::find)
+                .filter(person -> person.userId() == null)
+                .flatMap(person -> PlayerLogin.identityOf(person.data()));
+    }
+
+    @Transactional
+    ApprovalView decide(ApprovalRequestId id, String note, Optional<ProvisionedIdentity> login) {
         ApprovalRequest decided = decisions.store(decisions.load(id).approve(access.person(), note, clock.instant()));
         ApprovalPayload payload = decided.payload();
         switch (decided.action()) {
@@ -46,12 +78,15 @@ public class ApproveRequest {
                 lifecycle.admit(decided.player(), Optional.ofNullable(payload.team()),
                         Optional.ofNullable(payload.jersey()));
                 outbox.approved(decided);
+                login.ifPresent(identity -> playerLogin.link(decided.player(), identity));
             }
             case WITHDRAW_PLAYER -> {
                 lifecycle.withdraw(decided.player(), access.person());
                 outbox.withdrawn(decided);
             }
         }
-        return views.of(decided);
+        ApprovalView view = views.of(decided);
+        playerLogin.sendSetupEmail(login);
+        return view;
     }
 }

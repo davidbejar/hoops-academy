@@ -35,6 +35,13 @@ public final class CoreStubs {
         return this;
     }
 
+    /** core-service's own liveness endpoint (probed by the readiness indicator); delay in ms, 0 for none. */
+    public CoreStubs coreLiveness(int status, int delayMillis) {
+        wireMock.register(get(urlPathEqualTo("/q/health/live"))
+                .willReturn(aResponse().withStatus(status).withFixedDelay(delayMillis)));
+        return this;
+    }
+
     public CoreStubs roster(String tenant, String team, String... playerIds) {
         String players = Arrays.stream(playerIds)
                 .map(id -> "{\"playerId\":\"%s\",\"displayName\":\"Player %s\",\"birthDate\":\"2012-05-01\",\"gender\":\"MALE\",\"status\":\"ACTIVE\"}"

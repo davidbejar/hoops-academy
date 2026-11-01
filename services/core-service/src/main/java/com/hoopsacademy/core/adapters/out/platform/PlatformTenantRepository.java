@@ -89,6 +89,14 @@ class PlatformTenantRepository implements TenantRepository {
     }
 
     @Override
+    public java.util.List<TenantId> createdBetween(java.time.Instant from, java.time.Instant to) {
+        return em.createQuery("select t.id from PlatformTenantEntity t where t.createdAt >= :from and t.createdAt < :to"
+                        + " order by t.createdAt", java.util.UUID.class)
+                .setParameter("from", from).setParameter("to", to)
+                .getResultStream().map(TenantId::new).toList();
+    }
+
+    @Override
     public void deleteUnprovisioned(TenantId id) {
         em.createQuery("delete from PlatformTenantEntity t where t.id = :id").setParameter("id", id.value())
                 .executeUpdate();

@@ -1,5 +1,8 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
+import com.hoopsacademy.core.testsupport.KeycloakStubs;
+import com.hoopsacademy.core.testsupport.InjectWireMock;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -45,6 +48,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestSecurity(user = TenantUser.SUBJECT)
 class PlayerResourceTest {
 
+    @InjectWireMock
+    WireMockServer keycloak;
+
     private String tenant;
     private Approvals api;
     private UUID season;
@@ -55,6 +61,7 @@ class PlayerResourceTest {
 
     @BeforeEach
     void anAcademyWithAnU12TeamAndItsCoach() {
+        KeycloakStubs.installDefaults(keycloak);
         tenant = Members.newTenant();
         api = new Approvals(tenant);
         season = RosterDb.currentSeason(tenant);
@@ -97,9 +104,64 @@ class PlayerResourceTest {
                 + "on p.person_id = r.person_id where p.id = ? and r.role = 'PLAYER'", player)).isEqualTo(1);
         assertThat(CoreDb.count(tenant, "select count(*) from core.approval_request where status = 'APPROVED'")).isEqualTo(1);
         assertThat(api.outbox("player.approved")).isEqualTo(1);
+        assertThat(CoreDb.auditActions(tenant)).containsExactly("player.approved");
         api.getPlayer(player).statusCode(200).body("status", equalTo("ORPHAN"));
         api.request().queryParam("status", "ORPHAN").get("/api/core/players").then().statusCode(200)
                 .body("items.id", contains(player.toString()));
+    }
+
+    @Test
+    void aPlayerWithAnEmailGetsALoginAndTheSetupEmail() {
+        String sub = UUID.randomUUID().toString();
+        KeycloakStubs.createdUserGets(keycloak, sub);
+
+        UUID player = createdPlayer(api.create(Approvals.playerJson("Lia", "FEMALE", 11,
+                ",\"email\":\"lia@example.org\"")).statusCode(201));
+
+        keycloak.verify(1, KeycloakStubs.userCreated());
+        keycloak.verify(1, KeycloakStubs.setupEmailSent(sub));
+        assertThat(CoreDb.count(tenant, "select count(*) from core.player p join core.person s on s.id = p.person_id "
+                + "join core.app_user u on u.id = s.user_id where p.id = ? and u.keycloak_sub = ? "
+                + "and s.invitation_status = 'PENDING'", player, sub)).isEqualTo(1);
+        assertThat(CoreDb.count(tenant, "select count(*) from core.user_membership_index where keycloak_sub = ?", sub))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void anExistingKeycloakUserIsLinkedWithoutAnEmail() {
+        String sub = UUID.randomUUID().toString();
+        KeycloakStubs.existingUser(keycloak, "known@example.org", sub);
+
+        api.create(Approvals.playerJson("Kim", "FEMALE", 11, ",\"email\":\"known@example.org\"")).statusCode(201);
+
+        keycloak.verify(0, KeycloakStubs.userCreated());
+        keycloak.verify(0, KeycloakStubs.anySetupEmail());
+        assertThat(CoreDb.count(tenant, "select count(*) from core.person s join core.app_user u on u.id = s.user_id "
+                + "where u.keycloak_sub = ? and s.invitation_status = 'ACCEPTED'", sub)).isEqualTo(1);
+    }
+
+    @Test
+    void aFailingSetupEmailLeavesNoPlayerAndDeletesTheNewLogin() {
+        String sub = UUID.randomUUID().toString();
+        KeycloakStubs.createdUserGets(keycloak, sub);
+        KeycloakStubs.setupEmailFails(keycloak);
+        long persons = CoreDb.count(tenant, "select count(*) from core.person");
+
+        api.create(Approvals.playerJson("Lia", "FEMALE", 11, ",\"email\":\"lia2@example.org\"")).statusCode(502)
+                .body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
+
+        keycloak.verify(1, KeycloakStubs.userDeleted(sub));
+        assertThat(CoreDb.count(tenant, "select count(*) from core.person")).isEqualTo(persons);
+        assertThat(CoreDb.auditActions(tenant)).isEmpty();
+    }
+
+    @Test
+    void anEmailTakenInTheTenantFailsBeforeKeycloakIsCalled() {
+        api.create(Approvals.playerJson("Ann", "FEMALE", 11, ",\"email\":\"twice@example.org\"")).statusCode(201);
+        keycloak.resetRequests();
+        api.create(Approvals.playerJson("Bea", "FEMALE", 11, ",\"email\":\"twice@example.org\"")).statusCode(409)
+                .body("code", equalTo("EMAIL_TAKEN"));
+        keycloak.verify(0, KeycloakStubs.userCreated());
     }
 
     @Test

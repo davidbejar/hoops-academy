@@ -10,6 +10,7 @@ import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.domain.logo.LogoImage;
 import com.hoopsacademy.core.testsupport.Contract;
+import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
@@ -113,6 +114,18 @@ class TenantLogoResourceTest {
         given().filter(Contract.CORE).header("X-Tenant-Id", tenant).delete(LOGO).then().statusCode(204);
         given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LOGO).then().statusCode(404);
         given().filter(Contract.CORE).header("X-Tenant-Id", tenant).delete(LOGO).then().statusCode(404);
+        assertThat(CoreDb.auditActions(tenant)).containsExactly("tenant.logo_replaced", "tenant.logo_removed");
+        assertThat(CoreDb.auditRow(tenant, "tenant.logo_replaced").get("metadata")).contains("image/webp");
+    }
+
+    @Test
+    void aBodyAboveTheHttpLimitIsStillAProblem() {
+        Members.signIn(tenant, TenantRole.ADMIN);
+        putInvalid(Arrays.copyOf(PNG, 2 * 1024 * 1024 + 1), "image/png").statusCode(413)
+                .contentType("application/problem+json")
+                .body("type", equalTo("urn:hoops:problem:payload-too-large"))
+                .body("code", equalTo("REQUEST_TOO_LARGE"));
+        assertThat(CoreDb.auditActions(tenant)).isEmpty();
     }
 
     @ParameterizedTest

@@ -66,6 +66,8 @@ class GuardianLinkResourceTest {
                 .get(LINKS).then().statusCode(200).body("items", hasSize(0));
         delete(UUID.fromString(id)).statusCode(204);
         delete(UUID.fromString(id)).statusCode(404);
+        assertThat(CoreDb.auditActions(tenant)).containsSubsequence("guardian_link.created", "guardian_link.removed");
+        assertThat(CoreDb.auditRow(tenant, "guardian_link.removed")).containsEntry("targetId", id);
     }
 
     @Test

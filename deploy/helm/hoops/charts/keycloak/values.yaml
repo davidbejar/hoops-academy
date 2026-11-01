@@ -7,6 +7,9 @@ image:
 publicUrl: http://localhost:8090
 # Realm JSON redirect URIs / web origins are written for the compose proxy; they are rewritten to publicUrl.
 realmSourceUrl: http://localhost:8080
+# The realm also allows the Flutter dev server (compose only). Unless allowDevServer, it is rewritten to publicUrl.
+devServerUrl: http://localhost:5173
+allowDevServer: false
 db:
   host: keycloak-db-rw
   port: 5432
@@ -25,6 +28,22 @@ ingress:
   className: nginx
   host: ""
   path: /auth
+  # Brute-force / credential-stuffing brake at the edge (Keycloak's brute-force detection is the second layer):
+  # the token endpoint and the login form POSTs get their own Ingress with ingress-nginx per-IP limits
+  # (burst = rpm x burstMultiplier). Rejections are 503 unless the controller sets limit-req-status-code: "429".
+  rateLimit:
+    enabled: true
+    rpm: 60
+    burstMultiplier: 5
+    paths:
+      - /auth/realms/academy/protocol/openid-connect/token
+      - /auth/realms/academy/login-actions/authenticate
+# The admin console / Admin REST API and the master realm are NOT exposed through the ingress: those paths are
+# routed to the web nginx, which answers 403 (same pattern as /internal). Use kubectl port-forward, or set this to
+# true in a git-ignored values-local.yaml (e.g. for e2e runs that call the Admin API through the ingress).
+exposeAdminConsole: false
+adminDenyPaths: [/auth/admin, /auth/realms/master]
+denyBackend: {service: web, port: http}
 readiness:
   initialDelaySeconds: 60
 resources:

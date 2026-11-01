@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.jboss.logging.MDC;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class TenantContextTest {
@@ -14,6 +16,36 @@ class TenantContextTest {
 
     private static AuthzContext memberOf(TenantId tenant) {
         return new AuthzContext("sub", UUID.randomUUID(), tenant, Set.of(), Set.of(), Set.of(), Optional.empty());
+    }
+
+    @AfterEach
+    void clearMdc() {
+        MDC.remove(TenantContext.TENANT_ID_MDC_KEY);
+    }
+
+    @Test
+    void bindingATenantPutsItIntoTheLoggingMdcAndClearingRemovesIt() {
+        TenantId tenant = TenantId.random();
+
+        context.bindTenant(tenant);
+        assertThat(MDC.get("tenantId")).isEqualTo(tenant.toString());
+
+        context.clear();
+        assertThat(MDC.get("tenantId")).isNull();
+    }
+
+    @Test
+    void restoringASnapshotRestoresTheMdcToo() {
+        TenantId outer = TenantId.random();
+        context.bindTenant(outer);
+        TenantContext.Snapshot snapshot = context.snapshot();
+        context.bindTenant(TenantId.random());
+
+        context.restore(snapshot);
+        assertThat(MDC.get("tenantId")).isEqualTo(outer.toString());
+
+        context.restore(new TenantContext.Snapshot(null, null));
+        assertThat(MDC.get("tenantId")).isNull();
     }
 
     @Test

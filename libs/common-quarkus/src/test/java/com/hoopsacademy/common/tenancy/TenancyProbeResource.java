@@ -39,6 +39,24 @@ public class TenancyProbeResource {
                 "roles", authz.roles());
     }
 
+    @Inject
+    io.quarkus.security.identity.SecurityIdentity identity;
+
+    /** The caller id as every service derives it (CallerSubject). */
+    @GET
+    @Path("api/probe/me/subject")
+    @Authenticated
+    public String subject() {
+        return CallerSubject.of(identity);
+    }
+
+    /** The logging MDC as a log statement in a resource would see it. */
+    @GET
+    @Path("api/probe/mdc")
+    public String mdcTenant() {
+        return String.valueOf(org.jboss.logging.MDC.get("tenantId"));
+    }
+
     /** Like {@code /api/core/me}: an /api path declared tenant-exempt in hoops.tenancy.exempt-paths. */
     @GET
     @Path("api/probe/me")

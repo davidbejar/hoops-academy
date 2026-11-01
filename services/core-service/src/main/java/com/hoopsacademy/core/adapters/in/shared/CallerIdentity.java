@@ -23,7 +23,7 @@ public class CallerIdentity {
     public Caller current() {
         Principal principal = identity.getPrincipal();
         Optional<JsonWebToken> jwt = principal instanceof JsonWebToken token ? Optional.of(token) : Optional.empty();
-        String subject = jwt.map(JsonWebToken::getSubject).orElse(principal.getName());
+        String subject = com.hoopsacademy.common.tenancy.CallerSubject.of(identity);
         String email = jwt.map(token -> token.<String>getClaim("email")).orElse(null);
         String displayName = Stream.of(claim(jwt, "name"), claim(jwt, "preferred_username"), email, subject)
                 .filter(value -> value != null && !value.isBlank())

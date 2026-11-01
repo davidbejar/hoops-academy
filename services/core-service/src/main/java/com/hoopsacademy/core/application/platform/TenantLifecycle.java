@@ -1,5 +1,8 @@
 package com.hoopsacademy.core.application.platform;
 
+import com.hoopsacademy.core.application.shared.ChangedFields;
+import com.hoopsacademy.core.application.port.PlatformAuditLog;
+import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.application.authz.AuthzCache;
@@ -26,14 +29,17 @@ public class TenantLifecycle {
     private final TenantRepository tenants;
     private final PlatformOutboxWriter outbox;
     private final AuthzCache authzCache;
+    private final PlatformAuditLog audit;
     private final Clock clock;
     private final Period withdrawnRetention;
 
-    public TenantLifecycle(TenantRepository tenants, PlatformOutboxWriter outbox, AuthzCache authzCache, Clock clock,
+    public TenantLifecycle(TenantRepository tenants, PlatformOutboxWriter outbox, AuthzCache authzCache,
+            PlatformAuditLog audit, Clock clock,
             @ConfigProperty(name = "hoops.tenant.withdrawn-retention", defaultValue = "P365D") String retention) {
         this.tenants = tenants;
         this.outbox = outbox;
         this.authzCache = authzCache;
+        this.audit = audit;
         this.clock = clock;
         this.withdrawnRetention = Period.parse(retention);
     }
@@ -58,6 +64,9 @@ public class TenantLifecycle {
     public Tenant changeMasterData(TenantId id, Patch<String> name, Patch<ZoneId> timezone, Patch<AppLocale> locale) {
         Tenant changed = load(id).changeMasterData(name, timezone, locale);
         tenants.update(changed);
+        audit.record(id, AuditEvent.of("tenant.master_data_changed", "tenant", id, Map.of("fields",
+                new ChangedFields().field("name", name).field("timezone", timezone).field("defaultLocale", locale)
+                        .names())));
         return changed;
     }
 
@@ -69,6 +78,7 @@ public class TenantLifecycle {
             payload.put("reason", reason);
         }
         outbox.write(new OutboxEvent(id, eventType, "tenant", id.toString(), payload));
+        audit.record(id, AuditEvent.of(eventType, "tenant", id, payload));
         authzCache.invalidate(id);
         return changed;
     }

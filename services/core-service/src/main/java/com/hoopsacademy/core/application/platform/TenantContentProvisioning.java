@@ -1,5 +1,7 @@
 package com.hoopsacademy.core.application.platform;
 
+import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.core.application.members.MemberProvisioning;
 import com.hoopsacademy.core.application.port.OutboxEvent;
 import com.hoopsacademy.core.application.port.OutboxWriter;
@@ -23,13 +25,15 @@ public class TenantContentProvisioning {
     private final OutboxWriter outbox;
     private final MemberProvisioning members;
     private final Instance<TenantProvisioningHook> hooks;
+    private final AuditLog audit;
 
     public TenantContentProvisioning(TenantSettingsRepository settings, OutboxWriter outbox,
-            MemberProvisioning members, Instance<TenantProvisioningHook> hooks) {
+            MemberProvisioning members, Instance<TenantProvisioningHook> hooks, AuditLog audit) {
         this.settings = settings;
         this.outbox = outbox;
         this.members = members;
         this.hooks = hooks;
+        this.audit = audit;
     }
 
     @Transactional
@@ -38,6 +42,7 @@ public class TenantContentProvisioning {
         hooks.forEach(hook -> hook.onTenantCreated(tenant));
         outbox.write(new OutboxEvent(tenant.id(), "tenant.created", "tenant", tenant.id().toString(),
                 Map.of("slug", tenant.slug().value(), "name", tenant.name())));
+        audit.record(AuditEvent.of("tenant.created", "tenant", tenant.id(), Map.of("slug", tenant.slug().value())));
         return members.create(firstAdmin, Optional.of(login));
     }
 }
