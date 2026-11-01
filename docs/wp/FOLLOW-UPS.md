@@ -31,6 +31,12 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
   make the platform insert last (WP3 open point); member e-mail changes not synced to Keycloak.
 - **Uploads > 2 MB** return a plain 413 from the HTTP layer (no Problem body) — configure `quarkus.http.limits` + mapper.
 
+- **Contracts (athlete)**: add operations for plan archive/unarchive and assignment progress (use cases exist, WP9);
+  consider `nameKey` for template i18n.
+- **common test-jar**: add a `nullableTenantTables()` hook so templates can keep a `tenant_id` column (WP9 used
+  `owner_tenant_id` to satisfy the meta-test); RLS lesson learned: use separate select/insert/update/delete policies
+  when USING and WITH CHECK differ (FOR ALL lets DELETE through) — fold into `app.enable_tenant_rls` docs/skill.
+
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
 - Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0 (requires realm re-import: `just down && podman volume rm hoops_pgdata`).

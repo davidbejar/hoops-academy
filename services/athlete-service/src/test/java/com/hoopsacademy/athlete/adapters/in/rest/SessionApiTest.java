@@ -108,7 +108,8 @@ class SessionApiTest {
     @TenantUser(tenant = TENANT, roles = TenantRole.ADMIN)
     void patchChangesTimeLocationPlanNotesAndStatus() {
         String id = createSession(TEAM, "2027-05-04T17:00:00Z");
-        String plan = UUID.randomUUID().toString();
+        String plan = api(TENANT).body(Map.of("name", "Session plan")).post("/api/athlete/training-plans")
+                .then().statusCode(201).extract().path("id");
 
         api(TENANT).body(Map.of("startsAt", "2027-05-04T18:00:00Z", "durationMinutes", 60, "location", "Court 2",
                 "planId", plan, "notes", "bring bibs")).patch(SESSIONS + "/" + id)

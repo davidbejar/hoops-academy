@@ -21,6 +21,15 @@ final class Requests {
         return parse(field, raw, LocalDate::parse, "an ISO date (YYYY-MM-DD)");
     }
 
+    static boolean bool(String field, String raw, boolean fallback) {
+        return parse(field, raw, text -> {
+            if (!text.equals("true") && !text.equals("false")) {
+                throw new IllegalArgumentException(text);
+            }
+            return Boolean.parseBoolean(text);
+        }, "true or false").orElse(fallback);
+    }
+
     static <T> Optional<T> parse(String field, String raw, Function<String, T> parser, String expected) {
         if (raw == null || raw.isBlank()) {
             return Optional.empty();

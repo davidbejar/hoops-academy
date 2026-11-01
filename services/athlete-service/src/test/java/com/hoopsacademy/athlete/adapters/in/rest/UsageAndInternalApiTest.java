@@ -53,6 +53,10 @@ class UsageAndInternalApiTest {
                 .put("/api/athlete/training-sessions/" + session + "/attendance").then().statusCode(200);
         api(TENANT).body(Map.of("playerId", PLAYER, "fromDate", "2029-01-02", "toDate", "2029-01-03"))
                 .post("/api/athlete/planned-absences").then().statusCode(201);
+        String plan = api(TENANT).body(Map.of("name", "Usage plan")).post("/api/athlete/training-plans")
+                .then().statusCode(201).extract().path("id");
+        api(TENANT).body(Map.of("planId", plan, "teamId", TEAM, "dueOn", "2029-02-01")).post("/api/athlete/plan-assignments")
+                .then().statusCode(201);
         TenantUserRegistry.clear();
 
         api(TENANT).get("/internal/usage/" + TENANT).then().statusCode(200)
@@ -61,10 +65,13 @@ class UsageAndInternalApiTest {
                 .body("collectedAt", notNullValue())
                 .body("counters.trainingSessions", greaterThanOrEqualTo(1))
                 .body("counters.attendanceRecords", equalTo(1))
-                .body("counters.plannedAbsences", equalTo(1));
+                .body("counters.plannedAbsences", equalTo(1))
+                .body("counters.trainingPlans", equalTo(1))
+                .body("counters.planAssignments", equalTo(1));
         api(EMPTY_TENANT).get("/internal/usage/" + EMPTY_TENANT).then().statusCode(200)
                 .body("counters.trainingSessions", equalTo(0))
-                .body("counters.attendanceRecords", equalTo(0));
+                .body("counters.attendanceRecords", equalTo(0))
+                .body("counters.trainingPlans", equalTo(0));
     }
 
     @Test

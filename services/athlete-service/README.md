@@ -49,6 +49,16 @@ The nightly job needs the list of tenants. This service has no platform datasour
 A tenant is registered the first time a schedule or ad-hoc session is created. The job runs each tenant through
 `TenantScope.runAs` so RLS applies.
 
+## Training plans (WP9)
+`training_plan` / `plan_item` hold the tenant's plans and the global templates (`owner_tenant_id is null`, seeded by the
+repeatable `R__plan_templates.sql`, English, `locale = 'en'`; the UI translates template names by id). The owner column
+is not called `tenant_id` and the tables use per-command policies (read: templates + own; write: own only), so they are
+declared in `AthleteRlsSchemaMetaTest.globalTables()` and proved by `TemplateRlsIsolationTest`. Their JPA entities carry
+no `@TenantId` (Hibernate's discriminator filter would hide templates). Templates are copied on use (`POST
+/training-plans/{id}:copy`); direct edits answer 403 `PLAN_IS_TEMPLATE`. Assignments are `team xor player`; a team
+assignment is expanded against the CURRENT roster when read. `ManageCompletions.progress` (counts by status + per player)
+has no REST operation in the contract yet.
+
 ## Contract gaps (to settle with core / contracts)
 1. **Tenant time zone**: core's `AuthzContext` has no `timezone`. The adapter reads an optional `timezone` field
    when core starts sending it (additive, minor version); until then every tenant uses `hoops.athlete.default-timezone`.

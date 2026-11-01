@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.application;
 
+import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.SessionStatus;
 import com.hoopsacademy.athlete.domain.TeamId;
@@ -39,9 +40,11 @@ public class ManageSessions {
     private final TrainingAccess access;
     private final TenantZones zones;
     private final TenantClock clock;
+    private final PlanRepository plans;
 
     public ManageSessions(SessionRepository sessions, RosterPort roster, TrainingAccess access, TenantZones zones,
-            TenantClock clock) {
+            TenantClock clock, PlanRepository plans) {
+        this.plans = plans;
         this.sessions = sessions;
         this.roster = roster;
         this.access = access;
@@ -84,6 +87,7 @@ public class ManageSessions {
     public TrainingSession createAdHoc(AuthzContext caller, NewSession request) {
         access.requireManage(caller, request.teamId());
         roster.teamRoster(caller.tenantId(), request.teamId());
+        requirePlanExists(request.planId());
         zones.remember(caller);
         TrainingSession session = TrainingSession.adHoc(request.teamId(), request.startsAt(),
                 request.durationMinutes(), request.location(), request.planId(), request.notes());
@@ -95,6 +99,7 @@ public class ManageSessions {
     public TrainingSession update(AuthzContext caller, SessionId id, SessionChange change) {
         TrainingSession current = sessions.find(id).orElseThrow(() -> new NotFoundException("Session not found"));
         access.requireManage(caller, current.teamId());
+        change.planId().flatMap(p -> p).ifPresent(this::requirePlanExists);
         TrainingSession edited = current.edited(
                 change.startsAt().orElse(current.startsAt()),
                 change.durationMinutes().orElse(current.durationMinutes()),
@@ -104,6 +109,13 @@ public class ManageSessions {
                 change.status().orElse(current.status()));
         sessions.save(edited);
         return edited;
+    }
+
+    /** A plan or template visible to the tenant; the edit marks the session {@code manually_edited}, so a re-plan keeps it. */
+    private void requirePlanExists(UUID planId) {
+        if (planId != null && !plans.exists(new PlanId(planId))) {
+            throw new NotFoundException("Plan not found");
+        }
     }
 
     @Transactional

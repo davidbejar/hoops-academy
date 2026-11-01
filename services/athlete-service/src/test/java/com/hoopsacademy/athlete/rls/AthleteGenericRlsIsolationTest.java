@@ -29,7 +29,39 @@ class AthleteGenericRlsIsolationTest extends GenericRlsIsolationTest {
                         "ends_at", (c, t) -> "2026-01-01 13:00:00+00"),
                 "athlete.attendance", Map.of(
                         "session_id", AthleteGenericRlsIsolationTest::insertSession,
-                        "status", (c, t) -> "PRESENT"));
+                        "status", (c, t) -> "PRESENT"),
+                "athlete.plan_assignment", Map.of(
+                        "plan_id", AthleteGenericRlsIsolationTest::insertPlan,
+                        "team_id", (c, t) -> UUID.randomUUID()),
+                "athlete.plan_completion", Map.of(
+                        "assignment_id", AthleteGenericRlsIsolationTest::insertAssignment,
+                        "status", (c, t) -> "DONE"));
+    }
+
+    /** A tenant plan of the same tenant, as the composite foreign key of an assignment requires. */
+    private static UUID insertPlan(Connection migrator, TenantId tenant) throws SQLException {
+        try (PreparedStatement ps = migrator.prepareStatement(
+                "insert into athlete.training_plan (id, owner_tenant_id, name) values (gen_random_uuid(), ?, 'Plan') returning id")) {
+            ps.setObject(1, tenant.value());
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getObject(1, UUID.class);
+            }
+        }
+    }
+
+    private static UUID insertAssignment(Connection migrator, TenantId tenant) throws SQLException {
+        UUID plan = insertPlan(migrator, tenant);
+        try (PreparedStatement ps = migrator.prepareStatement(
+                "insert into athlete.plan_assignment (id, tenant_id, plan_id, team_id, due_on, assigned_by_person_id, assigned_by_name) "
+                        + "values (gen_random_uuid(), ?, ?, gen_random_uuid(), '2026-01-01', gen_random_uuid(), 'x') returning id")) {
+            ps.setObject(1, tenant.value());
+            ps.setObject(2, plan);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getObject(1, UUID.class);
+            }
+        }
     }
 
     /** A parent session in the same tenant, as the composite foreign key requires. */

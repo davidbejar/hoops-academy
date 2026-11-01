@@ -14,7 +14,14 @@ class AthleteRlsSchemaMetaTest extends RlsSchemaMetaTest {
 
     @Override
     protected Map<String, String> globalTables() {
-        return Map.of("athlete.tenant_registry",
-                "tenants known to this service with their time zone; lets the nightly job iterate tenants, holds no tenant content");
+        return Map.of(
+                "athlete.tenant_registry",
+                "tenants known to this service with their time zone; lets the nightly job iterate tenants, holds no tenant content",
+                "athlete.training_plan",
+                "global templates live next to tenant plans, so the owner column is nullable and named owner_tenant_id; "
+                        + "RLS is forced with policy (owner_tenant_id is null or = app.current_tenant()), written only for the own tenant; "
+                        + "proved by TemplateRlsIsolationTest",
+                "athlete.plan_item",
+                "items mirror their plan's nullable owner_tenant_id (templates); same custom policy, see TemplateRlsIsolationTest");
     }
 }

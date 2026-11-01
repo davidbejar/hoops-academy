@@ -50,6 +50,16 @@ final class PatchBody {
         };
     }
 
+    /** A non-blank string of at most {@code maxLength} characters. */
+    static Function<JsonNode, String> nonBlankText(int maxLength) {
+        return node -> {
+            if (!node.isTextual() || node.asText().isBlank() || node.asText().length() > maxLength) {
+                throw new IllegalArgumentException("a non-blank string of at most " + maxLength + " characters");
+            }
+            return node.asText();
+        };
+    }
+
     static Function<JsonNode, Integer> integer(int min, int max) {
         return node -> {
             if (!node.isInt() || node.asInt() < min || node.asInt() > max) {
