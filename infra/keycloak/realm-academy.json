@@ -157,7 +157,13 @@
       "serviceAccountClientId": "core-service",
       "realmRoles": [
         "service"
-      ]
+      ],
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users"
+        ]
+      }
     },
     {
       "username": "service-account-game-service",
