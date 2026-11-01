@@ -1,0 +1,6 @@
+apiVersion: v2
+name: databases
+description: CloudNativePG clusters hoops-db (application, schema per service, RLS) and keycloak-db. Needs the CNPG operator.
+type: application
+version: 0.1.0
+appVersion: "17"

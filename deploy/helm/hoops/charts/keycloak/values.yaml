@@ -1,0 +1,48 @@
+fullnameOverride: keycloak
+image:
+  repository: quay.io/keycloak/keycloak
+  tag: "26.8.1"
+  pullPolicy: IfNotPresent
+# Public base URL as the browser sees it (no trailing slash). Issuer = <publicUrl>/auth/realms/academy.
+publicUrl: http://localhost:8090
+# Realm JSON redirect URIs / web origins are written for the compose proxy; they are rewritten to publicUrl.
+realmSourceUrl: http://localhost:8080
+db:
+  host: keycloak-db-rw
+  port: 5432
+  database: keycloak
+  # CNPG basic-auth Secret with keys username/password (created by deploy/kind/up.sh).
+  existingSecret: keycloak-db-app
+admin:
+  existingSecret: keycloak-admin          # keys: username, password
+# Confidential client secrets substituted into the realm JSON at import (${..._CLIENT_SECRET}).
+clientSecrets:
+  - {env: CORE_SERVICE_CLIENT_SECRET,    secretName: hoops-oidc-core-service,    key: client-secret}
+  - {env: GAME_SERVICE_CLIENT_SECRET,    secretName: hoops-oidc-game-service,    key: client-secret}
+  - {env: ATHLETE_SERVICE_CLIENT_SECRET, secretName: hoops-oidc-athlete-service, key: client-secret}
+ingress:
+  enabled: true
+  className: nginx
+  host: ""
+  path: /auth
+readiness:
+  initialDelaySeconds: 60
+resources:
+  requests: {cpu: 250m, memory: 512Mi}
+  limits: {memory: 1Gi}
+extraJavaOpts: "-XX:MaxRAMPercentage=70.0"
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 0
+  fsGroup: 0
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  # `start` (non-optimized) re-augments into /opt/keycloak/lib at boot, so the root FS must be writable.
+  # Follow-up: a pre-built (`kc.sh build`) image + `start --optimized` allows readOnlyRootFilesystem: true.
+  readOnlyRootFilesystem: false
+  capabilities: {drop: [ALL]}
+networkPolicy:
+  enabled: true
+  ingressControllerNamespace: ingress-nginx

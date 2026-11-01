@@ -1,0 +1,6 @@
+apiVersion: v2
+name: web
+description: Hoops Academy Flutter Web PWA on nginx-unprivileged; also answers /internal with 403 for the ingress.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

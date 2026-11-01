@@ -1,0 +1,57 @@
+{{- if and .Values.ingress.enabled .Values.ingress.paths }}
+{{- $fullname := include "hoops-service.fullname" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "hoops-service.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - {{- with .Values.ingress.host }}
+      host: {{ . | quote }}
+      {{- end }}
+      http:
+        paths:
+          {{- range .Values.ingress.paths }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullname }}
+                port: {name: http}
+          {{- end }}
+{{- end }}
+{{- if and .Values.ingress.enabled .Values.ingress.health.enabled }}
+---
+{{- $fullname := include "hoops-service.fullname" . }}
+# Health only: <prefix>/q/health/** is rewritten to /q/health/** (nothing else under /q is exposed).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-health
+  labels:
+    {{- include "hoops-service.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /q/health$1
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - {{- with .Values.ingress.host }}
+      host: {{ . | quote }}
+      {{- end }}
+      http:
+        paths:
+          - path: {{ printf "%s/q/health(/(?:live|ready|started))?$" (required "ingress.health.prefix is required" .Values.ingress.health.prefix) }}
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ $fullname }}
+                port: {name: http}
+{{- end }}

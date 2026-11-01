@@ -1,0 +1,5 @@
+# Context filter for web.Containerfile with WEB_SOURCE=host.
+**
+!deploy/containers/web-nginx.conf
+!apps/web/build/web
+!apps/web/build/web/**

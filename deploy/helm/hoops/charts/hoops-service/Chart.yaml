@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hoops-service
+description: Reusable chart for a Hoops Academy Quarkus service (instantiated as core, game, athlete by the umbrella).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

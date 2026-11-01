@@ -1,0 +1,59 @@
+{{- $sql := .Files.Get "files/01_roles_schemas.sql" -}}
+{{- if not $sql }}{{ fail "files/01_roles_schemas.sql missing (symlink to infra/db/init/01_roles_schemas.sql)" }}{{ end -}}
+{{- with .Values.hoopsDb }}
+# infra/db/init/01_roles_schemas.sql (symlinked into the chart). Delivered as a ConfigMap reference, NOT inline
+# postInitApplicationSQL: CNPG hands inline queries to the initdb Pod as container args, where Kubernetes $(VAR)
+# expansion turns the `$$` of plpgsql bodies into `$` (observed: syntax error at or near "$").
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .name }}-init-sql
+  labels:
+    {{- include "databases.labels" $ | nindent 4 }}
+data:
+  01_roles_schemas.sql: |
+    {{- $sql | nindent 4 }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "databases.labels" $ | nindent 4 }}
+spec:
+  instances: {{ .instances }}
+  imageName: {{ $.Values.imageName }}
+  enableSuperuserAccess: false
+  storage:
+    size: {{ .storage.size }}
+    {{- with .storage.storageClass }}
+    storageClass: {{ . }}
+    {{- end }}
+  resources:
+    {{- toYaml .resources | nindent 4 }}
+  bootstrap:
+    initdb:
+      database: {{ .database }}
+      owner: {{ .owner }}
+      # Runs once as superuser in `{{ .database }}` right after initdb.
+      postInitApplicationSQLRefs:
+        configMapRefs:
+          - name: {{ .name }}-init-sql
+            key: 01_roles_schemas.sql
+  managed:
+    roles:
+      {{- range .roles }}
+      - name: {{ .name }}
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: {{ .connectionLimit }}
+        passwordSecret:
+          name: {{ .secret }}
+      {{- end }}
+{{- end }}

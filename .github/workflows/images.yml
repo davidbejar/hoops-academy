@@ -1,0 +1,94 @@
+name: images
+
+# Builds the container images (deploy/containers) and scans them with Trivy. Images are pushed only when a registry
+# is configured (repository variable IMAGE_REGISTRY + secrets REGISTRY_USERNAME / REGISTRY_PASSWORD).
+on:
+  push:
+    branches: [main]
+    paths: ['services/**', 'libs/**', 'apps/web/**', 'deploy/containers/**', 'pom.xml', '.github/workflows/images.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [core-service, game-service, athlete-service]
+        include:
+          - {service: core-service, port: 8081}
+          - {service: game-service, port: 8082}
+          - {service: athlete-service, port: 8083}
+    env:
+      IMAGE: localhost/hoops/${{ matrix.service }}:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (multi-stage, Maven inside the container)
+        run: |
+          podman build -f deploy/containers/service.Containerfile \
+            --ignorefile deploy/containers/service.containerignore \
+            --build-arg SERVICE=${{ matrix.service }} --build-arg SERVICE_PORT=${{ matrix.port }} \
+            -t "$IMAGE" .
+      - name: Runs as non-root
+        run: test "$(podman run --rm --entrypoint id "$IMAGE" -u)" != 0
+      - name: Trivy scan (fail on fixable HIGH/CRITICAL)
+        run: |
+          podman save -o image.tar "$IMAGE"
+          docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
+      - name: Push
+        if: ${{ vars.IMAGE_REGISTRY != '' }}
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          echo "$REGISTRY_PASSWORD" | podman login -u "$REGISTRY_USERNAME" --password-stdin "${{ vars.IMAGE_REGISTRY }}"
+          podman tag "$IMAGE" "${{ vars.IMAGE_REGISTRY }}/${{ matrix.service }}:${{ github.sha }}"
+          podman push "${{ vars.IMAGE_REGISTRY }}/${{ matrix.service }}:${{ github.sha }}"
+
+  web:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: localhost/hoops/web:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: {channel: stable, cache: true}
+      - name: flutter build web
+        working-directory: apps/web
+        run: flutter pub get && flutter build web --release --pwa-strategy=offline-first
+      - name: Build image (host-built bundle)
+        run: |
+          podman build -f deploy/containers/web.Containerfile --ignorefile deploy/containers/web.containerignore \
+            --build-arg WEB_SOURCE=host -t "$IMAGE" .
+      - name: Runs as non-root
+        run: test "$(podman run --rm --entrypoint id "$IMAGE" -u)" != 0
+      - name: Trivy scan (fail on fixable HIGH/CRITICAL)
+        run: |
+          podman save -o image.tar "$IMAGE"
+          docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
+      - name: Push
+        if: ${{ vars.IMAGE_REGISTRY != '' }}
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          echo "$REGISTRY_PASSWORD" | podman login -u "$REGISTRY_USERNAME" --password-stdin "${{ vars.IMAGE_REGISTRY }}"
+          podman tag "$IMAGE" "${{ vars.IMAGE_REGISTRY }}/web:${{ github.sha }}"
+          podman push "${{ vars.IMAGE_REGISTRY }}/web:${{ github.sha }}"
+
+  charts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Install kubeconform + gitleaks
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin kubeconform
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | sudo tar -xz -C /usr/local/bin gitleaks
+      - name: Chart tests (lint, snapshots, kubeconform, policy asserts, gitleaks)
+        run: deploy/helm/tests/run.sh

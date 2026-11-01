@@ -1,0 +1,37 @@
+# PostgreSQL 17 (PLAN decision). Pin a minor tag for reproducibility in real environments.
+imageName: ghcr.io/cloudnative-pg/postgresql:17
+hoopsDb:
+  name: hoops-db
+  instances: 1
+  storage: {size: 2Gi, storageClass: ""}
+  # Must stay `hoops`: infra/db/init/01_roles_schemas.sql grants/revokes on database hoops.
+  database: hoops
+  # Database owner is CNPG's default `app` role (not an application role); our roles come from the init SQL.
+  owner: app
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 512Mi}
+  # Passwords are managed by CNPG from kubernetes.io/basic-auth Secrets (username = role name).
+  # Attributes mirror 01_roles_schemas.sql so the reconciler never drifts from it.
+  roles:
+    - {name: core_migrator,    secret: hoops-db-core-migrator,    connectionLimit: -1}
+    - {name: core_app,         secret: hoops-db-core-app,         connectionLimit: 50}
+    - {name: core_platform,    secret: hoops-db-core-platform,    connectionLimit: 10}
+    - {name: game_migrator,    secret: hoops-db-game-migrator,    connectionLimit: -1}
+    - {name: game_app,         secret: hoops-db-game-app,         connectionLimit: 50}
+    - {name: athlete_migrator, secret: hoops-db-athlete-migrator, connectionLimit: -1}
+    - {name: athlete_app,      secret: hoops-db-athlete-app,      connectionLimit: 50}
+keycloakDb:
+  enabled: true
+  name: keycloak-db
+  instances: 1
+  storage: {size: 1Gi, storageClass: ""}
+  database: keycloak
+  owner: keycloak
+  secret: keycloak-db-app           # basic-auth, username keycloak
+  resources:
+    requests: {cpu: 50m, memory: 192Mi}
+    limits: {memory: 384Mi}
+networkPolicy:
+  enabled: true
+  operatorNamespace: cnpg-system

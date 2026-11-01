@@ -1,0 +1,1598 @@
+---
+# Source: hoops/charts/athlete/templates/networkpolicy.yaml
+# Only the ingress controller and pods of this namespace may reach the service.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: athlete-service
+  labels:
+    app.kubernetes.io/name: athlete-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: athlete-0.1.0
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: athlete-service
+      app.kubernetes.io/instance: hoops
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector: {}
+      ports:
+        - port: http
+          protocol: TCP
+
+---
+# Source: hoops/charts/core/templates/networkpolicy.yaml
+# Only the ingress controller and pods of this namespace may reach the service.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: core-service
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.1.0
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: core-service
+      app.kubernetes.io/instance: hoops
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector: {}
+      ports:
+        - port: http
+          protocol: TCP
+
+---
+# Source: hoops/charts/databases/templates/networkpolicy.yaml
+# Postgres instances: reachable from pods of this namespace and from the CNPG operator (status port 8000 + 5432).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: databases
+  labels:
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: database
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: databases-0.1.0
+spec:
+  podSelector:
+    matchExpressions:
+      - {key: cnpg.io/cluster, operator: Exists}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - {port: 5432, protocol: TCP}
+        - {port: 8000, protocol: TCP}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - {port: 5432, protocol: TCP}
+        - {port: 8000, protocol: TCP}
+
+---
+# Source: hoops/charts/game/templates/networkpolicy.yaml
+# Only the ingress controller and pods of this namespace may reach the service.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: game-service
+  labels:
+    app.kubernetes.io/name: game-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: game-0.1.0
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: game-service
+      app.kubernetes.io/instance: hoops
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector: {}
+      ports:
+        - port: http
+          protocol: TCP
+
+---
+# Source: hoops/charts/keycloak/templates/keycloak.yaml
+# The management port (9000, health) is reachable only by the kubelet (probes are not subject to policies).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: keycloak-0.1.0
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/instance: hoops
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector: {}
+      ports:
+        - {port: http, protocol: TCP}
+
+---
+# Source: hoops/charts/web/templates/web.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: web-0.1.0
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: web
+      app.kubernetes.io/instance: hoops
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector: {}
+      ports:
+        - {port: http, protocol: TCP}
+
+---
+# Source: hoops/charts/athlete/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: athlete-service-env
+  labels:
+    app.kubernetes.io/name: athlete-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: athlete-0.1.0
+data:
+  QUARKUS_HTTP_PORT: "8083"
+  ATHLETE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
+  HOOPS_CORE_URL: "http://core-service:8081"
+  KEYCLOAK_URL: "http://keycloak:8080/auth"
+
+---
+# Source: hoops/charts/core/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: core-service-env
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.1.0
+data:
+  QUARKUS_HTTP_PORT: "8081"
+  ATHLETE_SERVICE_URL: "http://athlete-service:8083"
+  CORE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
+  GAME_SERVICE_URL: "http://game-service:8082"
+  KEYCLOAK_URL: "http://keycloak:8080/auth"
+  OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
+
+---
+# Source: hoops/charts/databases/templates/hoops-db.yaml
+# infra/db/init/01_roles_schemas.sql (symlinked into the chart). Delivered as a ConfigMap reference, NOT inline
+# postInitApplicationSQL: CNPG hands inline queries to the initdb Pod as container args, where Kubernetes $(VAR)
+# expansion turns the `$$` of plpgsql bodies into `$` (observed: syntax error at or near "$").
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hoops-db-init-sql
+  labels:
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: database
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: databases-0.1.0
+data:
+  01_roles_schemas.sql: |
+    -- ============================================================================
+    -- Hoops Academy — database bootstrap (roles, schemas, RLS helpers)
+    --
+    -- Runs once as the Postgres superuser against the application database (`hoops`):
+    --   * compose / Testcontainers: /docker-entrypoint-initdb.d/01_roles_schemas.sql
+    --   * CloudNativePG:            postInitApplicationSQL
+    -- Passwords are NOT set here (see 02_passwords.sh / CNPG managed roles / test resources).
+    -- Idempotent: safe to re-run.
+    --
+    -- Principles (ADR-0006):
+    --   * <svc>_migrator owns the service schema and runs Flyway.
+    --   * <svc>_app is a NON-owner, NOBYPASSRLS login role with DML only → RLS always applies.
+    --   * core_platform is the super-admin datasource role: limited, explicit grants in migrations.
+    --   * app.current_tenant() RAISES when the transaction-local setting is missing (loud failure).
+    -- ============================================================================
+    
+    -- ---------- roles -----------------------------------------------------------
+    do $$
+    declare r text;
+    begin
+      foreach r in array array[
+        'core_migrator','core_app','core_platform',
+        'game_migrator','game_app',
+        'athlete_migrator','athlete_app'] loop
+        if not exists (select 1 from pg_roles where rolname = r) then
+          execute format('create role %I login nosuperuser nocreatedb nocreaterole noinherit nobypassrls', r);
+        else
+          execute format('alter role %I login nosuperuser nocreatedb nocreaterole nobypassrls', r);
+        end if;
+      end loop;
+    end $$;
+    
+    -- Reasonable connection limits for app roles (overridable per environment).
+    alter role core_app    connection limit 50;
+    alter role game_app    connection limit 50;
+    alter role athlete_app connection limit 50;
+    alter role core_platform connection limit 10;
+    
+    -- ---------- lock down public -----------------------------------------------
+    revoke create on schema public from public;
+    revoke all on database hoops from public;
+    grant connect on database hoops to core_migrator, core_app, core_platform,
+                                     game_migrator, game_app,
+                                     athlete_migrator, athlete_app;
+    
+    -- ---------- shared helper schema -------------------------------------------
+    create schema if not exists app;
+    grant usage on schema app to core_migrator, core_app, core_platform,
+                                game_migrator, game_app,
+                                athlete_migrator, athlete_app;
+    
+    -- Returns the tenant bound to the current transaction (set via
+    --   select set_config('app.tenant_id', '<uuid>', true);
+    -- ). Raises 42501 when unset so a forgotten tenant never yields "all rows" or "no rows" silently.
+    create or replace function app.current_tenant() returns uuid
+    language plpgsql stable parallel safe as $$
+    declare v text := current_setting('app.tenant_id', true);
+    begin
+      if v is null or v = '' then
+        raise exception 'app.tenant_id is not set for this transaction' using errcode = '42501';
+      end if;
+      return v::uuid;
+    end $$;
+    
+    -- Enables + forces RLS on a tenant table and (re)creates the standard isolation policy.
+    -- Runs with the privileges of the caller (the migrator that owns the table).
+    create or replace function app.enable_tenant_rls(tbl regclass) returns void
+    language plpgsql as $$
+    begin
+      execute format('alter table %s enable row level security', tbl);
+      execute format('alter table %s force row level security', tbl);
+      execute format('drop policy if exists tenant_isolation on %s', tbl);
+      execute format(
+        'create policy tenant_isolation on %s using (tenant_id = app.current_tenant()) with check (tenant_id = app.current_tenant())',
+        tbl);
+    end $$;
+    
+    grant execute on function app.current_tenant() to public;
+    grant execute on function app.enable_tenant_rls(regclass) to core_migrator, game_migrator, athlete_migrator;
+    
+    -- ---------- service schemas --------------------------------------------------
+    -- One block per (schema, migrator, app role). Default privileges make every table/sequence the
+    -- migrator creates usable by the app role without per-table grants in migrations.
+    do $$
+    declare s record;
+    begin
+      for s in select * from (values
+          ('core',    'core_migrator',    'core_app'),
+          ('billing', 'core_migrator',    'core_app'),
+          ('game',    'game_migrator',    'game_app'),
+          ('athlete', 'athlete_migrator', 'athlete_app')
+        ) as t(schema_name, migrator, app_role) loop
+        execute format('create schema if not exists %I authorization %I', s.schema_name, s.migrator);
+        execute format('grant usage on schema %I to %I', s.schema_name, s.app_role);
+        execute format('alter default privileges for role %I in schema %I grant select, insert, update, delete on tables to %I',
+                       s.migrator, s.schema_name, s.app_role);
+        execute format('alter default privileges for role %I in schema %I grant usage, select on sequences to %I',
+                       s.migrator, s.schema_name, s.app_role);
+        execute format('alter default privileges for role %I in schema %I grant execute on functions to %I',
+                       s.migrator, s.schema_name, s.app_role);
+      end loop;
+    end $$;
+    
+    -- core_platform: schema access only; table-level grants are explicit in core migrations
+    -- (tenant, usage_snapshot, billing.*). It never gets access to person/player data.
+    grant usage on schema core, billing to core_platform;
+    alter default privileges for role core_migrator in schema billing grant select, insert, update on tables to core_platform;
+    alter default privileges for role core_migrator in schema billing grant usage, select on sequences to core_platform;
+    
+    -- Search path hygiene: each role sees its own schema first.
+    alter role core_migrator    set search_path = core, billing, app, public;
+    alter role core_app         set search_path = core, billing, app, public;
+    alter role core_platform    set search_path = core, billing, app, public;
+    alter role game_migrator    set search_path = game, app, public;
+    alter role game_app         set search_path = game, app, public;
+    alter role athlete_migrator set search_path = athlete, app, public;
+    alter role athlete_app      set search_path = athlete, app, public;
+    
+
+---
+# Source: hoops/charts/game/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: game-service-env
+  labels:
+    app.kubernetes.io/name: game-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: game-0.1.0
+data:
+  QUARKUS_HTTP_PORT: "8082"
+  GAME_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
+  HOOPS_CORE_URL: "http://core-service:8081"
+  KEYCLOAK_URL: "http://keycloak:8080/auth"
+
+---
+# Source: hoops/charts/keycloak/templates/realm-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: keycloak-0.1.0
+data:
+  realm-academy.json: |
+    {
+      "realm": "academy",
+      "displayName": "Hoops Academy",
+      "enabled": true,
+      "sslRequired": "external",
+      "registrationAllowed": false,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "verifyEmail": false,
+      "accessTokenLifespan": 300,
+      "ssoSessionIdleTimeout": 14400,
+      "ssoSessionMaxLifespan": 43200,
+      "bruteForceProtected": true,
+      "failureFactor": 5,
+      "maxFailureWaitSeconds": 900,
+      "waitIncrementSeconds": 60,
+      "permanentLockout": false,
+      "maxDeltaTimeSeconds": 43200,
+      "passwordPolicy": "length(12)",
+      "internationalizationEnabled": true,
+      "supportedLocales": [
+        "en",
+        "es",
+        "id"
+      ],
+      "defaultLocale": "en",
+      "smtpServer": {
+        "host": "mailhog",
+        "port": "1025",
+        "from": "no-reply@hoops.local",
+        "fromDisplayName": "Hoops Academy",
+        "auth": "false",
+        "ssl": "false",
+        "starttls": "false"
+      },
+      "roles": {
+        "realm": [
+          {
+            "name": "super_admin",
+            "description": "Platform administrator (all tenants, platform endpoints)"
+          },
+          {
+            "name": "service",
+            "description": "Service-to-service calls to /internal endpoints"
+          }
+        ]
+      },
+      "clients": [
+        {
+          "clientId": "web",
+          "name": "Hoops Academy web",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "rootUrl": "http://localhost:8090",
+          "baseUrl": "/",
+          "redirectUris": [
+            "http://localhost:8090/*"
+          ],
+          "webOrigins": [
+            "http://localhost:8090"
+          ],
+          "attributes": {
+            "pkce.code.challenge.method": "S256",
+            "post.logout.redirect.uris": "http://localhost:8090/*"
+          },
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email"
+          ],
+          "optionalClientScopes": [
+            "offline_access"
+          ]
+        },
+        {
+          "clientId": "core-service",
+          "name": "core-service",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "${CORE_SERVICE_CLIENT_SECRET}",
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "redirectUris": [],
+          "webOrigins": [],
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email"
+          ],
+          "optionalClientScopes": []
+        },
+        {
+          "clientId": "game-service",
+          "name": "game-service",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "${GAME_SERVICE_CLIENT_SECRET}",
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "redirectUris": [],
+          "webOrigins": [],
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email"
+          ],
+          "optionalClientScopes": []
+        },
+        {
+          "clientId": "athlete-service",
+          "name": "athlete-service",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "${ATHLETE_SERVICE_CLIENT_SECRET}",
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": true,
+          "redirectUris": [],
+          "webOrigins": [],
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email"
+          ],
+          "optionalClientScopes": []
+        }
+      ],
+      "users": [
+        {
+          "username": "service-account-core-service",
+          "enabled": true,
+          "serviceAccountClientId": "core-service",
+          "realmRoles": [
+            "service"
+          ],
+          "clientRoles": {
+            "realm-management": [
+              "manage-users",
+              "view-users"
+            ]
+          }
+        },
+        {
+          "username": "service-account-game-service",
+          "enabled": true,
+          "serviceAccountClientId": "game-service",
+          "realmRoles": [
+            "service"
+          ]
+        },
+        {
+          "username": "service-account-athlete-service",
+          "enabled": true,
+          "serviceAccountClientId": "athlete-service",
+          "realmRoles": [
+            "service"
+          ]
+        }
+      ]
+    }
+    
+
+---
+# Source: hoops/charts/athlete/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: athlete-service
+  labels:
+    app.kubernetes.io/name: athlete-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: athlete-0.1.0
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: athlete-service
+    app.kubernetes.io/instance: hoops
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http
+      protocol: TCP
+
+---
+# Source: hoops/charts/core/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: core-service
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.1.0
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
+      protocol: TCP
+
+---
+# Source: hoops/charts/game/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: game-service
+  labels:
+    app.kubernetes.io/name: game-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: game-0.1.0
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: game-service
+    app.kubernetes.io/instance: hoops
+  ports:
+    - name: http
+      port: 8082
+      targetPort: http
+      protocol: TCP
+
+---
+# Source: hoops/charts/keycloak/templates/keycloak.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: keycloak-0.1.0
+spec:
+  selector:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: hoops
+  ports:
+    - {name: http, port: 8080, targetPort: http}
+
+---
+# Source: hoops/charts/web/templates/web.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: web-0.1.0
+spec:
+  selector:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: hoops
+  ports:
+    - {name: http, port: 8080, targetPort: http}
+
+---
+# Source: hoops/charts/athlete/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: athlete-service
+  labels:
+    app.kubernetes.io/name: athlete-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: athlete-0.1.0
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: athlete-service
+      app.kubernetes.io/instance: hoops
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: athlete-service
+        app.kubernetes.io/instance: hoops
+        app.kubernetes.io/part-of: hoops-academy
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: athlete-0.1.0
+      annotations:
+        checksum/env: 8f1a5f702c3886a6c00592f6ebd7f3e49d54e1233e56a1c2ae98944f6ea301c5
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsNonRoot: true
+        runAsUser: 185
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: athlete-service
+          image: "localhost/hoops/athlete-service:dev"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8083
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: athlete-service-env
+          env:
+            - name: ATHLETE_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-db-athlete-app
+                  key: password
+            - name: ATHLETE_MIGRATOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-db-athlete-migrator
+                  key: password
+            - name: ATHLETE_SERVICE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-oidc-athlete-service
+                  key: client-secret
+          startupProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 3
+          readinessProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 3
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+
+---
+# Source: hoops/charts/core/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-service
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.1.0
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: core-service
+      app.kubernetes.io/instance: hoops
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: core-service
+        app.kubernetes.io/instance: hoops
+        app.kubernetes.io/part-of: hoops-academy
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: core-0.1.0
+      annotations:
+        checksum/env: 4d03e949850ccd201eb973cc8d9196fbffd53dc4c86c49fa2d29742bec2b4495
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsNonRoot: true
+        runAsUser: 185
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: core-service
+          image: "localhost/hoops/core-service:dev"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: core-service-env
+          env:
+            - name: CORE_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-db-core-app
+                  key: password
+            - name: CORE_PLATFORM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-db-core-platform
+                  key: password
+            - name: CORE_MIGRATOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-db-core-migrator
+                  key: password
+            - name: CORE_SERVICE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-oidc-core-service
+                  key: client-secret
+          startupProbe:
+            httpGet: {path: /q/health/started, port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /q/health/live, port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet: {path: /q/health/ready, port: http}
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 3
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+
+---
+# Source: hoops/charts/game/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game-service
+  labels:
+    app.kubernetes.io/name: game-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: game-0.1.0
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: game-service
+      app.kubernetes.io/instance: hoops
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: game-service
+        app.kubernetes.io/instance: hoops
+        app.kubernetes.io/part-of: hoops-academy
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: game-0.1.0
+      annotations:
+        checksum/env: 9d22fbd386f34ef4e020dd21796a2a0cf8765ba189f351358b0b0b35a6c5286e
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsNonRoot: true
+        runAsUser: 185
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: game-service
+          image: "localhost/hoops/game-service:dev"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8082
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: game-service-env
+          env:
+            - name: GAME_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-db-game-app
+                  key: password
+            - name: GAME_MIGRATOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-db-game-migrator
+                  key: password
+            - name: GAME_SERVICE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-oidc-game-service
+                  key: client-secret
+          startupProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 3
+          readinessProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 3
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+
+---
+# Source: hoops/charts/keycloak/templates/keycloak.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: keycloak-0.1.0
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/instance: hoops
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: keycloak
+        app.kubernetes.io/instance: hoops
+        app.kubernetes.io/part-of: hoops-academy
+        app.kubernetes.io/component: identity
+        app.kubernetes.io/version: "26.8.1"
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: keycloak-0.1.0
+      annotations:
+        checksum/realm: 5a2d130cef4cc47a9675f700c597d67d0ac2ea8405e964a979eea25fef0d5309
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: keycloak
+          image: "quay.io/keycloak/keycloak:26.8.1"
+          imagePullPolicy: IfNotPresent
+          # Production mode. Realm import is skipped when the realm already exists (IGNORE_EXISTING).
+          args: ["start", "--import-realm"]
+          env:
+            - {name: KC_DB, value: postgres}
+            - {name: KC_DB_URL_HOST, value: "keycloak-db-rw"}
+            - {name: KC_DB_URL_PORT, value: "5432"}
+            - {name: KC_DB_URL_DATABASE, value: "keycloak"}
+            - name: KC_DB_USERNAME
+              valueFrom: {secretKeyRef: {name: keycloak-db-app, key: username}}
+            - name: KC_DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: keycloak-db-app, key: password}}
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              valueFrom: {secretKeyRef: {name: keycloak-admin, key: username}}
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom: {secretKeyRef: {name: keycloak-admin, key: password}}
+            - {name: KC_HTTP_ENABLED, value: "true"}
+            - {name: KC_HTTP_RELATIVE_PATH, value: /auth}
+            # Frontend URL (issuer) is fixed to the public URL; back-channel (pods -> http://keycloak:8080/auth)
+            # uses the request URL so services can fetch JWKS/tokens in-cluster while issuers stay consistent.
+            - name: KC_HOSTNAME
+              value: "http://localhost:8090/auth"
+            - {name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC, value: "true"}
+            - {name: KC_PROXY_HEADERS, value: xforwarded}
+            - {name: KC_HEALTH_ENABLED, value: "true"}
+            - {name: KC_METRICS_ENABLED, value: "false"}
+            - {name: KC_CACHE, value: local}
+            - name: JAVA_OPTS_APPEND
+              value: "-XX:MaxRAMPercentage=70.0"
+            - name: CORE_SERVICE_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: hoops-oidc-core-service, key: client-secret}}
+            - name: GAME_SERVICE_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: hoops-oidc-game-service, key: client-secret}}
+            - name: ATHLETE_SERVICE_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: hoops-oidc-athlete-service, key: client-secret}}
+          ports:
+            - {name: http, containerPort: 8080}
+            - {name: management, containerPort: 9000}
+          startupProbe:
+            httpGet: {path: /auth/health/started, port: management}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /auth/health/ready, port: management}
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet: {path: /auth/health/live, port: management}
+            periodSeconds: 15
+            failureThreshold: 6
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            - {name: realm, mountPath: /opt/keycloak/data/import, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: realm
+          configMap:
+            name: keycloak-realm
+        - name: tmp
+          emptyDir: {sizeLimit: 128Mi}
+
+---
+# Source: hoops/charts/web/templates/web.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: web-0.1.0
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web
+      app.kubernetes.io/instance: hoops
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: web
+        app.kubernetes.io/instance: hoops
+        app.kubernetes.io/part-of: hoops-academy
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: web-0.1.0
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsGroup: 101
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: "localhost/hoops/web:dev"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: 64Mi
+            requests:
+              cpu: 20m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 64Mi}
+
+---
+# Source: hoops/charts/athlete/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: athlete-service
+  labels:
+    app.kubernetes.io/name: athlete-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: athlete-0.1.0
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      http:
+        paths:
+          - path: /api/athlete
+            pathType: Prefix
+            backend:
+              service:
+                name: athlete-service
+                port: {name: http}
+
+---
+# Source: hoops/charts/athlete/templates/ingress.yaml
+# Health only: <prefix>/q/health/** is rewritten to /q/health/** (nothing else under /q is exposed).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: athlete-service-health
+  labels:
+    app.kubernetes.io/name: athlete-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: athlete-0.1.0
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /q/health$1
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      http:
+        paths:
+          - path: /api/athlete/q/health(/(?:live|ready|started))?$
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: athlete-service
+                port: {name: http}
+
+---
+# Source: hoops/charts/core/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: core-service
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.1.0
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      http:
+        paths:
+          - path: /api/core
+            pathType: Prefix
+            backend:
+              service:
+                name: core-service
+                port: {name: http}
+          - path: /platform
+            pathType: Prefix
+            backend:
+              service:
+                name: core-service
+                port: {name: http}
+
+---
+# Source: hoops/charts/core/templates/ingress.yaml
+# Health only: <prefix>/q/health/** is rewritten to /q/health/** (nothing else under /q is exposed).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: core-service-health
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.1.0
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /q/health$1
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      http:
+        paths:
+          - path: /api/core/q/health(/(?:live|ready|started))?$
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: core-service
+                port: {name: http}
+
+---
+# Source: hoops/charts/game/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: game-service
+  labels:
+    app.kubernetes.io/name: game-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: game-0.1.0
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      http:
+        paths:
+          - path: /api/game
+            pathType: Prefix
+            backend:
+              service:
+                name: game-service
+                port: {name: http}
+
+---
+# Source: hoops/charts/game/templates/ingress.yaml
+# Health only: <prefix>/q/health/** is rewritten to /q/health/** (nothing else under /q is exposed).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: game-service-health
+  labels:
+    app.kubernetes.io/name: game-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: game-0.1.0
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /q/health$1
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      http:
+        paths:
+          - path: /api/game/q/health(/(?:live|ready|started))?$
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: game-service
+                port: {name: http}
+
+---
+# Source: hoops/charts/keycloak/templates/keycloak.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: keycloak-0.1.0
+  annotations:
+    # Keycloak responses carry large cookies/headers.
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port: {name: http}
+
+---
+# Source: hoops/charts/web/templates/web.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: web-0.1.0
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port: {name: http}
+          - path: /internal
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port: {name: http}
+
+---
+# Source: hoops/charts/databases/templates/hoops-db.yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: hoops-db
+  labels:
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: database
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: databases-0.1.0
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  enableSuperuserAccess: false
+  storage:
+    size: 2Gi
+  resources:
+    limits:
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  bootstrap:
+    initdb:
+      database: hoops
+      owner: app
+      # Runs once as superuser in `hoops` right after initdb.
+      postInitApplicationSQLRefs:
+        configMapRefs:
+          - name: hoops-db-init-sql
+            key: 01_roles_schemas.sql
+  managed:
+    roles:
+      - name: core_migrator
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: -1
+        passwordSecret:
+          name: hoops-db-core-migrator
+      - name: core_app
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: 50
+        passwordSecret:
+          name: hoops-db-core-app
+      - name: core_platform
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: 10
+        passwordSecret:
+          name: hoops-db-core-platform
+      - name: game_migrator
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: -1
+        passwordSecret:
+          name: hoops-db-game-migrator
+      - name: game_app
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: 50
+        passwordSecret:
+          name: hoops-db-game-app
+      - name: athlete_migrator
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: -1
+        passwordSecret:
+          name: hoops-db-athlete-migrator
+      - name: athlete_app
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: 50
+        passwordSecret:
+          name: hoops-db-athlete-app
+
+---
+# Source: hoops/charts/databases/templates/keycloak-db.yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: keycloak-db
+  labels:
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: database
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: databases-0.1.0
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  enableSuperuserAccess: false
+  storage:
+    size: 1Gi
+  resources:
+    limits:
+      memory: 384Mi
+    requests:
+      cpu: 50m
+      memory: 192Mi
+  bootstrap:
+    initdb:
+      database: keycloak
+      owner: keycloak
+      secret:
+        name: keycloak-db-app

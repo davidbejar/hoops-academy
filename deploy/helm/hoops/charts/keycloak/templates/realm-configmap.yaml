@@ -1,0 +1,13 @@
+{{- /* files/realm-academy.json is a symlink to infra/keycloak/realm-academy.json (single source of truth).
+       It contains only ${..._CLIENT_SECRET} placeholders, never secret values. */ -}}
+{{- $realm := .Files.Get "files/realm-academy.json" -}}
+{{- if not $realm }}{{ fail "files/realm-academy.json missing (symlink to infra/keycloak/realm-academy.json)" }}{{ end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "keycloak.fullname" . }}-realm
+  labels:
+    {{- include "keycloak.labels" . | nindent 4 }}
+data:
+  realm-academy.json: |
+    {{- replace .Values.realmSourceUrl .Values.publicUrl $realm | nindent 4 }}

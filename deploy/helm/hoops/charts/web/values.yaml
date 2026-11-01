@@ -1,0 +1,30 @@
+fullnameOverride: web
+image:
+  repository: localhost/hoops/web
+  tag: dev
+  pullPolicy: IfNotPresent
+replicaCount: 1
+port: 8080
+ingress:
+  enabled: true
+  className: nginx
+  host: ""
+  # `/` serves the SPA. `/internal` is routed here explicitly and answered with 403 by nginx (portable:
+  # ingress-nginx snippets are disabled by default, and an explicit rule beats a catch-all fallback).
+  paths: [/]
+  denyPaths: [/internal]
+resources:
+  requests: {cpu: 20m, memory: 32Mi}
+  limits: {memory: 64Mi}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+  runAsGroup: 101
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
+networkPolicy:
+  enabled: true
+  ingressControllerNamespace: ingress-nginx

@@ -1,0 +1,16 @@
+# Exercises every optional feature of the reusable hoops-service chart.
+fullnameOverride: demo-service
+image: {repository: localhost/hoops/demo-service, tag: "1.2.3"}
+port: 8099
+replicaCount: 2
+env:
+  DEMO_URL: http://example.invalid
+secretEnv:
+  - {name: DEMO_PASSWORD, secretName: demo-db, key: password}
+existingSecret: demo-extra
+ingress:
+  host: hoops.example.test
+  paths: [/api/demo, /platform]
+  health: {enabled: true, prefix: /api/demo}
+pdb: {enabled: true, minAvailable: 1}
+hpa: {enabled: true, minReplicas: 2, maxReplicas: 4}

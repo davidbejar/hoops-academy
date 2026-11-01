@@ -44,9 +44,13 @@ scan:
     gitleaks detect --source . --redact
     source scripts/env.sh && ./mvnw -q -Psecurity-scan org.owasp:dependency-check-maven:aggregate
 
-# kind cluster lifecycle (WP16)
-kind-up:
-    deploy/kind/up.sh
+# kind cluster lifecycle (WP16): cluster + ingress-nginx + CNPG + namespace/secrets. ARGS: --deploy [--from-host]
+kind-up *ARGS:
+    deploy/kind/up.sh {{ARGS}}
 
 kind-down:
     deploy/kind/down.sh
+
+# Inner loop on kind (needs `just kind-up`). ARGS go to Tilt, e.g. `just tilt ci` or `just tilt up -- --from-host`
+tilt *ARGS="up":
+    source scripts/env.sh && tilt {{ARGS}}

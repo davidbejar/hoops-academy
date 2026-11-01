@@ -1,0 +1,16 @@
+# kind (deploy/kind): ingress-nginx on host ports 8090 (http) / 8453 (https, optional self-signed).
+# Keep requests small: the Podman machine is 2 CPU / 8 GiB and also runs the compose stack.
+keycloak:
+  publicUrl: http://localhost:8090
+  resources:
+    requests: {cpu: 100m, memory: 512Mi}
+    limits: {memory: 1Gi}
+core:
+  resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+game:
+  resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+athlete:
+  resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+databases:
+  hoopsDb:
+    storage: {size: 2Gi}

@@ -1,0 +1,4 @@
+# Context filter for service.Containerfile with APP_SOURCE=host: only the host-built fast-jars are sent.
+**
+!services/*/target/quarkus-app
+!services/*/target/quarkus-app/**

@@ -1,0 +1,107 @@
+{{- $fullname := include "hoops-service.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "hoops-service.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.hpa.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      {{- include "hoops-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "hoops-service.labels" . | nindent 8 }}
+      annotations:
+        checksum/env: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $fullname }}
+          image: {{ include "hoops-service.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ $fullname }}-env
+            {{- with .Values.existingSecret }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+          {{- with .Values.secretEnv }}
+          env:
+            {{- range . }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .key }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.probes }}
+          {{- $tcp := eq (default "http" .mode) "tcp" }}
+          startupProbe:
+            {{- if $tcp }}
+            tcpSocket: {port: http}
+            {{- else }}
+            httpGet: {path: {{ .startup.path }}, port: http}
+            {{- end }}
+            periodSeconds: {{ .startup.periodSeconds }}
+            failureThreshold: {{ .startup.failureThreshold }}
+            timeoutSeconds: {{ .startup.timeoutSeconds }}
+          livenessProbe:
+            {{- if $tcp }}
+            tcpSocket: {port: http}
+            {{- else }}
+            httpGet: {path: {{ .liveness.path }}, port: http}
+            {{- end }}
+            periodSeconds: {{ .liveness.periodSeconds }}
+            failureThreshold: {{ .liveness.failureThreshold }}
+            timeoutSeconds: {{ .liveness.timeoutSeconds }}
+          readinessProbe:
+            {{- if $tcp }}
+            tcpSocket: {port: http}
+            {{- else }}
+            httpGet: {path: {{ .readiness.path }}, port: http}
+            {{- end }}
+            periodSeconds: {{ .readiness.periodSeconds }}
+            failureThreshold: {{ .readiness.failureThreshold }}
+            timeoutSeconds: {{ .readiness.timeoutSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

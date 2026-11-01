@@ -65,6 +65,15 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
   document core counter keys in UsageReport; approval `reject` note should be required.
 - **Members list** shows pending/rejected players' persons (WP5) — filter by status.
 
+- **Health extension** (WP16): add `quarkus-smallrye-health` to game- and athlete-service and drop the TCP probe
+  overrides in `deploy/helm/hoops/values.yaml`.
+- **Kind deploy of core-service** + `smoke.sh core game athlete` + `/api/core/me` e2e through the ingress (WP18).
+- **Helm chart symlinks** (realm JSON, init SQL) break `helm package`; replace with a copy step in `up.sh`/CI before
+  publishing charts.
+- **Mail in kind**: realm SMTP host `mailhog` is not deployed in the cluster (add mailpit chart or disable e-mail).
+- **Problem `instance` double slash** in game 503 responses (`//api/game/...`).
+- **Production ingress choice** (ingress-nginx retiring upstream) and External Secrets Operator manifests.
+
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
 - Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0 (requires realm re-import: `just down && podman volume rm hoops_pgdata`).

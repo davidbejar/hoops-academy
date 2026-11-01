@@ -1,0 +1,15 @@
+# Context filter for service.Containerfile with APP_SOURCE=maven (repository root is the context).
+# Re-include each directory itself as well as its contents (buildah matches the directory first).
+**
+!pom.xml
+!.mvn
+!.mvn/wrapper
+!.mvn/wrapper/maven-wrapper.properties
+!libs
+!libs/**
+!services
+!services/**
+**/target
+**/.idea
+**/*.iml
+**/.DS_Store

@@ -1,0 +1,73 @@
+# Hoops Academy umbrella defaults. Environment overlays: values-kind.yaml (committed), values-local.yaml (git-ignored).
+# No secret values here: every credential is referenced by Secret name (see ADR-0012).
+
+databases:
+  enabled: true
+
+keycloak:
+  enabled: true
+  publicUrl: http://localhost:8090
+
+# ---------------------------------------------------------------------------------------------------------------
+core:
+  enabled: true
+  fullnameOverride: core-service
+  image: {repository: localhost/hoops/core-service, tag: dev}
+  port: 8081
+  ingress:
+    paths: [/api/core, /platform]
+    health: {enabled: true, prefix: /api/core}
+  env:
+    CORE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
+    OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
+    KEYCLOAK_URL: http://keycloak:8080/auth
+    GAME_SERVICE_URL: http://game-service:8082
+    ATHLETE_SERVICE_URL: http://athlete-service:8083
+  secretEnv:
+    - {name: CORE_APP_PASSWORD,          secretName: hoops-db-core-app,       key: password}
+    - {name: CORE_PLATFORM_PASSWORD,     secretName: hoops-db-core-platform,  key: password}
+    - {name: CORE_MIGRATOR_PASSWORD,     secretName: hoops-db-core-migrator,  key: password}
+    - {name: CORE_SERVICE_CLIENT_SECRET, secretName: hoops-oidc-core-service, key: client-secret}
+
+game:
+  enabled: true
+  fullnameOverride: game-service
+  image: {repository: localhost/hoops/game-service, tag: dev}
+  port: 8082
+  ingress:
+    paths: [/api/game]
+    health: {enabled: true, prefix: /api/game}
+  # game-service does not depend on quarkus-smallrye-health yet (no /q/health) -> TCP probes until it does
+  # (WP16 open point; then remove this block).
+  probes: {mode: tcp}
+  env:
+    GAME_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
+    KEYCLOAK_URL: http://keycloak:8080/auth
+    HOOPS_CORE_URL: http://core-service:8081
+  secretEnv:
+    - {name: GAME_APP_PASSWORD,          secretName: hoops-db-game-app,       key: password}
+    - {name: GAME_MIGRATOR_PASSWORD,     secretName: hoops-db-game-migrator,  key: password}
+    - {name: GAME_SERVICE_CLIENT_SECRET, secretName: hoops-oidc-game-service, key: client-secret}
+
+athlete:
+  enabled: true
+  fullnameOverride: athlete-service
+  image: {repository: localhost/hoops/athlete-service, tag: dev}
+  port: 8083
+  ingress:
+    paths: [/api/athlete]
+    health: {enabled: true, prefix: /api/athlete}
+  # athlete-service does not depend on quarkus-smallrye-health yet (no /q/health) -> TCP probes until it does
+  # (WP16 open point; then remove this block).
+  probes: {mode: tcp}
+  env:
+    ATHLETE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
+    KEYCLOAK_URL: http://keycloak:8080/auth
+    HOOPS_CORE_URL: http://core-service:8081
+  secretEnv:
+    - {name: ATHLETE_APP_PASSWORD,          secretName: hoops-db-athlete-app,       key: password}
+    - {name: ATHLETE_MIGRATOR_PASSWORD,     secretName: hoops-db-athlete-migrator,  key: password}
+    - {name: ATHLETE_SERVICE_CLIENT_SECRET, secretName: hoops-oidc-athlete-service, key: client-secret}
+
+web:
+  enabled: true

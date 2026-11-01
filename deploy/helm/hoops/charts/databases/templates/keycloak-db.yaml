@@ -1,0 +1,27 @@
+{{- if .Values.keycloakDb.enabled }}
+{{- with .Values.keycloakDb }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "databases.labels" $ | nindent 4 }}
+spec:
+  instances: {{ .instances }}
+  imageName: {{ $.Values.imageName }}
+  enableSuperuserAccess: false
+  storage:
+    size: {{ .storage.size }}
+    {{- with .storage.storageClass }}
+    storageClass: {{ . }}
+    {{- end }}
+  resources:
+    {{- toYaml .resources | nindent 4 }}
+  bootstrap:
+    initdb:
+      database: {{ .database }}
+      owner: {{ .owner }}
+      secret:
+        name: {{ .secret }}
+{{- end }}
+{{- end }}

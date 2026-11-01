@@ -1,0 +1,68 @@
+# Defaults for one Quarkus service. The umbrella chart (deploy/helm/hoops) sets per-service values.
+fullnameOverride: ""           # resource name and in-cluster DNS name, e.g. core-service
+image:
+  repository: localhost/hoops/service
+  tag: dev
+  pullPolicy: IfNotPresent
+replicaCount: 1
+port: 8080
+
+# Non-secret configuration -> ConfigMap -> envFrom.
+env: {}
+# Secret values injected as env vars: [{name: ENV_VAR, secretName: <existing Secret>, key: <key>}].
+# Secrets are created outside the chart (deploy/kind/up.sh, Tilt, or External Secrets Operator, see ADR-0012).
+secretEnv: []
+# Optional: an existing Secret whose keys all become env vars (envFrom).
+existingSecret: ""
+
+ingress:
+  enabled: true
+  className: nginx
+  host: ""                      # empty = any host (kind: localhost)
+  paths: []                     # path prefixes routed to this service, e.g. [/api/game]
+  annotations: {}
+  # Exposes <healthPrefix>/q/health/** -> /q/health/** (regex + rewrite; no snippets). Off by default.
+  health:
+    enabled: false
+    prefix: ""
+
+probes:
+  # http = SmallRye Health endpoints (needs quarkus-smallrye-health); tcp = port check only (fallback).
+  mode: http
+  startup:   {path: /q/health/started, periodSeconds: 5, failureThreshold: 60, timeoutSeconds: 3}
+  liveness:  {path: /q/health/live,    periodSeconds: 10, failureThreshold: 3, timeoutSeconds: 3}
+  readiness: {path: /q/health/ready,   periodSeconds: 5,  failureThreshold: 3, timeoutSeconds: 3}
+
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+  limits: {memory: 512Mi}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 185
+  runAsGroup: 0
+  fsGroup: 0
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
+
+networkPolicy:
+  enabled: true
+  ingressControllerNamespace: ingress-nginx
+
+pdb:
+  enabled: false
+  minAvailable: 1
+
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

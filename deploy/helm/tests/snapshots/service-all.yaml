@@ -1,0 +1,285 @@
+---
+# Source: hoops-service/templates/networkpolicy.yaml
+# Only the ingress controller and pods of this namespace may reach the service.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: demo-service
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.1.0
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: demo-service
+      app.kubernetes.io/instance: svc
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector: {}
+      ports:
+        - port: http
+          protocol: TCP
+
+---
+# Source: hoops-service/templates/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: demo-service
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.1.0
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: demo-service
+      app.kubernetes.io/instance: svc
+
+---
+# Source: hoops-service/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-service-env
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.1.0
+data:
+  QUARKUS_HTTP_PORT: "8099"
+  DEMO_URL: "http://example.invalid"
+
+---
+# Source: hoops-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-service
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.1.0
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+  ports:
+    - name: http
+      port: 8099
+      targetPort: http
+      protocol: TCP
+
+---
+# Source: hoops-service/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-service
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.1.0
+spec:
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: demo-service
+      app.kubernetes.io/instance: svc
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: demo-service
+        app.kubernetes.io/instance: svc
+        app.kubernetes.io/part-of: hoops-academy
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: hoops-service-0.1.0
+      annotations:
+        checksum/env: 781d98f3715ce1c88b15983c86885b3fe98a76ed46e5a8f368e78f91d68ea26a
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsNonRoot: true
+        runAsUser: 185
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: demo-service
+          image: "localhost/hoops/demo-service:1.2.3"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8099
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: demo-service-env
+            - secretRef:
+                name: demo-extra
+          env:
+            - name: DEMO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: demo-db
+                  key: password
+          startupProbe:
+            httpGet: {path: /q/health/started, port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /q/health/live, port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet: {path: /q/health/ready, port: http}
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 3
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+
+---
+# Source: hoops-service/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: demo-service
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.1.0
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: demo-service
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+# Source: hoops-service/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-service
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.1.0
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      host: "hoops.example.test"
+      http:
+        paths:
+          - path: /api/demo
+            pathType: Prefix
+            backend:
+              service:
+                name: demo-service
+                port: {name: http}
+          - path: /platform
+            pathType: Prefix
+            backend:
+              service:
+                name: demo-service
+                port: {name: http}
+
+---
+# Source: hoops-service/templates/ingress.yaml
+# Health only: <prefix>/q/health/** is rewritten to /q/health/** (nothing else under /q is exposed).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-service-health
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.1.0
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /q/health$1
+spec:
+  ingressClassName: nginx
+  rules:
+    -
+      host: "hoops.example.test"
+      http:
+        paths:
+          - path: /api/demo/q/health(/(?:live|ready|started))?$
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: demo-service
+                port: {name: http}
