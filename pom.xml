@@ -14,7 +14,10 @@
   <modules>
     <module>libs/common-quarkus</module>
     <module>libs/contracts</module>
-    <!-- services/* and e2e are added by their work packages (see docs/wp) -->
+    <module>services/core-service</module>
+    <module>services/game-service</module>
+    <module>services/athlete-service</module>
+    <!-- e2e is added by WP18 -->
   </modules>
 
   <properties>
