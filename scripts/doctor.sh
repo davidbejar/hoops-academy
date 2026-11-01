@@ -12,11 +12,11 @@ check "JDK 21"            "test -n \"\${JAVA_HOME:-}\" && \"\$JAVA_HOME/bin/java
 check "maven"             "mvn -v | head -1"
 check "podman"            "podman --version"
 check "podman machine"    "podman machine inspect --format '{{.State}} rootful={{.Rootful}} cpus={{.Resources.CPUs}} mem={{.Resources.Memory}}MiB' | grep running"
-check "podman compose"    "podman compose version 2>&1 | head -1"
+check "podman compose"    "podman compose version 2>/dev/null | grep -i version | head -1"
 check "kind"              "kind --version" optional
 check "helm"              "helm version --short" optional
 check "tilt"              "tilt version" optional
-check "kubectl"           "kubectl version --client | head -1" optional
+check "kubectl"           "kubectl version --client 2>/dev/null | head -1" optional
 check "flutter"           "flutter --version | head -1"
 check "gitleaks"          "gitleaks version"
 check "pre-commit"        "pre-commit --version"
@@ -25,7 +25,7 @@ check "trivy"             "trivy --version | head -1" optional
 check "just"              "just --version"
 echo "Environment (source scripts/env.sh first):"
 check "DOCKER_HOST"       "test -n \"\${DOCKER_HOST:-}\" && echo \$DOCKER_HOST"
-check "ryuk privileged"   "grep -q '^ryuk.container.privileged=true' ~/.testcontainers.properties && echo configured || test \"\${TESTCONTAINERS_RYUK_DISABLED:-}\" = true && echo 'disabled (rootless)'"
+check "ryuk"              "if grep -qs '^ryuk.container.privileged=true' ~/.testcontainers.properties; then echo 'privileged (rootful)'; elif [ \"\${TESTCONTAINERS_RYUK_DISABLED:-}\" = true ]; then echo 'disabled (rootless machine)'; else exit 1; fi"
 check "docker API via podman" "curl -s --unix-socket \"\${DOCKER_HOST#unix://}\" http://d/_ping"
 echo
 echo "$ok ok, $fail blocking problems"
