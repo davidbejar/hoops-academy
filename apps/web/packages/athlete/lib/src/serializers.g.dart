@@ -17,6 +17,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(AttendanceEntry.serializer)
       ..add(AttendanceInput.serializer)
       ..add(AttendanceStatus.serializer)
+      ..add(BandStatus.serializer)
       ..add(BodyMeasurement.serializer)
       ..add(BodyMeasurementInput.serializer)
       ..add(CancelTrainingSessionRequest.serializer)
@@ -45,8 +46,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PlanCompletion.serializer)
       ..add(PlanCompletionPage.serializer)
       ..add(PlanItem.serializer)
+      ..add(PlanProgress.serializer)
+      ..add(PlanProgressCounts.serializer)
       ..add(PlannedAbsence.serializer)
       ..add(PlannedAbsencePage.serializer)
+      ..add(PlayerAvailability.serializer)
+      ..add(PlayerProgress.serializer)
       ..add(Problem.serializer)
       ..add(ProblemViolation.serializer)
       ..add(RecordAttendanceRequest.serializer)
@@ -99,8 +104,14 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(PlannedAbsence)]),
           () => ListBuilder<PlannedAbsence>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlayerProgress)]),
+          () => ListBuilder<PlayerProgress>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(ProblemViolation)]),
           () => ListBuilder<ProblemViolation>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(TrainingPlanSummary)]),

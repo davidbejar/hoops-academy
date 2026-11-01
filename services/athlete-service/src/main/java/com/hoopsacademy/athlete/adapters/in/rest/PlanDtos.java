@@ -45,22 +45,23 @@ final class PlanDtos {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Summary(UUID id, String name, String description, boolean template, UUID sourceTemplateId, int itemCount,
-            int totalDurationMinutes) {
+            int totalDurationMinutes, boolean archived) {
 
         static Summary from(TrainingPlan p) {
             return new Summary(p.id().value(), p.name(), p.description(), p.template(),
-                    p.sourcePlanId().map(id -> id.value()).orElse(null), p.itemCount(), p.totalDurationMinutes());
+                    p.sourcePlanId().map(id -> id.value()).orElse(null), p.itemCount(), p.totalDurationMinutes(),
+                    p.archived());
         }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Plan(UUID id, String name, String description, boolean template, UUID sourceTemplateId, int itemCount,
-            int totalDurationMinutes, List<Item> items) {
+            int totalDurationMinutes, boolean archived, List<Item> items) {
 
         static Plan from(TrainingPlan p) {
             Summary s = Summary.from(p);
             return new Plan(s.id(), s.name(), s.description(), s.template(), s.sourceTemplateId(), s.itemCount(),
-                    s.totalDurationMinutes(), p.items().stream().map(Item::from).toList());
+                    s.totalDurationMinutes(), s.archived(), p.items().stream().map(Item::from).toList());
         }
     }
 }

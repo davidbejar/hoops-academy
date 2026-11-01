@@ -485,7 +485,9 @@ class ResultTile extends StatelessWidget {
       key: Key('result-${r.id}'),
       dense: true,
       title: Text(l.testResultLine(r.unit, _num(r.value))),
-      subtitle: Text('${fullDate(r.measuredOn)} · ${l.testAtAge(r.ageAtMeasurement)}'),
+      subtitle: Text(r.ageAtMeasurement == null
+          ? fullDate(r.measuredOn)
+          : '${fullDate(r.measuredOn)} · ${l.testAtAge(r.ageAtMeasurement!)}'),
       trailing: Wrap(
         spacing: AppTokens.spaceXs,
         crossAxisAlignment: WrapCrossAlignment.center,

@@ -59,7 +59,10 @@ public class ManageSessions {
             access.requireView(caller, calendar.team().get());
             teams = Set.of(calendar.team().get());
         } else if (!access.hasStaffRole(caller)) {
-            throw new InvalidRequestException("teamId", "TEAM_REQUIRED", "teamId is required for parents and players");
+            teams = access.playerTeams(caller);
+            if (teams.isEmpty()) {
+                return new PageResult<>(java.util.List.of(), calendar.page(), calendar.size(), 0);
+            }
         }
         ZoneId zone = clock.zoneOf(caller.tenantId());
         LocalDate today = clock.today(caller.tenantId());

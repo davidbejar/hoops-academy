@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
+import com.hoopsacademy.core.adapters.in.shared.InvalidRequestException;
 import com.hoopsacademy.core.adapters.in.shared.MergePatch;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.core.adapters.in.shared.Params;
 import com.hoopsacademy.core.application.platform.CreateTenant;
 import com.hoopsacademy.core.application.platform.CreateTenantCommand;
 import com.hoopsacademy.core.application.platform.PlatformTenantQueries;
@@ -13,6 +15,7 @@ import com.hoopsacademy.core.application.platform.TenantLifecycle;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.application.usage.AggregateTenantUsage;
+import com.hoopsacademy.core.application.usage.UsageHistory;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.domain.shared.Patch;
 import com.hoopsacademy.core.domain.tenant.Tenant;
@@ -37,7 +40,11 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,17 +54,24 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 public class PlatformTenantResource {
 
+    private static final int DEFAULT_HISTORY_DAYS = 90;
+    private static final int MAX_HISTORY_DAYS = 366;
+
     private final CreateTenant createTenant;
     private final PlatformTenantQueries queries;
     private final TenantLifecycle lifecycle;
     private final AggregateTenantUsage usage;
+    private final UsageHistory usageHistory;
+    private final Clock clock;
 
     public PlatformTenantResource(CreateTenant createTenant, PlatformTenantQueries queries, TenantLifecycle lifecycle,
-            AggregateTenantUsage usage) {
+            AggregateTenantUsage usage, UsageHistory usageHistory, Clock clock) {
         this.createTenant = createTenant;
         this.queries = queries;
         this.lifecycle = lifecycle;
         this.usage = usage;
+        this.usageHistory = usageHistory;
+        this.clock = clock;
     }
 
     @GET
@@ -125,5 +139,25 @@ public class PlatformTenantResource {
     @Path("/{tenantId}/usage")
     public TenantUsageDto usage(@PathParam("tenantId") UUID id) {
         return TenantUsageDto.of(usage.of(new TenantId(id)));
+    }
+
+    @GET
+    @Path("/{tenantId}/usage/history")
+    public TenantUsageHistoryDto usageHistory(@PathParam("tenantId") UUID id, @QueryParam("from") String from,
+            @QueryParam("to") String to) {
+        return TenantUsageHistoryDto.of(usageHistory.of(new TenantId(id), historyRange(from, to)));
+    }
+
+    /** Defaults: {@code to} = today (UTC), {@code from} = to - 89 days; at most 366 days, from <= to (else 400). */
+    private UsageHistory.Range historyRange(String rawFrom, String rawTo) {
+        LocalDate to = Params.date("to", rawTo).orElseGet(() -> LocalDate.now(clock.withZone(ZoneOffset.UTC)));
+        LocalDate from = Params.date("from", rawFrom).orElse(to.minusDays(DEFAULT_HISTORY_DAYS - 1));
+        if (from.isAfter(to)) {
+            throw InvalidRequestException.of("from", "must not be after to");
+        }
+        if (ChronoUnit.DAYS.between(from, to) >= MAX_HISTORY_DAYS) {
+            throw InvalidRequestException.of("from", "the range may span at most " + MAX_HISTORY_DAYS + " days");
+        }
+        return new UsageHistory.Range(from, to);
     }
 }

@@ -36,7 +36,7 @@ abstract class PlayerBrief implements Built<PlayerBrief, PlayerBriefBuilder> {
 
   @BuiltValueField(wireName: r'status')
   PlayerStatus get status;
-  // enum statusEnum {  PENDING_APPROVAL,  ACTIVE,  ORPHAN,  WITHDRAWN,  };
+  // enum statusEnum {  PENDING_APPROVAL,  ACTIVE,  ORPHAN,  WITHDRAWN,  REJECTED,  };
 
   PlayerBrief._();
 

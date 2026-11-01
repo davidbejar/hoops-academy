@@ -18,8 +18,6 @@ class _$BoxScore extends BoxScore {
   @override
   final StatLine teamTotals;
   @override
-  final int? opponentFouls;
-  @override
   final BuiltList<PlayerMatchStats> players;
   @override
   final BuiltList<ProjectionWarning> warnings;
@@ -35,7 +33,6 @@ class _$BoxScore extends BoxScore {
       required this.score,
       required this.periodScores,
       required this.teamTotals,
-      this.opponentFouls,
       required this.players,
       required this.warnings,
       required this.lastServerSeq})
@@ -56,7 +53,6 @@ class _$BoxScore extends BoxScore {
         score == other.score &&
         periodScores == other.periodScores &&
         teamTotals == other.teamTotals &&
-        opponentFouls == other.opponentFouls &&
         players == other.players &&
         warnings == other.warnings &&
         lastServerSeq == other.lastServerSeq;
@@ -70,7 +66,6 @@ class _$BoxScore extends BoxScore {
     _$hash = $jc(_$hash, score.hashCode);
     _$hash = $jc(_$hash, periodScores.hashCode);
     _$hash = $jc(_$hash, teamTotals.hashCode);
-    _$hash = $jc(_$hash, opponentFouls.hashCode);
     _$hash = $jc(_$hash, players.hashCode);
     _$hash = $jc(_$hash, warnings.hashCode);
     _$hash = $jc(_$hash, lastServerSeq.hashCode);
@@ -86,7 +81,6 @@ class _$BoxScore extends BoxScore {
           ..add('score', score)
           ..add('periodScores', periodScores)
           ..add('teamTotals', teamTotals)
-          ..add('opponentFouls', opponentFouls)
           ..add('players', players)
           ..add('warnings', warnings)
           ..add('lastServerSeq', lastServerSeq))
@@ -120,11 +114,6 @@ class BoxScoreBuilder implements Builder<BoxScore, BoxScoreBuilder> {
   set teamTotals(StatLineBuilder? teamTotals) =>
       _$this._teamTotals = teamTotals;
 
-  int? _opponentFouls;
-  int? get opponentFouls => _$this._opponentFouls;
-  set opponentFouls(int? opponentFouls) =>
-      _$this._opponentFouls = opponentFouls;
-
   ListBuilder<PlayerMatchStats>? _players;
   ListBuilder<PlayerMatchStats> get players =>
       _$this._players ??= ListBuilder<PlayerMatchStats>();
@@ -154,7 +143,6 @@ class BoxScoreBuilder implements Builder<BoxScore, BoxScoreBuilder> {
       _score = $v.score.toBuilder();
       _periodScores = $v.periodScores.toBuilder();
       _teamTotals = $v.teamTotals.toBuilder();
-      _opponentFouls = $v.opponentFouls;
       _players = $v.players.toBuilder();
       _warnings = $v.warnings.toBuilder();
       _lastServerSeq = $v.lastServerSeq;
@@ -188,7 +176,6 @@ class BoxScoreBuilder implements Builder<BoxScore, BoxScoreBuilder> {
             score: score.build(),
             periodScores: periodScores.build(),
             teamTotals: teamTotals.build(),
-            opponentFouls: opponentFouls,
             players: players.build(),
             warnings: warnings.build(),
             lastServerSeq: BuiltValueNullFieldError.checkNotNull(
@@ -203,7 +190,6 @@ class BoxScoreBuilder implements Builder<BoxScore, BoxScoreBuilder> {
         periodScores.build();
         _$failedField = 'teamTotals';
         teamTotals.build();
-
         _$failedField = 'players';
         players.build();
         _$failedField = 'warnings';

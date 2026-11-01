@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.in.internal;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -9,6 +10,7 @@ import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -57,6 +59,33 @@ class InternalResourceTest {
     }
 
     @Test
+    void authzContextCarriesTheTenantZoneAndTheTeamsOfOwnAndLinkedPlayers() {
+        RosterDb.timezone(tenant, "Asia/Jakarta");
+        UUID season = RosterDb.currentSeason(tenant);
+        var categories = RosterDb.defaultCategories(tenant);
+        UUID ownTeam = RosterDb.team(tenant, season, "Seniors", categories.get("SENIOR"), "MIXED");
+        UUID childTeam = RosterDb.team(tenant, season, "U12", categories.get("U12"), "MIXED");
+        UUID unrelatedTeam = RosterDb.team(tenant, season, "U14", categories.get("U14"), "MIXED");
+        RosterDb.assignment(tenant, ownTeam, ownPlayer, "4");
+        RosterDb.assignment(tenant, childTeam, child, "7");
+        RosterDb.assignment(tenant, unrelatedTeam, CoreDb.player(tenant, CoreDb.person(tenant, "Other", "O", null)), "9");
+
+        given().filter(Contract.CORE).get("/internal/authz/{t}/{s}", tenant, subject).then().statusCode(200)
+                .body("timezone", equalTo("Asia/Jakarta"))
+                .body("playerTeamIds", containsInAnyOrder(ownTeam.toString(), childTeam.toString()));
+    }
+
+    @Test
+    void aMemberWithoutPlayersHasNoPlayerTeams() {
+        String coach = "coach-" + UUID.randomUUID();
+        CoreDb.person(tenant, CoreDb.login(coach), "Coach", "C", null, null, null, TenantRole.COACH);
+
+        given().filter(Contract.CORE).get("/internal/authz/{t}/{s}", tenant, coach).then().statusCode(200)
+                .body("playerTeamIds", empty())
+                .body("timezone", equalTo("Europe/Madrid"));
+    }
+
+    @Test
     void suspendedTenantIsReportedSoCallersCanDenyAccess() {
         CoreDb.inTenant(null, c -> CoreDb.update(c, "update core.tenant set status = 'SUSPENDED' where id = ?::uuid", tenant));
         given().filter(Contract.CORE).get("/internal/authz/{t}/{s}", tenant, subject).then().statusCode(200)
@@ -76,8 +105,16 @@ class InternalResourceTest {
                 .body("tenantId", equalTo(tenant))
                 .body("counters.members", equalTo(2))
                 .body("counters.players", equalTo(2))
-                .body("counters.activePlayers", equalTo(2));
-        given().filter(Contract.CORE).get("/internal/usage/{t}", UUID.randomUUID()).then().statusCode(404);
+                .body("counters.activePlayers", equalTo(2))
+                .body("counters.playersRejected", equalTo(0));
+    }
+
+    @Test
+    void anUnknownTenantHasZeroUsageLikeInEveryOtherService() {
+        given().filter(Contract.CORE).get("/internal/usage/{t}", UUID.randomUUID()).then().statusCode(200)
+                .body("service", equalTo("core"))
+                .body("counters.members", equalTo(0))
+                .body("counters.players", equalTo(0));
     }
 
     @Test

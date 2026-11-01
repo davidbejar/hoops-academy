@@ -1,19 +1,15 @@
 package com.hoopsacademy.core.adapters.in.shared;
 
 import com.hoopsacademy.common.problem.Problem;
-import com.hoopsacademy.common.problem.ProblemType;
 import com.hoopsacademy.core.application.port.IdentityProviderException;
 import com.hoopsacademy.core.domain.logo.LogoTooLargeException;
 import com.hoopsacademy.core.domain.logo.UnsupportedLogoFormatException;
-import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.UnauthorizedException;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
-/** Problem+JSON for the failures specific to core (on top of the common-quarkus mappers). */
+/** Problem+JSON for the failures specific to core (401, 409 lost updates, 503 come from the common-quarkus mappers). */
 public class CoreExceptionMappers {
 
     private static final Logger LOG = Logger.getLogger(CoreExceptionMappers.class);
@@ -39,12 +35,6 @@ public class CoreExceptionMappers {
     @ServerExceptionMapper
     public Response invalidRequest(InvalidRequestException e, UriInfo uri) {
         return Problem.validation(e.violations(), path(uri)).toResponse();
-    }
-
-    @ServerExceptionMapper({UnauthorizedException.class, AuthenticationFailedException.class})
-    public Response unauthorized(UriInfo uri) {
-        return Response.fromResponse(Problem.of(ProblemType.UNAUTHORIZED, null, path(uri)).toResponse())
-                .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer").build();
     }
 
     private static Response problem(int status, String title, String slug, String detail, String code, UriInfo uri) {

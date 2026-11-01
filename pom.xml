@@ -33,7 +33,7 @@
     <jqwik.version>1.10.2</jqwik.version>
     <keycloak-admin-client.version>26.0.12</keycloak-admin-client.version>
     <testcontainers-keycloak.version>4.4.0</testcontainers-keycloak.version>
-    <swagger-request-validator.version>3.0.0</swagger-request-validator.version>
+    <openapi-request-validator.version>3.0.0</openapi-request-validator.version>
 
     <compiler-plugin.version>3.16.0</compiler-plugin.version>
     <surefire-plugin.version>3.6.1</surefire-plugin.version>
@@ -83,8 +83,8 @@
       </dependency>
       <dependency>
         <groupId>com.atlassian.oai</groupId>
-        <artifactId>swagger-request-validator-restassured</artifactId>
-        <version>${swagger-request-validator.version}</version>
+        <artifactId>openapi-request-validator-restassured</artifactId>
+        <version>${openapi-request-validator.version}</version>
         <scope>test</scope>
       </dependency>
       <!-- internal modules -->

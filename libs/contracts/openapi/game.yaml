@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — game-service API
-  version: 1.0.0
+  version: 2.0.0
   description: |
     Match operations and statistics (offline-first, event-sourced).
 
@@ -64,6 +64,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createMatch
       tags: [Matches]
@@ -85,6 +86,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -104,6 +106,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     patch:
       operationId: updateMatch
       tags: [Matches]
@@ -126,6 +129,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}/start:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -147,6 +151,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}/finish:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -167,6 +172,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}/cancel:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -192,6 +198,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}/roster:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -211,6 +218,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     put:
       operationId: replaceMatchRoster
       tags: [MatchRoster]
@@ -236,6 +244,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}/events:batch:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -266,6 +275,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}/events:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -293,6 +303,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}/box-score:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -312,6 +323,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/players/{playerId}/season-stats:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -339,6 +351,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /internal/usage/{tenantId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdPath'
@@ -591,24 +604,49 @@ components:
       description: Start of a period (clock / period event; staff only).
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [PERIOD_START]
     PeriodEndEvent:
       description: End of a period (clock / period event; staff only).
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [PERIOD_END]
     SubInEvent:
       description: Player enters the court (staff only).
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [SUB_IN]
         - $ref: '#/components/schemas/PlayerAttribution'
     SubOutEvent:
       description: Player leaves the court (staff only).
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [SUB_OUT]
         - $ref: '#/components/schemas/PlayerAttribution'
     ShotEvent:
       description: Shot attempt (free throw, 2 or 3 points), made or missed.
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [SHOT]
         - $ref: '#/components/schemas/PlayerAttribution'
         - type: object
           required: [payload]
@@ -617,10 +655,20 @@ components:
     AssistEvent:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [ASSIST]
         - $ref: '#/components/schemas/PlayerAttribution'
     ReboundEvent:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [REBOUND]
         - $ref: '#/components/schemas/PlayerAttribution'
         - type: object
           required: [payload]
@@ -629,18 +677,38 @@ components:
     TurnoverEvent:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [TURNOVER]
         - $ref: '#/components/schemas/PlayerAttribution'
     StealEvent:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [STEAL]
         - $ref: '#/components/schemas/PlayerAttribution'
     BlockEvent:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [BLOCK]
         - $ref: '#/components/schemas/PlayerAttribution'
     FoulEvent:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [FOUL]
         - $ref: '#/components/schemas/PlayerAttribution'
         - type: object
           required: [payload]
@@ -651,6 +719,11 @@ components:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
         - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [OPPONENT_SCORE]
+        - type: object
           required: [payload]
           properties:
             payload: {$ref: '#/components/schemas/OpponentScorePayload'}
@@ -658,6 +731,11 @@ components:
       description: Timeout called by either side (staff only).
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [TIMEOUT]
         - type: object
           required: [payload]
           properties:
@@ -667,6 +745,11 @@ components:
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
         - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [VOID]
+        - type: object
           required: [payload]
           properties:
             payload: {$ref: '#/components/schemas/VoidPayload'}
@@ -674,6 +757,11 @@ components:
       description: Free-text annotation (optionally about a player); no effect on statistics.
       allOf:
         - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          properties:
+            type:
+              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+              enum: [NOTE]
         - type: object
           required: [payload]
           properties:
@@ -734,8 +822,11 @@ components:
       description: |
         SCHEMA_INVALID — event does not match its type's schema; NOT_AUTHORIZED — caller may not enter this event
         (e.g. PARENT for a non-linked player, VOID of someone else's event); MATCH_CANCELLED — match is CANCELLED;
-        CLIENT_SEQ_CONFLICT — (deviceId, clientSeq) already used by a different event id.
-      enum: [SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT]
+        CLIENT_SEQ_CONFLICT — (deviceId, clientSeq) already used by a different event id; EVENT_ID_REUSED — the event id
+        is already stored for another match (ids are global); MATCH_NOT_STARTED — reserved for a future policy that
+        refuses events of SCHEDULED matches (v1 accepts them so offline devices never lose events, ADR-0014; clients
+        must already handle it).
+      enum: [SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT, EVENT_ID_REUSED, MATCH_NOT_STARTED]
     MatchEventResult:
       type: object
       required: [eventId, status]
@@ -798,7 +889,7 @@ components:
     StatLine:
       type: object
       description: Counting statistics. fg1 = free throws, fg2 = two-point field goals, fg3 = three-pointers.
-      required: [points, fg1Made, fg1Attempted, fg2Made, fg2Attempted, fg3Made, fg3Attempted, assists, offensiveRebounds, defensiveRebounds, turnovers, steals, blocks, personalFouls, secondsPlayed]
+      required: [points, fg1Made, fg1Attempted, fg2Made, fg2Attempted, fg3Made, fg3Attempted, assists, offensiveRebounds, defensiveRebounds, turnovers, steals, blocks, personalFouls, technicalFouls, unsportsmanlikeFouls, secondsPlayed]
       properties:
         points: {type: integer, format: int32, minimum: 0}
         fg1Made: {type: integer, format: int32, minimum: 0}
@@ -818,6 +909,16 @@ components:
           format: int32
           minimum: 0
           description: All fouls committed (PERSONAL + TECHNICAL + UNSPORTSMANLIKE).
+        technicalFouls:
+          type: integer
+          format: int32
+          minimum: 0
+          description: TECHNICAL fouls (also counted in personalFouls).
+        unsportsmanlikeFouls:
+          type: integer
+          format: int32
+          minimum: 0
+          description: UNSPORTSMANLIKE fouls (also counted in personalFouls).
         secondsPlayed:
           type: integer
           format: int32
@@ -869,11 +970,6 @@ components:
           type: array
           items: {$ref: '#/components/schemas/PeriodScore'}
         teamTotals: {$ref: '#/components/schemas/StatLine'}
-        opponentFouls:
-          type: integer
-          format: int32
-          minimum: 0
-          nullable: true
         players:
           type: array
           description: Player lines visible to the caller.

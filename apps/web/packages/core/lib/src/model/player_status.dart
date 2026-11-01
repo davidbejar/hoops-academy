@@ -9,6 +9,7 @@ import 'package:built_value/serializer.dart';
 
 part 'player_status.g.dart';
 
+/// PENDING_APPROVAL — requested by a coach, awaiting an admin decision; ACTIVE — has a valid assignment in a current season; ORPHAN — active but without a valid assignment; WITHDRAWN — left the academy (withdrawal approved, or a pending ADD_PLAYER request cancelled by its requester); REJECTED — an ADD_PLAYER request for this player was rejected (never admitted). WITHDRAWN and REJECTED are final. 
 class PlayerStatus extends EnumClass {
 
   @BuiltValueEnumConst(wireName: r'PENDING_APPROVAL')
@@ -19,6 +20,8 @@ class PlayerStatus extends EnumClass {
   static const PlayerStatus ORPHAN = _$ORPHAN;
   @BuiltValueEnumConst(wireName: r'WITHDRAWN')
   static const PlayerStatus WITHDRAWN = _$WITHDRAWN;
+  @BuiltValueEnumConst(wireName: r'REJECTED')
+  static const PlayerStatus REJECTED = _$REJECTED;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
   static const PlayerStatus unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 

@@ -14,6 +14,12 @@ import java.util.TreeSet;
  * Reads the catalogue and reports every table of the given schemas that breaks the tenancy rules (ADR-0006):
  * a table with {@code tenant_id} needs RLS enabled + FORCEd, {@code tenant_id uuid not null} and a policy that
  * depends on {@code app.current_tenant()}; a table without it must be a declared global table.
+ *
+ * <p>Shared tables (global rows with a null owner next to tenant rows, e.g. plan templates and norms) are declared
+ * with their owner column; they need a uuid owner column (nullable allowed), RLS enabled + FORCEd, a policy on
+ * {@code app.current_tenant()} and one policy PER COMMAND (select/insert/update/delete) — never {@code FOR ALL},
+ * because USING and WITH CHECK differ and DELETE only evaluates USING (a FOR ALL policy whose USING admits global
+ * rows lets a tenant delete them).
  */
 public final class RlsSchemaInspector {
 
@@ -38,6 +44,26 @@ public final class RlsSchemaInspector {
              order by c.relname
             """;
 
+    private static final String SHARED_TABLE_SQL = """
+            select c.relrowsecurity,
+                   c.relforcerowsecurity,
+                   coalesce((select format_type(a.atttypid, a.atttypmod) = 'uuid'
+                               from pg_attribute a
+                              where a.attrelid = c.oid and a.attname = ? and not a.attisdropped), false),
+                   exists (select 1
+                             from pg_policy p
+                             join pg_depend d on d.classid = 'pg_policy'::regclass and d.objid = p.oid
+                            where p.polrelid = c.oid
+                              and d.refclassid = 'pg_proc'::regclass
+                              and d.refobjid = 'app.current_tenant()'::regprocedure),
+                   coalesce((select string_agg(distinct p.polcmd::text, '') from pg_policy p where p.polrelid = c.oid), '')
+              from pg_class c
+              join pg_namespace n on n.oid = c.relnamespace
+             where n.nspname = ? and c.relname = ? and c.relkind in ('r', 'p')
+            """;
+
+    private static final Map<Character, String> COMMANDS = Map.of('r', "SELECT", 'a', "INSERT", 'w', "UPDATE", 'd', "DELETE");
+
     private RlsSchemaInspector() {}
 
     private record TableFacts(
@@ -47,11 +73,23 @@ public final class RlsSchemaInspector {
     /** @param globalTables {@code "schema.table" -> reason} for tables that intentionally have no tenant_id */
     public static List<String> violations(Connection connection, List<String> schemas, Map<String, String> globalTables)
             throws SQLException {
+        return violations(connection, schemas, globalTables, Map.of());
+    }
+
+    /**
+     * @param globalTables         {@code "schema.table" -> reason} for tables that intentionally have no tenant_id
+     * @param nullableTenantTables {@code "schema.table" -> owner column} for shared global+tenant tables
+     */
+    public static List<String> violations(Connection connection, List<String> schemas, Map<String, String> globalTables,
+            Map<String, String> nullableTenantTables) throws SQLException {
         List<String> violations = new ArrayList<>();
         Set<String> actualGlobalTables = new TreeSet<>();
         for (String schema : schemas) {
             for (TableFacts table : tableFacts(connection, schema)) {
                 String qualified = schema + "." + table.name();
+                if (nullableTenantTables.containsKey(qualified)) {
+                    continue;
+                }
                 if (table.hasTenantColumn()) {
                     violations.addAll(tenantTableViolations(qualified, table));
                 } else {
@@ -65,7 +103,49 @@ public final class RlsSchemaInspector {
         new TreeSet<>(globalTables.keySet()).stream()
                 .filter(declared -> !actualGlobalTables.contains(declared))
                 .forEach(stale -> violations.add(stale + ": declared in globalTables() but is not a global table of the schema"));
+        for (Map.Entry<String, String> shared : new java.util.TreeMap<>(nullableTenantTables).entrySet()) {
+            violations.addAll(sharedTableViolations(connection, shared.getKey(), shared.getValue()));
+        }
         return violations;
+    }
+
+    private static List<String> sharedTableViolations(Connection connection, String qualified, String ownerColumn)
+            throws SQLException {
+        String[] parts = qualified.split("\\.", 2);
+        try (PreparedStatement statement = connection.prepareStatement(SHARED_TABLE_SQL)) {
+            statement.setString(1, ownerColumn);
+            statement.setString(2, parts[0]);
+            statement.setString(3, parts.length > 1 ? parts[1] : "");
+            try (ResultSet rs = statement.executeQuery()) {
+                if (!rs.next()) {
+                    return List.of(qualified + ": declared in nullableTenantTables() but is not a table of the schema");
+                }
+                List<String> violations = new ArrayList<>();
+                if (!rs.getBoolean(1)) {
+                    violations.add(qualified + ": row level security not enabled");
+                }
+                if (!rs.getBoolean(2)) {
+                    violations.add(qualified + ": row level security not FORCEd");
+                }
+                if (!rs.getBoolean(3)) {
+                    violations.add(qualified + ": declared owner column " + ownerColumn + " must be a uuid column");
+                }
+                if (!rs.getBoolean(4)) {
+                    violations.add(qualified + ": no policy referencing app.current_tenant()");
+                }
+                String commands = rs.getString(5);
+                if (commands.indexOf('*') >= 0) {
+                    violations.add(qualified
+                            + ": shared table must not use a FOR ALL policy (DELETE would pass USING on global rows)");
+                }
+                COMMANDS.entrySet().stream()
+                        .filter(command -> commands.indexOf(command.getKey()) < 0)
+                        .map(command -> qualified + ": shared table needs its own " + command.getValue() + " policy")
+                        .sorted()
+                        .forEach(violations::add);
+                return violations;
+            }
+        }
     }
 
     private static List<String> tenantTableViolations(String qualified, TableFacts table) {

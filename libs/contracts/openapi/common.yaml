@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — shared components
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Components shared by `core.yaml`, `game.yaml` and `athlete.yaml` (referenced as `./common.yaml#/...`).
     This file declares no operations.
@@ -208,9 +208,15 @@ components:
       type: object
       description: |
         Usage counters of one service for one tenant (platform statistics and future billing). Counters by service:
-        core — `members`, `players`, `activePlayers`, `teams`, `seasons`; game — `matches`, `liveMatches`,
-        `matchEvents`, `matchEventsLast30Days`; athlete — `trainingSessions`, `attendanceRecords`, `trainingPlans`,
-        `physicalTestResults`, `injuries`, `bodyMeasurements`. Counters are additive: new keys may appear at any time.
+        core — `members`, `membersAdmin`, `membersCoach`, `membersAssistantCoach`, `membersParent`, `membersPlayer`,
+        `players`, `activePlayers`, `playersPendingApproval`, `playersOrphan`, `playersWithdrawn`, `playersRejected`,
+        `pendingApprovals`, `teams`, `seasons`; game — `matches`, `scheduledMatches`, `liveMatches`, `finishedMatches`,
+        `cancelledMatches`, `matchEvents`, `matchEventsLast30Days`; athlete — `trainingSchedules`, `trainingSessions`,
+        `attendanceRecords`, `plannedAbsences`, `trainingPlans`, `planAssignments`, `physicalTestResults`, `injuries`,
+        `bodyMeasurements`. Counters are additive: new keys may appear at any time.
+        A tenant a service has no data for (including a tenant id it has never seen) is answered with 200 and zero
+        counters: services cannot tell "unknown" from "empty", so `/internal/usage/{tenantId}` never answers 404 for
+        an unknown tenant.
       required: [tenantId, service, collectedAt, counters]
       properties:
         tenantId:
@@ -278,6 +284,24 @@ components:
             $ref: '#/components/schemas/Problem'
     UnsupportedMediaType:
       description: Content type not accepted (or content does not match the declared type).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UpstreamIdentityProvider:
+      description: |
+        The identity provider (Keycloak) failed or did not answer; nothing was committed (code
+        `IDENTITY_PROVIDER_UNAVAILABLE`). Safe to retry.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ServiceUnavailable:
+      description: |
+        A service this operation depends on (core-service, reached through `RosterPort`, ADR-0008) did not answer in
+        time or failed (code `UPSTREAM_UNAVAILABLE`). game-service and athlete-service resolve the caller's tenant
+        membership through core on every `/api/**` call, so every tenant operation of those services may answer 503.
+        Safe to retry.
       content:
         application/problem+json:
           schema:

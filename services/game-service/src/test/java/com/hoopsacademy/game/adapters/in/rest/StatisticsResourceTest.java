@@ -122,6 +122,25 @@ class StatisticsResourceTest {
     }
 
     @Test
+    @TenantUser(tenant = A, roles = TenantRole.COACH, staffTeams = TEAM)
+    void technicalAndUnsportsmanlikeFoulsAreCountedOnTheirOwnAndInPersonalFouls() {
+        UUID match = seed.match(A, TEAM, BOX_SEASON, MatchStatus.LIVE, Instant.parse("2026-12-02T10:00:00Z"), ROSTER);
+        seed.events(A, match, UUID.fromString(COACH_PERSON), Script.unique().start(1, 600)
+                .foul(1, 500, P1, com.hoopsacademy.game.domain.events.MatchEvent.FoulKind.PERSONAL)
+                .foul(1, 400, P1, com.hoopsacademy.game.domain.events.MatchEvent.FoulKind.TECHNICAL)
+                .foul(1, 300, P1, com.hoopsacademy.game.domain.events.MatchEvent.FoulKind.UNSPORTSMANLIKE)
+                .events());
+
+        boxScore(match).statusCode(200)
+                .body("players[0].stats.personalFouls", equalTo(3))
+                .body("players[0].stats.technicalFouls", equalTo(1))
+                .body("players[0].stats.unsportsmanlikeFouls", equalTo(1))
+                .body("teamTotals.technicalFouls", equalTo(1))
+                .body("teamTotals.unsportsmanlikeFouls", equalTo(1))
+                .body("$", org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasKey("opponentFouls")));
+    }
+
+    @Test
     @TenantUser(tenant = A, roles = TenantRole.ADMIN)
     void adminSeesEveryLine() {
         boxScore(liveMatchWithScore()).statusCode(200).body("players", hasSize(6));

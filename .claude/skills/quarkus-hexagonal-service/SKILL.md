@@ -13,7 +13,8 @@ com.hoopsacademy.<svc>
 └── adapters/
     ├── in/rest/       JAX-RS resources, DTO mapping, @RequiresTenantRole, request validation
     ├── out/persistence/  JPA entities + repositories implementing application ports
-    ├── out/client/    REST clients to other services (e.g. RosterPort adapter)
+    ├── out/client/    REST clients to other services (e.g. RosterPort adapter — a thin mapping over
+    │                  common-quarkus' shared CoreRosterClient for core /internal/**)
     └── out/keycloak/  Keycloak admin client adapter (core only)
 ```
 - `domain` imports nothing from Jakarta/Quarkus/Hibernate. Identity types are value objects (`TenantId`, `PlayerId`).
@@ -37,10 +38,27 @@ com.hoopsacademy.<svc>
 
 ## Persistence rules
 - Entities with a `tenantId` field annotate it with `@TenantId` (Hibernate discriminator multitenancy).
-- Global tables (`tenant_id` nullable or absent) are listed in `RlsSchemaMetaTest.globalTables()` with a reason.
+- Global tables (no tenant column) are listed in `RlsSchemaMetaTest.globalTables()` with a reason; shared
+  global+tenant tables (nullable owner) in `nullableTenantTables()` (see the tenant-isolation-testing skill).
 - No native SQL outside `*Repository` classes; prefer JPQL/Panache queries. Pagination on every list endpoint.
 - Optimistic locking (`@Version`) on aggregates that are edited concurrently (match, approval request).
 
+## Talking to core (game, athlete)
+Use `com.hoopsacademy.common.client`: `CoreRosterClient` (team roster, players batch, membership; 30 s cache
+`hoops.core.cache-ttl`, base URL `hoops.core.url`, 2 s timeouts) behind the service's own `RosterPort` adapter.
+`RosterAuthzResolver` is common's `@DefaultBean` tenant-filter resolver. The caller's `AuthzContext` carries
+`timezone` and `playerTeamIds` (teams of own/linked players) — use them instead of extra core calls.
+
+## Scheduled jobs
+Wrap multi-tenant jobs in `tenantScope.runExclusive(LOCK, ...)` so only one replica runs them; `@Scheduled` methods
+return `void` (call a `boolean run()` from them if tests need the outcome).
+
 ## Error handling
 Throw domain exceptions (`EligibilityViolation`, `NotFound`, `Conflict`); `common-quarkus` maps them to
-Problem+JSON (422/404/409). Never return stack traces or internal ids of other tenants.
+Problem+JSON (422/404/409), plus `UnauthorizedException` -> 401, `OptimisticLockException`/`StaleStateException` (also
+wrapped) -> 409 `CONCURRENT_MODIFICATION`, `UpstreamUnavailableException` -> 503 `UPSTREAM_UNAVAILABLE`. Do not add
+service-local mappers for these. Never return stack traces or internal ids of other tenants.
+
+## /api paths without a tenant
+Exact `/api/**` paths listed in `hoops.tenancy.exempt-paths` (default `/api/core/me`) skip the tenant filter; annotate
+such resources `@Authenticated`.

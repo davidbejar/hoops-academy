@@ -14,7 +14,9 @@ part 'authz_summary.g.dart';
 /// Properties:
 /// * [staffTeamIds] - Teams where the caller is COACH or ASSISTANT_COACH staff.
 /// * [linkedPlayerIds] - Players linked to the caller as guardian (PARENT).
-/// * [ownPlayerId] - The caller's own player id when they hold the PLAYER role.
+/// * [ownPlayerId] - The caller's own player id when they hold the PLAYER role (null otherwise).
+/// * [playerTeamIds] - Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. 
+/// * [timezone] - IANA time zone of the tenant (calendar days of sessions, birthdays, availability).
 @BuiltValue()
 abstract class AuthzSummary implements Built<AuthzSummary, AuthzSummaryBuilder> {
   /// Teams where the caller is COACH or ASSISTANT_COACH staff.
@@ -25,9 +27,17 @@ abstract class AuthzSummary implements Built<AuthzSummary, AuthzSummaryBuilder> 
   @BuiltValueField(wireName: r'linkedPlayerIds')
   BuiltList<String> get linkedPlayerIds;
 
-  /// The caller's own player id when they hold the PLAYER role.
+  /// The caller's own player id when they hold the PLAYER role (null otherwise).
   @BuiltValueField(wireName: r'ownPlayerId')
   String? get ownPlayerId;
+
+  /// Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. 
+  @BuiltValueField(wireName: r'playerTeamIds')
+  BuiltList<String> get playerTeamIds;
+
+  /// IANA time zone of the tenant (calendar days of sessions, birthdays, availability).
+  @BuiltValueField(wireName: r'timezone')
+  String get timezone;
 
   AuthzSummary._();
 
@@ -69,6 +79,16 @@ class _$AuthzSummarySerializer implements PrimitiveSerializer<AuthzSummary> {
         specifiedType: const FullType.nullable(String),
       );
     }
+    yield r'playerTeamIds';
+    yield serializers.serialize(
+      object.playerTeamIds,
+      specifiedType: const FullType(BuiltList, [FullType(String)]),
+    );
+    yield r'timezone';
+    yield serializers.serialize(
+      object.timezone,
+      specifiedType: const FullType(String),
+    );
   }
 
   @override
@@ -113,6 +133,20 @@ class _$AuthzSummarySerializer implements PrimitiveSerializer<AuthzSummary> {
           ) as String?;
           if (valueDes == null) continue;
           result.ownPlayerId = valueDes;
+          break;
+        case r'playerTeamIds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>;
+          result.playerTeamIds.replace(valueDes);
+          break;
+        case r'timezone':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.timezone = valueDes;
           break;
         default:
           unhandled.add(key);

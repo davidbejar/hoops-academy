@@ -11,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:hoops_athlete_api/src/api_util.dart';
 import 'package:hoops_athlete_api/src/model/plan_completion.dart';
 import 'package:hoops_athlete_api/src/model/plan_completion_page.dart';
+import 'package:hoops_athlete_api/src/model/plan_progress.dart';
 import 'package:hoops_athlete_api/src/model/problem.dart';
 import 'package:hoops_athlete_api/src/model/record_plan_completion_request.dart';
 
@@ -21,6 +22,90 @@ class PlanCompletionsApi {
   final Serializers _serializers;
 
   const PlanCompletionsApi(this._dio, this._serializers);
+
+  /// Completion progress of an assignment per targeted player
+  /// Targets are the team&#39;s current roster (team assignment) or the one player. Staff see every target; PARENT and PLAYER only their linked players / themselves. Authz: ADMIN; team staff; PARENT (linked); PLAYER (self). 
+  ///
+  /// Parameters:
+  /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
+  /// * [assignmentId] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [PlanProgress] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<PlanProgress>> getPlanAssignmentProgress({ 
+    required String xTenantId,
+    required String assignmentId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/athlete/plan-assignments/{assignmentId}/progress'.replaceAll('{' r'assignmentId' '}', encodeQueryParameter(_serializers, assignmentId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        r'X-Tenant-Id': xTenantId,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    PlanProgress? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(PlanProgress),
+      ) as PlanProgress;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<PlanProgress>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
 
   /// List recorded plan completions
   /// Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).

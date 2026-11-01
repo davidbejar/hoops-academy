@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:hoops_athlete_api/src/model/band_status.dart';
 import 'package:hoops_athlete_api/src/model/norm_band.dart';
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:hoops_athlete_api/src/model/person_ref.dart';
@@ -24,7 +25,8 @@ part 'physical_test_result.g.dart';
 /// * [unit] 
 /// * [measuredOn] 
 /// * [value] 
-/// * [ageAtMeasurement] - Actual age (years) on measuredOn.
+/// * [ageAtMeasurement] - Actual age (years) on measuredOn; null when core has no birth date for the player.
+/// * [bandStatus] 
 /// * [expectedBand] - Band for (gender, age at measurement, value); null when no norm covers the result.
 /// * [normId] - Norm row that produced `expectedBand`.
 /// * [referencePending] - The applied norm has no cited source yet (\"reference pending\" in the UI).
@@ -36,18 +38,8 @@ abstract class PhysicalTestResult implements AuditInfo, Built<PhysicalTestResult
   NormBand? get expectedBand;
   // enum expectedBandEnum {  POOR,  BELOW_AVERAGE,  AVERAGE,  ABOVE_AVERAGE,  EXCELLENT,  };
 
-  /// Norm row that produced `expectedBand`.
-  @BuiltValueField(wireName: r'normId')
-  String? get normId;
-
-  @BuiltValueField(wireName: r'testTypeId')
-  String get testTypeId;
-
   @BuiltValueField(wireName: r'testCode')
   String get testCode;
-
-  @BuiltValueField(wireName: r'unit')
-  String get unit;
 
   @BuiltValueField(wireName: r'notes')
   String? get notes;
@@ -55,9 +47,23 @@ abstract class PhysicalTestResult implements AuditInfo, Built<PhysicalTestResult
   @BuiltValueField(wireName: r'measuredOn')
   Date get measuredOn;
 
-  /// Actual age (years) on measuredOn.
+  /// Actual age (years) on measuredOn; null when core has no birth date for the player.
   @BuiltValueField(wireName: r'ageAtMeasurement')
-  int get ageAtMeasurement;
+  int? get ageAtMeasurement;
+
+  @BuiltValueField(wireName: r'bandStatus')
+  BandStatus get bandStatus;
+  // enum bandStatusEnum {  MATCHED,  NO_NORM,  MISSING_PLAYER_DATA,  };
+
+  /// Norm row that produced `expectedBand`.
+  @BuiltValueField(wireName: r'normId')
+  String? get normId;
+
+  @BuiltValueField(wireName: r'testTypeId')
+  String get testTypeId;
+
+  @BuiltValueField(wireName: r'unit')
+  String get unit;
 
   @BuiltValueField(wireName: r'id')
   String get id;
@@ -120,9 +126,14 @@ class _$PhysicalTestResultSerializer implements PrimitiveSerializer<PhysicalTest
       specifiedType: const FullType(Date),
     );
     yield r'ageAtMeasurement';
-    yield serializers.serialize(
+    yield object.ageAtMeasurement == null ? null : serializers.serialize(
       object.ageAtMeasurement,
-      specifiedType: const FullType(int),
+      specifiedType: const FullType.nullable(int),
+    );
+    yield r'bandStatus';
+    yield serializers.serialize(
+      object.bandStatus,
+      specifiedType: const FullType(BandStatus),
     );
     if (object.normId != null) {
       yield r'normId';
@@ -227,9 +238,17 @@ class _$PhysicalTestResultSerializer implements PrimitiveSerializer<PhysicalTest
         case r'ageAtMeasurement':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(int),
-          ) as int;
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
           result.ageAtMeasurement = valueDes;
+          break;
+        case r'bandStatus':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BandStatus),
+          ) as BandStatus;
+          result.bandStatus = valueDes;
           break;
         case r'normId':
           final valueDes = serializers.deserialize(

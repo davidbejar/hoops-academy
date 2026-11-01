@@ -3,7 +3,6 @@ package com.hoopsacademy.athlete.adapters.in.rest;
 import static com.hoopsacademy.athlete.support.ApiSupport.api;
 import static com.hoopsacademy.athlete.support.ApiSupport.lenient;
 import static com.hoopsacademy.athlete.support.ApiSupport.member;
-import static com.hoopsacademy.athlete.support.ApiSupport.unvalidated;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
@@ -213,12 +212,12 @@ class InjuryApiTest {
     void availabilityFollowsOpenInjuriesAndShowsTheExpectedReturn() {
         LocalDate today = LocalDate.now();
         String path = "/api/athlete/players/" + AVAILABLE + "/availability";
-        unvalidated(TENANT).get(path).then().statusCode(200).body("available", equalTo(true))
+        api(TENANT).get(path).then().statusCode(200).body("available", equalTo(true))
                 .body("playerId", equalTo(AVAILABLE)).body("expectedReturnOn", nullValue());
 
         String id = api(TENANT).body(injury(AVAILABLE, today.minusDays(2), today.plusDays(10))).post(INJURIES)
                 .then().statusCode(201).extract().path("id");
-        unvalidated(TENANT).get(path).then().statusCode(200).body("available", equalTo(false))
+        api(TENANT).get(path).then().statusCode(200).body("available", equalTo(false))
                 .body("expectedReturnOn", equalTo(today.plusDays(10).toString()))
                 .body("injuries", hasSize(1));
 
@@ -226,21 +225,21 @@ class InjuryApiTest {
         recover.put("status", "RECOVERED");
         recover.put("actualReturnOn", today.toString());
         api(TENANT).body(recover).patch(INJURIES + "/" + id).then().statusCode(200);
-        unvalidated(TENANT).get(path).then().statusCode(200).body("available", equalTo(true));
+        api(TENANT).get(path).then().statusCode(200).body("available", equalTo(true));
     }
 
     @Test
     void availabilityIsVisibleToStaffParentAndPlayerOfThatPlayerOnly() {
         String path = "/api/athlete/players/" + CHILD + "/availability";
         asCoachOfTeam();
-        unvalidated(TENANT).get(path).then().statusCode(200);
-        unvalidated(TENANT).get("/api/athlete/players/" + STRANGER + "/availability").then().statusCode(404);
+        api(TENANT).get(path).then().statusCode(200);
+        api(TENANT).get("/api/athlete/players/" + STRANGER + "/availability").then().statusCode(404);
         asParentOfChild();
-        unvalidated(TENANT).get(path).then().statusCode(200);
-        unvalidated(TENANT).get("/api/athlete/players/" + SIBLING + "/availability").then().statusCode(404);
+        api(TENANT).get(path).then().statusCode(200);
+        api(TENANT).get("/api/athlete/players/" + SIBLING + "/availability").then().statusCode(404);
         member(TENANT, Set.of(TenantRole.PLAYER), Set.of(), Set.of(), CHILD);
-        unvalidated(TENANT).get(path).then().statusCode(200);
+        api(TENANT).get(path).then().statusCode(200);
         member(TENANT, TenantRole.ADMIN);
-        unvalidated(TENANT).get("/api/athlete/players/" + UUID.randomUUID() + "/availability").then().statusCode(404);
+        api(TENANT).get("/api/athlete/players/" + UUID.randomUUID() + "/availability").then().statusCode(404);
     }
 }

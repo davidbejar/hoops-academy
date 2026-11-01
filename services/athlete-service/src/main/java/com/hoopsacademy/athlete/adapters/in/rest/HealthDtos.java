@@ -100,16 +100,20 @@ final class HealthDtos {
     record CreateResultRequest(@NotNull UUID playerId, @NotNull UUID testTypeId, @NotNull LocalDate measuredOn,
             @NotNull BigDecimal value, @Size(max = 1000) String notes) {}
 
-    /** {@code bandStatus} (MATCHED, NO_NORM or MISSING_PLAYER_DATA) is an addition to the contract that says why there is no band. */
+    /**
+     * Contract PhysicalTestResult: {@code bandStatus} (MATCHED, NO_NORM, MISSING_PLAYER_DATA) says why there is no band;
+     * {@code ageAtMeasurement} is required and explicitly null when core has no birth date.
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ResultResponse(UUID id, UUID playerId, UUID testTypeId, String testCode, String unit, LocalDate measuredOn,
-            double value, int ageAtMeasurement, NormBand expectedBand, UUID normId, boolean referencePending,
+            double value, @JsonInclude(JsonInclude.Include.ALWAYS) Integer ageAtMeasurement, NormBand expectedBand, UUID normId, boolean referencePending,
             String bandStatus, String notes, AttendanceDtos.PersonRef recordedBy, Instant recordedAt) {
 
         static ResultResponse from(ManageTestResults.ResultView v) {
             var r = v.result();
             return new ResultResponse(r.id().value(), r.playerId().value(), r.testTypeId().value(), v.type().code(),
-                    v.type().unit(), r.measuredOn(), r.value().doubleValue(), v.ageAtMeasurement(),
+                    v.type().unit(), r.measuredOn(), r.value().doubleValue(),
+                    v.ageAtMeasurement().isPresent() ? v.ageAtMeasurement().getAsInt() : null,
                     v.resolution().expectedBand().orElse(null), v.resolution().norm().map(n -> n.id().value()).orElse(null),
                     v.resolution().referencePending(), v.resolution().outcome().name(), r.notes(), ref(r.recordedBy()),
                     r.createdAt());

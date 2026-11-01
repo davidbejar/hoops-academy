@@ -189,7 +189,7 @@ class PhysicalTestApiTest {
         String cooper = typeId("COOPER_12MIN");
         api(TENANT).body(result(NO_BIRTH, cooper, "2026-06-01", 2000.0)).post(RESULTS).then().statusCode(201)
                 .body("expectedBand", nullValue()).body("normId", nullValue()).body("bandStatus", equalTo("MISSING_PLAYER_DATA"))
-                .body("referencePending", equalTo(false));
+                .body("ageAtMeasurement", nullValue()).body("referencePending", equalTo(false));
         api(TENANT).body(result(NO_GENDER, cooper, "2026-06-01", 2000.0)).post(RESULTS).then().statusCode(201)
                 .body("expectedBand", nullValue()).body("bandStatus", equalTo("MISSING_PLAYER_DATA"));
 

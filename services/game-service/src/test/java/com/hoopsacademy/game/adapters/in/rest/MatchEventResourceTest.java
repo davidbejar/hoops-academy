@@ -213,7 +213,7 @@ class MatchEventResourceTest {
 
     @Test
     @TenantUser(tenant = A, roles = TenantRole.COACH, staffTeams = TEAM)
-    void deviceSequenceReusedByAnotherIdIsAConflictAndSoIsAnIdOfAnotherMatch() {
+    void deviceSequenceReusedByAnotherIdIsAConflictAndAnIdOfAnotherMatchIsReused() {
         UUID match = match(A, MatchStatus.LIVE);
         UUID other = match(A, MatchStatus.LIVE);
         Script first = Script.unique().start(1, 600);
@@ -224,7 +224,7 @@ class MatchEventResourceTest {
                 .body("results[0].reason", equalTo("CLIENT_SEQ_CONFLICT"))
                 .body("results[0].message", containsString(first.events().get(0).id().toString()));
         post(other, EventBatches.batch(first)).statusCode(200)
-                .body("results[0].reason", equalTo("CLIENT_SEQ_CONFLICT"));
+                .body("results[0].reason", equalTo("EVENT_ID_REUSED"));
     }
 
     @Test

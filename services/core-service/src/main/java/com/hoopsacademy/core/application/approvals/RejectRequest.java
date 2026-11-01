@@ -41,7 +41,7 @@ public class RejectRequest {
     public ApprovalView handle(ApprovalRequestId id, String note) {
         ApprovalRequest decided = decisions.store(decisions.load(id).reject(access.person(), note, clock.instant()));
         if (decided.action() == ApprovalAction.ADD_PLAYER) {
-            players.updateStatus(decided.player(), PlayerStatus.WITHDRAWN);
+            players.updateStatus(decided.player(), PlayerStatus.REJECTED);
         }
         outbox.rejected(decided);
         return views.of(decided);

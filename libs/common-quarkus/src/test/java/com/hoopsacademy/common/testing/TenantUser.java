@@ -46,4 +46,10 @@ public @interface TenantUser {
 
     /** The caller's own player id (UUID), blank when not a player. */
     String ownPlayer() default "";
+
+    /** Team ids (UUID) of the own / linked players ({@code AuthzContext.playerTeamIds}). */
+    String[] playerTeams() default {};
+
+    /** Tenant IANA time zone ({@code AuthzContext.timezone}); blank = unknown. */
+    String timezone() default "";
 }

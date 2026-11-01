@@ -16,7 +16,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** When core-service fails or is slow, the API answers 503 Problem with code UPSTREAM_UNAVAILABLE (not in the contract's response set). */
+/** When core-service fails or is slow, the API answers the contract's 503 Problem with code UPSTREAM_UNAVAILABLE. */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
 @WithTestResource(CoreMockResource.class)
@@ -35,7 +35,7 @@ class UpstreamFailureApiTest {
     }
 
     private io.restassured.specification.RequestSpecification request() {
-        return given().header("X-Tenant-Id", TENANT).header("Content-Type", "application/json");
+        return com.hoopsacademy.athlete.support.ApiSupport.api(TENANT);
     }
 
     private static final String BODY = """

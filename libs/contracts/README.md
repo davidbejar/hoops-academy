@@ -20,6 +20,13 @@ The jar ships these files as classpath resources: `classpath:openapi/core.yaml`,
 - Paths are absolute (`servers: [{url: /}]`) because core-service serves three path families.
 - Every operation: camelCase unique `operationId`, `tags`, `summary`, bearer security, `400/401/403/404` Problem
   responses (`application/problem+json`), `409`/`422` where a state conflict / domain rule applies.
+- Upstream failures (`CrossServiceContractTest`): every `/api/game/**` and `/api/athlete/**` operation declares
+  `503` → `common.yaml#/components/responses/ServiceUnavailable` (code `UPSTREAM_UNAVAILABLE`), because the tenant
+  filter of those services resolves the caller through core's `/internal/authz` on every call. core's tenant and
+  platform operations call no peer synchronously except `createTenant` / `inviteMember`, which call Keycloak and declare
+  `502` → `UpstreamIdentityProvider` (code `IDENTITY_PROVIDER_UNAVAILABLE`). `getTenantUsage` never fails for a peer:
+  it lists the peer in `unavailableServices`.
+- `/internal/usage/{tenantId}` answers 200 with zero counters for an unknown tenant in every service.
 - Tenant-scoped operations (`/api/**` except `GET|PATCH /api/core/me`) take the required `X-Tenant-Id` header;
   `/platform/**`, `/internal/**` and `/me` never do. Non-members get **404** — hence 404 on every operation.
 - `/internal/**` operations are tagged `Internal` and marked `x-internal: true` (not generated into the Flutter client).
@@ -71,11 +78,13 @@ the contract therefore lets the server decide the format from the magic bytes.
 
 Services depend on this module in test scope and validate every REST-assured exchange with
 [swagger-request-validator](https://bitbucket.org/atlassian/swagger-request-validator)
-(`com.atlassian.oai:swagger-request-validator-restassured`, version managed in the root `pom.xml`):
+(`com.atlassian.oai:openapi-request-validator-restassured` — the relocated name of
+`swagger-request-validator-restassured`, same 3.0.0 code and `com.atlassian.oai.validator` packages — version managed
+in the root `pom.xml`):
 
 ```xml
 <dependency><groupId>com.hoopsacademy</groupId><artifactId>contracts</artifactId><scope>test</scope></dependency>
-<dependency><groupId>com.atlassian.oai</groupId><artifactId>swagger-request-validator-restassured</artifactId></dependency>
+<dependency><groupId>com.atlassian.oai</groupId><artifactId>openapi-request-validator-restassured</artifactId></dependency>
 ```
 
 ```java
@@ -91,4 +100,27 @@ Match events: game-service validates each submitted event individually against `
 (networknt json-schema-validator, Jackson 2 line `2.0.x`) so one invalid event is answered `REJECTED/SCHEMA_INVALID`
 instead of failing the whole batch. Tests that exercise rejection on purpose should therefore disable request
 validation for `submitMatchEvents` (`.withLevel("validation.request", ValidationReport.Level.IGNORE)` on that call)
-while keeping response validation.
+while keeping response validation. Every `<Type>Event` fixes its `type`
+(`type: {allOf: [{$ref: MatchEventType}], enum: [<TYPE>]}`), so exactly one `oneOf` branch matches for any
+spec-compliant validator (before WP2c PERIOD_START/PERIOD_END and SUB_IN/SUB_OUT were structurally identical). The
+`allOf`-wrapped spelling is deliberate: a plain inline `{type: string, enum: [<TYPE>]}` makes dart-dio drop the
+`MatchEventType` import of every variant (135 analyzer errors, checked with openapi-generator 7.26.0). swagger-request-
+validator, however, only selects the branch once combinators are resolved, and resolving drops that sibling `enum`;
+game-service's tests therefore validate events against a derived copy that spells the type as the plain enum
+(`support/Contract.EVENTS`) — the same constraint.
+
+### Known validator quirks
+
+- **`allOf` + `additionalProperties`**: schemas composed with `allOf` (`InviteMemberRequest`, `TrainingSchedule`,
+  `PlannedAbsence`, `TrainingPlan`, `PhysicalTestResult`, the `<Type>Event`s, …) are checked part by part, so with
+  `additionalProperties: false` semantics each part reports the other parts' properties as "additional". Either build
+  the validator with `withResolveCombinators(true)` (flattens `allOf`; core and game do this) or set
+  `validation.request.body.schema.additionalProperties` / `validation.response.body.schema.additionalProperties` to
+  `IGNORE` (athlete). Side effect of resolving combinators: `nullable` on an `allOf`-wrapped request field
+  (`jerseyNumber: {allOf: [...], nullable: true}`) is dropped, so a request sending `null` there is validated
+  response-only.
+- **Colons in paths** (`/api/game/matches/{matchId}/events:batch`, `/api/athlete/training-plans/{planId}:copy`,
+  `:archive`, `:unarchive`, `/internal/players:batch`): the validator matches the template only when the colon is sent
+  literally, and Quarkus REST answers 404 for a percent-encoded `%3A`. REST-assured tests call these paths with
+  `urlEncodingEnabled(false)`; the generated Dart (dio) and Quarkus REST clients send the colon unencoded; the nginx
+  gateway and the ingress must forward the path unchanged (no `proxy_pass` URI part that would re-normalise it).

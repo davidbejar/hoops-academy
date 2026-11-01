@@ -42,15 +42,25 @@ public class TrainingAccess {
         }
     }
 
-    /** Read access to a team's training data: staff roles see all teams, parents/players only their own team (404). */
+    /**
+     * Read access to a team's training data: staff roles see all teams, parents/players only a current team of their
+     * players (404 otherwise): {@code playerTeamIds} from core, else the team's roster.
+     */
     public void requireView(AuthzContext caller, TeamId team) {
-        if (hasStaffRole(caller)) {
+        if (hasStaffRole(caller) || caller.isPlayerTeam(team.value())) {
             return;
         }
         TeamRoster teamRoster = roster.teamRoster(caller.tenantId(), team);
         if (relatedPlayers(caller).stream().noneMatch(teamRoster::hasPlayer)) {
             throw new NotFoundException("Team not found");
         }
+    }
+
+    /** Teams of the caller's own / linked players, as core reports them ({@code AuthzContext.playerTeamIds}). */
+    public Set<TeamId> playerTeams(AuthzContext caller) {
+        Set<TeamId> teams = new HashSet<>();
+        caller.playerTeamIds().forEach(id -> teams.add(new TeamId(id)));
+        return teams;
     }
 
     /** Linked players (PARENT) plus the caller's own player (PLAYER). */

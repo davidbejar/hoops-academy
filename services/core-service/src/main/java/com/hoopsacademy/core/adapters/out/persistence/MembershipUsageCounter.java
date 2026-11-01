@@ -39,6 +39,7 @@ class MembershipUsageCounter implements UsageCounter {
         counters.put("playersPendingApproval", byStatus.getOrDefault(PlayerStatus.PENDING_APPROVAL, 0L));
         counters.put("playersOrphan", byStatus.getOrDefault(PlayerStatus.ORPHAN, 0L));
         counters.put("playersWithdrawn", byStatus.getOrDefault(PlayerStatus.WITHDRAWN, 0L));
+        counters.put("playersRejected", byStatus.getOrDefault(PlayerStatus.REJECTED, 0L));
         return counters;
     }
 

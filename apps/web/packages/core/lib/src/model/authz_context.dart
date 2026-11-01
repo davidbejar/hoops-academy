@@ -21,7 +21,9 @@ part 'authz_context.g.dart';
 /// * [roles] 
 /// * [staffTeamIds] 
 /// * [linkedPlayerIds] 
-/// * [ownPlayerId] 
+/// * [ownPlayerId] - The subject's own player id when they hold the PLAYER role.
+/// * [playerTeamIds] - Teams with an open, valid assignment of the own player or of a linked player.
+/// * [timezone] - IANA time zone of the tenant.
 @BuiltValue()
 abstract class AuthzContext implements Built<AuthzContext, AuthzContextBuilder> {
   @BuiltValueField(wireName: r'sub')
@@ -46,8 +48,17 @@ abstract class AuthzContext implements Built<AuthzContext, AuthzContextBuilder> 
   @BuiltValueField(wireName: r'linkedPlayerIds')
   BuiltList<String> get linkedPlayerIds;
 
+  /// The subject's own player id when they hold the PLAYER role.
   @BuiltValueField(wireName: r'ownPlayerId')
   String? get ownPlayerId;
+
+  /// Teams with an open, valid assignment of the own player or of a linked player.
+  @BuiltValueField(wireName: r'playerTeamIds')
+  BuiltList<String> get playerTeamIds;
+
+  /// IANA time zone of the tenant.
+  @BuiltValueField(wireName: r'timezone')
+  String get timezone;
 
   AuthzContext._();
 
@@ -114,6 +125,16 @@ class _$AuthzContextSerializer implements PrimitiveSerializer<AuthzContext> {
         specifiedType: const FullType.nullable(String),
       );
     }
+    yield r'playerTeamIds';
+    yield serializers.serialize(
+      object.playerTeamIds,
+      specifiedType: const FullType(BuiltList, [FullType(String)]),
+    );
+    yield r'timezone';
+    yield serializers.serialize(
+      object.timezone,
+      specifiedType: const FullType(String),
+    );
   }
 
   @override
@@ -193,6 +214,20 @@ class _$AuthzContextSerializer implements PrimitiveSerializer<AuthzContext> {
           ) as String?;
           if (valueDes == null) continue;
           result.ownPlayerId = valueDes;
+          break;
+        case r'playerTeamIds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>;
+          result.playerTeamIds.replace(valueDes);
+          break;
+        case r'timezone':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.timezone = valueDes;
           break;
         default:
           unhandled.add(key);

@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
+import com.hoopsacademy.athlete.support.ApiSupport;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -63,6 +64,23 @@ class SessionApiTest {
                 .body("durationMinutes", equalTo(75))
                 .body("startsAt", equalTo("2027-03-02T17:00:00Z"))
                 .body("notes", equalTo("shooting drills"));
+    }
+
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.ADMIN)
+    void aParentListsTheSessionsOfTheLinkedPlayersTeamsWithoutNamingATeam() {
+        String mine = createSession(TEAM, "2029-02-05T17:00:00Z");
+        createSession(OTHER_TEAM, "2029-02-06T17:00:00Z");
+
+        ApiSupport.member(TENANT, java.util.Set.of(TenantRole.PARENT), java.util.Set.of(), java.util.Set.of(PLAYER), null,
+                java.util.Set.of(TEAM));
+        api(TENANT).queryParam("from", "2029-02-01").queryParam("to", "2029-02-28").get(SESSIONS).then().statusCode(200)
+                .body("items.id", org.hamcrest.Matchers.contains(mine));
+
+        ApiSupport.member(TENANT, java.util.Set.of(TenantRole.PLAYER), java.util.Set.of(), java.util.Set.of(), PLAYER,
+                java.util.Set.of());
+        api(TENANT).queryParam("from", "2029-02-01").queryParam("to", "2029-02-28").get(SESSIONS).then().statusCode(200)
+                .body("items", hasSize(0)).body("page.totalElements", equalTo(0));
     }
 
     @Test
@@ -199,7 +217,8 @@ class SessionApiTest {
         api(TENANT).queryParam("teamId", TEAM).queryParam("from", "2027-07-01").queryParam("to", "2027-07-31")
                 .get(SESSIONS).then().statusCode(200).body("items", hasSize(1));
         api(TENANT).queryParam("teamId", OTHER_TEAM).get(SESSIONS).then().statusCode(404);
-        lenient(TENANT).get(SESSIONS).then().statusCode(400);
+        // no teamId: the teams of the linked players (none in this caller's context) instead of a 400
+        api(TENANT).get(SESSIONS).then().statusCode(200).body("items", hasSize(0));
         api(TENANT).body(Map.of("notes", "x")).patch(SESSIONS + "/" + ownTeamSession).then().statusCode(403);
         api(TENANT).body(Map.of("reason", "x")).post(SESSIONS + "/" + ownTeamSession + "/cancel").then().statusCode(403);
     }

@@ -1,5 +1,6 @@
 package com.hoopsacademy.game.adapters.in.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hoopsacademy.game.adapters.json.MatchEventJson;
@@ -15,8 +16,13 @@ final class MatchEventDtos {
 
     private MatchEventDtos() {}
 
+    /**
+     * {@code reason}/{@code message} are omitted unless REJECTED (both optional in the contract): an explicit null on
+     * the allOf-wrapped nullable enum cannot be validated once combinators are resolved (libs/contracts README).
+     */
     record EventResultDto(UUID eventId, IngestEventBatch.Status status, Long serverSeq,
-            IngestEventBatch.RejectionReason reason, String message) {}
+            @JsonInclude(JsonInclude.Include.NON_NULL) IngestEventBatch.RejectionReason reason,
+            @JsonInclude(JsonInclude.Include.NON_NULL) String message) {}
 
     record BatchResultDto(List<EventResultDto> results, long lastServerSeq) {
 

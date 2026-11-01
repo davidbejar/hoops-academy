@@ -99,6 +99,19 @@ public class TrainingPlanResource {
         return Response.status(Response.Status.CREATED).entity(PlanDtos.Plan.from(copy)).build();
     }
 
+    /** Custom methods like {@code :copy}; clients send the colon unencoded (libs/contracts README). */
+    @POST
+    @Path("/{planId}:archive")
+    public PlanDtos.Plan archive(@PathParam("planId") UUID planId) {
+        return PlanDtos.Plan.from(plans.setArchived(caller(), new PlanId(planId), true));
+    }
+
+    @POST
+    @Path("/{planId}:unarchive")
+    public PlanDtos.Plan unarchive(@PathParam("planId") UUID planId) {
+        return PlanDtos.Plan.from(plans.setArchived(caller(), new PlanId(planId), false));
+    }
+
     @POST
     @Path("/{planId}/items")
     public Response addItem(@PathParam("planId") UUID planId, @Valid @NotNull PlanDtos.ItemInput request) {

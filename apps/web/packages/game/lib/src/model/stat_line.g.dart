@@ -36,6 +36,10 @@ class _$StatLine extends StatLine {
   @override
   final int personalFouls;
   @override
+  final int technicalFouls;
+  @override
+  final int unsportsmanlikeFouls;
+  @override
   final int secondsPlayed;
 
   factory _$StatLine([void Function(StatLineBuilder)? updates]) =>
@@ -56,6 +60,8 @@ class _$StatLine extends StatLine {
       required this.steals,
       required this.blocks,
       required this.personalFouls,
+      required this.technicalFouls,
+      required this.unsportsmanlikeFouls,
       required this.secondsPlayed})
       : super._();
   @override
@@ -83,6 +89,8 @@ class _$StatLine extends StatLine {
         steals == other.steals &&
         blocks == other.blocks &&
         personalFouls == other.personalFouls &&
+        technicalFouls == other.technicalFouls &&
+        unsportsmanlikeFouls == other.unsportsmanlikeFouls &&
         secondsPlayed == other.secondsPlayed;
   }
 
@@ -103,6 +111,8 @@ class _$StatLine extends StatLine {
     _$hash = $jc(_$hash, steals.hashCode);
     _$hash = $jc(_$hash, blocks.hashCode);
     _$hash = $jc(_$hash, personalFouls.hashCode);
+    _$hash = $jc(_$hash, technicalFouls.hashCode);
+    _$hash = $jc(_$hash, unsportsmanlikeFouls.hashCode);
     _$hash = $jc(_$hash, secondsPlayed.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -125,6 +135,8 @@ class _$StatLine extends StatLine {
           ..add('steals', steals)
           ..add('blocks', blocks)
           ..add('personalFouls', personalFouls)
+          ..add('technicalFouls', technicalFouls)
+          ..add('unsportsmanlikeFouls', unsportsmanlikeFouls)
           ..add('secondsPlayed', secondsPlayed))
         .toString();
   }
@@ -192,6 +204,16 @@ class StatLineBuilder implements Builder<StatLine, StatLineBuilder> {
   set personalFouls(int? personalFouls) =>
       _$this._personalFouls = personalFouls;
 
+  int? _technicalFouls;
+  int? get technicalFouls => _$this._technicalFouls;
+  set technicalFouls(int? technicalFouls) =>
+      _$this._technicalFouls = technicalFouls;
+
+  int? _unsportsmanlikeFouls;
+  int? get unsportsmanlikeFouls => _$this._unsportsmanlikeFouls;
+  set unsportsmanlikeFouls(int? unsportsmanlikeFouls) =>
+      _$this._unsportsmanlikeFouls = unsportsmanlikeFouls;
+
   int? _secondsPlayed;
   int? get secondsPlayed => _$this._secondsPlayed;
   set secondsPlayed(int? secondsPlayed) =>
@@ -218,6 +240,8 @@ class StatLineBuilder implements Builder<StatLine, StatLineBuilder> {
       _steals = $v.steals;
       _blocks = $v.blocks;
       _personalFouls = $v.personalFouls;
+      _technicalFouls = $v.technicalFouls;
+      _unsportsmanlikeFouls = $v.unsportsmanlikeFouls;
       _secondsPlayed = $v.secondsPlayed;
       _$v = null;
     }
@@ -268,6 +292,10 @@ class StatLineBuilder implements Builder<StatLine, StatLineBuilder> {
               blocks, r'StatLine', 'blocks'),
           personalFouls: BuiltValueNullFieldError.checkNotNull(
               personalFouls, r'StatLine', 'personalFouls'),
+          technicalFouls: BuiltValueNullFieldError.checkNotNull(
+              technicalFouls, r'StatLine', 'technicalFouls'),
+          unsportsmanlikeFouls: BuiltValueNullFieldError.checkNotNull(
+              unsportsmanlikeFouls, r'StatLine', 'unsportsmanlikeFouls'),
           secondsPlayed: BuiltValueNullFieldError.checkNotNull(
               secondsPlayed, r'StatLine', 'secondsPlayed'),
         );

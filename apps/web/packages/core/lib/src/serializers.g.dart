@@ -59,6 +59,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PlayerTeamAssignment.serializer)
       ..add(Problem.serializer)
       ..add(ProblemViolation.serializer)
+      ..add(RejectApprovalRequest.serializer)
       ..add(ReplaceMemberRolesRequest.serializer)
       ..add(ResolveEligibilityCaseRequest.serializer)
       ..add(RosterPlayer.serializer)
@@ -85,6 +86,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TenantStatus.serializer)
       ..add(TenantSummary.serializer)
       ..add(TenantUsage.serializer)
+      ..add(TenantUsageHistory.serializer)
+      ..add(TenantUsageSnapshot.serializer)
+      ..add(TenantUsageSnapshotUnavailableServicesEnum.serializer)
       ..add(TenantUsageUnavailableServicesEnum.serializer)
       ..add(UpdateAgeCategoryRequest.serializer)
       ..add(UpdateMeRequest.serializer)
@@ -144,6 +148,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Team)]),
           () => ListBuilder<Team>())
       ..addBuilderFactory(
@@ -158,6 +165,18 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Tenant)]),
           () => ListBuilder<Tenant>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(TenantUsageSnapshot)]),
+          () => ListBuilder<TenantUsageSnapshot>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(UsageReport)]),
+          () => ListBuilder<UsageReport>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(TenantUsageSnapshotUnavailableServicesEnum)
+          ]),
+          () => ListBuilder<TenantUsageSnapshotUnavailableServicesEnum>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(UsageReport)]),
           () => ListBuilder<UsageReport>())
@@ -187,6 +206,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltSet, const [const FullType(TenantRole)]),
           () => SetBuilder<TenantRole>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())

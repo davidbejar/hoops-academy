@@ -39,6 +39,21 @@ public class TenancyProbeResource {
                 "roles", authz.roles());
     }
 
+    /** Like {@code /api/core/me}: an /api path declared tenant-exempt in hoops.tenancy.exempt-paths. */
+    @GET
+    @Path("api/probe/me")
+    @Authenticated
+    public String exemptMe() {
+        return "tenant-bound=" + tenantContext.tenantId().isPresent();
+    }
+
+    @GET
+    @Path("api/probe/me/details")
+    @Authenticated
+    public String belowAnExemptPath() {
+        return "tenant-bound=" + tenantContext.tenantId().isPresent();
+    }
+
     @GET
     @Path("platform/probe/ping")
     @Authenticated

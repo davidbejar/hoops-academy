@@ -3,50 +3,19 @@
 Collected from WP handovers. Resolved items move to the bottom with the WP/commit that closed them.
 
 ## Open
-- **AuthzContext enrichment** (raised by WP8, WP6): add `timezone` (tenant), `playerTeamIds` (teams of own/linked
-  players) to the core `/internal/authz` response, the OpenAPI schema (core.yaml), the Java record in common-quarkus
-  and the adapters in game/athlete. Until then athlete uses `hoops.athlete.default-timezone` and parent/player list
-  calls require `teamId`. → consolidation pass after WP3/WP4 (call it WP2c).
-- **503 `ServiceUnavailable` response** in `common.yaml` + referenced by game/athlete operations (WP6, WP8).
-- **OptimisticLockException → 409 Problem** mapper: WP7 added a game-local `CONCURRENT_MODIFICATION` mapper; move to common in WP2c.
-- **`swagger-request-validator-restassured` relocated** to `openapi-request-validator-restassured` — rename in root pom.
-- **RosterPort adapter duplication** (game, athlete): move to `libs/common-quarkus` (`client` package) in WP2c; keep
-  service-specific resolvers thin.
-- **Nightly jobs on multiple replicas** (athlete materialisation, core eligibility): add a Postgres advisory lock
-  helper in common (`TenantScope.runExclusive`) before WP16 scales replicas.
-- **`/internal/usage` for unknown tenant** returns zeros in game/athlete (contract says 404) — align contract.
 - **Keycloak client `web`**: add `http://localhost:5173/*` redirect/post-logout URIs and web origin for the Flutter dev
   server; API CORS for the dev origin in nginx (WP11). Realm import runs once → needs volume reset.
 - **Browser smoke tests**: chromedriver not installed (download was blocked by the environment); `flutter drive`
   smoke and the Lighthouse installability check are manual for now (apps/web/README.md).
 - **Product question**: a super_admin who also holds tenant memberships gets tenant navigation only (no Platform
   entry) — decide in WP14 (suggest: Platform entry in Profile menu when realm role present).
-- **allOf + swagger-request-validator additionalProperties** quirk — document in contracts README (WP8).
 
-- **common `TenantScopedPaths`**: exempt `/api/core/me` (no X-Tenant-Id) so core can drop its reroute filter; add an
-  `UnauthorizedException` → 401 Problem mapper to common (WP3).
-- **Contracts**: declare 502 (identity provider failure) on createTenant/inviteMember; document the allOf request-body
-  validator quirk (WP3).
 - **Core onboarding crash window**: tenant row without settings/admin if the process dies mid-saga → add a repair job or
   make the platform insert last (WP3 open point); member e-mail changes not synced to Keycloak.
 - **Uploads > 2 MB** return a plain 413 from the HTTP layer (no Problem body) — configure `quarkus.http.limits` + mapper.
 
-- **Contracts (athlete)**: add operations for plan archive/unarchive and assignment progress (use cases exist, WP9);
-  consider `nameKey` for template i18n.
-- **common test-jar**: add a `nullableTenantTables()` hook so templates can keep a `tenant_id` column (WP9 used
-  `owner_tenant_id` to satisfy the meta-test); RLS lesson learned: use separate select/insert/update/delete policies
-  when USING and WITH CHECK differ (FOR ALL lets DELETE through) — fold into `app.enable_tenant_rls` docs/skill.
-
-- **Contracts (game, WP7)**: per-event-type `type` const so request validators can discriminate MatchEvent; add
-  rejection reason for "event id reused in another match" (currently CLIENT_SEQ_CONFLICT) and optionally
-  `MATCH_NOT_STARTED`; `StatLine` technical/unsportsmanlike foul counts; `BoxScore.opponentFouls` has no source
-  event type (drop or add OPPONENT_FOUL).
-- **Ingress/nginx**: must pass `events:batch` paths through unchanged (percent-encoded colon → 404) (WP7, WP16).
 - **Rate limiting** for `events:batch` and `/auth` at the proxy/ingress (WP17).
 
-- **Contracts (athlete, WP10)**: add `GET /players/{playerId}/availability` and the `bandStatus` field
-  (MATCHED|NO_NORM|MISSING_PLAYER_DATA) + nullable `ageAtMeasurement`; measurement-per-day race → map unique
-  violation to 409.
 - **WP10b norms research** (Sonnet + web search): replace placeholder norm blocks with cited published tables
   (FITNESSGRAM HFZ, ALPHA-Fit/Eurofit percentiles, published youth vertical-jump/T-test norms) and verify the Cooper
   1968 figures; update `R__physical_test_norms.sql` + `docs/domain/norms.md`.
@@ -55,14 +24,10 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
   itself and caches nothing (`--pwa-strategy` deprecated). Add a custom caching service worker (app shell +
   `sqlite3.wasm` + `drift_worker.js` + deferred parts precache, network-first for `/api`) in WP14 or WP17; verify
   with airplane-mode reload. Until then offline works only while the tab stays open.
-- **Contracts (/me)**: expose the caller's own `playerId` per membership (PLAYER role) so Me → season stats and the
-  "own line" highlight work (WP13).
 - **Same-device two-tab clientSeq race** (WP13): acceptable for now (second event is CLIENT_SEQ_CONFLICT and visible).
 
 - **Player login/invitation** (WP5): CreatePlayer stores email but creates no Keycloak user; reuse the InviteMember
   saga for players with an email (and for parents created via guardian flow).
-- **Contracts (core)**: `PlayerStatus` lacks REJECTED (rejected adds end as WITHDRAWN); add `/platform/tenants/{id}/usage/history`;
-  document core counter keys in UsageReport; approval `reject` note should be required.
 - **Members list** shows pending/rejected players' persons (WP5) — filter by status.
 
 - **Health extension** (WP16): add `quarkus-smallrye-health` to game- and athlete-service and drop the TCP probe
@@ -71,7 +36,6 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
 - **Helm chart symlinks** (realm JSON, init SQL) break `helm package`; replace with a copy step in `up.sh`/CI before
   publishing charts.
 - **Mail in kind**: realm SMTP host `mailhog` is not deployed in the cluster (add mailpit chart or disable e-mail).
-- **Problem `instance` double slash** in game 503 responses (`//api/game/...`).
 - **Production ingress choice** (ingress-nginx retiring upstream) and External Secrets Operator manifests.
 
 - **Web polish (WP14)**: nginx/ingress must serve `sw.js` with `Cache-Control: no-cache`; add a "new version
@@ -79,7 +43,47 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
   device timezone (use tenant timezone once AuthzContext carries it); availability badge not yet in roster/match
   setup; usage history chart once the regenerated package exposes `getTenantUsageHistory`.
 
+- **Template i18n** (WP9): consider `nameKey`/`locale` on `TrainingPlanSummary` (the UI maps template names by id) — not
+  done in WP2c.
+- **Measurement-per-day race** (WP10): two simultaneous inserts hit the unique constraint as a 500; map the unique
+  violation to 409 `MEASUREMENT_EXISTS_FOR_DATE` — not done in WP2c.
+- **Ingress (WP16)**: the compose nginx forwards `events:batch` / `:copy` unchanged (verified in WP2c); the k8s ingress
+  must do the same (no rewrite / URI normalisation) — check when WP16 lands.
+- **Backfill REJECTED** (WP2c): players rejected before core `V8__player_rejected.sql` remain WITHDRAWN (no backfill).
+- **apps/web after WP2c**: regenerate the Dart packages (`just gen-api`) and adapt: `PlayerStatus.REJECTED`,
+  `BoxScore.opponentFouls` removed (also in `lib/features/match/data/mock_game_api.dart`), `StatLine.technicalFouls` /
+  `unsportsmanlikeFouls`, `RejectApprovalRequest` (required note), nullable `ageAtMeasurement`, `bandStatus`,
+  `EVENT_ID_REUSED` / `MATCH_NOT_STARTED`, `AuthzSummary.timezone` / `playerTeamIds`, new athlete/platform operations.
+
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
 - Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0 (requires realm re-import: `just down && podman volume rm hoops_pgdata`).
 - `Problem.code` alignment between contracts and common — done in WP2a.
+- WP2c: AuthzContext enrichment — core `/internal/authz` and `/me` (`AuthzSummary`) carry `timezone` and
+  `playerTeamIds` (open, valid assignments of own + linked players); `ownPlayerId` already was the own player id (/me
+  item of WP13); Java record + shared client + athlete (tenant registry zone, team-less PARENT/PLAYER lists).
+- WP2c: 503 `ServiceUnavailable` in `common.yaml`, declared on every `/api/game/**` and `/api/athlete/**` operation;
+  502 `UpstreamIdentityProvider` on `createTenant` / `inviteMember`.
+- WP2c: optimistic-lock → 409 `CONCURRENT_MODIFICATION`, `UnauthorizedException` → 401 and `UpstreamUnavailableException`
+  → 503 mappers in common; game's local mappers deleted.
+- WP2c: `openapi-request-validator-restassured` 3.0.0 (relocated name) in the root pom and the three services.
+- WP2c: RosterPort REST code moved to `com.hoopsacademy.common.client` (`CoreInternalClient`, `CoreRosterClient`,
+  `RosterAuthzResolver` default bean); game/athlete keep thin `RosterPort` adapters.
+- WP2c: `TenantScope.runExclusive` (advisory xact lock, lock tx suspended while the work runs) for core's eligibility
+  sweep and usage snapshot and athlete's materialisation.
+- WP2c: `/internal/usage/{tenantId}` → 200 with zero counters for an unknown tenant in every service (contract + core).
+- WP2c: allOf / additionalProperties validator quirk, combinator-resolution side effects and colon paths documented
+  in `libs/contracts/README.md`.
+- WP2c: `hoops.tenancy.exempt-paths` (default `/api/core/me`) replaces core's `MePathRewriteFilter`.
+- WP2c: athlete plan `:archive` / `:unarchive` and `GET /plan-assignments/{id}/progress` in the contract and wired.
+- WP2c: `RlsSchemaMetaTest.nullableTenantTables()` / `GenericRlsIsolationTest.nullableTenantTables()` hook with the
+  one-policy-per-command check; athlete's four shared tables use it; skill updated.
+- WP2c: game contract — fixed `type` per MatchEvent variant (batch and feed bodies contract-validated again),
+  `EVENT_ID_REUSED`, `MATCH_NOT_STARTED` (reserved), `StatLine` technical/unsportsmanlike fouls, `BoxScore.opponentFouls`
+  removed (ADR-0016).
+- WP2c: nginx passes `events:batch` (and `%3A`) through unchanged — verified from the nginx upstream URI, no config change.
+- WP2c: athlete availability operation + `bandStatus` + nullable `ageAtMeasurement` in the contract.
+- WP2c: core `PlayerStatus.REJECTED` (reject sets it), `GET /platform/tenants/{id}/usage/history`, required reject note
+  (`RejectApprovalRequest`), core counter keys documented in `UsageReport` (+ `playersRejected`).
+- WP2c: Problem `instance` double slash in game 503 responses — game's local 503 mapper (`"/" + uri.getPath()`) was
+  deleted; common's mapper uses the raw request path.

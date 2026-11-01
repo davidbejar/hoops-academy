@@ -81,6 +81,12 @@ public class PlanAssignmentResource {
         return Response.noContent().build();
     }
 
+    @GET
+    @Path("/{assignmentId}/progress")
+    public AssignmentDtos.Progress progress(@PathParam("assignmentId") UUID assignmentId) {
+        return AssignmentDtos.Progress.from(completions.progress(caller(), new AssignmentId(assignmentId)));
+    }
+
     @PUT
     @Path("/{assignmentId}/completions/{playerId}")
     public AssignmentDtos.CompletionResponse record(@PathParam("assignmentId") UUID assignmentId,

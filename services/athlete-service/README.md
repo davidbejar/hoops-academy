@@ -19,7 +19,7 @@ source scripts/env.sh
 | `adapters.in.internal` | `GET /internal/usage/{tenantId}` (role `service`). |
 | `adapters.in.job` | `@Scheduled` nightly materialisation. |
 | `adapters.out.persistence` | Hibernate entities (`@TenantId String tenantId`, ADR-0011) and repositories; `TenantRegistryRepository` is plain JDBC. |
-| `adapters.out.client` | `CoreRosterAdapter` (RosterPort over REST Client to core `/internal/**`), `RosterAuthzResolver`. |
+| `adapters.out.client` | `CoreRosterAdapter` (RosterPort mapping over common-quarkus' shared `CoreRosterClient`; the membership resolver is common's `RosterAuthzResolver`). |
 | `adapters.out.time` | `RegistryTenantClock`, `Clock` producer. |
 
 New WP9/WP10 code adds sibling packages/classes in the same layers (e.g. `domain.plan`, `application.ManagePlans`,
@@ -32,8 +32,8 @@ entities + `V2__...sql`) and reuses `TrainingAccess`, `RosterPort`, `CallerActor
 | `quarkus.flyway.*` | user `athlete_migrator`, `ATHLETE_MIGRATOR_PASSWORD` | migrations |
 | `quarkus.oidc.*` / `quarkus.oidc-client.*` | `KEYCLOAK_URL`, client `athlete-service`, `ATHLETE_SERVICE_CLIENT_SECRET` | end-user JWT validation / client credentials for `/internal` calls |
 | `hoops.core.url` | `http://localhost:8081` | core-service base URL |
-| `hoops.athlete.roster-cache-ttl` | `30S` | RosterPort cache |
-| `hoops.athlete.default-timezone` | `Europe/Madrid` | tenant zone until core reports one |
+| `hoops.core.cache-ttl` | `30S` | cache of the shared core client (common-quarkus default) |
+| `hoops.athlete.default-timezone` | `Europe/Madrid` | tenant zone only when the caller's `AuthzContext` carries none (older core) |
 | `hoops.athlete.horizon-weeks` | `8` | materialisation horizon |
 | `hoops.athlete.materialise.cron` | `0 15 2 * * ?` | nightly job (`off` disables) |
 
@@ -46,33 +46,35 @@ deletes its future PLANNED sessions without attendance.
 
 The nightly job needs the list of tenants. This service has no platform datasource, so it keeps the global table
 `athlete.tenant_registry (id, timezone)` (no `tenant_id` column, no RLS, declared in `RlsSchemaMetaTest.globalTables()`).
-A tenant is registered the first time a schedule or ad-hoc session is created. The job runs each tenant through
-`TenantScope.runAs` so RLS applies.
+A tenant is registered (with the zone from the caller's `AuthzContext.timezone`) when a schedule or ad-hoc session is
+created. The job runs under `TenantScope.runExclusive("athlete.materialisation", ...)` (one replica at a time, Postgres
+advisory lock) and each tenant through `TenantScope.runAs` so RLS applies.
 
 ## Training plans (WP9)
 `training_plan` / `plan_item` hold the tenant's plans and the global templates (`owner_tenant_id is null`, seeded by the
 repeatable `R__plan_templates.sql`, English, `locale = 'en'`; the UI translates template names by id). The owner column
 is not called `tenant_id` and the tables use per-command policies (read: templates + own; write: own only), so they are
-declared in `AthleteRlsSchemaMetaTest.globalTables()` and proved by `TemplateRlsIsolationTest`. Their JPA entities carry
+declared in `AthleteRlsSchemaMetaTest.nullableTenantTables()` (owner column `owner_tenant_id`; the common inspector checks
+forced RLS and one policy per command) and proved by `TemplateRlsIsolationTest`. Their JPA entities carry
 no `@TenantId` (Hibernate's discriminator filter would hide templates). Templates are copied on use (`POST
 /training-plans/{id}:copy`); direct edits answer 403 `PLAN_IS_TEMPLATE`. Assignments are `team xor player`; a team
-assignment is expanded against the CURRENT roster when read. `ManageCompletions.progress` (counts by status + per player)
-has no REST operation in the contract yet.
+assignment is expanded against the CURRENT roster when read. `POST /training-plans/{id}:archive|:unarchive` toggles
+`archived` (archived plans leave lists and cannot be assigned); `GET /plan-assignments/{id}/progress` returns counts by
+status plus one line per visible target.
 
-## Contract gaps (to settle with core / contracts)
-1. **Tenant time zone**: core's `AuthzContext` has no `timezone`. The adapter reads an optional `timezone` field
-   when core starts sending it (additive, minor version); until then every tenant uses `hoops.athlete.default-timezone`.
-2. **Team of a player**: `AuthzContext` has no team membership of linked/own players, so for PARENT/PLAYER the list
-   endpoints require `teamId` (400 otherwise) and team access is checked by looking for their players in
-   `GET /internal/teams/{id}/roster`.
+## Contract notes (WP2c closed the earlier gaps)
+1. **Tenant time zone** comes from `AuthzContext.timezone` (core); `hoops.athlete.default-timezone` is only a fallback.
+2. **Teams of a player**: `AuthzContext.playerTeamIds` (core). PARENT/PLAYER list calls without `teamId` return the
+   sessions/schedules of those teams (empty when there are none); single-team access accepts a team in
+   `playerTeamIds` and otherwise still looks for the caller's players in `GET /internal/teams/{id}/roster`.
 3. **Person display names**: `PersonRef.displayName` for `recordedBy` is a snapshot of the token's `name`
    (fallback `preferred_username`, then `Member`) stored in `*_by_name` columns.
-4. **503** (`UPSTREAM_UNAVAILABLE`) is not among the documented responses of the athlete operations.
+4. **503** (`UPSTREAM_UNAVAILABLE`) is declared on every `/api/athlete/**` operation (`common.yaml` `ServiceUnavailable`).
 
 ## Testing notes
 * `@TenantUser` (common test-jar) drives auth. The test-jar's `TestAuthzContextResolver` overrides the production
-  `RosterAuthzResolver` in every `@QuarkusTest`; the production resolver is exercised by `RosterAuthzResolverTest`
-  (unit, Mockito) and by `RealResolverApiTest` (`@TestProfile` that sets `quarkus.arc.exclude-types` for the test
+  `RosterAuthzResolver` (common-quarkus) in every `@QuarkusTest`; the production resolver is unit-tested in common and
+  exercised here by `RealResolverApiTest` (`@TestProfile` that sets `quarkus.arc.exclude-types` for the test
   resolver, with membership served by WireMock).
 * core-service and the Keycloak token endpoint are WireMock (`CoreMockResource`, stubs via `CoreStubs`); the adapter
   cache is cleared with `CoreRosterAdapter.clearCache()` between tests.

@@ -16,4 +16,10 @@ class SampleGenericRlsIsolationTest extends GenericRlsIsolationTest {
     protected Map<String, Map<String, ColumnFixture>> fixtureOverrides() {
         return Map.of("core.sample_widget_part", Map.of("widget_id", SampleFixtures::insertWidget));
     }
+
+    /** Shared global+tenant tables need their own isolation tests (a tenant also sees the global rows). */
+    @Override
+    protected Map<String, String> nullableTenantTables() {
+        return Map.of("core.sample_template", "tenant_id");
+    }
 }

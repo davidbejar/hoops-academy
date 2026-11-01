@@ -18,6 +18,7 @@ part 'training_plan_summary.g.dart';
 /// * [sourceTemplateId] - Template (or plan) this plan was copied from.
 /// * [itemCount] 
 /// * [totalDurationMinutes] 
+/// * [archived] - Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
 @BuiltValue(instantiable: false)
 abstract class TrainingPlanSummary  {
   @BuiltValueField(wireName: r'id')
@@ -42,6 +43,10 @@ abstract class TrainingPlanSummary  {
 
   @BuiltValueField(wireName: r'totalDurationMinutes')
   int get totalDurationMinutes;
+
+  /// Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
+  @BuiltValueField(wireName: r'archived')
+  bool? get archived;
 
   @BuiltValueSerializer(custom: true)
   static Serializer<TrainingPlanSummary> get serializer => _$TrainingPlanSummarySerializer();
@@ -98,6 +103,13 @@ class _$TrainingPlanSummarySerializer implements PrimitiveSerializer<TrainingPla
       object.totalDurationMinutes,
       specifiedType: const FullType(int),
     );
+    if (object.archived != null) {
+      yield r'archived';
+      yield serializers.serialize(
+        object.archived,
+        specifiedType: const FullType(bool),
+      );
+    }
   }
 
   @override
@@ -212,6 +224,14 @@ class _$$TrainingPlanSummarySerializer implements PrimitiveSerializer<$TrainingP
             specifiedType: const FullType(int),
           ) as int;
           result.totalDurationMinutes = valueDes;
+          break;
+        case r'archived':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.archived = valueDes;
           break;
         default:
           unhandled.add(key);

@@ -40,6 +40,7 @@ class NightlyMaterialisationTest {
     @Inject TenantScope tenantScope;
     @Inject SessionRepository sessions;
     @Inject CoreRosterAdapter rosterAdapter;
+    @Inject com.hoopsacademy.athlete.adapters.in.job.NightlyMaterialisationJob nightlyJob;
     CoreStubs core;
 
     @BeforeEach
@@ -59,10 +60,9 @@ class NightlyMaterialisationTest {
     }
 
     @Test
-    @TenantUser(tenant = JAKARTA_TENANT, roles = TenantRole.ADMIN)
-    void scheduleCreationRegistersTheTenantWithTheZoneCoreReports() {
+    @TenantUser(tenant = JAKARTA_TENANT, roles = TenantRole.ADMIN, timezone = "Asia/Jakarta")
+    void scheduleCreationRegistersTheTenantWithTheZoneOfTheCallersAuthzContext() {
         core.roster(JAKARTA_TENANT, TEAM_J);
-        core.member(JAKARTA_TENANT, "tenant-user", "ACTIVE", "Asia/Jakarta", "[\"ADMIN\"]", "[]", "[]", "null");
 
         api(JAKARTA_TENANT).body(Map.of("teamId", TEAM_J, "dayOfWeek", "MONDAY", "startTime", "18:00", "durationMinutes", 60,
                 "validFrom", LocalDate.now(ZoneId.of("Asia/Jakarta")).toString())).post("/api/athlete/training-schedules")
@@ -94,6 +94,19 @@ class NightlyMaterialisationTest {
 
         assertThat(sessionsOf(MADRID_TENANT, TEAM_M)).hasSize(8);
         assertThat(createdOnSecondRun).isZero();
+        assertThat(nightlyJob.run()).as("job wrapper ran under the cluster lock").isTrue();
         assertThat(refilled).allSatisfy(s -> assertThat(s.startsAt().atZone(ZoneId.of("Europe/Madrid")).toLocalTime().toString()).isEqualTo("18:00"));
+    }
+
+    @Test
+    void whileAnotherReplicaHoldsTheMaterialisationLockTheJobSkips() throws Exception {
+        try (java.sql.Connection otherReplica = com.hoopsacademy.common.testing.RlsTestDatabase.fromConfig().openAsApp();
+                java.sql.PreparedStatement lock = otherReplica.prepareStatement("select pg_advisory_lock(?)")) {
+            lock.setLong(1, TenantScope.advisoryKey(com.hoopsacademy.athlete.adapters.in.job.NightlyMaterialisationJob.LOCK));
+            lock.execute();
+
+            assertThat(nightlyJob.run()).isFalse();
+        }
+        assertThat(nightlyJob.run()).isTrue();
     }
 }

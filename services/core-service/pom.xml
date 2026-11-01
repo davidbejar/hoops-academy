@@ -102,7 +102,7 @@
     </dependency>
     <dependency>
       <groupId>com.atlassian.oai</groupId>
-      <artifactId>swagger-request-validator-restassured</artifactId>
+      <artifactId>openapi-request-validator-restassured</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

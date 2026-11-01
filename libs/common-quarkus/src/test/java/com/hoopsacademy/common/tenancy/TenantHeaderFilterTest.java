@@ -86,4 +86,37 @@ class TenantHeaderFilterTest {
     void onlyTheApiSegmentIsTenantScoped() {
         given().get("/apiary/probe/ping").then().statusCode(200).body(equalTo("tenant-bound=false"));
     }
+
+    @Test
+    @TestSecurity(user = "someone")
+    void anExemptApiPathNeedsNoTenantHeader() {
+        given().get("/api/probe/me").then().statusCode(200).body(equalTo("tenant-bound=false"));
+        given().get("/api/probe/me/").then().statusCode(200).body(equalTo("tenant-bound=false"));
+    }
+
+    @Test
+    void anExemptApiPathStillRequiresAuthentication() {
+        given().get("/api/probe/me").then()
+                .statusCode(401)
+                .contentType("application/problem+json");
+    }
+
+    @Test
+    @TestSecurity(user = "someone")
+    void theExemptionIsForTheExactPathOnly() {
+        given().get("/api/probe/me/details").then()
+                .statusCode(400)
+                .body("detail", equalTo("Header X-Tenant-Id is required"));
+    }
+
+    @Test
+    void exemptPathsComeFromConfigurationAndAreNormalised() {
+        TenantScopedPaths paths = new TenantScopedPaths(java.util.List.of(" /api/core/me/ ", "api/x"));
+
+        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("/api/core/me")).isFalse();
+        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("api/x/")).isFalse();
+        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("/api/core/members")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("/api")).isTrue();
+        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("/platform/x")).isFalse();
+    }
 }

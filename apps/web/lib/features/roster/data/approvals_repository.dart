@@ -40,7 +40,7 @@ class ApiApprovalsRepository implements ApprovalsRepository {
       (await _api.rejectApprovalRequest(
         xTenantId: _t,
         approvalRequestId: id,
-        approvalDecisionRequest: _note(note),
+        rejectApprovalRequest: api.RejectApprovalRequest((b) => b..note = note),
       )).data!;
 
   @override

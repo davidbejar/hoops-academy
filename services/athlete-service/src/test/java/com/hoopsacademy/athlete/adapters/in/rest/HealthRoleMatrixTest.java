@@ -13,6 +13,7 @@ import static com.hoopsacademy.athlete.adapters.in.rest.RoleMatrixTest.PLAYER_OT
 import static com.hoopsacademy.athlete.adapters.in.rest.RoleMatrixTest.PLAYER_SELF;
 import static com.hoopsacademy.athlete.support.ApiSupport.lenient;
 import static com.hoopsacademy.athlete.support.ApiSupport.member;
+import static com.hoopsacademy.athlete.support.ApiSupport.api;
 import static com.hoopsacademy.athlete.support.ApiSupport.unvalidated;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -206,7 +207,7 @@ class HealthRoleMatrixTest {
     @MethodSource("readHealth")
     void readAvailability(Caller caller, int expected) {
         act(caller);
-        assertThat(unvalidated(TENANT).get("/api/athlete/players/" + CHILD + "/availability").then().extract().statusCode())
+        assertThat(api(TENANT).get("/api/athlete/players/" + CHILD + "/availability").then().extract().statusCode())
                 .isEqualTo(expected);
     }
 

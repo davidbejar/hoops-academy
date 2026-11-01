@@ -4,13 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.athlete.application.RosterPort;
-import com.hoopsacademy.athlete.application.TenantStatus;
-import com.hoopsacademy.athlete.application.UpstreamUnavailableException;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
+import com.hoopsacademy.common.client.CoreMembership;
+import com.hoopsacademy.common.client.CoreRosterClient;
 import com.hoopsacademy.common.problem.NotFoundException;
+import com.hoopsacademy.common.problem.UpstreamUnavailableException;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -24,7 +25,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** The RosterPort REST adapter against a WireMock core-service (happy path, 404, timeout/503, caching, token). */
+/**
+ * The RosterPort adapter over common-quarkus' shared {@link CoreRosterClient} against a WireMock core-service (happy
+ * path, 404, timeout/503, caching, token); membership lookups go through the shared client directly.
+ */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
 @WithTestResource(CoreMockResource.class)
@@ -34,6 +38,7 @@ class CoreRosterAdapterTest {
 
     @Inject RosterPort roster;
     @Inject CoreRosterAdapter adapter;
+    @Inject CoreRosterClient coreClient;
 
     CoreStubs core;
     String team;
@@ -154,28 +159,28 @@ class CoreRosterAdapterTest {
         core.member(TENANT.toString(), "kc-sub-1", "ACTIVE", "Asia/Jakarta", "[\"COACH\",\"PARENT\"]",
                 CoreStubs.json(List.of(staffTeam)), "[]", "null");
 
-        var member = roster.authzContext(TENANT, "kc-sub-1").orElseThrow();
+        CoreMembership member = coreClient.membership(TENANT, "kc-sub-1").orElseThrow();
 
-        assertThat(member.tenantStatus()).isEqualTo(TenantStatus.ACTIVE);
-        assertThat(member.tenantZone()).contains(ZoneId.of("Asia/Jakarta"));
-        assertThat(member.authz().roles()).containsExactlyInAnyOrder(TenantRole.COACH, TenantRole.PARENT);
-        assertThat(member.authz().isStaffOf(UUID.fromString(staffTeam))).isTrue();
-        assertThat(member.authz().tenantId()).isEqualTo(TENANT);
+        assertThat(member.tenantStatus()).isEqualTo(CoreMembership.TenantStatus.ACTIVE);
+        assertThat(member.context().timezone()).contains(ZoneId.of("Asia/Jakarta"));
+        assertThat(member.context().roles()).containsExactlyInAnyOrder(TenantRole.COACH, TenantRole.PARENT);
+        assertThat(member.context().isStaffOf(UUID.fromString(staffTeam))).isTrue();
+        assertThat(member.context().tenantId()).isEqualTo(TENANT);
     }
 
     @Test
     void authzContextWithoutTimezoneFieldHasNoZone() {
         core.member(TENANT.toString(), "kc-sub-2", "ACTIVE", null, "[\"ADMIN\"]", "[]", "[]", "null");
 
-        assertThat(roster.authzContext(TENANT, "kc-sub-2").orElseThrow().tenantZone()).isEmpty();
+        assertThat(coreClient.membership(TENANT, "kc-sub-2").orElseThrow().context().timezone()).isEmpty();
     }
 
     @Test
     void authzContextOfANonMemberIsEmptyAndNotCached() {
         core.notAMember(TENANT.toString(), "stranger");
 
-        assertThat(roster.authzContext(TENANT, "stranger")).isEmpty();
-        assertThat(roster.authzContext(TENANT, "stranger")).isEmpty();
+        assertThat(coreClient.membership(TENANT, "stranger")).isEmpty();
+        assertThat(coreClient.membership(TENANT, "stranger")).isEmpty();
 
         assertThat(core.authzCalls(TENANT.toString(), "stranger")).isEqualTo(2);
     }
@@ -184,8 +189,8 @@ class CoreRosterAdapterTest {
     void authzContextIsCachedForAMember() {
         core.member(TENANT.toString(), "kc-sub-3", "ACTIVE", null, "[\"ADMIN\"]", "[]", "[]", "null");
 
-        roster.authzContext(TENANT, "kc-sub-3");
-        roster.authzContext(TENANT, "kc-sub-3");
+        coreClient.membership(TENANT, "kc-sub-3");
+        coreClient.membership(TENANT, "kc-sub-3");
 
         assertThat(core.authzCalls(TENANT.toString(), "kc-sub-3")).isEqualTo(1);
     }
@@ -193,7 +198,7 @@ class CoreRosterAdapterTest {
     @Test
     void authzContextPropagatesUpstreamFailure() {
         // nothing stubbed for this subject: WireMock answers 404 -> not a member; an unreachable core is covered above
-        assertThat(roster.authzContext(TENANT, "unknown-sub")).isEmpty();
+        assertThat(coreClient.membership(TENANT, "unknown-sub")).isEmpty();
     }
 
     @Test

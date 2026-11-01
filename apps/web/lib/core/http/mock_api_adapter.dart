@@ -174,6 +174,10 @@ class MockApiAdapter implements HttpClientAdapter {
           ? <String>[MockCoreApi.ownTeamId]
           : <String>[],
       'linkedPlayerIds': id == mockTenantAId && roles.contains('PARENT') ? <String>['p-ana'] : <String>[],
+      'playerTeamIds': id == mockTenantAId && (roles.contains('PARENT') || roles.contains('PLAYER'))
+          ? <String>[MockCoreApi.ownTeamId]
+          : <String>[],
+      'timezone': 'Europe/Madrid',
     },
   };
 

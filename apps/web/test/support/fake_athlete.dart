@@ -232,6 +232,7 @@ ath.PhysicalTestResult testResult(
     ..value = value
     ..ageAtMeasurement = 11
     ..expectedBand = band
+    ..bandStatus = band == null ? ath.BandStatus.NO_NORM : ath.BandStatus.MATCHED
     ..referencePending = pending
     ..recordedBy = _who.toBuilder()
     ..recordedAt = DateTime.utc(2026, 10, 1),

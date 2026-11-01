@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 1.0.0
+  version: 2.0.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -95,6 +95,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /platform/tenants/{tenantId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdPath'
@@ -220,6 +221,39 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/TenantUsage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /platform/tenants/{tenantId}/usage/history:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    get:
+      operationId: getTenantUsageHistory
+      tags: [Platform]
+      summary: Daily usage snapshots of a tenant (trend)
+      description: |
+        One snapshot per UTC day, written by the nightly snapshot job and by every `GET .../usage` (a snapshot with
+        unavailable services never replaces a complete one of the same day). Ordered by `date` ascending. Defaults:
+        `to` = today (UTC), `from` = `to` − 89 days; the range may span at most 366 days (400). Authz: super_admin.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: First UTC day (inclusive).
+          schema: {type: string, format: date}
+        - name: to
+          in: query
+          required: false
+          description: Last UTC day (inclusive).
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: Snapshots in the range.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantUsageHistory'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -481,6 +515,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /api/core/members/{personId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -1343,13 +1378,14 @@ paths:
       tags: [ApprovalRequests]
       summary: Reject a pending request
       description: |
-        A rejected ADD_PLAYER leaves the pending player WITHDRAWN; a rejected WITHDRAW_PLAYER leaves the player ACTIVE.
-        Only PENDING requests can be decided (409). Authz: ADMIN.
+        A rejected ADD_PLAYER leaves the pending player REJECTED; a rejected WITHDRAW_PLAYER leaves the player as it
+        was. The reason (`note`) is required and shown to the requesting coach. Only PENDING requests can be decided
+        (409). Authz: ADMIN.
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ApprovalDecisionRequest'}
+            schema: {$ref: '#/components/schemas/RejectApprovalRequest'}
       responses:
         '200':
           description: Rejected request.
@@ -1490,7 +1526,9 @@ paths:
       operationId: getCoreUsage
       tags: [Internal]
       summary: core-service usage counters of a tenant
-      description: 'Authz: role `service`.'
+      description: |
+        An unknown tenant (or one without data) answers 200 with zero counters, like game and athlete — no service
+        can tell "unknown" from "empty"; the platform endpoint checks existence itself. Authz: role `service`.
       x-internal: true
       responses:
         '200':
@@ -1609,7 +1647,12 @@ components:
       enum: [ACTIVE, SUSPENDED, WITHDRAWN]
     PlayerStatus:
       type: string
-      enum: [PENDING_APPROVAL, ACTIVE, ORPHAN, WITHDRAWN]
+      description: |
+        PENDING_APPROVAL — requested by a coach, awaiting an admin decision; ACTIVE — has a valid assignment in a
+        current season; ORPHAN — active but without a valid assignment; WITHDRAWN — left the academy (withdrawal
+        approved, or a pending ADD_PLAYER request cancelled by its requester); REJECTED — an ADD_PLAYER request for
+        this player was rejected (never admitted). WITHDRAWN and REJECTED are final.
+      enum: [PENDING_APPROVAL, ACTIVE, ORPHAN, WITHDRAWN, REJECTED]
     GenderPolicy:
       type: string
       enum: [MALE, FEMALE, MIXED]
@@ -1725,6 +1768,35 @@ components:
           items:
             type: string
             enum: [core, game, athlete]
+    TenantUsageHistory:
+      type: object
+      required: [tenantId, from, to, snapshots]
+      properties:
+        tenantId: {type: string, format: uuid}
+        from: {type: string, format: date}
+        to: {type: string, format: date}
+        snapshots:
+          type: array
+          description: At most one per UTC day, ascending; days without a snapshot are absent.
+          items: {$ref: '#/components/schemas/TenantUsageSnapshot'}
+    TenantUsageSnapshot:
+      type: object
+      required: [date, collectedAt, services, unavailableServices]
+      properties:
+        date:
+          type: string
+          format: date
+          description: UTC day of `collectedAt`.
+        collectedAt: {type: string, format: date-time}
+        services:
+          type: array
+          items: {$ref: './common.yaml#/components/schemas/UsageReport'}
+        unavailableServices:
+          type: array
+          description: Non-empty for a partial snapshot.
+          items:
+            type: string
+            enum: [core, game, athlete]
 
     # ---------------- me
     Me:
@@ -1767,7 +1839,7 @@ components:
     AuthzSummary:
       type: object
       description: The caller's scope within the tenant (what the UI may offer; the server re-checks every call).
-      required: [staffTeamIds, linkedPlayerIds]
+      required: [staffTeamIds, linkedPlayerIds, playerTeamIds, timezone]
       properties:
         staffTeamIds:
           type: array
@@ -1781,7 +1853,17 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: The caller's own player id when they hold the PLAYER role.
+          description: The caller's own player id when they hold the PLAYER role (null otherwise).
+        playerTeamIds:
+          type: array
+          description: |
+            Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player
+            (PARENT); empty for other roles.
+          items: {type: string, format: uuid}
+        timezone:
+          type: string
+          description: IANA time zone of the tenant (calendar days of sessions, birthdays, availability).
+          example: Europe/Madrid
     UpdateMeRequest:
       type: object
       required: [locale]
@@ -2328,6 +2410,15 @@ components:
       type: object
       properties:
         note: {type: string, maxLength: 500}
+    RejectApprovalRequest:
+      type: object
+      required: [note]
+      properties:
+        note:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Reason of the rejection (must contain non-whitespace text).
 
     # ---------------- eligibility cases
     EligibilityCase:
@@ -2370,7 +2461,7 @@ components:
     # ---------------- internal
     AuthzContext:
       type: object
-      required: [sub, personId, tenantId, tenantStatus, roles, staffTeamIds, linkedPlayerIds]
+      required: [sub, personId, tenantId, tenantStatus, roles, staffTeamIds, linkedPlayerIds, playerTeamIds, timezone]
       properties:
         sub: {type: string}
         personId: {type: string, format: uuid}
@@ -2386,7 +2477,19 @@ components:
         linkedPlayerIds:
           type: array
           items: {type: string, format: uuid}
-        ownPlayerId: {type: string, format: uuid, nullable: true}
+        ownPlayerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The subject's own player id when they hold the PLAYER role.
+        playerTeamIds:
+          type: array
+          description: Teams with an open, valid assignment of the own player or of a linked player.
+          items: {type: string, format: uuid}
+        timezone:
+          type: string
+          description: IANA time zone of the tenant.
+          example: Europe/Madrid
     TeamRoster:
       type: object
       required: [tenantId, teamId, seasonId, teamName, players, staff]

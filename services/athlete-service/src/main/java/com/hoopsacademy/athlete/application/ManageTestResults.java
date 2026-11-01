@@ -38,8 +38,8 @@ public class ManageTestResults {
     public record Search(Optional<PlayerId> player, Optional<TeamId> team, Optional<TestTypeId> testType,
             Optional<LocalDate> from, Optional<LocalDate> to, int page, int size) {}
 
-    /** A result with what was derived for it; {@code ageAtMeasurement} is 0 when the birth date is unknown. */
-    public record ResultView(PhysicalTestResult result, PhysicalTestType type, int ageAtMeasurement,
+    /** A result with what was derived for it; {@code ageAtMeasurement} is empty when the birth date is unknown. */
+    public record ResultView(PhysicalTestResult result, PhysicalTestType type, OptionalInt ageAtMeasurement,
             BandResolver.Resolution resolution) {}
 
     private static final LocalDate MIN_DATE = LocalDate.of(1900, 1, 1);
@@ -129,7 +129,7 @@ public class ManageTestResults {
             OptionalInt age = birth.map(b -> OptionalInt.of(AgeAt.years(b, result.measuredOn()))).orElse(OptionalInt.empty());
             var resolution = BandResolver.resolve(normsByType.getOrDefault(result.testTypeId(), List.of()),
                     Optional.ofNullable(brief).flatMap(PlayerBrief::gender), age, result.value());
-            return new ResultView(result, typesById.get(result.testTypeId()), age.orElse(0), resolution);
+            return new ResultView(result, typesById.get(result.testTypeId()), age, resolution);
         }).toList();
     }
 }

@@ -139,7 +139,8 @@ class MatchResourceTest {
         given().header("X-Tenant-Id", A).contentType(ContentType.JSON).body(newMatchBody(team)).post("/api/game/matches")
                 .then().statusCode(503).contentType("application/problem+json")
                 .body("code", equalTo("UPSTREAM_UNAVAILABLE"))
-                .body("type", equalTo("urn:hoops:problem:upstream-unavailable"));
+                .body("type", equalTo("urn:hoops:problem:upstream-unavailable"))
+                .body("instance", equalTo("/api/game/matches"));
     }
 
     @Test

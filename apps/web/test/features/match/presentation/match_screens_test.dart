@@ -392,6 +392,8 @@ gen.StatLine _line(int points) => gen.StatLine((b) => b
   ..steals = 0
   ..blocks = 0
   ..personalFouls = 1
+  ..technicalFouls = 0
+  ..unsportsmanlikeFouls = 0
   ..secondsPlayed = 600);
 
 gen.PlayerSeasonStats _seasonStats({bool empty = false}) => gen.PlayerSeasonStats((b) => b

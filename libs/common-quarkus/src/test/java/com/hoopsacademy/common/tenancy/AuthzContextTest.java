@@ -90,4 +90,26 @@ class AuthzContextTest {
         assertThatThrownBy(() -> new AuthzContext("s", null, null, Set.of(), Set.of(), Set.of(), Optional.empty()))
                 .isInstanceOf(NullPointerException.class);
     }
+
+    @Test
+    void carriesTheTenantZoneAndThePlayerTeamsWhenCoreReportsThem() {
+        UUID childTeam = UUID.randomUUID();
+        var parent = new AuthzContext("s", UUID.randomUUID(), TENANT, EnumSet.of(PARENT), Set.of(), Set.of(CHILD),
+                Optional.empty(), Set.of(childTeam), Optional.of(java.time.ZoneId.of("Asia/Jakarta")));
+
+        assertThat(parent.playerTeamIds()).containsExactly(childTeam);
+        assertThat(parent.timezone()).contains(java.time.ZoneId.of("Asia/Jakarta"));
+        assertThat(parent.isPlayerTeam(childTeam)).isTrue();
+        assertThat(parent.isPlayerTeam(TEAM)).isFalse();
+    }
+
+    @Test
+    void theShortFormHasNoPlayerTeamsAndNoZone() {
+        var ctx = context(EnumSet.of(COACH));
+
+        assertThat(ctx.playerTeamIds()).isEmpty();
+        assertThat(ctx.timezone()).isEmpty();
+        assertThat(new AuthzContext("s", UUID.randomUUID(), TENANT, Set.of(), Set.of(), Set.of(), Optional.empty(), null, null)
+                .playerTeamIds()).isEmpty();
+    }
 }

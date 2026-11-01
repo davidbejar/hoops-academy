@@ -25,6 +25,8 @@ part 'stat_line.g.dart';
 /// * [steals] 
 /// * [blocks] 
 /// * [personalFouls] - All fouls committed (PERSONAL + TECHNICAL + UNSPORTSMANLIKE).
+/// * [technicalFouls] - TECHNICAL fouls (also counted in personalFouls).
+/// * [unsportsmanlikeFouls] - UNSPORTSMANLIKE fouls (also counted in personalFouls).
 /// * [secondsPlayed] - Derived from starters and period / substitution events.
 @BuiltValue()
 abstract class StatLine implements Built<StatLine, StatLineBuilder> {
@@ -70,6 +72,14 @@ abstract class StatLine implements Built<StatLine, StatLineBuilder> {
   /// All fouls committed (PERSONAL + TECHNICAL + UNSPORTSMANLIKE).
   @BuiltValueField(wireName: r'personalFouls')
   int get personalFouls;
+
+  /// TECHNICAL fouls (also counted in personalFouls).
+  @BuiltValueField(wireName: r'technicalFouls')
+  int get technicalFouls;
+
+  /// UNSPORTSMANLIKE fouls (also counted in personalFouls).
+  @BuiltValueField(wireName: r'unsportsmanlikeFouls')
+  int get unsportsmanlikeFouls;
 
   /// Derived from starters and period / substitution events.
   @BuiltValueField(wireName: r'secondsPlayed')
@@ -166,6 +176,16 @@ class _$StatLineSerializer implements PrimitiveSerializer<StatLine> {
     yield r'personalFouls';
     yield serializers.serialize(
       object.personalFouls,
+      specifiedType: const FullType(int),
+    );
+    yield r'technicalFouls';
+    yield serializers.serialize(
+      object.technicalFouls,
+      specifiedType: const FullType(int),
+    );
+    yield r'unsportsmanlikeFouls';
+    yield serializers.serialize(
+      object.unsportsmanlikeFouls,
       specifiedType: const FullType(int),
     );
     yield r'secondsPlayed';
@@ -293,6 +313,20 @@ class _$StatLineSerializer implements PrimitiveSerializer<StatLine> {
             specifiedType: const FullType(int),
           ) as int;
           result.personalFouls = valueDes;
+          break;
+        case r'technicalFouls':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.technicalFouls = valueDes;
+          break;
+        case r'unsportsmanlikeFouls':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.unsportsmanlikeFouls = valueDes;
           break;
         case r'secondsPlayed':
           final valueDes = serializers.deserialize(

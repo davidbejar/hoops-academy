@@ -56,7 +56,7 @@ abstract class TeamPlayer implements Built<TeamPlayer, TeamPlayerBuilder> {
 
   @BuiltValueField(wireName: r'playerStatus')
   PlayerStatus get playerStatus;
-  // enum playerStatusEnum {  PENDING_APPROVAL,  ACTIVE,  ORPHAN,  WITHDRAWN,  };
+  // enum playerStatusEnum {  PENDING_APPROVAL,  ACTIVE,  ORPHAN,  WITHDRAWN,  REJECTED,  };
 
   TeamPlayer._();
 

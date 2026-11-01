@@ -15,6 +15,7 @@ import 'package:hoops_core_api/src/model/approval_request.dart';
 import 'package:hoops_core_api/src/model/approval_request_page.dart';
 import 'package:hoops_core_api/src/model/approval_status.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
+import 'package:hoops_core_api/src/model/reject_approval_request.dart';
 
 class ApprovalRequestsApi {
 
@@ -400,12 +401,12 @@ class ApprovalRequestsApi {
   }
 
   /// Reject a pending request
-  /// A rejected ADD_PLAYER leaves the pending player WITHDRAWN; a rejected WITHDRAW_PLAYER leaves the player ACTIVE. Only PENDING requests can be decided (409). Authz: ADMIN. 
+  /// A rejected ADD_PLAYER leaves the pending player REJECTED; a rejected WITHDRAW_PLAYER leaves the player as it was. The reason (&#x60;note&#x60;) is required and shown to the requesting coach. Only PENDING requests can be decided (409). Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
   /// * [approvalRequestId] 
-  /// * [approvalDecisionRequest] 
+  /// * [rejectApprovalRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -418,7 +419,7 @@ class ApprovalRequestsApi {
   Future<Response<ApprovalRequest>> rejectApprovalRequest({ 
     required String xTenantId,
     required String approvalRequestId,
-    required ApprovalDecisionRequest approvalDecisionRequest,
+    required RejectApprovalRequest rejectApprovalRequest,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -450,8 +451,8 @@ class ApprovalRequestsApi {
     dynamic _bodyData;
 
     try {
-      const _type = FullType(ApprovalDecisionRequest);
-      _bodyData = _serializers.serialize(approvalDecisionRequest, specifiedType: _type);
+      const _type = FullType(RejectApprovalRequest);
+      _bodyData = _serializers.serialize(rejectApprovalRequest, specifiedType: _type);
 
     } catch(error, stackTrace) {
       throw DioException(

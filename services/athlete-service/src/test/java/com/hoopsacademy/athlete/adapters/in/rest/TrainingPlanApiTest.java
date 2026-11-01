@@ -68,6 +68,40 @@ class TrainingPlanApiTest {
         return (body == null ? request : request.body(body)).post(PLANS + "/" + plan + ":copy");
     }
 
+    // ------------------------------------------------------------------ archive / unarchive
+    static io.restassured.response.Response lifecycle(io.restassured.specification.RequestSpecification spec, String plan,
+            String verb) {
+        return spec.urlEncodingEnabled(false).post(PLANS + "/" + plan + ":" + verb);
+    }
+
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.COACH, staffTeams = TEAM)
+    void anArchivedPlanLeavesTheListAndComesBackWhenUnarchived() {
+        String plan = createPlan("Archive me " + UUID.randomUUID(), item("Warm up", 10));
+
+        lifecycle(api(TENANT), plan, "archive").then().statusCode(200).body("id", equalTo(plan)).body("archived", equalTo(true));
+        lifecycle(api(TENANT), plan, "archive").then().statusCode(200).body("archived", equalTo(true));
+        api(TENANT).queryParam("size", 200).get(PLANS).then().statusCode(200)
+                .body("items.id", org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(plan)));
+        api(TENANT).get(PLANS + "/" + plan).then().statusCode(200).body("archived", equalTo(true));
+
+        lifecycle(api(TENANT), plan, "unarchive").then().statusCode(200).body("archived", equalTo(false));
+        api(TENANT).queryParam("size", 200).get(PLANS).then().body("items.id", org.hamcrest.Matchers.hasItem(plan))
+                .body("items.find { it.id == '" + plan + "' }.archived", equalTo(false));
+    }
+
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.COACH, staffTeams = TEAM)
+    void templatesCannotBeArchivedAndOnlyStaffArchives() {
+        String template = api(TENANT).queryParam("template", true).get(PLANS).then().extract().path("items[0].id");
+        lifecycle(api(TENANT), template, "archive").then().statusCode(403).body("code", equalTo("PLAN_IS_TEMPLATE"));
+        String plan = createPlan("Staff only " + UUID.randomUUID(), item("Warm up", 10));
+        lifecycle(api(TENANT), UUID.randomUUID().toString(), "unarchive").then().statusCode(404);
+
+        member(TENANT, java.util.Set.of(TenantRole.PARENT), java.util.Set.of(), java.util.Set.of(), null);
+        lifecycle(api(TENANT), plan, "archive").then().statusCode(403);
+    }
+
     // ------------------------------------------------------------------ templates
     @Test
     @TenantUser(tenant = TENANT, roles = TenantRole.PLAYER, ownPlayer = "60000000-0000-4000-8000-0000000000b1")

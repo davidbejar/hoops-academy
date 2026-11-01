@@ -50,6 +50,15 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-oidc-client</artifactId>
     </dependency>
+    <!-- shared core-service /internal client (CoreInternalClient, CoreRosterClient) -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-jackson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
 
     <!-- ===== tests + test-jar fixtures (consumers declare these as their own test deps) ===== -->
     <dependency>

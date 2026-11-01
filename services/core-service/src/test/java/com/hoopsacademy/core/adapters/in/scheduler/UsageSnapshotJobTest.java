@@ -48,6 +48,21 @@ class UsageSnapshotJobTest {
     }
 
     @Test
+    void anotherReplicaHoldingTheJobLockMakesThisRunSkipAndTheNextRunCatchesUp() throws Exception {
+        try (java.sql.Connection otherReplica = com.hoopsacademy.common.testing.RlsTestDatabase.fromConfig().openAsApp();
+                java.sql.PreparedStatement lock = otherReplica.prepareStatement("select pg_advisory_lock(?)")) {
+            lock.setLong(1, com.hoopsacademy.common.tenancy.TenantScope.advisoryKey(UsageSnapshotJob.LOCK));
+            lock.execute();
+
+            job.run();
+            assertThat(snapshots(first)).isZero();
+        }
+
+        job.run();
+        assertThat(snapshots(first)).isEqualTo(1);
+    }
+
+    @Test
     void writesOneSnapshotPerActiveTenantAndTheSecondRunOfTheDayChangesNothing() {
         job.run();
         assertThat(snapshots(first)).isEqualTo(1);

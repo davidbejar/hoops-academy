@@ -67,7 +67,7 @@ public class PlayerAccess {
         if (isAdmin()) {
             return true;
         }
-        boolean pending = row.summary().status() == PlayerStatus.PENDING_APPROVAL;
+        boolean pending = row.summary().status().awaitingOrRefused();
         if (isStaff()) {
             return !pending || person().equals(approvals.addRequesters(Set.of(id)).get(id));
         }

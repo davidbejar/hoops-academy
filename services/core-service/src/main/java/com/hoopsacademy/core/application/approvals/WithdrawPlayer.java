@@ -88,8 +88,8 @@ public class WithdrawPlayer {
             throw new ConflictException("The player is still awaiting approval; reject or cancel that request instead",
                     NOT_WITHDRAWABLE);
         }
-        if (status == PlayerStatus.WITHDRAWN) {
-            throw new ConflictException("The player is already withdrawn", NOT_WITHDRAWABLE);
+        if (status == PlayerStatus.WITHDRAWN || status == PlayerStatus.REJECTED) {
+            throw new ConflictException("The player is already withdrawn or was never admitted", NOT_WITHDRAWABLE);
         }
     }
 

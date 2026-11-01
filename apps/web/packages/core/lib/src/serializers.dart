@@ -65,6 +65,7 @@ import 'package:hoops_core_api/src/model/player_status.dart';
 import 'package:hoops_core_api/src/model/player_team_assignment.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/problem_violation.dart';
+import 'package:hoops_core_api/src/model/reject_approval_request.dart';
 import 'package:hoops_core_api/src/model/replace_member_roles_request.dart';
 import 'package:hoops_core_api/src/model/resolve_eligibility_case_request.dart';
 import 'package:hoops_core_api/src/model/roster_player.dart';
@@ -91,6 +92,8 @@ import 'package:hoops_core_api/src/model/tenant_settings.dart';
 import 'package:hoops_core_api/src/model/tenant_status.dart';
 import 'package:hoops_core_api/src/model/tenant_summary.dart';
 import 'package:hoops_core_api/src/model/tenant_usage.dart';
+import 'package:hoops_core_api/src/model/tenant_usage_history.dart';
+import 'package:hoops_core_api/src/model/tenant_usage_snapshot.dart';
 import 'package:hoops_core_api/src/model/update_age_category_request.dart';
 import 'package:hoops_core_api/src/model/update_me_request.dart';
 import 'package:hoops_core_api/src/model/update_member_request.dart';
@@ -156,6 +159,7 @@ part 'serializers.g.dart';
   PlayerTeamAssignment,
   Problem,
   ProblemViolation,
+  RejectApprovalRequest,
   ReplaceMemberRolesRequest,
   ResolveEligibilityCaseRequest,
   RosterPlayer,
@@ -182,6 +186,8 @@ part 'serializers.g.dart';
   TenantStatus,
   TenantSummary,
   TenantUsage,
+  TenantUsageHistory,
+  TenantUsageSnapshot,
   UpdateAgeCategoryRequest,
   UpdateMeRequest,
   UpdateMemberRequest,
@@ -249,6 +255,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(EligibilityCase)]),
         () => ListBuilder<EligibilityCase>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(TenantUsageSnapshot)]),
+        () => ListBuilder<TenantUsageSnapshot>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(AgeCategory)]),

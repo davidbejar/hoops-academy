@@ -9,7 +9,7 @@ import 'package:built_value/serializer.dart';
 
 part 'usage_report.g.dart';
 
-/// Usage counters of one service for one tenant (platform statistics and future billing). Counters by service: core — `members`, `players`, `activePlayers`, `teams`, `seasons`; game — `matches`, `liveMatches`, `matchEvents`, `matchEventsLast30Days`; athlete — `trainingSessions`, `attendanceRecords`, `trainingPlans`, `physicalTestResults`, `injuries`, `bodyMeasurements`. Counters are additive: new keys may appear at any time. 
+/// Usage counters of one service for one tenant (platform statistics and future billing). Counters by service: core — `members`, `membersAdmin`, `membersCoach`, `membersAssistantCoach`, `membersParent`, `membersPlayer`, `players`, `activePlayers`, `playersPendingApproval`, `playersOrphan`, `playersWithdrawn`, `playersRejected`, `pendingApprovals`, `teams`, `seasons`; game — `matches`, `scheduledMatches`, `liveMatches`, `finishedMatches`, `cancelledMatches`, `matchEvents`, `matchEventsLast30Days`; athlete — `trainingSchedules`, `trainingSessions`, `attendanceRecords`, `plannedAbsences`, `trainingPlans`, `planAssignments`, `physicalTestResults`, `injuries`, `bodyMeasurements`. Counters are additive: new keys may appear at any time. A tenant a service has no data for (including a tenant id it has never seen) is answered with 200 and zero counters: services cannot tell \"unknown\" from \"empty\", so `/internal/usage/{tenantId}` never answers 404 for an unknown tenant. 
 ///
 /// Properties:
 /// * [tenantId] 

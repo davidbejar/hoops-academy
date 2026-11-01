@@ -21,15 +21,16 @@ final class StatisticsDtos {
 
     private StatisticsDtos() {}
 
-    /** Contract StatLine (technical / unsportsmanlike counts are stored but not part of the contract yet). */
+    /** Contract StatLine; personalFouls counts every foul, technical/unsportsmanlike are also counted on their own. */
     record StatLineDto(int points, int fg1Made, int fg1Attempted, int fg2Made, int fg2Attempted, int fg3Made,
             int fg3Attempted, int assists, int offensiveRebounds, int defensiveRebounds, int turnovers, int steals,
-            int blocks, int personalFouls, int secondsPlayed) {
+            int blocks, int personalFouls, int technicalFouls, int unsportsmanlikeFouls, int secondsPlayed) {
 
         static StatLineDto from(StatLine s) {
             return new StatLineDto(s.points(), s.fg1Made(), s.fg1Attempted(), s.fg2Made(), s.fg2Attempted(),
                     s.fg3Made(), s.fg3Attempted(), s.assists(), s.offensiveRebounds(), s.defensiveRebounds(),
-                    s.turnovers(), s.steals(), s.blocks(), s.personalFouls(), s.secondsPlayed());
+                    s.turnovers(), s.steals(), s.blocks(), s.personalFouls(), s.technicalFouls(),
+                    s.unsportsmanlikeFouls(), s.secondsPlayed());
         }
     }
 
@@ -47,7 +48,7 @@ final class StatisticsDtos {
     record PeriodScoreDto(int period, int team, int opponent) {}
 
     record BoxScoreDto(UUID matchId, MatchStatus status, MatchDto.ScoreDto score, List<PeriodScoreDto> periodScores,
-            StatLineDto teamTotals, Integer opponentFouls, List<PlayerMatchStatsDto> players, List<WarningDto> warnings,
+            StatLineDto teamTotals, List<PlayerMatchStatsDto> players, List<WarningDto> warnings,
             long lastServerSeq) {
 
         static BoxScoreDto from(GetBoxScore.BoxScore box) {
@@ -62,7 +63,7 @@ final class StatisticsDtos {
             return new BoxScoreDto(box.match().id().value(), box.match().status(),
                     new MatchDto.ScoreDto(summary.teamScore(), summary.opponentScore()),
                     summary.periodScores().stream().map(p -> new PeriodScoreDto(p.period(), p.team(), p.opponent())).toList(),
-                    StatLineDto.from(projection.teamTotals()), null, players, WarningDto.from(projection.warnings()),
+                    StatLineDto.from(projection.teamTotals()), players, WarningDto.from(projection.warnings()),
                     summary.lastServerSeq());
         }
 

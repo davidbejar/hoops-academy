@@ -12,14 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.hoopsacademy.common.client.CoreMembership;
+import com.hoopsacademy.common.client.CoreRosterClient;
 import com.hoopsacademy.common.problem.NotFoundException;
+import com.hoopsacademy.common.problem.UpstreamUnavailableException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.game.application.MemberAccess;
 import com.hoopsacademy.game.application.PlayerBrief;
 import com.hoopsacademy.game.application.TeamRoster;
-import com.hoopsacademy.game.application.UpstreamUnavailableException;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.TeamId;
 import com.hoopsacademy.game.support.CoreStubs;
@@ -35,7 +36,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** The RosterPort REST adapter against a WireMock core-service (real REST client, token filter and cache). */
+/**
+ * The RosterPort adapter (over common-quarkus' shared {@link CoreRosterClient}) against a WireMock core-service: real
+ * REST client, token filter, JSON mapping and cache.
+ */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "game"))
 @WithTestResource(CoreWireMockResource.class)
@@ -51,6 +55,9 @@ class RestRosterPortTest {
 
     @Inject
     RestRosterPort port;
+
+    @Inject
+    CoreRosterClient coreClient;
 
     @BeforeEach
     void reset() {
@@ -165,13 +172,13 @@ class RestRosterPortTest {
     void authzContextMapsRolesStatusAndCaches() {
         CoreStubs.authz(core, TENANT.toString(), "alice", "ACTIVE", List.of("COACH", "PLAYER"), List.of(TEAM.toString()));
 
-        Optional<MemberAccess> access = port.authzContext(TENANT, "alice");
-        port.authzContext(TENANT, "alice");
+        Optional<CoreMembership> access = coreClient.membership(TENANT, "alice");
+        coreClient.membership(TENANT, "alice");
 
         assertThat(access).hasValueSatisfying(a -> {
-            assertThat(a.roles()).containsExactlyInAnyOrder(TenantRole.COACH, TenantRole.PLAYER);
-            assertThat(a.staffTeamIds()).containsExactly(TEAM);
-            assertThat(a.tenantUsable()).isTrue();
+            assertThat(a.context().roles()).containsExactlyInAnyOrder(TenantRole.COACH, TenantRole.PLAYER);
+            assertThat(a.context().staffTeamIds()).containsExactly(TEAM);
+            assertThat(a.tenantActive()).isTrue();
         });
         core.verify(1, getRequestedFor(urlPathEqualTo("/internal/authz/" + TENANT + "/alice")));
     }
@@ -180,13 +187,27 @@ class RestRosterPortTest {
     void nonMemberIsAnEmptyAuthzContext() {
         core.stubFor(get(urlPathEqualTo("/internal/authz/" + TENANT + "/mallory")).willReturn(aResponse().withStatus(404)));
 
-        assertThat(port.authzContext(TENANT, "mallory")).isEmpty();
+        assertThat(coreClient.membership(TENANT, "mallory")).isEmpty();
     }
 
     @Test
     void authzFailureIsUpstreamUnavailable() {
         core.stubFor(get(urlPathEqualTo("/internal/authz/" + TENANT + "/bob")).willReturn(aResponse().withStatus(503)));
 
-        assertThatThrownBy(() -> port.authzContext(TENANT, "bob")).isInstanceOf(UpstreamUnavailableException.class);
+        assertThatThrownBy(() -> coreClient.membership(TENANT, "bob")).isInstanceOf(UpstreamUnavailableException.class);
+    }
+
+    @Test
+    void authzContextCarriesTheTenantZoneAndThePlayerTeamsOverTheWire() {
+        core.stubFor(get(urlPathEqualTo("/internal/authz/" + TENANT + "/pia")).willReturn(aResponse()
+                .withHeader("Content-Type", "application/json").withBody("""
+                        {"sub":"pia","personId":"%s","tenantId":"%s","tenantStatus":"ACTIVE","roles":["PARENT"],
+                         "staffTeamIds":[],"linkedPlayerIds":["%s"],"ownPlayerId":null,"playerTeamIds":["%s"],
+                         "timezone":"Asia/Jakarta"}""".formatted(UUID.randomUUID(), TENANT, ANA, TEAM))));
+
+        assertThat(coreClient.membership(TENANT, "pia")).hasValueSatisfying(a -> {
+            assertThat(a.context().playerTeamIds()).containsExactly(TEAM);
+            assertThat(a.context().timezone()).contains(java.time.ZoneId.of("Asia/Jakarta"));
+        });
     }
 }

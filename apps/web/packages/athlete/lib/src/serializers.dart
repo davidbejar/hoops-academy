@@ -18,6 +18,7 @@ import 'package:hoops_athlete_api/src/model/attendance_entry.dart';
 import 'package:hoops_athlete_api/src/model/attendance_input.dart';
 import 'package:hoops_athlete_api/src/model/attendance_status.dart';
 import 'package:hoops_athlete_api/src/model/audit_info.dart';
+import 'package:hoops_athlete_api/src/model/band_status.dart';
 import 'package:hoops_athlete_api/src/model/body_measurement.dart';
 import 'package:hoops_athlete_api/src/model/body_measurement_input.dart';
 import 'package:hoops_athlete_api/src/model/cancel_training_session_request.dart';
@@ -49,9 +50,13 @@ import 'package:hoops_athlete_api/src/model/plan_completion.dart';
 import 'package:hoops_athlete_api/src/model/plan_completion_page.dart';
 import 'package:hoops_athlete_api/src/model/plan_item.dart';
 import 'package:hoops_athlete_api/src/model/plan_item_input.dart';
+import 'package:hoops_athlete_api/src/model/plan_progress.dart';
+import 'package:hoops_athlete_api/src/model/plan_progress_counts.dart';
 import 'package:hoops_athlete_api/src/model/planned_absence.dart';
 import 'package:hoops_athlete_api/src/model/planned_absence_input.dart';
 import 'package:hoops_athlete_api/src/model/planned_absence_page.dart';
+import 'package:hoops_athlete_api/src/model/player_availability.dart';
+import 'package:hoops_athlete_api/src/model/player_progress.dart';
 import 'package:hoops_athlete_api/src/model/problem.dart';
 import 'package:hoops_athlete_api/src/model/problem_violation.dart';
 import 'package:hoops_athlete_api/src/model/record_attendance_request.dart';
@@ -84,6 +89,7 @@ part 'serializers.g.dart';
   AttendanceInput,
   AttendanceStatus,
   AuditInfo,$AuditInfo,
+  BandStatus,
   BodyMeasurement,
   BodyMeasurementInput,
   CancelTrainingSessionRequest,
@@ -115,9 +121,13 @@ part 'serializers.g.dart';
   PlanCompletionPage,
   PlanItem,
   PlanItemInput,$PlanItemInput,
+  PlanProgress,
+  PlanProgressCounts,
   PlannedAbsence,
   PlannedAbsenceInput,$PlannedAbsenceInput,
   PlannedAbsencePage,
+  PlayerAvailability,
+  PlayerProgress,
   Problem,
   ProblemViolation,
   RecordAttendanceRequest,
@@ -193,6 +203,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<TrainingSession>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlayerProgress)]),
+        () => ListBuilder<PlayerProgress>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltMap, [FullType(String), FullType(int)]),
         () => MapBuilder<String, int>(),
       )
@@ -207,6 +221,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(AttendanceInput)]),
         () => ListBuilder<AttendanceInput>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(String)]),
+        () => ListBuilder<String>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PhysicalTestNorm)]),

@@ -62,6 +62,25 @@ class NightlyEligibilityJobTest {
     }
 
     @Test
+    void whileAnotherReplicaRunsTheSweepThisOneSkipsIt() throws Exception {
+        LocalDate today = LocalDate.now(MADRID);
+        Academy academy = Academy.create("BIRTH_YEAR", "Europe/Madrid", today, today.getYear());
+        academy.assign("Tom", LocalDate.of(today.getYear() - 13, 6, 1));
+
+        try (java.sql.Connection otherReplica = com.hoopsacademy.common.testing.RlsTestDatabase.fromConfig().openAsApp();
+                java.sql.PreparedStatement lock = otherReplica.prepareStatement("select pg_advisory_lock(?)")) {
+            lock.setLong(1, com.hoopsacademy.common.tenancy.TenantScope.advisoryKey(NightlyEligibilityJob.LOCK));
+            lock.execute();
+
+            job.run();
+            assertThat(academy.openCases()).isZero();
+        }
+
+        job.run();
+        assertThat(academy.openCases()).isEqualTo(1);
+    }
+
+    @Test
     void theDayAfterTheTwelfthBirthdayABirthdayTenantFlagsThePlayerAndOtherTenantsAreUntouched() {
         Instant now = Instant.now();
         LocalDate today = LocalDate.ofInstant(now, MADRID);

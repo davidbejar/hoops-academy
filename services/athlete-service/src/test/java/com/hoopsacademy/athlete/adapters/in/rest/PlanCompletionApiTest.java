@@ -111,6 +111,27 @@ class PlanCompletionApiTest {
 
     @Test
     @TenantUser(tenant = TENANT, roles = TenantRole.ADMIN)
+    void progressCountsTheTargetsAndShowsWhatEachRecorded() {
+        String assignment = assignedTo("teamId", TEAM);
+        api(TENANT).body(Map.of("status", "DONE")).put(completion(assignment, P1)).then().statusCode(200);
+
+        api(TENANT).get(ASSIGNMENTS + "/" + assignment + "/progress").then().statusCode(200)
+                .body("assignmentId", equalTo(assignment))
+                .body("total", equalTo(2)).body("notRecorded", equalTo(1))
+                .body("counts.DONE", equalTo(1)).body("counts.PARTIAL", equalTo(0)).body("counts.NOT_DONE", equalTo(0))
+                .body("players.playerId", containsInAnyOrder(P1, P2))
+                .body("players.find { it.playerId == '" + P1 + "' }.status", equalTo("DONE"))
+                .body("players.find { it.playerId == '" + P1 + "' }.completionId", notNullValue())
+                .body("players.find { it.playerId == '" + P2 + "' }.status", org.hamcrest.Matchers.nullValue());
+
+        member(TENANT, Set.of(TenantRole.PARENT), Set.of(), Set.of(P2), null);
+        api(TENANT).get(ASSIGNMENTS + "/" + assignment + "/progress").then().statusCode(200)
+                .body("total", equalTo(1)).body("players.playerId", containsInAnyOrder(P2));
+        api(TENANT).get(ASSIGNMENTS + "/" + java.util.UUID.randomUUID() + "/progress").then().statusCode(404);
+    }
+
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.ADMIN)
     void theMarkedPlayerMustBeATargetOfTheAssignment() {
         String teamAssignment = assignedTo("teamId", TEAM);
         String playerAssignment = assignedTo("playerId", P1);

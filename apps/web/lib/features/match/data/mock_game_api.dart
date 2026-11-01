@@ -282,7 +282,6 @@ class MockGameApi {
       'score': {'team': p.summary.teamScore, 'opponent': p.summary.opponentScore},
       'periodScores': [for (final s in p.summary.periodScores) {'period': s.period, 'team': s.team, 'opponent': s.opponent}],
       'teamTotals': _line(p.teamTotals),
-      'opponentFouls': null,
       'players': [
         for (final l in p.playerStats)
           if (visible(l.playerId))
@@ -325,7 +324,7 @@ class MockGameApi {
       'averages': {
         'points': avg(totals.points), 'assists': avg(totals.assists), 'rebounds': avg(totals.rebounds),
         'steals': avg(totals.steals), 'blocks': avg(totals.blocks), 'turnovers': avg(totals.turnovers),
-        'personalFouls': avg(totals.personalFouls),
+        'personalFouls': avg(totals.personalFouls), 'technicalFouls': 0, 'unsportsmanlikeFouls': 0,
         'minutesPlayed': played == 0 ? 0 : (totals.secondsPlayed / 60 / played * 100).round() / 100,
       },
       'matches': lines,
@@ -336,7 +335,7 @@ class MockGameApi {
     'points': s.points, 'fg1Made': s.fg1Made, 'fg1Attempted': s.fg1Attempted, 'fg2Made': s.fg2Made,
     'fg2Attempted': s.fg2Attempted, 'fg3Made': s.fg3Made, 'fg3Attempted': s.fg3Attempted, 'assists': s.assists,
     'offensiveRebounds': s.offensiveRebounds, 'defensiveRebounds': s.defensiveRebounds, 'turnovers': s.turnovers,
-    'steals': s.steals, 'blocks': s.blocks, 'personalFouls': s.personalFouls, 'secondsPlayed': s.secondsPlayed,
+    'steals': s.steals, 'blocks': s.blocks, 'personalFouls': s.personalFouls, 'technicalFouls': 0, 'unsportsmanlikeFouls': 0, 'secondsPlayed': s.secondsPlayed,
   };
 
   static Map<String, Object?> _warning(ProjectionWarning w) =>

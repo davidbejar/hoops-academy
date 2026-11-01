@@ -10,12 +10,14 @@ import 'package:dio/dio.dart';
 
 import 'package:hoops_core_api/src/api_util.dart';
 import 'package:hoops_core_api/src/model/create_tenant_request.dart';
+import 'package:hoops_core_api/src/model/date.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/tenant.dart';
 import 'package:hoops_core_api/src/model/tenant_lifecycle_request.dart';
 import 'package:hoops_core_api/src/model/tenant_page.dart';
 import 'package:hoops_core_api/src/model/tenant_status.dart';
 import 'package:hoops_core_api/src/model/tenant_usage.dart';
+import 'package:hoops_core_api/src/model/tenant_usage_history.dart';
 import 'package:hoops_core_api/src/model/update_tenant_request.dart';
 
 class PlatformApi {
@@ -278,6 +280,97 @@ class PlatformApi {
     }
 
     return Response<TenantUsage>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Daily usage snapshots of a tenant (trend)
+  /// One snapshot per UTC day, written by the nightly snapshot job and by every &#x60;GET .../usage&#x60; (a snapshot with unavailable services never replaces a complete one of the same day). Ordered by &#x60;date&#x60; ascending. Defaults: &#x60;to&#x60; &#x3D; today (UTC), &#x60;from&#x60; &#x3D; &#x60;to&#x60; − 89 days; the range may span at most 366 days (400). Authz: super_admin. 
+  ///
+  /// Parameters:
+  /// * [tenantId] 
+  /// * [from] - First UTC day (inclusive).
+  /// * [to] - Last UTC day (inclusive).
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TenantUsageHistory] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TenantUsageHistory>> getTenantUsageHistory({ 
+    required String tenantId,
+    Date? from,
+    Date? to,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/tenants/{tenantId}/usage/history'.replaceAll('{' r'tenantId' '}', encodeQueryParameter(_serializers, tenantId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (from != null) r'from': encodeQueryParameter(_serializers, from, const FullType(Date)),
+      if (to != null) r'to': encodeQueryParameter(_serializers, to, const FullType(Date)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TenantUsageHistory? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantUsageHistory),
+      ) as TenantUsageHistory;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TenantUsageHistory>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

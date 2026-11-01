@@ -41,11 +41,20 @@ public abstract class GenericRlsIsolationTest {
         return Map.of();
     }
 
+    /**
+     * Shared global+tenant tables (same map as {@link RlsSchemaMetaTest#nullableTenantTables()}): skipped here because
+     * a tenant legitimately sees the global rows; they need a dedicated isolation test.
+     */
+    protected Map<String, String> nullableTenantTables() {
+        return Map.of();
+    }
+
     @TestFactory
     Stream<DynamicTest> everyTenantTableIsIsolatedBetweenTenants() throws SQLException {
         RlsTestDatabase db = RlsTestDatabase.fromConfig();
         Map<String, Map<String, ColumnFixture>> overrides = fixtureOverrides();
-        return tenantTables(db).stream().map(table -> dynamicTest(table,
+        Map<String, String> shared = nullableTenantTables();
+        return tenantTables(db).stream().filter(table -> !shared.containsKey(table)).map(table -> dynamicTest(table,
                 () -> RlsIsolationCheck.verify(db, table, overrides.getOrDefault(table, Map.of()))));
     }
 

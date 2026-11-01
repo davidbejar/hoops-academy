@@ -26,10 +26,22 @@ public abstract class RlsSchemaMetaTest {
         return Map.of();
     }
 
+    /**
+     * {@code "schema.table" -> owner column} for shared tables holding GLOBAL rows (owner null, read-only for tenants)
+     * next to tenant rows, e.g. templates and norms. They may keep a column named {@code tenant_id} (nullable) or use
+     * another name ({@code owner_tenant_id}, as WP9/WP10 did before this hook existed). Expected shape: uuid owner
+     * column, RLS enabled + FORCEd, a policy on {@code app.current_tenant()} and SEPARATE select/insert/update/delete
+     * policies (no {@code FOR ALL}: DELETE only evaluates USING, which admits the global rows). Declare the same map in
+     * {@link GenericRlsIsolationTest#nullableTenantTables()} and give such tables their own isolation test.
+     */
+    protected Map<String, String> nullableTenantTables() {
+        return Map.of();
+    }
+
     @Test
     void everyTenantTableHasForcedRlsAndATenantPolicy() throws SQLException {
         try (Connection connection = RlsTestDatabase.fromConfig().openAsApp()) {
-            assertThat(RlsSchemaInspector.violations(connection, schemas(), globalTables()))
+            assertThat(RlsSchemaInspector.violations(connection, schemas(), globalTables(), nullableTenantTables()))
                     .as("tenancy violations in schemas %s", schemas())
                     .isEmpty();
         }

@@ -104,13 +104,15 @@ public class ManageSchedules {
         return schedule;
     }
 
-    /** Staff roles see all schedules (optionally of one team); parents/players must name one of their teams. */
+    /** Staff roles see all schedules (optionally of one team); parents/players those of their players' teams. */
     @Transactional
     public List<TrainingSchedule> list(AuthzContext caller, Optional<TeamId> team, Optional<LocalDate> activeOn) {
         if (team.isPresent()) {
             access.requireView(caller, team.get());
         } else if (!access.hasStaffRole(caller)) {
-            throw new InvalidRequestException("teamId", "TEAM_REQUIRED", "teamId is required for parents and players");
+            java.util.Set<TeamId> teams = access.playerTeams(caller);
+            return teams.isEmpty() ? List.of()
+                    : schedules.findActive(Optional.empty(), activeOn).stream().filter(s -> teams.contains(s.teamId())).toList();
         }
         return schedules.findActive(team, activeOn);
     }

@@ -146,7 +146,7 @@ class ApprovalRequestResourceTest {
     }
 
     @Test
-    void rejectingAnAddLeavesThePlayerWithdrawnAndNeedsANote() {
+    void rejectingAnAddLeavesThePlayerRejectedAndNeedsANote() {
         UUID[] ids = coachAdds("Pia", 11, true);
         api.lenientRequest().contentType(ContentType.JSON).body("{}").post("/api/core/approval-requests/" + ids[1] + "/reject")
                 .then().statusCode(400);
@@ -157,8 +157,9 @@ class ApprovalRequestResourceTest {
         api.decide(ids[1], "reject", "no capacity").statusCode(200)
                 .body("status", equalTo("REJECTED")).body("decisionNote", equalTo("no capacity"))
                 .body("decidedBy.personId", equalTo(admin.toString()));
-        api.getPlayer(ids[0]).body("status", equalTo("WITHDRAWN")).body("teams", empty());
+        api.getPlayer(ids[0]).body("status", equalTo("REJECTED")).body("teams", empty());
         assertThat(api.outbox("player.rejected")).isEqualTo(1);
+        assertThat(RosterDb.playerStatus(tenant, ids[0])).isEqualTo("REJECTED");
     }
 
     @Test

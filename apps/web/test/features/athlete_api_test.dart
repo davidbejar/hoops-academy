@@ -208,7 +208,7 @@ void main() {
     test('a created result carries the expected band and the reference-pending flag', () async {
       final a = _Adapter((_) => {
         'id': uuid, 'playerId': uuid, 'testTypeId': uuid, 'testCode': 'VJ', 'unit': 'cm', 'measuredOn': '2026-10-10', 'value': 35.0,
-        'ageAtMeasurement': 11, 'expectedBand': 'AVERAGE', 'normId': uuid, 'referencePending': true, ..._audit(),
+        'ageAtMeasurement': 11, 'expectedBand': 'AVERAGE', 'bandStatus': 'MATCHED', 'normId': uuid, 'referencePending': true, ..._audit(),
       });
       final r = await ApiFitnessRepository(_athlete(a), tenant).createResult(
         ath.PhysicalTestResultInput((b) => b

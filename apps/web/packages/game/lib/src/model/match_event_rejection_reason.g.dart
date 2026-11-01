@@ -14,6 +14,10 @@ const MatchEventRejectionReason _$MATCH_CANCELLED =
     const MatchEventRejectionReason._('MATCH_CANCELLED');
 const MatchEventRejectionReason _$CLIENT_SEQ_CONFLICT =
     const MatchEventRejectionReason._('CLIENT_SEQ_CONFLICT');
+const MatchEventRejectionReason _$EVENT_ID_REUSED =
+    const MatchEventRejectionReason._('EVENT_ID_REUSED');
+const MatchEventRejectionReason _$MATCH_NOT_STARTED =
+    const MatchEventRejectionReason._('MATCH_NOT_STARTED');
 const MatchEventRejectionReason _$unknownDefaultOpenApi =
     const MatchEventRejectionReason._('unknownDefaultOpenApi');
 
@@ -27,6 +31,10 @@ MatchEventRejectionReason _$valueOf(String name) {
       return _$MATCH_CANCELLED;
     case 'CLIENT_SEQ_CONFLICT':
       return _$CLIENT_SEQ_CONFLICT;
+    case 'EVENT_ID_REUSED':
+      return _$EVENT_ID_REUSED;
+    case 'MATCH_NOT_STARTED':
+      return _$MATCH_NOT_STARTED;
     case 'unknownDefaultOpenApi':
       return _$unknownDefaultOpenApi;
     default:
@@ -40,6 +48,8 @@ final BuiltSet<MatchEventRejectionReason> _$values =
   _$NOT_AUTHORIZED,
   _$MATCH_CANCELLED,
   _$CLIENT_SEQ_CONFLICT,
+  _$EVENT_ID_REUSED,
+  _$MATCH_NOT_STARTED,
   _$unknownDefaultOpenApi,
 ]);
 
@@ -49,6 +59,8 @@ class _$MatchEventRejectionReasonMeta {
   MatchEventRejectionReason get NOT_AUTHORIZED => _$NOT_AUTHORIZED;
   MatchEventRejectionReason get MATCH_CANCELLED => _$MATCH_CANCELLED;
   MatchEventRejectionReason get CLIENT_SEQ_CONFLICT => _$CLIENT_SEQ_CONFLICT;
+  MatchEventRejectionReason get EVENT_ID_REUSED => _$EVENT_ID_REUSED;
+  MatchEventRejectionReason get MATCH_NOT_STARTED => _$MATCH_NOT_STARTED;
   MatchEventRejectionReason get unknownDefaultOpenApi =>
       _$unknownDefaultOpenApi;
   MatchEventRejectionReason valueOf(String name) => _$valueOf(name);
@@ -71,6 +83,8 @@ class _$MatchEventRejectionReasonSerializer
     'NOT_AUTHORIZED': 'NOT_AUTHORIZED',
     'MATCH_CANCELLED': 'MATCH_CANCELLED',
     'CLIENT_SEQ_CONFLICT': 'CLIENT_SEQ_CONFLICT',
+    'EVENT_ID_REUSED': 'EVENT_ID_REUSED',
+    'MATCH_NOT_STARTED': 'MATCH_NOT_STARTED',
     'unknownDefaultOpenApi': 'unknown_default_open_api',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
@@ -78,6 +92,8 @@ class _$MatchEventRejectionReasonSerializer
     'NOT_AUTHORIZED': 'NOT_AUTHORIZED',
     'MATCH_CANCELLED': 'MATCH_CANCELLED',
     'CLIENT_SEQ_CONFLICT': 'CLIENT_SEQ_CONFLICT',
+    'EVENT_ID_REUSED': 'EVENT_ID_REUSED',
+    'MATCH_NOT_STARTED': 'MATCH_NOT_STARTED',
     'unknown_default_open_api': 'unknownDefaultOpenApi',
   };
 

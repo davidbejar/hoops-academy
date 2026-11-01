@@ -5,11 +5,12 @@ import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.TeamId;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * What game-service needs from core-service (ADR-0008). v1 adapter: REST to core {@code /internal/**}; v2 may read
- * local replicas instead. Every method may throw {@link UpstreamUnavailableException} (mapped to 503).
+ * local replicas instead. Every method may throw {@link com.hoopsacademy.common.problem.UpstreamUnavailableException}
+ * (mapped to 503 by common-quarkus). The caller's membership is resolved by common-quarkus'
+ * {@code RosterAuthzResolver} over the same shared client.
  */
 public interface RosterPort {
 
@@ -23,6 +24,4 @@ public interface RosterPort {
     /** Minimal data of the given players; unknown ids are simply absent from the answer. */
     List<PlayerBrief> players(TenantId tenantId, Collection<PlayerId> ids);
 
-    /** The caller's authorization in the tenant, or empty when they are not an active member. */
-    Optional<MemberAccess> authzContext(TenantId tenantId, String sub);
 }

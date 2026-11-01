@@ -7,28 +7,30 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.util.Map;
 
-/** Every table of the athlete schema has forced RLS with a tenant policy, or is a declared global table. */
+/**
+ * Every table of the athlete schema has forced RLS with a tenant policy, is a declared global table, or is a declared
+ * shared global+tenant table (owner column {@code owner_tenant_id}, null = global row): those are checked by the
+ * common inspector for forced RLS, a tenant policy and one policy per command (no FOR ALL), and their row-level
+ * behaviour is proved by TemplateRlsIsolationTest and HealthRlsIsolationTest.
+ */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
 class AthleteRlsSchemaMetaTest extends RlsSchemaMetaTest {
 
+    private static final String OWNER = "owner_tenant_id";
+
     @Override
     protected Map<String, String> globalTables() {
+        return Map.of("athlete.tenant_registry",
+                "tenants known to this service with their time zone; lets the nightly job iterate tenants, holds no tenant content");
+    }
+
+    @Override
+    protected Map<String, String> nullableTenantTables() {
         return Map.of(
-                "athlete.tenant_registry",
-                "tenants known to this service with their time zone; lets the nightly job iterate tenants, holds no tenant content",
-                "athlete.training_plan",
-                "global templates live next to tenant plans, so the owner column is nullable and named owner_tenant_id; "
-                        + "RLS is forced with policy (owner_tenant_id is null or = app.current_tenant()), written only for the own tenant; "
-                        + "proved by TemplateRlsIsolationTest",
-                "athlete.plan_item",
-                "items mirror their plan's nullable owner_tenant_id (templates); same custom policy, see TemplateRlsIsolationTest",
-                "athlete.physical_test_type",
-                "global test types (COOPER_12MIN ...) live next to tenant-defined ones, so the owner column is nullable and named "
-                        + "owner_tenant_id; forced RLS, select = global or own tenant, insert/update/delete = own tenant only; "
-                        + "proved by HealthRlsIsolationTest",
-                "athlete.physical_test_norm",
-                "global reference norms (null owner) next to tenant overrides; same policy shape as physical_test_type, "
-                        + "proved by HealthRlsIsolationTest");
+                "athlete.training_plan", OWNER,
+                "athlete.plan_item", OWNER,
+                "athlete.physical_test_type", OWNER,
+                "athlete.physical_test_norm", OWNER);
     }
 }

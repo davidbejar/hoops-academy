@@ -81,6 +81,30 @@ public class ProblemProbeResource {
     }
 
     @GET
+    @Path("/optimistic-lock")
+    public String optimisticLock() {
+        throw new jakarta.persistence.OptimisticLockException("row version 3 != 4");
+    }
+
+    @GET
+    @Path("/stale-state")
+    public String staleState() {
+        throw new org.hibernate.StaleObjectStateException("SampleWidget", 42);
+    }
+
+    @GET
+    @Path("/wrapped-optimistic-lock")
+    public String wrappedOptimisticLock() {
+        throw new IllegalStateException("commit failed", new jakarta.persistence.OptimisticLockException("stale"));
+    }
+
+    @GET
+    @Path("/upstream-unavailable")
+    public String upstreamUnavailable() {
+        throw new UpstreamUnavailableException("core-service answered 500 at 10.0.0.7", new RuntimeException());
+    }
+
+    @GET
     @Path("/platform-forbidden")
     @RolesAllowed("super_admin")
     public String platformForbidden() {

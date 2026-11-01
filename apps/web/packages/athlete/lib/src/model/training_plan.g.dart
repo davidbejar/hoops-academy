@@ -23,6 +23,8 @@ class _$TrainingPlan extends TrainingPlan {
   final int itemCount;
   @override
   final int totalDurationMinutes;
+  @override
+  final bool? archived;
 
   factory _$TrainingPlan([void Function(TrainingPlanBuilder)? updates]) =>
       (TrainingPlanBuilder()..update(updates))._build();
@@ -35,7 +37,8 @@ class _$TrainingPlan extends TrainingPlan {
       required this.template,
       this.sourceTemplateId,
       required this.itemCount,
-      required this.totalDurationMinutes})
+      required this.totalDurationMinutes,
+      this.archived})
       : super._();
   @override
   TrainingPlan rebuild(void Function(TrainingPlanBuilder) updates) =>
@@ -55,7 +58,8 @@ class _$TrainingPlan extends TrainingPlan {
         template == other.template &&
         sourceTemplateId == other.sourceTemplateId &&
         itemCount == other.itemCount &&
-        totalDurationMinutes == other.totalDurationMinutes;
+        totalDurationMinutes == other.totalDurationMinutes &&
+        archived == other.archived;
   }
 
   @override
@@ -69,6 +73,7 @@ class _$TrainingPlan extends TrainingPlan {
     _$hash = $jc(_$hash, sourceTemplateId.hashCode);
     _$hash = $jc(_$hash, itemCount.hashCode);
     _$hash = $jc(_$hash, totalDurationMinutes.hashCode);
+    _$hash = $jc(_$hash, archived.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -83,7 +88,8 @@ class _$TrainingPlan extends TrainingPlan {
           ..add('template', template)
           ..add('sourceTemplateId', sourceTemplateId)
           ..add('itemCount', itemCount)
-          ..add('totalDurationMinutes', totalDurationMinutes))
+          ..add('totalDurationMinutes', totalDurationMinutes)
+          ..add('archived', archived))
         .toString();
   }
 }
@@ -129,6 +135,10 @@ class TrainingPlanBuilder
   set totalDurationMinutes(covariant int? totalDurationMinutes) =>
       _$this._totalDurationMinutes = totalDurationMinutes;
 
+  bool? _archived;
+  bool? get archived => _$this._archived;
+  set archived(covariant bool? archived) => _$this._archived = archived;
+
   TrainingPlanBuilder() {
     TrainingPlan._defaults(this);
   }
@@ -144,6 +154,7 @@ class TrainingPlanBuilder
       _sourceTemplateId = $v.sourceTemplateId;
       _itemCount = $v.itemCount;
       _totalDurationMinutes = $v.totalDurationMinutes;
+      _archived = $v.archived;
       _$v = null;
     }
     return this;
@@ -180,6 +191,7 @@ class TrainingPlanBuilder
                 itemCount, r'TrainingPlan', 'itemCount'),
             totalDurationMinutes: BuiltValueNullFieldError.checkNotNull(
                 totalDurationMinutes, r'TrainingPlan', 'totalDurationMinutes'),
+            archived: archived,
           );
     } catch (_) {
       late String _$failedField;

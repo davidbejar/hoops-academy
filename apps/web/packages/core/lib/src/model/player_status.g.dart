@@ -11,6 +11,7 @@ const PlayerStatus _$PENDING_APPROVAL =
 const PlayerStatus _$ACTIVE = const PlayerStatus._('ACTIVE');
 const PlayerStatus _$ORPHAN = const PlayerStatus._('ORPHAN');
 const PlayerStatus _$WITHDRAWN = const PlayerStatus._('WITHDRAWN');
+const PlayerStatus _$REJECTED = const PlayerStatus._('REJECTED');
 const PlayerStatus _$unknownDefaultOpenApi =
     const PlayerStatus._('unknownDefaultOpenApi');
 
@@ -24,6 +25,8 @@ PlayerStatus _$valueOf(String name) {
       return _$ORPHAN;
     case 'WITHDRAWN':
       return _$WITHDRAWN;
+    case 'REJECTED':
+      return _$REJECTED;
     case 'unknownDefaultOpenApi':
       return _$unknownDefaultOpenApi;
     default:
@@ -37,6 +40,7 @@ final BuiltSet<PlayerStatus> _$values =
   _$ACTIVE,
   _$ORPHAN,
   _$WITHDRAWN,
+  _$REJECTED,
   _$unknownDefaultOpenApi,
 ]);
 
@@ -46,6 +50,7 @@ class _$PlayerStatusMeta {
   PlayerStatus get ACTIVE => _$ACTIVE;
   PlayerStatus get ORPHAN => _$ORPHAN;
   PlayerStatus get WITHDRAWN => _$WITHDRAWN;
+  PlayerStatus get REJECTED => _$REJECTED;
   PlayerStatus get unknownDefaultOpenApi => _$unknownDefaultOpenApi;
   PlayerStatus valueOf(String name) => _$valueOf(name);
   BuiltSet<PlayerStatus> get values => _$values;
@@ -64,6 +69,7 @@ class _$PlayerStatusSerializer implements PrimitiveSerializer<PlayerStatus> {
     'ACTIVE': 'ACTIVE',
     'ORPHAN': 'ORPHAN',
     'WITHDRAWN': 'WITHDRAWN',
+    'REJECTED': 'REJECTED',
     'unknownDefaultOpenApi': 'unknown_default_open_api',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
@@ -71,6 +77,7 @@ class _$PlayerStatusSerializer implements PrimitiveSerializer<PlayerStatus> {
     'ACTIVE': 'ACTIVE',
     'ORPHAN': 'ORPHAN',
     'WITHDRAWN': 'WITHDRAWN',
+    'REJECTED': 'REJECTED',
     'unknown_default_open_api': 'unknownDefaultOpenApi',
   };
 

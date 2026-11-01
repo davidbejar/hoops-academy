@@ -54,7 +54,7 @@ abstract class Player implements Built<Player, PlayerBuilder> {
 
   @BuiltValueField(wireName: r'status')
   PlayerStatus get status;
-  // enum statusEnum {  PENDING_APPROVAL,  ACTIVE,  ORPHAN,  WITHDRAWN,  };
+  // enum statusEnum {  PENDING_APPROVAL,  ACTIVE,  ORPHAN,  WITHDRAWN,  REJECTED,  };
 
   /// Lowest-ranked category the player qualifies for in the current season.
   @BuiltValueField(wireName: r'naturalCategory')

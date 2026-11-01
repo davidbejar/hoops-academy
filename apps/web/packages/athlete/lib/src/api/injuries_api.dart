@@ -13,6 +13,7 @@ import 'package:hoops_athlete_api/src/model/create_injury_request.dart';
 import 'package:hoops_athlete_api/src/model/injury.dart';
 import 'package:hoops_athlete_api/src/model/injury_page.dart';
 import 'package:hoops_athlete_api/src/model/injury_status.dart';
+import 'package:hoops_athlete_api/src/model/player_availability.dart';
 import 'package:hoops_athlete_api/src/model/problem.dart';
 import 'package:hoops_athlete_api/src/model/update_injury_request.dart';
 
@@ -257,6 +258,90 @@ class InjuriesApi {
     }
 
     return Response<Injury>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Whether a player is available today (derived from open injuries)
+  /// A player is unavailable while an OPEN injury has no actual return date, or its expected return date is today or later (\&quot;today\&quot; in the tenant&#39;s time zone). &#x60;expectedReturnOn&#x60; is the latest expected return of the blocking injuries (null when available or when no estimate exists). Unknown player: 404. Authz: ADMIN; team staff (of a team of the player); PARENT (linked); PLAYER (self). 
+  ///
+  /// Parameters:
+  /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
+  /// * [playerId] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [PlayerAvailability] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<PlayerAvailability>> getPlayerAvailability({ 
+    required String xTenantId,
+    required String playerId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/athlete/players/{playerId}/availability'.replaceAll('{' r'playerId' '}', encodeQueryParameter(_serializers, playerId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        r'X-Tenant-Id': xTenantId,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    PlayerAvailability? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(PlayerAvailability),
+      ) as PlayerAvailability;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<PlayerAvailability>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

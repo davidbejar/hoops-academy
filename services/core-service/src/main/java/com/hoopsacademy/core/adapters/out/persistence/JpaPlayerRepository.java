@@ -114,7 +114,7 @@ class JpaPlayerRepository implements PlayerRepository {
         visibility.only().ifPresent(ids -> conditions.add("p.id in :only"));
         if (visibility.hidePending()) {
             conditions.add("""
-                    (p.status <> 'PENDING_APPROVAL' or exists (select 1 from ApprovalRequestEntity r
+                    (p.status not in ('PENDING_APPROVAL', 'REJECTED') or exists (select 1 from ApprovalRequestEntity r
                        where r.playerId = p.id and r.action = 'ADD_PLAYER' and r.requestedByPersonId = :requester))""");
         }
         String where = conditions.stream().map(c -> " and " + c).reduce("", String::concat);

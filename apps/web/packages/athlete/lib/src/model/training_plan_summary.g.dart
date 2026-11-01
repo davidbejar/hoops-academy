@@ -29,6 +29,9 @@ abstract class TrainingPlanSummaryBuilder {
 
   int? get totalDurationMinutes;
   set totalDurationMinutes(int? totalDurationMinutes);
+
+  bool? get archived;
+  set archived(bool? archived);
 }
 
 class _$$TrainingPlanSummary extends $TrainingPlanSummary {
@@ -46,6 +49,8 @@ class _$$TrainingPlanSummary extends $TrainingPlanSummary {
   final int itemCount;
   @override
   final int totalDurationMinutes;
+  @override
+  final bool? archived;
 
   factory _$$TrainingPlanSummary(
           [void Function($TrainingPlanSummaryBuilder)? updates]) =>
@@ -58,7 +63,8 @@ class _$$TrainingPlanSummary extends $TrainingPlanSummary {
       required this.template,
       this.sourceTemplateId,
       required this.itemCount,
-      required this.totalDurationMinutes})
+      required this.totalDurationMinutes,
+      this.archived})
       : super._();
   @override
   $TrainingPlanSummary rebuild(
@@ -79,7 +85,8 @@ class _$$TrainingPlanSummary extends $TrainingPlanSummary {
         template == other.template &&
         sourceTemplateId == other.sourceTemplateId &&
         itemCount == other.itemCount &&
-        totalDurationMinutes == other.totalDurationMinutes;
+        totalDurationMinutes == other.totalDurationMinutes &&
+        archived == other.archived;
   }
 
   @override
@@ -92,6 +99,7 @@ class _$$TrainingPlanSummary extends $TrainingPlanSummary {
     _$hash = $jc(_$hash, sourceTemplateId.hashCode);
     _$hash = $jc(_$hash, itemCount.hashCode);
     _$hash = $jc(_$hash, totalDurationMinutes.hashCode);
+    _$hash = $jc(_$hash, archived.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -105,7 +113,8 @@ class _$$TrainingPlanSummary extends $TrainingPlanSummary {
           ..add('template', template)
           ..add('sourceTemplateId', sourceTemplateId)
           ..add('itemCount', itemCount)
-          ..add('totalDurationMinutes', totalDurationMinutes))
+          ..add('totalDurationMinutes', totalDurationMinutes)
+          ..add('archived', archived))
         .toString();
   }
 }
@@ -147,6 +156,10 @@ class $TrainingPlanSummaryBuilder
   set totalDurationMinutes(covariant int? totalDurationMinutes) =>
       _$this._totalDurationMinutes = totalDurationMinutes;
 
+  bool? _archived;
+  bool? get archived => _$this._archived;
+  set archived(covariant bool? archived) => _$this._archived = archived;
+
   $TrainingPlanSummaryBuilder() {
     $TrainingPlanSummary._defaults(this);
   }
@@ -161,6 +174,7 @@ class $TrainingPlanSummaryBuilder
       _sourceTemplateId = $v.sourceTemplateId;
       _itemCount = $v.itemCount;
       _totalDurationMinutes = $v.totalDurationMinutes;
+      _archived = $v.archived;
       _$v = null;
     }
     return this;
@@ -196,6 +210,7 @@ class $TrainingPlanSummaryBuilder
               totalDurationMinutes,
               r'$TrainingPlanSummary',
               'totalDurationMinutes'),
+          archived: archived,
         );
     replace(_$result);
     return _$result;

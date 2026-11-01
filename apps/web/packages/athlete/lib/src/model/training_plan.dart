@@ -21,6 +21,7 @@ part 'training_plan.g.dart';
 /// * [sourceTemplateId] - Template (or plan) this plan was copied from.
 /// * [itemCount] 
 /// * [totalDurationMinutes] 
+/// * [archived] - Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
 /// * [items] 
 @BuiltValue()
 abstract class TrainingPlan implements TrainingPlanSummary, Built<TrainingPlan, TrainingPlanBuilder> {
@@ -55,6 +56,13 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
       object.template,
       specifiedType: const FullType(bool),
     );
+    if (object.archived != null) {
+      yield r'archived';
+      yield serializers.serialize(
+        object.archived,
+        specifiedType: const FullType(bool),
+      );
+    }
     yield r'totalDurationMinutes';
     yield serializers.serialize(
       object.totalDurationMinutes,
@@ -123,6 +131,14 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
             specifiedType: const FullType(bool),
           ) as bool;
           result.template = valueDes;
+          break;
+        case r'archived':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.archived = valueDes;
           break;
         case r'totalDurationMinutes':
           final valueDes = serializers.deserialize(

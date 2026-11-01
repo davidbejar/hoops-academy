@@ -23,7 +23,6 @@ part 'box_score.g.dart';
 /// * [score] 
 /// * [periodScores] 
 /// * [teamTotals] 
-/// * [opponentFouls] 
 /// * [players] - Player lines visible to the caller.
 /// * [warnings] - Match-level warnings (not attributable to a player).
 /// * [lastServerSeq] - Projection is up to date with events up to this sequence number.
@@ -44,9 +43,6 @@ abstract class BoxScore implements Built<BoxScore, BoxScoreBuilder> {
 
   @BuiltValueField(wireName: r'teamTotals')
   StatLine get teamTotals;
-
-  @BuiltValueField(wireName: r'opponentFouls')
-  int? get opponentFouls;
 
   /// Player lines visible to the caller.
   @BuiltValueField(wireName: r'players')
@@ -108,13 +104,6 @@ class _$BoxScoreSerializer implements PrimitiveSerializer<BoxScore> {
       object.teamTotals,
       specifiedType: const FullType(StatLine),
     );
-    if (object.opponentFouls != null) {
-      yield r'opponentFouls';
-      yield serializers.serialize(
-        object.opponentFouls,
-        specifiedType: const FullType.nullable(int),
-      );
-    }
     yield r'players';
     yield serializers.serialize(
       object.players,
@@ -187,14 +176,6 @@ class _$BoxScoreSerializer implements PrimitiveSerializer<BoxScore> {
             specifiedType: const FullType(StatLine),
           ) as StatLine;
           result.teamTotals.replace(valueDes);
-          break;
-        case r'opponentFouls':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(int),
-          ) as int?;
-          if (valueDes == null) continue;
-          result.opponentFouls = valueDes;
           break;
         case r'players':
           final valueDes = serializers.deserialize(

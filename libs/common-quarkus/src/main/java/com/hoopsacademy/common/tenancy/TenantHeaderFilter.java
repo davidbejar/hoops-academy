@@ -10,13 +10,16 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
+import java.util.List;
 import java.util.Optional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * Binds the tenant for every {@code /api/**} request: the caller must be authenticated (401), send a valid
  * tenant header (400) and be a member of that tenant (404 — never 403, so tenant existence is not revealed).
- * {@code /platform/**}, {@code /internal/**} and non-REST paths ({@code /q/**}) are not tenant scoped.
+ * {@code /platform/**}, {@code /internal/**}, non-REST paths ({@code /q/**}) and the exact paths of
+ * {@code hoops.tenancy.exempt-paths} (default {@code /api/core/me}) are not tenant scoped; authentication of those is
+ * left to the resource ({@code @Authenticated}).
  */
 @Provider
 @Priority(Priorities.AUTHENTICATION + 10)
@@ -26,21 +29,24 @@ public class TenantHeaderFilter implements ContainerRequestFilter {
     private final TenantContext tenantContext;
     private final AuthzContextResolver resolver;
     private final String tenantHeader;
+    private final TenantScopedPaths scopedPaths;
 
     public TenantHeaderFilter(
             SecurityIdentity identity,
             TenantContext tenantContext,
             AuthzContextResolver resolver,
-            @ConfigProperty(name = "hoops.tenancy.header", defaultValue = "X-Tenant-Id") String tenantHeader) {
+            @ConfigProperty(name = "hoops.tenancy.header", defaultValue = "X-Tenant-Id") String tenantHeader,
+            @ConfigProperty(name = "hoops.tenancy.exempt-paths", defaultValue = "/api/core/me") List<String> exemptPaths) {
         this.identity = identity;
         this.tenantContext = tenantContext;
         this.resolver = resolver;
         this.tenantHeader = tenantHeader;
+        this.scopedPaths = new TenantScopedPaths(exemptPaths);
     }
 
     @Override
     public void filter(ContainerRequestContext request) {
-        if (!TenantScopedPaths.isTenantScoped(request.getUriInfo().getPath())) {
+        if (!scopedPaths.isTenantScoped(request.getUriInfo().getPath())) {
             return;
         }
         if (identity.isAnonymous()) {

@@ -101,6 +101,27 @@ class ProblemExceptionMappersTest {
         assertProblem(given().get(BASE + "platform-forbidden"), 403, "urn:hoops:problem:forbidden");
     }
 
+    @ParameterizedTest
+    @CsvSource({"optimistic-lock", "stale-state", "wrapped-optimistic-lock"})
+    void concurrentModificationIsAConflictProblem(String path) {
+        assertProblem(given().get(BASE + path), 409, "urn:hoops:problem:conflict")
+                .body("code", equalTo("CONCURRENT_MODIFICATION"))
+                .body(not(containsString("version")));
+    }
+
+    @Test
+    void anUnavailableUpstreamIsA503ProblemWithoutInternals() {
+        assertProblem(given().get(BASE + "upstream-unavailable"), 503, "urn:hoops:problem:upstream-unavailable")
+                .body("code", equalTo("UPSTREAM_UNAVAILABLE"))
+                .body(not(containsString("10.0.0.7")));
+    }
+
+    @Test
+    void anonymousCallOfARoleProtectedResourceIsA401Problem() {
+        assertProblem(given().get(BASE + "platform-forbidden"), 401, "urn:hoops:problem:unauthorized")
+                .header("WWW-Authenticate", "Bearer");
+    }
+
     private static ValidatableResponse assertProblem(io.restassured.response.Response response, int status, String type) {
         return response.then()
                 .statusCode(status)

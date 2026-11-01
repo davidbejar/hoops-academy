@@ -10,6 +10,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.application.MaterialiseSessions;
+import com.hoopsacademy.athlete.support.ApiSupport;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -90,6 +91,19 @@ class ScheduleApiTest {
                 .body("items[0].durationMinutes", equalTo(90))
                 .body("items[0].location", equalTo("Main court"))
                 .body("page.totalElements", equalTo(8));
+    }
+
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.ADMIN)
+    void aPlayerListsTheSchedulesOfTheOwnTeamsWithoutNamingATeam() {
+        String mine = createSchedule(TENANT, TEAM, "WEDNESDAY", "17:30");
+        createSchedule(TENANT, OTHER_TEAM, "WEDNESDAY", "17:30");
+
+        ApiSupport.member(TENANT, java.util.Set.of(TenantRole.PLAYER), java.util.Set.of(), java.util.Set.of(), PLAYER,
+                java.util.Set.of(TEAM));
+        api(TENANT).get("/api/athlete/training-schedules").then().statusCode(200)
+                .body("id", org.hamcrest.Matchers.hasItem(mine))
+                .body("teamId", org.hamcrest.Matchers.everyItem(equalTo(TEAM)));
     }
 
     @Test
@@ -271,7 +285,8 @@ class ScheduleApiTest {
 
         api(TENANT).queryParam("teamId", TEAM).get("/api/athlete/training-schedules").then().statusCode(200);
         api(TENANT).queryParam("teamId", OTHER_TEAM).get("/api/athlete/training-schedules").then().statusCode(404);
-        lenient(TENANT).get("/api/athlete/training-schedules").then().statusCode(400);
+        // no teamId: the schedules of the linked players' teams (none in this caller's context) instead of a 400
+        api(TENANT).get("/api/athlete/training-schedules").then().statusCode(200).body("$", org.hamcrest.Matchers.empty());
     }
 
     @Test

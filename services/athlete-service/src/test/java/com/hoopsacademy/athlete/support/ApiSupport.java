@@ -51,7 +51,7 @@ public final class ApiSupport {
         return base(tenant).filter(new OpenApiValidationFilter(RESPONSE_ONLY));
     }
 
-    /** For endpoints the contract does not describe yet (e.g. player availability): no OpenAPI validation. */
+    /** No OpenAPI validation: role-matrix calls that only assert the status code. */
     public static RequestSpecification unvalidated(String tenant) {
         return base(tenant);
     }
@@ -63,9 +63,16 @@ public final class ApiSupport {
     /** Registers the single test caller ({@code tenant-user}) as a member of {@code tenant}. */
     public static AuthzContext member(String tenant, Set<TenantRole> roles, Set<String> staffTeams, Set<String> linked,
             String ownPlayer) {
+        return member(tenant, roles, staffTeams, linked, ownPlayer, Set.of());
+    }
+
+    /** As above, with the teams of the own / linked players ({@code AuthzContext.playerTeamIds}, from core). */
+    public static AuthzContext member(String tenant, Set<TenantRole> roles, Set<String> staffTeams, Set<String> linked,
+            String ownPlayer, Set<String> playerTeams) {
         AuthzContext context = new AuthzContext("tenant-user", UUID.nameUUIDFromBytes(("person-" + tenant).getBytes()),
                 TenantId.parse(tenant), roles.isEmpty() ? Set.of() : EnumSet.copyOf(roles),
-                uuids(staffTeams), uuids(linked), Optional.ofNullable(ownPlayer).map(UUID::fromString));
+                uuids(staffTeams), uuids(linked), Optional.ofNullable(ownPlayer).map(UUID::fromString), uuids(playerTeams),
+                Optional.empty());
         TenantUserRegistry.register(context);
         return context;
     }

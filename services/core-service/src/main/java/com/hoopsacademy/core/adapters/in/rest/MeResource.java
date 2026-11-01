@@ -15,13 +15,16 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-/** {@code GET|PATCH /api/core/me} (served here after {@link MePathRewriteFilter}). No tenant header. */
+/**
+ * {@code GET|PATCH /api/core/me}. No tenant header: the path is in common-quarkus' {@code hoops.tenancy.exempt-paths}
+ * (library default), so the tenant filter skips it; authentication is required by {@code @Authenticated}.
+ */
 @Path(MeResource.PATH)
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
 public class MeResource {
 
-    static final String PATH = "/account/me";
+    static final String PATH = "/api/core/me";
 
     /** Contract {@code UpdateMeRequest}. */
     public record UpdateMeRequest(@NotNull @Pattern(regexp = Constraints.LOCALE) String locale) {}

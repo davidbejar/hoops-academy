@@ -86,6 +86,26 @@ class MeResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "me-parent")
+    void reportsTheTenantZoneAndTheTeamsOfOwnAndLinkedPlayers() {
+        String t = tenant("ACTIVE");
+        com.hoopsacademy.core.testsupport.RosterDb.timezone(t, "Asia/Jakarta");
+        UUID parent = CoreDb.person(t, CoreDb.login("me-parent"), "Pia", "P", null, null, null, TenantRole.PARENT);
+        UUID child = CoreDb.player(t, CoreDb.person(t, "Kid", "P", null));
+        CoreDb.guardianLink(t, parent, child);
+        java.util.Map<String, UUID> categories = com.hoopsacademy.core.testsupport.RosterDb.defaultCategories(t);
+        UUID season = com.hoopsacademy.core.testsupport.RosterDb.currentSeason(t);
+        UUID kidsTeam = com.hoopsacademy.core.testsupport.RosterDb.team(t, season, "Kids", categories.get("U12"), "MIXED");
+        com.hoopsacademy.core.testsupport.RosterDb.team(t, season, "Other", categories.get("U10"), "MIXED");
+        com.hoopsacademy.core.testsupport.RosterDb.assignment(t, kidsTeam, child, "5");
+
+        given().filter(Contract.CORE).get(ME).then().statusCode(200)
+                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.timezone", equalTo("Asia/Jakarta"))
+                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.playerTeamIds", contains(kidsTeam.toString()))
+                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.ownPlayerId", org.hamcrest.Matchers.nullValue());
+    }
+
+    @Test
     @TestSecurity(user = "me-pending")
     void firstMeCallAcceptsAPendingInvitation() {
         String t = tenant("ACTIVE");
@@ -134,6 +154,13 @@ class MeResourceTest {
     void meNeedsNoTenantHeaderButAuthentication() {
         CoreDb.login("me-no-header");
         given().filter(Contract.CORE).get(ME).then().statusCode(200).body("memberships", empty());
+    }
+
+    @Test
+    @TestSecurity(user = "me-no-header")
+    void meIsServedOnItsPublicPathOnly() {
+        CoreDb.login("me-no-header");
+        given().get("/account/me").then().statusCode(404);
     }
 
     @Test

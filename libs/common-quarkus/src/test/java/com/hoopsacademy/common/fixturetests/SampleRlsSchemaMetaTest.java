@@ -15,4 +15,9 @@ class SampleRlsSchemaMetaTest extends RlsSchemaMetaTest {
     protected Map<String, String> globalTables() {
         return Map.of("core.sample_colour", "colour codes are a fixed catalogue shared by all academies");
     }
+
+    @Override
+    protected Map<String, String> nullableTenantTables() {
+        return Map.of("core.sample_template", "tenant_id");
+    }
 }

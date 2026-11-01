@@ -23,6 +23,10 @@ class _$AuthzContext extends AuthzContext {
   final BuiltList<String> linkedPlayerIds;
   @override
   final String? ownPlayerId;
+  @override
+  final BuiltList<String> playerTeamIds;
+  @override
+  final String timezone;
 
   factory _$AuthzContext([void Function(AuthzContextBuilder)? updates]) =>
       (AuthzContextBuilder()..update(updates))._build();
@@ -35,7 +39,9 @@ class _$AuthzContext extends AuthzContext {
       required this.roles,
       required this.staffTeamIds,
       required this.linkedPlayerIds,
-      this.ownPlayerId})
+      this.ownPlayerId,
+      required this.playerTeamIds,
+      required this.timezone})
       : super._();
   @override
   AuthzContext rebuild(void Function(AuthzContextBuilder) updates) =>
@@ -55,7 +61,9 @@ class _$AuthzContext extends AuthzContext {
         roles == other.roles &&
         staffTeamIds == other.staffTeamIds &&
         linkedPlayerIds == other.linkedPlayerIds &&
-        ownPlayerId == other.ownPlayerId;
+        ownPlayerId == other.ownPlayerId &&
+        playerTeamIds == other.playerTeamIds &&
+        timezone == other.timezone;
   }
 
   @override
@@ -69,6 +77,8 @@ class _$AuthzContext extends AuthzContext {
     _$hash = $jc(_$hash, staffTeamIds.hashCode);
     _$hash = $jc(_$hash, linkedPlayerIds.hashCode);
     _$hash = $jc(_$hash, ownPlayerId.hashCode);
+    _$hash = $jc(_$hash, playerTeamIds.hashCode);
+    _$hash = $jc(_$hash, timezone.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -83,7 +93,9 @@ class _$AuthzContext extends AuthzContext {
           ..add('roles', roles)
           ..add('staffTeamIds', staffTeamIds)
           ..add('linkedPlayerIds', linkedPlayerIds)
-          ..add('ownPlayerId', ownPlayerId))
+          ..add('ownPlayerId', ownPlayerId)
+          ..add('playerTeamIds', playerTeamIds)
+          ..add('timezone', timezone))
         .toString();
   }
 }
@@ -130,6 +142,16 @@ class AuthzContextBuilder
   String? get ownPlayerId => _$this._ownPlayerId;
   set ownPlayerId(String? ownPlayerId) => _$this._ownPlayerId = ownPlayerId;
 
+  ListBuilder<String>? _playerTeamIds;
+  ListBuilder<String> get playerTeamIds =>
+      _$this._playerTeamIds ??= ListBuilder<String>();
+  set playerTeamIds(ListBuilder<String>? playerTeamIds) =>
+      _$this._playerTeamIds = playerTeamIds;
+
+  String? _timezone;
+  String? get timezone => _$this._timezone;
+  set timezone(String? timezone) => _$this._timezone = timezone;
+
   AuthzContextBuilder() {
     AuthzContext._defaults(this);
   }
@@ -145,6 +167,8 @@ class AuthzContextBuilder
       _staffTeamIds = $v.staffTeamIds.toBuilder();
       _linkedPlayerIds = $v.linkedPlayerIds.toBuilder();
       _ownPlayerId = $v.ownPlayerId;
+      _playerTeamIds = $v.playerTeamIds.toBuilder();
+      _timezone = $v.timezone;
       _$v = null;
     }
     return this;
@@ -180,6 +204,9 @@ class AuthzContextBuilder
             staffTeamIds: staffTeamIds.build(),
             linkedPlayerIds: linkedPlayerIds.build(),
             ownPlayerId: ownPlayerId,
+            playerTeamIds: playerTeamIds.build(),
+            timezone: BuiltValueNullFieldError.checkNotNull(
+                timezone, r'AuthzContext', 'timezone'),
           );
     } catch (_) {
       late String _$failedField;
@@ -190,6 +217,9 @@ class AuthzContextBuilder
         staffTeamIds.build();
         _$failedField = 'linkedPlayerIds';
         linkedPlayerIds.build();
+
+        _$failedField = 'playerTeamIds';
+        playerTeamIds.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'AuthzContext', _$failedField, e.toString());

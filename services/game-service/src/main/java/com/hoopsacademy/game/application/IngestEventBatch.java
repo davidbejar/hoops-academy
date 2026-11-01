@@ -27,7 +27,13 @@ public class IngestEventBatch {
 
     public enum Status { ACCEPTED, DUPLICATE, REJECTED }
 
-    public enum RejectionReason { SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT }
+    /**
+     * Contract MatchEventRejectionReason. MATCH_NOT_STARTED is reserved: v1 accepts events of SCHEDULED matches so
+     * offline devices never lose events (ADR-0014); it exists so a future policy needs no contract change.
+     */
+    public enum RejectionReason {
+        SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT, EVENT_ID_REUSED, MATCH_NOT_STARTED
+    }
 
     /** One result per submitted event, in request order; serverSeq for ACCEPTED/DUPLICATE, reason for REJECTED. */
     public record Result(UUID eventId, Status status, Long serverSeq, RejectionReason reason, String message) {
@@ -104,7 +110,7 @@ public class IngestEventBatch {
         }
         OptionalLong serverSeq = events.append(match.id(), event, recorder);
         if (serverSeq.isEmpty()) {
-            return Result.rejected(id, RejectionReason.CLIENT_SEQ_CONFLICT, "The event id is already used by another match");
+            return Result.rejected(id, RejectionReason.EVENT_ID_REUSED, "The event id is already used by another match");
         }
         ledger.accept(event, serverSeq.getAsLong(), recorder.personId());
         events.recordReceipt(match.id(), event.meta().deviceId(), event.meta().clientSeq());

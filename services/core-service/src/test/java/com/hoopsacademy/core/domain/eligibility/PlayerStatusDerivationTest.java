@@ -18,5 +18,6 @@ class PlayerStatusDerivationTest {
     void pendingAndWithdrawnPlayersAreLeftAlone() {
         assertThat(PlayerStatusDerivation.derive(PlayerStatus.PENDING_APPROVAL, true)).isEqualTo(PlayerStatus.PENDING_APPROVAL);
         assertThat(PlayerStatusDerivation.derive(PlayerStatus.WITHDRAWN, false)).isEqualTo(PlayerStatus.WITHDRAWN);
+        assertThat(PlayerStatusDerivation.derive(PlayerStatus.REJECTED, true)).isEqualTo(PlayerStatus.REJECTED);
     }
 }

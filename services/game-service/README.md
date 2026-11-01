@@ -30,25 +30,26 @@ State machine: `SCHEDULED -> LIVE -> FINISHED`; `CANCELLED` from `SCHEDULED` or 
 ```
 domain/                  Match (state machine), MatchRoster, RosterEntry, value objects (MatchId, TeamId, PlayerId, SeasonId, JerseyNumber)
 application/             use cases (CreateMatch, StartMatch, ReplaceMatchRoster, ...), ports MatchRepository, RosterPort, UsageCounter
-adapters/in/rest/        MatchResource, MatchRosterResource, DTOs, 503 mapper
+adapters/in/rest/        MatchResource, MatchRosterResource, DTOs (401/409/503 Problems come from common-quarkus)
 adapters/in/internal/    UsageResource (/internal/usage/{tenantId})
 adapters/out/persistence JPA entities (@TenantId), JpaMatchRepository, JpaUsageCounter
-adapters/out/client/     RestRosterPort (core /internal/**, Caffeine 30 s, 2 s timeout), RosterAuthzResolver
+adapters/out/client/     RestRosterPort (thin mapping over common-quarkus' CoreRosterClient)
 ```
 WP7: `domain/events` (MatchEvent sealed hierarchy, EventOrdering), `domain/projection` (BoxScoreProjector, SeasonStats),
 `application/` (IngestEventBatch, EventAuthorization, MatchReprojection, GetMatchEvents, GetBoxScore,
 GetPlayerSeasonStats; ports MatchEventRepository, ProjectionRepository), `adapters/json` (MatchEventJson codec),
 `adapters/in/rest` (MatchEventResource, BoxScoreResource, SeasonStatsResource, MatchEventDecoder = JSON Schema
-validation, OptimisticLockExceptionMapper 409), `adapters/out/persistence` (JDBC repositories on the transaction's
+validation), `adapters/out/persistence` (JDBC repositories on the transaction's
 connection) and Flyway `V2__events.sql` (`match_event`, `match_player_stats`, `match_summary`).
 
 ## Talking to core-service (ADR-0008)
-`RestRosterPort` implements `RosterPort{teamRoster, players, authzContext}` against core `/internal/**` with a
-client-credentials token (`ServiceTokenClientFilter`, `quarkus.oidc-client.*`). Answers are cached for
-`hoops.roster.cache-ttl` (30 s) per distinct call; failures are not cached. 404 -> `NotFoundException`;
-timeout (2 s, `quarkus.rest-client.core.*-timeout`), connection errors, 5xx, 401/403 -> `UpstreamUnavailableException`
--> `503` Problem with `code: UPSTREAM_UNAVAILABLE`. `RosterAuthzResolver` feeds the common tenant filter; a
-SUSPENDED / WITHDRAWN tenant yields no membership (404).
+Since WP2c the client lives in common-quarkus (`com.hoopsacademy.common.client`): `CoreInternalClient` (REST client,
+configKey `core`, base URL `hoops.core.url`, 2 s timeouts, client-credentials token via `ServiceTokenClientFilter`),
+`CoreRosterClient` (Caffeine cache `hoops.core.cache-ttl` = 30 s per distinct call; failures, unknown teams and "not a
+member" are not cached; 404 -> `NotFoundException`, timeout / connection error / 5xx / 401 / 403 ->
+`UpstreamUnavailableException` -> `503` Problem `UPSTREAM_UNAVAILABLE`, declared in the contract) and
+`RosterAuthzResolver` (`@DefaultBean` for the common tenant filter; SUSPENDED / WITHDRAWN tenant -> no membership, 404).
+`RestRosterPort` implements game's `RosterPort{teamRoster, players}` by mapping the shared client's DTOs.
 
 ## Configuration
 | Key / env | Default | |

@@ -9,7 +9,8 @@ public enum ProblemType {
     NOT_FOUND(404, "Not Found", "not-found"),
     CONFLICT(409, "Conflict", "conflict"),
     DOMAIN_RULE_VIOLATION(422, "Domain Rule Violation", "domain-rule-violation"),
-    INTERNAL_ERROR(500, "Internal Server Error", "internal-error");
+    INTERNAL_ERROR(500, "Internal Server Error", "internal-error"),
+    UPSTREAM_UNAVAILABLE(503, "Service Unavailable", "upstream-unavailable");
 
     private static final String URN_PREFIX = "urn:hoops:problem:";
 

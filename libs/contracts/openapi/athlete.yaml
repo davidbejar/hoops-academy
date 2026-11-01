@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — athlete-service API
-  version: 1.0.0
+  version: 2.0.0
   description: |
     Training & attendance, athlete health & fitness.
 
@@ -58,6 +58,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createTrainingSchedule
       tags: [TrainingSchedules]
@@ -79,6 +80,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-schedules/{scheduleId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -101,6 +103,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     patch:
       operationId: updateTrainingSchedule
       tags: [TrainingSchedules]
@@ -122,6 +125,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deleteTrainingSchedule
       tags: [TrainingSchedules]
@@ -134,6 +138,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ sessions
   /api/athlete/training-sessions:
@@ -163,6 +168,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createTrainingSession
       tags: [TrainingSessions]
@@ -184,6 +190,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-sessions/{sessionId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -203,6 +210,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     patch:
       operationId: updateTrainingSession
       tags: [TrainingSessions]
@@ -225,6 +233,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-sessions/{sessionId}/cancel:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -250,6 +259,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-sessions/{sessionId}/attendance:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -271,6 +281,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     put:
       operationId: recordSessionAttendance
       tags: [Attendance]
@@ -295,6 +306,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ planned absences
   /api/athlete/planned-absences:
@@ -322,6 +334,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createPlannedAbsence
       tags: [PlannedAbsences]
@@ -343,6 +356,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/planned-absences/{absenceId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -365,6 +379,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     patch:
       operationId: updatePlannedAbsence
       tags: [PlannedAbsences]
@@ -386,6 +401,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deletePlannedAbsence
       tags: [PlannedAbsences]
@@ -398,6 +414,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ training plans
   /api/athlete/training-plans:
@@ -428,6 +445,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createTrainingPlan
       tags: [TrainingPlans]
@@ -449,6 +467,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-plans/{planId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -468,6 +487,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     patch:
       operationId: updateTrainingPlan
       tags: [TrainingPlans]
@@ -489,6 +509,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deleteTrainingPlan
       tags: [TrainingPlans]
@@ -502,6 +523,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-plans/{planId}:copy:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -526,6 +548,47 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+  /api/athlete/training-plans/{planId}:archive:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlanId'
+    post:
+      operationId: archiveTrainingPlan
+      tags: [TrainingPlans]
+      summary: Archive a tenant plan (hidden from lists, cannot be assigned)
+      description: 'Idempotent. Existing assignments keep working. Templates are read-only (403). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      responses:
+        '200':
+          description: The plan.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingPlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+  /api/athlete/training-plans/{planId}:unarchive:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlanId'
+    post:
+      operationId: unarchiveTrainingPlan
+      tags: [TrainingPlans]
+      summary: Bring an archived tenant plan back
+      description: 'Idempotent. Templates are read-only (403). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      responses:
+        '200':
+          description: The plan.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingPlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-plans/{planId}/items:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -551,6 +614,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     put:
       operationId: reorderPlanItems
       tags: [TrainingPlans]
@@ -574,6 +638,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-plans/{planId}/items/{itemId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -603,6 +668,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deletePlanItem
       tags: [TrainingPlans]
@@ -615,6 +681,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ plan assignments & completions
   /api/athlete/plan-assignments:
@@ -648,6 +715,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createPlanAssignment
       tags: [PlanAssignments]
@@ -669,6 +737,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/plan-assignments/{assignmentId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -688,6 +757,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deletePlanAssignment
       tags: [PlanAssignments]
@@ -700,6 +770,29 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+  /api/athlete/plan-assignments/{assignmentId}/progress:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/AssignmentId'
+    get:
+      operationId: getPlanAssignmentProgress
+      tags: [PlanCompletions]
+      summary: Completion progress of an assignment per targeted player
+      description: |
+        Targets are the team's current roster (team assignment) or the one player. Staff see every target; PARENT and
+        PLAYER only their linked players / themselves. Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
+      responses:
+        '200':
+          description: Progress.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlanProgress'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/plan-assignments/{assignmentId}/completions/{playerId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -729,6 +822,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/plan-completions:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -754,6 +848,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ injuries
   /api/athlete/injuries:
@@ -782,6 +877,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createInjury
       tags: [Injuries]
@@ -803,6 +899,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/injuries/{injuryId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -825,6 +922,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     patch:
       operationId: updateInjury
       tags: [Injuries]
@@ -846,6 +944,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deleteInjury
       tags: [Injuries]
@@ -858,8 +957,36 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ body measurements
+  /api/athlete/players/{playerId}/availability:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: playerId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    get:
+      operationId: getPlayerAvailability
+      tags: [Injuries]
+      summary: Whether a player is available today (derived from open injuries)
+      description: |
+        A player is unavailable while an OPEN injury has no actual return date, or its expected return date is today
+        or later ("today" in the tenant's time zone). `expectedReturnOn` is the latest expected return of the blocking
+        injuries (null when available or when no estimate exists). Unknown player: 404. Authz: ADMIN; team staff (of a
+        team of the player); PARENT (linked); PLAYER (self).
+      responses:
+        '200':
+          description: Availability.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerAvailability'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/body-measurements:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -887,6 +1014,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createBodyMeasurement
       tags: [BodyMeasurements]
@@ -909,6 +1037,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/body-measurements/{measurementId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -938,6 +1067,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deleteBodyMeasurement
       tags: [BodyMeasurements]
@@ -950,6 +1080,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ physical tests
   /api/athlete/physical-test-types:
@@ -972,6 +1103,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createPhysicalTestType
       tags: [PhysicalTests]
@@ -993,6 +1125,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/physical-test-types/{testTypeId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -1015,6 +1148,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     patch:
       operationId: updatePhysicalTestType
       tags: [PhysicalTests]
@@ -1035,6 +1169,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/physical-test-results:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -1063,6 +1198,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createPhysicalTestResult
       tags: [PhysicalTests]
@@ -1086,6 +1222,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/physical-test-results/{resultId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -1108,6 +1245,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     patch:
       operationId: updatePhysicalTestResult
       tags: [PhysicalTests]
@@ -1129,6 +1267,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deletePhysicalTestResult
       tags: [PhysicalTests]
@@ -1141,6 +1280,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/physical-test-norms:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -1176,6 +1316,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     post:
       operationId: createPhysicalTestNorm
       tags: [PhysicalTests]
@@ -1198,6 +1339,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/physical-test-norms/{normId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -1227,6 +1369,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deletePhysicalTestNorm
       tags: [PhysicalTests]
@@ -1239,6 +1382,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ internal
   /internal/usage/{tenantId}:
@@ -1556,6 +1700,9 @@ components:
           description: Template (or plan) this plan was copied from.
         itemCount: {type: integer, format: int32, minimum: 0}
         totalDurationMinutes: {type: integer, format: int32, minimum: 0}
+        archived:
+          type: boolean
+          description: Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
     TrainingPlan:
       allOf:
         - $ref: '#/components/schemas/TrainingPlanSummary'
@@ -1784,7 +1931,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/AuditInfo'
         - type: object
-          required: [id, playerId, testTypeId, testCode, unit, measuredOn, value, ageAtMeasurement, referencePending]
+          required: [id, playerId, testTypeId, testCode, unit, measuredOn, value, ageAtMeasurement, bandStatus, referencePending]
           properties:
             id: {type: string, format: uuid}
             playerId: {type: string, format: uuid}
@@ -1797,7 +1944,9 @@ components:
               type: integer
               format: int32
               minimum: 0
-              description: Actual age (years) on measuredOn.
+              nullable: true
+              description: Actual age (years) on measuredOn; null when core has no birth date for the player.
+            bandStatus: {$ref: '#/components/schemas/BandStatus'}
             expectedBand:
               allOf: [{$ref: '#/components/schemas/NormBand'}]
               nullable: true
@@ -1811,6 +1960,59 @@ components:
               type: boolean
               description: The applied norm has no cited source yet ("reference pending" in the UI).
             notes: {type: string, nullable: true}
+    BandStatus:
+      type: string
+      description: |
+        How `expectedBand` was resolved: MATCHED — a norm covers (gender, age, value); NO_NORM — no effective norm
+        covers it (`expectedBand` null); MISSING_PLAYER_DATA — core has no birth date or gender for the player
+        (`expectedBand` null, `ageAtMeasurement` null when the birth date is missing).
+      enum: [MATCHED, NO_NORM, MISSING_PLAYER_DATA]
+    PlayerAvailability:
+      type: object
+      required: [playerId, available, injuries]
+      properties:
+        playerId: {type: string, format: uuid}
+        available: {type: boolean}
+        expectedReturnOn:
+          type: string
+          format: date
+          nullable: true
+          description: Latest expected return of the blocking injuries; absent/null when available or unknown.
+        injuries:
+          type: array
+          description: Ids of the injuries that block availability.
+          items: {type: string, format: uuid}
+    PlanProgress:
+      type: object
+      required: [assignmentId, total, notRecorded, counts, players]
+      properties:
+        assignmentId: {type: string, format: uuid}
+        total:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Targeted players visible to the caller.
+        notRecorded: {type: integer, format: int32, minimum: 0}
+        counts:
+          type: object
+          required: [DONE, PARTIAL, NOT_DONE]
+          properties:
+            DONE: {type: integer, format: int32, minimum: 0}
+            PARTIAL: {type: integer, format: int32, minimum: 0}
+            NOT_DONE: {type: integer, format: int32, minimum: 0}
+        players:
+          type: array
+          items: {$ref: '#/components/schemas/PlayerProgress'}
+    PlayerProgress:
+      type: object
+      required: [playerId]
+      properties:
+        playerId: {type: string, format: uuid}
+        status:
+          allOf: [{$ref: '#/components/schemas/CompletionStatus'}]
+          nullable: true
+          description: Null when nothing was recorded for the player yet.
+        completionId: {type: string, format: uuid, nullable: true}
     PhysicalTestResultPage:
       type: object
       required: [items, page]
