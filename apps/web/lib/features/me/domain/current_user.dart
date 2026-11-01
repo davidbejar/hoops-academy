@@ -9,6 +9,8 @@ class TenantMembership {
     required this.slug,
     required this.hasLogo,
     required this.roles,
+    this.personId,
+    this.staffTeamIds = const {},
   });
 
   final String tenantId;
@@ -16,6 +18,12 @@ class TenantMembership {
   final String slug;
   final bool hasLogo;
   final Set<TenantRole> roles;
+
+  /// The caller's person in this academy (null when unknown).
+  final String? personId;
+
+  /// Teams the caller is staff of (coach / assistant), from `/me.authz`.
+  final Set<String> staffTeamIds;
 }
 
 /// The caller as returned by `GET /api/core/me`, without transport types.

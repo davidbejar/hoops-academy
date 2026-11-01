@@ -25,6 +25,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       key: state.pageKey,
       child: DeferredScreen(load: feature.load, builder: (_) => feature.build()),
     ),
+    routes: [
+      for (final sub in feature.subPages)
+        GoRoute(
+          path: sub.path,
+          pageBuilder: (context, state) => NoTransitionPage(
+            key: state.pageKey,
+            child: DeferredScreen(
+              load: sub.load,
+              builder: (_) => sub.build(state.pathParameters),
+            ),
+          ),
+        ),
+    ],
   );
 
   final router = GoRouter(

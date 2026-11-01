@@ -16,7 +16,12 @@ import '../support/harness.dart';
 void main() {
   testWidgets('login, pick academy, tenant headers, logo and locale', (tester) async {
     await tester.runAsync(
-      () => Future.wait(featureModules.values.map((m) => m.load())),
+      () => Future.wait([
+        for (final m in featureModules.values) ...[
+          m.load(),
+          for (final sub in m.subPages) sub.load(),
+        ],
+      ]),
     );
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -60,6 +65,15 @@ void main() {
     // logo prove the header interceptor works through the generated client.
     expect(container.read(tenantProfileProvider).value?.name, 'Academia Demo');
     expect(container.read(tenantLogoProvider).value, isNotEmpty);
+
+    // The demo data behind the admin / roster screens (real generated client).
+    await tester.tap(navLabel('Equipos'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mini A (Leones)'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('team-team-mini-a')));
+    await tester.pumpAndSettle();
+    expect(find.text('Ana Ruiz'), findsOneWidget);
+    expect(find.text('Tomás Entrenador'), findsOneWidget);
 
     // Switch to Club Norte: PARENT, academy default locale is English.
     await tester.tap(find.byKey(const Key('tenant-chip')));

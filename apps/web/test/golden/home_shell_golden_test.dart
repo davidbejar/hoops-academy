@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
+import '../support/fake_repos.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
 
@@ -14,6 +15,7 @@ void main() {
   }) async {
     final h = Harness(
       me: FakeMeRepository(userWith([membershipWithRoles(roles)])),
+      core: FakeCore(),
     );
     await h.pump(tester, size: size);
   }

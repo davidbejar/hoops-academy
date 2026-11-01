@@ -9,8 +9,10 @@ import '../domain/tenant_profile.dart';
 abstract class TenantRepository {
   Future<TenantProfile> profile(String tenantId);
 
-  /// Logo bytes, or null when the academy has none (404).
-  Future<Uint8List?> logo(String tenantId);
+  /// Logo bytes, or null when the academy has none (404). [revalidate] makes
+  /// the browser re-check the ETag instead of reusing a cached copy (used
+  /// right after the logo was replaced or removed).
+  Future<Uint8List?> logo(String tenantId, {bool revalidate = false});
 }
 
 class ApiTenantRepository implements TenantRepository {
@@ -31,9 +33,12 @@ class ApiTenantRepository implements TenantRepository {
   }
 
   @override
-  Future<Uint8List?> logo(String tenantId) async {
+  Future<Uint8List?> logo(String tenantId, {bool revalidate = false}) async {
     try {
-      return (await _api.getTenantLogo(xTenantId: tenantId)).data;
+      return (await _api.getTenantLogo(
+        xTenantId: tenantId,
+        headers: revalidate ? const {'Cache-Control': 'no-cache'} : null,
+      )).data;
     } on DioException catch (e) {
       if (AppError.fromDioException(e).kind == AppErrorKind.notFound) {
         return null;

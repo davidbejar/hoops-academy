@@ -69,7 +69,10 @@ String? redirectFor(SessionState session, String location) {
       );
       if (destinations.isEmpty) return go('/no-access');
       final allowed = destinations.map((d) => d.path).toSet();
-      if (allowed.contains(location)) return null;
+      // A destination owns its sub-routes (`/teams/<id>`, `/admin/members`).
+      if (allowed.any((p) => location == p || location.startsWith('$p/'))) {
+        return null;
+      }
       return destinations.first.path;
   }
 }

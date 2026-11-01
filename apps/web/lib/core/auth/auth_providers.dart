@@ -12,7 +12,12 @@ import 'oidc_auth_service.dart';
 Uri appBaseUri() {
   final b = Uri.base;
   final dir = b.path.substring(0, b.path.lastIndexOf('/') + 1);
-  return Uri(scheme: b.scheme, host: b.host, port: b.hasPort ? b.port : null, path: dir.isEmpty ? '/' : dir);
+  return Uri(
+    scheme: b.scheme,
+    host: b.host,
+    port: b.hasPort ? b.port : null,
+    path: dir.isEmpty ? '/' : dir,
+  );
 }
 
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -38,4 +43,3 @@ class AuthStatusNotifier extends Notifier<AuthStatus> {
 final authStatusProvider = NotifierProvider<AuthStatusNotifier, AuthStatus>(
   AuthStatusNotifier.new,
 );
-

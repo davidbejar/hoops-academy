@@ -20,7 +20,12 @@ flutter run -d chrome --web-port 5173 --dart-define=HOOPS_MOCK_API=true
 ```
 
 The mock goes through the real Dio stack and generated clients (bearer required, `X-Tenant-Id` enforced on
-tenant paths), so it exercises the same code as the real API.
+tenant paths), so it exercises the same code as the real API. Since WP12 it also serves the whole admin / roster
+surface of core-service from memory (`lib/core/mock/mock_core_api.dart`: profile/settings/logo, members, guardian
+links, seasons + rollover, age categories, teams + staff + roster + eligibility with play-up, players,
+approvals, eligibility cases) and `test/core/mock_core_api_test.dart` runs the real repositories against it.
+The demo user is ADMIN+COACH in "Academia Demo" (the highest role wins: admin navigation). To try the other
+role variants: `--dart-define=HOOPS_MOCK_ROLES=COACH` (own team = Mini A), `ASSISTANT_COACH`, `PARENT`.
 
 ### Against the local stack (Keycloak + nginx)
 ```bash
@@ -83,6 +88,16 @@ packages/        GENERATED API clients hoops_{core,game,athlete}_api (do not edi
    the interceptor. Catch `DioException` and use `AppError.of(e)`; show `AppErrorView`.
 4. Every string in all three ARBs (`flutter gen-l10n`; `test/l10n` enforces parity).
 5. Tests: provider/unit, widget (loading/empty/error/populated/role), golden at 360x780 and 1024x768.
+
+### Admin & roster module (WP12)
+Routes (all under the shell; the destination decides who may enter, `Capabilities` decides which buttons show):
+`/admin` (hub) -> `/admin/profile` (academy + logo), `/admin/members[/:personId]` (invite, roles, deactivate,
+guardian links), `/admin/seasons[/:id/rollover]`, `/admin/age-categories`; `/teams[/:teamId]`, `/teams/cases`
+(eligibility cases); `/players`, `/players/new`, `/players/requests` (approvals inbox / "my requests"),
+`/players/:playerId`. Sub-pages are `ModulePage`s of a `FeatureModule` (own deferred library each).
+Shared building blocks for later modules: `core/session/capabilities.dart`, `core/ui/{async_body,actions,
+form_dialog,page_scaffold,labels}.dart`, `core/api/api.dart` (client + `Date`), `features/roster/presentation/
+eligibility_widgets.dart` (eligibility badge / panel, play-up badge).
 
 ## Generated API clients
 ```bash

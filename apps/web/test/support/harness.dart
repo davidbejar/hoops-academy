@@ -3,22 +3,28 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/app/app.dart';
 import 'package:hoops_app/app/feature_modules.dart';
+import 'package:hoops_app/app/router.dart';
 import 'package:hoops_app/core/auth/auth_providers.dart';
 import 'package:hoops_app/core/auth/auth_service.dart';
 import 'package:hoops_app/core/auth/mock_auth_service.dart';
 import 'package:hoops_app/core/connectivity/connectivity_providers.dart';
 import 'package:hoops_app/core/storage/preferences.dart';
 import 'package:hoops_app/core/ui/deferred_screen.dart';
+import 'package:hoops_app/features/admin/application/admin_providers.dart';
 import 'package:hoops_app/features/me/application/me_providers.dart';
+import 'package:hoops_app/features/roster/application/roster_providers.dart';
 import 'package:hoops_app/features/me/data/me_repository.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/tenant/application/tenant_providers.dart';
 import 'package:hoops_app/features/tenant/data/tenant_repository.dart';
 import 'package:hoops_app/features/tenant/domain/tenant_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'fake_repos.dart';
 
 class FakeMeRepository implements MeRepository {
   FakeMeRepository(this.user, {this.error});
@@ -42,6 +48,9 @@ class FakeTenantRepository implements TenantRepository {
   final String defaultLocale;
   final Uint8List? logoBytes;
 
+  /// `revalidate` flag of every logo fetch (cache-busting checks).
+  final List<bool> logoFetches = [];
+
   @override
   Future<TenantProfile> profile(String tenantId) async => TenantProfile(
     id: tenantId,
@@ -51,7 +60,10 @@ class FakeTenantRepository implements TenantRepository {
   );
 
   @override
-  Future<Uint8List?> logo(String tenantId) async => logoBytes;
+  Future<Uint8List?> logo(String tenantId, {bool revalidate = false}) async {
+    logoFetches.add(revalidate);
+    return logoBytes;
+  }
 }
 
 class Harness {
@@ -61,6 +73,8 @@ class Harness {
     FakeTenantRepository? tenant,
     Map<String, Object> prefs = const {},
     bool signedIn = true,
+    this.core,
+    this.extraOverrides = const [],
   }) : auth =
            auth ??
            MockAuthService(
@@ -75,9 +89,28 @@ class Harness {
   final AuthService auth;
   final FakeTenantRepository tenant;
   final Map<String, Object> initialPrefs;
+
+  /// In-memory admin / roster repositories (null: not needed by the test).
+  final FakeCore? core;
+  final List<Override> extraOverrides;
   final online = StreamController<bool>.broadcast();
   late SharedPreferences prefs;
   late ProviderContainer container;
+
+  /// Navigates the real router (guard included) to [location] and settles.
+  Future<void> go(WidgetTester tester, String location) async {
+    container.read(routerProvider).go(location);
+    await tester.pumpAndSettle();
+  }
+
+  /// Like [go] but only pumps frames (for screens that never settle, e.g.
+  /// while a spinner is shown).
+  Future<void> goAndPump(WidgetTester tester, String location) async {
+    container.read(routerProvider).go(location);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
 
   Future<void> pump(
     WidgetTester tester, {
@@ -90,7 +123,12 @@ class Harness {
     addTearDown(online.close);
 
     await tester.runAsync(
-      () => Future.wait(featureModules.values.map((m) => m.load())),
+      () => Future.wait([
+        for (final m in featureModules.values) ...[
+          m.load(),
+          for (final sub in m.subPages) sub.load(),
+        ],
+      ]),
     );
     SharedPreferences.setMockInitialValues(initialPrefs);
     prefs = await SharedPreferences.getInstance();
@@ -102,6 +140,17 @@ class Harness {
         meRepositoryProvider.overrideWithValue(me),
         tenantRepositoryProvider.overrideWithValue(tenant),
         onlineProvider.overrideWith((ref) => online.stream),
+        if (core != null) ...[
+          academyRepositoryProvider.overrideWithValue(core!.academy),
+          membersRepositoryProvider.overrideWithValue(core!.members),
+          seasonsRepositoryProvider.overrideWithValue(core!.seasons),
+          ageCategoriesRepositoryProvider.overrideWithValue(core!.categories),
+          teamsRepositoryProvider.overrideWithValue(core!.teams),
+          playersRepositoryProvider.overrideWithValue(core!.players),
+          approvalsRepositoryProvider.overrideWithValue(core!.approvals),
+          casesRepositoryProvider.overrideWithValue(core!.cases),
+        ],
+        ...extraOverrides,
         // Deferred libraries load in real time; make them instant in tests.
         libraryLoaderProvider.overrideWithValue((_) => SynchronousFuture<void>(null)),
       ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
+import '../support/fake_repos.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
 
@@ -78,15 +79,18 @@ void main() {
   });
 
   testWidgets('tapping a destination opens its (deferred) module screen', (tester) async {
-    final h = Harness(me: FakeMeRepository(userWith([membershipWithRoles({TenantRole.admin})])));
+    final h = Harness(
+      me: FakeMeRepository(userWith([membershipWithRoles({TenantRole.admin})])),
+      core: FakeCore(),
+    );
     await h.pump(tester);
-    expect(find.byKey(const Key('module-admin')), findsOneWidget);
+    expect(find.byKey(const Key('admin-hub')), findsOneWidget);
 
     await tester.tap(navLabel('Equipos'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('module-teams')), findsOneWidget);
-    expect(find.text('Equipos: próximamente'), findsOneWidget);
+    expect(find.byKey(const Key('season-select')), findsOneWidget);
+    expect(find.text('No hay equipos en esta temporada'), findsOneWidget);
   });
 
   testWidgets('wide screens use a navigation rail instead of a bottom bar', (tester) async {

@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import '../mock/mock_core_api.dart';
+
 const mockTenantAId = '11111111-1111-4111-8111-111111111111';
 const mockTenantBId = '22222222-2222-4222-8222-222222222222';
 
@@ -19,8 +21,19 @@ final _logoPng = base64Decode(
 /// real service (bearer on everything, `X-Tenant-Id` on tenant paths), so the
 /// shell's interceptors are exercised even without a backend.
 class MockApiAdapter implements HttpClientAdapter {
-  MockApiAdapter();
+  MockApiAdapter({List<String>? roles})
+    : _roles = roles ?? _rolesFromEnvironment(),
+      _core = MockCoreApi(initialLogo: _logoPng, roles: roles ?? _rolesFromEnvironment());
 
+  /// `--dart-define=HOOPS_MOCK_ROLES=COACH` (comma separated) switches the
+  /// demo user's roles in the first academy to try the role variants.
+  static List<String> _rolesFromEnvironment() => const String.fromEnvironment(
+    'HOOPS_MOCK_ROLES',
+    defaultValue: 'ADMIN,COACH',
+  ).split(',').map((r) => r.trim()).where((r) => r.isNotEmpty).toList();
+
+  final List<String> _roles;
+  final MockCoreApi _core;
   String _locale = 'es';
 
   @override
@@ -51,24 +64,53 @@ class MockApiAdapter implements HttpClientAdapter {
     }
 
     final tenant = options.headers['X-Tenant-Id'] as String?;
-    if (path.startsWith('/api/core/tenant')) {
+    if (path.startsWith('/api/core/')) {
       if (tenant != mockTenantAId && tenant != mockTenantBId) {
         return _problem(
           tenant == null ? 400 : 404,
           tenant == null ? 'X-Tenant-Id is required' : 'Not found',
         );
       }
-      if (path == '/api/core/tenant') return _json(_profile(tenant!));
-      if (path == '/api/core/tenant/logo') {
-        return tenant == mockTenantAId
-            ? ResponseBody.fromBytes(
-                _logoPng,
-                200,
-                headers: {
-                  Headers.contentTypeHeader: ['image/png'],
-                },
-              )
-            : _problem(404, 'No logo');
+      if (tenant == mockTenantBId) {
+        // The second academy only has a PARENT membership and no data.
+        if (path == '/api/core/tenant') return _json(_profile(tenant!));
+        return path == '/api/core/tenant/logo'
+            ? _problem(404, 'No logo')
+            : _problem(403, 'Forbidden');
+      }
+      Uint8List? bytes;
+      if (requestStream != null) {
+        final chunks = <int>[];
+        await for (final c in requestStream) {
+          chunks.addAll(c);
+        }
+        bytes = Uint8List.fromList(chunks);
+      }
+      final data = options.data;
+      final body = data is String && data.isNotEmpty ? jsonDecode(data) : data;
+      final result = _core.handle(
+        tenantId: tenant!,
+        method: method,
+        path: path,
+        query: options.queryParameters,
+        body: body,
+        bytes: bytes,
+      );
+      if (result != null) {
+        if (result.status == 304) {
+          return ResponseBody.fromString('', 304);
+        }
+        final isError = result.status >= 400;
+        return ResponseBody.fromBytes(
+          MockCoreApi.encode(result),
+          result.status,
+          headers: {
+            Headers.contentTypeHeader: [
+              isError ? 'application/problem+json' : result.contentType,
+            ],
+            for (final e in result.headers.entries) e.key: [e.value],
+          },
+        );
       }
     }
     return _problem(404, 'Not found');
@@ -82,10 +124,7 @@ class MockApiAdapter implements HttpClientAdapter {
     'locale': _locale,
     'superAdmin': false,
     'memberships': [
-      _membership(mockTenantAId, 'demo', 'Academia Demo', true, [
-        'ADMIN',
-        'COACH',
-      ]),
+      _membership(mockTenantAId, 'demo', 'Academia Demo', true, _roles),
       _membership(mockTenantBId, 'norte', 'Club Norte', false, ['PARENT']),
     ],
   };
@@ -104,9 +143,14 @@ class MockApiAdapter implements HttpClientAdapter {
       'status': 'ACTIVE',
       'hasLogo': hasLogo,
     },
-    'personId': '00000000-0000-4000-8000-0000000000a1',
+    'personId': 'a1',
     'roles': roles,
-    'authz': {'staffTeamIds': <String>[], 'linkedPlayerIds': <String>[]},
+    'authz': {
+      'staffTeamIds': roles.contains('COACH') || roles.contains('ASSISTANT_COACH')
+          ? <String>[MockCoreApi.ownTeamId]
+          : <String>[],
+      'linkedPlayerIds': <String>[],
+    },
   };
 
   Map<String, Object?> _profile(String id) => {

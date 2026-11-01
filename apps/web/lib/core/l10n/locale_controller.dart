@@ -30,7 +30,10 @@ final localePreferenceProvider = NotifierProvider<LocalePreference, String?>(
 /// Explicit choice, else the academy's `defaultLocale`, else Spanish.
 final effectiveLocaleProvider = Provider<Locale>((ref) {
   final chosen = ref.watch(localePreferenceProvider);
-  final tenantDefault = ref.watch(tenantProfileProvider).value?.defaultLocaleCode;
+  final tenantDefault = ref
+      .watch(tenantProfileProvider)
+      .value
+      ?.defaultLocaleCode;
   final code = chosen ?? tenantDefault;
   return Locale(supportedLanguageCodes.contains(code) ? code! : 'es');
 });

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/http/dio_provider.dart';
 import '../../../core/session/session_providers.dart';
+import '../../admin/application/logo_revision.dart';
 import '../data/tenant_repository.dart';
 import '../domain/tenant_profile.dart';
 
@@ -23,8 +24,12 @@ final tenantProfileProvider = FutureProvider<TenantProfile?>((ref) async {
 final tenantLogoProvider = FutureProvider<Uint8List?>((ref) async {
   final tenantId = ref.watch(activeTenantIdProvider);
   if (tenantId == null) return null;
+  // After the admin changed the logo (revision > 0) bypass any HTTP cache.
+  final revalidate = ref.watch(logoRevisionProvider) > 0;
   try {
-    return await ref.watch(tenantRepositoryProvider).logo(tenantId);
+    return await ref
+        .watch(tenantRepositoryProvider)
+        .logo(tenantId, revalidate: revalidate);
   } on Object {
     return null;
   }
