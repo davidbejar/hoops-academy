@@ -73,10 +73,6 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-scheduler</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.github.ben-manes.caffeine</groupId>
-      <artifactId>caffeine</artifactId>
-    </dependency>
 
     <!-- ===== test ===== -->
     <dependency>

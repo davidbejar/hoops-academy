@@ -48,6 +48,10 @@ Use `com.hoopsacademy.common.client`: `CoreRosterClient` (team roster, players b
 `hoops.core.cache-ttl`, base URL `hoops.core.url`, 2 s timeouts) behind the service's own `RosterPort` adapter.
 `RosterAuthzResolver` is common's `@DefaultBean` tenant-filter resolver. The caller's `AuthzContext` carries
 `timezone` and `playerTeamIds` (teams of own/linked players) — use them instead of extra core calls.
+Readiness: common's `CoreReachabilityCheck` adds an always-UP `core-service` check (`data.core = reachable|unreachable`)
+to every service that depends on common; a service that must not probe core sets
+`hoops.core.reachability-check.enabled=false` (build-time, as core does). Test lock contention by releasing the other
+connection's advisory lock explicitly (`pg_advisory_unlock`), never by closing the connection.
 
 ## Scheduled jobs
 Wrap multi-tenant jobs in `tenantScope.runExclusive(LOCK, ...)` so only one replica runs them; `@Scheduled` methods

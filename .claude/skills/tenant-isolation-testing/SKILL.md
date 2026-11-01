@@ -43,7 +43,9 @@ If a table needs special fixtures, override `fixtureOverrides()` in the service'
 Jobs that iterate tenants run under `tenantScope.runExclusive("<svc>.<job>", work)` (Postgres
 `pg_try_advisory_xact_lock`; another replica skips). The work runs outside the lock transaction, so each tenant still
 gets its own `runAs` transaction. Test it by holding `pg_advisory_lock(TenantScope.advisoryKey(LOCK))` on a second
-app-role connection: the job must skip, and run once the lock is released.
+app-role connection: the job must skip, and run once the lock is released. Release it with `pg_advisory_unlock(...)` on
+that connection before asserting the second run; closing the connection frees the lock only when the backend has exited,
+which can lag (this made three job tests flaky until WP20).
 
 ## Test connection rules
 - Tests connect as `<svc>_app` (non-owner). The Testcontainers resource in common-quarkus starts Postgres with

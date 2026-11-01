@@ -69,10 +69,6 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-narayana-jta</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.github.ben-manes.caffeine</groupId>
-      <artifactId>caffeine</artifactId>
-    </dependency>
     <!-- events/match-event.schema.json is read from the contracts jar at runtime (per-event validation) -->
     <dependency>
       <groupId>com.hoopsacademy</groupId>

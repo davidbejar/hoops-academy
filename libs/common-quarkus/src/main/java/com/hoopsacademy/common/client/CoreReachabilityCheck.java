@@ -1,5 +1,6 @@
-package com.hoopsacademy.athlete.adapters.out.client;
+package com.hoopsacademy.common.client;
 
+import io.quarkus.arc.properties.IfBuildProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -19,12 +20,16 @@ import org.eclipse.microprofile.health.Readiness;
  * request that needs core answers a 503 Problem on its own, ADR-0008). The probe hits core's unauthenticated
  * {@code /q/health/live} with a short timeout and the result is cached ({@code hoops.core.health-cache-ttl}), so
  * frequent kubelet probes neither wait on nor hammer core.
+ *
+ * <p>Shared by game-service and athlete-service. core-service itself switches it off at build time with
+ * {@code hoops.core.reachability-check.enabled=false} (it would only probe itself).
  */
 @Readiness
 @ApplicationScoped
+@IfBuildProperty(name = "hoops.core.reachability-check.enabled", stringValue = "true", enableIfMissing = true)
 public class CoreReachabilityCheck implements HealthCheck {
 
-    static final String NAME = "core-service";
+    public static final String NAME = "core-service";
 
     private final URI liveness;
     private final Duration timeout;

@@ -60,6 +60,12 @@
       <artifactId>caffeine</artifactId>
     </dependency>
 
+    <!-- readiness: CoreReachabilityCheck (game, athlete); every service also gets /q/health/live|ready -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-health</artifactId>
+    </dependency>
+
     <!-- observability for every service (ADR-0017): Prometheus /q/metrics, OpenTelemetry traces (SDK disabled by
          default, see microprofile-config.properties), JSON console logs in the prod profile -->
     <dependency>

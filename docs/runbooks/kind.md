@@ -78,9 +78,11 @@ curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8090/internal/x   # 40
 ## Charts
 `deploy/helm/hoops` (umbrella) → `databases`, `keycloak`, `hoops-service` ×3 (aliases `core`, `game`, `athlete`),
 `web`. Values: `values.yaml` (defaults), `values-kind.yaml`, optional git-ignored `values-local.yaml`.
-- The realm JSON and the DB init SQL are **symlinked** into the charts (`charts/keycloak/files`,
-  `charts/databases/files`) — single source of truth with compose; Helm follows the links (logs an INFO line).
-  The realm's `http://localhost:8080` redirect URIs/web origins are rewritten to `keycloak.publicUrl` at render time.
+- The realm JSON and the DB init SQL are **copied** into the charts (`charts/keycloak/files`,
+  `charts/databases/files`) by `scripts/sync-chart-files.sh` (WP17 replaced the WP16 symlinks so `helm package`
+  works). `deploy/kind/up.sh` runs the script; `deploy/helm/tests/run.sh` fails on drift. The Tiltfile does **not**
+  call it yet: run `scripts/sync-chart-files.sh` before `just tilt` after editing `infra/keycloak/realm-academy.json`
+  or `infra/db/init/01_roles_schemas.sql`. The realm's `http://localhost:8080` redirect URIs/web origins are rewritten to `keycloak.publicUrl` at render time.
 - Tests: `deploy/helm/tests/run.sh` (lint, golden snapshots in `tests/snapshots`, kubeconform incl. the CNPG CRD,
   security assertions, gitleaks on the rendered output). After an intended change: `run.sh --update` and review
   the snapshot diff (it also changes when the realm JSON or init SQL change — on purpose).
@@ -99,8 +101,11 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
   after 17 s with kindest/node v1.37.0. Rootful is only needed if your machine lacks the delegated controllers.
 - `ingress-nginx`/CNPG rollout timeouts on the very first `kind-up`: images are pulled inside the node; on a slow link
   that takes minutes. `up.sh` waits up to 15 min and is idempotent — just re-run it.
-- game/athlete use TCP probes and their `/api/<svc>/q/health/*` ingress answers 404 until those services add
-  `quarkus-smallrye-health` (core-service has it). Then drop `probes: {mode: tcp}` in `values.yaml`.
+- All three services use HTTP probes on `/q/health/live|ready|started` (WP17 added `quarkus-smallrye-health` to
+  game/athlete and removed the TCP overrides). game/athlete readiness reports `core-service: reachable|unreachable` as
+  data only; a core outage does not take them out of rotation.
+- Tokens without `sub` (realm clients lacking the Keycloak 25+ `basic` scope) are rejected with 401. The chart renders
+  the current realm; an existing `keycloak-db` keeps the old realm until it is recreated (see below).
 - CNPG init SQL is passed via `postInitApplicationSQLRefs` (ConfigMap), never inline `postInitApplicationSQL`: inline
   queries reach the initdb Pod as container args, where Kubernetes `$(VAR)` expansion turns plpgsql `$$` into `$`.
 - Tilt log scrubbing replaces every Secret value in logs, so the plain username `keycloak` shows as
@@ -110,9 +115,15 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
 - Keycloak not Ready for ~2 min after start is normal (`start` re-augments; readiness `initialDelaySeconds: 60`).
 - Realm changes are not applied to an existing Keycloak DB (import = IGNORE_EXISTING): delete the
   `keycloak-db` Cluster (`kubectl -n hoops delete cluster keycloak-db`) and let Helm/Tilt recreate it.
-- DB init SQL runs once (`postInitApplicationSQL`); to re-run, delete the `hoops-db` Cluster (data loss).
+- DB init SQL runs once (`postInitApplicationSQLRefs`); to re-run, delete the `hoops-db` Cluster (data loss).
 - ingress-nginx: Kubernetes SIG Network announced its retirement (best-effort maintenance only). It is pinned and fine
   for local use; the production ingress (a Gateway API implementation) is an open decision.
+
+## Verification status
+WP16: game + athlete + web deployed with `tilt ci`, `smoke.sh game athlete` passed. WP18: core, game and athlete
+deployed with `up.sh --deploy` + Helm, `smoke.sh core game athlete` passed (superadmin `/api/core/me`, `/platform/tenants`).
+The WP17 ingress rules (rate limits, admin deny) were checked by rendering and chart assertions only, and the e2e
+journey (`docs/runbooks/e2e.md`) has not been run green on kind.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.

@@ -27,8 +27,9 @@ source scripts/env.sh
 | `CORE_ELIGIBILITY_CRON` | `0 15 * * * ?` (hourly) | eligibility sweep over ACTIVE tenants (`off` disables it) |
 
 The Keycloak Admin API calls need the `core-service` service account to hold realm-management `manage-users`
-(and `view-users`); the realm export does not grant it yet (see WP3 handover). OpenAPI: `/q/openapi`,
-health: `/q/health`, metrics: `/q/metrics`.
+(and `view-users`); `infra/keycloak/realm-academy.json` grants both (re-import the realm on an old volume). OpenAPI:
+`/q/openapi`, health: `/q/health` (database only: the shared `CoreReachabilityCheck` of common-quarkus is switched off
+here with `hoops.core.reachability-check.enabled=false`), metrics: `/q/metrics`.
 
 ## Layout (hexagonal, enforced by `ArchitectureTest`)
 

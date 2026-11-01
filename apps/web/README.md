@@ -1,17 +1,19 @@
 # Hoops Academy web app (Flutter Web PWA)
 
 Mobile-first (360 px) Flutter Web shell: Keycloak login (OIDC, PKCE), tenant switcher, role-aware navigation,
-es / en / id, offline banner, installable PWA. Decisions: `docs/adr/0004-flutter-web-pwa.md`,
-`docs/adr/0005-keycloak-authentication-only.md`. Feature screens arrive with WP12-WP14; the shell, guard,
-HTTP stack and generated clients are real.
+es / en / id, offline banner, installable PWA, plus the feature screens of WP12-WP14 (admin & roster, live match
+with offline queue, training, health, profile, super-admin console). Decisions: `docs/adr/0004-flutter-web-pwa.md`,
+`docs/adr/0005-keycloak-authentication-only.md`, `docs/adr/0018-web-offline-shell-service-worker.md`,
+`docs/adr/0019-web-session-and-sign-out.md`.
 
 Requirements: Flutter 3.47+ (Dart 3.13), Chrome. No Node.
 
 ## Run
 
 ### Demo mode (no backend, no Keycloak)
-`core-service` does not exist yet, so `/api/core/me` and the tenant profile can be served from in-memory
-fixtures. "Sign in" works instantly and you get two academies (ADMIN+COACH with a logo, and PARENT):
+For UI work without the backend, `/api/core/**` and `/api/game/**` can be served from in-memory fixtures (the
+real services exist; see "Against the local stack"). "Sign in" works instantly and you get two academies
+(ADMIN+COACH with a logo, and PARENT):
 
 ```bash
 cd apps/web
@@ -40,20 +42,14 @@ Defaults: issuer `http://localhost:8080/auth/realms/academy`, client `web`, scop
 Seeded users (password = `DEV_USER_PASSWORD` in the repo `.env`): `superadmin`, `admin1`, `coach1`,
 `assistant1`, `parent1`, `player1`.
 
-**CORS / redirect URI.** The realm's client `web` only allows redirect URI and web origin
-`http://localhost:8080` (`infra/keycloak/realm-academy.json`). Therefore:
+**Origins / CORS.** Since WP17 the realm's client `web` allows `http://localhost:8080/*` and
+`http://localhost:5173/*` as redirect and post-logout URIs and both as web origins, and the services answer CORS
+for `http://localhost:5173` (`hoops.cors.origins`, env `HOOPS_CORS_ORIGINS`; no credentials). The realm is imported
+only on an empty volume: after pulling the WP17 realm run `just down && podman volume rm hoops_pgdata && just up &&
+just seed-users`. Serving the build through nginx on :8080 avoids cross-origin calls altogether.
 
-- the real login flow works when the build is **served from `http://localhost:8080`** (nginx), or
-- when serving on `:5173`, register `http://localhost:5173/*` (redirect URI, post-logout URI) and
-  `http://localhost:5173` (web origin) on the client. For a throw-away local setup, in the Keycloak admin
-  console (`http://localhost:8080/auth/admin/`, realm `academy`, client `web`) add them; the permanent fix is a
-  WP1 follow-up (add the dev origin to the realm JSON; realm imports only run on an empty volume).
-
-Calls to `/api/*` from `:5173` to nginx are cross-origin too, so they also need CORS on the API/nginx side
-(another lane); serving the build through nginx avoids all of it.
-
-Until `core-service` (WP3) is up, `/api/core/me` returns 502 from nginx and the shell shows a localized
-error with a retry button after login; use demo mode to see the rest.
+The three services must be running for the real flow (`e2e/bin/services-up.sh` or `quarkus:dev` per service);
+otherwise nginx answers 502 and the shell shows a localized error with a retry button.
 
 The URL strategy is the default hash strategy (`/#/matches`), so the static host needs no rewrite rules.
 OIDC uses `navigationMode: samePage` (full-page redirect, no popup) and `web/redirect.html` from the `oidc`
@@ -62,7 +58,12 @@ package (re-copy it when upgrading the package).
 ### Release build
 ```bash
 tool/build_web.sh [--dart-define=HOOPS_API_BASE=...]   # flutter build web --release + stamps web/sw.js (see below)
+HOOPS_ALLOW_HTTP_ISSUER=1 tool/build_web.sh             # local stack only: allows the http://localhost issuer
 ```
+The script refuses `HOOPS_MOCK_API=true` and a non-https `HOOPS_OIDC_ISSUER` (finding F-20) unless
+`HOOPS_ALLOW_HTTP_ISSUER=1`, and builds with `--no-web-resources-cdn` (CanvasKit, Roboto fallback font and icons are
+bundled; no request to gstatic, finding F-09). The OIDC scopes are `openid profile email` (no `offline_access`,
+finding F-08); sign-out forgets the tokens locally first and wipes the offline match database (ADR-0019).
 Output in `build/web` (our caching `sw.js`, manifest, deferred `main.dart.js_N.part.js` per feature module).
 Standard CanvasKit renderer; no COOP/COEP, no wasm. `flutter build web` alone also works but then `build/web/sw.js`
 still contains its `__BUILD_ID__` placeholder and would not cache anything useful: always release with the script.
@@ -73,7 +74,7 @@ installed PWA without network failed. We ship our own worker:
 
 | File | Role |
 |---|---|
-| `web/sw.js` | hand-written worker: precache of the app shell, cache-first, network-only for `/api/**` and `/auth/**` |
+| `web/sw.js` | hand-written worker: precache of the app shell, cache-first, network-only for `/api/**`, `/auth/**`, `/platform/**` and `/internal/**` (`NETWORK_ONLY_PREFIXES`, finding F-19) |
 | `web/flutter_bootstrap.js` | custom bootstrap **without** `serviceWorkerSettings`, so Flutter never registers its own worker (two workers cannot share a scope; they would replace each other on every load) |
 | `web/index.html` | registers `sw.js` on `load` |
 | `tool/sw_manifest.dart` | after the build, replaces `__BUILD_ID__` (hash of every shipped file) and `/*__PRECACHE_MANIFEST__*/[]` (the file list) in `build/web/sw.js`; unit tested in `test/tool/sw_manifest_test.dart` |
@@ -84,10 +85,11 @@ Precached: `index.html`, `main.dart.js` + every `main.dart.js_N.part.js`, `flutt
 (not `skwasm*`, `wimp*`, `webparagraph/`, `*.map`, `*.symbols`; a file that is not listed is still cached the first
 time it is fetched). About 22 MB, downloaded once per build.
 Rules: navigations inside the scope get the cached `index.html` (the app uses hash URLs); `redirect.html` is matched
-ignoring its OIDC `?code=...` query; `/api/**`, `/auth/**`, non-GET and cross-origin requests are never touched.
+ignoring its OIDC `?code=...` query; `/api/**`, `/auth/**`, `/platform/**`, `/internal/**`, non-GET and cross-origin
+requests are never touched.
 A new build installs next to the old one and activates when all tabs of the old build are closed (so lazily loaded
-parts always match the running `main.dart.js`); the page can force it with
-`registration.waiting.postMessage({type: 'SKIP_WAITING'})`. The `flutter_service_worker.js` that Flutter still
+parts always match the running `main.dart.js`); the app shows an "update available, reload" banner
+(`lib/core/pwa/update_channel*.dart`, WP14b) that posts `{type: 'SKIP_WAITING'}` and reloads once. The `flutter_service_worker.js` that Flutter still
 emits is excluded from the precache and never registered; a stale page that registered it in the past replaces
 our worker once and our `register('sw.js')` takes the scope back on the next load.
 
@@ -219,7 +221,7 @@ refresh-token grant, and prints only non-secret claims.
 
 **Manual browser check (real flow):** serve the build on `http://localhost:8080` (or register 5173, see CORS note),
 open it, press *Sign in*, log in as `coach1`, expect the redirect back to the app (`redirect.html` flashes), the
-tenant switcher or home (needs WP3 for `/me`; otherwise the error screen with *Retry*), reload the page and
+tenant switcher or home (needs the services running for `/me`; otherwise the error screen with *Retry*), reload the page and
 stay signed in, *Sign out* returns to the login screen.
 
 ### PWA installability (manual Lighthouse check)

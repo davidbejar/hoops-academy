@@ -1,5 +1,35 @@
 # Hoops Academy — Multitenant Basketball Academy Platform: Build Plan
 
+> **Status of this document (added in the WP20 review, 2026-11-02).** This is the *original* build plan, kept as written
+> (history is not rewritten below this box). What was actually built, statement by statement against `docs/SPEC.md` and
+> §2 of this plan, is in [`conformance.md`](conformance.md); decisions taken during implementation are ADR-0011 to
+> ADR-0021 in [`adr/`](adr/); work-package handovers are in [`wp/`](wp/).
+
+### Implementation notes / deviations from this plan
+- **Contracts**: OpenAPI 3.0.3 with absolute paths and `servers: [{url: /}]` (not `servers: /api/<svc>`); contracts are at
+  2.x (core 2.1.0) after WP2c/WP17 (ADR-0016). Generated Dart clients live in `apps/web/packages/<svc>`, not `lib/api`.
+- **Helm**: realm JSON and init SQL are *copies* in the charts kept in sync by `scripts/sync-chart-files.sh` (WP17), not
+  symlinks. kind uses ports 8090/8453 (compose owns 8080). Keycloak runs `start` on kind, `start-dev` on compose.
+- **Rollover** follows the contract: the target season must exist and be empty; `clonePlayers` defaults to true
+  (ADR-0015). Under `BIRTH_YEAR` a player becomes `ORPHAN` only when no valid assignment remains in a season that has not
+  ended, so after a rollover the status flips when the old season ends; the rollover report lists the orphans at once.
+- **Player status** has `REJECTED` in addition to the four statuses of §2 (ADR-0016, ADR-0020).
+- **Event ingest** accepts events for SCHEDULED, LIVE and FINISHED matches; only CANCELLED rejects (ADR-0014 §3). The
+  reason `MATCH_NOT_STARTED` exists in the contract but is unused.
+- **Training templates / norms** use an `owner_tenant_id` column (NULL = global) instead of `tenant_id NULL` (WP9/WP10).
+- **Health data** is team-scoped for staff; training data is readable by all staff (ADR-0021).
+- **PWA**: `--pwa-strategy=offline-first` no longer caches anything in Flutter 3.47; an own `sw.js` does (ADR-0018). The web
+  client does not request `offline_access` (ADR-0019).
+- **Hibernate `@TenantId`** is a `String` over a `uuid` column (`stringtype=unspecified`, ADR-0011); single-row tenant
+  tables use the tenant id as `@Id`.
+- **Season non-overlap** is a trigger with an advisory lock, not an exclusion constraint (`btree_gist` needs CREATE on the
+  database, which the migrator does not have; ADR-0015).
+- **Not built**: WP19 (outbox publisher + Redpanda + replicas; the `core.outbox` table is written but never published), the
+  billing module (extension points only), the purge job for withdrawn tenants, push notifications, native images, Pact.
+- **Verification gaps**: e2e journey green on compose (20/20, WP18b) but not re-run on kind (only the smoke script);
+  `flutter drive`, Lighthouse and the airplane-mode reload never ran (no chromedriver); CI workflows never ran; no PIT
+  (mutation testing) run is recorded; OWASP dependency-check needs an NVD key (CI only).
+
 ## Context
 
 A greenfield application for basketball academies. Each academy (tenant) tracks its players' progress

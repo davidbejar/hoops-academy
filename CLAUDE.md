@@ -1,7 +1,8 @@
 # Hoops Academy — agent guide
 
 Multitenant platform for basketball academies: roster & eligibility, live match statistics (offline-first),
-training/attendance, athlete health & fitness. Read this file first; the full plan lives in `docs/PLAN.md`.
+training/attendance, athlete health & fitness. Read this file first; the original plan lives in `docs/PLAN.md` (see its
+implementation notes), what was built vs the spec in `docs/conformance.md`, open items in `docs/wp/FOLLOW-UPS.md`.
 
 ## Stack (fixed decisions — see docs/adr)
 - Java 21, Quarkus 3.x, Maven multi-module, hexagonal layering per service. Three services: `core-service`,

@@ -74,6 +74,13 @@ class NightlyEligibilityJobTest {
 
             job.run();
             assertThat(academy.openCases()).isZero();
+
+            // release explicitly: closing the connection frees a session lock only when the backend has exited,
+            // which can lag behind close() and made the next run skip as well (flaky in the full suite)
+            try (java.sql.PreparedStatement unlock = otherReplica.prepareStatement("select pg_advisory_unlock(?)")) {
+                unlock.setLong(1, com.hoopsacademy.common.tenancy.TenantScope.advisoryKey(NightlyEligibilityJob.LOCK));
+                unlock.execute();
+            }
         }
 
         job.run();

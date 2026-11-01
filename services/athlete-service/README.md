@@ -27,7 +27,7 @@ entities + `V2__...sql`) and reuses `TrainingAccess`, `RosterPort`, `CallerActor
 
 ## Operations (WP17)
 - `/q/health/live`, `/q/health/ready` (datasource check + `core-service` indicator), `/q/health/started`
-  (`quarkus-smallrye-health`). The core indicator (`adapters.out.client.CoreReachabilityCheck`) is always UP and only
+  (`quarkus-smallrye-health`). The core indicator (`com.hoopsacademy.common.client.CoreReachabilityCheck`, shared from common-quarkus) is always UP and only
   reports `data.core = reachable|unreachable` from core's `/q/health/live` (timeout `hoops.core.health-timeout`, 1 s;
   cached `hoops.core.health-cache-ttl`, 10 s): a core outage must not take this service out of rotation, requests
   answer 503 Problems on their own. Helm probes use the http paths.

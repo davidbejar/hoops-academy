@@ -43,12 +43,11 @@ worker is a small separate item.
 - **F-01 event-feed visibility.** `GET /api/game/matches/{id}/events` returns all players' stat events to PARENT and PLAYER
   members, while the box score hides them. Either filter the feed to own or linked players plus team events, or document it
   as intended and align `domain/authz-matrix.md`. Needs a product decision and a contract note.
-- **F-03 web sign-out offline, F-07 offline DB not wiped, F-08 tokens in localStorage.** Forget the user locally before
-  end-session, wipe the Drift database on logout or subject change, scope cached `roster`/`matchJson`/`ownEvents` by tenant and
-  person, drop `offline_access`, enable refresh-token rotation in the realm.
-- **F-09/F-10 web supply chain.** `flutter build web --no-web-resources-cdn` with bundled fonts, then remove gstatic from both
-  CSPs; pin the sha256 of `sqlite3.wasm`. F-19/F-20: derive service-worker network-only prefixes from config; fail release
-  builds that contain the mock API or an http issuer.
+- **F-07/F-08 residuals.** WP14b fixed sign-out (F-03: local forget first, Drift wipe, no `offline_access`; ADR-0019). Still
+  open: scope cached `roster`/`matchJson`/`ownEvents` by tenant and person and wipe on a subject change; enable
+  refresh-token rotation in the realm.
+- **F-09/F-10/F-19/F-20** were fixed in WP14b (no CDN, pinned `sqlite3.wasm`, network-only prefixes incl. `/platform`,
+  release-build guards; ADR-0018). Re-check the service-worker prefixes against the production ingress.
 - **F-14 token audience.** Audience mapper per service and `quarkus.oidc.token.audience`.
 - **Audit read API.** `core.audit_event` is written but has no endpoint: add ADMIN `GET /api/core/audit-events` (and a
   super-admin view) in the contract, plus a retention job running as `core_migrator`.

@@ -106,6 +106,12 @@ class NightlyMaterialisationTest {
             lock.execute();
 
             assertThat(nightlyJob.run()).isFalse();
+
+            // release explicitly: close() frees a session lock only once the backend has exited (can lag)
+            try (java.sql.PreparedStatement unlock = otherReplica.prepareStatement("select pg_advisory_unlock(?)")) {
+                unlock.setLong(1, TenantScope.advisoryKey(com.hoopsacademy.athlete.adapters.in.job.NightlyMaterialisationJob.LOCK));
+                unlock.execute();
+            }
         }
         assertThat(nightlyJob.run()).isTrue();
     }

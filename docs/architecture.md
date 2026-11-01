@@ -141,6 +141,10 @@ Reasons: `CATEGORY_TOO_LOW`, `PLAY_UP_LIMIT_EXCEEDED`, `GENDER_POLICY`, `MISSING
 | Eligibility | sticky invalidation, cases, rollover | [0015](adr/0015-roster-eligibility-engine-and-rollover.md) |
 | Contracts 2.0 | shared core client, job lock | [0016](adr/0016-wp2c-consolidation-contracts-2-shared-core-client-job-lock.md) |
 | Audit and hardening | append-only audit trail, headers, limits | [0017](adr/0017-audit-trail-observability-and-http-hardening.md) |
+| Web offline shell | own caching service worker, no CDN, update prompt | [0018](adr/0018-web-offline-shell-service-worker.md) |
+| Web session | no `offline_access`, local-first sign-out, offline DB wipe | [0019](adr/0019-web-session-and-sign-out.md) |
+| Approvals | pending player rows, REJECTED, ORPHAN on creation, player login | [0020](adr/0020-approval-workflow-and-player-lifecycle.md) |
+| Authz refinements | assistant rights, match/feed visibility, team-scoped health data | [0021](adr/0021-authorization-refinements-beyond-the-matrix.md) |
 
 Not done as planned: WP19 (outbox, Redpanda, replica tables) has a brief only; billing exists as seams
 (`billing.plan`, `billing.tenant_subscription`, a no-op `EntitlementService`). See `roadmap.md`.
@@ -158,23 +162,25 @@ player names at roster creation so offline sync never depends on core. The exact
 service's Flyway migrations.
 
 ## 8. Testing strategy and current counts
-Counts are from the WP17 verification run (`./mvnw -q clean verify` from the root, exit 0) and the WP14 Flutter run; they
-change with every commit. I did not re-run them for this page.
+Counts are from the WP20 review run on 2026-11-02 (`./mvnw -q clean verify` from the root, exit 0, every coverage gate
+met; `flutter test` in `apps/web`; the e2e journey on the compose stack). They change with every commit.
 
 | Layer | Kinds of test | Count |
 |---|---|---|
-| `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON | 164 |
+| `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON | 168 |
 | `libs/contracts` | OpenAPI convention tests, JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation | 99 |
-| `services/core-service` | domain unit and jqwik property tests (eligibility), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses validated against `core.yaml`, scheduler tests, Keycloak Testcontainers (opt-in profile) | 427 |
+| `services/core-service` | domain unit and jqwik property tests (eligibility), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses validated against `core.yaml`, scheduler tests, Keycloak Testcontainers (opt-in profile) | 429 |
 | `services/game-service` | domain/projection tests with shared vectors, ingest API tests, WireMock peers, RLS suites, contract validation | 193 |
 | `services/athlete-service` | domain, norm seed and band resolver tests, role matrix, RLS suites (incl. nullable-tenant tables), contract validation | 578 |
-| `apps/web` | `flutter test`: unit, provider, widget per role and state, goldens (360 px), projector vectors, sync worker, l10n key parity | 447 |
-| `e2e` | black-box journey through the gateway with real Keycloak logins: 20 ordered steps, two tenants, every response validated against the OpenAPI | 20 steps |
+| `apps/web` | `flutter test`: unit, provider, widget per role and state, goldens (360 px), projector vectors, sync worker, sign-out, service worker / CSP / build guards, l10n key parity | 477 |
+| `e2e` | black-box journey through the gateway with real Keycloak logins: 20 ordered steps, two tenants, every response validated against the OpenAPI | 20 steps, green on compose |
 | Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform, policy assertions, gitleaks | script |
-JVM total at WP17: 1,461 tests, line coverage 95 to 99 % per module (gates: 80 % overall, 90 % in `domain`). Status of the
-e2e journey: per `wp/WP18-e2e.md` it was complete up to step 2 when that handover was written (a realm defect blocked real
-logins; fixed afterwards by WP17's `basic` scope); a full green run is not recorded in the documents I read. Browser-level
-checks (`flutter drive`, Lighthouse, service-worker offline reload) have never run because chromedriver is missing.
+JVM total: **1,467 tests** (WP17: 1,461; WP20 added `CoreReachabilityCheckTest` 4 and `CoreHealthEndpointsTest` 2), line
+coverage common 95.0 %, core 98.6 %, game 98.5 %, athlete 97.2 % (gates: 80 % overall, 90 % in `domain`). Flutter: 477
+tests, analyze clean. e2e: **20/20 green on compose** (WP18b, three consecutive runs; re-run green in the WP20 review,
+about 70 s); never run green on kind (only `deploy/kind/smoke.sh core game athlete`). Browser-level checks
+(`flutter drive`, Lighthouse, service-worker offline reload) have never run because chromedriver is missing; the CI
+workflows have never run. Statement-by-statement evidence: [`conformance.md`](conformance.md).
 
 ## 9. Security posture
 - Authentication: Keycloak, PKCE for the web client, password policy (12+ characters), brute-force protection. Tokens must
@@ -186,6 +192,7 @@ checks (`flutter drive`, Lighthouse, service-worker offline reload) have never r
 - Data: non-owner DB roles without `BYPASSRLS`; append-only audit trail ([ADR-0017](adr/0017-audit-trail-observability-and-http-hardening.md)); no PII in audit metadata; Problem+JSON without stack traces.
 - Supply chain: gitleaks (pre-commit and CI), Trivy (filesystem and images), dependency-check (CI, needs an NVD key), non-root
   images.
-- Open findings: F-01 event feed visibility, F-03/F-07/F-08 web storage and sign-out, F-09/F-10 web supply chain, F-11, F-14.
+- Open findings (status 2026-11-02): F-01 event feed visibility, F-11 invite of an existing account, F-14 token audience;
+  partly fixed F-07 (offline DB scoping) and F-08 (refresh-token rotation). F-03, F-09, F-10, F-19, F-20 were fixed in WP14b.
 Documents: [`security/review-2026-11.md`](security/review-2026-11.md) (21 findings: 0 critical, 0 high, 5 medium),
 [`security/threat-model.md`](security/threat-model.md), [`security/asvs-checklist.md`](security/asvs-checklist.md).

@@ -69,7 +69,7 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 |---|---|
 | User guides (es / en / id) | [`docs/guides/`](docs/guides): `admin`, `coach`, `parent`, `player`, `super-admin` as `<role>.<lang>.md` |
 | Architecture and diagrams | [`docs/architecture.md`](docs/architecture.md) |
-| Plan and original requirements | [`docs/PLAN.md`](docs/PLAN.md), [`docs/SPEC.md`](docs/SPEC.md) |
+| Plan, original requirements, conformance | [`docs/PLAN.md`](docs/PLAN.md), [`docs/SPEC.md`](docs/SPEC.md), [`docs/conformance.md`](docs/conformance.md) |
 | Decisions | [`docs/adr/`](docs/adr) |
 | Domain rules | [`docs/domain/`](docs/domain): authz matrix, glossary, norms |
 | Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [e2e](docs/runbooks/e2e.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
@@ -78,6 +78,9 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Work packages WP0 to WP18 have handovers in `docs/wp/` (the e2e journey was only partly verified when WP18 was written); the optional events/Redpanda package (WP19) and billing
-are not built. Known gaps: the browser-level checks and CI workflows have not been run, and parts of the norms table are
-placeholders marked "reference pending". See the roadmap.
+Work packages WP0 to WP20 have handovers in `docs/wp/`. Backend `./mvnw verify`: 1,467 tests green; `flutter test`: 477
+green; the 20-step e2e journey is green on the compose stack (WP18b, re-run in the WP20 review). The optional
+events/Redpanda package (WP19) and billing are not built. Known gaps: the e2e journey has not been run on kind, the
+browser-level checks and CI workflows have not been run, and most of the norms table is placeholders marked "reference
+pending". What the system does for each spec statement, with evidence: [`docs/conformance.md`](docs/conformance.md);
+open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md).

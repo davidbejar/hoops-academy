@@ -19,8 +19,9 @@ just services-up              # e2e/bin/services-up.sh [--no-build]; logs and pi
 just services-down
 ```
 `services-up.sh` builds the three fast-jars once, then starts them with the secrets of `.env` (never printed) on
-8081/8082/8083 and waits until they answer (core: `/q/health/ready`; game/athlete have no health extension, any HTTP
-answer means Flyway ran and the port is open).
+8081/8082/8083 and polls `/q/health/ready` of each. All three services have `quarkus-smallrye-health` since WP17
+(readiness includes the database; game/athlete add an informational `core-service` check). The script still treats
+any HTTP answer as "up" (its comment predates WP17); use `curl -s localhost:808x/q/health/ready` for the real state.
 
 Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin` is the
 platform super admin), `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` and `CORE_SERVICE_CLIENT_SECRET` in `.env`.
@@ -75,9 +76,15 @@ suite reads the e-mail from MailHog (proof that onboarding sends it) and then se
 through the Keycloak Admin API (master realm `admin-cli`, `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` from `.env`),
 clears the required actions and logs in with the scripted PKCE flow. Do not use this outside local/CI stacks.
 
+## Status (WP18b, 2026-11-02)
+On compose the full journey is green: 20 tests, 0 failures, about 70 s, three consecutive runs on the same stack
+(reproduced by the orchestrator). On kind only `deploy/kind/smoke.sh core game athlete` passed (WP18); the journey on
+kind was blocked by the realm defect at that time and has not been re-run since the fix.
+
 ## Known limits
-- The realm must be the current `infra/keycloak/realm-academy.json` (client `web` with the `basic` scope, so tokens carry
-  `sub`); the suite fails fast if a token has no `sub`. Reset: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
+- The realm must be the current `infra/keycloak/realm-academy.json` (every client has the Keycloak 25+ `basic` scope, so
+  access tokens carry `sub`; fixed in WP17, finding F-21). The suite fails fast if a token has no `sub`, and the services
+  answer 401 for a JWT without `sub`. Compose imports the realm only on an empty volume. Reset: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
 - The Admin API of the master realm must be reachable: set `HOOPS_EXPOSE_KC_ADMIN=true` in `.env` (compose) and restart nginx
   (`just down && just up`); on kind use the port-forward and `E2E_KEYCLOAK_ADMIN_URL`.
 - Contract validation of responses ignores `additionalProperties` errors inside `allOf` schemas (contract flaw, see the

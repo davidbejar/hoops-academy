@@ -56,6 +56,12 @@ class UsageSnapshotJobTest {
 
             job.run();
             assertThat(snapshots(first)).isZero();
+
+            // release explicitly: close() frees a session lock only once the backend has exited (can lag)
+            try (java.sql.PreparedStatement unlock = otherReplica.prepareStatement("select pg_advisory_unlock(?)")) {
+                unlock.setLong(1, com.hoopsacademy.common.tenancy.TenantScope.advisoryKey(UsageSnapshotJob.LOCK));
+                unlock.execute();
+            }
         }
 
         job.run();
