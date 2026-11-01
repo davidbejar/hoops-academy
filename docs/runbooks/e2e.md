@@ -1,0 +1,90 @@
+# Runbook: end-to-end journeys (WP18)
+
+The `e2e/` Maven module drives the whole platform from the outside, through the gateway, with real Keycloak logins:
+two academies, five roles, three services. It is a black box (REST Assured over HTTP, nothing internal on the
+classpath); every API response is validated against `libs/contracts/openapi/<service>.yaml` read from disk
+(`openapi-request-validator-restassured`, response side only).
+
+`./mvnw verify` at the root does **not** run it: the module's tests are skipped unless `-De2e.baseUrl=...` or the
+environment variable `E2E_BASE_URL` is set.
+
+## Run on compose (default)
+```bash
+source scripts/env.sh
+just e2e                      # up, seed-users, build + start the 3 services, run the suite, stop the services
+# or step by step
+just up && just seed-users
+just services-up              # e2e/bin/services-up.sh [--no-build]; logs and pids in e2e/target/services/
+./mvnw -pl e2e test -De2e.baseUrl=http://localhost:8080
+just services-down
+```
+`services-up.sh` builds the three fast-jars once, then starts them with the secrets of `.env` (never printed) on
+8081/8082/8083 and waits until they answer (core: `/q/health/ready`; game/athlete have no health extension, any HTTP
+answer means Flyway ran and the port is open).
+
+Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin` is the
+platform super admin), `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` and `CORE_SERVICE_CLIENT_SECRET` in `.env`.
+Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; the mail step is skipped when MailHog is unreachable),
+`E2E_REDIRECT_URI` (default `<base>/redirect.html`, must match client `web`), `E2E_KEYCLOAK_ADMIN_URL` (default `<base>/auth`).
+
+## Run on kind
+```bash
+source scripts/env.sh
+just kind-up --deploy --from-host        # cluster, ingress, CNPG, secrets, images, helm install (docs/runbooks/kind.md)
+deploy/kind/seed-users.sh
+deploy/kind/smoke.sh core game athlete   # pods, issuer, /internal 403, tokens, seeded superadmin through core
+# the ingress exposes only realm `academy` (the Admin API of the master realm answers 403): port-forward Keycloak and MailHog
+kubectl --context kind-hoops -n hoops port-forward svc/keycloak 18080:8080 &
+kubectl --context kind-hoops -n hoops port-forward svc/mailhog 18025:8025 &
+E2E_KEYCLOAK_ADMIN_URL=http://localhost:18080/auth E2E_MAILHOG_URL=http://localhost:18025 \
+  ./mvnw -pl e2e test -De2e.baseUrl=http://localhost:8090
+just kind-down
+```
+On kind the services run in the cluster (`just kind-up` leaves them restarting until `hoops-db` is up); do not start
+`services-up.sh`. The chart ships a MailHog pod; the mail step is skipped when `E2E_MAILHOG_URL` is unreachable.
+
+## What the journey covers (ordered, `JourneyTest`)
+1. super admin creates a tenant with its first admin; the setup e-mail arrives in MailHog;
+2. the admin logs in (scripted PKCE login of the public client `web`: `KeycloakUserTokens`); season, default
+   categories, team; invites a coach and a parent; the coach is made team staff;
+3. admin adds a player directly (201), the coach requests one (202, PENDING), the coach cannot approve their own
+   request, the admin approves; guardian link; the parent sees only the linked child;
+4. coach creates a match, roster, start; coach and parent enter events (parent: linked player accepted, other player
+   and `PERIOD_START` REJECTED `NOT_AUTHORIZED`); replaying the batch gives only `DUPLICATE` with the same
+   `serverSeq`; box score consistent (team total = sum of player lines, parent sees only the linked line); finish;
+   season stats;
+5. training schedule materialises sessions; parent's planned absence shows as `expectedAbsent`; attendance;
+   plan template copy-on-use (template edit 403), assignment, completion, progress;
+6. injury makes the player unavailable (`availability`), body measurement, physical test result with
+   `expectedBand`/`bandStatus=MATCHED`;
+7. platform usage shows the counters of all three services;
+8. rollover into the next season: the over-age player becomes an orphan (`CATEGORY_TOO_LOW`), the eligibility case
+   is resolved (and cannot be resolved twice);
+9. a second tenant: its admin gets 404 (never 403, never data) for the first tenant's team, player, match, box
+   score, session, injury, also with the first tenant's id in `X-Tenant-Id`, and vice versa;
+10. `/internal/**` answers 403 through the gateway, with and without a service token;
+11. suspending the tenant makes every member get 404 on all services (game/athlete need up to 30 s because of
+    their membership cache), `/me` drops the membership; reactivation restores it.
+
+Steps depend on each other: after the first failure the remaining steps are skipped, so read the first failure.
+All names, slugs and e-mails carry a per-run suffix, so the suite can run repeatedly on the same stack.
+
+## How passwords are set (test-only shortcut)
+Real users set their password through the e-mailed Keycloak "execute actions" link, which needs a browser. The
+suite reads the e-mail from MailHog (proof that onboarding sends it) and then sets a random permanent password
+through the Keycloak Admin API (master realm `admin-cli`, `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` from `.env`),
+clears the required actions and logs in with the scripted PKCE flow. Do not use this outside local/CI stacks.
+
+## Known blockers and options
+- Realm client `web` lacks the `basic` client scope, so user access tokens have no `sub` claim and every real user
+  gets 404 "User is not provisioned" (see docs/wp/WP18-e2e.md, bug 1). The suite fails fast with that message. Fix
+  `infra/keycloak/realm-academy.json` (`"basic"` in `defaultClientScopes` of `web`) and reset the realm, or set
+  `E2E_FIX_REALM=1` to patch the running realm through the Admin API before the run.
+
+## Browser smoke (Flutter)
+`apps/web/tool/web_smoke.sh` (mock mode) / `--real` / `--compile-only`; needs a chromedriver matching Chrome for the
+first two (see the script header).
+
+## CI
+`.github/workflows/e2e.yml`: Podman + podman-compose on `ubuntu-24.04`, throw-away `.env` with random secrets, the
+same scripts as `just e2e`, service logs and surefire reports uploaded on failure. Not executed from a workstation.

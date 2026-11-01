@@ -1,0 +1,68 @@
+name: e2e
+
+# End-to-end journeys (e2e/) against the compose stack on the runner: Postgres, Keycloak, MailHog and nginx run as
+# containers, the three services as fast-jars on the host (same scripts as `just e2e`, docs/runbooks/e2e.md).
+# Podman is used (preinstalled on ubuntu-24.04 runners) because infra/compose/nginx.conf reaches the host through
+# host.containers.internal and infra/keycloak/seed-users.sh uses `podman exec`.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  journeys:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: extractions/setup-just@v2
+      - name: Podman compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman podman-compose
+          podman --version
+      - name: Generate a throw-away .env (random secrets, never committed)
+        run: |
+          cp .env.example .env
+          while IFS= read -r line; do
+            case "$line" in
+              *=change-me-*) key="${line%%=*}"; sed -i "s|^${key}=.*|${key}=$(openssl rand -hex 16)|" .env ;;
+            esac
+          done < .env.example
+          echo "::add-mask::$(grep '^DEV_USER_PASSWORD=' .env | cut -d= -f2-)"
+      - name: Build the services once
+        run: ./mvnw -B -ntp -q -pl services/core-service,services/game-service,services/athlete-service -am package -DskipTests
+      - name: Start stack, seed users, start services
+        run: |
+          just up
+          just seed-users
+          e2e/bin/services-up.sh --no-build
+      - name: Journeys
+        run: ./mvnw -B -ntp -pl e2e test -De2e.baseUrl=http://localhost:8080
+      - name: Service logs on failure
+        if: failure()
+        run: |
+          for s in core game athlete; do echo "::group::$s"; tail -n 200 "e2e/target/services/$s.log" || true; echo "::endgroup::"; done
+          podman ps -a
+          podman logs hoops-keycloak 2>&1 | tail -n 100 || true
+      - name: Stop
+        if: always()
+        run: |
+          e2e/bin/services-down.sh || true
+          just down || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-reports
+          path: |
+            e2e/target/surefire-reports/
+            e2e/target/services/*.log

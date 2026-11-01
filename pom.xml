@@ -17,7 +17,7 @@
     <module>services/core-service</module>
     <module>services/game-service</module>
     <module>services/athlete-service</module>
-    <!-- e2e is added by WP18 -->
+    <module>e2e</module>
   </modules>
 
   <properties>

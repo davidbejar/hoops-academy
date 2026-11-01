@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Smoke test of the kind deployment through the ingress (http://localhost:8090 by default).
 #   deploy/kind/smoke.sh [service...]        default services: core game athlete
+# core is deployed since WP18: with `core` in the list the script also logs the seeded `superadmin` in (PKCE, no browser)
+# and checks GET /api/core/me (200, superAdmin=true) and GET /platform/tenants (200).
 # Checks: pods Ready, OIDC issuer, /internal -> 403, web /, each service's /q/health/ready via the ingress,
 # a client-credentials token from Keycloak, and that each API rejects anonymous calls (401) but accepts the token's
 # signature/issuer (anything but 401). The client secret is read from .env and sent as a form body over stdin.
@@ -56,5 +58,37 @@ for s in "${SERVICES[@]}"; do
   [ "$anon" = 401 ] && [ "$authd" != 401 ] && ok "$p anonymous 401, with token $authd" \
     || bad "$p anonymous $anon, with token $authd"
 done
+
+if [[ " ${SERVICES[*]} " == *" core "* ]]; then
+  echo "== seeded user through core (/api/core/me, /platform)"
+  # Browser-less authorization-code + PKCE login of client `web` (as apps/web/tool/keycloak_login_check.sh).
+  user_token() {  # $1 = username; password = DEV_USER_PASSWORD from .env (never printed)
+    local iss="$BASE/auth/realms/academy" redir="$BASE/redirect.html" jar v c form action loc code
+    jar=$(mktemp); trap 'rm -f "$jar"' RETURN
+    b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+    v=$(openssl rand 48 | b64); c=$(printf '%s' "$v" | openssl dgst -sha256 -binary | b64)
+    form=$(curl -fsS -c "$jar" -b "$jar" -G "$iss/protocol/openid-connect/auth" --data-urlencode client_id=web \
+      --data-urlencode response_type=code --data-urlencode "redirect_uri=$redir" --data-urlencode "scope=openid profile email" \
+      --data-urlencode state=smoke --data-urlencode "code_challenge=$c" --data-urlencode code_challenge_method=S256) || return 1
+    action=$(printf '%s' "$form" | tr '\n' ' ' | sed -n 's/.*id="kc-form-login"[^>]*action="\([^"]*\)".*/\1/p' | sed 's/&amp;/\&/g')
+    [ -n "$action" ] || return 1
+    loc=$(printf 'username=%s&password=%s' "$1" "$DEV_USER_PASSWORD" |
+      curl -sS -o /dev/null -D - -c "$jar" -b "$jar" "$action" --data-binary @- | tr -d '\r' | sed -n 's/^[Ll]ocation: //p')
+    code=$(printf '%s' "$loc" | sed -n 's/.*[?&]code=\([^&#]*\).*/\1/p'); [ -n "$code" ] || return 1
+    curl -fsS "$iss/protocol/openid-connect/token" -d grant_type=authorization_code -d client_id=web \
+      --data-urlencode "code=$code" --data-urlencode "redirect_uri=$redir" --data-urlencode "code_verifier=$v" |
+      sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
+  }
+  utok=$(user_token superadmin || true)
+  if [ -z "$utok" ]; then bad "superadmin PKCE login failed (run deploy/kind/seed-users.sh first?)"
+  else
+    me=$(curl -s -H "Authorization: Bearer $utok" "$BASE/api/core/me")
+    echo "$me" | grep -q '"superAdmin":true' && ok "/api/core/me -> superadmin" || bad "/api/core/me: $me"
+    c=$(code -H "Authorization: Bearer $utok" "$BASE/platform/tenants")
+    [ "$c" = 200 ] && ok "/platform/tenants -> 200" || bad "/platform/tenants -> $c"
+    c=$(code -H "Authorization: Bearer $utok" "$BASE/internal/usage/00000000-0000-0000-0000-000000000000")
+    [ "$c" = 403 ] && ok "/internal with a user token -> 403" || bad "/internal with a user token -> $c"
+  fi
+fi
 
 [ "$fail" = 0 ] && echo "SMOKE PASSED" || { echo "SMOKE FAILED"; exit 1; }

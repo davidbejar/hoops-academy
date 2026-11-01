@@ -54,3 +54,19 @@ kind-down:
 # Inner loop on kind (needs `just kind-up`). ARGS go to Tilt, e.g. `just tilt ci` or `just tilt up -- --from-host`
 tilt *ARGS="up":
     source scripts/env.sh && tilt {{ARGS}}
+
+# --- WP18: end-to-end journeys (docs/runbooks/e2e.md) ---
+
+# Build + start core/game/athlete on 8081-8083 against the running compose stack (needs `just up`, `just seed-users`)
+services-up:
+    e2e/bin/services-up.sh
+
+services-down:
+    e2e/bin/services-down.sh
+
+# Whole journey suite on compose: stack up, seed users, services up, run, services down (stack stays up). BASE defaults to :8080
+e2e BASE="http://localhost:8080":
+    just up
+    just seed-users
+    e2e/bin/services-up.sh
+    source scripts/env.sh && ./mvnw -pl e2e test -De2e.baseUrl={{BASE}}; rc=$?; e2e/bin/services-down.sh; exit $rc

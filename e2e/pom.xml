@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.hoopsacademy</groupId>
+    <artifactId>hoops-academy-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>e2e</artifactId>
+  <name>Hoops Academy :: End-to-end journeys</name>
+  <description>Black-box journey suite against a running stack (compose or kind). Skipped unless e2e.baseUrl / E2E_BASE_URL is set.</description>
+
+  <properties>
+    <!-- default: tests are skipped so `./mvnw verify` at the root needs no stack; the profiles below switch them on -->
+    <e2e.skip>true</e2e.skip>
+    <e2e.baseUrl></e2e.baseUrl>
+    <assertj.version>3.27.7</assertj.version>
+  </properties>
+
+  <dependencies>
+    <!-- versions come from the Quarkus BOM imported by the parent; nothing internal is depended upon -->
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency><!-- REST Assured's Apache HttpClient 4 needs it; the Quarkus BOM replaces it with jcl-over-slf4j elsewhere -->
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.3.5</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.atlassian.oai</groupId>
+      <artifactId>openapi-request-validator-restassured</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>${e2e.skip}</skipTests>
+          <trimStackTrace>false</trimStackTrace>
+          <systemPropertyVariables>
+            <java.util.logging.manager>java.util.logging.LogManager</java.util.logging.manager>
+            <e2e.baseUrl>${e2e.baseUrl}</e2e.baseUrl>
+            <e2e.contractsDir>${project.basedir}/../libs/contracts/openapi</e2e.contractsDir>
+            <e2e.envFile>${project.basedir}/../.env</e2e.envFile>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>e2e-from-property</id>
+      <activation><property><name>e2e.baseUrl</name></property></activation>
+      <properties><e2e.skip>false</e2e.skip></properties>
+    </profile>
+    <profile>
+      <id>e2e-from-env</id>
+      <activation><property><name>env.E2E_BASE_URL</name></property></activation>
+      <properties><e2e.skip>false</e2e.skip></properties>
+    </profile>
+  </profiles>
+</project>
