@@ -34,7 +34,7 @@ just scan                    # gitleaks + dependency-check
 4. **Hexagonal.** `domain` (no framework imports) → `application` (use cases, ports) → `adapters`
    (`in/rest`, `out/persistence`, `out/client`, `out/keycloak`). ArchUnit enforces it.
 5. **Contracts first.** OpenAPI in `libs/contracts` is the source of truth; responses are validated against
-   it in tests; Dart clients are generated (`just gen-api`), never hand-written.
+   it in tests; Dart clients are generated (`just gen-api` → `apps/web/packages/<svc>`), never hand-written.
 6. **Secrets never in git.** Placeholders only in `.env.example`; gitleaks runs pre-commit and in CI.
 7. **Verification before completion.** Follow `.claude/skills/verification-before-completion`: run the
    full command, read the output, then claim.

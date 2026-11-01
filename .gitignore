@@ -24,7 +24,11 @@ apps/web/build/
 apps/web/.flutter-plugins*
 apps/web/.packages
 apps/web/pubspec.lock.bak
-apps/web/lib/api/**/.openapi-generator/
+apps/web/packages/*/.dart_tool/
+apps/web/packages/*/build/
+apps/web/packages/*/.openapi-generator/
+apps/web/packages/*/pubspec.lock
+apps/web/test/golden/failures/
 apps/web/coverage/
 
 # --- tooling ---

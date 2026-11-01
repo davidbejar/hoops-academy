@@ -1,0 +1,120 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'serializers.dart';
+
+// **************************************************************************
+// BuiltValueGenerator
+// **************************************************************************
+
+Serializers _$serializers = (Serializers().toBuilder()
+      ..add($AuditInfo.serializer)
+      ..add($PhysicalTestNormInput.serializer)
+      ..add($PhysicalTestTypeInput.serializer)
+      ..add($PlanItemInput.serializer)
+      ..add($PlannedAbsenceInput.serializer)
+      ..add($TrainingPlanSummary.serializer)
+      ..add($TrainingScheduleInput.serializer)
+      ..add(AttendanceEntry.serializer)
+      ..add(AttendanceInput.serializer)
+      ..add(AttendanceStatus.serializer)
+      ..add(BodyMeasurement.serializer)
+      ..add(BodyMeasurementInput.serializer)
+      ..add(CancelTrainingSessionRequest.serializer)
+      ..add(CompletionStatus.serializer)
+      ..add(CopyTrainingPlanRequest.serializer)
+      ..add(CreateInjuryRequest.serializer)
+      ..add(CreatePlanAssignmentRequest.serializer)
+      ..add(CreateTrainingPlanRequest.serializer)
+      ..add(CreateTrainingSessionRequest.serializer)
+      ..add(DayOfWeek.serializer)
+      ..add(Gender.serializer)
+      ..add(Injury.serializer)
+      ..add(InjuryPage.serializer)
+      ..add(InjurySeverity.serializer)
+      ..add(InjuryStatus.serializer)
+      ..add(NormBand.serializer)
+      ..add(PageMeta.serializer)
+      ..add(PersonRef.serializer)
+      ..add(PhysicalTestNorm.serializer)
+      ..add(PhysicalTestResult.serializer)
+      ..add(PhysicalTestResultInput.serializer)
+      ..add(PhysicalTestResultPage.serializer)
+      ..add(PhysicalTestType.serializer)
+      ..add(PlanAssignment.serializer)
+      ..add(PlanAssignmentPage.serializer)
+      ..add(PlanCompletion.serializer)
+      ..add(PlanCompletionPage.serializer)
+      ..add(PlanItem.serializer)
+      ..add(PlannedAbsence.serializer)
+      ..add(PlannedAbsencePage.serializer)
+      ..add(Problem.serializer)
+      ..add(ProblemViolation.serializer)
+      ..add(RecordAttendanceRequest.serializer)
+      ..add(RecordPlanCompletionRequest.serializer)
+      ..add(ReorderPlanItemsRequest.serializer)
+      ..add(SessionAttendance.serializer)
+      ..add(TrainingPlan.serializer)
+      ..add(TrainingPlanSummaryPage.serializer)
+      ..add(TrainingSchedule.serializer)
+      ..add(TrainingSession.serializer)
+      ..add(TrainingSessionPage.serializer)
+      ..add(TrainingSessionStatus.serializer)
+      ..add(UpdateBodyMeasurementRequest.serializer)
+      ..add(UpdateInjuryRequest.serializer)
+      ..add(UpdatePhysicalTestResultRequest.serializer)
+      ..add(UpdatePhysicalTestTypeRequest.serializer)
+      ..add(UpdatePlanItemRequest.serializer)
+      ..add(UpdatePlannedAbsenceRequest.serializer)
+      ..add(UpdateTrainingPlanRequest.serializer)
+      ..add(UpdateTrainingScheduleRequest.serializer)
+      ..add(UpdateTrainingSessionRequest.serializer)
+      ..add(UpdateTrainingSessionRequestStatusEnum.serializer)
+      ..add(UsageReport.serializer)
+      ..add(UsageReportServiceEnum.serializer)
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(AttendanceEntry)]),
+          () => ListBuilder<AttendanceEntry>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(AttendanceInput)]),
+          () => ListBuilder<AttendanceInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(Injury)]),
+          () => ListBuilder<Injury>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PhysicalTestResult)]),
+          () => ListBuilder<PhysicalTestResult>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlanAssignment)]),
+          () => ListBuilder<PlanAssignment>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlanCompletion)]),
+          () => ListBuilder<PlanCompletion>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlanItem)]),
+          () => ListBuilder<PlanItem>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlanItemInput)]),
+          () => ListBuilder<PlanItemInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlannedAbsence)]),
+          () => ListBuilder<PlannedAbsence>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(ProblemViolation)]),
+          () => ListBuilder<ProblemViolation>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(TrainingPlanSummary)]),
+          () => ListBuilder<TrainingPlanSummary>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(TrainingSession)]),
+          () => ListBuilder<TrainingSession>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltMap, const [const FullType(String), const FullType(int)]),
+          () => MapBuilder<String, int>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet, const [const FullType(String)]),
+          () => SetBuilder<String>()))
+    .build();
+
+// ignore_for_file: deprecated_member_use_from_same_package,type=lint

@@ -1,0 +1,146 @@
+//
+// AUTO-GENERATED FILE, DO NOT MODIFY!
+//
+
+// ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
+import 'package:built_value/built_value.dart';
+import 'package:built_value/serializer.dart';
+
+part 'authz_summary.g.dart';
+
+/// The caller's scope within the tenant (what the UI may offer; the server re-checks every call).
+///
+/// Properties:
+/// * [staffTeamIds] - Teams where the caller is COACH or ASSISTANT_COACH staff.
+/// * [linkedPlayerIds] - Players linked to the caller as guardian (PARENT).
+/// * [ownPlayerId] - The caller's own player id when they hold the PLAYER role.
+@BuiltValue()
+abstract class AuthzSummary implements Built<AuthzSummary, AuthzSummaryBuilder> {
+  /// Teams where the caller is COACH or ASSISTANT_COACH staff.
+  @BuiltValueField(wireName: r'staffTeamIds')
+  BuiltList<String> get staffTeamIds;
+
+  /// Players linked to the caller as guardian (PARENT).
+  @BuiltValueField(wireName: r'linkedPlayerIds')
+  BuiltList<String> get linkedPlayerIds;
+
+  /// The caller's own player id when they hold the PLAYER role.
+  @BuiltValueField(wireName: r'ownPlayerId')
+  String? get ownPlayerId;
+
+  AuthzSummary._();
+
+  factory AuthzSummary([void updates(AuthzSummaryBuilder b)]) = _$AuthzSummary;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(AuthzSummaryBuilder b) => b;
+
+  @BuiltValueSerializer(custom: true)
+  static Serializer<AuthzSummary> get serializer => _$AuthzSummarySerializer();
+}
+
+class _$AuthzSummarySerializer implements PrimitiveSerializer<AuthzSummary> {
+  @override
+  final Iterable<Type> types = const [AuthzSummary, _$AuthzSummary];
+
+  @override
+  final String wireName = r'AuthzSummary';
+
+  Iterable<Object?> _serializeProperties(
+    Serializers serializers,
+    AuthzSummary object, {
+    FullType specifiedType = FullType.unspecified,
+  }) sync* {
+    yield r'staffTeamIds';
+    yield serializers.serialize(
+      object.staffTeamIds,
+      specifiedType: const FullType(BuiltList, [FullType(String)]),
+    );
+    yield r'linkedPlayerIds';
+    yield serializers.serialize(
+      object.linkedPlayerIds,
+      specifiedType: const FullType(BuiltList, [FullType(String)]),
+    );
+    if (object.ownPlayerId != null) {
+      yield r'ownPlayerId';
+      yield serializers.serialize(
+        object.ownPlayerId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+  }
+
+  @override
+  Object serialize(
+    Serializers serializers,
+    AuthzSummary object, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+  }
+
+  void _deserializeProperties(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+    required List<Object?> serializedList,
+    required AuthzSummaryBuilder result,
+    required List<Object?> unhandled,
+  }) {
+    for (var i = 0; i < serializedList.length; i += 2) {
+      final key = serializedList[i] as String;
+      final value = serializedList[i + 1];
+      switch (key) {
+        case r'staffTeamIds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>;
+          result.staffTeamIds.replace(valueDes);
+          break;
+        case r'linkedPlayerIds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>;
+          result.linkedPlayerIds.replace(valueDes);
+          break;
+        case r'ownPlayerId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.ownPlayerId = valueDes;
+          break;
+        default:
+          unhandled.add(key);
+          unhandled.add(value);
+          break;
+      }
+    }
+  }
+
+  @override
+  AuthzSummary deserialize(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    final result = AuthzSummaryBuilder();
+    final serializedList = (serialized as Iterable<Object?>).toList();
+    final unhandled = <Object?>[];
+    _deserializeProperties(
+      serializers,
+      serialized,
+      specifiedType: specifiedType,
+      serializedList: serializedList,
+      unhandled: unhandled,
+      result: result,
+    );
+    return result.build();
+  }
+}
+
+

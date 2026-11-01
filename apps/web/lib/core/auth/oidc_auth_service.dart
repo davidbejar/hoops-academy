@@ -1,0 +1,94 @@
+import 'dart:async';
+
+import 'package:oidc/oidc.dart';
+import 'package:oidc_default_store/oidc_default_store.dart';
+
+import '../config/app_config.dart';
+import 'auth_service.dart';
+
+/// Keycloak (OIDC authorization code + PKCE) via `package:oidc`.
+///
+/// Web redirects land on `redirect.html` (same origin); the page hands the
+/// response back to the app. Tokens live in the package's store
+/// (browser storage on web). Access tokens are refreshed proactively
+/// (`refreshBefore`) by the package, with the 401 interceptor as a backstop.
+class OidcAuthService implements AuthService {
+  OidcAuthService(AppConfig config, {required Uri origin})
+    : _manager = OidcUserManager.lazy(
+        discoveryDocumentUri: OidcUtils.getOpenIdConfigWellKnownUri(
+          config.issuer,
+        ),
+        clientCredentials: OidcClientAuthentication.none(
+          clientId: config.clientId,
+        ),
+        store: OidcDefaultStore(),
+        settings: OidcUserManagerSettings(
+          scope: config.scopes,
+          redirectUri: origin.resolve('redirect.html'),
+          postLogoutRedirectUri: origin.resolve('redirect.html'),
+          refreshBefore: (_) => const Duration(seconds: 60),
+          options: const OidcPlatformSpecificOptions(
+            web: OidcPlatformSpecificOptions_Web(
+              navigationMode:
+                  OidcPlatformSpecificOptions_Web_NavigationMode.samePage,
+            ),
+          ),
+        ),
+      );
+
+  final OidcUserManager _manager;
+  final _controller = StreamController<AuthStatus>.broadcast();
+  AuthStatus _status = AuthStatus.unknown;
+
+  @override
+  AuthStatus get status => _status;
+
+  @override
+  Stream<AuthStatus> get statusChanges => _controller.stream;
+
+  void _set(AuthStatus next) {
+    if (next == _status) return;
+    _status = next;
+    _controller.add(next);
+  }
+
+  @override
+  Future<void> init() async {
+    _manager.userChanges().listen(
+      (user) => _set(
+        user == null ? AuthStatus.unauthenticated : AuthStatus.authenticated,
+      ),
+    );
+    try {
+      await _manager.init();
+    } on Object {
+      // Discovery unreachable or stored state corrupt: treat as signed out so
+      // the user can retry from the login screen.
+    }
+    if (_status == AuthStatus.unknown) _set(AuthStatus.unauthenticated);
+  }
+
+  @override
+  Future<void> login() async {
+    await _manager.loginAuthorizationCodeFlow();
+  }
+
+  @override
+  Future<void> logout() => _manager.logout();
+
+  @override
+  Future<String?> accessToken() async =>
+      _manager.currentUser?.token.accessToken;
+
+  @override
+  Future<bool> refresh() async {
+    try {
+      return await _manager.refreshToken() != null;
+    } on Object {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> expireSession() => _manager.forgetUser();
+}

@@ -4,11 +4,13 @@
 # Usage: scripts/gen-api.sh [service ...]        (default: core game athlete; run from anywhere, e.g. `just gen-api`)
 #
 # Environment:
-#   API_OUT_ROOT       output root, one package per service in $API_OUT_ROOT/<svc>   (default: apps/web/lib/api;
+#   API_OUT_ROOT       output root, one package per service in $API_OUT_ROOT/<svc>   (default: apps/web/packages;
 #                      relative paths are resolved against the repository root)
 #   OPENAPI_GENERATOR  generator CLI                                                  (default: openapi-generator)
 #   GEN_API_BUILD      1 = run `dart pub get` + build_runner in each package so it compiles (default: 1; 0 = skip)
 #
+# The default root is apps/web/packages, NOT apps/web/lib/api: a package nested inside the app's lib/ makes
+# package_config.json invalid and the Dart compiler fails with "language version override has to be the same".
 # Output is fully generated: each $API_OUT_ROOT/<svc> directory is replaced on every run. Never edit it by hand —
 # change the contract and regenerate. Operations marked `x-internal` (/internal/**) are not generated.
 set -euo pipefail
@@ -19,7 +21,7 @@ EXPECTED_GENERATOR_VERSION="7.26.0" # keep in sync with openapi-generator.versio
 GENERATOR="${OPENAPI_GENERATOR:-openapi-generator}"
 BUILD="${GEN_API_BUILD:-1}"
 
-OUT_ROOT="${API_OUT_ROOT:-apps/web/lib/api}"
+OUT_ROOT="${API_OUT_ROOT:-apps/web/packages}"
 [[ "$OUT_ROOT" = /* ]] || OUT_ROOT="$REPO_ROOT/$OUT_ROOT"
 
 if [[ $# -gt 0 ]]; then SERVICES=("$@"); else SERVICES=(core game athlete); fi
@@ -56,6 +58,7 @@ generate() {
     command -v dart >/dev/null 2>&1 || die "dart not found; install Flutter or set GEN_API_BUILD=0"
     (cd "$out" && dart pub get >/dev/null && dart run build_runner build --delete-conflicting-outputs >/dev/null)
   fi
+  rm -rf -- "$out/.openapi-generator" # generator bookkeeping, not needed
 }
 
 for svc in "${SERVICES[@]}"; do

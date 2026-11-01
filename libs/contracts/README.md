@@ -54,7 +54,7 @@ Quick check of one file: `openapi-generator validate -i libs/contracts/openapi/g
 ## Regenerating the Flutter clients
 
 ```
-just gen-api                       # = scripts/gen-api.sh → apps/web/lib/api/{core,game,athlete}
+just gen-api                       # = scripts/gen-api.sh → apps/web/packages/{core,game,athlete}
 scripts/gen-api.sh game            # one service
 API_OUT_ROOT=/tmp/api scripts/gen-api.sh   # elsewhere (e.g. to inspect a change)
 ```
