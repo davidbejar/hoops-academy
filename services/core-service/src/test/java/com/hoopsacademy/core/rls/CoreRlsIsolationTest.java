@@ -51,6 +51,8 @@ class CoreRlsIsolationTest extends GenericRlsIsolationTest {
                         "role", (c, t) -> "COACH")),
                 Map.entry("core.team_player", Map.of("team_id", CoreRlsIsolationTest::team,
                         "player_id", CoreRlsIsolationTest::player)),
+                Map.entry("core.approval_request", Map.of("player_id", CoreRlsIsolationTest::player,
+                        "requested_by_person_id", CoreRlsIsolationTest::person, "action", (c, t) -> "ADD_PLAYER")),
                 Map.entry("core.eligibility_case", Map.of("player_id", CoreRlsIsolationTest::player,
                         "team_player_id", CoreRlsIsolationTest::teamPlayer, "reason", (c, t) -> "CATEGORY_TOO_LOW")));
     }

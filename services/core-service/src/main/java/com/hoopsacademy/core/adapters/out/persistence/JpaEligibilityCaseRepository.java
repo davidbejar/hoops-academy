@@ -56,6 +56,14 @@ class JpaEligibilityCaseRepository implements EligibilityCaseRepository {
     }
 
     @Override
+    public List<EligibilityCase> openOfPlayer(PlayerId player) {
+        return em.createQuery("select c, a.teamId" + FROM + " and c.playerId = :player and c.status = 'OPEN'",
+                        Object[].class)
+                .setParameter("player", player.value()).getResultStream()
+                .map(row -> toView(row).eligibilityCase()).toList();
+    }
+
+    @Override
     public PageResult<CaseOfTeam> list(CaseFilter filter, PageRequest page) {
         if (filter.onlyTeams().filter(Collection::isEmpty).isPresent()) {
             return new PageResult<>(List.of(), page, 0);

@@ -60,3 +60,14 @@ source scripts/env.sh
   the contract forbids use `Contract.RESPONSES_ONLY`, failure-path tests (502/500) use `Contract.FAILURES`.
 - `@Tag("keycloak")` tests import `infra/keycloak/realm-academy.json` into `quay.io/keycloak/keycloak:26.8.1`; they are
   excluded from the default surefire run (`surefire.excludedGroups=keycloak`) and meant for CI.
+
+## Approvals and usage (WP5, WP15)
+- `POST /api/core/players` and `…/withdraw`: ADMIN acts at once and leaves an auto-approved `approval_request` row;
+  a COACH creates a PENDING request (`202`), an ADMIN decides it through `/api/core/approval-requests/{id}/approve|reject`;
+  the requester may `cancel`. Rules in `domain.approvals`, use cases in `application.approvals`
+  (`CreatePlayer`, `WithdrawPlayer`, `ApproveRequest`, `RejectRequest`, `CancelRequest`), reads in `application.players`.
+- Outbox: `player.requested`, `player.approved`, `player.rejected`, `player.withdrawn`.
+- `GET /platform/tenants/{id}/usage` aggregates core (counters from every `UsageCounter`), game and athlete; peers that
+  fail or exceed 2 s are listed in `unavailableServices`. Each call upserts the day's `usage_snapshot`
+  (one row per tenant and UTC day); `UsageSnapshotJob` does it for all ACTIVE tenants (`hoops.core.usage-snapshot-cron`,
+  default 02:30 UTC).

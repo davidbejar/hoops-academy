@@ -17,6 +17,7 @@ import jakarta.persistence.TypedQuery;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -107,6 +108,16 @@ class JpaPersonRepository implements PersonRepository {
     public long countActive() {
         return em.createQuery("select count(p) from PersonEntity p where p.active = true", Long.class)
                 .getSingleResult();
+    }
+
+    @Override
+    public Map<TenantRole, Long> countActiveByRole() {
+        Map<TenantRole, Long> counts = new EnumMap<>(TenantRole.class);
+        em.createQuery("""
+                        select r.role, count(r) from MembershipRoleEntity r, PersonEntity p
+                         where p.id = r.personId and p.active = true group by r.role""", Object[].class)
+                .getResultList().forEach(row -> counts.put(TenantRole.valueOf((String) row[0]), (Long) row[1]));
+        return counts;
     }
 
     @Override

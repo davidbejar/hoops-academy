@@ -5,22 +5,43 @@ import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
+import com.hoopsacademy.core.application.shared.PageRequest;
+import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.core.domain.roster.TeamId;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /** Player records of the bound tenant; roster facts (birth date, gender, name) come from the player's person. */
 public interface PlayerRepository {
 
     /** What the roster needs to know about a player. */
     record PlayerSummary(PlayerId id, PersonId person, String displayName, PlayerStatus status, LocalDate birthDate,
-            Gender gender) {
+            Gender gender, String givenName, String familyName) {
 
         public EligibilityCandidate candidate() {
             return new EligibilityCandidate(id, status, birthDate, gender);
         }
     }
+
+    /** A player with its creation time (the list/get views). */
+    record PlayerRow(PlayerSummary summary, Instant createdAt) {}
+
+    /**
+     * Which players a caller may see: {@code only} present = restricted to these ids (linked / own players);
+     * {@code hidePending} = PENDING_APPROVAL players are hidden except those whose ADD request was made by
+     * {@code pendingRequester}.
+     */
+    record Visibility(Optional<Set<PlayerId>> only, boolean hidePending, Optional<PersonId> pendingRequester) {
+
+        public static final Visibility ALL = new Visibility(Optional.empty(), false, Optional.empty());
+    }
+
+    record PlayerFilter(Optional<PlayerStatus> status, Optional<TeamId> team, Optional<String> query,
+            Visibility visibility) {}
 
     PlayerId create(PersonId person, PlayerStatus status);
 
@@ -36,9 +57,17 @@ public interface PlayerRepository {
     /** Unknown ids are omitted. */
     Map<PlayerId, PlayerSummary> summaries(Collection<PlayerId> players);
 
+    /** Visibility is NOT applied: callers decide who may see the row. */
+    Optional<PlayerRow> find(PlayerId player);
+
+    PageResult<PlayerRow> page(PlayerFilter filter, PageRequest page);
+
     void updateStatus(PlayerId player, PlayerStatus status);
 
     long count();
 
     long countByStatus(PlayerStatus status);
+
+    /** Players per status (statuses without players are omitted). */
+    Map<PlayerStatus, Long> countsByStatus();
 }

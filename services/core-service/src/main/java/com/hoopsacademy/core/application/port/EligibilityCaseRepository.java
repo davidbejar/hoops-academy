@@ -7,6 +7,7 @@ import com.hoopsacademy.core.domain.eligibility.EligibilityCase;
 import com.hoopsacademy.core.domain.eligibility.EligibilityCaseId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.roster.TeamId;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -25,6 +26,9 @@ public interface EligibilityCaseRepository {
     void update(EligibilityCase eligibilityCase);
 
     Optional<CaseOfTeam> find(EligibilityCaseId id);
+
+    /** OPEN cases of the player's assignments. */
+    List<EligibilityCase> openOfPlayer(PlayerId player);
 
     PageResult<CaseOfTeam> list(CaseFilter filter, PageRequest page);
 }

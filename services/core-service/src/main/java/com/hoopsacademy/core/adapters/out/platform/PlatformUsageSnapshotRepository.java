@@ -25,7 +25,11 @@ class PlatformUsageSnapshotRepository implements UsageSnapshotRepository {
     public void save(TenantId tenant, Instant collectedAt, Object report) {
         em.createNativeQuery("""
                 insert into core.usage_snapshot (id, tenant_id, collected_at, report)
-                values (:id, :tenant, :collectedAt, cast(:report as jsonb))""")
+                values (:id, :tenant, :collectedAt, cast(:report as jsonb))
+                on conflict (tenant_id, snapshot_date) do update
+                   set collected_at = excluded.collected_at, report = excluded.report
+                 where jsonb_array_length(excluded.report -> 'unavailableServices') = 0
+                    or jsonb_array_length(core.usage_snapshot.report -> 'unavailableServices') > 0""")
                 .setParameter("id", UUID.randomUUID())
                 .setParameter("tenant", tenant.value())
                 .setParameter("collectedAt", collectedAt)

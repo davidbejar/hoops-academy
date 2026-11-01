@@ -7,16 +7,24 @@ import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
+import com.hoopsacademy.core.application.shared.PageRequest;
+import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.core.domain.roster.TeamId;
+import jakarta.persistence.TypedQuery;
+import java.util.ArrayList;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
 class JpaPlayerRepository implements PlayerRepository {
+
+    private static final UUID NO_ONE = new UUID(0, 0);
 
     private final EntityManager em;
     private final Clock clock;
@@ -82,6 +90,61 @@ class JpaPlayerRepository implements PlayerRepository {
     }
 
     @Override
+    public Optional<PlayerRow> find(PlayerId player) {
+        return em.createQuery("""
+                        select p, pe from PlayerEntity p, PersonEntity pe
+                         where pe.id = p.personId and p.id = :id""", Object[].class)
+                .setParameter("id", player.value()).getResultStream().findFirst()
+                .map(row -> toRow((PlayerEntity) row[0], (PersonEntity) row[1]));
+    }
+
+    @Override
+    public PageResult<PlayerRow> page(PlayerFilter filter, PageRequest page) {
+        Visibility visibility = filter.visibility();
+        if (visibility.only().filter(Set::isEmpty).isPresent()) {
+            return new PageResult<>(List.of(), page, 0);
+        }
+        List<String> conditions = new ArrayList<>();
+        filter.status().ifPresent(s -> conditions.add("p.status = :status"));
+        filter.team().ifPresent(t -> conditions.add("""
+                exists (select 1 from TeamPlayerEntity a
+                         where a.playerId = p.id and a.teamId = :team and a.leftOn is null)"""));
+        filter.query().ifPresent(q -> conditions.add(
+                "lower(concat(pe.givenName, ' ', pe.familyName)) like :query escape '\\'"));
+        visibility.only().ifPresent(ids -> conditions.add("p.id in :only"));
+        if (visibility.hidePending()) {
+            conditions.add("""
+                    (p.status <> 'PENDING_APPROVAL' or exists (select 1 from ApprovalRequestEntity r
+                       where r.playerId = p.id and r.action = 'ADD_PLAYER' and r.requestedByPersonId = :requester))""");
+        }
+        String where = conditions.stream().map(c -> " and " + c).reduce("", String::concat);
+        String from = " from PlayerEntity p, PersonEntity pe where pe.id = p.personId" + where;
+        TypedQuery<Object[]> items = em.createQuery("select p, pe" + from
+                + " order by pe.familyName, pe.givenName, p.id", Object[].class);
+        TypedQuery<Long> total = em.createQuery("select count(p)" + from, Long.class);
+        for (TypedQuery<?> query : List.of(items, total)) {
+            filter.status().ifPresent(s -> query.setParameter("status", s.name()));
+            filter.team().ifPresent(t -> query.setParameter("team", t.value()));
+            filter.query().ifPresent(q -> query.setParameter("query", "%" + escapeLike(q.toLowerCase(java.util.Locale.ROOT)) + "%"));
+            visibility.only().ifPresent(ids -> query.setParameter("only", ids.stream().map(PlayerId::value).toList()));
+            if (visibility.hidePending()) {
+                query.setParameter("requester", visibility.pendingRequester().map(PersonId::value).orElse(NO_ONE));
+            }
+        }
+        List<PlayerRow> found = items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultStream()
+                .map(row -> toRow((PlayerEntity) row[0], (PersonEntity) row[1])).toList();
+        return new PageResult<>(found, page, total.getSingleResult());
+    }
+
+    private static String escapeLike(String text) {
+        return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    private static PlayerRow toRow(PlayerEntity player, PersonEntity person) {
+        return new PlayerRow(toSummary(player, person), player.createdAt);
+    }
+
+    @Override
     public void updateStatus(PlayerId player, PlayerStatus status) {
         em.createQuery("select p from PlayerEntity p where p.id = :id", PlayerEntity.class)
                 .setParameter("id", player.value()).getResultStream().findFirst()
@@ -99,9 +162,17 @@ class JpaPlayerRepository implements PlayerRepository {
                 .setParameter("status", status.name()).getSingleResult();
     }
 
+    @Override
+    public Map<PlayerStatus, Long> countsByStatus() {
+        Map<PlayerStatus, Long> counts = new java.util.EnumMap<>(PlayerStatus.class);
+        em.createQuery("select p.status, count(p) from PlayerEntity p group by p.status", Object[].class)
+                .getResultList().forEach(row -> counts.put(PlayerStatus.valueOf((String) row[0]), (Long) row[1]));
+        return counts;
+    }
+
     private static PlayerSummary toSummary(PlayerEntity player, PersonEntity person) {
         return new PlayerSummary(new PlayerId(player.id), new PersonId(person.id),
                 person.givenName + " " + person.familyName, PlayerStatus.valueOf(player.status), person.birthDate,
-                person.gender == null ? null : Gender.valueOf(person.gender));
+                person.gender == null ? null : Gender.valueOf(person.gender), person.givenName, person.familyName);
     }
 }

@@ -8,6 +8,7 @@ import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Members (person + roles) of the bound tenant. */
@@ -32,6 +33,9 @@ public interface PersonRepository {
     long countActiveAdmins();
 
     long countActive();
+
+    /** Active members per tenant role (a member with several roles counts once per role). */
+    Map<TenantRole, Long> countActiveByRole();
 
     PageResult<Person> list(MemberFilter filter, PageRequest page);
 }

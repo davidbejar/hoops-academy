@@ -59,6 +59,12 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
   "own line" highlight work (WP13).
 - **Same-device two-tab clientSeq race** (WP13): acceptable for now (second event is CLIENT_SEQ_CONFLICT and visible).
 
+- **Player login/invitation** (WP5): CreatePlayer stores email but creates no Keycloak user; reuse the InviteMember
+  saga for players with an email (and for parents created via guardian flow).
+- **Contracts (core)**: `PlayerStatus` lacks REJECTED (rejected adds end as WITHDRAWN); add `/platform/tenants/{id}/usage/history`;
+  document core counter keys in UsageReport; approval `reject` note should be required.
+- **Members list** shows pending/rejected players' persons (WP5) — filter by status.
+
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
 - Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0 (requires realm re-import: `just down && podman volume rm hoops_pgdata`).
