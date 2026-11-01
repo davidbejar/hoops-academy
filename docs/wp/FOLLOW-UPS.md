@@ -44,6 +44,13 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
 - **Ingress/nginx**: must pass `events:batch` paths through unchanged (percent-encoded colon → 404) (WP7, WP16).
 - **Rate limiting** for `events:batch` and `/auth` at the proxy/ingress (WP17).
 
+- **Contracts (athlete, WP10)**: add `GET /players/{playerId}/availability` and the `bandStatus` field
+  (MATCHED|NO_NORM|MISSING_PLAYER_DATA) + nullable `ageAtMeasurement`; measurement-per-day race → map unique
+  violation to 409.
+- **WP10b norms research** (Sonnet + web search): replace placeholder norm blocks with cited published tables
+  (FITNESSGRAM HFZ, ALPHA-Fit/Eurofit percentiles, published youth vertical-jump/T-test norms) and verify the Cooper
+  1968 figures; update `R__physical_test_norms.sql` + `docs/domain/norms.md`.
+
 ## Resolved
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
 - Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0 (requires realm re-import: `just down && podman volume rm hoops_pgdata`).

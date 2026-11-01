@@ -48,5 +48,5 @@ interface CoreInternalClient {
 
     record PlayerBatchResponseDto(List<PlayerBriefDto> players) {}
 
-    record PlayerBriefDto(UUID id, String displayName, String status) {}
+    record PlayerBriefDto(UUID id, String displayName, String status, java.time.LocalDate birthDate, String gender) {}
 }

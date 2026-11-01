@@ -85,6 +85,23 @@ public final class CoreStubs {
         return this;
     }
 
+    /**
+     * Players known to core with their own birth date and gender (each row {@code {id, birthDate, gender}}; a null
+     * birth date or gender is sent as JSON null, which a real core never does but an incomplete record could).
+     */
+    public CoreStubs knownPlayerData(String tenant, String[]... rows) {
+        String players = Arrays.stream(rows)
+                .map(r -> "{\"id\":\"%s\",\"displayName\":\"Player %s\",\"birthDate\":%s,\"gender\":%s,\"status\":\"ACTIVE\"}"
+                        .formatted(r[0], r[0].substring(r[0].length() - 4), r[1] == null ? "null" : "\"" + r[1] + "\"",
+                                r[2] == null ? "null" : "\"" + r[2] + "\""))
+                .collect(Collectors.joining(","));
+        wireMock.register(post(urlPathEqualTo("/internal/players:batch"))
+                .withQueryParam("tenantId", equalTo(tenant))
+                .willReturn(aResponse().withHeader("Content-Type", "application/json")
+                        .withBody("{\"players\":[%s]}".formatted(players))));
+        return this;
+    }
+
     public CoreStubs member(String tenant, String sub, String status, String timezone, String rolesJson,
             String staffTeamsJson, String linkedJson, String ownPlayerJson) {
         wireMock.register(get(urlPathEqualTo("/internal/authz/" + tenant + "/" + sub))

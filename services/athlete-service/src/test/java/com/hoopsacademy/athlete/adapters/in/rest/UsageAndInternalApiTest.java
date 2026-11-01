@@ -57,6 +57,15 @@ class UsageAndInternalApiTest {
                 .then().statusCode(201).extract().path("id");
         api(TENANT).body(Map.of("planId", plan, "teamId", TEAM, "dueOn", "2029-02-01")).post("/api/athlete/plan-assignments")
                 .then().statusCode(201);
+        api(TENANT).body(Map.of("playerId", PLAYER, "occurredOn", "2029-01-02", "bodyPart", "knee", "severity", "MINOR"))
+                .post("/api/athlete/injuries").then().statusCode(201);
+        api(TENANT).body(Map.of("playerId", PLAYER, "measuredOn", "2029-01-02", "heightCm", 150.0))
+                .post("/api/athlete/body-measurements").then().statusCode(201);
+        api(TENANT).body(Map.of("playerId", PLAYER, "measuredOn", "2029-01-02", "heightCm", 151.0))
+                .post("/api/athlete/body-measurements").then().statusCode(409);
+        String cooper = api(TENANT).get("/api/athlete/physical-test-types").then().extract().path("find { it.code == 'COOPER_12MIN' }.id");
+        api(TENANT).body(Map.of("playerId", PLAYER, "testTypeId", cooper, "measuredOn", "2029-01-02", "value", 2000.0))
+                .post("/api/athlete/physical-test-results").then().statusCode(201);
         TenantUserRegistry.clear();
 
         api(TENANT).get("/internal/usage/" + TENANT).then().statusCode(200)
@@ -67,11 +76,17 @@ class UsageAndInternalApiTest {
                 .body("counters.attendanceRecords", equalTo(1))
                 .body("counters.plannedAbsences", equalTo(1))
                 .body("counters.trainingPlans", equalTo(1))
-                .body("counters.planAssignments", equalTo(1));
+                .body("counters.planAssignments", equalTo(1))
+                .body("counters.injuries", equalTo(1))
+                .body("counters.bodyMeasurements", equalTo(1))
+                .body("counters.physicalTestResults", equalTo(1));
         api(EMPTY_TENANT).get("/internal/usage/" + EMPTY_TENANT).then().statusCode(200)
                 .body("counters.trainingSessions", equalTo(0))
                 .body("counters.attendanceRecords", equalTo(0))
-                .body("counters.trainingPlans", equalTo(0));
+                .body("counters.trainingPlans", equalTo(0))
+                .body("counters.injuries", equalTo(0))
+                .body("counters.bodyMeasurements", equalTo(0))
+                .body("counters.physicalTestResults", equalTo(0));
     }
 
     @Test

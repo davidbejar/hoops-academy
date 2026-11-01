@@ -35,13 +35,32 @@ class AthleteGenericRlsIsolationTest extends GenericRlsIsolationTest {
                         "team_id", (c, t) -> UUID.randomUUID()),
                 "athlete.plan_completion", Map.of(
                         "assignment_id", AthleteGenericRlsIsolationTest::insertAssignment,
-                        "status", (c, t) -> "DONE"));
+                        "status", (c, t) -> "DONE"),
+                "athlete.injury", Map.of(
+                        "severity", (c, t) -> "MINOR"),
+                "athlete.body_measurement", Map.of(
+                        "height_cm", (c, t) -> 170.5),
+                "athlete.physical_test_result", Map.of(
+                        "test_type_id", AthleteGenericRlsIsolationTest::insertTestType));
     }
 
     /** A tenant plan of the same tenant, as the composite foreign key of an assignment requires. */
     private static UUID insertPlan(Connection migrator, TenantId tenant) throws SQLException {
         try (PreparedStatement ps = migrator.prepareStatement(
                 "insert into athlete.training_plan (id, owner_tenant_id, name) values (gen_random_uuid(), ?, 'Plan') returning id")) {
+            ps.setObject(1, tenant.value());
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getObject(1, UUID.class);
+            }
+        }
+    }
+
+    /** A test type owned by the same tenant, as the foreign key of a result requires. */
+    private static UUID insertTestType(Connection migrator, TenantId tenant) throws SQLException {
+        try (PreparedStatement ps = migrator.prepareStatement(
+                "insert into athlete.physical_test_type (id, owner_tenant_id, code, name, unit, higher_is_better) "
+                        + "values (gen_random_uuid(), ?, 'T' || upper(substr(md5(random()::text), 1, 8)), 'Type', 's', false) returning id")) {
             ps.setObject(1, tenant.value());
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();

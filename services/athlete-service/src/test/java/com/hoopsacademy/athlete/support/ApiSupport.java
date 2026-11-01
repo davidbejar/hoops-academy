@@ -51,6 +51,11 @@ public final class ApiSupport {
         return base(tenant).filter(new OpenApiValidationFilter(RESPONSE_ONLY));
     }
 
+    /** For endpoints the contract does not describe yet (e.g. player availability): no OpenAPI validation. */
+    public static RequestSpecification unvalidated(String tenant) {
+        return base(tenant);
+    }
+
     private static RequestSpecification base(String tenant) {
         return given().header("X-Tenant-Id", tenant).header("Authorization", "Bearer test").contentType(ContentType.JSON);
     }

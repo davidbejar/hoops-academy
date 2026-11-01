@@ -8,6 +8,7 @@ import com.hoopsacademy.athlete.application.RosterPort;
 import com.hoopsacademy.athlete.application.TeamRoster;
 import com.hoopsacademy.athlete.application.TenantStatus;
 import com.hoopsacademy.athlete.application.UpstreamUnavailableException;
+import com.hoopsacademy.athlete.domain.Gender;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
@@ -90,7 +91,8 @@ public class CoreRosterAdapter implements RosterPort {
                 if (!missing.contains(new PlayerId(dto.id()))) {
                     continue; // never trust more than what was asked for
                 }
-                PlayerBrief brief = new PlayerBrief(new PlayerId(dto.id()), dto.displayName(), dto.status());
+                PlayerBrief brief = new PlayerBrief(new PlayerId(dto.id()), dto.displayName(), dto.status(),
+                        Optional.ofNullable(dto.birthDate()), genderOf(dto.gender()));
                 players.put(new PlayerKey(tenant, brief.playerId()), brief);
                 found.put(brief.playerId(), brief);
             }
@@ -149,6 +151,18 @@ public class CoreRosterAdapter implements RosterPort {
         AuthzContext authz = new AuthzContext(dto.sub(), dto.personId(), tenant, roles, Set.copyOf(dto.staffTeamIds()),
                 Set.copyOf(dto.linkedPlayerIds()), Optional.ofNullable(dto.ownPlayerId()));
         return new MemberContext(authz, TenantStatus.valueOf(dto.tenantStatus()), zoneOf(dto.timezone()));
+    }
+
+    private static Optional<Gender> genderOf(String gender) {
+        if (gender == null || gender.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Gender.valueOf(gender));
+        } catch (IllegalArgumentException e) {
+            LOG.warnf("Ignoring unknown gender '%s' from core-service", gender);
+            return Optional.empty();
+        }
     }
 
     private static Optional<ZoneId> zoneOf(String timezone) {

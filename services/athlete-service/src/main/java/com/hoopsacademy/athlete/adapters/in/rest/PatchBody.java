@@ -69,6 +69,16 @@ final class PatchBody {
         };
     }
 
+    /** A JSON number between {@code min} and {@code max} (inclusive). */
+    static Function<JsonNode, java.math.BigDecimal> decimal(double min, double max) {
+        return node -> {
+            if (!node.isNumber() || node.asDouble() < min || node.asDouble() > max) {
+                throw new IllegalArgumentException("a number between " + min + " and " + max);
+            }
+            return node.decimalValue();
+        };
+    }
+
     static <T> Function<JsonNode, T> fromText(Function<String, T> parser, String expected) {
         return node -> {
             if (!node.isTextual()) {

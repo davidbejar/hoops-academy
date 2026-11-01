@@ -22,6 +22,13 @@ class AthleteRlsSchemaMetaTest extends RlsSchemaMetaTest {
                         + "RLS is forced with policy (owner_tenant_id is null or = app.current_tenant()), written only for the own tenant; "
                         + "proved by TemplateRlsIsolationTest",
                 "athlete.plan_item",
-                "items mirror their plan's nullable owner_tenant_id (templates); same custom policy, see TemplateRlsIsolationTest");
+                "items mirror their plan's nullable owner_tenant_id (templates); same custom policy, see TemplateRlsIsolationTest",
+                "athlete.physical_test_type",
+                "global test types (COOPER_12MIN ...) live next to tenant-defined ones, so the owner column is nullable and named "
+                        + "owner_tenant_id; forced RLS, select = global or own tenant, insert/update/delete = own tenant only; "
+                        + "proved by HealthRlsIsolationTest",
+                "athlete.physical_test_norm",
+                "global reference norms (null owner) next to tenant overrides; same policy shape as physical_test_type, "
+                        + "proved by HealthRlsIsolationTest");
     }
 }

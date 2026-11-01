@@ -20,11 +20,15 @@ public class ReportUsage {
     private final AbsenceRepository absences;
     private final PlanRepository plans;
     private final AssignmentRepository assignments;
+    private final InjuryRepository injuries;
+    private final MeasurementRepository measurements;
+    private final TestResultRepository testResults;
     private final TenantClock clock;
 
     public ReportUsage(TenantScope tenantScope, SessionRepository sessions, AttendanceRepository attendance,
             ScheduleRepository schedules, AbsenceRepository absences, PlanRepository plans,
-            AssignmentRepository assignments, TenantClock clock) {
+            AssignmentRepository assignments, InjuryRepository injuries, MeasurementRepository measurements,
+            TestResultRepository testResults, TenantClock clock) {
         this.tenantScope = tenantScope;
         this.sessions = sessions;
         this.attendance = attendance;
@@ -32,6 +36,9 @@ public class ReportUsage {
         this.absences = absences;
         this.plans = plans;
         this.assignments = assignments;
+        this.injuries = injuries;
+        this.measurements = measurements;
+        this.testResults = testResults;
         this.clock = clock;
     }
 
@@ -44,6 +51,9 @@ public class ReportUsage {
             counts.put("plannedAbsences", absences.count());
             counts.put("trainingPlans", plans.countTenantPlans());
             counts.put("planAssignments", assignments.countAssignments());
+            counts.put("injuries", injuries.count());
+            counts.put("bodyMeasurements", measurements.count());
+            counts.put("physicalTestResults", testResults.count());
             return counts;
         });
         return new Usage(tenant, clock.now(), counters);
