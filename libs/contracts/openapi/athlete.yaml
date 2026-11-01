@@ -1,0 +1,1863 @@
+openapi: 3.0.3
+info:
+  title: Hoops Academy — athlete-service API
+  version: 1.0.0
+  description: |
+    Training & attendance, athlete health & fitness.
+
+    Authorization (docs/domain/authz-matrix.md): ADMIN and team staff (COACH / ASSISTANT_COACH) write training data,
+    attendance, injuries, body measurements and test results; PARENT reads and may write injuries, body measurements,
+    planned absences and plan completions for linked players; PLAYER reads own data and may write own planned absences
+    and plan completions. Player names are not stored here: clients join ids with core-service rosters.
+servers:
+  - url: /
+    description: Gateway root (tenant API under /api/athlete, internal API under /internal).
+security:
+  - bearerAuth: []
+tags:
+  - name: TrainingSchedules
+    description: Recurring weekly slots, materialised 8 weeks ahead into sessions.
+  - name: TrainingSessions
+  - name: Attendance
+  - name: PlannedAbsences
+  - name: TrainingPlans
+    description: Plans and global templates (templates are copied on use).
+  - name: PlanAssignments
+  - name: PlanCompletions
+  - name: Injuries
+  - name: BodyMeasurements
+  - name: PhysicalTests
+    description: Test types, results (with expected norm band) and norms.
+  - name: Internal
+
+paths:
+  # ------------------------------------------------------------------ schedules
+  /api/athlete/training-schedules:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listTrainingSchedules
+      tags: [TrainingSchedules]
+      summary: List training schedules
+      description: 'Authz: any member (PARENT/PLAYER: schedules of their teams).'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - name: activeOn
+          in: query
+          description: Only schedules valid on this date.
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: Schedules.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/TrainingSchedule'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createTrainingSchedule
+      tags: [TrainingSchedules]
+      summary: Create a recurring training slot
+      description: 'Sessions are materialised 8 weeks ahead. Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TrainingScheduleInput'}
+      responses:
+        '201':
+          description: Schedule created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSchedule'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/training-schedules/{scheduleId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: scheduleId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    get:
+      operationId: getTrainingSchedule
+      tags: [TrainingSchedules]
+      summary: Get a training schedule
+      description: 'Authz: any member of the team''s audience.'
+      responses:
+        '200':
+          description: The schedule.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSchedule'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateTrainingSchedule
+      tags: [TrainingSchedules]
+      summary: Update a training schedule
+      description: 'Future PLANNED sessions without manual changes are re-materialised. Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateTrainingScheduleRequest'}
+      responses:
+        '200':
+          description: Updated schedule.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSchedule'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deleteTrainingSchedule
+      tags: [TrainingSchedules]
+      summary: End a training schedule
+      description: 'Removes future PLANNED sessions of the schedule; past sessions and attendance are kept. Authz: ADMIN; team staff.'
+      responses:
+        '204':
+          description: Schedule ended.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ sessions
+  /api/athlete/training-sessions:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listTrainingSessions
+      tags: [TrainingSessions]
+      summary: List training sessions by team and date range (calendar)
+      description: 'Range is limited to 366 days (400). Authz: any member (PARENT/PLAYER: sessions of their teams).'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - $ref: './common.yaml#/components/parameters/FromDate'
+        - $ref: './common.yaml#/components/parameters/ToDate'
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/TrainingSessionStatus'}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of sessions ordered by start.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSessionPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createTrainingSession
+      tags: [TrainingSessions]
+      summary: Create an ad-hoc training session
+      description: 'Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateTrainingSessionRequest'}
+      responses:
+        '201':
+          description: Session created (PLANNED).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSession'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/training-sessions/{sessionId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      operationId: getTrainingSession
+      tags: [TrainingSessions]
+      summary: Get a training session
+      description: 'Authz: any member of the team''s audience.'
+      responses:
+        '200':
+          description: The session.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSession'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateTrainingSession
+      tags: [TrainingSessions]
+      summary: Update a session (time, place, plan, notes, mark DONE)
+      description: 'CANCELLED sessions cannot be changed (409). Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateTrainingSessionRequest'}
+      responses:
+        '200':
+          description: Updated session.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSession'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/training-sessions/{sessionId}/cancel:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      operationId: cancelTrainingSession
+      tags: [TrainingSessions]
+      summary: Cancel a planned session
+      description: 'Only PLANNED sessions can be cancelled (409). Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CancelTrainingSessionRequest'}
+      responses:
+        '200':
+          description: Cancelled session.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSession'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /api/athlete/training-sessions/{sessionId}/attendance:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      operationId: getSessionAttendance
+      tags: [Attendance]
+      summary: Attendance sheet of a session
+      description: |
+        One entry per player of the team's current roster, overlaid with planned absences (`expectedAbsent`). Entries
+        without a recorded status have `status = null`. Authz: ADMIN; team staff; PARENT/PLAYER (linked / own entry).
+      responses:
+        '200':
+          description: Attendance sheet.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SessionAttendance'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    put:
+      operationId: recordSessionAttendance
+      tags: [Attendance]
+      summary: Record attendance for a session (upsert per player)
+      description: |
+        Entries for players not listed are left unchanged. `minutesLate` is required for LATE and forbidden otherwise
+        (422). Not allowed for CANCELLED sessions (409). Authz: ADMIN; team staff.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RecordAttendanceRequest'}
+      responses:
+        '200':
+          description: Updated attendance sheet.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SessionAttendance'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  # ------------------------------------------------------------------ planned absences
+  /api/athlete/planned-absences:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listPlannedAbsences
+      tags: [PlannedAbsences]
+      summary: List planned absences overlapping a date range
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - $ref: './common.yaml#/components/parameters/FromDate'
+        - $ref: './common.yaml#/components/parameters/ToDate'
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of planned absences.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlannedAbsencePage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createPlannedAbsence
+      tags: [PlannedAbsences]
+      summary: Announce a planned absence
+      description: '`toDate` ≥ `fromDate` (422). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PlannedAbsenceInput'}
+      responses:
+        '201':
+          description: Absence created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlannedAbsence'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/planned-absences/{absenceId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: absenceId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    get:
+      operationId: getPlannedAbsence
+      tags: [PlannedAbsences]
+      summary: Get a planned absence
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      responses:
+        '200':
+          description: The absence.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlannedAbsence'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updatePlannedAbsence
+      tags: [PlannedAbsences]
+      summary: Change a planned absence
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdatePlannedAbsenceRequest'}
+      responses:
+        '200':
+          description: Updated absence.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlannedAbsence'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deletePlannedAbsence
+      tags: [PlannedAbsences]
+      summary: Withdraw a planned absence
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      responses:
+        '204':
+          description: Absence removed.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ training plans
+  /api/athlete/training-plans:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listTrainingPlans
+      tags: [TrainingPlans]
+      summary: List tenant plans, or global templates with `template=true`
+      description: 'Authz: any member.'
+      parameters:
+        - name: template
+          in: query
+          description: true = global templates (read-only); false = the tenant's own plans.
+          schema: {type: boolean, default: false}
+        - name: q
+          in: query
+          schema: {type: string, maxLength: 100}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of plan summaries.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingPlanSummaryPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createTrainingPlan
+      tags: [TrainingPlans]
+      summary: Create a tenant training plan
+      description: 'Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateTrainingPlanRequest'}
+      responses:
+        '201':
+          description: Plan created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingPlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/training-plans/{planId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlanId'
+    get:
+      operationId: getTrainingPlan
+      tags: [TrainingPlans]
+      summary: Get a plan or template with its items
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: The plan.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingPlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateTrainingPlan
+      tags: [TrainingPlans]
+      summary: Rename / describe a tenant plan
+      description: 'Templates are read-only (403). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateTrainingPlanRequest'}
+      responses:
+        '200':
+          description: Updated plan.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingPlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deleteTrainingPlan
+      tags: [TrainingPlans]
+      summary: Delete an unassigned tenant plan
+      description: 'Plans with assignments cannot be deleted (409); templates are read-only (403). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      responses:
+        '204':
+          description: Plan deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /api/athlete/training-plans/{planId}:copy:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlanId'
+    post:
+      operationId: copyTrainingPlan
+      tags: [TrainingPlans]
+      summary: Copy a template (or tenant plan) into a new tenant plan (copy-on-use)
+      description: 'Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CopyTrainingPlanRequest'}
+      responses:
+        '201':
+          description: The tenant-owned copy.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingPlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/athlete/training-plans/{planId}/items:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlanId'
+    post:
+      operationId: addPlanItem
+      tags: [TrainingPlans]
+      summary: Append an item to a tenant plan
+      description: 'Templates are read-only (403). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PlanItemInput'}
+      responses:
+        '201':
+          description: Item created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlanItem'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    put:
+      operationId: reorderPlanItems
+      tags: [TrainingPlans]
+      summary: Reorder the items of a tenant plan
+      description: '`itemIds` must be a permutation of the plan''s items (422). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReorderPlanItemsRequest'}
+      responses:
+        '200':
+          description: Items in their new order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/PlanItem'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/training-plans/{planId}/items/{itemId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlanId'
+      - name: itemId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    patch:
+      operationId: updatePlanItem
+      tags: [TrainingPlans]
+      summary: Update a plan item
+      description: 'Templates are read-only (403). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdatePlanItemRequest'}
+      responses:
+        '200':
+          description: Updated item.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlanItem'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deletePlanItem
+      tags: [TrainingPlans]
+      summary: Remove a plan item
+      description: 'Templates are read-only (403). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      responses:
+        '204':
+          description: Item removed.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ plan assignments & completions
+  /api/athlete/plan-assignments:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listPlanAssignments
+      tags: [PlanAssignments]
+      summary: List plan assignments
+      description: |
+        With `playerId`, team assignments are fanned out to the player's current teams at read time.
+        Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
+      parameters:
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - name: dueFrom
+          in: query
+          schema: {type: string, format: date}
+        - name: dueTo
+          in: query
+          schema: {type: string, format: date}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of assignments.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlanAssignmentPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createPlanAssignment
+      tags: [PlanAssignments]
+      summary: Assign a tenant plan to a team or a player
+      description: 'Exactly one of `teamId` / `playerId` (422). Templates must be copied first (422). Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreatePlanAssignmentRequest'}
+      responses:
+        '201':
+          description: Assignment created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlanAssignment'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/plan-assignments/{assignmentId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/AssignmentId'
+    get:
+      operationId: getPlanAssignment
+      tags: [PlanAssignments]
+      summary: Get a plan assignment
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      responses:
+        '200':
+          description: The assignment.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlanAssignment'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    delete:
+      operationId: deletePlanAssignment
+      tags: [PlanAssignments]
+      summary: Withdraw a plan assignment
+      description: 'Completions recorded for it are deleted with it. Authz: ADMIN; team staff.'
+      responses:
+        '204':
+          description: Assignment removed.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/athlete/plan-assignments/{assignmentId}/completions/{playerId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/AssignmentId'
+      - name: playerId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    put:
+      operationId: recordPlanCompletion
+      tags: [PlanCompletions]
+      summary: Record (or change) a player's completion of an assignment
+      description: 'The player must be a target of the assignment (422). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RecordPlanCompletionRequest'}
+      responses:
+        '200':
+          description: Stored completion.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlanCompletion'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/plan-completions:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listPlanCompletions
+      tags: [PlanCompletions]
+      summary: List recorded plan completions
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      parameters:
+        - name: assignmentId
+          in: query
+          schema: {type: string, format: uuid}
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of completions.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlanCompletionPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ injuries
+  /api/athlete/injuries:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listInjuries
+      tags: [Injuries]
+      summary: List injuries
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self, read).'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/InjuryStatus'}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of injuries.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InjuryPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createInjury
+      tags: [Injuries]
+      summary: Report an injury
+      description: '`expectedReturnOn` ≥ `occurredOn` (422). An OPEN injury shows the player as unavailable. Authz: ADMIN; team staff; PARENT (linked).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateInjuryRequest'}
+      responses:
+        '201':
+          description: Injury created (OPEN).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Injury'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/injuries/{injuryId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: injuryId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    get:
+      operationId: getInjury
+      tags: [Injuries]
+      summary: Get an injury
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      responses:
+        '200':
+          description: The injury.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Injury'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateInjury
+      tags: [Injuries]
+      summary: Update an injury (e.g. mark RECOVERED with `actualReturnOn`)
+      description: 'RECOVERED requires `actualReturnOn` ≥ `occurredOn` (422). Authz: ADMIN; team staff; PARENT (linked).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateInjuryRequest'}
+      responses:
+        '200':
+          description: Updated injury.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Injury'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deleteInjury
+      tags: [Injuries]
+      summary: Delete an injury entered by mistake
+      description: 'Authz: ADMIN; team staff.'
+      responses:
+        '204':
+          description: Injury deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ body measurements
+  /api/athlete/body-measurements:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listBodyMeasurements
+      tags: [BodyMeasurements]
+      summary: Height / weight history of a player (measuredOn ascending)
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      parameters:
+        - name: playerId
+          in: query
+          required: true
+          schema: {type: string, format: uuid}
+        - $ref: './common.yaml#/components/parameters/FromDate'
+        - $ref: './common.yaml#/components/parameters/ToDate'
+      responses:
+        '200':
+          description: Measurements.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/BodyMeasurement'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createBodyMeasurement
+      tags: [BodyMeasurements]
+      summary: Record height and/or weight
+      description: 'At least one of `heightCm` / `weightKg` (422); one measurement per player and day (409). Authz: ADMIN; team staff; PARENT (linked).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BodyMeasurementInput'}
+      responses:
+        '201':
+          description: Measurement created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BodyMeasurement'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/body-measurements/{measurementId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: measurementId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    patch:
+      operationId: updateBodyMeasurement
+      tags: [BodyMeasurements]
+      summary: Correct a measurement
+      description: 'Authz: ADMIN; team staff; PARENT (linked).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateBodyMeasurementRequest'}
+      responses:
+        '200':
+          description: Updated measurement.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BodyMeasurement'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deleteBodyMeasurement
+      tags: [BodyMeasurements]
+      summary: Delete a measurement
+      description: 'Authz: ADMIN; team staff; PARENT (linked).'
+      responses:
+        '204':
+          description: Measurement deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ physical tests
+  /api/athlete/physical-test-types:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listPhysicalTestTypes
+      tags: [PhysicalTests]
+      summary: List test types (global and tenant-defined)
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: Test types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/PhysicalTestType'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createPhysicalTestType
+      tags: [PhysicalTests]
+      summary: Define a tenant-specific test type
+      description: '`code` is unique across global and tenant types (409). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PhysicalTestTypeInput'}
+      responses:
+        '201':
+          description: Test type created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestType'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /api/athlete/physical-test-types/{testTypeId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: testTypeId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    get:
+      operationId: getPhysicalTestType
+      tags: [PhysicalTests]
+      summary: Get a test type
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: The test type.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestType'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updatePhysicalTestType
+      tags: [PhysicalTests]
+      summary: Update a tenant-specific test type
+      description: 'Global types are read-only (403). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdatePhysicalTestTypeRequest'}
+      responses:
+        '200':
+          description: Updated test type.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestType'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/athlete/physical-test-results:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listPhysicalTestResults
+      tags: [PhysicalTests]
+      summary: List test results (each with its expected norm band)
+      description: 'Authz: ADMIN; team staff; PARENT (linked, read); PLAYER (self, read).'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - name: testTypeId
+          in: query
+          schema: {type: string, format: uuid}
+        - $ref: './common.yaml#/components/parameters/FromDate'
+        - $ref: './common.yaml#/components/parameters/ToDate'
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of results.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestResultPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createPhysicalTestResult
+      tags: [PhysicalTests]
+      summary: Record a test result
+      description: |
+        The server computes the player's age at `measuredOn` (birth date and gender from core) and the expected band
+        (tenant norm overrides global). Authz: ADMIN; team staff.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PhysicalTestResultInput'}
+      responses:
+        '201':
+          description: Result created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestResult'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/physical-test-results/{resultId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: resultId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    get:
+      operationId: getPhysicalTestResult
+      tags: [PhysicalTests]
+      summary: Get a test result
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      responses:
+        '200':
+          description: The result.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestResult'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updatePhysicalTestResult
+      tags: [PhysicalTests]
+      summary: Correct a test result (band is recomputed)
+      description: 'Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdatePhysicalTestResultRequest'}
+      responses:
+        '200':
+          description: Updated result.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestResult'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deletePhysicalTestResult
+      tags: [PhysicalTests]
+      summary: Delete a test result
+      description: 'Authz: ADMIN; team staff.'
+      responses:
+        '204':
+          description: Result deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/athlete/physical-test-norms:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listPhysicalTestNorms
+      tags: [PhysicalTests]
+      summary: List norm bands
+      description: |
+        `scope=EFFECTIVE` (default) returns the norms in force for the tenant (tenant rows replace the global rows of the
+        same test, gender and age range); `GLOBAL` / `TENANT` return one layer only. Authz: any member.
+      parameters:
+        - name: testTypeId
+          in: query
+          schema: {type: string, format: uuid}
+        - name: gender
+          in: query
+          schema: {$ref: './common.yaml#/components/schemas/Gender'}
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [EFFECTIVE, GLOBAL, TENANT]
+            default: EFFECTIVE
+      responses:
+        '200':
+          description: Norm bands.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/PhysicalTestNorm'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createPhysicalTestNorm
+      tags: [PhysicalTests]
+      summary: Add a tenant norm band (overrides global for that test, gender and age range)
+      description: 'Overlapping tenant bands for the same (test, gender, age, band) are rejected (409). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PhysicalTestNormInput'}
+      responses:
+        '201':
+          description: Norm created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestNorm'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/athlete/physical-test-norms/{normId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: normId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    put:
+      operationId: replacePhysicalTestNorm
+      tags: [PhysicalTests]
+      summary: Replace a tenant norm band
+      description: 'Global norms are read-only (403). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PhysicalTestNormInput'}
+      responses:
+        '200':
+          description: Updated norm.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PhysicalTestNorm'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deletePhysicalTestNorm
+      tags: [PhysicalTests]
+      summary: Delete a tenant norm band (the global band applies again)
+      description: 'Global norms are read-only (403). Authz: ADMIN.'
+      responses:
+        '204':
+          description: Norm deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ internal
+  /internal/usage/{tenantId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    get:
+      operationId: getAthleteUsage
+      tags: [Internal]
+      summary: athlete-service usage counters of a tenant
+      description: 'Authz: role `service`.'
+      x-internal: true
+      responses:
+        '200':
+          description: Usage counters.
+          content:
+            application/json:
+              schema: {$ref: './common.yaml#/components/schemas/UsageReport'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './common.yaml#/components/securitySchemes/bearerAuth'
+
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    PlanId:
+      name: planId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    AssignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+
+  schemas:
+    # ---------------- enums & small types
+    DayOfWeek:
+      type: string
+      enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+    LocalTime:
+      type: string
+      description: Wall-clock time in the tenant's time zone, `HH:mm`.
+      pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+      example: '18:30'
+    TrainingSessionStatus:
+      type: string
+      enum: [PLANNED, DONE, CANCELLED]
+    AttendanceStatus:
+      type: string
+      enum: [PRESENT, LATE, ABSENT, EXCUSED]
+    CompletionStatus:
+      type: string
+      enum: [DONE, PARTIAL, NOT_DONE]
+    InjurySeverity:
+      type: string
+      enum: [MINOR, MODERATE, SEVERE]
+    InjuryStatus:
+      type: string
+      enum: [OPEN, RECOVERED]
+    NormBand:
+      type: string
+      description: Expected performance band, worst to best.
+      enum: [POOR, BELOW_AVERAGE, AVERAGE, ABOVE_AVERAGE, EXCELLENT]
+    AuditInfo:
+      type: object
+      required: [recordedBy, recordedAt]
+      properties:
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}
+
+    # ---------------- schedules & sessions
+    TrainingScheduleInput:
+      type: object
+      required: [teamId, dayOfWeek, startTime, durationMinutes, validFrom]
+      properties:
+        teamId: {type: string, format: uuid}
+        dayOfWeek: {$ref: '#/components/schemas/DayOfWeek'}
+        startTime: {$ref: '#/components/schemas/LocalTime'}
+        durationMinutes: {type: integer, format: int32, minimum: 15, maximum: 480}
+        location: {type: string, maxLength: 200}
+        validFrom: {type: string, format: date}
+        validUntil:
+          type: string
+          format: date
+          description: Inclusive; absent = open-ended.
+    TrainingSchedule:
+      allOf:
+        - $ref: '#/components/schemas/TrainingScheduleInput'
+        - type: object
+          required: [id]
+          properties:
+            id: {type: string, format: uuid}
+    UpdateTrainingScheduleRequest:
+      type: object
+      minProperties: 1
+      properties:
+        dayOfWeek: {$ref: '#/components/schemas/DayOfWeek'}
+        startTime: {$ref: '#/components/schemas/LocalTime'}
+        durationMinutes: {type: integer, format: int32, minimum: 15, maximum: 480}
+        location: {type: string, maxLength: 200, nullable: true}
+        validFrom: {type: string, format: date}
+        validUntil: {type: string, format: date, nullable: true}
+    TrainingSession:
+      type: object
+      required: [id, teamId, startsAt, durationMinutes, status]
+      properties:
+        id: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        scheduleId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null for ad-hoc sessions.
+        startsAt: {type: string, format: date-time}
+        durationMinutes: {type: integer, format: int32, minimum: 15, maximum: 480}
+        location: {type: string, nullable: true}
+        status: {$ref: '#/components/schemas/TrainingSessionStatus'}
+        planId: {type: string, format: uuid, nullable: true}
+        notes: {type: string, nullable: true}
+        cancelReason: {type: string, nullable: true}
+    TrainingSessionPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/TrainingSession'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreateTrainingSessionRequest:
+      type: object
+      required: [teamId, startsAt, durationMinutes]
+      properties:
+        teamId: {type: string, format: uuid}
+        startsAt: {type: string, format: date-time}
+        durationMinutes: {type: integer, format: int32, minimum: 15, maximum: 480}
+        location: {type: string, maxLength: 200}
+        planId: {type: string, format: uuid}
+        notes: {type: string, maxLength: 2000}
+    UpdateTrainingSessionRequest:
+      type: object
+      minProperties: 1
+      properties:
+        startsAt: {type: string, format: date-time}
+        durationMinutes: {type: integer, format: int32, minimum: 15, maximum: 480}
+        location: {type: string, maxLength: 200, nullable: true}
+        planId: {type: string, format: uuid, nullable: true}
+        notes: {type: string, maxLength: 2000, nullable: true}
+        status:
+          type: string
+          description: PLANNED ↔ DONE; use the cancel operation to cancel.
+          enum: [PLANNED, DONE]
+    CancelTrainingSessionRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 500}
+
+    # ---------------- attendance
+    AttendanceEntry:
+      type: object
+      required: [playerId, expectedAbsent]
+      properties:
+        playerId: {type: string, format: uuid}
+        status:
+          allOf: [{$ref: '#/components/schemas/AttendanceStatus'}]
+          nullable: true
+          description: Null = not recorded yet.
+        minutesLate: {type: integer, format: int32, minimum: 1, maximum: 480, nullable: true}
+        note: {type: string, nullable: true}
+        expectedAbsent:
+          type: boolean
+          description: A planned absence covers the session date.
+        plannedAbsenceId: {type: string, format: uuid, nullable: true}
+        unavailableInjuryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set when the player has an OPEN injury.
+        recordedBy:
+          allOf: [{$ref: './common.yaml#/components/schemas/PersonRef'}]
+          nullable: true
+        recordedAt: {type: string, format: date-time, nullable: true}
+    SessionAttendance:
+      type: object
+      required: [sessionId, entries]
+      properties:
+        sessionId: {type: string, format: uuid}
+        entries:
+          type: array
+          items: {$ref: '#/components/schemas/AttendanceEntry'}
+    AttendanceInput:
+      type: object
+      required: [playerId, status]
+      properties:
+        playerId: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/AttendanceStatus'}
+        minutesLate:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 480
+          description: Required iff status = LATE.
+        note: {type: string, maxLength: 500}
+    RecordAttendanceRequest:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: {$ref: '#/components/schemas/AttendanceInput'}
+
+    # ---------------- planned absences
+    PlannedAbsenceInput:
+      type: object
+      required: [playerId, fromDate, toDate]
+      properties:
+        playerId: {type: string, format: uuid}
+        fromDate: {type: string, format: date}
+        toDate:
+          type: string
+          format: date
+          description: Inclusive.
+        reason: {type: string, maxLength: 500}
+    PlannedAbsence:
+      allOf:
+        - $ref: '#/components/schemas/PlannedAbsenceInput'
+        - $ref: '#/components/schemas/AuditInfo'
+        - type: object
+          required: [id]
+          properties:
+            id: {type: string, format: uuid}
+    PlannedAbsencePage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PlannedAbsence'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    UpdatePlannedAbsenceRequest:
+      type: object
+      minProperties: 1
+      properties:
+        fromDate: {type: string, format: date}
+        toDate: {type: string, format: date}
+        reason: {type: string, maxLength: 500, nullable: true}
+
+    # ---------------- plans
+    PlanItemInput:
+      type: object
+      required: [title]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, maxLength: 4000}
+        durationMinutes: {type: integer, format: int32, minimum: 1, maximum: 480}
+        sets: {type: integer, format: int32, minimum: 1, maximum: 100}
+        repetitions: {type: integer, format: int32, minimum: 1, maximum: 1000}
+        videoUrl: {type: string, format: uri, maxLength: 2000}
+    PlanItem:
+      allOf:
+        - $ref: '#/components/schemas/PlanItemInput'
+        - type: object
+          required: [id, position]
+          properties:
+            id: {type: string, format: uuid}
+            position:
+              type: integer
+              format: int32
+              minimum: 0
+              description: 0-based order within the plan.
+    UpdatePlanItemRequest:
+      type: object
+      minProperties: 1
+      properties:
+        title: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, maxLength: 4000, nullable: true}
+        durationMinutes: {type: integer, format: int32, minimum: 1, maximum: 480, nullable: true}
+        sets: {type: integer, format: int32, minimum: 1, maximum: 100, nullable: true}
+        repetitions: {type: integer, format: int32, minimum: 1, maximum: 1000, nullable: true}
+        videoUrl: {type: string, format: uri, maxLength: 2000, nullable: true}
+    ReorderPlanItemsRequest:
+      type: object
+      required: [itemIds]
+      properties:
+        itemIds:
+          type: array
+          uniqueItems: true
+          items: {type: string, format: uuid}
+    TrainingPlanSummary:
+      type: object
+      required: [id, name, template, itemCount, totalDurationMinutes]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        description: {type: string, nullable: true}
+        template:
+          type: boolean
+          description: Global, read-only template (copy before use).
+        sourceTemplateId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Template (or plan) this plan was copied from.
+        itemCount: {type: integer, format: int32, minimum: 0}
+        totalDurationMinutes: {type: integer, format: int32, minimum: 0}
+    TrainingPlan:
+      allOf:
+        - $ref: '#/components/schemas/TrainingPlanSummary'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: {$ref: '#/components/schemas/PlanItem'}
+    TrainingPlanSummaryPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/TrainingPlanSummary'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreateTrainingPlanRequest:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, maxLength: 4000}
+        items:
+          type: array
+          maxItems: 100
+          items: {$ref: '#/components/schemas/PlanItemInput'}
+    UpdateTrainingPlanRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, maxLength: 4000, nullable: true}
+    CopyTrainingPlanRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: Defaults to the source plan's name.
+
+    # ---------------- assignments & completions
+    CreatePlanAssignmentRequest:
+      type: object
+      description: Exactly one of `teamId` / `playerId`.
+      required: [planId, dueOn]
+      properties:
+        planId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        playerId: {type: string, format: uuid}
+        dueOn: {type: string, format: date}
+        notes: {type: string, maxLength: 2000}
+    PlanAssignment:
+      allOf:
+        - $ref: '#/components/schemas/AuditInfo'
+        - type: object
+          required: [id, plan, dueOn]
+          properties:
+            id: {type: string, format: uuid}
+            plan: {$ref: '#/components/schemas/TrainingPlanSummary'}
+            teamId: {type: string, format: uuid, nullable: true}
+            playerId: {type: string, format: uuid, nullable: true}
+            dueOn: {type: string, format: date}
+            notes: {type: string, nullable: true}
+    PlanAssignmentPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PlanAssignment'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    RecordPlanCompletionRequest:
+      type: object
+      required: [status]
+      properties:
+        status: {$ref: '#/components/schemas/CompletionStatus'}
+        comment: {type: string, maxLength: 1000}
+    PlanCompletion:
+      allOf:
+        - $ref: '#/components/schemas/AuditInfo'
+        - type: object
+          required: [id, assignmentId, playerId, status]
+          properties:
+            id: {type: string, format: uuid}
+            assignmentId: {type: string, format: uuid}
+            playerId: {type: string, format: uuid}
+            status: {$ref: '#/components/schemas/CompletionStatus'}
+            comment: {type: string, nullable: true}
+    PlanCompletionPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PlanCompletion'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+
+    # ---------------- injuries
+    CreateInjuryRequest:
+      type: object
+      required: [playerId, occurredOn, bodyPart, severity]
+      properties:
+        playerId: {type: string, format: uuid}
+        occurredOn: {type: string, format: date}
+        bodyPart: {type: string, minLength: 1, maxLength: 80, example: left ankle}
+        severity: {$ref: '#/components/schemas/InjurySeverity'}
+        description: {type: string, maxLength: 2000}
+        expectedReturnOn:
+          type: string
+          format: date
+          description: Must be ≥ occurredOn.
+    Injury:
+      allOf:
+        - $ref: '#/components/schemas/AuditInfo'
+        - type: object
+          required: [id, playerId, occurredOn, bodyPart, severity, status]
+          properties:
+            id: {type: string, format: uuid}
+            playerId: {type: string, format: uuid}
+            occurredOn: {type: string, format: date}
+            bodyPart: {type: string}
+            severity: {$ref: '#/components/schemas/InjurySeverity'}
+            description: {type: string, nullable: true}
+            expectedReturnOn: {type: string, format: date, nullable: true}
+            actualReturnOn: {type: string, format: date, nullable: true}
+            status: {$ref: '#/components/schemas/InjuryStatus'}
+    InjuryPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Injury'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    UpdateInjuryRequest:
+      type: object
+      minProperties: 1
+      properties:
+        occurredOn: {type: string, format: date}
+        bodyPart: {type: string, minLength: 1, maxLength: 80}
+        severity: {$ref: '#/components/schemas/InjurySeverity'}
+        description: {type: string, maxLength: 2000, nullable: true}
+        expectedReturnOn: {type: string, format: date, nullable: true}
+        actualReturnOn: {type: string, format: date, nullable: true}
+        status: {$ref: '#/components/schemas/InjuryStatus'}
+
+    # ---------------- body measurements
+    BodyMeasurementInput:
+      type: object
+      description: At least one of `heightCm` / `weightKg`.
+      required: [playerId, measuredOn]
+      properties:
+        playerId: {type: string, format: uuid}
+        measuredOn: {type: string, format: date}
+        heightCm: {type: number, format: double, minimum: 50, maximum: 250}
+        weightKg: {type: number, format: double, minimum: 10, maximum: 250}
+    BodyMeasurement:
+      allOf:
+        - $ref: '#/components/schemas/AuditInfo'
+        - type: object
+          required: [id, playerId, measuredOn]
+          properties:
+            id: {type: string, format: uuid}
+            playerId: {type: string, format: uuid}
+            measuredOn: {type: string, format: date}
+            heightCm: {type: number, format: double, nullable: true}
+            weightKg: {type: number, format: double, nullable: true}
+    UpdateBodyMeasurementRequest:
+      type: object
+      minProperties: 1
+      properties:
+        measuredOn: {type: string, format: date}
+        heightCm: {type: number, format: double, minimum: 50, maximum: 250, nullable: true}
+        weightKg: {type: number, format: double, minimum: 10, maximum: 250, nullable: true}
+
+    # ---------------- physical tests
+    PhysicalTestTypeInput:
+      type: object
+      required: [code, name, unit, higherIsBetter]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9_]{2,32}$'
+          example: SPRINT_20M
+        name: {type: string, minLength: 1, maxLength: 120}
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 16
+          example: s
+        higherIsBetter: {type: boolean}
+        description: {type: string, maxLength: 2000}
+    PhysicalTestType:
+      allOf:
+        - $ref: '#/components/schemas/PhysicalTestTypeInput'
+        - type: object
+          required: [id, global]
+          properties:
+            id: {type: string, format: uuid}
+            global:
+              type: boolean
+              description: Platform-provided (read-only) type.
+    UpdatePhysicalTestTypeRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        unit: {type: string, minLength: 1, maxLength: 16}
+        higherIsBetter: {type: boolean}
+        description: {type: string, maxLength: 2000, nullable: true}
+    PhysicalTestResultInput:
+      type: object
+      required: [playerId, testTypeId, measuredOn, value]
+      properties:
+        playerId: {type: string, format: uuid}
+        testTypeId: {type: string, format: uuid}
+        measuredOn: {type: string, format: date}
+        value:
+          type: number
+          format: double
+          description: In the test type's unit.
+        notes: {type: string, maxLength: 1000}
+    PhysicalTestResult:
+      allOf:
+        - $ref: '#/components/schemas/AuditInfo'
+        - type: object
+          required: [id, playerId, testTypeId, testCode, unit, measuredOn, value, ageAtMeasurement, referencePending]
+          properties:
+            id: {type: string, format: uuid}
+            playerId: {type: string, format: uuid}
+            testTypeId: {type: string, format: uuid}
+            testCode: {type: string}
+            unit: {type: string}
+            measuredOn: {type: string, format: date}
+            value: {type: number, format: double}
+            ageAtMeasurement:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Actual age (years) on measuredOn.
+            expectedBand:
+              allOf: [{$ref: '#/components/schemas/NormBand'}]
+              nullable: true
+              description: Band for (gender, age at measurement, value); null when no norm covers the result.
+            normId:
+              type: string
+              format: uuid
+              nullable: true
+              description: Norm row that produced `expectedBand`.
+            referencePending:
+              type: boolean
+              description: The applied norm has no cited source yet ("reference pending" in the UI).
+            notes: {type: string, nullable: true}
+    PhysicalTestResultPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PhysicalTestResult'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    UpdatePhysicalTestResultRequest:
+      type: object
+      minProperties: 1
+      properties:
+        measuredOn: {type: string, format: date}
+        value: {type: number, format: double}
+        notes: {type: string, maxLength: 1000, nullable: true}
+    PhysicalTestNormInput:
+      type: object
+      description: Value range [minValue, maxValue) for a band; a missing bound is open.
+      required: [testTypeId, gender, minAge, maxAge, band]
+      properties:
+        testTypeId: {type: string, format: uuid}
+        gender: {$ref: './common.yaml#/components/schemas/Gender'}
+        minAge: {type: integer, format: int32, minimum: 3, maximum: 99}
+        maxAge:
+          type: integer
+          format: int32
+          minimum: 3
+          maximum: 99
+          description: Inclusive.
+        band: {$ref: '#/components/schemas/NormBand'}
+        minValue: {type: number, format: double, nullable: true}
+        maxValue: {type: number, format: double, nullable: true}
+        source:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Citation of the reference the values come from.
+    PhysicalTestNorm:
+      allOf:
+        - $ref: '#/components/schemas/PhysicalTestNormInput'
+        - type: object
+          required: [id, global, referencePending]
+          properties:
+            id: {type: string, format: uuid}
+            global:
+              type: boolean
+              description: Platform-provided norm (tenant rows override it).
+            referencePending:
+              type: boolean
+              description: No source cited.

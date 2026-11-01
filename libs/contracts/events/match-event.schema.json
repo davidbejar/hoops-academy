@@ -1,0 +1,702 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hoops.academy/contracts/events/match-event.schema.json",
+  "title": "MatchEvent",
+  "description": "Append-only, client-identified match event (game-service). Dispatch on `type` (the discriminator): every value of $defs/MatchEventType has exactly one $defs/<Type>Event, applied through the if/then entries of allOf. Mirrors components.schemas.MatchEvent of openapi/game.yaml (kept in sync by MatchEventSchemaConsistencyTest). The server validates schema and authorization only, never domain consistency.",
+  "allOf": [
+    {
+      "$ref": "#/$defs/MatchEventBase"
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "PERIOD_START"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/PeriodStartEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "PERIOD_END"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/PeriodEndEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "SUB_IN"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/SubInEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "SUB_OUT"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/SubOutEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "SHOT"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/ShotEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "ASSIST"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/AssistEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "REBOUND"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/ReboundEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "TURNOVER"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/TurnoverEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "STEAL"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/StealEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "BLOCK"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/BlockEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "FOUL"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/FoulEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "OPPONENT_SCORE"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/OpponentScoreEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "TIMEOUT"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/TimeoutEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "VOID"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/VoidEvent"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "NOTE"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/NoteEvent"
+      }
+    }
+  ],
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "MatchEventType": {
+      "type": "string",
+      "enum": [
+        "PERIOD_START",
+        "PERIOD_END",
+        "SUB_IN",
+        "SUB_OUT",
+        "SHOT",
+        "ASSIST",
+        "REBOUND",
+        "TURNOVER",
+        "STEAL",
+        "BLOCK",
+        "FOUL",
+        "OPPONENT_SCORE",
+        "TIMEOUT",
+        "VOID",
+        "NOTE"
+      ]
+    },
+    "MatchEventBase": {
+      "type": "object",
+      "description": "Fields common to every match event.",
+      "required": [
+        "id",
+        "deviceId",
+        "clientSeq",
+        "type",
+        "period",
+        "clockSecondsRemaining",
+        "recordedAtClient"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid",
+          "description": "Client-generated UUIDv7; the idempotency key."
+        },
+        "deviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "clientSeq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "type": {
+          "$ref": "#/$defs/MatchEventType"
+        },
+        "period": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "clockSecondsRemaining": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600
+        },
+        "recordedAtClient": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ShotPayload": {
+      "type": "object",
+      "required": [
+        "points",
+        "made"
+      ],
+      "properties": {
+        "points": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        },
+        "made": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ReboundPayload": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "OFFENSIVE",
+            "DEFENSIVE"
+          ]
+        }
+      }
+    },
+    "FoulPayload": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "PERSONAL",
+            "TECHNICAL",
+            "UNSPORTSMANLIKE"
+          ]
+        }
+      }
+    },
+    "OpponentScorePayload": {
+      "type": "object",
+      "required": [
+        "points"
+      ],
+      "properties": {
+        "points": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        }
+      }
+    },
+    "TimeoutPayload": {
+      "type": "object",
+      "required": [
+        "side"
+      ],
+      "properties": {
+        "side": {
+          "type": "string",
+          "enum": [
+            "OWN",
+            "OPPONENT"
+          ]
+        }
+      }
+    },
+    "VoidPayload": {
+      "type": "object",
+      "required": [
+        "targetEventId"
+      ],
+      "properties": {
+        "targetEventId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      }
+    },
+    "NotePayload": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "PeriodStartEvent": {
+      "description": "Start of a period (clock / period event; staff only).",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "PERIOD_START"
+        }
+      }
+    },
+    "PeriodEndEvent": {
+      "description": "End of a period (clock / period event; staff only).",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "PERIOD_END"
+        }
+      }
+    },
+    "SubInEvent": {
+      "description": "Player enters the court (staff only).",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "SUB_IN"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "playerId"
+      ]
+    },
+    "SubOutEvent": {
+      "description": "Player leaves the court (staff only).",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "SUB_OUT"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "playerId"
+      ]
+    },
+    "ShotEvent": {
+      "description": "Shot attempt (free throw, 2 or 3 points), made or missed.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "SHOT"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "payload": {
+          "$ref": "#/$defs/ShotPayload"
+        }
+      },
+      "required": [
+        "playerId",
+        "payload"
+      ]
+    },
+    "AssistEvent": {
+      "description": "Assist.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "ASSIST"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "playerId"
+      ]
+    },
+    "ReboundEvent": {
+      "description": "Offensive or defensive rebound.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "REBOUND"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "payload": {
+          "$ref": "#/$defs/ReboundPayload"
+        }
+      },
+      "required": [
+        "playerId",
+        "payload"
+      ]
+    },
+    "TurnoverEvent": {
+      "description": "Turnover.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "TURNOVER"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "playerId"
+      ]
+    },
+    "StealEvent": {
+      "description": "Steal.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "STEAL"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "playerId"
+      ]
+    },
+    "BlockEvent": {
+      "description": "Blocked shot.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "BLOCK"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "playerId"
+      ]
+    },
+    "FoulEvent": {
+      "description": "Foul committed by the player.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "FOUL"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "payload": {
+          "$ref": "#/$defs/FoulPayload"
+        }
+      },
+      "required": [
+        "playerId",
+        "payload"
+      ]
+    },
+    "OpponentScoreEvent": {
+      "description": "Points scored by the opponent (staff only).",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "OPPONENT_SCORE"
+        },
+        "payload": {
+          "$ref": "#/$defs/OpponentScorePayload"
+        }
+      },
+      "required": [
+        "payload"
+      ]
+    },
+    "TimeoutEvent": {
+      "description": "Timeout called by either side (staff only).",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "TIMEOUT"
+        },
+        "payload": {
+          "$ref": "#/$defs/TimeoutPayload"
+        }
+      },
+      "required": [
+        "payload"
+      ]
+    },
+    "VoidEvent": {
+      "description": "Cancels the effect of an earlier event in all projections.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "VOID"
+        },
+        "payload": {
+          "$ref": "#/$defs/VoidPayload"
+        }
+      },
+      "required": [
+        "payload"
+      ]
+    },
+    "NoteEvent": {
+      "description": "Free-text annotation (optionally about a player); no effect on statistics.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/MatchEventBase"
+        }
+      ],
+      "properties": {
+        "type": {
+          "const": "NOTE"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "payload": {
+          "$ref": "#/$defs/NotePayload"
+        }
+      },
+      "required": [
+        "payload"
+      ]
+    }
+  }
+}

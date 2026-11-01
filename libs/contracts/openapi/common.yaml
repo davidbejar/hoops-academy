@@ -1,0 +1,284 @@
+openapi: 3.0.3
+info:
+  title: Hoops Academy — shared components
+  version: 1.0.0
+  description: |
+    Components shared by `core.yaml`, `game.yaml` and `athlete.yaml` (referenced as `./common.yaml#/...`).
+    This file declares no operations.
+
+    Conventions used by every service contract:
+    - Ids are `uuid`; calendar dates are `date` (ISO-8601 `YYYY-MM-DD`); instants are `date-time` in UTC (`Z`).
+    - Errors are `application/problem+json` (RFC 9457) using the `Problem` schema; no stack traces.
+    - Tenant-scoped operations require the `X-Tenant-Id` header (`TenantIdHeader`). A caller who is not a member of
+      that tenant receives **404**, never 403, so that tenant existence does not leak.
+    - Unbounded collections are paged with `page` (0-based) and `size` (1..200) and answer with a page envelope
+      `{ "items": [...], "page": PageMeta }`; the envelope is declared per resource as `<Resource>Page`.
+      Small, bounded collections (age categories, team staff, ...) are returned as plain JSON arrays.
+paths: {}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak access token (realm `academy`). `/internal/**` requires a client-credentials token with the `service` role.
+
+  parameters:
+    TenantIdHeader:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      description: Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
+      schema:
+        type: string
+        format: uuid
+    TenantIdPath:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TenantIdQuery:
+      name: tenantId
+      in: query
+      required: true
+      description: Tenant whose RLS context the internal call runs in (internal calls carry no `X-Tenant-Id` header).
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      required: false
+      description: 0-based page index.
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Page size.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 200
+        default: 50
+    FromDate:
+      name: from
+      in: query
+      required: false
+      description: Inclusive lower bound (calendar date in the tenant's time zone).
+      schema:
+        type: string
+        format: date
+    ToDate:
+      name: to
+      in: query
+      required: false
+      description: Inclusive upper bound (calendar date in the tenant's time zone).
+      schema:
+        type: string
+        format: date
+    PlayerIdQuery:
+      name: playerId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    TeamIdQuery:
+      name: teamId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    SeasonIdQuery:
+      name: seasonId
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Problem:
+      type: object
+      description: |
+        RFC 9457 problem details (serialised by `com.hoopsacademy.common.problem.Problem`; absent members are omitted).
+        Extension members: `traceId` (correlation with logs/traces), `code` (stable machine-readable reason clients may
+        branch on) and `violations` (field-level violations for 400, rule reasons for 422).
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: about:blank
+          description: Problem type URI, `urn:hoops:problem:<slug>` (e.g. `urn:hoops:problem:domain-rule-violation`).
+          example: urn:hoops:problem:domain-rule-violation
+        title:
+          type: string
+          description: Short, human-readable summary of the problem type.
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 599
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence.
+        instance:
+          type: string
+          format: uri-reference
+          description: URI reference identifying this occurrence (usually the request path).
+        traceId:
+          type: string
+          description: Trace id of the request (from the logging MDC / OpenTelemetry), for support.
+        code:
+          type: string
+          description: Machine-readable reason in SCREAMING_SNAKE_CASE, e.g. `PLAYER_INELIGIBLE`, `NOT_PENDING`.
+          example: PLAYER_INELIGIBLE
+        violations:
+          type: array
+          description: Field-level violations (400) or rule reasons (422, e.g. eligibility reasons in `code`).
+          items:
+            $ref: '#/components/schemas/ProblemViolation'
+    ProblemViolation:
+      type: object
+      required: [message]
+      properties:
+        field:
+          type: string
+          description: Dotted path of the offending field, when applicable.
+          example: birthDate
+        code:
+          type: string
+          description: Machine-readable reason, e.g. `MISSING_BIRTH_DATE`.
+        message:
+          type: string
+
+    PageMeta:
+      type: object
+      required: [page, size, totalElements, totalPages]
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 200
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          minimum: 0
+
+    Gender:
+      type: string
+      description: Player gender used by team gender policies and fitness norms.
+      enum: [MALE, FEMALE]
+    Locale:
+      type: string
+      description: UI language.
+      enum: [es, en, id]
+
+    PersonRef:
+      type: object
+      description: Minimal reference to a person (member) for audit fields.
+      required: [personId, displayName]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+
+    UsageReport:
+      type: object
+      description: |
+        Usage counters of one service for one tenant (platform statistics and future billing). Counters by service:
+        core — `members`, `players`, `activePlayers`, `teams`, `seasons`; game — `matches`, `liveMatches`,
+        `matchEvents`, `matchEventsLast30Days`; athlete — `trainingSessions`, `attendanceRecords`, `trainingPlans`,
+        `physicalTestResults`, `injuries`, `bodyMeasurements`. Counters are additive: new keys may appear at any time.
+      required: [tenantId, service, collectedAt, counters]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        service:
+          type: string
+          enum: [core, game, athlete]
+        collectedAt:
+          type: string
+          format: date-time
+        lastActivityAt:
+          type: string
+          format: date-time
+          nullable: true
+        counters:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+            minimum: 0
+
+  responses:
+    BadRequest:
+      description: Malformed request (syntax, types, query parameters).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Missing, expired or invalid bearer token.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Authenticated tenant member (or platform caller) without the required role or scope.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Resource not found — also returned to non-members of the tenant (existence is never leaked).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: State conflict (duplicate, invalid state transition, concurrent modification).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unprocessable:
+      description: Well-formed request that violates a domain rule (e.g. eligibility); see `code` and `violations`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PayloadTooLarge:
+      description: Request body exceeds the documented size limit.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UnsupportedMediaType:
+      description: Content type not accepted (or content does not match the declared type).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

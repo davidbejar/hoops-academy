@@ -1,0 +1,2448 @@
+openapi: 3.0.3
+info:
+  title: Hoops Academy — core-service API
+  version: 1.0.0
+  description: |
+    Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
+
+    Path families (all served by core-service):
+    - `/api/core/**` — tenant API; every operation except `/api/core/me` requires `X-Tenant-Id`.
+    - `/platform/**` — platform super-admin API (realm role `super_admin`); never exposes tenant content.
+    - `/internal/**` — service-to-service API (client-credentials token with role `service`), blocked at the proxy,
+      marked `x-internal` so it is not generated into the Flutter client.
+
+    Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
+servers:
+  - url: /
+    description: Gateway root (paths are absolute because one service serves three path families).
+security:
+  - bearerAuth: []
+tags:
+  - name: Platform
+    description: Tenant lifecycle and usage statistics (super_admin).
+  - name: Me
+    description: The calling user and their memberships.
+  - name: Tenant
+    description: Academy profile, settings and logo.
+  - name: Members
+    description: Persons with tenant roles.
+  - name: GuardianLinks
+    description: Parent/guardian ↔ player relations.
+  - name: Seasons
+  - name: AgeCategories
+  - name: Teams
+    description: Teams, team staff and team players (eligibility-checked assignment).
+  - name: Players
+  - name: ApprovalRequests
+    description: Coach-initiated ADD_PLAYER / WITHDRAW_PLAYER requests awaiting an admin decision.
+  - name: EligibilityCases
+    description: Open issues raised when an assignment becomes invalid (e.g. after rollover).
+  - name: Internal
+    description: Service-to-service endpoints behind `RosterPort`.
+
+paths:
+  # ------------------------------------------------------------------ platform
+  /platform/tenants:
+    get:
+      operationId: listTenants
+      tags: [Platform]
+      summary: List tenants
+      description: 'Authz: super_admin.'
+      parameters:
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/TenantStatus'}
+        - name: q
+          in: query
+          description: Case-insensitive match on name or slug.
+          schema: {type: string, maxLength: 100}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of tenants.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createTenant
+      tags: [Platform]
+      summary: Onboard a tenant
+      description: |
+        Atomically creates the tenant, its default settings, the seeded age categories (U8 … U18, SENIOR) and the
+        first ADMIN membership; the admin is provisioned in Keycloak with a required-action e-mail.
+        Authz: super_admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateTenantRequest'}
+      responses:
+        '201':
+          description: Tenant created.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Tenant'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /platform/tenants/{tenantId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    get:
+      operationId: getTenant
+      tags: [Platform]
+      summary: Get a tenant
+      description: 'Authz: super_admin.'
+      responses:
+        '200':
+          description: The tenant.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Tenant'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateTenant
+      tags: [Platform]
+      summary: Update tenant master data
+      description: 'Authz: super_admin. Absent fields are left unchanged.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateTenantRequest'}
+      responses:
+        '200':
+          description: Updated tenant.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Tenant'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /platform/tenants/{tenantId}/suspend:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    post:
+      operationId: suspendTenant
+      tags: [Platform]
+      summary: Suspend a tenant
+      description: 'Logins to the tenant are blocked until it is reactivated. Authz: super_admin.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TenantLifecycleRequest'}
+      responses:
+        '200':
+          description: Suspended tenant.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Tenant'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /platform/tenants/{tenantId}/reactivate:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    post:
+      operationId: reactivateTenant
+      tags: [Platform]
+      summary: Reactivate a suspended tenant
+      description: 'Only SUSPENDED tenants can be reactivated (409 otherwise). Authz: super_admin.'
+      responses:
+        '200':
+          description: Active tenant.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Tenant'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /platform/tenants/{tenantId}/withdraw:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    post:
+      operationId: withdrawTenant
+      tags: [Platform]
+      summary: Withdraw a tenant
+      description: |
+        Terminal state: logins are blocked immediately, data is retained until `retainUntil`
+        (purge job is v2). Authz: super_admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TenantLifecycleRequest'}
+      responses:
+        '200':
+          description: Withdrawn tenant.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Tenant'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /platform/tenants/{tenantId}/usage:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    get:
+      operationId: getTenantUsage
+      tags: [Platform]
+      summary: Usage statistics of a tenant across all services
+      description: |
+        Aggregates `/internal/usage/{tenantId}` of core, game and athlete. A service that does not answer is listed in
+        `unavailableServices` instead of failing the whole request. Authz: super_admin.
+      responses:
+        '200':
+          description: Usage per service.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantUsage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ me
+  /api/core/me:
+    get:
+      operationId: getMe
+      tags: [Me]
+      summary: The calling user, their memberships and per-tenant authorization summary
+      description: 'Feeds the tenant switcher. No `X-Tenant-Id`. 404 when the token subject is not provisioned.'
+      responses:
+        '200':
+          description: The caller.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Me'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateMe
+      tags: [Me]
+      summary: Update the caller's preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateMeRequest'}
+      responses:
+        '200':
+          description: The caller.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Me'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  # ------------------------------------------------------------------ tenant profile
+  /api/core/tenant:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: getTenantProfile
+      tags: [Tenant]
+      summary: Get the academy profile
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: Academy profile.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantProfile'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateTenantProfile
+      tags: [Tenant]
+      summary: Update the academy profile
+      description: 'Authz: ADMIN. Absent fields are left unchanged.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateTenantProfileRequest'}
+      responses:
+        '200':
+          description: Updated profile.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantProfile'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/tenant/settings:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: getTenantSettings
+      tags: [Tenant]
+      summary: Get roster rules and defaults
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: Settings.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantSettings'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    put:
+      operationId: replaceTenantSettings
+      tags: [Tenant]
+      summary: Replace roster rules and defaults
+      description: |
+        Changing `ageRule` or `maxPlayUpLevels` triggers a synchronous eligibility evaluation; resulting orphans are
+        reported as eligibility cases. Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TenantSettings'}
+      responses:
+        '200':
+          description: Stored settings.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantSettings'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/tenant/logo:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: getTenantLogo
+      tags: [Tenant]
+      summary: Download the academy logo
+      description: 'Served with `ETag` and `Cache-Control`; send `If-None-Match` to get 304. Authz: any member.'
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          schema: {type: string}
+      responses:
+        '200':
+          description: Logo bytes.
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+            Cache-Control: {$ref: '#/components/headers/CacheControl'}
+          content:
+            image/png:
+              schema: {$ref: '#/components/schemas/LogoBinary'}
+            image/jpeg:
+              schema: {$ref: '#/components/schemas/LogoBinary'}
+            image/webp:
+              schema: {$ref: '#/components/schemas/LogoBinary'}
+        '304':
+          description: Logo unchanged (ETag matched).
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    put:
+      operationId: putTenantLogo
+      tags: [Tenant]
+      summary: Upload or replace the academy logo
+      description: |
+        Raw image body, at most 512 KB (524 288 bytes). The `Content-Type` must be one of the listed image types; the
+        server identifies the format from the magic bytes (PNG, JPEG or WebP — anything else, including SVG, is 415,
+        ADR-0009) and stores/serves that detected type with `X-Content-Type-Options: nosniff`. Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema: {$ref: '#/components/schemas/LogoBinary'}
+          image/jpeg:
+            schema: {$ref: '#/components/schemas/LogoBinary'}
+          image/webp:
+            schema: {$ref: '#/components/schemas/LogoBinary'}
+      responses:
+        '200':
+          description: Stored logo metadata.
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantLogo'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
+    delete:
+      operationId: deleteTenantLogo
+      tags: [Tenant]
+      summary: Remove the academy logo
+      description: 'Authz: ADMIN. 404 when no logo is stored.'
+      responses:
+        '204':
+          description: Logo removed.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ members
+  /api/core/members:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listMembers
+      tags: [Members]
+      summary: List members
+      description: 'Authz: ADMIN.'
+      parameters:
+        - name: role
+          in: query
+          schema: {$ref: '#/components/schemas/TenantRole'}
+        - name: active
+          in: query
+          schema: {type: boolean}
+        - name: q
+          in: query
+          description: Case-insensitive match on name or e-mail.
+          schema: {type: string, maxLength: 100}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of members.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MemberPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: inviteMember
+      tags: [Members]
+      summary: Invite a member
+      description: |
+        Creates the person with the given roles and, when `email` is present, provisions a Keycloak user with a
+        required-action e-mail. The PLAYER role requires `birthDate` and `gender` (422). Players created here are
+        ACTIVE (admin path); coaches add players through `POST /api/core/players`. Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InviteMemberRequest'}
+      responses:
+        '201':
+          description: Member created.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Member'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/members/{personId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PersonId'
+    get:
+      operationId: getMember
+      tags: [Members]
+      summary: Get a member
+      description: 'Authz: ADMIN.'
+      responses:
+        '200':
+          description: The member.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Member'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateMember
+      tags: [Members]
+      summary: Update a member's personal data
+      description: 'Authz: ADMIN. Absent fields are left unchanged; `null` clears an optional field.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateMemberRequest'}
+      responses:
+        '200':
+          description: Updated member.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Member'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/members/{personId}/roles:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PersonId'
+    put:
+      operationId: replaceMemberRoles
+      tags: [Members]
+      summary: Replace a member's role set
+      description: |
+        Roles are additive per person. Adding PLAYER requires birth date and gender (422); removing the last ADMIN of
+        the tenant is rejected (409). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReplaceMemberRolesRequest'}
+      responses:
+        '200':
+          description: Member with the new role set.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Member'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/members/{personId}/deactivate:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PersonId'
+    post:
+      operationId: deactivateMember
+      tags: [Members]
+      summary: Deactivate a member
+      description: 'Revokes access to this tenant; history is kept. Deactivating the last ADMIN is rejected (409). Authz: ADMIN.'
+      responses:
+        '200':
+          description: Deactivated member.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Member'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+
+  # ------------------------------------------------------------------ guardian links
+  /api/core/guardian-links:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listGuardianLinks
+      tags: [GuardianLinks]
+      summary: List guardian links
+      description: 'Authz: ADMIN.'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - name: guardianPersonId
+          in: query
+          schema: {type: string, format: uuid}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of guardian links.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GuardianLinkPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createGuardianLink
+      tags: [GuardianLinks]
+      summary: Link a guardian to a player
+      description: 'The guardian must hold the PARENT role (422); duplicates are rejected (409). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateGuardianLinkRequest'}
+      responses:
+        '201':
+          description: Link created.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GuardianLink'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/guardian-links/{guardianLinkId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: guardianLinkId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    delete:
+      operationId: deleteGuardianLink
+      tags: [GuardianLinks]
+      summary: Remove a guardian link
+      description: 'Authz: ADMIN.'
+      responses:
+        '204':
+          description: Link removed.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ seasons
+  /api/core/seasons:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listSeasons
+      tags: [Seasons]
+      summary: List seasons (newest first)
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: All seasons of the tenant.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Season'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createSeason
+      tags: [Seasons]
+      summary: Create a season
+      description: 'Seasons must not overlap (409); `endsOn` ≥ `startsOn` (422). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SeasonInput'}
+      responses:
+        '201':
+          description: Season created.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Season'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/seasons/{seasonId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/SeasonId'
+    get:
+      operationId: getSeason
+      tags: [Seasons]
+      summary: Get a season
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: The season.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Season'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateSeason
+      tags: [Seasons]
+      summary: Update a season
+      description: 'Authz: ADMIN. Changing `referenceYear` re-evaluates eligibility of the season''s teams.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateSeasonRequest'}
+      responses:
+        '200':
+          description: Updated season.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Season'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/seasons/{seasonId}/rollover:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/SeasonId'
+    post:
+      operationId: rolloverSeason
+      tags: [Seasons]
+      summary: Roll teams over into this (new) season
+      description: |
+        `{seasonId}` is the target season. Clones the teams of `fromSeasonId` (name, alias, category, gender policy,
+        staff) and their open player assignments, evaluates eligibility with the target season's `referenceYear`,
+        invalidates assignments that no longer hold (never deletes) and opens eligibility cases. Returns the orphan
+        list — under BIRTH_YEAR this is the real orphan generator. 409 when the target season already has teams.
+        Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SeasonRolloverRequest'}
+      responses:
+        '200':
+          description: Rollover result with orphans.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonRolloverResult'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  # ------------------------------------------------------------------ age categories
+  /api/core/age-categories:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listAgeCategories
+      tags: [AgeCategories]
+      summary: List age categories ordered by rank
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: All age categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/AgeCategory'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createAgeCategory
+      tags: [AgeCategories]
+      summary: Create an age category
+      description: '`code` and `rank` are unique (409); `maxAge` must grow with `rank` (422). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AgeCategoryInput'}
+      responses:
+        '201':
+          description: Category created.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AgeCategory'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/age-categories/{ageCategoryId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: ageCategoryId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    patch:
+      operationId: updateAgeCategory
+      tags: [AgeCategories]
+      summary: Update an age category
+      description: 'Authz: ADMIN. Changing `maxAge` re-evaluates eligibility of affected teams.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateAgeCategoryRequest'}
+      responses:
+        '200':
+          description: Updated category.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AgeCategory'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: deleteAgeCategory
+      tags: [AgeCategories]
+      summary: Delete an unused age category
+      description: '409 when any team references it. Authz: ADMIN.'
+      responses:
+        '204':
+          description: Category deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+
+  # ------------------------------------------------------------------ teams
+  /api/core/teams:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listTeams
+      tags: [Teams]
+      summary: List teams
+      description: 'Authz: any member. `staffedByMe=true` restricts to teams where the caller is team staff.'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/SeasonIdQuery'
+        - name: ageCategoryId
+          in: query
+          schema: {type: string, format: uuid}
+        - name: staffedByMe
+          in: query
+          schema: {type: boolean, default: false}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of teams.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TeamPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createTeam
+      tags: [Teams]
+      summary: Create a team
+      description: '(seasonId, name) is unique (409). Entitlement-checked (billing seam). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateTeamRequest'}
+      responses:
+        '201':
+          description: Team created.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Team'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/teams/{teamId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      operationId: getTeam
+      tags: [Teams]
+      summary: Get a team
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: The team.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Team'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateTeam
+      tags: [Teams]
+      summary: Update a team
+      description: 'Changing category or gender policy re-evaluates eligibility of its players. Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateTeamRequest'}
+      responses:
+        '200':
+          description: Updated team.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Team'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/teams/{teamId}/staff:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      operationId: listTeamStaff
+      tags: [Teams]
+      summary: List team staff
+      description: 'Authz: any member.'
+      responses:
+        '200':
+          description: Coaches and assistant coaches of the team.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/TeamStaffMember'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/teams/{teamId}/staff/{personId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/PersonId'
+    put:
+      operationId: putTeamStaffMember
+      tags: [Teams]
+      summary: Attach a coach / assistant coach to the team (idempotent)
+      description: 'The person must hold the matching tenant role (422). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TeamStaffAssignment'}
+      responses:
+        '200':
+          description: Staff entry.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TeamStaffMember'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+    delete:
+      operationId: removeTeamStaffMember
+      tags: [Teams]
+      summary: Detach a staff member from the team
+      description: 'Authz: ADMIN.'
+      responses:
+        '204':
+          description: Detached.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/teams/{teamId}/players:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      operationId: listTeamPlayers
+      tags: [Teams]
+      summary: List the team's player assignments
+      description: 'Authz: any member (PARENT/PLAYER see the roster, not personal data of other players).'
+      parameters:
+        - name: includeLeft
+          in: query
+          description: Include assignments that were closed (`leftOn` set).
+          schema: {type: boolean, default: false}
+      responses:
+        '200':
+          description: Assignments.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/TeamPlayer'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: assignPlayerToTeam
+      tags: [Teams]
+      summary: Assign a player to the team (eligibility-checked)
+      description: |
+        Runs the eligibility check; INELIGIBLE → 422 with `code=PLAYER_INELIGIBLE` and the reasons in `violations[].code`.
+        PLAY_UP is allowed within the tenant's limit. 409 when the player already has an open assignment to this team.
+        Authz: ADMIN; COACH of this team.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssignPlayerRequest'}
+      responses:
+        '201':
+          description: Assignment created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TeamPlayer'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/teams/{teamId}/players/{playerId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/PlayerId'
+    patch:
+      operationId: updateTeamPlayer
+      tags: [Teams]
+      summary: Update an open assignment (jersey number)
+      description: 'Jersey numbers are unique among open assignments of the team (409). Authz: ADMIN; COACH of this team.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateTeamPlayerRequest'}
+      responses:
+        '200':
+          description: Updated assignment.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TeamPlayer'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+    delete:
+      operationId: unassignPlayerFromTeam
+      tags: [Teams]
+      summary: Close the player's open assignment to the team
+      description: 'Sets `leftOn` (history is kept). The player may become ORPHAN. Authz: ADMIN; COACH of this team.'
+      responses:
+        '204':
+          description: Assignment closed.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/teams/{teamId}/players/{playerId}/eligibility:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: '#/components/parameters/PlayerId'
+    get:
+      operationId: checkPlayerEligibility
+      tags: [Teams]
+      summary: Check whether a player is eligible for the team (no side effects)
+      description: 'Authz: ADMIN; team staff of this team.'
+      parameters:
+        - name: asOf
+          in: query
+          description: Evaluation date; defaults to today in the tenant's time zone.
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: Eligibility verdict.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EligibilityCheck'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ players
+  /api/core/players:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listPlayers
+      tags: [Players]
+      summary: List players
+      description: |
+        Authz: ADMIN and team staff see all players; PARENT sees linked players; PLAYER sees self. PENDING_APPROVAL
+        players are visible to admins and their requester only. `status=ORPHAN` is the orphan dashboard.
+      parameters:
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/PlayerStatus'}
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - name: q
+          in: query
+          description: Case-insensitive match on name.
+          schema: {type: string, maxLength: 100}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of players.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createPlayer
+      tags: [Players]
+      summary: Add a player (ADMIN directly, COACH via approval request)
+      description: |
+        ADMIN: the player is created ACTIVE (and assigned to `teamId` if given, eligibility-checked → 422), an
+        auto-approved audit request is recorded; answers **201**. COACH without ADMIN: the player is created
+        PENDING_APPROVAL with a PENDING ADD_PLAYER request; answers **202**. Assistant coaches cannot add (403).
+        Entitlement-checked (billing seam). Authz: ADMIN; COACH (for own teams).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreatePlayerRequest'}
+      responses:
+        '201':
+          description: Player created and active (admin path).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerCommandResult'}
+        '202':
+          description: Player pending approval (coach path).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerCommandResult'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/players/{playerId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlayerId'
+    get:
+      operationId: getPlayer
+      tags: [Players]
+      summary: Get a player
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self). Others → 404.'
+      responses:
+        '200':
+          description: The player.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Player'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/players/{playerId}/withdraw:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlayerId'
+    post:
+      operationId: withdrawPlayer
+      tags: [Players]
+      summary: Withdraw a player (ADMIN directly, COACH via approval request)
+      description: |
+        ADMIN: the player becomes WITHDRAWN and open assignments are closed; answers **200**. COACH without ADMIN: a
+        PENDING WITHDRAW_PLAYER request is created and the player stays ACTIVE; answers **202**. One PENDING request
+        per (action, player) (409). Authz: ADMIN; COACH (own teams).
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WithdrawPlayerRequest'}
+      responses:
+        '200':
+          description: Player withdrawn (admin path).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerCommandResult'}
+        '202':
+          description: Withdrawal pending approval (coach path).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerCommandResult'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /api/core/players/{playerId}/eligible-teams:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlayerId'
+    get:
+      operationId: listEligibleTeams
+      tags: [Players]
+      summary: Teams of a season the player may be assigned to
+      description: 'Feeds the assignment UI, which only offers eligible teams. Authz: ADMIN; COACH.'
+      parameters:
+        - name: seasonId
+          in: query
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Eligible (ELIGIBLE or PLAY_UP) teams with their verdict.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/EligibleTeam'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  # ------------------------------------------------------------------ approval requests
+  /api/core/approval-requests:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listApprovalRequests
+      tags: [ApprovalRequests]
+      summary: List approval requests
+      description: 'Authz: ADMIN sees all; COACH sees own requests.'
+      parameters:
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/ApprovalStatus'}
+        - name: action
+          in: query
+          schema: {$ref: '#/components/schemas/ApprovalAction'}
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of approval requests.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ApprovalRequestPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/approval-requests/{approvalRequestId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/ApprovalRequestId'
+    get:
+      operationId: getApprovalRequest
+      tags: [ApprovalRequests]
+      summary: Get an approval request
+      description: 'Authz: ADMIN; the requester.'
+      responses:
+        '200':
+          description: The request.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ApprovalRequest'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/approval-requests/{approvalRequestId}/approve:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/ApprovalRequestId'
+    post:
+      operationId: approveApprovalRequest
+      tags: [ApprovalRequests]
+      summary: Approve a pending request
+      description: |
+        Executes the action. ADD_PLAYER activates the player and applies the optional team assignment through the
+        eligibility-checked command — if that is INELIGIBLE the answer is 422 and the request stays PENDING.
+        Only PENDING requests can be decided (409 `NOT_PENDING`). Authz: ADMIN.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ApprovalDecisionRequest'}
+      responses:
+        '200':
+          description: Approved request.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ApprovalRequest'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/approval-requests/{approvalRequestId}/reject:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/ApprovalRequestId'
+    post:
+      operationId: rejectApprovalRequest
+      tags: [ApprovalRequests]
+      summary: Reject a pending request
+      description: |
+        A rejected ADD_PLAYER leaves the pending player WITHDRAWN; a rejected WITHDRAW_PLAYER leaves the player ACTIVE.
+        Only PENDING requests can be decided (409). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ApprovalDecisionRequest'}
+      responses:
+        '200':
+          description: Rejected request.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ApprovalRequest'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /api/core/approval-requests/{approvalRequestId}/cancel:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/ApprovalRequestId'
+    post:
+      operationId: cancelApprovalRequest
+      tags: [ApprovalRequests]
+      summary: Cancel an own pending request
+      description: 'Only PENDING requests can be cancelled (409). Authz: the requester.'
+      responses:
+        '200':
+          description: Cancelled request.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ApprovalRequest'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+
+  # ------------------------------------------------------------------ eligibility cases
+  /api/core/eligibility-cases:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listEligibilityCases
+      tags: [EligibilityCases]
+      summary: List eligibility cases
+      description: 'Authz: ADMIN sees all; team staff see cases of their teams.'
+      parameters:
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/EligibilityCaseStatus'}
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of eligibility cases.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EligibilityCasePage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/eligibility-cases/{eligibilityCaseId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/EligibilityCaseId'
+    get:
+      operationId: getEligibilityCase
+      tags: [EligibilityCases]
+      summary: Get an eligibility case
+      description: 'Authz: ADMIN; team staff of the case''s team.'
+      responses:
+        '200':
+          description: The case.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EligibilityCase'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/eligibility-cases/{eligibilityCaseId}/resolve:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/EligibilityCaseId'
+    post:
+      operationId: resolveEligibilityCase
+      tags: [EligibilityCases]
+      summary: Resolve an open eligibility case
+      description: |
+        REASSIGNED requires `targetTeamId` and performs the eligibility-checked assignment (422 when ineligible);
+        REMOVED_FROM_TEAM closes the invalid assignment; DISMISSED records the decision only. Only OPEN cases can be
+        resolved (409). Authz: ADMIN; COACH of the case's team.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ResolveEligibilityCaseRequest'}
+      responses:
+        '200':
+          description: Resolved case.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EligibilityCase'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  # ------------------------------------------------------------------ internal
+  /internal/authz/{tenantId}/{sub}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+      - name: sub
+        in: path
+        required: true
+        description: Keycloak subject of the end user.
+        schema: {type: string, minLength: 1, maxLength: 255}
+    get:
+      operationId: getAuthzContext
+      tags: [Internal]
+      summary: Authorization context of a user in a tenant (RosterPort.authzContext)
+      description: '404 when the subject is not an active member of the tenant. Authz: role `service`. Cached 30 s by callers.'
+      x-internal: true
+      responses:
+        '200':
+          description: Authorization context.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthzContext'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /internal/usage/{tenantId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    get:
+      operationId: getCoreUsage
+      tags: [Internal]
+      summary: core-service usage counters of a tenant
+      description: 'Authz: role `service`.'
+      x-internal: true
+      responses:
+        '200':
+          description: Usage counters.
+          content:
+            application/json:
+              schema: {$ref: './common.yaml#/components/schemas/UsageReport'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /internal/teams/{teamId}/roster:
+    parameters:
+      - $ref: '#/components/parameters/TeamId'
+      - $ref: './common.yaml#/components/parameters/TenantIdQuery'
+    get:
+      operationId: getInternalTeamRoster
+      tags: [Internal]
+      summary: Current roster and staff of a team (RosterPort.teamRoster)
+      description: 'Open, valid assignments only. Authz: role `service`.'
+      x-internal: true
+      responses:
+        '200':
+          description: Team roster.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TeamRoster'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /internal/players:batch:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdQuery'
+    post:
+      operationId: getInternalPlayersBatch
+      tags: [Internal]
+      summary: Minimal player data by ids (RosterPort.player / playersBirthAndGender)
+      description: 'Unknown ids are omitted from the answer (no 404 per id). 404 only for an unknown tenant. Authz: role `service`.'
+      x-internal: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PlayerBatchRequest'}
+      responses:
+        '200':
+          description: Players found.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerBatchResponse'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './common.yaml#/components/securitySchemes/bearerAuth'
+
+  parameters:
+    PersonId:
+      name: personId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    PlayerId:
+      name: playerId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    SeasonId:
+      name: seasonId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    ApprovalRequestId:
+      name: approvalRequestId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    EligibilityCaseId:
+      name: eligibilityCaseId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+
+  headers:
+    Location:
+      description: URI of the created resource.
+      schema: {type: string, format: uri-reference}
+    ETag:
+      description: Strong entity tag of the logo bytes.
+      schema: {type: string}
+    CacheControl:
+      description: e.g. `private, max-age=300, must-revalidate`.
+      schema: {type: string}
+
+  schemas:
+    # ---------------- enums
+    TenantRole:
+      type: string
+      enum: [ADMIN, COACH, ASSISTANT_COACH, PARENT, PLAYER]
+    StaffRole:
+      type: string
+      description: Role of a person within a team's staff (subset of TenantRole).
+      enum: [COACH, ASSISTANT_COACH]
+    TenantStatus:
+      type: string
+      enum: [ACTIVE, SUSPENDED, WITHDRAWN]
+    PlayerStatus:
+      type: string
+      enum: [PENDING_APPROVAL, ACTIVE, ORPHAN, WITHDRAWN]
+    GenderPolicy:
+      type: string
+      enum: [MALE, FEMALE, MIXED]
+    AgeRule:
+      type: string
+      description: |
+        BIRTH_YEAR (default): age = season reference year − birth year. BIRTHDAY: actual age on the evaluation date.
+      enum: [BIRTH_YEAR, BIRTHDAY]
+    EligibilityResult:
+      type: string
+      enum: [ELIGIBLE, PLAY_UP, INELIGIBLE]
+    EligibilityReason:
+      type: string
+      description: Why a player is INELIGIBLE for a team (or why an assignment was invalidated).
+      enum: [CATEGORY_TOO_LOW, PLAY_UP_LIMIT_EXCEEDED, GENDER_POLICY, MISSING_BIRTH_DATE, MISSING_GENDER, PLAYER_NOT_ACTIVE]
+    EligibilityCaseStatus:
+      type: string
+      enum: [OPEN, RESOLVED]
+    EligibilityCaseResolution:
+      type: string
+      enum: [REASSIGNED, REMOVED_FROM_TEAM, DISMISSED]
+    ApprovalAction:
+      type: string
+      enum: [ADD_PLAYER, WITHDRAW_PLAYER]
+    ApprovalStatus:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED, CANCELLED]
+    InvitationStatus:
+      type: string
+      description: NONE = person without login; PENDING = Keycloak user created, required actions outstanding.
+      enum: [NONE, PENDING, ACCEPTED]
+    JerseyNumber:
+      type: string
+      description: Jersey as printed ("0", "00" and "7" are different numbers).
+      pattern: '^[0-9]{1,2}$'
+      example: '7'
+
+    # ---------------- platform
+    Tenant:
+      type: object
+      required: [id, slug, name, status, timezone, defaultLocale, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        slug:
+          type: string
+          pattern: '^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$'
+        name: {type: string, minLength: 1, maxLength: 120}
+        status: {$ref: '#/components/schemas/TenantStatus'}
+        timezone:
+          type: string
+          description: IANA time zone id.
+          example: Asia/Jakarta
+        defaultLocale: {$ref: './common.yaml#/components/schemas/Locale'}
+        createdAt: {type: string, format: date-time}
+        suspendedAt: {type: string, format: date-time, nullable: true}
+        withdrawnAt: {type: string, format: date-time, nullable: true}
+        retainUntil:
+          type: string
+          format: date
+          nullable: true
+          description: For WITHDRAWN tenants, the date until which data is retained.
+    TenantPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Tenant'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreateTenantRequest:
+      type: object
+      required: [slug, name, timezone, defaultLocale, firstAdmin]
+      properties:
+        slug:
+          type: string
+          pattern: '^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$'
+        name: {type: string, minLength: 1, maxLength: 120}
+        timezone: {type: string, example: Europe/Madrid}
+        defaultLocale: {$ref: './common.yaml#/components/schemas/Locale'}
+        firstAdmin: {$ref: '#/components/schemas/FirstAdmin'}
+    FirstAdmin:
+      type: object
+      required: [email, givenName, familyName]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+    UpdateTenantRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        timezone: {type: string}
+        defaultLocale: {$ref: './common.yaml#/components/schemas/Locale'}
+    TenantLifecycleRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 500}
+    TenantUsage:
+      type: object
+      required: [tenantId, collectedAt, services, unavailableServices]
+      properties:
+        tenantId: {type: string, format: uuid}
+        collectedAt: {type: string, format: date-time}
+        services:
+          type: array
+          items: {$ref: './common.yaml#/components/schemas/UsageReport'}
+        unavailableServices:
+          type: array
+          description: Services that did not answer within the timeout.
+          items:
+            type: string
+            enum: [core, game, athlete]
+
+    # ---------------- me
+    Me:
+      type: object
+      required: [userId, sub, displayName, locale, superAdmin, memberships]
+      properties:
+        userId: {type: string, format: uuid}
+        sub: {type: string, description: Keycloak subject.}
+        email: {type: string, format: email, nullable: true}
+        displayName: {type: string}
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+        superAdmin:
+          type: boolean
+          description: Holds the platform realm role `super_admin`.
+        memberships:
+          type: array
+          description: Active memberships in ACTIVE tenants.
+          items: {$ref: '#/components/schemas/Membership'}
+    Membership:
+      type: object
+      required: [tenant, personId, roles, authz]
+      properties:
+        tenant: {$ref: '#/components/schemas/TenantSummary'}
+        personId: {type: string, format: uuid}
+        roles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+        authz: {$ref: '#/components/schemas/AuthzSummary'}
+    TenantSummary:
+      type: object
+      required: [id, slug, name, status, hasLogo]
+      properties:
+        id: {type: string, format: uuid}
+        slug: {type: string}
+        name: {type: string}
+        status: {$ref: '#/components/schemas/TenantStatus'}
+        hasLogo: {type: boolean}
+    AuthzSummary:
+      type: object
+      description: The caller's scope within the tenant (what the UI may offer; the server re-checks every call).
+      required: [staffTeamIds, linkedPlayerIds]
+      properties:
+        staffTeamIds:
+          type: array
+          description: Teams where the caller is COACH or ASSISTANT_COACH staff.
+          items: {type: string, format: uuid}
+        linkedPlayerIds:
+          type: array
+          description: Players linked to the caller as guardian (PARENT).
+          items: {type: string, format: uuid}
+        ownPlayerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The caller's own player id when they hold the PLAYER role.
+    UpdateMeRequest:
+      type: object
+      required: [locale]
+      properties:
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+
+    # ---------------- tenant profile
+    TenantProfile:
+      type: object
+      required: [id, slug, name, timezone, defaultLocale, hasLogo]
+      properties:
+        id: {type: string, format: uuid}
+        slug: {type: string}
+        name: {type: string, minLength: 1, maxLength: 120}
+        timezone: {type: string}
+        defaultLocale: {$ref: './common.yaml#/components/schemas/Locale'}
+        contactEmail: {type: string, format: email, nullable: true}
+        websiteUrl: {type: string, format: uri, nullable: true}
+        hasLogo: {type: boolean}
+        logoEtag: {type: string, nullable: true}
+    UpdateTenantProfileRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        timezone: {type: string}
+        defaultLocale: {$ref: './common.yaml#/components/schemas/Locale'}
+        contactEmail: {type: string, format: email, nullable: true}
+        websiteUrl: {type: string, format: uri, nullable: true}
+    TenantSettings:
+      type: object
+      required: [ageRule, maxPlayUpLevels]
+      properties:
+        ageRule: {$ref: '#/components/schemas/AgeRule'}
+        maxPlayUpLevels:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: Maximum category levels a player may play up; null = unlimited.
+        attendanceLateThresholdMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 120
+          default: 10
+          description: Minutes after which a LATE arrival is highlighted.
+    LogoBinary:
+      type: string
+      format: binary
+      maxLength: 524288
+      description: PNG, JPEG or WebP bytes, at most 512 KB.
+    TenantLogo:
+      type: object
+      required: [contentType, sizeBytes, etag, updatedAt]
+      properties:
+        contentType:
+          type: string
+          enum: [image/png, image/jpeg, image/webp]
+        sizeBytes:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 524288
+        etag: {type: string}
+        updatedAt: {type: string, format: date-time}
+
+    # ---------------- members
+    Member:
+      type: object
+      required: [personId, givenName, familyName, displayName, roles, active, invitationStatus, createdAt]
+      properties:
+        personId: {type: string, format: uuid}
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Platform user (login) of the person; null for persons without login (e.g. young players).
+        givenName: {type: string}
+        familyName: {type: string}
+        displayName: {type: string}
+        email: {type: string, format: email, nullable: true}
+        phone: {type: string, nullable: true}
+        birthDate: {type: string, format: date, nullable: true}
+        gender:
+          allOf: [{$ref: './common.yaml#/components/schemas/Gender'}]
+          nullable: true
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+        roles:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+        playerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set when the member holds the PLAYER role.
+        active: {type: boolean}
+        invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
+        createdAt: {type: string, format: date-time}
+    MemberPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Member'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    PersonalData:
+      type: object
+      required: [givenName, familyName]
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        email: {type: string, format: email, maxLength: 254}
+        phone: {type: string, maxLength: 32}
+        birthDate: {type: string, format: date}
+        gender: {$ref: './common.yaml#/components/schemas/Gender'}
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+    InviteMemberRequest:
+      allOf:
+        - $ref: '#/components/schemas/PersonalData'
+        - type: object
+          required: [roles]
+          properties:
+            roles:
+              type: array
+              minItems: 1
+              uniqueItems: true
+              items: {$ref: '#/components/schemas/TenantRole'}
+            sendInvitation:
+              type: boolean
+              default: true
+              description: Provision a login and send the invitation e-mail (requires `email`).
+    UpdateMemberRequest:
+      type: object
+      minProperties: 1
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        email: {type: string, format: email, maxLength: 254, nullable: true}
+        phone: {type: string, maxLength: 32, nullable: true}
+        birthDate: {type: string, format: date, nullable: true}
+        gender:
+          allOf: [{$ref: './common.yaml#/components/schemas/Gender'}]
+          nullable: true
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+    ReplaceMemberRolesRequest:
+      type: object
+      required: [roles]
+      properties:
+        roles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+
+    # ---------------- guardian links
+    GuardianLink:
+      type: object
+      required: [id, guardian, player, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        guardian: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        player: {$ref: '#/components/schemas/PlayerRef'}
+        createdAt: {type: string, format: date-time}
+    GuardianLinkPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/GuardianLink'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreateGuardianLinkRequest:
+      type: object
+      required: [guardianPersonId, playerId]
+      properties:
+        guardianPersonId: {type: string, format: uuid}
+        playerId: {type: string, format: uuid}
+
+    # ---------------- seasons & categories
+    SeasonInput:
+      type: object
+      required: [name, startsOn, endsOn, referenceYear]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 60, example: 2026/27}
+        startsOn: {type: string, format: date}
+        endsOn: {type: string, format: date}
+        referenceYear:
+          type: integer
+          format: int32
+          minimum: 2000
+          maximum: 2100
+          description: Year used by the BIRTH_YEAR age rule (age = referenceYear − birth year).
+    Season:
+      allOf:
+        - $ref: '#/components/schemas/SeasonInput'
+        - type: object
+          required: [id, current]
+          properties:
+            id: {type: string, format: uuid}
+            current:
+              type: boolean
+              description: Today (tenant time zone) lies within the season.
+    UpdateSeasonRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: {type: string, minLength: 1, maxLength: 60}
+        startsOn: {type: string, format: date}
+        endsOn: {type: string, format: date}
+        referenceYear: {type: integer, format: int32, minimum: 2000, maximum: 2100}
+    SeasonRolloverRequest:
+      type: object
+      required: [fromSeasonId]
+      properties:
+        fromSeasonId:
+          type: string
+          format: uuid
+          description: Season whose teams are cloned into the target season.
+        cloneStaff: {type: boolean, default: true}
+        clonePlayers:
+          type: boolean
+          default: true
+          description: Carry open player assignments over (then eligibility-checked).
+    SeasonRolloverResult:
+      type: object
+      required: [fromSeasonId, toSeasonId, clonedTeams, orphans, openedCaseIds]
+      properties:
+        fromSeasonId: {type: string, format: uuid}
+        toSeasonId: {type: string, format: uuid}
+        clonedTeams:
+          type: array
+          items: {$ref: '#/components/schemas/TeamRef'}
+        orphans:
+          type: array
+          description: Active players left without a valid open assignment in the target season.
+          items: {$ref: '#/components/schemas/Orphan'}
+        openedCaseIds:
+          type: array
+          items: {type: string, format: uuid}
+    Orphan:
+      type: object
+      required: [player, reasons]
+      properties:
+        player: {$ref: '#/components/schemas/PlayerRef'}
+        previousTeam:
+          allOf: [{$ref: '#/components/schemas/TeamRef'}]
+          nullable: true
+        reasons:
+          type: array
+          items: {$ref: '#/components/schemas/EligibilityReason'}
+    AgeCategoryInput:
+      type: object
+      required: [code, name, rank]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9_]{1,16}$'
+          example: U12
+        name: {type: string, minLength: 1, maxLength: 60}
+        maxAge:
+          type: integer
+          format: int32
+          minimum: 3
+          maximum: 99
+          nullable: true
+          description: Inclusive maximum age; null = senior (no limit).
+        rank:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Ordering; higher rank = older category.
+    AgeCategory:
+      allOf:
+        - $ref: '#/components/schemas/AgeCategoryInput'
+        - type: object
+          required: [id]
+          properties:
+            id: {type: string, format: uuid}
+    UpdateAgeCategoryRequest:
+      type: object
+      minProperties: 1
+      properties:
+        code: {type: string, pattern: '^[A-Z0-9_]{1,16}$'}
+        name: {type: string, minLength: 1, maxLength: 60}
+        maxAge: {type: integer, format: int32, minimum: 3, maximum: 99, nullable: true}
+        rank: {type: integer, format: int32, minimum: 0}
+
+    # ---------------- teams
+    TeamRef:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+    Team:
+      type: object
+      required: [id, seasonId, name, ageCategory, genderPolicy, playerCount]
+      properties:
+        id: {type: string, format: uuid}
+        seasonId: {type: string, format: uuid}
+        name: {type: string}
+        alias: {type: string, nullable: true}
+        ageCategory: {$ref: '#/components/schemas/AgeCategory'}
+        genderPolicy: {$ref: '#/components/schemas/GenderPolicy'}
+        playerCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Open, valid assignments.
+    TeamPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Team'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreateTeamRequest:
+      type: object
+      required: [seasonId, name, ageCategoryId, genderPolicy]
+      properties:
+        seasonId: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 80}
+        alias: {type: string, maxLength: 40}
+        ageCategoryId: {type: string, format: uuid}
+        genderPolicy: {$ref: '#/components/schemas/GenderPolicy'}
+    UpdateTeamRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: {type: string, minLength: 1, maxLength: 80}
+        alias: {type: string, maxLength: 40, nullable: true}
+        ageCategoryId: {type: string, format: uuid}
+        genderPolicy: {$ref: '#/components/schemas/GenderPolicy'}
+    TeamStaffAssignment:
+      type: object
+      required: [role]
+      properties:
+        role: {$ref: '#/components/schemas/StaffRole'}
+    TeamStaffMember:
+      type: object
+      required: [person, role, since]
+      properties:
+        person: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        role: {$ref: '#/components/schemas/StaffRole'}
+        since: {type: string, format: date}
+    TeamPlayer:
+      type: object
+      description: A player's assignment to a team (team_player).
+      required: [player, teamId, joinedOn, playUpLevels, playerStatus]
+      properties:
+        player: {$ref: '#/components/schemas/PlayerRef'}
+        teamId: {type: string, format: uuid}
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+        joinedOn: {type: string, format: date}
+        leftOn: {type: string, format: date, nullable: true}
+        playUpLevels:
+          type: integer
+          format: int32
+          minimum: 0
+          description: 0 = natural category; n > 0 = playing up n categories.
+        invalidatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when the evaluator found the assignment no longer valid (never deleted).
+        invalidReason:
+          allOf: [{$ref: '#/components/schemas/EligibilityReason'}]
+          nullable: true
+        playerStatus: {$ref: '#/components/schemas/PlayerStatus'}
+    AssignPlayerRequest:
+      type: object
+      required: [playerId]
+      properties:
+        playerId: {type: string, format: uuid}
+        jerseyNumber: {$ref: '#/components/schemas/JerseyNumber'}
+        joinedOn:
+          type: string
+          format: date
+          description: Defaults to today (tenant time zone).
+    UpdateTeamPlayerRequest:
+      type: object
+      required: [jerseyNumber]
+      properties:
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+    EligibilityCheck:
+      type: object
+      required: [playerId, teamId, asOf, result, reasons]
+      properties:
+        playerId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        asOf: {type: string, format: date}
+        result: {$ref: '#/components/schemas/EligibilityResult'}
+        playUpLevels:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: Set when result = PLAY_UP.
+        reasons:
+          type: array
+          description: Non-empty iff result = INELIGIBLE.
+          items: {$ref: '#/components/schemas/EligibilityReason'}
+        age:
+          type: integer
+          format: int32
+          nullable: true
+          description: Age computed with the tenant's age rule (null when the birth date is missing).
+        naturalCategory:
+          allOf: [{$ref: '#/components/schemas/AgeCategory'}]
+          nullable: true
+    EligibleTeam:
+      type: object
+      required: [team, eligibility]
+      properties:
+        team: {$ref: '#/components/schemas/Team'}
+        eligibility: {$ref: '#/components/schemas/EligibilityCheck'}
+
+    # ---------------- players
+    PlayerRef:
+      type: object
+      required: [id, displayName]
+      properties:
+        id: {type: string, format: uuid}
+        displayName: {type: string}
+    Player:
+      type: object
+      required: [id, personId, givenName, familyName, displayName, birthDate, gender, status, teams, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        personId: {type: string, format: uuid}
+        givenName: {type: string}
+        familyName: {type: string}
+        displayName: {type: string}
+        birthDate: {type: string, format: date}
+        gender: {$ref: './common.yaml#/components/schemas/Gender'}
+        status: {$ref: '#/components/schemas/PlayerStatus'}
+        naturalCategory:
+          allOf: [{$ref: '#/components/schemas/AgeCategory'}]
+          nullable: true
+          description: Lowest-ranked category the player qualifies for in the current season.
+        teams:
+          type: array
+          description: Open assignments.
+          items: {$ref: '#/components/schemas/PlayerTeamAssignment'}
+        createdAt: {type: string, format: date-time}
+    PlayerTeamAssignment:
+      type: object
+      required: [team, playUpLevels, valid]
+      properties:
+        team: {$ref: '#/components/schemas/TeamRef'}
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+        playUpLevels: {type: integer, format: int32, minimum: 0}
+        valid:
+          type: boolean
+          description: False when the assignment was invalidated by the evaluator.
+    PlayerPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Player'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreatePlayerRequest:
+      type: object
+      required: [givenName, familyName, birthDate, gender]
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        birthDate: {type: string, format: date}
+        gender: {$ref: './common.yaml#/components/schemas/Gender'}
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: When present the player gets a login (invitation e-mail).
+        teamId:
+          type: string
+          format: uuid
+          description: Optional team to assign (eligibility-checked; applied on approval for the coach path).
+        jerseyNumber: {$ref: '#/components/schemas/JerseyNumber'}
+        note:
+          type: string
+          maxLength: 500
+          description: Message to the approving admin (coach path).
+    WithdrawPlayerRequest:
+      type: object
+      properties:
+        reason: {type: string, maxLength: 500}
+    PlayerCommandResult:
+      type: object
+      description: Outcome of an add/withdraw command; `approvalRequest.status` tells whether it took effect (APPROVED) or awaits a decision (PENDING).
+      required: [player, approvalRequest]
+      properties:
+        player: {$ref: '#/components/schemas/Player'}
+        approvalRequest: {$ref: '#/components/schemas/ApprovalRequest'}
+
+    # ---------------- approvals
+    ApprovalRequest:
+      type: object
+      required: [id, action, status, player, payload, requestedBy, requestedAt]
+      properties:
+        id: {type: string, format: uuid}
+        action: {$ref: '#/components/schemas/ApprovalAction'}
+        status: {$ref: '#/components/schemas/ApprovalStatus'}
+        player: {$ref: '#/components/schemas/PlayerRef'}
+        payload: {$ref: '#/components/schemas/ApprovalPayload'}
+        requestedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        requestedAt: {type: string, format: date-time}
+        decidedBy:
+          allOf: [{$ref: './common.yaml#/components/schemas/PersonRef'}]
+          nullable: true
+        decidedAt: {type: string, format: date-time, nullable: true}
+        decisionNote: {type: string, nullable: true}
+    ApprovalPayload:
+      type: object
+      description: Action parameters captured at request time.
+      properties:
+        teamId: {type: string, format: uuid, nullable: true}
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+        note: {type: string, nullable: true}
+        reason: {type: string, nullable: true}
+    ApprovalRequestPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/ApprovalRequest'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    ApprovalDecisionRequest:
+      type: object
+      properties:
+        note: {type: string, maxLength: 500}
+
+    # ---------------- eligibility cases
+    EligibilityCase:
+      type: object
+      required: [id, player, team, reason, status, openedAt]
+      properties:
+        id: {type: string, format: uuid}
+        player: {$ref: '#/components/schemas/PlayerRef'}
+        team: {$ref: '#/components/schemas/TeamRef'}
+        reason: {$ref: '#/components/schemas/EligibilityReason'}
+        status: {$ref: '#/components/schemas/EligibilityCaseStatus'}
+        openedAt: {type: string, format: date-time}
+        resolvedAt: {type: string, format: date-time, nullable: true}
+        resolvedBy:
+          allOf: [{$ref: './common.yaml#/components/schemas/PersonRef'}]
+          nullable: true
+        resolution:
+          allOf: [{$ref: '#/components/schemas/EligibilityCaseResolution'}]
+          nullable: true
+        resolutionNote: {type: string, nullable: true}
+    EligibilityCasePage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/EligibilityCase'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    ResolveEligibilityCaseRequest:
+      type: object
+      required: [resolution]
+      properties:
+        resolution: {$ref: '#/components/schemas/EligibilityCaseResolution'}
+        targetTeamId:
+          type: string
+          format: uuid
+          description: Required when resolution = REASSIGNED.
+        note: {type: string, maxLength: 500}
+
+    # ---------------- internal
+    AuthzContext:
+      type: object
+      required: [sub, personId, tenantId, tenantStatus, roles, staffTeamIds, linkedPlayerIds]
+      properties:
+        sub: {type: string}
+        personId: {type: string, format: uuid}
+        tenantId: {type: string, format: uuid}
+        tenantStatus: {$ref: '#/components/schemas/TenantStatus'}
+        roles:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+        staffTeamIds:
+          type: array
+          items: {type: string, format: uuid}
+        linkedPlayerIds:
+          type: array
+          items: {type: string, format: uuid}
+        ownPlayerId: {type: string, format: uuid, nullable: true}
+    TeamRoster:
+      type: object
+      required: [tenantId, teamId, seasonId, teamName, players, staff]
+      properties:
+        tenantId: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        seasonId: {type: string, format: uuid}
+        teamName: {type: string}
+        players:
+          type: array
+          items: {$ref: '#/components/schemas/RosterPlayer'}
+        staff:
+          type: array
+          items: {$ref: '#/components/schemas/RosterStaff'}
+    RosterPlayer:
+      type: object
+      required: [playerId, displayName, birthDate, gender, status]
+      properties:
+        playerId: {type: string, format: uuid}
+        displayName: {type: string}
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+        birthDate: {type: string, format: date}
+        gender: {$ref: './common.yaml#/components/schemas/Gender'}
+        status: {$ref: '#/components/schemas/PlayerStatus'}
+    RosterStaff:
+      type: object
+      required: [personId, role]
+      properties:
+        personId: {type: string, format: uuid}
+        role: {$ref: '#/components/schemas/StaffRole'}
+    PlayerBatchRequest:
+      type: object
+      required: [playerIds]
+      properties:
+        playerIds:
+          type: array
+          minItems: 1
+          maxItems: 500
+          uniqueItems: true
+          items: {type: string, format: uuid}
+    PlayerBatchResponse:
+      type: object
+      required: [players]
+      properties:
+        players:
+          type: array
+          items: {$ref: '#/components/schemas/PlayerBrief'}
+    PlayerBrief:
+      type: object
+      description: Minimal player information for other services (age/gender for norms, names for denormalisation).
+      required: [id, displayName, birthDate, gender, status]
+      properties:
+        id: {type: string, format: uuid}
+        displayName: {type: string}
+        birthDate: {type: string, format: date}
+        gender: {$ref: './common.yaml#/components/schemas/Gender'}
+        status: {$ref: '#/components/schemas/PlayerStatus'}

@@ -1,0 +1,168 @@
+[
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000001",
+    "deviceId": "tablet-1",
+    "clientSeq": 1,
+    "type": "PERIOD_START",
+    "period": 1,
+    "clockSecondsRemaining": 600,
+    "recordedAtClient": "2026-11-01T10:01:00Z"
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000002",
+    "deviceId": "tablet-1",
+    "clientSeq": 2,
+    "type": "SUB_IN",
+    "period": 1,
+    "clockSecondsRemaining": 600,
+    "recordedAtClient": "2026-11-01T10:02:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa"
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000003",
+    "deviceId": "tablet-1",
+    "clientSeq": 3,
+    "type": "SHOT",
+    "period": 1,
+    "clockSecondsRemaining": 580,
+    "recordedAtClient": "2026-11-01T10:03:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa",
+    "payload": {
+      "points": 2,
+      "made": true
+    }
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000004",
+    "deviceId": "tablet-1",
+    "clientSeq": 4,
+    "type": "ASSIST",
+    "period": 1,
+    "clockSecondsRemaining": 580,
+    "recordedAtClient": "2026-11-01T10:04:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa"
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000005",
+    "deviceId": "tablet-1",
+    "clientSeq": 5,
+    "type": "REBOUND",
+    "period": 1,
+    "clockSecondsRemaining": 560,
+    "recordedAtClient": "2026-11-01T10:05:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa",
+    "payload": {
+      "kind": "DEFENSIVE"
+    }
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000006",
+    "deviceId": "tablet-1",
+    "clientSeq": 6,
+    "type": "TURNOVER",
+    "period": 1,
+    "clockSecondsRemaining": 540,
+    "recordedAtClient": "2026-11-01T10:06:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa"
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000007",
+    "deviceId": "tablet-1",
+    "clientSeq": 7,
+    "type": "STEAL",
+    "period": 1,
+    "clockSecondsRemaining": 530,
+    "recordedAtClient": "2026-11-01T10:07:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa"
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000008",
+    "deviceId": "tablet-1",
+    "clientSeq": 8,
+    "type": "BLOCK",
+    "period": 1,
+    "clockSecondsRemaining": 520,
+    "recordedAtClient": "2026-11-01T10:08:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa"
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000009",
+    "deviceId": "tablet-1",
+    "clientSeq": 9,
+    "type": "FOUL",
+    "period": 1,
+    "clockSecondsRemaining": 510,
+    "recordedAtClient": "2026-11-01T10:09:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa",
+    "payload": {
+      "kind": "PERSONAL"
+    }
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000010",
+    "deviceId": "tablet-1",
+    "clientSeq": 10,
+    "type": "OPPONENT_SCORE",
+    "period": 1,
+    "clockSecondsRemaining": 500,
+    "recordedAtClient": "2026-11-01T10:10:00Z",
+    "payload": {
+      "points": 3
+    }
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000011",
+    "deviceId": "tablet-1",
+    "clientSeq": 11,
+    "type": "TIMEOUT",
+    "period": 1,
+    "clockSecondsRemaining": 490,
+    "recordedAtClient": "2026-11-01T10:11:00Z",
+    "payload": {
+      "side": "OWN"
+    }
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000012",
+    "deviceId": "tablet-1",
+    "clientSeq": 12,
+    "type": "VOID",
+    "period": 1,
+    "clockSecondsRemaining": 480,
+    "recordedAtClient": "2026-11-01T10:12:00Z",
+    "payload": {
+      "targetEventId": "0190b6a0-0000-7000-8000-000000000003"
+    }
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000013",
+    "deviceId": "tablet-1",
+    "clientSeq": 13,
+    "type": "NOTE",
+    "period": 1,
+    "clockSecondsRemaining": 470,
+    "recordedAtClient": "2026-11-01T10:13:00Z",
+    "payload": {
+      "text": "Ankle taped at the bench"
+    }
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000014",
+    "deviceId": "tablet-1",
+    "clientSeq": 14,
+    "type": "SUB_OUT",
+    "period": 1,
+    "clockSecondsRemaining": 460,
+    "recordedAtClient": "2026-11-01T10:14:00Z",
+    "playerId": "0190b6a0-0000-7000-8000-0000000000aa"
+  },
+  {
+    "id": "0190b6a0-0000-7000-8000-000000000015",
+    "deviceId": "tablet-1",
+    "clientSeq": 15,
+    "type": "PERIOD_END",
+    "period": 1,
+    "clockSecondsRemaining": 0,
+    "recordedAtClient": "2026-11-01T10:15:00Z"
+  }
+]

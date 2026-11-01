@@ -1,0 +1,925 @@
+openapi: 3.0.3
+info:
+  title: Hoops Academy — game-service API
+  version: 1.0.0
+  description: |
+    Match operations and statistics (offline-first, event-sourced).
+
+    Match events are append-only, client-identified facts (`id` = client-generated UUIDv7, unique per
+    `(matchId, deviceId, clientSeq)`). The server validates **schema + authorization only**, never domain consistency:
+    an impossible substitution becomes a projection *warning* that staff fix with a VOID event. Box scores and season
+    statistics are projections re-computed on every accepted batch.
+
+    `MatchEvent` mirrors `events/match-event.schema.json` (JSON Schema 2020-12); `MatchEventSchemaConsistencyTest`
+    keeps both in sync.
+
+    Authorization (docs/domain/authz-matrix.md): team staff (COACH / ASSISTANT_COACH) and ADMIN may run matches and
+    enter any event; PARENT may enter player-attributed stat events for linked players and VOID their own events only;
+    PLAYER is read-only (own statistics).
+servers:
+  - url: /
+    description: Gateway root (tenant API under /api/game, internal API under /internal).
+security:
+  - bearerAuth: []
+tags:
+  - name: Matches
+  - name: MatchRoster
+  - name: MatchEvents
+    description: Offline sync of append-only match events.
+  - name: Statistics
+    description: Projections (box score, season statistics).
+  - name: Internal
+    description: Service-to-service endpoints.
+
+paths:
+  /api/game/matches:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listMatches
+      tags: [Matches]
+      summary: List matches by team and/or season (scheduledAt descending)
+      description: 'Authz: any member (PARENT/PLAYER see matches of their teams).'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - $ref: './common.yaml#/components/parameters/SeasonIdQuery'
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/MatchStatus'}
+        - name: scheduledFrom
+          in: query
+          schema: {type: string, format: date-time}
+        - name: scheduledTo
+          in: query
+          schema: {type: string, format: date-time}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of matches.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MatchPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createMatch
+      tags: [Matches]
+      summary: Schedule a match
+      description: 'The season is taken from the team. Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateMatchRequest'}
+      responses:
+        '201':
+          description: Match created (SCHEDULED).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Match'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/game/matches/{matchId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    get:
+      operationId: getMatch
+      tags: [Matches]
+      summary: Get a match
+      description: 'Authz: any member of the team''s audience.'
+      responses:
+        '200':
+          description: The match.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Match'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateMatch
+      tags: [Matches]
+      summary: Update a scheduled match
+      description: '`periodCount`/`periodMinutes` can only change while SCHEDULED (409). Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateMatchRequest'}
+      responses:
+        '200':
+          description: Updated match.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Match'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/game/matches/{matchId}/start:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    post:
+      operationId: startMatch
+      tags: [Matches]
+      summary: SCHEDULED → LIVE
+      description: 'Requires a roster with at least one starter (422). Idempotent for an already LIVE match. Authz: ADMIN; team staff.'
+      responses:
+        '200':
+          description: Live match.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Match'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/game/matches/{matchId}/finish:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    post:
+      operationId: finishMatch
+      tags: [Matches]
+      summary: LIVE → FINISHED
+      description: 'Events may still be synced afterwards (late offline devices, VOID corrections). Authz: ADMIN; team staff.'
+      responses:
+        '200':
+          description: Finished match.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Match'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /api/game/matches/{matchId}/cancel:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    post:
+      operationId: cancelMatch
+      tags: [Matches]
+      summary: SCHEDULED | LIVE → CANCELLED
+      description: 'Further events are REJECTED with MATCH_CANCELLED. FINISHED matches cannot be cancelled (409). Authz: ADMIN; team staff.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CancelMatchRequest'}
+      responses:
+        '200':
+          description: Cancelled match.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Match'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /api/game/matches/{matchId}/roster:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    get:
+      operationId: getMatchRoster
+      tags: [MatchRoster]
+      summary: Get the match roster
+      description: 'Authz: any member of the team''s audience.'
+      responses:
+        '200':
+          description: Match roster.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MatchRoster'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    put:
+      operationId: replaceMatchRoster
+      tags: [MatchRoster]
+      summary: Replace the match roster
+      description: |
+        Players must be on the team's current roster (core `/internal/teams/{teamId}/roster`, 422 otherwise); display
+        name and jersey are denormalised so offline sync never depends on core. Not allowed for FINISHED or CANCELLED
+        matches (409). Authz: ADMIN; team staff.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReplaceMatchRosterRequest'}
+      responses:
+        '200':
+          description: Stored roster.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MatchRoster'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/game/matches/{matchId}/events:batch:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    post:
+      operationId: submitMatchEvents
+      tags: [MatchEvents]
+      summary: Sync a batch of match events (idempotent)
+      description: |
+        Locks the match, appends new events, re-projects statistics and answers one result per submitted event, in
+        request order. ACCEPTED: stored now (gets a `serverSeq`); DUPLICATE: an event with this `id` was already stored
+        (its original `serverSeq` is returned) — safe to drop from the device queue; REJECTED: not stored, see
+        `reason` (schema or authorization) — retrying unchanged will fail again. A REJECTED event never fails the
+        batch: the server validates each event individually against `events/match-event.schema.json`.
+        Whole-request errors: 400 (not a batch, or more than 500 events), 404 (unknown match).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MatchEventBatch'}
+      responses:
+        '200':
+          description: Per-event results.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MatchEventBatchResult'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/game/matches/{matchId}/events:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    get:
+      operationId: listMatchEvents
+      tags: [MatchEvents]
+      summary: Events stored after a server sequence number (merge feed for other devices)
+      description: 'Ordered by `serverSeq` ascending. Includes voided events (with `voidedByEventId`). Authz: any member who may view the match.'
+      parameters:
+        - name: after
+          in: query
+          description: Return events with `serverSeq` > `after` (0 = from the beginning).
+          schema: {type: integer, format: int64, minimum: 0, default: 0}
+        - name: limit
+          in: query
+          schema: {type: integer, format: int32, minimum: 1, maximum: 1000, default: 500}
+      responses:
+        '200':
+          description: Events after the cursor.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MatchEventFeed'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/game/matches/{matchId}/box-score:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    get:
+      operationId: getBoxScore
+      tags: [Statistics]
+      summary: Box score projection of a match
+      description: 'Authz: ADMIN and team staff see all players; PARENT sees linked players'' lines; PLAYER sees own line (team totals always visible).'
+      responses:
+        '200':
+          description: Box score.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BoxScore'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/game/players/{playerId}/season-stats:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - name: playerId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+    get:
+      operationId: getPlayerSeasonStats
+      tags: [Statistics]
+      summary: A player's statistics over a season (FINISHED and LIVE matches)
+      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      parameters:
+        - name: seasonId
+          in: query
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Season statistics.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerSeasonStats'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /internal/usage/{tenantId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    get:
+      operationId: getGameUsage
+      tags: [Internal]
+      summary: game-service usage counters of a tenant
+      description: 'Authz: role `service`.'
+      x-internal: true
+      responses:
+        '200':
+          description: Usage counters.
+          content:
+            application/json:
+              schema: {$ref: './common.yaml#/components/schemas/UsageReport'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: './common.yaml#/components/securitySchemes/bearerAuth'
+
+  parameters:
+    MatchId:
+      name: matchId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+
+  schemas:
+    # ---------------- matches
+    MatchStatus:
+      type: string
+      enum: [SCHEDULED, LIVE, FINISHED, CANCELLED]
+    HomeAway:
+      type: string
+      enum: [HOME, AWAY]
+    JerseyNumber:
+      type: string
+      pattern: '^[0-9]{1,2}$'
+      example: '7'
+    Score:
+      type: object
+      required: [team, opponent]
+      properties:
+        team: {type: integer, format: int32, minimum: 0}
+        opponent: {type: integer, format: int32, minimum: 0}
+    Match:
+      type: object
+      required: [id, teamId, seasonId, opponentName, homeAway, scheduledAt, status, periodCount, periodMinutes, score, lastServerSeq]
+      properties:
+        id: {type: string, format: uuid}
+        teamId: {type: string, format: uuid}
+        seasonId: {type: string, format: uuid}
+        opponentName: {type: string}
+        homeAway: {$ref: '#/components/schemas/HomeAway'}
+        scheduledAt: {type: string, format: date-time}
+        venue: {type: string, nullable: true}
+        status: {$ref: '#/components/schemas/MatchStatus'}
+        periodCount: {type: integer, format: int32, minimum: 1, maximum: 8}
+        periodMinutes: {type: integer, format: int32, minimum: 1, maximum: 60}
+        startedAt: {type: string, format: date-time, nullable: true}
+        finishedAt: {type: string, format: date-time, nullable: true}
+        cancelledAt: {type: string, format: date-time, nullable: true}
+        cancelReason: {type: string, nullable: true}
+        score: {$ref: '#/components/schemas/Score'}
+        lastServerSeq:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Highest `serverSeq` stored for the match (0 = no events).
+    MatchPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Match'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreateMatchRequest:
+      type: object
+      required: [teamId, opponentName, homeAway, scheduledAt]
+      properties:
+        teamId: {type: string, format: uuid}
+        opponentName: {type: string, minLength: 1, maxLength: 120}
+        homeAway: {$ref: '#/components/schemas/HomeAway'}
+        scheduledAt: {type: string, format: date-time}
+        venue: {type: string, maxLength: 200}
+        periodCount: {type: integer, format: int32, minimum: 1, maximum: 8, default: 4}
+        periodMinutes: {type: integer, format: int32, minimum: 1, maximum: 60, default: 10}
+    UpdateMatchRequest:
+      type: object
+      minProperties: 1
+      properties:
+        opponentName: {type: string, minLength: 1, maxLength: 120}
+        homeAway: {$ref: '#/components/schemas/HomeAway'}
+        scheduledAt: {type: string, format: date-time}
+        venue: {type: string, maxLength: 200, nullable: true}
+        periodCount: {type: integer, format: int32, minimum: 1, maximum: 8}
+        periodMinutes: {type: integer, format: int32, minimum: 1, maximum: 60}
+    CancelMatchRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 500}
+
+    # ---------------- roster
+    MatchRoster:
+      type: object
+      required: [matchId, entries]
+      properties:
+        matchId: {type: string, format: uuid}
+        entries:
+          type: array
+          items: {$ref: '#/components/schemas/MatchRosterEntry'}
+    MatchRosterEntry:
+      type: object
+      required: [playerId, displayName, isStarter]
+      properties:
+        playerId: {type: string, format: uuid}
+        displayName: {type: string}
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+        isStarter: {type: boolean}
+    ReplaceMatchRosterRequest:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          maxItems: 30
+          items: {$ref: '#/components/schemas/MatchRosterEntryInput'}
+    MatchRosterEntryInput:
+      type: object
+      required: [playerId, isStarter]
+      properties:
+        playerId: {type: string, format: uuid}
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          description: Overrides the team jersey for this match.
+        isStarter: {type: boolean}
+
+    # ---------------- match events (mirror of events/match-event.schema.json)
+    MatchEventType:
+      type: string
+      enum: [PERIOD_START, PERIOD_END, SUB_IN, SUB_OUT, SHOT, ASSIST, REBOUND, TURNOVER, STEAL, BLOCK, FOUL, OPPONENT_SCORE, TIMEOUT, VOID, NOTE]
+    MatchEventBase:
+      type: object
+      description: Fields common to every match event.
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type: {$ref: '#/components/schemas/MatchEventType'}
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+    PlayerAttribution:
+      type: object
+      required: [playerId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
+
+    ShotPayload:
+      type: object
+      required: [points, made]
+      properties:
+        points:
+          type: integer
+          format: int32
+          enum: [1, 2, 3]
+          description: 1 = free throw, 2 = field goal, 3 = three-pointer.
+        made: {type: boolean}
+    ReboundPayload:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [OFFENSIVE, DEFENSIVE]
+    FoulPayload:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [PERSONAL, TECHNICAL, UNSPORTSMANLIKE]
+    OpponentScorePayload:
+      type: object
+      required: [points]
+      properties:
+        points:
+          type: integer
+          format: int32
+          enum: [1, 2, 3]
+    TimeoutPayload:
+      type: object
+      required: [side]
+      properties:
+        side:
+          type: string
+          enum: [OWN, OPPONENT]
+    VoidPayload:
+      type: object
+      required: [targetEventId]
+      properties:
+        targetEventId:
+          type: string
+          format: uuid
+          description: Event being voided (PARENT may only void own events).
+    NotePayload:
+      type: object
+      required: [text]
+      properties:
+        text: {type: string, minLength: 1, maxLength: 500}
+
+    PeriodStartEvent:
+      description: Start of a period (clock / period event; staff only).
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+    PeriodEndEvent:
+      description: End of a period (clock / period event; staff only).
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+    SubInEvent:
+      description: Player enters the court (staff only).
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+    SubOutEvent:
+      description: Player leaves the court (staff only).
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+    ShotEvent:
+      description: Shot attempt (free throw, 2 or 3 points), made or missed.
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+        - type: object
+          required: [payload]
+          properties:
+            payload: {$ref: '#/components/schemas/ShotPayload'}
+    AssistEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+    ReboundEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+        - type: object
+          required: [payload]
+          properties:
+            payload: {$ref: '#/components/schemas/ReboundPayload'}
+    TurnoverEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+    StealEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+    BlockEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+    FoulEvent:
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - $ref: '#/components/schemas/PlayerAttribution'
+        - type: object
+          required: [payload]
+          properties:
+            payload: {$ref: '#/components/schemas/FoulPayload'}
+    OpponentScoreEvent:
+      description: Points scored by the opponent (staff only).
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [payload]
+          properties:
+            payload: {$ref: '#/components/schemas/OpponentScorePayload'}
+    TimeoutEvent:
+      description: Timeout called by either side (staff only).
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [payload]
+          properties:
+            payload: {$ref: '#/components/schemas/TimeoutPayload'}
+    VoidEvent:
+      description: Cancels the effect of an earlier event in all projections.
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [payload]
+          properties:
+            payload: {$ref: '#/components/schemas/VoidPayload'}
+    NoteEvent:
+      description: Free-text annotation (optionally about a player); no effect on statistics.
+      allOf:
+        - $ref: '#/components/schemas/MatchEventBase'
+        - type: object
+          required: [payload]
+          properties:
+            playerId: {type: string, format: uuid}
+            payload: {$ref: '#/components/schemas/NotePayload'}
+
+    MatchEvent:
+      description: A match event, polymorphic on `type`.
+      oneOf:
+        - $ref: '#/components/schemas/PeriodStartEvent'
+        - $ref: '#/components/schemas/PeriodEndEvent'
+        - $ref: '#/components/schemas/SubInEvent'
+        - $ref: '#/components/schemas/SubOutEvent'
+        - $ref: '#/components/schemas/ShotEvent'
+        - $ref: '#/components/schemas/AssistEvent'
+        - $ref: '#/components/schemas/ReboundEvent'
+        - $ref: '#/components/schemas/TurnoverEvent'
+        - $ref: '#/components/schemas/StealEvent'
+        - $ref: '#/components/schemas/BlockEvent'
+        - $ref: '#/components/schemas/FoulEvent'
+        - $ref: '#/components/schemas/OpponentScoreEvent'
+        - $ref: '#/components/schemas/TimeoutEvent'
+        - $ref: '#/components/schemas/VoidEvent'
+        - $ref: '#/components/schemas/NoteEvent'
+      discriminator:
+        propertyName: type
+        mapping:
+          PERIOD_START: '#/components/schemas/PeriodStartEvent'
+          PERIOD_END: '#/components/schemas/PeriodEndEvent'
+          SUB_IN: '#/components/schemas/SubInEvent'
+          SUB_OUT: '#/components/schemas/SubOutEvent'
+          SHOT: '#/components/schemas/ShotEvent'
+          ASSIST: '#/components/schemas/AssistEvent'
+          REBOUND: '#/components/schemas/ReboundEvent'
+          TURNOVER: '#/components/schemas/TurnoverEvent'
+          STEAL: '#/components/schemas/StealEvent'
+          BLOCK: '#/components/schemas/BlockEvent'
+          FOUL: '#/components/schemas/FoulEvent'
+          OPPONENT_SCORE: '#/components/schemas/OpponentScoreEvent'
+          TIMEOUT: '#/components/schemas/TimeoutEvent'
+          VOID: '#/components/schemas/VoidEvent'
+          NOTE: '#/components/schemas/NoteEvent'
+
+    MatchEventBatch:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: {$ref: '#/components/schemas/MatchEvent'}
+    MatchEventResultStatus:
+      type: string
+      enum: [ACCEPTED, DUPLICATE, REJECTED]
+    MatchEventRejectionReason:
+      type: string
+      description: |
+        SCHEMA_INVALID — event does not match its type's schema; NOT_AUTHORIZED — caller may not enter this event
+        (e.g. PARENT for a non-linked player, VOID of someone else's event); MATCH_CANCELLED — match is CANCELLED;
+        CLIENT_SEQ_CONFLICT — (deviceId, clientSeq) already used by a different event id.
+      enum: [SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT]
+    MatchEventResult:
+      type: object
+      required: [eventId, status]
+      properties:
+        eventId: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/MatchEventResultStatus'}
+        serverSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+          description: Set for ACCEPTED and DUPLICATE.
+        reason:
+          allOf: [{$ref: '#/components/schemas/MatchEventRejectionReason'}]
+          nullable: true
+          description: Set for REJECTED.
+        message:
+          type: string
+          nullable: true
+          description: Human-readable detail for REJECTED (e.g. the failing schema path).
+    MatchEventBatchResult:
+      type: object
+      required: [results, lastServerSeq]
+      properties:
+        results:
+          type: array
+          items: {$ref: '#/components/schemas/MatchEventResult'}
+        lastServerSeq: {type: integer, format: int64, minimum: 0}
+    StoredMatchEvent:
+      type: object
+      description: A match event as stored by the server.
+      required: [serverSeq, event, recordedBy, receivedAt]
+      properties:
+        serverSeq: {type: integer, format: int64, minimum: 1}
+        event: {$ref: '#/components/schemas/MatchEvent'}
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        receivedAt: {type: string, format: date-time}
+        voidedByEventId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set when a later VOID event targets this event.
+    MatchEventFeed:
+      type: object
+      required: [events, lastServerSeq, hasMore]
+      properties:
+        events:
+          type: array
+          items: {$ref: '#/components/schemas/StoredMatchEvent'}
+        lastServerSeq:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Highest stored `serverSeq` of the match (cursor for the next call when hasMore = false).
+        hasMore:
+          type: boolean
+          description: More events exist after the last returned one.
+
+    # ---------------- statistics
+    StatLine:
+      type: object
+      description: Counting statistics. fg1 = free throws, fg2 = two-point field goals, fg3 = three-pointers.
+      required: [points, fg1Made, fg1Attempted, fg2Made, fg2Attempted, fg3Made, fg3Attempted, assists, offensiveRebounds, defensiveRebounds, turnovers, steals, blocks, personalFouls, secondsPlayed]
+      properties:
+        points: {type: integer, format: int32, minimum: 0}
+        fg1Made: {type: integer, format: int32, minimum: 0}
+        fg1Attempted: {type: integer, format: int32, minimum: 0}
+        fg2Made: {type: integer, format: int32, minimum: 0}
+        fg2Attempted: {type: integer, format: int32, minimum: 0}
+        fg3Made: {type: integer, format: int32, minimum: 0}
+        fg3Attempted: {type: integer, format: int32, minimum: 0}
+        assists: {type: integer, format: int32, minimum: 0}
+        offensiveRebounds: {type: integer, format: int32, minimum: 0}
+        defensiveRebounds: {type: integer, format: int32, minimum: 0}
+        turnovers: {type: integer, format: int32, minimum: 0}
+        steals: {type: integer, format: int32, minimum: 0}
+        blocks: {type: integer, format: int32, minimum: 0}
+        personalFouls:
+          type: integer
+          format: int32
+          minimum: 0
+          description: All fouls committed (PERSONAL + TECHNICAL + UNSPORTSMANLIKE).
+        secondsPlayed:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Derived from starters and period / substitution events.
+    ProjectionWarning:
+      type: object
+      description: Domain inconsistency found while projecting (events are never rejected for these).
+      required: [code, eventId, message]
+      properties:
+        code:
+          type: string
+          description: |
+            Open set (new codes may appear; clients must tolerate unknown values), e.g. SUB_IN_PLAYER_ON_COURT,
+            SUB_OUT_PLAYER_NOT_ON_COURT, PLAYER_NOT_IN_ROSTER, VOID_TARGET_NOT_FOUND, EVENT_OUTSIDE_PERIOD.
+          example: SUB_IN_PLAYER_ON_COURT
+        eventId: {type: string, format: uuid}
+        playerId: {type: string, format: uuid, nullable: true}
+        message: {type: string}
+    PlayerMatchStats:
+      type: object
+      required: [playerId, displayName, wasStarter, stats, warnings]
+      properties:
+        playerId: {type: string, format: uuid}
+        displayName: {type: string}
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+        wasStarter: {type: boolean}
+        stats: {$ref: '#/components/schemas/StatLine'}
+        warnings:
+          type: array
+          items: {$ref: '#/components/schemas/ProjectionWarning'}
+    PeriodScore:
+      type: object
+      required: [period, team, opponent]
+      properties:
+        period: {type: integer, format: int32, minimum: 1}
+        team: {type: integer, format: int32, minimum: 0}
+        opponent: {type: integer, format: int32, minimum: 0}
+    BoxScore:
+      type: object
+      required: [matchId, status, score, periodScores, teamTotals, players, warnings, lastServerSeq]
+      properties:
+        matchId: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/MatchStatus'}
+        score: {$ref: '#/components/schemas/Score'}
+        periodScores:
+          type: array
+          items: {$ref: '#/components/schemas/PeriodScore'}
+        teamTotals: {$ref: '#/components/schemas/StatLine'}
+        opponentFouls:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        players:
+          type: array
+          description: Player lines visible to the caller.
+          items: {$ref: '#/components/schemas/PlayerMatchStats'}
+        warnings:
+          type: array
+          description: Match-level warnings (not attributable to a player).
+          items: {$ref: '#/components/schemas/ProjectionWarning'}
+        lastServerSeq:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Projection is up to date with events up to this sequence number.
+    StatAverages:
+      type: object
+      description: Per-game averages over games played.
+      required: [points, assists, rebounds, steals, blocks, turnovers, personalFouls, minutesPlayed]
+      properties:
+        points: {type: number, format: double, minimum: 0}
+        assists: {type: number, format: double, minimum: 0}
+        rebounds: {type: number, format: double, minimum: 0}
+        steals: {type: number, format: double, minimum: 0}
+        blocks: {type: number, format: double, minimum: 0}
+        turnovers: {type: number, format: double, minimum: 0}
+        personalFouls: {type: number, format: double, minimum: 0}
+        minutesPlayed: {type: number, format: double, minimum: 0}
+    PlayerMatchLine:
+      type: object
+      required: [matchId, scheduledAt, opponentName, status, wasStarter, stats]
+      properties:
+        matchId: {type: string, format: uuid}
+        scheduledAt: {type: string, format: date-time}
+        opponentName: {type: string}
+        status: {$ref: '#/components/schemas/MatchStatus'}
+        wasStarter: {type: boolean}
+        stats: {$ref: '#/components/schemas/StatLine'}
+    PlayerSeasonStats:
+      type: object
+      required: [playerId, seasonId, gamesPlayed, gamesStarted, totals, averages, matches]
+      properties:
+        playerId: {type: string, format: uuid}
+        seasonId: {type: string, format: uuid}
+        gamesPlayed: {type: integer, format: int32, minimum: 0}
+        gamesStarted: {type: integer, format: int32, minimum: 0}
+        totals: {$ref: '#/components/schemas/StatLine'}
+        averages: {$ref: '#/components/schemas/StatAverages'}
+        matches:
+          type: array
+          items: {$ref: '#/components/schemas/PlayerMatchLine'}
