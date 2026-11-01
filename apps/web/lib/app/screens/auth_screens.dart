@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_providers.dart';
+import '../sign_out.dart';
 import '../../core/config/app_config.dart';
 import '../../core/errors/app_error.dart';
-import '../../core/tenancy/tenant_selection.dart';
 import '../../core/ui/app_error_view.dart';
 import '../../features/me/application/me_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -33,7 +33,7 @@ class SplashScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(AppTokens.spaceMd),
                     child: TextButton(
                       key: const Key('splash-sign-out'),
-                      onPressed: () => ref.read(authServiceProvider).logout(),
+                      onPressed: () => confirmAndSignOut(context, ref),
                       child: Text(l.signOut),
                     ),
                   ),
@@ -153,10 +153,7 @@ class NoAccessScreen extends ConsumerWidget {
                 Text(l.noAccessBody, textAlign: TextAlign.center),
                 const SizedBox(height: AppTokens.spaceLg),
                 OutlinedButton(
-                  onPressed: () async {
-                    await ref.read(selectedTenantIdProvider.notifier).clear();
-                    await ref.read(authServiceProvider).logout();
-                  },
+                  onPressed: () => confirmAndSignOut(context, ref),
                   child: Text(l.signOut),
                 ),
               ],

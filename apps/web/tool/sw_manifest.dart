@@ -72,7 +72,7 @@ String buildIdFor(Directory build, List<String> files) {
     mix(utf8.encode(f));
     mix(File('${build.path}/$f').readAsBytesSync());
   }
-  return hash.toUnsigned(64).toRadixString(16).padLeft(16, '0');
+  return BigInt.from(hash).toUnsigned(64).toRadixString(16).padLeft(16, '0');
 }
 
 /// Fills the placeholders of the worker template.

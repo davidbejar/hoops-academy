@@ -28,7 +28,7 @@ class MockAuthService implements AuthService {
   Future<void> login() async => _set(AuthStatus.authenticated);
 
   @override
-  Future<void> logout() async => _set(AuthStatus.unauthenticated);
+  Future<void> logout({bool endSession = true}) async => _set(AuthStatus.unauthenticated);
 
   @override
   Future<String?> accessToken() async =>

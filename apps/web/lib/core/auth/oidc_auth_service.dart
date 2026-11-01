@@ -5,6 +5,7 @@ import 'package:oidc_default_store/oidc_default_store.dart';
 
 import '../config/app_config.dart';
 import 'auth_service.dart';
+import 'end_session_redirect.dart';
 
 /// Keycloak (OIDC authorization code + PKCE) via `package:oidc`.
 ///
@@ -14,7 +15,9 @@ import 'auth_service.dart';
 /// (`refreshBefore`) by the package, with the 401 interceptor as a backstop.
 class OidcAuthService implements AuthService {
   OidcAuthService(AppConfig config, {required Uri origin})
-    : _manager = OidcUserManager.lazy(
+    : _clientId = config.clientId,
+      _postLogoutRedirect = origin.resolve('redirect.html'),
+      _manager = OidcUserManager.lazy(
         discoveryDocumentUri: OidcUtils.getOpenIdConfigWellKnownUri(
           config.issuer,
         ),
@@ -36,6 +39,9 @@ class OidcAuthService implements AuthService {
         ),
       );
 
+  static const _revokeTimeout = Duration(seconds: 3);
+  final String _clientId;
+  final Uri _postLogoutRedirect;
   final OidcUserManager _manager;
   final _controller = StreamController<AuthStatus>.broadcast();
   AuthStatus _status = AuthStatus.unknown;
@@ -73,8 +79,38 @@ class OidcAuthService implements AuthService {
     await _manager.loginAuthorizationCodeFlow();
   }
 
+  /// Local sign-out first, IdP end-session second (F-03): the stored tokens
+  /// are forgotten before the browser leaves for Keycloak, so a Keycloak that
+  /// is down (or no network at all, [endSession] false) cannot leave the
+  /// session behind for the next person on a shared device. The refresh token
+  /// is revoked best effort (short timeout) while the user is still known.
   @override
-  Future<void> logout() => _manager.logout();
+  Future<void> logout({bool endSession = true}) async {
+    final user = _manager.currentUser;
+    final idToken = user?.idToken;
+    Uri? endpoint;
+    if (endSession && user != null) {
+      try {
+        endpoint = _manager.discoveryDocument.endSessionEndpoint;
+        await _manager.revokeRefreshToken(forgetUser: false).timeout(_revokeTimeout);
+      } on Object {
+        // Never blocks the sign-out.
+      }
+    }
+    await _manager.forgetUser();
+    _set(AuthStatus.unauthenticated);
+    if (endpoint == null || idToken == null) return;
+    redirectBrowserTo(
+      endpoint.replace(
+        queryParameters: {
+          ...endpoint.queryParameters,
+          'client_id': _clientId,
+          'id_token_hint': idToken,
+          'post_logout_redirect_uri': _postLogoutRedirect.toString(),
+        },
+      ),
+    );
+  }
 
   @override
   Future<String?> accessToken() async =>

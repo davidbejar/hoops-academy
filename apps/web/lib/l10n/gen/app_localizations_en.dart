@@ -2143,4 +2143,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usageCounter_bodyMeasurements => 'Body measurements';
+
+  @override
+  String get signOutUnsyncedTitle => 'Events not synced yet';
+
+  @override
+  String signOutUnsyncedBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count match events are',
+      one: '1 match event is',
+    );
+    return '$_temp0 not synced from this device. Signing out now discards them for good. Connect and wait for the sync, or sign out and discard them.';
+  }
+
+  @override
+  String get signOutAnyway => 'Sign out and discard';
+
+  @override
+  String get updateAvailable => 'A new version is available';
+
+  @override
+  String get updateReload => 'Reload';
 }

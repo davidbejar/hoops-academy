@@ -42,16 +42,20 @@ Collected from WP handovers. Resolved items move to the bottom with the WP/commi
 ### From the WP17 security review (`docs/security/review-2026-11.md`)
 - **F-01 game event feed** (Medium): `GET /api/game/matches/{id}/events` returns every player's stat events to
   PARENT/PLAYER — filter to own/linked players + team events, or document it as intended and align the authz matrix.
-- **F-03 / F-07 / F-08 web sign-out and storage** (apps/web): forget the user locally before end-session (works
-  offline), wipe the drift DB on logout/subject change, scope `roster`/`matchJson`/`ownEvents` by tenant+person, drop
-  `offline_access`; realm: refresh-token rotation.
-- **F-09 / F-10 web supply chain** (apps/web): `flutter build web --no-web-resources-cdn` + bundled fonts (then remove
-  gstatic from the CSPs in `infra/compose/nginx.conf` and `deploy/containers/web-nginx.conf`); pin the sha256 of
-  `sqlite3.wasm`.
+- **F-07 residual (apps/web)**: reads of `roster`/`matchJson`/`ownEvents` are still keyed by matchId only (roster cache
+  has no tenant/person column); the logout wipe (WP14b) closes the shared-device case, a user switch without sign-out
+  (expired session, new login) does not wipe. Add tenant+person scoping with a drift migration. Also: a session that
+  EXPIRES (`expireSession`) keeps the DB on purpose (unsynced events); wipe only when a different `sub` signs in.
+- **F-08 realm**: refresh-token rotation (`revokeRefreshToken`/reuse detection) in `infra/keycloak/realm-academy.json`;
+  `offline_access` is no longer requested by the web client (WP14b), the realm still lists it as optional scope.
+- **Web (WP14b leftovers)**: end-session while offline is skipped, not queued (the Keycloak SSO session lives on until its
+  4 h idle timeout); `fontFallbackBaseUrl` points at `assets/fonts/` so glyphs outside Roboto (CJK, emoji) render as
+  tofu - bundle a Noto subset if a language needs it; production ingress prefixes for the SW network-only list
+  (`NETWORK_ONLY_PREFIXES` in `web/sw.js`) must match; `docs/security/review-2026-11.md` statuses of F-03, F-07 (partly),
+  F-08 (partly), F-09, F-10, F-19, F-20 still say Open (outside WP14b's ownership).
 - **F-11 invite of an existing Keycloak account**: links without consent and reveals the account (ACCEPTED vs PENDING) —
   product decision (notification e-mail; uniform response).
 - **F-14 token audience**: audience mapper per service + `quarkus.oidc.token.audience`.
-- **F-19 / F-20 web**: derive the SW network-only prefixes from config; fail release builds with mock API / http issuer.
 - **Audit read API**: `core.audit_event` has no endpoint (contract has none) — add ADMIN `GET /api/core/audit-events`
   (and/or a super_admin view) in the contract; retention job (migrator) for old rows.
 - **ASVS gaps**: password blocklist (6.2.4), breached passwords (6.2.12), optional OTP for ADMIN/super_admin (6.3.3),

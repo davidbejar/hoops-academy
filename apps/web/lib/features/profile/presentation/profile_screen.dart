@@ -3,11 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme.dart';
-import '../../../core/auth/auth_providers.dart';
+import '../../../app/sign_out.dart';
 import '../../../core/l10n/locale_controller.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_providers.dart';
-import '../../../core/tenancy/tenant_selection.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../me/application/me_providers.dart';
 
@@ -92,10 +91,7 @@ class ProfileScreen extends ConsumerWidget {
                   key: const Key('sign-out-button'),
                   icon: const Icon(Icons.logout),
                   label: Text(l.signOut),
-                  onPressed: () async {
-                    await ref.read(selectedTenantIdProvider.notifier).clear();
-                    await ref.read(authServiceProvider).logout();
-                  },
+                  onPressed: () => confirmAndSignOut(context, ref),
                 ),
               ],
             ),

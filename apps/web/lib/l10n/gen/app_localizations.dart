@@ -4047,6 +4047,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Medidas corporales'**
   String get usageCounter_bodyMeasurements;
+
+  /// No description provided for @signOutUnsyncedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Hay eventos sin sincronizar'**
+  String get signOutUnsyncedTitle;
+
+  /// No description provided for @signOutUnsyncedBody.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{Hay 1 evento de partido sin sincronizar} other{Hay {count} eventos de partido sin sincronizar}} en este dispositivo. Si cierras sesión ahora se perderán para siempre. Conéctate y espera a que se sincronicen, o cierra sesión y descártalos.'**
+  String signOutUnsyncedBody(int count);
+
+  /// No description provided for @signOutAnyway.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar sesión y descartar'**
+  String get signOutAnyway;
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Hay una nueva versión disponible'**
+  String get updateAvailable;
+
+  /// No description provided for @updateReload.
+  ///
+  /// In es, this message translates to:
+  /// **'Recargar'**
+  String get updateReload;
 }
 
 class _AppLocalizationsDelegate

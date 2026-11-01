@@ -6,6 +6,7 @@ import '../core/config/app_config.dart';
 import '../core/connectivity/connectivity_providers.dart';
 import '../core/navigation/destination_labels.dart';
 import '../core/navigation/destinations.dart';
+import '../core/pwa/update_providers.dart';
 import '../core/session/session.dart';
 import '../core/session/session_providers.dart';
 import '../features/tenant/presentation/tenant_avatar.dart';
@@ -46,6 +47,7 @@ class AppShell extends ConsumerWidget {
     final body = Column(
       children: [
         if (!online) const _Banner(key: Key('offline-banner'), offline: true),
+        if (ref.watch(updateAvailableProvider)) const _UpdateBanner(),
         if (mock) _Banner(key: const Key('mock-banner'), text: l.mockModeBanner),
         Expanded(child: child),
       ],
@@ -153,6 +155,36 @@ class _Banner extends StatelessWidget {
                 offline ? l.offlineBanner : text!,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A new build is installed and waiting (service worker): offer the reload.
+class _UpdateBanner extends ConsumerWidget {
+  const _UpdateBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
+    return Material(
+      key: const Key('update-banner'),
+      color: scheme.tertiaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd, vertical: AppTokens.spaceXs),
+        child: Row(
+          children: [
+            const Icon(Icons.system_update_alt, size: 18),
+            const SizedBox(width: AppTokens.spaceSm),
+            Expanded(child: Text(l.updateAvailable, style: Theme.of(context).textTheme.bodySmall)),
+            TextButton(
+              key: const Key('update-reload'),
+              onPressed: ref.read(updateAvailableProvider.notifier).reload,
+              child: Text(l.updateReload),
             ),
           ],
         ),

@@ -36,7 +36,7 @@ class AppConfig {
   static const _mock = bool.fromEnvironment('HOOPS_MOCK_API');
   static const _scopes = String.fromEnvironment(
     'HOOPS_OIDC_SCOPES',
-    defaultValue: 'openid,profile,email,offline_access',
+    defaultValue: 'openid,profile,email',
   );
 
   factory AppConfig.fromEnvironment() => AppConfig(

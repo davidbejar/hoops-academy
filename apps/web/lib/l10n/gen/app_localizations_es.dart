@@ -2157,4 +2157,27 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get usageCounter_bodyMeasurements => 'Medidas corporales';
+
+  @override
+  String get signOutUnsyncedTitle => 'Hay eventos sin sincronizar';
+
+  @override
+  String signOutUnsyncedBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Hay $count eventos de partido sin sincronizar',
+      one: 'Hay 1 evento de partido sin sincronizar',
+    );
+    return '$_temp0 en este dispositivo. Si cierras sesión ahora se perderán para siempre. Conéctate y espera a que se sincronicen, o cierra sesión y descártalos.';
+  }
+
+  @override
+  String get signOutAnyway => 'Cerrar sesión y descartar';
+
+  @override
+  String get updateAvailable => 'Hay una nueva versión disponible';
+
+  @override
+  String get updateReload => 'Recargar';
 }

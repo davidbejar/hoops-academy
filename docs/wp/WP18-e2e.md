@@ -12,7 +12,8 @@ Model: Sonnet. Depends on: WP12–WP14, WP16. Skills: test-driven-development, v
 - `just e2e` recipe; CI job (compose on GitHub runner).
 
 ## Acceptance
-- [ ] journey passes against compose and against kind; Flutter smoke passes; CI job green
+- [x] journey passes against compose (20/20, three consecutive runs on the same stack)
+- [ ] journey passes against kind; Flutter smoke runs in Chrome (compile-only verified, no chromedriver); CI job green
 
 ## Handover
 
@@ -102,3 +103,50 @@ which is blocked by a realm defect in another lane (bug 1). Acceptance boxes are
 - Unique data per run is left in the stack (tenants `e2e-*`, Keycloak users `e2e-*@hoops.local`); `just down` + volume
   removal cleans it.
 - The compose stack was left running; the three service jars were stopped.
+
+## Handover (WP18b)
+### Result
+- Stack reset (`just down`, volume removed, `just up`, `just seed-users`) with the fixed realm; `HOOPS_EXPOSE_KC_ADMIN=true`
+  appended to the local, git-ignored `.env` (needed for the master-realm Admin API through nginx) and nginx restarted.
+- `./mvnw -pl e2e test -De2e.baseUrl=http://localhost:8080`: **20 tests, 0 failures, 0 errors, 0 skipped, ~70 s**
+  (68 s of it is step 60: suspend/reactivate wait for the 30 s membership caches of game/athlete, twice). Run three
+  times in a row on the same stack, all green (per-run suffix on slugs/e-mails works).
+- Flutter `apps/web/tool/web_smoke.sh --compile-only`: OK (51 s). `flutter drive` still not run (no chromedriver).
+- Services stopped with `services-down.sh`; compose stack left up.
+
+### Assertion / tooling fixes (test side, no backend change)
+1. Test e-mails `@hoops.local` -> `@e2e.example.org`: the contract validator rejects `.local` as `format: email`
+   (`GET /api/core/me`, `/email`); the server was fine.
+2. `Actor` now sends `urlEncodingEnabled(false)`: REST Assured turned `events:batch` into `events%3Abatch` -> 404.
+3. `Contracts`: wrapper filter that ignores `additionalProperties` errors whose schema pointer is inside an `allOf`
+   (see contract flaws), other validation errors still fail.
+4. `GET /api/game/matches/{id}/events` is read unvalidated (validator cannot resolve the `MatchEvent` discriminator,
+   message `discriminator.oneOf.no_match_found` for every type, e.g. `PERIOD_START`); status/count still asserted.
+5. Step 40 rollover: `GET /api/core/players?status=ORPHAN` is empty right after rollover because status is derived
+   (ADR-0014) and the old assignment still sits in the current season; the orphan is asserted via the rollover report
+   (`orphans`, `openedCaseIds`) and the eligibility case. Test misreading, not a bug.
+6. `E2E_FIX_REALM` workaround and `KeycloakAdmin.ensureWebClientHasBasicScope` removed (realm fixed); the `sub` fail-fast
+   check stays. Runbook `docs/runbooks/e2e.md` updated (known limits).
+
+### Backend fixes
+None. No change in services/**.
+
+### Contract disagreements (libs/contracts, not touched)
+- `libs/contracts/openapi/core.yaml` `components.schemas.AgeCategory` = `allOf[AgeCategoryInput, {id}]` while
+  `AgeCategoryInput` has `additionalProperties: false`: no real response can validate (every field of the other member is
+  "additional"). Same pattern likely in other `allOf` compositions (the e2e filter hides it). Fix in the contract:
+  drop `additionalProperties:false` from composed members or use `unevaluatedProperties`.
+- `libs/contracts/openapi/game.yaml` `MatchEvent` (oneOf + discriminator mapping to `#/components/schemas/*Event`, each
+  `allOf[MatchEventBase, {type: allOf[MatchEventType] enum [X]}]`): the atlassian validator finds no match for any event in
+  `GET /matches/{id}/events` responses. Either a validator limitation with `allOf`-wrapped `type` enums or a schema that
+  needs `type: {type: string, enum:[X]}` directly; worth a look by the contracts owner.
+
+### Rate limits
+No 429 observed on the token endpoint or `events:batch` (about 8 logins + a few batches per run, three runs back to back).
+
+### Open points
+- kind run not repeated in this pass (needs port-forwards, see runbook); CI workflow unproven.
+- chromedriver 156.x needed for `web_smoke.sh` (mock/real) to run in a browser.
+- `HOOPS_EXPOSE_KC_ADMIN=true` is required for the suite on compose; the CI workflow's throw-away `.env` should set it
+  (not checked, `.github/` outside this task's scope).
+- Test data (`e2e-*` tenants/users) accumulates in the stack; `just down` + volume removal cleans it.

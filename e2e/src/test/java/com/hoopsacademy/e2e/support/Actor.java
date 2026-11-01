@@ -25,7 +25,7 @@ public final class Actor {
     }
 
     private RequestSpecification spec(String path, boolean validate) {
-        RequestSpecification s = given().baseUri(E2eEnv.baseUrl()).auth().oauth2(token).accept("*/*");
+        RequestSpecification s = given().urlEncodingEnabled(false).baseUri(E2eEnv.baseUrl()).auth().oauth2(token).accept("*/*");
         if (tenantId != null) {
             s.header("X-Tenant-Id", tenantId.toString());
         }

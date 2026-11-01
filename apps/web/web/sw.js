@@ -9,7 +9,7 @@
 // files, manifest = every file of the build except this worker).
 //
 // Rules
-//  - /api/** and /auth/**: never touched (network only, tokens and data stay fresh).
+//  - /api/**, /platform/**, /auth/**, /internal/**: never touched (network only, tokens and data stay fresh).
 //  - navigations inside the scope: the cached index.html (single page app,
 //    hash URLs); redirect.html is matched ignoring its OIDC query string.
 //  - everything else under the scope: cache first, then network; successful
@@ -58,8 +58,13 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
+// Same-origin paths that must never be served from or written to the cache:
+// the REST APIs (/api, /platform), Keycloak behind the proxy (/auth) and the
+// internal routes. Keep in step with infra/compose/nginx.conf and the ingress.
+const NETWORK_ONLY_PREFIXES = ['/api/', '/auth/', '/platform/', '/internal/'];
+
 function isNetworkOnly(url) {
-  return url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/');
+  return NETWORK_ONLY_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
 }
 
 self.addEventListener('fetch', (event) => {

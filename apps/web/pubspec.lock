@@ -210,7 +210,7 @@ packages:
     source: hosted
     version: "0.3.5+5"
   crypto:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: crypto
       sha256: e3626ae6270383c9e3a549f34c9e4cd26c09ae6a9adaab2bf4737a00340efdc4
@@ -564,7 +564,7 @@ packages:
       path: "packages/core"
       relative: true
     source: path
-    version: "2.0.0"
+    version: "2.1.0"
   hoops_game_api:
     dependency: "direct main"
     description:
@@ -1351,7 +1351,7 @@ packages:
     source: hosted
     version: "1.2.1"
   web:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: web
       sha256: e119e82ac4795c7925103b7cf3768191f33941b99e7ccffbd6c645201d9f606b

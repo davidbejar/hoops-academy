@@ -2149,4 +2149,21 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get usageCounter_bodyMeasurements => 'Pengukuran tubuh';
+
+  @override
+  String get signOutUnsyncedTitle => 'Ada kejadian yang belum disinkronkan';
+
+  @override
+  String signOutUnsyncedBody(int count) {
+    return '$count kejadian pertandingan belum disinkronkan dari perangkat ini. Jika keluar sekarang, kejadian itu akan hilang selamanya. Sambungkan internet dan tunggu sinkronisasi, atau keluar dan buang.';
+  }
+
+  @override
+  String get signOutAnyway => 'Keluar dan buang';
+
+  @override
+  String get updateAvailable => 'Versi baru tersedia';
+
+  @override
+  String get updateReload => 'Muat ulang';
 }

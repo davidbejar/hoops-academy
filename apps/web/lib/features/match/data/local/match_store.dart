@@ -21,6 +21,20 @@ class MatchStore {
 
   Future<void> close() => _db.close();
 
+  /// Deletes everything on this device (sign-out / user switch): the outbox,
+  /// the merged feed, the match and roster caches, the sequences and the
+  /// device identity (the next user gets a new one).
+  Future<void> wipe() => _db.transaction(() async {
+    for (final table in _db.allTables) {
+      await _db.delete(table).go();
+    }
+    _deviceId = null;
+  });
+
+  /// PENDING or SENT events of every user and academy on this device.
+  Future<int> unsyncedTotal() async =>
+      (await (_db.select(_db.pendingEvents)..where((e) => e.status.isIn(_unsynced))).get()).length;
+
   // ------------------------------------------------------------- identity
 
   /// Stable id of this installation, generated on first use.

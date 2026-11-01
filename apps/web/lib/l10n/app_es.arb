@@ -1241,5 +1241,17 @@
   "usageCounter_trainingPlans": "Planes",
   "usageCounter_physicalTestResults": "Resultados de pruebas",
   "usageCounter_injuries": "Lesiones",
-  "usageCounter_bodyMeasurements": "Medidas corporales"
+  "usageCounter_bodyMeasurements": "Medidas corporales",
+  "signOutUnsyncedTitle": "Hay eventos sin sincronizar",
+  "signOutUnsyncedBody": "{count, plural, one{Hay 1 evento de partido sin sincronizar} other{Hay {count} eventos de partido sin sincronizar}} en este dispositivo. Si cierras sesión ahora se perderán para siempre. Conéctate y espera a que se sincronicen, o cierra sesión y descártalos.",
+  "@signOutUnsyncedBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signOutAnyway": "Cerrar sesión y descartar",
+  "updateAvailable": "Hay una nueva versión disponible",
+  "updateReload": "Recargar"
 }

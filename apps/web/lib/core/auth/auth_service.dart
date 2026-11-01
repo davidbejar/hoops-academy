@@ -12,8 +12,10 @@ abstract class AuthService {
   /// Starts the PKCE authorization-code flow (leaves the page on web).
   Future<void> login();
 
-  /// Ends the session (also at the IdP).
-  Future<void> logout();
+  /// Ends the session. The local session is always forgotten first, so this
+  /// also works offline; with [endSession] the IdP session is ended too
+  /// (best effort, leaves the page on web). Pass false while offline.
+  Future<void> logout({bool endSession = true});
 
   /// The current access token, or null when signed out.
   Future<String?> accessToken();

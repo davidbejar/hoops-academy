@@ -75,11 +75,14 @@ suite reads the e-mail from MailHog (proof that onboarding sends it) and then se
 through the Keycloak Admin API (master realm `admin-cli`, `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` from `.env`),
 clears the required actions and logs in with the scripted PKCE flow. Do not use this outside local/CI stacks.
 
-## Known blockers and options
-- Realm client `web` lacks the `basic` client scope, so user access tokens have no `sub` claim and every real user
-  gets 404 "User is not provisioned" (see docs/wp/WP18-e2e.md, bug 1). The suite fails fast with that message. Fix
-  `infra/keycloak/realm-academy.json` (`"basic"` in `defaultClientScopes` of `web`) and reset the realm, or set
-  `E2E_FIX_REALM=1` to patch the running realm through the Admin API before the run.
+## Known limits
+- The realm must be the current `infra/keycloak/realm-academy.json` (client `web` with the `basic` scope, so tokens carry
+  `sub`); the suite fails fast if a token has no `sub`. Reset: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
+- The Admin API of the master realm must be reachable: set `HOOPS_EXPOSE_KC_ADMIN=true` in `.env` (compose) and restart nginx
+  (`just down && just up`); on kind use the port-forward and `E2E_KEYCLOAK_ADMIN_URL`.
+- Contract validation of responses ignores `additionalProperties` errors inside `allOf` schemas (contract flaw, see the
+  WP18 handover) and the `GET /matches/{id}/events` feed is not validated (the validator cannot resolve the `MatchEvent` discriminator).
+- A full run takes about 70 s, of which ~60 s are the 30 s membership caches of game/athlete expiring after suspend and after reactivate; no rate limit (429) was hit.
 
 ## Browser smoke (Flutter)
 `apps/web/tool/web_smoke.sh` (mock mode) / `--real` / `--compile-only`; needs a chromedriver matching Chrome for the

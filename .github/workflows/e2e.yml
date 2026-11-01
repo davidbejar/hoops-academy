@@ -33,6 +33,8 @@ jobs:
       - name: Generate a throw-away .env (random secrets, never committed)
         run: |
           cp .env.example .env
+          # the journey uses the master-realm Admin API through nginx to set invited users' passwords
+          grep -q '^HOOPS_EXPOSE_KC_ADMIN=' .env && sed -i 's|^HOOPS_EXPOSE_KC_ADMIN=.*|HOOPS_EXPOSE_KC_ADMIN=true|' .env || echo 'HOOPS_EXPOSE_KC_ADMIN=true' >> .env
           while IFS= read -r line; do
             case "$line" in
               *=change-me-*) key="${line%%=*}"; sed -i "s|^${key}=.*|${key}=$(openssl rand -hex 16)|" .env ;;

@@ -35,7 +35,7 @@ flutter run -d chrome --web-port 5173 \
   --dart-define=HOOPS_API_BASE=http://localhost:8080      # `/api/*` goes through nginx
 ```
 Defaults: issuer `http://localhost:8080/auth/realms/academy`, client `web`, scopes
-`openid profile email offline_access`. Override with `--dart-define=HOOPS_OIDC_ISSUER=...`,
+`openid profile email`. Override with `--dart-define=HOOPS_OIDC_ISSUER=...`,
 `HOOPS_OIDC_CLIENT_ID=...`, `HOOPS_OIDC_SCOPES=a,b,c`, `HOOPS_API_BASE=...`.
 Seeded users (password = `DEV_USER_PASSWORD` in the repo `.env`): `superadmin`, `admin1`, `coach1`,
 `assistant1`, `parent1`, `player1`.
@@ -77,7 +77,7 @@ installed PWA without network failed. We ship our own worker:
 | `web/flutter_bootstrap.js` | custom bootstrap **without** `serviceWorkerSettings`, so Flutter never registers its own worker (two workers cannot share a scope; they would replace each other on every load) |
 | `web/index.html` | registers `sw.js` on `load` |
 | `tool/sw_manifest.dart` | after the build, replaces `__BUILD_ID__` (hash of every shipped file) and `/*__PRECACHE_MANIFEST__*/[]` (the file list) in `build/web/sw.js`; unit tested in `test/tool/sw_manifest_test.dart` |
-| `tool/build_web.sh` | `flutter build web --release` then `dart run tool/sw_manifest.dart build/web` |
+| `tool/build_web.sh` | guards (no mock API, https issuer or `HOOPS_ALLOW_HTTP_ISSUER=1`), `flutter build web --release --no-web-resources-cdn` then `dart run tool/sw_manifest.dart build/web` |
 
 Precached: `index.html`, `main.dart.js` + every `main.dart.js_N.part.js`, `flutter.js`, `flutter_bootstrap.js`,
 `manifest.json`, icons, `redirect.html`, `sqlite3.wasm`, `drift_worker.js`, `assets/**` and the CanvasKit files
@@ -214,7 +214,7 @@ origin, which an in-page integration test cannot fill in.
 source scripts/env.sh && just up && just seed-users
 HOOPS_E2E_PASSWORD="$DEV_USER_PASSWORD" apps/web/tool/keycloak_login_check.sh   # password env var; defaults to .env
 ```
-It performs discovery, the login form, the code+S256 exchange (`web` client, `offline_access` scope) and a
+It performs discovery, the login form, the code+S256 exchange (`web` client) and a
 refresh-token grant, and prints only non-secret claims.
 
 **Manual browser check (real flow):** serve the build on `http://localhost:8080` (or register 5173, see CORS note),
