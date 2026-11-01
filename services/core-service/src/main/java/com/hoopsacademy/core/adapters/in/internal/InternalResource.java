@@ -14,7 +14,8 @@ import java.util.UUID;
 
 /**
  * Service-to-service API (client-credentials token with realm role {@code service}; blocked at the proxy).
- * WP4 adds {@code /internal/teams/{teamId}/roster} and {@code /internal/players:batch} next to these.
+ * The roster endpoints ({@code /internal/teams/{teamId}/roster}, {@code /internal/players:batch}) live in
+ * {@link InternalRosterResource}.
  */
 @Path("/internal")
 @RolesAllowed("service")

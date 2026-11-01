@@ -11,7 +11,7 @@
   </parent>
   <artifactId>core-service</artifactId>
   <name>Hoops Academy :: core-service</name>
-  <description>Tenancy, identity &amp; membership, platform endpoints, tenant profile and logo</description>
+  <description>Tenancy, identity &amp; membership, platform endpoints, tenant profile and logo, roster &amp; eligibility</description>
 
   <properties>
     <!-- DoD: >= 80 % lines for the module, >= 90 % for the domain packages -->
@@ -70,6 +70,10 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-keycloak-admin-rest-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-scheduler</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -145,6 +149,11 @@
     <dependency>
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
 import com.hoopsacademy.core.application.port.PlayerRepository;
+import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
@@ -8,6 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.time.Clock;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,6 +63,32 @@ class JpaPlayerRepository implements PlayerRepository {
     }
 
     @Override
+    public Optional<PlayerSummary> summary(PlayerId player) {
+        return Optional.ofNullable(summaries(List.of(player)).get(player));
+    }
+
+    @Override
+    public Map<PlayerId, PlayerSummary> summaries(Collection<PlayerId> players) {
+        if (players.isEmpty()) {
+            return Map.of();
+        }
+        return em.createQuery("""
+                        select p, pe from PlayerEntity p, PersonEntity pe
+                         where pe.id = p.personId and p.id in :ids""", Object[].class)
+                .setParameter("ids", players.stream().map(PlayerId::value).distinct().toList())
+                .getResultStream()
+                .map(row -> toSummary((PlayerEntity) row[0], (PersonEntity) row[1]))
+                .collect(Collectors.toMap(PlayerSummary::id, summary -> summary));
+    }
+
+    @Override
+    public void updateStatus(PlayerId player, PlayerStatus status) {
+        em.createQuery("select p from PlayerEntity p where p.id = :id", PlayerEntity.class)
+                .setParameter("id", player.value()).getResultStream().findFirst()
+                .ifPresent(row -> row.status = status.name());
+    }
+
+    @Override
     public long count() {
         return em.createQuery("select count(p) from PlayerEntity p", Long.class).getSingleResult();
     }
@@ -69,5 +97,11 @@ class JpaPlayerRepository implements PlayerRepository {
     public long countByStatus(PlayerStatus status) {
         return em.createQuery("select count(p) from PlayerEntity p where p.status = :status", Long.class)
                 .setParameter("status", status.name()).getSingleResult();
+    }
+
+    private static PlayerSummary toSummary(PlayerEntity player, PersonEntity person) {
+        return new PlayerSummary(new PlayerId(player.id), new PersonId(person.id),
+                person.givenName + " " + person.familyName, PlayerStatus.valueOf(player.status), person.birthDate,
+                person.gender == null ? null : Gender.valueOf(person.gender));
     }
 }

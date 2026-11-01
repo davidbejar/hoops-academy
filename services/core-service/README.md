@@ -1,7 +1,8 @@
 # core-service
 
-Tenancy, identity & membership, platform endpoints, academy profile and logo (WP3). Roster & eligibility (WP4)
-and approvals (WP5) are added to this module later. Contract: `libs/contracts/openapi/core.yaml`.
+Tenancy, identity & membership, platform endpoints, academy profile and logo (WP3); seasons, age categories, teams,
+staff, eligibility-checked assignments, eligibility cases, rollover and the eligibility sweep (WP4, ADR-0015).
+Approvals (WP5) are added to this module later. Contract: `libs/contracts/openapi/core.yaml`.
 Port **8081** (nginx routes `/api/core/**` and `/platform/**` here; `/internal/**` is blocked at the proxy).
 
 ## Run locally
@@ -23,6 +24,7 @@ source scripts/env.sh
 | `OIDC_AUTH_SERVER_URL` | `http://localhost:8080/auth/realms/academy` | issuer |
 | `KEYCLOAK_URL` | `http://localhost:8080/auth` | Keycloak Admin API base |
 | `GAME_SERVICE_URL` / `ATHLETE_SERVICE_URL` | `http://localhost:8082` / `:8083` | `/internal/usage` aggregation |
+| `CORE_ELIGIBILITY_CRON` | `0 15 * * * ?` (hourly) | eligibility sweep over ACTIVE tenants (`off` disables it) |
 
 The Keycloak Admin API calls need the `core-service` service account to hold realm-management `manage-users`
 (and `view-users`); the realm export does not grant it yet (see WP3 handover). OpenAPI: `/q/openapi`,
@@ -32,11 +34,11 @@ health: `/q/health`, metrics: `/q/metrics`.
 
 ```
 com.hoopsacademy.core
-├── domain/{tenant,identity,membership,logo,shared}   pure Java (value objects, rules)
-├── application/{platform,tenant,members,me,authz,usage,port,shared}   use cases + ports
+├── domain/{tenant,identity,membership,logo,roster,eligibility,shared}   pure Java (value objects, rules)
+├── application/{platform,tenant,members,me,authz,usage,roster,port,shared}   use cases + ports
 └── adapters/
     ├── in/rest       /api/core/** (tenant API, /me)      in/platform  /platform/**      in/internal  /internal/**
-    ├── in/shared     merge-patch reader, Problem mappers, caller identity
+    ├── in/shared     merge-patch reader, Problem mappers, caller identity     in/scheduler  eligibility sweep trigger
     ├── out/persistence  default PU (core_app, @TenantId entities)   out/platform  "platform" PU (core_platform)
     └── out/keycloak, out/client (usage of game/athlete), out/billing (noop entitlements)
 ```
@@ -52,7 +54,9 @@ source scripts/env.sh
 - Postgres via `PostgresRlsResource` (Testcontainers, production init SQL, app connects as `core_app`).
 - Keycloak Admin API, the service-token endpoint and game/athlete `/internal/usage` via WireMock
   (`WireMockResource`, stubs in `KeycloakStubs` / `UsageStubs`).
-- Every REST-assured exchange is validated against `core.yaml` (`Contract.CORE`); negative tests that send bodies
+- Roster fixtures: `RosterDb` (seasons around the real "today", default ladder, teams, staff, players, assignments,
+  cases); `Members.signInAs(tenant, person, roles, staffTeams)` for staff-relative authz.
+- Every REST-assured exchange is validated against `core.yaml` (`Contract.CORE`, `allOf` flattened); negative tests that send bodies
   the contract forbids use `Contract.RESPONSES_ONLY`, failure-path tests (502/500) use `Contract.FAILURES`.
 - `@Tag("keycloak")` tests import `infra/keycloak/realm-academy.json` into `quay.io/keycloak/keycloak:26.8.1`; they are
   excluded from the default surefire run (`surefire.excludedGroups=keycloak`) and meant for CI.

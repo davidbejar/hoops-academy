@@ -71,6 +71,21 @@ class MeResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "me-coach")
+    void reportsTheTeamsTheCallerIsStaffOf() {
+        String t = tenant("ACTIVE");
+        UUID coach = CoreDb.person(t, CoreDb.login("me-coach"), "Cora", "C", null, null, null, TenantRole.COACH);
+        java.util.Map<String, UUID> categories = com.hoopsacademy.core.testsupport.RosterDb.defaultCategories(t);
+        UUID season = com.hoopsacademy.core.testsupport.RosterDb.currentSeason(t);
+        UUID lions = com.hoopsacademy.core.testsupport.RosterDb.team(t, season, "Lions", categories.get("U12"), "MIXED");
+        com.hoopsacademy.core.testsupport.RosterDb.team(t, season, "Other", categories.get("U10"), "MIXED");
+        com.hoopsacademy.core.testsupport.RosterDb.staff(t, lions, coach, "COACH");
+
+        given().filter(Contract.CORE).get(ME).then().statusCode(200)
+                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.staffTeamIds", contains(lions.toString()));
+    }
+
+    @Test
     @TestSecurity(user = "me-pending")
     void firstMeCallAcceptsAPendingInvitation() {
         String t = tenant("ACTIVE");

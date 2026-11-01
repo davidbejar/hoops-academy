@@ -12,6 +12,12 @@ public final class Constraints {
     public static final String TENANT_ROLE = "ADMIN|COACH|ASSISTANT_COACH|PARENT|PLAYER";
     public static final String TENANT_STATUS = "ACTIVE|SUSPENDED|WITHDRAWN";
     public static final String GENDER = "MALE|FEMALE";
+    public static final String GENDER_POLICY = "MALE|FEMALE|MIXED";
+    public static final String STAFF_ROLE = "COACH|ASSISTANT_COACH";
+    public static final String CATEGORY_CODE = "^[A-Z0-9_]{1,16}$";
+    public static final String JERSEY = "^[0-9]{1,2}$";
+    public static final String CASE_STATUS = "OPEN|RESOLVED";
+    public static final String CASE_RESOLUTION = "REASSIGNED|REMOVED_FROM_TEAM|DISMISSED";
 
     private Constraints() {}
 

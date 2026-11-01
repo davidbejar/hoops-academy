@@ -54,6 +54,26 @@ public final class MergePatch {
         });
     }
 
+    /** A text field matching {@code regex} (contract {@code pattern}). */
+    public Patch<String> matching(String field, boolean nullable, Pattern regex) {
+        return read(field, nullable, node -> {
+            if (!node.isTextual() || !regex.matcher(node.asText()).matches()) {
+                return reject(field, "must match " + regex.pattern());
+            }
+            return Optional.of(node.asText());
+        });
+    }
+
+    /** An integer field within {@code min..max}. */
+    public Patch<Integer> integer(String field, boolean nullable, int min, int max) {
+        return read(field, nullable, node -> {
+            if (!node.isInt() || node.asInt() < min || node.asInt() > max) {
+                return reject(field, "must be an integer " + min + ".." + max);
+            }
+            return Optional.of(node.asInt());
+        });
+    }
+
     public Patch<String> email(String field, boolean nullable) {
         return read(field, nullable, node -> {
             if (!node.isTextual() || node.asText().length() > 254 || !EMAIL.matcher(node.asText()).matches()) {

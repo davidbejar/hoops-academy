@@ -30,6 +30,18 @@ public final class Members {
                 roles.isEmpty() ? Set.of() : EnumSet.copyOf(roles), Set.of(), Set.of(), Optional.empty()));
     }
 
+    /** Signs in as an existing person (e.g. a coach row) who is staff of {@code staffTeams}. */
+    public static void signInAs(String tenant, UUID personId, Set<TenantRole> roles, Set<UUID> staffTeams) {
+        TenantUserRegistry.clear();
+        TenantUserRegistry.register(new AuthzContext(TenantUser.SUBJECT, personId, TenantId.parse(tenant),
+                roles.isEmpty() ? Set.of() : EnumSet.copyOf(roles), staffTeams, Set.of(), Optional.empty()));
+    }
+
+    /** The person id {@link #signIn} uses for the caller in {@code tenant}. */
+    public static UUID callerPersonId(String tenant) {
+        return TenantUserCallback.defaultPersonId(TenantId.parse(tenant));
+    }
+
     public static void signIn(String tenant, TenantRole... roles) {
         signIn(tenant, roles.length == 0 ? Set.of() : EnumSet.copyOf(List.of(roles)));
     }

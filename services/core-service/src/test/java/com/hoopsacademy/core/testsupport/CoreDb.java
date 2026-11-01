@@ -168,7 +168,7 @@ public final class CoreDb {
         }
     }
 
-    static void bind(PreparedStatement statement, Object... params) throws SQLException {
+    public static void bind(PreparedStatement statement, Object... params) throws SQLException {
         for (int i = 0; i < params.length; i++) {
             statement.setObject(i + 1, params[i]);
         }

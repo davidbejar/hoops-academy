@@ -75,6 +75,12 @@ class PlatformTenantResourceTest {
         keycloak.verify(1, setupEmailSent(sub));
         assertThat(CoreDb.count(id, "select count(*) from core.tenant_settings")).isEqualTo(1);
         assertThat(CoreDb.count(id, """
+                select count(*) from core.age_category
+                 where (code, max_age, sort_rank) in (('U8', 7, 0), ('U10', 9, 1), ('U12', 11, 2), ('U14', 13, 3),
+                                                      ('U16', 15, 4), ('U18', 17, 5))
+                    or (code = 'SENIOR' and max_age is null and sort_rank = 6)""")).isEqualTo(7);
+        assertThat(CoreDb.count(id, "select count(*) from core.age_category")).isEqualTo(7);
+        assertThat(CoreDb.count(id, """
                 select count(*) from core.person p
                   join core.membership_role r on r.person_id = p.id and r.role = 'ADMIN'
                   join core.app_user u on u.id = p.user_id and u.keycloak_sub = ?

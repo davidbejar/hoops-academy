@@ -5,7 +5,11 @@ import com.atlassian.oai.validator.report.LevelResolver;
 import com.atlassian.oai.validator.report.ValidationReport;
 import com.atlassian.oai.validator.restassured.OpenApiValidationFilter;
 
-/** Validates every REST-assured exchange against {@code libs/contracts/openapi/core.yaml} (loaded from the jar). */
+/**
+ * Validates every REST-assured exchange against {@code libs/contracts/openapi/core.yaml} (loaded from the jar).
+ * {@code allOf} schemas are flattened ({@code withResolveCombinators}); without it the validator rejects properties of
+ * the sibling parts of e.g. {@code Season} / {@code AgeCategory} responses as "additionalProperties".
+ */
 public final class Contract {
 
     private static final String SPEC = "/openapi/core.yaml";
@@ -17,6 +21,7 @@ public final class Contract {
      */
     public static final OpenApiValidationFilter CORE = new OpenApiValidationFilter(
             OpenApiInteractionValidator.createForSpecificationUrl(SPEC)
+                    .withResolveCombinators(true)
                     .withLevelResolver(LevelResolver.create()
                             .withLevel("validation.request.body.schema.additionalProperties",
                                     ValidationReport.Level.IGNORE)
@@ -29,6 +34,7 @@ public final class Contract {
      */
     public static final OpenApiValidationFilter RESPONSES_ONLY = new OpenApiValidationFilter(
             OpenApiInteractionValidator.createForSpecificationUrl(SPEC)
+                    .withResolveCombinators(true)
                     .withLevelResolver(LevelResolver.create()
                             .withLevel("validation.request", ValidationReport.Level.IGNORE)
                             .build())
@@ -40,6 +46,7 @@ public final class Contract {
      */
     public static final OpenApiValidationFilter FAILURES = new OpenApiValidationFilter(
             OpenApiInteractionValidator.createForSpecificationUrl(SPEC)
+                    .withResolveCombinators(true)
                     .withLevelResolver(LevelResolver.create()
                             .withLevel("validation.response.status.unknown", ValidationReport.Level.IGNORE)
                             .withLevel("validation.request.body.schema.additionalProperties",
