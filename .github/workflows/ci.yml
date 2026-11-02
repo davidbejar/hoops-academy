@@ -45,6 +45,9 @@ jobs:
         working-directory: apps/web
       - run: flutter test
         working-directory: apps/web
+        env:
+          # goldens are recorded on macOS; Linux renders the test font/shapes a few % differently (test/flutter_test_config.dart)
+          GOLDEN_DIFF_TOLERANCE: "0.06"
 
   helm-chart-tests:
     runs-on: ubuntu-latest
@@ -98,9 +101,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # Trivy resolves the Maven dependency tree from the local repository; without it it fetches every POM from Maven
+      # Central, which rate-limits the runner (429). Populate ~/.m2 first and mount it read-only into the scanner.
+      - name: Populate the Maven cache
+        run: ./mvnw -B -ntp -q -DskipTests -Djacoco.skip=true package
       - name: trivy fs
         run: |
-          docker run --rm -v "$PWD:/src" -w /src aquasec/trivy:0.76.1 fs \
+          docker run --rm -v "$PWD:/src" -v "$HOME/.m2:/root/.m2:ro" -w /src aquasec/trivy:0.76.1 fs \
             --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
             --skip-dirs apps/web/build --skip-dirs '**/target' --skip-dirs apps/web/.dart_tool \
             --ignorefile .trivyignore.yaml .

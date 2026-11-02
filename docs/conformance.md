@@ -52,7 +52,7 @@ Deferred-v2: S-15, V-01, V-02.)
 7. **Players do not see their own line in the live box score** in the web app (season statistics yes; the server returns
    the line, the client hides it) (S-46).
 8. **Billing is seams only** and the outbox is written but never published (WP19 not built) (S-15, S-16).
-9. **CI has never run** (workflows parse; no runner), OWASP dependency-check needs an NVD key, no PIT run is recorded.
+9. **CI** first ran on GitHub on 2026-11-02 (e2e journey green on the runner; images build/scan green; ci backend/secrets/charts green, runner-only fixes applied the same day); OWASP dependency-check still needs a valid NVD key, no PIT run is recorded.
 10. **Withdrawn/suspended tenants**: members are blocked at once in core but up to 30 s later in game/athlete (membership
     cache); Keycloak logins themselves stay enabled; no purge job (R-15).
 
@@ -68,7 +68,7 @@ Deferred-v2: S-15, V-01, V-02.)
 | S-06 | Frontend: avoid Node, use something different | Implemented | Flutter/Dart only; sqlite3.wasm fetched + `dart compile js` for the drift worker (`tool/fetch_web_db_assets.sh`) | no `package.json` in the repo; WP11/WP13. (A one-off `deno` run checked `sw.js` in WP14; not part of the toolchain) |
 | S-07 | Backend with docker compose, but with Podman | Implemented | `infra/compose/compose.yaml` (Postgres 17, Keycloak 26.8.1, MailHog, nginx) + `e2e/bin/services-up.sh` | WP1 checks; **e2e journey 20/20 green on compose, three consecutive runs** (WP18b) |
 | S-08 | Then, when the app works, kind + Helm + Tilt | Partial | `deploy/kind/{up,down,secrets,seed-users,smoke}.sh`, `Tiltfile`, `just kind-up` / `just tilt` | WP16: `tilt ci` green for game + athlete + web; WP18: core/game/athlete via Helm + smoke. Gaps: no `tilt ci` with core; Tiltfile does not call `scripts/sync-chart-files.sh`; WP17 ingress rules only rendered |
-| S-09 | Write tests for everything | Partial | JUnit 5/AssertJ/jqwik/REST Assured/WireMock/ArchUnit/Testcontainers as non-owner roles; `flutter test`; e2e module | 1,467 JVM tests, 477 Flutter tests, 20 e2e steps; JaCoCo gates (≥ 80 %, domain ≥ 90 %) met. Gaps: browser integration tests written but never executed, CI never run, no PIT run, several WPs admit code written before its tests |
+| S-09 | Write tests for everything | Partial | JUnit 5/AssertJ/jqwik/REST Assured/WireMock/ArchUnit/Testcontainers as non-owner roles; `flutter test`; e2e module | 1,467 JVM tests, 477 Flutter tests, 20 e2e steps; JaCoCo gates (≥ 80 %, domain ≥ 90 %) met. Gaps: browser smoke executed only locally (mock + real), CI first green runs 2026-11-02 (dependency-check pending NVD key), no PIT run, several WPs admit code written before its tests |
 | S-10 | One big git project or several: your choice | Implemented | single monorepo (ADR-0002) | repo layout |
 | S-11 | A lightweight database that works well in k8s | Implemented | PostgreSQL 17, one database, schema per service, CloudNativePG on kind (`charts/databases`) | WP16 CNPG clusters healthy, managed roles reconciled; RLS suites. (Postgres rather than an embedded DB: chosen for RLS and CNPG) |
 | S-12 | Make sure secrets are not pushed to git | Implemented | `.env` ignored, `.env.example` placeholders, gitleaks pre-commit + CI, realm export without credentials, Secrets from `.env` (ADR-0012) | WP0 (fake AWS key blocked), WP16/WP17 `helm template … \| gitleaks detect --pipe` clean, `gitleaks detect --no-git` hits only in ignored `.env`; `NoBuiltInCredentialsTest` (game, athlete) |

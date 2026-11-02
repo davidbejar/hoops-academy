@@ -70,7 +70,7 @@ statement-by-statement status of the spec is in [`../conformance.md`](../conform
 - **Tiltfile**: call `scripts/sync-chart-files.sh` before `k8s_yaml(helm(...))` (chart copies of realm/init SQL).
 - **`e2e/bin/services-up.sh`** treats any HTTP answer as ready and its comment says game/athlete have no health
   extension; switch to `status == UP` on `/q/health/ready` now that all three have it.
-- **CI workflows** (`ci.yml`, `images.yml`, `e2e.yml`) have never run; the e2e workflow's throw-away `.env` must set
+- **CI workflows**: first runs on GitHub 2026-11-02 — `e2e` green (20 steps on the runner's Podman stack), `images` green up to the push step, `ci` backend/secrets/charts green; fixes for the runner-only failures landed the same day (see `git log --grep ci`). Still open: ZAP Keycloak CSP hardening (realm `browserSecurityHeaders`), NVD key activation. Original note: the e2e workflow's throw-away `.env` must set
   `HOOPS_EXPOSE_KC_ADMIN=true`; dependency-check needs `secrets.NVD_API_KEY`.
 - **Pin `ubi9/openjdk-21-runtime`** in `deploy/containers/service.Containerfile` (trivy DS-0001); drop the guava pin in the
   root pom once the Quarkus BOM ships ≥ 33.7.2.

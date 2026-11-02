@@ -197,7 +197,9 @@ flutter analyze
 flutter test                                   # unit + widget + l10n parity + goldens
 flutter test --update-goldens test/golden      # after an intentional UI change; review the PNGs
 ```
-Goldens use the test font (blocks instead of glyphs) so they are stable across machines; they check layout.
+Goldens use the test font (blocks instead of glyphs) so they are stable across machines; they check layout. They are
+recorded on macOS; Linux renders them a few % differently, so CI runs with `GOLDEN_DIFF_TOLERANCE=0.06`
+(`test/flutter_test_config.dart`). Locally the comparison is exact.
 
 ### Login smoke (integration_test, Chrome)
 Flutter cannot run `integration_test` on web with `flutter test`; it needs `flutter drive` and a
