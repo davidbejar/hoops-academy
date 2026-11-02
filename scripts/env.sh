@@ -2,14 +2,18 @@
 # Source this file: `source scripts/env.sh`
 # Sets JAVA_HOME to JDK 21 and points Docker-API clients (Testcontainers, Quarkus Dev Services, Tilt) at Podman.
 
-# Pick a JDK whose major version is exactly 21 (java_home -v 21 would also accept newer JDKs).
+# Pick a JDK whose major version is exactly 21 (java_home -v 21 would also accept newer JDKs). An already-set JAVA_HOME
+# (CI: actions/setup-java) or the java on PATH wins when it is a 21.
+_is_jdk21() { [ -n "$1" ] && [ -x "$1/bin/java" ] && "$1/bin/java" -version 2>&1 | grep -q '"21\.'; }
 _pick_jdk21() {
   local c
+  if _is_jdk21 "${JAVA_HOME:-}"; then echo "$JAVA_HOME"; return 0; fi
+  c=$(command -v java 2>/dev/null) && c=$(cd "$(dirname "$(readlink -f "$c" 2>/dev/null || echo "$c")")/.." && pwd) \
+    && _is_jdk21 "$c" && { echo "$c"; return 0; }
   for c in /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
            /usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
-           "$(/usr/libexec/java_home -v 21 2>/dev/null)"; do
-    [ -x "$c/bin/java" ] || continue
-    if "$c/bin/java" -version 2>&1 | grep -q '"21\.'; then echo "$c"; return 0; fi
+           "$(/usr/libexec/java_home -v 21 2>/dev/null || true)"; do
+    if _is_jdk21 "$c"; then echo "$c"; return 0; fi
   done
   return 1
 }
@@ -20,8 +24,20 @@ else
 fi
 [ -n "${JAVA_HOME:-}" ] && export PATH="$JAVA_HOME/bin:$PATH"
 
+# Podman API socket for Docker-API clients. macOS: the podman machine's forwarded socket. Linux (CI): the rootless
+# service socket, or whatever DOCKER_HOST already points at. Every probe tolerates failure (callers may run with set -e).
 if command -v podman >/dev/null 2>&1; then
-  SOCK=$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null)
+  SOCK=""
+  if [ -n "${DOCKER_HOST:-}" ] && [ -S "${DOCKER_HOST#unix://}" ]; then
+    SOCK="${DOCKER_HOST#unix://}"
+  else
+    SOCK=$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null || true)
+    if [ -z "$SOCK" ] || [ ! -S "$SOCK" ]; then
+      for c in "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock" /run/podman/podman.sock; do
+        [ -S "$c" ] && { SOCK="$c"; break; }
+      done
+    fi
+  fi
   if [ -n "$SOCK" ] && [ -S "$SOCK" ]; then
     export DOCKER_HOST="unix://$SOCK"
     export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
@@ -33,7 +49,7 @@ if command -v podman >/dev/null 2>&1; then
       export TESTCONTAINERS_RYUK_PRIVILEGED=true
     fi
   else
-    echo "warn: podman machine socket not found; is the machine running? (podman machine start)" >&2
+    echo "warn: podman API socket not found (macOS: podman machine start; Linux: systemctl --user start podman.socket)" >&2
   fi
 fi
 
