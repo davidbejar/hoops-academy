@@ -205,7 +205,7 @@ Flutter cannot run `integration_test` on web with `flutter test`; it needs `flut
 ```bash
 chromedriver --port=4444 &
 flutter drive --driver=test_driver/integration_test.dart \
-  --target=integration_test/login_smoke_test.dart -d chrome \
+  --target=integration_test/login_smoke_test.dart -d web-server \
   --dart-define=HOOPS_MOCK_API=true            # full UI flow with the in-memory API
 ```
 Without `HOOPS_MOCK_API` the test only asserts boot + login screen: the Keycloak form is a different page and

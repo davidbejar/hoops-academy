@@ -5,6 +5,8 @@
 #   tool/web_smoke.sh --real          # real mode: boots against http://localhost:5173 + the compose Keycloak (stack up)
 #   tool/web_smoke.sh --compile-only  # no chromedriver needed: proves the test + app compile for the web
 #
+# The device must be `web-server`: with `-d chrome`, `flutter drive` suppresses its own Chrome launch (no-launch-chrome)
+# and then waits forever for that Chrome to connect (symptom: stuck after "Waiting for connection from debug service").
 # `flutter drive` needs a chromedriver whose major version matches Chrome
 # (https://googlechromelabs.github.io/chrome-for-testing/). Put it on PATH or export CHROMEDRIVER=/path/to/chromedriver.
 # The script starts it on :4444 and stops it afterwards.
@@ -41,6 +43,7 @@ cd_pid=$!
 trap 'kill "$cd_pid" 2>/dev/null || true' EXIT
 sleep 1
 
-args=(--driver=test_driver/integration_test.dart --target="$TARGET" -d chrome "$DEFINE")
+# Phone-sized window: the app is mobile first and the smoke drives the bottom NavigationBar layout.
+args=(--driver=test_driver/integration_test.dart --target="$TARGET" -d web-server --browser-dimension=390x844 "$DEFINE")
 [ "$mode" = real ] && args+=(--web-port 5173)
 flutter drive "${args[@]}"

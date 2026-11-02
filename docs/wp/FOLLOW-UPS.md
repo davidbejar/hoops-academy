@@ -34,9 +34,9 @@ statement-by-statement status of the spec is in [`../conformance.md`](../conform
 - **Offline end-session** is skipped, not queued (SSO session lives until its 4 h idle timeout) — accepted, ADR-0019.
 
 ### Web app (`apps/web`)
-- **Browser-level tests**: install chromedriver matching Chrome (156.x) and run `apps/web/tool/web_smoke.sh` (mock and
-  `--real`), the Lighthouse installability check and the airplane-mode cold-start check (README "Offline cold start");
-  add chromedriver to CI.
+- **Browser-level tests**: `apps/web/tool/web_smoke.sh` ran green in mock mode on 2026-11-02 (chromedriver 156 installed
+  by hand from Chrome for Testing; the Homebrew cask is disabled). Still open: the Lighthouse installability check and the
+  airplane-mode cold-start check (README "Offline cold start"); add chromedriver to CI.
 - **PLAYER's own line in the live box score**: `scoring_rights.dart` `canSeeLine` ignores `ownPlayerId` (server returns
   the line).
 - **REJECTED player label**: `lib/core/ui/labels.dart` maps `PlayerStatus.REJECTED` to "withdrawn"; add a label in es/en/id.

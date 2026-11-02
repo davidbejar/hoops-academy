@@ -93,7 +93,10 @@ kind was blocked by the realm defect at that time and has not been re-run since 
 
 ## Browser smoke (Flutter)
 `apps/web/tool/web_smoke.sh` (mock mode) / `--real` / `--compile-only`; needs a chromedriver matching Chrome for the
-first two (see the script header).
+first two (see the script header). The Homebrew `chromedriver` cask is disabled (Gatekeeper); download the matching
+`chromedriver-mac-arm64.zip` from https://googlechromelabs.github.io/chrome-for-testing/, put the binary on PATH and run
+`xattr -d com.apple.quarantine` on it. The script drives the `web-server` device: with `-d chrome`, `flutter drive`
+never launches a browser and hangs forever after "Waiting for connection from debug service".
 
 ## CI
 `.github/workflows/e2e.yml`: Podman + podman-compose on `ubuntu-24.04`, throw-away `.env` with random secrets, the
