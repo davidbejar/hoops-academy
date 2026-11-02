@@ -1,4 +1,4 @@
-# Session handover (updated 2026-11-02, afternoon)
+# Session handover (updated 2026-11-02, evening — CI fully green)
 
 Read `CLAUDE.md` first. This page is the short "where are we" for a fresh session; the detail is in the linked files.
 The original request is `docs/SPEC.md` (verbatim); the approved plan with its status box is `docs/PLAN.md`; what was built
@@ -10,18 +10,18 @@ folder (`.../Code/Claude/projects/dummy-project2`) is archived and must not be w
   journey on the compose stack, browser smoke (`apps/web/tool/web_smoke.sh`, mock and `--real`), Helm chart tests.
 - GitHub: `davidbejar/hoops-academy` (public), branch `main`. Repository variable `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`;
   secret `NVD_API_KEY` (currently rejected by NVD as invalid, see below).
-- CI on `origin/main`: `ci` green except `dependency-check` (see below); `e2e` green on the runner's Podman stack; `images`
-  green end to end — the four images are published to `ghcr.io/davidbejar/hoops-academy/{core-service,game-service,athlete-service,web}:<sha>`
-  (verified 2026-11-02 after the orphan `REGISTRY_USERNAME` secret was removed). Packages are created private: make them
-  public in the package settings or set `global.imagePullSecrets` (runbook release.md §3) before a cluster pulls them.
+- CI on `origin/main` 5ab1f71 (2026-11-02): **all three workflows green** — `ci` (backend 1,502 tests, flutter, trivy-fs,
+  zap-baseline, dependency-check, secrets-scan, helm-chart-tests), `e2e` (20-step journey on the runner's Podman stack),
+  `images` (four images built, scanned and pushed to `ghcr.io/davidbejar/hoops-academy/{core-service,game-service,athlete-service,web}:<sha>`).
+  Packages are created private: make them public in the package settings or set `global.imagePullSecrets` (runbook
+  release.md §3) before a cluster pulls them.
 
 ## Pending
-1. `dependency-check`: the NVD key is valid since 2026-11-02 (first full NVD download ran ~3 h; the job now caches the NVD data
-   with split restore/save steps so later runs take minutes). Findings so far: `quarkus-flyway-postgresql` matched against
-   PostgreSQL *server* CVEs (CPE false positive, suppressed until 2027-05-01 in `.dependency-check-suppressions.xml`), and a
-   real one: Vert.x 4.5.34 (CVE-2026-1024xx, CVSS up to 9.2) via Quarkus 3.40.1 -> fixed by moving to Quarkus platform
-   **3.40.1.1** (Vert.x 4.5.35; full `./mvnw verify` green: 1,502 tests). Confirm the next `ci` run's dependency-check is green;
-   if NVD answers 503, rerun the job (data is cached). Keep `quarkus.platform.version` on the latest 3.40.x patch.
+1. `dependency-check` is green (verified 2026-11-02, 2 min with the cached NVD data; the first download took ~3 h). History:
+   `quarkus-flyway-postgresql` matched against PostgreSQL *server* CVEs (CPE false positive, suppressed until 2027-05-01 in
+   `.dependency-check-suppressions.xml`); Vert.x 4.5.34 CVE-2026-1024xx (CVSS up to 9.2) fixed by Quarkus platform 3.40.1.1
+   (Vert.x 4.5.35). The report still lists findings below the CVSS 7 gate: download the `dependency-check-report` artifact of a
+   `ci` run and review them once. Keep `quarkus.platform.version` on the latest 3.40.x patch; if NVD answers 503, rerun the job.
 2. Make the ghcr.io packages public (or configure a pull secret) before deploying to a cluster that pulls from ghcr.io.
 3. Decide security finding F-01 (parents/players reading the full match event feed), `docs/security/review-2026-11.md`.
 
