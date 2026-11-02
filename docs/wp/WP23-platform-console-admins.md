@@ -58,16 +58,16 @@ The super admin manages the administrators of an academy from the academy detail
     last-admin explanation (disabled button, row text, same message on a server 409, add the new admin first).
 - Verified (fresh, this session):
   - Red first: `platform_test.dart` administrators group committed against the fake and the repository methods only
-    (21 of 25 new cases failing; 4 passed only because they assert absence). Mutation check: `onPressed: isLast ? null :
+    (21 of the 22 new cases failing; the remaining one asserts absence only). Mutation check: `onPressed: isLast ? null :
     remove` -> `remove` made the "only administrator cannot be removed" test fail.
-  - `flutter test test/features/platform/platform_test.dart`: 38 tests green (13 existing + 25 new: list, loading,
+  - `flutter test test/features/platform/platform_test.dart`: 38 tests green (16 existing + 22 new: list, loading,
     list error + retry, add + validation, add 409 `EMAIL_TAKEN`, add 502, edit names only, edit e-mail + validation, edit
     unchanged, remove + cancel, resend, resend 409, last admin disabled + note, two admins enabled, remove down to one,
     server 409 `LAST_ADMIN` message without the English detail, last-admin text in en and id, withdrawn, stale 409
     `TENANT_WITHDRAWN`, suspended managed, long names/e-mail/roles at 360 px without overflow).
   - `flutter analyze`: No issues found. `flutter test test/l10n`: 3 tests green (placeholder and key parity).
-  - `just web-test` (`flutter test`): 507 tests, All tests passed (the memory baseline was 477; this WP adds 25 widget tests and 4 golden tests;
-    the remaining difference comes from tests added by other work packages).
+  - `just web-test` (`flutter test`): 507 tests, All tests passed (the memory baseline was 477; this WP adds 22 widget tests and 4 golden tests;
+    the remaining difference comes from tests added by other work packages since that note).
   - Goldens (Ahem blocks like the existing ones; viewed the PNGs: no overflow or clipping, add button right-aligned at
     1024, last-admin note wraps inside the card at 360, dialog fits 360x780):
     `apps/web/test/golden/goldens/platform_admins_360x780.png`, `platform_admins_1024x768.png`,
