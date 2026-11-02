@@ -1,0 +1,118 @@
+/*
+ * Hoops Academy login theme: makes Keycloak's keycloak.v2 pages look like the Flutter app.
+ * Colours are the app's Material 3 scheme from its seed colour #E8590C (apps/web/lib/app/theme.dart,
+ * ColorScheme.fromSeed), light and dark. Loaded after keycloak.v2's styles.css (theme.properties).
+ */
+:root {
+  --hoops-primary: #8e4d31;
+  --hoops-on-primary: #ffffff;
+  --hoops-primary-hover: #71361c;
+  --hoops-surface: #fff8f6;
+  --hoops-card: #fceae4;
+  --hoops-field: #fff8f6;
+  --hoops-on-surface: #231a16;
+  --hoops-on-surface-variant: #53433e;
+  --hoops-outline: #85736d;
+  --hoops-font: Roboto, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --keycloak-bg-logo-url: none;
+  --keycloak-card-top-color: var(--hoops-primary);
+}
+
+/* keycloak.v2 adds this class to <html> when the browser prefers dark (darkMode=true), like the app. */
+html.pf-v5-theme-dark {
+  --hoops-primary: #ffb598;
+  --hoops-on-primary: #552008;
+  --hoops-primary-hover: #ffdbce;
+  --hoops-surface: #1a110e;
+  --hoops-card: #271e1a;
+  --hoops-field: #322824;
+  --hoops-on-surface: #f1dfd9;
+  --hoops-on-surface-variant: #d8c2ba;
+  --hoops-outline: #a08d86;
+}
+
+:root,
+html.pf-v5-theme-dark {
+  --pf-v5-global--FontFamily--text: var(--hoops-font);
+  --pf-v5-global--FontFamily--heading: var(--hoops-font);
+  --pf-v5-global--primary-color--100: var(--hoops-primary);
+  --pf-v5-global--primary-color--200: var(--hoops-primary-hover);
+  --pf-v5-global--link--Color: var(--hoops-primary);
+  --pf-v5-global--link--Color--hover: var(--hoops-primary-hover);
+  --pf-v5-global--Color--100: var(--hoops-on-surface);
+  --pf-v5-global--Color--200: var(--hoops-on-surface-variant);
+  --pf-v5-global--BackgroundColor--100: var(--hoops-card);
+  --pf-v5-global--BorderColor--100: var(--hoops-outline);
+}
+
+/* PatternFly sets the button variables on .pf-v5-c-button itself (dark: `:where(.pf-v5-theme-dark) .pf-v5-c-button`),
+   so they are overridden there, not on :root; this sheet loads last and :where() adds no specificity. */
+.pf-v5-c-button {
+  --pf-v5-c-button--m-primary--BackgroundColor: var(--hoops-primary);
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--hoops-primary-hover);
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--hoops-primary-hover);
+  --pf-v5-c-button--m-primary--active--BackgroundColor: var(--hoops-primary-hover);
+  --pf-v5-c-button--m-primary--Color: var(--hoops-on-primary);
+  --pf-v5-c-button--m-primary--hover--Color: var(--hoops-on-primary);
+  --pf-v5-c-button--m-primary--focus--Color: var(--hoops-on-primary);
+  --pf-v5-c-button--m-primary--active--Color: var(--hoops-on-primary);
+  --pf-v5-c-button--BorderRadius: 12px;
+}
+
+html.login-pf,
+.login-pf body,
+.pf-v5-c-login {
+  background: var(--hoops-surface);
+  color: var(--hoops-on-surface);
+}
+
+.pf-v5-c-login__main {
+  background-color: var(--hoops-card);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* Brand: the app's basketball icon over "Hoops Academy" (realm displayName), not the Keycloak logo text. */
+#kc-header-wrapper {
+  color: var(--hoops-on-surface) !important;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 1.75rem;
+  font-weight: 400;
+}
+
+#kc-header-wrapper::before {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  background-color: var(--hoops-primary);
+  -webkit-mask: url("../img/basketball.svg") center / contain no-repeat;
+  mask: url("../img/basketball.svg") center / contain no-repeat;
+}
+
+/* Comfortable tap targets on a phone (the app's 48 px minimum). */
+.pf-v5-c-button.pf-m-primary {
+  min-height: 48px;
+}
+
+/* Fields: the app's surface tones and a primary focus line instead of PatternFly's grey and blue. */
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--BackgroundColor: var(--hoops-field);
+  --pf-v5-c-form-control--hover--after--BorderBottomColor: var(--hoops-primary);
+  --pf-v5-c-form-control--focus--after--BorderBottomColor: var(--hoops-primary);
+  border-radius: 8px;
+}
+
+.login-pf :focus-visible {
+  outline-color: var(--hoops-primary);
+}
+
+/* Mobile first: the card fills a phone screen edge to edge. */
+@media (max-width: 575px) {
+  .pf-v5-c-login__main {
+    border-radius: 0;
+  }
+}

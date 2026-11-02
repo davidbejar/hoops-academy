@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:oidc/oidc.dart';
 import 'package:oidc_default_store/oidc_default_store.dart';
 
@@ -9,39 +10,55 @@ import 'end_session_redirect.dart';
 
 /// Keycloak (OIDC authorization code + PKCE) via `package:oidc`.
 ///
-/// Web redirects land on `redirect.html` (same origin); the page hands the
-/// response back to the app. Tokens live in the package's store
-/// (browser storage on web). Access tokens are refreshed proactively
-/// (`refreshBefore`) by the package, with the 401 interceptor as a backstop.
+/// Web redirects land on `redirect.html` (same origin); the page stores the
+/// response and navigates the tab back to the `original_uri` the login was
+/// started with, where [init] completes the code exchange. Tokens live in the
+/// package's store (browser storage on web). Access tokens are refreshed
+/// proactively (`refreshBefore`) by the package, with the 401 interceptor as a
+/// backstop.
 class OidcAuthService implements AuthService {
-  OidcAuthService(AppConfig config, {required Uri origin})
-    : _clientId = config.clientId,
-      _postLogoutRedirect = origin.resolve('redirect.html'),
-      _manager = OidcUserManager.lazy(
-        discoveryDocumentUri: OidcUtils.getOpenIdConfigWellKnownUri(
-          config.issuer,
-        ),
-        clientCredentials: OidcClientAuthentication.none(
-          clientId: config.clientId,
-        ),
-        store: OidcDefaultStore(),
-        settings: OidcUserManagerSettings(
-          scope: config.scopes,
-          redirectUri: origin.resolve('redirect.html'),
-          postLogoutRedirectUri: origin.resolve('redirect.html'),
-          refreshBefore: (_) => const Duration(seconds: 60),
-          options: const OidcPlatformSpecificOptions(
-            web: OidcPlatformSpecificOptions_Web(
-              navigationMode:
-                  OidcPlatformSpecificOptions_Web_NavigationMode.samePage,
-            ),
-          ),
-        ),
-      );
+  OidcAuthService(
+    AppConfig config, {
+    required Uri origin,
+    Uri Function()? location,
+    @visibleForTesting OidcUserManager? manager,
+  }) : _clientId = config.clientId,
+       _location = location ?? (() => Uri.base),
+       postLogoutRedirectUri = origin,
+       _manager =
+           manager ??
+           OidcUserManager.lazy(
+             discoveryDocumentUri: OidcUtils.getOpenIdConfigWellKnownUri(
+               config.issuer,
+             ),
+             clientCredentials: OidcClientAuthentication.none(
+               clientId: config.clientId,
+             ),
+             store: OidcDefaultStore(),
+             settings: OidcUserManagerSettings(
+               scope: config.scopes,
+               redirectUri: origin.resolve('redirect.html'),
+               postLogoutRedirectUri: origin.resolve('redirect.html'),
+               refreshBefore: (_) => const Duration(seconds: 60),
+               options: const OidcPlatformSpecificOptions(
+                 web: OidcPlatformSpecificOptions_Web(
+                   navigationMode:
+                       OidcPlatformSpecificOptions_Web_NavigationMode.samePage,
+                 ),
+               ),
+             ),
+           );
 
   static const _revokeTimeout = Duration(seconds: 3);
   final String _clientId;
-  final Uri _postLogoutRedirect;
+  final Uri Function() _location;
+
+  /// Where Keycloak sends the browser after end-session: the app itself. The
+  /// user is already forgotten locally, so it boots to the login screen.
+  /// (Not `redirect.html`: this hand-built request carries no `state`, so the
+  /// page would have nothing to resume and would strand the tab.)
+  @visibleForTesting
+  final Uri postLogoutRedirectUri;
   final OidcUserManager _manager;
   final _controller = StreamController<AuthStatus>.broadcast();
   AuthStatus _status = AuthStatus.unknown;
@@ -76,7 +93,8 @@ class OidcAuthService implements AuthService {
 
   @override
   Future<void> login() async {
-    await _manager.loginAuthorizationCodeFlow();
+    // samePage: redirect.html can only navigate back with an original_uri.
+    await _manager.loginAuthorizationCodeFlow(originalUri: _location());
   }
 
   /// Local sign-out first, IdP end-session second (F-03): the stored tokens
@@ -92,7 +110,9 @@ class OidcAuthService implements AuthService {
     if (endSession && user != null) {
       try {
         endpoint = _manager.discoveryDocument.endSessionEndpoint;
-        await _manager.revokeRefreshToken(forgetUser: false).timeout(_revokeTimeout);
+        await _manager
+            .revokeRefreshToken(forgetUser: false)
+            .timeout(_revokeTimeout);
       } on Object {
         // Never blocks the sign-out.
       }
@@ -106,7 +126,7 @@ class OidcAuthService implements AuthService {
           ...endpoint.queryParameters,
           'client_id': _clientId,
           'id_token_hint': idToken,
-          'post_logout_redirect_uri': _postLogoutRedirect.toString(),
+          'post_logout_redirect_uri': postLogoutRedirectUri.toString(),
         },
       ),
     );

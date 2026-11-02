@@ -53,7 +53,9 @@ otherwise nginx answers 502 and the shell shows a localized error with a retry b
 
 The URL strategy is the default hash strategy (`/#/matches`), so the static host needs no rewrite rules.
 OIDC uses `navigationMode: samePage` (full-page redirect, no popup) and `web/redirect.html` from the `oidc`
-package (re-copy it when upgrading the package).
+package (re-copy it when upgrading the package). `redirect.html` returns the tab to the app only because `login()`
+passes the current URL as `originalUri`; sign-out returns to the app's base URL, not to `redirect.html` (ADR-0022).
+Keycloak's login pages use the branded `hoops` theme (`infra/keycloak/themes/hoops`).
 
 ### Release build
 ```bash
@@ -222,10 +224,15 @@ HOOPS_E2E_PASSWORD="$DEV_USER_PASSWORD" apps/web/tool/keycloak_login_check.sh   
 It performs discovery, the login form, the code+S256 exchange (`web` client) and a
 refresh-token grant, and prints only non-secret claims.
 
-**Manual browser check (real flow):** serve the build on `http://localhost:8080` (or register 5173, see CORS note),
-open it, press *Sign in*, log in as `coach1`, expect the redirect back to the app (`redirect.html` flashes), the
-tenant switcher or home (needs the services running for `/me`; otherwise the error screen with *Retry*), reload the page and
-stay signed in, *Sign out* returns to the login screen.
+**Browser round trip (real flow, automated):** with the stack, the services and the app on :5173 running
+(`./start.sh`), and a chromedriver matching Chrome on PATH:
+```bash
+python3 -I apps/web/tool/browser_login_check.py --user player1   # headless Chrome; --headed to watch it
+```
+It taps *Sign in*, requires the branded `hoops` Keycloak page, fills the form (password from `.env`, never printed),
+requires the tab to come back to the app signed in (not stranded on `redirect.html`), then taps *Sign out* when the
+landing screen has it and requires the app's sign-in screen again. `player1` has a sign-out button on its landing
+screen; `coach1` checks the login half only.
 
 ### PWA installability (manual Lighthouse check)
 Serve `build/web` over `http://localhost` (any static server; localhost counts as secure), open DevTools ->

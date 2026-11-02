@@ -54,6 +54,8 @@ services:
       ATHLETE_SERVICE_CLIENT_SECRET: ${ATHLETE_SERVICE_CLIENT_SECRET:?set in .env}
     volumes:
       - ../keycloak/realm-academy.json:/opt/keycloak/data/import/realm-academy.json:ro
+      # Branded login pages (ADR-0022); start-dev does not cache themes, so CSS edits show on reload.
+      - ../keycloak/themes/hoops:/opt/keycloak/themes/hoops:ro
     depends_on:
       postgres:
         condition: service_healthy

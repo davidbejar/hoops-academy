@@ -10,6 +10,10 @@ CHECK=0; [ "${1:-}" = "--check" ] && CHECK=1
 PAIRS=(
   "infra/keycloak/realm-academy.json:deploy/helm/hoops/charts/keycloak/files/realm-academy.json"
   "infra/db/init/01_roles_schemas.sql:deploy/helm/hoops/charts/databases/files/01_roles_schemas.sql"
+  # Branded login theme (ADR-0022), mounted by the keycloak chart's theme ConfigMap
+  "infra/keycloak/themes/hoops/login/theme.properties:deploy/helm/hoops/charts/keycloak/files/theme/theme.properties"
+  "infra/keycloak/themes/hoops/login/resources/css/hoops.css:deploy/helm/hoops/charts/keycloak/files/theme/hoops.css"
+  "infra/keycloak/themes/hoops/login/resources/img/basketball.svg:deploy/helm/hoops/charts/keycloak/files/theme/basketball.svg"
 )
 rc=0
 for pair in "${PAIRS[@]}"; do

@@ -49,6 +49,13 @@ statement-by-statement status of the spec is in [`../conformance.md`](../conform
 - **Fonts**: glyphs outside Roboto (CJK, emoji) render as tofu; bundle a Noto subset if a language needs it.
 - **Same-device two-tab clientSeq race** (WP13): accepted for now (second event is `CLIENT_SEQ_CONFLICT`, visible).
 - **Production ingress prefixes** must match `NETWORK_ONLY_PREFIXES` in `web/sw.js` if they ever differ.
+- **Signed in without any academy** (2026-11-02): `/api/core/me` answers 404 for a Keycloak user with no person/
+  membership (e.g. the seeded `coach1`/`player1` before an academy invites them), and the app shows the generic "not found"
+  error with *Retry* / *Sign out*. Show a dedicated "you are not a member of an academy yet" state instead.
+- **Dev login origin** (ADR-0022): `flutter run` on :5173 is another origin than Keycloak on :8080, so the address bar
+  changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
+- **Browser login round trip in CI**: `apps/web/tool/browser_login_check.py` (stdlib WebDriver) runs locally only; add it
+  with chromedriver to the e2e job.
 
 ### Backend
 - **Member e-mail changes** are not synced to Keycloak (WP3).

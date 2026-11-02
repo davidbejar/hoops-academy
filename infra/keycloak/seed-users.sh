@@ -41,4 +41,8 @@ ensure_user parent1 Pat Parent
 ensure_user player1 Jordan Player
 
 kc add-roles -r "$REALM" --uusername superadmin --rolename super_admin
-echo "seed-users: done (superadmin has super_admin)"
+
+# The realm JSON is imported only into an empty volume: bring an existing realm up to date with its login theme
+# (ADR-0022), so the branded pages show without resetting the database.
+kc update "realms/$REALM" -s loginTheme=hoops >/dev/null
+echo "seed-users: done (superadmin has super_admin; login theme hoops)"

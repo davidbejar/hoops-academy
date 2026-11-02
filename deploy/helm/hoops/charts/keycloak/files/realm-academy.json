@@ -1,6 +1,7 @@
 {
   "realm": "academy",
   "displayName": "Hoops Academy",
+  "loginTheme": "hoops",
   "enabled": true,
   "sslRequired": "external",
   "registrationAllowed": false,

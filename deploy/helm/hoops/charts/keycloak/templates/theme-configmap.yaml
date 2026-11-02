@@ -1,0 +1,17 @@
+{{- /* Branded login theme (ADR-0022). files/theme/* are copies of infra/keycloak/themes/hoops/login/** (single source of
+       truth), kept in sync by scripts/sync-chart-files.sh (drift checked by the chart tests). ConfigMap keys are flat;
+       the Deployment maps them back to the theme layout with `items`. */ -}}
+{{- $files := dict "theme.properties" "" "hoops.css" "" "basketball.svg" "" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "keycloak.fullname" . }}-theme
+  labels:
+    {{- include "keycloak.labels" . | nindent 4 }}
+data:
+{{- range $name, $_ := $files }}
+  {{- $content := $.Files.Get (printf "files/theme/%s" $name) }}
+  {{- if not $content }}{{ fail (printf "files/theme/%s missing (run scripts/sync-chart-files.sh)" $name) }}{{ end }}
+  {{ $name }}: |
+    {{- $content | nindent 4 }}
+{{- end }}

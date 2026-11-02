@@ -72,6 +72,9 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
 | Symptom | Cause / fix |
 |---|---|
 | nginx 502 on `/api/*` | the host service is not running on 8081/8082/8083 (`just services-up` or `quarkus:dev`) |
+| nginx 502 on `/auth/*` right after `just up` changed Keycloak | the Keycloak container was recreated (new IP) and nginx still uses the old one: `podman restart hoops-nginx` |
+| Keycloak shows its stock login page, not Hoops Academy's | the realm predates the `hoops` theme: `just seed-users` sets `loginTheme` (ADR-0022) |
+| After login the tab says "You can now close this tab" | the app was started without `original_uri` (fixed in ADR-0022); hard-reload the app to get the current build |
 | `required variable ... set in .env` | copy `.env.example` to `.env` and fill it; `DEV_USER_PASSWORD` needs 12+ characters |
 | Role password changed in `.env` has no effect | init scripts run only on an empty volume; reset it or `ALTER ROLE` |
 | Admin console / master realm returns 403 | by design; set `HOOPS_EXPOSE_KC_ADMIN=true` and restart (needed by the e2e suite) |

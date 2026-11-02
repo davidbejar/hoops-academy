@@ -16,7 +16,7 @@ bad() { printf '  FAIL %s\n' "$*"; fail=1; }
 quiet_helm() { helm "$@"; }
 
 echo "== chart file copies (no symlinks, identical to their sources)"
-if scripts/sync-chart-files.sh --check; then ok "realm JSON + init SQL copies in sync"
+if scripts/sync-chart-files.sh --check; then ok "realm JSON, init SQL and login theme copies in sync"
 else bad "chart copies drifted: run scripts/sync-chart-files.sh"; fi
 
 echo "== helm lint"
@@ -86,6 +86,10 @@ for s in core game athlete; do
 done
 ! grep -q 'localhost:5173' "$R" && ok "Flutter dev-server origin rewritten out of the cluster realm" || bad "realm still allows localhost:5173"
 grep -q '"passwordPolicy": "length(12)' "$R" && grep -q '"bruteForceProtected": true' "$R" && ok "realm: password policy + brute-force protection" || bad "realm hardening"
+# ADR-0022: the realm's login theme must be mounted, or Keycloak falls back to its own pages.
+grep -q '"loginTheme": "hoops"' "$R" && doc keycloak Deployment | grep -q 'mountPath: /opt/keycloak/themes/hoops/login' \
+  && doc keycloak-theme ConfigMap | grep -q 'parent=keycloak.v2' \
+  && ok "realm login theme hoops mounted from keycloak-theme ConfigMap" || bad "login theme not mounted"
 doc mailhog Service | grep -q 'port: 1025' && ok "kind: SMTP sink Service mailhog:1025 (realm smtpServer)" || bad "mailhog in kind"
 ! grep -q 'name: mailhog' "$WORK/umbrella-default.yaml" && ok "SMTP sink disabled outside kind" || bad "mailpit enabled by default"
 

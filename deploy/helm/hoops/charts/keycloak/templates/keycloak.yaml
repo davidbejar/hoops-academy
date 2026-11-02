@@ -18,6 +18,7 @@ spec:
         {{- include "keycloak.labels" . | nindent 8 }}
       annotations:
         checksum/realm: {{ include (print $.Template.BasePath "/realm-configmap.yaml") . | sha256sum }}
+        checksum/theme: {{ include (print $.Template.BasePath "/theme-configmap.yaml") . | sha256sum }}
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -82,11 +83,20 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           volumeMounts:
             - {name: realm, mountPath: /opt/keycloak/data/import, readOnly: true}
+            - {name: theme, mountPath: /opt/keycloak/themes/hoops/login, readOnly: true}
             - {name: tmp, mountPath: /tmp}
       volumes:
         - name: realm
           configMap:
             name: {{ $fullname }}-realm
+        # Login theme `hoops` (realm loginTheme), ADR-0022
+        - name: theme
+          configMap:
+            name: {{ $fullname }}-theme
+            items:
+              - {key: theme.properties, path: theme.properties}
+              - {key: hoops.css, path: resources/css/hoops.css}
+              - {key: basketball.svg, path: resources/img/basketball.svg}
         - name: tmp
           emptyDir: {sizeLimit: 128Mi}
 ---
