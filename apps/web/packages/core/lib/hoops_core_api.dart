@@ -22,6 +22,7 @@ export 'package:hoops_core_api/src/api/seasons_api.dart';
 export 'package:hoops_core_api/src/api/teams_api.dart';
 export 'package:hoops_core_api/src/api/tenant_api.dart';
 
+export 'package:hoops_core_api/src/model/add_tenant_admin_request.dart';
 export 'package:hoops_core_api/src/model/age_category.dart';
 export 'package:hoops_core_api/src/model/age_category_input.dart';
 export 'package:hoops_core_api/src/model/age_rule.dart';
@@ -91,6 +92,8 @@ export 'package:hoops_core_api/src/model/team_roster.dart';
 export 'package:hoops_core_api/src/model/team_staff_assignment.dart';
 export 'package:hoops_core_api/src/model/team_staff_member.dart';
 export 'package:hoops_core_api/src/model/tenant.dart';
+export 'package:hoops_core_api/src/model/tenant_admin.dart';
+export 'package:hoops_core_api/src/model/tenant_admin_page.dart';
 export 'package:hoops_core_api/src/model/tenant_lifecycle_request.dart';
 export 'package:hoops_core_api/src/model/tenant_logo.dart';
 export 'package:hoops_core_api/src/model/tenant_page.dart';
@@ -108,8 +111,8 @@ export 'package:hoops_core_api/src/model/update_member_request.dart';
 export 'package:hoops_core_api/src/model/update_season_request.dart';
 export 'package:hoops_core_api/src/model/update_team_player_request.dart';
 export 'package:hoops_core_api/src/model/update_team_request.dart';
+export 'package:hoops_core_api/src/model/update_tenant_admin_request.dart';
 export 'package:hoops_core_api/src/model/update_tenant_profile_request.dart';
 export 'package:hoops_core_api/src/model/update_tenant_request.dart';
 export 'package:hoops_core_api/src/model/usage_report.dart';
 export 'package:hoops_core_api/src/model/withdraw_player_request.dart';
-

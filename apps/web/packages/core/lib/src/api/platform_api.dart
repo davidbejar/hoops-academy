@@ -9,15 +9,19 @@ import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'package:hoops_core_api/src/api_util.dart';
+import 'package:hoops_core_api/src/model/add_tenant_admin_request.dart';
 import 'package:hoops_core_api/src/model/create_tenant_request.dart';
 import 'package:hoops_core_api/src/model/date.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/tenant.dart';
+import 'package:hoops_core_api/src/model/tenant_admin.dart';
+import 'package:hoops_core_api/src/model/tenant_admin_page.dart';
 import 'package:hoops_core_api/src/model/tenant_lifecycle_request.dart';
 import 'package:hoops_core_api/src/model/tenant_page.dart';
 import 'package:hoops_core_api/src/model/tenant_status.dart';
 import 'package:hoops_core_api/src/model/tenant_usage.dart';
 import 'package:hoops_core_api/src/model/tenant_usage_history.dart';
+import 'package:hoops_core_api/src/model/update_tenant_admin_request.dart';
 import 'package:hoops_core_api/src/model/update_tenant_request.dart';
 
 class PlatformApi {
@@ -28,11 +32,114 @@ class PlatformApi {
 
   const PlatformApi(this._dio, this._serializers);
 
-  /// Onboard a tenant
-  /// Atomically creates the tenant, its default settings, the seeded age categories (U8 … U18, SENIOR) and the first ADMIN membership; the admin is provisioned in Keycloak with a required-action e-mail. Authz: super_admin. 
+  /// Add an administrator to a tenant
+  /// When an active member of the tenant has this e-mail, they gain the ADMIN role (200; their names are kept; a member without a login is given one, with the account-setup e-mail). Otherwise a new member is invited with the ADMIN role through the onboarding saga — a new Keycloak user gets the account-setup e-mail, an existing login is linked (201). 409 &#x60;EMAIL_TAKEN&#x60; when a deactivated member has the e-mail, &#x60;LOGIN_ALREADY_MEMBER&#x60; when the login already belongs to another member of the tenant, &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is kept). Authz: super_admin.
   ///
   /// Parameters:
-  /// * [createTenantRequest] 
+  /// * [tenantId]
+  /// * [addTenantAdminRequest]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TenantAdmin] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TenantAdmin>> addTenantAdmin({
+    required String tenantId,
+    required AddTenantAdminRequest addTenantAdminRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/tenants/{tenantId}/admins'.replaceAll('{' r'tenantId' '}', encodeQueryParameter(_serializers, tenantId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(AddTenantAdminRequest);
+      _bodyData = _serializers.serialize(addTenantAdminRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TenantAdmin? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantAdmin),
+      ) as TenantAdmin;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TenantAdmin>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Onboard a tenant
+  /// Atomically creates the tenant, its default settings, the seeded age categories (U8 … U18, SENIOR) and the first ADMIN membership; the admin is provisioned in Keycloak with a required-action e-mail. Authz: super_admin.
+  ///
+  /// Parameters:
+  /// * [createTenantRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -42,7 +149,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> createTenant({ 
+  Future<Response<Tenant>> createTenant({
     required CreateTenantRequest createTenantRequest,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -133,7 +240,7 @@ class PlatformApi {
   /// Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId] 
+  /// * [tenantId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -143,7 +250,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> getTenant({ 
+  Future<Response<Tenant>> getTenant({
     required String tenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -211,10 +318,10 @@ class PlatformApi {
   }
 
   /// Usage statistics of a tenant across all services
-  /// Aggregates &#x60;/internal/usage/{tenantId}&#x60; of core, game and athlete. A service that does not answer is listed in &#x60;unavailableServices&#x60; instead of failing the whole request. Authz: super_admin. 
+  /// Aggregates &#x60;/internal/usage/{tenantId}&#x60; of core, game and athlete. A service that does not answer is listed in &#x60;unavailableServices&#x60; instead of failing the whole request. Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId] 
+  /// * [tenantId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -224,7 +331,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantUsage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantUsage>> getTenantUsage({ 
+  Future<Response<TenantUsage>> getTenantUsage({
     required String tenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -292,10 +399,10 @@ class PlatformApi {
   }
 
   /// Daily usage snapshots of a tenant (trend)
-  /// One snapshot per UTC day, written by the nightly snapshot job and by every &#x60;GET .../usage&#x60; (a snapshot with unavailable services never replaces a complete one of the same day). Ordered by &#x60;date&#x60; ascending. Defaults: &#x60;to&#x60; &#x3D; today (UTC), &#x60;from&#x60; &#x3D; &#x60;to&#x60; − 89 days; the range may span at most 366 days (400). Authz: super_admin. 
+  /// One snapshot per UTC day, written by the nightly snapshot job and by every &#x60;GET .../usage&#x60; (a snapshot with unavailable services never replaces a complete one of the same day). Ordered by &#x60;date&#x60; ascending. Defaults: &#x60;to&#x60; &#x3D; today (UTC), &#x60;from&#x60; &#x3D; &#x60;to&#x60; − 89 days; the range may span at most 366 days (400). Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId] 
+  /// * [tenantId]
   /// * [from] - First UTC day (inclusive).
   /// * [to] - Last UTC day (inclusive).
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -307,7 +414,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantUsageHistory] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantUsageHistory>> getTenantUsageHistory({ 
+  Future<Response<TenantUsageHistory>> getTenantUsageHistory({
     required String tenantId,
     Date? from,
     Date? to,
@@ -382,11 +489,102 @@ class PlatformApi {
     );
   }
 
+  /// List the administrators of a tenant
+  /// Active members holding the ADMIN role, ordered by family and given name. The only tenant content the platform reads (identity of the administrators, ADR-0023). 404 for an unknown tenant; 409 &#x60;TENANT_WITHDRAWN&#x60; for a withdrawn one (ACTIVE and SUSPENDED tenants are managed). Authz: super_admin.
+  ///
+  /// Parameters:
+  /// * [tenantId]
+  /// * [page] - 0-based page index.
+  /// * [size] - Page size.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TenantAdminPage] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TenantAdminPage>> listTenantAdmins({
+    required String tenantId,
+    int? page = 0,
+    int? size = 50,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/tenants/{tenantId}/admins'.replaceAll('{' r'tenantId' '}', encodeQueryParameter(_serializers, tenantId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
+      if (size != null) r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TenantAdminPage? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantAdminPage),
+      ) as TenantAdminPage;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TenantAdminPage>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// List tenants
   /// Authz: super_admin.
   ///
   /// Parameters:
-  /// * [status] 
+  /// * [status]
   /// * [q] - Case-insensitive match on name or slug.
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
@@ -399,7 +597,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantPage>> listTenants({ 
+  Future<Response<TenantPage>> listTenants({
     TenantStatus? status,
     String? q,
     int? page = 0,
@@ -481,7 +679,7 @@ class PlatformApi {
   /// Only SUSPENDED tenants can be reactivated (409 otherwise). Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId] 
+  /// * [tenantId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -491,7 +689,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> reactivateTenant({ 
+  Future<Response<Tenant>> reactivateTenant({
     required String tenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -558,12 +756,150 @@ class PlatformApi {
     );
   }
 
+  /// Remove an administrator
+  /// Drops the ADMIN role; a person whose only role was ADMIN is deactivated in this tenant. The Keycloak login is never deleted or disabled (it may be used in other academies). 409 &#x60;LAST_ADMIN&#x60; for the tenant&#39;s last active administrator (the &#x60;detail&#x60; explains that another administrator must be added first); 404 when the person is not an active administrator; 409 &#x60;TENANT_WITHDRAWN&#x60;. Authz: super_admin.
+  ///
+  /// Parameters:
+  /// * [tenantId]
+  /// * [personId]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future]
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<void>> removeTenantAdmin({
+    required String tenantId,
+    required String personId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/tenants/{tenantId}/admins/{personId}'.replaceAll('{' r'tenantId' '}', encodeQueryParameter(_serializers, tenantId, const FullType(String)).toString()).replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'DELETE',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    return _response;
+  }
+
+  /// Resend the account-setup e-mail of an administrator
+  /// Only while the invitation is PENDING (409 &#x60;INVITATION_NOT_PENDING&#x60; otherwise); 404 when the person is not an active administrator; 409 &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails. Authz: super_admin.
+  ///
+  /// Parameters:
+  /// * [tenantId]
+  /// * [personId]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TenantAdmin] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TenantAdmin>> resendTenantAdminInvitation({
+    required String tenantId,
+    required String personId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/tenants/{tenantId}/admins/{personId}/resend-invitation'.replaceAll('{' r'tenantId' '}', encodeQueryParameter(_serializers, tenantId, const FullType(String)).toString()).replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TenantAdmin? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantAdmin),
+      ) as TenantAdmin;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TenantAdmin>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// Suspend a tenant
   /// Logins to the tenant are blocked until it is reactivated. Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId] 
-  /// * [tenantLifecycleRequest] 
+  /// * [tenantId]
+  /// * [tenantLifecycleRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -573,7 +909,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> suspendTenant({ 
+  Future<Response<Tenant>> suspendTenant({
     required String tenantId,
     required TenantLifecycleRequest tenantLifecycleRequest,
     CancelToken? cancelToken,
@@ -665,8 +1001,8 @@ class PlatformApi {
   /// Authz: super_admin. Absent fields are left unchanged.
   ///
   /// Parameters:
-  /// * [tenantId] 
-  /// * [updateTenantRequest] 
+  /// * [tenantId]
+  /// * [updateTenantRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -676,7 +1012,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> updateTenant({ 
+  Future<Response<Tenant>> updateTenant({
     required String tenantId,
     required UpdateTenantRequest updateTenantRequest,
     CancelToken? cancelToken,
@@ -764,12 +1100,117 @@ class PlatformApi {
     );
   }
 
-  /// Withdraw a tenant
-  /// Terminal state: logins are blocked immediately, data is retained until &#x60;retainUntil&#x60; (purge job is v2). Authz: super_admin. 
+  /// Edit an administrator&#39;s names or e-mail
+  /// Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and e-mail, unverified, verification e-mail to the new address — the account-setup e-mail while the invitation is PENDING), also when the login is used in other academies (ADR-0023). 404 when the person is not an active administrator of the tenant; 409 &#x60;EMAIL_TAKEN&#x60; (another member or login uses the address), &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed). Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId] 
-  /// * [tenantLifecycleRequest] 
+  /// * [tenantId]
+  /// * [personId]
+  /// * [updateTenantAdminRequest]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TenantAdmin] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TenantAdmin>> updateTenantAdmin({
+    required String tenantId,
+    required String personId,
+    required UpdateTenantAdminRequest updateTenantAdminRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/tenants/{tenantId}/admins/{personId}'.replaceAll('{' r'tenantId' '}', encodeQueryParameter(_serializers, tenantId, const FullType(String)).toString()).replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'PATCH',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(UpdateTenantAdminRequest);
+      _bodyData = _serializers.serialize(updateTenantAdminRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TenantAdmin? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantAdmin),
+      ) as TenantAdmin;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TenantAdmin>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Withdraw a tenant
+  /// Terminal state: logins are blocked immediately, data is retained until &#x60;retainUntil&#x60; (purge job is v2). Authz: super_admin.
+  ///
+  /// Parameters:
+  /// * [tenantId]
+  /// * [tenantLifecycleRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -779,7 +1220,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> withdrawTenant({ 
+  Future<Response<Tenant>> withdrawTenant({
     required String tenantId,
     required TenantLifecycleRequest tenantLifecycleRequest,
     CancelToken? cancelToken,

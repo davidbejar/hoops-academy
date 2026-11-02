@@ -10,6 +10,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add($AgeCategoryInput.serializer)
       ..add($PersonalData.serializer)
       ..add($SeasonInput.serializer)
+      ..add(AddTenantAdminRequest.serializer)
       ..add(AgeCategory.serializer)
       ..add(AgeRule.serializer)
       ..add(ApprovalAction.serializer)
@@ -76,6 +77,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TeamStaffAssignment.serializer)
       ..add(TeamStaffMember.serializer)
       ..add(Tenant.serializer)
+      ..add(TenantAdmin.serializer)
+      ..add(TenantAdminPage.serializer)
       ..add(TenantLifecycleRequest.serializer)
       ..add(TenantLogo.serializer)
       ..add(TenantLogoContentTypeEnum.serializer)
@@ -96,6 +99,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(UpdateSeasonRequest.serializer)
       ..add(UpdateTeamPlayerRequest.serializer)
       ..add(UpdateTeamRequest.serializer)
+      ..add(UpdateTenantAdminRequest.serializer)
       ..add(UpdateTenantProfileRequest.serializer)
       ..add(UpdateTenantRequest.serializer)
       ..add(UsageReport.serializer)
@@ -166,6 +170,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(Tenant)]),
           () => ListBuilder<Tenant>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(TenantAdmin)]),
+          () => ListBuilder<TenantAdmin>())
+      ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(TenantUsageSnapshot)]),
           () => ListBuilder<TenantUsageSnapshot>())
@@ -191,6 +198,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltSet, const [const FullType(String)]),
           () => SetBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet, const [const FullType(TenantRole)]),
+          () => SetBuilder<TenantRole>())
       ..addBuilderFactory(
           const FullType(BuiltSet, const [const FullType(TenantRole)]),
           () => SetBuilder<TenantRole>())

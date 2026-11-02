@@ -14,6 +14,7 @@ import 'package:built_value/iso_8601_date_time_serializer.dart';
 import 'package:hoops_core_api/src/date_serializer.dart';
 import 'package:hoops_core_api/src/model/date.dart';
 
+import 'package:hoops_core_api/src/model/add_tenant_admin_request.dart';
 import 'package:hoops_core_api/src/model/age_category.dart';
 import 'package:hoops_core_api/src/model/age_category_input.dart';
 import 'package:hoops_core_api/src/model/age_rule.dart';
@@ -83,6 +84,8 @@ import 'package:hoops_core_api/src/model/team_roster.dart';
 import 'package:hoops_core_api/src/model/team_staff_assignment.dart';
 import 'package:hoops_core_api/src/model/team_staff_member.dart';
 import 'package:hoops_core_api/src/model/tenant.dart';
+import 'package:hoops_core_api/src/model/tenant_admin.dart';
+import 'package:hoops_core_api/src/model/tenant_admin_page.dart';
 import 'package:hoops_core_api/src/model/tenant_lifecycle_request.dart';
 import 'package:hoops_core_api/src/model/tenant_logo.dart';
 import 'package:hoops_core_api/src/model/tenant_page.dart';
@@ -100,6 +103,7 @@ import 'package:hoops_core_api/src/model/update_member_request.dart';
 import 'package:hoops_core_api/src/model/update_season_request.dart';
 import 'package:hoops_core_api/src/model/update_team_player_request.dart';
 import 'package:hoops_core_api/src/model/update_team_request.dart';
+import 'package:hoops_core_api/src/model/update_tenant_admin_request.dart';
 import 'package:hoops_core_api/src/model/update_tenant_profile_request.dart';
 import 'package:hoops_core_api/src/model/update_tenant_request.dart';
 import 'package:hoops_core_api/src/model/usage_report.dart';
@@ -108,6 +112,7 @@ import 'package:hoops_core_api/src/model/withdraw_player_request.dart';
 part 'serializers.g.dart';
 
 @SerializersFor([
+  AddTenantAdminRequest,
   AgeCategory,
   AgeCategoryInput,$AgeCategoryInput,
   AgeRule,
@@ -177,6 +182,8 @@ part 'serializers.g.dart';
   TeamStaffAssignment,
   TeamStaffMember,
   Tenant,
+  TenantAdmin,
+  TenantAdminPage,
   TenantLifecycleRequest,
   TenantLogo,
   TenantPage,
@@ -194,6 +201,7 @@ part 'serializers.g.dart';
   UpdateSeasonRequest,
   UpdateTeamPlayerRequest,
   UpdateTeamRequest,
+  UpdateTenantAdminRequest,
   UpdateTenantProfileRequest,
   UpdateTenantRequest,
   UsageReport,
@@ -263,6 +271,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(AgeCategory)]),
         () => ListBuilder<AgeCategory>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(TenantAdmin)]),
+        () => ListBuilder<TenantAdmin>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(Membership)]),

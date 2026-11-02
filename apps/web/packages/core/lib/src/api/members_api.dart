@@ -30,7 +30,7 @@ class MembersApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId] 
+  /// * [personId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -40,7 +40,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> deactivateMember({ 
+  Future<Response<Member>> deactivateMember({
     required String xTenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -114,7 +114,7 @@ class MembersApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId] 
+  /// * [personId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -124,7 +124,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> getMember({ 
+  Future<Response<Member>> getMember({
     required String xTenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -194,11 +194,11 @@ class MembersApi {
   }
 
   /// Invite a member
-  /// Creates the person with the given roles and, when &#x60;email&#x60; is present, provisions a Keycloak user with a required-action e-mail. The PLAYER role requires &#x60;birthDate&#x60; and &#x60;gender&#x60; (422). Players created here are ACTIVE (admin path); coaches add players through &#x60;POST /api/core/players&#x60;. Authz: ADMIN. 
+  /// Creates the person with the given roles and, when &#x60;email&#x60; is present, provisions a Keycloak user with a required-action e-mail. The PLAYER role requires &#x60;birthDate&#x60; and &#x60;gender&#x60; (422). Players created here are ACTIVE (admin path); coaches add players through &#x60;POST /api/core/players&#x60;. Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [inviteMemberRequest] 
+  /// * [inviteMemberRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -208,7 +208,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> inviteMember({ 
+  Future<Response<Member>> inviteMember({
     required String xTenantId,
     required InviteMemberRequest inviteMemberRequest,
     CancelToken? cancelToken,
@@ -302,8 +302,8 @@ class MembersApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [role] 
-  /// * [active] 
+  /// * [role]
+  /// * [active]
   /// * [q] - Case-insensitive match on name or e-mail.
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
@@ -316,7 +316,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [MemberPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<MemberPage>> listMembers({ 
+  Future<Response<MemberPage>> listMembers({
     required String xTenantId,
     TenantRole? role,
     bool? active,
@@ -399,12 +399,12 @@ class MembersApi {
   }
 
   /// Replace a member&#39;s role set
-  /// Roles are additive per person. Adding PLAYER requires birth date and gender (422); removing the last ADMIN of the tenant is rejected (409). Authz: ADMIN. 
+  /// Roles are additive per person. Adding PLAYER requires birth date and gender (422); removing the last ADMIN of the tenant is rejected (409). Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId] 
-  /// * [replaceMemberRolesRequest] 
+  /// * [personId]
+  /// * [replaceMemberRolesRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -414,7 +414,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> replaceMemberRoles({ 
+  Future<Response<Member>> replaceMemberRoles({
     required String xTenantId,
     required String personId,
     required ReplaceMemberRolesRequest replaceMemberRolesRequest,
@@ -505,12 +505,12 @@ class MembersApi {
   }
 
   /// Update a member&#39;s personal data
-  /// Authz: ADMIN. Absent fields are left unchanged; &#x60;null&#x60; clears an optional field.
+  /// Absent fields are left unchanged; &#x60;null&#x60; clears an optional field. Changing the &#x60;email&#x60; of a member with a login (&#x60;userId&#x60;) also moves the login (ADR-0023): the Keycloak username and e-mail become the new address (unverified) and a verification e-mail is sent to it (the account-setup e-mail while the invitation is PENDING). 409 &#x60;EMAIL_TAKEN&#x60; when another member of the tenant or another login uses the address; 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may move it); 422 &#x60;LOGIN_REQUIRES_EMAIL&#x60; when the e-mail of a member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId] 
-  /// * [updateMemberRequest] 
+  /// * [personId]
+  /// * [updateMemberRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -520,7 +520,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> updateMember({ 
+  Future<Response<Member>> updateMember({
     required String xTenantId,
     required String personId,
     required UpdateMemberRequest updateMemberRequest,
