@@ -36,10 +36,11 @@ listeners() { # port pattern
 
 stop_web() {
   local pids
-  # flutter_tools serves the app itself; also catch a `flutter run` that is still starting (not listening yet).
-  pids=$( { listeners "$WEB_PORT" 'dart|flutter'; pgrep -f "flutter_tools.*run.*--web-port[= ]$WEB_PORT" || true; } | sort -u)
+  # flutter_tools serves the app itself (default and --web-server modes), python's http.server serves the
+  # release build (--release); also catch a `flutter run` that is still starting (not listening yet).
+  pids=$( { listeners "$WEB_PORT" 'dart|flutter|http\.server'; pgrep -f "flutter_tools.*run.*--web-port[= ]$WEB_PORT" || true; } | sort -u)
   # shellcheck disable=SC2086
-  stop_pids "web app (flutter run)" $pids
+  stop_pids "web app" $pids
   # The Chrome that flutter launched uses a throw-away profile; your normal Chrome is not touched.
   pids=$(pgrep -f 'flutter_tools_chrome_device' || true)
   # shellcheck disable=SC2086

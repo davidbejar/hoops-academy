@@ -36,9 +36,19 @@ just seed-users                      # superadmin, admin1, coach1, assistant1, p
 it, edit `.env` (at least 12 characters) and re-run `just seed-users`; it resets every seeded user's password.
 
 **One command:** once `.env` is filled, `./start.sh` does everything below: it starts the Podman machine if needed,
-sources `scripts/env.sh`, runs `just up`, `just seed-users` and `just services-up`, then the web app on :5173.
-`./start.sh --no-build` reuses the built service jars. Quitting the web app (`q` or Ctrl+C) stops the services; the
-compose stack keeps running. `./stop.sh` stops everything (web app and its Chrome window, services, compose stack)
+sources `scripts/env.sh`, runs `just up`, `just seed-users` and `just services-up`, then the web app on
+http://localhost:5173. Flags:
+
+| Flag | Web app |
+|---|---|
+| *(none)* | debug run in a Chrome window that Flutter opens (hot reload and debugging are tied to that window). Other Chrome tabs on the same URL also run it (`apps/web/tool/browser_login_check.py` drives one); Safari stays blank, use `--release` |
+| `--web-server` | debug run without a browser; open http://localhost:5173 in any browser yourself (hot reload; debugging outside Chrome is limited) |
+| `--release` | release build with `tool/build_web.sh` (as in production, no CDN), served by `python3 -m http.server`; the reliable choice for Safari and other browsers, no hot reload (rebuild about a minute) |
+| `--no-build` | reuse the built service jars (faster); combines with any of the above |
+
+After `--release`, its caching service worker stays registered for http://localhost:5173 and can keep serving that
+build in a later debug run: accept the "update available" banner, or unregister it (DevTools > Application > Service
+workers). Quitting the web app (`q` or Ctrl+C) stops the services; the compose stack keeps running. `./stop.sh` stops everything (web app and its Chrome window, services, compose stack)
 from any terminal, whether `start.sh` is still running or was already interrupted; it is safe to run repeatedly and
 leaves the Podman machine running.
 
