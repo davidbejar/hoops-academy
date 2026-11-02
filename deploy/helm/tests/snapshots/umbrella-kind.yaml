@@ -449,7 +449,7 @@ data:
       "smtpServer": {
         "host": "mailhog",
         "port": "1025",
-        "from": "no-reply@hoops.local",
+        "from": "no-reply@hoops-academy.com",
         "fromDisplayName": "Hoops Academy",
         "auth": "false",
         "ssl": "false",
@@ -1253,7 +1253,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: keycloak-0.1.0
       annotations:
-        checksum/realm: 764cc74a1050d567d0d1e63893dbc9ac511e4e1435aa46145f3098ccfd2db365
+        checksum/realm: 8acca02e62f163fedf3f2a8c445f42305289186eaf6757563886f62bb4191613
         checksum/theme: d75dda9e05580bf4ccba2210d3a3830b5b0fc8965d3b674e7569f75929425551
     spec:
       automountServiceAccountToken: false

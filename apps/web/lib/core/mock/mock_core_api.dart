@@ -128,7 +128,7 @@ class MockCoreApi {
 
   Map<String, Object?> _member(String id, String given, String family, List<String> r) => {
     'personId': id, 'givenName': given, 'familyName': family, 'displayName': '$given $family',
-    'email': '${given.toLowerCase()}@demo.hoops.local', 'roles': r, 'active': true,
+    'email': '${given.toLowerCase()}@demo.hoops-academy.com', 'roles': r, 'active': true,
     'invitationStatus': 'ACCEPTED', 'createdAt': _now(),
   };
 

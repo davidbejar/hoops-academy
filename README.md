@@ -30,7 +30,7 @@ scripts/bootstrap.sh                 # toolchain (JDK 21, Maven wrapper, Podman,
 source scripts/env.sh && just doctor # JDK 21 + Podman socket for Testcontainers; toolchain check
 cp .env.example .env                 # replace every change-me-* value (git-ignored)
 just up                              # Postgres, Keycloak, MailHog, nginx on http://localhost:8080
-just seed-users                      # superadmin, admin1, coach1, assistant1, parent1, player1 (DEV_USER_PASSWORD)
+just seed-users                      # e-mail logins <name>@hoops-academy.com: superadmin, admin1, coach1, assistant1, parent1, player1 (DEV_USER_PASSWORD)
 ```
 `DEV_USER_PASSWORD` in `.env` is the plain login password for all seeded users (Keycloak stores only its hash). To change
 it, edit `.env` (at least 12 characters) and re-run `just seed-users`; it resets every seeded user's password.
@@ -67,7 +67,7 @@ flutter run -d chrome --web-port 5173 --dart-define=HOOPS_API_BASE=http://localh
 ```
 A demo without any backend: `flutter run -d chrome --web-port 5173 --dart-define=HOOPS_MOCK_API=true`.
 After pulling realm changes, reset Keycloak: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
-Create your first academy as `superadmin`: `docs/runbooks/onboard-tenant.md`.
+Create your first academy as `superadmin@hoops-academy.com`: `docs/runbooks/onboard-tenant.md`.
 
 Common commands: `just test` (backend verify with coverage and RLS gates), `just web-test`, `just e2e`, `just scan`,
 `just gen-api` (regenerate Dart clients), `just kind-up` and `just tilt` (Kubernetes on kind).

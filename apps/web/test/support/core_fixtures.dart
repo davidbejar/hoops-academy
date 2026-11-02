@@ -113,7 +113,7 @@ api.Member member(
     ..givenName = name.split(' ').first
     ..familyName = name.split(' ').last
     ..displayName = name
-    ..email = email ?? '${name.split(' ').first.toLowerCase()}@hoops.local'
+    ..email = email ?? '${name.split(' ').first.toLowerCase()}@hoops-academy.com'
     ..roles = SetBuilder<api.TenantRole>(roles)
     ..active = active
     ..invitationStatus = invitation

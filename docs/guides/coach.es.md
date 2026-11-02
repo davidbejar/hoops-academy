@@ -2,6 +2,8 @@
 
 Idiomas: Español · [English](coach.en.md) · [Bahasa Indonesia](coach.id.md)
 
+Inicias sesión con tu dirección de correo electrónico y tu contraseña.
+
 Eres **Entrenador** o **Entrenador asistente**. Tus permisos se aplican a los equipos en cuyo **Cuerpo técnico** te ha
 incluido un administrador. Barra inferior: **Equipos**, **Partidos**, **Entrenos**, **Jugadores**. **Perfil** está en la
 barra superior.

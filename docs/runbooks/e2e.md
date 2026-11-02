@@ -23,7 +23,7 @@ just services-down
 (readiness includes the database; game/athlete add an informational `core-service` check). The script still treats
 any HTTP answer as "up" (its comment predates WP17); use `curl -s localhost:808x/q/health/ready` for the real state.
 
-Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin` is the
+Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin@hoops-academy.com` is the
 platform super admin), `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` and `CORE_SERVICE_CLIENT_SECRET` in `.env`.
 Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; the mail step is skipped when MailHog is unreachable),
 `E2E_REDIRECT_URI` (default `<base>/redirect.html`, must match client `web`), `E2E_KEYCLOAK_ADMIN_URL` (default `<base>/auth`).
@@ -33,7 +33,7 @@ Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; the mail step is s
 source scripts/env.sh
 just kind-up --deploy --from-host        # cluster, ingress, CNPG, secrets, images, helm install (docs/runbooks/kind.md)
 deploy/kind/seed-users.sh
-deploy/kind/smoke.sh core game athlete   # pods, issuer, /internal 403, tokens, seeded superadmin through core
+deploy/kind/smoke.sh core game athlete   # pods, issuer, /internal 403, tokens, seeded superadmin@hoops-academy.com through core
 # the ingress exposes only realm `academy` (the Admin API of the master realm answers 403): port-forward Keycloak and MailHog
 kubectl --context kind-hoops -n hoops port-forward svc/keycloak 18080:8080 &
 kubectl --context kind-hoops -n hoops port-forward svc/mailhog 18025:8025 &

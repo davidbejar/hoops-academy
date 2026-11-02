@@ -2,6 +2,8 @@
 
 Languages: [Español](player.es.md) · English · [Bahasa Indonesia](player.id.md)
 
+You sign in with your e-mail address and your password.
+
 You have the **Player** role. Bottom bar: **Matches**, **Training**, **Me**. **Profile** is in the top bar (language,
 sign out). If **Me** says "Your account is not linked to a player yet", ask your academy administrator to link it.
 

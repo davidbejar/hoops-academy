@@ -22,7 +22,7 @@ CurrentUser userWith(
   String locale = 'es',
 }) => CurrentUser(
   displayName: 'Casey Coach',
-  email: 'coach1@hoops.local',
+  email: 'coach1@hoops-academy.com',
   localeCode: locale,
   superAdmin: superAdmin,
   memberships: memberships,

@@ -2,6 +2,8 @@
 
 Idiomas: Español · [English](super-admin.en.md) · [Bahasa Indonesia](super-admin.id.md)
 
+Inicias sesión con tu dirección de correo electrónico y tu contraseña.
+
 El **superadministrador** gestiona la plataforma: crea y retira academias y consulta su uso. Es un rol de realm de Keycloak
 (`super_admin`), no un rol de academia. Un superadministrador **no puede leer el contenido de las academias** (jugadores,
 partidos, datos de salud): la plataforma no tiene acceso a él.

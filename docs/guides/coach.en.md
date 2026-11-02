@@ -2,6 +2,8 @@
 
 Languages: [Español](coach.es.md) · English · [Bahasa Indonesia](coach.id.md)
 
+You sign in with your e-mail address and your password.
+
 You are a **Coach** or an **Assistant coach**. Your rights apply to the teams where an administrator listed you under
 **Staff**. Bottom bar: **Teams**, **Matches**, **Training**, **Players**. **Profile** is in the top bar.
 

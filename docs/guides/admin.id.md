@@ -2,6 +2,8 @@
 
 Bahasa: [Español](admin.es.md) · [English](admin.en.md) · Bahasa Indonesia
 
+Anda masuk dengan alamat e-mail dan kata sandi Anda.
+
 Anda adalah **Administrator** sebuah akademi. Anda menyiapkan akademi, mengundang orang, membuat musim dan tim, serta
 memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbahasa Indonesia.
 

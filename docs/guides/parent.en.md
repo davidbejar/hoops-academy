@@ -2,6 +2,8 @@
 
 Languages: [Español](parent.es.md) · English · [Bahasa Indonesia](parent.id.md)
 
+You sign in with your e-mail address and your password.
+
 You have the **Parent** role (called "Familia" in Spanish). You see and act only on the players an administrator linked
 to you. Bottom bar: **Matches**, **Training**, **My players**. **Profile** is in the top bar (language, sign out).
 

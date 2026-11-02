@@ -83,13 +83,13 @@ void main() {
       await tapKey(tester, 'member-invite');
       await enter(tester, 'invite-given', 'Nora');
       await enter(tester, 'invite-family', 'Vega');
-      await enter(tester, 'invite-email', 'nora@hoops.local');
+      await enter(tester, 'invite-email', 'nora@hoops-academy.com');
       await tapKey(tester, 'role-COACH');
       await tapKey(tester, 'role-ASSISTANT_COACH');
       await tapKey(tester, 'form-submit');
 
       final sent = core.members.invited!;
-      expect(sent.email, 'nora@hoops.local');
+      expect(sent.email, 'nora@hoops-academy.com');
       expect(sent.roles.toSet(), {api.TenantRole.COACH, api.TenantRole.ASSISTANT_COACH});
       expect(sent.sendInvitation, isTrue);
       expect(find.text('Invitación enviada'), findsOneWidget);
@@ -104,7 +104,7 @@ void main() {
       await tapKey(tester, 'member-invite');
       await enter(tester, 'invite-given', 'Nora');
       await enter(tester, 'invite-family', 'Vega');
-      await enter(tester, 'invite-email', 'nora@hoops.local');
+      await enter(tester, 'invite-email', 'nora@hoops-academy.com');
       await tapKey(tester, 'role-COACH');
       await tapKey(tester, 'form-submit');
       expect(find.textContaining('Los datos han cambiado'), findsOneWidget);

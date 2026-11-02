@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Seeds the dev users (superadmin, admin1, coach1, assistant1, parent1, player1) into realm `academy` of the
-# Keycloak running in kind. Kubernetes twin of infra/keycloak/seed-users.sh. Idempotent.
+# Seeds the dev users (superadmin, admin1, coach1, assistant1, parent1, player1 @hoops-academy.com; username = e-mail)
+# into realm `academy` of the Keycloak running in kind. Kubernetes twin of infra/keycloak/seed-users.sh. Idempotent.
 # Passwords travel over stdin of `kubectl exec`, never on a command line.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -20,14 +20,20 @@ read -r ADMIN; read -r ADMIN_PW; read -r DEV_PW
 KC=/opt/keycloak/bin/kcadm.sh; REALM=academy
 export HOME=/tmp
 $KC config credentials --server http://localhost:8080/auth --realm master --user "$ADMIN" --password "$ADMIN_PW" >/dev/null
-ensure_user() {
-  local u="$1" f="$2" l="$3" id
+ensure_user() { # name first last
+  local n="$1" f="$2" l="$3" u="$1@hoops-academy.com" id legacy
+  legacy=$($KC get users -r $REALM -q "username=$n" -q exact=true --fields id --format csv --noquotes | head -n1 | tr -d "\r")
+  if [ -n "$legacy" ]; then
+    $KC delete "users/$legacy" -r $REALM
+    echo "migrated $n -> $u"
+  fi
   id=$($KC get users -r $REALM -q "username=$u" -q exact=true --fields id --format csv --noquotes | head -n1 | tr -d "\r")
   if [ -z "$id" ]; then
-    $KC create users -r $REALM -s "username=$u" -s "email=$u@hoops.local" -s "firstName=$f" -s "lastName=$l" \
+    $KC create users -r $REALM -s "username=$u" -s "email=$u" -s "firstName=$f" -s "lastName=$l" \
       -s enabled=true -s emailVerified=true >/dev/null
     echo "created $u"
   else
+    $KC update "users/$id" -r $REALM -s "email=$u" -s enabled=true -s emailVerified=true >/dev/null
     echo "exists  $u"
   fi
   $KC set-password -r $REALM --username "$u" --new-password "$DEV_PW"
@@ -38,6 +44,6 @@ ensure_user coach1 Casey Coach
 ensure_user assistant1 Sam Assistant
 ensure_user parent1 Pat Parent
 ensure_user player1 Jordan Player
-$KC add-roles -r $REALM --uusername superadmin --rolename super_admin
+$KC add-roles -r $REALM --uusername superadmin@hoops-academy.com --rolename super_admin
 echo "seed-users: done (superadmin has super_admin)"
 '

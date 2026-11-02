@@ -14,7 +14,7 @@ step 1 passed). The UI path is described from the implemented screens and was no
 - core-service running (`./mvnw -pl services/core-service quarkus:dev`, or `just services-up`) so that `/platform/**`
   answers on :8081 through nginx.
 - Keycloak realm re-imported after WP17 (tokens must carry `sub`, see `troubleshooting.md`).
-- A super admin account. Local: the seeded `superadmin` (password `DEV_USER_PASSWORD` from `.env`). Elsewhere: create a
+- A super admin account. Local: the seeded `superadmin@hoops-academy.com` (password `DEV_USER_PASSWORD` from `.env`). Elsewhere: create a
   Keycloak user in realm `academy` and grant the realm role `super_admin`.
 
 ## Steps (UI)

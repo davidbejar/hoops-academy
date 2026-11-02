@@ -17,15 +17,21 @@ kc() { podman exec -e KCADM_PW="$KEYCLOAK_ADMIN_PASSWORD" -e DEV_PW="$DEV_USER_P
 podman exec -e KCADM_PW="$KEYCLOAK_ADMIN_PASSWORD" "$C" bash -c \
   '/opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user "$0" --password "$KCADM_PW" >/dev/null' "$KEYCLOAK_ADMIN"
 
-ensure_user() { # username first last
-  local u="$1" f="$2" l="$3" id
+# Username = e-mail (as core-service creates users). A legacy user with the bare name is deleted first: dev data only.
+ensure_user() { # name first last
+  local n="$1" f="$2" l="$3" u="$1@hoops-academy.com" id legacy
+  legacy=$(kc get users -r "$REALM" -q "username=$n" -q exact=true --fields id --format csv --noquotes | head -n1 | tr -d '\r')
+  if [ -n "$legacy" ]; then
+    kc delete "users/$legacy" -r "$REALM"
+    echo "migrated $n -> $u"
+  fi
   id=$(kc get users -r "$REALM" -q "username=$u" -q exact=true --fields id --format csv --noquotes | head -n1 | tr -d '\r')
   if [ -z "$id" ]; then
-    kc create users -r "$REALM" -s "username=$u" -s "email=$u@hoops.local" -s "firstName=$f" -s "lastName=$l" \
+    kc create users -r "$REALM" -s "username=$u" -s "email=$u" -s "firstName=$f" -s "lastName=$l" \
        -s enabled=true -s emailVerified=true >/dev/null
     echo "created $u"
   else
-    kc update "users/$id" -r "$REALM" -s "email=$u@hoops.local" -s enabled=true -s emailVerified=true >/dev/null
+    kc update "users/$id" -r "$REALM" -s "email=$u" -s enabled=true -s emailVerified=true >/dev/null
     echo "exists  $u"
   fi
   # Always (re)set the password from the environment; temporary=false.
@@ -40,7 +46,7 @@ ensure_user assistant1 Sam Assistant
 ensure_user parent1 Pat Parent
 ensure_user player1 Jordan Player
 
-kc add-roles -r "$REALM" --uusername superadmin --rolename super_admin
+kc add-roles -r "$REALM" --uusername superadmin@hoops-academy.com --rolename super_admin
 
 # The realm JSON is imported only into an empty volume: bring an existing realm up to date with its login theme
 # (ADR-0022), so the branded pages show without resetting the database.

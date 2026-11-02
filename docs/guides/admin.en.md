@@ -2,6 +2,8 @@
 
 Languages: [Español](admin.es.md) · English · [Bahasa Indonesia](admin.id.md)
 
+You sign in with your e-mail address and your password.
+
 You are an **Administrator** of one academy. You set the academy up, invite people, build seasons and teams, and
 decide on player requests. Menu names below are the labels shown in the English app.
 

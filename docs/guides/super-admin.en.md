@@ -2,6 +2,8 @@
 
 Languages: [Español](super-admin.es.md) · English · [Bahasa Indonesia](super-admin.id.md)
 
+You sign in with your e-mail address and your password.
+
 The **super administrator** runs the platform: creates and withdraws academies and reads their usage. It is a Keycloak
 realm role (`super_admin`), not an academy role. A super administrator **cannot read academy content** (players, matches,
 health data): the platform has no access to it.

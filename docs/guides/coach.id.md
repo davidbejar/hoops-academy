@@ -2,6 +2,8 @@
 
 Bahasa: [Español](coach.es.md) · [English](coach.en.md) · Bahasa Indonesia
 
+Anda masuk dengan alamat e-mail dan kata sandi Anda.
+
 Anda adalah **Pelatih** atau **Asisten pelatih**. Hak Anda berlaku untuk tim tempat administrator mendaftarkan Anda di
 **Staf**. Bilah bawah: **Tim**, **Pertandingan**, **Latihan**, **Pemain**. **Profil** ada di bilah atas.
 

@@ -4,7 +4,7 @@
 # Proves the realm/client/seeded user work; the browser part (redirect.html, token storage) is the manual check
 # in README.md because the Keycloak HTML form lives on another origin than the Flutter page.
 #
-#   HOOPS_E2E_USER=coach1 HOOPS_E2E_PASSWORD=... apps/web/tool/keycloak_login_check.sh
+#   HOOPS_E2E_USER=coach1@hoops-academy.com HOOPS_E2E_PASSWORD=... apps/web/tool/keycloak_login_check.sh
 #
 # HOOPS_E2E_PASSWORD defaults to DEV_USER_PASSWORD from the repo's .env (never printed).
 set -euo pipefail
@@ -14,7 +14,7 @@ if [ -z "${HOOPS_E2E_PASSWORD:-}" ] && [ -f "$ROOT/.env" ]; then
   HOOPS_E2E_PASSWORD="$(grep -E '^DEV_USER_PASSWORD=' "$ROOT/.env" | head -n1 | cut -d= -f2-)"
 fi
 : "${HOOPS_E2E_PASSWORD:?set HOOPS_E2E_PASSWORD (or DEV_USER_PASSWORD in .env)}"
-USER_NAME="${HOOPS_E2E_USER:-coach1}"
+USER_NAME="${HOOPS_E2E_USER:-coach1@hoops-academy.com}"
 ISSUER="${HOOPS_OIDC_ISSUER:-http://localhost:8080/auth/realms/academy}"
 CLIENT="${HOOPS_OIDC_CLIENT_ID:-web}"
 REDIRECT="${HOOPS_E2E_REDIRECT:-http://localhost:8080/redirect.html}" # must match the client's redirectUris

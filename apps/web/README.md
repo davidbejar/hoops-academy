@@ -39,8 +39,9 @@ flutter run -d chrome --web-port 5173 \
 Defaults: issuer `http://localhost:8080/auth/realms/academy`, client `web`, scopes
 `openid profile email`. Override with `--dart-define=HOOPS_OIDC_ISSUER=...`,
 `HOOPS_OIDC_CLIENT_ID=...`, `HOOPS_OIDC_SCOPES=a,b,c`, `HOOPS_API_BASE=...`.
-Seeded users (password = `DEV_USER_PASSWORD` in the repo `.env`): `superadmin`, `admin1`, `coach1`,
-`assistant1`, `parent1`, `player1`.
+Seeded users, signed in with their e-mail address (password = `DEV_USER_PASSWORD` in the repo `.env`):
+`superadmin@hoops-academy.com`, `admin1@hoops-academy.com`, `coach1@hoops-academy.com`,
+`assistant1@hoops-academy.com`, `parent1@hoops-academy.com`, `player1@hoops-academy.com`.
 
 **Origins / CORS.** Since WP17 the realm's client `web` allows `http://localhost:8080/*` and
 `http://localhost:5173/*` as redirect and post-logout URIs and both as web origins, and the services answer CORS
@@ -216,7 +217,7 @@ flutter drive --driver=test_driver/integration_test.dart \
 Without `HOOPS_MOCK_API` the test only asserts boot + login screen: the Keycloak form is a different page and
 origin, which an in-page integration test cannot fill in.
 
-**Credential check against the real Keycloak (scripted PKCE, user `coach1`):**
+**Credential check against the real Keycloak (scripted PKCE, user `coach1@hoops-academy.com`):**
 ```bash
 source scripts/env.sh && just up && just seed-users
 HOOPS_E2E_PASSWORD="$DEV_USER_PASSWORD" apps/web/tool/keycloak_login_check.sh   # password env var; defaults to .env
@@ -227,12 +228,12 @@ refresh-token grant, and prints only non-secret claims.
 **Browser round trip (real flow, automated):** with the stack, the services and the app on :5173 running
 (`./start.sh`), and a chromedriver matching Chrome on PATH:
 ```bash
-python3 -I apps/web/tool/browser_login_check.py --user player1   # headless Chrome; --headed to watch it
+python3 -I apps/web/tool/browser_login_check.py --user player1@hoops-academy.com   # headless Chrome; --headed to watch it
 ```
 It taps *Sign in*, requires the branded `hoops` Keycloak page, fills the form (password from `.env`, never printed),
 requires the tab to come back to the app signed in (not stranded on `redirect.html`), then taps *Sign out* when the
-landing screen has it and requires the app's sign-in screen again. `player1` has a sign-out button on its landing
-screen; `coach1` checks the login half only.
+landing screen has it and requires the app's sign-in screen again. `player1@hoops-academy.com` has a sign-out button on
+its landing screen; `coach1@hoops-academy.com` checks the login half only.
 
 ### PWA installability (manual Lighthouse check)
 Serve `build/web` over `http://localhost` (any static server; localhost counts as secure), open DevTools ->

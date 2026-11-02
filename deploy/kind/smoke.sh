@@ -79,7 +79,7 @@ if [[ " ${SERVICES[*]} " == *" core "* ]]; then
       --data-urlencode "code=$code" --data-urlencode "redirect_uri=$redir" --data-urlencode "code_verifier=$v" |
       sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
   }
-  utok=$(user_token superadmin || true)
+  utok=$(user_token superadmin@hoops-academy.com || true)
   if [ -z "$utok" ]; then bad "superadmin PKCE login failed (run deploy/kind/seed-users.sh first?)"
   else
     me=$(curl -s -H "Authorization: Bearer $utok" "$BASE/api/core/me")

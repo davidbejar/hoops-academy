@@ -8,7 +8,7 @@
 //   # real Keycloak (compose stack up, `just seed-users` done): boots, reaches the
 //   # login screen and starts the PKCE redirect. The Keycloak form is another
 //   # page/origin, which an in-page integration test cannot drive; the credential
-//   # part is covered by `tool/keycloak_login_check.sh` (coach1, HOOPS_E2E_PASSWORD)
+//   # part is covered by `tool/keycloak_login_check.sh` (coach1@hoops-academy.com, HOOPS_E2E_PASSWORD)
 //   # and the manual check in README.md.
 //   flutter drive --driver=test_driver/integration_test.dart \
 //     --target=integration_test/login_smoke_test.dart -d chrome --web-port 5173

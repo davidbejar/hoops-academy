@@ -5,7 +5,7 @@
 cp .env.example .env            # first time; replace all change-me-* with random values
 source scripts/env.sh
 just up                         # postgres, keycloak, mailhog, nginx; --wait until healthy
-just seed-users                 # superadmin, admin1, coach1, assistant1, parent1, player1 (password $DEV_USER_PASSWORD)
+just seed-users                 # e-mail logins <name>@hoops-academy.com: superadmin, admin1, coach1, assistant1, parent1, player1 (password $DEV_USER_PASSWORD)
 just logs keycloak              # follow logs
 just down                       # stop (data kept in volume hoops_pgdata)
 ```

@@ -12,7 +12,7 @@ headless Chrome driven over the W3C WebDriver HTTP protocol (stdlib only, no Nod
 Needs: compose stack up + `just seed-users`, the app served on an origin the realm's `web` client allows
 (http://localhost:5173 via `flutter run`/start.sh), chromedriver matching Chrome's major version on PATH.
 
-  python3 -I apps/web/tool/browser_login_check.py [--app http://localhost:5173/] [--user coach1] [--headed]
+  python3 -I apps/web/tool/browser_login_check.py [--app http://localhost:5173/] [--user coach1@hoops-academy.com] [--headed]
 """
 import argparse
 import json
@@ -146,7 +146,7 @@ return [...document.querySelectorAll('[role="button"]')].some(el =>
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--app", default="http://localhost:5173/")
-    ap.add_argument("--user", default="coach1")
+    ap.add_argument("--user", default="coach1@hoops-academy.com")
     ap.add_argument("--headed", action="store_true")
     ap.add_argument("--boot-timeout", type=int, default=240, help="seconds; a debug (DDC) build boots slowly")
     opts = ap.parse_args()

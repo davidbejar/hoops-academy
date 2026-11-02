@@ -27,7 +27,7 @@ podman machine start
 source scripts/env.sh
 just kind-up          # cluster "hoops" + ingress-nginx controller-v1.15.1 + CNPG 1.30.1 + ns hoops + Secrets from .env
 just tilt             # = tilt up: builds 4 images with Podman, kind-loads them, deploys the chart, port-forwards
-deploy/kind/seed-users.sh   # dev users (superadmin, admin1, coach1, assistant1, parent1, player1)
+deploy/kind/seed-users.sh   # dev users <name>@hoops-academy.com (superadmin, admin1, coach1, assistant1, parent1, player1)
 ```
 Without Tilt: `just kind-up --deploy` (builds all images, loads them, `helm upgrade --install --wait`).
 CI-style: `just tilt ci` (exits 0 when every resource is Ready).
@@ -121,7 +121,7 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
 
 ## Verification status
 WP16: game + athlete + web deployed with `tilt ci`, `smoke.sh game athlete` passed. WP18: core, game and athlete
-deployed with `up.sh --deploy` + Helm, `smoke.sh core game athlete` passed (superadmin `/api/core/me`, `/platform/tenants`).
+deployed with `up.sh --deploy` + Helm, `smoke.sh core game athlete` passed (superadmin@hoops-academy.com `/api/core/me`, `/platform/tenants`).
 The WP17 ingress rules (rate limits, admin deny) were checked by rendering and chart assertions only, and the e2e
 journey (`docs/runbooks/e2e.md`) has not been run green on kind.
 

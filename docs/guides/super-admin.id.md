@@ -2,6 +2,8 @@
 
 Bahasa: [Español](super-admin.es.md) · [English](super-admin.en.md) · Bahasa Indonesia
 
+Anda masuk dengan alamat e-mail dan kata sandi Anda.
+
 **Super administrator** menjalankan platform: membuat dan menarik akademi serta melihat penggunaannya. Ini adalah peran
 realm Keycloak (`super_admin`), bukan peran akademi. Super administrator **tidak dapat membaca isi akademi** (pemain,
 pertandingan, data kesehatan): platform tidak punya akses ke sana.

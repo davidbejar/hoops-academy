@@ -2,6 +2,8 @@
 
 Idiomas: Español · [English](player.en.md) · [Bahasa Indonesia](player.id.md)
 
+Inicias sesión con tu dirección de correo electrónico y tu contraseña.
+
 Tienes el rol **Jugador**. Barra inferior: **Partidos**, **Entrenos**, **Yo**. **Perfil** está en la barra superior
 (idioma, cerrar sesión). Si **Yo** dice "Tu cuenta aún no está vinculada a un jugador", pide al administrador de tu
 academia que la vincule.

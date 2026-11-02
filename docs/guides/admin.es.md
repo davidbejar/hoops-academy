@@ -2,6 +2,8 @@
 
 Idiomas: Español · [English](admin.en.md) · [Bahasa Indonesia](admin.id.md)
 
+Inicias sesión con tu dirección de correo electrónico y tu contraseña.
+
 Eres **Administrador** de una academia. Configuras la academia, invitas a personas, creas temporadas y equipos y
 decides sobre las solicitudes de jugadores. Los nombres de menú son los que muestra la aplicación en español.
 

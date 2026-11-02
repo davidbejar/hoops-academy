@@ -2,6 +2,8 @@
 
 Bahasa: [Español](parent.es.md) · [English](parent.en.md) · Bahasa Indonesia
 
+Anda masuk dengan alamat e-mail dan kata sandi Anda.
+
 Anda berperan **Orang tua**. Anda hanya melihat dan mengelola pemain yang dikaitkan administrator ke akun Anda. Bilah
 bawah: **Pertandingan**, **Latihan**, **Pemain saya**. **Profil** ada di bilah atas (bahasa, keluar).
 

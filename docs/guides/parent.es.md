@@ -2,6 +2,8 @@
 
 Idiomas: Español · [English](parent.en.md) · [Bahasa Indonesia](parent.id.md)
 
+Inicias sesión con tu dirección de correo electrónico y tu contraseña.
+
 Tienes el rol **Familia**. Solo ves y gestionas los jugadores que un administrador ha vinculado a tu cuenta. Barra
 inferior: **Partidos**, **Entrenos**, **Mis jugadores**. **Perfil** está en la barra superior (idioma, cerrar sesión).
 

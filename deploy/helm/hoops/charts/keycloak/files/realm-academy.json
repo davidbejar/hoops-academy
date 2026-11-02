@@ -29,7 +29,7 @@
   "smtpServer": {
     "host": "mailhog",
     "port": "1025",
-    "from": "no-reply@hoops.local",
+    "from": "no-reply@hoops-academy.com",
     "fromDisplayName": "Hoops Academy",
     "auth": "false",
     "ssl": "false",

@@ -126,7 +126,8 @@ class JourneyTest {
     @Test
     @Order(1)
     void superAdminCreatesTenantWithFirstAdmin() {
-        superAdmin = new Actor("superadmin", tokens.login("superadmin", E2eEnv.required("DEV_USER_PASSWORD")), null);
+        superAdmin = new Actor("superadmin",
+                tokens.login("superadmin@hoops-academy.com", E2eEnv.required("DEV_USER_PASSWORD")), null);
         adminEmail = email("admin");
         Response r = status(superAdmin.post("/platform/tenants", of(
                 "slug", "e2e-" + run, "name", "E2E Academy " + run, "timezone", "Europe/Madrid", "defaultLocale", "en",

@@ -2,6 +2,8 @@
 
 Bahasa: [Español](player.es.md) · [English](player.en.md) · Bahasa Indonesia
 
+Anda masuk dengan alamat e-mail dan kata sandi Anda.
+
 Anda berperan **Pemain**. Bilah bawah: **Pertandingan**, **Latihan**, **Saya**. **Profil** ada di bilah atas (bahasa,
 keluar). Jika **Saya** berisi "Akun Anda belum terhubung ke pemain", minta administrator akademi menghubungkannya.
 

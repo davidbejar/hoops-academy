@@ -143,7 +143,7 @@ class MockApiAdapter implements HttpClientAdapter {
   Map<String, Object?> _me() => {
     'userId': '00000000-0000-4000-8000-000000000001',
     'sub': 'mock-sub',
-    'email': 'coach1@hoops.local',
+    'email': 'coach1@hoops-academy.com',
     'displayName': 'Casey Coach',
     'locale': _locale,
     'superAdmin': false,
