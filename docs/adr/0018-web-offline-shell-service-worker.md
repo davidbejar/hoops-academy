@@ -21,7 +21,10 @@ Google's CDN (security finding F-09), which both broke an offline cold start and
    cache-first for shell assets; **network-only** for `/api/`, `/auth/`, `/platform/`, `/internal/`, non-GET and
    cross-origin requests (F-19: `/platform` GETs were cacheable before WP14b).
 4. **No CDN**: `--no-web-resources-cdn`, bundled Roboto and icons, `fontFallbackBaseUrl: 'assets/fonts/'`; the CSP is
-   `'self'` only (plus `wasm-unsafe-eval` and the inline-script hashes).
+   `'self'` only (plus `wasm-unsafe-eval` and the inline-script hashes). flutter_tools bundles Roboto only in that release
+   build, so `web/flutter_bootstrap.js` sets `fontFallbackBaseUrl` only when the build config has `useLocalCanvasKit` and
+   is not a `dartdevc` debug build. Debug `flutter run` keeps the engine default (Google Fonts): with the override it got a
+   404 for Roboto and every Noto fallback and rendered no text at all (fixed 2026-11-02, `test/web/bootstrap_fonts_test.dart`).
 5. **Updates are explicit**: no `skipWaiting`/`clients.claim` on install (lazily loaded `.part.js` chunks must match
    the running `main.dart.js`); the app shows an "update available, reload" banner that posts `SKIP_WAITING` and reloads
    once on `controllerchange`.

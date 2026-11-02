@@ -62,7 +62,8 @@ HOOPS_ALLOW_HTTP_ISSUER=1 tool/build_web.sh             # local stack only: allo
 ```
 The script refuses `HOOPS_MOCK_API=true` and a non-https `HOOPS_OIDC_ISSUER` (finding F-20) unless
 `HOOPS_ALLOW_HTTP_ISSUER=1`, and builds with `--no-web-resources-cdn` (CanvasKit, Roboto fallback font and icons are
-bundled; no request to gstatic, finding F-09). The OIDC scopes are `openid profile email` (no `offline_access`,
+bundled; no request to gstatic, finding F-09). Debug `flutter run` bundles no fonts, so it still loads Roboto (and Noto
+for other scripts) from Google Fonts and needs network (ADR-0018 §4). The OIDC scopes are `openid profile email` (no `offline_access`,
 finding F-08); sign-out forgets the tokens locally first and wipes the offline match database (ADR-0019).
 Output in `build/web` (our caching `sw.js`, manifest, deferred `main.dart.js_N.part.js` per feature module).
 Standard CanvasKit renderer; no COOP/COEP, no wasm. `flutter build web` alone also works but then `build/web/sw.js`
