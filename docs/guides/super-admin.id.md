@@ -39,9 +39,13 @@ Aksi di halaman detail akademi:
 - **Tarik**: alasan wajib diisi dan peringatan menjelaskan bahwa masa retensi dimulai. Tidak dapat dibatalkan.
 Setiap perubahan siklus hidup tercatat di jejak audit akademi (hanya bisa ditambah).
 
-## Administrator sebuah akademi
-Tersedia melalui API platform `/platform/tenants/{id}/admins` (layar konsol menyusul di WP23); hanya untuk akademi aktif
-atau ditangguhkan, akademi yang ditarik menjawab "ditarik" (409).
+## Administrator
+Di halaman detail akademi (**Platform >** akademi itu) bagian **Administrator** menampilkan setiap administrator dengan
+nama, email, status undangan (**Undangan tertunda** / **Undangan diterima**), dan peran lain mereka di akademi. Setiap
+baris punya **Ubah administrator**, **Hapus administrator** dan, selama undangan masih tertunda, **Kirim ulang undangan**;
+**Tambah administrator** ada di bagian atas. Bagian ini berlaku untuk akademi aktif dan ditangguhkan; untuk akademi yang
+**ditarik** hanya tampil catatan (administratornya tidak dapat lagi dilihat atau diubah). Operasi yang sama ada di API
+platform `/platform/tenants/{id}/admins`.
 - **Daftar**: administrator aktif dengan nama, email, status undangan, dan peran lain mereka di akademi.
 - **Tambah** (email, nama depan dan belakang, bahasa opsional): anggota akademi dengan email itu menjadi administrator
   (datanya tetap; anggota tanpa akun login menerima email untuk membuat kata sandi). Jika tidak ada, administrator baru
@@ -49,9 +53,14 @@ atau ditangguhkan, akademi yang ditarik menjawab "ditarik" (409).
 - **Ubah** nama depan, nama belakang, atau email. Email baru juga menjadi alamat masuk orang itu (username dan email di
   Keycloak) dan menerima email verifikasi — atau undangan lagi bila masih tertunda. Berbeda dengan administrator akademi,
   Anda boleh melakukannya juga untuk akun login yang dipakai di beberapa akademi.
-- **Hapus**: orang itu kehilangan peran administrator; jika itu satu-satunya perannya, ia dinonaktifkan di akademi ini.
-  Akun loginnya tidak pernah dihapus (mungkin dipakai di tempat lain). **Administrator terakhir tidak dapat dihapus**:
-  akademi selalu memerlukan satu administrator aktif, jadi tambahkan yang lain terlebih dahulu.
+- **Hapus** (meminta konfirmasi): orang itu kehilangan peran administrator; peran lainnya tetap, dan jika itu
+  satu-satunya perannya, ia dinonaktifkan di akademi ini. Akun loginnya tidak pernah dihapus (mungkin dipakai di tempat
+  lain).
+- **Administrator terakhir tidak dapat dihapus.** Sebuah akademi selalu memerlukan setidaknya satu administrator aktif.
+  Jika hanya ada satu administrator dalam daftar, tombol **Hapus**-nya dinonaktifkan dan barisnya menjelaskan: "Sebuah
+  akademi memerlukan setidaknya satu administrator. Tambahkan administrator lain terlebih dahulu." Jika orang lain baru
+  saja mengubah daftar dan server tetap menolak, Anda melihat pesan yang sama. Tambahkan administrator baru terlebih
+  dahulu, lalu hapus yang lama.
 - **Kirim ulang undangan**: hanya selama undangan masih tertunda.
 Setiap perubahan dicatat di jejak audit akademi dengan Anda sebagai pelakunya.
 

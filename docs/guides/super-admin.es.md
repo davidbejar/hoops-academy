@@ -39,9 +39,13 @@ Acciones en el detalle de la academia:
 - **Retirar**: el motivo es obligatorio y un aviso explica que empieza el plazo de conservación. No se puede deshacer.
 Cada cambio de ciclo de vida queda en el registro de auditoría (solo se añade) de la academia.
 
-## Administradores de una academia
-Disponible en la API de plataforma `/platform/tenants/{id}/admins` (las pantallas de la consola llegan con WP23); solo para
-academias activas o suspendidas, una retirada responde "retirada" (409).
+## Administradores
+En el detalle de la academia (**Plataforma >** la academia) la sección **Administradores** lista cada administrador con
+nombre, correo, estado de la invitación (**Invitación pendiente** / **Invitación aceptada**) y sus otros roles en la
+academia. Cada fila tiene **Editar administrador**, **Quitar administrador** y, mientras la invitación está pendiente,
+**Reenviar invitación**; arriba está **Añadir administrador**. La sección funciona en academias activas y suspendidas; en
+una **retirada** solo muestra una nota (sus administradores ya no se pueden consultar ni modificar). Las mismas
+operaciones existen en la API de plataforma `/platform/tenants/{id}/admins`.
 - **Listar**: los administradores activos con nombre, correo, estado de la invitación y sus otros roles en la academia.
 - **Añadir** (correo, nombre, apellidos, idioma opcional): si un miembro de la academia tiene ese correo, pasa a ser
   administrador (se conservan sus datos; si no tenía acceso recibe el correo para crear contraseña). Si no, se invita a un
@@ -49,9 +53,12 @@ academias activas o suspendidas, una retirada responde "retirada" (409).
 - **Editar** nombre, apellidos o correo. Un correo nuevo pasa a ser también la dirección de inicio de sesión (usuario y
   correo de Keycloak) y recibe un correo de verificación, o de nuevo la invitación si sigue pendiente. A diferencia de un
   administrador de academia, puedes hacerlo aunque el acceso se use en varias academias.
-- **Quitar**: la persona pierde el rol de administrador; si era su único rol, queda desactivada en esta academia. Su
-  acceso nunca se borra (puede usarse en otras academias). **No se puede quitar al último administrador**: una academia
-  necesita siempre un administrador activo, así que añade otro antes.
+- **Quitar** (pide confirmación): la persona pierde el rol de administrador; sus otros roles se mantienen y, si era su
+  único rol, queda desactivada en esta academia. Su acceso nunca se borra (puede usarse en otras academias).
+- **No se puede quitar al último administrador.** Una academia necesita siempre al menos un administrador activo. Cuando
+  solo hay un administrador en la lista, su botón **Quitar** está desactivado y la fila explica: "Una academia necesita al
+  menos un administrador. Añade otro administrador antes de quitar a este." Si otra persona acaba de cambiar la lista y el
+  servidor aun así lo rechaza, ves el mismo mensaje. Añade primero al nuevo administrador y después quita al anterior.
 - **Reenviar invitación**: solo mientras la invitación esté pendiente.
 Cada cambio queda en el registro de auditoría de la academia contigo como autor.
 

@@ -29,24 +29,27 @@ class TenantAdminsSection extends ConsumerWidget {
       key: const Key('admins-section'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: AppTokens.spaceSm,
-          runSpacing: AppTokens.spaceXs,
-          children: [
-            Text(l.adminsTitle, style: Theme.of(context).textTheme.titleMedium),
-            if (admins?.value != null)
-              OutlinedButton.icon(
-                key: const Key('admin-add'),
-                onPressed: () => showDialog<bool>(
-                  context: context,
-                  builder: (_) => AdminFormDialog(tenantId: tenant.id, locale: tenant.defaultLocale),
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppTokens.spaceSm,
+            runSpacing: AppTokens.spaceXs,
+            children: [
+              Text(l.adminsTitle, style: Theme.of(context).textTheme.titleMedium),
+              if (admins?.value != null)
+                OutlinedButton.icon(
+                  key: const Key('admin-add'),
+                  onPressed: () => showDialog<bool>(
+                    context: context,
+                    builder: (_) => AdminFormDialog(tenantId: tenant.id, locale: tenant.defaultLocale),
+                  ),
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                  label: Text(l.adminsAdd),
                 ),
-                icon: const Icon(Icons.person_add_alt_1_outlined),
-                label: Text(l.adminsAdd),
-              ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: AppTokens.spaceSm),
         if (withdrawn)

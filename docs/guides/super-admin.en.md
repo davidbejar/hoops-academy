@@ -39,9 +39,13 @@ Actions on an academy's detail page:
 - **Withdraw**: a reason is required and a warning explains that the retention period starts. It cannot be undone.
 Every lifecycle change is written to the academy's append-only audit trail.
 
-## An academy's administrators
-Available through the platform API `/platform/tenants/{id}/admins` (the console screens follow with WP23); ACTIVE and
-SUSPENDED academies only, a withdrawn one answers "withdrawn" (409).
+## Administrators
+On the academy detail page (**Platform >** the academy) the **Administrators** section lists each administrator with
+name, e-mail, invitation state (**Invitation pending** / **Invitation accepted**) and their other roles in the academy.
+Every row has **Edit**, **Remove administrator** and, while the invitation is pending, **Resend invitation**; **Add
+administrator** is at the top. The section works for ACTIVE and SUSPENDED academies; for a **withdrawn** academy it only
+shows a note (its administrators can no longer be viewed or changed). The same operations exist in the platform API
+`/platform/tenants/{id}/admins`.
 - **List**: the active administrators with name, e-mail, invitation state and their other roles in the academy.
 - **Add** (e-mail, first and last name, optional language): a member of the academy with that e-mail becomes
   administrator (their names are kept; a member without a login receives the set-password e-mail). Otherwise a new
@@ -49,9 +53,12 @@ SUSPENDED academies only, a withdrawn one answers "withdrawn" (409).
 - **Edit** first name, last name or e-mail. A new e-mail also becomes the person's sign-in address (Keycloak username and
   e-mail) and receives a verification e-mail — or the invitation again while it is pending. Unlike an academy
   administrator, you can do this also for a login that is used in several academies.
-- **Remove**: the person loses the administrator role; if it was their only role they are deactivated in this academy.
-  Their login is never deleted (it may be used elsewhere). The **last administrator cannot be removed**: an academy
-  always needs one active administrator, so add another one first.
+- **Remove** (asks for confirmation): the person loses the administrator role; other roles stay, and if it was their
+  only role they are deactivated in this academy. Their login is never deleted (it may be used elsewhere).
+- **The last administrator cannot be removed.** An academy always needs at least one active administrator. When only one
+  administrator is listed, its **Remove** button is disabled and the row says: "An academy needs at least one
+  administrator. Add another administrator first." If someone else has just changed the list and the server still
+  refuses, you see the same message. Add the new administrator first, then remove the old one.
 - **Resend invitation**: only while the invitation is pending.
 Every change is written to the academy's audit trail with you as the actor.
 
