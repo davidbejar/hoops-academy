@@ -7,4 +7,12 @@
     <cve>CVE-2026-00000</cve>
   </suppress>
   -->
+  <suppress until="2027-05-01Z">
+    <notes>False positive: io.quarkus:quarkus-flyway-postgresql is the Quarkus Flyway extension for PostgreSQL (Java code).
+    Its artifact name matches the PostgreSQL *server* CPE, so it inherits server CVEs from 2015-2021 that do not apply to a
+    client-side extension. The server itself runs from the postgres:17 image, which Trivy scans in images.yml.
+    Review when Quarkus or dependency-check changes the CPE match (first seen 2026-11-02, dependency-check 13.0.0).</notes>
+    <packageUrl regex="true">^pkg:maven/io\.quarkus/quarkus-flyway-postgresql@.*$</packageUrl>
+    <cpe>cpe:/a:postgresql:postgresql</cpe>
+  </suppress>
 </suppressions>

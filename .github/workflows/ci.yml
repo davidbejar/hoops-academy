@@ -75,8 +75,10 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      # The NVD mirror (~400k records, hours to fetch from scratch) is cached across runs. restore/save are split so the
+      # data is kept even when the scan itself fails (a plain actions/cache skips the save on a failed job).
       - name: Restore NVD data
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
           key: nvd-${{ runner.os }}-${{ github.run_id }}
@@ -88,6 +90,12 @@ jobs:
         run: |
           ./mvnw -B -ntp -Psecurity-scan verify -DskipTests -Djacoco.skip=true \
             -DnvdApiKey="$NVD_API_KEY" -DossindexAnalyzerEnabled=false -Dformats=HTML,JSON
+      - name: Save NVD data
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-${{ runner.os }}-${{ github.run_id }}
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4

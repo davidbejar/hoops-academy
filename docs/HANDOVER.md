@@ -1,4 +1,4 @@
-# Session handover (updated 2026-11-02)
+# Session handover (updated 2026-11-02, afternoon)
 
 Read `CLAUDE.md` first. This page is the short "where are we" for a fresh session; the detail is in the linked files.
 The original request is `docs/SPEC.md` (verbatim); the approved plan with its status box is `docs/PLAN.md`; what was built
@@ -10,15 +10,17 @@ folder (`.../Code/Claude/projects/dummy-project2`) is archived and must not be w
   journey on the compose stack, browser smoke (`apps/web/tool/web_smoke.sh`, mock and `--real`), Helm chart tests.
 - GitHub: `davidbejar/hoops-academy` (public), branch `main`. Repository variable `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`;
   secret `NVD_API_KEY` (currently rejected by NVD as invalid, see below).
-- CI on `origin/main` 7d326ec: `ci` green except `dependency-check`; `e2e` green on the runner's Podman stack; `images`
-  builds and scans green, push step blocked (see below).
+- CI on `origin/main`: `ci` green except `dependency-check` (see below); `e2e` green on the runner's Podman stack; `images`
+  green end to end — the four images are published to `ghcr.io/davidbejar/hoops-academy/{core-service,game-service,athlete-service,web}:<sha>`
+  (verified 2026-11-02 after the orphan `REGISTRY_USERNAME` secret was removed). Packages are created private: make them
+  public in the package settings or set `global.imagePullSecrets` (runbook release.md §3) before a cluster pulls them.
 
-## Pending user actions
-1. `gh secret delete REGISTRY_USERNAME -R davidbejar/hoops-academy` (a username without a password fails the push step; ghcr.io
-   needs neither), then `gh run rerun 41385838824 --failed -R davidbejar/hoops-academy` to publish the images. The first push
-   creates each package private: make them public in the package settings, or use `global.imagePullSecrets` (runbook release.md §3).
-2. NVD API key: activate it via the link in NVD's email or request a new one (https://nvd.nist.gov/developers/request-an-api-key)
-   and `gh secret set NVD_API_KEY`; then rerun the `ci` workflow's dependency-check job.
+## Pending
+1. `dependency-check`: the NVD key is valid since 2026-11-02 (first full NVD download ran ~3 h; the job now caches the NVD data
+   with split restore/save steps so later runs take minutes). The first real scan flagged `quarkus-flyway-postgresql` against
+   PostgreSQL *server* CVEs, a CPE false positive, suppressed in `.dependency-check-suppressions.xml` (until 2027-05-01).
+   Verify that the next `ci` run's dependency-check job is green; if NVD answers 503 again, rerun the job (data is cached).
+2. Make the ghcr.io packages public (or configure a pull secret) before deploying to a cluster that pulls from ghcr.io.
 3. Decide security finding F-01 (parents/players reading the full match event feed), `docs/security/review-2026-11.md`.
 
 ## Working conventions learned the hard way
