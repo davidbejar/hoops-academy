@@ -34,9 +34,9 @@ issue a new one while the invitation is pending.
       pending only, errors via `AppError`)
 - [x] Goldens of the dialog at 360x780 and 1024x768
 - [x] l10n parity green; `flutter analyze` clean; `just web-test` green
-- [ ] Live check (`start.sh`, orchestrator): super admin adds an admin, signs in as that admin with the temporary
+- [x] Live check (`start.sh`, orchestrator): super admin adds an admin, signs in as that admin with the temporary
       password, Keycloak (theme `hoops`) asks for a new password, the app opens signed in
-- [ ] Handover appended
+- [x] Handover appended
 
 ## Handover
 - Built:
@@ -86,7 +86,15 @@ issue a new one while the invitation is pending.
     with e-mail); approvals without a password just show "approved" because an approval does not always create a login.
 - Open points / follow-ups:
   - Live check (`start.sh`, orchestrator): super admin adds an admin, signs in with the temporary password, Keycloak theme
-    `hoops` asks for a new password, app opens signed in. **Not done by this session.**
+    `hoops` asks for a new password, app opens signed in. **Not done by this session.** Done by the orchestrator
+    (2026-11-02, services with the WP24 jars, `flutter run -d web-server`): super admin (PKCE login) `POST
+    /platform/tenants/{id}/admins` -> 201 `PENDING`, `Cache-Control: no-store`, 16-character `temporaryPassword` (kept
+    in a 600 file, never printed); `browser_login_check.py` without `--set-new-password` stops at Keycloak's
+    update-password page as intended; with `--set-new-password` (new option, this check) the branded `hoops`
+    update-password page takes the new password and the app opens signed in on the admin home (Profile,
+    Administration, Members, ...). Afterwards the own password signs in (`keycloak_login_check.sh` OK) and the
+    temporary one is refused. The console's password dialog itself was checked by widget tests and goldens only, not
+    clicked through in the browser.
   - `docs/conformance.md` / `authz-matrix.md` were not touched (no behaviour beyond WP24's).
   - The approval dialog names the person but cannot show the sign-in e-mail (the approval payload has none).
   - Members list shows "Invitation pending" for any PENDING member; the re-issue button is on the member detail page only.

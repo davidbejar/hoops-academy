@@ -6,6 +6,8 @@ headless Chrome driven over the W3C WebDriver HTTP protocol (stdlib only, no Nod
 
   1. open the app, enable Flutter's semantics tree and tap the sign-in button,
   2. fill the Keycloak form (user, password from DEV_USER_PASSWORD in the repo .env; never printed),
+  2b. with --set-new-password, a first sign-in with a temporary password (ADR-0024): require Keycloak's branded
+     "update password" page and set the new password from HOOPS_E2E_NEW_PASSWORD (never printed),
   3. require the tab to come back to the app, not to stay on redirect.html ("You can now close this tab ..."),
      and the app to hold a signed-in session (sign-in button gone).
 
@@ -13,6 +15,7 @@ Needs: compose stack up + `just seed-users`, the app served on an origin the rea
 (http://localhost:5173 via `flutter run`/start.sh), chromedriver matching Chrome's major version on PATH.
 
   python3 -I apps/web/tool/browser_login_check.py [--app http://localhost:5173/] [--user coach1@hoops-academy.com] [--headed]
+  HOOPS_E2E_PASSWORD=<temporary> HOOPS_E2E_NEW_PASSWORD=<new> python3 -I ... --user <new login> --set-new-password
 """
 import argparse
 import json
@@ -143,15 +146,31 @@ return [...document.querySelectorAll('[role="button"]')].some(el =>
 """
 
 
+HAS_HOOPS_THEME = ("return [...document.querySelectorAll('link[rel=stylesheet]')]"
+                   ".some(l => l.href.includes('/login/hoops/css/hoops.css'))")
+HAS_UPDATE_PASSWORD = "return !!document.getElementById('password-new')"
+SUBMIT_NEW_PASSWORD = """
+document.getElementById('password-new').value = arguments[0];
+document.getElementById('password-confirm').value = arguments[0];
+const form = document.getElementById('password-new').form;
+form.querySelector('[type=submit]').click();"""
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--app", default="http://localhost:5173/")
     ap.add_argument("--user", default="coach1@hoops-academy.com")
     ap.add_argument("--headed", action="store_true")
+    ap.add_argument("--set-new-password", action="store_true",
+                    help="first sign-in with a temporary password: expect Keycloak's update-password page and set "
+                         "HOOPS_E2E_NEW_PASSWORD")
     ap.add_argument("--boot-timeout", type=int, default=240, help="seconds; a debug (DDC) build boots slowly")
     opts = ap.parse_args()
     app_origin = opts.app.rstrip("/")
     password = dev_password()
+    new_password = os.environ.get("HOOPS_E2E_NEW_PASSWORD")
+    if opts.set_new_password and not new_password:
+        sys.exit("--set-new-password needs HOOPS_E2E_NEW_PASSWORD")
 
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -171,14 +190,27 @@ def main():
         print("2/5 Keycloak login form")
         wait_for("Keycloak form", lambda: wd.js("return !!document.getElementById('kc-login')"), 60)
         print(f"    at {wd.url().split('?')[0]}")
-        if not wd.js("return [...document.querySelectorAll('link[rel=stylesheet]')]"
-                     ".some(l => l.href.includes('/login/hoops/css/hoops.css'))"):
+        if not wd.js(HAS_HOOPS_THEME):
             print("FAIL: Keycloak serves its stock login page, not the branded `hoops` theme (ADR-0022)")
             return 1
         print("    branded login theme `hoops`")
         wd.js("""document.getElementById('username').value = arguments[0];
                  document.getElementById('password').value = arguments[1];
                  document.getElementById('kc-login').click();""", opts.user, password)
+
+        if opts.set_new_password:
+            print("2b/5 Keycloak asks for a new password (temporary password)")
+            try:
+                wait_for("update-password form", lambda: wd.js(HAS_UPDATE_PASSWORD), 30)
+            except TimeoutError:
+                print(f"FAIL: no update-password page after signing in with the temporary password; at "
+                      f"{wd.url().split('?')[0]}")
+                return 1
+            if not wd.js(HAS_HOOPS_THEME):
+                print("FAIL: the update-password page is not in the branded `hoops` theme")
+                return 1
+            print("    branded update-password page; setting the new password")
+            wd.js(SUBMIT_NEW_PASSWORD, new_password)
 
         print(f"3/5 back to the app as {opts.user}")
         seen = []
@@ -192,6 +224,9 @@ def main():
         try:
             wait_for("return to the app", back_in_app, 45)
         except TimeoutError:
+            if wd.js(HAS_UPDATE_PASSWORD):
+                print("FAIL: Keycloak asks for a new password (temporary password): pass --set-new-password")
+                return 1
             body = wd.js("return document.body ? document.body.innerText : ''") or ""
             stranded = " (stranded: page says '...close this tab...')" if STRANDED_TEXT in body else ""
             print(f"FAIL: tab did not return to the app{stranded}; URLs: {' -> '.join(seen)}")
