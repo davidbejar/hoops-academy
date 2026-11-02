@@ -17,9 +17,11 @@ folder (`.../Code/Claude/projects/dummy-project2`) is archived and must not be w
 
 ## Pending
 1. `dependency-check`: the NVD key is valid since 2026-11-02 (first full NVD download ran ~3 h; the job now caches the NVD data
-   with split restore/save steps so later runs take minutes). The first real scan flagged `quarkus-flyway-postgresql` against
-   PostgreSQL *server* CVEs, a CPE false positive, suppressed in `.dependency-check-suppressions.xml` (until 2027-05-01).
-   Verify that the next `ci` run's dependency-check job is green; if NVD answers 503 again, rerun the job (data is cached).
+   with split restore/save steps so later runs take minutes). Findings so far: `quarkus-flyway-postgresql` matched against
+   PostgreSQL *server* CVEs (CPE false positive, suppressed until 2027-05-01 in `.dependency-check-suppressions.xml`), and a
+   real one: Vert.x 4.5.34 (CVE-2026-1024xx, CVSS up to 9.2) via Quarkus 3.40.1 -> fixed by moving to Quarkus platform
+   **3.40.1.1** (Vert.x 4.5.35; full `./mvnw verify` green: 1,502 tests). Confirm the next `ci` run's dependency-check is green;
+   if NVD answers 503, rerun the job (data is cached). Keep `quarkus.platform.version` on the latest 3.40.x patch.
 2. Make the ghcr.io packages public (or configure a pull secret) before deploying to a cluster that pulls from ghcr.io.
 3. Decide security finding F-01 (parents/players reading the full match event feed), `docs/security/review-2026-11.md`.
 
