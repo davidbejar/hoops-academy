@@ -2,7 +2,8 @@
 # One-shot local start: Podman machine + compose stack, dev users, backend services, Flutter web app.
 #   ./start.sh              build services, then run everything
 #   ./start.sh --no-build   reuse the existing service jars (faster)
-# Quitting the web app (q or Ctrl+C) stops the backend services; the compose stack keeps running (`just down`).
+# Quitting the web app (q or Ctrl+C) stops the backend services; the compose stack keeps running.
+# ./stop.sh stops everything, from any terminal and in any state.
 set -euo pipefail
 cd "$(dirname "$0")"
 

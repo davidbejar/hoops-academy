@@ -38,7 +38,9 @@ it, edit `.env` (at least 12 characters) and re-run `just seed-users`; it resets
 **One command:** once `.env` is filled, `./start.sh` does everything below: it starts the Podman machine if needed,
 sources `scripts/env.sh`, runs `just up`, `just seed-users` and `just services-up`, then the web app on :5173.
 `./start.sh --no-build` reuses the built service jars. Quitting the web app (`q` or Ctrl+C) stops the services; the
-compose stack keeps running (`just down`).
+compose stack keeps running. `./stop.sh` stops everything (web app and its Chrome window, services, compose stack)
+from any terminal, whether `start.sh` is still running or was already interrupted; it is safe to run repeatedly and
+leaves the Podman machine running.
 
 Or step by step. Start the backend services (host mode; nginx reaches them on 8081 to 8083):
 ```bash
