@@ -4,7 +4,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
@@ -30,15 +29,22 @@ public final class KeycloakStubs {
 
     private KeycloakStubs() {}
 
-    /** Token endpoint, "no user with that e-mail", create → 201 with a fresh id, actions e-mail and delete → 204. */
+    /**
+     * Token endpoint, "no user with that e-mail", create → 201 with a fresh id, reset-password, update and delete →
+     * 204, every user without credentials or required actions. No execute-actions e-mail is stubbed: a call to it
+     * fails (ADR-0024, no e-mail is sent).
+     */
     public static void installDefaults(WireMockServer server) {
         server.resetAll();
         server.stubFor(post(urlEqualTo(TOKEN)).willReturn(okJson(TOKEN_BODY)));
         server.stubFor(get(urlPathEqualTo(USERS)).willReturn(okJson("[]")));
         server.stubFor(post(urlEqualTo(USERS)).willReturn(aResponse().withStatus(201)
                 .withHeader("Location", server.baseUrl() + USERS + "/{{randomValue type='UUID'}}")));
-        server.stubFor(put(urlPathMatching(USERS + "/[^/]+/execute-actions-email"))
-                .willReturn(aResponse().withStatus(204)));
+        server.stubFor(put(urlPathMatching(USERS + "/[^/]+/reset-password")).willReturn(aResponse().withStatus(204)));
+        server.stubFor(get(urlPathMatching(USERS + "/[^/]+/credentials")).willReturn(okJson("[]")));
+        server.stubFor(get(urlPathMatching(USERS + "/[^/]+")).willReturn(aResponse().withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\"id\":\"{{request.path.[5]}}\",\"enabled\":true,\"requiredActions\":[]}")));
         server.stubFor(delete(urlPathMatching(USERS + "/[^/]+")).willReturn(aResponse().withStatus(204)));
         server.stubFor(put(urlPathMatching(USERS + "/[^/]+")).willReturn(aResponse().withStatus(204)));
         UsageStubs.installDefaults(server);
@@ -63,6 +69,26 @@ public final class KeycloakStubs {
                  "emailVerified":true}""".formatted(subject, email, email))));
     }
 
+    /** The login {@code subject} has a password of its own (a password credential, no pending UPDATE_PASSWORD). */
+    public static void ownPassword(WireMockServer server, String subject) {
+        server.stubFor(get(urlPathEqualTo(USERS + "/" + subject + "/credentials"))
+                .willReturn(okJson("[{\"id\":\"c1\",\"type\":\"password\"}]")));
+        server.stubFor(get(urlPathEqualTo(USERS + "/" + subject))
+                .willReturn(okJson("{\"id\":\"" + subject + "\",\"enabled\":true,\"requiredActions\":[]}")));
+    }
+
+    /** The login {@code subject} holds a temporary password (a password credential and UPDATE_PASSWORD pending). */
+    public static void temporaryPassword(WireMockServer server, String subject) {
+        server.stubFor(get(urlPathEqualTo(USERS + "/" + subject + "/credentials"))
+                .willReturn(okJson("[{\"id\":\"c1\",\"type\":\"password\"}]")));
+        server.stubFor(get(urlPathEqualTo(USERS + "/" + subject)).willReturn(okJson(
+                "{\"id\":\"" + subject + "\",\"enabled\":true,\"requiredActions\":[\"UPDATE_PASSWORD\"]}")));
+    }
+
+    public static void temporaryPasswordFails(WireMockServer server) {
+        server.stubFor(put(urlPathMatching(USERS + "/[^/]+/reset-password")).willReturn(aResponse().withStatus(500)));
+    }
+
     /** Every login update answers 409 (another Keycloak user owns the e-mail). */
     public static void loginUpdateConflicts(WireMockServer server) {
         server.stubFor(put(urlPathMatching(USERS + "/[^/]+")).willReturn(aResponse().withStatus(409)
@@ -78,19 +104,34 @@ public final class KeycloakStubs {
         server.stubFor(post(urlEqualTo(USERS)).willReturn(aResponse().withStatus(500)));
     }
 
-    public static void setupEmailFails(WireMockServer server) {
-        server.stubFor(put(urlPathMatching(USERS + "/[^/]+/execute-actions-email"))
-                .willReturn(aResponse().withStatus(500)));
-    }
-
     public static RequestPatternBuilder userCreated() {
         return postRequestedFor(urlEqualTo(USERS));
     }
 
-    public static RequestPatternBuilder setupEmailSent(String subject) {
-        return putRequestedFor(urlPathEqualTo(USERS + "/" + subject + "/execute-actions-email"))
-                .withRequestBody(matching(".*UPDATE_PASSWORD.*"))
-                .withRequestBody(matching(".*VERIFY_EMAIL.*"));
+    /** A temporary password credential ({@code type=password, temporary=true}) set for {@code subject}. */
+    public static RequestPatternBuilder temporaryPasswordSet(String subject) {
+        return putRequestedFor(urlPathEqualTo(USERS + "/" + subject + "/reset-password"))
+                .withRequestBody(matchingJsonPath("$.type", equalTo("password")))
+                .withRequestBody(matchingJsonPath("$.temporary", equalTo("true")))
+                .withRequestBody(matchingJsonPath("$.value", matching("[A-Za-z2-9]{16}")));
+    }
+
+    public static RequestPatternBuilder anyPasswordReset() {
+        return putRequestedFor(urlPathMatching(USERS + "/[^/]+/reset-password"));
+    }
+
+    /** The value of the last temporary password sent to Keycloak for {@code subject} (read from the request journal). */
+    public static String temporaryPasswordSentFor(WireMockServer server, String subject) {
+        var requests = server.findAll(putRequestedFor(urlPathEqualTo(USERS + "/" + subject + "/reset-password")));
+        if (requests.isEmpty()) {
+            throw new AssertionError("no reset-password request for " + subject);
+        }
+        String body = requests.get(requests.size() - 1).getBodyAsString();
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().readTree(body).path("value").asText();
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** The login update of {@code subject} moving it to {@code email} (username = e-mail, unverified). */
@@ -101,23 +142,11 @@ public final class KeycloakStubs {
                 .withRequestBody(matchingJsonPath("$.emailVerified", equalTo("false")));
     }
 
-    /** A login update that puts {@code subject} back to {@code email} (compensation of a failed mail). */
-    public static RequestPatternBuilder loginRestored(String subject, String email) {
-        return putRequestedFor(urlPathEqualTo(USERS + "/" + subject))
-                .withRequestBody(matchingJsonPath("$.username", equalTo(email)))
-                .withRequestBody(matchingJsonPath("$.emailVerified", equalTo("true")));
-    }
-
     public static RequestPatternBuilder anyLoginUpdate() {
         return putRequestedFor(urlPathMatching(USERS + "/[^/]+"));
     }
 
-    /** The VERIFY_EMAIL-only actions e-mail (an e-mail change of a login whose setup is done). */
-    public static RequestPatternBuilder verifyEmailSent(String subject) {
-        return putRequestedFor(urlPathEqualTo(USERS + "/" + subject + "/execute-actions-email"))
-                .withRequestBody(equalToJson("[\"VERIFY_EMAIL\"]"));
-    }
-
+    /** Any execute-actions e-mail: must never happen any more (ADR-0024). */
     public static RequestPatternBuilder anySetupEmail() {
         return putRequestedFor(urlPathMatching(USERS + "/[^/]+/execute-actions-email"));
     }

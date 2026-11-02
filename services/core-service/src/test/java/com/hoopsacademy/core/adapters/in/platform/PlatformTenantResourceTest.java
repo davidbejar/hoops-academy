@@ -1,8 +1,10 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
+import static com.hoopsacademy.core.testsupport.KeycloakStubs.anyPasswordReset;
 import static com.hoopsacademy.core.testsupport.KeycloakStubs.anySetupEmail;
 import static com.hoopsacademy.core.testsupport.KeycloakStubs.anyUserDeleted;
-import static com.hoopsacademy.core.testsupport.KeycloakStubs.setupEmailSent;
+import static com.hoopsacademy.core.testsupport.KeycloakStubs.temporaryPasswordSentFor;
+import static com.hoopsacademy.core.testsupport.KeycloakStubs.temporaryPasswordSet;
 import static com.hoopsacademy.core.testsupport.KeycloakStubs.userCreated;
 import static com.hoopsacademy.core.testsupport.KeycloakStubs.userDeleted;
 import static io.restassured.RestAssured.given;
@@ -13,6 +15,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -23,6 +27,8 @@ import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.FailingProvisioningHook;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
+import com.hoopsacademy.core.testsupport.LogCapture;
+import com.hoopsacademy.core.testsupport.PasswordLeaks;
 import com.hoopsacademy.core.testsupport.Slugs;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
@@ -53,7 +59,7 @@ class PlatformTenantResourceTest {
     // ------------------------------------------------------------------ create
 
     @Test
-    void createTenantProvisionsTheFirstAdminAndSendsTheSetupEmail() {
+    void createTenantProvisionsTheFirstAdminWithATemporaryPasswordShownOnce() {
         String slug = Slugs.unique("acme");
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
@@ -62,17 +68,21 @@ class PlatformTenantResourceTest {
                 .body(createBody(slug, slug + ".ana@example.com"))
                 .when().post(TENANTS)
                 .then().statusCode(201)
+                .header("Cache-Control", "no-store")
                 .body("slug", equalTo(slug))
                 .body("status", equalTo("ACTIVE"))
                 .body("timezone", equalTo("Europe/Madrid"))
                 .body("defaultLocale", equalTo("es"))
                 .body("suspendedAt", nullValue())
+                .body("temporaryPassword", notNullValue())
                 .extract();
         String id = response.path("id");
         assertThat(response.header("Location")).endsWith(TENANTS + "/" + id);
 
         keycloak.verify(1, userCreated());
-        keycloak.verify(1, setupEmailSent(sub));
+        keycloak.verify(1, temporaryPasswordSet(sub));
+        assertThat(temporaryPasswordSentFor(keycloak, sub)).isEqualTo(response.path("temporaryPassword"));
+        keycloak.verify(0, anySetupEmail());
         assertThat(CoreDb.count(id, "select count(*) from core.tenant_settings")).isEqualTo(1);
         assertThat(CoreDb.count(id, """
                 select count(*) from core.age_category
@@ -91,22 +101,34 @@ class PlatformTenantResourceTest {
                 .isEqualTo(2);
         assertThat(CoreDb.countAsPlatform("select count(*) from billing.tenant_subscription where tenant_id = ?::uuid "
                 + "and plan_code = 'FREE'", id)).isEqualTo(1);
-        assertThat(CoreDb.auditActions(id)).containsExactly("tenant.created", "member.invited");
+        assertThat(CoreDb.auditActions(id)).containsExactly("tenant.created", "member.invited",
+                "member.temporary_password_issued");
         assertThat(CoreDb.auditRow(id, "tenant.created")).containsEntry("targetId", id)
                 .containsEntry("actorSub", "platform-admin");
     }
 
     @Test
-    void createTenantReusesAnExistingKeycloakUserWithoutEmail() {
+    void theTemporaryPasswordIsNeverStoredOrLogged() {
+        String slug = Slugs.unique("secret");
+        try (LogCapture logs = LogCapture.start()) {
+            var response = given().filter(Contract.CORE).contentType(ContentType.JSON)
+                    .body(createBody(slug, slug + ".s@example.com")).post(TENANTS).then().statusCode(201).extract();
+            PasswordLeaks.assertNeverStoredOrLogged(response.path("id"), response.path("temporaryPassword"), logs);
+        }
+    }
+
+    @Test
+    void createTenantReusesAnExistingKeycloakUserWithoutAnyPassword() {
         String slug = Slugs.unique("reuse");
         String email = slug + ".coach@example.com";
         String existingSub = UUID.randomUUID().toString();
         KeycloakStubs.existingUser(keycloak, email, existingSub);
 
         String id = given().filter(Contract.CORE).contentType(ContentType.JSON).body(createBody(slug, email))
-                .post(TENANTS).then().statusCode(201).extract().path("id");
+                .post(TENANTS).then().statusCode(201).body("$", not(hasKey("temporaryPassword"))).extract().path("id");
 
         keycloak.verify(0, userCreated());
+        keycloak.verify(0, anyPasswordReset());
         keycloak.verify(0, anySetupEmail());
         assertThat(CoreDb.count(id, """
                 select count(*) from core.person p join core.app_user u on u.id = p.user_id
@@ -139,15 +161,22 @@ class PlatformTenantResourceTest {
     }
 
     @Test
-    void setupEmailFailureRollsBackTheTenantAndDeletesTheNewKeycloakUser() {
-        String slug = Slugs.unique("mailfail");
+    void temporaryPasswordFailureRollsBackTheTenantAndDeletesTheNewKeycloakUser() {
+        String slug = Slugs.unique("pwfail");
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
-        KeycloakStubs.setupEmailFails(keycloak);
+        KeycloakStubs.temporaryPasswordFails(keycloak);
 
-        given().filter(Contract.FAILURES).contentType(ContentType.JSON).body(createBody(slug, slug + ".a@example.com"))
-                .post(TENANTS).then().statusCode(502);
+        try (LogCapture logs = LogCapture.start()) {
+            String problem = given().filter(Contract.FAILURES).contentType(ContentType.JSON)
+                    .body(createBody(slug, slug + ".a@example.com")).post(TENANTS).then().statusCode(502)
+                    .extract().asString();
 
+            String password = temporaryPasswordSentFor(keycloak, sub);
+            assertThat(problem).doesNotContain(password);
+            assertThat(logs.containing("Identity provider failure")).as("the capture sees the failure").isNotEmpty();
+            assertThat(logs.containing(password)).isEmpty();
+        }
         assertThat(CoreDb.countAsPlatform("select count(*) from core.tenant where slug = ?", slug)).isZero();
         assertThat(CoreDb.count(null, "select count(*) from core.app_user where keycloak_sub = ?", sub)).isZero();
         keycloak.verify(1, userDeleted(sub));
@@ -164,7 +193,7 @@ class PlatformTenantResourceTest {
 
         assertThat(CoreDb.countAsPlatform("select count(*) from core.tenant where slug = ?", slug)).isZero();
         keycloak.verify(1, userDeleted(sub));
-        keycloak.verify(0, anySetupEmail());
+        keycloak.verify(0, anyPasswordReset());
     }
 
     @Test

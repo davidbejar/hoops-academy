@@ -111,15 +111,20 @@ class PlayerResourceTest {
     }
 
     @Test
-    void aPlayerWithAnEmailGetsALoginAndTheSetupEmail() {
+    void aPlayerWithAnEmailGetsALoginWithATemporaryPasswordShownOnce() {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
 
-        UUID player = createdPlayer(api.create(Approvals.playerJson("Lia", "FEMALE", 11,
-                ",\"email\":\"lia@example.org\"")).statusCode(201));
+        var response = api.create(Approvals.playerJson("Lia", "FEMALE", 11, ",\"email\":\"lia@example.org\""))
+                .statusCode(201).header("Cache-Control", "no-store");
+        UUID player = createdPlayer(response);
+        String password = response.extract().path("temporaryPassword");
 
         keycloak.verify(1, KeycloakStubs.userCreated());
-        keycloak.verify(1, KeycloakStubs.setupEmailSent(sub));
+        keycloak.verify(1, KeycloakStubs.temporaryPasswordSet(sub));
+        assertThat(KeycloakStubs.temporaryPasswordSentFor(keycloak, sub)).isEqualTo(password);
+        assertThat(CoreDb.tablesContaining(tenant, password)).isEmpty();
+        keycloak.verify(0, KeycloakStubs.anySetupEmail());
         assertThat(CoreDb.count(tenant, "select count(*) from core.player p join core.person s on s.id = p.person_id "
                 + "join core.app_user u on u.id = s.user_id where p.id = ? and u.keycloak_sub = ? "
                 + "and s.invitation_status = 'PENDING'", player, sub)).isEqualTo(1);
@@ -132,19 +137,20 @@ class PlayerResourceTest {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.existingUser(keycloak, "known@example.org", sub);
 
-        api.create(Approvals.playerJson("Kim", "FEMALE", 11, ",\"email\":\"known@example.org\"")).statusCode(201);
+        api.create(Approvals.playerJson("Kim", "FEMALE", 11, ",\"email\":\"known@example.org\"")).statusCode(201)
+                .body("$", not(org.hamcrest.Matchers.hasKey("temporaryPassword")));
 
         keycloak.verify(0, KeycloakStubs.userCreated());
-        keycloak.verify(0, KeycloakStubs.anySetupEmail());
+        keycloak.verify(0, KeycloakStubs.anyPasswordReset());
         assertThat(CoreDb.count(tenant, "select count(*) from core.person s join core.app_user u on u.id = s.user_id "
                 + "where u.keycloak_sub = ? and s.invitation_status = 'ACCEPTED'", sub)).isEqualTo(1);
     }
 
     @Test
-    void aFailingSetupEmailLeavesNoPlayerAndDeletesTheNewLogin() {
+    void aFailingTemporaryPasswordLeavesNoPlayerAndDeletesTheNewLogin() {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
-        KeycloakStubs.setupEmailFails(keycloak);
+        KeycloakStubs.temporaryPasswordFails(keycloak);
         long persons = CoreDb.count(tenant, "select count(*) from core.person");
 
         api.create(Approvals.playerJson("Lia", "FEMALE", 11, ",\"email\":\"lia2@example.org\"")).statusCode(502)

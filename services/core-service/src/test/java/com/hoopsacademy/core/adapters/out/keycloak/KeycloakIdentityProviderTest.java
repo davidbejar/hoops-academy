@@ -2,9 +2,11 @@ package com.hoopsacademy.core.adapters.out.keycloak;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,6 +21,7 @@ import com.hoopsacademy.core.application.port.IdentityProviderException;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.LoginUpdate;
 import com.hoopsacademy.core.application.port.NewIdentity;
+import com.hoopsacademy.core.domain.identity.TemporaryPassword;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
@@ -35,6 +38,8 @@ import org.junit.jupiter.api.Test;
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
 @WithTestResource(WireMockResource.class)
 class KeycloakIdentityProviderTest {
+
+    private static final String FAKE_PASSWORD = "Fake-Temp-Value-7";
 
     @InjectWireMock
     WireMockServer keycloak;
@@ -72,29 +77,22 @@ class KeycloakIdentityProviderTest {
     }
 
     @Test
-    void updateLoginMovesUsernameAndEmailThenSendsVerifyEmail() {
+    void updateLoginMovesUsernameAndEmailAndSendsNoMail() {
         KeycloakStubs.login(keycloak, "moving", "old@example.com");
-        identityProvider.updateLogin(new LoginUpdate("moving", "new@example.com", "New", "Name", false));
+        identityProvider.updateLogin(new LoginUpdate("moving", "new@example.com", "New", "Name"));
         keycloak.verify(KeycloakStubs.loginMoved("moving", "new@example.com").withRequestBody(equalToJson("""
                 {"firstName":"New","lastName":"Name","enabled":true}""", true, true)));
-        keycloak.verify(KeycloakStubs.verifyEmailSent("moving"));
+        keycloak.verify(0, KeycloakStubs.anySetupEmail());
+        keycloak.verify(0, KeycloakStubs.anyPasswordReset());
     }
 
     @Test
-    void aPendingLoginGetsTheSetupActionsAtItsNewAddress() {
-        KeycloakStubs.login(keycloak, "pending", "typo@example.com");
-        identityProvider.updateLogin(new LoginUpdate("pending", "fixed@example.com", "P", "N", true));
-        keycloak.verify(KeycloakStubs.setupEmailSent("pending"));
-    }
-
-    @Test
-    void anEmailOwnedByAnotherLoginIsAConflictAndSendsNoMail() {
+    void anEmailOwnedByAnotherLoginIsAConflict() {
         KeycloakStubs.login(keycloak, "clash", "mine@example.com");
         KeycloakStubs.loginUpdateConflicts(keycloak);
         assertThatThrownBy(() -> identityProvider.updateLogin(
-                new LoginUpdate("clash", "taken@example.com", "C", "L", false)))
+                new LoginUpdate("clash", "taken@example.com", "C", "L")))
                 .isInstanceOf(ConflictException.class).extracting("code").isEqualTo("EMAIL_TAKEN");
-        keycloak.verify(0, KeycloakStubs.anySetupEmail());
     }
 
     @Test
@@ -102,19 +100,48 @@ class KeycloakIdentityProviderTest {
         KeycloakStubs.login(keycloak, "broken", "b@example.com");
         KeycloakStubs.loginUpdateFails(keycloak);
         assertThatThrownBy(() -> identityProvider.updateLogin(
-                new LoginUpdate("broken", "n@example.com", "B", "R", false)))
+                new LoginUpdate("broken", "n@example.com", "B", "R")))
                 .isInstanceOf(IdentityProviderException.class);
     }
 
     @Test
-    void aFailedMailRestoresThePreviousLogin() {
-        KeycloakStubs.login(keycloak, "nomail", "kept@example.com");
-        KeycloakStubs.setupEmailFails(keycloak);
-        assertThatThrownBy(() -> identityProvider.updateLogin(
-                new LoginUpdate("nomail", "lost@example.com", "N", "M", false)))
+    void setsATemporaryPasswordCredential() {
+        identityProvider.setTemporaryPassword("fresh", TemporaryPassword.of(FAKE_PASSWORD));
+        keycloak.verify(putRequestedFor(urlEqualTo(KeycloakStubs.USERS + "/fresh/reset-password"))
+                .withRequestBody(equalToJson("""
+                        {"type":"password","temporary":true,"value":"%s"}""".formatted(FAKE_PASSWORD), true, true)));
+        keycloak.verify(0, KeycloakStubs.anySetupEmail());
+    }
+
+    @Test
+    void aRefusedTemporaryPasswordIsAnIdentityProviderErrorWithoutTheValue() {
+        KeycloakStubs.temporaryPasswordFails(keycloak);
+        assertThatThrownBy(() -> identityProvider.setTemporaryPassword("refused", TemporaryPassword.of(FAKE_PASSWORD)))
+                .isInstanceOf(IdentityProviderException.class)
+                .satisfies(e -> assertThat(stackTraceOf(e)).doesNotContain(FAKE_PASSWORD));
+    }
+
+    @Test
+    void ownPasswordMeansAPasswordCredentialWithoutPendingUpdate() {
+        assertThat(identityProvider.hasOwnPassword("no-credential")).as("no credential at all").isFalse();
+        KeycloakStubs.temporaryPassword(keycloak, "temporary");
+        assertThat(identityProvider.hasOwnPassword("temporary")).as("temporary password pending").isFalse();
+        KeycloakStubs.ownPassword(keycloak, "chosen");
+        assertThat(identityProvider.hasOwnPassword("chosen")).as("password chosen").isTrue();
+    }
+
+    @Test
+    void anUnreadableLoginIsAnIdentityProviderError() {
+        keycloak.stubFor(get(urlPathMatching(KeycloakStubs.USERS + "/broken/credentials"))
+                .willReturn(aResponse().withStatus(500)));
+        assertThatThrownBy(() -> identityProvider.hasOwnPassword("broken"))
                 .isInstanceOf(IdentityProviderException.class);
-        keycloak.verify(KeycloakStubs.loginMoved("nomail", "lost@example.com"));
-        keycloak.verify(KeycloakStubs.loginRestored("nomail", "kept@example.com"));
+    }
+
+    private static String stackTraceOf(Throwable e) {
+        java.io.StringWriter trace = new java.io.StringWriter();
+        e.printStackTrace(new java.io.PrintWriter(trace));
+        return trace.toString();
     }
 
     @Test

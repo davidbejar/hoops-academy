@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.core.application.port.IdentityProviderException;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.LoginUpdate;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
+import com.hoopsacademy.core.domain.identity.TemporaryPassword;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.testsupport.KeycloakContainerResource;
 import io.quarkus.test.common.ResourceArg;
@@ -17,9 +17,11 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -31,7 +33,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 
 /**
  * {@code updateLogin} against a real Keycloak 26 with the academy realm (username = e-mail) and a MailHog SMTP
- * server. Run with {@code ./mvnw -pl services/core-service verify -Pkeycloak-it}.
+ * server, which must stay empty: moving a login sends no mail (ADR-0024). Run with {@code ./mvnw -pl services/core-service verify -Pkeycloak-it}.
  */
 @Tag("keycloak")
 @QuarkusTest
@@ -46,23 +48,28 @@ class KeycloakLoginUpdateKeycloakTest {
     Keycloak serviceAccount;
 
     @Test
-    void updateLoginMovesUsernameAndEmailAndMailsTheNewAddress() throws Exception {
+    void updateLoginMovesUsernameAndEmailWithoutAnyMailAndKeepsThePassword() throws Exception {
         String old = unique("old");
         ProvisionedIdentity login = identityProvider.provision(new NewIdentity(old, "Old", "Name", AppLocale.EN));
+        TemporaryPassword temporary = TemporaryPassword.of("Move-" + UUID.randomUUID().toString().substring(0, 12));
+        identityProvider.setTemporaryPassword(login.subject(), temporary);
         String moved = unique("moved");
 
-        identityProvider.updateLogin(new LoginUpdate(login.subject(), moved, "New", "Person", false));
+        identityProvider.updateLogin(new LoginUpdate(login.subject(), moved, "New", "Person"));
 
         UserRepresentation stored = users().get(login.subject()).toRepresentation();
         assertThat(stored.getUsername()).isEqualTo(moved);
         assertThat(stored.getEmail()).isEqualTo(moved);
         assertThat(stored.getFirstName()).isEqualTo("New");
         assertThat(stored.getLastName()).isEqualTo("Person");
-        assertThat(stored.isEmailVerified()).isFalse();
+        assertThat(stored.getRequiredActions()).containsExactly("UPDATE_PASSWORD");
         assertThat(users().searchByEmail(old, true)).isEmpty();
         assertThat(users().searchByUsername(moved, true)).extracting(UserRepresentation::getId)
                 .containsExactly(login.subject());
-        assertThat(mailsTo(moved)).as("VERIFY_EMAIL mail to the new address").contains(moved);
+        assertThat(directGrant(moved, temporary.reveal())).as("same temporary password under the new username")
+                .contains("Account is not fully set up");
+        assertThat(mailsTo(moved)).as("no mail to the new address").contains("\"total\":0");
+        assertThat(mailsTo(old)).as("no mail to the old address").contains("\"total\":0");
         identityProvider.delete(login.subject());
     }
 
@@ -74,28 +81,10 @@ class KeycloakLoginUpdateKeycloakTest {
         ProvisionedIdentity login = identityProvider.provision(new NewIdentity(mine, "Me", "Too", AppLocale.EN));
 
         assertThatThrownBy(() -> identityProvider.updateLogin(
-                new LoginUpdate(login.subject(), taken, "Me", "Too", false)))
+                new LoginUpdate(login.subject(), taken, "Me", "Too")))
                 .isInstanceOf(ConflictException.class);
         assertThat(users().get(login.subject()).toRepresentation().getUsername()).isEqualTo(mine);
         identityProvider.delete(owner.subject());
-        identityProvider.delete(login.subject());
-    }
-
-    @Test
-    void aFailedMailRestoresThePreviousLogin() {
-        String old = unique("restore");
-        ProvisionedIdentity login = identityProvider.provision(new NewIdentity(old, "Re", "Store", AppLocale.EN));
-        UserRepresentation disabled = users().get(login.subject()).toRepresentation();
-        disabled.setEnabled(false); // Keycloak refuses execute-actions e-mails for disabled users
-        users().get(login.subject()).update(disabled);
-
-        assertThatThrownBy(() -> identityProvider.updateLogin(
-                new LoginUpdate(login.subject(), unique("lost"), "Lo", "St", false)))
-                .isInstanceOf(IdentityProviderException.class);
-        UserRepresentation stored = users().get(login.subject()).toRepresentation();
-        assertThat(stored.getUsername()).isEqualTo(old);
-        assertThat(stored.getEmail()).isEqualTo(old);
-        assertThat(stored.getFirstName()).isEqualTo("Re");
         identityProvider.delete(login.subject());
     }
 
@@ -107,20 +96,28 @@ class KeycloakLoginUpdateKeycloakTest {
         return prefix + "-" + UUID.randomUUID() + "@example.com";
     }
 
-    /** The raw MailHog search result for messages to {@code address} (waits up to 10 s for delivery). */
+    /**
+     * The raw MailHog search result for messages to {@code address}, after giving a mail that Keycloak might have
+     * sent 3 s to arrive (it is delivered synchronously by the Admin API call, so this is generous).
+     */
     private String mailsTo(String address) throws Exception {
         String mailhog = ConfigProvider.getConfig().getValue(KeycloakContainerResource.MAILHOG_URL, String.class);
         HttpClient http = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder(
-                URI.create(mailhog + "/api/v2/search?kind=to&query=" + address)).timeout(Duration.ofSeconds(5)).build();
-        String body = "";
-        for (int attempt = 0; attempt < 20; attempt++) {
-            body = http.send(request, HttpResponse.BodyHandlers.ofString()).body();
-            if (!body.contains("\"total\":0")) {
-                return body;
-            }
-            Thread.sleep(500);
-        }
-        return body;
+        HttpRequest request = HttpRequest.newBuilder(URI.create(mailhog + "/api/v2/search?kind=to&query="
+                + URLEncoder.encode(address, StandardCharsets.UTF_8))).timeout(Duration.ofSeconds(5)).build();
+        Thread.sleep(3_000);
+        return http.send(request, HttpResponse.BodyHandlers.ofString()).body();
+    }
+
+    /** The token endpoint's raw answer to a password grant of the test-only direct-grant client. */
+    private static String directGrant(String username, String password) throws Exception {
+        String url = ConfigProvider.getConfig().getValue(KeycloakContainerResource.TOKEN_URL, String.class);
+        String form = "grant_type=password&client_id=" + KeycloakContainerResource.DIRECT_GRANT_CLIENT
+                + "&username=" + URLEncoder.encode(username, StandardCharsets.UTF_8)
+                + "&password=" + URLEncoder.encode(password, StandardCharsets.UTF_8);
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(form)).build();
+        return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).body();
     }
 }

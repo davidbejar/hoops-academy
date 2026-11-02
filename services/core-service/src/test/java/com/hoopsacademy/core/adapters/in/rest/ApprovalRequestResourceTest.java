@@ -148,10 +148,17 @@ class ApprovalRequestResourceTest {
         keycloak.verify(0, KeycloakStubs.userCreated());
         signInAdmin();
 
-        api.decide(request, "approve", null).statusCode(200).body("status", equalTo("APPROVED"));
+        String password = api.decide(request, "approve", null).statusCode(200).body("status", equalTo("APPROVED"))
+                .header("Cache-Control", "no-store")
+                .extract().path("temporaryPassword");
 
         keycloak.verify(1, KeycloakStubs.userCreated());
-        keycloak.verify(1, KeycloakStubs.setupEmailSent(sub));
+        keycloak.verify(1, KeycloakStubs.temporaryPasswordSet(sub));
+        org.assertj.core.api.Assertions.assertThat(KeycloakStubs.temporaryPasswordSentFor(keycloak, sub))
+                .isEqualTo(password);
+        keycloak.verify(0, KeycloakStubs.anySetupEmail());
+        assertThat(CoreDb.tablesContaining(tenant, password)).isEmpty();
+        assertThat(CoreDb.auditActions(tenant)).endsWith("player.approved", "member.temporary_password_issued");
         assertThat(CoreDb.count(tenant, "select count(*) from core.player p join core.person s on s.id = p.person_id "
                 + "join core.app_user u on u.id = s.user_id where p.id = ? and u.keycloak_sub = ? "
                 + "and s.invitation_status = 'PENDING'", player, sub)).isEqualTo(1);
@@ -163,7 +170,7 @@ class ApprovalRequestResourceTest {
     void aFailingInvitationKeepsTheAddPendingAndRemovesTheNewLogin() {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
-        KeycloakStubs.setupEmailFails(keycloak);
+        KeycloakStubs.temporaryPasswordFails(keycloak);
         signInCoach();
         var response = api.create(Approvals.playerJson("Eva", "FEMALE", 11, ",\"email\":\"eva2@example.org\""))
                 .statusCode(202);
@@ -183,7 +190,8 @@ class ApprovalRequestResourceTest {
         UUID request = UUID.fromString(api.create(Approvals.playerJson("Eva", "FEMALE", 11,
                 ",\"email\":\"eva3@example.org\"")).statusCode(202).extract().path("approvalRequest.id"));
         signInAdmin();
-        api.decide(request, "reject", "no").statusCode(200);
+        api.decide(request, "reject", "no").statusCode(200).body("$", org.hamcrest.Matchers.not(
+                org.hamcrest.Matchers.hasKey("temporaryPassword")));
         keycloak.verify(0, KeycloakStubs.userCreated());
     }
 

@@ -1,10 +1,8 @@
 package com.hoopsacademy.core.adapters.out.keycloak;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.core.application.port.IdentityProviderException;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
@@ -54,15 +52,5 @@ class KeycloakIdentityProviderKeycloakTest {
         identityProvider.delete(created.subject());
         identityProvider.delete(created.subject());
         assertThat(serviceAccount.realm("academy").users().searchByEmail(email, true)).isEmpty();
-    }
-
-    @Test
-    void setupEmailWithoutReachableSmtpIsAnIdentityProviderError() {
-        ProvisionedIdentity created = identityProvider.provision(
-                new NewIdentity("kc-" + UUID.randomUUID() + "@example.com", "No", "Smtp", AppLocale.ES));
-        // the realm's SMTP host (mailhog) does not exist next to the test container
-        assertThatThrownBy(() -> identityProvider.sendAccountSetupEmail(created.subject()))
-                .isInstanceOf(IdentityProviderException.class);
-        identityProvider.delete(created.subject());
     }
 }

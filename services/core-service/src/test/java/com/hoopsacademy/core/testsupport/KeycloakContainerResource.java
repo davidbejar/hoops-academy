@@ -18,12 +18,17 @@ import java.util.Map;
  * Real Keycloak (same image as infra/compose) with {@code infra/keycloak/realm-academy.json} imported. The realm copy
  * gets a known client secret and grants the {@code core-service} service account realm-management
  * {@code manage-users}/{@code view-users}, which the Admin API needs (not yet in the realm export — WP3 handover).
+ * The copy also gets a test-only public client {@value #DIRECT_GRANT_CLIENT} with direct access grants, so tests can
+ * try a password without a browser (the realm's own clients have direct grants disabled).
  * With the init arg {@code mail=true} a MailHog container joins Keycloak's network under the realm's SMTP host name
  * ({@code mailhog}) and its HTTP API is exposed as {@value #MAILHOG_URL}; without it, Keycloak cannot send e-mail.
  */
 public class KeycloakContainerResource implements QuarkusTestResourceLifecycleManager {
 
     public static final String SECRET = "kc-it-secret";
+    public static final String DIRECT_GRANT_CLIENT = "kc-it-direct-grant";
+    /** Config key of the realm's token endpoint (direct grants with {@value #DIRECT_GRANT_CLIENT}). */
+    public static final String TOKEN_URL = "test.keycloak.token-url";
     private static final String IMAGE = "quay.io/keycloak/keycloak:26.8.1";
     public static final String MAILHOG_URL = "test.mailhog.url";
     private static final String IMPORT = "keycloak-it/realm-academy.json";
@@ -59,7 +64,8 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
                 "quarkus.keycloak.admin-client.server-url", server,
                 "quarkus.keycloak.admin-client.client-secret", SECRET,
                 "quarkus.oidc-client.auth-server-url", server + "/realms/academy",
-                "quarkus.oidc-client.credentials.secret", SECRET));
+                "quarkus.oidc-client.credentials.secret", SECRET,
+                TOKEN_URL, server + "/realms/academy/protocol/openid-connect/token"));
         return config;
     }
 
@@ -83,6 +89,9 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
                     .replace("${CORE_SERVICE_CLIENT_SECRET}", SECRET)
                     .replaceAll("\\$\\{[A-Z_]+}", "unused-in-test");
             ObjectNode realm = (ObjectNode) json.readTree(raw);
+            realm.withArray("clients").add(json.valueToTree(Map.of("clientId", DIRECT_GRANT_CLIENT,
+                    "enabled", true, "publicClient", true, "standardFlowEnabled", false,
+                    "directAccessGrantsEnabled", true)));
             realm.withArray("users").forEach(user -> {
                 if ("service-account-core-service".equals(user.path("username").asText())) {
                     ((ObjectNode) user).set("clientRoles", json.valueToTree(

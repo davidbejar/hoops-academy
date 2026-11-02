@@ -1,8 +1,10 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
 import static com.hoopsacademy.core.testsupport.KeycloakStubs.anyLoginUpdate;
+import static com.hoopsacademy.core.testsupport.KeycloakStubs.anyPasswordReset;
 import static com.hoopsacademy.core.testsupport.KeycloakStubs.anySetupEmail;
-import static com.hoopsacademy.core.testsupport.KeycloakStubs.setupEmailSent;
+import static com.hoopsacademy.core.testsupport.KeycloakStubs.temporaryPasswordSentFor;
+import static com.hoopsacademy.core.testsupport.KeycloakStubs.temporaryPasswordSet;
 import static com.hoopsacademy.core.testsupport.KeycloakStubs.userCreated;
 import static com.hoopsacademy.core.testsupport.KeycloakStubs.userDeleted;
 import static io.restassured.RestAssured.given;
@@ -11,6 +13,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -19,7 +24,9 @@ import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
+import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
+import com.hoopsacademy.core.testsupport.PasswordLeaks;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -83,6 +90,8 @@ class PlatformAdminResourceTest {
         KeycloakStubs.createdUserGets(keycloak, sub);
 
         var response = add("new.admin@example.com", "Nia", "New").statusCode(201)
+                .header("Cache-Control", "no-store")
+                .body("temporaryPassword", notNullValue())
                 .body("givenName", equalTo("Nia"))
                 .body("email", equalTo("new.admin@example.com"))
                 .body("invitationStatus", equalTo("PENDING"))
@@ -92,13 +101,16 @@ class PlatformAdminResourceTest {
         assertThat(response.header("Location")).endsWith(admins() + "/" + personId);
 
         keycloak.verify(1, userCreated());
-        keycloak.verify(1, setupEmailSent(sub));
+        keycloak.verify(1, temporaryPasswordSet(sub));
+        assertThat(temporaryPasswordSentFor(keycloak, sub)).isEqualTo(response.path("temporaryPassword"));
+        keycloak.verify(0, anySetupEmail());
         assertThat(CoreDb.count(tenant, """
                 select count(*) from core.person p join core.membership_role r on r.person_id = p.id and r.role = 'ADMIN'
                  where p.id = ?::uuid and p.active""", personId)).isEqualTo(1);
         assertThat(CoreDb.count(tenant, "select count(*) from core.user_membership_index where keycloak_sub = ?", sub))
                 .isEqualTo(1);
-        assertThat(CoreDb.auditActions(tenant)).endsWith("member.invited", "admin.added");
+        assertThat(CoreDb.auditActions(tenant)).endsWith("member.invited", "member.temporary_password_issued",
+                "admin.added");
         var audit = CoreDb.auditRow(tenant, "admin.added");
         assertThat(audit).containsEntry("actorSub", "platform-admin").containsEntry("targetId", personId)
                 .containsEntry("actorPersonId", null);
@@ -111,13 +123,14 @@ class PlatformAdminResourceTest {
                 TenantRole.COACH);
 
         add("CORA@example.com", "Ignored", "Names").statusCode(200)
+                .body("$", not(hasKey("temporaryPassword")))
                 .body("personId", equalTo(coach.toString()))
                 .body("givenName", equalTo("Cora"))
                 .body("otherRoles", contains("COACH"))
                 .body("invitationStatus", equalTo("ACCEPTED"));
 
         keycloak.verify(0, userCreated());
-        keycloak.verify(0, anySetupEmail());
+        keycloak.verify(0, anyPasswordReset());
         assertThat(CoreDb.count(tenant, "select count(*) from core.membership_role where person_id = ? and role = 'ADMIN'",
                 coach)).isEqualTo(1);
         assertThat(CoreDb.auditRow(tenant, "admin.added")).containsEntry("targetId", coach.toString());
@@ -131,12 +144,15 @@ class PlatformAdminResourceTest {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
 
-        add("pam@example.com", "Pam", "Parent").statusCode(200)
+        String password = add("pam@example.com", "Pam", "Parent").statusCode(200)
+                .header("Cache-Control", "no-store")
                 .body("personId", equalTo(parent.toString()))
                 .body("invitationStatus", equalTo("PENDING"))
-                .body("otherRoles", contains("PARENT"));
+                .body("otherRoles", contains("PARENT"))
+                .extract().path("temporaryPassword");
 
-        keycloak.verify(1, setupEmailSent(sub));
+        keycloak.verify(1, temporaryPasswordSet(sub));
+        assertThat(temporaryPasswordSentFor(keycloak, sub)).isEqualTo(password);
         assertThat(CoreDb.count(tenant, "select count(*) from core.user_membership_index where person_id = ?", parent))
                 .isEqualTo(1);
     }
@@ -150,7 +166,7 @@ class PlatformAdminResourceTest {
 
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
-        KeycloakStubs.setupEmailFails(keycloak);
+        KeycloakStubs.temporaryPasswordFails(keycloak);
         given().filter(Contract.FAILURES).contentType(ContentType.JSON)
                 .body(addBody("mailfail@example.com", "Mai", "Lfail")).post(admins()).then()
                 .statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
@@ -184,7 +200,8 @@ class PlatformAdminResourceTest {
                 .body("email", equalTo("adah@example.com"));
 
         keycloak.verify(1, KeycloakStubs.loginMoved(adminSub, "adah@example.com"));
-        keycloak.verify(1, KeycloakStubs.verifyEmailSent(adminSub));
+        keycloak.verify(0, anySetupEmail());
+        keycloak.verify(0, anyPasswordReset());
         assertThat(CoreDb.count(null, "select count(*) from core.app_user where keycloak_sub = ? and email = ?",
                 adminSub, "adah@example.com")).isEqualTo(1);
         assertThat(CoreDb.auditActions(tenant)).endsWith("admin.updated", "member.updated",
@@ -202,11 +219,14 @@ class PlatformAdminResourceTest {
     }
 
     @Test
-    void aPendingAdminWithACorrectedEmailGetsTheSetupMailAgain() {
+    void aPendingAdminWithACorrectedEmailKeepsTheTemporaryPasswordAndGetsNoMail() {
         String sub = UUID.randomUUID().toString();
         UUID pending = withLogin(sub, "Typo", "Admin", "tpyo@example.com", "PENDING", TenantRole.ADMIN);
-        patch(pending, "{\"email\":\"typo@example.com\"}").statusCode(200).body("invitationStatus", equalTo("PENDING"));
-        keycloak.verify(1, setupEmailSent(sub));
+        patch(pending, "{\"email\":\"typo@example.com\"}").statusCode(200).body("invitationStatus", equalTo("PENDING"))
+                .body("$", not(hasKey("temporaryPassword")));
+        keycloak.verify(1, KeycloakStubs.loginMoved(sub, "typo@example.com"));
+        keycloak.verify(0, anyPasswordReset());
+        keycloak.verify(0, anySetupEmail());
     }
 
     @Test
@@ -265,21 +285,101 @@ class PlatformAdminResourceTest {
         assertThat(CoreDb.auditRow(tenant, "admin.removed").get("metadata")).contains("membershipDeactivated");
     }
 
-    // ------------------------------------------------------------------ resend
+    // ------------------------------------------------------------------ temporary password (ADR-0024)
 
     @Test
-    void resendOnlyWhileTheInvitationIsPending() {
+    void aPendingAdminWithoutAnyPasswordGetsATemporaryOneShownOnce() {
         String sub = UUID.randomUUID().toString();
         UUID pending = withLogin(sub, "Pen", "Ding", "pen@example.com", "PENDING", TenantRole.ADMIN);
 
-        given().filter(Contract.CORE).post(admins() + "/" + pending + "/resend-invitation").then().statusCode(202)
-                .body("personId", equalTo(pending.toString())).body("invitationStatus", equalTo("PENDING"));
-        keycloak.verify(1, setupEmailSent(sub));
-        assertThat(CoreDb.auditRow(tenant, "admin.invitation_resent")).containsEntry("targetId", pending.toString());
+        try (LogCapture logs = LogCapture.start()) {
+            String password = issue(pending).statusCode(200).header("Cache-Control", "no-store")
+                    .body("personId", equalTo(pending.toString())).body("invitationStatus", equalTo("PENDING"))
+                    .extract().path("temporaryPassword");
 
+            keycloak.verify(1, temporaryPasswordSet(sub));
+            assertThat(temporaryPasswordSentFor(keycloak, sub)).isEqualTo(password);
+            PasswordLeaks.assertNeverStoredOrLogged(tenant, password, logs);
+        }
+        assertThat(CoreDb.auditActions(tenant)).endsWith("admin.temporary_password_issued",
+                "member.temporary_password_issued");
+        assertThat(CoreDb.auditRow(tenant, "admin.temporary_password_issued")).containsEntry("targetId",
+                pending.toString()).containsEntry("actorSub", "platform-admin");
+        keycloak.verify(0, anySetupEmail());
+    }
+
+    @Test
+    void aNewTemporaryPasswordReplacesAnUnusedOne() {
+        String sub = UUID.randomUUID().toString();
+        UUID pending = withLogin(sub, "Re", "Issue", "reissue@example.com", "PENDING", TenantRole.ADMIN);
+        KeycloakStubs.temporaryPassword(keycloak, sub);
+        String first = issue(pending).statusCode(200).extract().path("temporaryPassword");
+        String second = issue(pending).statusCode(200).extract().path("temporaryPassword");
+        assertThat(second).isNotEqualTo(first);
+        keycloak.verify(2, temporaryPasswordSet(sub));
+    }
+
+    @Test
+    void onlyAPendingInvitationWithoutAChosenPasswordGetsATemporaryPassword() {
+        issue(admin).statusCode(409).body("code", equalTo("INVITATION_NOT_PENDING"));
+
+        UUID noLogin = CoreDb.person(tenant, "No", "Login", "nologin@example.com", TenantRole.ADMIN);
+        issue(noLogin).statusCode(409).body("code", equalTo("INVITATION_NOT_PENDING"));
+
+        String sub = UUID.randomUUID().toString();
+        UUID signedInElsewhere = withLogin(sub, "Else", "Where", "elsewhere@example.com", "PENDING", TenantRole.ADMIN);
+        KeycloakStubs.ownPassword(keycloak, sub);
+        issue(signedInElsewhere).statusCode(409).body("code", equalTo("INVITATION_NOT_PENDING"));
+
+        keycloak.verify(0, anyPasswordReset());
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("admin.temporary_password_issued");
+    }
+
+    @Test
+    void onlyActiveAdminsOfAManagedTenantGetATemporaryPassword() {
+        UUID coach = withLogin(UUID.randomUUID().toString(), "Co", "Ach", "co@example.com", "PENDING",
+                TenantRole.COACH);
+        UUID foreign = CoreDb.person(Members.newTenant(), "Fo", "Reign", null, TenantRole.ADMIN);
+        issue(coach).statusCode(404);
+        issue(foreign).statusCode(404);
+        issue(UUID.randomUUID()).statusCode(404);
+
+        String withdrawn = UUID.randomUUID().toString();
+        CoreDb.tenant(withdrawn, "WITHDRAWN");
+        given().filter(Contract.CORE).post(admins(withdrawn) + "/" + UUID.randomUUID() + "/temporary-password").then()
+                .statusCode(409).body("code", equalTo("TENANT_WITHDRAWN"));
+        keycloak.verify(0, anyPasswordReset());
+    }
+
+    @Test
+    void theSuperAdminAlsoResetsALoginSharedWithAnotherTenant() {
+        String sub = UUID.randomUUID().toString();
+        UUID pending = withLogin(sub, "Sha", "Red", "shared.pending@example.com", "PENDING", TenantRole.ADMIN);
+        CoreDb.person(Members.newTenant(), CoreDb.login(sub), "Sha", "Red", null, null, null, TenantRole.PARENT);
+        issue(pending).statusCode(200).body("temporaryPassword", notNullValue());
+    }
+
+    @Test
+    void aKeycloakFailureChangesNothing() {
+        UUID pending = withLogin(UUID.randomUUID().toString(), "Kc", "Down", "kcdown@example.com", "PENDING",
+                TenantRole.ADMIN);
+        KeycloakStubs.temporaryPasswordFails(keycloak);
+        given().filter(Contract.FAILURES).post(admins() + "/" + pending + "/temporary-password").then()
+                .statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("admin.temporary_password_issued",
+                "member.temporary_password_issued");
+    }
+
+    @Test
+    void theDeprecatedResendInvitationIsAnAliasOfTheReissue() {
+        String sub = UUID.randomUUID().toString();
+        UUID pending = withLogin(sub, "Old", "Client", "old.client@example.com", "PENDING", TenantRole.ADMIN);
+        given().filter(Contract.CORE).post(admins() + "/" + pending + "/resend-invitation").then().statusCode(202)
+                .header("Cache-Control", "no-store")
+                .body("personId", equalTo(pending.toString())).body("temporaryPassword", notNullValue());
+        keycloak.verify(1, temporaryPasswordSet(sub));
         given().filter(Contract.CORE).post(admins() + "/" + admin + "/resend-invitation").then().statusCode(409)
                 .body("code", equalTo("INVITATION_NOT_PENDING"));
-        keycloak.verify(0, setupEmailSent(adminSub));
     }
 
     // ------------------------------------------------------------------ tenant state and authorization
@@ -316,6 +416,8 @@ class PlatformAdminResourceTest {
         given().filter(Contract.CORE).contentType(ContentType.JSON).body(addBody("x@example.com", "X", "Y"))
                 .post(admins()).then().statusCode(403);
         given().filter(Contract.CORE).delete(admins() + "/" + admin).then().statusCode(403);
+        issue(admin).statusCode(403);
+        keycloak.verify(0, anyPasswordReset());
     }
 
     @Test
@@ -352,6 +454,10 @@ class PlatformAdminResourceTest {
     private ValidatableResponse patch(UUID person, String body) {
         return given().filter(Contract.CORE).contentType(ContentType.JSON).body(body)
                 .patch(admins() + "/" + person).then();
+    }
+
+    private ValidatableResponse issue(UUID person) {
+        return given().filter(Contract.CORE).post(admins() + "/" + person + "/temporary-password").then();
     }
 
     private ValidatableResponse remove(UUID person) {

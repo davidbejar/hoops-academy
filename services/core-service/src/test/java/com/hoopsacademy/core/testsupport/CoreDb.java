@@ -185,6 +185,41 @@ public final class CoreDb {
         });
     }
 
+    /**
+     * The tables of schema {@code core} with a row (visible with {@code tenant} bound) whose text form contains
+     * {@code text} — used to prove that a secret is never written to the database (audit, outbox, persons, …).
+     */
+    public static java.util.List<String> tablesContaining(String tenant, String text) {
+        return inTenant(tenant, c -> {
+            java.util.List<String> tables = new java.util.ArrayList<>();
+            try (PreparedStatement list = c.prepareStatement(
+                    "select table_name from information_schema.tables where table_schema = 'core' "
+                            + "and table_type = 'BASE TABLE' order by table_name");
+                    ResultSet rs = list.executeQuery()) {
+                while (rs.next()) {
+                    tables.add(rs.getString(1));
+                }
+            }
+            java.util.List<String> hits = new java.util.ArrayList<>();
+            for (String table : tables) {
+                try (PreparedStatement scan = c.prepareStatement(
+                        "select count(*) from core.\"" + table + "\" t where t::text like ?")) {
+                    scan.setString(1, "%" + text + "%");
+                    try (ResultSet rs = scan.executeQuery()) {
+                        rs.next();
+                        if (rs.getLong(1) > 0) {
+                            hits.add(table);
+                        }
+                    }
+                }
+            }
+            if (tables.size() < 10) {
+                throw new AssertionError("expected the core tables to be visible, saw " + tables);
+            }
+            return hits;
+        });
+    }
+
     /** Count over the tenant registry / billing tables as {@code core_platform}. */
     public static long countAsPlatform(String sql, Object... params) {
         try (Connection c = TestDatabases.openAsPlatform();

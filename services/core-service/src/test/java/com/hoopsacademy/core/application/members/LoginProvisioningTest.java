@@ -7,6 +7,7 @@ import com.hoopsacademy.core.application.port.IdentityProviderException;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
+import com.hoopsacademy.core.domain.identity.TemporaryPassword;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -58,8 +59,15 @@ class LoginProvisioningTest {
             return new ProvisionedIdentity("sub-" + identity.email(), true);
         }
 
-        @Override
         public void sendAccountSetupEmail(String subject) {}
+
+        @Override
+        public void setTemporaryPassword(String subject, TemporaryPassword password) {}
+
+        @Override
+        public boolean hasOwnPassword(String subject) {
+            return false;
+        }
 
         @Override
         public void updateLogin(com.hoopsacademy.core.application.port.LoginUpdate update) {}
