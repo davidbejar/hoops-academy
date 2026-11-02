@@ -44,7 +44,10 @@ Locally: `scripts/build-images.sh [--from-host] [--kind-load] [--push] [core-ser
 Web: build with `apps/web/tool/build_web.sh` (stamps the service worker); a plain `flutter build web` leaves `sw.js`
 unstamped. In CI `images.yml` runs on pushes to `main` that touch services, libs, web, containers or the pom:
 build per service, assert non-root, Trivy gate (`HIGH,CRITICAL --ignore-unfixed`, fails the job), and push only when the
-repository variable `IMAGE_REGISTRY` and the secrets `REGISTRY_USERNAME`/`REGISTRY_PASSWORD` exist.
+repository variable `IMAGE_REGISTRY` is set (`gh variable set IMAGE_REGISTRY --body ghcr.io/<owner>`). For ghcr.io no
+credential is needed: the push jobs request `packages: write` and log in with the run's own `GITHUB_TOKEN`. For any other
+registry set the secrets `REGISTRY_USERNAME`/`REGISTRY_PASSWORD`; when both exist they take precedence. Images carry the
+`org.opencontainers.image.source` label so ghcr.io links each package to this repository (first push creates it private).
 Pin the `ubi9/openjdk-21-runtime` tag in `deploy/containers/service.Containerfile` before the first release (open item).
 
 ## 4. Deploy with Helm

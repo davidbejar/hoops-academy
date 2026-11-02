@@ -1,7 +1,9 @@
 name: images
 
-# Builds the container images (deploy/containers) and scans them with Trivy. Images are pushed only when a registry
-# is configured (repository variable IMAGE_REGISTRY + secrets REGISTRY_USERNAME / REGISTRY_PASSWORD).
+# Builds the container images (deploy/containers) and scans them with Trivy. Images are pushed only when the
+# repository variable IMAGE_REGISTRY is set (e.g. ghcr.io/<owner>). Login uses the secrets REGISTRY_USERNAME /
+# REGISTRY_PASSWORD when both exist (any registry); otherwise the job's own GITHUB_TOKEN, which can push to ghcr.io
+# because the push jobs request `packages: write`. No long-lived credential is needed for ghcr.io.
 on:
   push:
     branches: [main]
@@ -14,6 +16,9 @@ permissions:
 jobs:
   service:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -31,6 +36,7 @@ jobs:
           podman build -f deploy/containers/service.Containerfile \
             --ignorefile deploy/containers/service.containerignore \
             --build-arg SERVICE=${{ matrix.service }} --build-arg SERVICE_PORT=${{ matrix.port }} \
+            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
             -t "$IMAGE" .
       - name: Runs as non-root
         run: test "$(podman run --rm --entrypoint id "$IMAGE" -u)" != 0
@@ -42,15 +48,19 @@ jobs:
       - name: Push
         if: ${{ vars.IMAGE_REGISTRY != '' }}
         env:
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
         run: |
-          echo "$REGISTRY_PASSWORD" | podman login -u "$REGISTRY_USERNAME" --password-stdin "${{ vars.IMAGE_REGISTRY }}"
-          podman tag "$IMAGE" "${{ vars.IMAGE_REGISTRY }}/${{ matrix.service }}:${{ github.sha }}"
-          podman push "${{ vars.IMAGE_REGISTRY }}/${{ matrix.service }}:${{ github.sha }}"
+          echo "$REGISTRY_PASSWORD" | podman login -u "$REGISTRY_USERNAME" --password-stdin "${REGISTRY%%/*}"
+          podman tag "$IMAGE" "$REGISTRY/${{ matrix.service }}:${{ github.sha }}"
+          podman push "$REGISTRY/${{ matrix.service }}:${{ github.sha }}"
 
   web:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     env:
       IMAGE: localhost/hoops/web:${{ github.sha }}
     steps:
@@ -63,7 +73,9 @@ jobs:
       - name: Build image (host-built bundle)
         run: |
           podman build -f deploy/containers/web.Containerfile --ignorefile deploy/containers/web.containerignore \
-            --build-arg WEB_SOURCE=host -t "$IMAGE" .
+            --build-arg WEB_SOURCE=host \
+            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
+            -t "$IMAGE" .
       - name: Runs as non-root
         run: test "$(podman run --rm --entrypoint id "$IMAGE" -u)" != 0
       - name: Trivy scan (fail on fixable HIGH/CRITICAL)
@@ -74,12 +86,13 @@ jobs:
       - name: Push
         if: ${{ vars.IMAGE_REGISTRY != '' }}
         env:
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
         run: |
-          echo "$REGISTRY_PASSWORD" | podman login -u "$REGISTRY_USERNAME" --password-stdin "${{ vars.IMAGE_REGISTRY }}"
-          podman tag "$IMAGE" "${{ vars.IMAGE_REGISTRY }}/web:${{ github.sha }}"
-          podman push "${{ vars.IMAGE_REGISTRY }}/web:${{ github.sha }}"
+          echo "$REGISTRY_PASSWORD" | podman login -u "$REGISTRY_USERNAME" --password-stdin "${REGISTRY%%/*}"
+          podman tag "$IMAGE" "$REGISTRY/web:${{ github.sha }}"
+          podman push "$REGISTRY/web:${{ github.sha }}"
 
   charts:
     runs-on: ubuntu-latest
