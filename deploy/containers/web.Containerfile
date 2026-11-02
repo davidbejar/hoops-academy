@@ -28,6 +28,9 @@ ARG SOURCE_URL=""
 LABEL org.opencontainers.image.title="hoops-web" \
       org.opencontainers.image.source="${SOURCE_URL}" \
       org.opencontainers.image.description="Hoops Academy Flutter Web PWA on nginx-unprivileged"
+# Apply Alpine security updates on top of the pinned base (the Trivy gate fails on fixable HIGH/CRITICAL CVEs).
+USER root
+RUN apk upgrade --no-cache
 COPY --chown=101:0 deploy/containers/web-nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=web --chown=101:0 /out/web /usr/share/nginx/html
 USER 101

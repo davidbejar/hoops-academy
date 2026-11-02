@@ -21,6 +21,7 @@ COPY pom.xml ./
 COPY .mvn .mvn
 COPY libs libs
 COPY services services
+COPY e2e/pom.xml e2e/pom.xml
 RUN --mount=type=cache,target=/root/.m2,id=hoops-m2 \
     test -n "${SERVICE}" || { echo "build-arg SERVICE is required" >&2; exit 1; }; \
     mvn -B -ntp -q -pl "services/${SERVICE}" -am package -DskipTests \

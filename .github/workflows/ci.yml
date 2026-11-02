@@ -33,7 +33,6 @@ jobs:
 
   flutter:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('apps/web/pubspec.yaml') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -49,7 +48,6 @@ jobs:
 
   helm-chart-tests:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('deploy/helm/**/Chart.yaml') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v4
@@ -127,7 +125,7 @@ jobs:
           ./mvnw -B -ntp -pl services/core-service -am package -DskipTests -Djacoco.skip=true
           set -a; . ./.env; set +a
           nohup java -jar services/core-service/target/quarkus-app/quarkus-run.jar > core.log 2>&1 &
-          for i in $(seq 1 60); do curl -fs http://localhost:8081/q/health/ready && break; sleep 2; done
+          for _ in $(seq 1 60); do curl -fs http://localhost:8081/q/health/ready && break; sleep 2; done
           curl -fs http://localhost:8080/healthz
       - name: ZAP baseline
         run: |

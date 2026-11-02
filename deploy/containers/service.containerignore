@@ -9,6 +9,8 @@
 !libs/**
 !services
 !services/**
+!e2e
+!e2e/pom.xml
 **/target
 **/.idea
 **/*.iml

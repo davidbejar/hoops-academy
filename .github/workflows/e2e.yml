@@ -26,10 +26,16 @@ jobs:
           cache: maven
       - uses: extractions/setup-just@v2
       - name: Podman compose
+        # `podman compose` delegates to the runner's docker-compose plugin, which talks to $DOCKER_HOST: start the
+        # rootless Podman API socket and export it (the runner's Docker daemon is not used).
         run: |
           sudo apt-get update
-          sudo apt-get install -y podman podman-compose
-          podman --version
+          sudo apt-get install -y podman
+          systemctl --user enable --now podman.socket
+          sock="/run/user/$(id -u)/podman/podman.sock"
+          for _ in $(seq 1 20); do [ -S "$sock" ] && break; sleep 1; done
+          echo "DOCKER_HOST=unix://$sock" >> "$GITHUB_ENV"
+          podman --version; DOCKER_HOST="unix://$sock" podman compose version
       - name: Generate a throw-away .env (random secrets, never committed)
         run: |
           cp .env.example .env
