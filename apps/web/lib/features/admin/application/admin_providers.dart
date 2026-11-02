@@ -152,13 +152,15 @@ class MembersNotifier extends AsyncNotifier<List<api.Member>> {
     await future;
   }
 
-  Future<void> invite({
+  /// Returns the member with the temporary password of a login this call created. The caller shows it once and drops
+  /// it; the state only ever holds the password-free list.
+  Future<api.MemberWithPassword> invite({
     required String givenName,
     required String familyName,
     required String email,
     required Set<api.TenantRole> roles,
   }) async {
-    await _repo.invite(
+    final invited = await _repo.invite(
       api.InviteMemberRequest(
         (b) => b
           ..givenName = givenName
@@ -169,6 +171,14 @@ class MembersNotifier extends AsyncNotifier<List<api.Member>> {
       ),
     );
     await _reload();
+    return invited;
+  }
+
+  /// New temporary password for a pending member (returned once, see [invite]).
+  Future<api.MemberWithPassword> issueTemporaryPassword(String personId) async {
+    final member = await _repo.issueTemporaryPassword(personId);
+    await _reload();
+    return member;
   }
 
   Future<void> replaceRoles(String personId, Set<api.TenantRole> roles) async {

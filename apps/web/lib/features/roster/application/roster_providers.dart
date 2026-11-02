@@ -327,9 +327,15 @@ class ApprovalsNotifier extends AsyncNotifier<List<api.ApprovalRequest>> {
     ref.invalidate(playersProvider);
   }
 
-  Future<void> approve(String id, {String? note}) async {
-    await _repo.approve(id, note: note);
+  /// The result carries the temporary password of a login the approval created: the caller shows it once and drops
+  /// it; the state only ever holds the password-free list.
+  Future<api.ApprovalRequestWithPassword> approve(
+    String id, {
+    String? note,
+  }) async {
+    final approved = await _repo.approve(id, note: note);
     await _reload();
+    return approved;
   }
 
   Future<void> reject(String id, {required String note}) async {

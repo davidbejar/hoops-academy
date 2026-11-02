@@ -4,7 +4,8 @@ import '../../../core/api/api.dart' as api;
 abstract class PlatformRepository {
   Future<List<api.Tenant>> tenants({api.TenantStatus? status, String? query});
   Future<api.Tenant> tenant(String tenantId);
-  Future<api.Tenant> create(api.CreateTenantRequest request);
+  /// The temporary password of the first administrator's new login is in the result, returned once (ADR-0024).
+  Future<api.TenantWithPassword> create(api.CreateTenantRequest request);
   Future<api.Tenant> suspend(String tenantId, String reason);
   Future<api.Tenant> withdraw(String tenantId, String reason);
   Future<api.Tenant> reactivate(String tenantId);
@@ -12,10 +13,12 @@ abstract class PlatformRepository {
 
   /// Administrators of a tenant (identity only, ADR-0023). 409 `TENANT_WITHDRAWN` for withdrawn academies.
   Future<List<api.TenantAdmin>> admins(String tenantId);
-  Future<api.TenantAdmin> addAdmin(String tenantId, api.AddTenantAdminRequest request);
+  Future<api.TenantAdminWithPassword> addAdmin(String tenantId, api.AddTenantAdminRequest request);
   Future<api.TenantAdmin> updateAdmin(String tenantId, String personId, api.UpdateTenantAdminRequest request);
   Future<void> removeAdmin(String tenantId, String personId);
-  Future<api.TenantAdmin> resendAdminInvitation(String tenantId, String personId);
+
+  /// New temporary password for a pending administrator; 409 `INVITATION_NOT_PENDING` otherwise.
+  Future<api.TenantAdminWithPassword> issueAdminTemporaryPassword(String tenantId, String personId);
 }
 
 class ApiPlatformRepository implements PlatformRepository {
@@ -31,7 +34,7 @@ class ApiPlatformRepository implements PlatformRepository {
   Future<api.Tenant> tenant(String tenantId) async => (await _api.getTenant(tenantId: tenantId)).data!;
 
   @override
-  Future<api.Tenant> create(api.CreateTenantRequest request) async =>
+  Future<api.TenantWithPassword> create(api.CreateTenantRequest request) async =>
       (await _api.createTenant(createTenantRequest: request)).data!;
 
   @override
@@ -57,7 +60,7 @@ class ApiPlatformRepository implements PlatformRepository {
       (await _api.listTenantAdmins(tenantId: tenantId, size: 100)).data!.items.toList();
 
   @override
-  Future<api.TenantAdmin> addAdmin(String tenantId, api.AddTenantAdminRequest request) async =>
+  Future<api.TenantAdminWithPassword> addAdmin(String tenantId, api.AddTenantAdminRequest request) async =>
       (await _api.addTenantAdmin(tenantId: tenantId, addTenantAdminRequest: request)).data!;
 
   @override
@@ -69,6 +72,6 @@ class ApiPlatformRepository implements PlatformRepository {
       _api.removeTenantAdmin(tenantId: tenantId, personId: personId);
 
   @override
-  Future<api.TenantAdmin> resendAdminInvitation(String tenantId, String personId) async =>
-      (await _api.resendTenantAdminInvitation(tenantId: tenantId, personId: personId)).data!;
+  Future<api.TenantAdminWithPassword> issueAdminTemporaryPassword(String tenantId, String personId) async =>
+      (await _api.issueTenantAdminTemporaryPassword(tenantId: tenantId, personId: personId)).data!;
 }

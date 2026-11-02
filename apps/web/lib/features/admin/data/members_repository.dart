@@ -3,7 +3,12 @@ import '../../../core/api/api.dart' as api;
 /// Members and guardian links (`/api/core/members`, `/guardian-links`).
 abstract class MembersRepository {
   Future<List<api.Member>> list({String? query, api.TenantRole? role, bool? active});
-  Future<api.Member> invite(api.InviteMemberRequest request);
+  /// A login created by the call comes back with its temporary password, once (ADR-0024).
+  Future<api.MemberWithPassword> invite(api.InviteMemberRequest request);
+
+  /// New temporary password for a pending member. 409 `INVITATION_NOT_PENDING` / `LOGIN_SHARED`.
+  Future<api.MemberWithPassword> issueTemporaryPassword(String personId);
+
   Future<api.Member> replaceRoles(String personId, Set<api.TenantRole> roles);
   Future<api.Member> deactivate(String personId);
 
@@ -32,8 +37,12 @@ class ApiMembersRepository implements MembersRepository {
       )).data!.items.toList();
 
   @override
-  Future<api.Member> invite(api.InviteMemberRequest request) async =>
+  Future<api.MemberWithPassword> invite(api.InviteMemberRequest request) async =>
       (await _members.inviteMember(xTenantId: _t, inviteMemberRequest: request)).data!;
+
+  @override
+  Future<api.MemberWithPassword> issueTemporaryPassword(String personId) async =>
+      (await _members.issueMemberTemporaryPassword(xTenantId: _t, personId: personId)).data!;
 
   @override
   Future<api.Member> replaceRoles(String personId, Set<api.TenantRole> roles) async =>

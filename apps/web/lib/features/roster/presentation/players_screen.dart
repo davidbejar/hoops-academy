@@ -10,6 +10,7 @@ import '../../../core/ui/async_body.dart';
 import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/labels.dart';
 import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
 import '../application/roster_providers.dart';
@@ -612,17 +613,19 @@ class _PlayerFormScreenState extends ConsumerState<PlayerFormScreen> {
     final l = AppLocalizations.of(context);
     setState(() => _busy = true);
     var created = false;
+    final (given, family) = (_given.text.trim(), _family.text.trim());
+    final email = _email.text.trim().isEmpty ? null : _email.text.trim();
     await runAction(context, () async {
       final result = await ref
           .read(playersProvider.notifier)
           .create(
             api.CreatePlayerRequest(
               (b) => b
-                ..givenName = _given.text.trim()
-                ..familyName = _family.text.trim()
+                ..givenName = given
+                ..familyName = family
                 ..birthDate = _birth
                 ..gender = _gender
-                ..email = _email.text.trim().isEmpty ? null : _email.text.trim()
+                ..email = email
                 ..teamId = _teamId
                 ..note = _note.text.trim().isEmpty ? null : _note.text.trim(),
             ),
@@ -631,10 +634,22 @@ class _PlayerFormScreenState extends ConsumerState<PlayerFormScreen> {
       if (!mounted) return;
       final pending =
           result.approvalRequest.status == api.ApprovalStatus.PENDING;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(pending ? l.playerRequestSent : l.playerCreated),
-        ),
+      if (pending || email == null) {
+        // A request creates no login yet; without an e-mail there is none to create.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(pending ? l.playerRequestSent : l.playerCreated),
+          ),
+        );
+        return;
+      }
+      // Direct creation with an e-mail: the new login's temporary password is shown once, then dropped.
+      await announceLogin(
+        context,
+        person: '$given $family',
+        email: email,
+        temporaryPassword: result.temporaryPassword,
+        done: l.playerCreated,
       );
     });
     if (!mounted) return;
@@ -710,7 +725,11 @@ class _PlayerFormScreenState extends ConsumerState<PlayerFormScreen> {
                 key: const Key('player-email'),
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(labelText: l.playerEmail),
+                decoration: InputDecoration(
+                  labelText: l.playerEmail,
+                  helperText: l.playerEmailHint,
+                  helperMaxLines: 3,
+                ),
                 validator: (v) {
                   final t = (v ?? '').trim();
                   return t.isEmpty ||

@@ -8,6 +8,7 @@ import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/labels.dart';
 import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/roster_providers.dart';
 
@@ -153,14 +154,33 @@ class _ApprovalCard extends ConsumerWidget {
                           confirmLabel: l.approvalApprove,
                         );
                         if (note == null || !context.mounted) return;
-                        await runAction(
+                        // The card leaves the pending list once approved: keep a context that outlives it.
+                        final nav = Navigator.of(
                           context,
-                          () => notifier.approve(
+                          rootNavigator: true,
+                        ).context;
+                        api.ApprovalRequestWithPassword? approved;
+                        final ok = await runAction(
+                          context,
+                          () async => approved = await notifier.approve(
                             request.id,
                             note: note.isEmpty ? null : note,
                           ),
-                          success: l.approvalApproved,
                         );
+                        if (!ok || !nav.mounted) return;
+                        final password = approved?.temporaryPassword;
+                        if (password == null) {
+                          ScaffoldMessenger.maybeOf(nav)?.showSnackBar(
+                            SnackBar(content: Text(l.approvalApproved)),
+                          );
+                        } else {
+                          await announceLogin(
+                            nav,
+                            person: request.player.displayName,
+                            temporaryPassword: password,
+                            done: l.approvalApproved,
+                          );
+                        }
                       },
                       child: Text(l.approvalApprove),
                     ),

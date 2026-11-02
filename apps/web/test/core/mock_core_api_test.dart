@@ -77,6 +77,11 @@ void main() {
         ..roles.replace([api.TenantRole.COACH])),
     );
     expect(invited.invitationStatus, api.InvitationStatus.PENDING);
+    expect(invited.temporaryPassword, isNotEmpty); // like the server: returned once for a login the call created
+    expect((await members.list(query: 'nora')).single, isNot(isA<api.MemberWithPassword>()));
+    final reissued = await members.issueTemporaryPassword(invited.personId);
+    expect(reissued.temporaryPassword, isNotEmpty);
+    expect(reissued.temporaryPassword, isNot(invited.temporaryPassword));
     await members.deactivate(invited.personId);
     expect((await members.list(active: true)).any((m) => m.personId == invited.personId), isFalse);
 

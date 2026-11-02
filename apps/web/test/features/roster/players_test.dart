@@ -242,8 +242,9 @@ void main() {
       expect(core.players.lastCreate!.email, 'noa@example.org');
       expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
       expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, core.players.newLoginPassword);
-      expect(find.textContaining('Noa Prieto'), findsOneWidget);
-      expect(find.textContaining('noa@example.org'), findsOneWidget);
+      final dialog = find.byKey(const Key('temp-password-dialog'));
+      expect(find.descendant(of: dialog, matching: find.textContaining('Noa Prieto')), findsOneWidget);
+      expect(find.descendant(of: dialog, matching: find.textContaining('noa@example.org')), findsOneWidget);
       await tapKey(tester, 'temp-password-done');
       expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
       expect(find.text(core.players.newLoginPassword!), findsNothing);

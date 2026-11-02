@@ -9,12 +9,14 @@ import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/labels.dart';
 import '../../../core/ui/page_scaffold.dart' show InfoChip, ChipTone;
+import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
 import 'platform_labels.dart';
 import 'platform_validators.dart';
 
-/// Administrators of an academy on the tenant detail page (ADR-0023): list, add, edit, remove, resend invitation.
+/// Administrators of an academy on the tenant detail page (ADR-0023): list, add, edit, remove, and a new temporary
+/// password for a pending administrator (ADR-0024; no e-mail is ever sent).
 /// An academy always keeps one administrator, so the only one listed cannot be removed.
 class TenantAdminsSection extends ConsumerWidget {
   const TenantAdminsSection({super.key, required this.tenant});
@@ -98,11 +100,28 @@ class _AdminTile extends ConsumerWidget {
     final notifier = ref.read(tenantAdminsProvider(tenantId).notifier);
     final name = '${admin.givenName} ${admin.familyName}';
     final status = admin.invitationStatus.label(l);
+    final nav = Navigator.of(context, rootNavigator: true).context;
 
     Future<void> remove() async {
       if (!await confirmDialog(context, message: l.adminRemoveConfirm(name), confirmLabel: l.adminRemoveSubmit)) return;
       if (!context.mounted) return;
       await runAction(context, () => notifier.remove(id), success: l.adminRemoved, errorText: adminErrorText);
+    }
+
+    Future<void> issue() async {
+      api.TenantAdminWithPassword? issued;
+      final ok = await runAction(
+        context,
+        () async => issued = await notifier.issueTemporaryPassword(id),
+        errorText: adminErrorText,
+      );
+      if (!ok || !nav.mounted) return;
+      await announceLogin(
+        nav,
+        person: name,
+        email: admin.email,
+        temporaryPassword: issued?.temporaryPassword,
+      );
     }
 
     return Card(
@@ -148,15 +167,10 @@ class _AdminTile extends ConsumerWidget {
               children: [
                 if (admin.invitationStatus == api.InvitationStatus.PENDING)
                   IconButton(
-                    key: Key('admin-resend-$id'),
-                    tooltip: l.adminResend,
-                    icon: const Icon(Icons.forward_to_inbox_outlined),
-                    onPressed: () => runAction(
-                      context,
-                      () => notifier.resendInvitation(id),
-                      success: l.adminInvitationResent,
-                      errorText: adminErrorText,
-                    ),
+                    key: Key('admin-issue-$id'),
+                    tooltip: l.tempPasswordIssue,
+                    icon: const Icon(Icons.key_outlined),
+                    onPressed: () => issue(),
                   ),
                 IconButton(
                   key: Key('admin-edit-$id'),
@@ -233,7 +247,7 @@ class AdminFormDialog extends ConsumerStatefulWidget {
   final String tenantId;
   final api.TenantAdmin? admin;
 
-  /// Language of the invitation e-mail (the academy's default); add only.
+  /// Language of the person's profile (the academy's default); add only.
   final api.ApiLocale? locale;
 
   @override
@@ -257,6 +271,9 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
   /// An administrator without an address may stay that way (the field is only validated once filled).
   bool keepsMissingEmail(String? v) => widget.admin != null && (widget.admin!.email ?? '').isEmpty && (v ?? '').trim().isEmpty;
 
+  /// Shown once the form has closed (see [FormDialog.afterClose]); never kept past that.
+  Future<void> Function()? _announce;
+
   String? _changed(String now, String? before) => now == (before ?? '') ? null : now;
 
   Future<bool> _submit(AppLocalizations l) async {
@@ -264,17 +281,28 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
     final (email, given, family) = (_email.text.trim(), _given.text.trim(), _family.text.trim());
     final admin = widget.admin;
     if (admin == null) {
-      return runAction(
+      final nav = Navigator.of(context, rootNavigator: true).context;
+      api.TenantAdminWithPassword? added;
+      final ok = await runAction(
         context,
-        () async {
-          final added = await notifier.add(email: email, givenName: given, familyName: family, locale: widget.locale ?? api.ApiLocale.es);
-          if (!mounted) return;
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(content: Text(added.invitationStatus == api.InvitationStatus.PENDING ? l.adminInvited : l.adminAdded)),
-          );
-        },
+        () async => added = await notifier.add(
+          email: email,
+          givenName: given,
+          familyName: family,
+          locale: widget.locale ?? api.ApiLocale.es,
+        ),
         errorText: adminErrorText,
       );
+      if (ok) {
+        _announce = () => announceLogin(
+          nav,
+          person: '$given $family',
+          email: email,
+          temporaryPassword: added?.temporaryPassword,
+          done: l.adminAdded,
+        );
+      }
+      return ok;
     }
     final (newGiven, newFamily, newEmail) = (_changed(given, admin.givenName), _changed(family, admin.familyName), _changed(email, admin.email));
     if (newGiven == null && newFamily == null && newEmail == null) return true; // nothing to send
@@ -305,6 +333,7 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
       submitLabel: editing ? l.save : l.adminAddSubmit,
       formKey: _form,
       onSubmit: () => _submit(l),
+      afterClose: () async => _announce?.call(),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12),

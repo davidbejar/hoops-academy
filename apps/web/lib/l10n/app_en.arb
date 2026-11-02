@@ -104,7 +104,6 @@
   "memberEmail": "Email",
   "memberRoles": "Roles",
   "memberRolesRequired": "Pick at least one role",
-  "memberInvited": "Invitation sent",
   "memberEditRoles": "Edit roles",
   "memberDeactivate": "Deactivate",
   "memberDeactivateConfirm": "Deactivate {name}? They will lose access to the academy.",
@@ -930,10 +929,9 @@
   },
   "adminEdit": "Edit administrator",
   "adminRemove": "Remove administrator",
-  "adminResend": "Resend invitation",
-  "adminAddHint": "If an active member already has this email, they become an administrator and keep their name. Otherwise an invitation email is sent.",
+  "adminAddHint": "If an active member already has this email, they become an administrator and keep their name. Otherwise their login is created and you will see a temporary password to give them; no email is sent.",
   "adminAddSubmit": "Add",
-  "adminEditEmailNote": "The email is also the person's login: if you change it, they must verify the new address to sign in.",
+  "adminEditEmailNote": "The email is also the person's login: if you change it, they sign in with the new address and keep their password.",
   "adminRemoveConfirm": "Remove {name} as administrator? This removes the Administrator role; other roles stay.",
   "@adminRemoveConfirm": {
     "placeholders": {
@@ -945,13 +943,41 @@
   "adminRemoveSubmit": "Remove",
   "adminLastAdminNote": "An academy needs at least one administrator. Add another administrator first.",
   "adminAdded": "Administrator added",
-  "adminInvited": "Invitation sent",
   "adminUpdated": "Administrator updated",
   "adminRemoved": "Administrator removed",
-  "adminInvitationResent": "Invitation resent",
   "adminsWithdrawn": "This academy is withdrawn: its administrators can no longer be viewed or changed.",
   "adminErrorEmailTaken": "That email is already used by another person or account",
   "adminErrorLoginAlreadyMember": "That login already belongs to another member of this academy",
   "adminErrorIdentityProvider": "The sign-in service is unavailable. Try again in a few minutes.",
-  "adminErrorInvitationNotPending": "The invitation is no longer pending"
+  "adminErrorInvitationNotPending": "The invitation is no longer pending",
+  "tempPasswordTitle": "Temporary password",
+  "tempPasswordFor": "Account of {person}",
+  "@tempPasswordFor": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "tempPasswordLoginWith": "Sign-in email: {email}",
+  "@tempPasswordLoginWith": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "tempPasswordShareHint": "Give it to the person through a private channel. No email is sent.",
+  "tempPasswordShownOnce": "Shown only now: it is not stored and cannot be viewed again. If it is lost, generate a new one while the person has not signed in yet.",
+  "tempPasswordFirstSignIn": "At the first sign-in they use their email and this password, and must choose their own.",
+  "tempPasswordCopy": "Copy password",
+  "tempPasswordCopied": "Password copied",
+  "tempPasswordDone": "Done",
+  "tempPasswordExistingLogin": "They already had an account: they sign in with their current password.",
+  "tempPasswordIssue": "Generate a new temporary password",
+  "memberAdded": "Member added",
+  "memberInviteHint": "No email is sent: when the login is created you will see a temporary password to give to the person.",
+  "memberErrorNotPending": "This person has already signed in or the invitation is no longer pending",
+  "memberErrorLoginShared": "This login is also used in another academy: only the platform administration can generate its password",
+  "playerEmailHint": "With an email the player gets access: you will see a temporary password to give to them."
 }

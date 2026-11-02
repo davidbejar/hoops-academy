@@ -4,16 +4,30 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
+import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
+import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/labels.dart';
 import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/admin_providers.dart';
 
 final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+/// Localised text for a failed member action, chosen by the server's error code (never its English detail).
+String memberErrorText(Object error, AppLocalizations l) {
+  final e = AppError.of(error);
+  return switch (e.code) {
+    'INVITATION_NOT_PENDING' => l.memberErrorNotPending,
+    'LOGIN_SHARED' => l.memberErrorLoginShared,
+    'IDENTITY_PROVIDER_UNAVAILABLE' => l.adminErrorIdentityProvider,
+    _ => e.message(l),
+  };
+}
 
 class MembersScreen extends ConsumerWidget {
   const MembersScreen({super.key});
@@ -111,6 +125,43 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
     super.dispose();
   }
 
+  /// Invites the member; a login created by the call comes with a temporary password, shown once then dropped.
+  Future<bool> _submit() async {
+    final l = AppLocalizations.of(context);
+    final nav = Navigator.of(context, rootNavigator: true).context;
+    final (given, family, email) = (
+      _given.text.trim(),
+      _family.text.trim(),
+      _email.text.trim(),
+    );
+    api.MemberWithPassword? invited;
+    final ok = await runAction(
+      context,
+      () async => invited = await ref
+          .read(membersProvider.notifier)
+          .invite(
+            givenName: given,
+            familyName: family,
+            email: email,
+            roles: _roles,
+          ),
+      errorText: memberErrorText,
+    );
+    if (ok) {
+      _announce = () => announceLogin(
+        nav,
+        person: '$given $family',
+        email: email,
+        temporaryPassword: invited?.temporaryPassword,
+        done: l.memberAdded,
+      );
+    }
+    return ok;
+  }
+
+  /// Shown once the form has closed (see [FormDialog.afterClose]); never kept past that.
+  Future<void> Function()? _announce;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -122,19 +173,13 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
         setState(() => _rolesTouched = true);
         return _roles.isNotEmpty;
       },
-      onSubmit: () {
-        return runAction(
-          context,
-          () => ref.read(membersProvider.notifier).invite(
-            givenName: _given.text.trim(),
-            familyName: _family.text.trim(),
-            email: _email.text.trim(),
-            roles: _roles,
-          ),
-          success: l.memberInvited,
-        );
-      },
+      onSubmit: _submit,
+      afterClose: () async => _announce?.call(),
       children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(l.memberInviteHint, key: const Key('invite-hint')),
+        ),
         TextFormField(
           key: const Key('invite-given'),
           controller: _given,
@@ -238,10 +283,32 @@ class _MemberDetail extends ConsumerStatefulWidget {
 class _MemberDetailState extends ConsumerState<_MemberDetail> {
   late final Set<api.TenantRole> _roles = {...widget.member.roles};
 
+  /// New temporary password for a pending member: shown once, then dropped.
+  Future<void> _issuePassword() async {
+    final m = widget.member;
+    final nav = Navigator.of(context, rootNavigator: true).context;
+    api.MemberWithPassword? issued;
+    final ok = await runAction(
+      context,
+      () async => issued = await ref
+          .read(membersProvider.notifier)
+          .issueTemporaryPassword(m.personId),
+      errorText: memberErrorText,
+    );
+    if (!ok || !nav.mounted) return;
+    await announceLogin(
+      nav,
+      person: m.displayName,
+      email: m.email,
+      temporaryPassword: issued?.temporaryPassword,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final m = widget.member;
+    final pending = m.invitationStatus == api.InvitationStatus.PENDING;
     final theme = Theme.of(context);
     final isParent = m.roles.contains(api.TenantRole.PARENT);
     return ListView(
@@ -251,7 +318,26 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
         if (m.email != null) Text(m.email!),
         if (!m.active) ...[
           const SizedBox(height: AppTokens.spaceSm),
-          Align(alignment: Alignment.centerLeft, child: InfoChip(l.memberInactive, tone: ChipTone.bad)),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: InfoChip(l.memberInactive, tone: ChipTone.bad),
+          ),
+        ] else if (pending) ...[
+          const SizedBox(height: AppTokens.spaceSm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: InfoChip(l.memberInvitationPending, tone: ChipTone.warn),
+          ),
+          const SizedBox(height: AppTokens.spaceSm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const Key('member-issue-password'),
+              icon: const Icon(Icons.key_outlined),
+              label: Text(l.tempPasswordIssue),
+              onPressed: _issuePassword,
+            ),
+          ),
         ],
         const SizedBox(height: AppTokens.spaceLg),
         Text(l.memberRoles, style: theme.textTheme.titleMedium),

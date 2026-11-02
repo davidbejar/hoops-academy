@@ -31,7 +31,9 @@ class TenantsNotifier extends AsyncNotifier<List<api.Tenant>> {
     return ref.watch(platformRepositoryProvider).tenants(status: f.status, query: f.query.trim().isEmpty ? null : f.query.trim());
   }
 
-  Future<api.Tenant> create({
+  /// The result carries the first administrator's temporary password: the caller shows it once and drops it; it is
+  /// never put into this notifier's state.
+  Future<api.TenantWithPassword> create({
     required String name,
     required String slug,
     required String timezone,
@@ -124,8 +126,9 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
     await future;
   }
 
-  /// Returns the administrator; `invitationStatus == PENDING` means a new member was invited.
-  Future<api.TenantAdmin> add({
+  /// Returns the administrator with the temporary password of a login this call created (null: existing login). The
+  /// caller shows it once and drops it; the state only ever holds the password-free list.
+  Future<api.TenantAdminWithPassword> add({
     required String email,
     required String givenName,
     required String familyName,
@@ -161,9 +164,13 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
     await _reload();
   }
 
-  Future<void> resendInvitation(String personId) async {
-    await _repo.resendAdminInvitation(tenantId, personId);
+  /// New temporary password for a pending administrator (returned once, see [add]).
+  Future<api.TenantAdminWithPassword> issueTemporaryPassword(
+    String personId,
+  ) async {
+    final admin = await _repo.issueAdminTemporaryPassword(tenantId, personId);
     await _reload();
+    return admin;
   }
 }
 

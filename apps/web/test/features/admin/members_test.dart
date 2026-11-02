@@ -94,7 +94,7 @@ void main() {
 
     testWidgets('sends the invitation with the chosen roles and refreshes the list', (tester) async {
       final core = coreWithMembers();
-      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path, size: const Size(360, 1400));
       await tapKey(tester, 'member-invite');
       await enter(tester, 'invite-given', 'Nora');
       await enter(tester, 'invite-family', 'Vega');
@@ -110,7 +110,7 @@ void main() {
       // The new login's temporary password is shown once (no e-mail is sent); the list never holds it.
       expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
       expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, core.members.newLoginPassword);
-      expect(find.textContaining('nora@hoops-academy.com'), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('temp-password-dialog')), matching: find.textContaining('nora@hoops-academy.com')), findsOneWidget);
       await tapKey(tester, 'temp-password-done');
       expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
       expect(find.text(core.members.newLoginPassword!), findsNothing);
@@ -122,7 +122,7 @@ void main() {
     testWidgets('a person who already has a login gets no dialog: they use their current password', (tester) async {
       final core = coreWithMembers();
       core.members.newLoginPassword = null;
-      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path, size: const Size(360, 1400));
       await tapKey(tester, 'member-invite');
       await enter(tester, 'invite-given', 'Nora');
       await enter(tester, 'invite-family', 'Vega');

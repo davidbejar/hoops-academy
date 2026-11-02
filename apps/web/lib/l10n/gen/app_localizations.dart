@@ -724,12 +724,6 @@ abstract class AppLocalizations {
   /// **'Elige al menos un rol'**
   String get memberRolesRequired;
 
-  /// No description provided for @memberInvited.
-  ///
-  /// In es, this message translates to:
-  /// **'Invitación enviada'**
-  String get memberInvited;
-
   /// No description provided for @memberEditRoles.
   ///
   /// In es, this message translates to:
@@ -4126,16 +4120,10 @@ abstract class AppLocalizations {
   /// **'Quitar administrador'**
   String get adminRemove;
 
-  /// No description provided for @adminResend.
-  ///
-  /// In es, this message translates to:
-  /// **'Reenviar invitación'**
-  String get adminResend;
-
   /// No description provided for @adminAddHint.
   ///
   /// In es, this message translates to:
-  /// **'Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se envía una invitación por correo.'**
+  /// **'Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se crea su acceso y verás una contraseña temporal para entregársela; no se envía ningún correo.'**
   String get adminAddHint;
 
   /// No description provided for @adminAddSubmit.
@@ -4147,7 +4135,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminEditEmailNote.
   ///
   /// In es, this message translates to:
-  /// **'El correo es también el acceso de la persona: si lo cambias, tendrá que verificar la nueva dirección para entrar.'**
+  /// **'El correo es también el acceso de la persona: si lo cambias, entrará con la nueva dirección y mantiene su contraseña.'**
   String get adminEditEmailNote;
 
   /// No description provided for @adminRemoveConfirm.
@@ -4174,12 +4162,6 @@ abstract class AppLocalizations {
   /// **'Administrador añadido'**
   String get adminAdded;
 
-  /// No description provided for @adminInvited.
-  ///
-  /// In es, this message translates to:
-  /// **'Invitación enviada'**
-  String get adminInvited;
-
   /// No description provided for @adminUpdated.
   ///
   /// In es, this message translates to:
@@ -4191,12 +4173,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Administrador quitado'**
   String get adminRemoved;
-
-  /// No description provided for @adminInvitationResent.
-  ///
-  /// In es, this message translates to:
-  /// **'Invitación reenviada'**
-  String get adminInvitationResent;
 
   /// No description provided for @adminsWithdrawn.
   ///
@@ -4227,6 +4203,102 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'La invitación ya no está pendiente'**
   String get adminErrorInvitationNotPending;
+
+  /// No description provided for @tempPasswordTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña temporal'**
+  String get tempPasswordTitle;
+
+  /// No description provided for @tempPasswordFor.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta de {person}'**
+  String tempPasswordFor(String person);
+
+  /// No description provided for @tempPasswordLoginWith.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo de acceso: {email}'**
+  String tempPasswordLoginWith(String email);
+
+  /// No description provided for @tempPasswordShareHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrégasela a la persona por un canal privado. No se envía ningún correo.'**
+  String get tempPasswordShareHint;
+
+  /// No description provided for @tempPasswordShownOnce.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo se muestra ahora: no se guarda y no se puede volver a ver. Si se pierde, genera una nueva mientras la persona no haya entrado.'**
+  String get tempPasswordShownOnce;
+
+  /// No description provided for @tempPasswordFirstSignIn.
+  ///
+  /// In es, this message translates to:
+  /// **'En su primer acceso entra con su correo y esta contraseña, y debe elegir la suya.'**
+  String get tempPasswordFirstSignIn;
+
+  /// No description provided for @tempPasswordCopy.
+  ///
+  /// In es, this message translates to:
+  /// **'Copiar contraseña'**
+  String get tempPasswordCopy;
+
+  /// No description provided for @tempPasswordCopied.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña copiada'**
+  String get tempPasswordCopied;
+
+  /// No description provided for @tempPasswordDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Hecho'**
+  String get tempPasswordDone;
+
+  /// No description provided for @tempPasswordExistingLogin.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tenía una cuenta: entra con su contraseña actual.'**
+  String get tempPasswordExistingLogin;
+
+  /// No description provided for @tempPasswordIssue.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar nueva contraseña temporal'**
+  String get tempPasswordIssue;
+
+  /// No description provided for @memberAdded.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembro añadido'**
+  String get memberAdded;
+
+  /// No description provided for @memberInviteHint.
+  ///
+  /// In es, this message translates to:
+  /// **'No se envía ningún correo: al crear su acceso verás una contraseña temporal para entregársela a la persona.'**
+  String get memberInviteHint;
+
+  /// No description provided for @memberErrorNotPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta persona ya entró o la invitación ya no está pendiente'**
+  String get memberErrorNotPending;
+
+  /// No description provided for @memberErrorLoginShared.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta cuenta de acceso se usa también en otra academia: solo la administración de la plataforma puede generar su contraseña'**
+  String get memberErrorLoginShared;
+
+  /// No description provided for @playerEmailHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela.'**
+  String get playerEmailHint;
 }
 
 class _AppLocalizationsDelegate

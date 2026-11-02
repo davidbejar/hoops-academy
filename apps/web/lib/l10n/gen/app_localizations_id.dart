@@ -336,9 +336,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get memberRolesRequired => 'Pilih setidaknya satu peran';
 
   @override
-  String get memberInvited => 'Undangan terkirim';
-
-  @override
   String get memberEditRoles => 'Ubah peran';
 
   @override
@@ -2194,18 +2191,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get adminRemove => 'Hapus administrator';
 
   @override
-  String get adminResend => 'Kirim ulang undangan';
-
-  @override
   String get adminAddHint =>
-      'Jika anggota aktif sudah memiliki email ini, ia menjadi administrator dan namanya tetap. Jika tidak, undangan dikirim lewat email.';
+      'Jika anggota aktif sudah memiliki email ini, ia menjadi administrator dan namanya tetap. Jika tidak, akunnya dibuat dan Anda akan melihat kata sandi sementara untuk diberikan kepadanya; tidak ada email yang dikirim.';
 
   @override
   String get adminAddSubmit => 'Tambah';
 
   @override
   String get adminEditEmailNote =>
-      'Email juga merupakan login orang tersebut: jika Anda mengubahnya, ia harus memverifikasi alamat baru untuk masuk.';
+      'Email juga merupakan login orang tersebut: jika Anda mengubahnya, ia masuk dengan alamat baru dan kata sandinya tetap.';
 
   @override
   String adminRemoveConfirm(String name) {
@@ -2223,16 +2217,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get adminAdded => 'Administrator ditambahkan';
 
   @override
-  String get adminInvited => 'Undangan terkirim';
-
-  @override
   String get adminUpdated => 'Administrator diperbarui';
 
   @override
   String get adminRemoved => 'Administrator dihapus';
-
-  @override
-  String get adminInvitationResent => 'Undangan dikirim ulang';
 
   @override
   String get adminsWithdrawn =>
@@ -2252,4 +2240,64 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get adminErrorInvitationNotPending => 'Undangan tidak lagi tertunda';
+
+  @override
+  String get tempPasswordTitle => 'Kata sandi sementara';
+
+  @override
+  String tempPasswordFor(String person) {
+    return 'Akun $person';
+  }
+
+  @override
+  String tempPasswordLoginWith(String email) {
+    return 'Email untuk masuk: $email';
+  }
+
+  @override
+  String get tempPasswordShareHint =>
+      'Berikan kepada orang tersebut lewat saluran pribadi. Tidak ada email yang dikirim.';
+
+  @override
+  String get tempPasswordShownOnce =>
+      'Hanya ditampilkan sekarang: tidak disimpan dan tidak dapat dilihat lagi. Jika hilang, buat yang baru selama orang tersebut belum masuk.';
+
+  @override
+  String get tempPasswordFirstSignIn =>
+      'Saat masuk pertama kali, ia memakai email dan kata sandi ini, lalu harus memilih kata sandinya sendiri.';
+
+  @override
+  String get tempPasswordCopy => 'Salin kata sandi';
+
+  @override
+  String get tempPasswordCopied => 'Kata sandi disalin';
+
+  @override
+  String get tempPasswordDone => 'Selesai';
+
+  @override
+  String get tempPasswordExistingLogin =>
+      'Ia sudah punya akun: masuk dengan kata sandinya saat ini.';
+
+  @override
+  String get tempPasswordIssue => 'Buat kata sandi sementara baru';
+
+  @override
+  String get memberAdded => 'Anggota ditambahkan';
+
+  @override
+  String get memberInviteHint =>
+      'Tidak ada email yang dikirim: setelah akun dibuat, Anda akan melihat kata sandi sementara untuk diberikan kepada orang tersebut.';
+
+  @override
+  String get memberErrorNotPending =>
+      'Orang ini sudah masuk atau undangan tidak lagi tertunda';
+
+  @override
+  String get memberErrorLoginShared =>
+      'Akun ini juga dipakai di akademi lain: hanya administrasi platform yang dapat membuat kata sandinya';
+
+  @override
+  String get playerEmailHint =>
+      'Dengan email, pemain mendapat akses: Anda akan melihat kata sandi sementara untuk diberikan kepadanya.';
 }

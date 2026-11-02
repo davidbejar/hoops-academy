@@ -4,7 +4,9 @@ import '../../../core/api/api.dart' as api;
 /// list: ADMIN sees everything, COACH only their own requests.
 abstract class ApprovalsRepository {
   Future<List<api.ApprovalRequest>> list({api.ApprovalStatus? status});
-  Future<api.ApprovalRequest> approve(String id, {String? note});
+
+  /// Approving a player request that creates a login returns its temporary password, once (ADR-0024).
+  Future<api.ApprovalRequestWithPassword> approve(String id, {String? note});
   Future<api.ApprovalRequest> reject(String id, {required String note});
   Future<api.ApprovalRequest> cancel(String id);
 }
@@ -28,12 +30,14 @@ class ApiApprovalsRepository implements ApprovalsRepository {
       )).data!.items.toList();
 
   @override
-  Future<api.ApprovalRequest> approve(String id, {String? note}) async =>
-      (await _api.approveApprovalRequest(
-        xTenantId: _t,
-        approvalRequestId: id,
-        approvalDecisionRequest: _note(note),
-      )).data!;
+  Future<api.ApprovalRequestWithPassword> approve(
+    String id, {
+    String? note,
+  }) async => (await _api.approveApprovalRequest(
+    xTenantId: _t,
+    approvalRequestId: id,
+    approvalDecisionRequest: _note(note),
+  )).data!;
 
   @override
   Future<api.ApprovalRequest> reject(String id, {required String note}) async =>

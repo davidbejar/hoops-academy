@@ -414,7 +414,7 @@ class MockCoreApi {
         ..['email'] = b['email']
         ..['invitationStatus'] = 'PENDING';
       _members.add(m);
-      return MockResult.json(201, m);
+      return MockResult.json(201, {...m, 'temporaryPassword': _mockPassword()});
     }
     final m = _members.where((m) => m['personId'] == id).firstOrNull;
     if (m == null) return const MockResult.json(404, {'title': 'Not found', 'status': 404});
@@ -427,8 +427,19 @@ class MockCoreApi {
       m['active'] = false;
       return MockResult.json(200, m);
     }
+    if (sub == 'temporary-password' && method == 'POST') {
+      if (m['invitationStatus'] != 'PENDING') {
+        return const MockResult.json(409, {'title': 'Conflict', 'status': 409, 'code': 'INVITATION_NOT_PENDING'});
+      }
+      return MockResult.json(200, {...m, 'temporaryPassword': _mockPassword()});
+    }
     return null;
   }
+
+  int _passwordCount = 0;
+
+  /// Demo stand-in for the server-generated temporary password (12+ characters, different every time).
+  String _mockPassword() => 'demo-temp-pass-${++_passwordCount}';
 
   MockResult? _teams_(String method, String? id, String? sub, List<String> seg, Map<String, dynamic> q, Map<String, Object?> b) {
     if (id == null && method == 'GET') {

@@ -135,7 +135,6 @@
   "memberEmail": "Correo electrónico",
   "memberRoles": "Roles",
   "memberRolesRequired": "Elige al menos un rol",
-  "memberInvited": "Invitación enviada",
   "memberEditRoles": "Editar roles",
   "memberDeactivate": "Desactivar",
   "memberDeactivateConfirm": "¿Desactivar a {name}? Perderá el acceso a la academia.",
@@ -1269,10 +1268,9 @@
   },
   "adminEdit": "Editar administrador",
   "adminRemove": "Quitar administrador",
-  "adminResend": "Reenviar invitación",
-  "adminAddHint": "Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se envía una invitación por correo.",
+  "adminAddHint": "Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se crea su acceso y verás una contraseña temporal para entregársela; no se envía ningún correo.",
   "adminAddSubmit": "Añadir",
-  "adminEditEmailNote": "El correo es también el acceso de la persona: si lo cambias, tendrá que verificar la nueva dirección para entrar.",
+  "adminEditEmailNote": "El correo es también el acceso de la persona: si lo cambias, entrará con la nueva dirección y mantiene su contraseña.",
   "adminRemoveConfirm": "¿Quitar a {name} como administrador? Se elimina el rol de administrador; los demás roles se mantienen.",
   "@adminRemoveConfirm": {
     "placeholders": {
@@ -1284,13 +1282,41 @@
   "adminRemoveSubmit": "Quitar",
   "adminLastAdminNote": "Una academia necesita al menos un administrador. Añade otro administrador antes de quitar a este.",
   "adminAdded": "Administrador añadido",
-  "adminInvited": "Invitación enviada",
   "adminUpdated": "Administrador actualizado",
   "adminRemoved": "Administrador quitado",
-  "adminInvitationResent": "Invitación reenviada",
   "adminsWithdrawn": "La academia está retirada: sus administradores ya no se pueden consultar ni modificar.",
   "adminErrorEmailTaken": "Ese correo ya lo usa otra persona o cuenta",
   "adminErrorLoginAlreadyMember": "Esa cuenta de acceso ya pertenece a otro miembro de esta academia",
   "adminErrorIdentityProvider": "El servicio de acceso no está disponible. Inténtalo de nuevo en unos minutos.",
-  "adminErrorInvitationNotPending": "La invitación ya no está pendiente"
+  "adminErrorInvitationNotPending": "La invitación ya no está pendiente",
+  "tempPasswordTitle": "Contraseña temporal",
+  "tempPasswordFor": "Cuenta de {person}",
+  "@tempPasswordFor": {
+    "placeholders": {
+      "person": {
+        "type": "String"
+      }
+    }
+  },
+  "tempPasswordLoginWith": "Correo de acceso: {email}",
+  "@tempPasswordLoginWith": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "tempPasswordShareHint": "Entrégasela a la persona por un canal privado. No se envía ningún correo.",
+  "tempPasswordShownOnce": "Solo se muestra ahora: no se guarda y no se puede volver a ver. Si se pierde, genera una nueva mientras la persona no haya entrado.",
+  "tempPasswordFirstSignIn": "En su primer acceso entra con su correo y esta contraseña, y debe elegir la suya.",
+  "tempPasswordCopy": "Copiar contraseña",
+  "tempPasswordCopied": "Contraseña copiada",
+  "tempPasswordDone": "Hecho",
+  "tempPasswordExistingLogin": "Ya tenía una cuenta: entra con su contraseña actual.",
+  "tempPasswordIssue": "Generar nueva contraseña temporal",
+  "memberAdded": "Miembro añadido",
+  "memberInviteHint": "No se envía ningún correo: al crear su acceso verás una contraseña temporal para entregársela a la persona.",
+  "memberErrorNotPending": "Esta persona ya entró o la invitación ya no está pendiente",
+  "memberErrorLoginShared": "Esta cuenta de acceso se usa también en otra academia: solo la administración de la plataforma puede generar su contraseña",
+  "playerEmailHint": "Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela."
 }

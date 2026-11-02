@@ -339,9 +339,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memberRolesRequired => 'Elige al menos un rol';
 
   @override
-  String get memberInvited => 'Invitación enviada';
-
-  @override
   String get memberEditRoles => 'Editar roles';
 
   @override
@@ -2208,18 +2205,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminRemove => 'Quitar administrador';
 
   @override
-  String get adminResend => 'Reenviar invitación';
-
-  @override
   String get adminAddHint =>
-      'Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se envía una invitación por correo.';
+      'Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se crea su acceso y verás una contraseña temporal para entregársela; no se envía ningún correo.';
 
   @override
   String get adminAddSubmit => 'Añadir';
 
   @override
   String get adminEditEmailNote =>
-      'El correo es también el acceso de la persona: si lo cambias, tendrá que verificar la nueva dirección para entrar.';
+      'El correo es también el acceso de la persona: si lo cambias, entrará con la nueva dirección y mantiene su contraseña.';
 
   @override
   String adminRemoveConfirm(String name) {
@@ -2237,16 +2231,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminAdded => 'Administrador añadido';
 
   @override
-  String get adminInvited => 'Invitación enviada';
-
-  @override
   String get adminUpdated => 'Administrador actualizado';
 
   @override
   String get adminRemoved => 'Administrador quitado';
-
-  @override
-  String get adminInvitationResent => 'Invitación reenviada';
 
   @override
   String get adminsWithdrawn =>
@@ -2267,4 +2255,64 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get adminErrorInvitationNotPending =>
       'La invitación ya no está pendiente';
+
+  @override
+  String get tempPasswordTitle => 'Contraseña temporal';
+
+  @override
+  String tempPasswordFor(String person) {
+    return 'Cuenta de $person';
+  }
+
+  @override
+  String tempPasswordLoginWith(String email) {
+    return 'Correo de acceso: $email';
+  }
+
+  @override
+  String get tempPasswordShareHint =>
+      'Entrégasela a la persona por un canal privado. No se envía ningún correo.';
+
+  @override
+  String get tempPasswordShownOnce =>
+      'Solo se muestra ahora: no se guarda y no se puede volver a ver. Si se pierde, genera una nueva mientras la persona no haya entrado.';
+
+  @override
+  String get tempPasswordFirstSignIn =>
+      'En su primer acceso entra con su correo y esta contraseña, y debe elegir la suya.';
+
+  @override
+  String get tempPasswordCopy => 'Copiar contraseña';
+
+  @override
+  String get tempPasswordCopied => 'Contraseña copiada';
+
+  @override
+  String get tempPasswordDone => 'Hecho';
+
+  @override
+  String get tempPasswordExistingLogin =>
+      'Ya tenía una cuenta: entra con su contraseña actual.';
+
+  @override
+  String get tempPasswordIssue => 'Generar nueva contraseña temporal';
+
+  @override
+  String get memberAdded => 'Miembro añadido';
+
+  @override
+  String get memberInviteHint =>
+      'No se envía ningún correo: al crear su acceso verás una contraseña temporal para entregársela a la persona.';
+
+  @override
+  String get memberErrorNotPending =>
+      'Esta persona ya entró o la invitación ya no está pendiente';
+
+  @override
+  String get memberErrorLoginShared =>
+      'Esta cuenta de acceso se usa también en otra academia: solo la administración de la plataforma puede generar su contraseña';
+
+  @override
+  String get playerEmailHint =>
+      'Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela.';
 }

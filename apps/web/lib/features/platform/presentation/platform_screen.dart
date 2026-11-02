@@ -8,6 +8,7 @@ import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
 import 'platform_labels.dart';
@@ -147,6 +148,45 @@ class _CreateTenantDialogState extends ConsumerState<CreateTenantDialog> {
     super.dispose();
   }
 
+  /// Creates the academy; the first administrator's temporary password (new login) is shown once, then dropped.
+  Future<bool> _submit() async {
+    final l = AppLocalizations.of(context);
+    final nav = Navigator.of(context, rootNavigator: true).context;
+    final (email, given, family) = (
+      _email.text.trim(),
+      _given.text.trim(),
+      _family.text.trim(),
+    );
+    api.TenantWithPassword? created;
+    final ok = await runAction(
+      context,
+      () async => created = await ref
+          .read(tenantsProvider.notifier)
+          .create(
+            name: _name.text.trim(),
+            slug: _slug.text.trim(),
+            timezone: _timezone.text.trim(),
+            locale: _locale,
+            adminEmail: email,
+            adminGivenName: given,
+            adminFamilyName: family,
+          ),
+    );
+    if (ok) {
+      _announce = () => announceLogin(
+        nav,
+        person: '$given $family',
+        email: email,
+        temporaryPassword: created?.temporaryPassword,
+        done: l.tenantCreated,
+      );
+    }
+    return ok;
+  }
+
+  /// Shown once the form has closed (see [FormDialog.afterClose]); never kept past that.
+  Future<void> Function()? _announce;
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -164,19 +204,8 @@ class _CreateTenantDialogState extends ConsumerState<CreateTenantDialog> {
     return FormDialog(
       title: l.platformNew,
       formKey: _form,
-      onSubmit: () => runAction(
-        context,
-        () => ref.read(tenantsProvider.notifier).create(
-          name: _name.text.trim(),
-          slug: _slug.text.trim(),
-          timezone: _timezone.text.trim(),
-          locale: _locale,
-          adminEmail: _email.text.trim(),
-          adminGivenName: _given.text.trim(),
-          adminFamilyName: _family.text.trim(),
-        ),
-        success: l.tenantCreated,
-      ),
+      onSubmit: _submit,
+      afterClose: () async => _announce?.call(),
       children: [
         field('tenant-name', _name, l.tenantName),
         field('tenant-slug', _slug, l.tenantSlug, validator: (v) => _slugPattern.hasMatch((v ?? '').trim()) ? null : l.tenantSlugInvalid),
