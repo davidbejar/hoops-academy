@@ -84,7 +84,9 @@ class CrossServiceContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"createTenant", "inviteMember"})
+    @ValueSource(strings = {"createTenant", "inviteMember", "addTenantAdmin", "updateTenantAdmin",
+            "issueTenantAdminTemporaryPassword", "updateMember", "issueMemberTemporaryPassword", "createPlayer",
+            "approveApprovalRequest"})
     void keycloakBackedOperationsDeclare502(String operationId) {
         ApiResponse badGateway = operation("core", operationId).getResponses().get("502");
 

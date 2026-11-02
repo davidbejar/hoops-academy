@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 2.2.0
+  version: 2.3.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -11,6 +11,11 @@ info:
       documented exception: the identity of a tenant's administrators (`/platform/tenants/{tenantId}/admins`, ADR-0023).
     - `/internal/**` — service-to-service API (client-credentials token with role `service`), blocked at the proxy,
       marked `x-internal` so it is not generated into the Flutter client.
+
+    First sign-in (ADR-0024): a login created by a call gets a server-generated temporary password, returned once as
+    `temporaryPassword` in that call's response (`Cache-Control: no-store`; never stored by the platform). No e-mail
+    is sent; Keycloak asks for a new password at the first sign-in. A person who already had a login gets no
+    temporary password and signs in with their own.
 
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
@@ -75,7 +80,8 @@ paths:
       summary: Onboard a tenant
       description: |
         Atomically creates the tenant, its default settings, the seeded age categories (U8 … U18, SENIOR) and the
-        first ADMIN membership; the admin is provisioned in Keycloak with a required-action e-mail.
+        first ADMIN membership. A new Keycloak login for the admin gets a temporary password, returned once in
+        `temporaryPassword`; an existing login (the e-mail already signs in elsewhere) is linked and gets none.
         Authz: super_admin.
       requestBody:
         required: true
@@ -87,9 +93,10 @@ paths:
           description: Tenant created.
           headers:
             Location: {$ref: '#/components/headers/Location'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Tenant'}
+              schema: {$ref: '#/components/schemas/TenantWithPassword'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -237,9 +244,9 @@ paths:
       summary: Add an administrator to a tenant
       description: |
         When an active member of the tenant has this e-mail, they gain the ADMIN role (200; their names are kept; a
-        member without a login is given one, with the account-setup e-mail). Otherwise a new member is invited with the
-        ADMIN role through the onboarding saga — a new Keycloak user gets the account-setup e-mail, an existing login
-        is linked (201). 409 `EMAIL_TAKEN` when a deactivated member has the e-mail, `LOGIN_ALREADY_MEMBER` when the
+        member without a login is given one). Otherwise a new member is invited with the ADMIN role through the
+        onboarding saga (201). A login created by this call gets a temporary password, returned once in
+        `temporaryPassword`; an existing login is linked and gets none (the person signs in with their own). 409 `EMAIL_TAKEN` when a deactivated member has the e-mail, `LOGIN_ALREADY_MEMBER` when the
         login already belongs to another member of the tenant, `TENANT_WITHDRAWN`; 502 when Keycloak fails (nothing is
         kept). Authz: super_admin.
       requestBody:
@@ -250,16 +257,19 @@ paths:
       responses:
         '200':
           description: An existing member is now an administrator.
+          headers:
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/TenantAdmin'}
+              schema: {$ref: '#/components/schemas/TenantAdminWithPassword'}
         '201':
           description: A new member was invited as administrator.
           headers:
             Location: {$ref: '#/components/headers/Location'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/TenantAdmin'}
+              schema: {$ref: '#/components/schemas/TenantAdminWithPassword'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -277,8 +287,8 @@ paths:
       summary: Edit an administrator's names or e-mail
       description: |
         Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and
-        e-mail, unverified, verification e-mail to the new address — the account-setup e-mail while the invitation is
-        PENDING), also when the login is used in other academies (ADR-0023). 404 when the person is not an active
+        e-mail; no e-mail is sent, the password is unchanged), also when the login is used in other academies
+        (ADR-0023, ADR-0024). 404 when the person is not an active
         administrator of the tenant; 409 `EMAIL_TAKEN` (another member or login uses the address), `TENANT_WITHDRAWN`;
         502 when Keycloak fails (nothing is changed). Authz: super_admin.
       requestBody:
@@ -316,23 +326,55 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /platform/tenants/{tenantId}/admins/{personId}/temporary-password:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+      - $ref: '#/components/parameters/PersonId'
+    post:
+      operationId: issueTenantAdminTemporaryPassword
+      tags: [Platform]
+      summary: Issue a new temporary password for a pending administrator
+      description: |
+        Replaces the password of the administrator's login by a new temporary password, returned once in
+        `temporaryPassword` (always present here); Keycloak asks for a new password at the first sign-in. Also
+        repairs a pending login that has no password at all. Only while the invitation is PENDING and the person has
+        not chosen a password of their own (409 `INVITATION_NOT_PENDING` otherwise, also for an administrator without
+        a login); 404 when the person is not an active administrator; 409 `TENANT_WITHDRAWN`; 502 when Keycloak fails
+        (nothing is changed). Authz: super_admin.
+      responses:
+        '200':
+          description: The administrator (still PENDING) with the new temporary password.
+          headers:
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantAdminWithPassword'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /platform/tenants/{tenantId}/admins/{personId}/resend-invitation:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdPath'
       - $ref: '#/components/parameters/PersonId'
     post:
       operationId: resendTenantAdminInvitation
+      deprecated: true
       tags: [Platform]
-      summary: Resend the account-setup e-mail of an administrator
+      summary: Deprecated alias of issueTenantAdminTemporaryPassword
       description: |
-        Only while the invitation is PENDING (409 `INVITATION_NOT_PENDING` otherwise); 404 when the person is not an
-        active administrator; 409 `TENANT_WITHDRAWN`; 502 when Keycloak fails. Authz: super_admin.
+        Deprecated since 2.3.0, removed in 3.0.0: use `issueTenantAdminTemporaryPassword`
+        (`POST .../temporary-password`). Same behaviour, answers 202. Authz: super_admin.
       responses:
         '202':
-          description: The account-setup e-mail was handed to Keycloak; the administrator (still PENDING).
+          description: The administrator (still PENDING) with the new temporary password.
+          headers:
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/TenantAdmin'}
+              schema: {$ref: '#/components/schemas/TenantAdminWithPassword'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -627,8 +669,9 @@ paths:
       tags: [Members]
       summary: Invite a member
       description: |
-        Creates the person with the given roles and, when `email` is present, provisions a Keycloak user with a
-        required-action e-mail. The PLAYER role requires `birthDate` and `gender` (422). Players created here are
+        Creates the person with the given roles and, with `sendInvitation` (default) and an `email`, gives them a
+        login: a new Keycloak login gets a temporary password, returned once in `temporaryPassword`; an existing
+        login (the e-mail already signs in elsewhere) is linked and gets none. The PLAYER role requires `birthDate` and `gender` (422). Players created here are
         ACTIVE (admin path); coaches add players through `POST /api/core/players`. Authz: ADMIN.
       requestBody:
         required: true
@@ -640,9 +683,10 @@ paths:
           description: Member created.
           headers:
             Location: {$ref: '#/components/headers/Location'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Member'}
+              schema: {$ref: '#/components/schemas/MemberWithPassword'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -676,8 +720,7 @@ paths:
       description: |
         Absent fields are left unchanged; `null` clears an optional field.
         Changing the `email` of a member with a login (`userId`) also moves the login (ADR-0023): the Keycloak
-        username and e-mail become the new address (unverified) and a verification e-mail is sent to it (the
-        account-setup e-mail while the invitation is PENDING). 409 `EMAIL_TAKEN` when another member of the tenant
+        username and e-mail become the new address (no e-mail is sent, the password is unchanged, ADR-0024). 409 `EMAIL_TAKEN` when another member of the tenant
         or another login uses the address; 409 `LOGIN_SHARED` when the login is also used by an active member of
         another academy (only the platform super admin may move it); 422 `LOGIN_REQUIRES_EMAIL` when the e-mail of a
         member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN.
@@ -698,6 +741,35 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
+  /api/core/members/{personId}/temporary-password:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PersonId'
+    post:
+      operationId: issueMemberTemporaryPassword
+      tags: [Members]
+      summary: Issue a new temporary password for a pending member
+      description: |
+        Replaces the password of the member's login by a new temporary password, returned once in
+        `temporaryPassword` (always present here); Keycloak asks for a new password at the first sign-in. Only for an
+        active member whose invitation is PENDING and who has not chosen a password of their own (409
+        `INVITATION_NOT_PENDING` otherwise, also for a member without a login); 409 `LOGIN_SHARED` when the login is
+        also used by an active member of another academy (only the platform super admin may reset it); 502 when
+        Keycloak fails (nothing is changed). Authz: ADMIN.
+      responses:
+        '200':
+          description: The member (still PENDING) with the new temporary password.
+          headers:
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MemberWithPassword'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /api/core/members/{personId}/roles:
     parameters:
@@ -1333,8 +1405,9 @@ paths:
         auto-approved audit request is recorded; answers **201**. COACH without ADMIN: the player is created
         PENDING_APPROVAL with a PENDING ADD_PLAYER request; answers **202**. Assistant coaches cannot add (403).
         Entitlement-checked (billing seam). Authz: ADMIN; COACH (for own teams).
-        With an `email` the ADMIN-added player gets a login (Keycloak user + setup e-mail, as `inviteMember`; 502
-        when Keycloak fails — nothing is created); a COACH-requested player gets it when the request is approved.
+        With an `email` the ADMIN-added player gets a login (as `inviteMember`: a new login's temporary password is
+        returned once in `temporaryPassword`; 502 when Keycloak fails — nothing is created); a COACH-requested player
+        gets it when the request is approved.
       requestBody:
         required: true
         content:
@@ -1343,6 +1416,8 @@ paths:
       responses:
         '201':
           description: Player created and active (admin path).
+          headers:
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
           content:
             application/json:
               schema: {$ref: '#/components/schemas/PlayerCommandResult'}
@@ -1496,6 +1571,8 @@ paths:
       description: |
         Executes the action. ADD_PLAYER activates the player and applies the optional team assignment through the
         eligibility-checked command — if that is INELIGIBLE the answer is 422 and the request stays PENDING.
+        A requested player with an e-mail and no login gets one: a new login's temporary password is returned once in
+        `temporaryPassword` (502 when Keycloak fails — the request stays PENDING).
         Only PENDING requests can be decided (409 `NOT_PENDING`). Authz: ADMIN.
       requestBody:
         required: false
@@ -1505,9 +1582,11 @@ paths:
       responses:
         '200':
           description: Approved request.
+          headers:
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/ApprovalRequest'}
+              schema: {$ref: '#/components/schemas/ApprovalRequestWithPassword'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -1778,6 +1857,9 @@ components:
     CacheControl:
       description: e.g. `private, max-age=300, must-revalidate`.
       schema: {type: string}
+    NoStore:
+      description: '`no-store`: the response may carry a temporary password, which must never be cached (ADR-0024).'
+      schema: {type: string, example: no-store}
 
   schemas:
     # ---------------- enums
@@ -1828,7 +1910,9 @@ components:
       enum: [PENDING, APPROVED, REJECTED, CANCELLED]
     InvitationStatus:
       type: string
-      description: NONE = person without login; PENDING = Keycloak user created, required actions outstanding.
+      description: |
+        NONE = person without login; PENDING = login created by this academy, the person has not signed in here yet
+        (a temporary password can be issued); ACCEPTED = signed in, or an existing login was linked.
       enum: [NONE, PENDING, ACCEPTED]
     JerseyNumber:
       type: string
@@ -1860,6 +1944,23 @@ components:
           format: date
           nullable: true
           description: For WITHDRAWN tenants, the date until which data is retained.
+    TemporaryPassword:
+      type: string
+      readOnly: true
+      minLength: 12
+      maxLength: 128
+      description: |
+        Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored:
+        pass it on privately; the person signs in with their e-mail and this password and must then choose their own.
+        Absent when the person already had a login (they sign in with their own password).
+      example: Xk7mPq2RtW9vNc4H
+    TenantWithPassword:
+      description: The onboarded tenant and the temporary password of the first administrator's new login.
+      allOf:
+        - $ref: '#/components/schemas/Tenant'
+        - type: object
+          properties:
+            temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     TenantPage:
       type: object
       required: [items, page]
@@ -1902,6 +2003,13 @@ components:
           description: The person's tenant roles besides ADMIN (removing the administrator keeps these).
           uniqueItems: true
           items: {$ref: '#/components/schemas/TenantRole'}
+    TenantAdminWithPassword:
+      description: An administrator and, when this call created or re-issued their login's password, that password.
+      allOf:
+        - $ref: '#/components/schemas/TenantAdmin'
+        - type: object
+          properties:
+            temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     TenantAdminPage:
       type: object
       required: [items, page]
@@ -2149,6 +2257,13 @@ components:
         active: {type: boolean}
         invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
         createdAt: {type: string, format: date-time}
+    MemberWithPassword:
+      description: A member and, when this call created or re-issued their login's password, that password.
+      allOf:
+        - $ref: '#/components/schemas/Member'
+        - type: object
+          properties:
+            temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     MemberPage:
       type: object
       required: [items, page]
@@ -2182,7 +2297,7 @@ components:
             sendInvitation:
               type: boolean
               default: true
-              description: Provision a login and send the invitation e-mail (requires `email`).
+              description: Give the member a login (requires `email`); a new login's temporary password is returned once.
     UpdateMemberRequest:
       type: object
       minProperties: 1
@@ -2534,7 +2649,7 @@ components:
           type: string
           format: email
           maxLength: 254
-          description: When present the player gets a login (invitation e-mail).
+          description: When present the player gets a login (a new login's temporary password is returned once).
         teamId:
           type: string
           format: uuid
@@ -2555,6 +2670,7 @@ components:
       properties:
         player: {$ref: '#/components/schemas/Player'}
         approvalRequest: {$ref: '#/components/schemas/ApprovalRequest'}
+        temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
 
     # ---------------- approvals
     ApprovalRequest:
@@ -2573,6 +2689,13 @@ components:
           nullable: true
         decidedAt: {type: string, format: date-time, nullable: true}
         decisionNote: {type: string, nullable: true}
+    ApprovalRequestWithPassword:
+      description: A decided request and, when approving created the player's login, that login's temporary password.
+      allOf:
+        - $ref: '#/components/schemas/ApprovalRequest'
+        - type: object
+          properties:
+            temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     ApprovalPayload:
       type: object
       description: Action parameters captured at request time.

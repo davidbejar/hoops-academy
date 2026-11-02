@@ -23,7 +23,9 @@ The jar ships these files as classpath resources: `classpath:openapi/core.yaml`,
 - Upstream failures (`CrossServiceContractTest`): every `/api/game/**` and `/api/athlete/**` operation declares
   `503` → `common.yaml#/components/responses/ServiceUnavailable` (code `UPSTREAM_UNAVAILABLE`), because the tenant
   filter of those services resolves the caller through core's `/internal/authz` on every call. core's tenant and
-  platform operations call no peer synchronously except `createTenant` / `inviteMember`, which call Keycloak and declare
+  platform operations call no peer synchronously except the ones that create or change a login (`createTenant`,
+  `addTenantAdmin`, `updateTenantAdmin`, `issueTenantAdminTemporaryPassword`, `inviteMember`, `updateMember`,
+  `issueMemberTemporaryPassword`, `createPlayer`, `approveApprovalRequest`), which call Keycloak and declare
   `502` → `UpstreamIdentityProvider` (code `IDENTITY_PROVIDER_UNAVAILABLE`). `getTenantUsage` never fails for a peer:
   it lists the peer in `unavailableServices`.
 - `/internal/usage/{tenantId}` answers 200 with zero counters for an unknown tenant in every service.
