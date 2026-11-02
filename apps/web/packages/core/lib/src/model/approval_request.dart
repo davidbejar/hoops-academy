@@ -16,18 +16,18 @@ part 'approval_request.g.dart';
 /// ApprovalRequest
 ///
 /// Properties:
-/// * [id] 
-/// * [action] 
-/// * [status] 
-/// * [player] 
-/// * [payload] 
-/// * [requestedBy] 
-/// * [requestedAt] 
-/// * [decidedBy] 
-/// * [decidedAt] 
-/// * [decisionNote] 
-@BuiltValue()
-abstract class ApprovalRequest implements Built<ApprovalRequest, ApprovalRequestBuilder> {
+/// * [id]
+/// * [action]
+/// * [status]
+/// * [player]
+/// * [payload]
+/// * [requestedBy]
+/// * [requestedAt]
+/// * [decidedBy]
+/// * [decidedAt]
+/// * [decisionNote]
+@BuiltValue(instantiable: false)
+abstract class ApprovalRequest  {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -60,20 +60,13 @@ abstract class ApprovalRequest implements Built<ApprovalRequest, ApprovalRequest
   @BuiltValueField(wireName: r'decisionNote')
   String? get decisionNote;
 
-  ApprovalRequest._();
-
-  factory ApprovalRequest([void updates(ApprovalRequestBuilder b)]) = _$ApprovalRequest;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(ApprovalRequestBuilder b) => b;
-
   @BuiltValueSerializer(custom: true)
   static Serializer<ApprovalRequest> get serializer => _$ApprovalRequestSerializer();
 }
 
 class _$ApprovalRequestSerializer implements PrimitiveSerializer<ApprovalRequest> {
   @override
-  final Iterable<Type> types = const [ApprovalRequest, _$ApprovalRequest];
+  final Iterable<Type> types = const [ApprovalRequest];
 
   @override
   final String wireName = r'ApprovalRequest';
@@ -148,6 +141,47 @@ class _$ApprovalRequestSerializer implements PrimitiveSerializer<ApprovalRequest
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+  }
+
+  @override
+  ApprovalRequest deserialize(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return serializers.deserialize(serialized, specifiedType: FullType($ApprovalRequest)) as $ApprovalRequest;
+  }
+}
+
+
+/// a concrete implementation of [ApprovalRequest], since [ApprovalRequest] is not instantiable
+@BuiltValue(instantiable: true)
+abstract class $ApprovalRequest implements ApprovalRequest, Built<$ApprovalRequest, $ApprovalRequestBuilder> {
+  $ApprovalRequest._();
+
+  factory $ApprovalRequest([void Function($ApprovalRequestBuilder)? updates]) = _$$ApprovalRequest;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults($ApprovalRequestBuilder b) => b;
+
+  @BuiltValueSerializer(custom: true)
+  static Serializer<$ApprovalRequest> get serializer => _$$ApprovalRequestSerializer();
+}
+
+class _$$ApprovalRequestSerializer implements PrimitiveSerializer<$ApprovalRequest> {
+  @override
+  final Iterable<Type> types = const [$ApprovalRequest, _$$ApprovalRequest];
+
+  @override
+  final String wireName = r'$ApprovalRequest';
+
+  @override
+  Object serialize(
+    Serializers serializers,
+    $ApprovalRequest object, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return serializers.serialize(object, specifiedType: FullType(ApprovalRequest))!;
   }
 
   void _deserializeProperties(
@@ -244,12 +278,12 @@ class _$ApprovalRequestSerializer implements PrimitiveSerializer<ApprovalRequest
   }
 
   @override
-  ApprovalRequest deserialize(
+  $ApprovalRequest deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = ApprovalRequestBuilder();
+    final result = $ApprovalRequestBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -263,5 +297,3 @@ class _$ApprovalRequestSerializer implements PrimitiveSerializer<ApprovalRequest
     return result.build();
   }
 }
-
-

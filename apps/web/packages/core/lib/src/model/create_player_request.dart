@@ -13,11 +13,11 @@ part 'create_player_request.g.dart';
 /// CreatePlayerRequest
 ///
 /// Properties:
-/// * [givenName] 
-/// * [familyName] 
-/// * [birthDate] 
-/// * [gender] 
-/// * [email] - When present the player gets a login (invitation e-mail).
+/// * [givenName]
+/// * [familyName]
+/// * [birthDate]
+/// * [gender]
+/// * [email] - When present the player gets a login (a new login's temporary password is returned once).
 /// * [teamId] - Optional team to assign (eligibility-checked; applied on approval for the coach path).
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
 /// * [note] - Message to the approving admin (coach path).
@@ -36,7 +36,7 @@ abstract class CreatePlayerRequest implements Built<CreatePlayerRequest, CreateP
   Gender get gender;
   // enum genderEnum {  MALE,  FEMALE,  };
 
-  /// When present the player gets a login (invitation e-mail).
+  /// When present the player gets a login (a new login's temporary password is returned once).
   @BuiltValueField(wireName: r'email')
   String? get email;
 
@@ -234,5 +234,3 @@ class _$CreatePlayerRequestSerializer implements PrimitiveSerializer<CreatePlaye
     return result.build();
   }
 }
-
-

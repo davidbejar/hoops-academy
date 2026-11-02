@@ -23,6 +23,7 @@ import 'package:hoops_core_api/src/model/approval_decision_request.dart';
 import 'package:hoops_core_api/src/model/approval_payload.dart';
 import 'package:hoops_core_api/src/model/approval_request.dart';
 import 'package:hoops_core_api/src/model/approval_request_page.dart';
+import 'package:hoops_core_api/src/model/approval_request_with_password.dart';
 import 'package:hoops_core_api/src/model/approval_status.dart';
 import 'package:hoops_core_api/src/model/assign_player_request.dart';
 import 'package:hoops_core_api/src/model/authz_context.dart';
@@ -50,6 +51,7 @@ import 'package:hoops_core_api/src/model/locale.dart';
 import 'package:hoops_core_api/src/model/me.dart';
 import 'package:hoops_core_api/src/model/member.dart';
 import 'package:hoops_core_api/src/model/member_page.dart';
+import 'package:hoops_core_api/src/model/member_with_password.dart';
 import 'package:hoops_core_api/src/model/membership.dart';
 import 'package:hoops_core_api/src/model/orphan.dart';
 import 'package:hoops_core_api/src/model/page_meta.dart';
@@ -86,6 +88,7 @@ import 'package:hoops_core_api/src/model/team_staff_member.dart';
 import 'package:hoops_core_api/src/model/tenant.dart';
 import 'package:hoops_core_api/src/model/tenant_admin.dart';
 import 'package:hoops_core_api/src/model/tenant_admin_page.dart';
+import 'package:hoops_core_api/src/model/tenant_admin_with_password.dart';
 import 'package:hoops_core_api/src/model/tenant_lifecycle_request.dart';
 import 'package:hoops_core_api/src/model/tenant_logo.dart';
 import 'package:hoops_core_api/src/model/tenant_page.dart';
@@ -97,6 +100,7 @@ import 'package:hoops_core_api/src/model/tenant_summary.dart';
 import 'package:hoops_core_api/src/model/tenant_usage.dart';
 import 'package:hoops_core_api/src/model/tenant_usage_history.dart';
 import 'package:hoops_core_api/src/model/tenant_usage_snapshot.dart';
+import 'package:hoops_core_api/src/model/tenant_with_password.dart';
 import 'package:hoops_core_api/src/model/update_age_category_request.dart';
 import 'package:hoops_core_api/src/model/update_me_request.dart';
 import 'package:hoops_core_api/src/model/update_member_request.dart';
@@ -119,8 +123,9 @@ part 'serializers.g.dart';
   ApprovalAction,
   ApprovalDecisionRequest,
   ApprovalPayload,
-  ApprovalRequest,
+  ApprovalRequest,$ApprovalRequest,
   ApprovalRequestPage,
+  ApprovalRequestWithPassword,
   ApprovalStatus,
   AssignPlayerRequest,
   AuthzContext,
@@ -146,8 +151,9 @@ part 'serializers.g.dart';
   InviteMemberRequest,
   Locale,
   Me,
-  Member,
+  Member,$Member,
   MemberPage,
+  MemberWithPassword,
   Membership,
   Orphan,
   PageMeta,
@@ -181,9 +187,10 @@ part 'serializers.g.dart';
   TeamRoster,
   TeamStaffAssignment,
   TeamStaffMember,
-  Tenant,
-  TenantAdmin,
+  Tenant,$Tenant,
+  TenantAdmin,$TenantAdmin,
   TenantAdminPage,
+  TenantAdminWithPassword,
   TenantLifecycleRequest,
   TenantLogo,
   TenantPage,
@@ -195,6 +202,7 @@ part 'serializers.g.dart';
   TenantUsage,
   TenantUsageHistory,
   TenantUsageSnapshot,
+  TenantWithPassword,
   UpdateAgeCategoryRequest,
   UpdateMeRequest,
   UpdateMemberRequest,
@@ -321,8 +329,12 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<String>(),
       )
       ..add(AgeCategoryInput.serializer)
+      ..add(ApprovalRequest.serializer)
+      ..add(Member.serializer)
       ..add(PersonalData.serializer)
       ..add(SeasonInput.serializer)
+      ..add(Tenant.serializer)
+      ..add(TenantAdmin.serializer)
       ..add(const OneOfSerializer())
       ..add(const AnyOfSerializer())
       ..add(const DateSerializer())

@@ -12,6 +12,7 @@ import 'package:hoops_core_api/src/api_util.dart';
 import 'package:hoops_core_api/src/model/invite_member_request.dart';
 import 'package:hoops_core_api/src/model/member.dart';
 import 'package:hoops_core_api/src/model/member_page.dart';
+import 'package:hoops_core_api/src/model/member_with_password.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/replace_member_roles_request.dart';
 import 'package:hoops_core_api/src/model/tenant_role.dart';
@@ -194,7 +195,7 @@ class MembersApi {
   }
 
   /// Invite a member
-  /// Creates the person with the given roles and, when &#x60;email&#x60; is present, provisions a Keycloak user with a required-action e-mail. The PLAYER role requires &#x60;birthDate&#x60; and &#x60;gender&#x60; (422). Players created here are ACTIVE (admin path); coaches add players through &#x60;POST /api/core/players&#x60;. Authz: ADMIN.
+  /// Creates the person with the given roles and, with &#x60;sendInvitation&#x60; (default) and an &#x60;email&#x60;, gives them a login: a new Keycloak login gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login (the e-mail already signs in elsewhere) is linked and gets none. The PLAYER role requires &#x60;birthDate&#x60; and &#x60;gender&#x60; (422). Players created here are ACTIVE (admin path); coaches add players through &#x60;POST /api/core/players&#x60;. Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -206,9 +207,9 @@ class MembersApi {
   /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
   /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
   ///
-  /// Returns a [Future] containing a [Response] with a [Member] as data
+  /// Returns a [Future] containing a [Response] with a [MemberWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> inviteMember({
+  Future<Response<MemberWithPassword>> inviteMember({
     required String xTenantId,
     required InviteMemberRequest inviteMemberRequest,
     CancelToken? cancelToken,
@@ -266,14 +267,14 @@ class MembersApi {
       onReceiveProgress: onReceiveProgress,
     );
 
-    Member? _responseData;
+    MemberWithPassword? _responseData;
 
     try {
       final rawResponse = _response.data;
       _responseData = rawResponse == null ? null : _serializers.deserialize(
         rawResponse,
-        specifiedType: const FullType(Member),
-      ) as Member;
+        specifiedType: const FullType(MemberWithPassword),
+      ) as MemberWithPassword;
 
     } catch (error, stackTrace) {
       throw DioException(
@@ -285,7 +286,91 @@ class MembersApi {
       );
     }
 
-    return Response<Member>(
+    return Response<MemberWithPassword>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Issue a new temporary password for a pending member
+  /// Replaces the password of the member&#39;s login by a new temporary password, returned once in &#x60;temporaryPassword&#x60; (always present here); Keycloak asks for a new password at the first sign-in. Only for an active member whose invitation is PENDING and who has not chosen a password of their own (409 &#x60;INVITATION_NOT_PENDING&#x60; otherwise, also for a member without a login); 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may reset it); 502 when Keycloak fails (nothing is changed). Authz: ADMIN.
+  ///
+  /// Parameters:
+  /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
+  /// * [personId]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [MemberWithPassword] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<MemberWithPassword>> issueMemberTemporaryPassword({
+    required String xTenantId,
+    required String personId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/core/members/{personId}/temporary-password'.replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'X-Tenant-Id': xTenantId,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    MemberWithPassword? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(MemberWithPassword),
+      ) as MemberWithPassword;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<MemberWithPassword>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -505,7 +590,7 @@ class MembersApi {
   }
 
   /// Update a member&#39;s personal data
-  /// Absent fields are left unchanged; &#x60;null&#x60; clears an optional field. Changing the &#x60;email&#x60; of a member with a login (&#x60;userId&#x60;) also moves the login (ADR-0023): the Keycloak username and e-mail become the new address (unverified) and a verification e-mail is sent to it (the account-setup e-mail while the invitation is PENDING). 409 &#x60;EMAIL_TAKEN&#x60; when another member of the tenant or another login uses the address; 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may move it); 422 &#x60;LOGIN_REQUIRES_EMAIL&#x60; when the e-mail of a member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN.
+  /// Absent fields are left unchanged; &#x60;null&#x60; clears an optional field. Changing the &#x60;email&#x60; of a member with a login (&#x60;userId&#x60;) also moves the login (ADR-0023): the Keycloak username and e-mail become the new address (no e-mail is sent, the password is unchanged, ADR-0024). 409 &#x60;EMAIL_TAKEN&#x60; when another member of the tenant or another login uses the address; 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may move it); 422 &#x60;LOGIN_REQUIRES_EMAIL&#x60; when the e-mail of a member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

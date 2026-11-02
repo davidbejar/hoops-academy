@@ -17,21 +17,21 @@ part 'invite_member_request.g.dart';
 /// InviteMemberRequest
 ///
 /// Properties:
-/// * [givenName] 
-/// * [familyName] 
-/// * [email] 
-/// * [phone] 
-/// * [birthDate] 
-/// * [gender] 
-/// * [locale] 
-/// * [roles] 
-/// * [sendInvitation] - Provision a login and send the invitation e-mail (requires `email`).
+/// * [givenName]
+/// * [familyName]
+/// * [email]
+/// * [phone]
+/// * [birthDate]
+/// * [gender]
+/// * [locale]
+/// * [roles]
+/// * [sendInvitation] - Give the member a login (requires `email`); a new login's temporary password is returned once.
 @BuiltValue()
 abstract class InviteMemberRequest implements PersonalData, Built<InviteMemberRequest, InviteMemberRequestBuilder> {
   @BuiltValueField(wireName: r'roles')
   BuiltSet<TenantRole> get roles;
 
-  /// Provision a login and send the invitation e-mail (requires `email`).
+  /// Give the member a login (requires `email`); a new login's temporary password is returned once.
   @BuiltValueField(wireName: r'sendInvitation')
   bool? get sendInvitation;
 
@@ -236,5 +236,3 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
     return result.build();
   }
 }
-
-

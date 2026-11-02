@@ -14,18 +14,18 @@ part 'tenant.g.dart';
 /// Tenant
 ///
 /// Properties:
-/// * [id] 
-/// * [slug] 
-/// * [name] 
-/// * [status] 
+/// * [id]
+/// * [slug]
+/// * [name]
+/// * [status]
 /// * [timezone] - IANA time zone id.
-/// * [defaultLocale] 
-/// * [createdAt] 
-/// * [suspendedAt] 
-/// * [withdrawnAt] 
+/// * [defaultLocale]
+/// * [createdAt]
+/// * [suspendedAt]
+/// * [withdrawnAt]
 /// * [retainUntil] - For WITHDRAWN tenants, the date until which data is retained.
-@BuiltValue()
-abstract class Tenant implements Built<Tenant, TenantBuilder> {
+@BuiltValue(instantiable: false)
+abstract class Tenant  {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -60,20 +60,13 @@ abstract class Tenant implements Built<Tenant, TenantBuilder> {
   @BuiltValueField(wireName: r'retainUntil')
   Date? get retainUntil;
 
-  Tenant._();
-
-  factory Tenant([void updates(TenantBuilder b)]) = _$Tenant;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(TenantBuilder b) => b;
-
   @BuiltValueSerializer(custom: true)
   static Serializer<Tenant> get serializer => _$TenantSerializer();
 }
 
 class _$TenantSerializer implements PrimitiveSerializer<Tenant> {
   @override
-  final Iterable<Type> types = const [Tenant, _$Tenant];
+  final Iterable<Type> types = const [Tenant];
 
   @override
   final String wireName = r'Tenant';
@@ -148,6 +141,47 @@ class _$TenantSerializer implements PrimitiveSerializer<Tenant> {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+  }
+
+  @override
+  Tenant deserialize(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return serializers.deserialize(serialized, specifiedType: FullType($Tenant)) as $Tenant;
+  }
+}
+
+
+/// a concrete implementation of [Tenant], since [Tenant] is not instantiable
+@BuiltValue(instantiable: true)
+abstract class $Tenant implements Tenant, Built<$Tenant, $TenantBuilder> {
+  $Tenant._();
+
+  factory $Tenant([void Function($TenantBuilder)? updates]) = _$$Tenant;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults($TenantBuilder b) => b;
+
+  @BuiltValueSerializer(custom: true)
+  static Serializer<$Tenant> get serializer => _$$TenantSerializer();
+}
+
+class _$$TenantSerializer implements PrimitiveSerializer<$Tenant> {
+  @override
+  final Iterable<Type> types = const [$Tenant, _$$Tenant];
+
+  @override
+  final String wireName = r'$Tenant';
+
+  @override
+  Object serialize(
+    Serializers serializers,
+    $Tenant object, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return serializers.serialize(object, specifiedType: FullType(Tenant))!;
   }
 
   void _deserializeProperties(
@@ -244,12 +278,12 @@ class _$TenantSerializer implements PrimitiveSerializer<Tenant> {
   }
 
   @override
-  Tenant deserialize(
+  $Tenant deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = TenantBuilder();
+    final result = $TenantBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -263,5 +297,3 @@ class _$TenantSerializer implements PrimitiveSerializer<Tenant> {
     return result.build();
   }
 }
-
-

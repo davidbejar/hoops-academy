@@ -9,7 +9,7 @@ import 'package:built_value/serializer.dart';
 
 part 'invitation_status.g.dart';
 
-/// NONE = person without login; PENDING = Keycloak user created, required actions outstanding.
+/// NONE = person without login; PENDING = login created by this academy, the person has not signed in here yet (a temporary password can be issued); ACCEPTED = signed in, or an existing login was linked.
 class InvitationStatus extends EnumClass {
 
   @BuiltValueEnumConst(wireName: r'NONE')
@@ -36,4 +36,3 @@ class InvitationStatus extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class InvitationStatusMixin = Object with _$InvitationStatusMixin;
-

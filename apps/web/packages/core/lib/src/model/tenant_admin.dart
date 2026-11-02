@@ -20,8 +20,8 @@ part 'tenant_admin.g.dart';
 /// * [email]
 /// * [invitationStatus]
 /// * [otherRoles] - The person's tenant roles besides ADMIN (removing the administrator keeps these).
-@BuiltValue()
-abstract class TenantAdmin implements Built<TenantAdmin, TenantAdminBuilder> {
+@BuiltValue(instantiable: false)
+abstract class TenantAdmin  {
   @BuiltValueField(wireName: r'personId')
   String get personId;
 
@@ -42,20 +42,13 @@ abstract class TenantAdmin implements Built<TenantAdmin, TenantAdminBuilder> {
   @BuiltValueField(wireName: r'otherRoles')
   BuiltSet<TenantRole> get otherRoles;
 
-  TenantAdmin._();
-
-  factory TenantAdmin([void updates(TenantAdminBuilder b)]) = _$TenantAdmin;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(TenantAdminBuilder b) => b;
-
   @BuiltValueSerializer(custom: true)
   static Serializer<TenantAdmin> get serializer => _$TenantAdminSerializer();
 }
 
 class _$TenantAdminSerializer implements PrimitiveSerializer<TenantAdmin> {
   @override
-  final Iterable<Type> types = const [TenantAdmin, _$TenantAdmin];
+  final Iterable<Type> types = const [TenantAdmin];
 
   @override
   final String wireName = r'TenantAdmin';
@@ -106,6 +99,47 @@ class _$TenantAdminSerializer implements PrimitiveSerializer<TenantAdmin> {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+  }
+
+  @override
+  TenantAdmin deserialize(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return serializers.deserialize(serialized, specifiedType: FullType($TenantAdmin)) as $TenantAdmin;
+  }
+}
+
+
+/// a concrete implementation of [TenantAdmin], since [TenantAdmin] is not instantiable
+@BuiltValue(instantiable: true)
+abstract class $TenantAdmin implements TenantAdmin, Built<$TenantAdmin, $TenantAdminBuilder> {
+  $TenantAdmin._();
+
+  factory $TenantAdmin([void Function($TenantAdminBuilder)? updates]) = _$$TenantAdmin;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults($TenantAdminBuilder b) => b;
+
+  @BuiltValueSerializer(custom: true)
+  static Serializer<$TenantAdmin> get serializer => _$$TenantAdminSerializer();
+}
+
+class _$$TenantAdminSerializer implements PrimitiveSerializer<$TenantAdmin> {
+  @override
+  final Iterable<Type> types = const [$TenantAdmin, _$$TenantAdmin];
+
+  @override
+  final String wireName = r'$TenantAdmin';
+
+  @override
+  Object serialize(
+    Serializers serializers,
+    $TenantAdmin object, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return serializers.serialize(object, specifiedType: FullType(TenantAdmin))!;
   }
 
   void _deserializeProperties(
@@ -172,12 +206,12 @@ class _$TenantAdminSerializer implements PrimitiveSerializer<TenantAdmin> {
   }
 
   @override
-  TenantAdmin deserialize(
+  $TenantAdmin deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = TenantAdminBuilder();
+    final result = $TenantAdminBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

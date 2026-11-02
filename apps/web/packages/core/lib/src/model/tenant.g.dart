@@ -6,7 +6,41 @@ part of 'tenant.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-class _$Tenant extends Tenant {
+abstract class TenantBuilder {
+  void replace(Tenant other);
+  void update(void Function(TenantBuilder) updates);
+  String? get id;
+  set id(String? id);
+
+  String? get slug;
+  set slug(String? slug);
+
+  String? get name;
+  set name(String? name);
+
+  TenantStatus? get status;
+  set status(TenantStatus? status);
+
+  String? get timezone;
+  set timezone(String? timezone);
+
+  Locale? get defaultLocale;
+  set defaultLocale(Locale? defaultLocale);
+
+  DateTime? get createdAt;
+  set createdAt(DateTime? createdAt);
+
+  DateTime? get suspendedAt;
+  set suspendedAt(DateTime? suspendedAt);
+
+  DateTime? get withdrawnAt;
+  set withdrawnAt(DateTime? withdrawnAt);
+
+  Date? get retainUntil;
+  set retainUntil(Date? retainUntil);
+}
+
+class _$$Tenant extends $Tenant {
   @override
   final String id;
   @override
@@ -28,10 +62,10 @@ class _$Tenant extends Tenant {
   @override
   final Date? retainUntil;
 
-  factory _$Tenant([void Function(TenantBuilder)? updates]) =>
-      (TenantBuilder()..update(updates))._build();
+  factory _$$Tenant([void Function($TenantBuilder)? updates]) =>
+      ($TenantBuilder()..update(updates))._build();
 
-  _$Tenant._(
+  _$$Tenant._(
       {required this.id,
       required this.slug,
       required this.name,
@@ -44,16 +78,16 @@ class _$Tenant extends Tenant {
       this.retainUntil})
       : super._();
   @override
-  Tenant rebuild(void Function(TenantBuilder) updates) =>
+  $Tenant rebuild(void Function($TenantBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  TenantBuilder toBuilder() => TenantBuilder()..replace(this);
+  $TenantBuilder toBuilder() => $TenantBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is Tenant &&
+    return other is $Tenant &&
         id == other.id &&
         slug == other.slug &&
         name == other.name &&
@@ -85,7 +119,7 @@ class _$Tenant extends Tenant {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'Tenant')
+    return (newBuiltValueToStringHelper(r'$Tenant')
           ..add('id', id)
           ..add('slug', slug)
           ..add('name', name)
@@ -100,55 +134,59 @@ class _$Tenant extends Tenant {
   }
 }
 
-class TenantBuilder implements Builder<Tenant, TenantBuilder> {
-  _$Tenant? _$v;
+class $TenantBuilder
+    implements Builder<$Tenant, $TenantBuilder>, TenantBuilder {
+  _$$Tenant? _$v;
 
   String? _id;
   String? get id => _$this._id;
-  set id(String? id) => _$this._id = id;
+  set id(covariant String? id) => _$this._id = id;
 
   String? _slug;
   String? get slug => _$this._slug;
-  set slug(String? slug) => _$this._slug = slug;
+  set slug(covariant String? slug) => _$this._slug = slug;
 
   String? _name;
   String? get name => _$this._name;
-  set name(String? name) => _$this._name = name;
+  set name(covariant String? name) => _$this._name = name;
 
   TenantStatus? _status;
   TenantStatus? get status => _$this._status;
-  set status(TenantStatus? status) => _$this._status = status;
+  set status(covariant TenantStatus? status) => _$this._status = status;
 
   String? _timezone;
   String? get timezone => _$this._timezone;
-  set timezone(String? timezone) => _$this._timezone = timezone;
+  set timezone(covariant String? timezone) => _$this._timezone = timezone;
 
   Locale? _defaultLocale;
   Locale? get defaultLocale => _$this._defaultLocale;
-  set defaultLocale(Locale? defaultLocale) =>
+  set defaultLocale(covariant Locale? defaultLocale) =>
       _$this._defaultLocale = defaultLocale;
 
   DateTime? _createdAt;
   DateTime? get createdAt => _$this._createdAt;
-  set createdAt(DateTime? createdAt) => _$this._createdAt = createdAt;
+  set createdAt(covariant DateTime? createdAt) => _$this._createdAt = createdAt;
 
   DateTime? _suspendedAt;
   DateTime? get suspendedAt => _$this._suspendedAt;
-  set suspendedAt(DateTime? suspendedAt) => _$this._suspendedAt = suspendedAt;
+  set suspendedAt(covariant DateTime? suspendedAt) =>
+      _$this._suspendedAt = suspendedAt;
 
   DateTime? _withdrawnAt;
   DateTime? get withdrawnAt => _$this._withdrawnAt;
-  set withdrawnAt(DateTime? withdrawnAt) => _$this._withdrawnAt = withdrawnAt;
+  set withdrawnAt(covariant DateTime? withdrawnAt) =>
+      _$this._withdrawnAt = withdrawnAt;
 
   Date? _retainUntil;
   Date? get retainUntil => _$this._retainUntil;
-  set retainUntil(Date? retainUntil) => _$this._retainUntil = retainUntil;
+  set retainUntil(covariant Date? retainUntil) =>
+      _$this._retainUntil = retainUntil;
 
-  TenantBuilder() {
-    Tenant._defaults(this);
+  $TenantBuilder() {
+    $Tenant._defaults(this);
   }
 
-  TenantBuilder get _$this {
+  $TenantBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _id = $v.id;
@@ -167,32 +205,32 @@ class TenantBuilder implements Builder<Tenant, TenantBuilder> {
   }
 
   @override
-  void replace(Tenant other) {
-    _$v = other as _$Tenant;
+  void replace(covariant $Tenant other) {
+    _$v = other as _$$Tenant;
   }
 
   @override
-  void update(void Function(TenantBuilder)? updates) {
+  void update(void Function($TenantBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  Tenant build() => _build();
+  $Tenant build() => _build();
 
-  _$Tenant _build() {
+  _$$Tenant _build() {
     final _$result = _$v ??
-        _$Tenant._(
-          id: BuiltValueNullFieldError.checkNotNull(id, r'Tenant', 'id'),
-          slug: BuiltValueNullFieldError.checkNotNull(slug, r'Tenant', 'slug'),
-          name: BuiltValueNullFieldError.checkNotNull(name, r'Tenant', 'name'),
+        _$$Tenant._(
+          id: BuiltValueNullFieldError.checkNotNull(id, r'$Tenant', 'id'),
+          slug: BuiltValueNullFieldError.checkNotNull(slug, r'$Tenant', 'slug'),
+          name: BuiltValueNullFieldError.checkNotNull(name, r'$Tenant', 'name'),
           status: BuiltValueNullFieldError.checkNotNull(
-              status, r'Tenant', 'status'),
+              status, r'$Tenant', 'status'),
           timezone: BuiltValueNullFieldError.checkNotNull(
-              timezone, r'Tenant', 'timezone'),
+              timezone, r'$Tenant', 'timezone'),
           defaultLocale: BuiltValueNullFieldError.checkNotNull(
-              defaultLocale, r'Tenant', 'defaultLocale'),
+              defaultLocale, r'$Tenant', 'defaultLocale'),
           createdAt: BuiltValueNullFieldError.checkNotNull(
-              createdAt, r'Tenant', 'createdAt'),
+              createdAt, r'$Tenant', 'createdAt'),
           suspendedAt: suspendedAt,
           withdrawnAt: withdrawnAt,
           retainUntil: retainUntil,

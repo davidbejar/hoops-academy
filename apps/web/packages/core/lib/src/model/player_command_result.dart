@@ -13,8 +13,9 @@ part 'player_command_result.g.dart';
 /// Outcome of an add/withdraw command; `approvalRequest.status` tells whether it took effect (APPROVED) or awaits a decision (PENDING).
 ///
 /// Properties:
-/// * [player] 
-/// * [approvalRequest] 
+/// * [player]
+/// * [approvalRequest]
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
 @BuiltValue()
 abstract class PlayerCommandResult implements Built<PlayerCommandResult, PlayerCommandResultBuilder> {
   @BuiltValueField(wireName: r'player')
@@ -22,6 +23,10 @@ abstract class PlayerCommandResult implements Built<PlayerCommandResult, PlayerC
 
   @BuiltValueField(wireName: r'approvalRequest')
   ApprovalRequest get approvalRequest;
+
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+  @BuiltValueField(wireName: r'temporaryPassword')
+  String? get temporaryPassword;
 
   PlayerCommandResult._();
 
@@ -56,6 +61,13 @@ class _$PlayerCommandResultSerializer implements PrimitiveSerializer<PlayerComma
       object.approvalRequest,
       specifiedType: const FullType(ApprovalRequest),
     );
+    if (object.temporaryPassword != null) {
+      yield r'temporaryPassword';
+      yield serializers.serialize(
+        object.temporaryPassword,
+        specifiedType: const FullType(String),
+      );
+    }
   }
 
   @override
@@ -91,7 +103,15 @@ class _$PlayerCommandResultSerializer implements PrimitiveSerializer<PlayerComma
             value,
             specifiedType: const FullType(ApprovalRequest),
           ) as ApprovalRequest;
-          result.approvalRequest.replace(valueDes);
+          result.approvalRequest = valueDes;
+          break;
+        case r'temporaryPassword':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.temporaryPassword = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -121,5 +141,3 @@ class _$PlayerCommandResultSerializer implements PrimitiveSerializer<PlayerComma
     return result.build();
   }
 }
-
-

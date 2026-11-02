@@ -17,23 +17,23 @@ part 'member.g.dart';
 /// Member
 ///
 /// Properties:
-/// * [personId] 
+/// * [personId]
 /// * [userId] - Platform user (login) of the person; null for persons without login (e.g. young players).
-/// * [givenName] 
-/// * [familyName] 
-/// * [displayName] 
-/// * [email] 
-/// * [phone] 
-/// * [birthDate] 
-/// * [gender] 
-/// * [locale] 
-/// * [roles] 
+/// * [givenName]
+/// * [familyName]
+/// * [displayName]
+/// * [email]
+/// * [phone]
+/// * [birthDate]
+/// * [gender]
+/// * [locale]
+/// * [roles]
 /// * [playerId] - Set when the member holds the PLAYER role.
-/// * [active] 
-/// * [invitationStatus] 
-/// * [createdAt] 
-@BuiltValue()
-abstract class Member implements Built<Member, MemberBuilder> {
+/// * [active]
+/// * [invitationStatus]
+/// * [createdAt]
+@BuiltValue(instantiable: false)
+abstract class Member  {
   @BuiltValueField(wireName: r'personId')
   String get personId;
 
@@ -84,20 +84,13 @@ abstract class Member implements Built<Member, MemberBuilder> {
   @BuiltValueField(wireName: r'createdAt')
   DateTime get createdAt;
 
-  Member._();
-
-  factory Member([void updates(MemberBuilder b)]) = _$Member;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(MemberBuilder b) => b;
-
   @BuiltValueSerializer(custom: true)
   static Serializer<Member> get serializer => _$MemberSerializer();
 }
 
 class _$MemberSerializer implements PrimitiveSerializer<Member> {
   @override
-  final Iterable<Type> types = const [Member, _$Member];
+  final Iterable<Type> types = const [Member];
 
   @override
   final String wireName = r'Member';
@@ -205,6 +198,47 @@ class _$MemberSerializer implements PrimitiveSerializer<Member> {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+  }
+
+  @override
+  Member deserialize(
+    Serializers serializers,
+    Object serialized, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return serializers.deserialize(serialized, specifiedType: FullType($Member)) as $Member;
+  }
+}
+
+
+/// a concrete implementation of [Member], since [Member] is not instantiable
+@BuiltValue(instantiable: true)
+abstract class $Member implements Member, Built<$Member, $MemberBuilder> {
+  $Member._();
+
+  factory $Member([void Function($MemberBuilder)? updates]) = _$$Member;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults($MemberBuilder b) => b;
+
+  @BuiltValueSerializer(custom: true)
+  static Serializer<$Member> get serializer => _$$MemberSerializer();
+}
+
+class _$$MemberSerializer implements PrimitiveSerializer<$Member> {
+  @override
+  final Iterable<Type> types = const [$Member, _$$Member];
+
+  @override
+  final String wireName = r'$Member';
+
+  @override
+  Object serialize(
+    Serializers serializers,
+    $Member object, {
+    FullType specifiedType = FullType.unspecified,
+  }) {
+    return serializers.serialize(object, specifiedType: FullType(Member))!;
   }
 
   void _deserializeProperties(
@@ -340,12 +374,12 @@ class _$MemberSerializer implements PrimitiveSerializer<Member> {
   }
 
   @override
-  Member deserialize(
+  $Member deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = MemberBuilder();
+    final result = $MemberBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -359,5 +393,3 @@ class _$MemberSerializer implements PrimitiveSerializer<Member> {
     return result.build();
   }
 }
-
-

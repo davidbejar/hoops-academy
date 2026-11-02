@@ -16,11 +16,13 @@ import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/tenant.dart';
 import 'package:hoops_core_api/src/model/tenant_admin.dart';
 import 'package:hoops_core_api/src/model/tenant_admin_page.dart';
+import 'package:hoops_core_api/src/model/tenant_admin_with_password.dart';
 import 'package:hoops_core_api/src/model/tenant_lifecycle_request.dart';
 import 'package:hoops_core_api/src/model/tenant_page.dart';
 import 'package:hoops_core_api/src/model/tenant_status.dart';
 import 'package:hoops_core_api/src/model/tenant_usage.dart';
 import 'package:hoops_core_api/src/model/tenant_usage_history.dart';
+import 'package:hoops_core_api/src/model/tenant_with_password.dart';
 import 'package:hoops_core_api/src/model/update_tenant_admin_request.dart';
 import 'package:hoops_core_api/src/model/update_tenant_request.dart';
 
@@ -33,7 +35,7 @@ class PlatformApi {
   const PlatformApi(this._dio, this._serializers);
 
   /// Add an administrator to a tenant
-  /// When an active member of the tenant has this e-mail, they gain the ADMIN role (200; their names are kept; a member without a login is given one, with the account-setup e-mail). Otherwise a new member is invited with the ADMIN role through the onboarding saga — a new Keycloak user gets the account-setup e-mail, an existing login is linked (201). 409 &#x60;EMAIL_TAKEN&#x60; when a deactivated member has the e-mail, &#x60;LOGIN_ALREADY_MEMBER&#x60; when the login already belongs to another member of the tenant, &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is kept). Authz: super_admin.
+  /// When an active member of the tenant has this e-mail, they gain the ADMIN role (200; their names are kept; a member without a login is given one). Otherwise a new member is invited with the ADMIN role through the onboarding saga (201). A login created by this call gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login is linked and gets none (the person signs in with their own). 409 &#x60;EMAIL_TAKEN&#x60; when a deactivated member has the e-mail, &#x60;LOGIN_ALREADY_MEMBER&#x60; when the login already belongs to another member of the tenant, &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is kept). Authz: super_admin.
   ///
   /// Parameters:
   /// * [tenantId]
@@ -45,9 +47,9 @@ class PlatformApi {
   /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
   /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
   ///
-  /// Returns a [Future] containing a [Response] with a [TenantAdmin] as data
+  /// Returns a [Future] containing a [Response] with a [TenantAdminWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantAdmin>> addTenantAdmin({
+  Future<Response<TenantAdminWithPassword>> addTenantAdmin({
     required String tenantId,
     required AddTenantAdminRequest addTenantAdminRequest,
     CancelToken? cancelToken,
@@ -104,14 +106,14 @@ class PlatformApi {
       onReceiveProgress: onReceiveProgress,
     );
 
-    TenantAdmin? _responseData;
+    TenantAdminWithPassword? _responseData;
 
     try {
       final rawResponse = _response.data;
       _responseData = rawResponse == null ? null : _serializers.deserialize(
         rawResponse,
-        specifiedType: const FullType(TenantAdmin),
-      ) as TenantAdmin;
+        specifiedType: const FullType(TenantAdminWithPassword),
+      ) as TenantAdminWithPassword;
 
     } catch (error, stackTrace) {
       throw DioException(
@@ -123,7 +125,7 @@ class PlatformApi {
       );
     }
 
-    return Response<TenantAdmin>(
+    return Response<TenantAdminWithPassword>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -136,7 +138,7 @@ class PlatformApi {
   }
 
   /// Onboard a tenant
-  /// Atomically creates the tenant, its default settings, the seeded age categories (U8 … U18, SENIOR) and the first ADMIN membership; the admin is provisioned in Keycloak with a required-action e-mail. Authz: super_admin.
+  /// Atomically creates the tenant, its default settings, the seeded age categories (U8 … U18, SENIOR) and the first ADMIN membership. A new Keycloak login for the admin gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login (the e-mail already signs in elsewhere) is linked and gets none. Authz: super_admin.
   ///
   /// Parameters:
   /// * [createTenantRequest]
@@ -147,9 +149,9 @@ class PlatformApi {
   /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
   /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
   ///
-  /// Returns a [Future] containing a [Response] with a [Tenant] as data
+  /// Returns a [Future] containing a [Response] with a [TenantWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> createTenant({
+  Future<Response<TenantWithPassword>> createTenant({
     required CreateTenantRequest createTenantRequest,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -205,14 +207,14 @@ class PlatformApi {
       onReceiveProgress: onReceiveProgress,
     );
 
-    Tenant? _responseData;
+    TenantWithPassword? _responseData;
 
     try {
       final rawResponse = _response.data;
       _responseData = rawResponse == null ? null : _serializers.deserialize(
         rawResponse,
-        specifiedType: const FullType(Tenant),
-      ) as Tenant;
+        specifiedType: const FullType(TenantWithPassword),
+      ) as TenantWithPassword;
 
     } catch (error, stackTrace) {
       throw DioException(
@@ -224,7 +226,7 @@ class PlatformApi {
       );
     }
 
-    return Response<Tenant>(
+    return Response<TenantWithPassword>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -478,6 +480,89 @@ class PlatformApi {
     }
 
     return Response<TenantUsageHistory>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Issue a new temporary password for a pending administrator
+  /// Replaces the password of the administrator&#39;s login by a new temporary password, returned once in &#x60;temporaryPassword&#x60; (always present here); Keycloak asks for a new password at the first sign-in. Also repairs a pending login that has no password at all. Only while the invitation is PENDING and the person has not chosen a password of their own (409 &#x60;INVITATION_NOT_PENDING&#x60; otherwise, also for an administrator without a login); 404 when the person is not an active administrator; 409 &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed). Authz: super_admin.
+  ///
+  /// Parameters:
+  /// * [tenantId]
+  /// * [personId]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TenantAdminWithPassword] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TenantAdminWithPassword>> issueTenantAdminTemporaryPassword({
+    required String tenantId,
+    required String personId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/tenants/{tenantId}/admins/{personId}/temporary-password'.replaceAll('{' r'tenantId' '}', encodeQueryParameter(_serializers, tenantId, const FullType(String)).toString()).replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TenantAdminWithPassword? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantAdminWithPassword),
+      ) as TenantAdminWithPassword;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TenantAdminWithPassword>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -811,8 +896,8 @@ class PlatformApi {
     return _response;
   }
 
-  /// Resend the account-setup e-mail of an administrator
-  /// Only while the invitation is PENDING (409 &#x60;INVITATION_NOT_PENDING&#x60; otherwise); 404 when the person is not an active administrator; 409 &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails. Authz: super_admin.
+  /// Deprecated alias of issueTenantAdminTemporaryPassword
+  /// Deprecated since 2.3.0, removed in 3.0.0: use &#x60;issueTenantAdminTemporaryPassword&#x60; (&#x60;POST .../temporary-password&#x60;). Same behaviour, answers 202. Authz: super_admin.
   ///
   /// Parameters:
   /// * [tenantId]
@@ -824,9 +909,10 @@ class PlatformApi {
   /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
   /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
   ///
-  /// Returns a [Future] containing a [Response] with a [TenantAdmin] as data
+  /// Returns a [Future] containing a [Response] with a [TenantAdminWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantAdmin>> resendTenantAdminInvitation({
+  @Deprecated('This operation has been deprecated')
+  Future<Response<TenantAdminWithPassword>> resendTenantAdminInvitation({
     required String tenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -863,14 +949,14 @@ class PlatformApi {
       onReceiveProgress: onReceiveProgress,
     );
 
-    TenantAdmin? _responseData;
+    TenantAdminWithPassword? _responseData;
 
     try {
       final rawResponse = _response.data;
       _responseData = rawResponse == null ? null : _serializers.deserialize(
         rawResponse,
-        specifiedType: const FullType(TenantAdmin),
-      ) as TenantAdmin;
+        specifiedType: const FullType(TenantAdminWithPassword),
+      ) as TenantAdminWithPassword;
 
     } catch (error, stackTrace) {
       throw DioException(
@@ -882,7 +968,7 @@ class PlatformApi {
       );
     }
 
-    return Response<TenantAdmin>(
+    return Response<TenantAdminWithPassword>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
@@ -1101,7 +1187,7 @@ class PlatformApi {
   }
 
   /// Edit an administrator&#39;s names or e-mail
-  /// Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and e-mail, unverified, verification e-mail to the new address — the account-setup e-mail while the invitation is PENDING), also when the login is used in other academies (ADR-0023). 404 when the person is not an active administrator of the tenant; 409 &#x60;EMAIL_TAKEN&#x60; (another member or login uses the address), &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed). Authz: super_admin.
+  /// Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and e-mail; no e-mail is sent, the password is unchanged), also when the login is used in other academies (ADR-0023, ADR-0024). 404 when the person is not an active administrator of the tenant; 409 &#x60;EMAIL_TAKEN&#x60; (another member or login uses the address), &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed). Authz: super_admin.
   ///
   /// Parameters:
   /// * [tenantId]

@@ -101,13 +101,13 @@ class FakeMembersRepository with Faulty implements MembersRepository {
   @override
   Future<api.Member> replaceRoles(String personId, Set<api.TenantRole> roles) => run('replaceRoles', () {
     final i = members.indexWhere((m) => m.personId == personId);
-    members[i] = members[i].rebuild((b) => b.roles.replace(roles));
+    members[i] = (members[i] as api.$Member).rebuild((b) => b.roles.replace(roles));
     return members[i];
   });
   @override
   Future<api.Member> deactivate(String personId) => run('deactivate', () {
     final i = members.indexWhere((m) => m.personId == personId);
-    members[i] = members[i].rebuild((b) => b.active = false);
+    members[i] = (members[i] as api.$Member).rebuild((b) => b.active = false);
     return members[i];
   });
   @override
@@ -311,8 +311,8 @@ class FakePlayersRepository with Faulty implements PlayersRepository {
     return api.PlayerCommandResult(
       (b) => b
         ..player.replace(p)
-        ..approvalRequest.replace(approval('a-new',
-            status: createdPending ? api.ApprovalStatus.PENDING : api.ApprovalStatus.APPROVED)),
+        ..approvalRequest = approval('a-new',
+            status: createdPending ? api.ApprovalStatus.PENDING : api.ApprovalStatus.APPROVED),
     );
   });
   @override
@@ -323,8 +323,8 @@ class FakePlayersRepository with Faulty implements PlayersRepository {
     return api.PlayerCommandResult(
       (b) => b
         ..player.replace(players[i])
-        ..approvalRequest.replace(approval('a-w', action: api.ApprovalAction.WITHDRAW_PLAYER,
-            status: createdPending ? api.ApprovalStatus.PENDING : api.ApprovalStatus.APPROVED)),
+        ..approvalRequest = approval('a-w', action: api.ApprovalAction.WITHDRAW_PLAYER,
+            status: createdPending ? api.ApprovalStatus.PENDING : api.ApprovalStatus.APPROVED),
     );
   });
   @override
@@ -339,7 +339,7 @@ class FakeApprovalsRepository with Faulty implements ApprovalsRepository {
 
   void _set(String id, api.ApprovalStatus s, String? note) {
     final i = requests.indexWhere((r) => r.id == id);
-    requests[i] = requests[i].rebuild((b) => b
+    requests[i] = (requests[i] as api.$ApprovalRequest).rebuild((b) => b
       ..status = s
       ..decisionNote = note);
   }
