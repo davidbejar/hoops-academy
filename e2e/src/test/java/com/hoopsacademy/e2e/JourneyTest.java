@@ -79,6 +79,8 @@ class JourneyTest {
     // tenant A
     private UUID tenantA;
     private String adminEmail;
+    /** Shown once by the create-tenant response (ADR-0024); only ever sent to Keycloak. */
+    private String adminTemporaryPassword;
     private Actor admin;
     private UUID seasonId;
     private Map<String, UUID> categoryByCode = new java.util.HashMap<>();
@@ -134,22 +136,26 @@ class JourneyTest {
                 "firstAdmin", of("email", adminEmail, "givenName", "Ada", "familyName", "Admin"))), 201);
         tenantA = id(r, "id");
         assertEquals("ACTIVE", r.jsonPath().getString("status"));
+        assertEquals("no-store", r.header("Cache-Control"));
+        adminTemporaryPassword = r.jsonPath().getString("temporaryPassword");
+        assertThat(adminTemporaryPassword).as("temporary password of the first admin").hasSize(16);
     }
 
     @Test
     @Order(2)
-    void setupEmailArrivesInMailHog() {
-        assumeTrue(mail.reachable(), "MailHog not reachable at " + E2eEnv.mailhogUrl() + " (set E2E_MAILHOG_URL)");
-        var msg = await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofSeconds(1))
-                .until(() -> mail.latestTo(adminEmail), java.util.Optional::isPresent).orElseThrow();
-        assertFalse(msg.get("Content").get("Body").asText().isBlank(), "setup e-mail has a body");
-        // the link needs a browser; the suite sets the password through the Keycloak Admin API instead (KeycloakAdmin)
+    void firstAdminSignsInWithTheTemporaryPasswordAndMustChooseTheirOwn() {
+        // ADR-0024: no setup e-mail; Keycloak shows "update password" at the first sign-in with the temporary password
+        String token = tokens.firstLogin(adminEmail, adminTemporaryPassword, password);
+        assertThat(KeycloakUserTokens.hasSub(token)).isTrue();
+        if (mail.reachable()) {
+            assertThat(mail.latestTo(adminEmail)).as("no e-mail to the new admin").isEmpty();
+        }
     }
 
     @Test
     @Order(3)
     void adminLogsInAndSeesTheTenant() {
-        admin = signIn("admin", adminEmail, tenantA);
+        admin = new Actor("admin", tokens.login(adminEmail, password), tenantA);
         Response me = status(admin.inTenant(null).get("/api/core/me"), 200);
         assertThat(me.jsonPath().getList("memberships.tenant.id")).contains(tenantA.toString());
         assertThat(me.jsonPath().getList("memberships.find { it.tenant.id == '" + tenantA + "' }.roles")).contains("ADMIN");
@@ -185,6 +191,7 @@ class JourneyTest {
         Response c = status(admin.post("/api/core/members", of(
                 "givenName", "Carla", "familyName", "Coach", "email", email("coach"), "roles", List.of("COACH"))), 201);
         coachPersonId = id(c, "personId");
+        assertThat(c.jsonPath().getString("temporaryPassword")).hasSize(16);
         Response p = status(admin.post("/api/core/members", of(
                 "givenName", "Paco", "familyName", "Parent", "email", email("parent"), "roles", List.of("PARENT"))), 201);
         parentPersonId = id(p, "personId");
@@ -445,19 +452,30 @@ class JourneyTest {
         Response added = status(superAdmin.post(admins, of("email", typo, "givenName", "Sam", "familyName", "Second")), 201);
         UUID second = id(added, "personId");
         assertEquals("PENDING", added.jsonPath().getString("invitationStatus"));
+        assertThat(added.jsonPath().getString("temporaryPassword")).hasSize(16);
 
-        // correcting the e-mail moves the Keycloak login (username = e-mail) and re-sends the invitation to it
+        // correcting the e-mail moves the Keycloak login (username = e-mail); no e-mail is sent (ADR-0024)
         String fixed = email("second-admin");
         Response edited = status(superAdmin.patch(admins + "/" + second, of("email", fixed, "familyName", "Seconda")), 200);
         assertEquals(fixed, edited.jsonPath().getString("email"));
         assertEquals("Seconda", edited.jsonPath().getString("familyName"));
         assertEquals(fixed, keycloakAdmin.usernameOf(fixed));
         if (mail.reachable()) {
-            await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofSeconds(1))
-                    .until(() -> mail.latestTo(fixed), java.util.Optional::isPresent);
+            assertThat(mail.latestTo(fixed)).as("no e-mail to the corrected address").isEmpty();
         }
-        Actor secondAdmin = signIn("second admin", fixed, tenantA);
+
+        // the super admin issues a new temporary password while the invitation is pending; the admin signs in with it
+        Response issued = status(superAdmin.post(admins + "/" + second + "/temporary-password"), 200);
+        assertEquals("no-store", issued.header("Cache-Control"));
+        String temporary = issued.jsonPath().getString("temporaryPassword");
+        assertThat(temporary).hasSize(16).isNotEqualTo(added.jsonPath().getString("temporaryPassword"));
+        Actor secondAdmin = new Actor("second admin", tokens.firstLogin(fixed, temporary, password), tenantA);
         status(secondAdmin.get("/api/core/tenant"), 200);
+        status(secondAdmin.inTenant(null).get("/api/core/me"), 200); // the app's first call accepts the invitation
+        assertEquals("ACCEPTED", status(superAdmin.get(admins), 200).jsonPath()
+                .getString("items.find { it.personId == '" + second + "' }.invitationStatus"));
+        Response notPending = status(superAdmin.post(admins + "/" + second + "/temporary-password"), 409);
+        assertEquals("INVITATION_NOT_PENDING", notPending.jsonPath().getString("code"));
 
         status(superAdmin.delete(admins + "/" + second), 204);
         assertThat(status(superAdmin.get(admins), 200).jsonPath().getList("items.personId"))

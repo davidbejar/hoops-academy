@@ -53,7 +53,10 @@ public final class Contracts {
             try {
                 return delegate.filter(req, res, spy);
             } catch (OpenApiValidationFilter.OpenApiValidationException e) {
-                var real = e.getValidationReport().getMessages().stream().filter(m -> !isAllOfArtifact(m)).toList();
+                // the report also lists the IGNOREd request messages; only non-ignored, non-artifact ones count
+                var real = e.getValidationReport().getMessages().stream()
+                        .filter(m -> m.getLevel() != ValidationReport.Level.IGNORE)
+                        .filter(m -> !isAllOfArtifact(m)).toList();
                 if (real.isEmpty() && seen[0] != null) {
                     return seen[0];
                 }

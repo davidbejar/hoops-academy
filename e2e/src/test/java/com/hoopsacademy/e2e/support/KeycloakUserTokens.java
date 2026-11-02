@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 public final class KeycloakUserTokens {
     private static final Pattern FORM_ACTION = Pattern.compile("id=\"kc-form-login\"[^>]*action=\"([^\"]*)\"", Pattern.DOTALL);
     private static final Pattern FORM_ACTION_REV = Pattern.compile("action=\"([^\"]*)\"[^>]*id=\"kc-form-login\"", Pattern.DOTALL);
+    private static final Pattern UPDATE_PASSWORD_FORM =
+            Pattern.compile("id=\"kc-passwd-update-form\"[^>]*action=\"([^\"]*)\"", Pattern.DOTALL);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final String issuer = E2eEnv.baseUrl() + "/auth/realms/academy";
@@ -42,6 +44,21 @@ public final class KeycloakUserTokens {
 
     /** @return the access token of {@code username}. */
     public String login(String username, String password) {
+        return login(username, password, null);
+    }
+
+    /**
+     * First sign-in with a temporary password (ADR-0024): Keycloak must answer the credentials with its "update
+     * password" page (required action UPDATE_PASSWORD, form {@code kc-passwd-update-form}) instead of a code; the new
+     * password is submitted there, as a person would in the browser, and the code exchanged as usual.
+     *
+     * @return the access token of {@code username}, now signed in with {@code newPassword}
+     */
+    public String firstLogin(String username, String temporaryPassword, String newPassword) {
+        return login(username, temporaryPassword, newPassword);
+    }
+
+    private String login(String username, String password, String newPassword) {
         byte[] v = new byte[48];
         RANDOM.nextBytes(v);
         String verifier = b64url(v);
@@ -75,6 +92,10 @@ public final class KeycloakUserTokens {
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .header("Cookie", cookieHeader(jar))
                 .POST(HttpRequest.BodyPublishers.ofString(Http.form(Map.of("username", username, "password", password)))).build());
+        remember(jar, submit);
+        if (newPassword != null) {
+            submit = updatePassword(http, jar, username, submit, newPassword);
+        }
         String location = submit.headers().firstValue("Location").orElse("");
         if (submit.statusCode() != 302 || !location.startsWith(redirect)) {
             Matcher err = Pattern.compile("kc-feedback-text\">([^<]*)<|id=\"kc-error-message\">\\s*<p[^>]*>([^<]*)<", Pattern.DOTALL)
@@ -91,6 +112,35 @@ public final class KeycloakUserTokens {
                 "grant_type", "authorization_code", "client_id", "web", "code", params.get("code"),
                 "redirect_uri", redirect, "code_verifier", verifier)), 200);
         return tokens.get("access_token").asText();
+    }
+
+    private HttpResponse<String> updatePassword(HttpClient http, Map<String, String> jar, String username,
+            HttpResponse<String> answer, String newPassword) {
+        // Keycloak redirects to its required-action page (login-actions/required-action?execution=UPDATE_PASSWORD)
+        HttpResponse<String> credentialsAnswer = answer;
+        for (int hops = 0; hops < 5 && credentialsAnswer.statusCode() == 302; hops++) {
+            String next = credentialsAnswer.headers().firstValue("Location").orElse("");
+            if (next.startsWith(redirect)) {
+                throw new IllegalStateException("the temporary password of " + username + " signed in without asking "
+                        + "for a new password");
+            }
+            credentialsAnswer = Http.send(http, HttpRequest.newBuilder(credentialsAnswer.uri().resolve(next))
+                    .header("Cookie", cookieHeader(jar)).GET().build());
+            remember(jar, credentialsAnswer);
+        }
+        String page = credentialsAnswer.body() == null ? "" : credentialsAnswer.body();
+        Matcher form = UPDATE_PASSWORD_FORM.matcher(page);
+        if (credentialsAnswer.statusCode() != 200 || !form.find()) {
+            throw new IllegalStateException("the temporary password of " + username + " did not lead to Keycloak's "
+                    + "update-password page (status " + credentialsAnswer.statusCode() + ")");
+        }
+        HttpResponse<String> updated = Http.send(http, HttpRequest.newBuilder(URI.create(form.group(1).replace("&amp;", "&")))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Cookie", cookieHeader(jar))
+                .POST(HttpRequest.BodyPublishers.ofString(Http.form(Map.of(
+                        "password-new", newPassword, "password-confirm", newPassword)))).build());
+        remember(jar, updated);
+        return updated;
     }
 
     /** True when the JWT payload has a {@code sub} claim (the realm defect of WP18 bug 1 removes it). */
