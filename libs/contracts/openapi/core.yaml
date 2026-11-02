@@ -1,13 +1,14 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 2.1.0
+  version: 2.2.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
     Path families (all served by core-service):
     - `/api/core/**` — tenant API; every operation except `/api/core/me` requires `X-Tenant-Id`.
-    - `/platform/**` — platform super-admin API (realm role `super_admin`); never exposes tenant content.
+    - `/platform/**` — platform super-admin API (realm role `super_admin`); never exposes tenant content, with one
+      documented exception: the identity of a tenant's administrators (`/platform/tenants/{tenantId}/admins`, ADR-0023).
     - `/internal/**` — service-to-service API (client-credentials token with role `service`), blocked at the proxy,
       marked `x-internal` so it is not generated into the Flutter client.
 
@@ -19,7 +20,7 @@ security:
   - bearerAuth: []
 tags:
   - name: Platform
-    description: Tenant lifecycle and usage statistics (super_admin).
+    description: Tenant lifecycle, the tenant's administrators and usage statistics (super_admin).
   - name: Me
     description: The calling user and their memberships.
   - name: Tenant
@@ -205,6 +206,139 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /platform/tenants/{tenantId}/admins:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+    get:
+      operationId: listTenantAdmins
+      tags: [Platform]
+      summary: List the administrators of a tenant
+      description: |
+        Active members holding the ADMIN role, ordered by family and given name. The only tenant content the platform
+        reads (identity of the administrators, ADR-0023). 404 for an unknown tenant; 409 `TENANT_WITHDRAWN` for a
+        withdrawn one (ACTIVE and SUSPENDED tenants are managed). Authz: super_admin.
+      parameters:
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of administrators.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantAdminPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+    post:
+      operationId: addTenantAdmin
+      tags: [Platform]
+      summary: Add an administrator to a tenant
+      description: |
+        When an active member of the tenant has this e-mail, they gain the ADMIN role (200; their names are kept; a
+        member without a login is given one, with the account-setup e-mail). Otherwise a new member is invited with the
+        ADMIN role through the onboarding saga — a new Keycloak user gets the account-setup e-mail, an existing login
+        is linked (201). 409 `EMAIL_TAKEN` when a deactivated member has the e-mail, `LOGIN_ALREADY_MEMBER` when the
+        login already belongs to another member of the tenant, `TENANT_WITHDRAWN`; 502 when Keycloak fails (nothing is
+        kept). Authz: super_admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AddTenantAdminRequest'}
+      responses:
+        '200':
+          description: An existing member is now an administrator.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantAdmin'}
+        '201':
+          description: A new member was invited as administrator.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantAdmin'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
+  /platform/tenants/{tenantId}/admins/{personId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+      - $ref: '#/components/parameters/PersonId'
+    patch:
+      operationId: updateTenantAdmin
+      tags: [Platform]
+      summary: Edit an administrator's names or e-mail
+      description: |
+        Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and
+        e-mail, unverified, verification e-mail to the new address — the account-setup e-mail while the invitation is
+        PENDING), also when the login is used in other academies (ADR-0023). 404 when the person is not an active
+        administrator of the tenant; 409 `EMAIL_TAKEN` (another member or login uses the address), `TENANT_WITHDRAWN`;
+        502 when Keycloak fails (nothing is changed). Authz: super_admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateTenantAdminRequest'}
+      responses:
+        '200':
+          description: Updated administrator.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantAdmin'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
+    delete:
+      operationId: removeTenantAdmin
+      tags: [Platform]
+      summary: Remove an administrator
+      description: |
+        Drops the ADMIN role; a person whose only role was ADMIN is deactivated in this tenant. The Keycloak login is
+        never deleted or disabled (it may be used in other academies). 409 `LAST_ADMIN` for the tenant's last active
+        administrator (the `detail` explains that another administrator must be added first); 404 when the person is
+        not an active administrator; 409 `TENANT_WITHDRAWN`. Authz: super_admin.
+      responses:
+        '204':
+          description: The person is no longer an administrator.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+  /platform/tenants/{tenantId}/admins/{personId}/resend-invitation:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdPath'
+      - $ref: '#/components/parameters/PersonId'
+    post:
+      operationId: resendTenantAdminInvitation
+      tags: [Platform]
+      summary: Resend the account-setup e-mail of an administrator
+      description: |
+        Only while the invitation is PENDING (409 `INVITATION_NOT_PENDING` otherwise); 404 when the person is not an
+        active administrator; 409 `TENANT_WITHDRAWN`; 502 when Keycloak fails. Authz: super_admin.
+      responses:
+        '202':
+          description: The account-setup e-mail was handed to Keycloak; the administrator (still PENDING).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TenantAdmin'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /platform/tenants/{tenantId}/usage:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdPath'
@@ -1753,6 +1887,45 @@ components:
         givenName: {type: string, minLength: 1, maxLength: 80}
         familyName: {type: string, minLength: 1, maxLength: 80}
         locale: {$ref: './common.yaml#/components/schemas/Locale'}
+    TenantAdmin:
+      type: object
+      description: An administrator of a tenant as the platform sees it (identity only, ADR-0023).
+      required: [personId, givenName, familyName, invitationStatus, otherRoles]
+      properties:
+        personId: {type: string, format: uuid}
+        givenName: {type: string}
+        familyName: {type: string}
+        email: {type: string, format: email, nullable: true}
+        invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
+        otherRoles:
+          type: array
+          description: The person's tenant roles besides ADMIN (removing the administrator keeps these).
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+    TenantAdminPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/TenantAdmin'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    AddTenantAdminRequest:
+      type: object
+      required: [email, givenName, familyName]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+    UpdateTenantAdminRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        email: {type: string, format: email, maxLength: 254}
     UpdateTenantRequest:
       type: object
       minProperties: 1

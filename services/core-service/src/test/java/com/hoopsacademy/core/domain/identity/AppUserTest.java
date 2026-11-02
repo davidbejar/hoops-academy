@@ -19,6 +19,15 @@ class AppUserTest {
     }
 
     @Test
+    void anEmailChangeKeepsTheLoginIdentity() {
+        AppUser user = AppUser.register("sub-2", "old@example.com").withLocale(AppLocale.ID);
+        AppUser moved = user.withEmail("new@example.com");
+        assertThat(moved.email()).isEqualTo("new@example.com");
+        assertThat(moved).extracting(AppUser::id, AppUser::subject, AppUser::locale)
+                .containsExactly(user.id(), "sub-2", AppLocale.ID);
+    }
+
+    @Test
     void subjectAndIdAreRequired() {
         assertThatThrownBy(() -> AppUser.register(" ", null)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> AppUser.register(null, null)).isInstanceOf(IllegalArgumentException.class);

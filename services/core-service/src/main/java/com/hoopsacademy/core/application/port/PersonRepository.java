@@ -26,6 +26,9 @@ public interface PersonRepository {
 
     Optional<Person> findActiveByLogin(String subject);
 
+    /** The member (active or not) with this e-mail, compared case-insensitively (unique per tenant). */
+    Optional<Person> findByEmail(String email);
+
     boolean emailTaken(String email, Optional<PersonId> except);
 
     boolean loginLinked(UserId user);

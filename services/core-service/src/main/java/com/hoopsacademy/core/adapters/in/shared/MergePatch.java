@@ -102,6 +102,16 @@ public final class MergePatch {
         });
     }
 
+    /** Every property other than {@code fields} is a violation (contract {@code additionalProperties: false}). */
+    public void allowOnly(String... fields) {
+        java.util.Set<String> allowed = java.util.Set.of(fields);
+        body.fieldNames().forEachRemaining(name -> {
+            if (!allowed.contains(name)) {
+                reject(name, "is not a known property");
+            }
+        });
+    }
+
     /** @throws InvalidRequestException when any field was invalid or {@code requireAny} and nothing was sent */
     public void validate(boolean requireAny) {
         if (requireAny && body.isEmpty()) {

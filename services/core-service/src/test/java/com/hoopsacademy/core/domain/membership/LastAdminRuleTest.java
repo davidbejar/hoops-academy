@@ -14,7 +14,8 @@ class LastAdminRuleTest {
     @Test
     void theOnlyActiveAdminCannotLoseTheRoleOrBeDeactivated() {
         assertThatThrownBy(() -> LastAdminRule.checkRoleChange(Set.of(ADMIN), Set.of(COACH), 1))
-                .isInstanceOf(ConflictException.class).hasMessageContaining("last ADMIN")
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("An academy needs at least one active administrator: add another administrator first")
                 .extracting(e -> ((ConflictException) e).code()).isEqualTo("LAST_ADMIN");
         assertThatThrownBy(() -> LastAdminRule.checkDeactivation(Set.of(ADMIN, COACH), 1))
                 .isInstanceOf(ConflictException.class);

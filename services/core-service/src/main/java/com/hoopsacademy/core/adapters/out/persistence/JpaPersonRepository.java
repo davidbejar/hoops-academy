@@ -84,6 +84,12 @@ class JpaPersonRepository implements PersonRepository {
     }
 
     @Override
+    public Optional<Person> findByEmail(String email) {
+        return toDomain(em.createQuery("select p from PersonEntity p where lower(p.email) = :email", PersonEntity.class)
+                .setParameter("email", email.toLowerCase(Locale.ROOT)).getResultList()).stream().findFirst();
+    }
+
+    @Override
     public boolean emailTaken(String email, Optional<PersonId> except) {
         return em.createQuery("select p.id from PersonEntity p where lower(p.email) = :email", UUID.class)
                 .setParameter("email", email.toLowerCase(Locale.ROOT))

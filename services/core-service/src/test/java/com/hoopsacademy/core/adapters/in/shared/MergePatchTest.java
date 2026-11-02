@@ -44,6 +44,15 @@ class MergePatchTest {
     }
 
     @Test
+    void propertiesOutsideTheAllowedSetAreViolations() throws Exception {
+        MergePatch patch = MergePatch.of(json("{\"givenName\":\"Ana\",\"phone\":\"1\",\"roles\":[]}"));
+        patch.requiredText("givenName", 80);
+        patch.allowOnly("givenName", "familyName", "email");
+        assertThatThrownBy(() -> patch.validate(true)).isInstanceOfSatisfying(InvalidRequestException.class,
+                e -> assertThat(e.violations()).extracting(v -> v.field()).containsExactly("phone", "roles"));
+    }
+
+    @Test
     void emptyBodiesAndNonObjectsAreRejected() throws Exception {
         assertThatThrownBy(() -> MergePatch.of(json("{}")).validate(true)).isInstanceOf(InvalidRequestException.class);
         assertThatThrownBy(() -> MergePatch.of(json("[1]"))).isInstanceOf(InvalidRequestException.class);

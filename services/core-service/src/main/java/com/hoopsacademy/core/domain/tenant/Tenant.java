@@ -64,6 +64,14 @@ public record Tenant(
                 suspendedAt, now, retainUntil);
     }
 
+    /** Whether the platform may still manage the tenant's administrators: ACTIVE and SUSPENDED yes, WITHDRAWN no. */
+    public void requireManageable() {
+        if (status == TenantStatus.WITHDRAWN) {
+            throw new ConflictException("The academy is withdrawn; its administrators can no longer be changed",
+                    "TENANT_WITHDRAWN");
+        }
+    }
+
     public Tenant changeMasterData(Patch<String> newName, Patch<ZoneId> newTimezone, Patch<AppLocale> newLocale) {
         return new Tenant(id, slug, newName.applyTo(name), status, statusReason, newTimezone.applyTo(timezone),
                 newLocale.applyTo(defaultLocale), createdAt, suspendedAt, withdrawnAt, retainUntil);

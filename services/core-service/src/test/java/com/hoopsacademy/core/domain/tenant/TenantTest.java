@@ -30,6 +30,16 @@ class TenantTest {
     }
 
     @Test
+    void activeAndSuspendedTenantsAreManagedButAWithdrawnOneIsNot() {
+        Tenant suspended = active.suspend("unpaid", NOW);
+        active.requireManageable();
+        suspended.requireManageable();
+        assertThatThrownBy(() -> suspended.withdraw("closed", NOW, Period.ofDays(365)).requireManageable())
+                .isInstanceOf(ConflictException.class)
+                .extracting(e -> ((ConflictException) e).code()).isEqualTo("TENANT_WITHDRAWN");
+    }
+
+    @Test
     void nameIsRequiredAndBounded() {
         assertThatThrownBy(() -> Tenant.onboard(TenantId.random(), TenantSlug.of("abc"), " ", ZoneId.of("UTC"),
                 AppLocale.EN, NOW)).isInstanceOf(DomainRuleViolation.class);

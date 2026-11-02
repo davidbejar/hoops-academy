@@ -25,7 +25,8 @@ public final class LastAdminRule {
 
     private static void requireAnotherAdmin(long activeAdmins) {
         if (activeAdmins <= 1) {
-            throw new ConflictException("The tenant would lose its last ADMIN", LAST_ADMIN);
+            throw new ConflictException(
+                    "An academy needs at least one active administrator: add another administrator first", LAST_ADMIN);
         }
     }
 }
