@@ -9,6 +9,7 @@
 # ./stop.sh stops everything, from any terminal and in any state.
 set -euo pipefail
 cd "$(dirname "$0")"
+root="$PWD"
 
 usage() { sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; }
 
@@ -43,7 +44,8 @@ echo "==> dev users"
 just seed-users
 
 echo "==> backend services on 8081-8083"
-trap 'echo "==> stopping backend services"; e2e/bin/services-down.sh' EXIT
+# Absolute path: the web app step below runs from apps/web, and the trap fires there.
+trap 'echo "==> stopping backend services"; "$root/e2e/bin/services-down.sh"' EXIT
 e2e/bin/services-up.sh ${services_flag:+"$services_flag"}
 
 API=--dart-define=HOOPS_API_BASE=http://localhost:8080
