@@ -36,7 +36,10 @@ done
 if [ -n "$TAG_OVERRIDE" ] && [ ${#IMAGES[@]} -ne 1 ]; then echo "build-images: --tag needs exactly one image" >&2; exit 2; fi
 
 REGISTRY="${IMAGE_REGISTRY:-localhost/hoops}"
+REGISTRY="${REGISTRY%/}"
 TAG="${IMAGE_TAG:-dev}"
+# OCI source label: SOURCE_URL env, else the origin remote as an https URL, else empty.
+SOURCE_URL="${SOURCE_URL:-$(git remote get-url origin 2>/dev/null | sed -E 's#^git@github.com:#https://github.com/#; s#\.git$##')}"
 KIND_CLUSTER="${KIND_CLUSTER:-hoops}"
 ref_for() { if [ -n "$TAG_OVERRIDE" ]; then echo "$TAG_OVERRIDE"; else echo "$REGISTRY/$1:$TAG"; fi; }
 port_for() { case "$1" in core-service) echo 8081 ;; game-service) echo 8082 ;; athlete-service) echo 8083 ;; esac; }
@@ -56,7 +59,7 @@ build_service() {
   echo "==> $ref (APP_SOURCE=$src)"
   podman build -f deploy/containers/service.Containerfile --ignorefile "$ignore" \
     --build-arg SERVICE="$svc" --build-arg SERVICE_PORT="$(port_for "$svc")" --build-arg APP_SOURCE="$src" \
-    -t "$ref" .
+    --build-arg SOURCE_URL="$SOURCE_URL" -t "$ref" .
 }
 
 build_web() {
@@ -69,7 +72,8 @@ build_web() {
   fi
   [ "$src" = flutter ] || [ -f apps/web/build/web/index.html ] || { echo "build-images: apps/web/build/web missing" >&2; exit 1; }
   echo "==> $ref (WEB_SOURCE=$src)"
-  podman build -f deploy/containers/web.Containerfile --ignorefile "$ignore" --build-arg WEB_SOURCE="$src" -t "$ref" .
+  podman build -f deploy/containers/web.Containerfile --ignorefile "$ignore" --build-arg WEB_SOURCE="$src" \
+    --build-arg SOURCE_URL="$SOURCE_URL" -t "$ref" .
 }
 
 kind_load() { # podman save | kind load image-archive (kind cannot read Podman's image store directly)

@@ -1,9 +1,10 @@
 name: images
 
-# Builds the container images (deploy/containers) and scans them with Trivy. Images are pushed only when the
-# repository variable IMAGE_REGISTRY is set (e.g. ghcr.io/<owner>). Login uses the secrets REGISTRY_USERNAME /
-# REGISTRY_PASSWORD when both exist (any registry); otherwise the job's own GITHUB_TOKEN, which can push to ghcr.io
-# because the push jobs request `packages: write`. No long-lived credential is needed for ghcr.io.
+# Builds the container images (deploy/containers) and scans them with Trivy. Images are pushed only from `main` and only
+# when the repository variable IMAGE_REGISTRY is set (recommended: ghcr.io/<owner>/<repo>, repo-scoped names). Login uses
+# the secrets REGISTRY_USERNAME + REGISTRY_PASSWORD when BOTH exist (any registry); with neither, the job's own
+# GITHUB_TOKEN pushes to ghcr.io under this repository's owner (the push jobs request `packages: write`). A single
+# secret set is a configuration error and fails the step.
 on:
   push:
     branches: [main]
@@ -36,8 +37,7 @@ jobs:
           podman build -f deploy/containers/service.Containerfile \
             --ignorefile deploy/containers/service.containerignore \
             --build-arg SERVICE=${{ matrix.service }} --build-arg SERVICE_PORT=${{ matrix.port }} \
-            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
-            -t "$IMAGE" .
+            --build-arg SOURCE_URL=https://github.com/${{ github.repository }} -t "$IMAGE" .
       - name: Runs as non-root
         run: test "$(podman run --rm --entrypoint id "$IMAGE" -u)" != 0
       - name: Trivy scan (fail on fixable HIGH/CRITICAL)
@@ -46,15 +46,22 @@ jobs:
           docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
       - name: Push
-        if: ${{ vars.IMAGE_REGISTRY != '' }}
+        if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
         env:
           REGISTRY: ${{ vars.IMAGE_REGISTRY }}
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME || github.actor }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NAME: ${{ matrix.service }}
         run: |
-          echo "$REGISTRY_PASSWORD" | podman login -u "$REGISTRY_USERNAME" --password-stdin "${REGISTRY%%/*}"
-          podman tag "$IMAGE" "$REGISTRY/${{ matrix.service }}:${{ github.sha }}"
-          podman push "$REGISTRY/${{ matrix.service }}:${{ github.sha }}"
+          set -euo pipefail
+          registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
+          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then user="$REGISTRY_USERNAME"; pass="$REGISTRY_PASSWORD"
+          elif [ -z "$REGISTRY_USERNAME" ] && [ -z "$REGISTRY_PASSWORD" ]; then user="${{ github.actor }}"; pass="$GITHUB_TOKEN"
+          else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
+          echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
+          podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
+          podman push "$registry/$NAME:${{ github.sha }}"
 
   web:
     runs-on: ubuntu-latest
@@ -73,9 +80,7 @@ jobs:
       - name: Build image (host-built bundle)
         run: |
           podman build -f deploy/containers/web.Containerfile --ignorefile deploy/containers/web.containerignore \
-            --build-arg WEB_SOURCE=host \
-            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
-            -t "$IMAGE" .
+            --build-arg WEB_SOURCE=host --build-arg SOURCE_URL=https://github.com/${{ github.repository }} -t "$IMAGE" .
       - name: Runs as non-root
         run: test "$(podman run --rm --entrypoint id "$IMAGE" -u)" != 0
       - name: Trivy scan (fail on fixable HIGH/CRITICAL)
@@ -84,15 +89,22 @@ jobs:
           docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
       - name: Push
-        if: ${{ vars.IMAGE_REGISTRY != '' }}
+        if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
         env:
           REGISTRY: ${{ vars.IMAGE_REGISTRY }}
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME || github.actor }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NAME: web
         run: |
-          echo "$REGISTRY_PASSWORD" | podman login -u "$REGISTRY_USERNAME" --password-stdin "${REGISTRY%%/*}"
-          podman tag "$IMAGE" "$REGISTRY/web:${{ github.sha }}"
-          podman push "$REGISTRY/web:${{ github.sha }}"
+          set -euo pipefail
+          registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
+          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then user="$REGISTRY_USERNAME"; pass="$REGISTRY_PASSWORD"
+          elif [ -z "$REGISTRY_USERNAME" ] && [ -z "$REGISTRY_PASSWORD" ]; then user="${{ github.actor }}"; pass="$GITHUB_TOKEN"
+          else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
+          echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
+          podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
+          podman push "$registry/$NAME:${{ github.sha }}"
 
   charts:
     runs-on: ubuntu-latest

@@ -4,6 +4,9 @@
 # Public base URL as the browser sees it (services' CORS allow-list). Keep equal to keycloak.publicUrl.
 global:
   publicUrl: http://localhost:8090
+  # Pull secrets applied to every service/web pod, e.g. [{name: ghcr-pull}] for private ghcr.io packages
+  # (kubectl create secret docker-registry ghcr-pull ... ; the Secret itself is created outside the chart, ADR-0012).
+  imagePullSecrets: []
 
 databases:
   enabled: true

@@ -43,11 +43,22 @@ refresh snapshots with `deploy/helm/tests/run.sh --update` after reviewing the d
 Locally: `scripts/build-images.sh [--from-host] [--kind-load] [--push] [core-service|game-service|athlete-service|web]`.
 Web: build with `apps/web/tool/build_web.sh` (stamps the service worker); a plain `flutter build web` leaves `sw.js`
 unstamped. In CI `images.yml` runs on pushes to `main` that touch services, libs, web, containers or the pom:
-build per service, assert non-root, Trivy gate (`HIGH,CRITICAL --ignore-unfixed`, fails the job), and push only when the
-repository variable `IMAGE_REGISTRY` is set (`gh variable set IMAGE_REGISTRY --body ghcr.io/<owner>`). For ghcr.io no
-credential is needed: the push jobs request `packages: write` and log in with the run's own `GITHUB_TOKEN`. For any other
-registry set the secrets `REGISTRY_USERNAME`/`REGISTRY_PASSWORD`; when both exist they take precedence. Images carry the
-`org.opencontainers.image.source` label so ghcr.io links each package to this repository (first push creates it private).
+build per service, assert non-root, Trivy gate (`HIGH,CRITICAL --ignore-unfixed`, fails the job), and push only from
+`main` and only when the repository variable `IMAGE_REGISTRY` is set. Use a repo-scoped prefix so package names never
+collide with another repository's: `gh variable set IMAGE_REGISTRY --body ghcr.io/<owner>/hoops-academy` (refs become
+`ghcr.io/<owner>/hoops-academy/core-service:<sha>`). For ghcr.io under the repository's own owner no credential is needed:
+the push jobs request `packages: write` and log in with the run's `GITHUB_TOKEN`. For any other registry (or another
+owner) set BOTH secrets `REGISTRY_USERNAME`/`REGISTRY_PASSWORD`; setting only one fails the step. Images carry the
+`org.opencontainers.image.source` label (build arg `SOURCE_URL`, derived from the `origin` remote by
+`scripts/build-images.sh`) so ghcr.io links each package to this repository.
+
+The first push creates each ghcr.io package **private**. Either make the packages public (package settings on github.com,
+fine for a public repo) or give the cluster a pull secret and reference it from the chart:
+```bash
+kubectl -n hoops create secret docker-registry ghcr-pull --docker-server=ghcr.io \
+  --docker-username=<owner> --docker-password=<PAT with read:packages>
+helm upgrade --install hoops deploy/helm/hoops -n hoops --set 'global.imagePullSecrets[0].name=ghcr-pull' ...
+```
 Pin the `ubi9/openjdk-21-runtime` tag in `deploy/containers/service.Containerfile` before the first release (open item).
 
 ## 4. Deploy with Helm

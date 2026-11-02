@@ -23,7 +23,10 @@ COPY apps/web/build/web /out/web
 FROM web-${WEB_SOURCE} AS web
 
 FROM ${NGINX_IMAGE}
+# SOURCE_URL: repository URL for the OCI source label (ghcr.io links the package to it). CI passes github.repository.
+ARG SOURCE_URL=""
 LABEL org.opencontainers.image.title="hoops-web" \
+      org.opencontainers.image.source="${SOURCE_URL}" \
       org.opencontainers.image.description="Hoops Academy Flutter Web PWA on nginx-unprivileged"
 COPY --chown=101:0 deploy/containers/web-nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=web --chown=101:0 /out/web /usr/share/nginx/html

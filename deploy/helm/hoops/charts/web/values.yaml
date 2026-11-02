@@ -3,6 +3,8 @@ image:
   repository: localhost/hoops/web
   tag: dev
   pullPolicy: IfNotPresent
+# Pull secrets for a private registry, e.g. [{name: ghcr-pull}]. Falls back to global.imagePullSecrets.
+imagePullSecrets: []
 replicaCount: 1
 port: 8080
 ingress:

@@ -37,8 +37,10 @@ FROM app-${APP_SOURCE} AS app
 FROM ${RUNTIME_IMAGE}
 ARG SERVICE
 ARG SERVICE_PORT=8080
+# SOURCE_URL: repository URL for the OCI source label (ghcr.io links the package to it). CI passes github.repository.
+ARG SOURCE_URL=""
 LABEL org.opencontainers.image.title="hoops-${SERVICE}" \
-      org.opencontainers.image.source="https://github.com/hoops-academy/hoops-academy" \
+      org.opencontainers.image.source="${SOURCE_URL}" \
       org.opencontainers.image.description="Hoops Academy ${SERVICE} (Quarkus fast-jar)"
 ENV LANGUAGE='en_US:en' \
     # container-aware heap: the JVM sizes itself from the cgroup memory limit
