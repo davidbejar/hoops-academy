@@ -28,6 +28,15 @@ done
 
 [ -f .env ] || { echo "start: .env missing; cp .env.example .env and fill in the change-me-* values" >&2; exit 1; }
 
+# Fail before starting anything when an earlier run (or another server) still holds the web port.
+WEB_PORT=5173
+if holders="$(lsof -nP -iTCP:"$WEB_PORT" -sTCP:LISTEN 2>/dev/null)"; then
+  echo "start: port $WEB_PORT is already in use, probably by an earlier ./start.sh that is still running:" >&2
+  echo "$holders" >&2
+  echo "start: run ./stop.sh first (or quit that run), then start again" >&2
+  exit 1
+fi
+
 if ! podman machine inspect --format '{{.State}}' 2>/dev/null | grep -q running; then
   echo "==> starting podman machine"
   podman machine start
