@@ -1253,5 +1253,44 @@
   },
   "signOutAnyway": "Cerrar sesión y descartar",
   "updateAvailable": "Hay una nueva versión disponible",
-  "updateReload": "Recargar"
+  "updateReload": "Recargar",
+  "adminsTitle": "Administradores",
+  "adminsAdd": "Añadir administrador",
+  "adminsEmpty": "Esta academia no tiene administradores activos",
+  "adminsLoadFailed": "No se pudieron cargar los administradores",
+  "adminInvitationAccepted": "Invitación aceptada",
+  "adminOtherRoles": "También: {roles}",
+  "@adminOtherRoles": {
+    "placeholders": {
+      "roles": {
+        "type": "String"
+      }
+    }
+  },
+  "adminEdit": "Editar administrador",
+  "adminRemove": "Quitar administrador",
+  "adminResend": "Reenviar invitación",
+  "adminAddHint": "Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se envía una invitación por correo.",
+  "adminAddSubmit": "Añadir",
+  "adminEditEmailNote": "El correo es también el acceso de la persona: si lo cambias, tendrá que verificar la nueva dirección para entrar.",
+  "adminRemoveConfirm": "¿Quitar a {name} como administrador? Se elimina el rol de administrador; los demás roles se mantienen.",
+  "@adminRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRemoveSubmit": "Quitar",
+  "adminLastAdminNote": "Una academia necesita al menos un administrador. Añade otro administrador antes de quitar a este.",
+  "adminAdded": "Administrador añadido",
+  "adminInvited": "Invitación enviada",
+  "adminUpdated": "Administrador actualizado",
+  "adminRemoved": "Administrador quitado",
+  "adminInvitationResent": "Invitación reenviada",
+  "adminsWithdrawn": "La academia está retirada: sus administradores ya no se pueden consultar ni modificar.",
+  "adminErrorEmailTaken": "Ese correo ya lo usa otra persona o cuenta",
+  "adminErrorLoginAlreadyMember": "Esa cuenta de acceso ya pertenece a otro miembro de esta academia",
+  "adminErrorIdentityProvider": "El servicio de acceso no está disponible. Inténtalo de nuevo en unos minutos.",
+  "adminErrorInvitationNotPending": "La invitación ya no está pendiente"
 }

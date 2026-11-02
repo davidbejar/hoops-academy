@@ -4077,6 +4077,156 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Recargar'**
   String get updateReload;
+
+  /// No description provided for @adminsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Administradores'**
+  String get adminsTitle;
+
+  /// No description provided for @adminsAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir administrador'**
+  String get adminsAdd;
+
+  /// No description provided for @adminsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta academia no tiene administradores activos'**
+  String get adminsEmpty;
+
+  /// No description provided for @adminsLoadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar los administradores'**
+  String get adminsLoadFailed;
+
+  /// No description provided for @adminInvitationAccepted.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitación aceptada'**
+  String get adminInvitationAccepted;
+
+  /// No description provided for @adminOtherRoles.
+  ///
+  /// In es, this message translates to:
+  /// **'También: {roles}'**
+  String adminOtherRoles(String roles);
+
+  /// No description provided for @adminEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar administrador'**
+  String get adminEdit;
+
+  /// No description provided for @adminRemove.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar administrador'**
+  String get adminRemove;
+
+  /// No description provided for @adminResend.
+  ///
+  /// In es, this message translates to:
+  /// **'Reenviar invitación'**
+  String get adminResend;
+
+  /// No description provided for @adminAddHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se envía una invitación por correo.'**
+  String get adminAddHint;
+
+  /// No description provided for @adminAddSubmit.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir'**
+  String get adminAddSubmit;
+
+  /// No description provided for @adminEditEmailNote.
+  ///
+  /// In es, this message translates to:
+  /// **'El correo es también el acceso de la persona: si lo cambias, tendrá que verificar la nueva dirección para entrar.'**
+  String get adminEditEmailNote;
+
+  /// No description provided for @adminRemoveConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Quitar a {name} como administrador? Se elimina el rol de administrador; los demás roles se mantienen.'**
+  String adminRemoveConfirm(String name);
+
+  /// No description provided for @adminRemoveSubmit.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar'**
+  String get adminRemoveSubmit;
+
+  /// No description provided for @adminLastAdminNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Una academia necesita al menos un administrador. Añade otro administrador antes de quitar a este.'**
+  String get adminLastAdminNote;
+
+  /// No description provided for @adminAdded.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador añadido'**
+  String get adminAdded;
+
+  /// No description provided for @adminInvited.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitación enviada'**
+  String get adminInvited;
+
+  /// No description provided for @adminUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador actualizado'**
+  String get adminUpdated;
+
+  /// No description provided for @adminRemoved.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador quitado'**
+  String get adminRemoved;
+
+  /// No description provided for @adminInvitationResent.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitación reenviada'**
+  String get adminInvitationResent;
+
+  /// No description provided for @adminsWithdrawn.
+  ///
+  /// In es, this message translates to:
+  /// **'La academia está retirada: sus administradores ya no se pueden consultar ni modificar.'**
+  String get adminsWithdrawn;
+
+  /// No description provided for @adminErrorEmailTaken.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese correo ya lo usa otra persona o cuenta'**
+  String get adminErrorEmailTaken;
+
+  /// No description provided for @adminErrorLoginAlreadyMember.
+  ///
+  /// In es, this message translates to:
+  /// **'Esa cuenta de acceso ya pertenece a otro miembro de esta academia'**
+  String get adminErrorLoginAlreadyMember;
+
+  /// No description provided for @adminErrorIdentityProvider.
+  ///
+  /// In es, this message translates to:
+  /// **'El servicio de acceso no está disponible. Inténtalo de nuevo en unos minutos.'**
+  String get adminErrorIdentityProvider;
+
+  /// No description provided for @adminErrorInvitationNotPending.
+  ///
+  /// In es, this message translates to:
+  /// **'La invitación ya no está pendiente'**
+  String get adminErrorInvitationNotPending;
 }
 
 class _AppLocalizationsDelegate

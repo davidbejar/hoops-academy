@@ -914,5 +914,44 @@
   },
   "signOutAnyway": "Sign out and discard",
   "updateAvailable": "A new version is available",
-  "updateReload": "Reload"
+  "updateReload": "Reload",
+  "adminsTitle": "Administrators",
+  "adminsAdd": "Add administrator",
+  "adminsEmpty": "This academy has no active administrators",
+  "adminsLoadFailed": "The administrators could not be loaded",
+  "adminInvitationAccepted": "Invitation accepted",
+  "adminOtherRoles": "Also: {roles}",
+  "@adminOtherRoles": {
+    "placeholders": {
+      "roles": {
+        "type": "String"
+      }
+    }
+  },
+  "adminEdit": "Edit administrator",
+  "adminRemove": "Remove administrator",
+  "adminResend": "Resend invitation",
+  "adminAddHint": "If an active member already has this email, they become an administrator and keep their name. Otherwise an invitation email is sent.",
+  "adminAddSubmit": "Add",
+  "adminEditEmailNote": "The email is also the person's login: if you change it, they must verify the new address to sign in.",
+  "adminRemoveConfirm": "Remove {name} as administrator? This removes the Administrator role; other roles stay.",
+  "@adminRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRemoveSubmit": "Remove",
+  "adminLastAdminNote": "An academy needs at least one administrator. Add another administrator first.",
+  "adminAdded": "Administrator added",
+  "adminInvited": "Invitation sent",
+  "adminUpdated": "Administrator updated",
+  "adminRemoved": "Administrator removed",
+  "adminInvitationResent": "Invitation resent",
+  "adminsWithdrawn": "This academy is withdrawn: its administrators can no longer be viewed or changed.",
+  "adminErrorEmailTaken": "That email is already used by another person or account",
+  "adminErrorLoginAlreadyMember": "That login already belongs to another member of this academy",
+  "adminErrorIdentityProvider": "The sign-in service is unavailable. Try again in a few minutes.",
+  "adminErrorInvitationNotPending": "The invitation is no longer pending"
 }

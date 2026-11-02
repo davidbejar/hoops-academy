@@ -2166,4 +2166,90 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get updateReload => 'Muat ulang';
+
+  @override
+  String get adminsTitle => 'Administrator';
+
+  @override
+  String get adminsAdd => 'Tambah administrator';
+
+  @override
+  String get adminsEmpty => 'Akademi ini tidak memiliki administrator aktif';
+
+  @override
+  String get adminsLoadFailed => 'Administrator tidak dapat dimuat';
+
+  @override
+  String get adminInvitationAccepted => 'Undangan diterima';
+
+  @override
+  String adminOtherRoles(String roles) {
+    return 'Juga: $roles';
+  }
+
+  @override
+  String get adminEdit => 'Ubah administrator';
+
+  @override
+  String get adminRemove => 'Hapus administrator';
+
+  @override
+  String get adminResend => 'Kirim ulang undangan';
+
+  @override
+  String get adminAddHint =>
+      'Jika anggota aktif sudah memiliki email ini, ia menjadi administrator dan namanya tetap. Jika tidak, undangan dikirim lewat email.';
+
+  @override
+  String get adminAddSubmit => 'Tambah';
+
+  @override
+  String get adminEditEmailNote =>
+      'Email juga merupakan login orang tersebut: jika Anda mengubahnya, ia harus memverifikasi alamat baru untuk masuk.';
+
+  @override
+  String adminRemoveConfirm(String name) {
+    return 'Hapus $name sebagai administrator? Peran Administrator dihapus; peran lainnya tetap.';
+  }
+
+  @override
+  String get adminRemoveSubmit => 'Hapus';
+
+  @override
+  String get adminLastAdminNote =>
+      'Sebuah akademi memerlukan setidaknya satu administrator. Tambahkan administrator lain terlebih dahulu.';
+
+  @override
+  String get adminAdded => 'Administrator ditambahkan';
+
+  @override
+  String get adminInvited => 'Undangan terkirim';
+
+  @override
+  String get adminUpdated => 'Administrator diperbarui';
+
+  @override
+  String get adminRemoved => 'Administrator dihapus';
+
+  @override
+  String get adminInvitationResent => 'Undangan dikirim ulang';
+
+  @override
+  String get adminsWithdrawn =>
+      'Akademi ini telah ditarik: administratornya tidak dapat lagi dilihat atau diubah.';
+
+  @override
+  String get adminErrorEmailTaken =>
+      'Email itu sudah digunakan oleh orang atau akun lain';
+
+  @override
+  String get adminErrorLoginAlreadyMember =>
+      'Login itu sudah dimiliki anggota lain di akademi ini';
+
+  @override
+  String get adminErrorIdentityProvider =>
+      'Layanan masuk tidak tersedia. Coba lagi beberapa menit lagi.';
+
+  @override
+  String get adminErrorInvitationNotPending => 'Undangan tidak lagi tertunda';
 }

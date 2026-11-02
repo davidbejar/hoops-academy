@@ -6,10 +6,13 @@ import 'app_error_view.dart';
 
 /// Runs a mutation, reports failures with a localised snack bar (never raw
 /// server text) and returns whether it succeeded. [success] is shown on OK.
+/// [errorText] lets a feature word specific failures (by error code); it
+/// defaults to the generic per-kind message.
 Future<bool> runAction(
   BuildContext context,
   Future<void> Function() action, {
   String? success,
+  String Function(Object error, AppLocalizations l)? errorText,
 }) async {
   final messenger = ScaffoldMessenger.maybeOf(context);
   final l = AppLocalizations.of(context);
@@ -20,8 +23,8 @@ Future<bool> runAction(
     }
     return true;
   } on Object catch (e) {
-    final error = AppError.of(e);
-    messenger?.showSnackBar(SnackBar(content: Text(error.message(l))));
+    final text = errorText?.call(e, l) ?? AppError.of(e).message(l);
+    messenger?.showSnackBar(SnackBar(content: Text(text)));
     return false;
   }
 }

@@ -11,6 +11,7 @@ import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
 import 'platform_labels.dart';
+import 'platform_validators.dart';
 
 class TenantStatusChip extends StatelessWidget {
   const TenantStatusChip(this.status, {super.key});
@@ -120,7 +121,6 @@ class PlatformScreen extends ConsumerWidget {
 }
 
 final _slugPattern = RegExp(r'^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$');
-final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
 class CreateTenantDialog extends ConsumerStatefulWidget {
   const CreateTenantDialog({super.key});
@@ -199,7 +199,7 @@ class _CreateTenantDialogState extends ConsumerState<CreateTenantDialog> {
           _email,
           l.tenantAdminEmail,
           type: TextInputType.emailAddress,
-          validator: (v) => _emailPattern.hasMatch((v ?? '').trim()) ? null : l.fieldInvalidEmail,
+          validator: (v) => emailValidator(l, v),
         ),
         field('tenant-admin-given', _given, l.tenantAdminGivenName),
         field('tenant-admin-family', _family, l.tenantAdminFamilyName),

@@ -2166,4 +2166,91 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateReload => 'Reload';
+
+  @override
+  String get adminsTitle => 'Administrators';
+
+  @override
+  String get adminsAdd => 'Add administrator';
+
+  @override
+  String get adminsEmpty => 'This academy has no active administrators';
+
+  @override
+  String get adminsLoadFailed => 'The administrators could not be loaded';
+
+  @override
+  String get adminInvitationAccepted => 'Invitation accepted';
+
+  @override
+  String adminOtherRoles(String roles) {
+    return 'Also: $roles';
+  }
+
+  @override
+  String get adminEdit => 'Edit administrator';
+
+  @override
+  String get adminRemove => 'Remove administrator';
+
+  @override
+  String get adminResend => 'Resend invitation';
+
+  @override
+  String get adminAddHint =>
+      'If an active member already has this email, they become an administrator and keep their name. Otherwise an invitation email is sent.';
+
+  @override
+  String get adminAddSubmit => 'Add';
+
+  @override
+  String get adminEditEmailNote =>
+      'The email is also the person\'s login: if you change it, they must verify the new address to sign in.';
+
+  @override
+  String adminRemoveConfirm(String name) {
+    return 'Remove $name as administrator? This removes the Administrator role; other roles stay.';
+  }
+
+  @override
+  String get adminRemoveSubmit => 'Remove';
+
+  @override
+  String get adminLastAdminNote =>
+      'An academy needs at least one administrator. Add another administrator first.';
+
+  @override
+  String get adminAdded => 'Administrator added';
+
+  @override
+  String get adminInvited => 'Invitation sent';
+
+  @override
+  String get adminUpdated => 'Administrator updated';
+
+  @override
+  String get adminRemoved => 'Administrator removed';
+
+  @override
+  String get adminInvitationResent => 'Invitation resent';
+
+  @override
+  String get adminsWithdrawn =>
+      'This academy is withdrawn: its administrators can no longer be viewed or changed.';
+
+  @override
+  String get adminErrorEmailTaken =>
+      'That email is already used by another person or account';
+
+  @override
+  String get adminErrorLoginAlreadyMember =>
+      'That login already belongs to another member of this academy';
+
+  @override
+  String get adminErrorIdentityProvider =>
+      'The sign-in service is unavailable. Try again in a few minutes.';
+
+  @override
+  String get adminErrorInvitationNotPending =>
+      'The invitation is no longer pending';
 }

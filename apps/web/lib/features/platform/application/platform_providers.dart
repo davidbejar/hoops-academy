@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api.dart' as api;
+import '../../../core/errors/app_error.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_providers.dart';
 import '../data/platform_repository.dart';
@@ -107,6 +108,71 @@ class TenantDetailNotifier extends AsyncNotifier<TenantDetail> {
 final tenantDetailProvider = AsyncNotifierProvider.family<TenantDetailNotifier, TenantDetail, String>(
   TenantDetailNotifier.new,
 );
+
+/// Administrators of one academy (ADR-0023). Every mutation reloads the list from the server.
+class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
+  TenantAdminsNotifier(this.tenantId);
+  final String tenantId;
+
+  PlatformRepository get _repo => ref.read(platformRepositoryProvider);
+
+  @override
+  Future<List<api.TenantAdmin>> build() => ref.watch(platformRepositoryProvider).admins(tenantId);
+
+  Future<void> _reload() async {
+    ref.invalidateSelf();
+    await future;
+  }
+
+  /// Returns the administrator; `invitationStatus == PENDING` means a new member was invited.
+  Future<api.TenantAdmin> add({
+    required String email,
+    required String givenName,
+    required String familyName,
+    required api.ApiLocale locale,
+  }) async {
+    final admin = await _repo.addAdmin(
+      tenantId,
+      api.AddTenantAdminRequest((b) => b
+        ..email = email
+        ..givenName = givenName
+        ..familyName = familyName
+        ..locale = locale),
+    );
+    await _reload();
+    return admin;
+  }
+
+  /// Merge patch: only the given fields are sent.
+  Future<void> edit(String personId, {String? givenName, String? familyName, String? email}) async {
+    await _repo.updateAdmin(
+      tenantId,
+      personId,
+      api.UpdateTenantAdminRequest((b) => b
+        ..givenName = givenName
+        ..familyName = familyName
+        ..email = email),
+    );
+    await _reload();
+  }
+
+  Future<void> remove(String personId) async {
+    await _repo.removeAdmin(tenantId, personId);
+    await _reload();
+  }
+
+  Future<void> resendInvitation(String personId) async {
+    await _repo.resendAdminInvitation(tenantId, personId);
+    await _reload();
+  }
+}
+
+final tenantAdminsProvider = AsyncNotifierProvider.family<TenantAdminsNotifier, List<api.TenantAdmin>, String>(
+  TenantAdminsNotifier.new,
+);
+
+/// The server answers 409 `TENANT_WITHDRAWN` for a withdrawn academy (also for the list).
+bool isTenantWithdrawn(Object error) => AppError.of(error).code == 'TENANT_WITHDRAWN';
 
 /// Platform console is for the realm role `super_admin` only.
 final isSuperAdminProvider = Provider<bool>((ref) {

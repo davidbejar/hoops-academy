@@ -2180,4 +2180,91 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get updateReload => 'Recargar';
+
+  @override
+  String get adminsTitle => 'Administradores';
+
+  @override
+  String get adminsAdd => 'Añadir administrador';
+
+  @override
+  String get adminsEmpty => 'Esta academia no tiene administradores activos';
+
+  @override
+  String get adminsLoadFailed => 'No se pudieron cargar los administradores';
+
+  @override
+  String get adminInvitationAccepted => 'Invitación aceptada';
+
+  @override
+  String adminOtherRoles(String roles) {
+    return 'También: $roles';
+  }
+
+  @override
+  String get adminEdit => 'Editar administrador';
+
+  @override
+  String get adminRemove => 'Quitar administrador';
+
+  @override
+  String get adminResend => 'Reenviar invitación';
+
+  @override
+  String get adminAddHint =>
+      'Si ya hay un miembro activo con este correo, pasa a ser administrador y conserva su nombre. Si no, se envía una invitación por correo.';
+
+  @override
+  String get adminAddSubmit => 'Añadir';
+
+  @override
+  String get adminEditEmailNote =>
+      'El correo es también el acceso de la persona: si lo cambias, tendrá que verificar la nueva dirección para entrar.';
+
+  @override
+  String adminRemoveConfirm(String name) {
+    return '¿Quitar a $name como administrador? Se elimina el rol de administrador; los demás roles se mantienen.';
+  }
+
+  @override
+  String get adminRemoveSubmit => 'Quitar';
+
+  @override
+  String get adminLastAdminNote =>
+      'Una academia necesita al menos un administrador. Añade otro administrador antes de quitar a este.';
+
+  @override
+  String get adminAdded => 'Administrador añadido';
+
+  @override
+  String get adminInvited => 'Invitación enviada';
+
+  @override
+  String get adminUpdated => 'Administrador actualizado';
+
+  @override
+  String get adminRemoved => 'Administrador quitado';
+
+  @override
+  String get adminInvitationResent => 'Invitación reenviada';
+
+  @override
+  String get adminsWithdrawn =>
+      'La academia está retirada: sus administradores ya no se pueden consultar ni modificar.';
+
+  @override
+  String get adminErrorEmailTaken =>
+      'Ese correo ya lo usa otra persona o cuenta';
+
+  @override
+  String get adminErrorLoginAlreadyMember =>
+      'Esa cuenta de acceso ya pertenece a otro miembro de esta academia';
+
+  @override
+  String get adminErrorIdentityProvider =>
+      'El servicio de acceso no está disponible. Inténtalo de nuevo en unos minutos.';
+
+  @override
+  String get adminErrorInvitationNotPending =>
+      'La invitación ya no está pendiente';
 }

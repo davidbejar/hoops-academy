@@ -914,5 +914,44 @@
   },
   "signOutAnyway": "Keluar dan buang",
   "updateAvailable": "Versi baru tersedia",
-  "updateReload": "Muat ulang"
+  "updateReload": "Muat ulang",
+  "adminsTitle": "Administrator",
+  "adminsAdd": "Tambah administrator",
+  "adminsEmpty": "Akademi ini tidak memiliki administrator aktif",
+  "adminsLoadFailed": "Administrator tidak dapat dimuat",
+  "adminInvitationAccepted": "Undangan diterima",
+  "adminOtherRoles": "Juga: {roles}",
+  "@adminOtherRoles": {
+    "placeholders": {
+      "roles": {
+        "type": "String"
+      }
+    }
+  },
+  "adminEdit": "Ubah administrator",
+  "adminRemove": "Hapus administrator",
+  "adminResend": "Kirim ulang undangan",
+  "adminAddHint": "Jika anggota aktif sudah memiliki email ini, ia menjadi administrator dan namanya tetap. Jika tidak, undangan dikirim lewat email.",
+  "adminAddSubmit": "Tambah",
+  "adminEditEmailNote": "Email juga merupakan login orang tersebut: jika Anda mengubahnya, ia harus memverifikasi alamat baru untuk masuk.",
+  "adminRemoveConfirm": "Hapus {name} sebagai administrator? Peran Administrator dihapus; peran lainnya tetap.",
+  "@adminRemoveConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminRemoveSubmit": "Hapus",
+  "adminLastAdminNote": "Sebuah akademi memerlukan setidaknya satu administrator. Tambahkan administrator lain terlebih dahulu.",
+  "adminAdded": "Administrator ditambahkan",
+  "adminInvited": "Undangan terkirim",
+  "adminUpdated": "Administrator diperbarui",
+  "adminRemoved": "Administrator dihapus",
+  "adminInvitationResent": "Undangan dikirim ulang",
+  "adminsWithdrawn": "Akademi ini telah ditarik: administratornya tidak dapat lagi dilihat atau diubah.",
+  "adminErrorEmailTaken": "Email itu sudah digunakan oleh orang atau akun lain",
+  "adminErrorLoginAlreadyMember": "Login itu sudah dimiliki anggota lain di akademi ini",
+  "adminErrorIdentityProvider": "Layanan masuk tidak tersedia. Coba lagi beberapa menit lagi.",
+  "adminErrorInvitationNotPending": "Undangan tidak lagi tertunda"
 }

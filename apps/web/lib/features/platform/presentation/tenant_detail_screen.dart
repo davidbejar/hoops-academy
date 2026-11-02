@@ -12,6 +12,7 @@ import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
 import 'platform_screen.dart' show TenantStatusChip;
+import 'tenant_admins_section.dart';
 
 String _date(DateTime d) {
   final t = d.toLocal();
@@ -37,7 +38,13 @@ class TenantDetailScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(tenantDetailProvider(tenantId)),
           builder: (context, d) => ListView(
             padding: const EdgeInsets.all(AppTokens.spaceMd),
-            children: [_Header(detail: d), const SizedBox(height: AppTokens.spaceMd), UsageDashboard(detail: d)],
+            children: [
+              _Header(detail: d),
+              const SizedBox(height: AppTokens.spaceMd),
+              TenantAdminsSection(tenant: d.tenant),
+              const SizedBox(height: AppTokens.spaceMd),
+              UsageDashboard(detail: d),
+            ],
           ),
         ),
       ),

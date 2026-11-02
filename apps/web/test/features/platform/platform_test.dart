@@ -321,7 +321,7 @@ void main() {
       final repo = repoWith([ana, bea]);
       await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
       await tapKey2(tester, 'admin-remove-p-ana');
-      expect(find.textContaining('Los demás roles se mantienen'), findsOneWidget);
+      expect(find.textContaining('demás roles se mantienen'), findsOneWidget);
       await tapKey2(tester, 'dialog-cancel');
       expect(repo.removedAdmins, isEmpty);
       await tapKey2(tester, 'admin-remove-p-ana');
