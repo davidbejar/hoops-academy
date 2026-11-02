@@ -6,7 +6,8 @@ You sign in with your e-mail address and your password.
 
 The **super administrator** runs the platform: creates and withdraws academies and reads their usage. It is a Keycloak
 realm role (`super_admin`), not an academy role. A super administrator **cannot read academy content** (players, matches,
-health data): the platform has no access to it.
+health data): the platform has no access to it. The one exception is the list of an academy's **administrators** (their
+names, e-mail and invitation state), which the super administrator manages (see below, ADR-0023).
 
 ## Finding the console
 - A super administrator with no academy membership lands on **Platform** directly.
@@ -37,6 +38,22 @@ Actions on an academy's detail page:
 - **Reactivate**: only from Suspended; restores access as it was.
 - **Withdraw**: a reason is required and a warning explains that the retention period starts. It cannot be undone.
 Every lifecycle change is written to the academy's append-only audit trail.
+
+## An academy's administrators
+Available through the platform API `/platform/tenants/{id}/admins` (the console screens follow with WP23); ACTIVE and
+SUSPENDED academies only, a withdrawn one answers "withdrawn" (409).
+- **List**: the active administrators with name, e-mail, invitation state and their other roles in the academy.
+- **Add** (e-mail, first and last name, optional language): a member of the academy with that e-mail becomes
+  administrator (their names are kept; a member without a login receives the set-password e-mail). Otherwise a new
+  administrator is invited exactly like the first one. A deactivated member with that e-mail is refused.
+- **Edit** first name, last name or e-mail. A new e-mail also becomes the person's sign-in address (Keycloak username and
+  e-mail) and receives a verification e-mail — or the invitation again while it is pending. Unlike an academy
+  administrator, you can do this also for a login that is used in several academies.
+- **Remove**: the person loses the administrator role; if it was their only role they are deactivated in this academy.
+  Their login is never deleted (it may be used elsewhere). The **last administrator cannot be removed**: an academy
+  always needs one active administrator, so add another one first.
+- **Resend invitation**: only while the invitation is pending.
+Every change is written to the academy's audit trail with you as the actor.
 
 ## Usage dashboard
 The academy detail shows **Usage** by service (Core, Matches, Athletes): members, players, active players, teams,

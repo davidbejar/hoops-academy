@@ -26,6 +26,10 @@ memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbah
    Orang tua, Pemain). Satu orang boleh memiliki beberapa peran.
 2. Orang tersebut menerima email untuk membuat kata sandi. Sebelum itu statusnya **Undangan tertunda**.
 3. **Ubah peran** mengganti peran. **Nonaktifkan** mencabut akses (orangnya tetap tersimpan, ditandai **Tidak aktif**).
+4. **Mengubah email** anggota yang punya akun login juga mengubah alamat masuknya: sejak itu ia masuk dengan email baru,
+   dan email verifikasi dikirim ke alamat tersebut (undangan yang masih tertunda dikirim ulang ke alamat baru). Jika orang
+   itu juga anggota akademi lain, perubahan ditolak ("dipakai di akademi lain"): minta administrator platform. Email
+   anggota yang punya akun login tidak dapat dihapus.
 Pada pengembangan lokal, email undangan terlihat di MailHog (http://localhost:8025).
 
 ## 3. Wali (orang tua)

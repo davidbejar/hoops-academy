@@ -23,3 +23,4 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Height / weight | write | write | write | linked (write) | read (self) |
 | Physical test results | write | write | write | read | read (self) |
 | Tenant lifecycle, usage statistics | `super_admin` (platform) only — cannot read tenant content | | | | |
+| A tenant's administrators (list, add, edit names/e-mail, remove, resend invitation) | `super_admin` (platform, `/platform/tenants/{id}/admins`) — identity of the admins only, ADR-0023; tenant ADMINs manage them as members | | | | |

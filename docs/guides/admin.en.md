@@ -26,6 +26,10 @@ decide on player requests. Menu names below are the labels shown in the English 
    Player). A person can hold several roles.
 2. The person receives an e-mail to set a password. Until then the member shows **Invitation pending**.
 3. **Edit roles** changes roles later. **Deactivate** removes access (the person is kept, shown as **Inactive**).
+4. **Changing the e-mail** of a member who has a login also changes their sign-in address: from then on they sign in
+   with the new e-mail, and a verification e-mail goes to it (an invitation that is still pending is sent again to the
+   new address). If the person also belongs to another academy, the change is refused ("used in another academy"):
+   ask the platform administrator. A member with a login cannot have the e-mail removed.
 Local development: the invitation e-mail is visible in MailHog (http://localhost:8025).
 
 ## 3. Guardians (parents and players)

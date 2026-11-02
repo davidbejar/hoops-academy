@@ -6,7 +6,9 @@ Anda masuk dengan alamat e-mail dan kata sandi Anda.
 
 **Super administrator** menjalankan platform: membuat dan menarik akademi serta melihat penggunaannya. Ini adalah peran
 realm Keycloak (`super_admin`), bukan peran akademi. Super administrator **tidak dapat membaca isi akademi** (pemain,
-pertandingan, data kesehatan): platform tidak punya akses ke sana.
+pertandingan, data kesehatan): platform tidak punya akses ke sana. Satu-satunya pengecualian adalah daftar
+**administrator** akademi (nama, email, dan status undangan), yang dikelola oleh super administrator (lihat di bawah,
+ADR-0023).
 
 ## Menemukan konsol
 - Super administrator tanpa keanggotaan akademi langsung masuk ke **Platform**.
@@ -36,6 +38,22 @@ Aksi di halaman detail akademi:
 - **Aktifkan kembali**: hanya dari Ditangguhkan; akses pulih seperti semula.
 - **Tarik**: alasan wajib diisi dan peringatan menjelaskan bahwa masa retensi dimulai. Tidak dapat dibatalkan.
 Setiap perubahan siklus hidup tercatat di jejak audit akademi (hanya bisa ditambah).
+
+## Administrator sebuah akademi
+Tersedia melalui API platform `/platform/tenants/{id}/admins` (layar konsol menyusul di WP23); hanya untuk akademi aktif
+atau ditangguhkan, akademi yang ditarik menjawab "ditarik" (409).
+- **Daftar**: administrator aktif dengan nama, email, status undangan, dan peran lain mereka di akademi.
+- **Tambah** (email, nama depan dan belakang, bahasa opsional): anggota akademi dengan email itu menjadi administrator
+  (datanya tetap; anggota tanpa akun login menerima email untuk membuat kata sandi). Jika tidak ada, administrator baru
+  diundang seperti administrator pertama. Email milik anggota yang dinonaktifkan ditolak.
+- **Ubah** nama depan, nama belakang, atau email. Email baru juga menjadi alamat masuk orang itu (username dan email di
+  Keycloak) dan menerima email verifikasi — atau undangan lagi bila masih tertunda. Berbeda dengan administrator akademi,
+  Anda boleh melakukannya juga untuk akun login yang dipakai di beberapa akademi.
+- **Hapus**: orang itu kehilangan peran administrator; jika itu satu-satunya perannya, ia dinonaktifkan di akademi ini.
+  Akun loginnya tidak pernah dihapus (mungkin dipakai di tempat lain). **Administrator terakhir tidak dapat dihapus**:
+  akademi selalu memerlukan satu administrator aktif, jadi tambahkan yang lain terlebih dahulu.
+- **Kirim ulang undangan**: hanya selama undangan masih tertunda.
+Setiap perubahan dicatat di jejak audit akademi dengan Anda sebagai pelakunya.
 
 ## Dasbor penggunaan
 Detail akademi menampilkan **Penggunaan** per layanan (Inti, Pertandingan, Atlet): anggota, pemain, pemain aktif, tim, musim,

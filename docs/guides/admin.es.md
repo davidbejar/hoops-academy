@@ -27,6 +27,10 @@ decides sobre las solicitudes de jugadores. Los nombres de menú son los que mue
    Familia, Jugador). Una persona puede tener varios roles.
 2. La persona recibe un correo para crear su contraseña. Hasta entonces figura como **Invitación pendiente**.
 3. **Editar roles** cambia los roles. **Desactivar** retira el acceso (la persona se conserva y aparece como **Inactivo**).
+4. **Cambiar el correo** de un miembro con acceso cambia también su dirección de inicio de sesión: desde ese momento
+   entra con el correo nuevo, que recibe un correo de verificación (si la invitación sigue pendiente, se reenvía a la
+   nueva dirección). Si la persona pertenece también a otra academia, el cambio se rechaza ("usado en otra academia"):
+   pídeselo al administrador de la plataforma. A un miembro con acceso no se le puede quitar el correo.
 En desarrollo local el correo de invitación se ve en MailHog (http://localhost:8025).
 
 ## 3. Tutores (familias)

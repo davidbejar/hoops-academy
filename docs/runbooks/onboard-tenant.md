@@ -56,5 +56,24 @@ data until `retainUntil` (`hoops.tenant.withdrawn-retention`, default `P365D`); 
 ## Recovery
 - Crash between the registry and tenant transactions: a tenant without settings blocks its slug. `OnboardingRepairJob`
   (every 10 min, 15 min grace) removes it; an orphaned Keycloak login is logged for manual deletion (ADR-0017).
-- Wrong first-admin e-mail: invite the right person as ADMIN from the academy (or withdraw and re-create). Member e-mail
-  changes are not synced to Keycloak (`docs/wp/FOLLOW-UPS.md`).
+- Wrong first-admin e-mail: correct it with `PATCH /platform/tenants/{id}/admins/{personId}` `{"email": "..."}`. The
+  Keycloak username and e-mail follow (ADR-0023) and, while the invitation is PENDING, the set-password e-mail goes to the
+  new address; `POST .../admins/{personId}/resend-invitation` sends it again.
+
+## Managing the academy's administrators later (API)
+`/platform/tenants/{id}/admins` with a super admin token (no `X-Tenant-Id`); ACTIVE and SUSPENDED tenants only (WITHDRAWN →
+409 `TENANT_WITHDRAWN`, unknown → 404). Contract: `listTenantAdmins`, `addTenantAdmin`, `updateTenantAdmin`,
+`removeTenantAdmin`, `resendTenantAdminInvitation` in `libs/contracts/openapi/core.yaml`.
+- `GET` → active admins (`personId, givenName, familyName, email, invitationStatus, otherRoles`), paged.
+- `POST {"email","givenName","familyName","locale"?}` → 200 when an active member with that e-mail is promoted, 201 when
+  a new member is invited (same saga as onboarding); 409 `EMAIL_TAKEN` (deactivated member), `LOGIN_ALREADY_MEMBER`;
+  502 `IDENTITY_PROVIDER_UNAVAILABLE` (nothing kept).
+- `PATCH /{personId}` (merge patch of `givenName`, `familyName`, `email`) → 200; 404 if not an active admin; 409
+  `EMAIL_TAKEN` (another member or Keycloak login has the address); 502 (nothing changed).
+- `DELETE /{personId}` → 204 (ADMIN role dropped; deactivated if it was the only role; Keycloak login kept); 409
+  `LAST_ADMIN`.
+- `POST /{personId}/resend-invitation` → 202 (PENDING only, else 409 `INVITATION_NOT_PENDING`).
+Every call is audited in the tenant's trail (`admin.*`, actor = the super admin's `sub`).
+
+Realm prerequisite: `registrationEmailAsUsername: true` (realm JSON; existing realms get it from `just seed-users`).
+Without it Keycloak refuses the username change with 400 `error-user-attribute-read-only` and the edit fails with 502.

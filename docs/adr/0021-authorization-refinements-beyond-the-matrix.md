@@ -31,6 +31,9 @@ collects them so the matrix, the guides and the role-matrix tests can be read to
    writable → 403; naming an unreadable player in a body or filter → 403.
 8. **super_admin** manages tenants and reads usage counters only; without a membership it gets 404 on `/api/**` and
    cannot read tenant content (by design, PLAN §1.3). A super_admin who is also a member uses the tenant normally.
+   Narrow exception (ADR-0023, WP22): through `/platform/tenants/{tenantId}/admins` the super admin lists, adds, edits
+   and removes the tenant's administrators and sees their identity only (names, e-mail, invitation status, other role
+   names) — never other members or academy data.
 
 ## Consequences
 - Role-matrix tests encode these rules: `TeamPlayerResourceTest`, `EligibilityCaseResourceTest`, `MatchResourceTest`,

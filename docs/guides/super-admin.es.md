@@ -6,7 +6,8 @@ Inicias sesión con tu dirección de correo electrónico y tu contraseña.
 
 El **superadministrador** gestiona la plataforma: crea y retira academias y consulta su uso. Es un rol de realm de Keycloak
 (`super_admin`), no un rol de academia. Un superadministrador **no puede leer el contenido de las academias** (jugadores,
-partidos, datos de salud): la plataforma no tiene acceso a él.
+partidos, datos de salud): la plataforma no tiene acceso a él. La única excepción es la lista de **administradores** de
+una academia (nombre, correo y estado de la invitación), que el superadministrador gestiona (ver abajo, ADR-0023).
 
 ## Encontrar la consola
 - Un superadministrador sin pertenencia a ninguna academia entra directamente en **Plataforma**.
@@ -37,6 +38,22 @@ Acciones en el detalle de la academia:
 - **Reactivar**: solo desde Suspendida; devuelve el acceso tal como estaba.
 - **Retirar**: el motivo es obligatorio y un aviso explica que empieza el plazo de conservación. No se puede deshacer.
 Cada cambio de ciclo de vida queda en el registro de auditoría (solo se añade) de la academia.
+
+## Administradores de una academia
+Disponible en la API de plataforma `/platform/tenants/{id}/admins` (las pantallas de la consola llegan con WP23); solo para
+academias activas o suspendidas, una retirada responde "retirada" (409).
+- **Listar**: los administradores activos con nombre, correo, estado de la invitación y sus otros roles en la academia.
+- **Añadir** (correo, nombre, apellidos, idioma opcional): si un miembro de la academia tiene ese correo, pasa a ser
+  administrador (se conservan sus datos; si no tenía acceso recibe el correo para crear contraseña). Si no, se invita a un
+  nuevo administrador igual que al primero. Si el correo es de un miembro desactivado, se rechaza.
+- **Editar** nombre, apellidos o correo. Un correo nuevo pasa a ser también la dirección de inicio de sesión (usuario y
+  correo de Keycloak) y recibe un correo de verificación, o de nuevo la invitación si sigue pendiente. A diferencia de un
+  administrador de academia, puedes hacerlo aunque el acceso se use en varias academias.
+- **Quitar**: la persona pierde el rol de administrador; si era su único rol, queda desactivada en esta academia. Su
+  acceso nunca se borra (puede usarse en otras academias). **No se puede quitar al último administrador**: una academia
+  necesita siempre un administrador activo, así que añade otro antes.
+- **Reenviar invitación**: solo mientras la invitación esté pendiente.
+Cada cambio queda en el registro de auditoría de la academia contigo como autor.
 
 ## Panel de uso
 El detalle muestra **Uso** por servicio (Núcleo, Partidos, Deportistas): miembros, jugadores, jugadores activos, equipos,

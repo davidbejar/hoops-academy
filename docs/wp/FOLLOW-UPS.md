@@ -58,7 +58,11 @@ statement-by-statement status of the spec is in [`../conformance.md`](../conform
   with chromedriver to the e2e job.
 
 ### Backend
-- **Member e-mail changes** are not synced to Keycloak (WP3).
+- **Shared login, other tenants' contact e-mail** (WP22): when the super admin moves a login used in several academies,
+  only the edited tenant's `core.person.email` changes; the other academies keep their per-tenant e-mail for that person
+  (Keycloak and `core.app_user` have the new one). Decide whether to propagate.
+- **Keycloak ahead of the database** (WP22, as ADR-0013): a commit failure right after a successful login update leaves
+  Keycloak with the new e-mail; no repair job detects `app_user.email` ≠ Keycloak e-mail yet.
 - **Parents via the guardian flow** get no login (WP5 note); WP17 covered players only (ADMIN add + approval).
 - **Entitlement seam** has no test of a denial path (the noop implementation always allows).
 - **Usage snapshots** are never pruned; the snapshot job aggregates tenants sequentially (fine for tens of tenants).
@@ -142,3 +146,6 @@ statement-by-statement status of the spec is in [`../conformance.md`](../conform
 - WP20: flaky job-lock tests (`NightlyEligibilityJobTest`, `UsageSnapshotJobTest`, `NightlyMaterialisationTest`) release
   the other replica's session lock explicitly instead of relying on connection close.
 - WP20: runbooks, apps/web README, PLAN implementation notes, security review statuses reconciled; ADR-0018…0021.
+- WP22: member e-mail changes are synced to Keycloak (username = e-mail, realm `registrationEmailAsUsername`) and
+  `core.app_user`; academy admins get 409 `LOGIN_SHARED` for a login used in another academy (ADR-0023). The super admin
+  manages each academy's administrators via `/platform/tenants/{id}/admins` (console screens: WP23).
