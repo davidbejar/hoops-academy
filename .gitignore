@@ -41,3 +41,5 @@ tilt_modules/
 .pre-commit-cache/
 *.swp
 /tmp/
+# per-machine Claude Code permissions
+.claude/settings.local.json

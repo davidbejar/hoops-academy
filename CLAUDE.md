@@ -1,8 +1,9 @@
 # Hoops Academy — agent guide
 
 Multitenant platform for basketball academies: roster & eligibility, live match statistics (offline-first),
-training/attendance, athlete health & fitness. Read this file first; the original plan lives in `docs/PLAN.md` (see its
-implementation notes), what was built vs the spec in `docs/conformance.md`, open items in `docs/wp/FOLLOW-UPS.md`.
+training/attendance, athlete health & fitness. Read this file first, then `docs/HANDOVER.md` (current state, pending user actions, lessons). The original request
+is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation notes), what was built vs the spec
+`docs/conformance.md`, open items `docs/wp/FOLLOW-UPS.md`. The old OneDrive planning folder is archived: never write there.
 
 ## Stack (fixed decisions — see docs/adr)
 - Java 21, Quarkus 3.x, Maven multi-module, hexagonal layering per service. Three services: `core-service`,
