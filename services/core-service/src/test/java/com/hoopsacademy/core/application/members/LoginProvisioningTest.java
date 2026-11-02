@@ -62,6 +62,9 @@ class LoginProvisioningTest {
         public void sendAccountSetupEmail(String subject) {}
 
         @Override
+        public void updateLogin(com.hoopsacademy.core.application.port.LoginUpdate update) {}
+
+        @Override
         public void delete(String subject) {
             if (failDeletes) {
                 throw new IdentityProviderException("down");

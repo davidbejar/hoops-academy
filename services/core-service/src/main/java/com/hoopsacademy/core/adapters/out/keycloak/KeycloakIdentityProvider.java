@@ -1,7 +1,9 @@
 package com.hoopsacademy.core.adapters.out.keycloak;
 
+import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.core.application.port.IdentityProviderException;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
+import com.hoopsacademy.core.application.port.LoginUpdate;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -13,8 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.UserRepresentation;
 
@@ -26,7 +30,12 @@ import org.keycloak.representations.idm.UserRepresentation;
 @ApplicationScoped
 class KeycloakIdentityProvider implements IdentityProviderPort {
 
+    static final String EMAIL_TAKEN = "EMAIL_TAKEN";
+
     static final List<String> SETUP_ACTIONS = List.of("UPDATE_PASSWORD", "VERIFY_EMAIL");
+    static final List<String> VERIFY_ACTIONS = List.of("VERIFY_EMAIL");
+
+    private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class);
 
     private final Keycloak keycloak;
     private final String realm;
@@ -65,6 +74,29 @@ class KeycloakIdentityProvider implements IdentityProviderPort {
     }
 
     @Override
+    public void updateLogin(LoginUpdate update) {
+        call("update login", () -> {
+            UserResource user = users().get(update.subject());
+            UserRepresentation previous = user.toRepresentation();
+            UserRepresentation moved = user.toRepresentation();
+            moved.setUsername(update.email());
+            moved.setEmail(update.email());
+            moved.setFirstName(update.givenName());
+            moved.setLastName(update.familyName());
+            moved.setEmailVerified(false);
+            updateOrConflict(user, moved);
+            try {
+                user.executeActionsEmail(update.setupPending() ? SETUP_ACTIONS : VERIFY_ACTIONS,
+                        setupEmailLifespanSeconds);
+            } catch (RuntimeException mailFailure) {
+                restore(user, previous, mailFailure);
+                throw mailFailure;
+            }
+            return null;
+        });
+    }
+
+    @Override
     public void delete(String subject) {
         call("delete user", () -> {
             try (Response response = users().delete(subject)) {
@@ -76,6 +108,28 @@ class KeycloakIdentityProvider implements IdentityProviderPort {
             }
             return null;
         });
+    }
+
+    private static void updateOrConflict(UserResource user, UserRepresentation changed) {
+        try {
+            user.update(changed);
+        } catch (WebApplicationException e) {
+            if (e.getResponse().getStatus() == Response.Status.CONFLICT.getStatusCode()) {
+                throw new ConflictException("Another login already uses this e-mail", EMAIL_TAKEN);
+            }
+            throw e;
+        }
+    }
+
+    /** Compensation of a failed mail: put the login back as it was (a failure here is logged and suppressed). */
+    private static void restore(UserResource user, UserRepresentation previous, RuntimeException failure) {
+        try {
+            user.update(previous);
+        } catch (RuntimeException restoreFailure) {
+            failure.addSuppressed(restoreFailure);
+            LOG.errorf("Could not restore Keycloak user %s after a failed e-mail; fix its username/e-mail manually",
+                    previous.getId());
+        }
     }
 
     private UsersResource users() {

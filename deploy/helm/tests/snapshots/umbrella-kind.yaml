@@ -426,6 +426,7 @@ data:
       "sslRequired": "external",
       "registrationAllowed": false,
       "loginWithEmailAllowed": true,
+      "registrationEmailAsUsername": true,
       "duplicateEmailsAllowed": false,
       "resetPasswordAllowed": true,
       "verifyEmail": false,
@@ -1253,7 +1254,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: keycloak-0.1.0
       annotations:
-        checksum/realm: 8acca02e62f163fedf3f2a8c445f42305289186eaf6757563886f62bb4191613
+        checksum/realm: 3d712da4073315f02043cab3f35237099c040c5550ded7acb1cf7cb79c08a37c
         checksum/theme: d75dda9e05580bf4ccba2210d3a3830b5b0fc8965d3b674e7569f75929425551
     spec:
       automountServiceAccountToken: false

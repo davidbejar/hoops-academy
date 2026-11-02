@@ -13,9 +13,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
+import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.application.port.IdentityProviderException;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
+import com.hoopsacademy.core.application.port.LoginUpdate;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
@@ -67,6 +69,52 @@ class KeycloakIdentityProviderTest {
                 .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
         assertThatThrownBy(() -> identityProvider.provision(new NewIdentity("x@example.com", "X", "Y", null)))
                 .isInstanceOf(IdentityProviderException.class);
+    }
+
+    @Test
+    void updateLoginMovesUsernameAndEmailThenSendsVerifyEmail() {
+        KeycloakStubs.login(keycloak, "moving", "old@example.com");
+        identityProvider.updateLogin(new LoginUpdate("moving", "new@example.com", "New", "Name", false));
+        keycloak.verify(KeycloakStubs.loginMoved("moving", "new@example.com").withRequestBody(equalToJson("""
+                {"firstName":"New","lastName":"Name","enabled":true}""", true, true)));
+        keycloak.verify(KeycloakStubs.verifyEmailSent("moving"));
+    }
+
+    @Test
+    void aPendingLoginGetsTheSetupActionsAtItsNewAddress() {
+        KeycloakStubs.login(keycloak, "pending", "typo@example.com");
+        identityProvider.updateLogin(new LoginUpdate("pending", "fixed@example.com", "P", "N", true));
+        keycloak.verify(KeycloakStubs.setupEmailSent("pending"));
+    }
+
+    @Test
+    void anEmailOwnedByAnotherLoginIsAConflictAndSendsNoMail() {
+        KeycloakStubs.login(keycloak, "clash", "mine@example.com");
+        KeycloakStubs.loginUpdateConflicts(keycloak);
+        assertThatThrownBy(() -> identityProvider.updateLogin(
+                new LoginUpdate("clash", "taken@example.com", "C", "L", false)))
+                .isInstanceOf(ConflictException.class).extracting("code").isEqualTo("EMAIL_TAKEN");
+        keycloak.verify(0, KeycloakStubs.anySetupEmail());
+    }
+
+    @Test
+    void aFailedUpdateIsAnIdentityProviderError() {
+        KeycloakStubs.login(keycloak, "broken", "b@example.com");
+        KeycloakStubs.loginUpdateFails(keycloak);
+        assertThatThrownBy(() -> identityProvider.updateLogin(
+                new LoginUpdate("broken", "n@example.com", "B", "R", false)))
+                .isInstanceOf(IdentityProviderException.class);
+    }
+
+    @Test
+    void aFailedMailRestoresThePreviousLogin() {
+        KeycloakStubs.login(keycloak, "nomail", "kept@example.com");
+        KeycloakStubs.setupEmailFails(keycloak);
+        assertThatThrownBy(() -> identityProvider.updateLogin(
+                new LoginUpdate("nomail", "lost@example.com", "N", "M", false)))
+                .isInstanceOf(IdentityProviderException.class);
+        keycloak.verify(KeycloakStubs.loginMoved("nomail", "lost@example.com"));
+        keycloak.verify(KeycloakStubs.loginRestored("nomail", "kept@example.com"));
     }
 
     @Test
