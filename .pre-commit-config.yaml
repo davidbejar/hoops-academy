@@ -8,8 +8,10 @@ repos:
     hooks:
       - id: detect-private-key
       - id: end-of-file-fixer
+        # helm golden snapshots must stay byte-identical to `helm template` output (deploy/helm/tests/run.sh)
+        exclude: '^deploy/helm/tests/snapshots/'
       - id: trailing-whitespace
-        exclude: '\.md$'
+        exclude: '(\.md$|^deploy/helm/tests/snapshots/)'
       - id: check-yaml
         args: [--allow-multiple-documents]
         exclude: '^deploy/helm/.*/templates/'
