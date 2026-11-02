@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:built_collection/built_collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -189,6 +191,246 @@ void main() {
       final repo = _repo()..failWith = StateError('x');
       await _pumpPlatform(tester, repo, location: '/platform/t-a');
       expect(find.text('Reintentar'), findsOneWidget);
+    });
+  });
+
+  group('administrators', () {
+    const lastAdminNote = 'Una academia necesita al menos un administrador. Añade otro administrador antes de quitar a este.';
+    const withdrawnNote = 'La academia está retirada: sus administradores ya no se pueden consultar ni modificar.';
+
+    FakePlatformRepository repoWith(List<api.TenantAdmin> admins, {List<api.Tenant>? tenants}) =>
+        FakePlatformRepository(tenants: tenants ?? _repo().list, admins: {'t-a': admins});
+
+    final ana = adminOf('p-ana', 'Ana', 'Ruiz', email: 'ana@example.org', otherRoles: {api.TenantRole.COACH});
+    final bea = adminOf('p-bea', 'Bea', 'Soto', email: 'bea@example.org', status: api.InvitationStatus.PENDING);
+
+    testWidgets('lists name, e-mail, invitation status and the other roles', (tester) async {
+      await _pumpPlatform(tester, repoWith([ana, bea]), location: '/platform/t-a', size: const Size(360, 1800));
+      expect(find.byKey(const Key('admins-section')), findsOneWidget);
+      expect(find.text('Administradores'), findsOneWidget);
+      expect(find.text('Ana Ruiz'), findsOneWidget);
+      expect(find.text('ana@example.org'), findsOneWidget);
+      expect(find.text('Bea Soto'), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('admin-p-ana')), matching: find.text('Invitación aceptada')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('admin-p-bea')), matching: find.text('Invitación pendiente')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('admin-p-ana')), matching: find.textContaining('Entrenador')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('admin-p-bea')), matching: find.textContaining('También')), findsNothing);
+    });
+
+    testWidgets('loading shows a spinner inside the section only', (tester) async {
+      final repo = repoWith([ana])..adminsGate = Completer<void>();
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', settle: false);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byKey(const Key('admins-loading')), findsOneWidget);
+      expect(find.byKey(const Key('tenant-suspend')), findsOneWidget);
+    });
+
+    testWidgets('list error keeps the tenant visible and retries', (tester) async {
+      final repo = repoWith([ana])..adminsListFails = StateError('x');
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      expect(find.byKey(const Key('admins-error')), findsOneWidget);
+      expect(find.byKey(const Key('tenant-suspend')), findsOneWidget);
+      repo.adminsListFails = null;
+      await tapKey2(tester, 'admins-retry');
+      expect(find.text('Ana Ruiz'), findsOneWidget);
+      expect(find.byKey(const Key('admins-error')), findsNothing);
+    });
+
+    testWidgets('add: explains promotion vs invitation, validates, sends trimmed values with the academy locale', (tester) async {
+      final repo = repoWith([ana]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-add');
+      expect(find.textContaining('pasa a ser administrador'), findsOneWidget);
+      expect(find.textContaining('invitación por correo'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('admin-email')), 'nope');
+      await tapKey2(tester, 'form-submit');
+      expect(find.text('Introduce un correo válido'), findsOneWidget);
+      expect(find.text('Campo obligatorio'), findsNWidgets(2));
+      expect(repo.addedAdmin, isNull);
+      await tester.enterText(find.byKey(const Key('admin-email')), '  cris@example.org ');
+      await tester.enterText(find.byKey(const Key('admin-given')), ' Cris ');
+      await tester.enterText(find.byKey(const Key('admin-family')), 'Mora');
+      await tapKey2(tester, 'form-submit');
+      final r = repo.addedAdmin!;
+      expect((r.email, r.givenName, r.familyName, r.locale), ('cris@example.org', 'Cris', 'Mora', api.ApiLocale.es));
+      expect(find.byKey(const Key('admin-new-1')), findsOneWidget);
+      expect(find.text('Invitación enviada'), findsOneWidget);
+    });
+
+    testWidgets('add: a server conflict is explained by its code and keeps the dialog open', (tester) async {
+      final repo = repoWith([ana])..adminMutationFails = problem(409, 'EMAIL_TAKEN');
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-add');
+      await tester.enterText(find.byKey(const Key('admin-email')), 'ana@example.org');
+      await tester.enterText(find.byKey(const Key('admin-given')), 'Ana');
+      await tester.enterText(find.byKey(const Key('admin-family')), 'Ruiz');
+      await tapKey2(tester, 'form-submit');
+      expect(find.text('Ese correo ya lo usa otra persona o cuenta'), findsOneWidget);
+      expect(find.textContaining('English server detail'), findsNothing);
+      expect(find.byKey(const Key('admin-email')), findsOneWidget);
+    });
+
+    testWidgets('add: identity provider outage gets its own message', (tester) async {
+      final repo = repoWith([ana])..adminMutationFails = problem(502, 'IDENTITY_PROVIDER_UNAVAILABLE');
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-add');
+      await tester.enterText(find.byKey(const Key('admin-email')), 'x@example.org');
+      await tester.enterText(find.byKey(const Key('admin-given')), 'X');
+      await tester.enterText(find.byKey(const Key('admin-family')), 'Y');
+      await tapKey2(tester, 'form-submit');
+      expect(find.textContaining('servicio de acceso no está disponible'), findsOneWidget);
+    });
+
+    testWidgets('edit: names only send no e-mail; the dialog warns that the e-mail is the login', (tester) async {
+      final repo = repoWith([ana, bea]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-edit-p-ana');
+      expect(find.textContaining('verificar la nueva dirección'), findsOneWidget);
+      expect(tester.widget<TextFormField>(find.byKey(const Key('admin-email'))).controller!.text, 'ana@example.org');
+      await tester.enterText(find.byKey(const Key('admin-given')), 'Anita');
+      await tapKey2(tester, 'form-submit');
+      expect(repo.updatedAdminId, 'p-ana');
+      expect((repo.updatedAdmin!.givenName, repo.updatedAdmin!.familyName, repo.updatedAdmin!.email), ('Anita', null, null));
+      expect(find.text('Anita Ruiz'), findsOneWidget);
+    });
+
+    testWidgets('edit: a changed e-mail is validated and sent', (tester) async {
+      final repo = repoWith([ana, bea]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-edit-p-bea');
+      await tester.enterText(find.byKey(const Key('admin-email')), 'bad');
+      await tapKey2(tester, 'form-submit');
+      expect(find.text('Introduce un correo válido'), findsOneWidget);
+      expect(repo.updatedAdmin, isNull);
+      await tester.enterText(find.byKey(const Key('admin-email')), 'bea.soto@example.org');
+      await tapKey2(tester, 'form-submit');
+      expect(repo.updatedAdmin!.email, 'bea.soto@example.org');
+      expect(find.text('bea.soto@example.org'), findsOneWidget);
+    });
+
+    testWidgets('edit without changes closes without calling the server', (tester) async {
+      final repo = repoWith([ana, bea]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-edit-p-ana');
+      await tapKey2(tester, 'form-submit');
+      expect(repo.updatedAdmin, isNull);
+      expect(find.byKey(const Key('admin-given')), findsNothing);
+    });
+
+    testWidgets('remove asks for confirmation (other roles stay) and drops the row', (tester) async {
+      final repo = repoWith([ana, bea]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-remove-p-ana');
+      expect(find.textContaining('Los demás roles se mantienen'), findsOneWidget);
+      await tapKey2(tester, 'dialog-cancel');
+      expect(repo.removedAdmins, isEmpty);
+      await tapKey2(tester, 'admin-remove-p-ana');
+      await tapKey2(tester, 'dialog-confirm');
+      expect(repo.removedAdmins, ['p-ana']);
+      expect(find.text('Ana Ruiz'), findsNothing);
+      expect(find.text('Administrador quitado'), findsOneWidget);
+    });
+
+    testWidgets('resend is offered for pending administrators only', (tester) async {
+      final repo = repoWith([ana, bea]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      expect(find.byKey(const Key('admin-resend-p-ana')), findsNothing);
+      await tapKey2(tester, 'admin-resend-p-bea');
+      expect(repo.resentInvitations, ['p-bea']);
+      expect(find.text('Invitación reenviada'), findsOneWidget);
+    });
+
+    testWidgets('resend: a stale invitation state is reported by its code', (tester) async {
+      final repo = repoWith([ana, bea])..adminMutationFails = problem(409, 'INVITATION_NOT_PENDING');
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-resend-p-bea');
+      expect(find.text('La invitación ya no está pendiente'), findsOneWidget);
+    });
+
+    testWidgets('the only administrator cannot be removed: action disabled and the row explains why', (tester) async {
+      final repo = repoWith([ana]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      expect(tester.widget<IconButton>(find.byKey(const Key('admin-remove-p-ana'))).onPressed, isNull);
+      expect(find.byKey(const Key('admin-last-note')), findsOneWidget);
+      expect(find.text(lastAdminNote), findsOneWidget);
+      await tester.tap(find.byKey(const Key('admin-remove-p-ana')), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dialog-confirm')), findsNothing);
+      expect(repo.removedAdmins, isEmpty);
+      // The other actions stay available.
+      expect(tester.widget<IconButton>(find.byKey(const Key('admin-edit-p-ana'))).onPressed, isNotNull);
+    });
+
+    testWidgets('with two administrators remove is enabled and no explanation shows', (tester) async {
+      await _pumpPlatform(tester, repoWith([ana, bea]), location: '/platform/t-a', size: const Size(360, 1800));
+      expect(tester.widget<IconButton>(find.byKey(const Key('admin-remove-p-ana'))).onPressed, isNotNull);
+      expect(find.byKey(const Key('admin-last-note')), findsNothing);
+    });
+
+    testWidgets('removing down to one administrator disables the last one', (tester) async {
+      await _pumpPlatform(tester, repoWith([ana, bea]), location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-remove-p-bea');
+      await tapKey2(tester, 'dialog-confirm');
+      expect(tester.widget<IconButton>(find.byKey(const Key('admin-remove-p-ana'))).onPressed, isNull);
+      expect(find.text(lastAdminNote), findsOneWidget);
+    });
+
+    testWidgets('a server 409 LAST_ADMIN shows the same localised message, never the English detail', (tester) async {
+      final repo = repoWith([ana, bea])..adminMutationFails = problem(409, 'LAST_ADMIN');
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-remove-p-ana');
+      await tapKey2(tester, 'dialog-confirm');
+      expect(find.text(lastAdminNote), findsOneWidget); // the snack bar (no row note: two admins are listed)
+      expect(find.textContaining('English server detail'), findsNothing);
+      expect(find.text('Ana Ruiz'), findsOneWidget);
+    });
+
+    for (final (code, expected) in [
+      ('en', 'An academy needs at least one administrator. Add another administrator first.'),
+      ('id', 'Sebuah akademi memerlukan setidaknya satu administrator. Tambahkan administrator lain terlebih dahulu.'),
+    ]) {
+      testWidgets('the last-administrator explanation is localised ($code)', (tester) async {
+        final h = Harness(
+          me: FakeMeRepository(userWith(const [], superAdmin: true)),
+          core: FakeCore(),
+          platform: FakePlatform(repo: repoWith([ana])),
+          prefs: {'hoops.locale': code},
+        );
+        await h.pump(tester, size: const Size(360, 1800));
+        await h.go(tester, '/platform/t-a');
+        expect(find.text(expected), findsOneWidget);
+      });
+    }
+
+    testWidgets('a withdrawn academy shows a note instead of the section, without calling the server', (tester) async {
+      final repo = _repo();
+      await _pumpPlatform(tester, repo, location: '/platform/t-c', size: const Size(360, 1800));
+      expect(find.byKey(const Key('admins-withdrawn')), findsOneWidget);
+      expect(find.text(withdrawnNote), findsOneWidget);
+      expect(find.byKey(const Key('admin-add')), findsNothing);
+      expect(find.byKey(const Key('admins-error')), findsNothing);
+      expect(repo.calls, isNot(contains('admins')));
+    });
+
+    testWidgets('a 409 TENANT_WITHDRAWN on the list (stale status) shows the note, not an error screen', (tester) async {
+      final repo = repoWith([ana])..adminsListFails = problem(409, 'TENANT_WITHDRAWN');
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      expect(find.byKey(const Key('admins-withdrawn')), findsOneWidget);
+      expect(find.byKey(const Key('admins-error')), findsNothing);
+      expect(find.byKey(const Key('admin-add')), findsNothing);
+    });
+
+    testWidgets('a suspended academy is still managed', (tester) async {
+      final repo = FakePlatformRepository(tenants: _repo().list, admins: {'t-b': [ana, bea]});
+      await _pumpPlatform(tester, repo, location: '/platform/t-b', size: const Size(360, 1800));
+      expect(find.text('Ana Ruiz'), findsOneWidget);
+      expect(find.byKey(const Key('admin-add')), findsOneWidget);
+    });
+
+    testWidgets('long names, e-mails and roles do not overflow at 360 px', (tester) async {
+      final long = adminOf('p-long', 'Maximiliano-Alejandro', 'Fernández de la Vega y Montenegro', email: 'maximiliano.alejandro.fernandez.de.la.vega@academia-de-baloncesto-internacional.example.org', otherRoles: {api.TenantRole.COACH, api.TenantRole.PARENT, api.TenantRole.ASSISTANT_COACH});
+      await _pumpPlatform(tester, repoWith([long, ana]), location: '/platform/t-a', size: const Size(360, 1800));
+      expect(tester.takeException(), isNull);
     });
   });
 

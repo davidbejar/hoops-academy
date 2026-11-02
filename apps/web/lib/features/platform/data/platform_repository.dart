@@ -9,6 +9,13 @@ abstract class PlatformRepository {
   Future<api.Tenant> withdraw(String tenantId, String reason);
   Future<api.Tenant> reactivate(String tenantId);
   Future<api.TenantUsage> usage(String tenantId);
+
+  /// Administrators of a tenant (identity only, ADR-0023). 409 `TENANT_WITHDRAWN` for withdrawn academies.
+  Future<List<api.TenantAdmin>> admins(String tenantId);
+  Future<api.TenantAdmin> addAdmin(String tenantId, api.AddTenantAdminRequest request);
+  Future<api.TenantAdmin> updateAdmin(String tenantId, String personId, api.UpdateTenantAdminRequest request);
+  Future<void> removeAdmin(String tenantId, String personId);
+  Future<api.TenantAdmin> resendAdminInvitation(String tenantId, String personId);
 }
 
 class ApiPlatformRepository implements PlatformRepository {
@@ -44,4 +51,24 @@ class ApiPlatformRepository implements PlatformRepository {
 
   @override
   Future<api.TenantUsage> usage(String tenantId) async => (await _api.getTenantUsage(tenantId: tenantId)).data!;
+
+  @override
+  Future<List<api.TenantAdmin>> admins(String tenantId) async =>
+      (await _api.listTenantAdmins(tenantId: tenantId, size: 100)).data!.items.toList();
+
+  @override
+  Future<api.TenantAdmin> addAdmin(String tenantId, api.AddTenantAdminRequest request) async =>
+      (await _api.addTenantAdmin(tenantId: tenantId, addTenantAdminRequest: request)).data!;
+
+  @override
+  Future<api.TenantAdmin> updateAdmin(String tenantId, String personId, api.UpdateTenantAdminRequest request) async =>
+      (await _api.updateTenantAdmin(tenantId: tenantId, personId: personId, updateTenantAdminRequest: request)).data!;
+
+  @override
+  Future<void> removeAdmin(String tenantId, String personId) async =>
+      _api.removeTenantAdmin(tenantId: tenantId, personId: personId);
+
+  @override
+  Future<api.TenantAdmin> resendAdminInvitation(String tenantId, String personId) async =>
+      (await _api.resendTenantAdminInvitation(tenantId: tenantId, personId: personId)).data!;
 }

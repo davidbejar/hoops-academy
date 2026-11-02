@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:built_collection/built_collection.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/platform/application/platform_providers.dart';
@@ -26,8 +29,41 @@ api.UsageReport usageReport(String service, Map<String, int> counters) => api.Us
     ..counters = MapBuilder<String, int>(counters),
 );
 
+api.TenantAdmin adminOf(
+  String personId,
+  String given,
+  String family, {
+  String? email,
+  api.InvitationStatus status = api.InvitationStatus.ACCEPTED,
+  Set<api.TenantRole> otherRoles = const {},
+}) => api.TenantAdmin(
+  (b) => b
+    ..personId = personId
+    ..givenName = given
+    ..familyName = family
+    ..email = email ?? '${given.toLowerCase()}@example.org'
+    ..invitationStatus = status
+    ..otherRoles = SetBuilder<api.TenantRole>(otherRoles),
+);
+
+/// A Problem+JSON failure as the Dio layer throws it (`code` is the machine-readable business code).
+DioException problem(int status, String code) {
+  final request = RequestOptions(path: '/platform');
+  return DioException(
+    requestOptions: request,
+    type: DioExceptionType.badResponse,
+    response: Response<dynamic>(
+      requestOptions: request,
+      statusCode: status,
+      data: {'status': status, 'code': code, 'detail': 'English server detail that must never be shown'},
+    ),
+  );
+}
+
 class FakePlatformRepository with Faulty implements PlatformRepository {
-  FakePlatformRepository({List<api.Tenant>? tenants, this.usageResult, this.usageFails = false}) : list = tenants ?? [];
+  FakePlatformRepository({List<api.Tenant>? tenants, this.usageResult, this.usageFails = false, Map<String, List<api.TenantAdmin>>? admins})
+    : list = tenants ?? [],
+      adminsOf = admins ?? {};
 
   final List<api.Tenant> list;
   api.TenantUsage? usageResult;
@@ -36,6 +72,21 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   String? lastReason;
   api.TenantStatus? lastStatusFilter;
   String? lastQuery;
+
+  /// Administrators per tenant id.
+  final Map<String, List<api.TenantAdmin>> adminsOf;
+
+  /// Holds `admins()` until completed (loading state) / makes only the list fail (the tenant still loads).
+  Completer<void>? adminsGate;
+  Object? adminsListFails;
+
+  /// Thrown by add/update/remove/resend only (the list keeps working), e.g. `problem(409, 'LAST_ADMIN')`.
+  Object? adminMutationFails;
+  api.AddTenantAdminRequest? addedAdmin;
+  api.UpdateTenantAdminRequest? updatedAdmin;
+  String? updatedAdminId;
+  final List<String> removedAdmins = [];
+  final List<String> resentInvitations = [];
 
   int _i(String id) => list.indexWhere((t) => t.id == id);
 
@@ -91,6 +142,75 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
             ..tenantId = tenantId
             ..collectedAt = DateTime.utc(2026, 11, 1),
         );
+  });
+  List<api.TenantAdmin> _admins(String tenantId) => adminsOf.putIfAbsent(tenantId, () => []);
+
+  api.Tenant _manageable(String tenantId) {
+    final t = list[_i(tenantId)];
+    if (t.status == api.TenantStatus.WITHDRAWN) throw problem(409, 'TENANT_WITHDRAWN');
+    return t;
+  }
+
+  @override
+  Future<List<api.TenantAdmin>> admins(String tenantId) async {
+    await adminsGate?.future;
+    if (adminsListFails != null) throw adminsListFails!;
+    return run('admins', () {
+      _manageable(tenantId);
+      return List.of(_admins(tenantId));
+    });
+  }
+
+  @override
+  Future<api.TenantAdmin> addAdmin(String tenantId, api.AddTenantAdminRequest request) => run('addAdmin', () {
+    if (adminMutationFails != null) throw adminMutationFails!;
+    _manageable(tenantId);
+    addedAdmin = request;
+    final admin = adminOf(
+      'new-${_admins(tenantId).length}',
+      request.givenName,
+      request.familyName,
+      email: request.email,
+      status: api.InvitationStatus.PENDING,
+    );
+    _admins(tenantId).add(admin);
+    return admin;
+  });
+
+  @override
+  Future<api.TenantAdmin> updateAdmin(String tenantId, String personId, api.UpdateTenantAdminRequest request) =>
+      run('updateAdmin', () {
+        if (adminMutationFails != null) throw adminMutationFails!;
+        _manageable(tenantId);
+        updatedAdmin = request;
+        updatedAdminId = personId;
+        final admins = _admins(tenantId);
+        final i = admins.indexWhere((a) => a.personId == personId);
+        admins[i] = admins[i].rebuild(
+          (b) => b
+            ..givenName = request.givenName ?? admins[i].givenName
+            ..familyName = request.familyName ?? admins[i].familyName
+            ..email = request.email ?? admins[i].email,
+        );
+        return admins[i];
+      });
+
+  @override
+  Future<void> removeAdmin(String tenantId, String personId) => run('removeAdmin', () {
+    if (adminMutationFails != null) throw adminMutationFails!;
+    _manageable(tenantId);
+    final admins = _admins(tenantId);
+    if (admins.length == 1) throw problem(409, 'LAST_ADMIN');
+    removedAdmins.add(personId);
+    admins.removeWhere((a) => a.personId == personId);
+  });
+
+  @override
+  Future<api.TenantAdmin> resendAdminInvitation(String tenantId, String personId) => run('resendAdmin', () {
+    if (adminMutationFails != null) throw adminMutationFails!;
+    _manageable(tenantId);
+    resentInvitations.add(personId);
+    return _admins(tenantId).firstWhere((a) => a.personId == personId);
   });
 }
 
