@@ -32,7 +32,15 @@ cp .env.example .env                 # replace every change-me-* value (git-igno
 just up                              # Postgres, Keycloak, MailHog, nginx on http://localhost:8080
 just seed-users                      # superadmin, admin1, coach1, assistant1, parent1, player1 (DEV_USER_PASSWORD)
 ```
-Start the backend services (host mode; nginx reaches them on 8081 to 8083):
+`DEV_USER_PASSWORD` in `.env` is the plain login password for all seeded users (Keycloak stores only its hash). To change
+it, edit `.env` (at least 12 characters) and re-run `just seed-users`; it resets every seeded user's password.
+
+**One command:** once `.env` is filled, `./start.sh` does everything below: it starts the Podman machine if needed,
+sources `scripts/env.sh`, runs `just up`, `just seed-users` and `just services-up`, then the web app on :5173.
+`./start.sh --no-build` reuses the built service jars. Quitting the web app (`q` or Ctrl+C) stops the services; the
+compose stack keeps running (`just down`).
+
+Or step by step. Start the backend services (host mode; nginx reaches them on 8081 to 8083):
 ```bash
 set -a; source .env; set +a
 ./mvnw -pl services/core-service    quarkus:dev     # :8081  (one terminal each)
