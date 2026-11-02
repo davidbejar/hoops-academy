@@ -6,13 +6,13 @@ import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.authz.AuthzCache;
 import com.hoopsacademy.core.application.port.AppUserRepository;
-import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.port.OutboxEvent;
 import com.hoopsacademy.core.application.port.OutboxWriter;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
+import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.identity.AppUser;
 import com.hoopsacademy.core.domain.membership.InvitationStatus;
 import com.hoopsacademy.core.domain.membership.Person;
@@ -24,8 +24,9 @@ import java.util.Optional;
 
 /**
  * The transactional half of adding a member (invite and first tenant ADMIN): person + roles (+ player), the login
- * link and membership index, the outbox event — and, LAST before commit, the setup e-mail for a login created by
- * this request, so a failing e-mail rolls the whole member back (the caller then deletes the created login).
+ * link and membership index, the outbox event — and, LAST before commit, the temporary password of a login created
+ * by this request (ADR-0024), so a Keycloak failure rolls the whole member back (the caller then deletes the created
+ * login).
  */
 @ApplicationScoped
 public class MemberProvisioning {
@@ -36,20 +37,20 @@ public class MemberProvisioning {
     private final AppUserRepository appUsers;
     private final MembershipRepository memberships;
     private final OutboxWriter outbox;
-    private final IdentityProviderPort identityProvider;
+    private final TemporaryPasswords temporaryPasswords;
     private final AuthzCache authzCache;
     private final AuditLog audit;
 
     public MemberProvisioning(TenantContext tenantContext, PersonRepository persons, PlayerRepository players,
             AppUserRepository appUsers, MembershipRepository memberships, OutboxWriter outbox,
-            IdentityProviderPort identityProvider, AuthzCache authzCache, AuditLog audit) {
+            TemporaryPasswords temporaryPasswords, AuthzCache authzCache, AuditLog audit) {
         this.tenantContext = tenantContext;
         this.persons = persons;
         this.players = players;
         this.appUsers = appUsers;
         this.memberships = memberships;
         this.outbox = outbox;
-        this.identityProvider = identityProvider;
+        this.temporaryPasswords = temporaryPasswords;
         this.authzCache = authzCache;
         this.audit = audit;
     }
@@ -63,7 +64,7 @@ public class MemberProvisioning {
     }
 
     @Transactional
-    public Person create(Person draft, Optional<ProvisionedIdentity> login) {
+    public WithTemporaryPassword<Person> create(Person draft, Optional<ProvisionedIdentity> login) {
         requireEmailAvailable(draft.data().email());
         Person person = login.map(identity -> linkLogin(draft, identity)).orElse(draft);
         persons.insert(person);
@@ -78,20 +79,12 @@ public class MemberProvisioning {
         authzCache.invalidate(tenantContext.requireTenantId());
         audit.record(AuditEvent.of("member.invited", "person", person.id().value(), Map.of(
                 "roles", person.roles().stream().map(Enum::name).sorted().toList(), "login", login.isPresent())));
-        sendSetupEmail(login);
-        return person;
-    }
-
-    /** The last step of a provisioning transaction: the setup e-mail for a login this request created. */
-    public void sendSetupEmail(Optional<ProvisionedIdentity> login) {
-        login.filter(ProvisionedIdentity::created)
-                .ifPresent(identity -> identityProvider.sendAccountSetupEmail(identity.subject()));
+        return new WithTemporaryPassword<>(person, temporaryPasswords.forCreated(person.id(), login));
     }
 
     /** Links {@code identity} to the draft (409 when that login is already a member) and indexes the membership. */
     public Person attachLogin(Person draft, ProvisionedIdentity identity) {
-        Person linked = linkLogin(draft, identity);
-        return linked;
+        return linkLogin(draft, identity);
     }
 
     /** Registers the membership index row of a login linked by {@link #attachLogin} (after the person insert). */

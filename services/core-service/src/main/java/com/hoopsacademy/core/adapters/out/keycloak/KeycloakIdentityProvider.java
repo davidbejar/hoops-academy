@@ -6,47 +6,40 @@ import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.LoginUpdate;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
+import com.hoopsacademy.core.domain.identity.TemporaryPassword;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
 /**
  * Keycloak Admin API through the service account of client {@code core-service} (needs realm-management
- * {@code manage-users}). Users are created enabled, without password, e-mail unverified; the setup e-mail carries
- * the required actions.
+ * {@code manage-users}). Users are created enabled, without password, e-mail unverified; a created login is given a
+ * temporary password by the caller (ADR-0024). Nothing here sends e-mail.
  */
 @ApplicationScoped
 class KeycloakIdentityProvider implements IdentityProviderPort {
 
     static final String EMAIL_TAKEN = "EMAIL_TAKEN";
-
-    static final List<String> SETUP_ACTIONS = List.of("UPDATE_PASSWORD", "VERIFY_EMAIL");
-    static final List<String> VERIFY_ACTIONS = List.of("VERIFY_EMAIL");
-
-    private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class);
+    static final String UPDATE_PASSWORD = "UPDATE_PASSWORD";
 
     private final Keycloak keycloak;
     private final String realm;
-    private final int setupEmailLifespanSeconds;
 
     KeycloakIdentityProvider(Keycloak keycloak,
-            @ConfigProperty(name = "hoops.keycloak.realm", defaultValue = "academy") String realm,
-            @ConfigProperty(name = "hoops.keycloak.setup-email-lifespan", defaultValue = "PT72H") Duration lifespan) {
+            @ConfigProperty(name = "hoops.keycloak.realm", defaultValue = "academy") String realm) {
         this.keycloak = keycloak;
         this.realm = realm;
-        this.setupEmailLifespanSeconds = (int) lifespan.toSeconds();
     }
 
     @Override
@@ -66,10 +59,25 @@ class KeycloakIdentityProvider implements IdentityProviderPort {
     }
 
     @Override
-    public void sendAccountSetupEmail(String subject) {
-        call("send setup e-mail", () -> {
-            users().get(subject).executeActionsEmail(SETUP_ACTIONS, setupEmailLifespanSeconds);
+    public void setTemporaryPassword(String subject, TemporaryPassword password) {
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setTemporary(true);
+        credential.setValue(password.reveal());
+        call("set a temporary password", () -> {
+            users().get(subject).resetPassword(credential);
             return null;
+        });
+    }
+
+    @Override
+    public boolean hasOwnPassword(String subject) {
+        return call("read the credentials of the user", () -> {
+            UserResource user = users().get(subject);
+            boolean password = user.credentials().stream()
+                    .anyMatch(credential -> CredentialRepresentation.PASSWORD.equals(credential.getType()));
+            List<String> pending = user.toRepresentation().getRequiredActions();
+            return password && (pending == null || !pending.contains(UPDATE_PASSWORD));
         });
     }
 
@@ -77,7 +85,6 @@ class KeycloakIdentityProvider implements IdentityProviderPort {
     public void updateLogin(LoginUpdate update) {
         call("update login", () -> {
             UserResource user = users().get(update.subject());
-            UserRepresentation previous = user.toRepresentation();
             UserRepresentation moved = user.toRepresentation();
             moved.setUsername(update.email());
             moved.setEmail(update.email());
@@ -85,13 +92,6 @@ class KeycloakIdentityProvider implements IdentityProviderPort {
             moved.setLastName(update.familyName());
             moved.setEmailVerified(false);
             updateOrConflict(user, moved);
-            try {
-                user.executeActionsEmail(update.setupPending() ? SETUP_ACTIONS : VERIFY_ACTIONS,
-                        setupEmailLifespanSeconds);
-            } catch (RuntimeException mailFailure) {
-                restore(user, previous, mailFailure);
-                throw mailFailure;
-            }
             return null;
         });
     }
@@ -118,17 +118,6 @@ class KeycloakIdentityProvider implements IdentityProviderPort {
                 throw new ConflictException("Another login already uses this e-mail", EMAIL_TAKEN);
             }
             throw e;
-        }
-    }
-
-    /** Compensation of a failed mail: put the login back as it was (a failure here is logged and suppressed). */
-    private static void restore(UserResource user, UserRepresentation previous, RuntimeException failure) {
-        try {
-            user.update(previous);
-        } catch (RuntimeException restoreFailure) {
-            failure.addSuppressed(restoreFailure);
-            LOG.errorf("Could not restore Keycloak user %s after a failed e-mail; fix its username/e-mail manually",
-                    previous.getId());
         }
     }
 

@@ -79,7 +79,7 @@ public class MeLookup {
         return Optional.of(new MeView.Membership(tenant, authz.get().context()));
     }
 
-    /** The first successful /me after the setup e-mail marks the invitation accepted. */
+    /** The first successful /me in this tenant (after the first sign-in) marks the invitation accepted. */
     private void acceptPendingInvitation(String subject) {
         persons.findActiveByLogin(subject)
                 .filter(person -> person.invitationStatus() == InvitationStatus.PENDING)

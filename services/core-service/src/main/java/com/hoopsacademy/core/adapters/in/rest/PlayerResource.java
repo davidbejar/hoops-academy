@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.in.rest;
 
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
 import com.hoopsacademy.core.application.approvals.CreatePlayer;
+import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.approvals.PlayerCommandResult;
 import com.hoopsacademy.core.application.approvals.WithdrawPlayer;
 import com.hoopsacademy.core.application.players.PlayerQueries;
@@ -67,7 +68,8 @@ public class PlayerResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response create(@Valid @NotNull CreatePlayerRequest request) {
         PlayerCommandResult result = createPlayer.handle(request.toCommand());
-        return Response.status(result.pending() ? Response.Status.ACCEPTED : Response.Status.CREATED)
+        return WithPasswordDto.noStore(Response.status(result.pending() ? Response.Status.ACCEPTED
+                        : Response.Status.CREATED))
                 .entity(PlayerCommandResultDto.of(result)).build();
     }
 

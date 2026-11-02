@@ -59,8 +59,6 @@ class LoginProvisioningTest {
             return new ProvisionedIdentity("sub-" + identity.email(), true);
         }
 
-        public void sendAccountSetupEmail(String subject) {}
-
         @Override
         public void setTemporaryPassword(String subject, TemporaryPassword password) {}
 

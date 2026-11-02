@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.in.rest;
 
 import com.hoopsacademy.common.problem.Problem;
 import com.hoopsacademy.core.adapters.in.shared.InvalidRequestException;
+import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.approvals.ApprovalQueries;
 import com.hoopsacademy.core.application.approvals.ApproveRequest;
 import com.hoopsacademy.core.application.approvals.CancelRequest;
@@ -25,6 +26,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -71,8 +73,11 @@ public class ApprovalRequestResource {
     @POST
     @Path("/{approvalRequestId}/approve")
     @Consumes(MediaType.APPLICATION_JSON)
-    public ApprovalRequestDto approve(@PathParam("approvalRequestId") UUID id, @Valid DecisionRequest body) {
-        return ApprovalRequestDto.of(approve.handle(new ApprovalRequestId(id), body == null ? null : body.note()));
+    public Response approve(@PathParam("approvalRequestId") UUID id, @Valid DecisionRequest body) {
+        return WithPasswordDto.noStore(Response.ok())
+                .entity(WithPasswordDto.of(approve.handle(new ApprovalRequestId(id), body == null ? null : body.note()),
+                        ApprovalRequestDto::of))
+                .build();
     }
 
     @POST

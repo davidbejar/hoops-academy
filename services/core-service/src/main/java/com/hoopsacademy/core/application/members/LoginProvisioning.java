@@ -10,7 +10,7 @@ import org.jboss.logging.Logger;
 /**
  * The saga used by CreateTenant and InviteMember (two datasources + Keycloak, no distributed transaction):
  * 1. provision the login in Keycloak first (nothing written yet → a Keycloak failure leaves no trace);
- * 2. run the database work (the setup e-mail is its last step before commit);
+ * 2. run the database work (a created login's temporary password is its last step before commit, ADR-0024);
  * 3. if the database work fails, delete the login — but only when step 1 created it.
  */
 @ApplicationScoped

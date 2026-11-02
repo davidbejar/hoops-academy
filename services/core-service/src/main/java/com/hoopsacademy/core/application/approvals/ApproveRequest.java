@@ -13,8 +13,10 @@ import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
+import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.approvals.ApprovalAction;
 import com.hoopsacademy.core.domain.approvals.ApprovalStatus;
+import com.hoopsacademy.core.domain.membership.Person;
 import java.util.Optional;
 
 /**
@@ -54,7 +56,7 @@ public class ApproveRequest {
      * {@link PlayerLogin}); a failing invitation leaves the request PENDING.
      */
     @RequiresTenantRole(TenantRole.ADMIN)
-    public ApprovalView handle(ApprovalRequestId id, String note) {
+    public WithTemporaryPassword<ApprovalView> handle(ApprovalRequestId id, String note) {
         return playerLogin.around(loginToInvite(id), login -> decide(id, note, login));
     }
 
@@ -70,15 +72,16 @@ public class ApproveRequest {
     }
 
     @Transactional
-    ApprovalView decide(ApprovalRequestId id, String note, Optional<ProvisionedIdentity> login) {
+    WithTemporaryPassword<ApprovalView> decide(ApprovalRequestId id, String note, Optional<ProvisionedIdentity> login) {
         ApprovalRequest decided = decisions.store(decisions.load(id).approve(access.person(), note, clock.instant()));
         ApprovalPayload payload = decided.payload();
+        Optional<Person> linked = Optional.empty();
         switch (decided.action()) {
             case ADD_PLAYER -> {
                 lifecycle.admit(decided.player(), Optional.ofNullable(payload.team()),
                         Optional.ofNullable(payload.jersey()));
                 outbox.approved(decided);
-                login.ifPresent(identity -> playerLogin.link(decided.player(), identity));
+                linked = login.map(identity -> playerLogin.link(decided.player(), identity));
             }
             case WITHDRAW_PLAYER -> {
                 lifecycle.withdraw(decided.player(), access.person());
@@ -86,7 +89,6 @@ public class ApproveRequest {
             }
         }
         ApprovalView view = views.of(decided);
-        playerLogin.sendSetupEmail(login);
-        return view;
+        return new WithTemporaryPassword<>(view, playerLogin.temporaryPassword(linked, login));
     }
 }

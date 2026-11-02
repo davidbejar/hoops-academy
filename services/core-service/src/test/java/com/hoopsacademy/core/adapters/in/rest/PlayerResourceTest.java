@@ -104,7 +104,7 @@ class PlayerResourceTest {
                 + "on p.person_id = r.person_id where p.id = ? and r.role = 'PLAYER'", player)).isEqualTo(1);
         assertThat(CoreDb.count(tenant, "select count(*) from core.approval_request where status = 'APPROVED'")).isEqualTo(1);
         assertThat(api.outbox("player.approved")).isEqualTo(1);
-        assertThat(CoreDb.auditActions(tenant)).containsExactly("player.approved");
+        assertThat(CoreDb.auditActions(tenant)).containsExactly("player.approved", "member.temporary_password_issued");
         api.getPlayer(player).statusCode(200).body("status", equalTo("ORPHAN"));
         api.request().queryParam("status", "ORPHAN").get("/api/core/players").then().statusCode(200)
                 .body("items.id", contains(player.toString()));

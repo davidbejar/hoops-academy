@@ -1,21 +1,31 @@
 package com.hoopsacademy.core.application.port;
 
+import com.hoopsacademy.core.domain.identity.TemporaryPassword;
+
 /**
  * Keycloak Admin API, used for user provisioning only (ADR-0005). Every method throws
- * {@link IdentityProviderException} when the provider fails or is unreachable.
+ * {@link IdentityProviderException} when the provider fails or is unreachable. No method sends e-mail (ADR-0024).
  */
 public interface IdentityProviderPort {
 
     /** Finds the login with this e-mail or creates it (enabled, e-mail unverified, no password). */
     ProvisionedIdentity provision(NewIdentity identity);
 
-    /** Sends the execute-actions e-mail (UPDATE_PASSWORD, VERIFY_EMAIL). */
-    void sendAccountSetupEmail(String subject);
+    /**
+     * Replaces the login's password by {@code password} as a temporary credential: the next sign-in must choose a new
+     * password (required action UPDATE_PASSWORD). The value never appears in an exception.
+     */
+    void setTemporaryPassword(String subject, TemporaryPassword password);
 
     /**
-     * Moves the login to a new e-mail: username and e-mail = {@code update.email()}, names, e-mail unverified; then
-     * mails the new address (VERIFY_EMAIL, or the setup actions while the invitation is pending). When that mail
-     * fails, the previous login data is restored before the exception is thrown.
+     * True when the person has chosen a password of their own: the login has a password credential and no pending
+     * UPDATE_PASSWORD (a temporary password not used yet, or no password at all, is false).
+     */
+    boolean hasOwnPassword(String subject);
+
+    /**
+     * Moves the login to a new e-mail: username and e-mail = {@code update.email()} (unverified), names. Sends no
+     * e-mail and leaves the password alone.
      *
      * @throws com.hoopsacademy.common.problem.ConflictException {@code EMAIL_TAKEN} when another login owns the e-mail
      */

@@ -5,11 +5,13 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
 import com.hoopsacademy.core.adapters.in.shared.MergePatch;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.members.MemberView;
 import com.hoopsacademy.core.application.platform.ManageTenantAdmins;
 import com.hoopsacademy.core.application.platform.ManageTenantAdmins.AddedAdmin;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PersonalDataChanges;
 import jakarta.annotation.security.RolesAllowed;
@@ -61,12 +63,12 @@ public class PlatformAdminResource {
     public Response add(@PathParam("tenantId") UUID tenantId, @Valid @NotNull AddTenantAdminRequest request,
             UriInfo uri) {
         AddedAdmin added = admins.add(new TenantId(tenantId), request.toPersonalData());
-        TenantAdminDto admin = TenantAdminDto.of(added.admin());
-        if (!added.invited()) {
-            return Response.ok(admin).build();
-        }
-        return Response.created(uri.getAbsolutePathBuilder().path(admin.personId().toString()).build())
-                .entity(admin).build();
+        WithPasswordDto<TenantAdminDto> admin = WithPasswordDto.of(
+                new WithTemporaryPassword<>(added.admin(), added.temporaryPassword()), TenantAdminDto::of);
+        Response.ResponseBuilder response = added.invited()
+                ? Response.created(uri.getAbsolutePathBuilder().path(admin.body().personId().toString()).build())
+                : Response.ok();
+        return WithPasswordDto.noStore(response).entity(admin).build();
     }
 
     @PATCH
@@ -91,10 +93,24 @@ public class PlatformAdminResource {
         return Response.noContent().build();
     }
 
+    /** A new temporary password while the invitation is pending (ADR-0024); shown once, never cached. */
+    @POST
+    @Path("/{personId}/temporary-password")
+    public Response issueTemporaryPassword(@PathParam("tenantId") UUID tenantId,
+            @PathParam("personId") UUID personId) {
+        return WithPasswordDto.noStore(Response.ok()).entity(temporaryPassword(tenantId, personId)).build();
+    }
+
+    /** Deprecated alias of {@link #issueTemporaryPassword} (contract 2.3.0, removed in 3.0.0); answers 202. */
+    @Deprecated(since = "core 2.3.0", forRemoval = true)
     @POST
     @Path("/{personId}/resend-invitation")
     public Response resendInvitation(@PathParam("tenantId") UUID tenantId, @PathParam("personId") UUID personId) {
-        MemberView admin = admins.resendInvitation(new TenantId(tenantId), new PersonId(personId));
-        return Response.accepted(TenantAdminDto.of(admin)).build();
+        return WithPasswordDto.noStore(Response.accepted()).entity(temporaryPassword(tenantId, personId)).build();
+    }
+
+    private WithPasswordDto<TenantAdminDto> temporaryPassword(UUID tenantId, UUID personId) {
+        return WithPasswordDto.of(admins.issueTemporaryPassword(new TenantId(tenantId), new PersonId(personId)),
+                TenantAdminDto::of);
     }
 }

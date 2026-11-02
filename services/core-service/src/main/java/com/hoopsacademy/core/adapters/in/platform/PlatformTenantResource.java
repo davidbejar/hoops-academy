@@ -8,12 +8,14 @@ import com.hoopsacademy.core.adapters.in.shared.InvalidRequestException;
 import com.hoopsacademy.core.adapters.in.shared.MergePatch;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.Params;
+import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.platform.CreateTenant;
 import com.hoopsacademy.core.application.platform.CreateTenantCommand;
 import com.hoopsacademy.core.application.platform.PlatformTenantQueries;
 import com.hoopsacademy.core.application.platform.TenantLifecycle;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.application.usage.AggregateTenantUsage;
 import com.hoopsacademy.core.application.usage.UsageHistory;
 import com.hoopsacademy.core.domain.shared.AppLocale;
@@ -89,12 +91,14 @@ public class PlatformTenantResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response create(@Valid @NotNull CreateTenantRequest request, UriInfo uri) {
         CreateTenantRequest.FirstAdmin admin = request.firstAdmin();
-        Tenant tenant = createTenant.handle(new CreateTenantCommand(TenantSlug.of(request.slug()), request.name(),
+        WithTemporaryPassword<Tenant> created = createTenant.handle(new CreateTenantCommand(
+                TenantSlug.of(request.slug()), request.name(),
                 Constraints.zone(request.timezone()), AppLocale.fromCode(request.defaultLocale()),
                 new CreateTenantCommand.FirstAdmin(admin.email(), admin.givenName(), admin.familyName(),
                         admin.locale() == null ? null : AppLocale.fromCode(admin.locale()))));
-        return Response.created(uri.getAbsolutePathBuilder().path(tenant.id().toString()).build())
-                .entity(TenantDto.of(tenant)).build();
+        return WithPasswordDto.noStore(Response.created(uri.getAbsolutePathBuilder()
+                        .path(created.value().id().toString()).build()))
+                .entity(WithPasswordDto.of(created, TenantDto::of)).build();
     }
 
     @GET

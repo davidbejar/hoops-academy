@@ -6,6 +6,7 @@ import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.core.application.members.LoginProvisioning;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
+import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PersonalData;
@@ -23,9 +24,10 @@ import java.util.Set;
  *   <li>validate, check the slug (409 before any side effect);</li>
  *   <li>provision the first ADMIN's login in Keycloak (failure → 502, nothing written);</li>
  *   <li>platform tx: registry row + subscription (failure → delete the created login);</li>
- *   <li>tenant tx as core_app: settings, hooks, person + ADMIN, index, outbox, setup e-mail last
- *       (failure → delete the registry row and the created login).</li>
+ *   <li>tenant tx as core_app: settings, hooks, person + ADMIN, index, outbox, the created login's temporary
+ *       password last (failure → delete the registry row and the created login).</li>
  * </ol>
+ * The temporary password is returned once (ADR-0024); an existing login keeps its own password.
  */
 @ApplicationScoped
 public class CreateTenant {
@@ -45,7 +47,7 @@ public class CreateTenant {
         this.clock = clock;
     }
 
-    public Tenant handle(CreateTenantCommand command) {
+    public WithTemporaryPassword<Tenant> handle(CreateTenantCommand command) {
         Tenant tenant = Tenant.onboard(TenantId.random(), command.slug(), command.name(), command.timezone(),
                 command.defaultLocale(), clock.instant());
         Person firstAdmin = firstAdmin(command);
@@ -53,17 +55,15 @@ public class CreateTenant {
 
         ProvisionedIdentity login = logins.provision(new NewIdentity(firstAdmin.data().email(),
                 firstAdmin.data().givenName(), firstAdmin.data().familyName(), firstAdmin.data().locale()));
-        logins.compensateOnFailure(login, () -> {
+        return logins.compensateOnFailure(login, () -> {
             registration.register(tenant);
-            provisionContent(tenant, firstAdmin, login);
-            return tenant;
+            return provisionContent(tenant, firstAdmin, login).map(admin -> tenant);
         });
-        return tenant;
     }
 
-    private void provisionContent(Tenant tenant, Person firstAdmin, ProvisionedIdentity login) {
+    private WithTemporaryPassword<Person> provisionContent(Tenant tenant, Person firstAdmin, ProvisionedIdentity login) {
         try {
-            tenantScope.runAs(tenant.id(), () -> content.provision(tenant, firstAdmin, login));
+            return tenantScope.runAs(tenant.id(), () -> content.provision(tenant, firstAdmin, login));
         } catch (RuntimeException failure) {
             registration.unregister(tenant.id());
             throw failure;

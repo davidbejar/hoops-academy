@@ -7,6 +7,7 @@ import com.hoopsacademy.core.application.port.OutboxEvent;
 import com.hoopsacademy.core.application.port.OutboxWriter;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
 import com.hoopsacademy.core.application.port.TenantSettingsRepository;
+import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.application.tenant.TenantProvisioningHook;
 import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.tenant.Tenant;
@@ -36,8 +37,9 @@ public class TenantContentProvisioning {
         this.audit = audit;
     }
 
+    /** The first admin's temporary password (a created login only) is the last step, see {@link MemberProvisioning}. */
     @Transactional
-    public Person provision(Tenant tenant, Person firstAdmin, ProvisionedIdentity login) {
+    public WithTemporaryPassword<Person> provision(Tenant tenant, Person firstAdmin, ProvisionedIdentity login) {
         settings.create(TenantSettings.defaults());
         hooks.forEach(hook -> hook.onTenantCreated(tenant));
         outbox.write(new OutboxEvent(tenant.id(), "tenant.created", "tenant", tenant.id().toString(),

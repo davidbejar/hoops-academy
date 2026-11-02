@@ -5,6 +5,7 @@ import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.port.EntitlementService;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
+import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PersonalData;
@@ -14,8 +15,8 @@ import java.util.Optional;
 
 /**
  * Invites a member: validate → (optional) provision the login in Keycloak → create person/roles/player in one
- * tenant transaction (setup e-mail last) → on failure delete the login this call created (saga, see
- * {@link LoginProvisioning}).
+ * tenant transaction (a created login's temporary password last, ADR-0024) → on failure delete the login this call
+ * created (saga, see {@link LoginProvisioning}).
  */
 @ApplicationScoped
 public class InviteMember {
@@ -39,7 +40,7 @@ public class InviteMember {
         this.clock = clock;
     }
 
-    public MemberView handle(InviteMemberCommand command) {
+    public WithTemporaryPassword<MemberView> handle(InviteMemberCommand command) {
         entitlements.check(tenantContext.requireTenantId(), EntitlementService.Limit.MEMBERS);
         Person draft = Person.create(PersonId.random(), command.data(), command.roles(), clock.instant());
         PersonalData data = draft.data();
@@ -48,11 +49,11 @@ public class InviteMember {
         }
         provisioning.requireEmailAvailable(data.email());
         if (!command.sendInvitation()) {
-            return queries.view(provisioning.create(draft, Optional.empty()));
+            return provisioning.create(draft, Optional.empty()).map(queries::view);
         }
         ProvisionedIdentity login = logins.provision(
                 new NewIdentity(data.email(), data.givenName(), data.familyName(), data.locale()));
-        Person created = logins.compensateOnFailure(login, () -> provisioning.create(draft, Optional.of(login)));
-        return queries.view(created);
+        return logins.compensateOnFailure(login, () -> provisioning.create(draft, Optional.of(login)))
+                .map(queries::view);
     }
 }

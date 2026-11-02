@@ -9,7 +9,6 @@ import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.LoginUpdate;
 import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.domain.identity.AppUser;
-import com.hoopsacademy.core.domain.membership.InvitationStatus;
 import com.hoopsacademy.core.domain.membership.Person;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Locale;
@@ -20,7 +19,8 @@ import java.util.Optional;
 /**
  * Keeps the login of a member on the member's e-mail (ADR-0023): when the e-mail of a person with a login changes,
  * {@code core.app_user.email} and the Keycloak user (username = e-mail) follow, inside the member's transaction with
- * the Keycloak call last, so a Keycloak failure rolls the database back.
+ * the Keycloak call last, so a Keycloak failure rolls the database back. No e-mail is sent and the password stays as
+ * it is (ADR-0024).
  */
 @ApplicationScoped
 public class LoginEmailSync {
@@ -75,8 +75,7 @@ public class LoginEmailSync {
         appUsers.save(move.login().withEmail(person.data().email()));
         audit.record(AuditEvent.of("member.login_email_changed", "person", person.id().value(), Map.of()));
         identityProvider.updateLogin(new LoginUpdate(move.login().subject(), person.data().email(),
-                person.data().givenName(), person.data().familyName(),
-                person.invitationStatus() == InvitationStatus.PENDING));
+                person.data().givenName(), person.data().familyName()));
     }
 
     private static boolean sameAddress(String before, String after) {

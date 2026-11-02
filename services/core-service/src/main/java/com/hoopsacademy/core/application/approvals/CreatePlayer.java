@@ -4,6 +4,7 @@ import com.hoopsacademy.common.authz.RequiresTenantRole;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.players.PlayerAccess;
+import com.hoopsacademy.core.application.players.PlayerView;
 import com.hoopsacademy.core.application.players.PlayerViews;
 import com.hoopsacademy.core.application.port.ApprovalRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
@@ -13,6 +14,7 @@ import com.hoopsacademy.core.domain.approvals.ApprovalAction;
 import com.hoopsacademy.core.domain.approvals.ApprovalPayload;
 import com.hoopsacademy.core.domain.approvals.ApprovalPolicy;
 import com.hoopsacademy.core.domain.approvals.ApprovalRequest;
+import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PersonalData;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
@@ -102,12 +104,12 @@ public class CreatePlayer {
                     clock.instant());
             approvals.insert(request);
             outbox.approved(request);
-            login.ifPresent(identity -> playerLogin.link(player, identity));
         }
-        PlayerCommandResult result = new PlayerCommandResult(playerViews.of(players.find(player).orElseThrow()),
-                approvalViews.of(request));
-        playerLogin.sendSetupEmail(login);
-        return result;
+        Optional<Person> linked = needsApproval ? Optional.empty()
+                : login.map(identity -> playerLogin.link(player, identity));
+        PlayerView view = playerViews.of(players.find(player).orElseThrow());
+        ApprovalView approval = approvalViews.of(request);
+        return new PlayerCommandResult(view, approval, playerLogin.temporaryPassword(linked, login));
     }
 
     private static String blankToNull(String text) {

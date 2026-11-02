@@ -6,7 +6,9 @@ import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
 import com.hoopsacademy.core.adapters.in.shared.MergePatch;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.members.InviteMember;
+import com.hoopsacademy.core.application.members.IssueTemporaryPassword;
 import com.hoopsacademy.core.application.members.MemberCommands;
 import com.hoopsacademy.core.application.members.MemberQueries;
 import com.hoopsacademy.core.application.members.MemberView;
@@ -53,11 +55,14 @@ public class MemberResource {
             @NotNull @NotEmpty List<@NotNull @Pattern(regexp = Constraints.TENANT_ROLE) String> roles) {}
 
     private final InviteMember inviteMember;
+    private final IssueTemporaryPassword issueTemporaryPassword;
     private final MemberQueries queries;
     private final MemberCommands commands;
 
-    public MemberResource(InviteMember inviteMember, MemberQueries queries, MemberCommands commands) {
+    public MemberResource(InviteMember inviteMember, IssueTemporaryPassword issueTemporaryPassword,
+            MemberQueries queries, MemberCommands commands) {
         this.inviteMember = inviteMember;
+        this.issueTemporaryPassword = issueTemporaryPassword;
         this.queries = queries;
         this.commands = commands;
     }
@@ -78,9 +83,19 @@ public class MemberResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response invite(@Valid @NotNull InviteMemberRequest request, UriInfo uri) {
-        MemberDto member = MemberDto.of(inviteMember.handle(request.toCommand()));
-        return Response.created(uri.getAbsolutePathBuilder().path(member.personId().toString()).build())
+        WithPasswordDto<MemberDto> member = WithPasswordDto.of(inviteMember.handle(request.toCommand()), MemberDto::of);
+        return WithPasswordDto.noStore(Response.created(
+                        uri.getAbsolutePathBuilder().path(member.body().personId().toString()).build()))
                 .entity(member).build();
+    }
+
+    /** A new temporary password while the invitation is pending (ADR-0024); shown once, never cached. */
+    @POST
+    @Path("/{personId}/temporary-password")
+    public Response issueTemporaryPassword(@PathParam("personId") UUID personId) {
+        return WithPasswordDto.noStore(Response.ok())
+                .entity(WithPasswordDto.of(issueTemporaryPassword.handle(new PersonId(personId)), MemberDto::of))
+                .build();
     }
 
     @GET
