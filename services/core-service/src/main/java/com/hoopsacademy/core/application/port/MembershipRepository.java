@@ -18,4 +18,11 @@ public interface MembershipRepository {
     void unregister(PersonId person);
 
     List<IndexedMembership> ofSubject(String subject);
+
+    /**
+     * Whether {@code subject} is linked to an active person of a tenant other than the bound one (the
+     * {@code LOGIN_SHARED} rule, ADR-0023). Runs inside the bound tenant's transaction and reveals only this boolean,
+     * never which tenants.
+     */
+    boolean linkedInAnotherTenant(String subject);
 }

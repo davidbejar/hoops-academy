@@ -45,6 +45,34 @@ class JpaMembershipRepository implements MembershipRepository {
                 .executeUpdate();
     }
 
+    /**
+     * Inside the bound tenant's transaction: sets {@code app.subject} to {@code subject} for ONE statement, so the
+     * {@code own_memberships} policy exposes that login's index rows of other tenants to an {@code exists} probe, then
+     * puts the previous value back. Only the boolean leaves this method (ADR-0023).
+     */
+    @Override
+    public boolean linkedInAnotherTenant(String subject) {
+        UUID tenant = boundTenant.id();
+        String previous = (String) em.createNativeQuery("select coalesce(current_setting('app.subject', true), '')")
+                .getSingleResult();
+        bindSubject(subject);
+        try {
+            return (Boolean) em.createNativeQuery("""
+                    select exists (select 1 from core.user_membership_index
+                                    where keycloak_sub = :sub and tenant_id <> :tenant)""")
+                    .setParameter("sub", subject)
+                    .setParameter("tenant", tenant)
+                    .getSingleResult();
+        } finally {
+            bindSubject(previous);
+        }
+    }
+
+    private void bindSubject(String subject) {
+        em.createNativeQuery("select set_config('app.subject', :sub, true)").setParameter("sub", subject)
+                .getSingleResult();
+    }
+
     /** Must run in its own transaction with no tenant bound: it rebinds app.tenant_id to the nil tenant. */
     @Override
     public List<IndexedMembership> ofSubject(String subject) {

@@ -7,6 +7,7 @@ import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.authz.AuthzCache;
+import com.hoopsacademy.core.application.members.LoginEmailSync.SharedLogin;
 import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.port.OutboxEvent;
 import com.hoopsacademy.core.application.port.OutboxWriter;
@@ -24,7 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** ADMIN changes to existing members: personal data, role set, deactivation. */
+/** Changes to existing members (academy ADMINs, and the super admin for a tenant's admins): data, roles, deactivation. */
 @ApplicationScoped
 public class MemberCommands {
 
@@ -36,11 +37,12 @@ public class MemberCommands {
     private final OutboxWriter outbox;
     private final AuthzCache authzCache;
     private final AuditLog audit;
+    private final LoginEmailSync loginSync;
     private final Clock clock;
 
     public MemberCommands(TenantContext tenantContext, PersonRepository persons, PlayerRepository players,
             MembershipRepository memberships, MemberQueries queries, OutboxWriter outbox, AuthzCache authzCache,
-            AuditLog audit, Clock clock) {
+            AuditLog audit, LoginEmailSync loginSync, Clock clock) {
         this.tenantContext = tenantContext;
         this.persons = persons;
         this.players = players;
@@ -49,22 +51,36 @@ public class MemberCommands {
         this.outbox = outbox;
         this.authzCache = authzCache;
         this.audit = audit;
+        this.loginSync = loginSync;
         this.clock = clock;
     }
 
+    /** An academy ADMIN's edit: the e-mail of a login shared with another tenant cannot be changed (409). */
     @Transactional
     public MemberView updateData(PersonId id, PersonalDataChanges changes) {
-        Person changed = queries.load(id).withData(changes);
+        return updateData(id, changes, SharedLogin.REFUSE);
+    }
+
+    /**
+     * Personal data; an e-mail change of a person with a login also moves the login (core.app_user, Keycloak — last,
+     * a failure rolls this transaction back), see {@link LoginEmailSync}.
+     */
+    @Transactional
+    public MemberView updateData(PersonId id, PersonalDataChanges changes, SharedLogin sharedLogin) {
+        Person current = queries.load(id);
+        Person changed = current.withData(changes);
         String email = changed.data().email();
         if (email != null && persons.emailTaken(email, Optional.of(id))) {
             throw new ConflictException("A member with this e-mail already exists", "EMAIL_TAKEN");
         }
+        Optional<LoginEmailSync.LoginMove> loginMove = loginSync.plan(current, changed, sharedLogin);
         persons.update(changed);
         audit.record(AuditEvent.of("member.updated", "person", id.value(), Map.of("fields", new ChangedFields()
                 .field("givenName", changes.givenName()).field("familyName", changes.familyName())
                 .field("email", changes.email()).field("phone", changes.phone())
                 .field("birthDate", changes.birthDate()).field("gender", changes.gender())
                 .field("locale", changes.locale()).names())));
+        loginMove.ifPresent(loginSync::apply);
         return queries.view(changed);
     }
 

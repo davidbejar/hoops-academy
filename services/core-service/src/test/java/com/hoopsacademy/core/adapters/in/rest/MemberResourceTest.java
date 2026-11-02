@@ -200,6 +200,99 @@ class MemberResourceTest {
                 .body("{}").patch(MEMBERS + "/" + kid).then().statusCode(400);
     }
 
+    // ------------------------------------------------------------------ e-mail of a member with a login (ADR-0023)
+
+    @Test
+    void emailChangeMovesTheLoginInKeycloakAndCore() {
+        String sub = UUID.randomUUID().toString();
+        UUID coach = coachWithLogin(sub, "old.coach@example.com");
+
+        patch(coach, "{\"email\":\"new.coach@example.com\"}").statusCode(200)
+                .body("email", equalTo("new.coach@example.com"));
+
+        keycloak.verify(1, KeycloakStubs.loginMoved(sub, "new.coach@example.com"));
+        keycloak.verify(1, KeycloakStubs.verifyEmailSent(sub));
+        assertThat(CoreDb.count(null, "select count(*) from core.app_user where keycloak_sub = ? and email = ?",
+                sub, "new.coach@example.com")).isEqualTo(1);
+        assertThat(CoreDb.auditActions(tenant)).endsWith("member.updated", "member.login_email_changed");
+        assertThat(CoreDb.auditRow(tenant, "member.login_email_changed")).containsEntry("targetId", coach.toString());
+        assertThat(CoreDb.auditRow(tenant, "member.login_email_changed").get("metadata"))
+                .doesNotContain("coach@example.com");
+    }
+
+    @Test
+    void namesOnlyAndMembersWithoutLoginDoNotTouchKeycloak() {
+        UUID coach = coachWithLogin(UUID.randomUUID().toString(), "names@example.com");
+        UUID kid = CoreDb.person(tenant, "No", "Login", "nologin@example.com", TenantRole.PARENT);
+        patch(coach, "{\"givenName\":\"Renamed\",\"email\":\"NAMES@example.com\"}").statusCode(200);
+        patch(kid, "{\"email\":\"still.nologin@example.com\"}").statusCode(200);
+        keycloak.verify(0, KeycloakStubs.anyLoginUpdate());
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("member.login_email_changed");
+    }
+
+    @Test
+    void keycloakFailureKeepsTheOldEmailEverywhere() {
+        String sub = UUID.randomUUID().toString();
+        UUID coach = coachWithLogin(sub, "kept.coach@example.com");
+        KeycloakStubs.loginUpdateFails(keycloak);
+
+        given().filter(Contract.FAILURES).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+                .body("{\"email\":\"lost.coach@example.com\"}").patch(MEMBERS + "/" + coach).then()
+                .statusCode(502).contentType("application/problem+json")
+                .body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
+
+        member(coach).statusCode(200).body("email", equalTo("kept.coach@example.com"));
+        assertThat(CoreDb.count(null, "select count(*) from core.app_user where keycloak_sub = ? and email = ?",
+                sub, "kept.coach@example.com")).isEqualTo(1);
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("member.updated", "member.login_email_changed");
+    }
+
+    @Test
+    void anEmailOfAnotherKeycloakLoginIsTaken() {
+        String sub = UUID.randomUUID().toString();
+        UUID coach = coachWithLogin(sub, "mine@example.com");
+        KeycloakStubs.loginUpdateConflicts(keycloak);
+        patch(coach, "{\"email\":\"someone.else@example.com\"}").statusCode(409).body("code", equalTo("EMAIL_TAKEN"));
+        member(coach).statusCode(200).body("email", equalTo("mine@example.com"));
+    }
+
+    @Test
+    void aLoginUsedInAnotherTenantCannotBeMovedByAnAcademyAdmin() {
+        String sub = UUID.randomUUID().toString();
+        UUID coach = coachWithLogin(sub, "shared@example.com");
+        UUID user = CoreDb.login(sub);
+        CoreDb.person(Members.newTenant(), user, "Sha", "Red", "shared@example.com", null, null, TenantRole.PARENT);
+
+        patch(coach, "{\"email\":\"takeover@example.com\"}").statusCode(409).contentType("application/problem+json")
+                .body("code", equalTo("LOGIN_SHARED"))
+                .body("detail", org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("shared@example.com")));
+
+        keycloak.verify(0, KeycloakStubs.anyLoginUpdate());
+        member(coach).statusCode(200).body("email", equalTo("shared@example.com"));
+        patch(coach, "{\"familyName\":\"Still Editable\"}").statusCode(200);
+    }
+
+    @Test
+    void aDeactivatedMembershipElsewhereDoesNotShareTheLogin() {
+        String sub = UUID.randomUUID().toString();
+        UUID coach = coachWithLogin(sub, "was.shared@example.com");
+        String other = Members.newTenant();
+        UUID gone = CoreDb.person(other, CoreDb.login(sub), "Gone", "Away", null, null, null, TenantRole.PARENT);
+        CoreDb.inTenant(other, c -> {
+            CoreDb.update(c, "update core.person set active = false where id = ?", gone);
+            return CoreDb.update(c, "delete from core.user_membership_index where person_id = ?", gone);
+        });
+        patch(coach, "{\"email\":\"free.now@example.com\"}").statusCode(200);
+        keycloak.verify(1, KeycloakStubs.loginMoved(sub, "free.now@example.com"));
+    }
+
+    @Test
+    void aMemberWithALoginKeepsAnEmail() {
+        UUID coach = coachWithLogin(UUID.randomUUID().toString(), "needed@example.com");
+        patch(coach, "{\"email\":null}").statusCode(422).body("code", equalTo("LOGIN_REQUIRES_EMAIL"));
+        keycloak.verify(0, KeycloakStubs.anyLoginUpdate());
+    }
+
     @Test
     void replaceRolesValidatesPlayerDataAndProtectsTheLastAdmin() {
         UUID coach = CoreDb.person(tenant, "Cole", "Coach", null, TenantRole.COACH);
@@ -279,6 +372,16 @@ class MemberResourceTest {
                 .body("items.personId", everyItem(org.hamcrest.Matchers.not(stranger.toString())))
                 .body("items.personId", hasItem(admin.toString()));
         given().filter(Contract.CORE).header("X-Tenant-Id", other).get(MEMBERS).then().statusCode(404);
+    }
+
+    /** An ACCEPTED coach whose login (core.app_user + Keycloak user) uses {@code email}. */
+    private UUID coachWithLogin(String sub, String email) {
+        UUID user = CoreDb.appUser(sub, email);
+        UUID coach = CoreDb.person(tenant, user, "Cora", "Coach", email, null, null, TenantRole.COACH);
+        CoreDb.inTenant(tenant, c -> CoreDb.update(c,
+                "update core.person set invitation_status = 'ACCEPTED' where id = ?", coach));
+        KeycloakStubs.login(keycloak, sub, email);
+        return coach;
     }
 
     private ValidatableResponse invite(String body) {

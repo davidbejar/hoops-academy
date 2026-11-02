@@ -539,7 +539,14 @@ paths:
       operationId: updateMember
       tags: [Members]
       summary: Update a member's personal data
-      description: 'Authz: ADMIN. Absent fields are left unchanged; `null` clears an optional field.'
+      description: |
+        Absent fields are left unchanged; `null` clears an optional field.
+        Changing the `email` of a member with a login (`userId`) also moves the login (ADR-0023): the Keycloak
+        username and e-mail become the new address (unverified) and a verification e-mail is sent to it (the
+        account-setup e-mail while the invitation is PENDING). 409 `EMAIL_TAKEN` when another member of the tenant
+        or another login uses the address; 409 `LOGIN_SHARED` when the login is also used by an active member of
+        another academy (only the platform super admin may move it); 422 `LOGIN_REQUIRES_EMAIL` when the e-mail of a
+        member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN.
       requestBody:
         required: true
         content:
@@ -557,6 +564,7 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /api/core/members/{personId}/roles:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'

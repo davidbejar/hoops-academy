@@ -22,6 +22,10 @@ public record AppUser(UserId id, String subject, String email, AppLocale locale)
         return new AppUser(UserId.random(), subject, email, null);
     }
 
+    public AppUser withEmail(String newEmail) {
+        return new AppUser(id, subject, newEmail, locale);
+    }
+
     public AppUser withLocale(AppLocale newLocale) {
         return new AppUser(id, subject, email, newLocale);
     }
