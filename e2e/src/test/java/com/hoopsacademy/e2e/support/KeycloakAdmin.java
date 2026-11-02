@@ -41,6 +41,18 @@ public final class KeycloakAdmin {
         return users.get(0).get("id").asText();
     }
 
+    /** The Keycloak username of the user with this e-mail (username = e-mail, ADR-0023). */
+    public String usernameOf(String email) {
+        String token = adminToken();
+        var r = Http.send(http, HttpRequest.newBuilder(URI.create(kc + "/admin/realms/" + REALM + "/users?exact=true&email="
+                + URLEncoder.encode(email, StandardCharsets.UTF_8))).header("Authorization", "Bearer " + token).GET().build());
+        JsonNode users = Http.json(r, 200);
+        if (users.size() != 1) {
+            throw new IllegalStateException("expected exactly one Keycloak user for the e-mail, found " + users.size());
+        }
+        return users.get(0).get("username").asText();
+    }
+
     public void setPassword(String email, String password) {
         String token = adminToken();
         String id = userIdByEmail(token, email);

@@ -432,6 +432,45 @@ class JourneyTest {
         status(admin.get("/platform/tenants/" + tenantA + "/usage"), 403);
     }
 
+    // ------------------------------------------------------------------------------------------ platform: academy admins
+
+    @Test
+    @Order(31)
+    void superAdminAddsEditsAndRemovesAnAcademyAdminButNeverTheLastOne() {
+        String admins = "/platform/tenants/" + tenantA + "/admins";
+        Response list = status(superAdmin.get(admins), 200);
+        UUID firstAdmin = UUID.fromString(list.jsonPath().getString("items.find { it.email == '" + adminEmail + "' }.personId"));
+
+        String typo = email("secnd-admin");
+        Response added = status(superAdmin.post(admins, of("email", typo, "givenName", "Sam", "familyName", "Second")), 201);
+        UUID second = id(added, "personId");
+        assertEquals("PENDING", added.jsonPath().getString("invitationStatus"));
+
+        // correcting the e-mail moves the Keycloak login (username = e-mail) and re-sends the invitation to it
+        String fixed = email("second-admin");
+        Response edited = status(superAdmin.patch(admins + "/" + second, of("email", fixed, "familyName", "Seconda")), 200);
+        assertEquals(fixed, edited.jsonPath().getString("email"));
+        assertEquals("Seconda", edited.jsonPath().getString("familyName"));
+        assertEquals(fixed, keycloakAdmin.usernameOf(fixed));
+        if (mail.reachable()) {
+            await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofSeconds(1))
+                    .until(() -> mail.latestTo(fixed), java.util.Optional::isPresent);
+        }
+        Actor secondAdmin = signIn("second admin", fixed, tenantA);
+        status(secondAdmin.get("/api/core/tenant"), 200);
+
+        status(superAdmin.delete(admins + "/" + second), 204);
+        assertThat(status(superAdmin.get(admins), 200).jsonPath().getList("items.personId"))
+                .containsExactly(firstAdmin.toString());
+        await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofSeconds(1))
+                .untilAsserted(() -> assertEquals(404, secondAdmin.get("/api/core/tenant").statusCode()));
+
+        Response refused = status(superAdmin.delete(admins + "/" + firstAdmin), 409);
+        assertEquals("LAST_ADMIN", refused.jsonPath().getString("code"));
+        assertThat(refused.jsonPath().getString("detail")).contains("at least one active administrator");
+        status(admin.get("/api/core/tenant"), 200);
+    }
+
     private Map<String, Integer> counters(Response usage, String service) {
         return usage.jsonPath().getMap("services.find { it.service == '" + service + "' }.counters");
     }
