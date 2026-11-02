@@ -1,6 +1,6 @@
 # ADR-0017: audit trail, observability defaults and service-level HTTP hardening
 
-- Status: Accepted
+- Status: Accepted; amended by ADR-0024 — player logins get a temporary password instead of the setup e-mail
 - Date: 2026-11-02 (WP17)
 
 ## Context

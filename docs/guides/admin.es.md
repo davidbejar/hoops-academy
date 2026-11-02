@@ -8,7 +8,8 @@ Eres **Administrador** de una academia. Configuras la academia, invitas a person
 decides sobre las solicitudes de jugadores. Los nombres de menú son los que muestra la aplicación en español.
 
 ## Moverse por la aplicación
-- Inicia sesión con la cuenta de tu correo de invitación (la primera vez, el enlace del correo te deja elegir contraseña).
+- Inicia sesión con tu correo y la contraseña temporal que te dio el administrador de la plataforma; la primera vez
+  Keycloak te pide elegir tu propia contraseña (al menos 12 caracteres). No se envía correo de invitación (ADR-0024).
 - Barra inferior en el móvil (barra lateral en pantallas anchas): **Admin**, **Equipos**, **Partidos**, **Entrenos**,
   **Jugadores**.
 - Toca el logo o el nombre de la academia en la barra superior para **Cambiar de academia** si perteneces a varias.
@@ -25,13 +26,18 @@ decides sobre las solicitudes de jugadores. Los nombres de menú son los que mue
 **Admin > Miembros.** Busca por nombre o correo.
 1. **Invitar**: nombre, apellidos, correo y al menos un **Rol** (Administrador, Entrenador, Entrenador asistente,
    Familia, Jugador). Una persona puede tener varios roles.
-2. La persona recibe un correo para crear su contraseña. Hasta entonces figura como **Invitación pendiente**.
+2. No se envía ningún correo. Si la persona aún no tenía acceso, se te muestra **una sola vez su contraseña temporal**:
+   entrégala en privado (en persona, por teléfono o por una mensajería de confianza; nunca en el mismo mensaje que el
+   correo). Entra con su correo y esa contraseña y después tiene que elegir la suya. Si ese correo ya tiene acceso (p. ej.
+   es miembro de otra academia), no hay contraseña temporal: usa la que ya tiene. Hasta su primer inicio de sesión
+   figura como **Invitación pendiente**. Mientras siga pendiente y no haya elegido contraseña, puedes generarle una
+   **nueva contraseña temporal** (sustituye a la anterior; se rechaza si el acceso se usa también en otra academia:
+   pídeselo al administrador de la plataforma).
 3. **Editar roles** cambia los roles. **Desactivar** retira el acceso (la persona se conserva y aparece como **Inactivo**).
 4. **Cambiar el correo** de un miembro con acceso cambia también su dirección de inicio de sesión: desde ese momento
-   entra con el correo nuevo, que recibe un correo de verificación (si la invitación sigue pendiente, se reenvía a la
-   nueva dirección). Si la persona pertenece también a otra academia, el cambio se rechaza ("usado en otra academia"):
-   pídeselo al administrador de la plataforma. A un miembro con acceso no se le puede quitar el correo.
-En desarrollo local el correo de invitación se ve en MailHog (http://localhost:8025).
+   entra con el correo nuevo; no se envía ningún correo y la contraseña no cambia. Si la persona pertenece también a
+   otra academia, el cambio se rechaza ("usado en otra academia"): pídeselo al administrador de la plataforma. A un
+   miembro con acceso no se le puede quitar el correo.
 
 ## 3. Tutores (familias)
 Abre un miembro con el rol **Familia**. En **Jugadores vinculados** usa **Vincular jugador** y elige al hijo o hija;
@@ -58,13 +64,14 @@ Pestaña **Equipos**, elige la temporada y pulsa **Nuevo equipo**: nombre, alias
 Pestaña **Jugadores**: filtros **Estado** (Activo, Sin equipo válido, Pendiente de aprobación, Baja), **Equipo**,
 **Categoría** y buscador.
 - **Nuevo jugador**: nombre, apellidos, fecha de nacimiento, género (obligatorios), correo y equipo inicial opcionales.
-  Como administrador el jugador se crea al instante. Con correo, además recibe una invitación para acceder.
+  Como administrador el jugador se crea al instante. Con correo, además recibe un acceso: su contraseña temporal se
+  muestra una vez, como en una invitación.
 - Un jugador sin equipo válido aparece como **Sin equipo válido** hasta que se le asigna uno.
 - Ficha del jugador: datos básicos, categoría natural, equipos, tutores, **Asignar a un equipo** (solo equipos
   elegibles), salud, **Estadísticas de la temporada** y **Dar de baja**.
 - **Admin > Solicitudes pendientes**: los entrenadores piden altas y bajas. **Aprobar** (nota opcional) o **Rechazar**
   (nota obligatoria). Aprobar un alta puede fallar si el jugador no es elegible para el equipo elegido; la solicitud
-  queda entonces pendiente.
+  queda entonces pendiente. Aprobar a un jugador con correo le crea un acceso; su contraseña temporal se muestra una vez.
 
 ## 7. Ajustes: regla de edad, categoría superior, idioma
 **Admin > Perfil de la academia**
@@ -94,3 +101,4 @@ normas publicadas: sustitúyelos antes de usar las bandas para tomar decisiones 
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.
+Los textos sobre la contraseña temporal describen el comportamiento del servidor de WP24; las pantallas que la muestran llegan con WP25.

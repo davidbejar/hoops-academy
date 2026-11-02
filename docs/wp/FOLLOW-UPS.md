@@ -10,8 +10,8 @@ statement-by-statement status of the spec is in [`../conformance.md`](../conform
 - **F-01 event feed** (Medium): `GET /api/game/matches/{id}/events` returns every player's events to PARENT/PLAYER members;
   the box score hides them. Filter the feed to team-level events + own/linked players, or declare the full feed intended
   (live scoring by parents) and align `docs/domain/authz-matrix.md` and the guides.
-- **F-11 invite of an existing Keycloak account**: links without consent and reveals the account (ACCEPTED vs PENDING);
-  decide on a notification e-mail and a uniform response.
+- **F-11 invite of an existing Keycloak account**: links without consent and reveals the account (ACCEPTED vs PENDING;
+  since WP24 also the absence of `temporaryPassword`); decide on a notification and a uniform response.
 - **Audit read API**: `core.audit_event` has no endpoint; add ADMIN `GET /api/core/audit-events` (and/or a super_admin
   view) to the contract, plus a retention job (migrator) for old rows.
 - **Contract `allOf` + `additionalProperties: false`** (WP18b): e.g. `AgeCategory = allOf[AgeCategoryInput, {id}]` cannot
@@ -24,6 +24,13 @@ statement-by-statement status of the spec is in [`../conformance.md`](../conform
   30 s (membership cache) — decide whether suspend/withdraw should also invalidate peers' caches or disable logins.
 
 ### Security (from `docs/security/review-2026-11.md`)
+- **Pre-account hijacking without e-mail verification** (WP24, ADR-0024, Medium, accepted by the product owner): an
+  academy admin can create a login for an address they do not own, sign in with its temporary password and choose a
+  password; if another academy later adds that e-mail, the existing login is linked and the first admin can enter the
+  second academy as that person. Options: link an existing login into another tenant only after its owner proved the
+  address (verification link, or a sign-in from a link sent to it), or notify the person and require their consent.
+- **Temporary passwords never expire** (WP24): Keycloak keeps a temporary credential until it is used or replaced.
+  Consider a scheduled job (or a Keycloak policy) that clears unused temporary passwords after N days.
 - **F-07 residual (apps/web)**: cached reads (`roster`, `matchJson`, `ownEvents`) are keyed by matchId only; add
   tenant + person columns (drift migration) and wipe when a *different* `sub` signs in after an expired session.
 - **F-08 residual (realm)**: refresh-token rotation / reuse detection in `infra/keycloak/realm-academy.json`; the realm
@@ -58,6 +65,8 @@ statement-by-statement status of the spec is in [`../conformance.md`](../conform
   with chromedriver to the e2e job.
 
 ### Backend
+- **Remove `resendTenantAdminInvitation`** (WP24): deprecated alias of `issueTenantAdminTemporaryPassword` kept in core
+  2.3.0 so the pre-WP25 web build keeps working; drop it in core 3.0.0 once WP25 uses the new operation.
 - **Shared login, other tenants' contact e-mail** (WP22): when the super admin moves a login used in several academies,
   only the edited tenant's `core.person.email` changes; the other academies keep their per-tenant e-mail for that person
   (Keycloak and `core.app_user` have the new one). Decide whether to propagate.

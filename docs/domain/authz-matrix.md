@@ -8,6 +8,7 @@ Non-members of a tenant receive **404** for every tenant resource.
 |---|---|---|---|---|---|
 | Tenant profile (name, logo, settings, categories, seasons) | write | read | read | read | read |
 | Members, roles, guardian links | write | – | – | – | – |
+| New temporary password for a PENDING member (`POST /api/core/members/{id}/temporary-password`, ADR-0024; not for a login also used in another academy) | yes | – | – | – | – |
 | Add / withdraw player | direct | via approval request | – | – | – |
 | Approve / reject requests | yes | – | – | – | – |
 | Assign players to teams (eligibility-checked), resolve orphan cases | yes | own teams | – | – | – |
@@ -23,4 +24,4 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Height / weight | write | write | write | linked (write) | read (self) |
 | Physical test results | write | write | write | read | read (self) |
 | Tenant lifecycle, usage statistics | `super_admin` (platform) only — cannot read tenant content | | | | |
-| A tenant's administrators (list, add, edit names/e-mail, remove, resend invitation) | `super_admin` (platform, `/platform/tenants/{id}/admins`) — identity of the admins only, ADR-0023; tenant ADMINs manage them as members | | | | |
+| A tenant's administrators (list, add, edit names/e-mail, remove, new temporary password while PENDING) | `super_admin` (platform, `/platform/tenants/{id}/admins`) — identity of the admins only, ADR-0023, ADR-0024; tenant ADMINs manage them as members | | | | |

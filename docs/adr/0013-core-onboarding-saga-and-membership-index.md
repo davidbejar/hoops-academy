@@ -1,6 +1,6 @@
 # ADR-0013: core onboarding saga, platform datasource reach and the cross-tenant membership index
 
-- Status: Accepted
+- Status: Accepted; amended by ADR-0024 — the setup e-mail as the last saga step is replaced by a temporary password
 - Date: 2026-11-01
 
 ## Context

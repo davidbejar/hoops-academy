@@ -1,6 +1,6 @@
 # ADR-0023: Super admin manages academy administrators; e-mail as login; shared-login rule
 
-- Status: Accepted
+- Status: Accepted; amended by ADR-0024 — §1 `resend-invitation` / set-password e-mail and §2 `VERIFY_EMAIL` after a login move are superseded by ADR-0024 (temporary password, no e-mail)
 - Date: 2026-11-02
 - Related: ADR-0005 (Keycloak authentication only), ADR-0013 (onboarding saga, membership index), ADR-0017 (audit
   trail), ADR-0021 §8 (super_admin and tenant content), WP22

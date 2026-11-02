@@ -23,8 +23,20 @@ ADR-0023).
 - **Nama akademi**, **Pengenal (slug)** (huruf kecil, angka, dan tanda hubung, 3-50), **Zona waktu**, **Bahasa**.
 - **Email admin pertama**, nama depan, dan nama belakang.
 Saat **Buat**, akademi dan administrator pertamanya langsung ada, kategori usia bawaan (U8 sampai U18, SENIOR) terisi, dan
-administrator menerima email berisi tautan untuk memilih kata sandi. Jika penyedia identitas tidak tersedia, pembuatan
-gagal seluruhnya dan tidak ada yang tersisa ("502").
+**kata sandi sementara** administrator ditampilkan kepada Anda **satu kali saja** (lihat "Masuk pertama kali" di bawah).
+Tidak ada email yang dikirim. Jika email itu sudah punya akun login di platform (misalnya administrator akademi lain),
+tidak ada kata sandi sementara: orang itu masuk dengan kata sandi yang sudah dimilikinya. Jika penyedia identitas tidak
+tersedia, pembuatan gagal seluruhnya dan tidak ada yang tersisa ("502").
+
+## Masuk pertama kali dengan kata sandi sementara (ADR-0024)
+- Akun login baru mendapat kata sandi sementara buatan server (16 huruf dan angka) yang ditampilkan **satu kali saja**
+  kepada pembuatnya. Platform tidak pernah menyimpannya; jika hilang, buat yang baru (**Kirim ulang undangan**, di bawah).
+- Sampaikan **secara pribadi**: langsung, lewat telepon, atau aplikasi pesan tepercaya, jangan pernah bersama alamat
+  email dalam pesan yang sama.
+- Orang itu membuka aplikasi, masuk dengan email dan kata sandi sementara, lalu Keycloak langsung meminta mereka
+  **memilih kata sandi baru** (minimal 12 karakter, bukan email mereka). Sejak itu hanya kata sandi mereka sendiri yang
+  berlaku.
+- Salah kata sandi berulang kali mengunci akun login untuk sementara (perlindungan brute force).
 
 ## Siklus hidup dan artinya
 | Status | Arti |
@@ -48,11 +60,12 @@ baris punya **Ubah administrator**, **Hapus administrator** dan, selama undangan
 platform `/platform/tenants/{id}/admins`.
 - **Daftar**: administrator aktif dengan nama, email, status undangan, dan peran lain mereka di akademi.
 - **Tambah** (email, nama depan dan belakang, bahasa opsional): anggota akademi dengan email itu menjadi administrator
-  (datanya tetap; anggota tanpa akun login menerima email untuk membuat kata sandi). Jika tidak ada, administrator baru
-  diundang seperti administrator pertama. Email milik anggota yang dinonaktifkan ditolak.
+  (datanya tetap; anggota tanpa akun login dibuatkan satu, dengan kata sandi sementara yang ditampilkan satu kali). Jika
+  tidak ada, administrator baru diundang seperti administrator pertama. Email milik anggota yang dinonaktifkan ditolak.
 - **Ubah** nama depan, nama belakang, atau email. Email baru juga menjadi alamat masuk orang itu (username dan email di
-  Keycloak) dan menerima email verifikasi — atau undangan lagi bila masih tertunda. Berbeda dengan administrator akademi,
-  Anda boleh melakukannya juga untuk akun login yang dipakai di beberapa akademi.
+  Keycloak); tidak ada email yang dikirim dan kata sandi tidak berubah (kata sandi sementara yang belum dipakai tetap
+  berlaku). Berbeda dengan administrator akademi, Anda boleh melakukannya juga untuk akun login yang dipakai di beberapa
+  akademi.
 - **Hapus** (meminta konfirmasi): orang itu kehilangan peran administrator; peran lainnya tetap, dan jika itu
   satu-satunya perannya, ia dinonaktifkan di akademi ini. Akun loginnya tidak pernah dihapus (mungkin dipakai di tempat
   lain).
@@ -61,7 +74,9 @@ platform `/platform/tenants/{id}/admins`.
   akademi memerlukan setidaknya satu administrator. Tambahkan administrator lain terlebih dahulu." Jika orang lain baru
   saja mengubah daftar dan server tetap menolak, Anda melihat pesan yang sama. Tambahkan administrator baru terlebih
   dahulu, lalu hapus yang lama.
-- **Kirim ulang undangan**: hanya selama undangan masih tertunda.
+- **Kirim ulang undangan** membuat **kata sandi sementara baru** (ditampilkan satu kali; yang lama tidak berlaku lagi),
+  hanya selama undangan masih tertunda dan orang itu belum memilih kata sandi. Ini juga memperbaiki administrator yang
+  dibuat sebelum perubahan ini dan tidak pernah mendapat kata sandi (mereka sama sekali tidak bisa masuk).
 Setiap perubahan dicatat di jejak audit akademi dengan Anda sebagai pelakunya.
 
 ## Dasbor penggunaan
@@ -72,3 +87,4 @@ sisanya tetap tampil. Satu rekam jepret disimpan per akademi per hari (02:30 UTC
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan, kontrak, dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.
+Teks tentang kata sandi sementara menjelaskan perilaku server WP24; layar yang menampilkannya hadir di WP25.

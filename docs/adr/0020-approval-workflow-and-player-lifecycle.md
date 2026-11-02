@@ -1,6 +1,6 @@
 # ADR-0020: Approval workflow and player lifecycle (ADD / WITHDRAW, REJECTED, ORPHAN on creation)
 
-- Status: Accepted (records decisions taken in WP5, WP2c and WP17)
+- Status: Accepted (records decisions taken in WP5, WP2c and WP17); amended by ADR-0024 — §5: a temporary password replaces the setup e-mail
 - Date: 2026-11-02
 - Related: ADR-0015 (status derivation), ADR-0016 §1 (`PlayerStatus.REJECTED`), ADR-0013 (login saga)
 

@@ -8,7 +8,8 @@ Anda adalah **Administrator** sebuah akademi. Anda menyiapkan akademi, mengundan
 memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbahasa Indonesia.
 
 ## Menjelajah aplikasi
-- Masuk dengan akun dari email undangan (pertama kali, tautan di email memungkinkan Anda memilih kata sandi).
+- Masuk dengan email Anda dan kata sandi sementara yang diberikan administrator platform; pertama kali, Keycloak meminta
+  Anda memilih kata sandi sendiri (minimal 12 karakter). Tidak ada email undangan yang dikirim (ADR-0024).
 - Bilah bawah di ponsel (rail samping di layar lebar): **Admin**, **Tim**, **Pertandingan**, **Latihan**, **Pemain**.
 - Ketuk logo/nama akademi di bilah atas untuk **Ganti akademi** jika Anda tergabung di beberapa akademi.
 - **Profil** (bilah atas): **Bahasa** (Español, English, Bahasa Indonesia) dan **Keluar**.
@@ -24,13 +25,18 @@ memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbah
 **Admin > Anggota.** Cari berdasarkan nama atau email.
 1. **Undang**: nama depan, nama belakang, email, dan minimal satu **Peran** (Administrator, Pelatih, Asisten pelatih,
    Orang tua, Pemain). Satu orang boleh memiliki beberapa peran.
-2. Orang tersebut menerima email untuk membuat kata sandi. Sebelum itu statusnya **Undangan tertunda**.
+2. Tidak ada email yang dikirim. Jika orang itu belum punya akun login, **kata sandi sementaranya ditampilkan satu kali
+   saja** kepada Anda: sampaikan secara pribadi (langsung, lewat telepon, atau aplikasi pesan tepercaya; jangan dalam
+   pesan yang sama dengan alamat email). Ia masuk dengan email dan kata sandi itu, lalu harus memilih kata sandi sendiri.
+   Jika email itu sudah punya akun login (misalnya anggota akademi lain), tidak ada kata sandi sementara: ia memakai kata
+   sandi yang sudah dimilikinya. Sampai ia masuk pertama kali, statusnya **Undangan tertunda**. Selama masih tertunda dan
+   ia belum memilih kata sandi, Anda dapat membuat **kata sandi sementara baru** (menggantikan yang lama; ditolak jika
+   akun login itu juga dipakai di akademi lain: minta administrator platform).
 3. **Ubah peran** mengganti peran. **Nonaktifkan** mencabut akses (orangnya tetap tersimpan, ditandai **Tidak aktif**).
 4. **Mengubah email** anggota yang punya akun login juga mengubah alamat masuknya: sejak itu ia masuk dengan email baru,
-   dan email verifikasi dikirim ke alamat tersebut (undangan yang masih tertunda dikirim ulang ke alamat baru). Jika orang
-   itu juga anggota akademi lain, perubahan ditolak ("dipakai di akademi lain"): minta administrator platform. Email
-   anggota yang punya akun login tidak dapat dihapus.
-Pada pengembangan lokal, email undangan terlihat di MailHog (http://localhost:8025).
+   tanpa email apa pun yang dikirim dan kata sandinya tidak berubah. Jika orang itu juga anggota akademi lain, perubahan
+   ditolak ("dipakai di akademi lain"): minta administrator platform. Email anggota yang punya akun login tidak dapat
+   dihapus.
 
 ## 3. Wali (orang tua)
 Buka anggota yang berperan **Orang tua**. Di **Pemain terkait**, pilih **Kaitkan pemain** lalu pilih anaknya; kaitan
@@ -57,13 +63,15 @@ Putri, Campuran). Di dalam tim:
 Tab **Pemain**: filter **Status** (Aktif, Tanpa tim valid, Menunggu persetujuan, Mengundurkan diri), **Tim**, **Kategori**,
 dan kolom pencarian.
 - **Pemain baru**: nama, tanggal lahir, gender (wajib), email dan tim awal (opsional). Sebagai administrator, pemain
-  langsung dibuat. Jika ada email, pemain juga menerima undangan akun.
+  langsung dibuat. Jika ada email, pemain juga mendapat akun login: kata sandi sementaranya ditampilkan satu kali, seperti
+  pada undangan.
 - Pemain tanpa tim valid ditampilkan sebagai **Tanpa tim valid** sampai ditetapkan ke tim.
 - Detail pemain: data dasar, kategori alami, tim, wali, **Tetapkan ke tim** (hanya tim yang memenuhi syarat), kesehatan,
   **Statistik musim**, dan **Keluarkan**.
 - **Admin > Permintaan tertunda**: pelatih meminta penambahan atau pengunduran pemain. **Setujui** (catatan opsional) atau
   **Tolak** (catatan wajib). Persetujuan penambahan bisa gagal jika pemain tidak memenuhi syarat untuk tim yang dipilih;
-  permintaan tetap tertunda.
+  permintaan tetap tertunda. Menyetujui pemain yang punya email membuatkan akun login; kata sandi sementaranya
+  ditampilkan satu kali.
 
 ## 7. Pengaturan: aturan usia, naik kategori, bahasa
 **Admin > Profil akademi**
@@ -94,3 +102,4 @@ gantilah sebelum memakai pita untuk keputusan (lihat `docs/domain/norms.md`).
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.
+Teks tentang kata sandi sementara menjelaskan perilaku server WP24; layar yang menampilkannya hadir di WP25.

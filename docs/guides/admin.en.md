@@ -8,7 +8,8 @@ You are an **Administrator** of one academy. You set the academy up, invite peop
 decide on player requests. Menu names below are the labels shown in the English app.
 
 ## Getting around
-- Sign in with the account from your invitation e-mail (the first time, the e-mail link lets you choose a password).
+- Sign in with your e-mail and the temporary password the platform administrator gave you; the first time, Keycloak
+  asks you to choose your own password (at least 12 characters). No invitation e-mail is sent (ADR-0024).
 - Bottom bar on a phone (side rail on a wide screen): **Admin**, **Teams**, **Matches**, **Training**, **Players**.
 - Tap the academy logo/name in the top bar to **Switch academy** if you belong to several.
 - **Profile** (top bar) holds **Language** (Español, English, Bahasa Indonesia) and **Sign out**.
@@ -24,13 +25,18 @@ decide on player requests. Menu names below are the labels shown in the English 
 **Admin > Members.** Search by name or e-mail.
 1. **Invite**: first name, last name, e-mail, and at least one **Role** (Administrator, Coach, Assistant coach, Parent,
    Player). A person can hold several roles.
-2. The person receives an e-mail to set a password. Until then the member shows **Invitation pending**.
+2. No e-mail is sent. If the person had no login yet, you are shown their **temporary password once**: pass it on
+   privately (in person, by phone or a messenger you trust; never in the same message as the e-mail address). They sign
+   in with their e-mail and that password and must then choose their own. If the e-mail already signs in elsewhere (e.g.
+   a member of another academy), there is no temporary password: they use the password they have. Until their first
+   sign-in the member shows **Invitation pending**. While pending and before they have chosen a password, you can issue
+   a **new temporary password** for them (it replaces the previous one; refused for a login that is also used in another
+   academy: ask the platform administrator).
 3. **Edit roles** changes roles later. **Deactivate** removes access (the person is kept, shown as **Inactive**).
 4. **Changing the e-mail** of a member who has a login also changes their sign-in address: from then on they sign in
-   with the new e-mail, and a verification e-mail goes to it (an invitation that is still pending is sent again to the
-   new address). If the person also belongs to another academy, the change is refused ("used in another academy"):
-   ask the platform administrator. A member with a login cannot have the e-mail removed.
-Local development: the invitation e-mail is visible in MailHog (http://localhost:8025).
+   with the new e-mail; no e-mail is sent and the password does not change. If the person also belongs to another
+   academy, the change is refused ("used in another academy"): ask the platform administrator. A member with a login
+   cannot have the e-mail removed.
 
 ## 3. Guardians (parents and players)
 Open a member who has the **Parent** role. Under **Linked players**, use **Link player** and pick the child; remove a
@@ -56,13 +62,14 @@ with the Parent role, so invite the parent first.
 ## 6. Players and approvals
 **Players** tab: filters **Status** (Active, Orphan, Pending approval, Withdrawn), **Team**, **Category**; search box.
 - **New player**: names, birth date, gender (required), optional e-mail, optional initial team. As an administrator the
-  player is created immediately. With an e-mail the player also receives a login invitation.
+  player is created immediately. With an e-mail the player also gets a login: its temporary password is shown once, as
+  for an invitation.
 - A player with no valid team is shown as **Orphan** ("Sin equipo válido" in Spanish) until assigned.
 - Player detail: basic data, natural category, teams, guardians, **Assign to a team** (eligible teams only), health,
   **Season statistics**, and **Withdraw**.
 - **Admin > Pending requests**: coaches ask to add or withdraw players. **Approve** (note optional) or **Reject**
   (note required). Approving an addition may still fail if the player is not eligible for the chosen team; the request
-  then stays pending.
+  then stays pending. Approving a player with an e-mail gives them a login; its temporary password is shown once.
 
 ## 7. Settings: age rule, play-up, language
 **Admin > Academy profile**
@@ -91,3 +98,4 @@ using bands for decisions (see `docs/domain/norms.md`).
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.
+The temporary-password texts describe the server behaviour of WP24; the screens that show the password come with WP25.

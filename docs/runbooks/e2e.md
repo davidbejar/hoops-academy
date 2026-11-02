@@ -25,7 +25,7 @@ any HTTP answer as "up" (its comment predates WP17); use `curl -s localhost:808x
 
 Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin@hoops-academy.com` is the
 platform super admin), `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` and `CORE_SERVICE_CLIENT_SECRET` in `.env`.
-Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; the mail step is skipped when MailHog is unreachable),
+Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; used to check that no e-mail is sent, skipped when MailHog is unreachable),
 `E2E_REDIRECT_URI` (default `<base>/redirect.html`, must match client `web`), `E2E_KEYCLOAK_ADMIN_URL` (default `<base>/auth`).
 
 ## Run on kind
@@ -42,11 +42,13 @@ E2E_KEYCLOAK_ADMIN_URL=http://localhost:18080/auth E2E_MAILHOG_URL=http://localh
 just kind-down
 ```
 On kind the services run in the cluster (`just kind-up` leaves them restarting until `hoops-db` is up); do not start
-`services-up.sh`. The chart ships a MailHog pod; the mail step is skipped when `E2E_MAILHOG_URL` is unreachable.
+`services-up.sh`. The chart ships a MailHog pod; the no-e-mail checks are skipped when `E2E_MAILHOG_URL` is unreachable.
 
 ## What the journey covers (ordered, `JourneyTest`)
-1. super admin creates a tenant with its first admin; the setup e-mail arrives in MailHog;
-2. the admin logs in (scripted PKCE login of the public client `web`: `KeycloakUserTokens`); season, default
+1. super admin creates a tenant with its first admin; the response carries the admin's temporary password once
+   (`no-store`), no e-mail is sent (ADR-0024);
+2. the admin signs in with the temporary password and must choose their own on Keycloak's update-password page
+   (`KeycloakUserTokens.firstLogin`), then logs in (scripted PKCE login of the public client `web`); season, default
    categories, team; invites a coach and a parent; the coach is made team staff;
 3. admin adds a player directly (201), the coach requests one (202, PENDING), the coach cannot approve their own
    request, the admin approves; guardian link; the parent sees only the linked child;
@@ -70,11 +72,12 @@ On kind the services run in the cluster (`just kind-up` leaves them restarting u
 Steps depend on each other: after the first failure the remaining steps are skipped, so read the first failure.
 All names, slugs and e-mails carry a per-run suffix, so the suite can run repeatedly on the same stack.
 
-## How passwords are set (test-only shortcut)
-Real users set their password through the e-mailed Keycloak "execute actions" link, which needs a browser. The
-suite reads the e-mail from MailHog (proof that onboarding sends it) and then sets a random permanent password
-through the Keycloak Admin API (master realm `admin-cli`, `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` from `.env`),
-clears the required actions and logs in with the scripted PKCE flow. Do not use this outside local/CI stacks.
+## How passwords are set
+The first admin of tenant A and the second admin of step 31 sign in like real users: with the temporary password from
+the API response, then Keycloak's update-password form (`KeycloakUserTokens.firstLogin`, ADR-0024). The other actors
+use a test-only shortcut: a random permanent password set through the Keycloak Admin API (master realm `admin-cli`,
+`KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` from `.env`), required actions cleared, then the scripted PKCE flow. Do not
+use the shortcut outside local/CI stacks.
 
 ## Status (WP18b, 2026-11-02)
 On compose the full journey is green: 20 tests, 0 failures, about 70 s, three consecutive runs on the same stack
