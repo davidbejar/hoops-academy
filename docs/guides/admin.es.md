@@ -26,12 +26,13 @@ decides sobre las solicitudes de jugadores. Los nombres de menú son los que mue
 **Admin > Miembros.** Busca por nombre o correo.
 1. **Invitar**: nombre, apellidos, correo y al menos un **Rol** (Administrador, Entrenador, Entrenador asistente,
    Familia, Jugador). Una persona puede tener varios roles.
-2. No se envía ningún correo. Si la persona aún no tenía acceso, se te muestra **una sola vez su contraseña temporal**:
+2. No se envía ningún correo. Si la persona aún no tenía acceso, un diálogo **Contraseña temporal** te muestra **una sola vez su contraseña** (con un botón **Copiar contraseña**;
+   solo se cierra con **Hecho**):
    entrégala en privado (en persona, por teléfono o por una mensajería de confianza; nunca en el mismo mensaje que el
    correo). Entra con su correo y esa contraseña y después tiene que elegir la suya. Si ese correo ya tiene acceso (p. ej.
-   es miembro de otra academia), no hay contraseña temporal: usa la que ya tiene. Hasta su primer inicio de sesión
-   figura como **Invitación pendiente**. Mientras siga pendiente y no haya elegido contraseña, puedes generarle una
-   **nueva contraseña temporal** (sustituye a la anterior; se rechaza si el acceso se usa también en otra academia:
+   es miembro de otra academia), no hay diálogo, una nota dice que usa la que ya tiene. Hasta su primer inicio de sesión
+   figura como **Invitación pendiente**. Mientras siga pendiente y no haya elegido contraseña, abre su ficha de miembro y usa
+   **Generar nueva contraseña temporal** (sustituye a la anterior; se rechaza si el acceso se usa también en otra academia:
    pídeselo al administrador de la plataforma).
 3. **Editar roles** cambia los roles. **Desactivar** retira el acceso (la persona se conserva y aparece como **Inactivo**).
 4. **Cambiar el correo** de un miembro con acceso cambia también su dirección de inicio de sesión: desde ese momento
@@ -101,4 +102,3 @@ normas publicadas: sustitúyelos antes de usar las bandas para tomar decisiones 
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.
-Los textos sobre la contraseña temporal describen el comportamiento del servidor de WP24; las pantallas que la muestran llegan con WP25.

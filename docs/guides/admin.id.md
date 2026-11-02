@@ -25,12 +25,12 @@ memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbah
 **Admin > Anggota.** Cari berdasarkan nama atau email.
 1. **Undang**: nama depan, nama belakang, email, dan minimal satu **Peran** (Administrator, Pelatih, Asisten pelatih,
    Orang tua, Pemain). Satu orang boleh memiliki beberapa peran.
-2. Tidak ada email yang dikirim. Jika orang itu belum punya akun login, **kata sandi sementaranya ditampilkan satu kali
-   saja** kepada Anda: sampaikan secara pribadi (langsung, lewat telepon, atau aplikasi pesan tepercaya; jangan dalam
+2. Tidak ada email yang dikirim. Jika orang itu belum punya akun login, dialog **Kata sandi sementara** menampilkan **kata sandinya satu kali
+   saja** kepada Anda (dengan tombol **Salin kata sandi**; hanya bisa ditutup dengan **Selesai**): sampaikan secara pribadi (langsung, lewat telepon, atau aplikasi pesan tepercaya; jangan dalam
    pesan yang sama dengan alamat email). Ia masuk dengan email dan kata sandi itu, lalu harus memilih kata sandi sendiri.
-   Jika email itu sudah punya akun login (misalnya anggota akademi lain), tidak ada kata sandi sementara: ia memakai kata
+   Jika email itu sudah punya akun login (misalnya anggota akademi lain), tidak ada dialog, sebuah catatan menyebut ia memakai kata
    sandi yang sudah dimilikinya. Sampai ia masuk pertama kali, statusnya **Undangan tertunda**. Selama masih tertunda dan
-   ia belum memilih kata sandi, Anda dapat membuat **kata sandi sementara baru** (menggantikan yang lama; ditolak jika
+   ia belum memilih kata sandi, buka halaman anggotanya dan pakai **Buat kata sandi sementara baru** (menggantikan yang lama; ditolak jika
    akun login itu juga dipakai di akademi lain: minta administrator platform).
 3. **Ubah peran** mengganti peran. **Nonaktifkan** mencabut akses (orangnya tetap tersimpan, ditandai **Tidak aktif**).
 4. **Mengubah email** anggota yang punya akun login juga mengubah alamat masuknya: sejak itu ia masuk dengan email baru,
@@ -102,4 +102,3 @@ gantilah sebelum memakai pita untuk keputusan (lihat `docs/domain/norms.md`).
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.
-Teks tentang kata sandi sementara menjelaskan perilaku server WP24; layar yang menampilkannya hadir di WP25.

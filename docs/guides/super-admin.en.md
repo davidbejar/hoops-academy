@@ -30,7 +30,9 @@ fails as a whole and nothing is left behind ("502").
 
 ## First sign-in with a temporary password (ADR-0024)
 - A new login gets a server-generated temporary password (16 letters and digits), shown **once** to whoever created
-  it. The platform never stores it; if it is lost, issue a new one (**Resend invitation**, below).
+  it in a dialog titled **Temporary password**: the password in a large monospace field, a **Copy password** button and
+  an explicit **Done**. The dialog cannot be closed any other way, and the password is not kept anywhere afterwards. The
+  platform never stores it; if it is lost, issue a new one (**Generate a new temporary password**, below).
 - Pass it on **privately**: in person, by phone or in a messenger you trust, never together with the e-mail address in
   the same message.
 - The person opens the app, signs in with their e-mail and the temporary password, and Keycloak asks them at once to
@@ -53,14 +55,16 @@ Every lifecycle change is written to the academy's append-only audit trail.
 ## Administrators
 On the academy detail page (**Platform >** the academy) the **Administrators** section lists each administrator with
 name, e-mail, invitation state (**Invitation pending** / **Invitation accepted**) and their other roles in the academy.
-Every row has **Edit**, **Remove administrator** and, while the invitation is pending, **Resend invitation**; **Add
+Every row has **Edit**, **Remove administrator** and, while the invitation is pending, the key button **Generate a new
+temporary password**; **Add
 administrator** is at the top. The section works for ACTIVE and SUSPENDED academies; for a **withdrawn** academy it only
 shows a note (its administrators can no longer be viewed or changed). The same operations exist in the platform API
 `/platform/tenants/{id}/admins`.
 - **List**: the active administrators with name, e-mail, invitation state and their other roles in the academy.
 - **Add** (e-mail, first and last name, optional language): a member of the academy with that e-mail becomes
   administrator (their names are kept; a member without a login is given one, with a temporary password shown once).
-  Otherwise a new administrator is invited exactly like the first one. A deactivated member with that e-mail is refused.
+  Otherwise a new administrator is created exactly like the first one and the dialog shows their temporary password. If
+  the e-mail already has a login, a note says that the person signs in with their current password. A deactivated member with that e-mail is refused.
 - **Edit** first name, last name or e-mail. A new e-mail also becomes the person's sign-in address (Keycloak username and
   e-mail); no e-mail is sent and the password does not change (a pending temporary password stays valid). Unlike an
   academy administrator, you can do this also for a login that is used in several academies.
@@ -70,8 +74,8 @@ shows a note (its administrators can no longer be viewed or changed). The same o
   administrator is listed, its **Remove** button is disabled and the row says: "An academy needs at least one
   administrator. Add another administrator first." If someone else has just changed the list and the server still
   refuses, you see the same message. Add the new administrator first, then remove the old one.
-- **Resend invitation** issues a **new temporary password** (shown once; the previous one stops working), only while the
-  invitation is pending and the person has not chosen a password yet. It also repairs administrators created before
+- **Generate a new temporary password** (key button; replaces the old "Resend invitation") shows a **new temporary
+  password** in the same dialog (once; the previous one stops working), only while the invitation is pending and the person has not chosen a password yet. It also repairs administrators created before
   this change who never got a password (they could not sign in at all).
 Every change is written to the academy's audit trail with you as the actor.
 
@@ -83,4 +87,3 @@ stored per academy per day (02:30 UTC); a trend chart is not in the app yet.
 
 ---
 Status: written from the implemented screens, the contract and the translation files; not yet checked in a manual browser walk-through.
-The temporary-password texts describe the server behaviour of WP24; the screens that show the password come with WP25.

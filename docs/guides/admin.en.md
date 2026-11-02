@@ -25,12 +25,13 @@ decide on player requests. Menu names below are the labels shown in the English 
 **Admin > Members.** Search by name or e-mail.
 1. **Invite**: first name, last name, e-mail, and at least one **Role** (Administrator, Coach, Assistant coach, Parent,
    Player). A person can hold several roles.
-2. No e-mail is sent. If the person had no login yet, you are shown their **temporary password once**: pass it on
+2. No e-mail is sent. If the person had no login yet, a **Temporary password** dialog shows their password **once**
+   (with a **Copy password** button; it only closes with **Done**): pass it on
    privately (in person, by phone or a messenger you trust; never in the same message as the e-mail address). They sign
    in with their e-mail and that password and must then choose their own. If the e-mail already signs in elsewhere (e.g.
-   a member of another academy), there is no temporary password: they use the password they have. Until their first
-   sign-in the member shows **Invitation pending**. While pending and before they have chosen a password, you can issue
-   a **new temporary password** for them (it replaces the previous one; refused for a login that is also used in another
+   a member of another academy), there is no dialog, a note says they use the password they have. Until their first
+   sign-in the member shows **Invitation pending**. While pending and before they have chosen a password, you can open their member page
+   and use **Generate a new temporary password** for them (it replaces the previous one; refused for a login that is also used in another
    academy: ask the platform administrator).
 3. **Edit roles** changes roles later. **Deactivate** removes access (the person is kept, shown as **Inactive**).
 4. **Changing the e-mail** of a member who has a login also changes their sign-in address: from then on they sign in
@@ -98,4 +99,3 @@ using bands for decisions (see `docs/domain/norms.md`).
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.
-The temporary-password texts describe the server behaviour of WP24; the screens that show the password come with WP25.
