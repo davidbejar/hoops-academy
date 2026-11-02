@@ -62,6 +62,30 @@ void main() {
       expect(find.byKey(const Key('approve-a1')), findsNothing); // left the pending view
     });
 
+    testWidgets('approving a request that creates a login shows its temporary password once', (tester) async {
+      final core = coreWithApprovals();
+      core.approvals.temporaryPasswords['a1'] = 'test-temp-password-2';
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);
+      await tapKey(tester, 'approve-a1');
+      await tapKey(tester, 'dialog-confirm');
+      expect(core.approvals.requests.first.status, api.ApprovalStatus.APPROVED);
+      expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+      expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, 'test-temp-password-2');
+      expect(find.textContaining('Luca Mora'), findsWidgets);
+      await tapKey(tester, 'temp-password-done');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.text('test-temp-password-2'), findsNothing);
+    });
+
+    testWidgets('approving a request for a person who already has a login shows no dialog', (tester) async {
+      final core = coreWithApprovals();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);
+      await tapKey(tester, 'approve-a1');
+      await tapKey(tester, 'dialog-confirm');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.text('Solicitud aprobada'), findsOneWidget);
+    });
+
     testWidgets('rejecting needs a note', (tester) async {
       final core = coreWithApprovals();
       await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);

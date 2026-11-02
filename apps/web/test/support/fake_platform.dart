@@ -86,7 +86,13 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   api.UpdateTenantAdminRequest? updatedAdmin;
   String? updatedAdminId;
   final List<String> removedAdmins = [];
-  final List<String> resentInvitations = [];
+
+  /// What the server returns for a login it creates (null: the person already had a login).
+  String? newLoginPassword = 'test-temp-password-1';
+
+  /// What a re-issue returns; each call hands out the next one (`Reissued-1`, ...).
+  String reissuedPrefix = 'Reissued-';
+  final List<String> reissuedFor = [];
 
   int _i(String id) => list.indexWhere((t) => t.id == id);
 
@@ -106,11 +112,21 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   Future<api.Tenant> tenant(String tenantId) => run('tenant', () => list[_i(tenantId)]);
 
   @override
-  Future<api.Tenant> create(api.CreateTenantRequest request) => run('create', () {
+  Future<api.TenantWithPassword> create(api.CreateTenantRequest request) => run('create', () {
     created = request;
     final t = tenantOf('new-${list.length}', request.name, slug: request.slug);
     list.add(t);
-    return t;
+    return api.TenantWithPassword(
+      (b) => b
+        ..id = t.id
+        ..slug = t.slug
+        ..name = t.name
+        ..status = t.status
+        ..timezone = t.timezone
+        ..defaultLocale = t.defaultLocale
+        ..createdAt = t.createdAt
+        ..temporaryPassword = newLoginPassword,
+    );
   });
 
   api.Tenant _set(String id, api.TenantStatus s) {
@@ -162,7 +178,7 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   }
 
   @override
-  Future<api.TenantAdmin> addAdmin(String tenantId, api.AddTenantAdminRequest request) => run('addAdmin', () {
+  Future<api.TenantAdminWithPassword> addAdmin(String tenantId, api.AddTenantAdminRequest request) => run('addAdmin', () {
     if (adminMutationFails != null) throw adminMutationFails!;
     _manageable(tenantId);
     addedAdmin = request;
@@ -171,11 +187,22 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
       request.givenName,
       request.familyName,
       email: request.email,
-      status: api.InvitationStatus.PENDING,
+      status: newLoginPassword == null ? api.InvitationStatus.ACCEPTED : api.InvitationStatus.PENDING,
     );
     _admins(tenantId).add(admin);
-    return admin;
+    return _withPassword(admin, newLoginPassword);
   });
+
+  api.TenantAdminWithPassword _withPassword(api.TenantAdmin a, String? password) => api.TenantAdminWithPassword(
+    (b) => b
+      ..personId = a.personId
+      ..givenName = a.givenName
+      ..familyName = a.familyName
+      ..email = a.email
+      ..invitationStatus = a.invitationStatus
+      ..otherRoles = SetBuilder<api.TenantRole>(a.otherRoles)
+      ..temporaryPassword = password,
+  );
 
   @override
   Future<api.TenantAdmin> updateAdmin(String tenantId, String personId, api.UpdateTenantAdminRequest request) =>
@@ -206,12 +233,15 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   });
 
   @override
-  Future<api.TenantAdmin> resendAdminInvitation(String tenantId, String personId) => run('resendAdmin', () {
-    if (adminMutationFails != null) throw adminMutationFails!;
-    _manageable(tenantId);
-    resentInvitations.add(personId);
-    return _admins(tenantId).firstWhere((a) => a.personId == personId);
-  });
+  Future<api.TenantAdminWithPassword> issueAdminTemporaryPassword(String tenantId, String personId) =>
+      run('issueAdminTemporaryPassword', () {
+        if (adminMutationFails != null) throw adminMutationFails!;
+        _manageable(tenantId);
+        final admin = _admins(tenantId).firstWhere((a) => a.personId == personId);
+        if (admin.invitationStatus != api.InvitationStatus.PENDING) throw problem(409, 'INVITATION_NOT_PENDING');
+        reissuedFor.add(personId);
+        return _withPassword(admin, '$reissuedPrefix${reissuedFor.length}');
+      });
 }
 
 class FakePlatform {

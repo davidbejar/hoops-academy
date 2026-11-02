@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
@@ -13,9 +14,23 @@ FakeCore coreWithMembers() => FakeCore(
     member('m1', 'Casey Coach', roles: {api.TenantRole.COACH}),
     member('m2', 'Pat Parent', roles: {api.TenantRole.PARENT}),
     member('m3', 'Old Admin', roles: {api.TenantRole.ADMIN}, active: false),
+    member('m4', 'Nina Nueva', roles: {api.TenantRole.COACH}, invitation: api.InvitationStatus.PENDING),
   ]),
   players: FakePlayersRepository([player('p1', 'Ana Ruiz'), player('p2', 'Leo Gil')]),
 );
+
+DioException _problem(int status, String code) {
+  final request = RequestOptions(path: '/members');
+  return DioException(
+    requestOptions: request,
+    type: DioExceptionType.badResponse,
+    response: Response<dynamic>(
+      requestOptions: request,
+      statusCode: status,
+      data: {'status': status, 'code': code, 'detail': 'English server detail that must never be shown'},
+    ),
+  );
+}
 
 void main() {
   const path = '/admin/members';
@@ -92,9 +107,38 @@ void main() {
       expect(sent.email, 'nora@hoops-academy.com');
       expect(sent.roles.toSet(), {api.TenantRole.COACH, api.TenantRole.ASSISTANT_COACH});
       expect(sent.sendInvitation, isTrue);
-      expect(find.text('Invitación enviada'), findsOneWidget);
+      // The new login's temporary password is shown once (no e-mail is sent); the list never holds it.
+      expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+      expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, core.members.newLoginPassword);
+      expect(find.textContaining('nora@hoops-academy.com'), findsOneWidget);
+      await tapKey(tester, 'temp-password-done');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.text(core.members.newLoginPassword!), findsNothing);
+      expect(find.text('Invitación enviada'), findsNothing);
       expect(find.text('Nora Vega'), findsOneWidget);
-      expect(find.text('Invitación pendiente'), findsOneWidget);
+      expect(find.text('Invitación pendiente'), findsNWidgets(2)); // Nina (seeded) and Nora
+    });
+
+    testWidgets('a person who already has a login gets no dialog: they use their current password', (tester) async {
+      final core = coreWithMembers();
+      core.members.newLoginPassword = null;
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);
+      await tapKey(tester, 'member-invite');
+      await enter(tester, 'invite-given', 'Nora');
+      await enter(tester, 'invite-family', 'Vega');
+      await enter(tester, 'invite-email', 'nora@hoops-academy.com');
+      await tapKey(tester, 'role-COACH');
+      await tapKey(tester, 'form-submit');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.textContaining('contraseña actual'), findsOneWidget);
+      expect(find.text('Nora Vega'), findsOneWidget);
+    });
+
+    testWidgets('the invite dialog promises no e-mail', (tester) async {
+      await pumpAs(tester, roles: {TenantRole.admin}, core: coreWithMembers(), location: path);
+      await tapKey(tester, 'member-invite');
+      expect(find.textContaining('contraseña temporal'), findsOneWidget);
+      expect(find.textContaining('correo con'), findsNothing);
     });
 
     testWidgets('a server conflict keeps the dialog open with a localized message', (tester) async {
@@ -119,6 +163,64 @@ void main() {
       await tapKey(tester, 'role-ASSISTANT_COACH');
       await tapKey(tester, 'member-save-roles');
       expect(core.members.members.first.roles.toSet(), {api.TenantRole.COACH, api.TenantRole.ASSISTANT_COACH});
+    });
+
+    testWidgets('re-issue is offered for a pending active member only', (tester) async {
+      final core = coreWithMembers();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '$path/m1');
+      expect(find.byKey(const Key('member-issue-password')), findsNothing);
+    });
+
+    testWidgets('re-issue: a new temporary password is shown once for a pending member', (tester) async {
+      final core = coreWithMembers();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '$path/m4');
+      expect(find.text('Invitación pendiente'), findsOneWidget);
+      await tapKey(tester, 'member-issue-password');
+      expect(core.members.reissuedFor, ['m4']);
+      expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+      expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, 'Reissued-1');
+      expect(find.textContaining('Nina Nueva'), findsWidgets);
+      expect(find.textContaining('nina@hoops-academy.com'), findsOneWidget);
+      await tapKey(tester, 'temp-password-done');
+      expect(find.text('Reissued-1'), findsNothing);
+    });
+
+    testWidgets('re-issue is not offered for an inactive pending member', (tester) async {
+      final core = FakeCore(
+        members: FakeMembersRepository([
+          member('m5', 'Ines Inactiva', active: false, invitation: api.InvitationStatus.PENDING),
+        ]),
+      );
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '$path/m5');
+      expect(find.byKey(const Key('member-issue-password')), findsNothing);
+    });
+
+    testWidgets('re-issue: 409 INVITATION_NOT_PENDING is reported in plain words, no dialog', (tester) async {
+      final core = coreWithMembers();
+      core.members.issueFails = _problem(409, 'INVITATION_NOT_PENDING');
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '$path/m4');
+      await tapKey(tester, 'member-issue-password');
+      expect(find.text('Esta persona ya entró o la invitación ya no está pendiente'), findsOneWidget);
+      expect(find.textContaining('English server detail'), findsNothing);
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+    });
+
+    testWidgets('re-issue: 409 LOGIN_SHARED says only the platform administration can do it', (tester) async {
+      final core = coreWithMembers();
+      core.members.issueFails = _problem(409, 'LOGIN_SHARED');
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '$path/m4');
+      await tapKey(tester, 'member-issue-password');
+      expect(find.textContaining('se usa también en otra academia'), findsOneWidget);
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+    });
+
+    testWidgets('re-issue: a generic failure uses the localized per-kind message', (tester) async {
+      final core = coreWithMembers();
+      core.members.issueFails = const AppError(kind: AppErrorKind.server);
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '$path/m4');
+      await tapKey(tester, 'member-issue-password');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.byType(SnackBar), findsOneWidget);
     });
 
     testWidgets('deactivate asks for confirmation', (tester) async {

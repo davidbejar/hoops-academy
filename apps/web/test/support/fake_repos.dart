@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/admin/data/academy_repository.dart';
 import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
@@ -80,6 +82,27 @@ class FakeMembersRepository with Faulty implements MembersRepository {
   String? lastQuery;
   api.InviteMemberRequest? invited;
 
+  /// What the server returns for a login it creates (null: the person already had a login).
+  String? newLoginPassword = 'test-temp-password-1';
+  final List<String> reissuedFor = [];
+
+  /// Thrown by `issueTemporaryPassword` only, e.g. a 409 `LOGIN_SHARED` Problem.
+  Object? issueFails;
+
+  static api.MemberWithPassword withPassword(api.Member m, String? password) => api.MemberWithPassword(
+    (b) => b
+      ..personId = m.personId
+      ..givenName = m.givenName
+      ..familyName = m.familyName
+      ..displayName = m.displayName
+      ..email = m.email
+      ..roles = SetBuilder<api.TenantRole>(m.roles)
+      ..active = m.active
+      ..invitationStatus = m.invitationStatus
+      ..createdAt = m.createdAt
+      ..temporaryPassword = password,
+  );
+
   @override
   Future<List<api.Member>> list({String? query, api.TenantRole? role, bool? active}) => run('list', () {
     lastQuery = query;
@@ -91,12 +114,32 @@ class FakeMembersRepository with Faulty implements MembersRepository {
     ];
   });
   @override
-  Future<api.Member> invite(api.InviteMemberRequest request) => run('invite', () {
+  Future<api.MemberWithPassword> invite(api.InviteMemberRequest request) => run('invite', () {
     invited = request;
     final m = member('new-${members.length}', '${request.givenName} ${request.familyName}',
-        roles: request.roles.toSet(), invitation: api.InvitationStatus.PENDING);
+        roles: request.roles.toSet(),
+        email: request.email,
+        invitation: newLoginPassword == null ? api.InvitationStatus.ACCEPTED : api.InvitationStatus.PENDING);
     members.add(m);
-    return m;
+    return withPassword(m, newLoginPassword);
+  });
+  @override
+  Future<api.MemberWithPassword> issueTemporaryPassword(String personId) => run('issueTemporaryPassword', () {
+    if (issueFails != null) throw issueFails!;
+    final m = members.firstWhere((m) => m.personId == personId);
+    if (m.invitationStatus != api.InvitationStatus.PENDING) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/members'),
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(path: '/members'),
+          statusCode: 409,
+          data: {'status': 409, 'code': 'INVITATION_NOT_PENDING', 'detail': 'English server detail that must never be shown'},
+        ),
+      );
+    }
+    reissuedFor.add(personId);
+    return withPassword(m, 'Reissued-${reissuedFor.length}');
   });
   @override
   Future<api.Member> replaceRoles(String personId, Set<api.TenantRole> roles) => run('replaceRoles', () {
@@ -283,6 +326,9 @@ class FakePlayersRepository with Faulty implements PlayersRepository {
   /// Eligible teams by player id.
   final Map<String, List<api.EligibleTeam>> eligible;
   final bool createdPending;
+
+  /// Returned by `create` when the request carries an e-mail (null: the person already had a login).
+  String? newLoginPassword = 'test-temp-password-1';
   api.CreatePlayerRequest? lastCreate;
   String? withdrawn;
   api.PlayerStatus? lastStatus;
@@ -312,7 +358,8 @@ class FakePlayersRepository with Faulty implements PlayersRepository {
       (b) => b
         ..player.replace(p)
         ..approvalRequest = approval('a-new',
-            status: createdPending ? api.ApprovalStatus.PENDING : api.ApprovalStatus.APPROVED),
+            status: createdPending ? api.ApprovalStatus.PENDING : api.ApprovalStatus.APPROVED)
+        ..temporaryPassword = request.email == null || createdPending ? null : newLoginPassword,
     );
   });
   @override
@@ -337,6 +384,9 @@ class FakeApprovalsRepository with Faulty implements ApprovalsRepository {
   final List<api.ApprovalRequest> requests;
   String? lastNote;
 
+  /// Temporary password per request id that the server creates a login for on approval.
+  final Map<String, String> temporaryPasswords = {};
+
   void _set(String id, api.ApprovalStatus s, String? note) {
     final i = requests.indexWhere((r) => r.id == id);
     requests[i] = (requests[i] as api.$ApprovalRequest).rebuild((b) => b
@@ -348,10 +398,22 @@ class FakeApprovalsRepository with Faulty implements ApprovalsRepository {
   Future<List<api.ApprovalRequest>> list({api.ApprovalStatus? status}) =>
       run('list', () => [for (final r in requests) if (status == null || r.status == status) r]);
   @override
-  Future<api.ApprovalRequest> approve(String id, {String? note}) => run('approve', () {
+  Future<api.ApprovalRequestWithPassword> approve(String id, {String? note}) => run('approve', () {
     lastNote = note;
     _set(id, api.ApprovalStatus.APPROVED, note);
-    return requests.firstWhere((r) => r.id == id);
+    final r = requests.firstWhere((r) => r.id == id);
+    return api.ApprovalRequestWithPassword(
+      (b) => b
+        ..id = r.id
+        ..action = r.action
+        ..status = r.status
+        ..player.replace(r.player)
+        ..payload.replace(r.payload)
+        ..requestedBy.replace(r.requestedBy)
+        ..requestedAt = r.requestedAt
+        ..decisionNote = r.decisionNote
+        ..temporaryPassword = temporaryPasswords[id],
+    );
   });
   @override
   Future<api.ApprovalRequest> reject(String id, {required String note}) => run('reject', () {

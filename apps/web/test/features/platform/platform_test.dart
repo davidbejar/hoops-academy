@@ -119,7 +119,43 @@ void main() {
       final c = repo.created!;
       expect((c.slug, c.name, c.timezone, c.defaultLocale), ('nueva-academia', 'Nueva Academia', 'Europe/Madrid', api.ApiLocale.en));
       expect((c.firstAdmin.email, c.firstAdmin.givenName, c.firstAdmin.familyName), ('ada@example.org', 'Ada', 'Lovelace'));
+      // The first administrator's login is new: its temporary password is shown once, for the creator to pass on.
+      expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+      expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, repo.newLoginPassword);
+      expect(find.textContaining('ada@example.org'), findsOneWidget);
+      await tapKey2(tester, 'temp-password-done');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.text(repo.newLoginPassword!), findsNothing);
       expect(find.text('Nueva Academia'), findsOneWidget);
+    });
+
+    testWidgets('create: a first admin who already has a login gets no dialog, only the note to use their password', (tester) async {
+      final repo = _repo()..newLoginPassword = null;
+      await _pumpPlatform(tester, repo);
+      await tapKey2(tester, 'tenant-new');
+      await tester.enterText(find.byKey(const Key('tenant-name')), 'Nueva Academia');
+      await tester.enterText(find.byKey(const Key('tenant-slug')), 'nueva-academia');
+      await tester.enterText(find.byKey(const Key('tenant-admin-email')), 'ada@example.org');
+      await tester.enterText(find.byKey(const Key('tenant-admin-given')), 'Ada');
+      await tester.enterText(find.byKey(const Key('tenant-admin-family')), 'Lovelace');
+      await tapKey2(tester, 'form-submit');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.textContaining('contraseña actual'), findsOneWidget);
+      expect(find.text('Nueva Academia'), findsOneWidget);
+    });
+
+    testWidgets('create: a failure keeps the form open and shows no password dialog', (tester) async {
+      final repo = _repo()..failWith = problem(502, 'IDENTITY_PROVIDER_UNAVAILABLE');
+      await _pumpPlatform(tester, repo);
+      await tapKey2(tester, 'tenant-new');
+      await tester.enterText(find.byKey(const Key('tenant-name')), 'Nueva Academia');
+      await tester.enterText(find.byKey(const Key('tenant-slug')), 'nueva-academia');
+      await tester.enterText(find.byKey(const Key('tenant-admin-email')), 'ada@example.org');
+      await tester.enterText(find.byKey(const Key('tenant-admin-given')), 'Ada');
+      await tester.enterText(find.byKey(const Key('tenant-admin-family')), 'Lovelace');
+      await tapKey2(tester, 'form-submit');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.byKey(const Key('tenant-name')), findsOneWidget);
     });
   });
 
@@ -236,12 +272,14 @@ void main() {
       expect(find.byKey(const Key('admins-error')), findsNothing);
     });
 
-    testWidgets('add: explains promotion vs invitation, validates, sends trimmed values with the academy locale', (tester) async {
+    testWidgets('add: explains promotion vs temporary password (no e-mail), validates, sends trimmed values with the academy locale', (tester) async {
       final repo = repoWith([ana]);
       await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
       await tapKey2(tester, 'admin-add');
       expect(find.textContaining('pasa a ser administrador'), findsOneWidget);
-      expect(find.textContaining('invitación por correo'), findsOneWidget);
+      expect(find.textContaining('contraseña temporal'), findsOneWidget);
+      expect(find.textContaining('correo se envía'), findsNothing);
+      expect(find.textContaining('invitación por correo'), findsNothing);
       await tester.enterText(find.byKey(const Key('admin-email')), 'nope');
       await tapKey2(tester, 'form-submit');
       expect(find.text('Introduce un correo válido'), findsOneWidget);
@@ -253,8 +291,29 @@ void main() {
       await tapKey2(tester, 'form-submit');
       final r = repo.addedAdmin!;
       expect((r.email, r.givenName, r.familyName, r.locale), ('cris@example.org', 'Cris', 'Mora', api.ApiLocale.es));
+      // New login: the temporary password is shown once; the list below never holds it.
+      expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+      expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, repo.newLoginPassword);
+      expect(find.textContaining('cris@example.org'), findsWidgets);
+      await tapKey2(tester, 'temp-password-done');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.text(repo.newLoginPassword!), findsNothing);
       expect(find.byKey(const Key('admin-new-1')), findsOneWidget);
-      expect(find.text('Invitación enviada'), findsOneWidget);
+      expect(find.textContaining('Invitación enviada'), findsNothing);
+    });
+
+    testWidgets('add: an existing login (promotion) gets no dialog; the note says to use the current password', (tester) async {
+      final repo = repoWith([ana])..newLoginPassword = null;
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-add');
+      await tester.enterText(find.byKey(const Key('admin-email')), 'cris@example.org');
+      await tester.enterText(find.byKey(const Key('admin-given')), 'Cris');
+      await tester.enterText(find.byKey(const Key('admin-family')), 'Mora');
+      await tapKey2(tester, 'form-submit');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.textContaining('Administrador añadido'), findsOneWidget);
+      expect(find.textContaining('contraseña actual'), findsOneWidget);
+      expect(find.byKey(const Key('admin-new-1')), findsOneWidget);
     });
 
     testWidgets('add: a server conflict is explained by its code and keeps the dialog open', (tester) async {
@@ -285,7 +344,8 @@ void main() {
       final repo = repoWith([ana, bea]);
       await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
       await tapKey2(tester, 'admin-edit-p-ana');
-      expect(find.textContaining('verificar la nueva dirección'), findsOneWidget);
+      expect(find.textContaining('entrará con la nueva dirección'), findsOneWidget);
+      expect(find.textContaining('verificar'), findsNothing);
       expect(tester.widget<TextFormField>(find.byKey(const Key('admin-email'))).controller!.text, 'ana@example.org');
       await tester.enterText(find.byKey(const Key('admin-given')), 'Anita');
       await tapKey2(tester, 'form-submit');
@@ -331,20 +391,46 @@ void main() {
       expect(find.text('Administrador quitado'), findsOneWidget);
     });
 
-    testWidgets('resend is offered for pending administrators only', (tester) async {
+    testWidgets('new temporary password is offered for pending administrators only', (tester) async {
       final repo = repoWith([ana, bea]);
       await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
-      expect(find.byKey(const Key('admin-resend-p-ana')), findsNothing);
-      await tapKey2(tester, 'admin-resend-p-bea');
-      expect(repo.resentInvitations, ['p-bea']);
-      expect(find.text('Invitación reenviada'), findsOneWidget);
+      expect(find.byKey(const Key('admin-issue-p-ana')), findsNothing);
+      expect(find.byKey(const Key('admin-resend-p-bea')), findsNothing); // the old "resend invitation" is gone
+      expect(find.byTooltip('Generar nueva contraseña temporal'), findsOneWidget);
+      await tapKey2(tester, 'admin-issue-p-bea');
+      expect(repo.reissuedFor, ['p-bea']);
+      expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+      expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, 'Reissued-1');
+      expect(find.textContaining('Bea Soto'), findsWidgets);
+      expect(find.textContaining('bea@example.org'), findsWidgets);
+      await tapKey2(tester, 'temp-password-done');
+      expect(find.text('Reissued-1'), findsNothing);
     });
 
-    testWidgets('resend: a stale invitation state is reported by its code', (tester) async {
+    testWidgets('a second re-issue shows the new password, never the previous one', (tester) async {
+      final repo = repoWith([ana, bea]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-issue-p-bea');
+      await tapKey2(tester, 'temp-password-done');
+      await tapKey2(tester, 'admin-issue-p-bea');
+      expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, 'Reissued-2');
+      expect(find.text('Reissued-1'), findsNothing);
+    });
+
+    testWidgets('re-issue: a stale state is reported by its code, no dialog', (tester) async {
       final repo = repoWith([ana, bea])..adminMutationFails = problem(409, 'INVITATION_NOT_PENDING');
       await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
-      await tapKey2(tester, 'admin-resend-p-bea');
+      await tapKey2(tester, 'admin-issue-p-bea');
       expect(find.text('La invitación ya no está pendiente'), findsOneWidget);
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+    });
+
+    testWidgets('re-issue: an identity provider outage is explained and shows no dialog', (tester) async {
+      final repo = repoWith([ana, bea])..adminMutationFails = problem(502, 'IDENTITY_PROVIDER_UNAVAILABLE');
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
+      await tapKey2(tester, 'admin-issue-p-bea');
+      expect(find.textContaining('servicio de acceso no está disponible'), findsOneWidget);
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
     });
 
     testWidgets('the only administrator cannot be removed: action disabled and the row explains why', (tester) async {

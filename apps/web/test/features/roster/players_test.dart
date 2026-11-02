@@ -232,6 +232,56 @@ void main() {
       expect(find.text('Noa Prieto'), findsOneWidget);
     });
 
+    testWidgets('admin creates a player with an e-mail: the temporary password is shown once before returning to the list', (tester) async {
+      final core = coreWithPlayers();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '/players/new');
+      await fill(tester);
+      await enter(tester, 'player-email', 'noa@example.org');
+      expect(find.textContaining('contraseña temporal'), findsOneWidget); // the field explains it, no e-mail is sent
+      await tapKey(tester, 'player-submit');
+      expect(core.players.lastCreate!.email, 'noa@example.org');
+      expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+      expect(tester.widget<SelectableText>(find.byKey(const Key('temp-password-value'))).data, core.players.newLoginPassword);
+      expect(find.textContaining('Noa Prieto'), findsOneWidget);
+      expect(find.textContaining('noa@example.org'), findsOneWidget);
+      await tapKey(tester, 'temp-password-done');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.text(core.players.newLoginPassword!), findsNothing);
+      expect(find.byKey(const Key('player-submit')), findsNothing); // back on the list
+    });
+
+    testWidgets('a player whose e-mail already has a login gets no dialog, only the note', (tester) async {
+      final core = coreWithPlayers();
+      core.players.newLoginPassword = null;
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '/players/new');
+      await fill(tester);
+      await enter(tester, 'player-email', 'noa@example.org');
+      await tapKey(tester, 'player-submit');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.textContaining('Jugador creado'), findsOneWidget);
+      expect(find.textContaining('contraseña actual'), findsOneWidget);
+    });
+
+    testWidgets('without an e-mail there is no login and no dialog', (tester) async {
+      final core = coreWithPlayers();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '/players/new');
+      await fill(tester);
+      await tapKey(tester, 'player-submit');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.text('Jugador creado'), findsOneWidget);
+      expect(find.textContaining('contraseña actual'), findsNothing);
+    });
+
+    testWidgets('a coach request with an e-mail creates no login yet: no dialog', (tester) async {
+      final core = coreWithPlayers(coachRequests: true);
+      await pumpAs(tester, roles: {TenantRole.coach}, core: core, location: '/players/new', staffTeamIds: {'t1'});
+      await fill(tester);
+      await enter(tester, 'player-email', 'noa@example.org');
+      await tapKey(tester, 'player-submit');
+      expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
+      expect(find.text('Solicitud enviada al administrador'), findsOneWidget);
+    });
+
     testWidgets('coach files a request with an initial own team and a note', (tester) async {
       final core = coreWithPlayers(coachRequests: true);
       await pumpAs(tester, roles: {TenantRole.coach}, core: core, location: '/players/new', staffTeamIds: {'t1'});
