@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
@@ -27,6 +28,7 @@ import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.PasswordLeaks;
+import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -211,11 +213,82 @@ class PlatformAdminResourceTest {
                 .doesNotContain("adah@example.com", "Adah");
     }
 
+    // ------------------------------------------------------------------ edit: a login shared by several academies (WP31)
+
     @Test
-    void theSuperAdminAlsoMovesALoginSharedWithAnotherTenant() {
-        CoreDb.person(Members.newTenant(), CoreDb.login(adminSub), "Ada", "Zeta", null, null, null, TenantRole.PARENT);
-        patch(admin, "{\"email\":\"moved@example.com\"}").statusCode(200);
+    void theSuperAdminMovesASharedLoginInEveryAcademyThatUsesIt() {
+        String other = Members.newTenant();
+        UUID parent = sharedWith(other);
+        String left = Members.newTenant();
+        UUID former = sharedWith(left);
+        CoreDb.inTenant(left, c -> {
+            CoreDb.update(c, "update core.person set active = false where id = ?", former);
+            return CoreDb.update(c, "delete from core.user_membership_index where person_id = ?", former);
+        });
+
+        patch(admin, "{\"email\":\"moved@example.com\"}").statusCode(200).body("email", equalTo("moved@example.com"));
+
         keycloak.verify(1, KeycloakStubs.loginMoved(adminSub, "moved@example.com"));
+        assertThat(emailOf(tenant, admin)).isEqualTo("moved@example.com");
+        assertThat(emailOf(other, parent)).as("the other academy's member is the same person").isEqualTo("moved@example.com");
+        assertThat(CoreDb.auditActions(other)).containsExactly("member.login_email_changed");
+        assertThat(CoreDb.auditRow(other, "member.login_email_changed"))
+                .containsEntry("actorSub", "platform-admin")
+                .containsEntry("actorPersonId", null)
+                .containsEntry("targetType", "person")
+                .containsEntry("targetId", parent.toString())
+                .containsEntry("metadata", "{}");
+        assertThat(CoreDb.auditActions(tenant)).containsOnlyOnce("member.login_email_changed");
+        assertThat(emailOf(left, former)).as("an academy the person left keeps its record").isEqualTo(oldEmail());
+        assertThat(CoreDb.auditActions(left)).isEmpty();
+    }
+
+    @Test
+    void anEmailUsedByAnotherMemberOfAnAcademySharingTheLoginIsTaken() {
+        String other = Members.newTenant();
+        UUID parent = sharedWith(other);
+        CoreDb.person(other, "Some", "One", "taken.there@example.com", TenantRole.COACH);
+
+        given().filter(Contract.CORE).contentType(ContentType.JSON).body("{\"email\":\"Taken.There@example.com\"}")
+                .patch(admins() + "/" + admin).then().statusCode(409).contentType("application/problem+json")
+                .body("code", equalTo("EMAIL_TAKEN"));
+
+        keycloak.verify(0, anyLoginUpdate());
+        assertThat(emailOf(tenant, admin)).isEqualTo(oldEmail());
+        assertThat(emailOf(other, parent)).isEqualTo(oldEmail());
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("admin.updated", "member.login_email_changed");
+        assertThat(CoreDb.auditActions(other)).isEmpty();
+    }
+
+    @Test
+    void aKeycloakFailureLeavesEveryAcademyOfASharedLoginUnchanged() {
+        String other = Members.newTenant();
+        UUID parent = sharedWith(other);
+        KeycloakStubs.loginUpdateFails(keycloak);
+
+        given().filter(Contract.FAILURES).contentType(ContentType.JSON).body("{\"email\":\"lost@example.com\"}")
+                .patch(admins() + "/" + admin).then().statusCode(502);
+
+        assertThat(emailOf(tenant, admin)).isEqualTo(oldEmail());
+        assertThat(emailOf(other, parent)).isEqualTo(oldEmail());
+        assertThat(CoreDb.auditActions(other)).isEmpty();
+    }
+
+    @Test
+    @TestSecurity(user = TenantUser.SUBJECT)
+    void anAcademyAdminStillCannotMoveASharedLogin() {
+        String other = Members.newTenant();
+        UUID parent = sharedWith(other);
+        Members.signIn(tenant, TenantRole.ADMIN);
+
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+                .body("{\"email\":\"takeover@example.com\"}").patch("/api/core/members/" + admin).then()
+                .statusCode(409).body("code", equalTo("LOGIN_SHARED"));
+
+        keycloak.verify(0, anyLoginUpdate());
+        assertThat(emailOf(tenant, admin)).isEqualTo(oldEmail());
+        assertThat(emailOf(other, parent)).isEqualTo(oldEmail());
+        assertThat(CoreDb.auditActions(other)).isEmpty();
     }
 
     @Test
@@ -436,6 +509,19 @@ class PlatformAdminResourceTest {
                 invitation, person));
         KeycloakStubs.login(keycloak, sub, email);
         return person;
+    }
+
+    /** The tenant admin's login also used by an active PARENT of {@code other}, with the same e-mail there. */
+    private UUID sharedWith(String other) {
+        return CoreDb.person(other, CoreDb.login(adminSub), "Ada", "Zeta", oldEmail(), null, null, TenantRole.PARENT);
+    }
+
+    private String oldEmail() {
+        return "ada." + tenant + "@example.com";
+    }
+
+    private static String emailOf(String tenantId, UUID person) {
+        return RosterDb.text(tenantId, "select email from core.person where id = ?", person);
     }
 
     private String admins() {
