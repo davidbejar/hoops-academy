@@ -140,7 +140,7 @@ class FakeMembersRepository with Faulty implements MembersRepository {
       );
     }
     reissuedFor.add(personId);
-    final renewed = (m as api.$Member).rebuild((b) => b.temporaryPasswordStatus = api.TemporaryPasswordStatus.ACTIVE);
+    final renewed = m.rebuild((b) => b.temporaryPasswordStatus = api.TemporaryPasswordStatus.ACTIVE);
     members[members.indexOf(m)] = renewed;
     return withPassword(renewed, 'Reissued-${reissuedFor.length}');
   });
