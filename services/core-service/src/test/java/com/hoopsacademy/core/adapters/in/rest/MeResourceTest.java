@@ -115,6 +115,14 @@ class MeResourceTest {
         given().filter(Contract.CORE).get(ME).then().statusCode(200).body("memberships", hasSize(1));
         assertThat(CoreDb.count(t, "select count(*) from core.person where id = ? and invitation_status = 'ACCEPTED'",
                 person)).isEqualTo(1);
+        var audit = CoreDb.auditRow(t, "member.invitation_accepted");
+        assertThat(audit).containsEntry("actorSub", "me-pending").containsEntry("actorPersonId", person.toString())
+                .containsEntry("targetType", "person").containsEntry("targetId", person.toString())
+                .containsEntry("metadata", "{}");
+
+        given().filter(Contract.CORE).get(ME).then().statusCode(200);
+        assertThat(CoreDb.auditActions(t)).as("only the first sign-in accepts").containsOnlyOnce(
+                "member.invitation_accepted");
     }
 
     @Test

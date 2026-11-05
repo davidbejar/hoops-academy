@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * {@code core.audit_event} is append-only for the application (ASVS 16.4.2): core_app may insert and read its own
- * tenant's rows but never change or delete one; core_platform (tenant lifecycle) may only append. The generic RLS
- * suites cover the tenant isolation itself.
+ * tenant's rows but never change or delete one; core_platform (tenant lifecycle, the super admin's trail) appends and,
+ * since WP34, reads every academy's rows, never changes them. The generic RLS suites cover the tenant isolation itself.
  */
 @Tag("rls")
 @QuarkusTest
@@ -55,14 +55,43 @@ class AuditEventRlsTest {
     }
 
     @Test
-    void thePlatformRoleMayOnlyAppend() throws SQLException {
+    void thePlatformRoleAppendsAndReadsEveryAcademyButNeverRewritesHistory() throws SQLException {
+        String other = UUID.randomUUID().toString();
+        CoreDb.tenant(other);
         try (Connection platform = TestDatabases.openAsPlatform()) {
             platform.setAutoCommit(false);
             assertThat(sqlState(platform, insert(tenant))).isEqualTo("no error");
-            assertThat(sqlState(platform, "select count(*) from core.audit_event")).isEqualTo(INSUFFICIENT_PRIVILEGE);
+            CoreDb.update(platform, insert(tenant));
+            CoreDb.update(platform, insert(other));
+            assertThat(count(platform, "select count(*) from core.audit_event where tenant_id in ('" + tenant + "', '"
+                    + other + "')")).as("WP34: the super admin's trail spans academies, no tenant bound").isEqualTo(2);
             assertThat(sqlState(platform, "update core.audit_event set action = 'x'")).isEqualTo(INSUFFICIENT_PRIVILEGE);
             assertThat(sqlState(platform, "delete from core.audit_event")).isEqualTo(INSUFFICIENT_PRIVILEGE);
+            assertThat(sqlState(platform, "truncate core.audit_event")).isEqualTo(INSUFFICIENT_PRIVILEGE);
             platform.rollback();
+        }
+    }
+
+    @Test
+    void thePlatformRoleStillReadsNoTenantContent() throws SQLException {
+        try (Connection platform = TestDatabases.openAsPlatform()) {
+            assertThat(sqlState(platform, "select count(*) from core.person")).isEqualTo(INSUFFICIENT_PRIVILEGE);
+            assertThat(sqlState(platform, "select count(*) from core.player")).isEqualTo(INSUFFICIENT_PRIVILEGE);
+        }
+    }
+
+    @Test
+    void theAppRoleReadsOnlyItsOwnAcademysTrail() throws SQLException {
+        String other = UUID.randomUUID().toString();
+        CoreDb.tenant(other);
+        CoreDb.inTenant(other, c -> CoreDb.update(c, insert(other)));
+        CoreDb.inTenant(tenant, c -> CoreDb.update(c, insert(tenant)));
+        try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
+            app.setAutoCommit(false);
+            CoreDb.bindTenant(app, TenantId.parse(tenant));
+            assertThat(count(app, "select count(*) from core.audit_event where tenant_id <> '" + tenant + "'")).isZero();
+            assertThat(count(app, "select count(*) from core.audit_event")).isEqualTo(1);
+            app.rollback();
         }
     }
 

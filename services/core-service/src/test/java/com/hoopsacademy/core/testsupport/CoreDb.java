@@ -198,6 +198,24 @@ public final class CoreDb {
         });
     }
 
+    /**
+     * Arranges one audit row of {@code tenant} at {@code at} (the writers stamp {@code now()}; the read API is tested
+     * against fixed times). Returns the row id.
+     */
+    public static UUID auditEvent(String tenant, java.time.Instant at, String actorSub, UUID actorPersonId,
+            String action, String targetType, Object targetId, String metadataJson) {
+        return inTenant(tenant, c -> {
+            UUID id = UUID.randomUUID();
+            update(c, """
+                    insert into core.audit_event (id, tenant_id, actor_sub, actor_person_id, action, target_type,
+                                                  target_id, metadata, at)
+                    values (?, ?, ?, ?, ?, ?, ?, cast(? as jsonb), ?)""",
+                    id, UUID.fromString(tenant), actorSub, actorPersonId, action, targetType, String.valueOf(targetId),
+                    metadataJson, java.sql.Timestamp.from(at));
+            return id;
+        });
+    }
+
     /** The newest audit row of {@code action}: actorSub, actorPersonId, targetType, targetId, metadata (json text). */
     public static java.util.Map<String, String> auditRow(String tenant, String action) {
         return inTenant(tenant, c -> {
