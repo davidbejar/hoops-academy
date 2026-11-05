@@ -76,3 +76,59 @@ infrequent event happens.
   `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built:
+  - Contract core **2.4.0** (from main's 2.3.1 after WP29; additive): enum `TemporaryPasswordStatus` (`ACTIVE | EXPIRED |
+    NONE`), required `temporaryPasswordStatus` on `Member`, `TenantAdmin` and their flattened `*WithPassword` copies
+    (WP29's `x-extends` rule); info and re-issue descriptions mention expiry and renewal (`TemporaryPasswordExpiryContractTest`, 5).
+    Dart core client regenerated (`scripts/gen-api.sh core` only).
+  - `V10__temporary_password_expiry.sql`: `core.app_user.temporary_password_issued_at` / `_expired_at` + partial index
+    for due rows. No grant changes: core_app already has DML on `app_user` through default privileges (V4 gives core_platform
+    nothing on it). No RLS change (global table, V2).
+  - `TemporaryPasswords.issue` (every path): records the issue time (row locked), sets the Keycloak temporary password,
+    **enables** the login only when the previous one had expired, then `TemporaryPasswordSweeps.request()`.
+    `IdentityProviderPort.enable/disable` (read-modify-write of the representation). The view in `IssueTemporaryPassword` is
+    now built after the issue.
+  - `application/identity/ExpireTemporaryPasswords`: one transaction per due login, no tenant bound: `select … for update`
+    re-check, own password ⇒ forget `issued_at`; else set `expired_at`, audit `member.temporary_password_expired` (actor
+    `system`, metadata `{}`) in every academy where the login links an active PENDING person (`PendingLoginPersons`,
+    adapter `JpaPendingLoginPersonRepository`: index read via `own_memberships`, per-academy `app.tenant_id` binding,
+    `AuditLog.recordFor`, settings restored), Keycloak `disable` last. TTL `hoops.temporary-password.ttl=P3D`.
+  - Triggers: `TemporaryPasswordSweepJob` (adapters/in/scheduler) implements the port: after-commit `Synchronization` →
+    one daemon thread (at most one waiting sweep) → `runExclusive("core.temporary_password_sweep")`. Triggered by every
+    issue and by `/me` accepting an invitation, which also clears `issued_at` (signing in proves the temporary password was
+    replaced). `hoops.temporary-password.sweep-on-events` (true; `%test` false).
+  - Member/admin views: `MemberView.temporaryPassword` (batch lookup by user ids), mapped in `MemberDto`/`TenantAdminDto`.
+  - Keycloak theme `hoops`: `login/messages/messages_{en,es,id}.properties` override `accountDisabledMessage` (ASCII,
+    unicode escapes). Compose mounts the theme dir; Helm: sync-script pairs, theme ConfigMap keys, Deployment `items`,
+    snapshots re-recorded. `KeycloakContainerResource` now copies the theme into the test container.
+  - Web: l10n `tempPasswordExpired` (es/en/id); chip **Temporary password expired** in the member list (subtitle, 360 px
+    safe), on the member page next to the re-issue button, and on pending administrator rows; mock API sends the status.
+  - Docs: ADR-0028 (number given by the coordinator; WP29 took 0027), ADR-0024 consequence amended, ADR index, guides
+    `admin.*` and `super-admin.*` (en/es/id), security review F-23 → fixed (totals updated). Authz matrix unchanged
+    (no new operation, no role change).
+- Verified (fresh, 2026-11-05, after the rebase onto main `ad48cb6`):
+  - Red first: commits `test(contracts)`, `test(core)`, `test(web)` before their `feat`. Core red run against a compile
+    skeleton: 102 tests, 5 failures + 48 errors (missing columns, missing status, no-op enable/disable, theme files
+    missing); web: the 2 new widget tests failed, 542 passed.
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`: BUILD SUCCESS, common-quarkus 172, contracts 138,
+    core 741, game 196, athlete 586 = **1,833 tests**, 0 failures/errors/skips; JaCoCo gates met (core lines 98.2 %,
+    domain 99.4 %); ArchUnit, RLS meta and generic RLS suites included.
+  - `./mvnw -pl services/core-service -am verify -Pkeycloak-it -Dquarkus.http.test-port=0`: **17 tests**, 0 failures
+    (new `TemporaryPasswordExpiryKeycloakTest` 5: a login issued "4 days ago" answers "Account disabled" after the sweep,
+    re-issue enables it and Keycloak asks for a new password ("Account is not fully set up"), the old value is invalid, the
+    chosen password gets a token; an own-password login stays enabled; the branded login page shows the expiry message
+    in en, es and id).
+  - `just web-test` (`flutter test`): **544 passed**; `flutter analyze`: no issues. `deploy/helm/tests/run.sh`: all passed.
+  - `just isolation-check`: 6 passed; `just db-role-check`: 13 passed.
+- Decisions/ADRs: ADR-0028 — event-triggered sweep under the cluster lock, Keycloak last per login, disable instead of
+  deleting the credential, audit rows in the same transaction via per-statement binding (ADR-0026 mechanism without a
+  home tenant), `/me` acceptance forgets the issue time. Core contract bumped 2.3.1 → **2.4.0**.
+- Open points:
+  - Accepted gap: expiry happens at the first issue or first sign-in after the 3 days; the status shows ACTIVE until then.
+  - Every disabled login sees the expiry text (the theme cannot tell the reason apart); the sweep is the only disabler today.
+  - Realm/theme change needs a Keycloak restart locally (`just down && just up`; no re-import needed for messages).
+  - Commit `d540cab` still says "ADR-0027" in its subject (written before the renumbering; content says 0028).
+  - Commits end with `Co-Authored-By: Claude Opus 5.5` (the model that did the work), not the brief's Fable 5.1 line.
+  - e2e `JourneyTest` was not run (not in this WP's acceptance); it only reads members and admins, now with one more field.
