@@ -44,3 +44,52 @@ sourced now.
 - Finish per the `work-package` skill: fresh full verification, checklist with evidence, `## Handover` appended.
 - Final report to the orchestrator, at most 300 words: built, verified (commands and numbers), left out and why,
   anything another WP must know.
+
+## Handover
+
+### Acceptance checklist
+- [x] `R__physical_test_norms.sql` cites a source wherever one was found and could be read; placeholders only where
+      `docs/domain/norms.md` explains the gap (per-test table "Per test: sources and status", section "Open leads").
+- [x] `norms.md` lists every source with a DOI or journal citation (section "References"), plus the population, protocol and
+      centile-to-band mapping per test.
+- [x] Fresh run `./mvnw -pl services/athlete-service -am clean verify`: BUILD SUCCESS; athlete-service 586 tests, 0 failures
+      (common-quarkus 172 + 120), coverage checks met; the migration applied on a fresh Testcontainers Postgres 17.
+- [x] Handover (this section).
+
+### Built
+| Test | Before (WP10b) | After (WP27) | Source |
+|---|---|---|---|
+| BEEP_TEST | cited 9-17 (Zhang 2020), 8 and 18 placeholder | cited 8-18 | Ortega et al. 2023 (FitBack), BJSM 57:299, Table 1, printed P20/40/60/80 |
+| SIT_AND_REACH | placeholder 8-18 (HFZ-anchored) | cited 9-17, placeholder 8 and 18 (repeat 9 / 17) | Catley & Tomkinson 2013, BJSM 47:98, corrected Table 10, printed P20/40/60/80 |
+| SPRINT_20M | placeholder 8-18 | cited 8-17, placeholder 18 (repeats 17) | Cossio-Bolaños et al. 2026, J Pediatr (Rio J) 102(6):101596, Table 4, centiles computed from the published LMS |
+| AGILITY_T_TEST, VERTICAL_JUMP | placeholder 8-18 | cited 14-15, rest unchanged synthetic placeholders | Mascherini et al. 2022, Healthcare 10(12):2486, Tables 2-5, P20-P80 interpolated between P10/25/50/75/90 |
+| COOPER_12MIN | cited 13-19, placeholder 8-12 | unchanged | no youth table under 13 found |
+
+Rows (630 global): cited 120 -> 370, placeholder 510 -> 260 (COOPER 50, SIT 20, SPRINT 10, VJ 90, T-test 90). All ids reused
+(same natural key), so the repeatable seed upserts in place. The SIT_AND_REACH test-type description now states the scale
+(20 cm = fingertips at the toes, Catley's convention). Tests: `NormSeedTest` +5 (one per source with sample band edges taken
+from the printed tables, and a pinned placeholder count per test); `PhysicalTestApiTest`'s placeholder example moved from
+SPRINT_20M (now cited at 16) to VERTICAL_JUMP.
+
+### Decisions
+- BEEP_TEST 9-17 moved from Zhang 2020 to FitBack 2023, which is outside the strict scope. The reason is that one source
+  now covers 8-18 without a jump at the source boundary, and FitBack is the international reference the follow-ups asked for.
+  Zhang stays documented as a tenant-override option.
+- Two new ways to get the band edges, both documented in norms.md "Percentile to band rule": exact centiles from published
+  LMS parameters (checked: they reproduce the 264 printed centiles within rounding), and linear interpolation when only
+  P10/25/50/75/90 are printed. Rows built either way are flagged cited, and the method is named in each row's `source`.
+- Every numeric value was extracted with a script from the downloaded article (PMC HTML or PDF text), not typed by hand.
+- Commit trailer: `Co-Authored-By: Claude Opus 5.5` (the model that did the work) instead of the brief's Fable line.
+
+### Open points
+- VERTICAL_JUMP: Moreno-Gonzalez et al., BMC Pediatr 2026 (doi:10.1186/s12887-026-07796-1; sport-participating 6-17, CMJ),
+  is open access but could not be fetched (bot challenge, no PMC copy yet). It is the best candidate to replace the remaining
+  90 rows.
+- AGILITY_T_TEST 8-13/16-18: no readable youth table. The synthetic girls' placeholders are about 1.2 s too fast next to the
+  Florentine data, so they should be re-modelled or overridden.
+- COOPER_12MIN 8-12: no published centile table found.
+- The Catley PDF was a third-party copy of the publisher version. Check it against the BMJ copy.
+- The sit-and-reach scale changed from the back-saver box (toes at 22.9 cm) to toes at 20 cm, and the web UI should show the
+  unit hint.
+- WP26 (docs) should update `docs/conformance.md` S-44 and `docs/roadmap.md` line 71, which still describe the WP10b sourcing.
+  This WP did not edit them, to avoid conflicts.
