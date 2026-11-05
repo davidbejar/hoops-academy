@@ -36,3 +36,42 @@ out; each item is its own commit pair, test first):
   `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built (all in `apps/web`, each item a red-test commit followed by the change; no contract or generated-package change):
+  1. **No academy**: a 404 from `/me` shows a dedicated state (`NotAMember`, key `not-a-member`) with the sign-in e-mail
+     and Sign out, no Retry; other errors keep Retry. The e-mail is the `email` claim of the access token
+     (`core/auth/signed_in_email.dart`; `/me` is a 404 and carries none). Falls back to a text without e-mail.
+     l10n `notMemberTitle/Body/BodyNoEmail` (es/en/id).
+  2. **Academy time zone**: `/me` does NOT carry the zone (`TenantSummary` has none); it comes from the tenant profile
+     (`getTenantProfile.timezone`, now in `TenantProfile.timezone`). `core/time/tenant_zone.dart` (`TenantZone`, new
+     dependency `timezone` 0.11.2 with the 10-year data set) converts instants <-> academy wall clock; unknown/missing
+     zone = device zone. Used by the week calendar (day grouping, "today", week start), session tiles/detail/create/edit,
+     match list/create/season stats and the date pickers' "today". The zone is named once per screen (`TimezoneNote`,
+     training + matches) and only when the academy zone is known. Not applied to the platform console (not tenant-scoped).
+  3. **Usage trend**: `UsageTrend` on the tenant detail (`getTenantUsageHistory`, `tenantUsageHistoryProvider`): counter
+     picker + the existing `GrowthChart` line chart (+ table view); loading / empty / error with retry.
+  4. **Training/health**: plan picker on ad-hoc sessions; session edit dialog (`session-edit`, planned sessions, staff of
+     the team); edit and delete of body measurements (new list rows) and of physical test results; edit of custom test types
+     (global ones read-only); edit of planned absences.
+  5. **Availability badge** (`AvailabilityBadge`) in team roster rows and match setup (information only).
+  6. **Demo mock**: nothing added. The mock adapter serves no `/platform/*` and no `/api/athlete/*` at all, so the demo has
+     neither the trend chart nor the training/health screens; that needs its own WP (all of those screens are unreachable in
+     mock mode, so none of the items above needed it).
+- Goldens regenerated: `platform_admins_1024x768.png`, `temporary_password_1024x768.png` (tenant detail page behind the
+  dialog gained the trend section). No other golden changed (no zone in golden fixtures).
+- Verified (fresh): `flutter analyze` no issues; `flutter test` 587 passed, 0 failed (l10n key parity test included);
+  `apps/web/tool/web_smoke.sh` (mock mode, chromedriver present) "All tests passed".
+- Navigation: none changed (no router, shell or destination edits), so WP34's Activity screen will not conflict.
+- Missing / limiting API operations (for a contract WP):
+  - `UpdateTrainingSessionRequest` cannot clear `planId`, `location` or `notes` (null = unchanged): a plan cannot be detached
+    and a location emptied in the edit dialog is not sent as cleared. Same for the other `Update*Request`s used here (e.g.
+    absence reason, result notes, measurement values: a value can be changed but not removed).
+  - `/me` memberships carry no tenant `timezone`; the app needs the extra profile call.
+  - No operation to change the role-less "not a member" state (by design: an admin must add the e-mail).
+- Left out: mock-mode support for platform/athlete (item 6); editing the test-type code (not in the contract); delete of
+  test types.
+- Notes: `AvailabilityBadge` is imported from `features/health` into roster and match (cross-feature import; the health
+  module is a deferred library, so the badge code now loads with roster/match: move it to `core/ui` if that matters).
+  Existing tests adjusted only for layout: `test types` create test uses a 360x1200 viewport (rows grew with the edit
+  button). Commits carry the brief's `Co-Authored-By: Claude Fable 5.1` line.
