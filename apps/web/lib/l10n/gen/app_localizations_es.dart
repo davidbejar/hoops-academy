@@ -1785,6 +1785,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get resultDeleteConfirm => '¿Eliminar este resultado?';
 
   @override
+  String get absenceEdit => 'Editar ausencia';
+
+  @override
+  String get testTypeEdit => 'Editar tipo de prueba';
+
+  @override
   String get growthAdd => 'Añadir medida';
 
   @override

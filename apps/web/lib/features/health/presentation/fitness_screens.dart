@@ -49,7 +49,20 @@ class TestTypesScreen extends ConsumerWidget {
                     subtitle: Text(
                       [t.code, t.higherIsBetter ? l.testTypeHigherYes : l.testTypeHigherNo, if (t.description != null) t.description!].join(' · '),
                     ),
-                    trailing: InfoChip(t.global ? l.testTypeGlobal : l.testTypeCustom),
+                    trailing: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        InfoChip(t.global ? l.testTypeGlobal : l.testTypeCustom),
+                        // Global types are read-only (403).
+                        if (!t.global && caps.canAdminFitness)
+                          IconButton(
+                            key: Key('type-edit-${t.id}'),
+                            tooltip: l.edit,
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () => showDialog<bool>(context: context, builder: (_) => TestTypeDialog(type: t)),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
             ],
@@ -60,8 +73,10 @@ class TestTypesScreen extends ConsumerWidget {
   }
 }
 
+/// Creates a custom test type, or edits [type] (its code is fixed).
 class TestTypeDialog extends ConsumerStatefulWidget {
-  const TestTypeDialog({super.key});
+  const TestTypeDialog({super.key, this.type});
+  final ath.PhysicalTestType? type;
 
   @override
   ConsumerState<TestTypeDialog> createState() => _TestTypeDialogState();
@@ -69,11 +84,11 @@ class TestTypeDialog extends ConsumerStatefulWidget {
 
 class _TestTypeDialogState extends ConsumerState<TestTypeDialog> {
   final _form = GlobalKey<FormState>();
-  final _code = TextEditingController();
-  final _name = TextEditingController();
-  final _unit = TextEditingController();
-  final _description = TextEditingController();
-  bool _higher = true;
+  late final _code = TextEditingController(text: widget.type?.code ?? '');
+  late final _name = TextEditingController(text: widget.type?.name ?? '');
+  late final _unit = TextEditingController(text: widget.type?.unit ?? '');
+  late final _description = TextEditingController(text: widget.type?.description ?? '');
+  late bool _higher = widget.type?.higherIsBetter ?? true;
 
   @override
   void dispose() {
@@ -86,22 +101,31 @@ class _TestTypeDialogState extends ConsumerState<TestTypeDialog> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final editing = widget.type;
     return FormDialog(
-      title: l.testTypeNew,
+      title: editing == null ? l.testTypeNew : l.testTypeEdit,
       formKey: _form,
       onSubmit: () => runAction(
         context,
-        () => ref.read(testTypesProvider.notifier).create(
-          code: _code.text.trim().toUpperCase(),
-          name: _name.text.trim(),
-          unit: _unit.text.trim(),
-          higherIsBetter: _higher,
-          description: _description.text.trim().isEmpty ? null : _description.text.trim(),
-        ),
+        () => editing == null
+            ? ref.read(testTypesProvider.notifier).create(
+                code: _code.text.trim().toUpperCase(),
+                name: _name.text.trim(),
+                unit: _unit.text.trim(),
+                higherIsBetter: _higher,
+                description: _description.text.trim().isEmpty ? null : _description.text.trim(),
+              )
+            : ref.read(testTypesProvider.notifier).correct(
+                editing.id,
+                name: _name.text.trim(),
+                unit: _unit.text.trim(),
+                higherIsBetter: _higher,
+                description: _description.text.trim().isEmpty ? null : _description.text.trim(),
+              ),
         success: l.saved,
       ),
       children: [
-        TextFormField(key: const Key('type-code'), controller: _code, decoration: InputDecoration(labelText: l.testTypeCode), validator: (v) => requiredValidator(l, v)),
+        TextFormField(key: const Key('type-code'), controller: _code, enabled: editing == null, decoration: InputDecoration(labelText: l.testTypeCode), validator: (v) => requiredValidator(l, v)),
         formGap,
         TextFormField(key: const Key('type-name'), controller: _name, decoration: InputDecoration(labelText: l.testTypeName), validator: (v) => requiredValidator(l, v)),
         formGap,

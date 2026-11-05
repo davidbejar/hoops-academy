@@ -51,15 +51,25 @@ class AbsencesScreen extends ConsumerWidget {
                     [l.absenceRange(fullDate(a.fromDate), fullDate(a.toDate)), if (a.reason != null) a.reason!].join(' · '),
                   ),
                   trailing: caps.canFileAbsenceFor(a.playerId)
-                      ? IconButton(
-                          key: Key('absence-delete-${a.id}'),
-                          tooltip: l.delete,
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () async {
-                            if (!await confirmDialog(context, message: l.absenceDeleteConfirm, confirmLabel: l.delete)) return;
-                            if (!context.mounted) return;
-                            await runAction(context, () => ref.read(absencesProvider.notifier).delete(a.id));
-                          },
+                      ? Wrap(
+                          children: [
+                            IconButton(
+                              key: Key('absence-edit-${a.id}'),
+                              tooltip: l.edit,
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () => showDialog<bool>(context: context, builder: (_) => AbsenceDialog(absence: a)),
+                            ),
+                            IconButton(
+                              key: Key('absence-delete-${a.id}'),
+                              tooltip: l.delete,
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () async {
+                                if (!await confirmDialog(context, message: l.absenceDeleteConfirm, confirmLabel: l.delete)) return;
+                                if (!context.mounted) return;
+                                await runAction(context, () => ref.read(absencesProvider.notifier).delete(a.id));
+                              },
+                            ),
+                          ],
                         )
                       : null,
                 ),
@@ -71,8 +81,10 @@ class AbsencesScreen extends ConsumerWidget {
   }
 }
 
+/// Files a planned absence, or corrects [absence].
 class AbsenceDialog extends ConsumerStatefulWidget {
-  const AbsenceDialog({super.key});
+  const AbsenceDialog({super.key, this.absence});
+  final ath.PlannedAbsence? absence;
 
   @override
   ConsumerState<AbsenceDialog> createState() => _AbsenceDialogState();
@@ -80,10 +92,10 @@ class AbsenceDialog extends ConsumerStatefulWidget {
 
 class _AbsenceDialogState extends ConsumerState<AbsenceDialog> {
   final _form = GlobalKey<FormState>();
-  final _reason = TextEditingController();
+  late final _reason = TextEditingController(text: widget.absence?.reason ?? '');
   String? _playerId;
-  DateTime _from = DateTime.now();
-  DateTime _to = DateTime.now();
+  late DateTime _from = widget.absence?.fromDate.toDateTime() ?? DateTime.now();
+  late DateTime _to = widget.absence?.toDate.toDateTime() ?? DateTime.now();
   bool _bad = false;
 
   @override
@@ -96,8 +108,9 @@ class _AbsenceDialogState extends ConsumerState<AbsenceDialog> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final ids = ref.watch(selectablePlayerIdsProvider);
+    final editing = widget.absence;
     return FormDialog(
-      title: l.absenceNew,
+      title: editing == null ? l.absenceNew : l.absenceEdit,
       formKey: _form,
       validateExtra: () {
         final bad = _to.isBefore(_from);
@@ -106,17 +119,26 @@ class _AbsenceDialogState extends ConsumerState<AbsenceDialog> {
       },
       onSubmit: () => runAction(
         context,
-        () => ref.read(absencesProvider.notifier).create(
-          playerId: _playerId ?? ids.first,
-          from: _from,
-          to: _to,
-          reason: _reason.text.trim().isEmpty ? null : _reason.text.trim(),
-        ),
+        () => editing == null
+            ? ref.read(absencesProvider.notifier).create(
+                playerId: _playerId ?? ids.first,
+                from: _from,
+                to: _to,
+                reason: _reason.text.trim().isEmpty ? null : _reason.text.trim(),
+              )
+            : ref.read(absencesProvider.notifier).correct(
+                editing.id,
+                from: _from,
+                to: _to,
+                reason: _reason.text.trim().isEmpty ? null : _reason.text.trim(),
+              ),
         success: l.absenceSaved,
       ),
       children: [
-        PlayerPicker(label: l.absencePlayer, value: _playerId, onChanged: (v) => setState(() => _playerId = v)),
-        formGap,
+        if (editing == null) ...[
+          PlayerPicker(label: l.absencePlayer, value: _playerId, onChanged: (v) => setState(() => _playerId = v)),
+          formGap,
+        ],
         DateField(
           key: const Key('absence-from'),
           label: l.absenceFrom,

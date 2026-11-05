@@ -687,6 +687,8 @@
   "testEdit": "Ubah hasil",
   "measurementDeleteConfirm": "Hapus pengukuran ini?",
   "resultDeleteConfirm": "Hapus hasil ini?",
+  "absenceEdit": "Ubah ketidakhadiran",
+  "testTypeEdit": "Ubah jenis tes",
   "growthAdd": "Tambah pengukuran",
   "growthMeasuredOn": "Tanggal pengukuran",
   "growthEmpty": "Belum ada pengukuran",

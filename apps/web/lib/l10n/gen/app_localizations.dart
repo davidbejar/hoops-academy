@@ -3346,6 +3346,18 @@ abstract class AppLocalizations {
   /// **'¿Eliminar este resultado?'**
   String get resultDeleteConfirm;
 
+  /// No description provided for @absenceEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar ausencia'**
+  String get absenceEdit;
+
+  /// No description provided for @testTypeEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar tipo de prueba'**
+  String get testTypeEdit;
+
   /// No description provided for @growthAdd.
   ///
   /// In es, this message translates to:

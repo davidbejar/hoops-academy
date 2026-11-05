@@ -1771,6 +1771,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resultDeleteConfirm => 'Delete this result?';
 
   @override
+  String get absenceEdit => 'Edit absence';
+
+  @override
+  String get testTypeEdit => 'Edit test type';
+
+  @override
   String get growthAdd => 'Add measurement';
 
   @override

@@ -1778,6 +1778,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get resultDeleteConfirm => 'Hapus hasil ini?';
 
   @override
+  String get absenceEdit => 'Ubah ketidakhadiran';
+
+  @override
+  String get testTypeEdit => 'Ubah jenis tes';
+
+  @override
   String get growthAdd => 'Tambah pengukuran';
 
   @override

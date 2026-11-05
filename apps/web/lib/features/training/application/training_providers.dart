@@ -248,6 +248,20 @@ class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>> {
     ref.invalidate(weekSessionsProvider);
   }
 
+  /// Corrects dates / reason of a planned absence (the player cannot change).
+  Future<void> correct(String id, {required DateTime from, required DateTime to, String? reason}) async {
+    await ref.read(trainingRepositoryProvider).updateAbsence(
+      id,
+      ath.UpdatePlannedAbsenceRequest((b) => b
+        ..fromDate = toAthDate(from)
+        ..toDate = toAthDate(to)
+        ..reason = reason),
+    );
+    ref.invalidateSelf();
+    await future;
+    ref.invalidate(weekSessionsProvider);
+  }
+
   Future<void> delete(String id) async {
     await ref.read(trainingRepositoryProvider).deleteAbsence(id);
     ref.invalidateSelf();

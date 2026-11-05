@@ -687,6 +687,8 @@
   "testEdit": "Edit result",
   "measurementDeleteConfirm": "Delete this measurement?",
   "resultDeleteConfirm": "Delete this result?",
+  "absenceEdit": "Edit absence",
+  "testTypeEdit": "Edit test type",
   "growthAdd": "Add measurement",
   "growthMeasuredOn": "Measurement date",
   "growthEmpty": "No measurements yet",

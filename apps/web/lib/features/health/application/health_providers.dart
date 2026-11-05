@@ -133,6 +133,26 @@ class TestTypesNotifier extends AsyncNotifier<List<ath.PhysicalTestType>> {
   @override
   Future<List<ath.PhysicalTestType>> build() => ref.watch(fitnessRepositoryProvider).types();
 
+  /// Custom (tenant) types only: global ones are read-only on the server. The code never changes.
+  Future<void> correct(
+    String id, {
+    required String name,
+    required String unit,
+    required bool higherIsBetter,
+    String? description,
+  }) async {
+    await ref.read(fitnessRepositoryProvider).updateType(
+      id,
+      ath.UpdatePhysicalTestTypeRequest((b) => b
+        ..name = name
+        ..unit = unit
+        ..higherIsBetter = higherIsBetter
+        ..description = description),
+    );
+    ref.invalidateSelf();
+    await future;
+  }
+
   Future<void> create({
     required String code,
     required String name,

@@ -1026,6 +1026,8 @@
   "testEdit": "Editar resultado",
   "measurementDeleteConfirm": "¿Eliminar esta medida?",
   "resultDeleteConfirm": "¿Eliminar este resultado?",
+  "absenceEdit": "Editar ausencia",
+  "testTypeEdit": "Editar tipo de prueba",
   "growthAdd": "Añadir medida",
   "growthMeasuredOn": "Fecha de la medida",
   "growthEmpty": "Sin medidas todavía",

@@ -308,7 +308,7 @@ void main() {
   group('test types', () {
     testWidgets('lists global and custom types; ADMIN creates a custom one', (tester) async {
       final a = _athlete();
-      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/players/tests');
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/players/tests', size: const Size(360, 1200));
       expect(find.text('Salto vertical (cm)'), findsOneWidget);
       expect(find.text('De la academia'), findsOneWidget);
       expect(find.text('Global'), findsNWidgets(2));
