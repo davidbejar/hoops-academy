@@ -3,7 +3,6 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:hoops_athlete_api/src/model/plan_item_input.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -12,16 +11,34 @@ part 'plan_item.g.dart';
 /// PlanItem
 ///
 /// Properties:
-/// * [title] 
-/// * [description] 
-/// * [durationMinutes] 
-/// * [sets] 
-/// * [repetitions] 
-/// * [videoUrl] 
-/// * [id] 
+/// * [title]
+/// * [description]
+/// * [durationMinutes]
+/// * [sets]
+/// * [repetitions]
+/// * [videoUrl]
+/// * [id]
 /// * [position] - 0-based order within the plan.
 @BuiltValue()
-abstract class PlanItem implements PlanItemInput, Built<PlanItem, PlanItemBuilder> {
+abstract class PlanItem implements Built<PlanItem, PlanItemBuilder> {
+  @BuiltValueField(wireName: r'title')
+  String get title;
+
+  @BuiltValueField(wireName: r'description')
+  String? get description;
+
+  @BuiltValueField(wireName: r'durationMinutes')
+  int? get durationMinutes;
+
+  @BuiltValueField(wireName: r'sets')
+  int? get sets;
+
+  @BuiltValueField(wireName: r'repetitions')
+  int? get repetitions;
+
+  @BuiltValueField(wireName: r'videoUrl')
+  String? get videoUrl;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -52,6 +69,18 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
     PlanItem object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'title';
+    yield serializers.serialize(
+      object.title,
+      specifiedType: const FullType(String),
+    );
+    if (object.description != null) {
+      yield r'description';
+      yield serializers.serialize(
+        object.description,
+        specifiedType: const FullType(String),
+      );
+    }
     if (object.durationMinutes != null) {
       yield r'durationMinutes';
       yield serializers.serialize(
@@ -66,17 +95,17 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
         specifiedType: const FullType(int),
       );
     }
+    if (object.repetitions != null) {
+      yield r'repetitions';
+      yield serializers.serialize(
+        object.repetitions,
+        specifiedType: const FullType(int),
+      );
+    }
     if (object.videoUrl != null) {
       yield r'videoUrl';
       yield serializers.serialize(
         object.videoUrl,
-        specifiedType: const FullType(String),
-      );
-    }
-    if (object.description != null) {
-      yield r'description';
-      yield serializers.serialize(
-        object.description,
         specifiedType: const FullType(String),
       );
     }
@@ -90,18 +119,6 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
       object.position,
       specifiedType: const FullType(int),
     );
-    yield r'title';
-    yield serializers.serialize(
-      object.title,
-      specifiedType: const FullType(String),
-    );
-    if (object.repetitions != null) {
-      yield r'repetitions';
-      yield serializers.serialize(
-        object.repetitions,
-        specifiedType: const FullType(int),
-      );
-    }
   }
 
   @override
@@ -125,6 +142,21 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'title':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.title = valueDes;
+          break;
+        case r'description':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.description = valueDes;
+          break;
         case r'durationMinutes':
           final valueDes = serializers.deserialize(
             value,
@@ -141,6 +173,14 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
           if (valueDes == null) continue;
           result.sets = valueDes;
           break;
+        case r'repetitions':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.repetitions = valueDes;
+          break;
         case r'videoUrl':
           final valueDes = serializers.deserialize(
             value,
@@ -148,14 +188,6 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
           ) as String?;
           if (valueDes == null) continue;
           result.videoUrl = valueDes;
-          break;
-        case r'description':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.description = valueDes;
           break;
         case r'id':
           final valueDes = serializers.deserialize(
@@ -170,21 +202,6 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
             specifiedType: const FullType(int),
           ) as int;
           result.position = valueDes;
-          break;
-        case r'title':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.title = valueDes;
-          break;
-        case r'repetitions':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(int),
-          ) as int?;
-          if (valueDes == null) continue;
-          result.repetitions = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -214,5 +231,3 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
     return result.build();
   }
 }
-
-

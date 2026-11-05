@@ -5,7 +5,6 @@
 // ignore_for_file: unused_element
 import 'package:hoops_core_api/src/model/date.dart';
 import 'package:hoops_core_api/src/model/gender.dart';
-import 'package:hoops_core_api/src/model/personal_data.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:hoops_core_api/src/model/tenant_role.dart';
 import 'package:hoops_core_api/src/model/locale.dart';
@@ -27,7 +26,30 @@ part 'invite_member_request.g.dart';
 /// * [roles]
 /// * [sendInvitation] - Give the member a login (requires `email`); a new login's temporary password is returned once.
 @BuiltValue()
-abstract class InviteMemberRequest implements PersonalData, Built<InviteMemberRequest, InviteMemberRequestBuilder> {
+abstract class InviteMemberRequest implements Built<InviteMemberRequest, InviteMemberRequestBuilder> {
+  @BuiltValueField(wireName: r'givenName')
+  String get givenName;
+
+  @BuiltValueField(wireName: r'familyName')
+  String get familyName;
+
+  @BuiltValueField(wireName: r'email')
+  String? get email;
+
+  @BuiltValueField(wireName: r'phone')
+  String? get phone;
+
+  @BuiltValueField(wireName: r'birthDate')
+  Date? get birthDate;
+
+  @BuiltValueField(wireName: r'gender')
+  Gender? get gender;
+  // enum genderEnum {  MALE,  FEMALE,  };
+
+  @BuiltValueField(wireName: r'locale')
+  Locale? get locale;
+  // enum localeEnum {  es,  en,  id,  };
+
   @BuiltValueField(wireName: r'roles')
   BuiltSet<TenantRole> get roles;
 
@@ -59,25 +81,6 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
     InviteMemberRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    if (object.gender != null) {
-      yield r'gender';
-      yield serializers.serialize(
-        object.gender,
-        specifiedType: const FullType(Gender),
-      );
-    }
-    if (object.phone != null) {
-      yield r'phone';
-      yield serializers.serialize(
-        object.phone,
-        specifiedType: const FullType(String),
-      );
-    }
-    yield r'roles';
-    yield serializers.serialize(
-      object.roles,
-      specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
-    );
     yield r'givenName';
     yield serializers.serialize(
       object.givenName,
@@ -88,11 +91,18 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
       object.familyName,
       specifiedType: const FullType(String),
     );
-    if (object.locale != null) {
-      yield r'locale';
+    if (object.email != null) {
+      yield r'email';
       yield serializers.serialize(
-        object.locale,
-        specifiedType: const FullType(Locale),
+        object.email,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.phone != null) {
+      yield r'phone';
+      yield serializers.serialize(
+        object.phone,
+        specifiedType: const FullType(String),
       );
     }
     if (object.birthDate != null) {
@@ -102,18 +112,30 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
         specifiedType: const FullType(Date),
       );
     }
+    if (object.gender != null) {
+      yield r'gender';
+      yield serializers.serialize(
+        object.gender,
+        specifiedType: const FullType(Gender),
+      );
+    }
+    if (object.locale != null) {
+      yield r'locale';
+      yield serializers.serialize(
+        object.locale,
+        specifiedType: const FullType(Locale),
+      );
+    }
+    yield r'roles';
+    yield serializers.serialize(
+      object.roles,
+      specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
+    );
     if (object.sendInvitation != null) {
       yield r'sendInvitation';
       yield serializers.serialize(
         object.sendInvitation,
         specifiedType: const FullType(bool),
-      );
-    }
-    if (object.email != null) {
-      yield r'email';
-      yield serializers.serialize(
-        object.email,
-        specifiedType: const FullType(String),
       );
     }
   }
@@ -139,29 +161,6 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'gender':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(Gender),
-          ) as Gender?;
-          if (valueDes == null) continue;
-          result.gender = valueDes;
-          break;
-        case r'phone':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.phone = valueDes;
-          break;
-        case r'roles':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
-          ) as BuiltSet<TenantRole>;
-          result.roles.replace(valueDes);
-          break;
         case r'givenName':
           final valueDes = serializers.deserialize(
             value,
@@ -176,13 +175,21 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
           ) as String;
           result.familyName = valueDes;
           break;
-        case r'locale':
+        case r'email':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(Locale),
-          ) as Locale?;
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
           if (valueDes == null) continue;
-          result.locale = valueDes;
+          result.email = valueDes;
+          break;
+        case r'phone':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.phone = valueDes;
           break;
         case r'birthDate':
           final valueDes = serializers.deserialize(
@@ -192,6 +199,29 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
           if (valueDes == null) continue;
           result.birthDate = valueDes;
           break;
+        case r'gender':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(Gender),
+          ) as Gender?;
+          if (valueDes == null) continue;
+          result.gender = valueDes;
+          break;
+        case r'locale':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(Locale),
+          ) as Locale?;
+          if (valueDes == null) continue;
+          result.locale = valueDes;
+          break;
+        case r'roles':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
+          ) as BuiltSet<TenantRole>;
+          result.roles.replace(valueDes);
+          break;
         case r'sendInvitation':
           final valueDes = serializers.deserialize(
             value,
@@ -199,14 +229,6 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
           ) as bool?;
           if (valueDes == null) continue;
           result.sendInvitation = valueDes;
-          break;
-        case r'email':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.email = valueDes;
           break;
         default:
           unhandled.add(key);

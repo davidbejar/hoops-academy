@@ -13,16 +13,16 @@ part 'physical_test_norm_input.g.dart';
 /// Value range [minValue, maxValue) for a band; a missing bound is open.
 ///
 /// Properties:
-/// * [testTypeId] 
-/// * [gender] 
-/// * [minAge] 
+/// * [testTypeId]
+/// * [gender]
+/// * [minAge]
 /// * [maxAge] - Inclusive.
-/// * [band] 
-/// * [minValue] 
-/// * [maxValue] 
+/// * [band]
+/// * [minValue]
+/// * [maxValue]
 /// * [source_] - Citation of the reference the values come from.
-@BuiltValue(instantiable: false)
-abstract class PhysicalTestNormInput  {
+@BuiltValue()
+abstract class PhysicalTestNormInput implements Built<PhysicalTestNormInput, PhysicalTestNormInputBuilder> {
   @BuiltValueField(wireName: r'testTypeId')
   String get testTypeId;
 
@@ -51,13 +51,20 @@ abstract class PhysicalTestNormInput  {
   @BuiltValueField(wireName: r'source')
   String? get source_;
 
+  PhysicalTestNormInput._();
+
+  factory PhysicalTestNormInput([void updates(PhysicalTestNormInputBuilder b)]) = _$PhysicalTestNormInput;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(PhysicalTestNormInputBuilder b) => b;
+
   @BuiltValueSerializer(custom: true)
   static Serializer<PhysicalTestNormInput> get serializer => _$PhysicalTestNormInputSerializer();
 }
 
 class _$PhysicalTestNormInputSerializer implements PrimitiveSerializer<PhysicalTestNormInput> {
   @override
-  final Iterable<Type> types = const [PhysicalTestNormInput];
+  final Iterable<Type> types = const [PhysicalTestNormInput, _$PhysicalTestNormInput];
 
   @override
   final String wireName = r'PhysicalTestNormInput';
@@ -122,47 +129,6 @@ class _$PhysicalTestNormInputSerializer implements PrimitiveSerializer<PhysicalT
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
-  }
-
-  @override
-  PhysicalTestNormInput deserialize(
-    Serializers serializers,
-    Object serialized, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.deserialize(serialized, specifiedType: FullType($PhysicalTestNormInput)) as $PhysicalTestNormInput;
-  }
-}
-
-
-/// a concrete implementation of [PhysicalTestNormInput], since [PhysicalTestNormInput] is not instantiable
-@BuiltValue(instantiable: true)
-abstract class $PhysicalTestNormInput implements PhysicalTestNormInput, Built<$PhysicalTestNormInput, $PhysicalTestNormInputBuilder> {
-  $PhysicalTestNormInput._();
-
-  factory $PhysicalTestNormInput([void Function($PhysicalTestNormInputBuilder)? updates]) = _$$PhysicalTestNormInput;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults($PhysicalTestNormInputBuilder b) => b;
-
-  @BuiltValueSerializer(custom: true)
-  static Serializer<$PhysicalTestNormInput> get serializer => _$$PhysicalTestNormInputSerializer();
-}
-
-class _$$PhysicalTestNormInputSerializer implements PrimitiveSerializer<$PhysicalTestNormInput> {
-  @override
-  final Iterable<Type> types = const [$PhysicalTestNormInput, _$$PhysicalTestNormInput];
-
-  @override
-  final String wireName = r'$PhysicalTestNormInput';
-
-  @override
-  Object serialize(
-    Serializers serializers,
-    $PhysicalTestNormInput object, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.serialize(object, specifiedType: FullType(PhysicalTestNormInput))!;
   }
 
   void _deserializeProperties(
@@ -245,12 +211,12 @@ class _$$PhysicalTestNormInputSerializer implements PrimitiveSerializer<$Physica
   }
 
   @override
-  $PhysicalTestNormInput deserialize(
+  PhysicalTestNormInput deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = $PhysicalTestNormInputBuilder();
+    final result = PhysicalTestNormInputBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -264,4 +230,3 @@ class _$$PhysicalTestNormInputSerializer implements PrimitiveSerializer<$Physica
     return result.build();
   }
 }
-

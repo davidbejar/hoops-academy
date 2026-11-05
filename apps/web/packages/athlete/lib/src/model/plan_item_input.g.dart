@@ -6,29 +6,7 @@ part of 'plan_item_input.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-abstract class PlanItemInputBuilder {
-  void replace(PlanItemInput other);
-  void update(void Function(PlanItemInputBuilder) updates);
-  String? get title;
-  set title(String? title);
-
-  String? get description;
-  set description(String? description);
-
-  int? get durationMinutes;
-  set durationMinutes(int? durationMinutes);
-
-  int? get sets;
-  set sets(int? sets);
-
-  int? get repetitions;
-  set repetitions(int? repetitions);
-
-  String? get videoUrl;
-  set videoUrl(String? videoUrl);
-}
-
-class _$$PlanItemInput extends $PlanItemInput {
+class _$PlanItemInput extends PlanItemInput {
   @override
   final String title;
   @override
@@ -42,10 +20,10 @@ class _$$PlanItemInput extends $PlanItemInput {
   @override
   final String? videoUrl;
 
-  factory _$$PlanItemInput([void Function($PlanItemInputBuilder)? updates]) =>
-      ($PlanItemInputBuilder()..update(updates))._build();
+  factory _$PlanItemInput([void Function(PlanItemInputBuilder)? updates]) =>
+      (PlanItemInputBuilder()..update(updates))._build();
 
-  _$$PlanItemInput._(
+  _$PlanItemInput._(
       {required this.title,
       this.description,
       this.durationMinutes,
@@ -54,16 +32,16 @@ class _$$PlanItemInput extends $PlanItemInput {
       this.videoUrl})
       : super._();
   @override
-  $PlanItemInput rebuild(void Function($PlanItemInputBuilder) updates) =>
+  PlanItemInput rebuild(void Function(PlanItemInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  $PlanItemInputBuilder toBuilder() => $PlanItemInputBuilder()..replace(this);
+  PlanItemInputBuilder toBuilder() => PlanItemInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is $PlanItemInput &&
+    return other is PlanItemInput &&
         title == other.title &&
         description == other.description &&
         durationMinutes == other.durationMinutes &&
@@ -87,7 +65,7 @@ class _$$PlanItemInput extends $PlanItemInput {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'$PlanItemInput')
+    return (newBuiltValueToStringHelper(r'PlanItemInput')
           ..add('title', title)
           ..add('description', description)
           ..add('durationMinutes', durationMinutes)
@@ -98,44 +76,40 @@ class _$$PlanItemInput extends $PlanItemInput {
   }
 }
 
-class $PlanItemInputBuilder
-    implements
-        Builder<$PlanItemInput, $PlanItemInputBuilder>,
-        PlanItemInputBuilder {
-  _$$PlanItemInput? _$v;
+class PlanItemInputBuilder
+    implements Builder<PlanItemInput, PlanItemInputBuilder> {
+  _$PlanItemInput? _$v;
 
   String? _title;
   String? get title => _$this._title;
-  set title(covariant String? title) => _$this._title = title;
+  set title(String? title) => _$this._title = title;
 
   String? _description;
   String? get description => _$this._description;
-  set description(covariant String? description) =>
-      _$this._description = description;
+  set description(String? description) => _$this._description = description;
 
   int? _durationMinutes;
   int? get durationMinutes => _$this._durationMinutes;
-  set durationMinutes(covariant int? durationMinutes) =>
+  set durationMinutes(int? durationMinutes) =>
       _$this._durationMinutes = durationMinutes;
 
   int? _sets;
   int? get sets => _$this._sets;
-  set sets(covariant int? sets) => _$this._sets = sets;
+  set sets(int? sets) => _$this._sets = sets;
 
   int? _repetitions;
   int? get repetitions => _$this._repetitions;
-  set repetitions(covariant int? repetitions) =>
-      _$this._repetitions = repetitions;
+  set repetitions(int? repetitions) => _$this._repetitions = repetitions;
 
   String? _videoUrl;
   String? get videoUrl => _$this._videoUrl;
-  set videoUrl(covariant String? videoUrl) => _$this._videoUrl = videoUrl;
+  set videoUrl(String? videoUrl) => _$this._videoUrl = videoUrl;
 
-  $PlanItemInputBuilder() {
-    $PlanItemInput._defaults(this);
+  PlanItemInputBuilder() {
+    PlanItemInput._defaults(this);
   }
 
-  $PlanItemInputBuilder get _$this {
+  PlanItemInputBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _title = $v.title;
@@ -150,23 +124,23 @@ class $PlanItemInputBuilder
   }
 
   @override
-  void replace(covariant $PlanItemInput other) {
-    _$v = other as _$$PlanItemInput;
+  void replace(PlanItemInput other) {
+    _$v = other as _$PlanItemInput;
   }
 
   @override
-  void update(void Function($PlanItemInputBuilder)? updates) {
+  void update(void Function(PlanItemInputBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  $PlanItemInput build() => _build();
+  PlanItemInput build() => _build();
 
-  _$$PlanItemInput _build() {
+  _$PlanItemInput _build() {
     final _$result = _$v ??
-        _$$PlanItemInput._(
+        _$PlanItemInput._(
           title: BuiltValueNullFieldError.checkNotNull(
-              title, r'$PlanItemInput', 'title'),
+              title, r'PlanItemInput', 'title'),
           description: description,
           durationMinutes: durationMinutes,
           sets: sets,

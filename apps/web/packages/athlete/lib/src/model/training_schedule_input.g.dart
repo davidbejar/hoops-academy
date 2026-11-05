@@ -6,32 +6,7 @@ part of 'training_schedule_input.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-abstract class TrainingScheduleInputBuilder {
-  void replace(TrainingScheduleInput other);
-  void update(void Function(TrainingScheduleInputBuilder) updates);
-  String? get teamId;
-  set teamId(String? teamId);
-
-  DayOfWeek? get dayOfWeek;
-  set dayOfWeek(DayOfWeek? dayOfWeek);
-
-  String? get startTime;
-  set startTime(String? startTime);
-
-  int? get durationMinutes;
-  set durationMinutes(int? durationMinutes);
-
-  String? get location;
-  set location(String? location);
-
-  Date? get validFrom;
-  set validFrom(Date? validFrom);
-
-  Date? get validUntil;
-  set validUntil(Date? validUntil);
-}
-
-class _$$TrainingScheduleInput extends $TrainingScheduleInput {
+class _$TrainingScheduleInput extends TrainingScheduleInput {
   @override
   final String teamId;
   @override
@@ -47,11 +22,11 @@ class _$$TrainingScheduleInput extends $TrainingScheduleInput {
   @override
   final Date? validUntil;
 
-  factory _$$TrainingScheduleInput(
-          [void Function($TrainingScheduleInputBuilder)? updates]) =>
-      ($TrainingScheduleInputBuilder()..update(updates))._build();
+  factory _$TrainingScheduleInput(
+          [void Function(TrainingScheduleInputBuilder)? updates]) =>
+      (TrainingScheduleInputBuilder()..update(updates))._build();
 
-  _$$TrainingScheduleInput._(
+  _$TrainingScheduleInput._(
       {required this.teamId,
       required this.dayOfWeek,
       required this.startTime,
@@ -61,18 +36,18 @@ class _$$TrainingScheduleInput extends $TrainingScheduleInput {
       this.validUntil})
       : super._();
   @override
-  $TrainingScheduleInput rebuild(
-          void Function($TrainingScheduleInputBuilder) updates) =>
+  TrainingScheduleInput rebuild(
+          void Function(TrainingScheduleInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  $TrainingScheduleInputBuilder toBuilder() =>
-      $TrainingScheduleInputBuilder()..replace(this);
+  TrainingScheduleInputBuilder toBuilder() =>
+      TrainingScheduleInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is $TrainingScheduleInput &&
+    return other is TrainingScheduleInput &&
         teamId == other.teamId &&
         dayOfWeek == other.dayOfWeek &&
         startTime == other.startTime &&
@@ -98,7 +73,7 @@ class _$$TrainingScheduleInput extends $TrainingScheduleInput {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'$TrainingScheduleInput')
+    return (newBuiltValueToStringHelper(r'TrainingScheduleInput')
           ..add('teamId', teamId)
           ..add('dayOfWeek', dayOfWeek)
           ..add('startTime', startTime)
@@ -110,47 +85,44 @@ class _$$TrainingScheduleInput extends $TrainingScheduleInput {
   }
 }
 
-class $TrainingScheduleInputBuilder
-    implements
-        Builder<$TrainingScheduleInput, $TrainingScheduleInputBuilder>,
-        TrainingScheduleInputBuilder {
-  _$$TrainingScheduleInput? _$v;
+class TrainingScheduleInputBuilder
+    implements Builder<TrainingScheduleInput, TrainingScheduleInputBuilder> {
+  _$TrainingScheduleInput? _$v;
 
   String? _teamId;
   String? get teamId => _$this._teamId;
-  set teamId(covariant String? teamId) => _$this._teamId = teamId;
+  set teamId(String? teamId) => _$this._teamId = teamId;
 
   DayOfWeek? _dayOfWeek;
   DayOfWeek? get dayOfWeek => _$this._dayOfWeek;
-  set dayOfWeek(covariant DayOfWeek? dayOfWeek) =>
-      _$this._dayOfWeek = dayOfWeek;
+  set dayOfWeek(DayOfWeek? dayOfWeek) => _$this._dayOfWeek = dayOfWeek;
 
   String? _startTime;
   String? get startTime => _$this._startTime;
-  set startTime(covariant String? startTime) => _$this._startTime = startTime;
+  set startTime(String? startTime) => _$this._startTime = startTime;
 
   int? _durationMinutes;
   int? get durationMinutes => _$this._durationMinutes;
-  set durationMinutes(covariant int? durationMinutes) =>
+  set durationMinutes(int? durationMinutes) =>
       _$this._durationMinutes = durationMinutes;
 
   String? _location;
   String? get location => _$this._location;
-  set location(covariant String? location) => _$this._location = location;
+  set location(String? location) => _$this._location = location;
 
   Date? _validFrom;
   Date? get validFrom => _$this._validFrom;
-  set validFrom(covariant Date? validFrom) => _$this._validFrom = validFrom;
+  set validFrom(Date? validFrom) => _$this._validFrom = validFrom;
 
   Date? _validUntil;
   Date? get validUntil => _$this._validUntil;
-  set validUntil(covariant Date? validUntil) => _$this._validUntil = validUntil;
+  set validUntil(Date? validUntil) => _$this._validUntil = validUntil;
 
-  $TrainingScheduleInputBuilder() {
-    $TrainingScheduleInput._defaults(this);
+  TrainingScheduleInputBuilder() {
+    TrainingScheduleInput._defaults(this);
   }
 
-  $TrainingScheduleInputBuilder get _$this {
+  TrainingScheduleInputBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _teamId = $v.teamId;
@@ -166,32 +138,32 @@ class $TrainingScheduleInputBuilder
   }
 
   @override
-  void replace(covariant $TrainingScheduleInput other) {
-    _$v = other as _$$TrainingScheduleInput;
+  void replace(TrainingScheduleInput other) {
+    _$v = other as _$TrainingScheduleInput;
   }
 
   @override
-  void update(void Function($TrainingScheduleInputBuilder)? updates) {
+  void update(void Function(TrainingScheduleInputBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  $TrainingScheduleInput build() => _build();
+  TrainingScheduleInput build() => _build();
 
-  _$$TrainingScheduleInput _build() {
+  _$TrainingScheduleInput _build() {
     final _$result = _$v ??
-        _$$TrainingScheduleInput._(
+        _$TrainingScheduleInput._(
           teamId: BuiltValueNullFieldError.checkNotNull(
-              teamId, r'$TrainingScheduleInput', 'teamId'),
+              teamId, r'TrainingScheduleInput', 'teamId'),
           dayOfWeek: BuiltValueNullFieldError.checkNotNull(
-              dayOfWeek, r'$TrainingScheduleInput', 'dayOfWeek'),
+              dayOfWeek, r'TrainingScheduleInput', 'dayOfWeek'),
           startTime: BuiltValueNullFieldError.checkNotNull(
-              startTime, r'$TrainingScheduleInput', 'startTime'),
+              startTime, r'TrainingScheduleInput', 'startTime'),
           durationMinutes: BuiltValueNullFieldError.checkNotNull(
-              durationMinutes, r'$TrainingScheduleInput', 'durationMinutes'),
+              durationMinutes, r'TrainingScheduleInput', 'durationMinutes'),
           location: location,
           validFrom: BuiltValueNullFieldError.checkNotNull(
-              validFrom, r'$TrainingScheduleInput', 'validFrom'),
+              validFrom, r'TrainingScheduleInput', 'validFrom'),
           validUntil: validUntil,
         );
     replace(_$result);

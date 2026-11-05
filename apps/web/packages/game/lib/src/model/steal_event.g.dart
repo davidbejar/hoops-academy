@@ -88,46 +88,42 @@ class _$StealEvent extends StealEvent {
   }
 }
 
-class StealEventBuilder
-    implements
-        Builder<StealEvent, StealEventBuilder>,
-        MatchEventBaseBuilder,
-        PlayerAttributionBuilder {
+class StealEventBuilder implements Builder<StealEvent, StealEventBuilder> {
   _$StealEvent? _$v;
 
   String? _id;
   String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
+  set id(String? id) => _$this._id = id;
 
   String? _deviceId;
   String? get deviceId => _$this._deviceId;
-  set deviceId(covariant String? deviceId) => _$this._deviceId = deviceId;
+  set deviceId(String? deviceId) => _$this._deviceId = deviceId;
 
   int? _clientSeq;
   int? get clientSeq => _$this._clientSeq;
-  set clientSeq(covariant int? clientSeq) => _$this._clientSeq = clientSeq;
+  set clientSeq(int? clientSeq) => _$this._clientSeq = clientSeq;
 
   MatchEventType? _type;
   MatchEventType? get type => _$this._type;
-  set type(covariant MatchEventType? type) => _$this._type = type;
+  set type(MatchEventType? type) => _$this._type = type;
 
   int? _period;
   int? get period => _$this._period;
-  set period(covariant int? period) => _$this._period = period;
+  set period(int? period) => _$this._period = period;
 
   int? _clockSecondsRemaining;
   int? get clockSecondsRemaining => _$this._clockSecondsRemaining;
-  set clockSecondsRemaining(covariant int? clockSecondsRemaining) =>
+  set clockSecondsRemaining(int? clockSecondsRemaining) =>
       _$this._clockSecondsRemaining = clockSecondsRemaining;
 
   DateTime? _recordedAtClient;
   DateTime? get recordedAtClient => _$this._recordedAtClient;
-  set recordedAtClient(covariant DateTime? recordedAtClient) =>
+  set recordedAtClient(DateTime? recordedAtClient) =>
       _$this._recordedAtClient = recordedAtClient;
 
   String? _playerId;
   String? get playerId => _$this._playerId;
-  set playerId(covariant String? playerId) => _$this._playerId = playerId;
+  set playerId(String? playerId) => _$this._playerId = playerId;
 
   StealEventBuilder() {
     StealEvent._defaults(this);
@@ -150,8 +146,7 @@ class StealEventBuilder
   }
 
   @override
-// ignore: override_on_non_overriding_method
-  void replace(covariant StealEvent other) {
+  void replace(StealEvent other) {
     _$v = other as _$StealEvent;
   }
 

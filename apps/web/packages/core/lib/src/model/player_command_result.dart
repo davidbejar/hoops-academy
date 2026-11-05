@@ -103,7 +103,7 @@ class _$PlayerCommandResultSerializer implements PrimitiveSerializer<PlayerComma
             value,
             specifiedType: const FullType(ApprovalRequest),
           ) as ApprovalRequest;
-          result.approvalRequest = valueDes;
+          result.approvalRequest.replace(valueDes);
           break;
         case r'temporaryPassword':
           final valueDes = serializers.deserialize(

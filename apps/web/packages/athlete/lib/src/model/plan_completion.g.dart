@@ -8,7 +8,9 @@ part of 'plan_completion.dart';
 
 class _$PlanCompletion extends PlanCompletion {
   @override
-  final String? comment;
+  final PersonRef recordedBy;
+  @override
+  final DateTime recordedAt;
   @override
   final String id;
   @override
@@ -18,21 +20,19 @@ class _$PlanCompletion extends PlanCompletion {
   @override
   final CompletionStatus status;
   @override
-  final PersonRef recordedBy;
-  @override
-  final DateTime recordedAt;
+  final String? comment;
 
   factory _$PlanCompletion([void Function(PlanCompletionBuilder)? updates]) =>
       (PlanCompletionBuilder()..update(updates))._build();
 
   _$PlanCompletion._(
-      {this.comment,
+      {required this.recordedBy,
+      required this.recordedAt,
       required this.id,
       required this.assignmentId,
       required this.playerId,
       required this.status,
-      required this.recordedBy,
-      required this.recordedAt})
+      this.comment})
       : super._();
   @override
   PlanCompletion rebuild(void Function(PlanCompletionBuilder) updates) =>
@@ -45,25 +45,25 @@ class _$PlanCompletion extends PlanCompletion {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is PlanCompletion &&
-        comment == other.comment &&
+        recordedBy == other.recordedBy &&
+        recordedAt == other.recordedAt &&
         id == other.id &&
         assignmentId == other.assignmentId &&
         playerId == other.playerId &&
         status == other.status &&
-        recordedBy == other.recordedBy &&
-        recordedAt == other.recordedAt;
+        comment == other.comment;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, comment.hashCode);
+    _$hash = $jc(_$hash, recordedBy.hashCode);
+    _$hash = $jc(_$hash, recordedAt.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, assignmentId.hashCode);
     _$hash = $jc(_$hash, playerId.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
-    _$hash = $jc(_$hash, recordedBy.hashCode);
-    _$hash = $jc(_$hash, recordedAt.hashCode);
+    _$hash = $jc(_$hash, comment.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -71,53 +71,49 @@ class _$PlanCompletion extends PlanCompletion {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'PlanCompletion')
-          ..add('comment', comment)
+          ..add('recordedBy', recordedBy)
+          ..add('recordedAt', recordedAt)
           ..add('id', id)
           ..add('assignmentId', assignmentId)
           ..add('playerId', playerId)
           ..add('status', status)
-          ..add('recordedBy', recordedBy)
-          ..add('recordedAt', recordedAt))
+          ..add('comment', comment))
         .toString();
   }
 }
 
 class PlanCompletionBuilder
-    implements
-        Builder<PlanCompletion, PlanCompletionBuilder>,
-        AuditInfoBuilder {
+    implements Builder<PlanCompletion, PlanCompletionBuilder> {
   _$PlanCompletion? _$v;
-
-  String? _comment;
-  String? get comment => _$this._comment;
-  set comment(covariant String? comment) => _$this._comment = comment;
-
-  String? _id;
-  String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
-
-  String? _assignmentId;
-  String? get assignmentId => _$this._assignmentId;
-  set assignmentId(covariant String? assignmentId) =>
-      _$this._assignmentId = assignmentId;
-
-  String? _playerId;
-  String? get playerId => _$this._playerId;
-  set playerId(covariant String? playerId) => _$this._playerId = playerId;
-
-  CompletionStatus? _status;
-  CompletionStatus? get status => _$this._status;
-  set status(covariant CompletionStatus? status) => _$this._status = status;
 
   PersonRefBuilder? _recordedBy;
   PersonRefBuilder get recordedBy => _$this._recordedBy ??= PersonRefBuilder();
-  set recordedBy(covariant PersonRefBuilder? recordedBy) =>
+  set recordedBy(PersonRefBuilder? recordedBy) =>
       _$this._recordedBy = recordedBy;
 
   DateTime? _recordedAt;
   DateTime? get recordedAt => _$this._recordedAt;
-  set recordedAt(covariant DateTime? recordedAt) =>
-      _$this._recordedAt = recordedAt;
+  set recordedAt(DateTime? recordedAt) => _$this._recordedAt = recordedAt;
+
+  String? _id;
+  String? get id => _$this._id;
+  set id(String? id) => _$this._id = id;
+
+  String? _assignmentId;
+  String? get assignmentId => _$this._assignmentId;
+  set assignmentId(String? assignmentId) => _$this._assignmentId = assignmentId;
+
+  String? _playerId;
+  String? get playerId => _$this._playerId;
+  set playerId(String? playerId) => _$this._playerId = playerId;
+
+  CompletionStatus? _status;
+  CompletionStatus? get status => _$this._status;
+  set status(CompletionStatus? status) => _$this._status = status;
+
+  String? _comment;
+  String? get comment => _$this._comment;
+  set comment(String? comment) => _$this._comment = comment;
 
   PlanCompletionBuilder() {
     PlanCompletion._defaults(this);
@@ -126,20 +122,20 @@ class PlanCompletionBuilder
   PlanCompletionBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _comment = $v.comment;
+      _recordedBy = $v.recordedBy.toBuilder();
+      _recordedAt = $v.recordedAt;
       _id = $v.id;
       _assignmentId = $v.assignmentId;
       _playerId = $v.playerId;
       _status = $v.status;
-      _recordedBy = $v.recordedBy.toBuilder();
-      _recordedAt = $v.recordedAt;
+      _comment = $v.comment;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant PlanCompletion other) {
+  void replace(PlanCompletion other) {
     _$v = other as _$PlanCompletion;
   }
 
@@ -156,7 +152,9 @@ class PlanCompletionBuilder
     try {
       _$result = _$v ??
           _$PlanCompletion._(
-            comment: comment,
+            recordedBy: recordedBy.build(),
+            recordedAt: BuiltValueNullFieldError.checkNotNull(
+                recordedAt, r'PlanCompletion', 'recordedAt'),
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'PlanCompletion', 'id'),
             assignmentId: BuiltValueNullFieldError.checkNotNull(
@@ -165,9 +163,7 @@ class PlanCompletionBuilder
                 playerId, r'PlanCompletion', 'playerId'),
             status: BuiltValueNullFieldError.checkNotNull(
                 status, r'PlanCompletion', 'status'),
-            recordedBy: recordedBy.build(),
-            recordedAt: BuiltValueNullFieldError.checkNotNull(
-                recordedAt, r'PlanCompletion', 'recordedAt'),
+            comment: comment,
           );
     } catch (_) {
       late String _$failedField;

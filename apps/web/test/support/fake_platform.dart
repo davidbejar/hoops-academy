@@ -9,7 +9,7 @@ import 'package:hoops_app/features/platform/data/platform_repository.dart';
 
 import 'fake_repos.dart' show Faulty;
 
-api.$Tenant tenantOf(String id, String name, {String? slug, api.TenantStatus status = api.TenantStatus.ACTIVE}) => api.$Tenant(
+api.Tenant tenantOf(String id, String name, {String? slug, api.TenantStatus status = api.TenantStatus.ACTIVE}) => api.Tenant(
   (b) => b
     ..id = id
     ..slug = slug ?? name.toLowerCase().replaceAll(' ', '-')
@@ -29,14 +29,14 @@ api.UsageReport usageReport(String service, Map<String, int> counters) => api.Us
     ..counters = MapBuilder<String, int>(counters),
 );
 
-api.$TenantAdmin adminOf(
+api.TenantAdmin adminOf(
   String personId,
   String given,
   String family, {
   String? email,
   api.InvitationStatus status = api.InvitationStatus.ACCEPTED,
   Set<api.TenantRole> otherRoles = const {},
-}) => api.$TenantAdmin(
+}) => api.TenantAdmin(
   (b) => b
     ..personId = personId
     ..givenName = given
@@ -130,7 +130,7 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   });
 
   api.Tenant _set(String id, api.TenantStatus s) {
-    list[_i(id)] = (list[_i(id)] as api.$Tenant).rebuild((b) => b.status = s);
+    list[_i(id)] = list[_i(id)].rebuild((b) => b.status = s);
     return list[_i(id)];
   }
 
@@ -213,7 +213,7 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
         updatedAdminId = personId;
         final admins = _admins(tenantId);
         final i = admins.indexWhere((a) => a.personId == personId);
-        admins[i] = (admins[i] as api.$TenantAdmin).rebuild(
+        admins[i] = admins[i].rebuild(
           (b) => b
             ..givenName = request.givenName ?? admins[i].givenName
             ..familyName = request.familyName ?? admins[i].familyName

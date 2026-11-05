@@ -305,7 +305,7 @@ class _NormDialogState extends ConsumerState<NormDialog> {
       onSubmit: () => runAction(
         context,
         () => ref.read(normsProvider.notifier).save(
-          ath.$PhysicalTestNormInput((b) => b
+          ath.PhysicalTestNormInput((b) => b
             ..testTypeId = _typeId
             ..gender = _gender
             ..minAge = int.parse(_minAge.text.trim())

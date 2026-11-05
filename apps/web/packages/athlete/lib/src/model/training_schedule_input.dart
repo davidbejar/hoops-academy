@@ -13,15 +13,15 @@ part 'training_schedule_input.g.dart';
 /// TrainingScheduleInput
 ///
 /// Properties:
-/// * [teamId] 
-/// * [dayOfWeek] 
+/// * [teamId]
+/// * [dayOfWeek]
 /// * [startTime] - Wall-clock time in the tenant's time zone, `HH:mm`.
-/// * [durationMinutes] 
-/// * [location] 
-/// * [validFrom] 
+/// * [durationMinutes]
+/// * [location]
+/// * [validFrom]
 /// * [validUntil] - Inclusive; absent = open-ended.
-@BuiltValue(instantiable: false)
-abstract class TrainingScheduleInput  {
+@BuiltValue()
+abstract class TrainingScheduleInput implements Built<TrainingScheduleInput, TrainingScheduleInputBuilder> {
   @BuiltValueField(wireName: r'teamId')
   String get teamId;
 
@@ -46,13 +46,20 @@ abstract class TrainingScheduleInput  {
   @BuiltValueField(wireName: r'validUntil')
   Date? get validUntil;
 
+  TrainingScheduleInput._();
+
+  factory TrainingScheduleInput([void updates(TrainingScheduleInputBuilder b)]) = _$TrainingScheduleInput;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(TrainingScheduleInputBuilder b) => b;
+
   @BuiltValueSerializer(custom: true)
   static Serializer<TrainingScheduleInput> get serializer => _$TrainingScheduleInputSerializer();
 }
 
 class _$TrainingScheduleInputSerializer implements PrimitiveSerializer<TrainingScheduleInput> {
   @override
-  final Iterable<Type> types = const [TrainingScheduleInput];
+  final Iterable<Type> types = const [TrainingScheduleInput, _$TrainingScheduleInput];
 
   @override
   final String wireName = r'TrainingScheduleInput';
@@ -110,47 +117,6 @@ class _$TrainingScheduleInputSerializer implements PrimitiveSerializer<TrainingS
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
-  }
-
-  @override
-  TrainingScheduleInput deserialize(
-    Serializers serializers,
-    Object serialized, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.deserialize(serialized, specifiedType: FullType($TrainingScheduleInput)) as $TrainingScheduleInput;
-  }
-}
-
-
-/// a concrete implementation of [TrainingScheduleInput], since [TrainingScheduleInput] is not instantiable
-@BuiltValue(instantiable: true)
-abstract class $TrainingScheduleInput implements TrainingScheduleInput, Built<$TrainingScheduleInput, $TrainingScheduleInputBuilder> {
-  $TrainingScheduleInput._();
-
-  factory $TrainingScheduleInput([void Function($TrainingScheduleInputBuilder)? updates]) = _$$TrainingScheduleInput;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults($TrainingScheduleInputBuilder b) => b;
-
-  @BuiltValueSerializer(custom: true)
-  static Serializer<$TrainingScheduleInput> get serializer => _$$TrainingScheduleInputSerializer();
-}
-
-class _$$TrainingScheduleInputSerializer implements PrimitiveSerializer<$TrainingScheduleInput> {
-  @override
-  final Iterable<Type> types = const [$TrainingScheduleInput, _$$TrainingScheduleInput];
-
-  @override
-  final String wireName = r'$TrainingScheduleInput';
-
-  @override
-  Object serialize(
-    Serializers serializers,
-    $TrainingScheduleInput object, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.serialize(object, specifiedType: FullType(TrainingScheduleInput))!;
   }
 
   void _deserializeProperties(
@@ -225,12 +191,12 @@ class _$$TrainingScheduleInputSerializer implements PrimitiveSerializer<$Trainin
   }
 
   @override
-  $TrainingScheduleInput deserialize(
+  TrainingScheduleInput deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = $TrainingScheduleInputBuilder();
+    final result = TrainingScheduleInputBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -244,4 +210,3 @@ class _$$TrainingScheduleInputSerializer implements PrimitiveSerializer<$Trainin
     return result.build();
   }
 }
-

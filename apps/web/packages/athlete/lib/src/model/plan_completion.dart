@@ -5,7 +5,6 @@
 // ignore_for_file: unused_element
 import 'package:hoops_athlete_api/src/model/completion_status.dart';
 import 'package:hoops_athlete_api/src/model/person_ref.dart';
-import 'package:hoops_athlete_api/src/model/audit_info.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -14,17 +13,20 @@ part 'plan_completion.g.dart';
 /// PlanCompletion
 ///
 /// Properties:
-/// * [recordedBy] 
-/// * [recordedAt] 
-/// * [id] 
-/// * [assignmentId] 
-/// * [playerId] 
-/// * [status] 
-/// * [comment] 
+/// * [recordedBy]
+/// * [recordedAt]
+/// * [id]
+/// * [assignmentId]
+/// * [playerId]
+/// * [status]
+/// * [comment]
 @BuiltValue()
-abstract class PlanCompletion implements AuditInfo, Built<PlanCompletion, PlanCompletionBuilder> {
-  @BuiltValueField(wireName: r'comment')
-  String? get comment;
+abstract class PlanCompletion implements Built<PlanCompletion, PlanCompletionBuilder> {
+  @BuiltValueField(wireName: r'recordedBy')
+  PersonRef get recordedBy;
+
+  @BuiltValueField(wireName: r'recordedAt')
+  DateTime get recordedAt;
 
   @BuiltValueField(wireName: r'id')
   String get id;
@@ -38,6 +40,9 @@ abstract class PlanCompletion implements AuditInfo, Built<PlanCompletion, PlanCo
   @BuiltValueField(wireName: r'status')
   CompletionStatus get status;
   // enum statusEnum {  DONE,  PARTIAL,  NOT_DONE,  };
+
+  @BuiltValueField(wireName: r'comment')
+  String? get comment;
 
   PlanCompletion._();
 
@@ -72,13 +77,6 @@ class _$PlanCompletionSerializer implements PrimitiveSerializer<PlanCompletion> 
       object.recordedAt,
       specifiedType: const FullType(DateTime),
     );
-    if (object.comment != null) {
-      yield r'comment';
-      yield serializers.serialize(
-        object.comment,
-        specifiedType: const FullType.nullable(String),
-      );
-    }
     yield r'id';
     yield serializers.serialize(
       object.id,
@@ -99,6 +97,13 @@ class _$PlanCompletionSerializer implements PrimitiveSerializer<PlanCompletion> 
       object.status,
       specifiedType: const FullType(CompletionStatus),
     );
+    if (object.comment != null) {
+      yield r'comment';
+      yield serializers.serialize(
+        object.comment,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override
@@ -136,14 +141,6 @@ class _$PlanCompletionSerializer implements PrimitiveSerializer<PlanCompletion> 
           ) as DateTime;
           result.recordedAt = valueDes;
           break;
-        case r'comment':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.comment = valueDes;
-          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,
@@ -171,6 +168,14 @@ class _$PlanCompletionSerializer implements PrimitiveSerializer<PlanCompletion> 
             specifiedType: const FullType(CompletionStatus),
           ) as CompletionStatus;
           result.status = valueDes;
+          break;
+        case r'comment':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.comment = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -200,5 +205,3 @@ class _$PlanCompletionSerializer implements PrimitiveSerializer<PlanCompletion> 
     return result.build();
   }
 }
-
-

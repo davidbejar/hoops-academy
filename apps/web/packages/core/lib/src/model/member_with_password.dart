@@ -6,7 +6,6 @@
 import 'package:hoops_core_api/src/model/date.dart';
 import 'package:hoops_core_api/src/model/invitation_status.dart';
 import 'package:hoops_core_api/src/model/gender.dart';
-import 'package:hoops_core_api/src/model/member.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:hoops_core_api/src/model/tenant_role.dart';
 import 'package:hoops_core_api/src/model/locale.dart';
@@ -35,7 +34,57 @@ part 'member_with_password.g.dart';
 /// * [createdAt]
 /// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
 @BuiltValue()
-abstract class MemberWithPassword implements Member, Built<MemberWithPassword, MemberWithPasswordBuilder> {
+abstract class MemberWithPassword implements Built<MemberWithPassword, MemberWithPasswordBuilder> {
+  @BuiltValueField(wireName: r'personId')
+  String get personId;
+
+  /// Platform user (login) of the person; null for persons without login (e.g. young players).
+  @BuiltValueField(wireName: r'userId')
+  String? get userId;
+
+  @BuiltValueField(wireName: r'givenName')
+  String get givenName;
+
+  @BuiltValueField(wireName: r'familyName')
+  String get familyName;
+
+  @BuiltValueField(wireName: r'displayName')
+  String get displayName;
+
+  @BuiltValueField(wireName: r'email')
+  String? get email;
+
+  @BuiltValueField(wireName: r'phone')
+  String? get phone;
+
+  @BuiltValueField(wireName: r'birthDate')
+  Date? get birthDate;
+
+  @BuiltValueField(wireName: r'gender')
+  Gender? get gender;
+  // enum genderEnum {  MALE,  FEMALE,  };
+
+  @BuiltValueField(wireName: r'locale')
+  Locale? get locale;
+  // enum localeEnum {  es,  en,  id,  };
+
+  @BuiltValueField(wireName: r'roles')
+  BuiltSet<TenantRole> get roles;
+
+  /// Set when the member holds the PLAYER role.
+  @BuiltValueField(wireName: r'playerId')
+  String? get playerId;
+
+  @BuiltValueField(wireName: r'active')
+  bool get active;
+
+  @BuiltValueField(wireName: r'invitationStatus')
+  InvitationStatus get invitationStatus;
+  // enum invitationStatusEnum {  NONE,  PENDING,  ACCEPTED,  };
+
+  @BuiltValueField(wireName: r'createdAt')
+  DateTime get createdAt;
+
   /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
@@ -63,44 +112,44 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
     MemberWithPassword object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    if (object.gender != null) {
-      yield r'gender';
-      yield serializers.serialize(
-        object.gender,
-        specifiedType: const FullType.nullable(Gender),
-      );
-    }
-    yield r'displayName';
+    yield r'personId';
     yield serializers.serialize(
-      object.displayName,
+      object.personId,
       specifiedType: const FullType(String),
     );
+    if (object.userId != null) {
+      yield r'userId';
+      yield serializers.serialize(
+        object.userId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
     yield r'givenName';
     yield serializers.serialize(
       object.givenName,
       specifiedType: const FullType(String),
     );
-    yield r'roles';
+    yield r'familyName';
     yield serializers.serialize(
-      object.roles,
-      specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
+      object.familyName,
+      specifiedType: const FullType(String),
     );
-    yield r'active';
+    yield r'displayName';
     yield serializers.serialize(
-      object.active,
-      specifiedType: const FullType(bool),
+      object.displayName,
+      specifiedType: const FullType(String),
     );
-    if (object.locale != null) {
-      yield r'locale';
+    if (object.email != null) {
+      yield r'email';
       yield serializers.serialize(
-        object.locale,
-        specifiedType: const FullType(Locale),
+        object.email,
+        specifiedType: const FullType.nullable(String),
       );
     }
-    if (object.userId != null) {
-      yield r'userId';
+    if (object.phone != null) {
+      yield r'phone';
       yield serializers.serialize(
-        object.userId,
+        object.phone,
         specifiedType: const FullType.nullable(String),
       );
     }
@@ -111,52 +160,52 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
         specifiedType: const FullType.nullable(Date),
       );
     }
-    if (object.temporaryPassword != null) {
-      yield r'temporaryPassword';
+    if (object.gender != null) {
+      yield r'gender';
       yield serializers.serialize(
-        object.temporaryPassword,
-        specifiedType: const FullType(String),
+        object.gender,
+        specifiedType: const FullType.nullable(Gender),
       );
     }
-    yield r'createdAt';
-    yield serializers.serialize(
-      object.createdAt,
-      specifiedType: const FullType(DateTime),
-    );
-    if (object.phone != null) {
-      yield r'phone';
+    if (object.locale != null) {
+      yield r'locale';
       yield serializers.serialize(
-        object.phone,
+        object.locale,
+        specifiedType: const FullType(Locale),
+      );
+    }
+    yield r'roles';
+    yield serializers.serialize(
+      object.roles,
+      specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
+    );
+    if (object.playerId != null) {
+      yield r'playerId';
+      yield serializers.serialize(
+        object.playerId,
         specifiedType: const FullType.nullable(String),
       );
     }
-    yield r'familyName';
+    yield r'active';
     yield serializers.serialize(
-      object.familyName,
-      specifiedType: const FullType(String),
-    );
-    yield r'personId';
-    yield serializers.serialize(
-      object.personId,
-      specifiedType: const FullType(String),
+      object.active,
+      specifiedType: const FullType(bool),
     );
     yield r'invitationStatus';
     yield serializers.serialize(
       object.invitationStatus,
       specifiedType: const FullType(InvitationStatus),
     );
-    if (object.email != null) {
-      yield r'email';
+    yield r'createdAt';
+    yield serializers.serialize(
+      object.createdAt,
+      specifiedType: const FullType(DateTime),
+    );
+    if (object.temporaryPassword != null) {
+      yield r'temporaryPassword';
       yield serializers.serialize(
-        object.email,
-        specifiedType: const FullType.nullable(String),
-      );
-    }
-    if (object.playerId != null) {
-      yield r'playerId';
-      yield serializers.serialize(
-        object.playerId,
-        specifiedType: const FullType.nullable(String),
+        object.temporaryPassword,
+        specifiedType: const FullType(String),
       );
     }
   }
@@ -182,49 +231,12 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'gender':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(Gender),
-          ) as Gender?;
-          if (valueDes == null) continue;
-          result.gender = valueDes;
-          break;
-        case r'displayName':
+        case r'personId':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
-          result.displayName = valueDes;
-          break;
-        case r'givenName':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.givenName = valueDes;
-          break;
-        case r'roles':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
-          ) as BuiltSet<TenantRole>;
-          result.roles.replace(valueDes);
-          break;
-        case r'active':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(bool),
-          ) as bool;
-          result.active = valueDes;
-          break;
-        case r'locale':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(Locale),
-          ) as Locale?;
-          if (valueDes == null) continue;
-          result.locale = valueDes;
+          result.personId = valueDes;
           break;
         case r'userId':
           final valueDes = serializers.deserialize(
@@ -234,36 +246,12 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
           if (valueDes == null) continue;
           result.userId = valueDes;
           break;
-        case r'birthDate':
+        case r'givenName':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(Date),
-          ) as Date?;
-          if (valueDes == null) continue;
-          result.birthDate = valueDes;
-          break;
-        case r'temporaryPassword':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.temporaryPassword = valueDes;
-          break;
-        case r'createdAt':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(DateTime),
-          ) as DateTime;
-          result.createdAt = valueDes;
-          break;
-        case r'phone':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.phone = valueDes;
+            specifiedType: const FullType(String),
+          ) as String;
+          result.givenName = valueDes;
           break;
         case r'familyName':
           final valueDes = serializers.deserialize(
@@ -272,19 +260,12 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
           ) as String;
           result.familyName = valueDes;
           break;
-        case r'personId':
+        case r'displayName':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
-          result.personId = valueDes;
-          break;
-        case r'invitationStatus':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(InvitationStatus),
-          ) as InvitationStatus;
-          result.invitationStatus = valueDes;
+          result.displayName = valueDes;
           break;
         case r'email':
           final valueDes = serializers.deserialize(
@@ -294,6 +275,45 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
           if (valueDes == null) continue;
           result.email = valueDes;
           break;
+        case r'phone':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.phone = valueDes;
+          break;
+        case r'birthDate':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(Date),
+          ) as Date?;
+          if (valueDes == null) continue;
+          result.birthDate = valueDes;
+          break;
+        case r'gender':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(Gender),
+          ) as Gender?;
+          if (valueDes == null) continue;
+          result.gender = valueDes;
+          break;
+        case r'locale':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(Locale),
+          ) as Locale?;
+          if (valueDes == null) continue;
+          result.locale = valueDes;
+          break;
+        case r'roles':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
+          ) as BuiltSet<TenantRole>;
+          result.roles.replace(valueDes);
+          break;
         case r'playerId':
           final valueDes = serializers.deserialize(
             value,
@@ -301,6 +321,35 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
           ) as String?;
           if (valueDes == null) continue;
           result.playerId = valueDes;
+          break;
+        case r'active':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.active = valueDes;
+          break;
+        case r'invitationStatus':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(InvitationStatus),
+          ) as InvitationStatus;
+          result.invitationStatus = valueDes;
+          break;
+        case r'createdAt':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(DateTime),
+          ) as DateTime;
+          result.createdAt = valueDes;
+          break;
+        case r'temporaryPassword':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.temporaryPassword = valueDes;
           break;
         default:
           unhandled.add(key);

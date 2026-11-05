@@ -11,16 +11,16 @@ part 'training_plan_summary.g.dart';
 /// TrainingPlanSummary
 ///
 /// Properties:
-/// * [id] 
-/// * [name] 
-/// * [description] 
+/// * [id]
+/// * [name]
+/// * [description]
 /// * [template] - Global, read-only template (copy before use).
 /// * [sourceTemplateId] - Template (or plan) this plan was copied from.
-/// * [itemCount] 
-/// * [totalDurationMinutes] 
+/// * [itemCount]
+/// * [totalDurationMinutes]
 /// * [archived] - Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
-@BuiltValue(instantiable: false)
-abstract class TrainingPlanSummary  {
+@BuiltValue()
+abstract class TrainingPlanSummary implements Built<TrainingPlanSummary, TrainingPlanSummaryBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -48,13 +48,20 @@ abstract class TrainingPlanSummary  {
   @BuiltValueField(wireName: r'archived')
   bool? get archived;
 
+  TrainingPlanSummary._();
+
+  factory TrainingPlanSummary([void updates(TrainingPlanSummaryBuilder b)]) = _$TrainingPlanSummary;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(TrainingPlanSummaryBuilder b) => b;
+
   @BuiltValueSerializer(custom: true)
   static Serializer<TrainingPlanSummary> get serializer => _$TrainingPlanSummarySerializer();
 }
 
 class _$TrainingPlanSummarySerializer implements PrimitiveSerializer<TrainingPlanSummary> {
   @override
-  final Iterable<Type> types = const [TrainingPlanSummary];
+  final Iterable<Type> types = const [TrainingPlanSummary, _$TrainingPlanSummary];
 
   @override
   final String wireName = r'TrainingPlanSummary';
@@ -119,47 +126,6 @@ class _$TrainingPlanSummarySerializer implements PrimitiveSerializer<TrainingPla
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
-  }
-
-  @override
-  TrainingPlanSummary deserialize(
-    Serializers serializers,
-    Object serialized, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.deserialize(serialized, specifiedType: FullType($TrainingPlanSummary)) as $TrainingPlanSummary;
-  }
-}
-
-
-/// a concrete implementation of [TrainingPlanSummary], since [TrainingPlanSummary] is not instantiable
-@BuiltValue(instantiable: true)
-abstract class $TrainingPlanSummary implements TrainingPlanSummary, Built<$TrainingPlanSummary, $TrainingPlanSummaryBuilder> {
-  $TrainingPlanSummary._();
-
-  factory $TrainingPlanSummary([void Function($TrainingPlanSummaryBuilder)? updates]) = _$$TrainingPlanSummary;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults($TrainingPlanSummaryBuilder b) => b;
-
-  @BuiltValueSerializer(custom: true)
-  static Serializer<$TrainingPlanSummary> get serializer => _$$TrainingPlanSummarySerializer();
-}
-
-class _$$TrainingPlanSummarySerializer implements PrimitiveSerializer<$TrainingPlanSummary> {
-  @override
-  final Iterable<Type> types = const [$TrainingPlanSummary, _$$TrainingPlanSummary];
-
-  @override
-  final String wireName = r'$TrainingPlanSummary';
-
-  @override
-  Object serialize(
-    Serializers serializers,
-    $TrainingPlanSummary object, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.serialize(object, specifiedType: FullType(TrainingPlanSummary))!;
   }
 
   void _deserializeProperties(
@@ -242,12 +208,12 @@ class _$$TrainingPlanSummarySerializer implements PrimitiveSerializer<$TrainingP
   }
 
   @override
-  $TrainingPlanSummary deserialize(
+  TrainingPlanSummary deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = $TrainingPlanSummaryBuilder();
+    final result = TrainingPlanSummaryBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -261,4 +227,3 @@ class _$$TrainingPlanSummarySerializer implements PrimitiveSerializer<$TrainingP
     return result.build();
   }
 }
-

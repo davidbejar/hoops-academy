@@ -6,35 +6,7 @@ part of 'physical_test_norm_input.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-abstract class PhysicalTestNormInputBuilder {
-  void replace(PhysicalTestNormInput other);
-  void update(void Function(PhysicalTestNormInputBuilder) updates);
-  String? get testTypeId;
-  set testTypeId(String? testTypeId);
-
-  Gender? get gender;
-  set gender(Gender? gender);
-
-  int? get minAge;
-  set minAge(int? minAge);
-
-  int? get maxAge;
-  set maxAge(int? maxAge);
-
-  NormBand? get band;
-  set band(NormBand? band);
-
-  double? get minValue;
-  set minValue(double? minValue);
-
-  double? get maxValue;
-  set maxValue(double? maxValue);
-
-  String? get source_;
-  set source_(String? source_);
-}
-
-class _$$PhysicalTestNormInput extends $PhysicalTestNormInput {
+class _$PhysicalTestNormInput extends PhysicalTestNormInput {
   @override
   final String testTypeId;
   @override
@@ -52,11 +24,11 @@ class _$$PhysicalTestNormInput extends $PhysicalTestNormInput {
   @override
   final String? source_;
 
-  factory _$$PhysicalTestNormInput(
-          [void Function($PhysicalTestNormInputBuilder)? updates]) =>
-      ($PhysicalTestNormInputBuilder()..update(updates))._build();
+  factory _$PhysicalTestNormInput(
+          [void Function(PhysicalTestNormInputBuilder)? updates]) =>
+      (PhysicalTestNormInputBuilder()..update(updates))._build();
 
-  _$$PhysicalTestNormInput._(
+  _$PhysicalTestNormInput._(
       {required this.testTypeId,
       required this.gender,
       required this.minAge,
@@ -67,18 +39,18 @@ class _$$PhysicalTestNormInput extends $PhysicalTestNormInput {
       this.source_})
       : super._();
   @override
-  $PhysicalTestNormInput rebuild(
-          void Function($PhysicalTestNormInputBuilder) updates) =>
+  PhysicalTestNormInput rebuild(
+          void Function(PhysicalTestNormInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  $PhysicalTestNormInputBuilder toBuilder() =>
-      $PhysicalTestNormInputBuilder()..replace(this);
+  PhysicalTestNormInputBuilder toBuilder() =>
+      PhysicalTestNormInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is $PhysicalTestNormInput &&
+    return other is PhysicalTestNormInput &&
         testTypeId == other.testTypeId &&
         gender == other.gender &&
         minAge == other.minAge &&
@@ -106,7 +78,7 @@ class _$$PhysicalTestNormInput extends $PhysicalTestNormInput {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'$PhysicalTestNormInput')
+    return (newBuiltValueToStringHelper(r'PhysicalTestNormInput')
           ..add('testTypeId', testTypeId)
           ..add('gender', gender)
           ..add('minAge', minAge)
@@ -119,50 +91,47 @@ class _$$PhysicalTestNormInput extends $PhysicalTestNormInput {
   }
 }
 
-class $PhysicalTestNormInputBuilder
-    implements
-        Builder<$PhysicalTestNormInput, $PhysicalTestNormInputBuilder>,
-        PhysicalTestNormInputBuilder {
-  _$$PhysicalTestNormInput? _$v;
+class PhysicalTestNormInputBuilder
+    implements Builder<PhysicalTestNormInput, PhysicalTestNormInputBuilder> {
+  _$PhysicalTestNormInput? _$v;
 
   String? _testTypeId;
   String? get testTypeId => _$this._testTypeId;
-  set testTypeId(covariant String? testTypeId) =>
-      _$this._testTypeId = testTypeId;
+  set testTypeId(String? testTypeId) => _$this._testTypeId = testTypeId;
 
   Gender? _gender;
   Gender? get gender => _$this._gender;
-  set gender(covariant Gender? gender) => _$this._gender = gender;
+  set gender(Gender? gender) => _$this._gender = gender;
 
   int? _minAge;
   int? get minAge => _$this._minAge;
-  set minAge(covariant int? minAge) => _$this._minAge = minAge;
+  set minAge(int? minAge) => _$this._minAge = minAge;
 
   int? _maxAge;
   int? get maxAge => _$this._maxAge;
-  set maxAge(covariant int? maxAge) => _$this._maxAge = maxAge;
+  set maxAge(int? maxAge) => _$this._maxAge = maxAge;
 
   NormBand? _band;
   NormBand? get band => _$this._band;
-  set band(covariant NormBand? band) => _$this._band = band;
+  set band(NormBand? band) => _$this._band = band;
 
   double? _minValue;
   double? get minValue => _$this._minValue;
-  set minValue(covariant double? minValue) => _$this._minValue = minValue;
+  set minValue(double? minValue) => _$this._minValue = minValue;
 
   double? _maxValue;
   double? get maxValue => _$this._maxValue;
-  set maxValue(covariant double? maxValue) => _$this._maxValue = maxValue;
+  set maxValue(double? maxValue) => _$this._maxValue = maxValue;
 
   String? _source_;
   String? get source_ => _$this._source_;
-  set source_(covariant String? source_) => _$this._source_ = source_;
+  set source_(String? source_) => _$this._source_ = source_;
 
-  $PhysicalTestNormInputBuilder() {
-    $PhysicalTestNormInput._defaults(this);
+  PhysicalTestNormInputBuilder() {
+    PhysicalTestNormInput._defaults(this);
   }
 
-  $PhysicalTestNormInputBuilder get _$this {
+  PhysicalTestNormInputBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _testTypeId = $v.testTypeId;
@@ -179,31 +148,31 @@ class $PhysicalTestNormInputBuilder
   }
 
   @override
-  void replace(covariant $PhysicalTestNormInput other) {
-    _$v = other as _$$PhysicalTestNormInput;
+  void replace(PhysicalTestNormInput other) {
+    _$v = other as _$PhysicalTestNormInput;
   }
 
   @override
-  void update(void Function($PhysicalTestNormInputBuilder)? updates) {
+  void update(void Function(PhysicalTestNormInputBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  $PhysicalTestNormInput build() => _build();
+  PhysicalTestNormInput build() => _build();
 
-  _$$PhysicalTestNormInput _build() {
+  _$PhysicalTestNormInput _build() {
     final _$result = _$v ??
-        _$$PhysicalTestNormInput._(
+        _$PhysicalTestNormInput._(
           testTypeId: BuiltValueNullFieldError.checkNotNull(
-              testTypeId, r'$PhysicalTestNormInput', 'testTypeId'),
+              testTypeId, r'PhysicalTestNormInput', 'testTypeId'),
           gender: BuiltValueNullFieldError.checkNotNull(
-              gender, r'$PhysicalTestNormInput', 'gender'),
+              gender, r'PhysicalTestNormInput', 'gender'),
           minAge: BuiltValueNullFieldError.checkNotNull(
-              minAge, r'$PhysicalTestNormInput', 'minAge'),
+              minAge, r'PhysicalTestNormInput', 'minAge'),
           maxAge: BuiltValueNullFieldError.checkNotNull(
-              maxAge, r'$PhysicalTestNormInput', 'maxAge'),
+              maxAge, r'PhysicalTestNormInput', 'maxAge'),
           band: BuiltValueNullFieldError.checkNotNull(
-              band, r'$PhysicalTestNormInput', 'band'),
+              band, r'PhysicalTestNormInput', 'band'),
           minValue: minValue,
           maxValue: maxValue,
           source_: source_,

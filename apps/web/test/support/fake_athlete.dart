@@ -107,7 +107,7 @@ ath.TrainingPlan planOf(String id, String name, {bool template = false, List<ath
         ..items.replace(items),
     );
 
-ath.$TrainingPlanSummary summaryOf(ath.TrainingPlan p) => ath.$TrainingPlanSummary(
+ath.TrainingPlanSummary summaryOf(ath.TrainingPlan p) => ath.TrainingPlanSummary(
   (b) => b
     ..id = p.id
     ..name = p.name
@@ -121,7 +121,7 @@ ath.PlanAssignment assignmentOf(String id, ath.TrainingPlan p, {String? teamId, 
     ath.PlanAssignment(
       (b) => b
         ..id = id
-        ..plan = summaryOf(p)
+        ..plan.replace(summaryOf(p))
         ..teamId = teamId
         ..playerId = playerId
         ..dueOn = due ?? ath.Date(2026, 11, 20)

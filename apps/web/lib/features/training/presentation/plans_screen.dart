@@ -408,7 +408,7 @@ class _PlanItemDialogState extends ConsumerState<PlanItemDialog> {
       onSubmit: () => runAction(context, () async {
         if (widget.item == null) {
           await notifier.addItem(
-            ath.$PlanItemInput((b) => b
+            ath.PlanItemInput((b) => b
               ..title = _title.text.trim()
               ..description = _text(_description)
               ..durationMinutes = _int(_duration)

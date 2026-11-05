@@ -5,7 +5,6 @@
 // ignore_for_file: unused_element
 import 'package:hoops_core_api/src/model/invitation_status.dart';
 import 'package:built_collection/built_collection.dart';
-import 'package:hoops_core_api/src/model/tenant_admin.dart';
 import 'package:hoops_core_api/src/model/tenant_role.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -23,7 +22,27 @@ part 'tenant_admin_with_password.g.dart';
 /// * [otherRoles] - The person's tenant roles besides ADMIN (removing the administrator keeps these).
 /// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
 @BuiltValue()
-abstract class TenantAdminWithPassword implements TenantAdmin, Built<TenantAdminWithPassword, TenantAdminWithPasswordBuilder> {
+abstract class TenantAdminWithPassword implements Built<TenantAdminWithPassword, TenantAdminWithPasswordBuilder> {
+  @BuiltValueField(wireName: r'personId')
+  String get personId;
+
+  @BuiltValueField(wireName: r'givenName')
+  String get givenName;
+
+  @BuiltValueField(wireName: r'familyName')
+  String get familyName;
+
+  @BuiltValueField(wireName: r'email')
+  String? get email;
+
+  @BuiltValueField(wireName: r'invitationStatus')
+  InvitationStatus get invitationStatus;
+  // enum invitationStatusEnum {  NONE,  PENDING,  ACCEPTED,  };
+
+  /// The person's tenant roles besides ADMIN (removing the administrator keeps these).
+  @BuiltValueField(wireName: r'otherRoles')
+  BuiltSet<TenantRole> get otherRoles;
+
   /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
@@ -51,13 +70,11 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
     TenantAdminWithPassword object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    if (object.temporaryPassword != null) {
-      yield r'temporaryPassword';
-      yield serializers.serialize(
-        object.temporaryPassword,
-        specifiedType: const FullType(String),
-      );
-    }
+    yield r'personId';
+    yield serializers.serialize(
+      object.personId,
+      specifiedType: const FullType(String),
+    );
     yield r'givenName';
     yield serializers.serialize(
       object.givenName,
@@ -68,26 +85,28 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
       object.familyName,
       specifiedType: const FullType(String),
     );
-    yield r'otherRoles';
-    yield serializers.serialize(
-      object.otherRoles,
-      specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
-    );
-    yield r'personId';
-    yield serializers.serialize(
-      object.personId,
-      specifiedType: const FullType(String),
-    );
-    yield r'invitationStatus';
-    yield serializers.serialize(
-      object.invitationStatus,
-      specifiedType: const FullType(InvitationStatus),
-    );
     if (object.email != null) {
       yield r'email';
       yield serializers.serialize(
         object.email,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    yield r'invitationStatus';
+    yield serializers.serialize(
+      object.invitationStatus,
+      specifiedType: const FullType(InvitationStatus),
+    );
+    yield r'otherRoles';
+    yield serializers.serialize(
+      object.otherRoles,
+      specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
+    );
+    if (object.temporaryPassword != null) {
+      yield r'temporaryPassword';
+      yield serializers.serialize(
+        object.temporaryPassword,
+        specifiedType: const FullType(String),
       );
     }
   }
@@ -113,13 +132,12 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'temporaryPassword':
+        case r'personId':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.temporaryPassword = valueDes;
+            specifiedType: const FullType(String),
+          ) as String;
+          result.personId = valueDes;
           break;
         case r'givenName':
           final valueDes = serializers.deserialize(
@@ -135,19 +153,13 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
           ) as String;
           result.familyName = valueDes;
           break;
-        case r'otherRoles':
+        case r'email':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
-          ) as BuiltSet<TenantRole>;
-          result.otherRoles.replace(valueDes);
-          break;
-        case r'personId':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.personId = valueDes;
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.email = valueDes;
           break;
         case r'invitationStatus':
           final valueDes = serializers.deserialize(
@@ -156,13 +168,20 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
           ) as InvitationStatus;
           result.invitationStatus = valueDes;
           break;
-        case r'email':
+        case r'otherRoles':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltSet, [FullType(TenantRole)]),
+          ) as BuiltSet<TenantRole>;
+          result.otherRoles.replace(valueDes);
+          break;
+        case r'temporaryPassword':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType.nullable(String),
           ) as String?;
           if (valueDes == null) continue;
-          result.email = valueDes;
+          result.temporaryPassword = valueDes;
           break;
         default:
           unhandled.add(key);

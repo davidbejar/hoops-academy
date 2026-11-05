@@ -24,7 +24,6 @@ export 'package:hoops_athlete_api/src/api/training_sessions_api.dart';
 export 'package:hoops_athlete_api/src/model/attendance_entry.dart';
 export 'package:hoops_athlete_api/src/model/attendance_input.dart';
 export 'package:hoops_athlete_api/src/model/attendance_status.dart';
-export 'package:hoops_athlete_api/src/model/audit_info.dart';
 export 'package:hoops_athlete_api/src/model/band_status.dart';
 export 'package:hoops_athlete_api/src/model/body_measurement.dart';
 export 'package:hoops_athlete_api/src/model/body_measurement_input.dart';
@@ -88,4 +87,3 @@ export 'package:hoops_athlete_api/src/model/update_training_plan_request.dart';
 export 'package:hoops_athlete_api/src/model/update_training_schedule_request.dart';
 export 'package:hoops_athlete_api/src/model/update_training_session_request.dart';
 export 'package:hoops_athlete_api/src/model/usage_report.dart';
-

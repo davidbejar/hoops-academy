@@ -8,12 +8,6 @@ part of 'physical_test_norm.dart';
 
 class _$PhysicalTestNorm extends PhysicalTestNorm {
   @override
-  final bool global;
-  @override
-  final String id;
-  @override
-  final bool referencePending;
-  @override
   final String testTypeId;
   @override
   final Gender gender;
@@ -29,23 +23,29 @@ class _$PhysicalTestNorm extends PhysicalTestNorm {
   final double? maxValue;
   @override
   final String? source_;
+  @override
+  final String id;
+  @override
+  final bool global;
+  @override
+  final bool referencePending;
 
   factory _$PhysicalTestNorm(
           [void Function(PhysicalTestNormBuilder)? updates]) =>
       (PhysicalTestNormBuilder()..update(updates))._build();
 
   _$PhysicalTestNorm._(
-      {required this.global,
-      required this.id,
-      required this.referencePending,
-      required this.testTypeId,
+      {required this.testTypeId,
       required this.gender,
       required this.minAge,
       required this.maxAge,
       required this.band,
       this.minValue,
       this.maxValue,
-      this.source_})
+      this.source_,
+      required this.id,
+      required this.global,
+      required this.referencePending})
       : super._();
   @override
   PhysicalTestNorm rebuild(void Function(PhysicalTestNormBuilder) updates) =>
@@ -59,9 +59,6 @@ class _$PhysicalTestNorm extends PhysicalTestNorm {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is PhysicalTestNorm &&
-        global == other.global &&
-        id == other.id &&
-        referencePending == other.referencePending &&
         testTypeId == other.testTypeId &&
         gender == other.gender &&
         minAge == other.minAge &&
@@ -69,15 +66,15 @@ class _$PhysicalTestNorm extends PhysicalTestNorm {
         band == other.band &&
         minValue == other.minValue &&
         maxValue == other.maxValue &&
-        source_ == other.source_;
+        source_ == other.source_ &&
+        id == other.id &&
+        global == other.global &&
+        referencePending == other.referencePending;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, global.hashCode);
-    _$hash = $jc(_$hash, id.hashCode);
-    _$hash = $jc(_$hash, referencePending.hashCode);
     _$hash = $jc(_$hash, testTypeId.hashCode);
     _$hash = $jc(_$hash, gender.hashCode);
     _$hash = $jc(_$hash, minAge.hashCode);
@@ -86,6 +83,9 @@ class _$PhysicalTestNorm extends PhysicalTestNorm {
     _$hash = $jc(_$hash, minValue.hashCode);
     _$hash = $jc(_$hash, maxValue.hashCode);
     _$hash = $jc(_$hash, source_.hashCode);
+    _$hash = $jc(_$hash, id.hashCode);
+    _$hash = $jc(_$hash, global.hashCode);
+    _$hash = $jc(_$hash, referencePending.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -93,9 +93,6 @@ class _$PhysicalTestNorm extends PhysicalTestNorm {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'PhysicalTestNorm')
-          ..add('global', global)
-          ..add('id', id)
-          ..add('referencePending', referencePending)
           ..add('testTypeId', testTypeId)
           ..add('gender', gender)
           ..add('minAge', minAge)
@@ -103,62 +100,62 @@ class _$PhysicalTestNorm extends PhysicalTestNorm {
           ..add('band', band)
           ..add('minValue', minValue)
           ..add('maxValue', maxValue)
-          ..add('source_', source_))
+          ..add('source_', source_)
+          ..add('id', id)
+          ..add('global', global)
+          ..add('referencePending', referencePending))
         .toString();
   }
 }
 
 class PhysicalTestNormBuilder
-    implements
-        Builder<PhysicalTestNorm, PhysicalTestNormBuilder>,
-        PhysicalTestNormInputBuilder {
+    implements Builder<PhysicalTestNorm, PhysicalTestNormBuilder> {
   _$PhysicalTestNorm? _$v;
-
-  bool? _global;
-  bool? get global => _$this._global;
-  set global(covariant bool? global) => _$this._global = global;
-
-  String? _id;
-  String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
-
-  bool? _referencePending;
-  bool? get referencePending => _$this._referencePending;
-  set referencePending(covariant bool? referencePending) =>
-      _$this._referencePending = referencePending;
 
   String? _testTypeId;
   String? get testTypeId => _$this._testTypeId;
-  set testTypeId(covariant String? testTypeId) =>
-      _$this._testTypeId = testTypeId;
+  set testTypeId(String? testTypeId) => _$this._testTypeId = testTypeId;
 
   Gender? _gender;
   Gender? get gender => _$this._gender;
-  set gender(covariant Gender? gender) => _$this._gender = gender;
+  set gender(Gender? gender) => _$this._gender = gender;
 
   int? _minAge;
   int? get minAge => _$this._minAge;
-  set minAge(covariant int? minAge) => _$this._minAge = minAge;
+  set minAge(int? minAge) => _$this._minAge = minAge;
 
   int? _maxAge;
   int? get maxAge => _$this._maxAge;
-  set maxAge(covariant int? maxAge) => _$this._maxAge = maxAge;
+  set maxAge(int? maxAge) => _$this._maxAge = maxAge;
 
   NormBand? _band;
   NormBand? get band => _$this._band;
-  set band(covariant NormBand? band) => _$this._band = band;
+  set band(NormBand? band) => _$this._band = band;
 
   double? _minValue;
   double? get minValue => _$this._minValue;
-  set minValue(covariant double? minValue) => _$this._minValue = minValue;
+  set minValue(double? minValue) => _$this._minValue = minValue;
 
   double? _maxValue;
   double? get maxValue => _$this._maxValue;
-  set maxValue(covariant double? maxValue) => _$this._maxValue = maxValue;
+  set maxValue(double? maxValue) => _$this._maxValue = maxValue;
 
   String? _source_;
   String? get source_ => _$this._source_;
-  set source_(covariant String? source_) => _$this._source_ = source_;
+  set source_(String? source_) => _$this._source_ = source_;
+
+  String? _id;
+  String? get id => _$this._id;
+  set id(String? id) => _$this._id = id;
+
+  bool? _global;
+  bool? get global => _$this._global;
+  set global(bool? global) => _$this._global = global;
+
+  bool? _referencePending;
+  bool? get referencePending => _$this._referencePending;
+  set referencePending(bool? referencePending) =>
+      _$this._referencePending = referencePending;
 
   PhysicalTestNormBuilder() {
     PhysicalTestNorm._defaults(this);
@@ -167,9 +164,6 @@ class PhysicalTestNormBuilder
   PhysicalTestNormBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _global = $v.global;
-      _id = $v.id;
-      _referencePending = $v.referencePending;
       _testTypeId = $v.testTypeId;
       _gender = $v.gender;
       _minAge = $v.minAge;
@@ -178,13 +172,16 @@ class PhysicalTestNormBuilder
       _minValue = $v.minValue;
       _maxValue = $v.maxValue;
       _source_ = $v.source_;
+      _id = $v.id;
+      _global = $v.global;
+      _referencePending = $v.referencePending;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant PhysicalTestNorm other) {
+  void replace(PhysicalTestNorm other) {
     _$v = other as _$PhysicalTestNorm;
   }
 
@@ -199,12 +196,6 @@ class PhysicalTestNormBuilder
   _$PhysicalTestNorm _build() {
     final _$result = _$v ??
         _$PhysicalTestNorm._(
-          global: BuiltValueNullFieldError.checkNotNull(
-              global, r'PhysicalTestNorm', 'global'),
-          id: BuiltValueNullFieldError.checkNotNull(
-              id, r'PhysicalTestNorm', 'id'),
-          referencePending: BuiltValueNullFieldError.checkNotNull(
-              referencePending, r'PhysicalTestNorm', 'referencePending'),
           testTypeId: BuiltValueNullFieldError.checkNotNull(
               testTypeId, r'PhysicalTestNorm', 'testTypeId'),
           gender: BuiltValueNullFieldError.checkNotNull(
@@ -218,6 +209,12 @@ class PhysicalTestNormBuilder
           minValue: minValue,
           maxValue: maxValue,
           source_: source_,
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'PhysicalTestNorm', 'id'),
+          global: BuiltValueNullFieldError.checkNotNull(
+              global, r'PhysicalTestNorm', 'global'),
+          referencePending: BuiltValueNullFieldError.checkNotNull(
+              referencePending, r'PhysicalTestNorm', 'referencePending'),
         );
     replace(_$result);
     return _$result;

@@ -12,12 +12,12 @@ part 'planned_absence_input.g.dart';
 /// PlannedAbsenceInput
 ///
 /// Properties:
-/// * [playerId] 
-/// * [fromDate] 
+/// * [playerId]
+/// * [fromDate]
 /// * [toDate] - Inclusive.
-/// * [reason] 
-@BuiltValue(instantiable: false)
-abstract class PlannedAbsenceInput  {
+/// * [reason]
+@BuiltValue()
+abstract class PlannedAbsenceInput implements Built<PlannedAbsenceInput, PlannedAbsenceInputBuilder> {
   @BuiltValueField(wireName: r'playerId')
   String get playerId;
 
@@ -31,13 +31,20 @@ abstract class PlannedAbsenceInput  {
   @BuiltValueField(wireName: r'reason')
   String? get reason;
 
+  PlannedAbsenceInput._();
+
+  factory PlannedAbsenceInput([void updates(PlannedAbsenceInputBuilder b)]) = _$PlannedAbsenceInput;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(PlannedAbsenceInputBuilder b) => b;
+
   @BuiltValueSerializer(custom: true)
   static Serializer<PlannedAbsenceInput> get serializer => _$PlannedAbsenceInputSerializer();
 }
 
 class _$PlannedAbsenceInputSerializer implements PrimitiveSerializer<PlannedAbsenceInput> {
   @override
-  final Iterable<Type> types = const [PlannedAbsenceInput];
+  final Iterable<Type> types = const [PlannedAbsenceInput, _$PlannedAbsenceInput];
 
   @override
   final String wireName = r'PlannedAbsenceInput';
@@ -78,47 +85,6 @@ class _$PlannedAbsenceInputSerializer implements PrimitiveSerializer<PlannedAbse
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
-  }
-
-  @override
-  PlannedAbsenceInput deserialize(
-    Serializers serializers,
-    Object serialized, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.deserialize(serialized, specifiedType: FullType($PlannedAbsenceInput)) as $PlannedAbsenceInput;
-  }
-}
-
-
-/// a concrete implementation of [PlannedAbsenceInput], since [PlannedAbsenceInput] is not instantiable
-@BuiltValue(instantiable: true)
-abstract class $PlannedAbsenceInput implements PlannedAbsenceInput, Built<$PlannedAbsenceInput, $PlannedAbsenceInputBuilder> {
-  $PlannedAbsenceInput._();
-
-  factory $PlannedAbsenceInput([void Function($PlannedAbsenceInputBuilder)? updates]) = _$$PlannedAbsenceInput;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults($PlannedAbsenceInputBuilder b) => b;
-
-  @BuiltValueSerializer(custom: true)
-  static Serializer<$PlannedAbsenceInput> get serializer => _$$PlannedAbsenceInputSerializer();
-}
-
-class _$$PlannedAbsenceInputSerializer implements PrimitiveSerializer<$PlannedAbsenceInput> {
-  @override
-  final Iterable<Type> types = const [$PlannedAbsenceInput, _$$PlannedAbsenceInput];
-
-  @override
-  final String wireName = r'$PlannedAbsenceInput';
-
-  @override
-  Object serialize(
-    Serializers serializers,
-    $PlannedAbsenceInput object, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.serialize(object, specifiedType: FullType(PlannedAbsenceInput))!;
   }
 
   void _deserializeProperties(
@@ -171,12 +137,12 @@ class _$$PlannedAbsenceInputSerializer implements PrimitiveSerializer<$PlannedAb
   }
 
   @override
-  $PlannedAbsenceInput deserialize(
+  PlannedAbsenceInput deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = $PlannedAbsenceInputBuilder();
+    final result = PlannedAbsenceInputBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -190,4 +156,3 @@ class _$$PlannedAbsenceInputSerializer implements PrimitiveSerializer<$PlannedAb
     return result.build();
   }
 }
-

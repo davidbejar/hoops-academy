@@ -8,12 +8,6 @@ part of 'planned_absence.dart';
 
 class _$PlannedAbsence extends PlannedAbsence {
   @override
-  final String id;
-  @override
-  final PersonRef recordedBy;
-  @override
-  final DateTime recordedAt;
-  @override
   final String playerId;
   @override
   final Date fromDate;
@@ -21,18 +15,24 @@ class _$PlannedAbsence extends PlannedAbsence {
   final Date toDate;
   @override
   final String? reason;
+  @override
+  final PersonRef recordedBy;
+  @override
+  final DateTime recordedAt;
+  @override
+  final String id;
 
   factory _$PlannedAbsence([void Function(PlannedAbsenceBuilder)? updates]) =>
       (PlannedAbsenceBuilder()..update(updates))._build();
 
   _$PlannedAbsence._(
-      {required this.id,
-      required this.recordedBy,
-      required this.recordedAt,
-      required this.playerId,
+      {required this.playerId,
       required this.fromDate,
       required this.toDate,
-      this.reason})
+      this.reason,
+      required this.recordedBy,
+      required this.recordedAt,
+      required this.id})
       : super._();
   @override
   PlannedAbsence rebuild(void Function(PlannedAbsenceBuilder) updates) =>
@@ -45,25 +45,25 @@ class _$PlannedAbsence extends PlannedAbsence {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is PlannedAbsence &&
-        id == other.id &&
-        recordedBy == other.recordedBy &&
-        recordedAt == other.recordedAt &&
         playerId == other.playerId &&
         fromDate == other.fromDate &&
         toDate == other.toDate &&
-        reason == other.reason;
+        reason == other.reason &&
+        recordedBy == other.recordedBy &&
+        recordedAt == other.recordedAt &&
+        id == other.id;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, id.hashCode);
-    _$hash = $jc(_$hash, recordedBy.hashCode);
-    _$hash = $jc(_$hash, recordedAt.hashCode);
     _$hash = $jc(_$hash, playerId.hashCode);
     _$hash = $jc(_$hash, fromDate.hashCode);
     _$hash = $jc(_$hash, toDate.hashCode);
     _$hash = $jc(_$hash, reason.hashCode);
+    _$hash = $jc(_$hash, recordedBy.hashCode);
+    _$hash = $jc(_$hash, recordedAt.hashCode);
+    _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -71,53 +71,49 @@ class _$PlannedAbsence extends PlannedAbsence {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'PlannedAbsence')
-          ..add('id', id)
-          ..add('recordedBy', recordedBy)
-          ..add('recordedAt', recordedAt)
           ..add('playerId', playerId)
           ..add('fromDate', fromDate)
           ..add('toDate', toDate)
-          ..add('reason', reason))
+          ..add('reason', reason)
+          ..add('recordedBy', recordedBy)
+          ..add('recordedAt', recordedAt)
+          ..add('id', id))
         .toString();
   }
 }
 
 class PlannedAbsenceBuilder
-    implements
-        Builder<PlannedAbsence, PlannedAbsenceBuilder>,
-        AuditInfoBuilder,
-        PlannedAbsenceInputBuilder {
+    implements Builder<PlannedAbsence, PlannedAbsenceBuilder> {
   _$PlannedAbsence? _$v;
 
-  String? _id;
-  String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
+  String? _playerId;
+  String? get playerId => _$this._playerId;
+  set playerId(String? playerId) => _$this._playerId = playerId;
+
+  Date? _fromDate;
+  Date? get fromDate => _$this._fromDate;
+  set fromDate(Date? fromDate) => _$this._fromDate = fromDate;
+
+  Date? _toDate;
+  Date? get toDate => _$this._toDate;
+  set toDate(Date? toDate) => _$this._toDate = toDate;
+
+  String? _reason;
+  String? get reason => _$this._reason;
+  set reason(String? reason) => _$this._reason = reason;
 
   PersonRefBuilder? _recordedBy;
   PersonRefBuilder get recordedBy => _$this._recordedBy ??= PersonRefBuilder();
-  set recordedBy(covariant PersonRefBuilder? recordedBy) =>
+  set recordedBy(PersonRefBuilder? recordedBy) =>
       _$this._recordedBy = recordedBy;
 
   DateTime? _recordedAt;
   DateTime? get recordedAt => _$this._recordedAt;
-  set recordedAt(covariant DateTime? recordedAt) =>
-      _$this._recordedAt = recordedAt;
+  set recordedAt(DateTime? recordedAt) => _$this._recordedAt = recordedAt;
 
-  String? _playerId;
-  String? get playerId => _$this._playerId;
-  set playerId(covariant String? playerId) => _$this._playerId = playerId;
-
-  Date? _fromDate;
-  Date? get fromDate => _$this._fromDate;
-  set fromDate(covariant Date? fromDate) => _$this._fromDate = fromDate;
-
-  Date? _toDate;
-  Date? get toDate => _$this._toDate;
-  set toDate(covariant Date? toDate) => _$this._toDate = toDate;
-
-  String? _reason;
-  String? get reason => _$this._reason;
-  set reason(covariant String? reason) => _$this._reason = reason;
+  String? _id;
+  String? get id => _$this._id;
+  set id(String? id) => _$this._id = id;
 
   PlannedAbsenceBuilder() {
     PlannedAbsence._defaults(this);
@@ -126,21 +122,20 @@ class PlannedAbsenceBuilder
   PlannedAbsenceBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _id = $v.id;
-      _recordedBy = $v.recordedBy.toBuilder();
-      _recordedAt = $v.recordedAt;
       _playerId = $v.playerId;
       _fromDate = $v.fromDate;
       _toDate = $v.toDate;
       _reason = $v.reason;
+      _recordedBy = $v.recordedBy.toBuilder();
+      _recordedAt = $v.recordedAt;
+      _id = $v.id;
       _$v = null;
     }
     return this;
   }
 
   @override
-// ignore: override_on_non_overriding_method
-  void replace(covariant PlannedAbsence other) {
+  void replace(PlannedAbsence other) {
     _$v = other as _$PlannedAbsence;
   }
 
@@ -157,11 +152,6 @@ class PlannedAbsenceBuilder
     try {
       _$result = _$v ??
           _$PlannedAbsence._(
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'PlannedAbsence', 'id'),
-            recordedBy: recordedBy.build(),
-            recordedAt: BuiltValueNullFieldError.checkNotNull(
-                recordedAt, r'PlannedAbsence', 'recordedAt'),
             playerId: BuiltValueNullFieldError.checkNotNull(
                 playerId, r'PlannedAbsence', 'playerId'),
             fromDate: BuiltValueNullFieldError.checkNotNull(
@@ -169,6 +159,11 @@ class PlannedAbsenceBuilder
             toDate: BuiltValueNullFieldError.checkNotNull(
                 toDate, r'PlannedAbsence', 'toDate'),
             reason: reason,
+            recordedBy: recordedBy.build(),
+            recordedAt: BuiltValueNullFieldError.checkNotNull(
+                recordedAt, r'PlannedAbsence', 'recordedAt'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'PlannedAbsence', 'id'),
           );
     } catch (_) {
       late String _$failedField;

@@ -8,10 +8,6 @@ part of 'invite_member_request.dart';
 
 class _$InviteMemberRequest extends InviteMemberRequest {
   @override
-  final BuiltSet<TenantRole> roles;
-  @override
-  final bool? sendInvitation;
-  @override
   final String givenName;
   @override
   final String familyName;
@@ -25,21 +21,25 @@ class _$InviteMemberRequest extends InviteMemberRequest {
   final Gender? gender;
   @override
   final Locale? locale;
+  @override
+  final BuiltSet<TenantRole> roles;
+  @override
+  final bool? sendInvitation;
 
   factory _$InviteMemberRequest(
           [void Function(InviteMemberRequestBuilder)? updates]) =>
       (InviteMemberRequestBuilder()..update(updates))._build();
 
   _$InviteMemberRequest._(
-      {required this.roles,
-      this.sendInvitation,
-      required this.givenName,
+      {required this.givenName,
       required this.familyName,
       this.email,
       this.phone,
       this.birthDate,
       this.gender,
-      this.locale})
+      this.locale,
+      required this.roles,
+      this.sendInvitation})
       : super._();
   @override
   InviteMemberRequest rebuild(
@@ -54,22 +54,20 @@ class _$InviteMemberRequest extends InviteMemberRequest {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is InviteMemberRequest &&
-        roles == other.roles &&
-        sendInvitation == other.sendInvitation &&
         givenName == other.givenName &&
         familyName == other.familyName &&
         email == other.email &&
         phone == other.phone &&
         birthDate == other.birthDate &&
         gender == other.gender &&
-        locale == other.locale;
+        locale == other.locale &&
+        roles == other.roles &&
+        sendInvitation == other.sendInvitation;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, roles.hashCode);
-    _$hash = $jc(_$hash, sendInvitation.hashCode);
     _$hash = $jc(_$hash, givenName.hashCode);
     _$hash = $jc(_$hash, familyName.hashCode);
     _$hash = $jc(_$hash, email.hashCode);
@@ -77,6 +75,8 @@ class _$InviteMemberRequest extends InviteMemberRequest {
     _$hash = $jc(_$hash, birthDate.hashCode);
     _$hash = $jc(_$hash, gender.hashCode);
     _$hash = $jc(_$hash, locale.hashCode);
+    _$hash = $jc(_$hash, roles.hashCode);
+    _$hash = $jc(_$hash, sendInvitation.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -84,63 +84,60 @@ class _$InviteMemberRequest extends InviteMemberRequest {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'InviteMemberRequest')
-          ..add('roles', roles)
-          ..add('sendInvitation', sendInvitation)
           ..add('givenName', givenName)
           ..add('familyName', familyName)
           ..add('email', email)
           ..add('phone', phone)
           ..add('birthDate', birthDate)
           ..add('gender', gender)
-          ..add('locale', locale))
+          ..add('locale', locale)
+          ..add('roles', roles)
+          ..add('sendInvitation', sendInvitation))
         .toString();
   }
 }
 
 class InviteMemberRequestBuilder
-    implements
-        Builder<InviteMemberRequest, InviteMemberRequestBuilder>,
-        PersonalDataBuilder {
+    implements Builder<InviteMemberRequest, InviteMemberRequestBuilder> {
   _$InviteMemberRequest? _$v;
+
+  String? _givenName;
+  String? get givenName => _$this._givenName;
+  set givenName(String? givenName) => _$this._givenName = givenName;
+
+  String? _familyName;
+  String? get familyName => _$this._familyName;
+  set familyName(String? familyName) => _$this._familyName = familyName;
+
+  String? _email;
+  String? get email => _$this._email;
+  set email(String? email) => _$this._email = email;
+
+  String? _phone;
+  String? get phone => _$this._phone;
+  set phone(String? phone) => _$this._phone = phone;
+
+  Date? _birthDate;
+  Date? get birthDate => _$this._birthDate;
+  set birthDate(Date? birthDate) => _$this._birthDate = birthDate;
+
+  Gender? _gender;
+  Gender? get gender => _$this._gender;
+  set gender(Gender? gender) => _$this._gender = gender;
+
+  Locale? _locale;
+  Locale? get locale => _$this._locale;
+  set locale(Locale? locale) => _$this._locale = locale;
 
   SetBuilder<TenantRole>? _roles;
   SetBuilder<TenantRole> get roles =>
       _$this._roles ??= SetBuilder<TenantRole>();
-  set roles(covariant SetBuilder<TenantRole>? roles) => _$this._roles = roles;
+  set roles(SetBuilder<TenantRole>? roles) => _$this._roles = roles;
 
   bool? _sendInvitation;
   bool? get sendInvitation => _$this._sendInvitation;
-  set sendInvitation(covariant bool? sendInvitation) =>
+  set sendInvitation(bool? sendInvitation) =>
       _$this._sendInvitation = sendInvitation;
-
-  String? _givenName;
-  String? get givenName => _$this._givenName;
-  set givenName(covariant String? givenName) => _$this._givenName = givenName;
-
-  String? _familyName;
-  String? get familyName => _$this._familyName;
-  set familyName(covariant String? familyName) =>
-      _$this._familyName = familyName;
-
-  String? _email;
-  String? get email => _$this._email;
-  set email(covariant String? email) => _$this._email = email;
-
-  String? _phone;
-  String? get phone => _$this._phone;
-  set phone(covariant String? phone) => _$this._phone = phone;
-
-  Date? _birthDate;
-  Date? get birthDate => _$this._birthDate;
-  set birthDate(covariant Date? birthDate) => _$this._birthDate = birthDate;
-
-  Gender? _gender;
-  Gender? get gender => _$this._gender;
-  set gender(covariant Gender? gender) => _$this._gender = gender;
-
-  Locale? _locale;
-  Locale? get locale => _$this._locale;
-  set locale(covariant Locale? locale) => _$this._locale = locale;
 
   InviteMemberRequestBuilder() {
     InviteMemberRequest._defaults(this);
@@ -149,8 +146,6 @@ class InviteMemberRequestBuilder
   InviteMemberRequestBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _roles = $v.roles.toBuilder();
-      _sendInvitation = $v.sendInvitation;
       _givenName = $v.givenName;
       _familyName = $v.familyName;
       _email = $v.email;
@@ -158,13 +153,15 @@ class InviteMemberRequestBuilder
       _birthDate = $v.birthDate;
       _gender = $v.gender;
       _locale = $v.locale;
+      _roles = $v.roles.toBuilder();
+      _sendInvitation = $v.sendInvitation;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant InviteMemberRequest other) {
+  void replace(InviteMemberRequest other) {
     _$v = other as _$InviteMemberRequest;
   }
 
@@ -181,8 +178,6 @@ class InviteMemberRequestBuilder
     try {
       _$result = _$v ??
           _$InviteMemberRequest._(
-            roles: roles.build(),
-            sendInvitation: sendInvitation,
             givenName: BuiltValueNullFieldError.checkNotNull(
                 givenName, r'InviteMemberRequest', 'givenName'),
             familyName: BuiltValueNullFieldError.checkNotNull(
@@ -192,6 +187,8 @@ class InviteMemberRequestBuilder
             birthDate: birthDate,
             gender: gender,
             locale: locale,
+            roles: roles.build(),
+            sendInvitation: sendInvitation,
           );
     } catch (_) {
       late String _$failedField;

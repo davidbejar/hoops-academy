@@ -69,9 +69,10 @@ class PlayerCommandResultBuilder
   PlayerBuilder get player => _$this._player ??= PlayerBuilder();
   set player(PlayerBuilder? player) => _$this._player = player;
 
-  ApprovalRequest? _approvalRequest;
-  ApprovalRequest? get approvalRequest => _$this._approvalRequest;
-  set approvalRequest(ApprovalRequest? approvalRequest) =>
+  ApprovalRequestBuilder? _approvalRequest;
+  ApprovalRequestBuilder get approvalRequest =>
+      _$this._approvalRequest ??= ApprovalRequestBuilder();
+  set approvalRequest(ApprovalRequestBuilder? approvalRequest) =>
       _$this._approvalRequest = approvalRequest;
 
   String? _temporaryPassword;
@@ -87,7 +88,7 @@ class PlayerCommandResultBuilder
     final $v = _$v;
     if ($v != null) {
       _player = $v.player.toBuilder();
-      _approvalRequest = $v.approvalRequest;
+      _approvalRequest = $v.approvalRequest.toBuilder();
       _temporaryPassword = $v.temporaryPassword;
       _$v = null;
     }
@@ -113,8 +114,7 @@ class PlayerCommandResultBuilder
       _$result = _$v ??
           _$PlayerCommandResult._(
             player: player.build(),
-            approvalRequest: BuiltValueNullFieldError.checkNotNull(
-                approvalRequest, r'PlayerCommandResult', 'approvalRequest'),
+            approvalRequest: approvalRequest.build(),
             temporaryPassword: temporaryPassword,
           );
     } catch (_) {
@@ -122,6 +122,8 @@ class PlayerCommandResultBuilder
       try {
         _$failedField = 'player';
         player.build();
+        _$failedField = 'approvalRequest';
+        approvalRequest.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'PlayerCommandResult', _$failedField, e.toString());

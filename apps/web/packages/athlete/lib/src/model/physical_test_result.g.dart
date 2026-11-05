@@ -8,56 +8,56 @@ part of 'physical_test_result.dart';
 
 class _$PhysicalTestResult extends PhysicalTestResult {
   @override
-  final NormBand? expectedBand;
+  final PersonRef recordedBy;
+  @override
+  final DateTime recordedAt;
+  @override
+  final String id;
+  @override
+  final String playerId;
+  @override
+  final String testTypeId;
   @override
   final String testCode;
   @override
-  final String? notes;
+  final String unit;
   @override
   final Date measuredOn;
+  @override
+  final double value;
   @override
   final int? ageAtMeasurement;
   @override
   final BandStatus bandStatus;
   @override
+  final NormBand? expectedBand;
+  @override
   final String? normId;
-  @override
-  final String testTypeId;
-  @override
-  final String unit;
-  @override
-  final String id;
-  @override
-  final double value;
   @override
   final bool referencePending;
   @override
-  final String playerId;
-  @override
-  final PersonRef recordedBy;
-  @override
-  final DateTime recordedAt;
+  final String? notes;
 
   factory _$PhysicalTestResult(
           [void Function(PhysicalTestResultBuilder)? updates]) =>
       (PhysicalTestResultBuilder()..update(updates))._build();
 
   _$PhysicalTestResult._(
-      {this.expectedBand,
+      {required this.recordedBy,
+      required this.recordedAt,
+      required this.id,
+      required this.playerId,
+      required this.testTypeId,
       required this.testCode,
-      this.notes,
+      required this.unit,
       required this.measuredOn,
+      required this.value,
       this.ageAtMeasurement,
       required this.bandStatus,
+      this.expectedBand,
       this.normId,
-      required this.testTypeId,
-      required this.unit,
-      required this.id,
-      required this.value,
       required this.referencePending,
-      required this.playerId,
-      required this.recordedBy,
-      required this.recordedAt})
+      this.notes})
       : super._();
   @override
   PhysicalTestResult rebuild(
@@ -72,41 +72,41 @@ class _$PhysicalTestResult extends PhysicalTestResult {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is PhysicalTestResult &&
-        expectedBand == other.expectedBand &&
+        recordedBy == other.recordedBy &&
+        recordedAt == other.recordedAt &&
+        id == other.id &&
+        playerId == other.playerId &&
+        testTypeId == other.testTypeId &&
         testCode == other.testCode &&
-        notes == other.notes &&
+        unit == other.unit &&
         measuredOn == other.measuredOn &&
+        value == other.value &&
         ageAtMeasurement == other.ageAtMeasurement &&
         bandStatus == other.bandStatus &&
+        expectedBand == other.expectedBand &&
         normId == other.normId &&
-        testTypeId == other.testTypeId &&
-        unit == other.unit &&
-        id == other.id &&
-        value == other.value &&
         referencePending == other.referencePending &&
-        playerId == other.playerId &&
-        recordedBy == other.recordedBy &&
-        recordedAt == other.recordedAt;
+        notes == other.notes;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, expectedBand.hashCode);
-    _$hash = $jc(_$hash, testCode.hashCode);
-    _$hash = $jc(_$hash, notes.hashCode);
-    _$hash = $jc(_$hash, measuredOn.hashCode);
-    _$hash = $jc(_$hash, ageAtMeasurement.hashCode);
-    _$hash = $jc(_$hash, bandStatus.hashCode);
-    _$hash = $jc(_$hash, normId.hashCode);
-    _$hash = $jc(_$hash, testTypeId.hashCode);
-    _$hash = $jc(_$hash, unit.hashCode);
-    _$hash = $jc(_$hash, id.hashCode);
-    _$hash = $jc(_$hash, value.hashCode);
-    _$hash = $jc(_$hash, referencePending.hashCode);
-    _$hash = $jc(_$hash, playerId.hashCode);
     _$hash = $jc(_$hash, recordedBy.hashCode);
     _$hash = $jc(_$hash, recordedAt.hashCode);
+    _$hash = $jc(_$hash, id.hashCode);
+    _$hash = $jc(_$hash, playerId.hashCode);
+    _$hash = $jc(_$hash, testTypeId.hashCode);
+    _$hash = $jc(_$hash, testCode.hashCode);
+    _$hash = $jc(_$hash, unit.hashCode);
+    _$hash = $jc(_$hash, measuredOn.hashCode);
+    _$hash = $jc(_$hash, value.hashCode);
+    _$hash = $jc(_$hash, ageAtMeasurement.hashCode);
+    _$hash = $jc(_$hash, bandStatus.hashCode);
+    _$hash = $jc(_$hash, expectedBand.hashCode);
+    _$hash = $jc(_$hash, normId.hashCode);
+    _$hash = $jc(_$hash, referencePending.hashCode);
+    _$hash = $jc(_$hash, notes.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -114,97 +114,92 @@ class _$PhysicalTestResult extends PhysicalTestResult {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'PhysicalTestResult')
-          ..add('expectedBand', expectedBand)
+          ..add('recordedBy', recordedBy)
+          ..add('recordedAt', recordedAt)
+          ..add('id', id)
+          ..add('playerId', playerId)
+          ..add('testTypeId', testTypeId)
           ..add('testCode', testCode)
-          ..add('notes', notes)
+          ..add('unit', unit)
           ..add('measuredOn', measuredOn)
+          ..add('value', value)
           ..add('ageAtMeasurement', ageAtMeasurement)
           ..add('bandStatus', bandStatus)
+          ..add('expectedBand', expectedBand)
           ..add('normId', normId)
-          ..add('testTypeId', testTypeId)
-          ..add('unit', unit)
-          ..add('id', id)
-          ..add('value', value)
           ..add('referencePending', referencePending)
-          ..add('playerId', playerId)
-          ..add('recordedBy', recordedBy)
-          ..add('recordedAt', recordedAt))
+          ..add('notes', notes))
         .toString();
   }
 }
 
 class PhysicalTestResultBuilder
-    implements
-        Builder<PhysicalTestResult, PhysicalTestResultBuilder>,
-        AuditInfoBuilder {
+    implements Builder<PhysicalTestResult, PhysicalTestResultBuilder> {
   _$PhysicalTestResult? _$v;
-
-  NormBand? _expectedBand;
-  NormBand? get expectedBand => _$this._expectedBand;
-  set expectedBand(covariant NormBand? expectedBand) =>
-      _$this._expectedBand = expectedBand;
-
-  String? _testCode;
-  String? get testCode => _$this._testCode;
-  set testCode(covariant String? testCode) => _$this._testCode = testCode;
-
-  String? _notes;
-  String? get notes => _$this._notes;
-  set notes(covariant String? notes) => _$this._notes = notes;
-
-  Date? _measuredOn;
-  Date? get measuredOn => _$this._measuredOn;
-  set measuredOn(covariant Date? measuredOn) => _$this._measuredOn = measuredOn;
-
-  int? _ageAtMeasurement;
-  int? get ageAtMeasurement => _$this._ageAtMeasurement;
-  set ageAtMeasurement(covariant int? ageAtMeasurement) =>
-      _$this._ageAtMeasurement = ageAtMeasurement;
-
-  BandStatus? _bandStatus;
-  BandStatus? get bandStatus => _$this._bandStatus;
-  set bandStatus(covariant BandStatus? bandStatus) =>
-      _$this._bandStatus = bandStatus;
-
-  String? _normId;
-  String? get normId => _$this._normId;
-  set normId(covariant String? normId) => _$this._normId = normId;
-
-  String? _testTypeId;
-  String? get testTypeId => _$this._testTypeId;
-  set testTypeId(covariant String? testTypeId) =>
-      _$this._testTypeId = testTypeId;
-
-  String? _unit;
-  String? get unit => _$this._unit;
-  set unit(covariant String? unit) => _$this._unit = unit;
-
-  String? _id;
-  String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
-
-  double? _value;
-  double? get value => _$this._value;
-  set value(covariant double? value) => _$this._value = value;
-
-  bool? _referencePending;
-  bool? get referencePending => _$this._referencePending;
-  set referencePending(covariant bool? referencePending) =>
-      _$this._referencePending = referencePending;
-
-  String? _playerId;
-  String? get playerId => _$this._playerId;
-  set playerId(covariant String? playerId) => _$this._playerId = playerId;
 
   PersonRefBuilder? _recordedBy;
   PersonRefBuilder get recordedBy => _$this._recordedBy ??= PersonRefBuilder();
-  set recordedBy(covariant PersonRefBuilder? recordedBy) =>
+  set recordedBy(PersonRefBuilder? recordedBy) =>
       _$this._recordedBy = recordedBy;
 
   DateTime? _recordedAt;
   DateTime? get recordedAt => _$this._recordedAt;
-  set recordedAt(covariant DateTime? recordedAt) =>
-      _$this._recordedAt = recordedAt;
+  set recordedAt(DateTime? recordedAt) => _$this._recordedAt = recordedAt;
+
+  String? _id;
+  String? get id => _$this._id;
+  set id(String? id) => _$this._id = id;
+
+  String? _playerId;
+  String? get playerId => _$this._playerId;
+  set playerId(String? playerId) => _$this._playerId = playerId;
+
+  String? _testTypeId;
+  String? get testTypeId => _$this._testTypeId;
+  set testTypeId(String? testTypeId) => _$this._testTypeId = testTypeId;
+
+  String? _testCode;
+  String? get testCode => _$this._testCode;
+  set testCode(String? testCode) => _$this._testCode = testCode;
+
+  String? _unit;
+  String? get unit => _$this._unit;
+  set unit(String? unit) => _$this._unit = unit;
+
+  Date? _measuredOn;
+  Date? get measuredOn => _$this._measuredOn;
+  set measuredOn(Date? measuredOn) => _$this._measuredOn = measuredOn;
+
+  double? _value;
+  double? get value => _$this._value;
+  set value(double? value) => _$this._value = value;
+
+  int? _ageAtMeasurement;
+  int? get ageAtMeasurement => _$this._ageAtMeasurement;
+  set ageAtMeasurement(int? ageAtMeasurement) =>
+      _$this._ageAtMeasurement = ageAtMeasurement;
+
+  BandStatus? _bandStatus;
+  BandStatus? get bandStatus => _$this._bandStatus;
+  set bandStatus(BandStatus? bandStatus) => _$this._bandStatus = bandStatus;
+
+  NormBand? _expectedBand;
+  NormBand? get expectedBand => _$this._expectedBand;
+  set expectedBand(NormBand? expectedBand) =>
+      _$this._expectedBand = expectedBand;
+
+  String? _normId;
+  String? get normId => _$this._normId;
+  set normId(String? normId) => _$this._normId = normId;
+
+  bool? _referencePending;
+  bool? get referencePending => _$this._referencePending;
+  set referencePending(bool? referencePending) =>
+      _$this._referencePending = referencePending;
+
+  String? _notes;
+  String? get notes => _$this._notes;
+  set notes(String? notes) => _$this._notes = notes;
 
   PhysicalTestResultBuilder() {
     PhysicalTestResult._defaults(this);
@@ -213,28 +208,28 @@ class PhysicalTestResultBuilder
   PhysicalTestResultBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _expectedBand = $v.expectedBand;
-      _testCode = $v.testCode;
-      _notes = $v.notes;
-      _measuredOn = $v.measuredOn;
-      _ageAtMeasurement = $v.ageAtMeasurement;
-      _bandStatus = $v.bandStatus;
-      _normId = $v.normId;
-      _testTypeId = $v.testTypeId;
-      _unit = $v.unit;
-      _id = $v.id;
-      _value = $v.value;
-      _referencePending = $v.referencePending;
-      _playerId = $v.playerId;
       _recordedBy = $v.recordedBy.toBuilder();
       _recordedAt = $v.recordedAt;
+      _id = $v.id;
+      _playerId = $v.playerId;
+      _testTypeId = $v.testTypeId;
+      _testCode = $v.testCode;
+      _unit = $v.unit;
+      _measuredOn = $v.measuredOn;
+      _value = $v.value;
+      _ageAtMeasurement = $v.ageAtMeasurement;
+      _bandStatus = $v.bandStatus;
+      _expectedBand = $v.expectedBand;
+      _normId = $v.normId;
+      _referencePending = $v.referencePending;
+      _notes = $v.notes;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant PhysicalTestResult other) {
+  void replace(PhysicalTestResult other) {
     _$v = other as _$PhysicalTestResult;
   }
 
@@ -251,31 +246,31 @@ class PhysicalTestResultBuilder
     try {
       _$result = _$v ??
           _$PhysicalTestResult._(
-            expectedBand: expectedBand,
-            testCode: BuiltValueNullFieldError.checkNotNull(
-                testCode, r'PhysicalTestResult', 'testCode'),
-            notes: notes,
-            measuredOn: BuiltValueNullFieldError.checkNotNull(
-                measuredOn, r'PhysicalTestResult', 'measuredOn'),
-            ageAtMeasurement: ageAtMeasurement,
-            bandStatus: BuiltValueNullFieldError.checkNotNull(
-                bandStatus, r'PhysicalTestResult', 'bandStatus'),
-            normId: normId,
-            testTypeId: BuiltValueNullFieldError.checkNotNull(
-                testTypeId, r'PhysicalTestResult', 'testTypeId'),
-            unit: BuiltValueNullFieldError.checkNotNull(
-                unit, r'PhysicalTestResult', 'unit'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'PhysicalTestResult', 'id'),
-            value: BuiltValueNullFieldError.checkNotNull(
-                value, r'PhysicalTestResult', 'value'),
-            referencePending: BuiltValueNullFieldError.checkNotNull(
-                referencePending, r'PhysicalTestResult', 'referencePending'),
-            playerId: BuiltValueNullFieldError.checkNotNull(
-                playerId, r'PhysicalTestResult', 'playerId'),
             recordedBy: recordedBy.build(),
             recordedAt: BuiltValueNullFieldError.checkNotNull(
                 recordedAt, r'PhysicalTestResult', 'recordedAt'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'PhysicalTestResult', 'id'),
+            playerId: BuiltValueNullFieldError.checkNotNull(
+                playerId, r'PhysicalTestResult', 'playerId'),
+            testTypeId: BuiltValueNullFieldError.checkNotNull(
+                testTypeId, r'PhysicalTestResult', 'testTypeId'),
+            testCode: BuiltValueNullFieldError.checkNotNull(
+                testCode, r'PhysicalTestResult', 'testCode'),
+            unit: BuiltValueNullFieldError.checkNotNull(
+                unit, r'PhysicalTestResult', 'unit'),
+            measuredOn: BuiltValueNullFieldError.checkNotNull(
+                measuredOn, r'PhysicalTestResult', 'measuredOn'),
+            value: BuiltValueNullFieldError.checkNotNull(
+                value, r'PhysicalTestResult', 'value'),
+            ageAtMeasurement: ageAtMeasurement,
+            bandStatus: BuiltValueNullFieldError.checkNotNull(
+                bandStatus, r'PhysicalTestResult', 'bandStatus'),
+            expectedBand: expectedBand,
+            normId: normId,
+            referencePending: BuiltValueNullFieldError.checkNotNull(
+                referencePending, r'PhysicalTestResult', 'referencePending'),
+            notes: notes,
           );
     } catch (_) {
       late String _$failedField;

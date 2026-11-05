@@ -3,7 +3,6 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:hoops_athlete_api/src/model/physical_test_type_input.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -12,21 +11,36 @@ part 'physical_test_type.g.dart';
 /// PhysicalTestType
 ///
 /// Properties:
-/// * [code] 
-/// * [name] 
-/// * [unit] 
-/// * [higherIsBetter] 
-/// * [description] 
-/// * [id] 
+/// * [code]
+/// * [name]
+/// * [unit]
+/// * [higherIsBetter]
+/// * [description]
+/// * [id]
 /// * [global] - Platform-provided (read-only) type.
 @BuiltValue()
-abstract class PhysicalTestType implements PhysicalTestTypeInput, Built<PhysicalTestType, PhysicalTestTypeBuilder> {
-  /// Platform-provided (read-only) type.
-  @BuiltValueField(wireName: r'global')
-  bool get global;
+abstract class PhysicalTestType implements Built<PhysicalTestType, PhysicalTestTypeBuilder> {
+  @BuiltValueField(wireName: r'code')
+  String get code;
+
+  @BuiltValueField(wireName: r'name')
+  String get name;
+
+  @BuiltValueField(wireName: r'unit')
+  String get unit;
+
+  @BuiltValueField(wireName: r'higherIsBetter')
+  bool get higherIsBetter;
+
+  @BuiltValueField(wireName: r'description')
+  String? get description;
 
   @BuiltValueField(wireName: r'id')
   String get id;
+
+  /// Platform-provided (read-only) type.
+  @BuiltValueField(wireName: r'global')
+  bool get global;
 
   PhysicalTestType._();
 
@@ -51,11 +65,6 @@ class _$PhysicalTestTypeSerializer implements PrimitiveSerializer<PhysicalTestTy
     PhysicalTestType object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'unit';
-    yield serializers.serialize(
-      object.unit,
-      specifiedType: const FullType(String),
-    );
     yield r'code';
     yield serializers.serialize(
       object.code,
@@ -66,6 +75,16 @@ class _$PhysicalTestTypeSerializer implements PrimitiveSerializer<PhysicalTestTy
       object.name,
       specifiedType: const FullType(String),
     );
+    yield r'unit';
+    yield serializers.serialize(
+      object.unit,
+      specifiedType: const FullType(String),
+    );
+    yield r'higherIsBetter';
+    yield serializers.serialize(
+      object.higherIsBetter,
+      specifiedType: const FullType(bool),
+    );
     if (object.description != null) {
       yield r'description';
       yield serializers.serialize(
@@ -73,19 +92,14 @@ class _$PhysicalTestTypeSerializer implements PrimitiveSerializer<PhysicalTestTy
         specifiedType: const FullType(String),
       );
     }
-    yield r'global';
-    yield serializers.serialize(
-      object.global,
-      specifiedType: const FullType(bool),
-    );
     yield r'id';
     yield serializers.serialize(
       object.id,
       specifiedType: const FullType(String),
     );
-    yield r'higherIsBetter';
+    yield r'global';
     yield serializers.serialize(
-      object.higherIsBetter,
+      object.global,
       specifiedType: const FullType(bool),
     );
   }
@@ -111,13 +125,6 @@ class _$PhysicalTestTypeSerializer implements PrimitiveSerializer<PhysicalTestTy
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'unit':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.unit = valueDes;
-          break;
         case r'code':
           final valueDes = serializers.deserialize(
             value,
@@ -132,6 +139,20 @@ class _$PhysicalTestTypeSerializer implements PrimitiveSerializer<PhysicalTestTy
           ) as String;
           result.name = valueDes;
           break;
+        case r'unit':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.unit = valueDes;
+          break;
+        case r'higherIsBetter':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.higherIsBetter = valueDes;
+          break;
         case r'description':
           final valueDes = serializers.deserialize(
             value,
@@ -140,13 +161,6 @@ class _$PhysicalTestTypeSerializer implements PrimitiveSerializer<PhysicalTestTy
           if (valueDes == null) continue;
           result.description = valueDes;
           break;
-        case r'global':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(bool),
-          ) as bool;
-          result.global = valueDes;
-          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,
@@ -154,12 +168,12 @@ class _$PhysicalTestTypeSerializer implements PrimitiveSerializer<PhysicalTestTy
           ) as String;
           result.id = valueDes;
           break;
-        case r'higherIsBetter':
+        case r'global':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(bool),
           ) as bool;
-          result.higherIsBetter = valueDes;
+          result.global = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -189,5 +203,3 @@ class _$PhysicalTestTypeSerializer implements PrimitiveSerializer<PhysicalTestTy
     return result.build();
   }
 }
-
-

@@ -6,29 +6,7 @@ part of 'tenant_admin.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-abstract class TenantAdminBuilder {
-  void replace(TenantAdmin other);
-  void update(void Function(TenantAdminBuilder) updates);
-  String? get personId;
-  set personId(String? personId);
-
-  String? get givenName;
-  set givenName(String? givenName);
-
-  String? get familyName;
-  set familyName(String? familyName);
-
-  String? get email;
-  set email(String? email);
-
-  InvitationStatus? get invitationStatus;
-  set invitationStatus(InvitationStatus? invitationStatus);
-
-  SetBuilder<TenantRole> get otherRoles;
-  set otherRoles(SetBuilder<TenantRole>? otherRoles);
-}
-
-class _$$TenantAdmin extends $TenantAdmin {
+class _$TenantAdmin extends TenantAdmin {
   @override
   final String personId;
   @override
@@ -42,10 +20,10 @@ class _$$TenantAdmin extends $TenantAdmin {
   @override
   final BuiltSet<TenantRole> otherRoles;
 
-  factory _$$TenantAdmin([void Function($TenantAdminBuilder)? updates]) =>
-      ($TenantAdminBuilder()..update(updates))._build();
+  factory _$TenantAdmin([void Function(TenantAdminBuilder)? updates]) =>
+      (TenantAdminBuilder()..update(updates))._build();
 
-  _$$TenantAdmin._(
+  _$TenantAdmin._(
       {required this.personId,
       required this.givenName,
       required this.familyName,
@@ -54,16 +32,16 @@ class _$$TenantAdmin extends $TenantAdmin {
       required this.otherRoles})
       : super._();
   @override
-  $TenantAdmin rebuild(void Function($TenantAdminBuilder) updates) =>
+  TenantAdmin rebuild(void Function(TenantAdminBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  $TenantAdminBuilder toBuilder() => $TenantAdminBuilder()..replace(this);
+  TenantAdminBuilder toBuilder() => TenantAdminBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is $TenantAdmin &&
+    return other is TenantAdmin &&
         personId == other.personId &&
         givenName == other.givenName &&
         familyName == other.familyName &&
@@ -87,7 +65,7 @@ class _$$TenantAdmin extends $TenantAdmin {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'$TenantAdmin')
+    return (newBuiltValueToStringHelper(r'TenantAdmin')
           ..add('personId', personId)
           ..add('givenName', givenName)
           ..add('familyName', familyName)
@@ -98,43 +76,41 @@ class _$$TenantAdmin extends $TenantAdmin {
   }
 }
 
-class $TenantAdminBuilder
-    implements Builder<$TenantAdmin, $TenantAdminBuilder>, TenantAdminBuilder {
-  _$$TenantAdmin? _$v;
+class TenantAdminBuilder implements Builder<TenantAdmin, TenantAdminBuilder> {
+  _$TenantAdmin? _$v;
 
   String? _personId;
   String? get personId => _$this._personId;
-  set personId(covariant String? personId) => _$this._personId = personId;
+  set personId(String? personId) => _$this._personId = personId;
 
   String? _givenName;
   String? get givenName => _$this._givenName;
-  set givenName(covariant String? givenName) => _$this._givenName = givenName;
+  set givenName(String? givenName) => _$this._givenName = givenName;
 
   String? _familyName;
   String? get familyName => _$this._familyName;
-  set familyName(covariant String? familyName) =>
-      _$this._familyName = familyName;
+  set familyName(String? familyName) => _$this._familyName = familyName;
 
   String? _email;
   String? get email => _$this._email;
-  set email(covariant String? email) => _$this._email = email;
+  set email(String? email) => _$this._email = email;
 
   InvitationStatus? _invitationStatus;
   InvitationStatus? get invitationStatus => _$this._invitationStatus;
-  set invitationStatus(covariant InvitationStatus? invitationStatus) =>
+  set invitationStatus(InvitationStatus? invitationStatus) =>
       _$this._invitationStatus = invitationStatus;
 
   SetBuilder<TenantRole>? _otherRoles;
   SetBuilder<TenantRole> get otherRoles =>
       _$this._otherRoles ??= SetBuilder<TenantRole>();
-  set otherRoles(covariant SetBuilder<TenantRole>? otherRoles) =>
+  set otherRoles(SetBuilder<TenantRole>? otherRoles) =>
       _$this._otherRoles = otherRoles;
 
-  $TenantAdminBuilder() {
-    $TenantAdmin._defaults(this);
+  TenantAdminBuilder() {
+    TenantAdmin._defaults(this);
   }
 
-  $TenantAdminBuilder get _$this {
+  TenantAdminBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _personId = $v.personId;
@@ -149,32 +125,32 @@ class $TenantAdminBuilder
   }
 
   @override
-  void replace(covariant $TenantAdmin other) {
-    _$v = other as _$$TenantAdmin;
+  void replace(TenantAdmin other) {
+    _$v = other as _$TenantAdmin;
   }
 
   @override
-  void update(void Function($TenantAdminBuilder)? updates) {
+  void update(void Function(TenantAdminBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  $TenantAdmin build() => _build();
+  TenantAdmin build() => _build();
 
-  _$$TenantAdmin _build() {
-    _$$TenantAdmin _$result;
+  _$TenantAdmin _build() {
+    _$TenantAdmin _$result;
     try {
       _$result = _$v ??
-          _$$TenantAdmin._(
+          _$TenantAdmin._(
             personId: BuiltValueNullFieldError.checkNotNull(
-                personId, r'$TenantAdmin', 'personId'),
+                personId, r'TenantAdmin', 'personId'),
             givenName: BuiltValueNullFieldError.checkNotNull(
-                givenName, r'$TenantAdmin', 'givenName'),
+                givenName, r'TenantAdmin', 'givenName'),
             familyName: BuiltValueNullFieldError.checkNotNull(
-                familyName, r'$TenantAdmin', 'familyName'),
+                familyName, r'TenantAdmin', 'familyName'),
             email: email,
             invitationStatus: BuiltValueNullFieldError.checkNotNull(
-                invitationStatus, r'$TenantAdmin', 'invitationStatus'),
+                invitationStatus, r'TenantAdmin', 'invitationStatus'),
             otherRoles: otherRoles.build(),
           );
     } catch (_) {
@@ -184,7 +160,7 @@ class $TenantAdminBuilder
         otherRoles.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
-            r'$TenantAdmin', _$failedField, e.toString());
+            r'TenantAdmin', _$failedField, e.toString());
       }
       rethrow;
     }

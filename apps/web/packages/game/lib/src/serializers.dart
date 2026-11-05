@@ -24,7 +24,6 @@ import 'package:hoops_game_api/src/model/foul_payload.dart';
 import 'package:hoops_game_api/src/model/home_away.dart';
 import 'package:hoops_game_api/src/model/match.dart';
 import 'package:hoops_game_api/src/model/match_event.dart';
-import 'package:hoops_game_api/src/model/match_event_base.dart';
 import 'package:hoops_game_api/src/model/match_event_batch.dart';
 import 'package:hoops_game_api/src/model/match_event_batch_result.dart';
 import 'package:hoops_game_api/src/model/match_event_feed.dart';
@@ -46,7 +45,6 @@ import 'package:hoops_game_api/src/model/period_end_event.dart';
 import 'package:hoops_game_api/src/model/period_score.dart';
 import 'package:hoops_game_api/src/model/period_start_event.dart';
 import 'package:hoops_game_api/src/model/person_ref.dart';
-import 'package:hoops_game_api/src/model/player_attribution.dart';
 import 'package:hoops_game_api/src/model/player_match_line.dart';
 import 'package:hoops_game_api/src/model/player_match_stats.dart';
 import 'package:hoops_game_api/src/model/player_season_stats.dart';
@@ -86,7 +84,6 @@ part 'serializers.g.dart';
   HomeAway,
   Match,
   MatchEvent,
-  MatchEventBase,$MatchEventBase,
   MatchEventBatch,
   MatchEventBatchResult,
   MatchEventFeed,
@@ -108,7 +105,6 @@ part 'serializers.g.dart';
   PeriodScore,
   PeriodStartEvent,
   PersonRef,
-  PlayerAttribution,$PlayerAttribution,
   PlayerMatchLine,
   PlayerMatchStats,
   PlayerSeasonStats,
@@ -184,8 +180,6 @@ Serializers serializers = (_$serializers.toBuilder()
         const FullType(BuiltList, [FullType(ProblemViolation)]),
         () => ListBuilder<ProblemViolation>(),
       )
-      ..add(MatchEventBase.serializer)
-      ..add(PlayerAttribution.serializer)
       ..add(const OneOfSerializer())
       ..add(const AnyOfSerializer())
       ..add(const DateSerializer())

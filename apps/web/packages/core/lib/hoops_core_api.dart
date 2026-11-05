@@ -64,7 +64,6 @@ export 'package:hoops_core_api/src/model/membership.dart';
 export 'package:hoops_core_api/src/model/orphan.dart';
 export 'package:hoops_core_api/src/model/page_meta.dart';
 export 'package:hoops_core_api/src/model/person_ref.dart';
-export 'package:hoops_core_api/src/model/personal_data.dart';
 export 'package:hoops_core_api/src/model/player.dart';
 export 'package:hoops_core_api/src/model/player_batch_request.dart';
 export 'package:hoops_core_api/src/model/player_batch_response.dart';

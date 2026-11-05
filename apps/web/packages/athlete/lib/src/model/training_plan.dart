@@ -4,7 +4,6 @@
 
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
-import 'package:hoops_athlete_api/src/model/training_plan_summary.dart';
 import 'package:hoops_athlete_api/src/model/plan_item.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -14,17 +13,44 @@ part 'training_plan.g.dart';
 /// TrainingPlan
 ///
 /// Properties:
-/// * [id] 
-/// * [name] 
-/// * [description] 
+/// * [id]
+/// * [name]
+/// * [description]
 /// * [template] - Global, read-only template (copy before use).
 /// * [sourceTemplateId] - Template (or plan) this plan was copied from.
-/// * [itemCount] 
-/// * [totalDurationMinutes] 
+/// * [itemCount]
+/// * [totalDurationMinutes]
 /// * [archived] - Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
-/// * [items] 
+/// * [items]
 @BuiltValue()
-abstract class TrainingPlan implements TrainingPlanSummary, Built<TrainingPlan, TrainingPlanBuilder> {
+abstract class TrainingPlan implements Built<TrainingPlan, TrainingPlanBuilder> {
+  @BuiltValueField(wireName: r'id')
+  String get id;
+
+  @BuiltValueField(wireName: r'name')
+  String get name;
+
+  @BuiltValueField(wireName: r'description')
+  String? get description;
+
+  /// Global, read-only template (copy before use).
+  @BuiltValueField(wireName: r'template')
+  bool get template;
+
+  /// Template (or plan) this plan was copied from.
+  @BuiltValueField(wireName: r'sourceTemplateId')
+  String? get sourceTemplateId;
+
+  @BuiltValueField(wireName: r'itemCount')
+  int get itemCount;
+
+  @BuiltValueField(wireName: r'totalDurationMinutes')
+  int get totalDurationMinutes;
+
+  /// Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
+  @BuiltValueField(wireName: r'archived')
+  bool? get archived;
+
   @BuiltValueField(wireName: r'items')
   BuiltList<PlanItem> get items;
 
@@ -51,27 +77,27 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
     TrainingPlan object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'template';
+    yield r'id';
     yield serializers.serialize(
-      object.template,
-      specifiedType: const FullType(bool),
-    );
-    if (object.archived != null) {
-      yield r'archived';
-      yield serializers.serialize(
-        object.archived,
-        specifiedType: const FullType(bool),
-      );
-    }
-    yield r'totalDurationMinutes';
-    yield serializers.serialize(
-      object.totalDurationMinutes,
-      specifiedType: const FullType(int),
+      object.id,
+      specifiedType: const FullType(String),
     );
     yield r'name';
     yield serializers.serialize(
       object.name,
       specifiedType: const FullType(String),
+    );
+    if (object.description != null) {
+      yield r'description';
+      yield serializers.serialize(
+        object.description,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    yield r'template';
+    yield serializers.serialize(
+      object.template,
+      specifiedType: const FullType(bool),
     );
     if (object.sourceTemplateId != null) {
       yield r'sourceTemplateId';
@@ -80,27 +106,27 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
         specifiedType: const FullType.nullable(String),
       );
     }
-    if (object.description != null) {
-      yield r'description';
-      yield serializers.serialize(
-        object.description,
-        specifiedType: const FullType.nullable(String),
-      );
-    }
-    yield r'id';
-    yield serializers.serialize(
-      object.id,
-      specifiedType: const FullType(String),
-    );
-    yield r'items';
-    yield serializers.serialize(
-      object.items,
-      specifiedType: const FullType(BuiltList, [FullType(PlanItem)]),
-    );
     yield r'itemCount';
     yield serializers.serialize(
       object.itemCount,
       specifiedType: const FullType(int),
+    );
+    yield r'totalDurationMinutes';
+    yield serializers.serialize(
+      object.totalDurationMinutes,
+      specifiedType: const FullType(int),
+    );
+    if (object.archived != null) {
+      yield r'archived';
+      yield serializers.serialize(
+        object.archived,
+        specifiedType: const FullType(bool),
+      );
+    }
+    yield r'items';
+    yield serializers.serialize(
+      object.items,
+      specifiedType: const FullType(BuiltList, [FullType(PlanItem)]),
     );
   }
 
@@ -125,27 +151,12 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'template':
+        case r'id':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(bool),
-          ) as bool;
-          result.template = valueDes;
-          break;
-        case r'archived':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(bool),
-          ) as bool?;
-          if (valueDes == null) continue;
-          result.archived = valueDes;
-          break;
-        case r'totalDurationMinutes':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(int),
-          ) as int;
-          result.totalDurationMinutes = valueDes;
+            specifiedType: const FullType(String),
+          ) as String;
+          result.id = valueDes;
           break;
         case r'name':
           final valueDes = serializers.deserialize(
@@ -153,14 +164,6 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
             specifiedType: const FullType(String),
           ) as String;
           result.name = valueDes;
-          break;
-        case r'sourceTemplateId':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.sourceTemplateId = valueDes;
           break;
         case r'description':
           final valueDes = serializers.deserialize(
@@ -170,19 +173,20 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
           if (valueDes == null) continue;
           result.description = valueDes;
           break;
-        case r'id':
+        case r'template':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.id = valueDes;
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.template = valueDes;
           break;
-        case r'items':
+        case r'sourceTemplateId':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(PlanItem)]),
-          ) as BuiltList<PlanItem>;
-          result.items.replace(valueDes);
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.sourceTemplateId = valueDes;
           break;
         case r'itemCount':
           final valueDes = serializers.deserialize(
@@ -190,6 +194,28 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
             specifiedType: const FullType(int),
           ) as int;
           result.itemCount = valueDes;
+          break;
+        case r'totalDurationMinutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.totalDurationMinutes = valueDes;
+          break;
+        case r'archived':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(bool),
+          ) as bool?;
+          if (valueDes == null) continue;
+          result.archived = valueDes;
+          break;
+        case r'items':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(PlanItem)]),
+          ) as BuiltList<PlanItem>;
+          result.items.replace(valueDes);
           break;
         default:
           unhandled.add(key);
@@ -219,5 +245,3 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
     return result.build();
   }
 }
-
-

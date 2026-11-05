@@ -41,7 +41,7 @@ class ApiSeasonsRepository implements SeasonsRepository {
     required int referenceYear,
   }) async => (await _api.createSeason(
     xTenantId: _t,
-    seasonInput: api.$SeasonInput(
+    seasonInput: api.SeasonInput(
       (b) => b
         ..name = name
         ..startsOn = startsOn

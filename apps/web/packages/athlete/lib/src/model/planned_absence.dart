@@ -3,10 +3,8 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:hoops_athlete_api/src/model/planned_absence_input.dart';
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:hoops_athlete_api/src/model/person_ref.dart';
-import 'package:hoops_athlete_api/src/model/audit_info.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -15,15 +13,34 @@ part 'planned_absence.g.dart';
 /// PlannedAbsence
 ///
 /// Properties:
-/// * [playerId] 
-/// * [fromDate] 
+/// * [playerId]
+/// * [fromDate]
 /// * [toDate] - Inclusive.
-/// * [reason] 
-/// * [recordedBy] 
-/// * [recordedAt] 
-/// * [id] 
+/// * [reason]
+/// * [recordedBy]
+/// * [recordedAt]
+/// * [id]
 @BuiltValue()
-abstract class PlannedAbsence implements AuditInfo, PlannedAbsenceInput, Built<PlannedAbsence, PlannedAbsenceBuilder> {
+abstract class PlannedAbsence implements Built<PlannedAbsence, PlannedAbsenceBuilder> {
+  @BuiltValueField(wireName: r'playerId')
+  String get playerId;
+
+  @BuiltValueField(wireName: r'fromDate')
+  Date get fromDate;
+
+  /// Inclusive.
+  @BuiltValueField(wireName: r'toDate')
+  Date get toDate;
+
+  @BuiltValueField(wireName: r'reason')
+  String? get reason;
+
+  @BuiltValueField(wireName: r'recordedBy')
+  PersonRef get recordedBy;
+
+  @BuiltValueField(wireName: r'recordedAt')
+  DateTime get recordedAt;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -50,9 +67,19 @@ class _$PlannedAbsenceSerializer implements PrimitiveSerializer<PlannedAbsence> 
     PlannedAbsence object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'playerId';
+    yield serializers.serialize(
+      object.playerId,
+      specifiedType: const FullType(String),
+    );
     yield r'fromDate';
     yield serializers.serialize(
       object.fromDate,
+      specifiedType: const FullType(Date),
+    );
+    yield r'toDate';
+    yield serializers.serialize(
+      object.toDate,
       specifiedType: const FullType(Date),
     );
     if (object.reason != null) {
@@ -72,19 +99,9 @@ class _$PlannedAbsenceSerializer implements PrimitiveSerializer<PlannedAbsence> 
       object.recordedAt,
       specifiedType: const FullType(DateTime),
     );
-    yield r'toDate';
-    yield serializers.serialize(
-      object.toDate,
-      specifiedType: const FullType(Date),
-    );
     yield r'id';
     yield serializers.serialize(
       object.id,
-      specifiedType: const FullType(String),
-    );
-    yield r'playerId';
-    yield serializers.serialize(
-      object.playerId,
       specifiedType: const FullType(String),
     );
   }
@@ -110,12 +127,26 @@ class _$PlannedAbsenceSerializer implements PrimitiveSerializer<PlannedAbsence> 
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'playerId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.playerId = valueDes;
+          break;
         case r'fromDate':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(Date),
           ) as Date;
           result.fromDate = valueDes;
+          break;
+        case r'toDate':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(Date),
+          ) as Date;
+          result.toDate = valueDes;
           break;
         case r'reason':
           final valueDes = serializers.deserialize(
@@ -139,26 +170,12 @@ class _$PlannedAbsenceSerializer implements PrimitiveSerializer<PlannedAbsence> 
           ) as DateTime;
           result.recordedAt = valueDes;
           break;
-        case r'toDate':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(Date),
-          ) as Date;
-          result.toDate = valueDes;
-          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
           result.id = valueDes;
-          break;
-        case r'playerId':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.playerId = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -188,5 +205,3 @@ class _$PlannedAbsenceSerializer implements PrimitiveSerializer<PlannedAbsence> 
     return result.build();
   }
 }
-
-

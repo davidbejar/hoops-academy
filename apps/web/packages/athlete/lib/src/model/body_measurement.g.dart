@@ -8,31 +8,31 @@ part of 'body_measurement.dart';
 
 class _$BodyMeasurement extends BodyMeasurement {
   @override
+  final PersonRef recordedBy;
+  @override
+  final DateTime recordedAt;
+  @override
+  final String id;
+  @override
+  final String playerId;
+  @override
   final Date measuredOn;
   @override
   final double? heightCm;
   @override
-  final String id;
-  @override
   final double? weightKg;
-  @override
-  final String playerId;
-  @override
-  final PersonRef recordedBy;
-  @override
-  final DateTime recordedAt;
 
   factory _$BodyMeasurement([void Function(BodyMeasurementBuilder)? updates]) =>
       (BodyMeasurementBuilder()..update(updates))._build();
 
   _$BodyMeasurement._(
-      {required this.measuredOn,
-      this.heightCm,
+      {required this.recordedBy,
+      required this.recordedAt,
       required this.id,
-      this.weightKg,
       required this.playerId,
-      required this.recordedBy,
-      required this.recordedAt})
+      required this.measuredOn,
+      this.heightCm,
+      this.weightKg})
       : super._();
   @override
   BodyMeasurement rebuild(void Function(BodyMeasurementBuilder) updates) =>
@@ -45,25 +45,25 @@ class _$BodyMeasurement extends BodyMeasurement {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is BodyMeasurement &&
+        recordedBy == other.recordedBy &&
+        recordedAt == other.recordedAt &&
+        id == other.id &&
+        playerId == other.playerId &&
         measuredOn == other.measuredOn &&
         heightCm == other.heightCm &&
-        id == other.id &&
-        weightKg == other.weightKg &&
-        playerId == other.playerId &&
-        recordedBy == other.recordedBy &&
-        recordedAt == other.recordedAt;
+        weightKg == other.weightKg;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, measuredOn.hashCode);
-    _$hash = $jc(_$hash, heightCm.hashCode);
-    _$hash = $jc(_$hash, id.hashCode);
-    _$hash = $jc(_$hash, weightKg.hashCode);
-    _$hash = $jc(_$hash, playerId.hashCode);
     _$hash = $jc(_$hash, recordedBy.hashCode);
     _$hash = $jc(_$hash, recordedAt.hashCode);
+    _$hash = $jc(_$hash, id.hashCode);
+    _$hash = $jc(_$hash, playerId.hashCode);
+    _$hash = $jc(_$hash, measuredOn.hashCode);
+    _$hash = $jc(_$hash, heightCm.hashCode);
+    _$hash = $jc(_$hash, weightKg.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -71,52 +71,49 @@ class _$BodyMeasurement extends BodyMeasurement {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'BodyMeasurement')
+          ..add('recordedBy', recordedBy)
+          ..add('recordedAt', recordedAt)
+          ..add('id', id)
+          ..add('playerId', playerId)
           ..add('measuredOn', measuredOn)
           ..add('heightCm', heightCm)
-          ..add('id', id)
-          ..add('weightKg', weightKg)
-          ..add('playerId', playerId)
-          ..add('recordedBy', recordedBy)
-          ..add('recordedAt', recordedAt))
+          ..add('weightKg', weightKg))
         .toString();
   }
 }
 
 class BodyMeasurementBuilder
-    implements
-        Builder<BodyMeasurement, BodyMeasurementBuilder>,
-        AuditInfoBuilder {
+    implements Builder<BodyMeasurement, BodyMeasurementBuilder> {
   _$BodyMeasurement? _$v;
-
-  Date? _measuredOn;
-  Date? get measuredOn => _$this._measuredOn;
-  set measuredOn(covariant Date? measuredOn) => _$this._measuredOn = measuredOn;
-
-  double? _heightCm;
-  double? get heightCm => _$this._heightCm;
-  set heightCm(covariant double? heightCm) => _$this._heightCm = heightCm;
-
-  String? _id;
-  String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
-
-  double? _weightKg;
-  double? get weightKg => _$this._weightKg;
-  set weightKg(covariant double? weightKg) => _$this._weightKg = weightKg;
-
-  String? _playerId;
-  String? get playerId => _$this._playerId;
-  set playerId(covariant String? playerId) => _$this._playerId = playerId;
 
   PersonRefBuilder? _recordedBy;
   PersonRefBuilder get recordedBy => _$this._recordedBy ??= PersonRefBuilder();
-  set recordedBy(covariant PersonRefBuilder? recordedBy) =>
+  set recordedBy(PersonRefBuilder? recordedBy) =>
       _$this._recordedBy = recordedBy;
 
   DateTime? _recordedAt;
   DateTime? get recordedAt => _$this._recordedAt;
-  set recordedAt(covariant DateTime? recordedAt) =>
-      _$this._recordedAt = recordedAt;
+  set recordedAt(DateTime? recordedAt) => _$this._recordedAt = recordedAt;
+
+  String? _id;
+  String? get id => _$this._id;
+  set id(String? id) => _$this._id = id;
+
+  String? _playerId;
+  String? get playerId => _$this._playerId;
+  set playerId(String? playerId) => _$this._playerId = playerId;
+
+  Date? _measuredOn;
+  Date? get measuredOn => _$this._measuredOn;
+  set measuredOn(Date? measuredOn) => _$this._measuredOn = measuredOn;
+
+  double? _heightCm;
+  double? get heightCm => _$this._heightCm;
+  set heightCm(double? heightCm) => _$this._heightCm = heightCm;
+
+  double? _weightKg;
+  double? get weightKg => _$this._weightKg;
+  set weightKg(double? weightKg) => _$this._weightKg = weightKg;
 
   BodyMeasurementBuilder() {
     BodyMeasurement._defaults(this);
@@ -125,20 +122,20 @@ class BodyMeasurementBuilder
   BodyMeasurementBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _measuredOn = $v.measuredOn;
-      _heightCm = $v.heightCm;
-      _id = $v.id;
-      _weightKg = $v.weightKg;
-      _playerId = $v.playerId;
       _recordedBy = $v.recordedBy.toBuilder();
       _recordedAt = $v.recordedAt;
+      _id = $v.id;
+      _playerId = $v.playerId;
+      _measuredOn = $v.measuredOn;
+      _heightCm = $v.heightCm;
+      _weightKg = $v.weightKg;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant BodyMeasurement other) {
+  void replace(BodyMeasurement other) {
     _$v = other as _$BodyMeasurement;
   }
 
@@ -155,17 +152,17 @@ class BodyMeasurementBuilder
     try {
       _$result = _$v ??
           _$BodyMeasurement._(
-            measuredOn: BuiltValueNullFieldError.checkNotNull(
-                measuredOn, r'BodyMeasurement', 'measuredOn'),
-            heightCm: heightCm,
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'BodyMeasurement', 'id'),
-            weightKg: weightKg,
-            playerId: BuiltValueNullFieldError.checkNotNull(
-                playerId, r'BodyMeasurement', 'playerId'),
             recordedBy: recordedBy.build(),
             recordedAt: BuiltValueNullFieldError.checkNotNull(
                 recordedAt, r'BodyMeasurement', 'recordedAt'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'BodyMeasurement', 'id'),
+            playerId: BuiltValueNullFieldError.checkNotNull(
+                playerId, r'BodyMeasurement', 'playerId'),
+            measuredOn: BuiltValueNullFieldError.checkNotNull(
+                measuredOn, r'BodyMeasurement', 'measuredOn'),
+            heightCm: heightCm,
+            weightKg: weightKg,
           );
     } catch (_) {
       late String _$failedField;

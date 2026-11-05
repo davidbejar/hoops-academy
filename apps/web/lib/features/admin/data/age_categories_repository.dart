@@ -38,7 +38,7 @@ class ApiAgeCategoriesRepository implements AgeCategoriesRepository {
     required int rank,
   }) async => (await _api.createAgeCategory(
     xTenantId: _t,
-    ageCategoryInput: api.$AgeCategoryInput(
+    ageCategoryInput: api.AgeCategoryInput(
       (b) => b
         ..code = code
         ..name = name

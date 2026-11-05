@@ -11,13 +11,13 @@ part 'physical_test_type_input.g.dart';
 /// PhysicalTestTypeInput
 ///
 /// Properties:
-/// * [code] 
-/// * [name] 
-/// * [unit] 
-/// * [higherIsBetter] 
-/// * [description] 
-@BuiltValue(instantiable: false)
-abstract class PhysicalTestTypeInput  {
+/// * [code]
+/// * [name]
+/// * [unit]
+/// * [higherIsBetter]
+/// * [description]
+@BuiltValue()
+abstract class PhysicalTestTypeInput implements Built<PhysicalTestTypeInput, PhysicalTestTypeInputBuilder> {
   @BuiltValueField(wireName: r'code')
   String get code;
 
@@ -33,13 +33,20 @@ abstract class PhysicalTestTypeInput  {
   @BuiltValueField(wireName: r'description')
   String? get description;
 
+  PhysicalTestTypeInput._();
+
+  factory PhysicalTestTypeInput([void updates(PhysicalTestTypeInputBuilder b)]) = _$PhysicalTestTypeInput;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(PhysicalTestTypeInputBuilder b) => b;
+
   @BuiltValueSerializer(custom: true)
   static Serializer<PhysicalTestTypeInput> get serializer => _$PhysicalTestTypeInputSerializer();
 }
 
 class _$PhysicalTestTypeInputSerializer implements PrimitiveSerializer<PhysicalTestTypeInput> {
   @override
-  final Iterable<Type> types = const [PhysicalTestTypeInput];
+  final Iterable<Type> types = const [PhysicalTestTypeInput, _$PhysicalTestTypeInput];
 
   @override
   final String wireName = r'PhysicalTestTypeInput';
@@ -85,47 +92,6 @@ class _$PhysicalTestTypeInputSerializer implements PrimitiveSerializer<PhysicalT
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
-  }
-
-  @override
-  PhysicalTestTypeInput deserialize(
-    Serializers serializers,
-    Object serialized, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.deserialize(serialized, specifiedType: FullType($PhysicalTestTypeInput)) as $PhysicalTestTypeInput;
-  }
-}
-
-
-/// a concrete implementation of [PhysicalTestTypeInput], since [PhysicalTestTypeInput] is not instantiable
-@BuiltValue(instantiable: true)
-abstract class $PhysicalTestTypeInput implements PhysicalTestTypeInput, Built<$PhysicalTestTypeInput, $PhysicalTestTypeInputBuilder> {
-  $PhysicalTestTypeInput._();
-
-  factory $PhysicalTestTypeInput([void Function($PhysicalTestTypeInputBuilder)? updates]) = _$$PhysicalTestTypeInput;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults($PhysicalTestTypeInputBuilder b) => b;
-
-  @BuiltValueSerializer(custom: true)
-  static Serializer<$PhysicalTestTypeInput> get serializer => _$$PhysicalTestTypeInputSerializer();
-}
-
-class _$$PhysicalTestTypeInputSerializer implements PrimitiveSerializer<$PhysicalTestTypeInput> {
-  @override
-  final Iterable<Type> types = const [$PhysicalTestTypeInput, _$$PhysicalTestTypeInput];
-
-  @override
-  final String wireName = r'$PhysicalTestTypeInput';
-
-  @override
-  Object serialize(
-    Serializers serializers,
-    $PhysicalTestTypeInput object, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.serialize(object, specifiedType: FullType(PhysicalTestTypeInput))!;
   }
 
   void _deserializeProperties(
@@ -185,12 +151,12 @@ class _$$PhysicalTestTypeInputSerializer implements PrimitiveSerializer<$Physica
   }
 
   @override
-  $PhysicalTestTypeInput deserialize(
+  PhysicalTestTypeInput deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = $PhysicalTestTypeInputBuilder();
+    final result = PhysicalTestTypeInputBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -204,4 +170,3 @@ class _$$PhysicalTestTypeInputSerializer implements PrimitiveSerializer<$Physica
     return result.build();
   }
 }
-

@@ -6,7 +6,6 @@
 import 'package:hoops_athlete_api/src/model/training_plan_summary.dart';
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:hoops_athlete_api/src/model/person_ref.dart';
-import 'package:hoops_athlete_api/src/model/audit_info.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -15,24 +14,21 @@ part 'plan_assignment.g.dart';
 /// PlanAssignment
 ///
 /// Properties:
-/// * [recordedBy] 
-/// * [recordedAt] 
-/// * [id] 
-/// * [plan] 
-/// * [teamId] 
-/// * [playerId] 
-/// * [dueOn] 
-/// * [notes] 
+/// * [recordedBy]
+/// * [recordedAt]
+/// * [id]
+/// * [plan]
+/// * [teamId]
+/// * [playerId]
+/// * [dueOn]
+/// * [notes]
 @BuiltValue()
-abstract class PlanAssignment implements AuditInfo, Built<PlanAssignment, PlanAssignmentBuilder> {
-  @BuiltValueField(wireName: r'notes')
-  String? get notes;
+abstract class PlanAssignment implements Built<PlanAssignment, PlanAssignmentBuilder> {
+  @BuiltValueField(wireName: r'recordedBy')
+  PersonRef get recordedBy;
 
-  @BuiltValueField(wireName: r'dueOn')
-  Date get dueOn;
-
-  @BuiltValueField(wireName: r'teamId')
-  String? get teamId;
+  @BuiltValueField(wireName: r'recordedAt')
+  DateTime get recordedAt;
 
   @BuiltValueField(wireName: r'id')
   String get id;
@@ -40,8 +36,17 @@ abstract class PlanAssignment implements AuditInfo, Built<PlanAssignment, PlanAs
   @BuiltValueField(wireName: r'plan')
   TrainingPlanSummary get plan;
 
+  @BuiltValueField(wireName: r'teamId')
+  String? get teamId;
+
   @BuiltValueField(wireName: r'playerId')
   String? get playerId;
+
+  @BuiltValueField(wireName: r'dueOn')
+  Date get dueOn;
+
+  @BuiltValueField(wireName: r'notes')
+  String? get notes;
 
   PlanAssignment._();
 
@@ -71,30 +76,11 @@ class _$PlanAssignmentSerializer implements PrimitiveSerializer<PlanAssignment> 
       object.recordedBy,
       specifiedType: const FullType(PersonRef),
     );
-    if (object.notes != null) {
-      yield r'notes';
-      yield serializers.serialize(
-        object.notes,
-        specifiedType: const FullType.nullable(String),
-      );
-    }
-    yield r'dueOn';
-    yield serializers.serialize(
-      object.dueOn,
-      specifiedType: const FullType(Date),
-    );
     yield r'recordedAt';
     yield serializers.serialize(
       object.recordedAt,
       specifiedType: const FullType(DateTime),
     );
-    if (object.teamId != null) {
-      yield r'teamId';
-      yield serializers.serialize(
-        object.teamId,
-        specifiedType: const FullType.nullable(String),
-      );
-    }
     yield r'id';
     yield serializers.serialize(
       object.id,
@@ -105,10 +91,29 @@ class _$PlanAssignmentSerializer implements PrimitiveSerializer<PlanAssignment> 
       object.plan,
       specifiedType: const FullType(TrainingPlanSummary),
     );
+    if (object.teamId != null) {
+      yield r'teamId';
+      yield serializers.serialize(
+        object.teamId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
     if (object.playerId != null) {
       yield r'playerId';
       yield serializers.serialize(
         object.playerId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    yield r'dueOn';
+    yield serializers.serialize(
+      object.dueOn,
+      specifiedType: const FullType(Date),
+    );
+    if (object.notes != null) {
+      yield r'notes';
+      yield serializers.serialize(
+        object.notes,
         specifiedType: const FullType.nullable(String),
       );
     }
@@ -142,35 +147,12 @@ class _$PlanAssignmentSerializer implements PrimitiveSerializer<PlanAssignment> 
           ) as PersonRef;
           result.recordedBy.replace(valueDes);
           break;
-        case r'notes':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.notes = valueDes;
-          break;
-        case r'dueOn':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(Date),
-          ) as Date;
-          result.dueOn = valueDes;
-          break;
         case r'recordedAt':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(DateTime),
           ) as DateTime;
           result.recordedAt = valueDes;
-          break;
-        case r'teamId':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.teamId = valueDes;
           break;
         case r'id':
           final valueDes = serializers.deserialize(
@@ -184,7 +166,15 @@ class _$PlanAssignmentSerializer implements PrimitiveSerializer<PlanAssignment> 
             value,
             specifiedType: const FullType(TrainingPlanSummary),
           ) as TrainingPlanSummary;
-          result.plan = valueDes;
+          result.plan.replace(valueDes);
+          break;
+        case r'teamId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.teamId = valueDes;
           break;
         case r'playerId':
           final valueDes = serializers.deserialize(
@@ -193,6 +183,21 @@ class _$PlanAssignmentSerializer implements PrimitiveSerializer<PlanAssignment> 
           ) as String?;
           if (valueDes == null) continue;
           result.playerId = valueDes;
+          break;
+        case r'dueOn':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(Date),
+          ) as Date;
+          result.dueOn = valueDes;
+          break;
+        case r'notes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.notes = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -222,5 +227,3 @@ class _$PlanAssignmentSerializer implements PrimitiveSerializer<PlanAssignment> 
     return result.build();
   }
 }
-
-

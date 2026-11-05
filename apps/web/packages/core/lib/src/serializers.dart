@@ -56,7 +56,6 @@ import 'package:hoops_core_api/src/model/membership.dart';
 import 'package:hoops_core_api/src/model/orphan.dart';
 import 'package:hoops_core_api/src/model/page_meta.dart';
 import 'package:hoops_core_api/src/model/person_ref.dart';
-import 'package:hoops_core_api/src/model/personal_data.dart';
 import 'package:hoops_core_api/src/model/player.dart';
 import 'package:hoops_core_api/src/model/player_batch_request.dart';
 import 'package:hoops_core_api/src/model/player_batch_response.dart';
@@ -118,12 +117,12 @@ part 'serializers.g.dart';
 @SerializersFor([
   AddTenantAdminRequest,
   AgeCategory,
-  AgeCategoryInput,$AgeCategoryInput,
+  AgeCategoryInput,
   AgeRule,
   ApprovalAction,
   ApprovalDecisionRequest,
   ApprovalPayload,
-  ApprovalRequest,$ApprovalRequest,
+  ApprovalRequest,
   ApprovalRequestPage,
   ApprovalRequestWithPassword,
   ApprovalStatus,
@@ -151,14 +150,13 @@ part 'serializers.g.dart';
   InviteMemberRequest,
   Locale,
   Me,
-  Member,$Member,
+  Member,
   MemberPage,
   MemberWithPassword,
   Membership,
   Orphan,
   PageMeta,
   PersonRef,
-  PersonalData,$PersonalData,
   Player,
   PlayerBatchRequest,
   PlayerBatchResponse,
@@ -176,7 +174,7 @@ part 'serializers.g.dart';
   RosterPlayer,
   RosterStaff,
   Season,
-  SeasonInput,$SeasonInput,
+  SeasonInput,
   SeasonRolloverRequest,
   SeasonRolloverResult,
   StaffRole,
@@ -187,8 +185,8 @@ part 'serializers.g.dart';
   TeamRoster,
   TeamStaffAssignment,
   TeamStaffMember,
-  Tenant,$Tenant,
-  TenantAdmin,$TenantAdmin,
+  Tenant,
+  TenantAdmin,
   TenantAdminPage,
   TenantAdminWithPassword,
   TenantLifecycleRequest,
@@ -328,13 +326,6 @@ Serializers serializers = (_$serializers.toBuilder()
         const FullType(BuiltList, [FullType(String)]),
         () => ListBuilder<String>(),
       )
-      ..add(AgeCategoryInput.serializer)
-      ..add(ApprovalRequest.serializer)
-      ..add(Member.serializer)
-      ..add(PersonalData.serializer)
-      ..add(SeasonInput.serializer)
-      ..add(Tenant.serializer)
-      ..add(TenantAdmin.serializer)
       ..add(const OneOfSerializer())
       ..add(const AnyOfSerializer())
       ..add(const DateSerializer())

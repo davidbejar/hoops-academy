@@ -7,8 +7,6 @@ part of 'serializers.dart';
 // **************************************************************************
 
 Serializers _$serializers = (Serializers().toBuilder()
-      ..add($MatchEventBase.serializer)
-      ..add($PlayerAttribution.serializer)
       ..add(AssistEvent.serializer)
       ..add(BlockEvent.serializer)
       ..add(BoxScore.serializer)

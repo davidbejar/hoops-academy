@@ -8,8 +8,6 @@ part of 'tenant_with_password.dart';
 
 class _$TenantWithPassword extends TenantWithPassword {
   @override
-  final String? temporaryPassword;
-  @override
   final String id;
   @override
   final String slug;
@@ -29,14 +27,15 @@ class _$TenantWithPassword extends TenantWithPassword {
   final DateTime? withdrawnAt;
   @override
   final Date? retainUntil;
+  @override
+  final String? temporaryPassword;
 
   factory _$TenantWithPassword(
           [void Function(TenantWithPasswordBuilder)? updates]) =>
       (TenantWithPasswordBuilder()..update(updates))._build();
 
   _$TenantWithPassword._(
-      {this.temporaryPassword,
-      required this.id,
+      {required this.id,
       required this.slug,
       required this.name,
       required this.status,
@@ -45,7 +44,8 @@ class _$TenantWithPassword extends TenantWithPassword {
       required this.createdAt,
       this.suspendedAt,
       this.withdrawnAt,
-      this.retainUntil})
+      this.retainUntil,
+      this.temporaryPassword})
       : super._();
   @override
   TenantWithPassword rebuild(
@@ -60,7 +60,6 @@ class _$TenantWithPassword extends TenantWithPassword {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TenantWithPassword &&
-        temporaryPassword == other.temporaryPassword &&
         id == other.id &&
         slug == other.slug &&
         name == other.name &&
@@ -70,13 +69,13 @@ class _$TenantWithPassword extends TenantWithPassword {
         createdAt == other.createdAt &&
         suspendedAt == other.suspendedAt &&
         withdrawnAt == other.withdrawnAt &&
-        retainUntil == other.retainUntil;
+        retainUntil == other.retainUntil &&
+        temporaryPassword == other.temporaryPassword;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, temporaryPassword.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, slug.hashCode);
     _$hash = $jc(_$hash, name.hashCode);
@@ -87,6 +86,7 @@ class _$TenantWithPassword extends TenantWithPassword {
     _$hash = $jc(_$hash, suspendedAt.hashCode);
     _$hash = $jc(_$hash, withdrawnAt.hashCode);
     _$hash = $jc(_$hash, retainUntil.hashCode);
+    _$hash = $jc(_$hash, temporaryPassword.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -94,7 +94,6 @@ class _$TenantWithPassword extends TenantWithPassword {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TenantWithPassword')
-          ..add('temporaryPassword', temporaryPassword)
           ..add('id', id)
           ..add('slug', slug)
           ..add('name', name)
@@ -104,65 +103,61 @@ class _$TenantWithPassword extends TenantWithPassword {
           ..add('createdAt', createdAt)
           ..add('suspendedAt', suspendedAt)
           ..add('withdrawnAt', withdrawnAt)
-          ..add('retainUntil', retainUntil))
+          ..add('retainUntil', retainUntil)
+          ..add('temporaryPassword', temporaryPassword))
         .toString();
   }
 }
 
 class TenantWithPasswordBuilder
-    implements
-        Builder<TenantWithPassword, TenantWithPasswordBuilder>,
-        TenantBuilder {
+    implements Builder<TenantWithPassword, TenantWithPasswordBuilder> {
   _$TenantWithPassword? _$v;
-
-  String? _temporaryPassword;
-  String? get temporaryPassword => _$this._temporaryPassword;
-  set temporaryPassword(covariant String? temporaryPassword) =>
-      _$this._temporaryPassword = temporaryPassword;
 
   String? _id;
   String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
+  set id(String? id) => _$this._id = id;
 
   String? _slug;
   String? get slug => _$this._slug;
-  set slug(covariant String? slug) => _$this._slug = slug;
+  set slug(String? slug) => _$this._slug = slug;
 
   String? _name;
   String? get name => _$this._name;
-  set name(covariant String? name) => _$this._name = name;
+  set name(String? name) => _$this._name = name;
 
   TenantStatus? _status;
   TenantStatus? get status => _$this._status;
-  set status(covariant TenantStatus? status) => _$this._status = status;
+  set status(TenantStatus? status) => _$this._status = status;
 
   String? _timezone;
   String? get timezone => _$this._timezone;
-  set timezone(covariant String? timezone) => _$this._timezone = timezone;
+  set timezone(String? timezone) => _$this._timezone = timezone;
 
   Locale? _defaultLocale;
   Locale? get defaultLocale => _$this._defaultLocale;
-  set defaultLocale(covariant Locale? defaultLocale) =>
+  set defaultLocale(Locale? defaultLocale) =>
       _$this._defaultLocale = defaultLocale;
 
   DateTime? _createdAt;
   DateTime? get createdAt => _$this._createdAt;
-  set createdAt(covariant DateTime? createdAt) => _$this._createdAt = createdAt;
+  set createdAt(DateTime? createdAt) => _$this._createdAt = createdAt;
 
   DateTime? _suspendedAt;
   DateTime? get suspendedAt => _$this._suspendedAt;
-  set suspendedAt(covariant DateTime? suspendedAt) =>
-      _$this._suspendedAt = suspendedAt;
+  set suspendedAt(DateTime? suspendedAt) => _$this._suspendedAt = suspendedAt;
 
   DateTime? _withdrawnAt;
   DateTime? get withdrawnAt => _$this._withdrawnAt;
-  set withdrawnAt(covariant DateTime? withdrawnAt) =>
-      _$this._withdrawnAt = withdrawnAt;
+  set withdrawnAt(DateTime? withdrawnAt) => _$this._withdrawnAt = withdrawnAt;
 
   Date? _retainUntil;
   Date? get retainUntil => _$this._retainUntil;
-  set retainUntil(covariant Date? retainUntil) =>
-      _$this._retainUntil = retainUntil;
+  set retainUntil(Date? retainUntil) => _$this._retainUntil = retainUntil;
+
+  String? _temporaryPassword;
+  String? get temporaryPassword => _$this._temporaryPassword;
+  set temporaryPassword(String? temporaryPassword) =>
+      _$this._temporaryPassword = temporaryPassword;
 
   TenantWithPasswordBuilder() {
     TenantWithPassword._defaults(this);
@@ -171,7 +166,6 @@ class TenantWithPasswordBuilder
   TenantWithPasswordBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _temporaryPassword = $v.temporaryPassword;
       _id = $v.id;
       _slug = $v.slug;
       _name = $v.name;
@@ -182,13 +176,14 @@ class TenantWithPasswordBuilder
       _suspendedAt = $v.suspendedAt;
       _withdrawnAt = $v.withdrawnAt;
       _retainUntil = $v.retainUntil;
+      _temporaryPassword = $v.temporaryPassword;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant TenantWithPassword other) {
+  void replace(TenantWithPassword other) {
     _$v = other as _$TenantWithPassword;
   }
 
@@ -203,7 +198,6 @@ class TenantWithPasswordBuilder
   _$TenantWithPassword _build() {
     final _$result = _$v ??
         _$TenantWithPassword._(
-          temporaryPassword: temporaryPassword,
           id: BuiltValueNullFieldError.checkNotNull(
               id, r'TenantWithPassword', 'id'),
           slug: BuiltValueNullFieldError.checkNotNull(
@@ -221,6 +215,7 @@ class TenantWithPasswordBuilder
           suspendedAt: suspendedAt,
           withdrawnAt: withdrawnAt,
           retainUntil: retainUntil,
+          temporaryPassword: temporaryPassword,
         );
     replace(_$result);
     return _$result;

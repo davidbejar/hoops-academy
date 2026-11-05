@@ -8,8 +8,6 @@ part of 'tenant_admin_with_password.dart';
 
 class _$TenantAdminWithPassword extends TenantAdminWithPassword {
   @override
-  final String? temporaryPassword;
-  @override
   final String personId;
   @override
   final String givenName;
@@ -21,19 +19,21 @@ class _$TenantAdminWithPassword extends TenantAdminWithPassword {
   final InvitationStatus invitationStatus;
   @override
   final BuiltSet<TenantRole> otherRoles;
+  @override
+  final String? temporaryPassword;
 
   factory _$TenantAdminWithPassword(
           [void Function(TenantAdminWithPasswordBuilder)? updates]) =>
       (TenantAdminWithPasswordBuilder()..update(updates))._build();
 
   _$TenantAdminWithPassword._(
-      {this.temporaryPassword,
-      required this.personId,
+      {required this.personId,
       required this.givenName,
       required this.familyName,
       this.email,
       required this.invitationStatus,
-      required this.otherRoles})
+      required this.otherRoles,
+      this.temporaryPassword})
       : super._();
   @override
   TenantAdminWithPassword rebuild(
@@ -48,25 +48,25 @@ class _$TenantAdminWithPassword extends TenantAdminWithPassword {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TenantAdminWithPassword &&
-        temporaryPassword == other.temporaryPassword &&
         personId == other.personId &&
         givenName == other.givenName &&
         familyName == other.familyName &&
         email == other.email &&
         invitationStatus == other.invitationStatus &&
-        otherRoles == other.otherRoles;
+        otherRoles == other.otherRoles &&
+        temporaryPassword == other.temporaryPassword;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, temporaryPassword.hashCode);
     _$hash = $jc(_$hash, personId.hashCode);
     _$hash = $jc(_$hash, givenName.hashCode);
     _$hash = $jc(_$hash, familyName.hashCode);
     _$hash = $jc(_$hash, email.hashCode);
     _$hash = $jc(_$hash, invitationStatus.hashCode);
     _$hash = $jc(_$hash, otherRoles.hashCode);
+    _$hash = $jc(_$hash, temporaryPassword.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -74,55 +74,53 @@ class _$TenantAdminWithPassword extends TenantAdminWithPassword {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TenantAdminWithPassword')
-          ..add('temporaryPassword', temporaryPassword)
           ..add('personId', personId)
           ..add('givenName', givenName)
           ..add('familyName', familyName)
           ..add('email', email)
           ..add('invitationStatus', invitationStatus)
-          ..add('otherRoles', otherRoles))
+          ..add('otherRoles', otherRoles)
+          ..add('temporaryPassword', temporaryPassword))
         .toString();
   }
 }
 
 class TenantAdminWithPasswordBuilder
     implements
-        Builder<TenantAdminWithPassword, TenantAdminWithPasswordBuilder>,
-        TenantAdminBuilder {
+        Builder<TenantAdminWithPassword, TenantAdminWithPasswordBuilder> {
   _$TenantAdminWithPassword? _$v;
-
-  String? _temporaryPassword;
-  String? get temporaryPassword => _$this._temporaryPassword;
-  set temporaryPassword(covariant String? temporaryPassword) =>
-      _$this._temporaryPassword = temporaryPassword;
 
   String? _personId;
   String? get personId => _$this._personId;
-  set personId(covariant String? personId) => _$this._personId = personId;
+  set personId(String? personId) => _$this._personId = personId;
 
   String? _givenName;
   String? get givenName => _$this._givenName;
-  set givenName(covariant String? givenName) => _$this._givenName = givenName;
+  set givenName(String? givenName) => _$this._givenName = givenName;
 
   String? _familyName;
   String? get familyName => _$this._familyName;
-  set familyName(covariant String? familyName) =>
-      _$this._familyName = familyName;
+  set familyName(String? familyName) => _$this._familyName = familyName;
 
   String? _email;
   String? get email => _$this._email;
-  set email(covariant String? email) => _$this._email = email;
+  set email(String? email) => _$this._email = email;
 
   InvitationStatus? _invitationStatus;
   InvitationStatus? get invitationStatus => _$this._invitationStatus;
-  set invitationStatus(covariant InvitationStatus? invitationStatus) =>
+  set invitationStatus(InvitationStatus? invitationStatus) =>
       _$this._invitationStatus = invitationStatus;
 
   SetBuilder<TenantRole>? _otherRoles;
   SetBuilder<TenantRole> get otherRoles =>
       _$this._otherRoles ??= SetBuilder<TenantRole>();
-  set otherRoles(covariant SetBuilder<TenantRole>? otherRoles) =>
+  set otherRoles(SetBuilder<TenantRole>? otherRoles) =>
       _$this._otherRoles = otherRoles;
+
+  String? _temporaryPassword;
+  String? get temporaryPassword => _$this._temporaryPassword;
+  set temporaryPassword(String? temporaryPassword) =>
+      _$this._temporaryPassword = temporaryPassword;
 
   TenantAdminWithPasswordBuilder() {
     TenantAdminWithPassword._defaults(this);
@@ -131,20 +129,20 @@ class TenantAdminWithPasswordBuilder
   TenantAdminWithPasswordBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _temporaryPassword = $v.temporaryPassword;
       _personId = $v.personId;
       _givenName = $v.givenName;
       _familyName = $v.familyName;
       _email = $v.email;
       _invitationStatus = $v.invitationStatus;
       _otherRoles = $v.otherRoles.toBuilder();
+      _temporaryPassword = $v.temporaryPassword;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant TenantAdminWithPassword other) {
+  void replace(TenantAdminWithPassword other) {
     _$v = other as _$TenantAdminWithPassword;
   }
 
@@ -161,7 +159,6 @@ class TenantAdminWithPasswordBuilder
     try {
       _$result = _$v ??
           _$TenantAdminWithPassword._(
-            temporaryPassword: temporaryPassword,
             personId: BuiltValueNullFieldError.checkNotNull(
                 personId, r'TenantAdminWithPassword', 'personId'),
             givenName: BuiltValueNullFieldError.checkNotNull(
@@ -174,6 +171,7 @@ class TenantAdminWithPasswordBuilder
                 r'TenantAdminWithPassword',
                 'invitationStatus'),
             otherRoles: otherRoles.build(),
+            temporaryPassword: temporaryPassword,
           );
     } catch (_) {
       late String _$failedField;

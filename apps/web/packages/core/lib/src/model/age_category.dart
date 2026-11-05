@@ -3,7 +3,6 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:hoops_core_api/src/model/age_category_input.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -12,13 +11,27 @@ part 'age_category.g.dart';
 /// AgeCategory
 ///
 /// Properties:
-/// * [code] 
-/// * [name] 
+/// * [code]
+/// * [name]
 /// * [maxAge] - Inclusive maximum age; null = senior (no limit).
 /// * [rank] - Ordering; higher rank = older category.
-/// * [id] 
+/// * [id]
 @BuiltValue()
-abstract class AgeCategory implements AgeCategoryInput, Built<AgeCategory, AgeCategoryBuilder> {
+abstract class AgeCategory implements Built<AgeCategory, AgeCategoryBuilder> {
+  @BuiltValueField(wireName: r'code')
+  String get code;
+
+  @BuiltValueField(wireName: r'name')
+  String get name;
+
+  /// Inclusive maximum age; null = senior (no limit).
+  @BuiltValueField(wireName: r'maxAge')
+  int? get maxAge;
+
+  /// Ordering; higher rank = older category.
+  @BuiltValueField(wireName: r'rank')
+  int get rank;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -45,11 +58,23 @@ class _$AgeCategorySerializer implements PrimitiveSerializer<AgeCategory> {
     AgeCategory object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    yield r'code';
+    yield serializers.serialize(
+      object.code,
+      specifiedType: const FullType(String),
+    );
     yield r'name';
     yield serializers.serialize(
       object.name,
       specifiedType: const FullType(String),
     );
+    if (object.maxAge != null) {
+      yield r'maxAge';
+      yield serializers.serialize(
+        object.maxAge,
+        specifiedType: const FullType.nullable(int),
+      );
+    }
     yield r'rank';
     yield serializers.serialize(
       object.rank,
@@ -60,18 +85,6 @@ class _$AgeCategorySerializer implements PrimitiveSerializer<AgeCategory> {
       object.id,
       specifiedType: const FullType(String),
     );
-    yield r'code';
-    yield serializers.serialize(
-      object.code,
-      specifiedType: const FullType(String),
-    );
-    if (object.maxAge != null) {
-      yield r'maxAge';
-      yield serializers.serialize(
-        object.maxAge,
-        specifiedType: const FullType.nullable(int),
-      );
-    }
   }
 
   @override
@@ -95,12 +108,27 @@ class _$AgeCategorySerializer implements PrimitiveSerializer<AgeCategory> {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'code':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.code = valueDes;
+          break;
         case r'name':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
           result.name = valueDes;
+          break;
+        case r'maxAge':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(int),
+          ) as int?;
+          if (valueDes == null) continue;
+          result.maxAge = valueDes;
           break;
         case r'rank':
           final valueDes = serializers.deserialize(
@@ -115,21 +143,6 @@ class _$AgeCategorySerializer implements PrimitiveSerializer<AgeCategory> {
             specifiedType: const FullType(String),
           ) as String;
           result.id = valueDes;
-          break;
-        case r'code':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.code = valueDes;
-          break;
-        case r'maxAge':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(int),
-          ) as int?;
-          if (valueDes == null) continue;
-          result.maxAge = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -159,5 +172,3 @@ class _$AgeCategorySerializer implements PrimitiveSerializer<AgeCategory> {
     return result.build();
   }
 }
-
-

@@ -5,7 +5,6 @@
 // ignore_for_file: unused_element
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:hoops_athlete_api/src/model/person_ref.dart';
-import 'package:hoops_athlete_api/src/model/audit_info.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -14,29 +13,35 @@ part 'body_measurement.g.dart';
 /// BodyMeasurement
 ///
 /// Properties:
-/// * [recordedBy] 
-/// * [recordedAt] 
-/// * [id] 
-/// * [playerId] 
-/// * [measuredOn] 
-/// * [heightCm] 
-/// * [weightKg] 
+/// * [recordedBy]
+/// * [recordedAt]
+/// * [id]
+/// * [playerId]
+/// * [measuredOn]
+/// * [heightCm]
+/// * [weightKg]
 @BuiltValue()
-abstract class BodyMeasurement implements AuditInfo, Built<BodyMeasurement, BodyMeasurementBuilder> {
+abstract class BodyMeasurement implements Built<BodyMeasurement, BodyMeasurementBuilder> {
+  @BuiltValueField(wireName: r'recordedBy')
+  PersonRef get recordedBy;
+
+  @BuiltValueField(wireName: r'recordedAt')
+  DateTime get recordedAt;
+
+  @BuiltValueField(wireName: r'id')
+  String get id;
+
+  @BuiltValueField(wireName: r'playerId')
+  String get playerId;
+
   @BuiltValueField(wireName: r'measuredOn')
   Date get measuredOn;
 
   @BuiltValueField(wireName: r'heightCm')
   double? get heightCm;
 
-  @BuiltValueField(wireName: r'id')
-  String get id;
-
   @BuiltValueField(wireName: r'weightKg')
   double? get weightKg;
-
-  @BuiltValueField(wireName: r'playerId')
-  String get playerId;
 
   BodyMeasurement._();
 
@@ -66,15 +71,25 @@ class _$BodyMeasurementSerializer implements PrimitiveSerializer<BodyMeasurement
       object.recordedBy,
       specifiedType: const FullType(PersonRef),
     );
-    yield r'measuredOn';
-    yield serializers.serialize(
-      object.measuredOn,
-      specifiedType: const FullType(Date),
-    );
     yield r'recordedAt';
     yield serializers.serialize(
       object.recordedAt,
       specifiedType: const FullType(DateTime),
+    );
+    yield r'id';
+    yield serializers.serialize(
+      object.id,
+      specifiedType: const FullType(String),
+    );
+    yield r'playerId';
+    yield serializers.serialize(
+      object.playerId,
+      specifiedType: const FullType(String),
+    );
+    yield r'measuredOn';
+    yield serializers.serialize(
+      object.measuredOn,
+      specifiedType: const FullType(Date),
     );
     if (object.heightCm != null) {
       yield r'heightCm';
@@ -83,11 +98,6 @@ class _$BodyMeasurementSerializer implements PrimitiveSerializer<BodyMeasurement
         specifiedType: const FullType.nullable(double),
       );
     }
-    yield r'id';
-    yield serializers.serialize(
-      object.id,
-      specifiedType: const FullType(String),
-    );
     if (object.weightKg != null) {
       yield r'weightKg';
       yield serializers.serialize(
@@ -95,11 +105,6 @@ class _$BodyMeasurementSerializer implements PrimitiveSerializer<BodyMeasurement
         specifiedType: const FullType.nullable(double),
       );
     }
-    yield r'playerId';
-    yield serializers.serialize(
-      object.playerId,
-      specifiedType: const FullType(String),
-    );
   }
 
   @override
@@ -130,19 +135,33 @@ class _$BodyMeasurementSerializer implements PrimitiveSerializer<BodyMeasurement
           ) as PersonRef;
           result.recordedBy.replace(valueDes);
           break;
-        case r'measuredOn':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(Date),
-          ) as Date;
-          result.measuredOn = valueDes;
-          break;
         case r'recordedAt':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(DateTime),
           ) as DateTime;
           result.recordedAt = valueDes;
+          break;
+        case r'id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.id = valueDes;
+          break;
+        case r'playerId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.playerId = valueDes;
+          break;
+        case r'measuredOn':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(Date),
+          ) as Date;
+          result.measuredOn = valueDes;
           break;
         case r'heightCm':
           final valueDes = serializers.deserialize(
@@ -152,13 +171,6 @@ class _$BodyMeasurementSerializer implements PrimitiveSerializer<BodyMeasurement
           if (valueDes == null) continue;
           result.heightCm = valueDes;
           break;
-        case r'id':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.id = valueDes;
-          break;
         case r'weightKg':
           final valueDes = serializers.deserialize(
             value,
@@ -166,13 +178,6 @@ class _$BodyMeasurementSerializer implements PrimitiveSerializer<BodyMeasurement
           ) as double?;
           if (valueDes == null) continue;
           result.weightKg = valueDes;
-          break;
-        case r'playerId':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.playerId = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -202,5 +207,3 @@ class _$BodyMeasurementSerializer implements PrimitiveSerializer<BodyMeasurement
     return result.build();
   }
 }
-
-

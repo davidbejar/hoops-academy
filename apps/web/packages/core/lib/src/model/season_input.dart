@@ -12,12 +12,12 @@ part 'season_input.g.dart';
 /// SeasonInput
 ///
 /// Properties:
-/// * [name] 
-/// * [startsOn] 
-/// * [endsOn] 
+/// * [name]
+/// * [startsOn]
+/// * [endsOn]
 /// * [referenceYear] - Year used by the BIRTH_YEAR age rule (age = referenceYear − birth year).
-@BuiltValue(instantiable: false)
-abstract class SeasonInput  {
+@BuiltValue()
+abstract class SeasonInput implements Built<SeasonInput, SeasonInputBuilder> {
   @BuiltValueField(wireName: r'name')
   String get name;
 
@@ -31,13 +31,20 @@ abstract class SeasonInput  {
   @BuiltValueField(wireName: r'referenceYear')
   int get referenceYear;
 
+  SeasonInput._();
+
+  factory SeasonInput([void updates(SeasonInputBuilder b)]) = _$SeasonInput;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(SeasonInputBuilder b) => b;
+
   @BuiltValueSerializer(custom: true)
   static Serializer<SeasonInput> get serializer => _$SeasonInputSerializer();
 }
 
 class _$SeasonInputSerializer implements PrimitiveSerializer<SeasonInput> {
   @override
-  final Iterable<Type> types = const [SeasonInput];
+  final Iterable<Type> types = const [SeasonInput, _$SeasonInput];
 
   @override
   final String wireName = r'SeasonInput';
@@ -76,47 +83,6 @@ class _$SeasonInputSerializer implements PrimitiveSerializer<SeasonInput> {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
-  }
-
-  @override
-  SeasonInput deserialize(
-    Serializers serializers,
-    Object serialized, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.deserialize(serialized, specifiedType: FullType($SeasonInput)) as $SeasonInput;
-  }
-}
-
-
-/// a concrete implementation of [SeasonInput], since [SeasonInput] is not instantiable
-@BuiltValue(instantiable: true)
-abstract class $SeasonInput implements SeasonInput, Built<$SeasonInput, $SeasonInputBuilder> {
-  $SeasonInput._();
-
-  factory $SeasonInput([void Function($SeasonInputBuilder)? updates]) = _$$SeasonInput;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults($SeasonInputBuilder b) => b;
-
-  @BuiltValueSerializer(custom: true)
-  static Serializer<$SeasonInput> get serializer => _$$SeasonInputSerializer();
-}
-
-class _$$SeasonInputSerializer implements PrimitiveSerializer<$SeasonInput> {
-  @override
-  final Iterable<Type> types = const [$SeasonInput, _$$SeasonInput];
-
-  @override
-  final String wireName = r'$SeasonInput';
-
-  @override
-  Object serialize(
-    Serializers serializers,
-    $SeasonInput object, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.serialize(object, specifiedType: FullType(SeasonInput))!;
   }
 
   void _deserializeProperties(
@@ -168,12 +134,12 @@ class _$$SeasonInputSerializer implements PrimitiveSerializer<$SeasonInput> {
   }
 
   @override
-  $SeasonInput deserialize(
+  SeasonInput deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = $SeasonInputBuilder();
+    final result = SeasonInputBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -187,4 +153,3 @@ class _$$SeasonInputSerializer implements PrimitiveSerializer<$SeasonInput> {
     return result.build();
   }
 }
-

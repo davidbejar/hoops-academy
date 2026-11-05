@@ -8,8 +8,6 @@ part of 'training_plan.dart';
 
 class _$TrainingPlan extends TrainingPlan {
   @override
-  final BuiltList<PlanItem> items;
-  @override
   final String id;
   @override
   final String name;
@@ -25,20 +23,22 @@ class _$TrainingPlan extends TrainingPlan {
   final int totalDurationMinutes;
   @override
   final bool? archived;
+  @override
+  final BuiltList<PlanItem> items;
 
   factory _$TrainingPlan([void Function(TrainingPlanBuilder)? updates]) =>
       (TrainingPlanBuilder()..update(updates))._build();
 
   _$TrainingPlan._(
-      {required this.items,
-      required this.id,
+      {required this.id,
       required this.name,
       this.description,
       required this.template,
       this.sourceTemplateId,
       required this.itemCount,
       required this.totalDurationMinutes,
-      this.archived})
+      this.archived,
+      required this.items})
       : super._();
   @override
   TrainingPlan rebuild(void Function(TrainingPlanBuilder) updates) =>
@@ -51,7 +51,6 @@ class _$TrainingPlan extends TrainingPlan {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TrainingPlan &&
-        items == other.items &&
         id == other.id &&
         name == other.name &&
         description == other.description &&
@@ -59,13 +58,13 @@ class _$TrainingPlan extends TrainingPlan {
         sourceTemplateId == other.sourceTemplateId &&
         itemCount == other.itemCount &&
         totalDurationMinutes == other.totalDurationMinutes &&
-        archived == other.archived;
+        archived == other.archived &&
+        items == other.items;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, items.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, name.hashCode);
     _$hash = $jc(_$hash, description.hashCode);
@@ -74,6 +73,7 @@ class _$TrainingPlan extends TrainingPlan {
     _$hash = $jc(_$hash, itemCount.hashCode);
     _$hash = $jc(_$hash, totalDurationMinutes.hashCode);
     _$hash = $jc(_$hash, archived.hashCode);
+    _$hash = $jc(_$hash, items.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -81,7 +81,6 @@ class _$TrainingPlan extends TrainingPlan {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TrainingPlan')
-          ..add('items', items)
           ..add('id', id)
           ..add('name', name)
           ..add('description', description)
@@ -89,55 +88,53 @@ class _$TrainingPlan extends TrainingPlan {
           ..add('sourceTemplateId', sourceTemplateId)
           ..add('itemCount', itemCount)
           ..add('totalDurationMinutes', totalDurationMinutes)
-          ..add('archived', archived))
+          ..add('archived', archived)
+          ..add('items', items))
         .toString();
   }
 }
 
 class TrainingPlanBuilder
-    implements
-        Builder<TrainingPlan, TrainingPlanBuilder>,
-        TrainingPlanSummaryBuilder {
+    implements Builder<TrainingPlan, TrainingPlanBuilder> {
   _$TrainingPlan? _$v;
-
-  ListBuilder<PlanItem>? _items;
-  ListBuilder<PlanItem> get items => _$this._items ??= ListBuilder<PlanItem>();
-  set items(covariant ListBuilder<PlanItem>? items) => _$this._items = items;
 
   String? _id;
   String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
+  set id(String? id) => _$this._id = id;
 
   String? _name;
   String? get name => _$this._name;
-  set name(covariant String? name) => _$this._name = name;
+  set name(String? name) => _$this._name = name;
 
   String? _description;
   String? get description => _$this._description;
-  set description(covariant String? description) =>
-      _$this._description = description;
+  set description(String? description) => _$this._description = description;
 
   bool? _template;
   bool? get template => _$this._template;
-  set template(covariant bool? template) => _$this._template = template;
+  set template(bool? template) => _$this._template = template;
 
   String? _sourceTemplateId;
   String? get sourceTemplateId => _$this._sourceTemplateId;
-  set sourceTemplateId(covariant String? sourceTemplateId) =>
+  set sourceTemplateId(String? sourceTemplateId) =>
       _$this._sourceTemplateId = sourceTemplateId;
 
   int? _itemCount;
   int? get itemCount => _$this._itemCount;
-  set itemCount(covariant int? itemCount) => _$this._itemCount = itemCount;
+  set itemCount(int? itemCount) => _$this._itemCount = itemCount;
 
   int? _totalDurationMinutes;
   int? get totalDurationMinutes => _$this._totalDurationMinutes;
-  set totalDurationMinutes(covariant int? totalDurationMinutes) =>
+  set totalDurationMinutes(int? totalDurationMinutes) =>
       _$this._totalDurationMinutes = totalDurationMinutes;
 
   bool? _archived;
   bool? get archived => _$this._archived;
-  set archived(covariant bool? archived) => _$this._archived = archived;
+  set archived(bool? archived) => _$this._archived = archived;
+
+  ListBuilder<PlanItem>? _items;
+  ListBuilder<PlanItem> get items => _$this._items ??= ListBuilder<PlanItem>();
+  set items(ListBuilder<PlanItem>? items) => _$this._items = items;
 
   TrainingPlanBuilder() {
     TrainingPlan._defaults(this);
@@ -146,7 +143,6 @@ class TrainingPlanBuilder
   TrainingPlanBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _items = $v.items.toBuilder();
       _id = $v.id;
       _name = $v.name;
       _description = $v.description;
@@ -155,13 +151,14 @@ class TrainingPlanBuilder
       _itemCount = $v.itemCount;
       _totalDurationMinutes = $v.totalDurationMinutes;
       _archived = $v.archived;
+      _items = $v.items.toBuilder();
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant TrainingPlan other) {
+  void replace(TrainingPlan other) {
     _$v = other as _$TrainingPlan;
   }
 
@@ -178,7 +175,6 @@ class TrainingPlanBuilder
     try {
       _$result = _$v ??
           _$TrainingPlan._(
-            items: items.build(),
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'TrainingPlan', 'id'),
             name: BuiltValueNullFieldError.checkNotNull(
@@ -192,6 +188,7 @@ class TrainingPlanBuilder
             totalDurationMinutes: BuiltValueNullFieldError.checkNotNull(
                 totalDurationMinutes, r'TrainingPlan', 'totalDurationMinutes'),
             archived: archived,
+            items: items.build(),
           );
     } catch (_) {
       late String _$failedField;

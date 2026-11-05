@@ -128,7 +128,7 @@ class TestTypesNotifier extends AsyncNotifier<List<ath.PhysicalTestType>> {
     String? description,
   }) async {
     await ref.read(fitnessRepositoryProvider).createType(
-      ath.$PhysicalTestTypeInput((b) => b
+      ath.PhysicalTestTypeInput((b) => b
         ..code = code
         ..name = name
         ..unit = unit

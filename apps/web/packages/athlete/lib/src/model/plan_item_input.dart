@@ -11,14 +11,14 @@ part 'plan_item_input.g.dart';
 /// PlanItemInput
 ///
 /// Properties:
-/// * [title] 
-/// * [description] 
-/// * [durationMinutes] 
-/// * [sets] 
-/// * [repetitions] 
-/// * [videoUrl] 
-@BuiltValue(instantiable: false)
-abstract class PlanItemInput  {
+/// * [title]
+/// * [description]
+/// * [durationMinutes]
+/// * [sets]
+/// * [repetitions]
+/// * [videoUrl]
+@BuiltValue()
+abstract class PlanItemInput implements Built<PlanItemInput, PlanItemInputBuilder> {
   @BuiltValueField(wireName: r'title')
   String get title;
 
@@ -37,13 +37,20 @@ abstract class PlanItemInput  {
   @BuiltValueField(wireName: r'videoUrl')
   String? get videoUrl;
 
+  PlanItemInput._();
+
+  factory PlanItemInput([void updates(PlanItemInputBuilder b)]) = _$PlanItemInput;
+
+  @BuiltValueHook(initializeBuilder: true)
+  static void _defaults(PlanItemInputBuilder b) => b;
+
   @BuiltValueSerializer(custom: true)
   static Serializer<PlanItemInput> get serializer => _$PlanItemInputSerializer();
 }
 
 class _$PlanItemInputSerializer implements PrimitiveSerializer<PlanItemInput> {
   @override
-  final Iterable<Type> types = const [PlanItemInput];
+  final Iterable<Type> types = const [PlanItemInput, _$PlanItemInput];
 
   @override
   final String wireName = r'PlanItemInput';
@@ -102,47 +109,6 @@ class _$PlanItemInputSerializer implements PrimitiveSerializer<PlanItemInput> {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
-  }
-
-  @override
-  PlanItemInput deserialize(
-    Serializers serializers,
-    Object serialized, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.deserialize(serialized, specifiedType: FullType($PlanItemInput)) as $PlanItemInput;
-  }
-}
-
-
-/// a concrete implementation of [PlanItemInput], since [PlanItemInput] is not instantiable
-@BuiltValue(instantiable: true)
-abstract class $PlanItemInput implements PlanItemInput, Built<$PlanItemInput, $PlanItemInputBuilder> {
-  $PlanItemInput._();
-
-  factory $PlanItemInput([void Function($PlanItemInputBuilder)? updates]) = _$$PlanItemInput;
-
-  @BuiltValueHook(initializeBuilder: true)
-  static void _defaults($PlanItemInputBuilder b) => b;
-
-  @BuiltValueSerializer(custom: true)
-  static Serializer<$PlanItemInput> get serializer => _$$PlanItemInputSerializer();
-}
-
-class _$$PlanItemInputSerializer implements PrimitiveSerializer<$PlanItemInput> {
-  @override
-  final Iterable<Type> types = const [$PlanItemInput, _$$PlanItemInput];
-
-  @override
-  final String wireName = r'$PlanItemInput';
-
-  @override
-  Object serialize(
-    Serializers serializers,
-    $PlanItemInput object, {
-    FullType specifiedType = FullType.unspecified,
-  }) {
-    return serializers.serialize(object, specifiedType: FullType(PlanItemInput))!;
   }
 
   void _deserializeProperties(
@@ -213,12 +179,12 @@ class _$$PlanItemInputSerializer implements PrimitiveSerializer<$PlanItemInput> 
   }
 
   @override
-  $PlanItemInput deserialize(
+  PlanItemInput deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = $PlanItemInputBuilder();
+    final result = PlanItemInputBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(
@@ -232,4 +198,3 @@ class _$$PlanItemInputSerializer implements PrimitiveSerializer<$PlanItemInput> 
     return result.build();
   }
 }
-

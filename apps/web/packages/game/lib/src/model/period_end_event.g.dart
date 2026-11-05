@@ -83,39 +83,37 @@ class _$PeriodEndEvent extends PeriodEndEvent {
 }
 
 class PeriodEndEventBuilder
-    implements
-        Builder<PeriodEndEvent, PeriodEndEventBuilder>,
-        MatchEventBaseBuilder {
+    implements Builder<PeriodEndEvent, PeriodEndEventBuilder> {
   _$PeriodEndEvent? _$v;
 
   String? _id;
   String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
+  set id(String? id) => _$this._id = id;
 
   String? _deviceId;
   String? get deviceId => _$this._deviceId;
-  set deviceId(covariant String? deviceId) => _$this._deviceId = deviceId;
+  set deviceId(String? deviceId) => _$this._deviceId = deviceId;
 
   int? _clientSeq;
   int? get clientSeq => _$this._clientSeq;
-  set clientSeq(covariant int? clientSeq) => _$this._clientSeq = clientSeq;
+  set clientSeq(int? clientSeq) => _$this._clientSeq = clientSeq;
 
   MatchEventType? _type;
   MatchEventType? get type => _$this._type;
-  set type(covariant MatchEventType? type) => _$this._type = type;
+  set type(MatchEventType? type) => _$this._type = type;
 
   int? _period;
   int? get period => _$this._period;
-  set period(covariant int? period) => _$this._period = period;
+  set period(int? period) => _$this._period = period;
 
   int? _clockSecondsRemaining;
   int? get clockSecondsRemaining => _$this._clockSecondsRemaining;
-  set clockSecondsRemaining(covariant int? clockSecondsRemaining) =>
+  set clockSecondsRemaining(int? clockSecondsRemaining) =>
       _$this._clockSecondsRemaining = clockSecondsRemaining;
 
   DateTime? _recordedAtClient;
   DateTime? get recordedAtClient => _$this._recordedAtClient;
-  set recordedAtClient(covariant DateTime? recordedAtClient) =>
+  set recordedAtClient(DateTime? recordedAtClient) =>
       _$this._recordedAtClient = recordedAtClient;
 
   PeriodEndEventBuilder() {
@@ -138,7 +136,7 @@ class PeriodEndEventBuilder
   }
 
   @override
-  void replace(covariant PeriodEndEvent other) {
+  void replace(PeriodEndEvent other) {
     _$v = other as _$PeriodEndEvent;
   }
 

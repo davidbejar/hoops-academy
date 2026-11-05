@@ -8,34 +8,34 @@ part of 'plan_assignment.dart';
 
 class _$PlanAssignment extends PlanAssignment {
   @override
-  final String? notes;
+  final PersonRef recordedBy;
   @override
-  final Date dueOn;
-  @override
-  final String? teamId;
+  final DateTime recordedAt;
   @override
   final String id;
   @override
   final TrainingPlanSummary plan;
   @override
+  final String? teamId;
+  @override
   final String? playerId;
   @override
-  final PersonRef recordedBy;
+  final Date dueOn;
   @override
-  final DateTime recordedAt;
+  final String? notes;
 
   factory _$PlanAssignment([void Function(PlanAssignmentBuilder)? updates]) =>
       (PlanAssignmentBuilder()..update(updates))._build();
 
   _$PlanAssignment._(
-      {this.notes,
-      required this.dueOn,
-      this.teamId,
+      {required this.recordedBy,
+      required this.recordedAt,
       required this.id,
       required this.plan,
+      this.teamId,
       this.playerId,
-      required this.recordedBy,
-      required this.recordedAt})
+      required this.dueOn,
+      this.notes})
       : super._();
   @override
   PlanAssignment rebuild(void Function(PlanAssignmentBuilder) updates) =>
@@ -48,27 +48,27 @@ class _$PlanAssignment extends PlanAssignment {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is PlanAssignment &&
-        notes == other.notes &&
-        dueOn == other.dueOn &&
-        teamId == other.teamId &&
+        recordedBy == other.recordedBy &&
+        recordedAt == other.recordedAt &&
         id == other.id &&
         plan == other.plan &&
+        teamId == other.teamId &&
         playerId == other.playerId &&
-        recordedBy == other.recordedBy &&
-        recordedAt == other.recordedAt;
+        dueOn == other.dueOn &&
+        notes == other.notes;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, notes.hashCode);
-    _$hash = $jc(_$hash, dueOn.hashCode);
-    _$hash = $jc(_$hash, teamId.hashCode);
-    _$hash = $jc(_$hash, id.hashCode);
-    _$hash = $jc(_$hash, plan.hashCode);
-    _$hash = $jc(_$hash, playerId.hashCode);
     _$hash = $jc(_$hash, recordedBy.hashCode);
     _$hash = $jc(_$hash, recordedAt.hashCode);
+    _$hash = $jc(_$hash, id.hashCode);
+    _$hash = $jc(_$hash, plan.hashCode);
+    _$hash = $jc(_$hash, teamId.hashCode);
+    _$hash = $jc(_$hash, playerId.hashCode);
+    _$hash = $jc(_$hash, dueOn.hashCode);
+    _$hash = $jc(_$hash, notes.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -76,57 +76,55 @@ class _$PlanAssignment extends PlanAssignment {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'PlanAssignment')
-          ..add('notes', notes)
-          ..add('dueOn', dueOn)
-          ..add('teamId', teamId)
+          ..add('recordedBy', recordedBy)
+          ..add('recordedAt', recordedAt)
           ..add('id', id)
           ..add('plan', plan)
+          ..add('teamId', teamId)
           ..add('playerId', playerId)
-          ..add('recordedBy', recordedBy)
-          ..add('recordedAt', recordedAt))
+          ..add('dueOn', dueOn)
+          ..add('notes', notes))
         .toString();
   }
 }
 
 class PlanAssignmentBuilder
-    implements
-        Builder<PlanAssignment, PlanAssignmentBuilder>,
-        AuditInfoBuilder {
+    implements Builder<PlanAssignment, PlanAssignmentBuilder> {
   _$PlanAssignment? _$v;
-
-  String? _notes;
-  String? get notes => _$this._notes;
-  set notes(covariant String? notes) => _$this._notes = notes;
-
-  Date? _dueOn;
-  Date? get dueOn => _$this._dueOn;
-  set dueOn(covariant Date? dueOn) => _$this._dueOn = dueOn;
-
-  String? _teamId;
-  String? get teamId => _$this._teamId;
-  set teamId(covariant String? teamId) => _$this._teamId = teamId;
-
-  String? _id;
-  String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
-
-  TrainingPlanSummary? _plan;
-  TrainingPlanSummary? get plan => _$this._plan;
-  set plan(covariant TrainingPlanSummary? plan) => _$this._plan = plan;
-
-  String? _playerId;
-  String? get playerId => _$this._playerId;
-  set playerId(covariant String? playerId) => _$this._playerId = playerId;
 
   PersonRefBuilder? _recordedBy;
   PersonRefBuilder get recordedBy => _$this._recordedBy ??= PersonRefBuilder();
-  set recordedBy(covariant PersonRefBuilder? recordedBy) =>
+  set recordedBy(PersonRefBuilder? recordedBy) =>
       _$this._recordedBy = recordedBy;
 
   DateTime? _recordedAt;
   DateTime? get recordedAt => _$this._recordedAt;
-  set recordedAt(covariant DateTime? recordedAt) =>
-      _$this._recordedAt = recordedAt;
+  set recordedAt(DateTime? recordedAt) => _$this._recordedAt = recordedAt;
+
+  String? _id;
+  String? get id => _$this._id;
+  set id(String? id) => _$this._id = id;
+
+  TrainingPlanSummaryBuilder? _plan;
+  TrainingPlanSummaryBuilder get plan =>
+      _$this._plan ??= TrainingPlanSummaryBuilder();
+  set plan(TrainingPlanSummaryBuilder? plan) => _$this._plan = plan;
+
+  String? _teamId;
+  String? get teamId => _$this._teamId;
+  set teamId(String? teamId) => _$this._teamId = teamId;
+
+  String? _playerId;
+  String? get playerId => _$this._playerId;
+  set playerId(String? playerId) => _$this._playerId = playerId;
+
+  Date? _dueOn;
+  Date? get dueOn => _$this._dueOn;
+  set dueOn(Date? dueOn) => _$this._dueOn = dueOn;
+
+  String? _notes;
+  String? get notes => _$this._notes;
+  set notes(String? notes) => _$this._notes = notes;
 
   PlanAssignmentBuilder() {
     PlanAssignment._defaults(this);
@@ -135,21 +133,21 @@ class PlanAssignmentBuilder
   PlanAssignmentBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _notes = $v.notes;
-      _dueOn = $v.dueOn;
-      _teamId = $v.teamId;
-      _id = $v.id;
-      _plan = $v.plan;
-      _playerId = $v.playerId;
       _recordedBy = $v.recordedBy.toBuilder();
       _recordedAt = $v.recordedAt;
+      _id = $v.id;
+      _plan = $v.plan.toBuilder();
+      _teamId = $v.teamId;
+      _playerId = $v.playerId;
+      _dueOn = $v.dueOn;
+      _notes = $v.notes;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant PlanAssignment other) {
+  void replace(PlanAssignment other) {
     _$v = other as _$PlanAssignment;
   }
 
@@ -166,24 +164,26 @@ class PlanAssignmentBuilder
     try {
       _$result = _$v ??
           _$PlanAssignment._(
-            notes: notes,
-            dueOn: BuiltValueNullFieldError.checkNotNull(
-                dueOn, r'PlanAssignment', 'dueOn'),
-            teamId: teamId,
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'PlanAssignment', 'id'),
-            plan: BuiltValueNullFieldError.checkNotNull(
-                plan, r'PlanAssignment', 'plan'),
-            playerId: playerId,
             recordedBy: recordedBy.build(),
             recordedAt: BuiltValueNullFieldError.checkNotNull(
                 recordedAt, r'PlanAssignment', 'recordedAt'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'PlanAssignment', 'id'),
+            plan: plan.build(),
+            teamId: teamId,
+            playerId: playerId,
+            dueOn: BuiltValueNullFieldError.checkNotNull(
+                dueOn, r'PlanAssignment', 'dueOn'),
+            notes: notes,
           );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'recordedBy';
         recordedBy.build();
+
+        _$failedField = 'plan';
+        plan.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'PlanAssignment', _$failedField, e.toString());

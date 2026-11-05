@@ -4,7 +4,6 @@
 
 // ignore_for_file: unused_element
 import 'package:hoops_core_api/src/model/date.dart';
-import 'package:hoops_core_api/src/model/season_input.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -13,20 +12,33 @@ part 'season.g.dart';
 /// Season
 ///
 /// Properties:
-/// * [name] 
-/// * [startsOn] 
-/// * [endsOn] 
+/// * [name]
+/// * [startsOn]
+/// * [endsOn]
 /// * [referenceYear] - Year used by the BIRTH_YEAR age rule (age = referenceYear − birth year).
-/// * [id] 
+/// * [id]
 /// * [current] - Today (tenant time zone) lies within the season.
 @BuiltValue()
-abstract class Season implements SeasonInput, Built<Season, SeasonBuilder> {
-  /// Today (tenant time zone) lies within the season.
-  @BuiltValueField(wireName: r'current')
-  bool get current;
+abstract class Season implements Built<Season, SeasonBuilder> {
+  @BuiltValueField(wireName: r'name')
+  String get name;
+
+  @BuiltValueField(wireName: r'startsOn')
+  Date get startsOn;
+
+  @BuiltValueField(wireName: r'endsOn')
+  Date get endsOn;
+
+  /// Year used by the BIRTH_YEAR age rule (age = referenceYear − birth year).
+  @BuiltValueField(wireName: r'referenceYear')
+  int get referenceYear;
 
   @BuiltValueField(wireName: r'id')
   String get id;
+
+  /// Today (tenant time zone) lies within the season.
+  @BuiltValueField(wireName: r'current')
+  bool get current;
 
   Season._();
 
@@ -56,30 +68,30 @@ class _$SeasonSerializer implements PrimitiveSerializer<Season> {
       object.name,
       specifiedType: const FullType(String),
     );
-    yield r'endsOn';
-    yield serializers.serialize(
-      object.endsOn,
-      specifiedType: const FullType(Date),
-    );
-    yield r'current';
-    yield serializers.serialize(
-      object.current,
-      specifiedType: const FullType(bool),
-    );
-    yield r'id';
-    yield serializers.serialize(
-      object.id,
-      specifiedType: const FullType(String),
-    );
     yield r'startsOn';
     yield serializers.serialize(
       object.startsOn,
+      specifiedType: const FullType(Date),
+    );
+    yield r'endsOn';
+    yield serializers.serialize(
+      object.endsOn,
       specifiedType: const FullType(Date),
     );
     yield r'referenceYear';
     yield serializers.serialize(
       object.referenceYear,
       specifiedType: const FullType(int),
+    );
+    yield r'id';
+    yield serializers.serialize(
+      object.id,
+      specifiedType: const FullType(String),
+    );
+    yield r'current';
+    yield serializers.serialize(
+      object.current,
+      specifiedType: const FullType(bool),
     );
   }
 
@@ -111,6 +123,13 @@ class _$SeasonSerializer implements PrimitiveSerializer<Season> {
           ) as String;
           result.name = valueDes;
           break;
+        case r'startsOn':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(Date),
+          ) as Date;
+          result.startsOn = valueDes;
+          break;
         case r'endsOn':
           final valueDes = serializers.deserialize(
             value,
@@ -118,12 +137,12 @@ class _$SeasonSerializer implements PrimitiveSerializer<Season> {
           ) as Date;
           result.endsOn = valueDes;
           break;
-        case r'current':
+        case r'referenceYear':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(bool),
-          ) as bool;
-          result.current = valueDes;
+            specifiedType: const FullType(int),
+          ) as int;
+          result.referenceYear = valueDes;
           break;
         case r'id':
           final valueDes = serializers.deserialize(
@@ -132,19 +151,12 @@ class _$SeasonSerializer implements PrimitiveSerializer<Season> {
           ) as String;
           result.id = valueDes;
           break;
-        case r'startsOn':
+        case r'current':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(Date),
-          ) as Date;
-          result.startsOn = valueDes;
-          break;
-        case r'referenceYear':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(int),
-          ) as int;
-          result.referenceYear = valueDes;
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.current = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -174,5 +186,3 @@ class _$SeasonSerializer implements PrimitiveSerializer<Season> {
     return result.build();
   }
 }
-
-

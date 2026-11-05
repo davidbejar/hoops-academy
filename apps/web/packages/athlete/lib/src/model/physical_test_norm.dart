@@ -3,7 +3,6 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:hoops_athlete_api/src/model/physical_test_norm_input.dart';
 import 'package:hoops_athlete_api/src/model/norm_band.dart';
 import 'package:hoops_athlete_api/src/model/gender.dart';
 import 'package:built_value/built_value.dart';
@@ -14,25 +13,53 @@ part 'physical_test_norm.g.dart';
 /// PhysicalTestNorm
 ///
 /// Properties:
-/// * [testTypeId] 
-/// * [gender] 
-/// * [minAge] 
+/// * [testTypeId]
+/// * [gender]
+/// * [minAge]
 /// * [maxAge] - Inclusive.
-/// * [band] 
-/// * [minValue] 
-/// * [maxValue] 
+/// * [band]
+/// * [minValue]
+/// * [maxValue]
 /// * [source_] - Citation of the reference the values come from.
-/// * [id] 
+/// * [id]
 /// * [global] - Platform-provided norm (tenant rows override it).
 /// * [referencePending] - No source cited.
 @BuiltValue()
-abstract class PhysicalTestNorm implements PhysicalTestNormInput, Built<PhysicalTestNorm, PhysicalTestNormBuilder> {
-  /// Platform-provided norm (tenant rows override it).
-  @BuiltValueField(wireName: r'global')
-  bool get global;
+abstract class PhysicalTestNorm implements Built<PhysicalTestNorm, PhysicalTestNormBuilder> {
+  @BuiltValueField(wireName: r'testTypeId')
+  String get testTypeId;
+
+  @BuiltValueField(wireName: r'gender')
+  Gender get gender;
+  // enum genderEnum {  MALE,  FEMALE,  };
+
+  @BuiltValueField(wireName: r'minAge')
+  int get minAge;
+
+  /// Inclusive.
+  @BuiltValueField(wireName: r'maxAge')
+  int get maxAge;
+
+  @BuiltValueField(wireName: r'band')
+  NormBand get band;
+  // enum bandEnum {  POOR,  BELOW_AVERAGE,  AVERAGE,  ABOVE_AVERAGE,  EXCELLENT,  };
+
+  @BuiltValueField(wireName: r'minValue')
+  double? get minValue;
+
+  @BuiltValueField(wireName: r'maxValue')
+  double? get maxValue;
+
+  /// Citation of the reference the values come from.
+  @BuiltValueField(wireName: r'source')
+  String? get source_;
 
   @BuiltValueField(wireName: r'id')
   String get id;
+
+  /// Platform-provided norm (tenant rows override it).
+  @BuiltValueField(wireName: r'global')
+  bool get global;
 
   /// No source cited.
   @BuiltValueField(wireName: r'referencePending')
@@ -66,6 +93,26 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
       object.testTypeId,
       specifiedType: const FullType(String),
     );
+    yield r'gender';
+    yield serializers.serialize(
+      object.gender,
+      specifiedType: const FullType(Gender),
+    );
+    yield r'minAge';
+    yield serializers.serialize(
+      object.minAge,
+      specifiedType: const FullType(int),
+    );
+    yield r'maxAge';
+    yield serializers.serialize(
+      object.maxAge,
+      specifiedType: const FullType(int),
+    );
+    yield r'band';
+    yield serializers.serialize(
+      object.band,
+      specifiedType: const FullType(NormBand),
+    );
     if (object.minValue != null) {
       yield r'minValue';
       yield serializers.serialize(
@@ -73,16 +120,6 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
         specifiedType: const FullType.nullable(double),
       );
     }
-    yield r'gender';
-    yield serializers.serialize(
-      object.gender,
-      specifiedType: const FullType(Gender),
-    );
-    yield r'maxAge';
-    yield serializers.serialize(
-      object.maxAge,
-      specifiedType: const FullType(int),
-    );
     if (object.maxValue != null) {
       yield r'maxValue';
       yield serializers.serialize(
@@ -90,11 +127,6 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
         specifiedType: const FullType.nullable(double),
       );
     }
-    yield r'minAge';
-    yield serializers.serialize(
-      object.minAge,
-      specifiedType: const FullType(int),
-    );
     if (object.source_ != null) {
       yield r'source';
       yield serializers.serialize(
@@ -102,20 +134,15 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
         specifiedType: const FullType.nullable(String),
       );
     }
-    yield r'global';
-    yield serializers.serialize(
-      object.global,
-      specifiedType: const FullType(bool),
-    );
     yield r'id';
     yield serializers.serialize(
       object.id,
       specifiedType: const FullType(String),
     );
-    yield r'band';
+    yield r'global';
     yield serializers.serialize(
-      object.band,
-      specifiedType: const FullType(NormBand),
+      object.global,
+      specifiedType: const FullType(bool),
     );
     yield r'referencePending';
     yield serializers.serialize(
@@ -152,14 +179,6 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
           ) as String;
           result.testTypeId = valueDes;
           break;
-        case r'minValue':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(double),
-          ) as double?;
-          if (valueDes == null) continue;
-          result.minValue = valueDes;
-          break;
         case r'gender':
           final valueDes = serializers.deserialize(
             value,
@@ -167,12 +186,34 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
           ) as Gender;
           result.gender = valueDes;
           break;
+        case r'minAge':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.minAge = valueDes;
+          break;
         case r'maxAge':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(int),
           ) as int;
           result.maxAge = valueDes;
+          break;
+        case r'band':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(NormBand),
+          ) as NormBand;
+          result.band = valueDes;
+          break;
+        case r'minValue':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(double),
+          ) as double?;
+          if (valueDes == null) continue;
+          result.minValue = valueDes;
           break;
         case r'maxValue':
           final valueDes = serializers.deserialize(
@@ -182,13 +223,6 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
           if (valueDes == null) continue;
           result.maxValue = valueDes;
           break;
-        case r'minAge':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(int),
-          ) as int;
-          result.minAge = valueDes;
-          break;
         case r'source':
           final valueDes = serializers.deserialize(
             value,
@@ -197,13 +231,6 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
           if (valueDes == null) continue;
           result.source_ = valueDes;
           break;
-        case r'global':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(bool),
-          ) as bool;
-          result.global = valueDes;
-          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,
@@ -211,12 +238,12 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
           ) as String;
           result.id = valueDes;
           break;
-        case r'band':
+        case r'global':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(NormBand),
-          ) as NormBand;
-          result.band = valueDes;
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.global = valueDes;
           break;
         case r'referencePending':
           final valueDes = serializers.deserialize(
@@ -253,5 +280,3 @@ class _$PhysicalTestNormSerializer implements PrimitiveSerializer<PhysicalTestNo
     return result.build();
   }
 }
-
-

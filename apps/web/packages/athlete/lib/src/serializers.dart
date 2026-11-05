@@ -17,7 +17,6 @@ import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:hoops_athlete_api/src/model/attendance_entry.dart';
 import 'package:hoops_athlete_api/src/model/attendance_input.dart';
 import 'package:hoops_athlete_api/src/model/attendance_status.dart';
-import 'package:hoops_athlete_api/src/model/audit_info.dart';
 import 'package:hoops_athlete_api/src/model/band_status.dart';
 import 'package:hoops_athlete_api/src/model/body_measurement.dart';
 import 'package:hoops_athlete_api/src/model/body_measurement_input.dart';
@@ -88,7 +87,6 @@ part 'serializers.g.dart';
   AttendanceEntry,
   AttendanceInput,
   AttendanceStatus,
-  AuditInfo,$AuditInfo,
   BandStatus,
   BodyMeasurement,
   BodyMeasurementInput,
@@ -109,22 +107,22 @@ part 'serializers.g.dart';
   PageMeta,
   PersonRef,
   PhysicalTestNorm,
-  PhysicalTestNormInput,$PhysicalTestNormInput,
+  PhysicalTestNormInput,
   PhysicalTestResult,
   PhysicalTestResultInput,
   PhysicalTestResultPage,
   PhysicalTestType,
-  PhysicalTestTypeInput,$PhysicalTestTypeInput,
+  PhysicalTestTypeInput,
   PlanAssignment,
   PlanAssignmentPage,
   PlanCompletion,
   PlanCompletionPage,
   PlanItem,
-  PlanItemInput,$PlanItemInput,
+  PlanItemInput,
   PlanProgress,
   PlanProgressCounts,
   PlannedAbsence,
-  PlannedAbsenceInput,$PlannedAbsenceInput,
+  PlannedAbsenceInput,
   PlannedAbsencePage,
   PlayerAvailability,
   PlayerProgress,
@@ -135,10 +133,10 @@ part 'serializers.g.dart';
   ReorderPlanItemsRequest,
   SessionAttendance,
   TrainingPlan,
-  TrainingPlanSummary,$TrainingPlanSummary,
+  TrainingPlanSummary,
   TrainingPlanSummaryPage,
   TrainingSchedule,
-  TrainingScheduleInput,$TrainingScheduleInput,
+  TrainingScheduleInput,
   TrainingSession,
   TrainingSessionPage,
   TrainingSessionStatus,
@@ -234,13 +232,6 @@ Serializers serializers = (_$serializers.toBuilder()
         const FullType(BuiltList, [FullType(Injury)]),
         () => ListBuilder<Injury>(),
       )
-      ..add(AuditInfo.serializer)
-      ..add(PhysicalTestNormInput.serializer)
-      ..add(PhysicalTestTypeInput.serializer)
-      ..add(PlanItemInput.serializer)
-      ..add(PlannedAbsenceInput.serializer)
-      ..add(TrainingPlanSummary.serializer)
-      ..add(TrainingScheduleInput.serializer)
       ..add(const OneOfSerializer())
       ..add(const AnyOfSerializer())
       ..add(const DateSerializer())

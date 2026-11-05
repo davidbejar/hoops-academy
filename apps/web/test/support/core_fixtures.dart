@@ -100,14 +100,14 @@ api.TeamPlayer teamPlayer(String teamId, String pid, String name, {String? jerse
         ..playerStatus = api.PlayerStatus.ACTIVE,
     );
 
-api.$Member member(
+api.Member member(
   String id,
   String name, {
   Set<api.TenantRole> roles = const {api.TenantRole.COACH},
   bool active = true,
   String? email,
   api.InvitationStatus invitation = api.InvitationStatus.ACCEPTED,
-}) => api.$Member(
+}) => api.Member(
   (b) => b
     ..personId = id
     ..givenName = name.split(' ').first
@@ -136,7 +136,7 @@ api.EligibilityCheck check(
     ..reasons.replace(reasons),
 );
 
-api.$ApprovalRequest approval(
+api.ApprovalRequest approval(
   String id, {
   api.ApprovalStatus status = api.ApprovalStatus.PENDING,
   api.ApprovalAction action = api.ApprovalAction.ADD_PLAYER,
@@ -144,7 +144,7 @@ api.$ApprovalRequest approval(
   String by = 'person-me',
   String byName = 'Casey Coach',
   String? note,
-}) => api.$ApprovalRequest(
+}) => api.ApprovalRequest(
   (b) => b
     ..id = id
     ..action = action

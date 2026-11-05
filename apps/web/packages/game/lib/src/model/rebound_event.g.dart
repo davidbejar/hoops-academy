@@ -8,8 +8,6 @@ part of 'rebound_event.dart';
 
 class _$ReboundEvent extends ReboundEvent {
   @override
-  final ReboundPayload payload;
-  @override
   final String id;
   @override
   final String deviceId;
@@ -25,20 +23,22 @@ class _$ReboundEvent extends ReboundEvent {
   final DateTime recordedAtClient;
   @override
   final String playerId;
+  @override
+  final ReboundPayload payload;
 
   factory _$ReboundEvent([void Function(ReboundEventBuilder)? updates]) =>
       (ReboundEventBuilder()..update(updates))._build();
 
   _$ReboundEvent._(
-      {required this.payload,
-      required this.id,
+      {required this.id,
       required this.deviceId,
       required this.clientSeq,
       required this.type,
       required this.period,
       required this.clockSecondsRemaining,
       required this.recordedAtClient,
-      required this.playerId})
+      required this.playerId,
+      required this.payload})
       : super._();
   @override
   ReboundEvent rebuild(void Function(ReboundEventBuilder) updates) =>
@@ -51,7 +51,6 @@ class _$ReboundEvent extends ReboundEvent {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is ReboundEvent &&
-        payload == other.payload &&
         id == other.id &&
         deviceId == other.deviceId &&
         clientSeq == other.clientSeq &&
@@ -59,13 +58,13 @@ class _$ReboundEvent extends ReboundEvent {
         period == other.period &&
         clockSecondsRemaining == other.clockSecondsRemaining &&
         recordedAtClient == other.recordedAtClient &&
-        playerId == other.playerId;
+        playerId == other.playerId &&
+        payload == other.payload;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, payload.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, deviceId.hashCode);
     _$hash = $jc(_$hash, clientSeq.hashCode);
@@ -74,6 +73,7 @@ class _$ReboundEvent extends ReboundEvent {
     _$hash = $jc(_$hash, clockSecondsRemaining.hashCode);
     _$hash = $jc(_$hash, recordedAtClient.hashCode);
     _$hash = $jc(_$hash, playerId.hashCode);
+    _$hash = $jc(_$hash, payload.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -81,7 +81,6 @@ class _$ReboundEvent extends ReboundEvent {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'ReboundEvent')
-          ..add('payload', payload)
           ..add('id', id)
           ..add('deviceId', deviceId)
           ..add('clientSeq', clientSeq)
@@ -89,57 +88,54 @@ class _$ReboundEvent extends ReboundEvent {
           ..add('period', period)
           ..add('clockSecondsRemaining', clockSecondsRemaining)
           ..add('recordedAtClient', recordedAtClient)
-          ..add('playerId', playerId))
+          ..add('playerId', playerId)
+          ..add('payload', payload))
         .toString();
   }
 }
 
 class ReboundEventBuilder
-    implements
-        Builder<ReboundEvent, ReboundEventBuilder>,
-        MatchEventBaseBuilder,
-        PlayerAttributionBuilder {
+    implements Builder<ReboundEvent, ReboundEventBuilder> {
   _$ReboundEvent? _$v;
-
-  ReboundPayloadBuilder? _payload;
-  ReboundPayloadBuilder get payload =>
-      _$this._payload ??= ReboundPayloadBuilder();
-  set payload(covariant ReboundPayloadBuilder? payload) =>
-      _$this._payload = payload;
 
   String? _id;
   String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
+  set id(String? id) => _$this._id = id;
 
   String? _deviceId;
   String? get deviceId => _$this._deviceId;
-  set deviceId(covariant String? deviceId) => _$this._deviceId = deviceId;
+  set deviceId(String? deviceId) => _$this._deviceId = deviceId;
 
   int? _clientSeq;
   int? get clientSeq => _$this._clientSeq;
-  set clientSeq(covariant int? clientSeq) => _$this._clientSeq = clientSeq;
+  set clientSeq(int? clientSeq) => _$this._clientSeq = clientSeq;
 
   MatchEventType? _type;
   MatchEventType? get type => _$this._type;
-  set type(covariant MatchEventType? type) => _$this._type = type;
+  set type(MatchEventType? type) => _$this._type = type;
 
   int? _period;
   int? get period => _$this._period;
-  set period(covariant int? period) => _$this._period = period;
+  set period(int? period) => _$this._period = period;
 
   int? _clockSecondsRemaining;
   int? get clockSecondsRemaining => _$this._clockSecondsRemaining;
-  set clockSecondsRemaining(covariant int? clockSecondsRemaining) =>
+  set clockSecondsRemaining(int? clockSecondsRemaining) =>
       _$this._clockSecondsRemaining = clockSecondsRemaining;
 
   DateTime? _recordedAtClient;
   DateTime? get recordedAtClient => _$this._recordedAtClient;
-  set recordedAtClient(covariant DateTime? recordedAtClient) =>
+  set recordedAtClient(DateTime? recordedAtClient) =>
       _$this._recordedAtClient = recordedAtClient;
 
   String? _playerId;
   String? get playerId => _$this._playerId;
-  set playerId(covariant String? playerId) => _$this._playerId = playerId;
+  set playerId(String? playerId) => _$this._playerId = playerId;
+
+  ReboundPayloadBuilder? _payload;
+  ReboundPayloadBuilder get payload =>
+      _$this._payload ??= ReboundPayloadBuilder();
+  set payload(ReboundPayloadBuilder? payload) => _$this._payload = payload;
 
   ReboundEventBuilder() {
     ReboundEvent._defaults(this);
@@ -148,7 +144,6 @@ class ReboundEventBuilder
   ReboundEventBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _payload = $v.payload.toBuilder();
       _id = $v.id;
       _deviceId = $v.deviceId;
       _clientSeq = $v.clientSeq;
@@ -157,14 +152,14 @@ class ReboundEventBuilder
       _clockSecondsRemaining = $v.clockSecondsRemaining;
       _recordedAtClient = $v.recordedAtClient;
       _playerId = $v.playerId;
+      _payload = $v.payload.toBuilder();
       _$v = null;
     }
     return this;
   }
 
   @override
-// ignore: override_on_non_overriding_method
-  void replace(covariant ReboundEvent other) {
+  void replace(ReboundEvent other) {
     _$v = other as _$ReboundEvent;
   }
 
@@ -181,7 +176,6 @@ class ReboundEventBuilder
     try {
       _$result = _$v ??
           _$ReboundEvent._(
-            payload: payload.build(),
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'ReboundEvent', 'id'),
             deviceId: BuiltValueNullFieldError.checkNotNull(
@@ -200,6 +194,7 @@ class ReboundEventBuilder
                 recordedAtClient, r'ReboundEvent', 'recordedAtClient'),
             playerId: BuiltValueNullFieldError.checkNotNull(
                 playerId, r'ReboundEvent', 'playerId'),
+            payload: payload.build(),
           );
     } catch (_) {
       late String _$failedField;

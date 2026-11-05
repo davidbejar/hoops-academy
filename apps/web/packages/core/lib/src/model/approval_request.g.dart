@@ -6,41 +6,7 @@ part of 'approval_request.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-abstract class ApprovalRequestBuilder {
-  void replace(ApprovalRequest other);
-  void update(void Function(ApprovalRequestBuilder) updates);
-  String? get id;
-  set id(String? id);
-
-  ApprovalAction? get action;
-  set action(ApprovalAction? action);
-
-  ApprovalStatus? get status;
-  set status(ApprovalStatus? status);
-
-  PlayerRefBuilder get player;
-  set player(PlayerRefBuilder? player);
-
-  ApprovalPayloadBuilder get payload;
-  set payload(ApprovalPayloadBuilder? payload);
-
-  PersonRefBuilder get requestedBy;
-  set requestedBy(PersonRefBuilder? requestedBy);
-
-  DateTime? get requestedAt;
-  set requestedAt(DateTime? requestedAt);
-
-  PersonRefBuilder get decidedBy;
-  set decidedBy(PersonRefBuilder? decidedBy);
-
-  DateTime? get decidedAt;
-  set decidedAt(DateTime? decidedAt);
-
-  String? get decisionNote;
-  set decisionNote(String? decisionNote);
-}
-
-class _$$ApprovalRequest extends $ApprovalRequest {
+class _$ApprovalRequest extends ApprovalRequest {
   @override
   final String id;
   @override
@@ -62,11 +28,10 @@ class _$$ApprovalRequest extends $ApprovalRequest {
   @override
   final String? decisionNote;
 
-  factory _$$ApprovalRequest(
-          [void Function($ApprovalRequestBuilder)? updates]) =>
-      ($ApprovalRequestBuilder()..update(updates))._build();
+  factory _$ApprovalRequest([void Function(ApprovalRequestBuilder)? updates]) =>
+      (ApprovalRequestBuilder()..update(updates))._build();
 
-  _$$ApprovalRequest._(
+  _$ApprovalRequest._(
       {required this.id,
       required this.action,
       required this.status,
@@ -79,17 +44,16 @@ class _$$ApprovalRequest extends $ApprovalRequest {
       this.decisionNote})
       : super._();
   @override
-  $ApprovalRequest rebuild(void Function($ApprovalRequestBuilder) updates) =>
+  ApprovalRequest rebuild(void Function(ApprovalRequestBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  $ApprovalRequestBuilder toBuilder() =>
-      $ApprovalRequestBuilder()..replace(this);
+  ApprovalRequestBuilder toBuilder() => ApprovalRequestBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is $ApprovalRequest &&
+    return other is ApprovalRequest &&
         id == other.id &&
         action == other.action &&
         status == other.status &&
@@ -121,7 +85,7 @@ class _$$ApprovalRequest extends $ApprovalRequest {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'$ApprovalRequest')
+    return (newBuiltValueToStringHelper(r'ApprovalRequest')
           ..add('id', id)
           ..add('action', action)
           ..add('status', status)
@@ -136,64 +100,58 @@ class _$$ApprovalRequest extends $ApprovalRequest {
   }
 }
 
-class $ApprovalRequestBuilder
-    implements
-        Builder<$ApprovalRequest, $ApprovalRequestBuilder>,
-        ApprovalRequestBuilder {
-  _$$ApprovalRequest? _$v;
+class ApprovalRequestBuilder
+    implements Builder<ApprovalRequest, ApprovalRequestBuilder> {
+  _$ApprovalRequest? _$v;
 
   String? _id;
   String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
+  set id(String? id) => _$this._id = id;
 
   ApprovalAction? _action;
   ApprovalAction? get action => _$this._action;
-  set action(covariant ApprovalAction? action) => _$this._action = action;
+  set action(ApprovalAction? action) => _$this._action = action;
 
   ApprovalStatus? _status;
   ApprovalStatus? get status => _$this._status;
-  set status(covariant ApprovalStatus? status) => _$this._status = status;
+  set status(ApprovalStatus? status) => _$this._status = status;
 
   PlayerRefBuilder? _player;
   PlayerRefBuilder get player => _$this._player ??= PlayerRefBuilder();
-  set player(covariant PlayerRefBuilder? player) => _$this._player = player;
+  set player(PlayerRefBuilder? player) => _$this._player = player;
 
   ApprovalPayloadBuilder? _payload;
   ApprovalPayloadBuilder get payload =>
       _$this._payload ??= ApprovalPayloadBuilder();
-  set payload(covariant ApprovalPayloadBuilder? payload) =>
-      _$this._payload = payload;
+  set payload(ApprovalPayloadBuilder? payload) => _$this._payload = payload;
 
   PersonRefBuilder? _requestedBy;
   PersonRefBuilder get requestedBy =>
       _$this._requestedBy ??= PersonRefBuilder();
-  set requestedBy(covariant PersonRefBuilder? requestedBy) =>
+  set requestedBy(PersonRefBuilder? requestedBy) =>
       _$this._requestedBy = requestedBy;
 
   DateTime? _requestedAt;
   DateTime? get requestedAt => _$this._requestedAt;
-  set requestedAt(covariant DateTime? requestedAt) =>
-      _$this._requestedAt = requestedAt;
+  set requestedAt(DateTime? requestedAt) => _$this._requestedAt = requestedAt;
 
   PersonRefBuilder? _decidedBy;
   PersonRefBuilder get decidedBy => _$this._decidedBy ??= PersonRefBuilder();
-  set decidedBy(covariant PersonRefBuilder? decidedBy) =>
-      _$this._decidedBy = decidedBy;
+  set decidedBy(PersonRefBuilder? decidedBy) => _$this._decidedBy = decidedBy;
 
   DateTime? _decidedAt;
   DateTime? get decidedAt => _$this._decidedAt;
-  set decidedAt(covariant DateTime? decidedAt) => _$this._decidedAt = decidedAt;
+  set decidedAt(DateTime? decidedAt) => _$this._decidedAt = decidedAt;
 
   String? _decisionNote;
   String? get decisionNote => _$this._decisionNote;
-  set decisionNote(covariant String? decisionNote) =>
-      _$this._decisionNote = decisionNote;
+  set decisionNote(String? decisionNote) => _$this._decisionNote = decisionNote;
 
-  $ApprovalRequestBuilder() {
-    $ApprovalRequest._defaults(this);
+  ApprovalRequestBuilder() {
+    ApprovalRequest._defaults(this);
   }
 
-  $ApprovalRequestBuilder get _$this {
+  ApprovalRequestBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _id = $v.id;
@@ -212,34 +170,34 @@ class $ApprovalRequestBuilder
   }
 
   @override
-  void replace(covariant $ApprovalRequest other) {
-    _$v = other as _$$ApprovalRequest;
+  void replace(ApprovalRequest other) {
+    _$v = other as _$ApprovalRequest;
   }
 
   @override
-  void update(void Function($ApprovalRequestBuilder)? updates) {
+  void update(void Function(ApprovalRequestBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  $ApprovalRequest build() => _build();
+  ApprovalRequest build() => _build();
 
-  _$$ApprovalRequest _build() {
-    _$$ApprovalRequest _$result;
+  _$ApprovalRequest _build() {
+    _$ApprovalRequest _$result;
     try {
       _$result = _$v ??
-          _$$ApprovalRequest._(
+          _$ApprovalRequest._(
             id: BuiltValueNullFieldError.checkNotNull(
-                id, r'$ApprovalRequest', 'id'),
+                id, r'ApprovalRequest', 'id'),
             action: BuiltValueNullFieldError.checkNotNull(
-                action, r'$ApprovalRequest', 'action'),
+                action, r'ApprovalRequest', 'action'),
             status: BuiltValueNullFieldError.checkNotNull(
-                status, r'$ApprovalRequest', 'status'),
+                status, r'ApprovalRequest', 'status'),
             player: player.build(),
             payload: payload.build(),
             requestedBy: requestedBy.build(),
             requestedAt: BuiltValueNullFieldError.checkNotNull(
-                requestedAt, r'$ApprovalRequest', 'requestedAt'),
+                requestedAt, r'ApprovalRequest', 'requestedAt'),
             decidedBy: _decidedBy?.build(),
             decidedAt: decidedAt,
             decisionNote: decisionNote,
@@ -258,7 +216,7 @@ class $ApprovalRequestBuilder
         _decidedBy?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
-            r'$ApprovalRequest', _$failedField, e.toString());
+            r'ApprovalRequest', _$failedField, e.toString());
       }
       rethrow;
     }

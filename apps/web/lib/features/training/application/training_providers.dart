@@ -191,7 +191,7 @@ class SchedulesNotifier extends AsyncNotifier<List<ath.TrainingSchedule>> {
   }) async {
     final repo = ref.read(trainingRepositoryProvider);
     if (scheduleId == null) {
-      await repo.createSchedule(ath.$TrainingScheduleInput((b) => b
+      await repo.createSchedule(ath.TrainingScheduleInput((b) => b
         ..teamId = teamId
         ..dayOfWeek = day
         ..startTime = startTime
@@ -234,7 +234,7 @@ class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>> {
 
   Future<void> create({required String playerId, required DateTime from, required DateTime to, String? reason}) async {
     await ref.read(trainingRepositoryProvider).createAbsence(
-      ath.$PlannedAbsenceInput((b) => b
+      ath.PlannedAbsenceInput((b) => b
         ..playerId = playerId
         ..fromDate = toAthDate(from)
         ..toDate = toAthDate(to)

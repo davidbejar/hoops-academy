@@ -8,43 +8,43 @@ part of 'injury.dart';
 
 class _$Injury extends Injury {
   @override
+  final PersonRef recordedBy;
+  @override
+  final DateTime recordedAt;
+  @override
+  final String id;
+  @override
+  final String playerId;
+  @override
+  final Date occurredOn;
+  @override
+  final String bodyPart;
+  @override
   final InjurySeverity severity;
+  @override
+  final String? description;
   @override
   final Date? expectedReturnOn;
   @override
   final Date? actualReturnOn;
   @override
-  final String? description;
-  @override
-  final String id;
-  @override
-  final Date occurredOn;
-  @override
-  final String playerId;
-  @override
-  final String bodyPart;
-  @override
   final InjuryStatus status;
-  @override
-  final PersonRef recordedBy;
-  @override
-  final DateTime recordedAt;
 
   factory _$Injury([void Function(InjuryBuilder)? updates]) =>
       (InjuryBuilder()..update(updates))._build();
 
   _$Injury._(
-      {required this.severity,
+      {required this.recordedBy,
+      required this.recordedAt,
+      required this.id,
+      required this.playerId,
+      required this.occurredOn,
+      required this.bodyPart,
+      required this.severity,
+      this.description,
       this.expectedReturnOn,
       this.actualReturnOn,
-      this.description,
-      required this.id,
-      required this.occurredOn,
-      required this.playerId,
-      required this.bodyPart,
-      required this.status,
-      required this.recordedBy,
-      required this.recordedAt})
+      required this.status})
       : super._();
   @override
   Injury rebuild(void Function(InjuryBuilder) updates) =>
@@ -57,33 +57,33 @@ class _$Injury extends Injury {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is Injury &&
+        recordedBy == other.recordedBy &&
+        recordedAt == other.recordedAt &&
+        id == other.id &&
+        playerId == other.playerId &&
+        occurredOn == other.occurredOn &&
+        bodyPart == other.bodyPart &&
         severity == other.severity &&
+        description == other.description &&
         expectedReturnOn == other.expectedReturnOn &&
         actualReturnOn == other.actualReturnOn &&
-        description == other.description &&
-        id == other.id &&
-        occurredOn == other.occurredOn &&
-        playerId == other.playerId &&
-        bodyPart == other.bodyPart &&
-        status == other.status &&
-        recordedBy == other.recordedBy &&
-        recordedAt == other.recordedAt;
+        status == other.status;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, severity.hashCode);
-    _$hash = $jc(_$hash, expectedReturnOn.hashCode);
-    _$hash = $jc(_$hash, actualReturnOn.hashCode);
-    _$hash = $jc(_$hash, description.hashCode);
-    _$hash = $jc(_$hash, id.hashCode);
-    _$hash = $jc(_$hash, occurredOn.hashCode);
-    _$hash = $jc(_$hash, playerId.hashCode);
-    _$hash = $jc(_$hash, bodyPart.hashCode);
-    _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, recordedBy.hashCode);
     _$hash = $jc(_$hash, recordedAt.hashCode);
+    _$hash = $jc(_$hash, id.hashCode);
+    _$hash = $jc(_$hash, playerId.hashCode);
+    _$hash = $jc(_$hash, occurredOn.hashCode);
+    _$hash = $jc(_$hash, bodyPart.hashCode);
+    _$hash = $jc(_$hash, severity.hashCode);
+    _$hash = $jc(_$hash, description.hashCode);
+    _$hash = $jc(_$hash, expectedReturnOn.hashCode);
+    _$hash = $jc(_$hash, actualReturnOn.hashCode);
+    _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -91,74 +91,70 @@ class _$Injury extends Injury {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'Injury')
+          ..add('recordedBy', recordedBy)
+          ..add('recordedAt', recordedAt)
+          ..add('id', id)
+          ..add('playerId', playerId)
+          ..add('occurredOn', occurredOn)
+          ..add('bodyPart', bodyPart)
           ..add('severity', severity)
+          ..add('description', description)
           ..add('expectedReturnOn', expectedReturnOn)
           ..add('actualReturnOn', actualReturnOn)
-          ..add('description', description)
-          ..add('id', id)
-          ..add('occurredOn', occurredOn)
-          ..add('playerId', playerId)
-          ..add('bodyPart', bodyPart)
-          ..add('status', status)
-          ..add('recordedBy', recordedBy)
-          ..add('recordedAt', recordedAt))
+          ..add('status', status))
         .toString();
   }
 }
 
-class InjuryBuilder
-    implements Builder<Injury, InjuryBuilder>, AuditInfoBuilder {
+class InjuryBuilder implements Builder<Injury, InjuryBuilder> {
   _$Injury? _$v;
-
-  InjurySeverity? _severity;
-  InjurySeverity? get severity => _$this._severity;
-  set severity(covariant InjurySeverity? severity) =>
-      _$this._severity = severity;
-
-  Date? _expectedReturnOn;
-  Date? get expectedReturnOn => _$this._expectedReturnOn;
-  set expectedReturnOn(covariant Date? expectedReturnOn) =>
-      _$this._expectedReturnOn = expectedReturnOn;
-
-  Date? _actualReturnOn;
-  Date? get actualReturnOn => _$this._actualReturnOn;
-  set actualReturnOn(covariant Date? actualReturnOn) =>
-      _$this._actualReturnOn = actualReturnOn;
-
-  String? _description;
-  String? get description => _$this._description;
-  set description(covariant String? description) =>
-      _$this._description = description;
-
-  String? _id;
-  String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
-
-  Date? _occurredOn;
-  Date? get occurredOn => _$this._occurredOn;
-  set occurredOn(covariant Date? occurredOn) => _$this._occurredOn = occurredOn;
-
-  String? _playerId;
-  String? get playerId => _$this._playerId;
-  set playerId(covariant String? playerId) => _$this._playerId = playerId;
-
-  String? _bodyPart;
-  String? get bodyPart => _$this._bodyPart;
-  set bodyPart(covariant String? bodyPart) => _$this._bodyPart = bodyPart;
-
-  InjuryStatus? _status;
-  InjuryStatus? get status => _$this._status;
-  set status(covariant InjuryStatus? status) => _$this._status = status;
 
   PersonRefBuilder? _recordedBy;
   PersonRefBuilder get recordedBy => _$this._recordedBy ??= PersonRefBuilder();
-  set recordedBy(covariant PersonRefBuilder? recordedBy) =>
+  set recordedBy(PersonRefBuilder? recordedBy) =>
       _$this._recordedBy = recordedBy;
 
   DateTime? _recordedAt;
   DateTime? get recordedAt => _$this._recordedAt;
-  set recordedAt(covariant DateTime? recordedAt) =>
-      _$this._recordedAt = recordedAt;
+  set recordedAt(DateTime? recordedAt) => _$this._recordedAt = recordedAt;
+
+  String? _id;
+  String? get id => _$this._id;
+  set id(String? id) => _$this._id = id;
+
+  String? _playerId;
+  String? get playerId => _$this._playerId;
+  set playerId(String? playerId) => _$this._playerId = playerId;
+
+  Date? _occurredOn;
+  Date? get occurredOn => _$this._occurredOn;
+  set occurredOn(Date? occurredOn) => _$this._occurredOn = occurredOn;
+
+  String? _bodyPart;
+  String? get bodyPart => _$this._bodyPart;
+  set bodyPart(String? bodyPart) => _$this._bodyPart = bodyPart;
+
+  InjurySeverity? _severity;
+  InjurySeverity? get severity => _$this._severity;
+  set severity(InjurySeverity? severity) => _$this._severity = severity;
+
+  String? _description;
+  String? get description => _$this._description;
+  set description(String? description) => _$this._description = description;
+
+  Date? _expectedReturnOn;
+  Date? get expectedReturnOn => _$this._expectedReturnOn;
+  set expectedReturnOn(Date? expectedReturnOn) =>
+      _$this._expectedReturnOn = expectedReturnOn;
+
+  Date? _actualReturnOn;
+  Date? get actualReturnOn => _$this._actualReturnOn;
+  set actualReturnOn(Date? actualReturnOn) =>
+      _$this._actualReturnOn = actualReturnOn;
+
+  InjuryStatus? _status;
+  InjuryStatus? get status => _$this._status;
+  set status(InjuryStatus? status) => _$this._status = status;
 
   InjuryBuilder() {
     Injury._defaults(this);
@@ -167,24 +163,24 @@ class InjuryBuilder
   InjuryBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _severity = $v.severity;
-      _expectedReturnOn = $v.expectedReturnOn;
-      _actualReturnOn = $v.actualReturnOn;
-      _description = $v.description;
-      _id = $v.id;
-      _occurredOn = $v.occurredOn;
-      _playerId = $v.playerId;
-      _bodyPart = $v.bodyPart;
-      _status = $v.status;
       _recordedBy = $v.recordedBy.toBuilder();
       _recordedAt = $v.recordedAt;
+      _id = $v.id;
+      _playerId = $v.playerId;
+      _occurredOn = $v.occurredOn;
+      _bodyPart = $v.bodyPart;
+      _severity = $v.severity;
+      _description = $v.description;
+      _expectedReturnOn = $v.expectedReturnOn;
+      _actualReturnOn = $v.actualReturnOn;
+      _status = $v.status;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant Injury other) {
+  void replace(Injury other) {
     _$v = other as _$Injury;
   }
 
@@ -201,23 +197,23 @@ class InjuryBuilder
     try {
       _$result = _$v ??
           _$Injury._(
-            severity: BuiltValueNullFieldError.checkNotNull(
-                severity, r'Injury', 'severity'),
-            expectedReturnOn: expectedReturnOn,
-            actualReturnOn: actualReturnOn,
-            description: description,
-            id: BuiltValueNullFieldError.checkNotNull(id, r'Injury', 'id'),
-            occurredOn: BuiltValueNullFieldError.checkNotNull(
-                occurredOn, r'Injury', 'occurredOn'),
-            playerId: BuiltValueNullFieldError.checkNotNull(
-                playerId, r'Injury', 'playerId'),
-            bodyPart: BuiltValueNullFieldError.checkNotNull(
-                bodyPart, r'Injury', 'bodyPart'),
-            status: BuiltValueNullFieldError.checkNotNull(
-                status, r'Injury', 'status'),
             recordedBy: recordedBy.build(),
             recordedAt: BuiltValueNullFieldError.checkNotNull(
                 recordedAt, r'Injury', 'recordedAt'),
+            id: BuiltValueNullFieldError.checkNotNull(id, r'Injury', 'id'),
+            playerId: BuiltValueNullFieldError.checkNotNull(
+                playerId, r'Injury', 'playerId'),
+            occurredOn: BuiltValueNullFieldError.checkNotNull(
+                occurredOn, r'Injury', 'occurredOn'),
+            bodyPart: BuiltValueNullFieldError.checkNotNull(
+                bodyPart, r'Injury', 'bodyPart'),
+            severity: BuiltValueNullFieldError.checkNotNull(
+                severity, r'Injury', 'severity'),
+            description: description,
+            expectedReturnOn: expectedReturnOn,
+            actualReturnOn: actualReturnOn,
+            status: BuiltValueNullFieldError.checkNotNull(
+                status, r'Injury', 'status'),
           );
     } catch (_) {
       late String _$failedField;

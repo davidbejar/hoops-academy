@@ -8,8 +8,6 @@ part of 'training_schedule.dart';
 
 class _$TrainingSchedule extends TrainingSchedule {
   @override
-  final String id;
-  @override
   final String teamId;
   @override
   final DayOfWeek dayOfWeek;
@@ -23,20 +21,22 @@ class _$TrainingSchedule extends TrainingSchedule {
   final Date validFrom;
   @override
   final Date? validUntil;
+  @override
+  final String id;
 
   factory _$TrainingSchedule(
           [void Function(TrainingScheduleBuilder)? updates]) =>
       (TrainingScheduleBuilder()..update(updates))._build();
 
   _$TrainingSchedule._(
-      {required this.id,
-      required this.teamId,
+      {required this.teamId,
       required this.dayOfWeek,
       required this.startTime,
       required this.durationMinutes,
       this.location,
       required this.validFrom,
-      this.validUntil})
+      this.validUntil,
+      required this.id})
       : super._();
   @override
   TrainingSchedule rebuild(void Function(TrainingScheduleBuilder) updates) =>
@@ -50,20 +50,19 @@ class _$TrainingSchedule extends TrainingSchedule {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is TrainingSchedule &&
-        id == other.id &&
         teamId == other.teamId &&
         dayOfWeek == other.dayOfWeek &&
         startTime == other.startTime &&
         durationMinutes == other.durationMinutes &&
         location == other.location &&
         validFrom == other.validFrom &&
-        validUntil == other.validUntil;
+        validUntil == other.validUntil &&
+        id == other.id;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, teamId.hashCode);
     _$hash = $jc(_$hash, dayOfWeek.hashCode);
     _$hash = $jc(_$hash, startTime.hashCode);
@@ -71,6 +70,7 @@ class _$TrainingSchedule extends TrainingSchedule {
     _$hash = $jc(_$hash, location.hashCode);
     _$hash = $jc(_$hash, validFrom.hashCode);
     _$hash = $jc(_$hash, validUntil.hashCode);
+    _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -78,57 +78,54 @@ class _$TrainingSchedule extends TrainingSchedule {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'TrainingSchedule')
-          ..add('id', id)
           ..add('teamId', teamId)
           ..add('dayOfWeek', dayOfWeek)
           ..add('startTime', startTime)
           ..add('durationMinutes', durationMinutes)
           ..add('location', location)
           ..add('validFrom', validFrom)
-          ..add('validUntil', validUntil))
+          ..add('validUntil', validUntil)
+          ..add('id', id))
         .toString();
   }
 }
 
 class TrainingScheduleBuilder
-    implements
-        Builder<TrainingSchedule, TrainingScheduleBuilder>,
-        TrainingScheduleInputBuilder {
+    implements Builder<TrainingSchedule, TrainingScheduleBuilder> {
   _$TrainingSchedule? _$v;
-
-  String? _id;
-  String? get id => _$this._id;
-  set id(covariant String? id) => _$this._id = id;
 
   String? _teamId;
   String? get teamId => _$this._teamId;
-  set teamId(covariant String? teamId) => _$this._teamId = teamId;
+  set teamId(String? teamId) => _$this._teamId = teamId;
 
   DayOfWeek? _dayOfWeek;
   DayOfWeek? get dayOfWeek => _$this._dayOfWeek;
-  set dayOfWeek(covariant DayOfWeek? dayOfWeek) =>
-      _$this._dayOfWeek = dayOfWeek;
+  set dayOfWeek(DayOfWeek? dayOfWeek) => _$this._dayOfWeek = dayOfWeek;
 
   String? _startTime;
   String? get startTime => _$this._startTime;
-  set startTime(covariant String? startTime) => _$this._startTime = startTime;
+  set startTime(String? startTime) => _$this._startTime = startTime;
 
   int? _durationMinutes;
   int? get durationMinutes => _$this._durationMinutes;
-  set durationMinutes(covariant int? durationMinutes) =>
+  set durationMinutes(int? durationMinutes) =>
       _$this._durationMinutes = durationMinutes;
 
   String? _location;
   String? get location => _$this._location;
-  set location(covariant String? location) => _$this._location = location;
+  set location(String? location) => _$this._location = location;
 
   Date? _validFrom;
   Date? get validFrom => _$this._validFrom;
-  set validFrom(covariant Date? validFrom) => _$this._validFrom = validFrom;
+  set validFrom(Date? validFrom) => _$this._validFrom = validFrom;
 
   Date? _validUntil;
   Date? get validUntil => _$this._validUntil;
-  set validUntil(covariant Date? validUntil) => _$this._validUntil = validUntil;
+  set validUntil(Date? validUntil) => _$this._validUntil = validUntil;
+
+  String? _id;
+  String? get id => _$this._id;
+  set id(String? id) => _$this._id = id;
 
   TrainingScheduleBuilder() {
     TrainingSchedule._defaults(this);
@@ -137,7 +134,6 @@ class TrainingScheduleBuilder
   TrainingScheduleBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _id = $v.id;
       _teamId = $v.teamId;
       _dayOfWeek = $v.dayOfWeek;
       _startTime = $v.startTime;
@@ -145,13 +141,14 @@ class TrainingScheduleBuilder
       _location = $v.location;
       _validFrom = $v.validFrom;
       _validUntil = $v.validUntil;
+      _id = $v.id;
       _$v = null;
     }
     return this;
   }
 
   @override
-  void replace(covariant TrainingSchedule other) {
+  void replace(TrainingSchedule other) {
     _$v = other as _$TrainingSchedule;
   }
 
@@ -166,8 +163,6 @@ class TrainingScheduleBuilder
   _$TrainingSchedule _build() {
     final _$result = _$v ??
         _$TrainingSchedule._(
-          id: BuiltValueNullFieldError.checkNotNull(
-              id, r'TrainingSchedule', 'id'),
           teamId: BuiltValueNullFieldError.checkNotNull(
               teamId, r'TrainingSchedule', 'teamId'),
           dayOfWeek: BuiltValueNullFieldError.checkNotNull(
@@ -180,6 +175,8 @@ class TrainingScheduleBuilder
           validFrom: BuiltValueNullFieldError.checkNotNull(
               validFrom, r'TrainingSchedule', 'validFrom'),
           validUntil: validUntil,
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'TrainingSchedule', 'id'),
         );
     replace(_$result);
     return _$result;

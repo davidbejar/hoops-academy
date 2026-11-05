@@ -3,7 +3,6 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:hoops_athlete_api/src/model/training_schedule_input.dart';
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:hoops_athlete_api/src/model/day_of_week.dart';
 import 'package:built_value/built_value.dart';
@@ -14,16 +13,40 @@ part 'training_schedule.g.dart';
 /// TrainingSchedule
 ///
 /// Properties:
-/// * [teamId] 
-/// * [dayOfWeek] 
+/// * [teamId]
+/// * [dayOfWeek]
 /// * [startTime] - Wall-clock time in the tenant's time zone, `HH:mm`.
-/// * [durationMinutes] 
-/// * [location] 
-/// * [validFrom] 
+/// * [durationMinutes]
+/// * [location]
+/// * [validFrom]
 /// * [validUntil] - Inclusive; absent = open-ended.
-/// * [id] 
+/// * [id]
 @BuiltValue()
-abstract class TrainingSchedule implements TrainingScheduleInput, Built<TrainingSchedule, TrainingScheduleBuilder> {
+abstract class TrainingSchedule implements Built<TrainingSchedule, TrainingScheduleBuilder> {
+  @BuiltValueField(wireName: r'teamId')
+  String get teamId;
+
+  @BuiltValueField(wireName: r'dayOfWeek')
+  DayOfWeek get dayOfWeek;
+  // enum dayOfWeekEnum {  MONDAY,  TUESDAY,  WEDNESDAY,  THURSDAY,  FRIDAY,  SATURDAY,  SUNDAY,  };
+
+  /// Wall-clock time in the tenant's time zone, `HH:mm`.
+  @BuiltValueField(wireName: r'startTime')
+  String get startTime;
+
+  @BuiltValueField(wireName: r'durationMinutes')
+  int get durationMinutes;
+
+  @BuiltValueField(wireName: r'location')
+  String? get location;
+
+  @BuiltValueField(wireName: r'validFrom')
+  Date get validFrom;
+
+  /// Inclusive; absent = open-ended.
+  @BuiltValueField(wireName: r'validUntil')
+  Date? get validUntil;
+
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -50,32 +73,25 @@ class _$TrainingScheduleSerializer implements PrimitiveSerializer<TrainingSchedu
     TrainingSchedule object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'durationMinutes';
+    yield r'teamId';
     yield serializers.serialize(
-      object.durationMinutes,
-      specifiedType: const FullType(int),
+      object.teamId,
+      specifiedType: const FullType(String),
     );
     yield r'dayOfWeek';
     yield serializers.serialize(
       object.dayOfWeek,
       specifiedType: const FullType(DayOfWeek),
     );
-    yield r'teamId';
-    yield serializers.serialize(
-      object.teamId,
-      specifiedType: const FullType(String),
-    );
-    if (object.validUntil != null) {
-      yield r'validUntil';
-      yield serializers.serialize(
-        object.validUntil,
-        specifiedType: const FullType(Date),
-      );
-    }
     yield r'startTime';
     yield serializers.serialize(
       object.startTime,
       specifiedType: const FullType(String),
+    );
+    yield r'durationMinutes';
+    yield serializers.serialize(
+      object.durationMinutes,
+      specifiedType: const FullType(int),
     );
     if (object.location != null) {
       yield r'location';
@@ -84,15 +100,22 @@ class _$TrainingScheduleSerializer implements PrimitiveSerializer<TrainingSchedu
         specifiedType: const FullType(String),
       );
     }
-    yield r'id';
-    yield serializers.serialize(
-      object.id,
-      specifiedType: const FullType(String),
-    );
     yield r'validFrom';
     yield serializers.serialize(
       object.validFrom,
       specifiedType: const FullType(Date),
+    );
+    if (object.validUntil != null) {
+      yield r'validUntil';
+      yield serializers.serialize(
+        object.validUntil,
+        specifiedType: const FullType(Date),
+      );
+    }
+    yield r'id';
+    yield serializers.serialize(
+      object.id,
+      specifiedType: const FullType(String),
     );
   }
 
@@ -117,12 +140,12 @@ class _$TrainingScheduleSerializer implements PrimitiveSerializer<TrainingSchedu
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'durationMinutes':
+        case r'teamId':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(int),
-          ) as int;
-          result.durationMinutes = valueDes;
+            specifiedType: const FullType(String),
+          ) as String;
+          result.teamId = valueDes;
           break;
         case r'dayOfWeek':
           final valueDes = serializers.deserialize(
@@ -131,27 +154,19 @@ class _$TrainingScheduleSerializer implements PrimitiveSerializer<TrainingSchedu
           ) as DayOfWeek;
           result.dayOfWeek = valueDes;
           break;
-        case r'teamId':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.teamId = valueDes;
-          break;
-        case r'validUntil':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(Date),
-          ) as Date?;
-          if (valueDes == null) continue;
-          result.validUntil = valueDes;
-          break;
         case r'startTime':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
           result.startTime = valueDes;
+          break;
+        case r'durationMinutes':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(int),
+          ) as int;
+          result.durationMinutes = valueDes;
           break;
         case r'location':
           final valueDes = serializers.deserialize(
@@ -161,19 +176,27 @@ class _$TrainingScheduleSerializer implements PrimitiveSerializer<TrainingSchedu
           if (valueDes == null) continue;
           result.location = valueDes;
           break;
-        case r'id':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.id = valueDes;
-          break;
         case r'validFrom':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(Date),
           ) as Date;
           result.validFrom = valueDes;
+          break;
+        case r'validUntil':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(Date),
+          ) as Date?;
+          if (valueDes == null) continue;
+          result.validUntil = valueDes;
+          break;
+        case r'id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.id = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -203,5 +226,3 @@ class _$TrainingScheduleSerializer implements PrimitiveSerializer<TrainingSchedu
     return result.build();
   }
 }
-
-

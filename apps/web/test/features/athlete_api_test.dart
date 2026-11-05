@@ -111,7 +111,7 @@ void main() {
     test('schedule input serialises weekday, HH:MM and dates', () async {
       final a = _Adapter((_) => {'id': uuid, 'teamId': uuid, 'dayOfWeek': 'TUESDAY', 'startTime': '18:00:00', 'durationMinutes': 90, 'validFrom': '2026-09-01'});
       await ApiTrainingRepository(_athlete(a), tenant).createSchedule(
-        ath.$TrainingScheduleInput((b) => b
+        ath.TrainingScheduleInput((b) => b
           ..teamId = uuid
           ..dayOfWeek = ath.DayOfWeek.TUESDAY
           ..startTime = '18:00'
@@ -126,7 +126,7 @@ void main() {
     test('planned absence round trip', () async {
       final a = _Adapter((_) => {'id': uuid, 'playerId': uuid, 'fromDate': '2026-11-10', 'toDate': '2026-11-12', ..._audit()});
       final r = await ApiTrainingRepository(_athlete(a), tenant).createAbsence(
-        ath.$PlannedAbsenceInput((b) => b
+        ath.PlannedAbsenceInput((b) => b
           ..playerId = uuid
           ..fromDate = ath.Date(2026, 11, 10)
           ..toDate = ath.Date(2026, 11, 12)),
@@ -229,7 +229,7 @@ void main() {
       expect(a.last!.queryParameters, containsPair('testTypeId', uuid));
       final b = _Adapter((_) => {'id': uuid, 'global': false, 'referencePending': false, 'testTypeId': uuid, 'gender': 'MALE', 'minAge': 10, 'maxAge': 12, 'band': 'AVERAGE', 'source': 'Club'});
       await ApiFitnessRepository(_athlete(b), tenant).createNorm(
-        ath.$PhysicalTestNormInput((n) => n
+        ath.PhysicalTestNormInput((n) => n
           ..testTypeId = uuid
           ..gender = ath.Gender.MALE
           ..minAge = 10

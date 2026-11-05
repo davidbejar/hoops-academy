@@ -6,7 +6,6 @@
 import 'package:hoops_core_api/src/model/approval_status.dart';
 import 'package:hoops_core_api/src/model/player_ref.dart';
 import 'package:hoops_core_api/src/model/approval_action.dart';
-import 'package:hoops_core_api/src/model/approval_request.dart';
 import 'package:hoops_core_api/src/model/approval_payload.dart';
 import 'package:hoops_core_api/src/model/person_ref.dart';
 import 'package:built_value/built_value.dart';
@@ -29,7 +28,39 @@ part 'approval_request_with_password.g.dart';
 /// * [decisionNote]
 /// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
 @BuiltValue()
-abstract class ApprovalRequestWithPassword implements ApprovalRequest, Built<ApprovalRequestWithPassword, ApprovalRequestWithPasswordBuilder> {
+abstract class ApprovalRequestWithPassword implements Built<ApprovalRequestWithPassword, ApprovalRequestWithPasswordBuilder> {
+  @BuiltValueField(wireName: r'id')
+  String get id;
+
+  @BuiltValueField(wireName: r'action')
+  ApprovalAction get action;
+  // enum actionEnum {  ADD_PLAYER,  WITHDRAW_PLAYER,  };
+
+  @BuiltValueField(wireName: r'status')
+  ApprovalStatus get status;
+  // enum statusEnum {  PENDING,  APPROVED,  REJECTED,  CANCELLED,  };
+
+  @BuiltValueField(wireName: r'player')
+  PlayerRef get player;
+
+  @BuiltValueField(wireName: r'payload')
+  ApprovalPayload get payload;
+
+  @BuiltValueField(wireName: r'requestedBy')
+  PersonRef get requestedBy;
+
+  @BuiltValueField(wireName: r'requestedAt')
+  DateTime get requestedAt;
+
+  @BuiltValueField(wireName: r'decidedBy')
+  PersonRef? get decidedBy;
+
+  @BuiltValueField(wireName: r'decidedAt')
+  DateTime? get decidedAt;
+
+  @BuiltValueField(wireName: r'decisionNote')
+  String? get decisionNote;
+
   /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
@@ -57,59 +88,16 @@ class _$ApprovalRequestWithPasswordSerializer implements PrimitiveSerializer<App
     ApprovalRequestWithPassword object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    if (object.temporaryPassword != null) {
-      yield r'temporaryPassword';
-      yield serializers.serialize(
-        object.temporaryPassword,
-        specifiedType: const FullType(String),
-      );
-    }
-    yield r'requestedBy';
-    yield serializers.serialize(
-      object.requestedBy,
-      specifiedType: const FullType(PersonRef),
-    );
-    if (object.decisionNote != null) {
-      yield r'decisionNote';
-      yield serializers.serialize(
-        object.decisionNote,
-        specifiedType: const FullType.nullable(String),
-      );
-    }
-    yield r'payload';
-    yield serializers.serialize(
-      object.payload,
-      specifiedType: const FullType(ApprovalPayload),
-    );
-    yield r'requestedAt';
-    yield serializers.serialize(
-      object.requestedAt,
-      specifiedType: const FullType(DateTime),
-    );
-    if (object.decidedAt != null) {
-      yield r'decidedAt';
-      yield serializers.serialize(
-        object.decidedAt,
-        specifiedType: const FullType.nullable(DateTime),
-      );
-    }
-    yield r'action';
-    yield serializers.serialize(
-      object.action,
-      specifiedType: const FullType(ApprovalAction),
-    );
     yield r'id';
     yield serializers.serialize(
       object.id,
       specifiedType: const FullType(String),
     );
-    if (object.decidedBy != null) {
-      yield r'decidedBy';
-      yield serializers.serialize(
-        object.decidedBy,
-        specifiedType: const FullType.nullable(PersonRef),
-      );
-    }
+    yield r'action';
+    yield serializers.serialize(
+      object.action,
+      specifiedType: const FullType(ApprovalAction),
+    );
     yield r'status';
     yield serializers.serialize(
       object.status,
@@ -120,6 +108,49 @@ class _$ApprovalRequestWithPasswordSerializer implements PrimitiveSerializer<App
       object.player,
       specifiedType: const FullType(PlayerRef),
     );
+    yield r'payload';
+    yield serializers.serialize(
+      object.payload,
+      specifiedType: const FullType(ApprovalPayload),
+    );
+    yield r'requestedBy';
+    yield serializers.serialize(
+      object.requestedBy,
+      specifiedType: const FullType(PersonRef),
+    );
+    yield r'requestedAt';
+    yield serializers.serialize(
+      object.requestedAt,
+      specifiedType: const FullType(DateTime),
+    );
+    if (object.decidedBy != null) {
+      yield r'decidedBy';
+      yield serializers.serialize(
+        object.decidedBy,
+        specifiedType: const FullType.nullable(PersonRef),
+      );
+    }
+    if (object.decidedAt != null) {
+      yield r'decidedAt';
+      yield serializers.serialize(
+        object.decidedAt,
+        specifiedType: const FullType.nullable(DateTime),
+      );
+    }
+    if (object.decisionNote != null) {
+      yield r'decisionNote';
+      yield serializers.serialize(
+        object.decisionNote,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.temporaryPassword != null) {
+      yield r'temporaryPassword';
+      yield serializers.serialize(
+        object.temporaryPassword,
+        specifiedType: const FullType(String),
+      );
+    }
   }
 
   @override
@@ -143,58 +174,6 @@ class _$ApprovalRequestWithPasswordSerializer implements PrimitiveSerializer<App
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'temporaryPassword':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.temporaryPassword = valueDes;
-          break;
-        case r'requestedBy':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(PersonRef),
-          ) as PersonRef;
-          result.requestedBy.replace(valueDes);
-          break;
-        case r'decisionNote':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.decisionNote = valueDes;
-          break;
-        case r'payload':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(ApprovalPayload),
-          ) as ApprovalPayload;
-          result.payload.replace(valueDes);
-          break;
-        case r'requestedAt':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(DateTime),
-          ) as DateTime;
-          result.requestedAt = valueDes;
-          break;
-        case r'decidedAt':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(DateTime),
-          ) as DateTime?;
-          if (valueDes == null) continue;
-          result.decidedAt = valueDes;
-          break;
-        case r'action':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(ApprovalAction),
-          ) as ApprovalAction;
-          result.action = valueDes;
-          break;
         case r'id':
           final valueDes = serializers.deserialize(
             value,
@@ -202,13 +181,12 @@ class _$ApprovalRequestWithPasswordSerializer implements PrimitiveSerializer<App
           ) as String;
           result.id = valueDes;
           break;
-        case r'decidedBy':
+        case r'action':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(PersonRef),
-          ) as PersonRef?;
-          if (valueDes == null) continue;
-          result.decidedBy.replace(valueDes);
+            specifiedType: const FullType(ApprovalAction),
+          ) as ApprovalAction;
+          result.action = valueDes;
           break;
         case r'status':
           final valueDes = serializers.deserialize(
@@ -223,6 +201,59 @@ class _$ApprovalRequestWithPasswordSerializer implements PrimitiveSerializer<App
             specifiedType: const FullType(PlayerRef),
           ) as PlayerRef;
           result.player.replace(valueDes);
+          break;
+        case r'payload':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(ApprovalPayload),
+          ) as ApprovalPayload;
+          result.payload.replace(valueDes);
+          break;
+        case r'requestedBy':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(PersonRef),
+          ) as PersonRef;
+          result.requestedBy.replace(valueDes);
+          break;
+        case r'requestedAt':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(DateTime),
+          ) as DateTime;
+          result.requestedAt = valueDes;
+          break;
+        case r'decidedBy':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(PersonRef),
+          ) as PersonRef?;
+          if (valueDes == null) continue;
+          result.decidedBy.replace(valueDes);
+          break;
+        case r'decidedAt':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(DateTime),
+          ) as DateTime?;
+          if (valueDes == null) continue;
+          result.decidedAt = valueDes;
+          break;
+        case r'decisionNote':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.decisionNote = valueDes;
+          break;
+        case r'temporaryPassword':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.temporaryPassword = valueDes;
           break;
         default:
           unhandled.add(key);
