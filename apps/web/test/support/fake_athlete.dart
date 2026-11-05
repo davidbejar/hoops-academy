@@ -262,6 +262,7 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
   String? cancelledReason;
   ath.TrainingScheduleInput? createdSchedule;
   ath.PlannedAbsenceInput? createdAbsence;
+  ath.UpdatePlannedAbsenceRequest? updatedAbsence;
 
   @override
   Future<List<ath.TrainingSession>> sessions({String? teamId, required ath.Date from, required ath.Date to}) =>
@@ -394,6 +395,17 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
     final a = absence('abs-${absenceList.length}', input.playerId, reason: input.reason);
     absenceList.add(a);
     return a;
+  });
+
+  @override
+  Future<ath.PlannedAbsence> updateAbsence(String absenceId, ath.UpdatePlannedAbsenceRequest request) => run('updateAbsence', () {
+    updatedAbsence = request;
+    final i = absenceList.indexWhere((a) => a.id == absenceId);
+    absenceList[i] = absenceList[i].rebuild((b) => b
+      ..fromDate = request.fromDate ?? b.fromDate
+      ..toDate = request.toDate ?? b.toDate
+      ..reason = request.reason ?? b.reason);
+    return absenceList[i];
   });
 
   @override
@@ -609,6 +621,7 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
   ath.PhysicalTestNormInput? savedNorm;
   ath.PhysicalTestTypeInput? createdType;
   ath.UpdatePhysicalTestResultRequest? updatedResult;
+  ath.UpdatePhysicalTestTypeRequest? updatedType;
 
   @override
   Future<List<ath.PhysicalTestType>> types() => run('types', () => [...typeList]);
@@ -623,7 +636,16 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
 
   @override
   Future<ath.PhysicalTestType> updateType(String id, ath.UpdatePhysicalTestTypeRequest request) =>
-      run('updateType', () => typeList.firstWhere((t) => t.id == id));
+      run('updateType', () {
+        updatedType = request;
+        final i = typeList.indexWhere((t) => t.id == id);
+        typeList[i] = typeList[i].rebuild((b) => b
+          ..name = request.name ?? b.name
+          ..unit = request.unit ?? b.unit
+          ..higherIsBetter = request.higherIsBetter ?? b.higherIsBetter
+          ..description = request.description ?? b.description);
+        return typeList[i];
+      });
 
   @override
   Future<List<ath.PhysicalTestResult>> results({String? playerId, String? teamId, String? testTypeId}) => run(

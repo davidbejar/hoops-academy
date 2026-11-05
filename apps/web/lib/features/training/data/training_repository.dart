@@ -19,6 +19,7 @@ abstract class TrainingRepository {
 
   Future<List<ath.PlannedAbsence>> absences({String? playerId, String? teamId, ath.Date? from, ath.Date? to});
   Future<ath.PlannedAbsence> createAbsence(ath.PlannedAbsenceInput input);
+  Future<ath.PlannedAbsence> updateAbsence(String absenceId, ath.UpdatePlannedAbsenceRequest request);
   Future<void> deleteAbsence(String absenceId);
 }
 
@@ -97,6 +98,10 @@ class ApiTrainingRepository implements TrainingRepository {
   @override
   Future<ath.PlannedAbsence> createAbsence(ath.PlannedAbsenceInput input) async =>
       (await _absences.createPlannedAbsence(xTenantId: _t, plannedAbsenceInput: input)).data!;
+
+  @override
+  Future<ath.PlannedAbsence> updateAbsence(String absenceId, ath.UpdatePlannedAbsenceRequest request) async =>
+      (await _absences.updatePlannedAbsence(xTenantId: _t, absenceId: absenceId, updatePlannedAbsenceRequest: request)).data!;
 
   @override
   Future<void> deleteAbsence(String absenceId) async {

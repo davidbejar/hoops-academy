@@ -72,6 +72,27 @@ void main() {
     });
   });
 
+  group('planned absences edit', () {
+    FakeAthlete athlete() => FakeAthlete(training: FakeTrainingRepository(absences: [absence('a1', 'p1', reason: 'Viaje')]));
+
+    testWidgets('the reason of an absence can be corrected', (tester) async {
+      final a = athlete();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/training/absences');
+      await tapKey(tester, 'absence-edit-a1');
+      expect(find.widgetWithText(TextFormField, 'Viaje'), findsOneWidget); // prefilled
+      await enter(tester, 'absence-reason', 'Torneo');
+      await tapKey(tester, 'form-submit');
+      expect(a.training.updatedAbsence!.reason, 'Torneo');
+      expect(a.training.createdAbsence, isNull);
+      expect(find.textContaining('Torneo'), findsOneWidget);
+    });
+
+    testWidgets('a coach of nobody, without rights to the player, sees no edit button', (tester) async {
+      await pumpAs(tester, roles: {TenantRole.parent}, linkedPlayerIds: {'p2'}, core: athleteCore(), athlete: athlete(), location: '/training/absences');
+      expect(find.byKey(const Key('absence-edit-a1')), findsNothing);
+    });
+  });
+
   group('planned absences', () {
     FakeAthlete athlete() => FakeAthlete(training: FakeTrainingRepository(absences: [absence('a1', 'p1', reason: 'Viaje')]));
 

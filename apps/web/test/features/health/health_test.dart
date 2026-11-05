@@ -323,6 +323,19 @@ void main() {
       expect(find.text('Agilidad T (s)'), findsOneWidget);
     });
 
+    testWidgets('ADMIN edits a custom test type; global types have no edit button', (tester) async {
+      final a = _athlete();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/players/tests', size: const Size(360, 1400));
+      expect(find.byKey(const Key('type-edit-ty-jump')), findsNothing);
+      await tapKey(tester, 'type-edit-ty-custom');
+      expect(find.widgetWithText(TextFormField, 'Test club'), findsOneWidget); // prefilled
+      await enter(tester, 'type-name', 'Test club 2');
+      await tapKey(tester, 'form-submit');
+      expect(a.fitness.updatedType!.name, 'Test club 2');
+      expect(a.fitness.createdType, isNull);
+      expect(find.text('Test club 2 (pts)'), findsOneWidget);
+    });
+
     testWidgets('a coach sees the list but not the create button', (tester) async {
       await pumpAs(tester, roles: {TenantRole.coach}, staffTeamIds: {'t1'}, core: athleteCore(), athlete: _athlete(), location: '/players/tests');
       expect(find.text('Salto vertical (cm)'), findsOneWidget);
