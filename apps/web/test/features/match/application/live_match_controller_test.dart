@@ -172,6 +172,91 @@ void main() {
     expect(s.log, isEmpty);
   });
 
+  group('filtered feed (ADR-0028)', () {
+    const parent = Capabilities(roles: {TenantRole.parent}, linkedPlayerIds: {'p1'}, personId: 'person-me');
+
+    RecordedEvent shot(String id, String player, int points, {int clock = 500}) => RecordedEvent(Shot(
+      EventMeta(id: id, deviceId: 'coach-tablet', clientSeq: clock, period: 1, clockSecondsRemaining: clock,
+          recordedAtClient: DateTime.utc(2026, 11, 7, 10)),
+      playerId: player, points: points, made: true,
+    ));
+
+    FakeGame coachScored() => liveGame()
+      ..server.visiblePlayers = {'p1'}
+      ..server.preload(m1, [
+        RecordedEventFixture.periodStart(period: 1, clock: 600),
+        shot('0190b6a0-0000-7000-8000-0000000000d1', 'p2', 3, clock: 550),
+        shot('0190b6a0-0000-7000-8000-0000000000d2', 'p1', 2, clock: 540),
+      ], personId: 'coach');
+
+    test('a parent never receives other players\' events; the score comes from the server box score', () async {
+      final game = coachScored();
+      final c = containerFor(game, caps: parent);
+      await settle(c);
+      await c.read(syncWorkerProvider).syncNow(matchId: m1);
+      await pumpEventQueue();
+      final s = c.read(liveMatchProvider(m1)).requireValue;
+      expect(s.synced.map((e) => e.event.playerId), isNot(contains('p2')));
+      expect(s.projection.summary.teamScore, 2, reason: 'the local replay only knows the linked player');
+      expect(s.team.teamScore, 5);
+      expect(s.team.periodScores!.first.team, 5);
+      expect(s.team.teamTotals!.fg3Made, 1);
+    });
+
+    test('own unsynced events count at once; hidden server events with the next refresh', () async {
+      final game = coachScored();
+      final c = containerFor(game, caps: parent);
+      await settle(c);
+      await c.read(syncWorkerProvider).syncNow(matchId: m1);
+      await pumpEventQueue();
+      game.server.offline = true;
+      await c.read(liveMatchProvider(m1).notifier).recordStat('p1', StatAction.threeMade, clock: 530);
+      await pumpEventQueue();
+      expect(c.read(liveMatchProvider(m1)).requireValue.team.teamScore, 8);
+
+      game.server.offline = false;
+      await c.read(syncWorkerProvider).syncNow(matchId: m1);
+      await pumpEventQueue();
+      var s = c.read(liveMatchProvider(m1)).requireValue;
+      expect(s.own.single.status, EventStatus.accepted);
+      expect(s.team.teamScore, 8, reason: 'stored now, counted once');
+
+      game.server.preload(m1, [shot('0190b6a0-0000-7000-8000-0000000000d3', 'p2', 2, clock: 520)], personId: 'coach');
+      await c.read(syncWorkerProvider).syncNow(matchId: m1);
+      await pumpEventQueue();
+      expect(c.read(liveMatchProvider(m1)).requireValue.team.teamScore, 8, reason: 'the feed brought nothing visible');
+      for (final t in [...game.timers.periodic]) {
+        await t.tick();
+      }
+      await pumpEventQueue();
+      s = c.read(liveMatchProvider(m1)).requireValue;
+      expect(s.team.teamScore, 10, reason: 'the periodic box-score refresh');
+    });
+
+    test('offline without a box score: the cached match score, period scores and totals unknown', () async {
+      final game = coachScored();
+      game.matches.matches[0] = gameMatch(m1, team: 5).rebuild((b) => b.lastServerSeq = 3);
+      game.matches.boxScoreOf = (_) => throw const AppError(kind: AppErrorKind.network);
+      final c = containerFor(game, caps: parent);
+      final s = await settle(c);
+      expect(s.team.teamScore, 5);
+      expect(s.team.periodScores, isNull);
+      expect(s.team.teamTotals, isNull);
+    });
+
+    test('staff: team figures are the local projection, no box score request', () async {
+      final game = coachScored()..server.visiblePlayers = null;
+      final c = containerFor(game);
+      await settle(c);
+      await c.read(syncWorkerProvider).syncNow(matchId: m1);
+      await pumpEventQueue();
+      final s = c.read(liveMatchProvider(m1)).requireValue;
+      expect(s.team.teamScore, 5);
+      expect(s.team.teamScore, s.projection.summary.teamScore);
+      expect(game.matches.calls, isNot(contains('boxScore')));
+    });
+  });
+
   test('recording triggers a background sync', () async {
     final game = liveGame();
     final c = containerFor(game);

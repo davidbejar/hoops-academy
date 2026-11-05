@@ -361,6 +361,84 @@ void main() {
     });
   });
 
+  group('filtered feed (ADR-0028)', () {
+    FakeGame coachScored() {
+      final game = gameWith()..server.visiblePlayers = {'p1'};
+      game.server.preload(live, [
+        RecordedEvent(PeriodStart(_meta('f1', 600))),
+        RecordedEvent(Shot(_meta('f2', 550), playerId: 'p2', points: 3, made: true)),
+        RecordedEvent(Shot(_meta('f3', 540), playerId: 'p1', points: 2, made: true)),
+        RecordedEvent(OpponentScore(_meta('f4', 530), points: 2)),
+      ], personId: 'coach');
+      return game;
+    }
+
+    Future<void> settleFeed(WidgetTester tester) async {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pumpAndSettle();
+    }
+
+    Finder statsOf(String player) =>
+        find.descendant(of: find.byKey(Key('player-$player')), matching: find.textContaining('PTS'));
+
+    testWidgets('PARENT: server score, one player list, only the linked player\'s numbers', (tester) async {
+      final game = coachScored();
+      await pumpParent(tester, game, '/matches/$live');
+      await settleFeed(tester);
+
+      expect(textOf(tester, 'score-team'), '5', reason: 'the feed has 2 of the 5 points; the box score has all');
+      expect(textOf(tester, 'score-opponent'), '2');
+      expect(find.byKey(const Key('players-all')), findsOneWidget);
+      expect(find.text('En pista'), findsNothing, reason: 'substitutions of other players are not in the feed');
+      expect(find.text('Banquillo'), findsNothing);
+      expect(statsOf('p1'), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('player-p1')), matching: find.text('2 PTS · 0 PF')), findsOneWidget);
+      expect(statsOf('p2'), findsNothing);
+      expect(statsOf('p6'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('tab-log')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(Key('log-${_id('f3')}')), findsOneWidget);
+      expect(find.byKey(Key('log-${_id('f2')}')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('tab-box')));
+      await tester.pumpAndSettle();
+      expect(textOf(tester, 'period-score-1'), '5–2');
+      final box = find.byKey(const Key('box-score'));
+      expect(find.descendant(of: box, matching: find.text('#4 Ana Ruiz *')), findsOneWidget);
+      expect(find.descendant(of: box, matching: find.textContaining('Bo Gil')), findsNothing);
+      final totals = tester.widget<DataTable>(find.byType(DataTable)).rows.last;
+      expect((totals.cells[2].child as Text).data, '5', reason: 'team totals from the server');
+
+      await tester.tap(find.byKey(const Key('tab-court')));
+      await tester.pumpAndSettle();
+      await tapAction(tester, 'p1', '3pt-made');
+      expect(textOf(tester, 'score-team'), '8', reason: 'own unsynced event counts at once');
+    });
+
+    testWidgets('PLAYER: the filtered feed renders with the server score', (tester) async {
+      final game = coachScored();
+      await pumpPlayer(tester, game, '/matches/$live');
+      await settleFeed(tester);
+
+      expect(find.byKey(const Key('read-only')), findsOneWidget);
+      expect(textOf(tester, 'score-team'), '5');
+      expect(statsOf('p1'), findsOneWidget);
+      expect(statsOf('p2'), findsNothing);
+    });
+
+    testWidgets('staff keep court and bench', (tester) async {
+      final game = coachScored()..server.visiblePlayers = null;
+      await pumpCoach(tester, game, '/matches/$live');
+      await settleFeed(tester);
+
+      expect(textOf(tester, 'score-team'), '5');
+      expect(find.text('En pista'), findsOneWidget);
+      expect(find.byKey(const Key('players-all')), findsNothing);
+      expect(statsOf('p2'), findsOneWidget);
+    });
+  });
+
   group('season stats', () {
     testWidgets('populated, reached from the player detail', (tester) async {
       final game = gameWith();

@@ -1,5 +1,6 @@
 import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/match/data/events_remote.dart';
+import 'package:hoops_app/features/match/domain/feed_visibility.dart';
 import 'package:hoops_app/features/match/domain/match_event.dart';
 import 'package:hoops_app/features/match/domain/pending_event.dart';
 import 'package:hoops_app/features/match/domain/projector/projection.dart';
@@ -23,6 +24,10 @@ class FakeGameServer implements EventsRemote {
 
   /// The server stores the batch but the response is lost.
   bool dropResponses = false;
+
+  /// Players the caller sees (ADR-0028): null = staff, the whole feed; else
+  /// the feed holds team-level events and these players' events only.
+  Set<String>? visiblePlayers;
 
   /// Rule deciding a rejection reason (null = accept).
   String? Function(MatchEvent event)? rejectWhen;
@@ -95,11 +100,12 @@ class FakeGameServer implements EventsRemote {
   Future<FeedPage> feed(String matchId, {required int after, int limit = 500}) async {
     _gate();
     feedCalls++;
-    final events = stored(matchId).where((s) => s.serverSeq > after).toList();
+    final all = stored(matchId);
+    final events = visibleFeed(all, (s) => s.event, visiblePlayers: visiblePlayers).where((s) => s.serverSeq > after).toList();
     final page = events.take(limit).toList();
     return FeedPage(
       events: page,
-      lastServerSeq: page.isEmpty ? after : page.last.serverSeq,
+      lastServerSeq: all.isEmpty ? 0 : all.last.serverSeq,
       hasMore: events.length > page.length,
     );
   }

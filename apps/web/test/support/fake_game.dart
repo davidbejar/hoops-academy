@@ -5,6 +5,7 @@ import 'package:hoops_app/features/match/application/match_providers.dart';
 import 'package:hoops_app/features/match/data/local/match_database.dart';
 import 'package:hoops_app/features/match/data/local/match_store.dart';
 import 'package:hoops_app/features/match/data/matches_repository.dart';
+import 'package:hoops_app/features/match/domain/projector/projection.dart';
 import 'package:hoops_app/features/match/domain/projector/projector.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
@@ -101,8 +102,11 @@ class FakeMatchesRepository with Faulty implements MatchesRepository {
         RosterPlayer(playerId: e.playerId, displayName: e.playerId, jerseyNumber: e.jerseyNumber, isStarter: e.isStarter),
     ];
   });
+  /// `GET box-score`; FakeGame answers from its server's stored events.
+  gen.BoxScore Function(String matchId)? boxScoreOf;
+
   @override
-  Future<gen.BoxScore> boxScore(String matchId) => run('boxScore', () => throw UnimplementedError());
+  Future<gen.BoxScore> boxScore(String matchId) => run('boxScore', () => boxScoreOf!(matchId));
   @override
   Future<gen.PlayerSeasonStats> seasonStats(String playerId, String seasonId) => run('seasonStats', () {
     lastSeasonStatsSeason = seasonId;
@@ -120,7 +124,9 @@ class FakeGame {
         return matches ?? FakeMatchesRepository();
       })(),
       server = server ?? FakeGameServer(roster: demoRoster),
-      store = MatchStore(MatchDatabase(DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true)));
+      store = MatchStore(MatchDatabase(DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true))) {
+    this.matches.boxScoreOf ??= (id) => genBoxScore(id, this.server.boxScore(id));
+  }
 
   final FakeMatchesRepository matches;
   final FakeGameServer server;
@@ -133,4 +139,26 @@ class FakeGame {
     eventsRemoteProvider.overrideWithValue(server),
     syncTimersProvider.overrideWithValue(timers),
   ];
+}
+
+/// The server's box score of a projection, as the contract's `BoxScore`
+/// (team figures; player lines are not needed by the app).
+gen.BoxScore genBoxScore(String matchId, Projection p) {
+  Map<String, Object?> line(StatLine s) => {
+    'points': s.points, 'fg1Made': s.fg1Made, 'fg1Attempted': s.fg1Attempted, 'fg2Made': s.fg2Made,
+    'fg2Attempted': s.fg2Attempted, 'fg3Made': s.fg3Made, 'fg3Attempted': s.fg3Attempted, 'assists': s.assists,
+    'offensiveRebounds': s.offensiveRebounds, 'defensiveRebounds': s.defensiveRebounds, 'turnovers': s.turnovers,
+    'steals': s.steals, 'blocks': s.blocks, 'personalFouls': s.personalFouls, 'technicalFouls': s.technicalFouls,
+    'unsportsmanlikeFouls': s.unsportsmanlikeFouls, 'secondsPlayed': s.secondsPlayed,
+  };
+  return gen.standardSerializers.deserializeWith(gen.BoxScore.serializer, {
+    'matchId': matchId,
+    'status': 'LIVE',
+    'score': {'team': p.summary.teamScore, 'opponent': p.summary.opponentScore},
+    'periodScores': [for (final s in p.summary.periodScores) {'period': s.period, 'team': s.team, 'opponent': s.opponent}],
+    'teamTotals': line(p.teamTotals),
+    'players': <Object?>[],
+    'warnings': <Object?>[],
+    'lastServerSeq': p.summary.lastServerSeq,
+  })!;
 }
