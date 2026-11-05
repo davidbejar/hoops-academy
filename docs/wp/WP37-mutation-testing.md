@@ -67,3 +67,39 @@ Dart mutation tool; say so in the doc).
   `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built:
+  - Root `pluginManagement`: shared PIT setup (STRONGER mutators, `threads=4`, HTML + XML in `target/pit-reports`,
+    no timestamps, `skip=${pit.skip}` = true by default, never bound to a phase). Each of `common-quarkus`,
+    `core-service`, `game-service`, `athlete-service` names its targets in `pit.targetClasses` / `pit.targetTests` and
+    has a `mutation` profile (activated by `-Dmutation=<artifactId>` or `-Pmutation`) that sets `pit.skip=false`, the
+    baseline `pit.mutationThreshold` and (core) `pit.excludedMethods=hashCode`. `just mutation [module]` runs
+    `./mvnw -Dmutation=<m> -pl :<m> -am test-compile org.pitest:pitest-maven:mutationCoverage` per module.
+  - Container tests cannot reach PIT: `MutationTestScope` (common-quarkus test-jar, own fixture test) +
+    `MutationScopeTest` per module in the default build fail when a `pit.targetTests` glob matches a class (or its
+    enclosing class / superclass) using `io.quarkus.test.*` or `org.testcontainers.*`, matches nothing, or carries
+    whitespace (PIT does not trim). Surefire passes `pit.targetTests` as a system property.
+  - Tests that kill the survivors, committed per module; `.github/workflows/mutation.yml` (`workflow_dispatch` +
+    monthly cron, matrix over the four modules, artifacts `pit-reports-<module>`); `docs/quality/mutation.md`;
+    `just mutation` in CLAUDE.md.
+- Scores (before → after): common-quarkus 95.4 % → 99.1 %, core 92.9 % → 99.6 % (domain 93.3 → 99.6), game
+  87.3 % → 99.5 % (domain 86.8 → 99.5), athlete 76.7 % → 100 %. Baselines 95 / 95 / 95 / 100. Runtimes (M1 Pro,
+  shared): 11 s / 68 s / 42 s / 34 s.
+- Production code: unchanged — no mutant exposed a real defect. Remaining survivors are equivalent and listed with
+  reasons in mutation.md (Eligibility.reasons dead branch, CoreRosterClient.zoneOf blank check, EventVisibility
+  seesAll fast path, ProjectionRun.apply lastClock); `TemporaryPassword.hashCode` excluded in the pom.
+- Verified: `just mutation` (all four modules, thresholds active) BUILD SUCCESS; a threshold above the score fails the
+  run ("Mutation score of 99 is below threshold of 100"); `./mvnw -B -ntp -T 1C verify` fresh: BUILD SUCCESS, 1970
+  tests, 0 failures/errors, all coverage checks met, 8:46 min wall clock (PIT not in it; the default build only gains
+  the new unit tests and four ~1 s scope checks); `actionlint .github/workflows/mutation.yml` clean.
+- Decisions/ADRs: no new ADR — the decision of 2026-11-05 (on demand + monthly, baseline per module) is recorded in
+  mutation.md together with the mechanism choices (property-activated profiles, explicit test globs + guard,
+  STRONGER).
+- Open points / follow-ups:
+  - Orchestrator: after pushing, run the workflow once (`gh workflow run mutation.yml`) and confirm it is green.
+  - FOLLOW-UPS "PIT" item is resolved by WP37 (WP26 owns FOLLOW-UPS; please move it).
+  - core `ApprovalPayload.empty()` is never called (dead code; its mutant stays uncovered): delete or use it.
+  - Rule code reached only by container tests (`TenantScope`, `ProblemExceptionMappers`, use cases) is outside PIT's
+    scope; extracting pure rules from them would let PIT cover them.
+  - Commits carry `Co-Authored-By: Claude Opus 5.5` (the model that did the work), not the Fable line from the brief.
