@@ -40,7 +40,7 @@ core-service ◀──/internal (client-credentials token, role `service`)──
 | T | Tampering with requests (tenant header, ids) | Server-side authz: `TenantHeaderFilter` (membership → else 404), `@RequiresTenantRole` + `Authz` checks, RLS | — |
 | T | XSS / script injection into the SPA | CSP `script-src 'self' 'wasm-unsafe-eval'` (+ hash for the inline SW registration, gstatic while CanvasKit is CDN-loaded), no HTML sinks in the app (Flutter review); API responses carry `CSP: default-src 'none'` and `nosniff` | gstatic allowed until `--no-web-resources-cdn` (F-09) |
 | T | Clickjacking | `X-Frame-Options: DENY` + `frame-ancestors 'none'` at nginx and services | — |
-| R | User denies an administrative action | `core.audit_event` with actor sub + person (ADR-0017) | No audit read endpoint (contract follow-up) |
+| R | User denies an administrative action | `core.audit_event` with actor sub + person (ADR-0017); read by the academy ADMIN and the super admin (ADR-0029, WP34) | No retention job yet (v2) |
 | I | Enumeration of tenants/members via status codes | Non-members get 404 (never 403); uniform Problem bodies without internals | Invite reveals existing Keycloak account (F-11) |
 | I | Stale SPA/service worker served after a fix | `Cache-Control: no-cache` for `index.html`, `sw.js`, `flutter_service_worker.js` | — |
 | D | Flooding `events:batch` / large bodies | `limit_req` on `events:batch`; batch ≤ 500 events; 2 MB body limit → 413 Problem; nginx `client_max_body_size` | No per-tenant quotas |
