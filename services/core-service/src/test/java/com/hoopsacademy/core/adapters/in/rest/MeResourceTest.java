@@ -118,6 +118,20 @@ class MeResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "me-first-sign-in")
+    void theFirstSignInWithATemporaryPasswordLeavesNothingToExpire() {
+        String t = tenant("ACTIVE");
+        UUID person = CoreDb.person(t, CoreDb.login("me-first-sign-in"), "Fi", "Rst", null, null, null, TenantRole.COACH);
+        CoreDb.inTenant(t, c -> CoreDb.update(c, "update core.person set invitation_status = 'PENDING' where id = ?", person));
+        CoreDb.temporaryPasswordIssued("me-first-sign-in", "1 day");
+
+        given().filter(Contract.CORE).get(ME).then().statusCode(200).body("memberships", hasSize(1));
+
+        assertThat(CoreDb.temporaryPassword("me-first-sign-in")).containsEntry("issuedAt", null)
+                .containsEntry("expiredAt", null);
+    }
+
+    @Test
     @TestSecurity(user = "me-never-provisioned")
     void unprovisionedUserIsNotFound() {
         given().filter(Contract.CORE).get(ME).then().statusCode(404).contentType("application/problem+json");

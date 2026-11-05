@@ -90,6 +90,42 @@ public final class CoreDb {
         });
     }
 
+    /** Pretends the login's temporary password was issued {@code age} ago (a Postgres interval, e.g. "4 days"). */
+    public static void temporaryPasswordIssued(String subject, String age) {
+        inTenant(null, c -> update(c, "update core.app_user set temporary_password_issued_at = now() - cast(? as interval), "
+                + "temporary_password_expired_at = null where keycloak_sub = ?", age, subject));
+    }
+
+    /** Marks the login's temporary password as expired by an earlier sweep, issued {@code age} ago. */
+    public static void temporaryPasswordExpired(String subject, String age) {
+        inTenant(null, c -> update(c, "update core.app_user set temporary_password_issued_at = now() - cast(? as interval), "
+                + "temporary_password_expired_at = now() - interval '1 hour' where keycloak_sub = ?", age, subject));
+    }
+
+    /** The login's temporary password timestamps: {@code issuedAt} and {@code expiredAt} (null when unset). */
+    public static java.util.Map<String, java.time.Instant> temporaryPassword(String subject) {
+        return inTenant(null, c -> {
+            try (PreparedStatement statement = c.prepareStatement("select temporary_password_issued_at, "
+                    + "temporary_password_expired_at from core.app_user where keycloak_sub = ?")) {
+                statement.setString(1, subject);
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new AssertionError("no login " + subject);
+                    }
+                    java.util.Map<String, java.time.Instant> row = new java.util.HashMap<>();
+                    row.put("issuedAt", instant(rs, 1));
+                    row.put("expiredAt", instant(rs, 2));
+                    return row;
+                }
+            }
+        });
+    }
+
+    private static java.time.Instant instant(ResultSet rs, int column) throws SQLException {
+        java.time.OffsetDateTime value = rs.getObject(column, java.time.OffsetDateTime.class);
+        return value == null ? null : value.toInstant();
+    }
+
     public static UUID person(String tenant, String given, String family, String email, TenantRole... roles) {
         return person(tenant, null, given, family, email, null, null, roles);
     }

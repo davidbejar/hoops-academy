@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
@@ -85,6 +86,17 @@ public final class KeycloakStubs {
                 "{\"id\":\"" + subject + "\",\"enabled\":true,\"requiredActions\":[\"UPDATE_PASSWORD\"]}")));
     }
 
+    /** Disabling or enabling the login {@code subject} (its update) answers 500. */
+    public static void loginUpdateFails(WireMockServer server, String subject) {
+        server.stubFor(put(urlPathEqualTo(USERS + "/" + subject)).willReturn(aResponse().withStatus(500)));
+    }
+
+    /** Reading the credentials of {@code subject} takes {@code millis} (a slow Keycloak). */
+    public static void slowCredentials(WireMockServer server, String subject, int millis) {
+        server.stubFor(get(urlPathEqualTo(USERS + "/" + subject + "/credentials"))
+                .willReturn(okJson("[]").withFixedDelay(millis)));
+    }
+
     public static void temporaryPasswordFails(WireMockServer server) {
         server.stubFor(put(urlPathMatching(USERS + "/[^/]+/reset-password")).willReturn(aResponse().withStatus(500)));
     }
@@ -140,6 +152,17 @@ public final class KeycloakStubs {
                 .withRequestBody(matchingJsonPath("$.username", equalTo(email)))
                 .withRequestBody(matchingJsonPath("$.email", equalTo(email)))
                 .withRequestBody(matchingJsonPath("$.emailVerified", equalTo("false")));
+    }
+
+    /** The update of {@code subject} that sets {@code enabled} and keeps the username (a disable or re-enable). */
+    public static RequestPatternBuilder loginEnabled(String subject, boolean enabled) {
+        return putRequestedFor(urlPathEqualTo(USERS + "/" + subject))
+                .withRequestBody(matchingJsonPath("$.enabled", equalTo(String.valueOf(enabled))));
+    }
+
+    /** Any read of the credentials of {@code subject} (the own-password check). */
+    public static RequestPatternBuilder credentialsRead(String subject) {
+        return getRequestedFor(urlPathEqualTo(USERS + "/" + subject + "/credentials"));
     }
 
     public static RequestPatternBuilder anyLoginUpdate() {

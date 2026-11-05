@@ -71,6 +71,12 @@ class LoginProvisioningTest {
         public void updateLogin(com.hoopsacademy.core.application.port.LoginUpdate update) {}
 
         @Override
+        public void disable(String subject) {}
+
+        @Override
+        public void enable(String subject) {}
+
+        @Override
         public void delete(String subject) {
             if (failDeletes) {
                 throw new IdentityProviderException("down");

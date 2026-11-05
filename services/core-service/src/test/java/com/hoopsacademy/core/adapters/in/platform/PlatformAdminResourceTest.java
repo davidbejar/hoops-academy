@@ -393,6 +393,26 @@ class PlatformAdminResourceTest {
     }
 
     @Test
+    void anExpiredAdministratorIsLabelledAndARenewedPasswordEnablesTheLoginAgain() {
+        String sub = UUID.randomUUID().toString();
+        UUID expired = withLogin(sub, "Ex", "Pired", "expired.admin@example.com", "PENDING", TenantRole.ADMIN);
+        CoreDb.temporaryPasswordExpired(sub, "6 days");
+        String active = UUID.randomUUID().toString();
+        UUID waiting = withLogin(active, "Wa", "Iting", "waiting.admin@example.com", "PENDING", TenantRole.ADMIN);
+        CoreDb.temporaryPasswordIssued(active, "1 day");
+
+        given().filter(Contract.CORE).get(admins()).then().statusCode(200)
+                .body("items.find { it.personId == '" + expired + "' }.temporaryPasswordStatus", equalTo("EXPIRED"))
+                .body("items.find { it.personId == '" + waiting + "' }.temporaryPasswordStatus", equalTo("ACTIVE"))
+                .body("items.find { it.personId == '" + admin + "' }.temporaryPasswordStatus", equalTo("NONE"));
+
+        issue(expired).statusCode(200).body("temporaryPasswordStatus", equalTo("ACTIVE"));
+
+        keycloak.verify(1, KeycloakStubs.loginEnabled(sub, true));
+        assertThat(CoreDb.temporaryPassword(sub).get("expiredAt")).isNull();
+    }
+
+    @Test
     void onlyAPendingInvitationWithoutAChosenPasswordGetsATemporaryPassword() {
         issue(admin).statusCode(409).body("code", equalTo("INVITATION_NOT_PENDING"));
 

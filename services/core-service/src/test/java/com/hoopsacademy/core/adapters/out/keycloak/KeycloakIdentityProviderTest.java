@@ -3,7 +3,9 @@ package com.hoopsacademy.core.adapters.out.keycloak;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
@@ -142,6 +144,28 @@ class KeycloakIdentityProviderTest {
         java.io.StringWriter trace = new java.io.StringWriter();
         e.printStackTrace(new java.io.PrintWriter(trace));
         return trace.toString();
+    }
+
+    @Test
+    void disablingAndEnablingALoginChangeOnlyItsEnabledFlag() {
+        KeycloakStubs.login(keycloak, "sub-expiring", "kept@example.com");
+
+        identityProvider.disable("sub-expiring");
+        keycloak.verify(1, KeycloakStubs.loginEnabled("sub-expiring", false)
+                .withRequestBody(matchingJsonPath("$.username", equalTo("kept@example.com")))
+                .withRequestBody(matchingJsonPath("$.emailVerified", equalTo("true"))));
+
+        identityProvider.enable("sub-expiring");
+        keycloak.verify(1, KeycloakStubs.loginEnabled("sub-expiring", true));
+    }
+
+    @Test
+    void aFailedDisableOrEnableIsAnIdentityProviderError() {
+        KeycloakStubs.login(keycloak, "sub-broken", "broken@example.com");
+        KeycloakStubs.loginUpdateFails(keycloak, "sub-broken");
+
+        assertThatThrownBy(() -> identityProvider.disable("sub-broken")).isInstanceOf(IdentityProviderException.class);
+        assertThatThrownBy(() -> identityProvider.enable("sub-broken")).isInstanceOf(IdentityProviderException.class);
     }
 
     @Test

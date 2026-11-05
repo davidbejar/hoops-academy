@@ -38,6 +38,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
@@ -366,6 +367,54 @@ class MemberResourceTest {
         var audit = CoreDb.auditRow(tenant, "member.temporary_password_issued");
         assertThat(audit).containsEntry("targetId", coach.toString()).containsEntry("actorSub", TenantUser.SUBJECT);
         keycloak.verify(0, anySetupEmail());
+    }
+
+    @Test
+    void aNewTemporaryPasswordIsActiveAndItsTimeIsRecordedWithoutTouchingTheLoginOtherwise() {
+        String sub = UUID.randomUUID().toString();
+        KeycloakStubs.createdUserGets(keycloak, sub);
+
+        invite("""
+                {"givenName":"Tia","familyName":"Timer","email":"tia@example.com","roles":["PARENT"]}""")
+                .statusCode(201).body("temporaryPasswordStatus", equalTo("ACTIVE"));
+
+        assertThat(CoreDb.temporaryPassword(sub).get("issuedAt")).isAfter(Instant.now().minusSeconds(120));
+        assertThat(CoreDb.temporaryPassword(sub).get("expiredAt")).isNull();
+        keycloak.verify(0, KeycloakStubs.anyLoginUpdate());
+        member(admin).statusCode(200).body("temporaryPasswordStatus", equalTo("NONE"));
+    }
+
+    @Test
+    void anExpiredTemporaryPasswordIsRenewedAndTheLoginEnabledAgain() {
+        String sub = UUID.randomUUID().toString();
+        UUID coach = coachWithLogin(sub, "expired.coach@example.com", "PENDING");
+        CoreDb.temporaryPasswordExpired(sub, "5 days");
+        member(coach).statusCode(200).body("temporaryPasswordStatus", equalTo("EXPIRED"));
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(MEMBERS).then().statusCode(200)
+                .body("items.find { it.personId == '" + coach + "' }.temporaryPasswordStatus", equalTo("EXPIRED"));
+
+        issue(coach).statusCode(200).body("temporaryPasswordStatus", equalTo("ACTIVE"));
+
+        keycloak.verify(1, temporaryPasswordSet(sub));
+        keycloak.verify(1, KeycloakStubs.loginEnabled(sub, true));
+        assertThat(CoreDb.temporaryPassword(sub).get("issuedAt")).isAfter(Instant.now().minusSeconds(120));
+        assertThat(CoreDb.temporaryPassword(sub).get("expiredAt")).isNull();
+        member(coach).statusCode(200).body("temporaryPasswordStatus", equalTo("ACTIVE"));
+    }
+
+    @Test
+    void aLoginThatCannotBeEnabledAgainStaysExpired() {
+        String sub = UUID.randomUUID().toString();
+        UUID coach = coachWithLogin(sub, "still.expired@example.com", "PENDING");
+        CoreDb.temporaryPasswordExpired(sub, "5 days");
+        KeycloakStubs.loginUpdateFails(keycloak, sub);
+
+        given().filter(Contract.FAILURES).header("X-Tenant-Id", tenant).post(MEMBERS + "/" + coach + "/temporary-password")
+                .then().statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
+
+        assertThat(CoreDb.temporaryPassword(sub).get("expiredAt")).isNotNull();
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("member.temporary_password_issued");
+        member(coach).statusCode(200).body("temporaryPasswordStatus", equalTo("EXPIRED"));
     }
 
     @Test

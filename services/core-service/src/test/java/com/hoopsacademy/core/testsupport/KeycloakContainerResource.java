@@ -6,6 +6,7 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.utility.MountableFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -20,6 +21,7 @@ import java.util.Map;
  * {@code manage-users}/{@code view-users}, which the Admin API needs (not yet in the realm export — WP3 handover).
  * The copy also gets a test-only public client {@value #DIRECT_GRANT_CLIENT} with direct access grants, so tests can
  * try a password without a browser (the realm's own clients have direct grants disabled).
+ * The login theme {@code hoops} is copied into the container, so browser-flow tests see the branded pages.
  * With the init arg {@code mail=true} a MailHog container joins Keycloak's network under the realm's SMTP host name
  * ({@code mailhog}) and its HTTP API is exposed as {@value #MAILHOG_URL}; without it, Keycloak cannot send e-mail.
  */
@@ -32,6 +34,8 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
     private static final String IMAGE = "quay.io/keycloak/keycloak:26.8.1";
     public static final String MAILHOG_URL = "test.mailhog.url";
     private static final String IMPORT = "keycloak-it/realm-academy.json";
+    /** The realm's login theme (ADR-0022), copied in so the login pages and their messages are the real ones. */
+    private static final String THEME = "infra/keycloak/themes/hoops";
     private static final String MAILHOG_IMAGE = "docker.io/mailhog/mailhog:latest";
     private static final int MAILHOG_API = 8025;
 
@@ -48,7 +52,8 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
     @Override
     public Map<String, String> start() {
         writePatchedRealm();
-        keycloak = new KeycloakContainer(IMAGE).withRealmImportFile("/" + IMPORT);
+        keycloak = new KeycloakContainer(IMAGE).withRealmImportFile("/" + IMPORT)
+                .withCopyFileToContainer(MountableFile.forHostPath(locate(THEME)), "/opt/keycloak/themes/hoops");
         Map<String, String> config = new HashMap<>();
         if (withMail) {
             network = Network.newNetwork();
