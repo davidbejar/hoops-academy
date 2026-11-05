@@ -7,6 +7,41 @@ global:
   # Pull secrets applied to every service/web pod, e.g. [{name: ghcr-pull}] for private ghcr.io packages
   # (kubectl create secret docker-registry ghcr-pull ... ; the Secret itself is created outside the chart, ADR-0012).
   imagePullSecrets: []
+  # Gateway every HTTPRoute of the subcharts attaches to (ADR-0031). namespace: empty = the release namespace.
+  # requestTimeout applies to every route rule (Envoy's default is 15 s; ingress-nginx used 60 s proxy timeouts).
+  gateway:
+    name: hoops
+    namespace: ""
+    requestTimeout: 60s
+
+# ---------------------------------------------------------------------------------------------------------------
+# Edge (WP36, ADR-0031): Gateway API Gateway implemented by Envoy Gateway (pinned version: deploy/kind/up.sh).
+gateway:
+  enabled: true
+  # GatewayClass of the cluster's Envoy Gateway installation. Normally provided by the cluster (platform team); set
+  # gatewayClass.create to render it with this chart (kind does).
+  className: envoy-gateway
+  gatewayClass:
+    create: false
+    controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  hostname: ""                  # listener hostname; empty = any host
+  tls:
+    enabled: false              # HTTPS listener on :443 (terminates TLS)
+    certificateRefs: []         # [{name: <Secret of type kubernetes.io/tls>}], created outside the chart (ADR-0012)
+    # Sent on the HTTPS listener only (ingress-nginx's default on TLS hosts); "" disables (localhost).
+    hsts: "max-age=31536000; includeSubDomains"
+  clientIPDetection:
+    # > 0 behind a load balancer / CDN that appends X-Forwarded-For: rate limits then count the real client IP.
+    numTrustedHops: 0
+  # Per-Gateway Envoy settings (EnvoyProxy via Gateway.spec.infrastructure.parametersRef). Off: Envoy Gateway defaults
+  # (a LoadBalancer Service with a generated name, default proxy resources).
+  envoyProxy:
+    enabled: false
+    serviceName: ""             # fixed Service name in Envoy Gateway's namespace (port-forward target)
+    serviceType: LoadBalancer   # LoadBalancer | NodePort | ClusterIP
+    nodePorts: {http: 0, https: 0}
+    replicas: 1
+    resources: {}
 
 databases:
   enabled: true
@@ -21,12 +56,12 @@ core:
   fullnameOverride: core-service
   image: {repository: localhost/hoops/core-service, tag: dev}
   port: 8081
-  ingress:
+  route:
     paths: [/api/core, /platform]
     health: {enabled: true, prefix: /api/core}
   env:
     CORE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
-    # Browser origin allowed by the services' CORS filter (same-origin through the ingress needs none; keep it
+    # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
     # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
     # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
@@ -46,16 +81,17 @@ game:
   fullnameOverride: game-service
   image: {repository: localhost/hoops/game-service, tag: dev}
   port: 8082
-  ingress:
+  route:
     paths: [/api/game]
     health: {enabled: true, prefix: /api/game}
-    # Offline devices flush their outbox in bursts; 120/min per IP with burst x5 covers a reconnect storm of a
-    # bench, but not a flood. The colon path is matched literally (no rewrite / normalisation, WP16 follow-up).
+    # Offline devices flush their outbox in bursts; 120/min per IP (Envoy: a bucket of 120 refilled every minute)
+    # covers a reconnect storm of a bench, but not a flood. The colon path is matched on the raw path without rewrite;
+    # the percent-encoded form (%3A, which Envoy does not decode) is limited too.
     rateLimits:
-      - {name: events-batch, path: "/api/game/matches/[^/]+/events:batch", rpm: 120, burstMultiplier: 5}
+      - {name: events-batch, path: "/api/game/matches/[^/]+/events(:|%3[Aa])batch", rpm: 120}
   env:
     GAME_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
-    # Browser origin allowed by the services' CORS filter (same-origin through the ingress needs none; keep it
+    # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
     # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
     # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
@@ -72,12 +108,12 @@ athlete:
   fullnameOverride: athlete-service
   image: {repository: localhost/hoops/athlete-service, tag: dev}
   port: 8083
-  ingress:
+  route:
     paths: [/api/athlete]
     health: {enabled: true, prefix: /api/athlete}
   env:
     ATHLETE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
-    # Browser origin allowed by the services' CORS filter (same-origin through the ingress needs none; keep it
+    # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
     # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
     # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'

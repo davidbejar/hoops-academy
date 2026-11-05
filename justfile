@@ -66,7 +66,7 @@ scan:
     gitleaks detect --source . --redact
     source scripts/env.sh && ./mvnw -q -Psecurity-scan org.owasp:dependency-check-maven:aggregate
 
-# kind cluster lifecycle (WP16): cluster + ingress-nginx + CNPG + namespace/secrets. ARGS: --deploy [--from-host]
+# kind cluster lifecycle (WP16, WP36): cluster + Envoy Gateway + CNPG + namespace/secrets. ARGS: --deploy [--from-host]
 kind-up *ARGS:
     deploy/kind/up.sh {{ARGS}}
 

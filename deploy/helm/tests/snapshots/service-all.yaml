@@ -1,6 +1,6 @@
 ---
 # Source: hoops-service/templates/networkpolicy.yaml
-# Only the ingress controller and pods of this namespace may reach the service.
+# Only the Envoy Gateway proxies and pods of this namespace may reach the service.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 spec:
   podSelector:
     matchLabels:
@@ -23,7 +23,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
+              kubernetes.io/metadata.name: envoy-gateway-system
         - podSelector: {}
       ports:
         - port: http
@@ -42,7 +42,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 spec:
   minAvailable: 1
   selector:
@@ -63,7 +63,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 data:
   QUARKUS_HTTP_PORT: "8099"
   DEMO_URL: "http://example.invalid"
@@ -81,7 +81,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 spec:
   type: ClusterIP
   selector:
@@ -106,7 +106,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 spec:
   revisionHistoryLimit: 3
   selector:
@@ -122,9 +122,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: hoops-service-0.1.0
+        helm.sh/chart: hoops-service-0.2.0
       annotations:
-        checksum/env: 781d98f3715ce1c88b15983c86885b3fe98a76ed46e5a8f368e78f91d68ea26a
+        checksum/env: 732d247c24e01077d549e0469fd3ae20442e2ff5c8188cb026bffed36b2fdfc0
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8099"
@@ -205,7 +205,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -222,77 +222,11 @@ spec:
           averageUtilization: 80
 
 ---
-# Source: hoops-service/templates/ingress.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: demo-service
-  labels:
-    app.kubernetes.io/name: demo-service
-    app.kubernetes.io/instance: svc
-    app.kubernetes.io/part-of: hoops-academy
-    app.kubernetes.io/component: backend
-    app.kubernetes.io/version: "0.1.0"
-    app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
-spec:
-  ingressClassName: nginx
-  rules:
-    -
-      host: "hoops.example.test"
-      http:
-        paths:
-          - path: /api/demo
-            pathType: Prefix
-            backend:
-              service:
-                name: demo-service
-                port: {name: http}
-          - path: /platform
-            pathType: Prefix
-            backend:
-              service:
-                name: demo-service
-                port: {name: http}
-
----
-# Source: hoops-service/templates/ingress.yaml
-# Health only: <prefix>/q/health/** is rewritten to /q/health/** (nothing else under /q is exposed).
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: demo-service-health
-  labels:
-    app.kubernetes.io/name: demo-service
-    app.kubernetes.io/instance: svc
-    app.kubernetes.io/part-of: hoops-academy
-    app.kubernetes.io/component: backend
-    app.kubernetes.io/version: "0.1.0"
-    app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
-  annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /q/health$1
-spec:
-  ingressClassName: nginx
-  rules:
-    -
-      host: "hoops.example.test"
-      http:
-        paths:
-          - path: /api/demo/q/health(/(?:live|ready|started))?$
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: demo-service
-                port: {name: http}
-
----
-# Source: hoops-service/templates/ingress.yaml
-# Rate-limited path (ingress-nginx per-IP limit; a separate Ingress because limits apply per Ingress object).
-# The regex path is matched against the request URI; no rewrite, so the colon of ":batch" reaches the service as-is.
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+# Source: hoops-service/templates/httproute.yaml
+# Envoy Gateway local rate limit: 120 requests per minute per client IP (token bucket of 120, refilled every
+# minute; per Envoy replica). Over the limit: 429.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
 metadata:
   name: demo-service-batch
   labels:
@@ -302,31 +236,26 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
-  annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/limit-rpm: "120"
-    nginx.ingress.kubernetes.io/limit-burst-multiplier: "2"
+    helm.sh/chart: hoops-service-0.2.0
 spec:
-  ingressClassName: nginx
-  rules:
-    -
-      host: "hoops.example.test"
-      http:
-        paths:
-          - path: /api/demo/items/[^/]+/things:batch
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: demo-service
-                port: {name: http}
+  targetRefs:
+    - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: demo-service-batch}
+  rateLimit:
+    local:
+      rules:
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+          limit: {requests: 120, unit: Minute}
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+          limit: {requests: 120, unit: Minute}
 
 ---
-# Source: hoops-service/templates/ingress.yaml
-# Rate-limited path (ingress-nginx per-IP limit; a separate Ingress because limits apply per Ingress object).
-# The regex path is matched against the request URI; no rewrite, so the colon of ":batch" reaches the service as-is.
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+# Source: hoops-service/templates/httproute.yaml
+# Envoy Gateway local rate limit: 10 requests per minute per client IP (token bucket of 10, refilled every
+# minute; per Envoy replica). Over the limit: 429.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
 metadata:
   name: demo-service-plain
   labels:
@@ -336,21 +265,182 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
-  annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/limit-rpm: "10"
-    nginx.ingress.kubernetes.io/limit-burst-multiplier: "5"
+    helm.sh/chart: hoops-service-0.2.0
 spec:
-  ingressClassName: nginx
+  targetRefs:
+    - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: demo-service-plain}
+  rateLimit:
+    local:
+      rules:
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+          limit: {requests: 10, unit: Minute}
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+          limit: {requests: 10, unit: Minute}
+
+---
+# Source: hoops-service/templates/httproute.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-service-api-demo
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.2.0
+spec:
+  parentRefs:
+    - name: hoops
+  hostnames:
+    - "hoops.example.test"
   rules:
-    -
-      host: "hoops.example.test"
-      http:
-        paths:
-          - path: /api/demo/slow
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: demo-service
-                port: {name: http}
+    - matches:
+        - path: {type: PathPrefix, value: "/api/demo"}
+      backendRefs:
+        - {name: demo-service, port: 8099}
+      timeouts: {request: 60s}
+
+---
+# Source: hoops-service/templates/httproute.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-service-platform
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.2.0
+spec:
+  parentRefs:
+    - name: hoops
+  hostnames:
+    - "hoops.example.test"
+  rules:
+    - matches:
+        - path: {type: PathPrefix, value: "/platform"}
+      backendRefs:
+        - {name: demo-service, port: 8099}
+      timeouts: {request: 60s}
+
+---
+# Source: hoops-service/templates/httproute.yaml
+# Health only: <prefix>/q/health[/live|ready|started] (exact paths) -> /q/health...; nothing else under /q is routed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-service-health
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.2.0
+spec:
+  parentRefs:
+    - name: hoops
+  hostnames:
+    - "hoops.example.test"
+  rules:
+    - matches:
+        - path: {type: Exact, value: "/api/demo/q/health"}
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: {type: ReplaceFullPath, replaceFullPath: "/q/health"}
+      backendRefs:
+        - {name: demo-service, port: 8099}
+      timeouts: {request: 60s}
+    - matches:
+        - path: {type: Exact, value: "/api/demo/q/health/live"}
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: {type: ReplaceFullPath, replaceFullPath: "/q/health/live"}
+      backendRefs:
+        - {name: demo-service, port: 8099}
+      timeouts: {request: 60s}
+    - matches:
+        - path: {type: Exact, value: "/api/demo/q/health/ready"}
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: {type: ReplaceFullPath, replaceFullPath: "/q/health/ready"}
+      backendRefs:
+        - {name: demo-service, port: 8099}
+      timeouts: {request: 60s}
+    - matches:
+        - path: {type: Exact, value: "/api/demo/q/health/started"}
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: {type: ReplaceFullPath, replaceFullPath: "/q/health/started"}
+      backendRefs:
+        - {name: demo-service, port: 8099}
+      timeouts: {request: 60s}
+
+---
+# Source: hoops-service/templates/httproute.yaml
+# Rate-limited path: RE2 regex matched against the request path as sent (no rewrite, no decoding of %3A), so the
+# colon of ":batch" reaches the service unchanged. Its own route, because a BackendTrafficPolicy applies per route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-service-batch
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.2.0
+spec:
+  parentRefs:
+    - name: hoops
+  hostnames:
+    - "hoops.example.test"
+  rules:
+    - matches:
+        - path: {type: RegularExpression, value: "/api/demo/items/[^/]+/things(:|%3[Aa])batch"}
+      backendRefs:
+        - {name: demo-service, port: 8099}
+      timeouts: {request: 60s}
+
+---
+# Source: hoops-service/templates/httproute.yaml
+# Rate-limited path: RE2 regex matched against the request path as sent (no rewrite, no decoding of %3A), so the
+# colon of ":batch" reaches the service unchanged. Its own route, because a BackendTrafficPolicy applies per route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-service-plain
+  labels:
+    app.kubernetes.io/name: demo-service
+    app.kubernetes.io/instance: svc
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: hoops-service-0.2.0
+spec:
+  parentRefs:
+    - name: hoops
+  hostnames:
+    - "hoops.example.test"
+  rules:
+    - matches:
+        - path: {type: RegularExpression, value: "/api/demo/slow"}
+      backendRefs:
+        - {name: demo-service, port: 8099}
+      timeouts: {request: 60s}

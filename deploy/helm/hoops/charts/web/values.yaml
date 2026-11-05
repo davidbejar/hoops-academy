@@ -7,12 +7,12 @@ image:
 imagePullSecrets: []
 replicaCount: 1
 port: 8080
-ingress:
+# Gateway API route (ADR-0031) attached to the umbrella's Gateway (global.gateway.name, default "hoops").
+route:
   enabled: true
-  className: nginx
-  host: ""
-  # `/` serves the SPA. `/internal` is routed here explicitly and answered with 403 by nginx (portable:
-  # ingress-nginx snippets are disabled by default, and an explicit rule beats a catch-all fallback).
+  hostnames: []
+  # `/` serves the SPA. `/internal` is routed here explicitly and answered with 403 by nginx (portable: no
+  # implementation-specific direct response, and the longer prefix beats the catch-all).
   paths: [/]
   denyPaths: [/internal]
 resources:
@@ -29,4 +29,5 @@ securityContext:
   capabilities: {drop: [ALL]}
 networkPolicy:
   enabled: true
-  ingressControllerNamespace: ingress-nginx
+  # Namespace of the Envoy proxy pods (Envoy Gateway's controller namespace).
+  gatewayNamespace: envoy-gateway-system

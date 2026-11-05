@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Creates the Hoops Academy kind cluster (Podman provider) with ingress-nginx, the CloudNativePG operator,
-# namespace `hoops` and the Secrets from .env. Then either run `tilt up` (inner loop) or pass --deploy to build the
+# Creates the Hoops Academy kind cluster (Podman provider) with Envoy Gateway (Gateway API), the CloudNativePG
+# operator, namespace `hoops`, the Secrets from .env and a self-signed TLS Secret for the Gateway's HTTPS listener. Then either run `tilt up` (inner loop) or pass --deploy to build the
 # images, load them into kind and `helm upgrade --install` the umbrella chart without Tilt.
 #
 #   deploy/kind/up.sh [--deploy] [--from-host]
@@ -9,7 +9,10 @@ cd "$(dirname "$0")/../.."
 
 CLUSTER="${KIND_CLUSTER:-hoops}"
 NS="${HOOPS_NAMESPACE:-hoops}"
-INGRESS_NGINX_VERSION="controller-v1.15.1"
+# Envoy Gateway v1.9.x bundles and needs Gateway API v1.6.1 (CRDs installed by its chart; compatibility matrix:
+# https://gateway.envoyproxy.io/news/releases/matrix/). Bump both together, see docs/adr/0031-gateway-api.md.
+ENVOY_GATEWAY_VERSION="v1.9.3"
+GATEWAY_API_VERSION="v1.6.1"
 CNPG_VERSION="1.30.1"
 CNPG_BRANCH="release-${CNPG_VERSION%.*}"
 DEPLOY=0 BUILD_FLAGS=()
@@ -21,7 +24,7 @@ for a in "$@"; do
   esac
 done
 
-for t in podman kind kubectl helm; do command -v "$t" >/dev/null || { echo "up.sh: $t not found" >&2; exit 1; }; done
+for t in podman kind kubectl helm openssl; do command -v "$t" >/dev/null || { echo "up.sh: $t not found" >&2; exit 1; }; done
 [ -f .env ] || { echo "up.sh: .env missing (cp .env.example .env and set values)" >&2; exit 1; }
 # shellcheck disable=SC1091
 source scripts/env.sh >/dev/null
@@ -38,23 +41,36 @@ fi
 kubectl config use-context "kind-$CLUSTER" >/dev/null
 K=(kubectl --context "kind-$CLUSTER")
 
-step "ingress-nginx $INGRESS_NGINX_VERSION"
-"${K[@]}" apply -f "https://raw.githubusercontent.com/kubernetes/ingress-nginx/${INGRESS_NGINX_VERSION}/deploy/static/provider/kind/deploy.yaml"
+step "Envoy Gateway $ENVOY_GATEWAY_VERSION (Gateway API $GATEWAY_API_VERSION CRDs)"
+# `helm upgrade` never updates CRDs: on a version bump apply them first (docs/adr/0031-gateway-api.md, upgrade path).
+helm --kube-context "kind-$CLUSTER" upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
+  --version "$ENVOY_GATEWAY_VERSION" -n envoy-gateway-system --create-namespace
 
 step "CloudNativePG operator $CNPG_VERSION"
 "${K[@]}" apply --server-side --force-conflicts \
   -f "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/${CNPG_BRANCH}/releases/cnpg-${CNPG_VERSION}.yaml"
 
-step "waiting for ingress-nginx and CNPG (first run pulls images; slow links take minutes)"
-"${K[@]}" -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=900s
-# rate-limited Ingresses (WP17) answer 429 instead of ingress-nginx' default 503
-"${K[@]}" -n ingress-nginx patch configmap ingress-nginx-controller --type merge \
-  -p '{"data":{"limit-req-status-code":"429","limit-conn-status-code":"429"}}'
+step "waiting for Envoy Gateway and CNPG (first run pulls images; slow links take minutes)"
+"${K[@]}" -n envoy-gateway-system rollout status deployment/envoy-gateway --timeout=900s
 "${K[@]}" -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=900s
+crd_version=$("${K[@]}" get crd gateways.gateway.networking.k8s.io \
+  -o jsonpath='{.metadata.annotations.gateway\.networking\.k8s\.io/bundle-version}')
+[ "$crd_version" = "$GATEWAY_API_VERSION" ] \
+  || { echo "up.sh: Gateway API CRDs are $crd_version, Envoy Gateway $ENVOY_GATEWAY_VERSION needs $GATEWAY_API_VERSION" >&2; exit 1; }
+echo "Gateway API CRDs $crd_version"
 
 step "namespace $NS + secrets from .env"
 "${K[@]}" create namespace "$NS" --dry-run=client -o yaml | "${K[@]}" apply -f -
 HOOPS_NAMESPACE="$NS" deploy/kind/secrets.sh | "${K[@]}" apply -f -
+# Self-signed certificate for https://localhost:8453 (the Gateway's HTTPS listener). Generated once per cluster in a
+# temporary directory that is removed again; never committed. Keycloak's issuer stays the http URL.
+if ! "${K[@]}" -n "$NS" get secret hoops-gateway-tls >/dev/null 2>&1; then
+  tls_dir=$(mktemp -d); trap 'rm -rf "$tls_dir"' EXIT
+  openssl req -x509 -newkey rsa:2048 -nodes -days 365 -subj "/CN=localhost" \
+    -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" -keyout "$tls_dir/tls.key" -out "$tls_dir/tls.crt" 2>/dev/null
+  "${K[@]}" -n "$NS" create secret tls hoops-gateway-tls --cert="$tls_dir/tls.crt" --key="$tls_dir/tls.key"
+  rm -rf "$tls_dir"
+fi
 
 if [ "$DEPLOY" = 1 ]; then
   step "images -> kind"
@@ -69,7 +85,7 @@ fi
 
 cat <<MSG
 
-kind cluster '$CLUSTER' ready.  Ingress: http://localhost:8090  (https://localhost:8453 is optional, self-signed)
+kind cluster '$CLUSTER' ready.  Gateway: http://localhost:8090  (https://localhost:8453 is optional, self-signed)
 Next: tilt up            (or: deploy/kind/up.sh --deploy)
       deploy/kind/seed-users.sh   once Keycloak is Ready
 MSG

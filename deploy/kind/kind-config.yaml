@@ -1,18 +1,19 @@
-# kind cluster for Hoops Academy (WP16). Created by deploy/kind/up.sh with the Podman provider.
-# Host ports 8090/8453 (not 80/443, not 8080 which is the compose stack) map to ingress-nginx on the node.
+# kind cluster for Hoops Academy (WP16, WP36). Created by deploy/kind/up.sh with the Podman provider.
+# Host ports 8090/8453 (not 80/443, not 8080 which is the compose stack) map to the node ports of the Envoy Gateway
+# Service (values-kind.yaml: gateway.envoyProxy.nodePorts 30080/30443).
+# Node image pinned to Kubernetes 1.36 (kind v0.33.0 release notes): Envoy Gateway v1.9 supports 1.33-1.36.
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: hoops
 nodes:
   - role: control-plane
-    labels:
-      ingress-ready: "true"
+    image: kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed
     extraPortMappings:
-      - containerPort: 80
+      - containerPort: 30080
         hostPort: 8090
         listenAddress: "127.0.0.1"
         protocol: TCP
-      - containerPort: 443
+      - containerPort: 30443
         hostPort: 8453
         listenAddress: "127.0.0.1"
         protocol: TCP

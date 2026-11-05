@@ -1,6 +1,6 @@
 ---
 # Source: hoops-service/templates/networkpolicy.yaml
-# Only the ingress controller and pods of this namespace may reach the service.
+# Only the Envoy Gateway proxies and pods of this namespace may reach the service.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 spec:
   podSelector:
     matchLabels:
@@ -23,7 +23,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
+              kubernetes.io/metadata.name: envoy-gateway-system
         - podSelector: {}
       ports:
         - port: http
@@ -42,7 +42,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 data:
   QUARKUS_HTTP_PORT: "8080"
 
@@ -59,7 +59,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 spec:
   type: ClusterIP
   selector:
@@ -84,7 +84,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.1.0
+    helm.sh/chart: hoops-service-0.2.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -101,9 +101,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: hoops-service-0.1.0
+        helm.sh/chart: hoops-service-0.2.0
       annotations:
-        checksum/env: 00b5a13fbe604713f14c04895cd21c97df7754d86571d44b03f35b4d644f6081
+        checksum/env: bde48c46a25ffb1ccbb10875275dec7ccca56fe086cb420a8507365297fbea81
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8080"

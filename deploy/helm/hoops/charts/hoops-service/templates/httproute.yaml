@@ -1,0 +1,94 @@
+{{- /*
+Gateway API routes (WP36, ADR-0031). One HTTPRoute per path prefix, a health route with exact rewrites, and one route
+per rate-limited path with its Envoy Gateway BackendTrafficPolicy (local rate limit, a token bucket per client IP).
+*/ -}}
+{{- if .Values.route.enabled }}
+{{- $root := . }}
+{{- $fullname := include "hoops-service.fullname" . }}
+{{- range .Values.route.paths }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ printf "%s-%s" $fullname (trimPrefix "/" . | replace "/" "-") | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "hoops-service.labels" $root | nindent 4 }}
+spec:
+  {{- include "hoops-service.parentRefs" $root | nindent 2 }}
+  {{- with include "hoops-service.hostnames" $root }}{{ . | nindent 2 }}{{ end }}
+  rules:
+    - matches:
+        - path: {type: PathPrefix, value: {{ . | quote }}}
+      backendRefs:
+        - {name: {{ $fullname }}, port: {{ $root.Values.port }}}
+      {{- with include "hoops-service.ruleTimeouts" $root }}{{ . | nindent 6 }}{{ end }}
+{{- end }}
+{{- if .Values.route.health.enabled }}
+{{- $prefix := required "route.health.prefix is required" .Values.route.health.prefix }}
+---
+# Health only: <prefix>/q/health[/live|ready|started] (exact paths) -> /q/health...; nothing else under /q is routed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $fullname }}-health
+  labels:
+    {{- include "hoops-service.labels" . | nindent 4 }}
+spec:
+  {{- include "hoops-service.parentRefs" . | nindent 2 }}
+  {{- with include "hoops-service.hostnames" . }}{{ . | nindent 2 }}{{ end }}
+  rules:
+    {{- range list "" "/live" "/ready" "/started" }}
+    - matches:
+        - path: {type: Exact, value: {{ printf "%s/q/health%s" $prefix . | quote }}}
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path: {type: ReplaceFullPath, replaceFullPath: {{ printf "/q/health%s" . | quote }}}
+      backendRefs:
+        - {name: {{ $fullname }}, port: {{ $root.Values.port }}}
+      {{- with include "hoops-service.ruleTimeouts" $root }}{{ . | nindent 6 }}{{ end }}
+    {{- end }}
+{{- end }}
+{{- range .Values.route.rateLimits }}
+{{- $name := printf "%s-%s" $fullname (required "route.rateLimits[].name is required" .name) }}
+{{- $rpm := required "route.rateLimits[].rpm is required" .rpm }}
+---
+# Rate-limited path: RE2 regex matched against the request path as sent (no rewrite, no decoding of %3A), so the
+# colon of ":batch" reaches the service unchanged. Its own route, because a BackendTrafficPolicy applies per route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "hoops-service.labels" $root | nindent 4 }}
+spec:
+  {{- include "hoops-service.parentRefs" $root | nindent 2 }}
+  {{- with include "hoops-service.hostnames" $root }}{{ . | nindent 2 }}{{ end }}
+  rules:
+    - matches:
+        - path: {type: RegularExpression, value: {{ required "route.rateLimits[].path is required" .path | quote }}}
+      backendRefs:
+        - {name: {{ $fullname }}, port: {{ $root.Values.port }}}
+      {{- with include "hoops-service.ruleTimeouts" $root }}{{ . | nindent 6 }}{{ end }}
+---
+# Envoy Gateway local rate limit: {{ $rpm }} requests per minute per client IP (token bucket of {{ $rpm }}, refilled every
+# minute; per Envoy replica). Over the limit: 429.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "hoops-service.labels" $root | nindent 4 }}
+spec:
+  targetRefs:
+    - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: {{ $name }}}
+  rateLimit:
+    local:
+      rules:
+        {{- range list "0.0.0.0/0" "::/0" }}
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: {{ . | quote }}}
+          limit: {requests: {{ $rpm }}, unit: Minute}
+        {{- end }}
+{{- end }}
+{{- end }}

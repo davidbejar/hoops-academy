@@ -11,3 +11,39 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
 {{- end -}}
+
+{{/* Gateway API parentRefs (+ hostnames) of every route: the umbrella's Gateway (global.gateway, default "hoops"). */}}
+{{- define "keycloak.routeCommon" -}}
+{{- $g := (.Values.global | default dict).gateway | default dict -}}
+parentRefs:
+  - name: {{ $g.name | default "hoops" }}
+    {{- with $g.namespace }}
+    namespace: {{ . }}
+    {{- end }}
+{{- with .Values.route.hostnames }}
+hostnames:
+  {{- range . }}
+  - {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+{{- define "keycloak.ruleTimeouts" -}}
+{{- $g := (.Values.global | default dict).gateway | default dict -}}
+{{- with ($g.requestTimeout | default "60s") -}}
+timeouts: {request: {{ . }}}
+{{- end }}
+{{- end -}}
+
+{{/*
+X-Forwarded-Host = host[:port] of publicUrl on every rule that reaches Keycloak. With KC_PROXY_HEADERS=xforwarded and
+KC_HOSTNAME_BACKCHANNEL_DYNAMIC the back-channel URLs in the discovery document (token, JWKS, userinfo) come from the
+forwarded headers; Envoy sets X-Forwarded-Proto but no X-Forwarded-Host, so Keycloak would fall back to the scheme's
+default port (http://localhost/...). Setting it also overwrites any client-supplied value.
+*/}}
+{{- define "keycloak.forwardedHostFilter" -}}
+filters:
+  - type: RequestHeaderModifier
+    requestHeaderModifier:
+      set: [{name: X-Forwarded-Host, value: {{ (urlParse .Values.publicUrl).host | quote }}}]
+{{- end -}}

@@ -1,0 +1,104 @@
+{{- /*
+Edge of the platform (WP36, ADR-0031): one Gateway API Gateway, implemented by Envoy Gateway. The subcharts attach
+their HTTPRoutes to it by name (global.gateway.name). The GatewayClass normally belongs to the cluster; gateway.gatewayClass.create
+renders one (kind). TLS certificates are Secrets created outside the chart (ADR-0012).
+*/ -}}
+{{- $gw := .Values.gateway -}}
+{{- $name := .Values.global.gateway.name | default "hoops" -}}
+{{- if and $gw.enabled $gw.gatewayClass.create }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: {{ $gw.className }}
+  labels: {app.kubernetes.io/part-of: hoops-academy, app.kubernetes.io/managed-by: {{ .Release.Service }}}
+spec:
+  controllerName: {{ $gw.gatewayClass.controllerName }}
+{{- end }}
+{{- if and $gw.enabled $gw.envoyProxy.enabled }}
+{{- $ep := $gw.envoyProxy }}
+---
+# Envoy proxy deployment and Service of this Gateway only (Gateway.spec.infrastructure.parametersRef).
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: {{ $name }}
+  labels: {app.kubernetes.io/part-of: hoops-academy, app.kubernetes.io/managed-by: {{ .Release.Service }}}
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        {{- with $ep.serviceName }}
+        name: {{ . }}
+        {{- end }}
+        type: {{ $ep.serviceType }}
+        {{- if eq $ep.serviceType "NodePort" }}
+        # Fixed node ports so a kind extraPortMapping can reach them (Service ports are keyed by port).
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              ports:
+                - {port: 80, nodePort: {{ required "gateway.envoyProxy.nodePorts.http is required for NodePort" $ep.nodePorts.http }}}
+                {{- if $gw.tls.enabled }}
+                - {port: 443, nodePort: {{ required "gateway.envoyProxy.nodePorts.https is required for NodePort" $ep.nodePorts.https }}}
+                {{- end }}
+        {{- end }}
+      envoyDeployment:
+        replicas: {{ $ep.replicas }}
+        {{- with $ep.resources }}
+        container:
+          resources:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+{{- end }}
+{{- if $gw.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ $name }}
+  labels: {app.kubernetes.io/part-of: hoops-academy, app.kubernetes.io/managed-by: {{ .Release.Service }}}
+spec:
+  gatewayClassName: {{ $gw.className }}
+  {{- if $gw.envoyProxy.enabled }}
+  infrastructure:
+    parametersRef: {group: gateway.envoyproxy.io, kind: EnvoyProxy, name: {{ $name }}}
+  {{- end }}
+  listeners:
+    - {name: http, protocol: HTTP, port: 80{{ with $gw.hostname }}, hostname: {{ . | quote }}{{ end }}}
+    {{- if $gw.tls.enabled }}
+    {{- $refs := list }}
+    {{- range (required "gateway.tls.certificateRefs is required when TLS is enabled" $gw.tls.certificateRefs) }}
+    {{- $refs = append $refs (printf "{name: %s}" .name) }}
+    {{- end }}
+    - {name: https, protocol: HTTPS, port: 443{{ with $gw.hostname }}, hostname: {{ . | quote }}{{ end }}, tls: {mode: Terminate, certificateRefs: [{{ join ", " $refs }}]}}
+    {{- end }}
+{{- range $listener := (ternary (list "http" "https") (list "http") $gw.tls.enabled) }}
+---
+# Client-side settings of the {{ $listener }} listener (one policy per listener: a policy for a listener replaces one for
+# the whole Gateway instead of merging). Client-supplied X-Forwarded-Host/-Port are dropped (ingress-nginx overwrote
+# them; Keycloak trusts X-Forwarded-* headers).
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: {{ printf "%s-%s" $name $listener }}
+  labels: {app.kubernetes.io/part-of: hoops-academy, app.kubernetes.io/managed-by: {{ $.Release.Service }}}
+spec:
+  targetRefs:
+    - {group: gateway.networking.k8s.io, kind: Gateway, name: {{ $name }}, sectionName: {{ $listener }}}
+  headers:
+    earlyRequestHeaders:
+      remove: [X-Forwarded-Host, X-Forwarded-Port]
+    {{- if and (eq $listener "https") $gw.tls.hsts }}
+    lateResponseHeaders:
+      set:
+        - {name: Strict-Transport-Security, value: {{ $gw.tls.hsts | quote }}}
+    {{- end }}
+  {{- with $gw.clientIPDetection.numTrustedHops }}
+  # Behind a load balancer: the client IP (rate limits, logs) is taken from X-Forwarded-For, trusting {{ . }} hop(s).
+  clientIPDetection:
+    xForwardedFor: {numTrustedHops: {{ . }}}
+  {{- end }}
+{{- end }}
+{{- end }}

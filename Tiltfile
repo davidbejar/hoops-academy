@@ -1,5 +1,5 @@
 # -*- mode: Python -*-
-# Hoops Academy inner loop on kind (WP16). Prerequisite: `just kind-up` (cluster, ingress-nginx, CNPG, namespace).
+# Hoops Academy inner loop on kind (WP16). Prerequisite: `just kind-up` (cluster, Envoy Gateway, CNPG, namespace).
 #   tilt up                       build images with Podman, load them into kind, deploy the umbrella chart
 #   tilt up -- --services=game-service,athlete-service   only build/deploy a subset (others stay disabled)
 #   tilt ci                       same, exits when everything is Ready (or fails)
@@ -111,13 +111,30 @@ k8s_resource(
     extra_pod_selectors=[{'cnpg.io/cluster': 'hoops-db'}, {'cnpg.io/cluster': 'keycloak-db'}],
     pod_readiness='wait',
 )
-k8s_resource('keycloak', objects=['keycloak-realm:configmap'], resource_deps=['databases'],
-             port_forwards=['18080:8080'], labels=['infra'])  # direct Keycloak (no ingress) for debugging
+# Edge (WP36): GatewayClass, Gateway, Envoy settings and client policies; the HTTPRoutes and rate-limit policies of
+# each workload follow below (Tilt does not attach Gateway API objects to workloads by itself).
+k8s_resource(
+    new_name='gateway',
+    objects=['envoy-gateway:gatewayclass', 'hoops:gateway', 'hoops:envoyproxy',
+             'hoops-http:clienttrafficpolicy', 'hoops-https:clienttrafficpolicy'],
+    labels=['infra'],
+)
+k8s_resource('keycloak', objects=['keycloak-realm:configmap', 'keycloak:httproute', 'keycloak-ratelimited:httproute',
+                                  'keycloak-ratelimited:backendtrafficpolicy', 'keycloak-admin-deny:httproute'],
+             resource_deps=['databases'],
+             port_forwards=['18080:8080'], labels=['infra'])  # direct Keycloak (no gateway) for debugging
 
 # Host ports 1808x so they never clash with services started with `quarkus:dev` (8081-8083) or compose (8080).
 PORTS = {'core-service': 8081, 'game-service': 8082, 'athlete-service': 8083}
+ROUTES = {
+    'core-service': ['core-service-api-core:httproute', 'core-service-platform:httproute'],
+    'game-service': ['game-service-api-game:httproute', 'game-service-events-batch:httproute',
+                     'game-service-events-batch:backendtrafficpolicy'],
+    'athlete-service': ['athlete-service-api-athlete:httproute'],
+}
 for svc in services:
-    k8s_resource(svc, objects=['%s-env:configmap' % svc], resource_deps=['keycloak'],
+    k8s_resource(svc, objects=['%s-env:configmap' % svc, '%s-health:httproute' % svc] + ROUTES[svc],
+                 resource_deps=['keycloak'],
                  port_forwards=['%d:%d' % (PORTS[svc] + 10000, PORTS[svc])], labels=['services'])
 
-k8s_resource('web', resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])
+k8s_resource('web', objects=['web:httproute'], resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])

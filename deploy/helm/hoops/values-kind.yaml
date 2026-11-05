@@ -1,7 +1,20 @@
-# kind (deploy/kind): ingress-nginx on host ports 8090 (http) / 8453 (https, optional self-signed).
+# kind (deploy/kind): Envoy Gateway; its Service is a NodePort (30080/30443) that kind maps to host ports 8090 (http)
+# and 8453 (https, self-signed certificate created by deploy/kind/up.sh as Secret hoops-gateway-tls).
 # Keep requests small: the Podman machine is 2 CPU / 8 GiB and also runs the compose stack.
 global:
   publicUrl: http://localhost:8090
+gateway:
+  gatewayClass: {create: true}
+  tls:
+    enabled: true
+    certificateRefs: [{name: hoops-gateway-tls}]
+    hsts: ""                    # never pin HSTS on localhost (it would cover every localhost port)
+  envoyProxy:
+    enabled: true
+    serviceName: hoops-gateway
+    serviceType: NodePort
+    nodePorts: {http: 30080, https: 30443}
+    resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 256Mi}}
 keycloak:
   publicUrl: http://localhost:8090
   resources:

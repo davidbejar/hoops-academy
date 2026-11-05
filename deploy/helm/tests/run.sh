@@ -76,7 +76,7 @@ routes_to() { # HTTPRoute $1 sends path $2 (match type $3) to Service $4 without
 
 echo "== gateway (WP36: Gateway API + Envoy Gateway, no Ingress)"
 ! grep -q '^kind: Ingress' "$WORK"/*.yaml && ok "no Ingress objects in any render" || bad "an Ingress is still rendered"
-! grep -q 'ingress-nginx\|nginx.ingress.kubernetes.io' "$WORK"/*.yaml && ok "no ingress-nginx namespace or annotation left" || bad "ingress-nginx reference left"
+! grep -hv '^ *#' "$WORK"/*.yaml | grep -q 'ingress-nginx\|nginx.ingress.kubernetes.io' && ok "no ingress-nginx namespace or annotation left" || bad "ingress-nginx reference left"
 doc hoops Gateway | grep -q 'gatewayClassName: envoy-gateway' && doc hoops Gateway | grep -q 'name: http, protocol: HTTP, port: 80' \
   && ok "Gateway hoops: class envoy-gateway, HTTP listener :80" || bad "Gateway hoops"
 doc envoy-gateway GatewayClass | grep -q 'controllerName: gateway.envoyproxy.io/gatewayclass-controller' && ok "kind: GatewayClass created by the chart (switch on)" || bad "kind GatewayClass"
@@ -101,7 +101,13 @@ done
 ratelimited() { # BackendTrafficPolicy $1 targets HTTPRoute $1 with $2 requests/minute per client IP (IPv4 + IPv6)
   local d; d=$(doc "$1" BackendTrafficPolicy)
   echo "$d" | grep -q "kind: HTTPRoute, name: $1}" && [ "$(echo "$d" | grep -c "requests: $2, unit: Minute")" = 2 ] \
-    && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: 0.0.0.0/0}' && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "::/0"}'; }
+    && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}' && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "::/0"}'; }
+for spec in keycloak:/auth keycloak-ratelimited:/auth/realms/academy/protocol/openid-connect/token; do
+  IFS=: read -r route path <<<"$spec"
+  rule "$route" "$path" | grep -q 'set: \[{name: X-Forwarded-Host, value: "localhost:8090"}\]' \
+    && ok "$route: X-Forwarded-Host = public host (Keycloak back-channel URLs keep :8090)" || bad "$route X-Forwarded-Host"
+done
+rule keycloak /auth "$WORK/umbrella-tls.yaml" | grep -q 'value: "hoops.example.test"}' && ok "TLS: X-Forwarded-Host = hoops.example.test" || bad "TLS X-Forwarded-Host"
 ratelimited keycloak-ratelimited 60 && ok "token endpoint + login form: local rate limit 60/min per client IP" || bad "keycloak rate limit"
 routes_to game-service-events-batch '/api/game/matches/[^/]+/events(:|%3[Aa])batch' RegularExpression game-service \
   && ok "events:batch (and %3A) regex route, path not rewritten" || bad "events:batch route"

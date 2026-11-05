@@ -23,27 +23,26 @@ clientSecrets:
   - {env: CORE_SERVICE_CLIENT_SECRET,    secretName: hoops-oidc-core-service,    key: client-secret}
   - {env: GAME_SERVICE_CLIENT_SECRET,    secretName: hoops-oidc-game-service,    key: client-secret}
   - {env: ATHLETE_SERVICE_CLIENT_SECRET, secretName: hoops-oidc-athlete-service, key: client-secret}
-ingress:
+# Gateway API routes (ADR-0031) attached to the umbrella's Gateway (global.gateway.name, default "hoops").
+route:
   enabled: true
-  className: nginx
-  host: ""
+  hostnames: []
   path: /auth
   # Brute-force / credential-stuffing brake at the edge (Keycloak's brute-force detection is the second layer):
-  # the token endpoint and the login form POSTs get their own Ingress with ingress-nginx per-IP limits
-  # (burst = rpm x burstMultiplier). Rejections are 503 unless the controller sets limit-req-status-code: "429".
+  # the token endpoint and the login form POSTs get their own route with an Envoy Gateway local rate limit of rpm
+  # requests per minute per client IP (bucket of rpm tokens, refilled every minute). Rejections are 429.
   rateLimit:
     enabled: true
     rpm: 60
-    burstMultiplier: 5
     paths:
       - /auth/realms/academy/protocol/openid-connect/token
       - /auth/realms/academy/login-actions/authenticate
-# The admin console / Admin REST API and the master realm are NOT exposed through the ingress: those paths are
+# The admin console / Admin REST API and the master realm are NOT exposed through the gateway: those paths are
 # routed to the web nginx, which answers 403 (same pattern as /internal). Use kubectl port-forward, or set this to
-# true in a git-ignored values-local.yaml (e.g. for e2e runs that call the Admin API through the ingress).
+# true in a git-ignored values-local.yaml (e.g. for e2e runs that call the Admin API through the gateway).
 exposeAdminConsole: false
 adminDenyPaths: [/auth/admin, /auth/realms/master]
-denyBackend: {service: web, port: http}
+denyBackend: {service: web, port: 8080}   # Service name + port number (Gateway API backendRef)
 readiness:
   initialDelaySeconds: 60
 resources:
@@ -64,4 +63,5 @@ securityContext:
   capabilities: {drop: [ALL]}
 networkPolicy:
   enabled: true
-  ingressControllerNamespace: ingress-nginx
+  # Namespace of the Envoy proxy pods (Envoy Gateway's controller namespace).
+  gatewayNamespace: envoy-gateway-system

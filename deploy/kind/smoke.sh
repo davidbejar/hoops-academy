@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Smoke test of the kind deployment through the ingress (http://localhost:8090 by default).
+# Smoke test of the kind deployment through the Envoy Gateway (http://localhost:8090 by default).
 #   deploy/kind/smoke.sh [service...]        default services: core game athlete
 # core is deployed since WP18: with `core` in the list the script also logs the seeded `superadmin` in (PKCE, no browser)
 # and checks GET /api/core/me (200, superAdmin=true) and GET /platform/tenants (200).
-# Checks: pods Ready, OIDC issuer, /internal -> 403, web /, each service's /q/health/ready via the ingress,
+# Checks: pods Ready, Gateway programmed, OIDC issuer, /internal -> 403, web /, each service's /q/health/ready via the gateway,
 # a client-credentials token from Keycloak, and that each API rejects anonymous calls (401) but accepts the token's
 # signature/issuer (anything but 401). The client secret is read from .env and sent as a form body over stdin.
 set -euo pipefail
@@ -22,10 +22,22 @@ kubectl "${CTX[@]}" get pods -o wide
 not_ready=$(kubectl "${CTX[@]}" get pods --no-headers | awk '$3!="Completed" && $3!="Succeeded" {split($2,a,"/"); if (a[1]!=a[2]) print $1}')
 [ -z "$not_ready" ] && ok "all pods Ready" || bad "not ready: $not_ready"
 
-echo "== ingress"
-issuer=$(curl -s "$BASE/auth/realms/academy/.well-known/openid-configuration" | sed -n 's/.*"issuer":"\([^"]*\)".*/\1/p')
+echo "== gateway"
+prog=$(kubectl "${CTX[@]}" get gateway hoops -o jsonpath='{.status.conditions[?(@.type=="Programmed")].status}' 2>/dev/null || true)
+[ "$prog" = True ] && ok "Gateway hoops programmed" || bad "Gateway hoops Programmed='$prog'"
+disco=$(curl -s "$BASE/auth/realms/academy/.well-known/openid-configuration")
+issuer=$(echo "$disco" | sed -n 's/.*"issuer":"\([^"]*\)".*/\1/p')
 [ "$issuer" = "$BASE/auth/realms/academy" ] && ok "issuer $issuer" || bad "issuer '$issuer'"
+# back-channel URLs come from X-Forwarded-Host, which the Keycloak routes set to the public host (a spoofed one is ignored)
+tep=$(curl -s -H 'X-Forwarded-Host: evil.example' "$BASE/auth/realms/academy/.well-known/openid-configuration" |
+  sed -n 's/.*"token_endpoint":"\([^"]*\)".*/\1/p')
+[ "$tep" = "$BASE/auth/realms/academy/protocol/openid-connect/token" ] && ok "token_endpoint $tep (spoofed X-Forwarded-Host ignored)" \
+  || bad "token_endpoint '$tep'"
 c=$(code "$BASE/internal/x"); [ "$c" = 403 ] && ok "/internal/x -> 403" || bad "/internal/x -> $c"
+# Envoy normalises the path (RFC 3986, merged slashes) before routing: encoded or dotted variants hit the deny routes too
+for p in //internal/x /%69nternal/x /auth/admin/ /auth/realms/academy/../master/ /auth/realms/%6Daster/; do
+  c=$(code --path-as-is "$BASE$p"); [ "$c" = 403 ] && ok "$p -> 403" || bad "$p -> $c"
+done
 if [[ " ${SERVICES[*]} " == *" core "* ]]; then  # with core absent the path falls through to the SPA (200)
   c=$(code "$BASE/api/core/internal/authz/x/y"); [ "$c" != 200 ] && ok "/api/core/internal/... -> $c (not exposed)" || bad "/api/core/internal exposed"
 fi
@@ -39,6 +51,17 @@ for s in "${SERVICES[@]}"; do
   else bad "/api/$s/q/health/ready: $body"; fi
   c=$(code "$BASE/api/$s/q/metrics"); [ "$c" != 200 ] && ok "/api/$s/q/metrics not exposed ($c)" || bad "/api/$s/q/metrics exposed"
 done
+
+if [[ " ${SERVICES[*]} " == *" game "* ]]; then
+  # The rate-limited regex route forwards the colon path byte-for-byte (anonymous -> the service's 401); the
+  # percent-encoded form also reaches the service unchanged (its Problem echoes the path; Quarkus answers 404 for it).
+  m=00000000-0000-0000-0000-000000000001
+  body=$(curl -s -X POST -H 'Content-Type: application/json' --data '[]' "$BASE/api/game/matches/$m/events:batch")
+  echo "$body" | grep -q '"status":401' && echo "$body" | grep -q "events:batch" && ok "events:batch reaches game-service unchanged (401)" \
+    || bad "events:batch: $body"
+  body=$(curl -s --path-as-is -X POST -H 'Content-Type: application/json' --data '[]' "$BASE/api/game/matches/$m/events%3Abatch")
+  echo "$body" | grep -q 'events%3Abatch' && ok "events%3Abatch forwarded undecoded" || bad "events%3Abatch: $body"
+fi
 
 echo "== tokens (client credentials, realm role 'service')"
 # A secured GET endpoint per service (anonymous -> 401; a valid token -> anything else, e.g. 400/404 without tenant).
