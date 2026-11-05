@@ -13,6 +13,7 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/live_match_controller.dart';
 import '../application/match_providers.dart';
+import '../../health/presentation/player_health_view.dart' show AvailabilityBadge;
 import '../data/matches_repository.dart';
 import '../domain/pending_event.dart';
 import '../domain/projector/projector.dart';
@@ -192,7 +193,16 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
             if (!line.selected) line.starter = false;
           }),
         ),
-        Expanded(child: Text(p.player.displayName, overflow: TextOverflow.ellipsis)),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(p.player.displayName, overflow: TextOverflow.ellipsis),
+              // Information only: the coach decides who plays.
+              AvailabilityBadge(playerId: p.player.id),
+            ],
+          ),
+        ),
         SizedBox(
           width: 64,
           child: TextFormField(

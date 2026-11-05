@@ -13,6 +13,7 @@ import '../../../core/ui/labels.dart';
 import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
+import '../../health/presentation/player_health_view.dart' show AvailabilityBadge;
 import '../application/roster_providers.dart';
 import 'eligibility_widgets.dart';
 
@@ -455,6 +456,7 @@ class _RosterSection extends ConsumerWidget {
             subtitle: Wrap(
               spacing: AppTokens.spaceSm,
               children: [
+                AvailabilityBadge(playerId: tp.player.id),
                 if (tp.playUpLevels > 0) PlayUpBadge(levels: tp.playUpLevels),
                 if (tp.invalidatedAt != null)
                   InfoChip(
