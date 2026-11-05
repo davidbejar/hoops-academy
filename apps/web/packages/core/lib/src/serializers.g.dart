@@ -19,6 +19,13 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ApprovalRequestWithPassword.serializer)
       ..add(ApprovalStatus.serializer)
       ..add(AssignPlayerRequest.serializer)
+      ..add(AuditAction.serializer)
+      ..add(AuditActor.serializer)
+      ..add(AuditActorKind.serializer)
+      ..add(AuditEvent.serializer)
+      ..add(AuditEventPage.serializer)
+      ..add(AuditTarget.serializer)
+      ..add(AuditTargetType.serializer)
       ..add(AuthzContext.serializer)
       ..add(AuthzSummary.serializer)
       ..add(CreateGuardianLinkRequest.serializer)
@@ -49,6 +56,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(Orphan.serializer)
       ..add(PageMeta.serializer)
       ..add(PersonRef.serializer)
+      ..add(PlatformAuditEvent.serializer)
+      ..add(PlatformAuditEventPage.serializer)
       ..add(Player.serializer)
       ..add(PlayerBatchRequest.serializer)
       ..add(PlayerBatchResponse.serializer)
@@ -113,6 +122,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(ApprovalRequest)]),
           () => ListBuilder<ApprovalRequest>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(AuditEvent)]),
+          () => ListBuilder<AuditEvent>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(EligibilityCase)]),
           () => ListBuilder<EligibilityCase>())
       ..addBuilderFactory(
@@ -130,6 +142,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Membership)]),
           () => ListBuilder<Membership>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlatformAuditEvent)]),
+          () => ListBuilder<PlatformAuditEvent>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Player)]),
           () => ListBuilder<Player>())
@@ -199,6 +214,18 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(
               BuiltMap, const [const FullType(String), const FullType(int)]),
           () => MapBuilder<String, int>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
       ..addBuilderFactory(
           const FullType(BuiltSet, const [const FullType(String)]),
           () => SetBuilder<String>())

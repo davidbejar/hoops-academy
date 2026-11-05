@@ -11,6 +11,7 @@ import 'package:hoops_core_api/src/auth/bearer_auth.dart';
 import 'package:hoops_core_api/src/auth/oauth.dart';
 import 'package:hoops_core_api/src/api/age_categories_api.dart';
 import 'package:hoops_core_api/src/api/approval_requests_api.dart';
+import 'package:hoops_core_api/src/api/audit_api.dart';
 import 'package:hoops_core_api/src/api/eligibility_cases_api.dart';
 import 'package:hoops_core_api/src/api/guardian_links_api.dart';
 import 'package:hoops_core_api/src/api/me_api.dart';
@@ -125,6 +126,12 @@ class HoopsCoreApi {
   /// by doing that all interceptors will not be executed
   ApprovalRequestsApi getApprovalRequestsApi() {
     return ApprovalRequestsApi(dio, serializers);
+  }
+
+  /// Get AuditApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  AuditApi getAuditApi() {
+    return AuditApi(dio, serializers);
   }
 
   /// Get EligibilityCasesApi instance, base route and serializer can be overridden by a given but be careful,

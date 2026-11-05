@@ -26,6 +26,13 @@ import 'package:hoops_core_api/src/model/approval_request_page.dart';
 import 'package:hoops_core_api/src/model/approval_request_with_password.dart';
 import 'package:hoops_core_api/src/model/approval_status.dart';
 import 'package:hoops_core_api/src/model/assign_player_request.dart';
+import 'package:hoops_core_api/src/model/audit_action.dart';
+import 'package:hoops_core_api/src/model/audit_actor.dart';
+import 'package:hoops_core_api/src/model/audit_actor_kind.dart';
+import 'package:hoops_core_api/src/model/audit_event.dart';
+import 'package:hoops_core_api/src/model/audit_event_page.dart';
+import 'package:hoops_core_api/src/model/audit_target.dart';
+import 'package:hoops_core_api/src/model/audit_target_type.dart';
 import 'package:hoops_core_api/src/model/authz_context.dart';
 import 'package:hoops_core_api/src/model/authz_summary.dart';
 import 'package:hoops_core_api/src/model/create_guardian_link_request.dart';
@@ -56,6 +63,8 @@ import 'package:hoops_core_api/src/model/membership.dart';
 import 'package:hoops_core_api/src/model/orphan.dart';
 import 'package:hoops_core_api/src/model/page_meta.dart';
 import 'package:hoops_core_api/src/model/person_ref.dart';
+import 'package:hoops_core_api/src/model/platform_audit_event.dart';
+import 'package:hoops_core_api/src/model/platform_audit_event_page.dart';
 import 'package:hoops_core_api/src/model/player.dart';
 import 'package:hoops_core_api/src/model/player_batch_request.dart';
 import 'package:hoops_core_api/src/model/player_batch_response.dart';
@@ -128,6 +137,13 @@ part 'serializers.g.dart';
   ApprovalRequestWithPassword,
   ApprovalStatus,
   AssignPlayerRequest,
+  AuditAction,
+  AuditActor,
+  AuditActorKind,
+  AuditEvent,
+  AuditEventPage,
+  AuditTarget,
+  AuditTargetType,
   AuthzContext,
   AuthzSummary,
   CreateGuardianLinkRequest,
@@ -158,6 +174,8 @@ part 'serializers.g.dart';
   Orphan,
   PageMeta,
   PersonRef,
+  PlatformAuditEvent,
+  PlatformAuditEventPage,
   Player,
   PlayerBatchRequest,
   PlayerBatchResponse,
@@ -261,6 +279,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<GuardianLink>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlatformAuditEvent)]),
+        () => ListBuilder<PlatformAuditEvent>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(UsageReport)]),
         () => ListBuilder<UsageReport>(),
       )
@@ -319,6 +341,18 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(Member)]),
         () => ListBuilder<Member>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(AuditAction)]),
+        () => ListBuilder<AuditAction>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
+        () => MapBuilder<String, JsonObject?>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(AuditEvent)]),
+        () => ListBuilder<AuditEvent>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(Player)]),

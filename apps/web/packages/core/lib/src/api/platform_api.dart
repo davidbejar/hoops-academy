@@ -8,10 +8,13 @@ import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_core_api/src/api_util.dart';
 import 'package:hoops_core_api/src/model/add_tenant_admin_request.dart';
+import 'package:hoops_core_api/src/model/audit_action.dart';
 import 'package:hoops_core_api/src/model/create_tenant_request.dart';
 import 'package:hoops_core_api/src/model/date.dart';
+import 'package:hoops_core_api/src/model/platform_audit_event_page.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/tenant.dart';
 import 'package:hoops_core_api/src/model/tenant_admin.dart';
@@ -563,6 +566,107 @@ class PlatformApi {
     }
 
     return Response<TenantAdminWithPassword>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Audit trail of every academy
+  /// The administrative actions of all academies (or of &#x60;tenantId&#x60;), newest first. Each item names its academy. Names are resolved for academies and for persons who are active administrators of their academy (the identity the platform already manages, ADR-0023); other persons and players are shown by id only (ADR-0029). &#x60;from&#x60; must be before &#x60;to&#x60; (400); an unknown &#x60;tenantId&#x60; gives 404. Retention: none in v1 (a purge job is a v2 item); rows are append-only. Authz: super_admin. 
+  ///
+  /// Parameters:
+  /// * [tenantId] - Only this academy.
+  /// * [from] - Inclusive lower bound on `at`.
+  /// * [to] - Exclusive upper bound on `at`.
+  /// * [action] - One or several actions (`?action=member.invited&action=member.updated`); any action when absent.
+  /// * [page] - 0-based page index.
+  /// * [size] - Page size.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [PlatformAuditEventPage] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<PlatformAuditEventPage>> listPlatformAuditEvents({ 
+    String? tenantId,
+    DateTime? from,
+    DateTime? to,
+    BuiltList<AuditAction>? action,
+    int? page = 0,
+    int? size = 50,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/audit-events';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (tenantId != null) r'tenantId': encodeQueryParameter(_serializers, tenantId, const FullType(String)),
+      if (from != null) r'from': encodeQueryParameter(_serializers, from, const FullType(DateTime)),
+      if (to != null) r'to': encodeQueryParameter(_serializers, to, const FullType(DateTime)),
+      if (action != null) r'action': encodeCollectionQueryParameter<AuditAction>(_serializers, action, const FullType(BuiltList, [FullType(AuditAction)]), format: ListFormat.multi,),
+      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
+      if (size != null) r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    PlatformAuditEventPage? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(PlatformAuditEventPage),
+      ) as PlatformAuditEventPage;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<PlatformAuditEventPage>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
