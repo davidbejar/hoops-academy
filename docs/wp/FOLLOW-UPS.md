@@ -7,7 +7,7 @@ closed them. The statement-by-statement status of the spec is in [`../conformanc
 
 ## Plan (2026-11-05)
 Work packages run as parallel agents in git worktrees under `$HOME`, merged in waves (decision 12). Briefs:
-`docs/wp/WP<n>-*.md` (WP26–WP31 written; WP32–WP36 follow with their wave).
+`docs/wp/WP<n>-*.md` (WP26–WP37 written).
 
 | Wave | WP | Title | Model |
 |---|---|---|---|
@@ -22,6 +22,7 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 | 3 | WP34 | Audit log read API and console screens | Opus |
 | 3 | WP35 | Web UX gaps | Sonnet |
 | 4 | WP36 | Gateway API (Envoy Gateway) replaces ingress-nginx | Opus |
+| 4 | WP37 | Mutation testing: on-demand PIT runs, mutants fixed, baseline kept (not in every build) | Opus |
 
 ### Decisions of 2026-11-05 (product owner)
 1. **Project nature.** Hoops Academy is a learning project, not commercial (yet). Easy sign-up (temporary password,
@@ -152,7 +153,7 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **→ WP36. Production ingress**: decided (10): move the chart from ingress-nginx (retiring upstream) to Gateway API
   (Envoy Gateway).
 - **External Secrets Operator manifests** (ADR-0012).
-- **PIT** (mutation testing) is configured in the root pom but no run is recorded.
+- **PIT** (mutation testing) is configured in the root pom but no run is recorded → WP37 (decision of 2026-11-05: on demand and on a monthly schedule, never in every build; a baseline threshold catches regressions).
 
 ### v2 (by decision)
 - **[v2] Events**: outbox publisher + Redpanda + `*_ref` replicas behind `RosterPort` (WP19 brief; `core.outbox` is
