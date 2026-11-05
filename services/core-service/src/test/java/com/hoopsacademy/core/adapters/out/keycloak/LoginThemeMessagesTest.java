@@ -12,7 +12,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * The {@code hoops} login theme tells a disabled login that its temporary password expired (ADR-0027): the sweep is
+ * The {@code hoops} login theme tells a disabled login that its temporary password expired (ADR-0028): the sweep is
  * the only thing that disables logins, and the theme cannot tell other disabled accounts apart, so the key Keycloak
  * shows for any disabled account ({@code accountDisabledMessage}) carries this text in every app language. The Helm
  * chart ships the same files (copies kept in sync by {@code scripts/sync-chart-files.sh}).

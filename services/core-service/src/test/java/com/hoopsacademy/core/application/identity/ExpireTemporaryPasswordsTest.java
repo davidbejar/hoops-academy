@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The sweep of ADR-0027: an unused temporary password older than {@code hoops.temporary-password.ttl} (3 days) is
+ * The sweep of ADR-0028: an unused temporary password older than {@code hoops.temporary-password.ttl} (3 days) is
  * expired — the Keycloak login is disabled and every academy where the login has a PENDING person gets an audit row;
  * a login whose owner chose a password is only forgotten; Keycloak failures are retried by the next sweep.
  */

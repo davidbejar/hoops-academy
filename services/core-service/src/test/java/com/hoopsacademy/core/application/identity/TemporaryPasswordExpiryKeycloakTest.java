@@ -44,7 +44,7 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 
 /**
- * Temporary password expiry end to end against a real Keycloak 26 (ADR-0027): the sweep disables a login whose
+ * Temporary password expiry end to end against a real Keycloak 26 (ADR-0028): the sweep disables a login whose
  * temporary password was issued more than three days ago, a re-issue enables it again with a new temporary password
  * (Keycloak asks for a new password), and the branded login page tells a disabled person what happened. Run with
  * {@code ./mvnw -pl services/core-service verify -Pkeycloak-it}.

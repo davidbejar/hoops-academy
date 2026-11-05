@@ -25,7 +25,8 @@ import org.keycloak.representations.idm.UserRepresentation;
 /**
  * Keycloak Admin API through the service account of client {@code core-service} (needs realm-management
  * {@code manage-users}). Users are created enabled, without password, e-mail unverified; a created login is given a
- * temporary password by the caller (ADR-0024). Nothing here sends e-mail.
+ * temporary password by the caller (ADR-0024), which is disabled when it expires unused and enabled again by the next
+ * one (ADR-0028). Nothing here sends e-mail.
  */
 @ApplicationScoped
 class KeycloakIdentityProvider implements IdentityProviderPort {
@@ -92,6 +93,27 @@ class KeycloakIdentityProvider implements IdentityProviderPort {
             moved.setLastName(update.familyName());
             moved.setEmailVerified(false);
             updateOrConflict(user, moved);
+            return null;
+        });
+    }
+
+    @Override
+    public void disable(String subject) {
+        setEnabled(subject, false);
+    }
+
+    @Override
+    public void enable(String subject) {
+        setEnabled(subject, true);
+    }
+
+    /** Read-modify-write of the whole representation: a partial one could drop attributes (e.g. the locale). */
+    private void setEnabled(String subject, boolean enabled) {
+        call(enabled ? "enable the user" : "disable the user", () -> {
+            UserResource user = users().get(subject);
+            UserRepresentation changed = user.toRepresentation();
+            changed.setEnabled(enabled);
+            user.update(changed);
             return null;
         });
     }

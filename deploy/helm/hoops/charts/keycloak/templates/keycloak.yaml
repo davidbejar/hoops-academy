@@ -97,6 +97,9 @@ spec:
               - {key: theme.properties, path: theme.properties}
               - {key: hoops.css, path: resources/css/hoops.css}
               - {key: basketball.svg, path: resources/img/basketball.svg}
+              - {key: messages_en.properties, path: messages/messages_en.properties}
+              - {key: messages_es.properties, path: messages/messages_es.properties}
+              - {key: messages_id.properties, path: messages/messages_id.properties}
         - name: tmp
           emptyDir: {sizeLimit: 128Mi}
 ---

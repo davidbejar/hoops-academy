@@ -34,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The two events that start a temporary-password sweep (ADR-0027): a temporary password being issued and the first
+ * The two events that start a temporary-password sweep (ADR-0028): a temporary password being issued and the first
  * sign-in of an invited person. The sweep runs in the background after the request's transaction committed, under
  * the cluster lock; the request never waits for it and never fails because of it. Other test classes run with
  * {@code hoops.temporary-password.sweep-on-events=false} and call the sweep directly.

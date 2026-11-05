@@ -12,7 +12,7 @@ import java.util.UUID;
 /** Contract {@code Member}. */
 public record MemberDto(UUID personId, UUID userId, String givenName, String familyName, String displayName,
         String email, String phone, LocalDate birthDate, String gender, String locale, List<String> roles,
-        UUID playerId, boolean active, String invitationStatus, Instant createdAt) {
+        UUID playerId, boolean active, String invitationStatus, String temporaryPasswordStatus, Instant createdAt) {
 
     static MemberDto of(MemberView view) {
         Person person = view.person();
@@ -23,6 +23,6 @@ public record MemberDto(UUID personId, UUID userId, String givenName, String fam
                 data.locale() == null ? null : data.locale().code(),
                 person.roles().stream().map(Enum::name).sorted().toList(),
                 view.playerId().map(PlayerId::value).orElse(null), person.active(), person.invitationStatus().name(),
-                person.createdAt());
+                view.temporaryPassword().name(), person.createdAt());
     }
 }

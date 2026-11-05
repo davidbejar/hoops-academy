@@ -8,6 +8,8 @@ import com.hoopsacademy.core.application.port.LogoRepository;
 import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.port.MembershipRepository.IndexedMembership;
 import com.hoopsacademy.core.application.port.PersonRepository;
+import com.hoopsacademy.core.application.port.TemporaryPasswordLogins;
+import com.hoopsacademy.core.application.port.TemporaryPasswordSweeps;
 import com.hoopsacademy.core.application.port.TenantProfileRepository;
 import com.hoopsacademy.core.domain.identity.AppUser;
 import com.hoopsacademy.core.domain.membership.InvitationStatus;
@@ -28,15 +30,20 @@ public class MeLookup {
     private final TenantProfileRepository profiles;
     private final LogoRepository logos;
     private final PersonRepository persons;
+    private final TemporaryPasswordLogins temporaryPasswords;
+    private final TemporaryPasswordSweeps sweeps;
 
     public MeLookup(AppUserRepository appUsers, MembershipRepository memberships, MembershipLookup membershipLookup,
-            TenantProfileRepository profiles, LogoRepository logos, PersonRepository persons) {
+            TenantProfileRepository profiles, LogoRepository logos, PersonRepository persons,
+            TemporaryPasswordLogins temporaryPasswords, TemporaryPasswordSweeps sweeps) {
         this.appUsers = appUsers;
         this.memberships = memberships;
         this.membershipLookup = membershipLookup;
         this.profiles = profiles;
         this.logos = logos;
         this.persons = persons;
+        this.temporaryPasswords = temporaryPasswords;
+        this.sweeps = sweeps;
     }
 
     /** The caller's login; super admins are registered on first sight, anybody else must have been provisioned. */
@@ -79,10 +86,18 @@ public class MeLookup {
         return Optional.of(new MeView.Membership(tenant, authz.get().context()));
     }
 
-    /** The first successful /me in this tenant (after the first sign-in) marks the invitation accepted. */
+    /**
+     * The first successful /me in this tenant (after the first sign-in) marks the invitation accepted. Signing in
+     * means the temporary password has been replaced (Keycloak issues no token before), so nothing is left to expire;
+     * the acceptance also starts a background sweep of the others (ADR-0028).
+     */
     private void acceptPendingInvitation(String subject) {
         persons.findActiveByLogin(subject)
                 .filter(person -> person.invitationStatus() == InvitationStatus.PENDING)
-                .ifPresent(person -> persons.update(person.acceptInvitation()));
+                .ifPresent(person -> {
+                    persons.update(person.acceptInvitation());
+                    temporaryPasswords.used(subject);
+                    sweeps.request();
+                });
     }
 }

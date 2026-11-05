@@ -9,7 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * WP32 / ADR-0027: a temporary password expires after a few days; members and administrators carry the state of their
+ * WP32 / ADR-0028: a temporary password expires after a few days; members and administrators carry the state of their
  * login's temporary password so the consoles can label an expired one next to the re-issue action.
  */
 class TemporaryPasswordExpiryContractTest {

@@ -31,6 +31,15 @@ public interface IdentityProviderPort {
      */
     void updateLogin(LoginUpdate update);
 
+    /**
+     * Disables the login (an expired temporary password, ADR-0028): no sign-in and no token until {@link #enable}.
+     * Changes nothing else about the login.
+     */
+    void disable(String subject);
+
+    /** Enables a login {@link #disable} disabled (a new temporary password was issued). */
+    void enable(String subject);
+
     /** Compensation: removes a login this service created. Missing logins are ignored. */
     void delete(String subject);
 }

@@ -1,7 +1,7 @@
 {{- /* Branded login theme (ADR-0022). files/theme/* are copies of infra/keycloak/themes/hoops/login/** (single source of
        truth), kept in sync by scripts/sync-chart-files.sh (drift checked by the chart tests). ConfigMap keys are flat;
        the Deployment maps them back to the theme layout with `items`. */ -}}
-{{- $files := dict "theme.properties" "" "hoops.css" "" "basketball.svg" "" -}}
+{{- $files := dict "theme.properties" "" "hoops.css" "" "basketball.svg" "" "messages_en.properties" "" "messages_es.properties" "" "messages_id.properties" "" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

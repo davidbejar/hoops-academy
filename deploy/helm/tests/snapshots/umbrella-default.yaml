@@ -732,6 +732,24 @@ data:
       }
     }
     
+  messages_en.properties: |
+    # Hoops Academy login theme (ADR-0022), messages that differ from keycloak.v2. ASCII only (non-ASCII letters as unicode escapes).
+    # accountDisabledMessage: the temporary password sweep (ADR-0028) is the only thing that disables a login, and the
+    # theme cannot tell other disabled accounts apart, so every disabled login sees this text.
+    accountDisabledMessage=Your temporary password has expired. Ask your academy administrator for a new one.
+    
+  messages_es.properties: |
+    # Hoops Academy login theme (ADR-0022), messages that differ from keycloak.v2. ASCII only (non-ASCII letters as unicode escapes).
+    # accountDisabledMessage: the temporary password sweep (ADR-0028) is the only thing that disables a login, and the
+    # theme cannot tell other disabled accounts apart, so every disabled login sees this text.
+    accountDisabledMessage=Tu contrase\u00f1a temporal ha caducado. Pide una nueva al administrador de tu academia.
+    
+  messages_id.properties: |
+    # Hoops Academy login theme (ADR-0022), messages that differ from keycloak.v2. ASCII only (non-ASCII letters as unicode escapes).
+    # accountDisabledMessage: the temporary password sweep (ADR-0028) is the only thing that disables a login, and the
+    # theme cannot tell other disabled accounts apart, so every disabled login sees this text.
+    accountDisabledMessage=Kata sandi sementara Anda sudah kedaluwarsa. Mintalah yang baru kepada administrator akademi Anda.
+    
   theme.properties: |
     # Hoops Academy login theme (ADR-0022): Keycloak's keycloak.v2 login pages, restyled to look like the app.
     # CSS only (no template overrides) so Keycloak upgrades keep working; follows the browser's dark mode like the app.
@@ -1223,7 +1241,7 @@ spec:
         helm.sh/chart: keycloak-0.1.0
       annotations:
         checksum/realm: 3d712da4073315f02043cab3f35237099c040c5550ded7acb1cf7cb79c08a37c
-        checksum/theme: d75dda9e05580bf4ccba2210d3a3830b5b0fc8965d3b674e7569f75929425551
+        checksum/theme: 6837b9791c70f9a9141ea908069fe9e27b483860ff9f8a4aa6e6f245ba0b3832
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -1317,6 +1335,9 @@ spec:
               - {key: theme.properties, path: theme.properties}
               - {key: hoops.css, path: resources/css/hoops.css}
               - {key: basketball.svg, path: resources/img/basketball.svg}
+              - {key: messages_en.properties, path: messages/messages_en.properties}
+              - {key: messages_es.properties, path: messages/messages_es.properties}
+              - {key: messages_id.properties, path: messages/messages_id.properties}
         - name: tmp
           emptyDir: {sizeLimit: 128Mi}
 

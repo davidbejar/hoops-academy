@@ -7,6 +7,7 @@ import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.identity.AppUser;
+import com.hoopsacademy.core.domain.identity.TemporaryPassword;
 import com.hoopsacademy.core.domain.membership.InvitationStatus;
 import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PersonId;
@@ -63,8 +64,8 @@ public class IssueTemporaryPassword {
         if (identityProvider.hasOwnPassword(login.subject())) {
             throw notPending();
         }
-        return new WithTemporaryPassword<>(queries.view(person),
-                Optional.of(temporaryPasswords.issue(person.id(), login.subject())));
+        TemporaryPassword password = temporaryPasswords.issue(person.id(), login.subject());
+        return new WithTemporaryPassword<>(queries.view(person), Optional.of(password));
     }
 
     private static ConflictException notPending() {
