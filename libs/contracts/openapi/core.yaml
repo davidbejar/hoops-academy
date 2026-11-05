@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 2.3.1
+  version: 2.4.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -16,6 +16,10 @@ info:
     `temporaryPassword` in that call's response (`Cache-Control: no-store`; never stored by the platform). No e-mail
     is sent; Keycloak asks for a new password at the first sign-in. A person who already had a login gets no
     temporary password and signs in with their own.
+
+    Expiry (ADR-0028, core 2.4.0): a temporary password not used within `hoops.temporary-password.ttl` (default 3 days)
+    expires; the login is disabled in Keycloak until a new temporary password is issued (the re-issue operations).
+    `Member.temporaryPasswordStatus` and `TenantAdmin.temporaryPasswordStatus` show the state.
 
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
@@ -339,7 +343,8 @@ paths:
       description: |
         Replaces the password of the administrator's login by a new temporary password, returned once in
         `temporaryPassword` (always present here); Keycloak asks for a new password at the first sign-in. Also
-        repairs a pending login that has no password at all. Only while the invitation is PENDING and the person has
+        repairs a pending login that has no password at all, and renews an expired one (`temporaryPasswordStatus`
+        EXPIRED: the login is enabled again, ADR-0028). Only while the invitation is PENDING and the person has
         not chosen a password of their own (409 `INVITATION_NOT_PENDING` otherwise, also for an administrator without
         a login); 404 when the person is not an active administrator; 409 `TENANT_WITHDRAWN`; 502 when Keycloak fails
         (nothing is changed). Authz: super_admin.
@@ -754,8 +759,9 @@ paths:
       summary: Issue a new temporary password for a pending member
       description: |
         Replaces the password of the member's login by a new temporary password, returned once in
-        `temporaryPassword` (always present here); Keycloak asks for a new password at the first sign-in. Only for an
-        active member whose invitation is PENDING and who has not chosen a password of their own (409
+        `temporaryPassword` (always present here); Keycloak asks for a new password at the first sign-in. Also renews
+        an expired temporary password (`temporaryPasswordStatus` EXPIRED: the login is enabled again, ADR-0028). Only
+        for an active member whose invitation is PENDING and who has not chosen a password of their own (409
         `INVITATION_NOT_PENDING` otherwise, also for a member without a login); 409 `LOGIN_SHARED` when the login is
         also used by an active member of another academy (only the platform super admin may reset it); 502 when
         Keycloak fails (nothing is changed). Authz: ADMIN.
@@ -1916,6 +1922,14 @@ components:
         NONE = person without login; PENDING = login created by this academy, the person has not signed in here yet
         (a temporary password can be issued); ACCEPTED = signed in, or an existing login was linked.
       enum: [NONE, PENDING, ACCEPTED]
+    TemporaryPasswordStatus:
+      type: string
+      description: |
+        State of the temporary password of the person's login (ADR-0028). ACTIVE = issued and not used yet (it still
+        signs in until it expires); EXPIRED = not used in time: the login is disabled until a new temporary password is
+        issued (re-issue while the invitation is PENDING); NONE = no login, or no temporary password outstanding (the
+        person chose their own password, or the login was linked as it was).
+      enum: [ACTIVE, EXPIRED, NONE]
     JerseyNumber:
       type: string
       description: Jersey as printed ("0", "00" and "7" are different numbers).
@@ -2012,13 +2026,14 @@ components:
     TenantAdmin:
       type: object
       description: An administrator of a tenant as the platform sees it (identity only, ADR-0023).
-      required: [personId, givenName, familyName, invitationStatus, otherRoles]
+      required: [personId, givenName, familyName, invitationStatus, temporaryPasswordStatus, otherRoles]
       properties:
         personId: {type: string, format: uuid}
         givenName: {type: string}
         familyName: {type: string}
         email: {type: string, format: email, nullable: true}
         invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
+        temporaryPasswordStatus: {$ref: '#/components/schemas/TemporaryPasswordStatus'}
         otherRoles:
           type: array
           description: The person's tenant roles besides ADMIN (removing the administrator keeps these).
@@ -2028,13 +2043,14 @@ components:
       description: An administrator and, when this call created or re-issued their login's password, that password.
       type: object
       x-extends: [TenantAdmin]
-      required: [personId, givenName, familyName, invitationStatus, otherRoles]
+      required: [personId, givenName, familyName, invitationStatus, temporaryPasswordStatus, otherRoles]
       properties:
         personId: {type: string, format: uuid}
         givenName: {type: string}
         familyName: {type: string}
         email: {type: string, format: email, nullable: true}
         invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
+        temporaryPasswordStatus: {$ref: '#/components/schemas/TemporaryPasswordStatus'}
         otherRoles:
           type: array
           description: The person's tenant roles besides ADMIN (removing the administrator keeps these).
@@ -2258,7 +2274,8 @@ components:
     # ---------------- members
     Member:
       type: object
-      required: [personId, givenName, familyName, displayName, roles, active, invitationStatus, createdAt]
+      required: [personId, givenName, familyName, displayName, roles, active, invitationStatus,
+                 temporaryPasswordStatus, createdAt]
       properties:
         personId: {type: string, format: uuid}
         userId:
@@ -2287,12 +2304,14 @@ components:
           description: Set when the member holds the PLAYER role.
         active: {type: boolean}
         invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
+        temporaryPasswordStatus: {$ref: '#/components/schemas/TemporaryPasswordStatus'}
         createdAt: {type: string, format: date-time}
     MemberWithPassword:
       description: A member and, when this call created or re-issued their login's password, that password.
       type: object
       x-extends: [Member]
-      required: [personId, givenName, familyName, displayName, roles, active, invitationStatus, createdAt]
+      required: [personId, givenName, familyName, displayName, roles, active, invitationStatus,
+                 temporaryPasswordStatus, createdAt]
       properties:
         personId: {type: string, format: uuid}
         userId:
@@ -2321,6 +2340,7 @@ components:
           description: Set when the member holds the PLAYER role.
         active: {type: boolean}
         invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
+        temporaryPasswordStatus: {$ref: '#/components/schemas/TemporaryPasswordStatus'}
         createdAt: {type: string, format: date-time}
         temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     MemberPage:
