@@ -2111,6 +2111,12 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get usageTrendTitle => 'Tren penggunaan';
+
+  @override
+  String get usageTrendEmpty => 'Belum ada data penggunaan';
+
+  @override
   String get usageFailed => 'Penggunaan tidak dapat dimuat';
 
   @override

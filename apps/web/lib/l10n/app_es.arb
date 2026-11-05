@@ -1233,6 +1233,8 @@
       }
     }
   },
+  "usageTrendTitle": "Evolución del uso",
+  "usageTrendEmpty": "Todavía no hay datos de uso",
   "usageFailed": "No se pudo cargar el uso",
   "usageServiceCore": "Núcleo",
   "usageServiceGame": "Partidos",

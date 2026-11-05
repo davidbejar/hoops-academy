@@ -2105,6 +2105,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get usageTrendTitle => 'Usage trend';
+
+  @override
+  String get usageTrendEmpty => 'No usage snapshots yet';
+
+  @override
   String get usageFailed => 'Usage could not be loaded';
 
   @override

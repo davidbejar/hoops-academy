@@ -14,6 +14,7 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
 import 'platform_screen.dart' show TenantStatusChip;
 import 'tenant_admins_section.dart';
+import 'usage_trend.dart';
 
 String _date(DateTime d) {
   final t = d.toLocal();
@@ -53,6 +54,8 @@ class TenantDetailScreen extends ConsumerWidget {
               TenantAdminsSection(tenant: d.tenant),
               const SizedBox(height: AppTokens.spaceMd),
               UsageDashboard(detail: d),
+              const SizedBox(height: AppTokens.spaceMd),
+              UsageTrend(tenantId: d.tenant.id),
             ],
           ),
         ),
@@ -128,7 +131,7 @@ class _Header extends ConsumerWidget {
   }
 }
 
-String _counterLabel(AppLocalizations l, String key) => switch (key) {
+String usageCounterLabel(AppLocalizations l, String key) => switch (key) {
   'members' => l.usageCounter_members,
   'players' => l.usageCounter_players,
   'activePlayers' => l.usageCounter_activePlayers,
@@ -234,7 +237,7 @@ class _ServiceCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text(_counterLabel(l, e.key), style: theme.textTheme.bodyMedium)),
+                        Expanded(child: Text(usageCounterLabel(l, e.key), style: theme.textTheme.bodyMedium)),
                         Text('${e.value}', key: Key('counter-${e.key}'), style: theme.textTheme.titleSmall),
                       ],
                     ),

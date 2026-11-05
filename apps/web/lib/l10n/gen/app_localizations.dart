@@ -3958,6 +3958,18 @@ abstract class AppLocalizations {
   /// **'Última actividad: {date}'**
   String usageLastActivity(String date);
 
+  /// No description provided for @usageTrendTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Evolución del uso'**
+  String get usageTrendTitle;
+
+  /// No description provided for @usageTrendEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay datos de uso'**
+  String get usageTrendEmpty;
+
   /// No description provided for @usageFailed.
   ///
   /// In es, this message translates to:

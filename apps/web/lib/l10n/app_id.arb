@@ -894,6 +894,8 @@
       }
     }
   },
+  "usageTrendTitle": "Tren penggunaan",
+  "usageTrendEmpty": "Belum ada data penggunaan",
   "usageFailed": "Penggunaan tidak dapat dimuat",
   "usageServiceCore": "Inti",
   "usageServiceGame": "Pertandingan",

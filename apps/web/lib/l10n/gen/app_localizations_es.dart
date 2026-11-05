@@ -2119,6 +2119,12 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get usageTrendTitle => 'Evolución del uso';
+
+  @override
+  String get usageTrendEmpty => 'Todavía no hay datos de uso';
+
+  @override
   String get usageFailed => 'No se pudo cargar el uso';
 
   @override

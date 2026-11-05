@@ -894,6 +894,8 @@
       }
     }
   },
+  "usageTrendTitle": "Usage trend",
+  "usageTrendEmpty": "No usage snapshots yet",
   "usageFailed": "Usage could not be loaded",
   "usageServiceCore": "Core",
   "usageServiceGame": "Matches",
