@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — athlete-service API
-  version: 2.0.0
+  version: 2.0.1
   description: |
     Training & attendance, athlete health & fitness.
 
@@ -1456,12 +1456,6 @@ components:
       type: string
       description: Expected performance band, worst to best.
       enum: [POOR, BELOW_AVERAGE, AVERAGE, ABOVE_AVERAGE, EXCELLENT]
-    AuditInfo:
-      type: object
-      required: [recordedBy, recordedAt]
-      properties:
-        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
-        recordedAt: {type: string, format: date-time}
 
     # ---------------- schedules & sessions
     TrainingScheduleInput:
@@ -1479,12 +1473,21 @@ components:
           format: date
           description: Inclusive; absent = open-ended.
     TrainingSchedule:
-      allOf:
-        - $ref: '#/components/schemas/TrainingScheduleInput'
-        - type: object
-          required: [id]
-          properties:
-            id: {type: string, format: uuid}
+      type: object
+      x-extends: [TrainingScheduleInput]
+      required: [teamId, dayOfWeek, startTime, durationMinutes, validFrom, id]
+      properties:
+        teamId: {type: string, format: uuid}
+        dayOfWeek: {$ref: '#/components/schemas/DayOfWeek'}
+        startTime: {$ref: '#/components/schemas/LocalTime'}
+        durationMinutes: {type: integer, format: int32, minimum: 15, maximum: 480}
+        location: {type: string, maxLength: 200}
+        validFrom: {type: string, format: date}
+        validUntil:
+          type: string
+          format: date
+          description: Inclusive; absent = open-ended.
+        id: {type: string, format: uuid}
     UpdateTrainingScheduleRequest:
       type: object
       minProperties: 1
@@ -1619,13 +1622,20 @@ components:
           description: Inclusive.
         reason: {type: string, maxLength: 500}
     PlannedAbsence:
-      allOf:
-        - $ref: '#/components/schemas/PlannedAbsenceInput'
-        - $ref: '#/components/schemas/AuditInfo'
-        - type: object
-          required: [id]
-          properties:
-            id: {type: string, format: uuid}
+      type: object
+      x-extends: [PlannedAbsenceInput, AuditInfo]
+      required: [playerId, fromDate, toDate, recordedBy, recordedAt, id]
+      properties:
+        playerId: {type: string, format: uuid}
+        fromDate: {type: string, format: date}
+        toDate:
+          type: string
+          format: date
+          description: Inclusive.
+        reason: {type: string, maxLength: 500}
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}
+        id: {type: string, format: uuid}
     PlannedAbsencePage:
       type: object
       required: [items, page]
@@ -1654,17 +1664,22 @@ components:
         repetitions: {type: integer, format: int32, minimum: 1, maximum: 1000}
         videoUrl: {type: string, format: uri, maxLength: 2000}
     PlanItem:
-      allOf:
-        - $ref: '#/components/schemas/PlanItemInput'
-        - type: object
-          required: [id, position]
-          properties:
-            id: {type: string, format: uuid}
-            position:
-              type: integer
-              format: int32
-              minimum: 0
-              description: 0-based order within the plan.
+      type: object
+      x-extends: [PlanItemInput]
+      required: [title, id, position]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, maxLength: 4000}
+        durationMinutes: {type: integer, format: int32, minimum: 1, maximum: 480}
+        sets: {type: integer, format: int32, minimum: 1, maximum: 100}
+        repetitions: {type: integer, format: int32, minimum: 1, maximum: 1000}
+        videoUrl: {type: string, format: uri, maxLength: 2000}
+        id: {type: string, format: uuid}
+        position:
+          type: integer
+          format: int32
+          minimum: 0
+          description: 0-based order within the plan.
     UpdatePlanItemRequest:
       type: object
       minProperties: 1
@@ -1704,14 +1719,29 @@ components:
           type: boolean
           description: Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
     TrainingPlan:
-      allOf:
-        - $ref: '#/components/schemas/TrainingPlanSummary'
-        - type: object
-          required: [items]
-          properties:
-            items:
-              type: array
-              items: {$ref: '#/components/schemas/PlanItem'}
+      type: object
+      x-extends: [TrainingPlanSummary]
+      required: [id, name, template, itemCount, totalDurationMinutes, items]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        description: {type: string, nullable: true}
+        template:
+          type: boolean
+          description: Global, read-only template (copy before use).
+        sourceTemplateId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Template (or plan) this plan was copied from.
+        itemCount: {type: integer, format: int32, minimum: 0}
+        totalDurationMinutes: {type: integer, format: int32, minimum: 0}
+        archived:
+          type: boolean
+          description: Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PlanItem'}
     TrainingPlanSummaryPage:
       type: object
       required: [items, page]
@@ -1757,17 +1787,18 @@ components:
         dueOn: {type: string, format: date}
         notes: {type: string, maxLength: 2000}
     PlanAssignment:
-      allOf:
-        - $ref: '#/components/schemas/AuditInfo'
-        - type: object
-          required: [id, plan, dueOn]
-          properties:
-            id: {type: string, format: uuid}
-            plan: {$ref: '#/components/schemas/TrainingPlanSummary'}
-            teamId: {type: string, format: uuid, nullable: true}
-            playerId: {type: string, format: uuid, nullable: true}
-            dueOn: {type: string, format: date}
-            notes: {type: string, nullable: true}
+      type: object
+      x-extends: [AuditInfo]
+      required: [recordedBy, recordedAt, id, plan, dueOn]
+      properties:
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}
+        id: {type: string, format: uuid}
+        plan: {$ref: '#/components/schemas/TrainingPlanSummary'}
+        teamId: {type: string, format: uuid, nullable: true}
+        playerId: {type: string, format: uuid, nullable: true}
+        dueOn: {type: string, format: date}
+        notes: {type: string, nullable: true}
     PlanAssignmentPage:
       type: object
       required: [items, page]
@@ -1783,16 +1814,17 @@ components:
         status: {$ref: '#/components/schemas/CompletionStatus'}
         comment: {type: string, maxLength: 1000}
     PlanCompletion:
-      allOf:
-        - $ref: '#/components/schemas/AuditInfo'
-        - type: object
-          required: [id, assignmentId, playerId, status]
-          properties:
-            id: {type: string, format: uuid}
-            assignmentId: {type: string, format: uuid}
-            playerId: {type: string, format: uuid}
-            status: {$ref: '#/components/schemas/CompletionStatus'}
-            comment: {type: string, nullable: true}
+      type: object
+      x-extends: [AuditInfo]
+      required: [recordedBy, recordedAt, id, assignmentId, playerId, status]
+      properties:
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}
+        id: {type: string, format: uuid}
+        assignmentId: {type: string, format: uuid}
+        playerId: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/CompletionStatus'}
+        comment: {type: string, nullable: true}
     PlanCompletionPage:
       type: object
       required: [items, page]
@@ -1817,20 +1849,21 @@ components:
           format: date
           description: Must be ≥ occurredOn.
     Injury:
-      allOf:
-        - $ref: '#/components/schemas/AuditInfo'
-        - type: object
-          required: [id, playerId, occurredOn, bodyPart, severity, status]
-          properties:
-            id: {type: string, format: uuid}
-            playerId: {type: string, format: uuid}
-            occurredOn: {type: string, format: date}
-            bodyPart: {type: string}
-            severity: {$ref: '#/components/schemas/InjurySeverity'}
-            description: {type: string, nullable: true}
-            expectedReturnOn: {type: string, format: date, nullable: true}
-            actualReturnOn: {type: string, format: date, nullable: true}
-            status: {$ref: '#/components/schemas/InjuryStatus'}
+      type: object
+      x-extends: [AuditInfo]
+      required: [recordedBy, recordedAt, id, playerId, occurredOn, bodyPart, severity, status]
+      properties:
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}
+        id: {type: string, format: uuid}
+        playerId: {type: string, format: uuid}
+        occurredOn: {type: string, format: date}
+        bodyPart: {type: string}
+        severity: {$ref: '#/components/schemas/InjurySeverity'}
+        description: {type: string, nullable: true}
+        expectedReturnOn: {type: string, format: date, nullable: true}
+        actualReturnOn: {type: string, format: date, nullable: true}
+        status: {$ref: '#/components/schemas/InjuryStatus'}
     InjuryPage:
       type: object
       required: [items, page]
@@ -1862,16 +1895,17 @@ components:
         heightCm: {type: number, format: double, minimum: 50, maximum: 250}
         weightKg: {type: number, format: double, minimum: 10, maximum: 250}
     BodyMeasurement:
-      allOf:
-        - $ref: '#/components/schemas/AuditInfo'
-        - type: object
-          required: [id, playerId, measuredOn]
-          properties:
-            id: {type: string, format: uuid}
-            playerId: {type: string, format: uuid}
-            measuredOn: {type: string, format: date}
-            heightCm: {type: number, format: double, nullable: true}
-            weightKg: {type: number, format: double, nullable: true}
+      type: object
+      x-extends: [AuditInfo]
+      required: [recordedBy, recordedAt, id, playerId, measuredOn]
+      properties:
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}
+        id: {type: string, format: uuid}
+        playerId: {type: string, format: uuid}
+        measuredOn: {type: string, format: date}
+        heightCm: {type: number, format: double, nullable: true}
+        weightKg: {type: number, format: double, nullable: true}
     UpdateBodyMeasurementRequest:
       type: object
       minProperties: 1
@@ -1898,15 +1932,26 @@ components:
         higherIsBetter: {type: boolean}
         description: {type: string, maxLength: 2000}
     PhysicalTestType:
-      allOf:
-        - $ref: '#/components/schemas/PhysicalTestTypeInput'
-        - type: object
-          required: [id, global]
-          properties:
-            id: {type: string, format: uuid}
-            global:
-              type: boolean
-              description: Platform-provided (read-only) type.
+      type: object
+      x-extends: [PhysicalTestTypeInput]
+      required: [code, name, unit, higherIsBetter, id, global]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9_]{2,32}$'
+          example: SPRINT_20M
+        name: {type: string, minLength: 1, maxLength: 120}
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 16
+          example: s
+        higherIsBetter: {type: boolean}
+        description: {type: string, maxLength: 2000}
+        id: {type: string, format: uuid}
+        global:
+          type: boolean
+          description: Platform-provided (read-only) type.
     UpdatePhysicalTestTypeRequest:
       type: object
       minProperties: 1
@@ -1928,38 +1973,39 @@ components:
           description: In the test type's unit.
         notes: {type: string, maxLength: 1000}
     PhysicalTestResult:
-      allOf:
-        - $ref: '#/components/schemas/AuditInfo'
-        - type: object
-          required: [id, playerId, testTypeId, testCode, unit, measuredOn, value, ageAtMeasurement, bandStatus, referencePending]
-          properties:
-            id: {type: string, format: uuid}
-            playerId: {type: string, format: uuid}
-            testTypeId: {type: string, format: uuid}
-            testCode: {type: string}
-            unit: {type: string}
-            measuredOn: {type: string, format: date}
-            value: {type: number, format: double}
-            ageAtMeasurement:
-              type: integer
-              format: int32
-              minimum: 0
-              nullable: true
-              description: Actual age (years) on measuredOn; null when core has no birth date for the player.
-            bandStatus: {$ref: '#/components/schemas/BandStatus'}
-            expectedBand:
-              allOf: [{$ref: '#/components/schemas/NormBand'}]
-              nullable: true
-              description: Band for (gender, age at measurement, value); null when no norm covers the result.
-            normId:
-              type: string
-              format: uuid
-              nullable: true
-              description: Norm row that produced `expectedBand`.
-            referencePending:
-              type: boolean
-              description: The applied norm has no cited source yet ("reference pending" in the UI).
-            notes: {type: string, nullable: true}
+      type: object
+      x-extends: [AuditInfo]
+      required: [recordedBy, recordedAt, id, playerId, testTypeId, testCode, unit, measuredOn, value, ageAtMeasurement, bandStatus, referencePending]
+      properties:
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}
+        id: {type: string, format: uuid}
+        playerId: {type: string, format: uuid}
+        testTypeId: {type: string, format: uuid}
+        testCode: {type: string}
+        unit: {type: string}
+        measuredOn: {type: string, format: date}
+        value: {type: number, format: double}
+        ageAtMeasurement:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: Actual age (years) on measuredOn; null when core has no birth date for the player.
+        bandStatus: {$ref: '#/components/schemas/BandStatus'}
+        expectedBand:
+          allOf: [{$ref: '#/components/schemas/NormBand'}]
+          nullable: true
+          description: Band for (gender, age at measurement, value); null when no norm covers the result.
+        normId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Norm row that produced `expectedBand`.
+        referencePending:
+          type: boolean
+          description: The applied norm has no cited source yet ("reference pending" in the UI).
+        notes: {type: string, nullable: true}
     BandStatus:
       type: string
       description: |
@@ -2051,15 +2097,40 @@ components:
           nullable: true
           description: Citation of the reference the values come from.
     PhysicalTestNorm:
-      allOf:
-        - $ref: '#/components/schemas/PhysicalTestNormInput'
-        - type: object
-          required: [id, global, referencePending]
-          properties:
-            id: {type: string, format: uuid}
-            global:
-              type: boolean
-              description: Platform-provided norm (tenant rows override it).
-            referencePending:
-              type: boolean
-              description: No source cited.
+      type: object
+      x-extends: [PhysicalTestNormInput]
+      required: [testTypeId, gender, minAge, maxAge, band, id, global, referencePending]
+      properties:
+        testTypeId: {type: string, format: uuid}
+        gender: {$ref: './common.yaml#/components/schemas/Gender'}
+        minAge: {type: integer, format: int32, minimum: 3, maximum: 99}
+        maxAge:
+          type: integer
+          format: int32
+          minimum: 3
+          maximum: 99
+          description: Inclusive.
+        band: {$ref: '#/components/schemas/NormBand'}
+        minValue: {type: number, format: double, nullable: true}
+        maxValue: {type: number, format: double, nullable: true}
+        source:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Citation of the reference the values come from.
+        id: {type: string, format: uuid}
+        global:
+          type: boolean
+          description: Platform-provided norm (tenant rows override it).
+        referencePending:
+          type: boolean
+          description: No source cited.
+  # Field groups that several schemas repeat (x-extends) instead of composing them with allOf, which
+  # swagger-request-validator cannot check strictly. Not wire types: no client code is generated for them.
+  x-mixins:
+    AuditInfo:
+      type: object
+      required: [recordedBy, recordedAt]
+      properties:
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}

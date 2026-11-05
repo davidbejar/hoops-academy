@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — game-service API
-  version: 2.0.0
+  version: 2.0.1
   description: |
     Match operations and statistics (offline-first, event-sourced).
 
@@ -502,50 +502,6 @@ components:
     MatchEventType:
       type: string
       enum: [PERIOD_START, PERIOD_END, SUB_IN, SUB_OUT, SHOT, ASSIST, REBOUND, TURNOVER, STEAL, BLOCK, FOUL, OPPONENT_SCORE, TIMEOUT, VOID, NOTE]
-    MatchEventBase:
-      type: object
-      description: Fields common to every match event.
-      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient]
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Client-generated UUIDv7; the idempotency key.
-        deviceId:
-          type: string
-          minLength: 1
-          maxLength: 64
-          description: Stable id of the scoring device (installation).
-        clientSeq:
-          type: integer
-          format: int64
-          minimum: 1
-          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
-        type: {$ref: '#/components/schemas/MatchEventType'}
-        period:
-          type: integer
-          format: int32
-          minimum: 1
-          maximum: 12
-          description: 1-based period; values above the match's periodCount are overtimes.
-        clockSecondsRemaining:
-          type: integer
-          format: int32
-          minimum: 0
-          maximum: 3600
-          description: Game clock at the event, seconds remaining in the period.
-        recordedAtClient:
-          type: string
-          format: date-time
-          description: Device wall clock (UTC) when the event was entered.
-    PlayerAttribution:
-      type: object
-      required: [playerId]
-      properties:
-        playerId:
-          type: string
-          format: uuid
-          description: Player the event is attributed to (must be on the match roster for the projection).
 
     ShotPayload:
       type: object
@@ -602,171 +558,627 @@ components:
 
     PeriodStartEvent:
       description: Start of a period (clock / period event; staff only).
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [PERIOD_START]
+      type: object
+      x-extends: [MatchEventBase]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [PERIOD_START]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
     PeriodEndEvent:
       description: End of a period (clock / period event; staff only).
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [PERIOD_END]
+      type: object
+      x-extends: [MatchEventBase]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [PERIOD_END]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
     SubInEvent:
       description: Player enters the court (staff only).
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [SUB_IN]
-        - $ref: '#/components/schemas/PlayerAttribution'
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [SUB_IN]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
     SubOutEvent:
       description: Player leaves the court (staff only).
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [SUB_OUT]
-        - $ref: '#/components/schemas/PlayerAttribution'
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [SUB_OUT]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
     ShotEvent:
       description: Shot attempt (free throw, 2 or 3 points), made or missed.
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [SHOT]
-        - $ref: '#/components/schemas/PlayerAttribution'
-        - type: object
-          required: [payload]
-          properties:
-            payload: {$ref: '#/components/schemas/ShotPayload'}
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId, payload]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [SHOT]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
+        payload: {$ref: '#/components/schemas/ShotPayload'}
     AssistEvent:
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [ASSIST]
-        - $ref: '#/components/schemas/PlayerAttribution'
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [ASSIST]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
     ReboundEvent:
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [REBOUND]
-        - $ref: '#/components/schemas/PlayerAttribution'
-        - type: object
-          required: [payload]
-          properties:
-            payload: {$ref: '#/components/schemas/ReboundPayload'}
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId, payload]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [REBOUND]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
+        payload: {$ref: '#/components/schemas/ReboundPayload'}
     TurnoverEvent:
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [TURNOVER]
-        - $ref: '#/components/schemas/PlayerAttribution'
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [TURNOVER]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
     StealEvent:
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [STEAL]
-        - $ref: '#/components/schemas/PlayerAttribution'
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [STEAL]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
     BlockEvent:
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [BLOCK]
-        - $ref: '#/components/schemas/PlayerAttribution'
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [BLOCK]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
     FoulEvent:
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [FOUL]
-        - $ref: '#/components/schemas/PlayerAttribution'
-        - type: object
-          required: [payload]
-          properties:
-            payload: {$ref: '#/components/schemas/FoulPayload'}
+      type: object
+      x-extends: [MatchEventBase, PlayerAttribution]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, playerId, payload]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [FOUL]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).
+        payload: {$ref: '#/components/schemas/FoulPayload'}
     OpponentScoreEvent:
       description: Points scored by the opponent (staff only).
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [OPPONENT_SCORE]
-        - type: object
-          required: [payload]
-          properties:
-            payload: {$ref: '#/components/schemas/OpponentScorePayload'}
+      type: object
+      x-extends: [MatchEventBase]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, payload]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [OPPONENT_SCORE]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        payload: {$ref: '#/components/schemas/OpponentScorePayload'}
     TimeoutEvent:
       description: Timeout called by either side (staff only).
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [TIMEOUT]
-        - type: object
-          required: [payload]
-          properties:
-            payload: {$ref: '#/components/schemas/TimeoutPayload'}
+      type: object
+      x-extends: [MatchEventBase]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, payload]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [TIMEOUT]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        payload: {$ref: '#/components/schemas/TimeoutPayload'}
     VoidEvent:
       description: Cancels the effect of an earlier event in all projections.
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [VOID]
-        - type: object
-          required: [payload]
-          properties:
-            payload: {$ref: '#/components/schemas/VoidPayload'}
+      type: object
+      x-extends: [MatchEventBase]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, payload]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [VOID]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        payload: {$ref: '#/components/schemas/VoidPayload'}
     NoteEvent:
       description: Free-text annotation (optionally about a player); no effect on statistics.
-      allOf:
-        - $ref: '#/components/schemas/MatchEventBase'
-        - type: object
-          properties:
-            type:
-              allOf: [{$ref: '#/components/schemas/MatchEventType'}]
-              enum: [NOTE]
-        - type: object
-          required: [payload]
-          properties:
-            playerId: {type: string, format: uuid}
-            payload: {$ref: '#/components/schemas/NotePayload'}
+      type: object
+      x-extends: [MatchEventBase]
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient, payload]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type:
+          allOf: [{$ref: '#/components/schemas/MatchEventType'}]
+          enum: [NOTE]
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+        playerId: {type: string, format: uuid}
+        payload: {$ref: '#/components/schemas/NotePayload'}
 
     MatchEvent:
       description: A match event, polymorphic on `type`.
@@ -1019,3 +1431,50 @@ components:
         matches:
           type: array
           items: {$ref: '#/components/schemas/PlayerMatchLine'}
+  # Field groups that several schemas repeat (x-extends) instead of composing them with allOf, which
+  # swagger-request-validator cannot check strictly. Not wire types: no client code is generated for them.
+  x-mixins:
+    MatchEventBase:
+      type: object
+      description: Fields common to every match event (each variant repeats them).
+      required: [id, deviceId, clientSeq, type, period, clockSecondsRemaining, recordedAtClient]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-generated UUIDv7; the idempotency key.
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Stable id of the scoring device (installation).
+        clientSeq:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-device monotonically increasing sequence; unique per (match, deviceId).
+        type: {$ref: '#/components/schemas/MatchEventType'}
+        period:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 1-based period; values above the match's periodCount are overtimes.
+        clockSecondsRemaining:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3600
+          description: Game clock at the event, seconds remaining in the period.
+        recordedAtClient:
+          type: string
+          format: date-time
+          description: Device wall clock (UTC) when the event was entered.
+    PlayerAttribution:
+      type: object
+      required: [playerId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+          description: Player the event is attributed to (must be on the match roster for the projection).

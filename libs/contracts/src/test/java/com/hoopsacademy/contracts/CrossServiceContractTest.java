@@ -141,13 +141,7 @@ class CrossServiceContractTest {
 
         mapping.forEach((type, ref) -> {
             Schema<?> variant = game.get(ref.substring(ref.lastIndexOf('/') + 1));
-            Schema<?> typeProperty = (Schema<?>) variant.getAllOf().stream()
-                    .map(part -> ((Schema<?>) part).getProperties())
-                    .filter(Objects::nonNull)
-                    .map(p -> p.get("type"))
-                    .filter(Objects::nonNull)
-                    .findFirst()
-                    .orElseThrow(() -> new AssertionError(ref + " has no fixed type"));
+            Schema<?> typeProperty = Objects.requireNonNull(variant.getProperties().get("type"), ref + " has no type");
             assertThat(enumOf(typeProperty)).as(ref).containsExactly(type);
         });
     }

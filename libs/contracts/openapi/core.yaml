@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 2.3.0
+  version: 2.3.1
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -1958,11 +1958,30 @@ components:
       example: Xk7mPq2RtW9vNc4H
     TenantWithPassword:
       description: The onboarded tenant and the temporary password of the first administrator's new login.
-      allOf:
-        - $ref: '#/components/schemas/Tenant'
-        - type: object
-          properties:
-            temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
+      type: object
+      x-extends: [Tenant]
+      required: [id, slug, name, status, timezone, defaultLocale, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        slug:
+          type: string
+          pattern: '^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$'
+        name: {type: string, minLength: 1, maxLength: 120}
+        status: {$ref: '#/components/schemas/TenantStatus'}
+        timezone:
+          type: string
+          description: IANA time zone id.
+          example: Asia/Jakarta
+        defaultLocale: {$ref: './common.yaml#/components/schemas/Locale'}
+        createdAt: {type: string, format: date-time}
+        suspendedAt: {type: string, format: date-time, nullable: true}
+        withdrawnAt: {type: string, format: date-time, nullable: true}
+        retainUntil:
+          type: string
+          format: date
+          nullable: true
+          description: For WITHDRAWN tenants, the date until which data is retained.
+        temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     TenantPage:
       type: object
       required: [items, page]
@@ -2007,11 +2026,21 @@ components:
           items: {$ref: '#/components/schemas/TenantRole'}
     TenantAdminWithPassword:
       description: An administrator and, when this call created or re-issued their login's password, that password.
-      allOf:
-        - $ref: '#/components/schemas/TenantAdmin'
-        - type: object
-          properties:
-            temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
+      type: object
+      x-extends: [TenantAdmin]
+      required: [personId, givenName, familyName, invitationStatus, otherRoles]
+      properties:
+        personId: {type: string, format: uuid}
+        givenName: {type: string}
+        familyName: {type: string}
+        email: {type: string, format: email, nullable: true}
+        invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
+        otherRoles:
+          type: array
+          description: The person's tenant roles besides ADMIN (removing the administrator keeps these).
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+        temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     TenantAdminPage:
       type: object
       required: [items, page]
@@ -2261,11 +2290,39 @@ components:
         createdAt: {type: string, format: date-time}
     MemberWithPassword:
       description: A member and, when this call created or re-issued their login's password, that password.
-      allOf:
-        - $ref: '#/components/schemas/Member'
-        - type: object
-          properties:
-            temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
+      type: object
+      x-extends: [Member]
+      required: [personId, givenName, familyName, displayName, roles, active, invitationStatus, createdAt]
+      properties:
+        personId: {type: string, format: uuid}
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Platform user (login) of the person; null for persons without login (e.g. young players).
+        givenName: {type: string}
+        familyName: {type: string}
+        displayName: {type: string}
+        email: {type: string, format: email, nullable: true}
+        phone: {type: string, nullable: true}
+        birthDate: {type: string, format: date, nullable: true}
+        gender:
+          allOf: [{$ref: './common.yaml#/components/schemas/Gender'}]
+          nullable: true
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+        roles:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+        playerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set when the member holds the PLAYER role.
+        active: {type: boolean}
+        invitationStatus: {$ref: '#/components/schemas/InvitationStatus'}
+        createdAt: {type: string, format: date-time}
+        temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     MemberPage:
       type: object
       required: [items, page]
@@ -2274,9 +2331,10 @@ components:
           type: array
           items: {$ref: '#/components/schemas/Member'}
         page: {$ref: './common.yaml#/components/schemas/PageMeta'}
-    PersonalData:
+    InviteMemberRequest:
       type: object
-      required: [givenName, familyName]
+      x-extends: [PersonalData]
+      required: [givenName, familyName, roles]
       properties:
         givenName: {type: string, minLength: 1, maxLength: 80}
         familyName: {type: string, minLength: 1, maxLength: 80}
@@ -2285,21 +2343,15 @@ components:
         birthDate: {type: string, format: date}
         gender: {$ref: './common.yaml#/components/schemas/Gender'}
         locale: {$ref: './common.yaml#/components/schemas/Locale'}
-    InviteMemberRequest:
-      allOf:
-        - $ref: '#/components/schemas/PersonalData'
-        - type: object
-          required: [roles]
-          properties:
-            roles:
-              type: array
-              minItems: 1
-              uniqueItems: true
-              items: {$ref: '#/components/schemas/TenantRole'}
-            sendInvitation:
-              type: boolean
-              default: true
-              description: Give the member a login (requires `email`); a new login's temporary password is returned once.
+        roles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+        sendInvitation:
+          type: boolean
+          default: true
+          description: Give the member a login (requires `email`); a new login's temporary password is returned once.
     UpdateMemberRequest:
       type: object
       minProperties: 1
@@ -2362,15 +2414,23 @@ components:
           maximum: 2100
           description: Year used by the BIRTH_YEAR age rule (age = referenceYear − birth year).
     Season:
-      allOf:
-        - $ref: '#/components/schemas/SeasonInput'
-        - type: object
-          required: [id, current]
-          properties:
-            id: {type: string, format: uuid}
-            current:
-              type: boolean
-              description: Today (tenant time zone) lies within the season.
+      type: object
+      x-extends: [SeasonInput]
+      required: [name, startsOn, endsOn, referenceYear, id, current]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 60, example: 2026/27}
+        startsOn: {type: string, format: date}
+        endsOn: {type: string, format: date}
+        referenceYear:
+          type: integer
+          format: int32
+          minimum: 2000
+          maximum: 2100
+          description: Year used by the BIRTH_YEAR age rule (age = referenceYear − birth year).
+        id: {type: string, format: uuid}
+        current:
+          type: boolean
+          description: Today (tenant time zone) lies within the season.
     UpdateSeasonRequest:
       type: object
       minProperties: 1
@@ -2441,12 +2501,28 @@ components:
           minimum: 0
           description: Ordering; higher rank = older category.
     AgeCategory:
-      allOf:
-        - $ref: '#/components/schemas/AgeCategoryInput'
-        - type: object
-          required: [id]
-          properties:
-            id: {type: string, format: uuid}
+      type: object
+      x-extends: [AgeCategoryInput]
+      required: [code, name, rank, id]
+      properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9_]{1,16}$'
+          example: U12
+        name: {type: string, minLength: 1, maxLength: 60}
+        maxAge:
+          type: integer
+          format: int32
+          minimum: 3
+          maximum: 99
+          nullable: true
+          description: Inclusive maximum age; null = senior (no limit).
+        rank:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Ordering; higher rank = older category.
+        id: {type: string, format: uuid}
     UpdateAgeCategoryRequest:
       type: object
       minProperties: 1
@@ -2693,11 +2769,23 @@ components:
         decisionNote: {type: string, nullable: true}
     ApprovalRequestWithPassword:
       description: A decided request and, when approving created the player's login, that login's temporary password.
-      allOf:
-        - $ref: '#/components/schemas/ApprovalRequest'
-        - type: object
-          properties:
-            temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
+      type: object
+      x-extends: [ApprovalRequest]
+      required: [id, action, status, player, payload, requestedBy, requestedAt]
+      properties:
+        id: {type: string, format: uuid}
+        action: {$ref: '#/components/schemas/ApprovalAction'}
+        status: {$ref: '#/components/schemas/ApprovalStatus'}
+        player: {$ref: '#/components/schemas/PlayerRef'}
+        payload: {$ref: '#/components/schemas/ApprovalPayload'}
+        requestedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        requestedAt: {type: string, format: date-time}
+        decidedBy:
+          allOf: [{$ref: './common.yaml#/components/schemas/PersonRef'}]
+          nullable: true
+        decidedAt: {type: string, format: date-time, nullable: true}
+        decisionNote: {type: string, nullable: true}
+        temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
     ApprovalPayload:
       type: object
       description: Action parameters captured at request time.
@@ -2859,3 +2947,17 @@ components:
         birthDate: {type: string, format: date}
         gender: {$ref: './common.yaml#/components/schemas/Gender'}
         status: {$ref: '#/components/schemas/PlayerStatus'}
+  # Field groups that several schemas repeat (x-extends) instead of composing them with allOf, which
+  # swagger-request-validator cannot check strictly. Not wire types: no client code is generated for them.
+  x-mixins:
+    PersonalData:
+      type: object
+      required: [givenName, familyName]
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        email: {type: string, format: email, maxLength: 254}
+        phone: {type: string, maxLength: 32}
+        birthDate: {type: string, format: date}
+        gender: {$ref: './common.yaml#/components/schemas/Gender'}
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}

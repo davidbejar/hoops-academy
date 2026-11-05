@@ -35,6 +35,15 @@ The jar ships these files as classpath resources: `classpath:openapi/core.yaml`,
 - Ids are `uuid`; dates `date`; instants `date-time` (UTC). Unbounded lists use the `<Resource>Page` envelope
   `{items, page}`; small bounded lists are plain arrays.
 - Names follow `docs/domain/glossary.md`; the `Authz:` line of each operation summarises `docs/domain/authz-matrix.md`.
+- **No `allOf` composition** (`StrictValidatorCompatibilityTest`, ADR-0025): every request and response object is a
+  plain object, and `allOf` only wraps a single `$ref` (to add `nullable`, a description or a narrowing `enum`). A
+  schema that carries the fields of another one repeats them and names its bases in `x-extends: [Base, …]`
+  (`AgeCategory` → `AgeCategoryInput`, `ShotEvent` → `MatchEventBase, PlayerAttribution`, …); the test keeps every
+  repeated property identical to its base (the MatchEvent `type` may narrow `MatchEventType` to one value). Field
+  groups that are not wire types of their own (`PersonalData`, `AuditInfo`, `MatchEventBase`, `PlayerAttribution`)
+  live under `components.x-mixins`: generators and validators ignore them, and a mixin no schema extends fails the
+  test. Reason: swagger-request-validator, in its default strict configuration, adds `additionalProperties: false`
+  to every object schema with `properties`, so each part of an `allOf` would reject the other parts' fields.
 
 ## Versioning policy
 
@@ -56,7 +65,7 @@ source scripts/env.sh
 ./mvnw -pl libs/contracts verify
 ```
 
-`verify` runs the JUnit suite (swagger-parser + networknt json-schema-validator) and then
+`verify` runs the JUnit suite (swagger-parser, networknt json-schema-validator and swagger-request-validator) and then
 `openapi-generator-maven-plugin:validate` (strict) for `common`, `core`, `game` and `athlete`.
 Quick check of one file: `openapi-generator validate -i libs/contracts/openapi/game.yaml`.
 
@@ -98,29 +107,29 @@ static final OpenApiValidationFilter CONTRACT = new OpenApiValidationFilter(
 given().filter(CONTRACT).header("X-Tenant-Id", tenantId).when().get("/api/core/teams").then().statusCode(200);
 ```
 
+Use the validator's **default configuration**: no `withResolveCombinators`, no message muted. It then rejects any
+request or response field the contract does not declare, and it checks every `MatchEvent` (oneOf + discriminator)
+directly — the contract is written for it (see "No `allOf` composition" above). The only levels the tests lower are
+deliberate test modes, never contract gaps: `validation.request` for calls that send a forbidden request on purpose
+(response still validated), and in core `validation.response.status.unknown` for fault-injection tests that provoke
+an undeclared 500. game-service's tests send a placeholder bearer token (`Bearer test`; the caller is simulated) so
+the security requirement is checked too.
+
 Match events: game-service validates each submitted event individually against `events/match-event.schema.json`
 (networknt json-schema-validator, Jackson 2 line `2.0.x`) so one invalid event is answered `REJECTED/SCHEMA_INVALID`
-instead of failing the whole batch. Tests that exercise rejection on purpose should therefore disable request
-validation for `submitMatchEvents` (`.withLevel("validation.request", ValidationReport.Level.IGNORE)` on that call)
-while keeping response validation. Every `<Type>Event` fixes its `type`
-(`type: {allOf: [{$ref: MatchEventType}], enum: [<TYPE>]}`), so exactly one `oneOf` branch matches for any
-spec-compliant validator (before WP2c PERIOD_START/PERIOD_END and SUB_IN/SUB_OUT were structurally identical). The
-`allOf`-wrapped spelling is deliberate: a plain inline `{type: string, enum: [<TYPE>]}` makes dart-dio drop the
-`MatchEventType` import of every variant (135 analyzer errors, checked with openapi-generator 7.26.0). swagger-request-
-validator, however, only selects the branch once combinators are resolved, and resolving drops that sibling `enum`;
-game-service's tests therefore validate events against a derived copy that spells the type as the plain enum
-(`support/Contract.EVENTS`) — the same constraint.
+instead of failing the whole batch. Tests that exercise rejection on purpose therefore validate the response only
+(`Contract.RESPONSES_ONLY`). Every `<Type>Event` fixes its `type` (`type: {allOf: [{$ref: MatchEventType}], enum:
+[<TYPE>]}`), so exactly one `oneOf` branch matches for any spec-compliant validator. The `allOf`-wrapped spelling is
+deliberate: a plain inline `{type: string, enum: [<TYPE>]}` makes dart-dio drop the `MatchEventType` import of every
+variant (135 analyzer errors, checked with openapi-generator 7.26.0).
 
 ### Known validator quirks
 
-- **`allOf` + `additionalProperties`**: schemas composed with `allOf` (`InviteMemberRequest`, `TrainingSchedule`,
-  `PlannedAbsence`, `TrainingPlan`, `PhysicalTestResult`, the `<Type>Event`s, …) are checked part by part, so with
-  `additionalProperties: false` semantics each part reports the other parts' properties as "additional". Either build
-  the validator with `withResolveCombinators(true)` (flattens `allOf`; core and game do this) or set
-  `validation.request.body.schema.additionalProperties` / `validation.response.body.schema.additionalProperties` to
-  `IGNORE` (athlete). Side effect of resolving combinators: `nullable` on an `allOf`-wrapped request field
-  (`jerseyNumber: {allOf: [...], nullable: true}`) is dropped, so a request sending `null` there is validated
-  response-only.
+- **Gone (WP29): `allOf` + `additionalProperties`.** Composed schemas made every real response fail ("property … is
+  not defined in the schema"), so the services and e2e muted `additionalProperties` or flattened with
+  `withResolveCombinators(true)`, which in turn dropped `nullable` on `allOf`-wrapped fields; and the `MatchEvent`
+  feed could not be validated at all (`discriminator.oneOf.no_match_found`). Both disappeared with the plain-object
+  rule; game's derived copy of game.yaml (`Contract.EVENTS`) is gone too.
 - **Colons in paths** (`/api/game/matches/{matchId}/events:batch`, `/api/athlete/training-plans/{planId}:copy`,
   `:archive`, `:unarchive`, `/internal/players:batch`): the validator matches the template only when the colon is sent
   literally, and Quarkus REST answers 404 for a percent-encoded `%3A`. REST-assured tests call these paths with

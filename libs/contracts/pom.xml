@@ -36,6 +36,13 @@
       <version>${json-schema-validator.version}</version>
       <scope>test</scope>
     </dependency>
+    <!-- The validator the services and e2e use (version managed by the parent): StrictValidatorCompatibilityTest. -->
+    <dependency>
+      <groupId>com.atlassian.oai</groupId>
+      <artifactId>openapi-request-validator-core</artifactId>
+      <version>${openapi-request-validator.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
