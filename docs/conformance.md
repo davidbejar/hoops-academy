@@ -1,11 +1,13 @@
-# Spec conformance checklist (WP20 review, 2026-11-02; reconciled 2026-11-05, WP26)
+# Spec conformance checklist (WP20 review, 2026-11-02; reconciled 2026-11-05, WP26, and 2026-11-06, after WP37)
 
 This page walks the original requirements — [`SPEC.md`](SPEC.md) sentence by sentence, the two additions the user made
 when the plan was locked (trilingual UI, admin-uploaded logo), and the domain rules of [`PLAN.md`](PLAN.md) §2 — and
 states for each what was built, where, and what proves it. It was written from the work-package handovers
 ([`wp/`](wp/)), the ADRs, the security review and a read of the code; nothing here was taken on trust from a single
 source when the code could be checked. WP26 (2026-11-05) updated the evidence and gaps after WP21–WP25, the first green
-CI runs and the product decisions of 2026-11-05 (`wp/FOLLOW-UPS.md` "Plan (2026-11-05)"); no status changed.
+CI runs and the product decisions of 2026-11-05 (`wp/FOLLOW-UPS.md` "Plan (2026-11-05)"); no status changed. The
+reconciliation of 2026-11-06 follows WP26–WP37 (all merged): S-36, S-46 and R-11 moved from Partial to Implemented
+(WP35, WP28, WP33), the e2e journey is green on kind (WP36) and the edge is Gateway API with Envoy Gateway (ADR-0031).
 
 **Status legend**
 - **Implemented** — built as asked and covered by automated tests.
@@ -17,21 +19,22 @@ CI runs and the product decisions of 2026-11-05 (`wp/FOLLOW-UPS.md` "Plan (2026-
 
 **Evidence sources.** JVM tests run by `./mvnw verify` (counts in [§ Verification baseline](#verification-baseline));
 Flutter tests run by `flutter test` in `apps/web`; e2e steps are methods of `e2e/src/test/java/com/hoopsacademy/e2e/JourneyTest.java`
-(21 ordered steps since WP24; green on compose in WP18b and in every CI `e2e` run on `main` since 2026-11-02). "WPn" refers to `docs/wp/WPn-*.md` `## Handover`.
+(21 ordered steps since WP24; green on compose in WP18b and in every CI `e2e` run on `main` since 2026-11-02; green on
+kind through the Envoy Gateway in WP36). "WPn" refers to `docs/wp/WPn-*.md` `## Handover`.
 
 ## Summary
 
 | Status | Count |
 |---|---|
-| Implemented | 49 |
-| Partial | 12 |
+| Implemented | 52 |
+| Partial | 9 |
 | Deviated | 5 |
 | Not implemented | 0 |
 | Deferred-v2 | 3 |
 | **Total statements** | **69** |
 
 (Spec statements S-01…S-50, user additions U-01…U-02, plan §2 rules R-01…R-15, v2 items V-01…V-02; one row each.
-Partial: S-03, S-04, S-08, S-09, S-16, S-36, S-43, S-44, S-46, R-11, R-13, R-15. Deviated: S-25, S-41, R-01, R-04, R-09.
+Partial: S-03, S-04, S-08, S-09, S-16, S-43, S-44, R-13, R-15. Deviated: S-25, S-41, R-01, R-04, R-09.
 Deferred-v2: S-15, V-01, V-02.)
 
 ### Top gaps a user should know
@@ -40,9 +43,10 @@ Deferred-v2: S-15, V-01, V-02.)
    both with a hand-installed chromedriver, not in CI. The Lighthouse installability check and the airplane-mode reload
    of the offline shell never ran; the offline cold start is proven by unit tests, a mocked service-worker run and a
    headless boot only (S-03, R-09).
-2. **Kubernetes is proven only partly.** kind + Helm + Tilt deployed game, athlete and web (WP16) and all three services
-   passed the smoke script (WP18), but the journey has never been run green on kind, and the Tiltfile does not
-   sync the chart's realm/init SQL copies (S-04, S-08; Tiltfile → WP30).
+2. **Kubernetes is proven on kind only.** kind + Helm + Tilt deployed game, athlete and web (WP16), all three services
+   passed the smoke script (WP18), and since WP36 the 21-step journey is green on kind through the Envoy Gateway
+   (Gateway API, ADR-0031; first green run on kind). No cluster beyond kind exists, and `tilt ci` with core-service has
+   not been run (WP30 made the Tiltfile sync the chart's realm/init SQL copies) (S-04, S-08).
 3. **Event feed visibility (F-01) — resolved in WP33.** The feed now follows the box score's rule (ADR-0030): ADMIN and
    team staff read every event, anybody else team-level events plus their own or linked players' (S-30, R-11).
 4. **Fitness norms are partly placeholders.** Since WP27 (2026-11-05), 370 of 630 norm rows are sourced (beep test
@@ -53,14 +57,15 @@ Deferred-v2: S-15, V-01, V-02.)
 5. **Birthday → orphan works differently from the literal spec** under the default `BIRTH_YEAR` rule: a birthday changes
    nothing; orphans arise at season rollover, and the player's status only flips to ORPHAN when the old season ends
    (the rollover report lists them at once). `BIRTHDAY` mode behaves literally (S-24, R-05).
-6. **Training plan on a session is backend-only.** The API stores a plan per session, but the web calendar has no plan
-   picker; plans reach players through assignments (S-36; → WP35).
-7. **Players do not see their own line in the live box score** in the web app (season statistics yes; the server returns
-   the line, the client hides it) (S-46; → WP28).
+6. **Update requests cannot clear a field.** Since WP35 the web app edits sessions (with a plan picker), measurements,
+   results, custom test types and absences, but every `Update*Request` treats null as "unchanged", so a plan, a location
+   or a note can be changed and not removed (contract decision open, FOLLOW-UPS) (S-36).
+7. **Players see their own line in the live box score** since WP28 (S-46); no longer a gap.
 8. **Billing is seams only** and the outbox is written but never published (WP19 not built) (S-15, S-16).
 9. **CI** is green on GitHub since 2026-11-02 (`ci` incl. OWASP dependency-check with a valid NVD key, `e2e` journey
-   on the runner, `images` built, scanned and pushed to ghcr.io); last checked on 70d860b, 2026-11-05. No PIT run is
-   recorded.
+   on the runner, `images` built, scanned and pushed to ghcr.io); last run on `origin/main` ebdd49f (2026-11-05, after
+   WP35). Mutation testing runs on demand (`just mutation`, WP37: scores 99.1–100 %, baselines kept); the
+   `mutation.yml` workflow has not run on GitHub yet (WP36/WP37 not pushed when this was written).
 10. **Withdrawn/suspended tenants**: members are blocked at once in core but up to 30 s later in game/athlete (membership
     cache); Keycloak logins themselves stay enabled; both accepted by design on 2026-11-05 (decision 6, ADR-0025: a
     login may belong to other academies); no purge job (R-15).
@@ -72,12 +77,12 @@ Deferred-v2: S-15, V-01, V-02.)
 | S-01 | Application in Java using a microservices architecture | Implemented | Java 21 / Quarkus 3.40.1; `services/core-service`, `game-service`, `athlete-service` (ADR-0003, ADR-0007); hexagonal per service | `ArchitectureTest` / `AthleteArchitectureTest` / `HoopsArchitectureRules` (ArchUnit); root `./mvnw verify` |
 | S-02 | Frontend web, mobile first | Implemented | Flutter Web in `apps/web` (ADR-0004), 360 px layout, bottom bar < 720 px / rail ≥ 720 px | goldens at 360×780 (`test/golden/goldens/*`), `navigation_roles_test.dart` |
 | S-03 | "Progressive loading application kind of thing" (PWA) | Partial | manifest + icons, deferred libraries per feature (160 `*.part.js`), own caching `web/sw.js` (ADR-0018), update banner | `sw_manifest_test.dart`, `service_worker_test.dart`, `csp_hashes_test.dart`, headless-Chrome boot (WP14b); `tool/web_smoke.sh` in Chrome, mock and `--real`, 2026-11-02. **Not run**: install / airplane-mode reload / Lighthouse in a real browser |
-| S-04 | Backend eventually deployed in Kubernetes | Partial | `deploy/helm/hoops` (umbrella, CNPG, Keycloak, 3 service subcharts, web), `deploy/kind/*` | `deploy/helm/tests/run.sh` (lint, snapshots, kubeconform 85/85, assertions); WP18 `smoke.sh core game athlete` SMOKE PASSED. Journey on kind not green (blocked then by the realm defect, not re-run) |
+| S-04 | Backend eventually deployed in Kubernetes | Partial | `deploy/helm/hoops` (umbrella, CNPG, Keycloak, 3 service subcharts, web), `deploy/kind/*` | `deploy/helm/tests/run.sh` (lint, snapshots, kubeconform 85/85, assertions); WP18 `smoke.sh core game athlete` SMOKE PASSED. WP36: chart 0.2.0 on Gateway API (Envoy Gateway v1.9.3, ADR-0031), journey on kind 21/21 green, `ratelimit-check.sh` PASSED. Gap: kind only, no other cluster |
 | S-05 | Use Podman instead of Docker | Implemented | `scripts/env.sh` (Podman socket for Testcontainers), `podman compose`, `KIND_EXPERIMENTAL_PROVIDER=podman`, images via `podman build` | WP0/WP1/WP16 handovers; every `verify` runs Testcontainers on Podman |
 | S-06 | Frontend: avoid Node, use something different | Implemented | Flutter/Dart only; sqlite3.wasm fetched + `dart compile js` for the drift worker (`tool/fetch_web_db_assets.sh`) | no `package.json` in the repo; WP11/WP13. (A one-off `deno` run checked `sw.js` in WP14; not part of the toolchain) |
 | S-07 | Backend with docker compose, but with Podman | Implemented | `infra/compose/compose.yaml` (Postgres 17, Keycloak 26.8.1, MailHog, nginx) + `e2e/bin/services-up.sh` | WP1 checks; **e2e journey 20/20 green on compose, three consecutive runs** (WP18b) |
-| S-08 | Then, when the app works, kind + Helm + Tilt | Partial | `deploy/kind/{up,down,secrets,seed-users,smoke}.sh`, `Tiltfile`, `just kind-up` / `just tilt` | WP16: `tilt ci` green for game + athlete + web; WP18: core/game/athlete via Helm + smoke. Gaps: no `tilt ci` with core; Tiltfile does not call `scripts/sync-chart-files.sh` (→ WP30); WP17 ingress rules only rendered (ingress → Gateway API in WP36) |
-| S-09 | Write tests for everything | Partial | JUnit 5/AssertJ/jqwik/REST Assured/WireMock/ArchUnit/Testcontainers as non-owner roles; `flutter test`; e2e module | 1,760 JVM tests, 538 Flutter tests, 21 e2e steps (2026-11-05); JaCoCo gates (≥ 80 %, domain ≥ 90 %) met; all three CI workflows green since 2026-11-02. Gaps: browser smoke executed only locally (mock + real), no PIT run, several WPs admit code written before its tests, one week-calendar golden depends on today's date (FOLLOW-UPS) |
+| S-08 | Then, when the app works, kind + Helm + Tilt | Partial | `deploy/kind/{up,down,secrets,seed-users,smoke}.sh`, `Tiltfile`, `just kind-up` / `just tilt` | WP16: `tilt ci` green for game + athlete + web; WP18: core/game/athlete via Helm + smoke. WP30: the Tiltfile runs `scripts/sync-chart-files.sh` before rendering; WP36: Gateway API routes and rate limits checked on kind. Gap: no `tilt ci` with core |
+| S-09 | Write tests for everything | Partial | JUnit 5/AssertJ/jqwik/REST Assured/WireMock/ArchUnit/Testcontainers as non-owner roles; `flutter test`; e2e module | 1,970 JVM tests (after WP37), 608 Flutter tests (CI, ebdd49f), 21 e2e steps on compose and kind; JaCoCo gates (≥ 80 %, domain ≥ 90 %) met; all three CI workflows green since 2026-11-02; mutation testing on demand (PIT, WP37: common 99.1 %, core 99.6 %, game 99.5 %, athlete 100 %). Gaps: browser smoke executed only locally (mock + real), several WPs admit code written before its tests |
 | S-10 | One big git project or several: your choice | Implemented | single monorepo (ADR-0002) | repo layout |
 | S-11 | A lightweight database that works well in k8s | Implemented | PostgreSQL 17, one database, schema per service, CloudNativePG on kind (`charts/databases`) | WP16 CNPG clusters healthy, managed roles reconciled; RLS suites. (Postgres rather than an embedded DB: chosen for RLS and CNPG) |
 | S-12 | Make sure secrets are not pushed to git | Implemented | `.env` ignored, `.env.example` placeholders, gitleaks pre-commit + CI, realm export without credentials, Secrets from `.env` (ADR-0012) | WP0 (fake AWS key blocked), WP16/WP17 `helm template … \| gitleaks detect --pipe` clean, `gitleaks detect --no-git` hits only in ignored `.env`; `NoBuiltInCredentialsTest` (game, athlete) |
@@ -104,17 +109,17 @@ Deferred-v2: S-15, V-01, V-02.)
 | S-33 | Assistant coach and coach can enter stats for everybody in the team | Implemented | staff of the match's team: any event type for any player | `EventAuthorizationTest`, `MatchEventResourceTest` |
 | S-34 | Starting team, minutes played, when they came to the court | Implemented | `match_roster.is_starter`; SUB_IN/SUB_OUT with period + clock; `seconds_played`, `was_starter` projected; event log shows each substitution | `MinutesTest` (re-entry, period boundaries, overtime), vector `substitutions-and-minutes`; `startWithoutStarterIs422` |
 | S-35 | Coach, assistant coach and parent can enter injuries and expected return date | Implemented | `injury(occurred_on, body_part, severity, expected_return_on ≥ occurred_on, actual_return_on, OPEN/RECOVERED)`; PARENT for linked players (create/update, not delete); availability derived | `InjuryApiTest`, `HealthRoleMatrixTest`, `HealthDomainTest`; web `health_test.dart`; e2e `injuryMakesPlayerUnavailableThenMeasurementAndPhysicalTestWithBand` |
-| S-36 | Coach and assistant enter the training calendar: location, schedule and training plan | Partial | schedules (weekday, time, duration, location, validity) materialised 8 weeks ahead in the tenant zone; ad-hoc sessions; `training_session.plan_id` in the API. **Web**: no plan picker on sessions and no session edit screen (→ WP35); plans reach players through assignments (team/player, due date) | `ScheduleApiTest`, `SessionMaterialiserTest` (DST Madrid, Jakarta), `SessionPlanApiTest`; web `calendar_test.dart`, `schedules_absences_test.dart`; e2e `scheduleMaterialisesSessionsAndAttendanceHonoursPlannedAbsence` |
+| S-36 | Coach and assistant enter the training calendar: location, schedule and training plan | Implemented | schedules (weekday, time, duration, location, validity) materialised 8 weeks ahead in the tenant zone; ad-hoc sessions; `training_session.plan_id` in the API. **Web**: plan picker on ad-hoc sessions and a session edit dialog (WP35; a plan cannot be detached, update requests cannot clear a field); plans also reach players through assignments (team/player, due date) | `ScheduleApiTest`, `SessionMaterialiserTest` (DST Madrid, Jakarta), `SessionPlanApiTest`; web `calendar_test.dart`, `schedules_absences_test.dart`, `session_edit_test.dart`; e2e `scheduleMaterialisesSessionsAndAttendanceHonoursPlannedAbsence` |
 | S-37 | Predefined training plans, and the coach can also enter their own | Implemented | 10 global templates (`R__plan_templates.sql`, English names), copy-on-use into the tenant; own plans with items, reorder, archive | `TemplateSeedTest`, `TemplateRlsIsolationTest` (templates read-only), `TrainingPlanApiTest`; web `plans_test.dart`; e2e `planCopyOnUseAssignmentAndCompletion` |
 | S-38 | Overall admin manages tenants: sign up and withdraw tenants | Implemented | `/platform/tenants` create (tenant + FREE subscription + seeded categories + first ADMIN login, saga ADR-0013), suspend, reactivate, withdraw (retention `P365D`); `super_admin` realm role. Sign-up is done by the super admin (no self-service sign-up); the super admin also lists, adds, edits and removes each academy's administrators (`/platform/tenants/{id}/admins`, ADR-0023). A new login's temporary password is returned once and Keycloak forces a new password at the first sign-in; no setup e-mail (ADR-0024, re-issue while PENDING) | `PlatformTenantResourceTest` (saga compensation cases), `PlatformAdminResourceTest`, `OnboardingRepairTest`, `KeycloakTemporaryPasswordKeycloakTest` (`-Pkeycloak-it`); web `platform_test.dart`; e2e `superAdminCreatesTenantWithFirstAdmin`, `firstAdminSignsInWithTheTemporaryPasswordAndMustChooseTheirOwn`, `suspendedTenantAnswersNotFound…` |
-| S-39 | … can see how many teams, players, games and other usage statistics | Implemented | `GET /platform/tenants/{id}/usage` aggregating core + game + athlete `/internal/usage` (`unavailableServices` on failure), daily snapshots + `/usage/history` | `TenantUsageResourceTest`, `TenantUsageHistoryResourceTest`, `UsageSnapshotJobTest`, `UsageAndInternalApiTest`; web usage dashboard (`platform_test.dart`; no trend chart yet, → WP35); e2e `platformUsageShowsTheCounts` |
+| S-39 | … can see how many teams, players, games and other usage statistics | Implemented | `GET /platform/tenants/{id}/usage` aggregating core + game + athlete `/internal/usage` (`unavailableServices` on failure), daily snapshots + `/usage/history` | `TenantUsageResourceTest`, `TenantUsageHistoryResourceTest`, `UsageSnapshotJobTest`, `UsageAndInternalApiTest`; web usage dashboard and trend chart (`platform_test.dart`, WP35); e2e `platformUsageShowsTheCounts` |
 | S-40 | Admin and coach can add or withdraw players; by a coach it needs admin approval | Implemented | `approval_request` ADD_PLAYER / WITHDRAW_PLAYER; ADMIN direct (auto-approved audit row), COACH → PENDING, approval runs the eligibility-checked assignment (ADR-0020) | `ApprovalPolicyTest`, `ApprovalRequestResourceTest` (422 keeps PENDING, double decide 409, concurrent decisions), `PlayerResourceTest`; web `approvals_cases_test.dart`; e2e `adminAddsPlayerAndCoachRequestsOneWhichTheAdminApproves` |
-| S-41 | (Approval outcome: rejected requests) | Deviated | a rejected ADD leaves the player `REJECTED` (a fifth status, contracts 2.0, ADR-0016/0020), hidden from non-admins; web labels it "withdrawn" | `rejectingAnAddLeavesThePlayerRejected…` (core); `labels.dart` gap noted in FOLLOW-UPS (→ WP28) |
+| S-41 | (Approval outcome: rejected requests) | Deviated | a rejected ADD leaves the player `REJECTED` (a fifth status, contracts 2.0, ADR-0016/0020), hidden from non-admins; web labels it "Rejected" (es/en/id, WP28) | `rejectingAnAddLeavesThePlayerRejected…` (core); web `labels_test.dart` |
 | S-42 | Coach can enter other physical-education stats, e.g. Cooper test results with date | Implemented | `physical_test_type` (6 global: COOPER_12MIN, SPRINT_20M, VERTICAL_JUMP, AGILITY_T_TEST, SIT_AND_REACH, BEEP_TEST + tenant types), `physical_test_result(player, date, value)` | `PhysicalTestApiTest`, `HealthRoleMatrixTest`; web `health_test.dart` |
-| S-43 | For each, an indication of the expected level for the age | Partial | `BandResolver`: band POOR…EXCELLENT by gender + age at test date + value, tenant norms override global; `bandStatus` MATCHED / NO_NORM / MISSING_PLAYER_DATA; "reference pending" flag in the UI | `BandResolverTest`, `NormSeedTest`; web `charts_test.dart`. **Data gap**: only 120 / 628 norm rows sourced (see S-44; → WP27) |
-| S-44 | (Expected levels must be real reference values) | Partial | sourced: COOPER_12MIN 13–19 (Cooper 1968 as reproduced, primary not obtained), BEEP_TEST 9–17 (Zhang et al. 2020); placeholders flagged `reference_pending` for everything else (`docs/domain/norms.md`; cited tables → WP27) | `NormSeedTest` (placeholders ⇔ flagged pending, Cooper blocks cite the source); WP10b handover |
+| S-43 | For each, an indication of the expected level for the age | Partial | `BandResolver`: band POOR…EXCELLENT by gender + age at test date + value, tenant norms override global; `bandStatus` MATCHED / NO_NORM / MISSING_PLAYER_DATA; "reference pending" flag in the UI | `BandResolverTest`, `NormSeedTest`; web `charts_test.dart`. **Data gap**: 370 of 630 norm rows sourced (WP27; see S-44) |
+| S-44 | (Expected levels must be real reference values) | Partial | sourced (370 of 630 rows, WP27): BEEP_TEST 8–18 (FitBack 2023), SIT_AND_REACH 9–17 (Catley & Tomkinson 2013), SPRINT_20M 8–17 (Cossio-Bolaños 2026), AGILITY_T_TEST and VERTICAL_JUMP 14–15 (Mascherini 2022), COOPER_12MIN 13–19 (Cooper 1968 as reproduced, primary not obtained); the other 260 rows are placeholders flagged `reference_pending` (`docs/domain/norms.md`) | `NormSeedTest` (placeholders ⇔ flagged pending, band edges per source, placeholder count per test); WP10b and WP27 handovers |
 | S-45 | Each player has weight and height, modifiable by parents, coach and assistant coach | Implemented | `body_measurement(player, measured_on, height_cm, weight_kg)` unique per day (409 on a same-day race); PARENT linked write; PLAYER read; growth charts | `BodyMeasurementApiTest`, `MeasurementSameDayRaceTest`, `HealthRoleMatrixTest`; web `charts_test.dart` |
-| S-46 | Players can see their own stats | Partial | server: box score returns the PLAYER's own line, season stats for self (`GetPlayerSeasonStats`); web Me → season statistics. **Web live box score shows team totals only to a PLAYER** (`scoring_rights.dart` `canSeeLine` ignores `ownPlayerId`; → WP28) | `StatisticsResourceTest` (self line, season stats visibility); web `profile_test.dart` |
+| S-46 | Players can see their own stats | Implemented | server: box score returns the PLAYER's own line, season stats for self (`GetPlayerSeasonStats`); web Me → season statistics. web live box score shows the PLAYER's own line and no other (`ScoringRights.ownPlayerId`, WP28) | `StatisticsResourceTest` (self line, season stats visibility); web `profile_test.dart`, `scoring_rights_test.dart`, `match_screens_test.dart` |
 | S-47 | … and the training program given by the coach, and mark it done / not done / partially | Implemented | `plan_assignment` fan-out at read time, `plan_completion` DONE / PARTIAL / NOT_DONE by self, linked parent or team staff; progress view | `PlanCompletionApiTest`, `PlanRoleMatrixTest` (102 cases), `PlanProgressTest`; web `plans_test.dart`, `profile_test.dart`; e2e `planCopyOnUseAssignmentAndCompletion` |
 | S-48 | Parents and players can record a planned absence | Implemented | `planned_absence(player, from, to, reason)`: PARENT linked, PLAYER self, staff any; shown as `expectedAbsent` on the attendance sheet | `PlannedAbsenceApiTest`, `RoleMatrixTest`; web `schedules_absences_test.dart`; e2e step above |
 | S-49 | Coach and assistant record a player late or missing a training | Implemented | `attendance(session, player, PRESENT/LATE/ABSENT/EXCUSED, minutes_late)` by ADMIN / staff of the team | `AttendanceApiTest`, `RoleMatrixTest` (73 cases); web `session_test.dart` |
@@ -147,9 +152,9 @@ match statistics R-07…R-11, training R-12, health & fitness R-13, authorizatio
 | R-08 | Event = client UUIDv7 id, server_seq, (device, client_seq) unique, 15 types each with a JSON Schema; server validates schema + authz only, never domain consistency (impossible sequences → projection warnings, fixed by VOID) | Implemented | `V2__events.sql`, `libs/contracts/events/match-event.schema.json`, `MatchEventDecoder`, projection warnings (13 codes) | `MatchEventJsonSchemaTest`, `MatchEventDecoderTest`, vector `impossible-sequences-warnings`, `ProjectionPropertiesTest` |
 | R-09 | `events:batch` → per-event ACCEPTED / DUPLICATE / REJECTED; row lock; re-projection of player stats + summary; total ordering; `GET /events?after=seq`; minutes from starters + period/sub events | Deviated | as planned, **plus** events are accepted for SCHEDULED and FINISHED matches, only CANCELLED rejects (ADR-0014 §3; `MATCH_NOT_STARTED` reserved, unused); id reused for another match → `EVENT_ID_REUSED` (ADR-0016) | `ConcurrentIngestTest` (overlapping concurrent batches = sequential replay), `repostingABatchIsAllDuplicate…`, `MinutesTest`, `ProjectionVectorsTest`; Dart `sync_worker_test.dart` |
 | R-10 | Event authz: staff → any event + transitions; PARENT → player-attributed stat events of linked players, VOID own only, never clock/period/opponent/roster; PLAYER read-only | Implemented | `EventAuthorization` (pure), ADR-0014 §4, ADR-0021 §4 | `EventAuthorizationTest`, `MatchEventResourceTest`; e2e `coachAndParentEnterEventsAndTheParentIsRestricted` |
-| R-11 | View match stats: staff all, PARENT linked, PLAYER self | Partial | box score and season stats are line-filtered on the server, and the event feed by the same rule since WP33 (F-01, ADR-0030); the web live box score hides the PLAYER's own line (S-46, → WP28) | `StatisticsResourceTest`, `MatchEventFeedRoleMatrixTest`; security review F-01 |
+| R-11 | View match stats: staff all, PARENT linked, PLAYER self | Implemented | box score and season stats are line-filtered on the server, and the event feed by the same rule since WP33 (F-01, ADR-0030); the web live box score shows the PLAYER's own line (S-46, WP28) | `StatisticsResourceTest`, `MatchEventFeedRoleMatrixTest`; security review F-01 |
 | R-12 | Training: schedules materialised 8 weeks ahead (idempotent, DST), ad-hoc sessions, plans + items (global templates, copy-on-use), assignment to exactly one of team/player fanned out at read time, completion by self / linked parent / team staff, planned absence, attendance by staff, absence overlay | Implemented | `athlete` V1/V2 + `R__plan_templates.sql`; templates via `owner_tenant_id` (NULL = global) instead of `tenant_id NULL` (WP9, `nullableTenantTables()` hook, ADR-0016 §6); training reads open to all staff (ADR-0021 §5) | `SessionMaterialiserTest`, `ScheduleApiTest`, `NightlyMaterialisationTest`, `PlanDomainTest`, `PlanAssignmentApiTest`, `PlanCompletionApiTest`, `AttendanceApiTest`, `PlannedAbsenceApiTest`, `TemplateRlsIsolationTest` |
-| R-13 | Health & fitness: injury → player unavailable; measurements unique per day editable by parent + staff; test types; results; norms (tenant rows override global); expected level = band for (gender, age at measurement, value); seeds cite sources, uncited flagged "reference pending" | Partial | all built (`V3__health.sql`, `BandResolver`, availability endpoint); staff access team-scoped (ADR-0021 §6); availability badge shown in the health view and attendance sheet, not yet in team roster / match setup (→ WP35); most norms are placeholders (S-44, → WP27) | `HealthDomainTest`, `InjuryApiTest`, `BodyMeasurementApiTest`, `PhysicalTestApiTest`, `BandResolverTest`, `NormSeedTest`, `HealthRlsIsolationTest` |
+| R-13 | Health & fitness: injury → player unavailable; measurements unique per day editable by parent + staff; test types; results; norms (tenant rows override global); expected level = band for (gender, age at measurement, value); seeds cite sources, uncited flagged "reference pending" | Partial | all built (`V3__health.sql`, `BandResolver`, availability endpoint); staff access team-scoped (ADR-0021 §6); availability badge shown in the health view, attendance sheet, team roster and match setup (WP35); 260 of 630 norm rows are still placeholders (S-44) | `HealthDomainTest`, `InjuryApiTest`, `BodyMeasurementApiTest`, `PhysicalTestApiTest`, `BandResolverTest`, `NormSeedTest`, `HealthRlsIsolationTest` |
 | R-14 | Authorization matrix (oracle for role-matrix tests); non-members 404; super_admin only for tenant lifecycle and usage, cannot read tenant content | Implemented | `docs/domain/authz-matrix.md` + refinements ADR-0021; `TenantHeaderFilter`, `@RequiresTenantRole`, `Authz`; super_admin without membership → 404 on `/api/**` (by design) | role-matrix suites in every service (`Members.roleSetsWithAdminFlag`, `RoleMatrixTest`, `PlanRoleMatrixTest`, `HealthRoleMatrixTest`, `TeamPlayerResourceTest.roleMatrix`), `RealAuthzResolverTest.superAdminWithoutMembershipGetsNotFound`, `TenantRegistryRlsTest` (platform cannot read tenant tables) |
 | R-15 | Tenant withdrawal: logins blocked immediately, data retained for a configurable period, purge job v2 | Partial | `TenantLifecycle` (retention `hoops.tenant.withdrawn-retention=P365D`); memberships of SUSPENDED/WITHDRAWN tenants disappear from `/me` and the resolvers. Core blocks at once (cache invalidated); game/athlete after up to 30 s (`hoops.core.cache-ttl`); Keycloak accounts stay enabled (a member of another tenant keeps working there); the 30 s delay and enabled logins are accepted by design (decision 6, ADR-0025). Purge job: Deferred-v2 | `RealAuthzResolverTest.suspendedAndWithdrawnTenantsAnswerNotFound`, `PlatformTenantResourceTest`; e2e `suspendedTenantAnswersNotFoundForItsMembersAndReactivationRestoresIt` (waits for the 30 s caches) |
 
@@ -172,11 +177,11 @@ reason; none is a silent gap.
 | Assistant coach permissions | separate role; match + stats + training + health, but no player add/withdraw requests, assignments or case resolution | ADR-0021 §1 |
 | Parents entering stats | linked players only, 7 stat types + VOID of own events; never clock, periods, opponent score, substitutions | ADR-0014 §4, ADR-0021 §4 |
 | Coach add / withdraw | always through an approval request unless the coach is also ADMIN; withdraw only for players on own teams | ADR-0020 |
-| Cooper / fitness norms | most bands are placeholders flagged "reference pending"; Cooper 13–19 from reproductions, not the primary paper | `docs/domain/norms.md`, WP10b |
+| Cooper / fitness norms | 370 of 630 rows cited (WP27); the other 260 are placeholders flagged "reference pending"; Cooper 13–19 from reproductions, not the primary paper | `docs/domain/norms.md`, WP10b, WP27 |
 | Offline cold start | Flutter's worker caches nothing; own `sw.js` instead; never exercised in a real browser | ADR-0018 |
 | super_admin and tenant content | cannot read tenant content without a membership (404), sees counters only | PLAN §1.3, ADR-0021 §8 |
 | Billing | extension points only (tables, noop `EntitlementService`, outbox rows), no module, no publisher | PLAN locked decisions, V-01 |
-| Kubernetes | deployed and smoke-tested on kind (game/athlete/web via Tilt; core/game/athlete via Helm), journey not re-run on kind | WP16, WP18 |
+| Kubernetes | deployed and smoke-tested on kind (game/athlete/web via Tilt; core/game/athlete via Helm); edge is Gateway API with Envoy Gateway; the e2e journey is green on kind (WP36); no other cluster | WP16, WP18, WP36, ADR-0031 |
 | Browser tests | `integration_test` + `tool/web_smoke.sh` run locally with a hand-installed chromedriver (green in mock and `--real` modes, 2026-11-02); not in CI | WP11, WP18 |
 | Health vs training visibility | health data team-scoped for staff, training data tenant-wide for staff | ADR-0021 §5–6 |
 | Session sign-out | no `offline_access`; sign-out wipes the offline DB after warning about unsynced events | ADR-0019 |
@@ -184,15 +189,18 @@ reason; none is a silent gap.
 | One login, several academies | an invite of an e-mail that already signs in links that login without asking its owner and reveals that it exists (F-11, accepted by design); logins stay enabled when an academy is suspended or withdrawn | ADR-0025 |
 
 ## Verification baseline
-- **Backend** (WP26, 2026-11-05, on ec3360e: `source scripts/env.sh && ./mvnw -B -ntp -T 1C verify`, exit 0, every
-  coverage gate met): common-quarkus 172, contracts 120, core-service 691, game-service 196, athlete-service 581 =
-  **1,760 tests**, 0 failures / errors / skipped (surefire reports). The CI `ci` run 42038926658 on 70d860b reports the
-  same five totals. (WP20 review baseline: 1,467.)
-- **Flutter** (WP26, `cd apps/web && flutter test`): 538 tests, 537 passed, 1 failed: the golden "week calendar, ADMIN,
-  360x780" (1.61 % pixel diff) because `training_screen.dart` highlights the heading of today and the test's fixed week
-  (2026-11-02) contains the run date; CI passes it (`GOLDEN_DIFF_TOLERANCE=0.06`, run 42038926658: 538 passed).
-  Tracked in FOLLOW-UPS. `flutter analyze` not re-run in WP26.
-- **e2e** (CI `e2e` run 42038926724 on 70d860b, 2026-11-05, compose stack on the runner): `JourneyTest` 21 tests, 0
-  failures / errors / skipped, 75.5 s. Not re-run locally in WP26 (last local run: WP24, 21/21). WP18b: 20/20 green,
-  three consecutive runs.
-- **Charts**: `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED (CI `helm-chart-tests`, run 42038926658).
+- **Backend**: CI `ci` run 42077952795 on ebdd49f (2026-11-05, `origin/main` after WP35): common-quarkus 172, contracts
+  146, core-service 760, game-service 238, athlete-service 586 = **1,902 tests**, 0 failures / errors / skipped. After
+  WP37 (mutation-killing unit tests and scope checks; fresh `./mvnw -B -ntp -T 1C verify` in the WP37 handover, local,
+  on top of ebdd49f): **1,970 tests**, 0 failures, every coverage gate met. WP36 changed no Java code. (WP26 baseline on
+  ec3360e: 1,760; WP20 review: 1,467.)
+- **Flutter**: CI run 42077952795 on ebdd49f: **608 tests passed** (`GOLDEN_DIFF_TOLERANCE=0.06`). The date-dependent
+  week-calendar golden was fixed on main (commit 7e13cec: "today" comes from `nowProvider`).
+- **e2e**: CI `e2e` run 42077952884 on ebdd49f (compose stack on the runner): `JourneyTest` 21 tests, 0 failures /
+  errors / skipped, 69.2 s, requests and responses validated (ADR-0027). On kind (WP36, 2026-11-06, local): 21 tests,
+  0 failures, 0 skipped, 159 s through the Envoy Gateway; the MailHog checks inside the journey are skipped there (Mailpit's API is
+  `/api/v1`).
+- **Mutation** (WP37, local, `just mutation`): common-quarkus 99.1 %, core 99.6 %, game 99.5 %, athlete 100 %;
+  baselines 95 / 95 / 95 / 100.
+- **Charts**: `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED (CI `helm-chart-tests` in run 42077952795; after WP36,
+  local: 74 checks, kubeconform 144/144, 5 snapshots).
