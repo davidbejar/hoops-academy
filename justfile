@@ -13,6 +13,14 @@ doctor:
 test:
     source scripts/env.sh && ./mvnw -q -T 1C verify
 
+# Gate before Claude's git commit: academy A logs in through real Keycloak and tries to read academy B (API + database)
+isolation-check:
+    scripts/hooks/isolation-check.sh
+
+# Gate before Claude's git push: every service connects as a role RLS binds (not owner, superuser or BYPASSRLS)
+db-role-check:
+    scripts/hooks/db-role-check.sh
+
 # Fast compile + unit tests only
 unit:
     source scripts/env.sh && ./mvnw -q -T 1C test

@@ -39,6 +39,24 @@ If a table needs special fixtures, override `fixtureOverrides()` in the service'
   statuses come from `docs/domain/authz-matrix.md`.
 - `super_admin` without membership calling `/api/**` → 404; `/platform/**` without `super_admin` → 403.
 
+## 4. Database role + end-to-end check (Claude Code hook on git commit / git push)
+- **`DatabaseRoleMetaTest`** (test-jar, `@Tag("db-role")`; subclasses `Core/Game/AthleteDatabaseRoleTest`): every
+  datasource user the service SHIPS with (`ShippedDatasources`: `src/main/resources/application.properties`, prod
+  profile, no env) is `<svc>_app`, differs from the Flyway user, and passes `DatabaseRoleCheck` (not a superuser or
+  BYPASSRLS, not owner of or member of the owner of any table, no CREATE on any schema). A new service or a new
+  named datasource needs a subclass and nothing else. Runs before Claude's `git push`: `just db-role-check`.
+- Why not just `select current_user` in a `@QuarkusTest`: `PostgresRlsResource` forces the user to `<svc>_app` at
+  test time, and Quarkus exposes that as a generated `startup-override/application.properties` on the classpath.
+  Read the source file, never `application.properties` from the classpath (that masked a wrong default once).
+- **`CrossTenantAccessTest`** (core, `@Tag("keycloak")`, `RealLoginProfile`): academy A's admin logs in through a
+  real Keycloak (password grant), and the real resolver maps the token. Through the API, B's records give 404 via the
+  header and via ids, and A's lists never contain B's people. Under the API, in the app's own pool bound to A, B's
+  rows are invisible and an unbound select raises 42501. A sanity test proves the login works. Runs before
+  Claude's `git commit`: `just isolation-check`. Proven to fail when the app role gets BYPASSRLS; the API part stays 404 there (Hibernate
+  `@TenantId` filter), which is the point of two layers.
+- `.claude/hooks/tenancy-gate.sh` (PreToolUse on Bash) detects the git subcommand and blocks it (exit 2) when a
+  check fails. The checks fail (never skip) when Podman is down, and fail when the `-Dtest` filter matches no tests.
+
 ## Scheduled jobs on several replicas
 Jobs that iterate tenants run under `tenantScope.runExclusive("<svc>.<job>", work)` (Postgres
 `pg_try_advisory_xact_lock`; another replica skips). The work runs outside the lock transaction, so each tenant still

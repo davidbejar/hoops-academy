@@ -31,6 +31,11 @@ folder (`.../Code/Claude/projects/dummy-project2`) is archived and must not be w
   with `git push origin <branch>:main` instead of switching branches in a shared checkout.
 - Commit with `gitleaks protect --staged` first and `git commit --no-verify` (the pre-commit stash conflicts with concurrent
   edits); never `git add -A` when another session may have files in flight.
+- Claude Code hook (`.claude/settings.json` → `.claude/hooks/tenancy-gate.sh`, PreToolUse on Bash): before Claude
+  runs `git commit` it runs `just isolation-check` (academy A logs in through real Keycloak and cannot read academy B,
+  ~40 s); before `git push`, `just db-role-check` (no service connects as a table owner, superuser or BYPASSRLS role,
+  ~40 s). A failure blocks the git command; `--no-verify` does not skip it. Both need Podman. Commits a person makes in a
+  terminal are not gated: run the two `just` recipes yourself. Review or disable the hook with `/hooks`.
 - `flutter drive` on web needs `-d web-server` (`-d chrome` hangs forever); chromedriver matching Chrome must be on PATH
   (Homebrew cask is disabled; download from Chrome for Testing and `xattr -d com.apple.quarantine`).
 - Workflows: run `actionlint .github/workflows/*.yml` before pushing. Goldens are macOS-exact; CI uses

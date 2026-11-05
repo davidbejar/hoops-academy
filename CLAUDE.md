@@ -21,6 +21,8 @@ source scripts/env.sh        # JDK 21 + Podman socket for Testcontainers (always
 just doctor                  # toolchain check
 just up / just down          # local stack: Postgres, Keycloak, nginx, MailHog
 just test                    # ./mvnw verify (unit + integration + arch + RLS suites + coverage gates)
+just isolation-check         # academy A logs in (real Keycloak), cannot read academy B; Claude hook runs it before git commit
+just db-role-check           # no service connects as table owner / superuser / BYPASSRLS; Claude hook runs it before git push
 ./mvnw -pl services/core-service quarkus:dev
 just web-test                # flutter test
 just scan                    # gitleaks + dependency-check
