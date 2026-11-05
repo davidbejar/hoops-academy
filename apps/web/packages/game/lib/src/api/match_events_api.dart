@@ -23,13 +23,13 @@ class MatchEventsApi {
   const MatchEventsApi(this._dio, this._serializers);
 
   /// Events stored after a server sequence number (merge feed for other devices)
-  /// Ordered by &#x60;serverSeq&#x60; ascending. Includes voided events (with &#x60;voidedByEventId&#x60;). Authz: any member who may view the match.
+  /// Ordered by &#x60;serverSeq&#x60; ascending. Includes voided events (with &#x60;voidedByEventId&#x60;).  Authz: any member who may view the match; **the feed is filtered per caller** (ADR-0028, security review F-01). ADMIN and staff (COACH / ASSISTANT_COACH) of the match&#39;s team read every event. Anybody else reads: - the **team-level** events: &#x60;PERIOD_START&#x60;, &#x60;PERIOD_END&#x60;, &#x60;OPPONENT_SCORE&#x60;, &#x60;TIMEOUT&#x60; and &#x60;NOTE&#x60; without   &#x60;playerId&#x60;; - the **player** events (&#x60;SHOT&#x60;, &#x60;ASSIST&#x60;, &#x60;REBOUND&#x60;, &#x60;TURNOVER&#x60;, &#x60;STEAL&#x60;, &#x60;BLOCK&#x60;, &#x60;FOUL&#x60;, &#x60;SUB_IN&#x60;, &#x60;SUB_OUT&#x60;,   &#x60;NOTE&#x60; with &#x60;playerId&#x60;) of their own player (PLAYER) or linked players (PARENT) only; - a &#x60;VOID&#x60; when the event it voids is visible to them (following VOID-of-VOID chains); a VOID of an event   unknown to the server is visible.  A filtered feed has gaps in &#x60;serverSeq&#x60;: page with &#x60;after&#x60; &#x3D; the last returned &#x60;serverSeq&#x60; (or &#x60;lastServerSeq&#x60; when &#x60;hasMore&#x60; is false), never assume consecutive numbers. A filtered caller cannot rebuild the team score from the feed; it reads score, period scores and team totals from &#x60;getBoxScore&#x60;.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [matchId] 
+  /// * [matchId]
   /// * [after] - Return events with `serverSeq` > `after` (0 = from the beginning).
-  /// * [limit] 
+  /// * [limit]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -39,7 +39,7 @@ class MatchEventsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [MatchEventFeed] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<MatchEventFeed>> listMatchEvents({ 
+  Future<Response<MatchEventFeed>> listMatchEvents({
     required String xTenantId,
     required String matchId,
     int? after = 0,
@@ -117,12 +117,12 @@ class MatchEventsApi {
   }
 
   /// Sync a batch of match events (idempotent)
-  /// Locks the match, appends new events, re-projects statistics and answers one result per submitted event, in request order. ACCEPTED: stored now (gets a &#x60;serverSeq&#x60;); DUPLICATE: an event with this &#x60;id&#x60; was already stored (its original &#x60;serverSeq&#x60; is returned) — safe to drop from the device queue; REJECTED: not stored, see &#x60;reason&#x60; (schema or authorization) — retrying unchanged will fail again. A REJECTED event never fails the batch: the server validates each event individually against &#x60;events/match-event.schema.json&#x60;. Whole-request errors: 400 (not a batch, or more than 500 events), 404 (unknown match). 
+  /// Locks the match, appends new events, re-projects statistics and answers one result per submitted event, in request order. ACCEPTED: stored now (gets a &#x60;serverSeq&#x60;); DUPLICATE: an event with this &#x60;id&#x60; was already stored (its original &#x60;serverSeq&#x60; is returned) — safe to drop from the device queue; REJECTED: not stored, see &#x60;reason&#x60; (schema or authorization) — retrying unchanged will fail again. A REJECTED event never fails the batch: the server validates each event individually against &#x60;events/match-event.schema.json&#x60;. Whole-request errors: 400 (not a batch, or more than 500 events), 404 (unknown match).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [matchId] 
-  /// * [matchEventBatch] 
+  /// * [matchId]
+  /// * [matchEventBatch]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -132,7 +132,7 @@ class MatchEventsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [MatchEventBatchResult] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<MatchEventBatchResult>> submitMatchEvents({ 
+  Future<Response<MatchEventBatchResult>> submitMatchEvents({
     required String xTenantId,
     required String matchId,
     required MatchEventBatch matchEventBatch,

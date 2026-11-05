@@ -13,19 +13,19 @@ part 'match_event_feed.g.dart';
 /// MatchEventFeed
 ///
 /// Properties:
-/// * [events] 
-/// * [lastServerSeq] - Highest stored `serverSeq` of the match (cursor for the next call when hasMore = false).
-/// * [hasMore] - More events exist after the last returned one.
+/// * [events]
+/// * [lastServerSeq] - Highest stored `serverSeq` of the match, whether or not the caller may read that event (cursor for the next call when hasMore = false).
+/// * [hasMore] - More events the caller may read exist after the last returned one.
 @BuiltValue()
 abstract class MatchEventFeed implements Built<MatchEventFeed, MatchEventFeedBuilder> {
   @BuiltValueField(wireName: r'events')
   BuiltList<StoredMatchEvent> get events;
 
-  /// Highest stored `serverSeq` of the match (cursor for the next call when hasMore = false).
+  /// Highest stored `serverSeq` of the match, whether or not the caller may read that event (cursor for the next call when hasMore = false).
   @BuiltValueField(wireName: r'lastServerSeq')
   int get lastServerSeq;
 
-  /// More events exist after the last returned one.
+  /// More events the caller may read exist after the last returned one.
   @BuiltValueField(wireName: r'hasMore')
   bool get hasMore;
 
@@ -139,5 +139,3 @@ class _$MatchEventFeedSerializer implements PrimitiveSerializer<MatchEventFeed> 
     return result.build();
   }
 }
-
-

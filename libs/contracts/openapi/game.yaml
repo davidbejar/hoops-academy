@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — game-service API
-  version: 2.0.1
+  version: 2.1.0
   description: |
     Match operations and statistics (offline-first, event-sourced).
 
@@ -16,6 +16,11 @@ info:
     Authorization (docs/domain/authz-matrix.md): team staff (COACH / ASSISTANT_COACH) and ADMIN may run matches and
     enter any event; PARENT may enter player-attributed stat events for linked players and VOID their own events only;
     PLAYER is read-only (own statistics).
+
+    Visibility of player statistics (ADR-0021 §3, ADR-0028): ADMIN and staff of the match's team see every player;
+    anybody else sees linked players (PARENT) and the own player (PLAYER). Box-score lines and the event feed
+    (`listMatchEvents`) follow the same rule; team-level figures (score, period scores, team totals) are visible to
+    every member through the box score.
 servers:
   - url: /
     description: Gateway root (tenant API under /api/game, internal API under /internal).
@@ -284,7 +289,21 @@ paths:
       operationId: listMatchEvents
       tags: [MatchEvents]
       summary: Events stored after a server sequence number (merge feed for other devices)
-      description: 'Ordered by `serverSeq` ascending. Includes voided events (with `voidedByEventId`). Authz: any member who may view the match.'
+      description: |
+        Ordered by `serverSeq` ascending. Includes voided events (with `voidedByEventId`).
+
+        Authz: any member who may view the match; **the feed is filtered per caller** (ADR-0028, security review
+        F-01). ADMIN and staff (COACH / ASSISTANT_COACH) of the match's team read every event. Anybody else reads:
+        - the **team-level** events: `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and `NOTE` without
+          `playerId`;
+        - the **player** events (`SHOT`, `ASSIST`, `REBOUND`, `TURNOVER`, `STEAL`, `BLOCK`, `FOUL`, `SUB_IN`, `SUB_OUT`,
+          `NOTE` with `playerId`) of their own player (PLAYER) or linked players (PARENT) only;
+        - a `VOID` when the event it voids is visible to them (following VOID-of-VOID chains); a VOID of an event
+          unknown to the server is visible.
+
+        A filtered feed has gaps in `serverSeq`: page with `after` = the last returned `serverSeq` (or `lastServerSeq`
+        when `hasMore` is false), never assume consecutive numbers. A filtered caller cannot rebuild the team score
+        from the feed; it reads score, period scores and team totals from `getBoxScore`.
       parameters:
         - name: after
           in: query
@@ -1292,10 +1311,10 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Highest stored `serverSeq` of the match (cursor for the next call when hasMore = false).
+          description: Highest stored `serverSeq` of the match, whether or not the caller may read that event (cursor for the next call when hasMore = false).
         hasMore:
           type: boolean
-          description: More events exist after the last returned one.
+          description: More events the caller may read exist after the last returned one.
 
     # ---------------- statistics
     StatLine:
