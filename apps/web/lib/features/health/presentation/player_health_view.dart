@@ -330,6 +330,7 @@ class GrowthSection extends ConsumerWidget {
             children: [
               GrowthChart(title: l.growthHeight, points: measurementPoints(data, height: true)),
               GrowthChart(title: l.growthWeight, points: measurementPoints(data, height: false)),
+              for (final m in data.reversed) MeasurementTile(measurement: m, canWrite: canWrite),
             ],
           ),
         ),
@@ -338,9 +339,59 @@ class GrowthSection extends ConsumerWidget {
   }
 }
 
+/// One measurement row; staff and linked parents can correct or delete it.
+class MeasurementTile extends ConsumerWidget {
+  const MeasurementTile({super.key, required this.measurement, required this.canWrite});
+  final ath.BodyMeasurement measurement;
+  final bool canWrite;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final m = measurement;
+    final values = [
+      if (m.heightCm != null) '${_num(m.heightCm!)} cm',
+      if (m.weightKg != null) '${_num(m.weightKg!)} kg',
+    ].join(' · ');
+    return ListTile(
+      key: Key('measurement-${m.id}'),
+      dense: true,
+      title: Text(values),
+      subtitle: Text(fullDate(m.measuredOn)),
+      trailing: canWrite
+          ? Wrap(
+              children: [
+                IconButton(
+                  key: Key('measurement-edit-${m.id}'),
+                  tooltip: l.edit,
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => showDialog<bool>(
+                    context: context,
+                    builder: (_) => MeasurementDialog(playerId: m.playerId, measurement: m),
+                  ),
+                ),
+                IconButton(
+                  key: Key('measurement-delete-${m.id}'),
+                  tooltip: l.delete,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () async {
+                    if (!await confirmDialog(context, message: l.measurementDeleteConfirm, confirmLabel: l.delete)) return;
+                    if (!context.mounted) return;
+                    await runAction(context, () => ref.read(measurementsProvider(m.playerId).notifier).delete(m.id));
+                  },
+                ),
+              ],
+            )
+          : null,
+    );
+  }
+}
+
+/// Adds a measurement, or corrects [measurement].
 class MeasurementDialog extends ConsumerStatefulWidget {
-  const MeasurementDialog({super.key, required this.playerId});
+  const MeasurementDialog({super.key, required this.playerId, this.measurement});
   final String playerId;
+  final ath.BodyMeasurement? measurement;
 
   @override
   ConsumerState<MeasurementDialog> createState() => _MeasurementDialogState();
@@ -348,10 +399,12 @@ class MeasurementDialog extends ConsumerStatefulWidget {
 
 class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
   final _form = GlobalKey<FormState>();
-  final _height = TextEditingController();
-  final _weight = TextEditingController();
-  DateTime _on = DateTime.now();
+  late final _height = TextEditingController(text: _initial(widget.measurement?.heightCm));
+  late final _weight = TextEditingController(text: _initial(widget.measurement?.weightKg));
+  late DateTime _on = widget.measurement?.measuredOn.toDateTime() ?? DateTime.now();
   bool _needOne = false;
+
+  static String _initial(double? v) => v == null ? '' : _num(v);
 
   @override
   void dispose() {
@@ -360,7 +413,7 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
     super.dispose();
   }
 
-  double? _num(TextEditingController c) => double.tryParse(c.text.trim().replaceAll(',', '.'));
+  double? _parse(TextEditingController c) => double.tryParse(c.text.trim().replaceAll(',', '.'));
 
   String? _optional(AppLocalizations l, String? v) {
     if ((v ?? '').trim().isEmpty) return null;
@@ -371,21 +424,29 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final editing = widget.measurement != null;
     return FormDialog(
-      title: l.growthAdd,
+      title: editing ? l.growthEdit : l.growthAdd,
       formKey: _form,
       validateExtra: () {
-        final none = _num(_height) == null && _num(_weight) == null;
+        final none = _parse(_height) == null && _parse(_weight) == null;
         setState(() => _needOne = none);
         return !none;
       },
       onSubmit: () => runAction(
         context,
-        () => ref.read(measurementsProvider(widget.playerId).notifier).add(
-          measuredOn: _on,
-          heightCm: _num(_height),
-          weightKg: _num(_weight),
-        ),
+        () => editing
+            ? ref.read(measurementsProvider(widget.playerId).notifier).correct(
+                widget.measurement!.id,
+                measuredOn: _on,
+                heightCm: _parse(_height),
+                weightKg: _parse(_weight),
+              )
+            : ref.read(measurementsProvider(widget.playerId).notifier).add(
+                measuredOn: _on,
+                heightCm: _parse(_height),
+                weightKg: _parse(_weight),
+              ),
         success: l.saved,
       ),
       children: [
@@ -461,7 +522,7 @@ class TestsSection extends ConsumerWidget {
                     unit: e.value.first.unit,
                     points: resultPoints(e.value),
                   ),
-                  for (final r in e.value.reversed) ResultTile(result: r),
+                  for (final r in e.value.reversed) ResultTile(result: r, canWrite: caps.canEnterTestResults),
                 ],
               ],
             );
@@ -473,12 +534,13 @@ class TestsSection extends ConsumerWidget {
 }
 
 /// One result with its expected band and the "reference pending" flag.
-class ResultTile extends StatelessWidget {
-  const ResultTile({super.key, required this.result});
+class ResultTile extends ConsumerWidget {
+  const ResultTile({super.key, required this.result, this.canWrite = false});
   final ath.PhysicalTestResult result;
+  final bool canWrite;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final r = result;
     return ListTile(
@@ -494,8 +556,92 @@ class ResultTile extends StatelessWidget {
         children: [
           InfoChip(r.expectedBand == null ? l.testNoBand.split(' ').take(2).join(' ') : r.expectedBand!.label(l)),
           if (r.referencePending) InfoChip(l.testReferencePending, tone: ChipTone.warn, icon: Icons.hourglass_empty),
+          if (canWrite) ...[
+            IconButton(
+              key: Key('result-edit-${r.id}'),
+              tooltip: l.edit,
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => showDialog<bool>(context: context, builder: (_) => ResultEditDialog(result: r)),
+            ),
+            IconButton(
+              key: Key('result-delete-${r.id}'),
+              tooltip: l.delete,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () async {
+                if (!await confirmDialog(context, message: l.resultDeleteConfirm, confirmLabel: l.delete)) return;
+                if (!context.mounted) return;
+                await runAction(context, () => ref.read(testResultsProvider(r.playerId).notifier).delete(r.id));
+              },
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// Corrects the value, date and notes of a stored result (the test type is fixed).
+class ResultEditDialog extends ConsumerStatefulWidget {
+  const ResultEditDialog({super.key, required this.result});
+  final ath.PhysicalTestResult result;
+
+  @override
+  ConsumerState<ResultEditDialog> createState() => _ResultEditDialogState();
+}
+
+class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
+  final _form = GlobalKey<FormState>();
+  late final _value = TextEditingController(text: _num(widget.result.value));
+  late final _notes = TextEditingController(text: widget.result.notes ?? '');
+  late DateTime _on = widget.result.measuredOn.toDateTime();
+
+  @override
+  void dispose() {
+    _value.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final r = widget.result;
+    return FormDialog(
+      title: '${l.testEdit} · ${r.testCode}',
+      formKey: _form,
+      onSubmit: () => runAction(
+        context,
+        () => ref.read(testResultsProvider(r.playerId).notifier).correct(
+          r.id,
+          measuredOn: _on,
+          value: double.parse(_value.text.trim().replaceAll(',', '.')),
+          notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+        ),
+        success: l.saved,
+      ),
+      children: [
+        TextFormField(
+          key: const Key('result-value'),
+          controller: _value,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(labelText: '${l.testValue} (${r.unit})'),
+          validator: (v) => double.tryParse((v ?? '').trim().replaceAll(',', '.')) == null ? l.fieldInvalidNumber : null,
+        ),
+        formGap,
+        DateField(
+          key: const Key('result-date'),
+          label: l.testMeasuredOn,
+          value: _on,
+          lastDate: DateTime.now(),
+          onChanged: (d) => setState(() => _on = d),
+        ),
+        formGap,
+        TextFormField(
+          key: const Key('result-notes'),
+          controller: _notes,
+          decoration: InputDecoration(labelText: l.testNotes),
+        ),
+      ],
     );
   }
 }

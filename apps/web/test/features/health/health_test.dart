@@ -205,7 +205,8 @@ void main() {
     });
 
     testWidgets('players have no edit / delete buttons', (tester) async {
-      await pumpAs(tester, roles: {TenantRole.player}, ownPlayerId: 'p1', core: athleteCore(), athlete: _athlete(), location: '/me/health', size: const Size(360, 2000));
+      await pumpAs(tester, roles: {TenantRole.player}, ownPlayerId: 'p1', core: athleteCore(), athlete: _athlete(), location: '/me', size: const Size(360, 2000));
+      await tapKey(tester, 'hub-tab-health');
       await tapKey(tester, 'health-tab-growth');
       expect(find.byKey(const Key('measurement-m3')), findsOneWidget);
       expect(find.byKey(const Key('measurement-edit-m3')), findsNothing);

@@ -1759,6 +1759,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get growthWeight => 'Weight (kg)';
 
   @override
+  String get growthEdit => 'Edit measurement';
+
+  @override
+  String get testEdit => 'Edit result';
+
+  @override
+  String get measurementDeleteConfirm => 'Delete this measurement?';
+
+  @override
+  String get resultDeleteConfirm => 'Delete this result?';
+
+  @override
   String get growthAdd => 'Add measurement';
 
   @override

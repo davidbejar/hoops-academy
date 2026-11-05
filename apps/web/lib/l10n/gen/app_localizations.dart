@@ -3322,6 +3322,30 @@ abstract class AppLocalizations {
   /// **'Peso (kg)'**
   String get growthWeight;
 
+  /// No description provided for @growthEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar medida'**
+  String get growthEdit;
+
+  /// No description provided for @testEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar resultado'**
+  String get testEdit;
+
+  /// No description provided for @measurementDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar esta medida?'**
+  String get measurementDeleteConfirm;
+
+  /// No description provided for @resultDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar este resultado?'**
+  String get resultDeleteConfirm;
+
   /// No description provided for @growthAdd.
   ///
   /// In es, this message translates to:

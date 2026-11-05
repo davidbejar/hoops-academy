@@ -103,6 +103,19 @@ class MeasurementsNotifier extends AsyncNotifier<List<ath.BodyMeasurement>> {
     await future;
   }
 
+  /// Only the given values change (a missing one stays as it is).
+  Future<void> correct(String id, {DateTime? measuredOn, double? heightCm, double? weightKg}) async {
+    await ref.read(healthRepositoryProvider).updateMeasurement(
+      id,
+      ath.UpdateBodyMeasurementRequest((b) => b
+        ..measuredOn = measuredOn == null ? null : toAthDate(measuredOn)
+        ..heightCm = heightCm
+        ..weightKg = weightKg),
+    );
+    ref.invalidateSelf();
+    await future;
+  }
+
   Future<void> delete(String id) async {
     await ref.read(healthRepositoryProvider).deleteMeasurement(id);
     ref.invalidateSelf();
@@ -171,6 +184,19 @@ class TestResultsNotifier extends AsyncNotifier<List<ath.PhysicalTestResult>> {
     ref.invalidateSelf();
     await future;
     return r;
+  }
+
+  /// Only the given values change; the server recomputes the expected band.
+  Future<void> correct(String id, {DateTime? measuredOn, double? value, String? notes}) async {
+    await ref.read(fitnessRepositoryProvider).updateResult(
+      id,
+      ath.UpdatePhysicalTestResultRequest((b) => b
+        ..measuredOn = measuredOn == null ? null : toAthDate(measuredOn)
+        ..value = value
+        ..notes = notes),
+    );
+    ref.invalidateSelf();
+    await future;
   }
 
   Future<void> delete(String id) async {

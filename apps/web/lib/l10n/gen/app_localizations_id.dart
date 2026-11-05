@@ -1766,6 +1766,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get growthWeight => 'Berat (kg)';
 
   @override
+  String get growthEdit => 'Ubah pengukuran';
+
+  @override
+  String get testEdit => 'Ubah hasil';
+
+  @override
+  String get measurementDeleteConfirm => 'Hapus pengukuran ini?';
+
+  @override
+  String get resultDeleteConfirm => 'Hapus hasil ini?';
+
+  @override
   String get growthAdd => 'Tambah pengukuran';
 
   @override
