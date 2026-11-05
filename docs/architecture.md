@@ -162,25 +162,28 @@ player names at roster creation so offline sync never depends on core. The exact
 service's Flyway migrations.
 
 ## 8. Testing strategy and current counts
-Counts are from the WP20 review run on 2026-11-02 (`./mvnw -q clean verify` from the root, exit 0, every coverage gate
-met; `flutter test` in `apps/web`; the e2e journey on the compose stack). They change with every commit.
+Per-module counts are from the CI `ci` run 42077952795 on ebdd49f (2026-11-05, after WP35; surefire and `flutter test`
+reports); the totals after WP37 are from the WP37 handover. They change with every commit.
 
 | Layer | Kinds of test | Count |
 |---|---|---|
-| `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON | 168 |
-| `libs/contracts` | OpenAPI convention tests, JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation | 99 |
-| `services/core-service` | domain unit and jqwik property tests (eligibility), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses validated against `core.yaml`, scheduler tests, Keycloak Testcontainers (opt-in profile) | 429 |
-| `services/game-service` | domain/projection tests with shared vectors, ingest API tests, WireMock peers, RLS suites, contract validation | 193 |
-| `services/athlete-service` | domain, norm seed and band resolver tests, role matrix, RLS suites (incl. nullable-tenant tables), contract validation | 578 |
-| `apps/web` | `flutter test`: unit, provider, widget per role and state, goldens (360 px), projector vectors, sync worker, sign-out, service worker / CSP / build guards, l10n key parity | 477 |
-| `e2e` | black-box journey through the gateway with real Keycloak logins: 20 ordered steps, two tenants, every response validated against the OpenAPI | 20 steps, green on compose |
-| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform, policy assertions, gitleaks | script |
-JVM total: **1,760 tests** (fresh `verify` on 2026-11-05, 0 failures; 1,467 at WP20, the rest from WP21–WP25 and the
-isolation/role suites), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: 541 tests
-(2026-11-05), analyze clean. e2e: **20/20 green on compose** (WP18b, three consecutive runs; re-run green in the WP20 review,
-about 70 s); never run green on kind (only `deploy/kind/smoke.sh core game athlete`). Browser-level checks
-(`flutter drive`, Lighthouse, service-worker offline reload) have never run because chromedriver is missing; the CI
-workflows have never run. Statement-by-statement evidence: [`conformance.md`](conformance.md).
+| `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON | 172 |
+| `libs/contracts` | OpenAPI convention tests, JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation, strict-validator compatibility (no `allOf`, ADR-0027) | 146 |
+| `services/core-service` | domain unit and jqwik property tests (eligibility), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, cross-tenant access through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile) | 760 |
+| `services/game-service` | domain/projection tests with shared vectors, feed visibility (ADR-0030), ingest API tests, WireMock peers, RLS suites, contract validation | 238 |
+| `services/athlete-service` | domain, norm seed and band resolver tests, role matrix, RLS suites (incl. nullable-tenant tables), contract validation | 586 |
+| `apps/web` | `flutter test`: unit, provider, widget per role and state, goldens (360 px), projector vectors, sync worker, sign-out, service worker / CSP / build guards, l10n key parity | 608 |
+| `e2e` | black-box journey through the gateway with real Keycloak logins: 21 ordered steps, two tenants, every request and response validated against the OpenAPI | 21 steps, green on compose (CI) and on kind (WP36) |
+| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform, Gateway API route and policy assertions, gitleaks; `deploy/kind/ratelimit-check.sh` on kind | script |
+| Mutation (on demand) | PIT per module (`just mutation [module]`, workflow `mutation.yml` manual + monthly; never in `verify`), baselines 95 / 95 / 95 / 100 % for common / core / game / athlete; see [`quality/mutation.md`](quality/mutation.md) | scores 99.1 / 99.6 / 99.5 / 100 % (WP37) |
+
+JVM total: **1,902 tests** in the CI run above (0 failures); **1,970** after WP37 (fresh `./mvnw -B -ntp -T 1C verify`
+in the WP37 handover, on top of ebdd49f; WP36 changed no Java code), line coverage above the gates (80 % overall, 90 % in
+`domain`). Flutter: **608 tests** (CI run 42077952795), analyze clean. e2e: **21/21 green on compose** in every CI
+`e2e` run on `main` (last: run 42077952884 on ebdd49f) and **green on kind** for the first time in WP36 (21 tests,
+159 s, through the Envoy Gateway on :8090). Browser-level checks: `apps/web/tool/web_smoke.sh` runs locally with a
+hand-installed chromedriver (last green in WP35, mock mode); Lighthouse and the airplane-mode reload have not run.
+Statement-by-statement evidence: [`conformance.md`](conformance.md).
 
 ## 9. Security posture
 - Authentication: Keycloak, PKCE for the web client, password policy (12+ characters), brute-force protection. Tokens must
@@ -192,7 +195,11 @@ workflows have never run. Statement-by-statement evidence: [`conformance.md`](co
 - Data: non-owner DB roles without `BYPASSRLS`; append-only audit trail ([ADR-0017](adr/0017-audit-trail-observability-and-http-hardening.md)); no PII in audit metadata; Problem+JSON without stack traces.
 - Supply chain: gitleaks (pre-commit and CI), Trivy (filesystem and images), dependency-check (CI, needs an NVD key), non-root
   images.
-- Open findings (status 2026-11-02): F-01 event feed visibility, F-11 invite of an existing account, F-14 token audience;
-  partly fixed F-07 (offline DB scoping) and F-08 (refresh-token rotation). F-03, F-09, F-10, F-19, F-20 were fixed in WP14b.
-Documents: [`security/review-2026-11.md`](security/review-2026-11.md) (21 findings: 0 critical, 0 high, 5 medium),
+- Findings (status 2026-11-06): 18 fixed (F-01 in WP33, F-23 in WP32, F-03/F-09/F-10/F-19/F-20 in WP14b); partly fixed
+  F-07 (offline DB scoping) and F-08 (refresh-token rotation); accepted F-11 and F-22 by design (ADR-0025) and F-14
+  (token audience) for now.
+- Edge: nginx locally; Gateway API with Envoy Gateway in the chart (ADR-0031): per-IP local rate limits (per replica,
+  burst = rate), `/internal` and the Keycloak admin console routed to a 403, HSTS on the HTTPS listener; no body-size
+  limit at the gateway (the services reject bodies above 2 MB).
+Documents: [`security/review-2026-11.md`](security/review-2026-11.md) (23 findings: 0 critical, 0 high, 6 medium),
 [`security/threat-model.md`](security/threat-model.md), [`security/asvs-checklist.md`](security/asvs-checklist.md).
