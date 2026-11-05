@@ -64,6 +64,8 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
                 "quarkus.keycloak.admin-client.server-url", server,
                 "quarkus.keycloak.admin-client.client-secret", SECRET,
                 "quarkus.oidc-client.auth-server-url", server + "/realms/academy",
+                // bearer validation; only active with quarkus.oidc.tenant-enabled=true (RealLoginProfile)
+                "quarkus.oidc.auth-server-url", server + "/realms/academy",
                 "quarkus.oidc-client.credentials.secret", SECRET,
                 TOKEN_URL, server + "/realms/academy/protocol/openid-connect/token"));
         return config;

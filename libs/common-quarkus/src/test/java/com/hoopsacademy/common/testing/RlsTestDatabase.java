@@ -45,6 +45,11 @@ public final class RlsTestDatabase {
 
     /** The runtime role: non-owner, NOBYPASSRLS. */
     public Connection openAsApp() throws SQLException {
-        return DriverManager.getConnection(jdbcUrl, appRole(), TestRolePasswords.of(appRole()));
+        return openAs(appRole());
+    }
+
+    /** Any bootstrap role of {@code infra/db/init} (e.g. {@code core_platform}). */
+    public Connection openAs(String role) throws SQLException {
+        return DriverManager.getConnection(jdbcUrl, role, TestRolePasswords.of(role));
     }
 }
