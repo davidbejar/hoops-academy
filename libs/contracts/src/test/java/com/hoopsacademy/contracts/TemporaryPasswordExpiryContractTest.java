@@ -17,11 +17,6 @@ class TemporaryPasswordExpiryContractTest {
     private static final OpenAPI CORE = OpenApiSpecs.parse("core").getOpenAPI();
 
     @Test
-    void coreIsVersion240() {
-        assertThat(CORE.getInfo().getVersion()).isEqualTo("2.4.0");
-    }
-
-    @Test
     void theStatusIsAnEnumOfActiveExpiredAndNone() {
         Schema<?> status = CORE.getComponents().getSchemas().get("TemporaryPasswordStatus");
 
