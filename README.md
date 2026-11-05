@@ -11,7 +11,7 @@ available in Spanish, English and Indonesian.
 ## Features by role
 | Role | What they do |
 |---|---|
-| Super admin | create, suspend, reactivate and withdraw academies; see usage per service |
+| Super admin | create, suspend, reactivate and withdraw academies; add, edit and remove each academy's administrators; see usage per service |
 | Administrator | academy profile and logo, members and invitations, guardian links, seasons, categories, teams and staff, player approvals, eligibility cases, rollover, age rule and play-up limit |
 | Coach | match setup and live scoring, training calendar, attendance, plans, health and fitness entries, requests to add or withdraw players |
 | Assistant coach | the same for matches, training and health; read-only on roster, no player requests |
@@ -90,17 +90,21 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | User guides (es / en / id) | [`docs/guides/`](docs/guides): `admin`, `coach`, `parent`, `player`, `super-admin` as `<role>.<lang>.md` |
 | Architecture and diagrams | [`docs/architecture.md`](docs/architecture.md) |
 | Plan, original requirements, conformance | [`docs/PLAN.md`](docs/PLAN.md), [`docs/SPEC.md`](docs/SPEC.md), [`docs/conformance.md`](docs/conformance.md) |
-| Decisions | [`docs/adr/`](docs/adr) |
+| Decisions | [`docs/adr/`](docs/adr/README.md) (index) |
 | Domain rules | [`docs/domain/`](docs/domain): authz matrix, glossary, norms |
 | Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [e2e](docs/runbooks/e2e.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
 | Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md) |
-| Roadmap and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) |
+| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plan of 2026-11-05), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Work packages WP0 to WP20 have handovers in `docs/wp/`. Backend `./mvnw verify`: 1,467 tests green; `flutter test`: 477
-green; the 20-step e2e journey is green on the compose stack (WP18b, re-run in the WP20 review). The optional
-events/Redpanda package (WP19) and billing are not built. Known gaps: the e2e journey has not been run on kind, the
-browser-level checks and CI workflows have not been run, and most of the norms table is placeholders marked "reference
-pending". What the system does for each spec statement, with evidence: [`docs/conformance.md`](docs/conformance.md);
-open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md).
+Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages WP0–WP25 are done, with
+handovers in `docs/wp/` (WP19, the optional events/Redpanda package, and billing are not built). As of 2026-11-05: backend
+`./mvnw verify` runs 1,760 tests green; `flutter test` runs 538 tests (one week-calendar golden fails locally during the
+week of 2026-11-02 only, see FOLLOW-UPS); the 21-step e2e journey is green on a compose stack (CI `e2e` workflow). The
+CI workflows `ci`, `e2e` and `images` are green on `origin/main` since 2026-11-02 and publish the four images to
+ghcr.io. The browser smoke (`apps/web/tool/web_smoke.sh`, mock and real backend) and the browser login check ran green
+on 2026-11-02 (not run in CI). Known gaps: the e2e journey has not been run on kind, the Lighthouse and airplane-mode
+checks have not been run, and most of the norms table is placeholders marked "reference pending" (WP27). The plan of
+2026-11-05 (WP26–WP36) and open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); what the system does for each
+spec statement, with evidence: [`docs/conformance.md`](docs/conformance.md).

@@ -109,3 +109,43 @@ commercial (verification before cross-academy linking, consent on invite).
 - Finish per the `work-package` skill: fresh full verification, checklist with evidence, `## Handover` appended.
 - Final report to the orchestrator, at most 300 words: built, verified (commands and numbers), left out and why,
   anything another WP must know.
+
+## Handover
+- Built:
+  - `README.md` "Project status" (WP0–WP25, 1,760 / 538 tests, 21-step journey, CI green since 2026-11-02, browser
+    smoke 2026-11-02, learning project), super admin row (manages academy admins), links to the ADR index and HANDOVER.
+  - `docs/HANDOVER.md` (dated 2026-11-05): State (WP21–WP25, the 2026-11-05 isolation/role checks, fresh local numbers,
+    CI runs on 70d860b, `NVD_API_KEY` valid, ghcr.io packages public per the coordinator's correction to decision 9);
+    Pending = NVD cache incident note + the WP plan; working conventions kept, including the Claude hook bullet.
+  - `docs/wp/FOLLOW-UPS.md`: "## Plan (2026-11-05)" table and the 14 decisions before "## Open"; F-01 → WP33, audit →
+    WP34, allOf/oneOf → WP29, temporary password expiry → WP32, web items → WP28/WP35, shared e-mail → WP31, norms →
+    WP27, Tiltfile/services-up/image pins → WP30, ingress → WP36; resolved: F-11 (2), pre-account hijacking (3),
+    withdrawn-academy logins (6), ghcr.io packages (9), NVD key, CI green. New open items: date-dependent golden, NVD
+    cache saved on failure.
+  - `docs/conformance.md` (no status changes): gaps, S-03/S-08/S-09/S-30/S-36/S-39/S-41/S-43/S-44/S-46, R-11/R-13/R-15
+    point to their WP or decision; two deviation rows; verification baseline re-run.
+  - `docs/roadmap.md`: stale items removed (e-mail sync, CoreReachabilityCheck, reload prompt, "none has ever run", CI
+    proof), WP pointers, "if it goes commercial" note.
+  - `docs/security/review-2026-11.md`: F-01 planned (WP33), F-11 accepted by design; new IDs F-22 (pre-account hijacking,
+    Medium, accepted by design) and F-23 (temporary password expiry, Low, planned WP32); totals 23 findings.
+  - ADR-0025 (decisions 1–3, 6) and a new ADR index `docs/adr/README.md` (none existed).
+- Verified (2026-11-05, on ec3360e):
+  - `./mvnw -B -ntp -T 1C verify`: BUILD SUCCESS, coverage gates met; surefire 172 + 120 + 691 + 196 + 581 = 1,760, 0
+    failures/errors/skips (same as CI run 42038926658).
+  - `flutter test`: 538 tests, 537 passed, 1 failed: golden "week calendar, ADMIN, 360x780" (1.61 % diff). Cause:
+    `training_screen.dart` highlights `DateTime.now()`'s heading and the test's fixed week 2026-11-02 contains today.
+    Pre-existing, not caused by this docs-only WP; CI tolerates it (538 passed in run 42038926658).
+  - `gh run list/view`: ci/e2e/images green on 5ab1f71, 95e298b, 70d860b; e2e 21 tests; dependency-check on 70d860b
+    restored `nvd-Linux-41422780377` and took 77 min; `gh cache list` no longer lists that key. `gh variable/secret list`.
+  - ghcr.io: anonymous token → 200 on `tags/list` and the `70d860b` manifest for all four packages.
+  - `grep -rn "1,467\|not been run\|rejected by NVD\|WP0 to WP20" README.md docs`: remaining hits are true ("has not
+    been run on kind", "tilt ci … has not been run"), historical (WP20 file, conformance "WP20 review baseline") or in
+    `docs/architecture.md` (outside this WP's files, see below).
+  - `git diff --stat`: documentation files only.
+- Decisions/ADRs: ADR-0025. F-22/F-23 IDs given to the two WP24 items so the ADR and the review can cite them.
+- Open points / follow-ups:
+  - `docs/architecture.md:178` still says "JVM total: 1,467 tests" (not in this WP's file set).
+  - `docs/runbooks/release.md:55` says the first push creates each package private; true of GitHub in general, but ours
+    are public now: add a note there (not in this WP's file set).
+  - Date-dependent golden and NVD cache `if: always()` have no WP yet (FOLLOW-UPS).
+  - ADR-0021's status line still says "one item open, see F-01" (not edited; F-01 is now planned in WP33).
