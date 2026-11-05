@@ -84,19 +84,18 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **→ WP28. PLAYER's own line in the live box score**: `scoring_rights.dart` `canSeeLine` ignores `ownPlayerId` (server returns
   the line).
 - **→ WP28. REJECTED player label**: `lib/core/ui/labels.dart` maps `PlayerStatus.REJECTED` to "withdrawn"; add a label in es/en/id.
-- **→ WP35. Training plan on a session**: no plan picker on ad-hoc sessions and no session edit screen (`SessionDetailNotifier.edit`
-  exists); also no UI to edit/delete measurements and test results, update test types or edit absences.
-- **→ WP35. Availability badge** in team roster rows and match setup (needs the athlete fake in those tests).
-- **→ WP35. Calendar timezone**: times are shown in the device zone; `/me` now carries the tenant `timezone`, use it.
-- **→ WP35. Usage trend chart** on the platform console (`getTenantUsageHistory` is in the regenerated package, unused).
-- **Demo mock** lacks `/api/athlete/*` and `/platform/*`.
+
+- **Update requests cannot clear a field** (WP35): every `Update*Request` treats null as "unchanged", so a session's plan,
+  location or notes, an absence reason, a result's notes or a measurement value can be changed but not removed. Needs a
+  contract convention (explicit null, or a `clear` list) in core and athlete.
+- **`/me` memberships carry no tenant `timezone`**: the app calls the tenant profile for it (WP35). Add it to `TenantSummary`.
+- **Test types**: no operation to change a type's code or delete a type (WP35 left them out).
+- **Demo mock** lacks `/api/athlete/*` and `/platform/*` (all WP35 screens are unreachable in mock mode).
 - **Fonts**: glyphs outside Roboto (CJK, emoji) render as tofu; bundle a Noto subset if a language needs it.
 - **Same-device two-tab clientSeq race** (WP13): accepted for now (second event is `CLIENT_SEQ_CONFLICT`, visible).
 - **Production ingress prefixes** must match `NETWORK_ONLY_PREFIXES` in `web/sw.js` if they ever differ (re-check in
   WP36).
-- **→ WP35. Signed in without any academy** (2026-11-02): `/api/core/me` answers 404 for a Keycloak user with no person/
-  membership (e.g. the seeded `coach1`/`player1` before an academy invites them), and the app shows the generic "not found"
-  error with *Retry* / *Sign out*. Show a dedicated "you are not a member of an academy yet" state instead.
+
 - **Dev login origin** (ADR-0022): `flutter run` on :5173 is another origin than Keycloak on :8080, so the address bar
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
 - **Browser login round trip in CI**: `apps/web/tool/browser_login_check.py` (stdlib WebDriver) runs locally only; add it
@@ -155,6 +154,9 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP35 (decision 14): not-a-member-yet state, academy time zone in calendars/pickers (`timezone` package, zone from the
+  tenant profile), usage trend chart, session edit + plan picker, editable measurements/results/test types/absences,
+  availability badge in rosters and match setup.
 - WP34 (decision 8): audit trail read API (`GET /api/core/audit-events` for ADMIN under RLS, `GET /platform/audit-events`
   for super_admin through a platform read policy), filters by date range and action, `AuditAction` enum kept equal to
   the contract and `docs/domain/audit-events.md` by a test, `member.invitation_accepted` recorded, Activity screens in
