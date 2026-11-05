@@ -8,6 +8,8 @@ import 'package:hoops_app/features/admin/data/academy_repository.dart';
 import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
 import 'package:hoops_app/features/admin/data/members_repository.dart';
 import 'package:hoops_app/features/admin/data/seasons_repository.dart';
+import 'package:hoops_app/features/audit/data/audit_repository.dart';
+import 'package:hoops_app/features/audit/domain/audit_entry.dart';
 import 'package:hoops_app/features/roster/data/approvals_repository.dart';
 import 'package:hoops_app/features/roster/data/cases_repository.dart';
 import 'package:hoops_app/features/roster/data/players_repository.dart';
@@ -44,6 +46,17 @@ void main() {
     expect(fetched.data, bytes);
     await academy.deleteLogo();
     expect((await academy.profile()).hasLogo, isFalse);
+  });
+
+  test('the activity trail deserialises with every actor kind (WP34)', () async {
+    final page = await ApiAuditRepository(client).academy(t, const AuditQuery());
+    expect(page.items, isNotEmpty);
+    expect(page.items.map((e) => e.actorKind).toSet(), {
+      api.AuditActorKind.PERSON,
+      api.AuditActorKind.SYSTEM,
+      api.AuditActorKind.PLATFORM,
+    });
+    expect(page.items.first.action, api.AuditAction.memberPeriodInvited);
   });
 
   test('seasons, categories, rollover with orphans and opened cases', () async {

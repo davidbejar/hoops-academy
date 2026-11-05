@@ -70,6 +70,13 @@ class PlatformScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd),
                   child: Row(
                     children: [
+                      ActionChip(
+                        key: const Key('platform-activity'),
+                        avatar: const Icon(Icons.history, size: 18),
+                        label: Text(l.platformActivity),
+                        onPressed: () => context.go('/platform/activity'),
+                      ),
+                      const SizedBox(width: AppTokens.spaceSm),
                       ChoiceChip(
                         key: const Key('status-all'),
                         label: Text(l.all),

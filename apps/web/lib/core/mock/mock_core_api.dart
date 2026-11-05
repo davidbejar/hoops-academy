@@ -64,6 +64,25 @@ class MockCoreApi {
   static String _now() => DateTime.now().toUtc().toIso8601String();
 
   static Map<String, Object?> _person(String id, String name) => {'personId': id, 'displayName': name};
+
+  /// A short demo trail (newest first) for the Activity screen (WP34).
+  List<Object?> _auditEvents(String tenantId) {
+    final now = DateTime.now().toUtc();
+    Map<String, Object?> event(int minutesAgo, String action, Map<String, Object?> actor, Map<String, Object?> target) => {
+      'id': '00000000-0000-4000-8000-${(900 + minutesAgo).toString().padLeft(12, '0')}',
+      'at': now.subtract(Duration(minutes: minutesAgo)).toIso8601String(),
+      'action': action, 'actor': actor, 'target': target, 'metadata': <String, Object?>{},
+    };
+    final me = {'kind': 'PERSON', 'subject': 'demo', 'personId': meId, 'displayName': 'Demo Admin'};
+    return [
+      event(5, 'member.invited', me, {'type': 'person', 'id': 'm-1', 'displayName': 'Casey Coach'}),
+      event(90, 'tenant.profile_changed', me, {'type': 'tenant', 'id': tenantId, 'displayName': _profile['name']}),
+      event(60 * 26, 'member.temporary_password_expired', {'kind': 'SYSTEM', 'subject': 'system'},
+          {'type': 'person', 'id': 'm-2', 'displayName': 'Pat Parent'}),
+      event(60 * 50, 'admin.added', {'kind': 'PLATFORM', 'subject': 'platform'},
+          {'type': 'person', 'id': meId, 'displayName': 'Demo Admin'}),
+    ];
+  }
   static Map<String, Object?> _ref(String id, String name) => {'id': id, 'displayName': name};
 
   void _seed() {
@@ -335,6 +354,8 @@ class MockCoreApi {
         return _players_(method, id, sub, query, b);
       case 'approval-requests':
         return _approvals_(method, id, sub, query, b);
+      case 'audit-events':
+        if (id == null && is_('GET')) return MockResult.json(200, _page(_auditEvents(tenantId)));
       case 'eligibility-cases':
         if (id == null && is_('GET')) {
           return MockResult.json(200, _page([

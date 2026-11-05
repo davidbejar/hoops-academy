@@ -2307,4 +2307,164 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get playerEmailHint =>
       'With an email the player gets access: you will see a temporary password to give to them.';
+
+  @override
+  String get adminActivity => 'Activity';
+
+  @override
+  String get platformActivity => 'Academies\' activity';
+
+  @override
+  String get auditTitle => 'Activity';
+
+  @override
+  String get auditAnyTime => 'Any time';
+
+  @override
+  String get auditClearRange => 'Clear dates';
+
+  @override
+  String get auditAllActions => 'All actions';
+
+  @override
+  String auditSelectedActions(int count) {
+    return '$count actions';
+  }
+
+  @override
+  String get auditFilterTitle => 'Filter by action';
+
+  @override
+  String get auditApply => 'Apply';
+
+  @override
+  String get auditEmpty => 'No activity for this filter';
+
+  @override
+  String auditPageOf(int page, int pages) {
+    return 'Page $page of $pages';
+  }
+
+  @override
+  String get auditPreviousPage => 'Previous page';
+
+  @override
+  String get auditNextPage => 'Next page';
+
+  @override
+  String auditByActor(String actor) {
+    return 'By $actor';
+  }
+
+  @override
+  String get auditActorSystem => 'System';
+
+  @override
+  String get auditActorPlatform => 'Platform administration';
+
+  @override
+  String get auditActorMember => 'Academy member';
+
+  @override
+  String get auditTargetPerson => 'Person';
+
+  @override
+  String get auditTargetPlayer => 'Player';
+
+  @override
+  String get auditTargetTenant => 'Academy';
+
+  @override
+  String get auditTargetApprovalRequest => 'Request';
+
+  @override
+  String get auditTargetGuardianLink => 'Guardian link';
+
+  @override
+  String get auditActionAdminAdded => 'Administrator added';
+
+  @override
+  String get auditActionAdminRemoved => 'Administrator removed';
+
+  @override
+  String get auditActionAdminTemporaryPasswordIssued =>
+      'Administrator temporary password issued';
+
+  @override
+  String get auditActionAdminUpdated => 'Administrator edited';
+
+  @override
+  String get auditActionApprovalCancelled => 'Request cancelled';
+
+  @override
+  String get auditActionGuardianLinkCreated => 'Guardian link created';
+
+  @override
+  String get auditActionGuardianLinkRemoved => 'Guardian link removed';
+
+  @override
+  String get auditActionMemberDeactivated => 'Member deactivated';
+
+  @override
+  String get auditActionMemberInvitationAccepted => 'First sign-in';
+
+  @override
+  String get auditActionMemberInvited => 'Member invited';
+
+  @override
+  String get auditActionMemberLoginEmailChanged => 'Sign-in e-mail changed';
+
+  @override
+  String get auditActionMemberRolesReplaced => 'Roles changed';
+
+  @override
+  String get auditActionMemberTemporaryPasswordExpired =>
+      'Temporary password expired';
+
+  @override
+  String get auditActionMemberTemporaryPasswordIssued =>
+      'Temporary password issued';
+
+  @override
+  String get auditActionMemberUpdated => 'Member edited';
+
+  @override
+  String get auditActionPlayerApproved => 'Player approved';
+
+  @override
+  String get auditActionPlayerRejected => 'Player rejected';
+
+  @override
+  String get auditActionPlayerRequested => 'Player requested';
+
+  @override
+  String get auditActionPlayerWithdrawn => 'Player withdrawn';
+
+  @override
+  String get auditActionTenantCreated => 'Academy created';
+
+  @override
+  String get auditActionTenantLogoRemoved => 'Logo removed';
+
+  @override
+  String get auditActionTenantLogoReplaced => 'Logo replaced';
+
+  @override
+  String get auditActionTenantMasterDataChanged =>
+      'Academy master data changed';
+
+  @override
+  String get auditActionTenantProfileChanged => 'Academy profile changed';
+
+  @override
+  String get auditActionTenantReactivated => 'Academy reactivated';
+
+  @override
+  String get auditActionTenantSettingsChanged => 'Settings changed';
+
+  @override
+  String get auditActionTenantSuspended => 'Academy suspended';
+
+  @override
+  String get auditActionTenantWithdrawn => 'Academy withdrawn';
 }

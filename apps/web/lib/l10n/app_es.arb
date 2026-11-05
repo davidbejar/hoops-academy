@@ -1323,5 +1323,79 @@
   "memberInviteHint": "No se envía ningún correo: al crear su acceso verás una contraseña temporal para entregársela a la persona.",
   "memberErrorNotPending": "Esta persona ya entró o la invitación ya no está pendiente",
   "memberErrorLoginShared": "Esta cuenta de acceso se usa también en otra academia: solo la administración de la plataforma puede generar su contraseña",
-  "playerEmailHint": "Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela."
+  "playerEmailHint": "Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela.",
+  "adminActivity": "Actividad",
+  "platformActivity": "Actividad de las academias",
+  "auditTitle": "Actividad",
+  "auditAnyTime": "Cualquier fecha",
+  "auditClearRange": "Quitar fechas",
+  "auditAllActions": "Todas las acciones",
+  "auditSelectedActions": "{count} acciones",
+  "@auditSelectedActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "auditFilterTitle": "Filtrar por acción",
+  "auditApply": "Aplicar",
+  "auditEmpty": "No hay actividad con este filtro",
+  "auditPageOf": "Página {page} de {pages}",
+  "@auditPageOf": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "auditPreviousPage": "Página anterior",
+  "auditNextPage": "Página siguiente",
+  "auditByActor": "Por {actor}",
+  "@auditByActor": {
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "auditActorSystem": "Sistema",
+  "auditActorPlatform": "Administración de la plataforma",
+  "auditActorMember": "Miembro de la academia",
+  "auditTargetPerson": "Persona",
+  "auditTargetPlayer": "Jugador/a",
+  "auditTargetTenant": "Academia",
+  "auditTargetApprovalRequest": "Solicitud",
+  "auditTargetGuardianLink": "Vínculo familiar",
+  "auditActionAdminAdded": "Administrador añadido",
+  "auditActionAdminRemoved": "Administrador retirado",
+  "auditActionAdminTemporaryPasswordIssued": "Contraseña temporal de administrador generada",
+  "auditActionAdminUpdated": "Administrador editado",
+  "auditActionApprovalCancelled": "Solicitud cancelada",
+  "auditActionGuardianLinkCreated": "Vínculo familiar creado",
+  "auditActionGuardianLinkRemoved": "Vínculo familiar eliminado",
+  "auditActionMemberDeactivated": "Miembro desactivado",
+  "auditActionMemberInvitationAccepted": "Primer inicio de sesión",
+  "auditActionMemberInvited": "Miembro invitado",
+  "auditActionMemberLoginEmailChanged": "Correo de acceso cambiado",
+  "auditActionMemberRolesReplaced": "Roles cambiados",
+  "auditActionMemberTemporaryPasswordExpired": "Contraseña temporal caducada",
+  "auditActionMemberTemporaryPasswordIssued": "Contraseña temporal generada",
+  "auditActionMemberUpdated": "Miembro editado",
+  "auditActionPlayerApproved": "Jugador aprobado",
+  "auditActionPlayerRejected": "Jugador rechazado",
+  "auditActionPlayerRequested": "Alta de jugador solicitada",
+  "auditActionPlayerWithdrawn": "Jugador dado de baja",
+  "auditActionTenantCreated": "Academia creada",
+  "auditActionTenantLogoRemoved": "Logo eliminado",
+  "auditActionTenantLogoReplaced": "Logo cambiado",
+  "auditActionTenantMasterDataChanged": "Datos de la academia cambiados por la plataforma",
+  "auditActionTenantProfileChanged": "Perfil de la academia cambiado",
+  "auditActionTenantReactivated": "Academia reactivada",
+  "auditActionTenantSettingsChanged": "Ajustes cambiados",
+  "auditActionTenantSuspended": "Academia suspendida",
+  "auditActionTenantWithdrawn": "Academia dada de baja"
 }

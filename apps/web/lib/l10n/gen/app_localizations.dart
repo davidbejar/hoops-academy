@@ -4311,6 +4311,306 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela.'**
   String get playerEmailHint;
+
+  /// No description provided for @adminActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Actividad'**
+  String get adminActivity;
+
+  /// No description provided for @platformActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Actividad de las academias'**
+  String get platformActivity;
+
+  /// No description provided for @auditTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actividad'**
+  String get auditTitle;
+
+  /// No description provided for @auditAnyTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Cualquier fecha'**
+  String get auditAnyTime;
+
+  /// No description provided for @auditClearRange.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar fechas'**
+  String get auditClearRange;
+
+  /// No description provided for @auditAllActions.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas las acciones'**
+  String get auditAllActions;
+
+  /// No description provided for @auditSelectedActions.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} acciones'**
+  String auditSelectedActions(int count);
+
+  /// No description provided for @auditFilterTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Filtrar por acción'**
+  String get auditFilterTitle;
+
+  /// No description provided for @auditApply.
+  ///
+  /// In es, this message translates to:
+  /// **'Aplicar'**
+  String get auditApply;
+
+  /// No description provided for @auditEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay actividad con este filtro'**
+  String get auditEmpty;
+
+  /// No description provided for @auditPageOf.
+  ///
+  /// In es, this message translates to:
+  /// **'Página {page} de {pages}'**
+  String auditPageOf(int page, int pages);
+
+  /// No description provided for @auditPreviousPage.
+  ///
+  /// In es, this message translates to:
+  /// **'Página anterior'**
+  String get auditPreviousPage;
+
+  /// No description provided for @auditNextPage.
+  ///
+  /// In es, this message translates to:
+  /// **'Página siguiente'**
+  String get auditNextPage;
+
+  /// No description provided for @auditByActor.
+  ///
+  /// In es, this message translates to:
+  /// **'Por {actor}'**
+  String auditByActor(String actor);
+
+  /// No description provided for @auditActorSystem.
+  ///
+  /// In es, this message translates to:
+  /// **'Sistema'**
+  String get auditActorSystem;
+
+  /// No description provided for @auditActorPlatform.
+  ///
+  /// In es, this message translates to:
+  /// **'Administración de la plataforma'**
+  String get auditActorPlatform;
+
+  /// No description provided for @auditActorMember.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembro de la academia'**
+  String get auditActorMember;
+
+  /// No description provided for @auditTargetPerson.
+  ///
+  /// In es, this message translates to:
+  /// **'Persona'**
+  String get auditTargetPerson;
+
+  /// No description provided for @auditTargetPlayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador/a'**
+  String get auditTargetPlayer;
+
+  /// No description provided for @auditTargetTenant.
+  ///
+  /// In es, this message translates to:
+  /// **'Academia'**
+  String get auditTargetTenant;
+
+  /// No description provided for @auditTargetApprovalRequest.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud'**
+  String get auditTargetApprovalRequest;
+
+  /// No description provided for @auditTargetGuardianLink.
+  ///
+  /// In es, this message translates to:
+  /// **'Vínculo familiar'**
+  String get auditTargetGuardianLink;
+
+  /// No description provided for @auditActionAdminAdded.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador añadido'**
+  String get auditActionAdminAdded;
+
+  /// No description provided for @auditActionAdminRemoved.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador retirado'**
+  String get auditActionAdminRemoved;
+
+  /// No description provided for @auditActionAdminTemporaryPasswordIssued.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña temporal de administrador generada'**
+  String get auditActionAdminTemporaryPasswordIssued;
+
+  /// No description provided for @auditActionAdminUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador editado'**
+  String get auditActionAdminUpdated;
+
+  /// No description provided for @auditActionApprovalCancelled.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud cancelada'**
+  String get auditActionApprovalCancelled;
+
+  /// No description provided for @auditActionGuardianLinkCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Vínculo familiar creado'**
+  String get auditActionGuardianLinkCreated;
+
+  /// No description provided for @auditActionGuardianLinkRemoved.
+  ///
+  /// In es, this message translates to:
+  /// **'Vínculo familiar eliminado'**
+  String get auditActionGuardianLinkRemoved;
+
+  /// No description provided for @auditActionMemberDeactivated.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembro desactivado'**
+  String get auditActionMemberDeactivated;
+
+  /// No description provided for @auditActionMemberInvitationAccepted.
+  ///
+  /// In es, this message translates to:
+  /// **'Primer inicio de sesión'**
+  String get auditActionMemberInvitationAccepted;
+
+  /// No description provided for @auditActionMemberInvited.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembro invitado'**
+  String get auditActionMemberInvited;
+
+  /// No description provided for @auditActionMemberLoginEmailChanged.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo de acceso cambiado'**
+  String get auditActionMemberLoginEmailChanged;
+
+  /// No description provided for @auditActionMemberRolesReplaced.
+  ///
+  /// In es, this message translates to:
+  /// **'Roles cambiados'**
+  String get auditActionMemberRolesReplaced;
+
+  /// No description provided for @auditActionMemberTemporaryPasswordExpired.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña temporal caducada'**
+  String get auditActionMemberTemporaryPasswordExpired;
+
+  /// No description provided for @auditActionMemberTemporaryPasswordIssued.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña temporal generada'**
+  String get auditActionMemberTemporaryPasswordIssued;
+
+  /// No description provided for @auditActionMemberUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembro editado'**
+  String get auditActionMemberUpdated;
+
+  /// No description provided for @auditActionPlayerApproved.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador aprobado'**
+  String get auditActionPlayerApproved;
+
+  /// No description provided for @auditActionPlayerRejected.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador rechazado'**
+  String get auditActionPlayerRejected;
+
+  /// No description provided for @auditActionPlayerRequested.
+  ///
+  /// In es, this message translates to:
+  /// **'Alta de jugador solicitada'**
+  String get auditActionPlayerRequested;
+
+  /// No description provided for @auditActionPlayerWithdrawn.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador dado de baja'**
+  String get auditActionPlayerWithdrawn;
+
+  /// No description provided for @auditActionTenantCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Academia creada'**
+  String get auditActionTenantCreated;
+
+  /// No description provided for @auditActionTenantLogoRemoved.
+  ///
+  /// In es, this message translates to:
+  /// **'Logo eliminado'**
+  String get auditActionTenantLogoRemoved;
+
+  /// No description provided for @auditActionTenantLogoReplaced.
+  ///
+  /// In es, this message translates to:
+  /// **'Logo cambiado'**
+  String get auditActionTenantLogoReplaced;
+
+  /// No description provided for @auditActionTenantMasterDataChanged.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos de la academia cambiados por la plataforma'**
+  String get auditActionTenantMasterDataChanged;
+
+  /// No description provided for @auditActionTenantProfileChanged.
+  ///
+  /// In es, this message translates to:
+  /// **'Perfil de la academia cambiado'**
+  String get auditActionTenantProfileChanged;
+
+  /// No description provided for @auditActionTenantReactivated.
+  ///
+  /// In es, this message translates to:
+  /// **'Academia reactivada'**
+  String get auditActionTenantReactivated;
+
+  /// No description provided for @auditActionTenantSettingsChanged.
+  ///
+  /// In es, this message translates to:
+  /// **'Ajustes cambiados'**
+  String get auditActionTenantSettingsChanged;
+
+  /// No description provided for @auditActionTenantSuspended.
+  ///
+  /// In es, this message translates to:
+  /// **'Academia suspendida'**
+  String get auditActionTenantSuspended;
+
+  /// No description provided for @auditActionTenantWithdrawn.
+  ///
+  /// In es, this message translates to:
+  /// **'Academia dada de baja'**
+  String get auditActionTenantWithdrawn;
 }
 
 class _AppLocalizationsDelegate

@@ -2306,4 +2306,163 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get playerEmailHint =>
       'Dengan email, pemain mendapat akses: Anda akan melihat kata sandi sementara untuk diberikan kepadanya.';
+
+  @override
+  String get adminActivity => 'Aktivitas';
+
+  @override
+  String get platformActivity => 'Aktivitas akademi';
+
+  @override
+  String get auditTitle => 'Aktivitas';
+
+  @override
+  String get auditAnyTime => 'Kapan saja';
+
+  @override
+  String get auditClearRange => 'Hapus tanggal';
+
+  @override
+  String get auditAllActions => 'Semua tindakan';
+
+  @override
+  String auditSelectedActions(int count) {
+    return '$count tindakan';
+  }
+
+  @override
+  String get auditFilterTitle => 'Saring menurut tindakan';
+
+  @override
+  String get auditApply => 'Terapkan';
+
+  @override
+  String get auditEmpty => 'Tidak ada aktivitas untuk saringan ini';
+
+  @override
+  String auditPageOf(int page, int pages) {
+    return 'Halaman $page dari $pages';
+  }
+
+  @override
+  String get auditPreviousPage => 'Halaman sebelumnya';
+
+  @override
+  String get auditNextPage => 'Halaman berikutnya';
+
+  @override
+  String auditByActor(String actor) {
+    return 'Oleh $actor';
+  }
+
+  @override
+  String get auditActorSystem => 'Sistem';
+
+  @override
+  String get auditActorPlatform => 'Administrasi platform';
+
+  @override
+  String get auditActorMember => 'Anggota akademi';
+
+  @override
+  String get auditTargetPerson => 'Orang';
+
+  @override
+  String get auditTargetPlayer => 'Pemain';
+
+  @override
+  String get auditTargetTenant => 'Akademi';
+
+  @override
+  String get auditTargetApprovalRequest => 'Permintaan';
+
+  @override
+  String get auditTargetGuardianLink => 'Tautan wali';
+
+  @override
+  String get auditActionAdminAdded => 'Administrator ditambahkan';
+
+  @override
+  String get auditActionAdminRemoved => 'Administrator dihapus';
+
+  @override
+  String get auditActionAdminTemporaryPasswordIssued =>
+      'Kata sandi sementara administrator dibuat';
+
+  @override
+  String get auditActionAdminUpdated => 'Administrator diubah';
+
+  @override
+  String get auditActionApprovalCancelled => 'Permintaan dibatalkan';
+
+  @override
+  String get auditActionGuardianLinkCreated => 'Tautan wali dibuat';
+
+  @override
+  String get auditActionGuardianLinkRemoved => 'Tautan wali dihapus';
+
+  @override
+  String get auditActionMemberDeactivated => 'Anggota dinonaktifkan';
+
+  @override
+  String get auditActionMemberInvitationAccepted => 'Masuk pertama kali';
+
+  @override
+  String get auditActionMemberInvited => 'Anggota diundang';
+
+  @override
+  String get auditActionMemberLoginEmailChanged => 'Email masuk diubah';
+
+  @override
+  String get auditActionMemberRolesReplaced => 'Peran diubah';
+
+  @override
+  String get auditActionMemberTemporaryPasswordExpired =>
+      'Kata sandi sementara kedaluwarsa';
+
+  @override
+  String get auditActionMemberTemporaryPasswordIssued =>
+      'Kata sandi sementara dibuat';
+
+  @override
+  String get auditActionMemberUpdated => 'Anggota diubah';
+
+  @override
+  String get auditActionPlayerApproved => 'Pemain disetujui';
+
+  @override
+  String get auditActionPlayerRejected => 'Pemain ditolak';
+
+  @override
+  String get auditActionPlayerRequested => 'Pemain diajukan';
+
+  @override
+  String get auditActionPlayerWithdrawn => 'Pemain ditarik';
+
+  @override
+  String get auditActionTenantCreated => 'Akademi dibuat';
+
+  @override
+  String get auditActionTenantLogoRemoved => 'Logo dihapus';
+
+  @override
+  String get auditActionTenantLogoReplaced => 'Logo diganti';
+
+  @override
+  String get auditActionTenantMasterDataChanged => 'Data induk akademi diubah';
+
+  @override
+  String get auditActionTenantProfileChanged => 'Profil akademi diubah';
+
+  @override
+  String get auditActionTenantReactivated => 'Akademi diaktifkan kembali';
+
+  @override
+  String get auditActionTenantSettingsChanged => 'Pengaturan diubah';
+
+  @override
+  String get auditActionTenantSuspended => 'Akademi ditangguhkan';
+
+  @override
+  String get auditActionTenantWithdrawn => 'Akademi ditarik';
 }

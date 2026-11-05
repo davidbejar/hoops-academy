@@ -116,8 +116,11 @@ void main() {
       await _pumpAcademy(tester, repo, size: const Size(360, 1200));
       await tester.tap(find.byKey(const Key('audit-actions')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('audit-action-member.invited')));
-      await tester.tap(find.byKey(const Key('audit-action-tenant.profile_changed')));
+      for (final wire in ['member.invited', 'tenant.profile_changed']) {
+        await tester.ensureVisible(find.byKey(Key('audit-action-$wire')));
+        await tester.tap(find.byKey(Key('audit-action-$wire')));
+        await tester.pump();
+      }
       await tester.tap(find.byKey(const Key('audit-actions-apply')));
       await tester.pumpAndSettle();
       expect(repo.academyQueries.last.$2.actions, {
@@ -170,9 +173,10 @@ void main() {
       expect(repo.academyQueries.last.$2.fromInstant, isNull);
     });
 
-    testWidgets('the date picker sets the range', (tester) async {
+    testWidgets('the date button opens the range picker', (tester) async {
       final repo = FakeAuditRepository(_trail());
-      await _pumpAcademy(tester, repo);
+      // Wide: the picker's own header overflows with the square test font at phone width.
+      await _pumpAcademy(tester, repo, size: const Size(1024, 900));
       await tester.tap(find.byKey(const Key('audit-range')));
       await tester.pumpAndSettle();
       expect(find.byType(DateRangePickerDialog), findsOneWidget);

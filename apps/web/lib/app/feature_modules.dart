@@ -10,6 +10,7 @@ import '../features/admin/presentation/admin_screen.dart' deferred as admin;
 import '../features/admin/presentation/age_categories_screen.dart' deferred as admin_categories;
 import '../features/admin/presentation/members_screen.dart' deferred as admin_members;
 import '../features/admin/presentation/seasons_screen.dart' deferred as admin_seasons;
+import '../features/audit/presentation/audit_log_screen.dart' deferred as audit;
 import '../features/match/presentation/live_match_screen.dart' deferred as match_live;
 import '../features/match/presentation/match_setup_screen.dart' deferred as match_setup;
 import '../features/match/presentation/matches_screen.dart' deferred as matches;
@@ -76,6 +77,7 @@ final Map<AppDestination, FeatureModule> featureModules = {
         (p) => admin_seasons.RolloverScreen(seasonId: p['seasonId']!),
       ),
       ModulePage('age-categories', admin_categories.loadLibrary, (_) => admin_categories.AgeCategoriesScreen()),
+      ModulePage('activity', audit.loadLibrary, (_) => audit.AcademyActivityScreen()),
     ],
   ),
   AppDestination.teams: FeatureModule(
@@ -130,6 +132,14 @@ final Map<AppDestination, FeatureModule> featureModules = {
   AppDestination.platform: FeatureModule(
     platform.loadLibrary,
     () => platform.PlatformScreen(),
-    subPages: [ModulePage(':tenantId', tenant_detail.loadLibrary, (p) => tenant_detail.TenantDetailScreen(tenantId: p['tenantId']!))],
+    subPages: [
+      ModulePage('activity', audit.loadLibrary, (_) => audit.PlatformActivityScreen()),
+      ModulePage(':tenantId', tenant_detail.loadLibrary, (p) => tenant_detail.TenantDetailScreen(tenantId: p['tenantId']!)),
+      ModulePage(
+        ':tenantId/activity',
+        audit.loadLibrary,
+        (p) => audit.PlatformActivityScreen(tenantId: p['tenantId']!),
+      ),
+    ],
   ),
 };

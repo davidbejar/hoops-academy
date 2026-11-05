@@ -2321,4 +2321,165 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get playerEmailHint =>
       'Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela.';
+
+  @override
+  String get adminActivity => 'Actividad';
+
+  @override
+  String get platformActivity => 'Actividad de las academias';
+
+  @override
+  String get auditTitle => 'Actividad';
+
+  @override
+  String get auditAnyTime => 'Cualquier fecha';
+
+  @override
+  String get auditClearRange => 'Quitar fechas';
+
+  @override
+  String get auditAllActions => 'Todas las acciones';
+
+  @override
+  String auditSelectedActions(int count) {
+    return '$count acciones';
+  }
+
+  @override
+  String get auditFilterTitle => 'Filtrar por acción';
+
+  @override
+  String get auditApply => 'Aplicar';
+
+  @override
+  String get auditEmpty => 'No hay actividad con este filtro';
+
+  @override
+  String auditPageOf(int page, int pages) {
+    return 'Página $page de $pages';
+  }
+
+  @override
+  String get auditPreviousPage => 'Página anterior';
+
+  @override
+  String get auditNextPage => 'Página siguiente';
+
+  @override
+  String auditByActor(String actor) {
+    return 'Por $actor';
+  }
+
+  @override
+  String get auditActorSystem => 'Sistema';
+
+  @override
+  String get auditActorPlatform => 'Administración de la plataforma';
+
+  @override
+  String get auditActorMember => 'Miembro de la academia';
+
+  @override
+  String get auditTargetPerson => 'Persona';
+
+  @override
+  String get auditTargetPlayer => 'Jugador/a';
+
+  @override
+  String get auditTargetTenant => 'Academia';
+
+  @override
+  String get auditTargetApprovalRequest => 'Solicitud';
+
+  @override
+  String get auditTargetGuardianLink => 'Vínculo familiar';
+
+  @override
+  String get auditActionAdminAdded => 'Administrador añadido';
+
+  @override
+  String get auditActionAdminRemoved => 'Administrador retirado';
+
+  @override
+  String get auditActionAdminTemporaryPasswordIssued =>
+      'Contraseña temporal de administrador generada';
+
+  @override
+  String get auditActionAdminUpdated => 'Administrador editado';
+
+  @override
+  String get auditActionApprovalCancelled => 'Solicitud cancelada';
+
+  @override
+  String get auditActionGuardianLinkCreated => 'Vínculo familiar creado';
+
+  @override
+  String get auditActionGuardianLinkRemoved => 'Vínculo familiar eliminado';
+
+  @override
+  String get auditActionMemberDeactivated => 'Miembro desactivado';
+
+  @override
+  String get auditActionMemberInvitationAccepted => 'Primer inicio de sesión';
+
+  @override
+  String get auditActionMemberInvited => 'Miembro invitado';
+
+  @override
+  String get auditActionMemberLoginEmailChanged => 'Correo de acceso cambiado';
+
+  @override
+  String get auditActionMemberRolesReplaced => 'Roles cambiados';
+
+  @override
+  String get auditActionMemberTemporaryPasswordExpired =>
+      'Contraseña temporal caducada';
+
+  @override
+  String get auditActionMemberTemporaryPasswordIssued =>
+      'Contraseña temporal generada';
+
+  @override
+  String get auditActionMemberUpdated => 'Miembro editado';
+
+  @override
+  String get auditActionPlayerApproved => 'Jugador aprobado';
+
+  @override
+  String get auditActionPlayerRejected => 'Jugador rechazado';
+
+  @override
+  String get auditActionPlayerRequested => 'Alta de jugador solicitada';
+
+  @override
+  String get auditActionPlayerWithdrawn => 'Jugador dado de baja';
+
+  @override
+  String get auditActionTenantCreated => 'Academia creada';
+
+  @override
+  String get auditActionTenantLogoRemoved => 'Logo eliminado';
+
+  @override
+  String get auditActionTenantLogoReplaced => 'Logo cambiado';
+
+  @override
+  String get auditActionTenantMasterDataChanged =>
+      'Datos de la academia cambiados por la plataforma';
+
+  @override
+  String get auditActionTenantProfileChanged =>
+      'Perfil de la academia cambiado';
+
+  @override
+  String get auditActionTenantReactivated => 'Academia reactivada';
+
+  @override
+  String get auditActionTenantSettingsChanged => 'Ajustes cambiados';
+
+  @override
+  String get auditActionTenantSuspended => 'Academia suspendida';
+
+  @override
+  String get auditActionTenantWithdrawn => 'Academia dada de baja';
 }

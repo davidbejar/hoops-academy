@@ -19,6 +19,7 @@ class AdminScreen extends StatelessWidget {
       (Icons.category_outlined, l.adminAgeCategories, '/admin/age-categories', 'admin-categories'),
       (Icons.how_to_reg_outlined, l.adminApprovals, '/players/requests', 'admin-approvals'),
       (Icons.report_problem_outlined, l.adminCases, '/teams/cases', 'admin-cases'),
+      (Icons.history, l.adminActivity, '/admin/activity', 'admin-activity'),
     ];
     return ListView(
       key: const Key('admin-hub'),

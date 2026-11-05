@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
@@ -31,6 +32,14 @@ class TenantDetailScreen extends ConsumerWidget {
     return SubPage(
       title: detail.value?.tenant.name ?? l.platformTitle,
       parentPath: '/platform',
+      actions: [
+        IconButton(
+          key: const Key('tenant-activity'),
+          tooltip: l.auditTitle,
+          icon: const Icon(Icons.history),
+          onPressed: () => context.go('/platform/$tenantId/activity'),
+        ),
+      ],
       child: Guarded(
         allowed: ref.watch(isSuperAdminProvider),
         child: AsyncBody<TenantDetail>(
