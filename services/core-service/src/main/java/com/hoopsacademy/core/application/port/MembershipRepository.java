@@ -25,4 +25,11 @@ public interface MembershipRepository {
      * never which tenants.
      */
     boolean linkedInAnotherTenant(String subject);
+
+    /**
+     * The active persons of tenants other than the bound one that {@code subject} is linked to, for the super admin's
+     * login e-mail move ({@link SharedLoginPersons}, ADR-0026). Runs inside the bound tenant's transaction; the ids
+     * stay inside core and are never returned to a caller.
+     */
+    List<IndexedMembership> inOtherTenants(String subject);
 }

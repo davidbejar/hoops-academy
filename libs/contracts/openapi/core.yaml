@@ -287,10 +287,12 @@ paths:
       summary: Edit an administrator's names or e-mail
       description: |
         Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and
-        e-mail; no e-mail is sent, the password is unchanged), also when the login is used in other academies
-        (ADR-0023, ADR-0024). 404 when the person is not an active
-        administrator of the tenant; 409 `EMAIL_TAKEN` (another member or login uses the address), `TENANT_WITHDRAWN`;
-        502 when Keycloak fails (nothing is changed). Authz: super_admin.
+        e-mail; no e-mail is sent, the password is unchanged), also when the login is used in other academies: then
+        the same person's e-mail changes in every academy where they are an active member, in the same transaction,
+        with one `member.login_email_changed` audit event per academy (ADR-0023, ADR-0024, ADR-0026). 404 when the
+        person is not an active administrator of the tenant; 409 `EMAIL_TAKEN` (another member of this academy or of
+        an academy sharing the login, or another login, uses the address), `TENANT_WITHDRAWN`; 502 when Keycloak
+        fails (nothing is changed in any academy). Authz: super_admin.
       requestBody:
         required: true
         content:

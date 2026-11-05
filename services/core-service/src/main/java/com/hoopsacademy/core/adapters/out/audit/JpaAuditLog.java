@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.out.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantContext;
+import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.core.application.port.AuditLog;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,5 +25,10 @@ class JpaAuditLog implements AuditLog {
     @Override
     public void record(AuditEvent event) {
         AuditEventRepository.write(em, json, tenantContext.requireTenantId(), AuditActor.current(tenantContext), event);
+    }
+
+    @Override
+    public void recordFor(TenantId tenant, AuditEvent event) {
+        AuditEventRepository.write(em, json, tenant, AuditActor.current(tenantContext).withoutPerson(), event);
     }
 }

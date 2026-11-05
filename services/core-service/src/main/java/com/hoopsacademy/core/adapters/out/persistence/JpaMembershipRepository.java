@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * {@code core.user_membership_index}. Writes use the standard tenant policy. The cross-tenant read binds the nil
@@ -53,19 +54,43 @@ class JpaMembershipRepository implements MembershipRepository {
     @Override
     public boolean linkedInAnotherTenant(String subject) {
         UUID tenant = boundTenant.id();
+        return asSubject(subject, () -> (Boolean) em.createNativeQuery("""
+                select exists (select 1 from core.user_membership_index
+                                where keycloak_sub = :sub and tenant_id <> :tenant)""")
+                .setParameter("sub", subject)
+                .setParameter("tenant", tenant)
+                .getSingleResult());
+    }
+
+    /** Like {@link #linkedInAnotherTenant}, for the super admin's login move: which other tenants' persons (ADR-0026). */
+    @Override
+    public List<IndexedMembership> inOtherTenants(String subject) {
+        UUID tenant = boundTenant.id();
+        List<?> rows = asSubject(subject, () -> em.createNativeQuery("""
+                select tenant_id, person_id from core.user_membership_index
+                 where keycloak_sub = :sub and tenant_id <> :tenant order by tenant_id""")
+                .setParameter("sub", subject)
+                .setParameter("tenant", tenant)
+                .getResultList());
+        return indexed(rows);
+    }
+
+    /** Runs {@code statement} with {@code app.subject} bound to {@code subject}, then puts the previous value back. */
+    private <T> T asSubject(String subject, Supplier<T> statement) {
         String previous = (String) em.createNativeQuery("select coalesce(current_setting('app.subject', true), '')")
                 .getSingleResult();
         bindSubject(subject);
         try {
-            return (Boolean) em.createNativeQuery("""
-                    select exists (select 1 from core.user_membership_index
-                                    where keycloak_sub = :sub and tenant_id <> :tenant)""")
-                    .setParameter("sub", subject)
-                    .setParameter("tenant", tenant)
-                    .getSingleResult();
+            return statement.get();
         } finally {
             bindSubject(previous);
         }
+    }
+
+    private static List<IndexedMembership> indexed(List<?> rows) {
+        return rows.stream().map(Object[].class::cast)
+                .map(row -> new IndexedMembership(new TenantId((UUID) row[0]), new PersonId((UUID) row[1])))
+                .toList();
     }
 
     private void bindSubject(String subject) {
@@ -88,8 +113,6 @@ class JpaMembershipRepository implements MembershipRepository {
                  where keycloak_sub = :sub order by tenant_id""")
                 .setParameter("sub", subject)
                 .getResultList();
-        return rows.stream().map(Object[].class::cast)
-                .map(row -> new IndexedMembership(new TenantId((UUID) row[0]), new PersonId((UUID) row[1])))
-                .toList();
+        return indexed(rows);
     }
 }
