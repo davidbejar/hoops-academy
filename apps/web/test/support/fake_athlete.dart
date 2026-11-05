@@ -537,6 +537,7 @@ class FakeHealthRepository with Faulty implements HealthRepository {
   ath.CreateInjuryRequest? createdInjury;
   ath.UpdateInjuryRequest? lastInjuryUpdate;
   ath.BodyMeasurementInput? createdMeasurement;
+  ath.UpdateBodyMeasurementRequest? updatedMeasurement;
 
   @override
   Future<List<ath.Injury>> injuries({String? playerId, String? teamId, ath.InjuryStatus? status}) => run(
@@ -581,7 +582,15 @@ class FakeHealthRepository with Faulty implements HealthRepository {
 
   @override
   Future<ath.BodyMeasurement> updateMeasurement(String id, ath.UpdateBodyMeasurementRequest request) =>
-      run('updateMeasurement', () => measurementList.firstWhere((m) => m.id == id));
+      run('updateMeasurement', () {
+        updatedMeasurement = request;
+        final i = measurementList.indexWhere((m) => m.id == id);
+        measurementList[i] = measurementList[i].rebuild((b) => b
+          ..measuredOn = request.measuredOn ?? b.measuredOn
+          ..heightCm = request.heightCm ?? b.heightCm
+          ..weightKg = request.weightKg ?? b.weightKg);
+        return measurementList[i];
+      });
 
   @override
   Future<void> deleteMeasurement(String id) => run('deleteMeasurement', () => measurementList.removeWhere((m) => m.id == id));
@@ -599,6 +608,7 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
   final List<String> normScopes = [];
   ath.PhysicalTestNormInput? savedNorm;
   ath.PhysicalTestTypeInput? createdType;
+  ath.UpdatePhysicalTestResultRequest? updatedResult;
 
   @override
   Future<List<ath.PhysicalTestType>> types() => run('types', () => [...typeList]);
@@ -637,7 +647,15 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
 
   @override
   Future<ath.PhysicalTestResult> updateResult(String id, ath.UpdatePhysicalTestResultRequest request) =>
-      run('updateResult', () => resultList.firstWhere((r) => r.id == id));
+      run('updateResult', () {
+        updatedResult = request;
+        final i = resultList.indexWhere((r) => r.id == id);
+        resultList[i] = resultList[i].rebuild((b) => b
+          ..measuredOn = request.measuredOn ?? b.measuredOn
+          ..value = request.value ?? b.value
+          ..notes = request.notes ?? b.notes);
+        return resultList[i];
+      });
 
   @override
   Future<void> deleteResult(String id) => run('deleteResult', () => resultList.removeWhere((r) => r.id == id));

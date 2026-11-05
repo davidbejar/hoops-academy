@@ -176,6 +176,66 @@ void main() {
     });
   });
 
+  group('edit and delete of measurements', () {
+    testWidgets('staff edit a measurement; the list shows the new value', (tester) async {
+      final a = _athlete();
+      await _staff(tester, a);
+      await tapKey(tester, 'health-tab-growth');
+      expect(find.byKey(const Key('measurement-m3')), findsOneWidget);
+      await tapKey(tester, 'measurement-edit-m3');
+      expect(find.widgetWithText(TextFormField, '148'), findsOneWidget); // prefilled
+      await enter(tester, 'growth-height', '149,5');
+      await tapKey(tester, 'form-submit');
+      expect(a.health.updatedMeasurement!.heightCm, 149.5);
+      expect(a.health.createdMeasurement, isNull);
+      expect(find.textContaining('149.5'), findsWidgets);
+    });
+
+    testWidgets('delete asks first, then removes the measurement', (tester) async {
+      final a = _athlete();
+      await _staff(tester, a);
+      await tapKey(tester, 'health-tab-growth');
+      await tapKey(tester, 'measurement-delete-m1');
+      await tapKey(tester, 'dialog-cancel');
+      expect(a.health.measurementList.length, 3);
+      await tapKey(tester, 'measurement-delete-m1');
+      await tapKey(tester, 'dialog-confirm');
+      expect(a.health.measurementList.map((m) => m.id), ['m2', 'm3']);
+      expect(find.byKey(const Key('measurement-m1')), findsNothing);
+    });
+
+    testWidgets('players have no edit / delete buttons', (tester) async {
+      await pumpAs(tester, roles: {TenantRole.player}, ownPlayerId: 'p1', core: athleteCore(), athlete: _athlete(), location: '/me/health', size: const Size(360, 2000));
+      await tapKey(tester, 'health-tab-growth');
+      expect(find.byKey(const Key('measurement-m3')), findsOneWidget);
+      expect(find.byKey(const Key('measurement-edit-m3')), findsNothing);
+      expect(find.byKey(const Key('measurement-delete-m3')), findsNothing);
+    });
+  });
+
+  group('edit and delete of test results', () {
+    testWidgets('staff correct a result value; the band is refreshed from the server', (tester) async {
+      final a = _athlete();
+      await _staff(tester, a);
+      await tapKey(tester, 'health-tab-tests');
+      await tapKey(tester, 'result-edit-r3');
+      await tester.enterText(find.byKey(const Key('result-value')), '38,5');
+      await tester.pump();
+      await tapKey(tester, 'form-submit');
+      expect(a.fitness.updatedResult!.value, 38.5);
+      expect(a.fitness.resultList.firstWhere((r) => r.id == 'r3').value, 38.5);
+    });
+
+    testWidgets('delete asks first, then removes the result', (tester) async {
+      final a = _athlete();
+      await _staff(tester, a);
+      await tapKey(tester, 'health-tab-tests');
+      await tapKey(tester, 'result-delete-r1');
+      await tapKey(tester, 'dialog-confirm');
+      expect(a.fitness.resultList.map((r) => r.id), ['r2', 'r3']);
+    });
+  });
+
   group('physical tests', () {
     testWidgets('history chart per test type, band chips and the reference-pending flag', (tester) async {
       await _staff(tester, _athlete());
