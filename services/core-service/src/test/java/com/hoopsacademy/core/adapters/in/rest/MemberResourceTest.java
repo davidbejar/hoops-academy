@@ -409,7 +409,7 @@ class MemberResourceTest {
         CoreDb.temporaryPasswordExpired(sub, "5 days");
         KeycloakStubs.loginUpdateFails(keycloak, sub);
 
-        given().filter(Contract.FAILURES).header("X-Tenant-Id", tenant).post(MEMBERS + "/" + coach + "/temporary-password")
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).post(MEMBERS + "/" + coach + "/temporary-password")
                 .then().statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
 
         assertThat(CoreDb.temporaryPassword(sub).get("expiredAt")).isNotNull();
