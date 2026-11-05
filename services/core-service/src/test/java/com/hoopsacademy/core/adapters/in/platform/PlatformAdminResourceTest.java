@@ -169,7 +169,7 @@ class PlatformAdminResourceTest {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
         KeycloakStubs.temporaryPasswordFails(keycloak);
-        given().filter(Contract.FAILURES).contentType(ContentType.JSON)
+        given().filter(Contract.CORE).contentType(ContentType.JSON)
                 .body(addBody("mailfail@example.com", "Mai", "Lfail")).post(admins()).then()
                 .statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
         keycloak.verify(1, userDeleted(sub));
@@ -305,7 +305,7 @@ class PlatformAdminResourceTest {
     @Test
     void keycloakFailureOnEditChangesNothing() {
         KeycloakStubs.loginUpdateFails(keycloak);
-        given().filter(Contract.FAILURES).contentType(ContentType.JSON).body("{\"email\":\"lost@example.com\"}")
+        given().filter(Contract.CORE).contentType(ContentType.JSON).body("{\"email\":\"lost@example.com\"}")
                 .patch(admins() + "/" + admin).then().statusCode(502)
                 .body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
         given().filter(Contract.CORE).get(admins()).then().body("items[0].email", equalTo("ada." + tenant + "@example.com"));
@@ -437,7 +437,7 @@ class PlatformAdminResourceTest {
         UUID pending = withLogin(UUID.randomUUID().toString(), "Kc", "Down", "kcdown@example.com", "PENDING",
                 TenantRole.ADMIN);
         KeycloakStubs.temporaryPasswordFails(keycloak);
-        given().filter(Contract.FAILURES).post(admins() + "/" + pending + "/temporary-password").then()
+        given().filter(Contract.CORE).post(admins() + "/" + pending + "/temporary-password").then()
                 .statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
         assertThat(CoreDb.auditActions(tenant)).doesNotContain("admin.temporary_password_issued",
                 "member.temporary_password_issued");

@@ -1,24 +1,24 @@
 package com.hoopsacademy.e2e.support;
 
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
-import com.atlassian.oai.validator.report.LevelResolver;
-import com.atlassian.oai.validator.report.ValidationReport;
 import com.atlassian.oai.validator.restassured.OpenApiValidationFilter;
+import io.restassured.filter.Filter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Response validation against {@code libs/contracts/openapi/<service>.yaml} read from disk (no dependency on the
- * contracts module). Requests are not validated here (bearer auth is real, and some steps send deliberately invalid
- * bodies); every response of a validated call must match the contract.
+ * Request and response validation against {@code libs/contracts/openapi/<service>.yaml} read from disk (no dependency
+ * on the contracts module), in the validator's default, strict configuration: the contracts are written so that it
+ * applies (no allOf compositions, see StrictValidatorCompatibilityTest in libs/contracts), so every exchange of a
+ * validated call, the match-event feed included, must match the contract exactly.
  */
 public final class Contracts {
-    private static final Map<String, OpenApiValidationFilter> CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, Filter> CACHE = new ConcurrentHashMap<>();
 
     private Contracts() {}
 
     /** @return the validating filter for the service owning {@code path}, or null for non-API paths. */
-    public static io.restassured.filter.Filter forPath(String path) {
+    public static Filter forPath(String path) {
         String file;
         if (path.startsWith("/api/core/") || path.startsWith("/platform/")) {
             file = "core";
@@ -29,48 +29,8 @@ public final class Contracts {
         } else {
             return null;
         }
-        var delegate = CACHE.computeIfAbsent(file, f -> new OpenApiValidationFilter(
-                OpenApiInteractionValidator.createForSpecificationUrl(E2eEnv.contractsDir().resolve(f + ".yaml").toUri().toString())
-                        .withLevelResolver(LevelResolver.create()
-                                .withLevel("validation.request", ValidationReport.Level.IGNORE)
-                                .withLevel("validation.response.body.missing", ValidationReport.Level.WARN)
-                                .build())
-                        .build()));
-        return (req, res, ctx) -> {
-            var seen = new io.restassured.response.Response[1];
-            io.restassured.filter.FilterContext spy = (io.restassured.filter.FilterContext) java.lang.reflect.Proxy.newProxyInstance(
-                    Contracts.class.getClassLoader(), new Class<?>[] {io.restassured.filter.FilterContext.class}, (proxy, method, args) -> {
-                        try {
-                            Object out = method.invoke(ctx, args);
-                            if ("next".equals(method.getName())) {
-                                seen[0] = (io.restassured.response.Response) out;
-                            }
-                            return out;
-                        } catch (java.lang.reflect.InvocationTargetException ite) {
-                            throw ite.getCause();
-                        }
-                    });
-            try {
-                return delegate.filter(req, res, spy);
-            } catch (OpenApiValidationFilter.OpenApiValidationException e) {
-                // the report also lists the IGNOREd request messages; only non-ignored, non-artifact ones count
-                var real = e.getValidationReport().getMessages().stream()
-                        .filter(m -> m.getLevel() != ValidationReport.Level.IGNORE)
-                        .filter(m -> !isAllOfArtifact(m)).toList();
-                if (real.isEmpty() && seen[0] != null) {
-                    return seen[0];
-                }
-                throw e;
-            }
-        };
-    }
-
-    /**
-     * Known contract flaw (reported in docs/wp/WP18-e2e.md): schemas composed with {@code allOf} where each member sets
-     * {@code additionalProperties: false} reject every property of the other member. Those messages are ignored.
-     */
-    private static boolean isAllOfArtifact(ValidationReport.Message m) {
-        return "validation.response.body.schema.additionalProperties".equals(m.getKey())
-                && m.getContext().flatMap(c -> c.getPointers()).map(p -> p.getSchema() != null && p.getSchema().contains("/allOf/")).orElse(false);
+        return CACHE.computeIfAbsent(file, f -> new OpenApiValidationFilter(OpenApiInteractionValidator
+                .createForSpecificationUrl(E2eEnv.contractsDir().resolve(f + ".yaml").toUri().toString())
+                .build()));
     }
 }

@@ -6,27 +6,17 @@ import com.atlassian.oai.validator.report.ValidationReport;
 import com.atlassian.oai.validator.restassured.OpenApiValidationFilter;
 
 /**
- * Validates every REST-assured exchange against {@code libs/contracts/openapi/core.yaml} (loaded from the jar).
- * {@code allOf} schemas are flattened ({@code withResolveCombinators}); without it the validator rejects properties of
- * the sibling parts of e.g. {@code Season} / {@code AgeCategory} responses as "additionalProperties".
+ * Validates every REST-assured exchange against {@code libs/contracts/openapi/core.yaml} (loaded from the jar) with
+ * the validator's default, strict configuration: the contract is written so that it applies (no {@code allOf}
+ * compositions, see StrictValidatorCompatibilityTest), so an undeclared request or response field fails the test.
  */
 public final class Contract {
 
     private static final String SPEC = "/openapi/core.yaml";
 
-    /**
-     * Request AND response must match the contract. One known false positive is muted for REQUESTS only: the validator
-     * reports "additionalProperties" for properties declared in a sibling {@code allOf} part (InviteMemberRequest =
-     * PersonalData + roles). Responses keep the strict check, so an undeclared response field still fails.
-     */
+    /** Request AND response must match the contract. */
     public static final OpenApiValidationFilter CORE = new OpenApiValidationFilter(
-            OpenApiInteractionValidator.createForSpecificationUrl(SPEC)
-                    .withResolveCombinators(true)
-                    .withLevelResolver(LevelResolver.create()
-                            .withLevel("validation.request.body.schema.additionalProperties",
-                                    ValidationReport.Level.IGNORE)
-                            .build())
-                    .build());
+            OpenApiInteractionValidator.createForSpecificationUrl(SPEC).build());
 
     /**
      * For negative tests that send a request the contract forbids on purpose (wrong media type, oversize body):
@@ -34,23 +24,20 @@ public final class Contract {
      */
     public static final OpenApiValidationFilter RESPONSES_ONLY = new OpenApiValidationFilter(
             OpenApiInteractionValidator.createForSpecificationUrl(SPEC)
-                    .withResolveCombinators(true)
                     .withLevelResolver(LevelResolver.create()
                             .withLevel("validation.request", ValidationReport.Level.IGNORE)
                             .build())
                     .build());
 
     /**
-     * For failure-path tests (identity provider down → 502, simulated database failure → 500): statuses the contract
-     * does not declare are tolerated, everything else (Problem body, content type) is still validated.
+     * For fault-injection tests (simulated database failure → 500): a status no operation declares is tolerated,
+     * everything else (request, Problem body, content type) is still validated. Declared failures such as 502
+     * IDENTITY_PROVIDER_UNAVAILABLE use {@link #CORE}.
      */
-    public static final OpenApiValidationFilter FAILURES = new OpenApiValidationFilter(
+    public static final OpenApiValidationFilter UNEXPECTED_FAILURE = new OpenApiValidationFilter(
             OpenApiInteractionValidator.createForSpecificationUrl(SPEC)
-                    .withResolveCombinators(true)
                     .withLevelResolver(LevelResolver.create()
                             .withLevel("validation.response.status.unknown", ValidationReport.Level.IGNORE)
-                            .withLevel("validation.request.body.schema.additionalProperties",
-                                    ValidationReport.Level.IGNORE)
                             .build())
                     .build());
 

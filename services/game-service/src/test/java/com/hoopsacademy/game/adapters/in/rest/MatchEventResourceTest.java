@@ -67,15 +67,15 @@ class MatchEventResourceTest {
         return given().filter(Contract.FILTER).header("X-Tenant-Id", A).contentType(ContentType.JSON);
     }
 
-    /** See {@link Contract#BATCH}; ':' is sent unencoded, as the generated clients do. */
+    /** ':' is sent unencoded, as the generated clients do. */
     static ValidatableResponse post(UUID match, String body) {
-        return given().filter(Contract.BATCH).urlEncodingEnabled(false).header("X-Tenant-Id", A)
+        return given().filter(Contract.FILTER).urlEncodingEnabled(false).header("X-Tenant-Id", A)
                 .contentType(ContentType.JSON).body(body).post("/api/game/matches/" + match + "/events:batch").then();
     }
 
-    /** GET of the feed; the body is checked with {@link EventSchema#assertValidFeed} (see {@link Contract#FEED}). */
+    /** GET of the feed: validated against game.yaml and, per event, against the JSON Schema ({@link EventSchema}). */
     static ValidatableResponse feed(String tenant, UUID match, String query) {
-        ValidatableResponse response = given().filter(Contract.FEED).header("X-Tenant-Id", tenant)
+        ValidatableResponse response = given().filter(Contract.FILTER).header("X-Tenant-Id", tenant)
                 .get("/api/game/matches/" + match + "/events" + query).then();
         if (response.extract().statusCode() == 200) {
             EventSchema.assertValidFeed(response.extract().asString());

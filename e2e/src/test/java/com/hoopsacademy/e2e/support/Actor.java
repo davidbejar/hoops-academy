@@ -7,7 +7,7 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import java.util.UUID;
 
-/** A signed-in user acting in one tenant. Every call validates its response against the service's OpenAPI. */
+/** A signed-in user acting in one tenant. Every call is validated (request and response) against the service's OpenAPI. */
 public final class Actor {
     public final String name;
     private final String token;
@@ -24,12 +24,12 @@ public final class Actor {
         return new Actor(name, token, other);
     }
 
-    private RequestSpecification spec(String path, boolean validate) {
+    private RequestSpecification spec(String path) {
         RequestSpecification s = given().urlEncodingEnabled(false).baseUri(E2eEnv.baseUrl()).auth().oauth2(token).accept("*/*");
         if (tenantId != null) {
             s.header("X-Tenant-Id", tenantId.toString());
         }
-        var f = validate ? Contracts.forPath(path) : null;
+        var f = Contracts.forPath(path);
         if (f != null) {
             s.filter(f);
         }
@@ -37,35 +37,26 @@ public final class Actor {
     }
 
     public Response get(String path) {
-        return spec(path, true).get(path);
-    }
-
-    public Response getUnvalidated(String path) {
-        return spec(path, false).get(path);
+        return spec(path).get(path);
     }
 
     public Response post(String path, Object body) {
-        return spec(path, true).contentType(ContentType.JSON).body(body).post(path);
+        return spec(path).contentType(ContentType.JSON).body(body).post(path);
     }
 
     public Response post(String path) {
-        return spec(path, true).post(path);
+        return spec(path).post(path);
     }
 
     public Response put(String path, Object body) {
-        return spec(path, true).contentType(ContentType.JSON).body(body).put(path);
+        return spec(path).contentType(ContentType.JSON).body(body).put(path);
     }
 
     public Response patch(String path, Object body) {
-        return spec(path, true).contentType(ContentType.JSON).body(body).patch(path);
+        return spec(path).contentType(ContentType.JSON).body(body).patch(path);
     }
 
     public Response delete(String path) {
-        return spec(path, true).delete(path);
-    }
-
-    /** Raw request with an explicit body and no response validation (deliberately malformed / foreign payloads). */
-    public Response postUnvalidated(String path, Object body) {
-        return spec(path, false).contentType(ContentType.JSON).body(body).post(path);
+        return spec(path).delete(path);
     }
 }

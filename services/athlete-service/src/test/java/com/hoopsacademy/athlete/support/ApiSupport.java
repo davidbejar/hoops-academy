@@ -21,21 +21,15 @@ import java.util.UUID;
 public final class ApiSupport {
 
     /**
-     * The contract composes schemas with allOf (e.g. TrainingSchedule = TrainingScheduleInput + id). The validator
-     * checks each allOf member on its own and then reports the other members' properties as "additional", so this
-     * one rule is ignored; types, required members, enums, formats and status/content types are still checked.
+     * Default, strict configuration: the contract has no allOf compositions (StrictValidatorCompatibilityTest), so an
+     * undeclared request or response field fails the test.
      */
-    private static final LevelResolver ALLOF_FRIENDLY = LevelResolver.create()
-            .withLevel("validation.response.body.schema.additionalProperties", ValidationReport.Level.IGNORE)
-            .withLevel("validation.request.body.schema.additionalProperties", ValidationReport.Level.IGNORE)
-            .build();
     private static final OpenApiInteractionValidator STRICT = OpenApiInteractionValidator
-            .createForSpecificationUrl("/openapi/athlete.yaml").withLevelResolver(ALLOF_FRIENDLY).build();
+            .createForSpecificationUrl("/openapi/athlete.yaml").build();
     private static final OpenApiInteractionValidator RESPONSE_ONLY = OpenApiInteractionValidator
             .createForSpecificationUrl("/openapi/athlete.yaml")
             .withLevelResolver(LevelResolver.create()
                     .withLevel("validation.request", ValidationReport.Level.IGNORE)
-                    .withLevel("validation.response.body.schema.additionalProperties", ValidationReport.Level.IGNORE)
                     .build())
             .build();
 

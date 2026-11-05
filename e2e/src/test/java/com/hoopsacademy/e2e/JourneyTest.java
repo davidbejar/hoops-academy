@@ -302,8 +302,7 @@ class JourneyTest {
         Response again = status(coach.post("/api/game/matches/" + matchId + "/events:batch", of("events", coachEvents)), 200);
         assertThat(again.jsonPath().getList("results.status")).containsOnly("DUPLICATE");
         assertEquals(firstServerSeqs.subList(0, 8), again.jsonPath().getList("results.serverSeq"));
-        // not contract-validated: the validator cannot resolve the MatchEvent discriminator (see WP18 handover)
-        Response feed = status(admin.getUnvalidated("/api/game/matches/" + matchId + "/events"), 200);
+        Response feed = status(admin.get("/api/game/matches/" + matchId + "/events"), 200);
         assertEquals(9, feed.jsonPath().getList("events").size(), "8 coach events + 1 accepted parent event, no duplicates stored");
     }
 
@@ -595,8 +594,8 @@ class JourneyTest {
         // core drops its caches on the write; game and athlete cache the membership for up to 30 s
         await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofSeconds(2)).untilAsserted(() -> {
             assertEquals(404, admin.get("/api/core/teams").statusCode());
-            assertEquals(404, coach.getUnvalidated("/api/game/matches").statusCode());
-            assertEquals(404, parent.getUnvalidated("/api/athlete/training-sessions?teamId=" + teamId).statusCode());
+            assertEquals(404, coach.get("/api/game/matches").statusCode());
+            assertEquals(404, parent.get("/api/athlete/training-sessions?teamId=" + teamId).statusCode());
         });
         status(admin.get("/api/core/tenant"), 404);
         Response me = status(admin.inTenant(null).get("/api/core/me"), 200);

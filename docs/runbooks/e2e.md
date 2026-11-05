@@ -2,8 +2,8 @@
 
 The `e2e/` Maven module drives the whole platform from the outside, through the gateway, with real Keycloak logins:
 two academies, five roles, three services. It is a black box (REST Assured over HTTP, nothing internal on the
-classpath); every API response is validated against `libs/contracts/openapi/<service>.yaml` read from disk
-(`openapi-request-validator-restassured`, response side only).
+classpath); every API request and response is validated against `libs/contracts/openapi/<service>.yaml` read from
+disk (`openapi-request-validator-restassured`, default strict configuration, nothing muted; ADR-0025).
 
 `./mvnw verify` at the root does **not** run it: the module's tests are skipped unless `-De2e.baseUrl=...` or the
 environment variable `E2E_BASE_URL` is set.
@@ -89,8 +89,6 @@ kind was blocked by the realm defect at that time and has not been re-run since 
   answer 401 for a JWT without `sub`. Compose imports the realm only on an empty volume. Reset: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
 - The Admin API of the master realm must be reachable: set `HOOPS_EXPOSE_KC_ADMIN=true` in `.env` (compose) and restart nginx
   (`just down && just up`); on kind use the port-forward and `E2E_KEYCLOAK_ADMIN_URL`.
-- Contract validation of responses ignores `additionalProperties` errors inside `allOf` schemas (contract flaw, see the
-  WP18 handover) and the `GET /matches/{id}/events` feed is not validated (the validator cannot resolve the `MatchEvent` discriminator).
 - A full run takes about 70 s, of which ~60 s are the 30 s membership caches of game/athlete expiring after suspend and after reactivate; no rate limit (429) was hit.
 
 ## Browser smoke (Flutter)

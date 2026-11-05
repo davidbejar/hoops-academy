@@ -153,7 +153,7 @@ class PlatformTenantResourceTest {
         String slug = Slugs.unique("kcdown");
         KeycloakStubs.createUserFails(keycloak);
 
-        given().filter(Contract.FAILURES).contentType(ContentType.JSON).body(createBody(slug, slug + ".a@example.com"))
+        given().filter(Contract.CORE).contentType(ContentType.JSON).body(createBody(slug, slug + ".a@example.com"))
                 .post(TENANTS).then().statusCode(502).contentType("application/problem+json")
                 .body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
 
@@ -168,7 +168,7 @@ class PlatformTenantResourceTest {
         KeycloakStubs.temporaryPasswordFails(keycloak);
 
         try (LogCapture logs = LogCapture.start()) {
-            String problem = given().filter(Contract.FAILURES).contentType(ContentType.JSON)
+            String problem = given().filter(Contract.CORE).contentType(ContentType.JSON)
                     .body(createBody(slug, slug + ".a@example.com")).post(TENANTS).then().statusCode(502)
                     .extract().asString();
 
@@ -188,7 +188,7 @@ class PlatformTenantResourceTest {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
 
-        given().filter(Contract.FAILURES).contentType(ContentType.JSON).body(createBody(slug, slug + ".a@example.com"))
+        given().filter(Contract.UNEXPECTED_FAILURE).contentType(ContentType.JSON).body(createBody(slug, slug + ".a@example.com"))
                 .post(TENANTS).then().statusCode(500).contentType("application/problem+json");
 
         assertThat(CoreDb.countAsPlatform("select count(*) from core.tenant where slug = ?", slug)).isZero();
@@ -202,7 +202,7 @@ class PlatformTenantResourceTest {
         String email = slug + ".kept@example.com";
         KeycloakStubs.existingUser(keycloak, email, UUID.randomUUID().toString());
 
-        given().filter(Contract.FAILURES).contentType(ContentType.JSON).body(createBody(slug, email))
+        given().filter(Contract.UNEXPECTED_FAILURE).contentType(ContentType.JSON).body(createBody(slug, email))
                 .post(TENANTS).then().statusCode(500);
         keycloak.verify(0, anyUserDeleted());
     }

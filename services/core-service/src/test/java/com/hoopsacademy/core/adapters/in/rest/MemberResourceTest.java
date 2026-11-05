@@ -144,7 +144,7 @@ class MemberResourceTest {
     @Test
     void keycloakFailuresLeaveNoMemberBehind() {
         KeycloakStubs.createUserFails(keycloak);
-        given().filter(Contract.FAILURES).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"givenName\":\"K\",\"familyName\":\"Down\",\"email\":\"kdown@example.com\",\"roles\":[\"COACH\"]}")
                 .post(MEMBERS).then().statusCode(502);
 
@@ -152,7 +152,7 @@ class MemberResourceTest {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
         KeycloakStubs.temporaryPasswordFails(keycloak);
-        given().filter(Contract.FAILURES).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"givenName\":\"M\",\"familyName\":\"Fail\",\"email\":\"mfail@example.com\",\"roles\":[\"COACH\"]}")
                 .post(MEMBERS).then().statusCode(502);
         keycloak.verify(1, userDeleted(sub));
@@ -260,7 +260,7 @@ class MemberResourceTest {
         UUID coach = coachWithLogin(sub, "kept.coach@example.com");
         KeycloakStubs.loginUpdateFails(keycloak);
 
-        given().filter(Contract.FAILURES).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"email\":\"lost.coach@example.com\"}").patch(MEMBERS + "/" + coach).then()
                 .statusCode(502).contentType("application/problem+json")
                 .body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
@@ -403,7 +403,7 @@ class MemberResourceTest {
     void aKeycloakFailureLeavesNoAuditRow() {
         UUID coach = coachWithLogin(UUID.randomUUID().toString(), "kc.down@example.com", "PENDING");
         KeycloakStubs.temporaryPasswordFails(keycloak);
-        given().filter(Contract.FAILURES).header("X-Tenant-Id", tenant).post(MEMBERS + "/" + coach + "/temporary-password")
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).post(MEMBERS + "/" + coach + "/temporary-password")
                 .then().statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
         assertThat(CoreDb.auditActions(tenant)).doesNotContain("member.temporary_password_issued");
     }
