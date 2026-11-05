@@ -70,7 +70,7 @@ class LiveMatch {
   final List<RosterPlayer> roster;
   final MatchRules rules;
   /// Local replay of the events this device knows. For a caller with a
-  /// filtered feed (not ADMIN / team staff, ADR-0028) it holds their own and
+  /// filtered feed (not ADMIN / team staff, ADR-0030) it holds their own and
   /// linked players' lines only; use [team] for the score and totals.
   final Projection projection;
 
@@ -198,7 +198,7 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     if (state.hasValue) state = AsyncData(_compose());
   }
 
-  /// Fetches the server's team figures (ADR-0028); offline keeps the last.
+  /// Fetches the server's team figures (ADR-0030); offline keeps the last.
   Future<void> _refreshOfficial(MatchesRepository repo) async {
     if (_refreshing) {
       _refreshAgain = true;

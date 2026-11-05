@@ -1,4 +1,4 @@
-# ADR-0028: Match event feed filtered by player visibility
+# ADR-0030: Match event feed filtered by player visibility
 
 - Status: Accepted
 - Date: 2026-11-05

@@ -33,4 +33,4 @@ says so in its header ("Supersedes", "Records"), and the earlier one carries an 
 | [0026](0026-shared-login-email-reaches-every-academy.md) | A shared login's e-mail change reaches every academy that uses it (same transaction, per-statement tenant binding) |
 | [0027](0027-contracts-without-allof-composition.md) | Contracts without allOf composition, validated strictly everywhere |
 | [0028](0028-temporary-password-expiry-without-a-scheduler.md) | Temporary passwords expire after three days, swept on events instead of a scheduler |
-| [0028](0028-match-event-feed-filtered-by-player-visibility.md) | Match event feed filtered by player visibility (F-01) |
+| [0030](0030-match-event-feed-filtered-by-player-visibility.md) | Match event feed filtered by player visibility (F-01) |

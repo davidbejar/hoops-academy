@@ -233,7 +233,7 @@ class MockGameApi {
     return MockResult.json(200, {'results': results, 'lastServerSeq': m['lastServerSeq']});
   }
 
-  /// Filtered like game-service (ADR-0028): staff read every event, anybody
+  /// Filtered like game-service (ADR-0030): staff read every event, anybody
   /// else team-level events plus those of linked players.
   MockResult _feed(String matchId, int after, int limit) {
     final stored = _events[matchId] ?? <_Stored>[];

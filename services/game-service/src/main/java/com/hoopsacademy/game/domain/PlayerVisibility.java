@@ -5,7 +5,7 @@ import java.util.Set;
 
 /**
  * Whose player statistics a viewer may see in one match: every player's, or only some players' (ADR-0021 §3,
- * ADR-0028). Box-score lines and player-attributed events follow it alike.
+ * ADR-0030). Box-score lines and player-attributed events follow it alike.
  *
  * @param seesAll every player is visible ({@code players} is then irrelevant and empty)
  * @param players the visible players when not {@code seesAll}

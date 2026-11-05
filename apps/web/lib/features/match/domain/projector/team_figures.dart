@@ -1,5 +1,5 @@
 /// Team-level figures of a match (score, period scores, team totals) and how
-/// a caller with a filtered event feed gets them right (ADR-0028).
+/// a caller with a filtered event feed gets them right (ADR-0030).
 library;
 
 import 'dart:math' as math;

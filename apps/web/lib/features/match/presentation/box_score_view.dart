@@ -10,7 +10,7 @@ import 'match_labels.dart';
 /// Live / final box score from the local projection (same rules as the
 /// server). PARENT sees linked players' lines only, like `GET box-score`;
 /// score, period scores and totals come from [LiveMatch.team] (for a filtered
-/// feed the server's figures, ADR-0028; hidden while unknown offline).
+/// feed the server's figures, ADR-0030; hidden while unknown offline).
 class BoxScoreView extends StatelessWidget {
   const BoxScoreView({super.key, required this.live});
   final LiveMatch live;

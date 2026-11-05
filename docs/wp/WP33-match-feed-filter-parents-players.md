@@ -33,7 +33,7 @@ COACH, ASSISTANT_COACH) keep the full feed.
 - [ ] Failing tests first (application rule unit tests + role-matrix API test), then the change
 - [ ] `./mvnw -B -ntp -T 1C verify` green (fresh; totals), `just web-test` green, `just isolation-check` green
 - [ ] Authz matrix and contract updated; handover appended; ADR only if a visibility rule needed a judgment call
-      (then ADR-0028)
+      (then ADR-0030)
 
 ## Working rules
 - Work only in your worktree on your branch; `source scripts/env.sh` first. Do not touch `main`, do not push.
@@ -61,7 +61,7 @@ COACH, ASSISTANT_COACH) keep the full feed.
     non-staff on build, on feed changes and every 15 s; offline fallback = cached match score (period scores / totals
     hidden). Court for non-staff = one "Players" list (subs of others are hidden); tile numbers only for own/linked.
     `feed_visibility.dart` mirrors the rule for `MockGameApi` and the test fakes.
-  - Docs: ADR-0028, ADR-0021 §3, authz matrix feed row + note, security review F-01 → Fixed, conformance S-30/R-11,
+  - Docs: ADR-0030, ADR-0021 §3, authz matrix feed row + note, security review F-01 → Fixed, conformance S-30/R-11,
     guides parent/player/coach (es/en/id), game-service README.
 - Verified (fresh, 2026-11-05):
   - Red first: `MatchEventFeedRoleMatrixTest` 16/26 failed (the 8 filtered callers × 2) before the change; unit tests
@@ -70,10 +70,15 @@ COACH, ASSISTANT_COACH) keep the full feed.
   - `./mvnw -B -ntp -T 1C clean verify`: BUILD SUCCESS; contracts 134, common 172, game **238** (was 196), athlete 586,
     core 701; 0 failures; all coverage checks met (game lines 98.6 %, domain 98.8 %).
   - `just web-test`: 556 passed; `flutter analyze`: no issues. `just isolation-check`: 6 tests passed.
-- Decisions/ADRs: ADR-0028 (substitutions are player events; COACH of another team gets the filtered feed like the box
+- Decisions/ADRs: ADR-0030 (substitutions are player events; COACH of another team gets the filtered feed like the box
   score; VOID visibility; unfiltered `lastServerSeq`; client team figures from the box score).
 - Open points / follow-ups:
   - Filtered feed reads all events of the match per request; push the filter into SQL if it ever shows up in profiles.
   - Hidden players' events reach a parent's score with the next refresh (≤ 15 s online).
-  - ADR number: the WP32 brief may also claim 0028 — renumber on merge if WP32 lands first.
+  - ADR number: renumbered 0028 → **0030** after the rebase onto main (0028 is WP32's, 0029 reserved for WP34).
   - Commits carry `Co-Authored-By: Claude Opus 5.5` (the model that did the work), not the brief's "Fable 5.1" line.
+- Rebase onto main (WP32 merged): conflicts only in docs/adr/README.md (both rows kept) and the security review status
+  updates (WP32's kept; WP33's recounted: fixed 18, planned 0). ADR renumbered **0028 → 0030** everywhere (code
+  comments, contract descriptions, regenerated game client docs, matrix, review, conformance, ADR-0021). Fresh after
+  the rebase: `./mvnw -B -ntp -T 1C clean verify` BUILD SUCCESS (contracts 138, common 172, game 238, athlete 586,
+  core 724; coverage met); `flutter analyze` clean, `flutter test` 559 passed; `just isolation-check` 6 passed.

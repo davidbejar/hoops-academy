@@ -361,7 +361,7 @@ void main() {
     });
   });
 
-  group('filtered feed (ADR-0028)', () {
+  group('filtered feed (ADR-0030)', () {
     FakeGame coachScored() {
       final game = gameWith()..server.visiblePlayers = {'p1'};
       game.server.preload(live, [

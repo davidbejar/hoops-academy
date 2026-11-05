@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** ADR-0028: which events of a match a viewer whose player visibility is restricted may read. */
+/** ADR-0030: which events of a match a viewer whose player visibility is restricted may read. */
 class EventVisibilityTest {
 
     static final PlayerId OWN = player(1), OTHER = player(2);

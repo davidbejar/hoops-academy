@@ -42,7 +42,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * docs/domain/authz-matrix.md "Read the match event feed" (security review F-01, ADR-0028): ADMIN and staff of the
+ * docs/domain/authz-matrix.md "Read the match event feed" (security review F-01, ADR-0030): ADMIN and staff of the
  * match's team read every event; everybody else reads the team-level events plus the events of their own or linked
  * players. A VOID is visible when the event it voids is.
  */

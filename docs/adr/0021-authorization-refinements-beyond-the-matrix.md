@@ -1,6 +1,6 @@
 # ADR-0021: Authorization refinements beyond the authz matrix
 
-- Status: Accepted (records decisions taken in WP4, WP6, WP7, WP8, WP9, WP10; §3 amended by ADR-0028: the event feed is filtered since WP33)
+- Status: Accepted (records decisions taken in WP4, WP6, WP7, WP8, WP9, WP10; §3 amended by ADR-0030: the event feed is filtered since WP33)
 - Date: 2026-11-02
 - Related: `docs/domain/authz-matrix.md` (the oracle), ADR-0005, ADR-0014 §3–4
 
@@ -18,7 +18,7 @@ collects them so the matrix, the guides and the role-matrix tests can be read to
 2. **"Coach of the team"** = COACH role + a `team_staff` row for the team (any staff role on the row).
 3. **Match visibility**: any tenant member may list and read matches, rosters and the event feed (WP6/WP7). Box scores
    and season stats are line-filtered: ADMIN/team staff all lines, PARENT linked players, PLAYER self. The event feed
-   follows the box score's rule (ADR-0028, WP33; was F-01): ADMIN/team staff read every event, anybody else team-level
+   follows the box score's rule (ADR-0030, WP33; was F-01): ADMIN/team staff read every event, anybody else team-level
    events plus the events of their own or linked players.
 4. **Event ingest by status** (ADR-0014 §3): SCHEDULED, LIVE and FINISHED accept events, CANCELLED rejects. After
    FINISHED staff may still correct anything; a PARENT event counts only if recorded before `finishedAt`. Parents may
@@ -39,7 +39,7 @@ collects them so the matrix, the guides and the role-matrix tests can be read to
 ## Consequences
 - Role-matrix tests encode these rules: `TeamPlayerResourceTest`, `EligibilityCaseResourceTest`, `MatchResourceTest`,
   `EventAuthorizationTest`, `MatchEventResourceTest`, `RoleMatrixTest`, `PlanRoleMatrixTest`, `HealthRoleMatrixTest`.
-- The matrix document has the feed row since WP33 (ADR-0028: team-level events for everyone, player events only for
+- The matrix document has the feed row since WP33 (ADR-0030: team-level events for everyone, player events only for
   own or linked players; staff of the team and ADMIN everything). Role-matrix test: `MatchEventFeedRoleMatrixTest`.
 - Training reads for all staff and health reads limited to own teams are intentionally different (health data of minors
   is more sensitive).

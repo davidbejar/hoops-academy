@@ -13,7 +13,7 @@ Authorization (docs/domain/authz-matrix.md): team staff (COACH / ASSISTANT_COACH
 enter any event; PARENT may enter player-attributed stat events for linked players and VOID their own events only;
 PLAYER is read-only (own statistics).
 
-Visibility of player statistics (ADR-0021 §3, ADR-0028): ADMIN and staff of the match's team see every player;
+Visibility of player statistics (ADR-0021 §3, ADR-0030): ADMIN and staff of the match's team see every player;
 anybody else sees linked players (PARENT) and the own player (PLAYER). Box-score lines and the event feed
 (`listMatchEvents`) follow the same rule; team-level figures (score, period scores, team totals) are visible to
 every member through the box score.

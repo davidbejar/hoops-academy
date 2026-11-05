@@ -17,7 +17,7 @@ info:
     enter any event; PARENT may enter player-attributed stat events for linked players and VOID their own events only;
     PLAYER is read-only (own statistics).
 
-    Visibility of player statistics (ADR-0021 §3, ADR-0028): ADMIN and staff of the match's team see every player;
+    Visibility of player statistics (ADR-0021 §3, ADR-0030): ADMIN and staff of the match's team see every player;
     anybody else sees linked players (PARENT) and the own player (PLAYER). Box-score lines and the event feed
     (`listMatchEvents`) follow the same rule; team-level figures (score, period scores, team totals) are visible to
     every member through the box score.
@@ -292,7 +292,7 @@ paths:
       description: |
         Ordered by `serverSeq` ascending. Includes voided events (with `voidedByEventId`).
 
-        Authz: any member who may view the match; **the feed is filtered per caller** (ADR-0028, security review
+        Authz: any member who may view the match; **the feed is filtered per caller** (ADR-0030, security review
         F-01). ADMIN and staff (COACH / ASSISTANT_COACH) of the match's team read every event. Anybody else reads:
         - the **team-level** events: `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and `NOTE` without
           `playerId`;

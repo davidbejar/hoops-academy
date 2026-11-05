@@ -172,7 +172,7 @@ void main() {
     expect(s.log, isEmpty);
   });
 
-  group('filtered feed (ADR-0028)', () {
+  group('filtered feed (ADR-0030)', () {
     const parent = Capabilities(roles: {TenantRole.parent}, linkedPlayerIds: {'p1'}, personId: 'person-me');
 
     RecordedEvent shot(String id, String player, int points, {int clock = 500}) => RecordedEvent(Shot(

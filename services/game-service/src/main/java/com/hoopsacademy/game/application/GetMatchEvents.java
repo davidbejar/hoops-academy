@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Merge feed for other devices (contract listMatchEvents); any member who may view the match may read it, filtered by
- * {@link StatVisibility} and {@link EventVisibility} (ADR-0028): ADMIN and staff of the team read every event,
+ * {@link StatVisibility} and {@link EventVisibility} (ADR-0030): ADMIN and staff of the team read every event,
  * anybody else the team-level events plus those of their own or linked players. Paging walks the visible events only;
  * {@code lastServerSeq} is the match's highest sequence number for every caller.
  */

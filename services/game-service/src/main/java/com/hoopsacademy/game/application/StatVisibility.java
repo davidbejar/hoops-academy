@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 
 /**
  * The one place that decides whose statistics a caller sees in a match of {@code team} (docs/domain/authz-matrix.md
- * "View match stats", ADR-0021 §3, ADR-0028): ADMIN and staff of the team see every player; anybody else sees the
+ * "View match stats", ADR-0021 §3, ADR-0030): ADMIN and staff of the team see every player; anybody else sees the
  * players they are guardian of (PARENT) and their own player (PLAYER). Box-score lines and the event feed use it.
  */
 final class StatVisibility {

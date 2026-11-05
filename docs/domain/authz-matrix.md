@@ -16,7 +16,7 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Enter player stat events | yes | all team | all team | linked players only | – |
 | Void events | yes | any | any | own events only | – |
 | View match stats | yes | yes | yes | linked | self |
-| Read the match event feed (`GET /api/game/matches/{id}/events`, ADR-0028) | all events | all events | all events | team-level + linked players' events | team-level + own events |
+| Read the match event feed (`GET /api/game/matches/{id}/events`, ADR-0030) | all events | all events | all events | team-level + linked players' events | team-level + own events |
 | Training schedule / sessions / plans | write | write | write | read | read |
 | Mark plan completion | yes | team | team | linked | self |
 | Planned absence | yes | yes | yes | linked | self |
@@ -27,6 +27,6 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Tenant lifecycle, usage statistics | `super_admin` (platform) only — cannot read tenant content | | | | |
 | A tenant's administrators (list, add, edit names/e-mail, remove, new temporary password while PENDING) | `super_admin` (platform, `/platform/tenants/{id}/admins`) — identity of the admins only, ADR-0023, ADR-0024; tenant ADMINs manage them as members | | | | |
 
-Feed row (ADR-0028): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
+Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of
 another team read the feed like any other member (linked / own players only), as for the box score.

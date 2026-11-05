@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Which events of one match a viewer may read (ADR-0028, security review F-01). An event attributed to a player
+ * Which events of one match a viewer may read (ADR-0030, security review F-01). An event attributed to a player
  * (statistics, substitutions, a note about a player) is visible when that player is; team-level events (period start
  * and end, opponent score, timeouts, notes about nobody) are visible to everyone. A VOID is visible when the event it
  * voids is, following VOID-of-VOID chains; a VOID whose target is unknown, or that ends in a cycle of VOIDs, names no

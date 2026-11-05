@@ -65,7 +65,7 @@ void main() {
     expect(box.players.map((p) => p.playerId), ['p-ana']);
   });
 
-  test('feed like the server (ADR-0028): staff read every event, a parent team events and the linked player\'s', () async {
+  test('feed like the server (ADR-0030): staff read every event, a parent team events and the linked player\'s', () async {
     final staff = await ApiEventsRemote(client(['COACH']), mockTenantAId).feed(MockGameApi.liveMatchId, after: 0);
     expect(staff.events.map((s) => s.event.playerId), contains('p-leo'), reason: 'precondition: other players scored');
 

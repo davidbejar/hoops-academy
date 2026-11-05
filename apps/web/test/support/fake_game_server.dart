@@ -25,7 +25,7 @@ class FakeGameServer implements EventsRemote {
   /// The server stores the batch but the response is lost.
   bool dropResponses = false;
 
-  /// Players the caller sees (ADR-0028): null = staff, the whole feed; else
+  /// Players the caller sees (ADR-0030): null = staff, the whole feed; else
   /// the feed holds team-level events and these players' events only.
   Set<String>? visiblePlayers;
 

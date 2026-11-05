@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * The single rule behind the box-score lines and the event feed (ADR-0021 §3, ADR-0028): ADMIN and staff of the
+ * The single rule behind the box-score lines and the event feed (ADR-0021 §3, ADR-0030): ADMIN and staff of the
  * match's team see every player; anybody else sees linked players (PARENT) and the own player (PLAYER) only.
  */
 class StatVisibilityTest {

@@ -1,6 +1,6 @@
 import 'match_event.dart';
 
-/// Mirror of game-service `EventVisibility` (ADR-0028): the events of a match
+/// Mirror of game-service `EventVisibility` (ADR-0030): the events of a match
 /// a caller who sees only [visiblePlayers] reads in the feed. `null` = sees
 /// every player (ADMIN, team staff). Player events (stats, substitutions, a
 /// note about a player) follow their player; team-level events are visible to

@@ -3,7 +3,7 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import '../domain/projector/projection.dart';
 import '../domain/projector/team_figures.dart';
 
-/// The server's team figures from `GET box-score` (ADR-0028).
+/// The server's team figures from `GET box-score` (ADR-0030).
 OfficialFigures officialFiguresOf(gen.BoxScore box) => OfficialFigures(
   lastServerSeq: box.lastServerSeq,
   figures: TeamFigures(

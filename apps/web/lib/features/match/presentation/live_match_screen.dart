@@ -369,7 +369,7 @@ class _CourtPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     if (!live.rights.canRunMatch) {
-      // Filtered feed (ADR-0028): other players' substitutions are not in it,
+      // Filtered feed (ADR-0030): other players' substitutions are not in it,
       // so who is on court is unknown; one list, the linked player tappable.
       return ListView(
         key: const Key('court-panel'),
