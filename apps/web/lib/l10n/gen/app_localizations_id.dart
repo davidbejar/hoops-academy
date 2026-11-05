@@ -135,6 +135,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Anda belum menjadi anggota akademi mana pun. Minta administrator akademi untuk menambahkan Anda dengan e-mail yang Anda gunakan untuk masuk.';
 
   @override
+  String timesShownIn(String zone) {
+    return 'Waktu ditampilkan dalam zona waktu akademi: $zone';
+  }
+
+  @override
   String get profileLoadFailed => 'Kami tidak dapat memuat profil Anda';
 
   @override

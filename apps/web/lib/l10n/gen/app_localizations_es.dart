@@ -136,6 +136,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con el correo con el que has iniciado sesión.';
 
   @override
+  String timesShownIn(String zone) {
+    return 'Las horas se muestran en la zona horaria de la academia: $zone';
+  }
+
+  @override
   String get profileLoadFailed => 'No hemos podido cargar tu perfil';
 
   @override

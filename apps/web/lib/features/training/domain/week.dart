@@ -18,10 +18,17 @@ DateTime addWeeks(DateTime monday, int weeks) =>
 bool sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
 /// Groups [items] by local calendar day of [at], each group sorted by time.
-Map<DateTime, List<T>> groupByDay<T>(Iterable<T> items, DateTime Function(T) at) {
+///
+/// [wall] converts an instant to the wall clock the days are counted in
+/// (default: the device zone).
+Map<DateTime, List<T>> groupByDay<T>(
+  Iterable<T> items,
+  DateTime Function(T) at, {
+  DateTime Function(DateTime)? wall,
+}) {
   final out = <DateTime, List<T>>{};
   for (final i in items) {
-    final t = at(i).toLocal();
+    final t = (wall ?? (d) => d.toLocal())(at(i));
     out.putIfAbsent(DateTime(t.year, t.month, t.day), () => []).add(i);
   }
   for (final l in out.values) {

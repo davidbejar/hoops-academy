@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../tenant/application/tenant_providers.dart';
+
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
@@ -33,9 +35,10 @@ final nowProvider = Provider<DateTime Function()>((_) => DateTime.now);
 /// Monday of the week on screen.
 class WeekStart extends Notifier<DateTime> {
   @override
-  DateTime build() => startOfWeek(ref.read(nowProvider)());
+  DateTime build() => startOfWeek(_today());
   void shift(int weeks) => state = addWeeks(state, weeks);
-  void today() => state = startOfWeek(ref.read(nowProvider)());
+  void today() => state = startOfWeek(_today());
+  DateTime _today() => ref.read(tenantZoneProvider).today(ref.read(nowProvider)());
   void set(DateTime monday) => state = startOfWeek(monday);
 }
 

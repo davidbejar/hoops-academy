@@ -41,6 +41,10 @@
     "placeholders": { "email": { "type": "String" } }
   },
   "notMemberBodyNoEmail": "Anda belum menjadi anggota akademi mana pun. Minta administrator akademi untuk menambahkan Anda dengan e-mail yang Anda gunakan untuk masuk.",
+  "timesShownIn": "Waktu ditampilkan dalam zona waktu akademi: {zone}",
+  "@timesShownIn": {
+    "placeholders": { "zone": { "type": "String" } }
+  },
   "profileLoadFailed": "Kami tidak dapat memuat profil Anda",
   "errorNetwork": "Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.",
   "errorTimeout": "Server terlalu lama merespons. Coba lagi.",

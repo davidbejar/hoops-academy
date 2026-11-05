@@ -11,6 +11,8 @@ import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/timezone_note.dart';
+import '../../tenant/application/tenant_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/match_providers.dart';
@@ -39,6 +41,7 @@ class MatchesScreen extends ConsumerWidget {
       body: Column(
         children: [
           const SyncBanner(),
+          const TimezoneNote(),
           if (caps.canSeeModule) const _TeamFilter(),
           if (list.value?.fromCache ?? false)
             Padding(
@@ -99,15 +102,15 @@ class _TeamFilter extends ConsumerWidget {
   }
 }
 
-class MatchTile extends StatelessWidget {
+class MatchTile extends ConsumerWidget {
   const MatchTile({super.key, required this.match});
   final gen.Match match;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final when = DateFormat.yMMMd(locale).add_Hm().format(match.scheduledAt.toLocal());
+    final when = DateFormat.yMMMd(locale).add_Hm().format(ref.watch(tenantZoneProvider).wall(match.scheduledAt));
     final played = match.status == gen.MatchStatus.LIVE || match.status == gen.MatchStatus.FINISHED;
     return ListTile(
       key: Key('match-${match.id}'),
@@ -142,7 +145,7 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
   final _opponent = TextEditingController();
   String? _teamId;
   gen.HomeAway _homeAway = gen.HomeAway.HOME;
-  DateTime _date = DateTime.now().add(const Duration(days: 1));
+  late DateTime _date = ref.read(tenantZoneProvider).today(DateTime.now()).add(const Duration(days: 1));
 
   @override
   void dispose() {
@@ -168,7 +171,7 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
           teamId: _teamId!,
           opponentName: _opponent.text.trim(),
           homeAway: _homeAway,
-          scheduledAt: _date,
+          scheduledAt: ref.read(tenantZoneProvider).instant(DateTime(_date.year, _date.month, _date.day, 10)),
         ),
         success: l.matchCreated,
       ),
@@ -203,13 +206,14 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
           subtitle: Text(DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag()).format(_date)),
           trailing: const Icon(Icons.calendar_today),
           onTap: () async {
+            final today = ref.read(tenantZoneProvider).today(DateTime.now());
             final picked = await showDatePicker(
               context: context,
               initialDate: _date,
-              firstDate: DateTime.now().subtract(const Duration(days: 365)),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
+              firstDate: today.subtract(const Duration(days: 365)),
+              lastDate: today.add(const Duration(days: 365)),
             );
-            if (picked != null) setState(() => _date = DateTime(picked.year, picked.month, picked.day, 10));
+            if (picked != null) setState(() => _date = DateTime(picked.year, picked.month, picked.day));
           },
         ),
       ],

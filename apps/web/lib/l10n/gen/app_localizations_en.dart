@@ -135,6 +135,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'You are not a member of an academy yet. Ask an academy administrator to add you with the e-mail you signed in with.';
 
   @override
+  String timesShownIn(String zone) {
+    return 'Times are shown in the academy\'s time zone: $zone';
+  }
+
+  @override
   String get profileLoadFailed => 'We could not load your profile';
 
   @override

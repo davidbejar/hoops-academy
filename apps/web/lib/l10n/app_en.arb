@@ -41,6 +41,10 @@
     "placeholders": { "email": { "type": "String" } }
   },
   "notMemberBodyNoEmail": "You are not a member of an academy yet. Ask an academy administrator to add you with the e-mail you signed in with.",
+  "timesShownIn": "Times are shown in the academy's time zone: {zone}",
+  "@timesShownIn": {
+    "placeholders": { "zone": { "type": "String" } }
+  },
   "profileLoadFailed": "We could not load your profile",
   "errorNetwork": "Cannot reach the server. Check your connection and try again.",
   "errorTimeout": "The server is taking too long to respond. Try again.",

@@ -8,6 +8,7 @@ import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
+import '../../tenant/application/tenant_providers.dart';
 import '../application/training_providers.dart';
 import 'training_labels.dart';
 
@@ -42,6 +43,7 @@ class _Body extends ConsumerWidget {
     final s = detail.session;
     final caps = ref.watch(capabilitiesProvider);
     final staff = caps.canManageTraining(s.teamId);
+    final zone = ref.watch(tenantZoneProvider);
     final end = s.startsAt.add(Duration(minutes: s.durationMinutes));
     final names = ref.watch(teamNamesProvider);
     final planned = s.status == ath.TrainingSessionStatus.PLANNED;
@@ -58,7 +60,7 @@ class _Body extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '${shortDate(s.startsAt.toLocal())}  ${l.sessionTimeRange(formatTime(end), formatTime(s.startsAt))}',
+                        '${shortDate(zone.wall(s.startsAt))}  ${l.sessionTimeRange(formatTime(end, zone), formatTime(s.startsAt, zone))}',
                         style: theme.textTheme.titleMedium,
                       ),
                     ),

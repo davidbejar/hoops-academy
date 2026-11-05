@@ -11,6 +11,7 @@ import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
 import '../../roster/application/roster_providers.dart';
+import '../../tenant/application/tenant_providers.dart';
 import '../application/match_providers.dart';
 import 'match_labels.dart';
 
@@ -124,7 +125,7 @@ class _StatsBody extends ConsumerWidget {
                 key: Key('stats-match-${m.matchId}'),
                 contentPadding: EdgeInsets.zero,
                 title: Text(l.matchVs(m.opponentName)),
-                subtitle: Text(DateFormat.yMMMd(locale).format(m.scheduledAt.toLocal())),
+                subtitle: Text(DateFormat.yMMMd(locale).format(ref.watch(tenantZoneProvider).wall(m.scheduledAt))),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

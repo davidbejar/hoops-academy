@@ -1,3 +1,4 @@
+import '../../../core/time/tenant_zone.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/api/athlete_api.dart' as ath;
@@ -83,9 +84,9 @@ const completionChoices = [ath.CompletionStatus.DONE, ath.CompletionStatus.PARTI
 
 String two(int n) => n.toString().padLeft(2, '0');
 
-/// `HH:mm` in the device's local zone.
-String formatTime(DateTime d) {
-  final t = d.toLocal();
+/// `HH:mm` of the instant [d] in the academy [zone].
+String formatTime(DateTime d, TenantZone zone) {
+  final t = zone.wall(d);
   return '${two(t.hour)}:${two(t.minute)}';
 }
 

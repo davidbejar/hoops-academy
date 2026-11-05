@@ -328,6 +328,12 @@ abstract class AppLocalizations {
   /// **'Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con el correo con el que has iniciado sesión.'**
   String get notMemberBodyNoEmail;
 
+  /// No description provided for @timesShownIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Las horas se muestran en la zona horaria de la academia: {zone}'**
+  String timesShownIn(String zone);
+
   /// No description provided for @profileLoadFailed.
   ///
   /// In es, this message translates to:

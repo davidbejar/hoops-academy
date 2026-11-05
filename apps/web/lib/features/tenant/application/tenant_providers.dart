@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/http/dio_provider.dart';
 import '../../../core/session/session_providers.dart';
+import '../../../core/time/tenant_zone.dart';
 import '../../admin/application/logo_revision.dart';
 import '../data/tenant_repository.dart';
 import '../domain/tenant_profile.dart';
@@ -18,6 +19,11 @@ final tenantProfileProvider = FutureProvider<TenantProfile?>((ref) async {
   if (tenantId == null) return null;
   return ref.watch(tenantRepositoryProvider).profile(tenantId);
 });
+
+/// The active academy's time zone; the device zone until the profile is known.
+final tenantZoneProvider = Provider<TenantZone>(
+  (ref) => TenantZone.of(ref.watch(tenantProfileProvider).value?.timezone),
+);
 
 /// Logo bytes of the active academy; null when it has none or loading fails
 /// (the UI then shows initials).

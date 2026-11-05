@@ -65,6 +65,10 @@
     "placeholders": { "email": { "type": "String" } }
   },
   "notMemberBodyNoEmail": "Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con el correo con el que has iniciado sesión.",
+  "timesShownIn": "Las horas se muestran en la zona horaria de la academia: {zone}",
+  "@timesShownIn": {
+    "placeholders": { "zone": { "type": "String" } }
+  },
   "profileLoadFailed": "No hemos podido cargar tu perfil",
   "errorNetwork": "No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.",
   "errorTimeout": "El servidor tarda demasiado en responder. Inténtalo de nuevo.",

@@ -11,6 +11,8 @@ import '../../../core/ui/async_body.dart';
 import '../../../core/ui/date_field.dart';
 import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/timezone_note.dart';
+import '../../tenant/application/tenant_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../../roster/presentation/eligibility_widgets.dart' show TeamLabel;
@@ -44,6 +46,7 @@ class TrainingScreen extends ConsumerWidget {
           child: Column(
             children: [
               _WeekHeader(monday: monday),
+              const TimezoneNote(),
               const _TrainingMenu(),
               if (caps.canManageAnyTraining) const _TeamFilter(),
               Expanded(
@@ -177,9 +180,10 @@ class WeekCalendar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final byDay = groupByDay(sessions, (s) => s.startsAt);
+    final zone = ref.watch(tenantZoneProvider);
+    final byDay = groupByDay(sessions, (s) => s.startsAt, wall: zone.wall);
     final names = ref.watch(teamNamesProvider);
-    final today = ref.watch(nowProvider)();
+    final today = zone.today(ref.watch(nowProvider)());
     return ListView(
       key: const Key('week-calendar'),
       padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
@@ -208,13 +212,14 @@ class WeekCalendar extends ConsumerWidget {
   }
 }
 
-class SessionTile extends StatelessWidget {
+class SessionTile extends ConsumerWidget {
   const SessionTile({super.key, required this.session, this.teamName});
   final ath.TrainingSession session;
   final String? teamName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final zone = ref.watch(tenantZoneProvider);
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final end = session.startsAt.add(Duration(minutes: session.durationMinutes));
@@ -234,7 +239,7 @@ class SessionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l.sessionTimeRange(formatTime(end), formatTime(session.startsAt)),
+                      l.sessionTimeRange(formatTime(end, zone), formatTime(session.startsAt, zone)),
                       style: theme.textTheme.titleMedium?.copyWith(
                         decoration: cancelled ? TextDecoration.lineThrough : null,
                       ),
@@ -269,7 +274,7 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
   final _location = TextEditingController();
   final _notes = TextEditingController();
   String? _teamId;
-  DateTime _date = DateTime.now();
+  late DateTime _date = ref.read(tenantZoneProvider).today(DateTime.now());
   TimeOfDay _time = const TimeOfDay(hour: 18, minute: 0);
 
   @override
@@ -296,7 +301,7 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
         context,
         () => ref.read(weekSessionsProvider.notifier).create(
           teamId: _teamId!,
-          startsAt: DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute),
+          startsAt: ref.read(tenantZoneProvider).instant(DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute)),
           durationMinutes: int.parse(_duration.text),
           location: _location.text.trim().isEmpty ? null : _location.text.trim(),
           notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
@@ -319,7 +324,7 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
           label: l.sessionDate,
           value: _date,
           onChanged: (d) => setState(() => _date = d),
-          firstDate: DateTime.now().subtract(const Duration(days: 365)),
+          firstDate: ref.read(tenantZoneProvider).today(DateTime.now()).subtract(const Duration(days: 365)),
         ),
         formGap,
         InkWell(
