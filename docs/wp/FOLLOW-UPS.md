@@ -1,28 +1,29 @@
 # Cross-cutting follow-ups (owned by the orchestrator)
 
 Collected from the WP handovers and the WP20 review (2026-11-02); reconciled with the product interview of 2026-11-05
-(WP26). Grouped by area; **[v2]** marks items that are out of v1 by decision (PLAN §8, roadmap); **→ WPnn** marks an
-item that the plan below assigns to a work package. Resolved items are listed at the bottom with the WP or decision that
+(WP26) and with the WP26–WP37 handovers on 2026-11-06. Grouped by area; **[v2]** marks items that are out of v1 by
+decision (PLAN §8, roadmap); **→ WPnn** marked an item the plan below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
 closed them. The statement-by-statement status of the spec is in [`../conformance.md`](../conformance.md).
 
 ## Plan (2026-11-05)
-Work packages run as parallel agents in git worktrees under `$HOME`, merged in waves (decision 12). Briefs:
-`docs/wp/WP<n>-*.md` (WP26–WP37 written).
+Work packages run as parallel agents in git worktrees under `$HOME`, merged in waves (decision 12). Briefs and
+handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 2026-11-05/06 in the order WP26…WP37
+(WP37 before WP36 at the end).
 
-| Wave | WP | Title | Model |
-|---|---|---|---|
-| 1 | WP26 | Docs reconciliation and decisions | Opus |
-| 1 | WP27 | Fitness norms: cited tables | Opus |
-| 1 | WP28 | Web bugs: own box-score line, REJECTED label | Sonnet |
-| 1 | WP29 | Contract validation: allOf/additionalProperties, MatchEvent oneOf | Opus |
-| 1 | WP30 | Infra hygiene: e2e readiness, Tiltfile sync, image pins | Sonnet |
-| 1 | WP31 | Shared login e-mail propagates to every academy | Opus |
-| 2 | WP32 | Temporary password expiry (event-triggered sweep) | Opus |
-| 2 | WP33 | Match feed filtered for parents and players (F-01) | Opus |
-| 3 | WP34 | Audit log read API and console screens | Opus |
-| 3 | WP35 | Web UX gaps | Sonnet |
-| 4 | WP36 | Gateway API (Envoy Gateway) replaces ingress-nginx | Opus |
-| 4 | WP37 | Mutation testing: on-demand PIT runs, mutants fixed, baseline kept (not in every build) | Opus |
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP26 | Docs reconciliation and decisions | Opus | Done (ADR-0025) |
+| 1 | WP27 | Fitness norms: cited tables | Opus | Done (370 of 630 rows cited) |
+| 1 | WP28 | Web bugs: own box-score line, REJECTED label | Sonnet | Done |
+| 1 | WP29 | Contract validation: allOf/additionalProperties, MatchEvent oneOf | Opus | Done (ADR-0027; core 2.3.1, game 2.0.1, athlete 2.0.1) |
+| 1 | WP30 | Infra hygiene: e2e readiness, Tiltfile sync, image pins | Sonnet | Done |
+| 1 | WP31 | Shared login e-mail propagates to every academy | Opus | Done (ADR-0026) |
+| 2 | WP32 | Temporary password expiry (event-triggered sweep) | Opus | Done (ADR-0028; core 2.4.0) |
+| 2 | WP33 | Match feed filtered for parents and players (F-01) | Opus | Done (ADR-0030; game 2.1.0) |
+| 3 | WP34 | Audit log read API and console screens | Opus | Done (ADR-0029; core 2.5.0) |
+| 3 | WP35 | Web UX gaps | Sonnet | Done |
+| 4 | WP36 | Gateway API (Envoy Gateway) replaces ingress-nginx | Opus | Done (ADR-0031; chart 0.2.0) |
+| 4 | WP37 | Mutation testing: on-demand PIT runs, mutants fixed, baseline kept (not in every build) | Opus | Done (baselines 95/95/95/100) |
 
 ### Decisions of 2026-11-05 (product owner)
 1. **Project nature.** Hoops Academy is a learning project, not commercial (yet). Easy sign-up (temporary password,
@@ -81,10 +82,6 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **Browser-level tests**: `apps/web/tool/web_smoke.sh` ran green in mock mode on 2026-11-02 (chromedriver 156 installed
   by hand from Chrome for Testing; the Homebrew cask is disabled). Still open: the Lighthouse installability check and the
   airplane-mode cold-start check (README "Offline cold start"); add chromedriver to CI.
-- **→ WP28. PLAYER's own line in the live box score**: `scoring_rights.dart` `canSeeLine` ignores `ownPlayerId` (server returns
-  the line).
-- **→ WP28. REJECTED player label**: `lib/core/ui/labels.dart` maps `PlayerStatus.REJECTED` to "withdrawn"; add a label in es/en/id.
-
 - **Update requests cannot clear a field** (WP35): every `Update*Request` treats null as "unchanged", so a session's plan,
   location or notes, an absence reason, a result's notes or a measurement value can be changed but not removed. Needs a
   contract convention (explicit null, or a `clear` list) in core and athlete.
@@ -93,17 +90,11 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **Demo mock** lacks `/api/athlete/*` and `/platform/*` (all WP35 screens are unreachable in mock mode).
 - **Fonts**: glyphs outside Roboto (CJK, emoji) render as tofu; bundle a Noto subset if a language needs it.
 - **Same-device two-tab clientSeq race** (WP13): accepted for now (second event is `CLIENT_SEQ_CONFLICT`, visible).
-- **Production ingress prefixes** must match `NETWORK_ONLY_PREFIXES` in `web/sw.js` if they ever differ (re-check in
-  WP36).
 
 - **Dev login origin** (ADR-0022): `flutter run` on :5173 is another origin than Keycloak on :8080, so the address bar
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
 - **Browser login round trip in CI**: `apps/web/tool/browser_login_check.py` (stdlib WebDriver) runs locally only; add it
   with chromedriver to the e2e job.
-- **Date-dependent golden** (found in WP26, 2026-11-05): `test/golden/training_health_golden_test.dart` "week calendar,
-  ADMIN, 360x780" fixes the week of 2026-11-02, but `training_screen.dart` highlights the heading of `DateTime.now()`, so
-  a local `flutter test` (exact goldens) fails with a 1.61 % pixel diff on the days of that week; CI passes with
-  `GOLDEN_DIFF_TOLERANCE=0.06`. Inject the clock (or move the fixed week away from any real "today" check). No WP yet.
 
 ### Backend
 - **Remove `resendTenantAdminInvitation`** (WP24): deprecated alias of `issueTenantAdminTemporaryPassword` kept in core
@@ -121,29 +112,39 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
   fetchable yet), edge ages that repeat the nearest cited age; the girls' T-test placeholders run ~1.2 s too fast; the
   Cooper figures are not traced to the 1968 paper; check the Catley PDF against the BMJ copy. The sit-and-reach scale is
   now "20 cm = toes" (Catley): the web UI should show the unit hint. Details: `docs/domain/norms.md`.
+- **`ApprovalPayload.empty()`** in core is never called (dead code found by WP37; its mutant stays uncovered): delete it
+  or use it.
+- **Mutation scope** (WP37): rule code reached only by container tests (`TenantScope`, `ProblemExceptionMappers`, use
+  cases) is outside PIT's scope; extracting pure rules from them would let PIT cover them.
 - **Dependency hygiene**: `dependency:analyze` lists Quarkus extensions as "unused" (false positives, runtime-only) and
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
-- **e2e journey on kind**: never green (blocked by the realm defect at the time, not re-run). Run per
-  `docs/runbooks/e2e.md` (port-forwards for the Keycloak Admin API and MailHog).
-- **`tilt ci` with core-service** has not been run (WP16 deployed game/athlete/web; WP18 used `up.sh --deploy`).
-- **→ WP30. Tiltfile**: call `scripts/sync-chart-files.sh` before `k8s_yaml(helm(...))` (chart copies of realm/init SQL).
-- **→ WP30. `e2e/bin/services-up.sh`** treats any HTTP answer as ready and its comment says game/athlete have no health
-  extension; switch to `status == UP` on `/q/health/ready` now that all three have it.
+- **Gateway rate limits** (WP36, product owner to decide): Envoy Gateway local rate limits hold **per Envoy replica**
+  and the burst equals the per-minute rate (ingress-nginx allowed 5 x); global rate limiting (Envoy ratelimit service +
+  Redis) if the proxy runs more than one replica and the limit must hold across them (ADR-0031).
+- **No gateway body-size limit** (WP36, product owner to decide): Envoy streams bodies; the services reject bodies above
+  2 MB with a 413 Problem. A gateway limit needs `BackendTrafficPolicy.requestBuffer`, which buffers every request.
+- **e2e MailHog checks skipped on kind** (WP36): kind runs Mailpit as Service `mailhog`, whose API is `/api/v1`, not
+  MailHog's; the journey skips those checks there (green on compose).
+- **`tilt ci` with core-service** has not been run (WP16 deployed game/athlete/web; WP18 used `up.sh --deploy`; not
+  re-run after WP30's Tiltfile sync or WP36's Gateway API chart).
+- **Mutation workflow on GitHub** (WP37): after the push, run `gh workflow run mutation.yml` once and check it is green
+  (not on the default branch yet on 2026-11-06).
+- **Podman VM clock drift** (seen in WP36 and on 2026-11-06, 15–59 min): after the host sleeps, the Podman machine's
+  clock falls behind or stalls, Keycloak tokens from Testcontainers look expired, and the Claude commit/push hooks fail
+  with 401 or time out. Workaround: `podman machine ssh "sudo date -u -s @$(date +%s)"`; needs a host-level fix (time
+  sync in the VM after resume).
 - **Keycloak CSP hardening**: realm `browserSecurityHeaders`, so the accepted ZAP alerts under `/auth/realms/` can go
   (`.zap/baseline.conf`). (The CI workflows themselves are green on `origin/main` since 2026-11-02; see Resolved.)
 - **dependency-check NVD cache** (2026-11-05): the "Save NVD data" step runs `if: always()`, so a failed or cancelled
   run can save a broken cache that later runs restore (the 2026-11-05 run restored `nvd-Linux-41422780377`, saved by
   the failed run 41422780377, and took 77 min; that cache has been deleted). Save on success only, or delete the key by
   hand (`gh cache delete`) when the job runs > 40 min. No WP yet.
-- **→ WP30. Pin `ubi9/openjdk-21-runtime`** in `deploy/containers/service.Containerfile` (trivy DS-0001); drop the guava pin in the
-  root pom once the Quarkus BOM ships ≥ 33.7.2.
+- **Image pins** (WP30): the `ubi9/openjdk-21-runtime` digest is pinned but not auto-bumped (no Renovate/Dependabot for
+  Containerfile ARGs); drop the guava pin in the root pom once the Quarkus BOM ships ≥ 33.7.2.
 - **Optimised Keycloak image** (read-only root FS; KSV-0014 accepted until 2027-03-31).
-- **→ WP36. Production ingress**: decided (10): move the chart from ingress-nginx (retiring upstream) to Gateway API
-  (Envoy Gateway).
 - **External Secrets Operator manifests** (ADR-0012).
-- **PIT** (mutation testing) is configured in the root pom but no run is recorded → WP37 (decision of 2026-11-05: on demand and on a monthly schedule, never in every build; a baseline threshold catches regressions).
 
 ### v2 (by decision)
 - **[v2] Events**: outbox publisher + Redpanda + `*_ref` replicas behind `RosterPort` (WP19 brief; `core.outbox` is
@@ -154,6 +155,22 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP37 (decision of 2026-11-05): mutation testing with PIT on demand (`just mutation [module]`, never in `verify`) and in
+  `.github/workflows/mutation.yml` (manual + monthly). Scores after the killing tests: common-quarkus 99.1 %, core
+  99.6 %, game 99.5 %, athlete 100 %; baselines 95 / 95 / 95 / 100; equivalent survivors listed in
+  `docs/quality/mutation.md`. No production defect found.
+- WP36 (decision 10): Helm chart 0.2.0 on Gateway API with Envoy Gateway v1.9.3 (Gateway API v1.6.1) instead of
+  ingress-nginx: HTTPRoutes per prefix, deny routes, per-IP local rate limits, HSTS on HTTPS, kind NodePort on :8090
+  (ADR-0031). The e2e journey is **green on kind** for the first time (21 tests, 159 s); `ratelimit-check.sh` passed.
+  Remaining gateway items are listed under "Infra, CI, e2e".
+- Production prefixes vs `NETWORK_ONLY_PREFIXES` in `web/sw.js` (re-check after WP36, 2026-11-06): the chart routes
+  `/api/core`, `/platform`, `/api/game`, `/api/athlete`, `/auth` and the `/internal` deny route all fall under
+  `/api/`, `/auth/`, `/platform/`, `/internal/`; re-check if a route prefix changes.
+- Date-dependent week-calendar golden (found in WP26): "today" comes from `nowProvider` and is pinned in the golden
+  (commit 7e13cec).
+- WP30: `e2e/bin/services-up.sh` waits for `"status":"UP"`; the Tiltfile runs `scripts/sync-chart-files.sh` before
+  `helm(...)`; `ubi9/openjdk-21-runtime:1.24` pinned by digest; guava pin kept (the BOM still resolves 33.6.0).
+- WP28: a PLAYER sees their own line in the live box score; `PlayerStatus.REJECTED` has its own label in es/en/id.
 - WP35 (decision 14): not-a-member-yet state, academy time zone in calendars/pickers (`timezone` package, zone from the
   tenant profile), usage trend chart, session edit + plan picker, editable measurements/results/test types/absences,
   availability badge in rosters and match setup.
