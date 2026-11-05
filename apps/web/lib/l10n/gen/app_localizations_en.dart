@@ -2287,6 +2287,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tempPasswordIssue => 'Generate a new temporary password';
 
   @override
+  String get tempPasswordExpired => 'Temporary password expired';
+
+  @override
   String get memberAdded => 'Member added';
 
   @override

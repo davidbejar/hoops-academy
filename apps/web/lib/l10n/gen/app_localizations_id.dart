@@ -2286,6 +2286,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get tempPasswordIssue => 'Buat kata sandi sementara baru';
 
   @override
+  String get tempPasswordExpired => 'Kata sandi sementara kedaluwarsa';
+
+  @override
   String get memberAdded => 'Anggota ditambahkan';
 
   @override

@@ -2301,6 +2301,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tempPasswordIssue => 'Generar nueva contraseña temporal';
 
   @override
+  String get tempPasswordExpired => 'Contraseña temporal caducada';
+
+  @override
   String get memberAdded => 'Miembro añadido';
 
   @override

@@ -150,6 +150,9 @@ class _AdminTile extends ConsumerWidget {
                             status,
                             tone: admin.invitationStatus == api.InvitationStatus.PENDING ? ChipTone.warn : ChipTone.good,
                           ),
+                        if (admin.invitationStatus == api.InvitationStatus.PENDING &&
+                            admin.temporaryPasswordStatus == api.TemporaryPasswordStatus.EXPIRED)
+                          InfoChip(l.tempPasswordExpired, key: Key('admin-password-expired-$id'), tone: ChipTone.bad),
                         if (admin.otherRoles.isNotEmpty)
                           Text(l.adminOtherRoles(rolesText(admin.otherRoles, l)), style: theme.textTheme.bodySmall),
                       ],

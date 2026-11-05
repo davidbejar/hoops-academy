@@ -4276,6 +4276,12 @@ abstract class AppLocalizations {
   /// **'Generar nueva contraseña temporal'**
   String get tempPasswordIssue;
 
+  /// Chip on a pending member or administrator whose temporary password was not used in time (the login is disabled until a new one is generated, ADR-0028)
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña temporal caducada'**
+  String get tempPasswordExpired;
+
   /// No description provided for @memberAdded.
   ///
   /// In es, this message translates to:

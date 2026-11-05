@@ -86,12 +86,27 @@ class _MemberTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final details = [if (member.email != null) member.email!, rolesText(member.roles, l)].join(' · ');
+    final expired = member.active &&
+        member.invitationStatus == api.InvitationStatus.PENDING &&
+        member.temporaryPasswordStatus == api.TemporaryPasswordStatus.EXPIRED;
     return ListTile(
       key: Key('member-${member.personId}'),
       title: Text(member.displayName),
-      subtitle: Text(
-        [if (member.email != null) member.email!, rolesText(member.roles, l)].join(' · '),
-      ),
+      subtitle: expired
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(details),
+                const SizedBox(height: AppTokens.spaceXs),
+                InfoChip(
+                  l.tempPasswordExpired,
+                  key: Key('member-password-expired-${member.personId}'),
+                  tone: ChipTone.bad,
+                ),
+              ],
+            )
+          : Text(details),
       trailing: !member.active
           ? InfoChip(l.memberInactive, tone: ChipTone.bad)
           : member.invitationStatus == api.InvitationStatus.PENDING
@@ -324,9 +339,14 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
           ),
         ] else if (pending) ...[
           const SizedBox(height: AppTokens.spaceSm),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: InfoChip(l.memberInvitationPending, tone: ChipTone.warn),
+          Wrap(
+            spacing: AppTokens.spaceSm,
+            runSpacing: AppTokens.spaceXs,
+            children: [
+              InfoChip(l.memberInvitationPending, tone: ChipTone.warn),
+              if (m.temporaryPasswordStatus == api.TemporaryPasswordStatus.EXPIRED)
+                InfoChip(l.tempPasswordExpired, key: const Key('member-password-expired'), tone: ChipTone.bad),
+            ],
           ),
           const SizedBox(height: AppTokens.spaceSm),
           Align(

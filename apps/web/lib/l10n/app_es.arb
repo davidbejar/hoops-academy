@@ -1315,6 +1315,10 @@
   "tempPasswordDone": "Hecho",
   "tempPasswordExistingLogin": "Ya tenía una cuenta: entra con su contraseña actual.",
   "tempPasswordIssue": "Generar nueva contraseña temporal",
+  "tempPasswordExpired": "Contraseña temporal caducada",
+  "@tempPasswordExpired": {
+    "description": "Chip on a pending member or administrator whose temporary password was not used in time (the login is disabled until a new one is generated, ADR-0028)"
+  },
   "memberAdded": "Miembro añadido",
   "memberInviteHint": "No se envía ningún correo: al crear su acceso verás una contraseña temporal para entregársela a la persona.",
   "memberErrorNotPending": "Esta persona ya entró o la invitación ya no está pendiente",

@@ -976,6 +976,7 @@
   "tempPasswordDone": "Done",
   "tempPasswordExistingLogin": "They already had an account: they sign in with their current password.",
   "tempPasswordIssue": "Generate a new temporary password",
+  "tempPasswordExpired": "Temporary password expired",
   "memberAdded": "Member added",
   "memberInviteHint": "No email is sent: when the login is created you will see a temporary password to give to the person.",
   "memberErrorNotPending": "This person has already signed in or the invitation is no longer pending",

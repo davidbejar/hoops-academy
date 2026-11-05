@@ -129,7 +129,7 @@ class MockCoreApi {
   Map<String, Object?> _member(String id, String given, String family, List<String> r) => {
     'personId': id, 'givenName': given, 'familyName': family, 'displayName': '$given $family',
     'email': '${given.toLowerCase()}@demo.hoops-academy.com', 'roles': r, 'active': true,
-    'invitationStatus': 'ACCEPTED', 'createdAt': _now(),
+    'invitationStatus': 'ACCEPTED', 'temporaryPasswordStatus': 'NONE', 'createdAt': _now(),
   };
 
   Map<String, Object?> _approval(String id, String action, String status, String pid, String pname, String? note, {String? reason}) => {
@@ -412,7 +412,8 @@ class MockCoreApi {
     if (id == null && method == 'POST') {
       final m = _member(_id('m'), b['givenName']! as String, b['familyName']! as String, (b['roles']! as List).cast<String>())
         ..['email'] = b['email']
-        ..['invitationStatus'] = 'PENDING';
+        ..['invitationStatus'] = 'PENDING'
+        ..['temporaryPasswordStatus'] = 'ACTIVE';
       _members.add(m);
       return MockResult.json(201, {...m, 'temporaryPassword': _mockPassword()});
     }
@@ -431,6 +432,7 @@ class MockCoreApi {
       if (m['invitationStatus'] != 'PENDING') {
         return const MockResult.json(409, {'title': 'Conflict', 'status': 409, 'code': 'INVITATION_NOT_PENDING'});
       }
+      m['temporaryPasswordStatus'] = 'ACTIVE';
       return MockResult.json(200, {...m, 'temporaryPassword': _mockPassword()});
     }
     return null;
