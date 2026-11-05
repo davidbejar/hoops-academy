@@ -73,9 +73,6 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **Template i18n** (WP9): `nameKey`/`locale` on `TrainingPlanSummary`; the 10 templates are English-only in the DB.
 
 ### Security (from `docs/security/review-2026-11.md`)
-- **→ WP32. Temporary passwords never expire** (WP24, security review F-23): Keycloak keeps a temporary credential
-  until it is used or replaced. Decided (4): expire after 3 days via an event-triggered background sweep that disables
-  the login; re-issue re-enables.
 - **F-07 residual (apps/web)**: cached reads (`roster`, `matchJson`, `ownEvents`) are keyed by matchId only; add
   tenant + person columns (drift migration) and wipe when a *different* `sub` signs in after an expired session.
 - **F-08 residual (realm)**: refresh-token rotation / reuse detection in `infra/keycloak/realm-academy.json`; the realm
@@ -163,6 +160,9 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP32 (decision 4, F-23): unused temporary passwords expire after 3 days; swept in the background on issuance and
+  first sign-in under a cluster lock, the Keycloak login disabled with an es/en/id message, re-issue re-enables
+  (ADR-0028, core 2.4.0 `temporaryPasswordStatus`). Known: expiry happens at the first sweep after the 3 days.
 - WP27 (decision 11): 370 of 630 norm rows cited (FitBack 2023 beep test 8–18, Catley & Tomkinson 2013 sit-and-reach
   9–17, Cossio-Bolaños 2026 sprint 8–17, Mascherini 2022 T-test and vertical jump 14–15); remaining gaps tracked above.
 - WP31 (decision 7): a shared login's e-mail moved by the super admin reaches every academy that uses it, in the
