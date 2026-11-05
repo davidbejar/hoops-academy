@@ -62,6 +62,11 @@ class TenantsNotifier extends AsyncNotifier<List<api.Tenant>> {
 
 final tenantsProvider = AsyncNotifierProvider<TenantsNotifier, List<api.Tenant>>(TenantsNotifier.new);
 
+/// Daily usage snapshots of one academy, for the trend chart (loaded apart from the dashboard).
+final tenantUsageHistoryProvider = FutureProvider.family<api.TenantUsageHistory, String>(
+  (ref, tenantId) => ref.watch(platformRepositoryProvider).usageHistory(tenantId),
+);
+
 class TenantDetail {
   const TenantDetail({required this.tenant, this.usage, this.usageError});
   final api.Tenant tenant;

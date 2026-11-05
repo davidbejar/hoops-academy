@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:built_collection/built_collection.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/app/router.dart';
@@ -207,6 +208,44 @@ void main() {
       expect(find.byKey(const Key('counter-players')), findsOneWidget);
       expect(tester.widget<Text>(find.byKey(const Key('counter-players'))).data, '80');
       expect(find.byKey(const Key('usage-unavailable')), findsNothing);
+    });
+
+    api.TenantUsageSnapshot snap(int day, int players, {int members = 10}) => api.TenantUsageSnapshot(
+      (b) => b
+        ..date = api.Date(2026, 11, day)
+        ..collectedAt = DateTime.utc(2026, 11, day, 3)
+        ..services.replace([usageReport('core', {'players': players, 'members': members})]),
+    );
+
+    testWidgets('usage trend: a line chart of the chosen counter over the snapshots', (tester) async {
+      final repo = _repo()
+        ..usageResult = _usage()
+        ..history = [snap(1, 60), snap(2, 70), snap(3, 80)];
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 2400));
+      expect(find.byKey(const Key('usage-trend')), findsOneWidget);
+      expect(find.byType(LineChart), findsOneWidget);
+      expect(find.byKey(const Key('usage-trend-counter')), findsOneWidget);
+      expect(repo.calls, contains('usageHistory'));
+    });
+
+    testWidgets('usage trend: empty history says so', (tester) async {
+      final repo = _repo()..usageResult = _usage();
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 2400));
+      expect(find.byKey(const Key('usage-trend-empty')), findsOneWidget);
+      expect(find.byType(LineChart), findsNothing);
+    });
+
+    testWidgets('usage trend: loading and error with retry', (tester) async {
+      final repo = _repo()
+        ..usageResult = _usage()
+        ..historyFails = true;
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 2400));
+      expect(find.byKey(const Key('usage-trend-error')), findsOneWidget);
+      repo.historyFails = false;
+      repo.history = [snap(1, 60)];
+      await tester.tap(find.descendant(of: find.byKey(const Key('usage-trend-error')), matching: find.byKey(const Key('retry-button'))));
+      await tester.pumpAndSettle();
+      expect(find.byType(LineChart), findsOneWidget);
     });
 
     testWidgets('unavailableServices shows the notice naming the services', (tester) async {

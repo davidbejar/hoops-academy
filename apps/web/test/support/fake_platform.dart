@@ -70,6 +70,9 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   final List<api.Tenant> list;
   api.TenantUsage? usageResult;
   bool usageFails;
+  /// Snapshots returned by `usageHistory` (empty by default).
+  List<api.TenantUsageSnapshot> history = [];
+  bool historyFails = false;
   api.CreateTenantRequest? created;
   String? lastReason;
   api.TenantStatus? lastStatusFilter;
@@ -161,6 +164,18 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
             ..collectedAt = DateTime.utc(2026, 11, 1),
         );
   });
+  @override
+  Future<api.TenantUsageHistory> usageHistory(String tenantId) => run('usageHistory', () {
+    if (historyFails) throw StateError('history down');
+    return api.TenantUsageHistory(
+      (b) => b
+        ..tenantId = tenantId
+        ..from = api.Date(2026, 10, 1)
+        ..to = api.Date(2026, 11, 1)
+        ..snapshots.replace(history),
+    );
+  });
+
   List<api.TenantAdmin> _admins(String tenantId) => adminsOf.putIfAbsent(tenantId, () => []);
 
   api.Tenant _manageable(String tenantId) {

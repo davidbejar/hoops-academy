@@ -11,6 +11,9 @@ abstract class PlatformRepository {
   Future<api.Tenant> reactivate(String tenantId);
   Future<api.TenantUsage> usage(String tenantId);
 
+  /// Daily usage snapshots (at most one per UTC day, ascending) for the trend chart.
+  Future<api.TenantUsageHistory> usageHistory(String tenantId);
+
   /// Administrators of a tenant (identity only, ADR-0023). 409 `TENANT_WITHDRAWN` for withdrawn academies.
   Future<List<api.TenantAdmin>> admins(String tenantId);
   Future<api.TenantAdminWithPassword> addAdmin(String tenantId, api.AddTenantAdminRequest request);
@@ -54,6 +57,10 @@ class ApiPlatformRepository implements PlatformRepository {
 
   @override
   Future<api.TenantUsage> usage(String tenantId) async => (await _api.getTenantUsage(tenantId: tenantId)).data!;
+
+  @override
+  Future<api.TenantUsageHistory> usageHistory(String tenantId) async =>
+      (await _api.getTenantUsageHistory(tenantId: tenantId)).data!;
 
   @override
   Future<List<api.TenantAdmin>> admins(String tenantId) async =>
