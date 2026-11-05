@@ -110,6 +110,74 @@ class NormSeedTest {
     }
 
     @Test
+    void theBeepTestFollowsTheFitBackEuropeanTableAtEveryAge() throws Exception {
+        List<SeedNorm> beep = rows("BEEP_TEST");
+
+        assertThat(beep).hasSize(2 * 11 * 5).allSatisfy(n -> {
+            assertThat(n.norm().referencePending()).isFalse();
+            assertThat(n.source()).contains("Ortega").contains("2023").contains("Table 1");
+        });
+        // Ortega et al. 2023, Table 1: boys 18.0-18.9 P80 = 8.6 stages, girls 8.0-8.9 P20 = 1.5 stages
+        assertThat(band(beep, Gender.MALE, 18, "8.6")).isEqualTo(NormBand.EXCELLENT);
+        assertThat(band(beep, Gender.MALE, 18, "8.5")).isEqualTo(NormBand.ABOVE_AVERAGE);
+        assertThat(band(beep, Gender.FEMALE, 8, "1.4")).isEqualTo(NormBand.POOR);
+        assertThat(band(beep, Gender.FEMALE, 8, "1.5")).isEqualTo(NormBand.BELOW_AVERAGE);
+    }
+
+    @Test
+    void theSitAndReachFollowsCatleyAndTomkinsonFrom9To17() throws Exception {
+        List<SeedNorm> sit = rows("SIT_AND_REACH");
+
+        assertThat(sit).allSatisfy(n -> {
+            boolean inSource = n.norm().minAge() >= 9 && n.norm().maxAge() <= 17;
+            assertThat(n.norm().referencePending()).as(n.norm().minAge() + " pending").isEqualTo(!inSource);
+            assertThat(n.source()).contains("Catley").contains("Table 10");
+        });
+        // Catley & Tomkinson 2013, Table 10: girls 14 P20 = 23.1 cm, boys 17 P80 = 33.0 cm
+        assertThat(band(sit, Gender.FEMALE, 14, "23.0")).isEqualTo(NormBand.POOR);
+        assertThat(band(sit, Gender.FEMALE, 14, "23.1")).isEqualTo(NormBand.BELOW_AVERAGE);
+        assertThat(band(sit, Gender.MALE, 17, "33.0")).isEqualTo(NormBand.EXCELLENT);
+    }
+
+    @Test
+    void theSprintBandsComeFromThePublishedLmsFrom8To17() throws Exception {
+        List<SeedNorm> sprint = rows("SPRINT_20M");
+
+        assertThat(sprint).allSatisfy(n -> {
+            assertThat(n.norm().referencePending()).as(n.norm().minAge() + " pending").isEqualTo(n.norm().minAge() == 18);
+            assertThat(n.source()).contains("Cossio-Bolanos").contains("LMS");
+        });
+        // Cossio-Bolanos et al. 2026, Table 4, boys 12: L -2.382, M 3.997, S 0.110 -> P20 3.68 s, P80 4.44 s
+        assertThat(band(sprint, Gender.MALE, 12, "3.67")).isEqualTo(NormBand.EXCELLENT);
+        assertThat(band(sprint, Gender.MALE, 12, "3.997")).isEqualTo(NormBand.AVERAGE);
+        assertThat(band(sprint, Gender.MALE, 12, "4.44")).isEqualTo(NormBand.POOR);
+    }
+
+    @Test
+    void theTTestAndVerticalJumpAreCitedOnlyAt14And15() throws Exception {
+        for (String code : List.of("AGILITY_T_TEST", "VERTICAL_JUMP")) {
+            assertThat(rows(code)).allSatisfy(n -> {
+                boolean florence = n.norm().minAge() >= 14 && n.norm().maxAge() <= 15;
+                assertThat(n.norm().referencePending()).as(code + " " + n.norm().minAge()).isEqualTo(!florence);
+                assertThat(n.source().contains("Mascherini")).as(code + " " + n.norm().minAge()).isEqualTo(florence);
+            });
+        }
+        // Mascherini et al. 2022, Table 2 (boys, first class): T-agility P10 10.2, P25 10.7 -> P20 = 10.53 s
+        assertThat(band(rows("AGILITY_T_TEST"), Gender.MALE, 14, "10.52")).isEqualTo(NormBand.EXCELLENT);
+        assertThat(band(rows("AGILITY_T_TEST"), Gender.MALE, 14, "10.53")).isEqualTo(NormBand.ABOVE_AVERAGE);
+    }
+
+    @Test
+    void placeholderRowsAreOnlyTheDocumentedGaps() throws Exception {
+        Map<String, Long> pending = load().stream().filter(n -> n.norm().referencePending())
+                .collect(Collectors.groupingBy(SeedNorm::code, Collectors.counting()));
+
+        // docs/domain/norms.md, "Per test: sources and status"
+        assertThat(pending).containsExactlyInAnyOrderEntriesOf(Map.of("COOPER_12MIN", 50L, "SIT_AND_REACH", 20L,
+                "SPRINT_20M", 10L, "VERTICAL_JUMP", 90L, "AGILITY_T_TEST", 90L));
+    }
+
+    @Test
     void runningTheSeedAgainChangesNothingAndForceIsRestored() throws Exception {
         String before = fingerprint();
 
@@ -137,6 +205,15 @@ class NormSeedTest {
             }
         }
         return ordered.get(0).minValue().isEmpty() && ordered.get(ordered.size() - 1).maxValue().isEmpty();
+    }
+
+    private static List<SeedNorm> rows(String code) throws SQLException {
+        return load().stream().filter(n -> n.code().equals(code)).toList();
+    }
+
+    private static NormBand band(List<SeedNorm> rows, Gender gender, int age, String value) {
+        return BandResolver.resolve(rows.stream().map(SeedNorm::norm).toList(), java.util.Optional.of(gender),
+                java.util.OptionalInt.of(age), new java.math.BigDecimal(value)).expectedBand().orElseThrow();
     }
 
     private static List<SeedNorm> load() throws SQLException {

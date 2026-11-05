@@ -169,7 +169,7 @@ class PhysicalTestApiTest {
 
     @Test
     void aPlaceholderNormGivesABandButIsFlaggedReferencePending() {
-        api(TENANT).body(result(BOY, typeId("SPRINT_20M"), "2026-06-01", 3.9)).post(RESULTS).then().statusCode(201)
+        api(TENANT).body(result(BOY, typeId("VERTICAL_JUMP"), "2026-06-01", 40.0)).post(RESULTS).then().statusCode(201)
                 .body("ageAtMeasurement", equalTo(16)).body("expectedBand", notNullValue()).body("referencePending", equalTo(true));
     }
 
