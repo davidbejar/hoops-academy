@@ -1,6 +1,6 @@
 # ADR-0023: Super admin manages academy administrators; e-mail as login; shared-login rule
 
-- Status: Accepted; amended by ADR-0024 — §1 `resend-invitation` / set-password e-mail and §2 `VERIFY_EMAIL` after a login move are superseded by ADR-0024 (temporary password, no e-mail)
+- Status: Accepted; amended by ADR-0024 — §1 `resend-invitation` / set-password e-mail and §2 `VERIFY_EMAIL` after a login move are superseded by ADR-0024 (temporary password, no e-mail); amended by ADR-0026 — a super admin's e-mail change of a shared login now reaches every academy where the person is an active member
 - Date: 2026-11-02
 - Related: ADR-0005 (Keycloak authentication only), ADR-0013 (onboarding saga, membership index), ADR-0017 (audit
   trail), ADR-0021 §8 (super_admin and tenant content), WP22
@@ -62,8 +62,8 @@ Three questions had to be answered:
 ## Consequences
 - WP23 can build the console on the new endpoints (`just gen-api` regenerates the Dart client from core 2.2.0).
 - `docs/domain/authz-matrix.md` and ADR-0021 §8 point here for the exception.
-- A super admin's e-mail change of a shared login updates `core.person.email` only in the edited tenant; the other
-  academies keep their own (per-tenant) contact e-mail for that person. Keycloak and `core.app_user` hold the new one.
+- ~~A super admin's e-mail change of a shared login updates `core.person.email` only in the edited tenant~~ —
+  superseded by ADR-0026: it updates the person in every academy where they are an active member, in one transaction.
 - The access token keeps the old `email` claim until the next login; `/me` shows the token's e-mail.
 - Same accepted window as ADR-0013: a commit failure after a successful Keycloak update leaves Keycloak ahead of the
   database (detectable: `app_user.email` differs from the Keycloak e-mail); an admin can repeat the edit.

@@ -67,7 +67,10 @@ shows a note (its administrators can no longer be viewed or changed). The same o
   the e-mail already has a login, a note says that the person signs in with their current password. A deactivated member with that e-mail is refused.
 - **Edit** first name, last name or e-mail. A new e-mail also becomes the person's sign-in address (Keycloak username and
   e-mail); no e-mail is sent and the password does not change (a pending temporary password stays valid). Unlike an
-  academy administrator, you can do this also for a login that is used in several academies.
+  academy administrator, you can do this also for a login that is used in several academies: the new e-mail then
+  replaces the old one in every academy where the person is an active member (one person, one e-mail), and each of
+  those academies' audit log records the change. If another member of one of those academies already uses the new
+  address, the change is refused ("e-mail taken") and nothing changes anywhere.
 - **Remove** (asks for confirmation): the person loses the administrator role; other roles stay, and if it was their
   only role they are deactivated in this academy. Their login is never deleted (it may be used elsewhere).
 - **The last administrator cannot be removed.** An academy always needs at least one active administrator. When only one

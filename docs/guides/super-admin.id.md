@@ -68,7 +68,10 @@ platform `/platform/tenants/{id}/admins`.
 - **Ubah** nama depan, nama belakang, atau email. Email baru juga menjadi alamat masuk orang itu (username dan email di
   Keycloak); tidak ada email yang dikirim dan kata sandi tidak berubah (kata sandi sementara yang belum dipakai tetap
   berlaku). Berbeda dengan administrator akademi, Anda boleh melakukannya juga untuk akun login yang dipakai di beberapa
-  akademi.
+  akademi: email baru lalu menggantikan email lama di setiap akademi tempat orang itu menjadi anggota aktif (satu orang,
+  satu email), dan log audit setiap akademi itu mencatat perubahannya. Jika anggota lain di salah satu akademi itu sudah
+  memakai alamat baru tersebut, perubahan ditolak ("email sudah dipakai") dan tidak ada yang berubah di akademi mana
+  pun.
 - **Hapus** (meminta konfirmasi): orang itu kehilangan peran administrator; peran lainnya tetap, dan jika itu
   satu-satunya perannya, ia dinonaktifkan di akademi ini. Akun loginnya tidak pernah dihapus (mungkin dipakai di tempat
   lain).

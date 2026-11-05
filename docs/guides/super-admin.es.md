@@ -68,7 +68,10 @@ operaciones existen en la API de plataforma `/platform/tenants/{id}/admins`.
   rechaza.
 - **Editar** nombre, apellidos o correo. Un correo nuevo pasa a ser también la dirección de inicio de sesión (usuario y
   correo de Keycloak); no se envía ningún correo y la contraseña no cambia (una contraseña temporal pendiente sigue
-  valiendo). A diferencia de un administrador de academia, puedes hacerlo aunque el acceso se use en varias academias.
+  valiendo). A diferencia de un administrador de academia, puedes hacerlo aunque el acceso se use en varias academias:
+  el correo nuevo sustituye entonces al anterior en todas las academias donde la persona es miembro activo (una
+  persona, un correo) y el registro de auditoría de cada una lo anota. Si otro miembro de una de esas academias ya usa
+  la dirección nueva, el cambio se rechaza ("correo en uso") y no cambia nada en ninguna academia.
 - **Quitar** (pide confirmación): la persona pierde el rol de administrador; sus otros roles se mantienen y, si era su
   único rol, queda desactivada en esta academia. Su acceso nunca se borra (puede usarse en otras academias).
 - **No se puede quitar al último administrador.** Una academia necesita siempre al menos un administrador activo. Cuando
