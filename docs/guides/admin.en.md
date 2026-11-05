@@ -101,5 +101,14 @@ Players list icons open **Test types** and **Norms**. Global norms are read-only
 rows to replace them. Values flagged **Reference pending** are placeholders, not published norms: override them before
 using bands for decisions (see `docs/domain/norms.md`).
 
+## 10. Activity (audit trail)
+**Administration → Activity** lists what was done in the academy, newest first: members invited, edited, given new roles
+or deactivated, temporary passwords issued or expired, first sign-ins, guardian links, player requests and decisions,
+profile, settings and logo changes, and what the platform administration did (administrators added, academy
+suspended…). Each entry names the action, what it was about and who did it ("System" for automatic jobs, "Platform
+administration" for the super admin). Names are shown as they are today; an entry about something that no longer exists
+shows its type only. Filter by a date range and by one or several actions; move between pages with the arrows at the
+bottom. Only administrators see it. Entries are never edited or deleted, and they are kept (no automatic clean-up yet).
+
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

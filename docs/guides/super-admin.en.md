@@ -95,5 +95,12 @@ seasons, matches, live matches, match events, training sessions, attendance reco
 body measurements. If a service did not answer, a notice "No data from: ..." names it; the rest still shows. A snapshot is
 stored per academy per day (02:30 UTC); a trend chart is not in the app yet.
 
+## Activity (audit trail of every academy)
+**Academies' activity** above the academy list shows the audit trail of every academy, newest first, each entry with its
+academy; the clock icon on an academy's page shows that academy only. Filter by a date range and by one or several
+actions; page with the arrows at the bottom. Names are shown for academies and for each academy's current administrators
+only; other members and players appear by type, because the platform does not read academy content beyond the
+administrators' identity (ADR-0023, ADR-0029). Entries are append-only and kept (no retention job yet).
+
 ---
 Status: written from the implemented screens, the contract and the translation files; not yet checked in a manual browser walk-through.

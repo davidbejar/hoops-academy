@@ -24,8 +24,10 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Injuries | write | write | write | linked (write) | read (self) |
 | Height / weight | write | write | write | linked (write) | read (self) |
 | Physical test results | write | write | write | read | read (self) |
+| Academy activity (audit trail, `GET /api/core/audit-events`, ADR-0029) | read | – | – | – | – |
 | Tenant lifecycle, usage statistics | `super_admin` (platform) only — cannot read tenant content | | | | |
 | A tenant's administrators (list, add, edit names/e-mail, remove, new temporary password while PENDING) | `super_admin` (platform, `/platform/tenants/{id}/admins`) — identity of the admins only, ADR-0023, ADR-0024; tenant ADMINs manage them as members | | | | |
+| Audit trail of every academy (`GET /platform/audit-events`, optionally one `tenantId`) | `super_admin` (platform) only — actions, ids and metadata; names of academies and of their active administrators only (ADR-0023, ADR-0029). A super_admin without membership calling `/api/core/audit-events` gets 404 like any non-member | | | | |
 
 Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of

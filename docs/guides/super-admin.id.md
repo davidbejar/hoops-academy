@@ -100,5 +100,12 @@ pertandingan, pertandingan langsung, peristiwa pertandingan, sesi latihan, catat
 dan pengukuran tubuh. Jika sebuah layanan tidak menjawab, pemberitahuan "Tidak ada data dari: ..." menyebutkannya dan
 sisanya tetap tampil. Satu rekam jepret disimpan per akademi per hari (02:30 UTC); grafik tren belum ada di aplikasi.
 
+## Aktivitas (jejak audit semua akademi)
+**Aktivitas akademi** di atas daftar akademi menampilkan jejak audit semua akademi, dari yang terbaru, setiap entri dengan
+akademinya; ikon jam di halaman sebuah akademi hanya menampilkan akademi itu. Saring menurut rentang tanggal dan satu atau
+beberapa tindakan; pindah halaman dengan panah di bawah. Nama hanya ditampilkan untuk akademi dan administratornya saat
+ini; anggota lain dan pemain tampil menurut jenisnya, karena platform tidak membaca isi akademi selain identitas
+administratornya (ADR-0023, ADR-0029). Entri hanya bisa ditambah dan disimpan (belum ada retensi).
+
 ---
 Status: disusun dari layar yang sudah diimplementasikan, kontrak, dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

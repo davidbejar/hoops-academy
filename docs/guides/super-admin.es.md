@@ -99,5 +99,13 @@ resultados de pruebas, lesiones y medidas corporales. Si un servicio no responde
 resto se sigue mostrando. Se guarda una instantánea por academia y día (02:30 UTC); el gráfico de evolución aún no está en la
 aplicación.
 
+## Actividad (registro de auditoría de todas las academias)
+**Actividad de las academias**, encima de la lista, muestra el registro de auditoría de todas las academias, de lo más
+reciente a lo más antiguo, cada entrada con su academia; el icono de reloj en la página de una academia muestra solo esa
+academia. Filtra por intervalo de fechas y por una o varias acciones; cambia de página con las flechas de abajo. Solo se
+muestran los nombres de las academias y de sus administradores actuales; los demás miembros y los jugadores aparecen por
+su tipo, porque la plataforma no lee el contenido de la academia más allá de la identidad de sus administradores
+(ADR-0023, ADR-0029). Las entradas no se modifican y se conservan (aún no hay retención).
+
 ---
 Estado: redactada a partir de las pantallas implementadas, el contrato y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.

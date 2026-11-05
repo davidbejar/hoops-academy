@@ -105,5 +105,15 @@ Ikon di daftar pemain membuka **Jenis tes** dan **Norma**. Norma global hanya ba
 akademi** untuk menggantinya. Nilai berlabel **Rujukan menyusul** hanyalah nilai sementara, bukan norma terbitan:
 gantilah sebelum memakai pita untuk keputusan (lihat `docs/domain/norms.md`).
 
+## 10. Aktivitas (jejak audit)
+**Administrasi → Aktivitas** menampilkan apa yang dilakukan di akademi, dari yang terbaru: anggota diundang, diubah,
+diganti perannya atau dinonaktifkan, kata sandi sementara dibuat atau kedaluwarsa, masuk pertama kali, tautan wali,
+pengajuan dan keputusan pemain, perubahan profil, pengaturan dan logo, serta tindakan administrasi platform
+(administrator ditambahkan, akademi ditangguhkan…). Setiap entri menyebut tindakan, objeknya, dan siapa pelakunya
+("Sistem" untuk proses otomatis, "Administrasi platform" untuk super administrator). Nama ditampilkan seperti saat ini;
+entri tentang sesuatu yang sudah tidak ada hanya menampilkan jenisnya. Saring menurut rentang tanggal dan satu atau
+beberapa tindakan; pindah halaman dengan panah di bawah. Hanya administrator yang dapat melihatnya. Entri tidak pernah
+diubah atau dihapus, dan disimpan (belum ada pembersihan otomatis).
+
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.
