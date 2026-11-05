@@ -67,6 +67,20 @@ class ServiceTokenClientFilterTest {
     }
 
     @Test
+    void fetchesANewTokenWithinTheRefreshIntervalBeforeItExpires() {
+        Tokens refreshDue = new Tokens("old", Instant.now().plusSeconds(30).getEpochSecond(), Duration.ofMinutes(1),
+                null, null, null, "core-service");
+        when(oidcClient.getTokens())
+                .thenReturn(Uni.createFrom().item(refreshDue))
+                .thenReturn(Uni.createFrom().item(tokensExpiringIn("new", Duration.ofMinutes(5))));
+
+        filter.filter(request);
+        filter.filter(request);
+
+        assertThat(headers.getFirst("Authorization")).isEqualTo("Bearer new");
+    }
+
+    @Test
     void failsTheCallWhenNoTokenCanBeObtained() {
         when(oidcClient.getTokens()).thenReturn(Uni.createFrom().failure(new IllegalStateException("idp down")));
 

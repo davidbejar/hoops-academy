@@ -114,16 +114,30 @@ class CoreRosterClientTest {
 
     @Test
     void answersAreCachedPerArgumentsUntilCleared() {
-        client.membership(TENANT, "sub-1");
-        client.membership(TENANT, "sub-1");
+        CoreMembership fetched = client.membership(TENANT, "sub-1").orElseThrow();
+        assertThat(client.membership(TENANT, "sub-1")).containsSame(fetched);
         client.teamRoster(TENANT, TEAM);
         client.teamRoster(TENANT, TEAM);
         client.teamRoster(TenantId.random(), TEAM);
+        client.players(TENANT, List.of(PLAYER));
+        client.players(TENANT, List.of(PLAYER));
 
-        assertThat(core.calls).hasSize(3);
-        client.clearCache();
-        client.teamRoster(TENANT, TEAM);
         assertThat(core.calls).hasSize(4);
+    }
+
+    @Test
+    void clearingTheCacheRefetchesEveryKindOfAnswer() {
+        client.membership(TENANT, "sub-1");
+        client.teamRoster(TENANT, TEAM);
+        client.players(TENANT, List.of(PLAYER));
+
+        client.clearCache();
+        client.membership(TENANT, "sub-1");
+        client.teamRoster(TENANT, TEAM);
+        client.players(TENANT, List.of(PLAYER));
+
+        assertThat(core.calls).containsExactly("authz sub-1", "roster " + TEAM, "players " + List.of(PLAYER),
+                "authz sub-1", "roster " + TEAM, "players " + List.of(PLAYER));
     }
 
     @Test
