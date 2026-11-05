@@ -32,6 +32,11 @@ memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbah
    sandi yang sudah dimilikinya. Sampai ia masuk pertama kali, statusnya **Undangan tertunda**. Selama masih tertunda dan
    ia belum memilih kata sandi, buka halaman anggotanya dan pakai **Buat kata sandi sementara baru** (menggantikan yang lama; ditolak jika
    akun login itu juga dipakai di akademi lain: minta administrator platform).
+   Kata sandi sementara yang tidak dipakai **kedaluwarsa setelah 3 hari** (ADR-0028): halaman masuk orang tersebut lalu
+   menampilkan "Kata sandi sementara Anda sudah kedaluwarsa. Mintalah yang baru kepada administrator akademi Anda.", dan
+   anggota itu menampilkan **Kata sandi sementara kedaluwarsa** di daftar dan di halamannya. Gunakan **Buat kata sandi
+   sementara baru** di sana: kata sandi baru langsung berfungsi (akun login aktif kembali) dan juga kedaluwarsa setelah 3
+   hari bila tidak dipakai.
 3. **Ubah peran** mengganti peran. **Nonaktifkan** mencabut akses (orangnya tetap tersimpan, ditandai **Tidak aktif**).
 4. **Mengubah email** anggota yang punya akun login juga mengubah alamat masuknya: sejak itu ia masuk dengan email baru,
    tanpa email apa pun yang dikirim dan kata sandinya tidak berubah. Jika orang itu juga anggota akademi lain, perubahan

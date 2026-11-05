@@ -39,6 +39,13 @@ fails as a whole and nothing is left behind ("502").
   **choose a new password** (at least 12 characters, not their e-mail). From then on only their own password works.
 - Repeated wrong passwords lock the login for a while (brute-force protection).
 
+- **A temporary password expires after 3 days** if nobody used it (ADR-0028). The login is then disabled: the person
+  sees "Your temporary password has expired. Ask your academy administrator for a new one." on the sign-in page. The
+  administrator's row shows **Temporary password expired** next to **Invitation pending**; use **Generate a new temporary
+  password** (key button) to give them a new one, which also enables the login again. The check runs in the background
+  whenever a temporary password is issued or someone signs in for the first time, so an expired password may keep
+  working for a while until the next such event. A person who already chose their own password is never affected.
+
 ## Lifecycle and what it means
 | State | Meaning |
 |---|---|

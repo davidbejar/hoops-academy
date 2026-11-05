@@ -34,6 +34,10 @@ decides sobre las solicitudes de jugadores. Los nombres de menú son los que mue
    figura como **Invitación pendiente**. Mientras siga pendiente y no haya elegido contraseña, abre su ficha de miembro y usa
    **Generar nueva contraseña temporal** (sustituye a la anterior; se rechaza si el acceso se usa también en otra academia:
    pídeselo al administrador de la plataforma).
+   Una contraseña temporal que nadie usa **caduca a los 3 días** (ADR-0028): la página de inicio de sesión de la persona
+   dice entonces "Tu contraseña temporal ha caducado. Pide una nueva al administrador de tu academia." y el miembro
+   muestra **Contraseña temporal caducada** en la lista y en su página. Usa ahí **Generar nueva contraseña temporal**: la
+   nueva funciona enseguida (el acceso se reactiva) y también caduca a los 3 días si no se usa.
 3. **Editar roles** cambia los roles. **Desactivar** retira el acceso (la persona se conserva y aparece como **Inactivo**).
 4. **Cambiar el correo** de un miembro con acceso cambia también su dirección de inicio de sesión: desde ese momento
    entra con el correo nuevo; no se envía ningún correo y la contraseña no cambia. Si la persona pertenece también a

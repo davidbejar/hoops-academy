@@ -40,6 +40,14 @@ disponible, la creación falla entera y no queda nada a medias ("502").
   **elegir una contraseña nueva** (al menos 12 caracteres, distinta de su correo). Desde entonces solo vale la suya.
 - Varios intentos fallidos bloquean el acceso durante un tiempo (protección contra fuerza bruta).
 
+- **Una contraseña temporal caduca a los 3 días** si nadie la ha usado (ADR-0028). El acceso queda desactivado: la
+  persona ve "Tu contraseña temporal ha caducado. Pide una nueva al administrador de tu academia." en la página de inicio
+  de sesión. La fila del administrador muestra **Contraseña temporal caducada** junto a **Invitación pendiente**; usa
+  **Generar nueva contraseña temporal** (botón de llave) para darle una nueva, lo que también reactiva el acceso. La
+  comprobación se hace en segundo plano cada vez que se genera una contraseña temporal o alguien entra por primera vez,
+  así que una contraseña caducada puede seguir funcionando un tiempo hasta el siguiente de esos eventos. A quien ya
+  eligió su propia contraseña no le afecta nunca.
+
 ## Ciclo de vida y su significado
 | Estado | Significado |
 |---|---|

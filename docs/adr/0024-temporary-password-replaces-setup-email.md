@@ -68,7 +68,8 @@ take the account over.
   verified e-mail (or a sign-in after the link) before an existing login is linked into another tenant, or notify the
   person when their login is linked.
 - A temporary password does not expire by itself (Keycloak has no expiry for temporary credentials); issuing a new one
-  invalidates the previous one.
+  invalidates the previous one. *Amended by ADR-0028 (WP32): an unused temporary password expires after 3 days (the login is
+  disabled until a new one is issued).*
 - The web app must show the value once and never keep or log it (WP25); until WP25 the console does not display it, so
   a temporary password issued from the old UI is lost and has to be issued again.
 - Responses reveal whether a login was created (presence of `temporaryPassword`), as the invitation status already did

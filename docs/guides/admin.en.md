@@ -33,6 +33,10 @@ decide on player requests. Menu names below are the labels shown in the English 
    sign-in the member shows **Invitation pending**. While pending and before they have chosen a password, you can open their member page
    and use **Generate a new temporary password** for them (it replaces the previous one; refused for a login that is also used in another
    academy: ask the platform administrator).
+   A temporary password nobody used **expires after 3 days** (ADR-0028): the person's sign-in page then says "Your
+   temporary password has expired. Ask your academy administrator for a new one.", and the member shows **Temporary
+   password expired** in the list and on their page. Use **Generate a new temporary password** there: the new one works
+   at once (the login is enabled again) and also expires after 3 days if unused.
 3. **Edit roles** changes roles later. **Deactivate** removes access (the person is kept, shown as **Inactive**).
 4. **Changing the e-mail** of a member who has a login also changes their sign-in address: from then on they sign in
    with the new e-mail; no e-mail is sent and the password does not change. If the person also belongs to another

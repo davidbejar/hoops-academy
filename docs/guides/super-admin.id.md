@@ -40,6 +40,14 @@ tersedia, pembuatan gagal seluruhnya dan tidak ada yang tersisa ("502").
   berlaku.
 - Salah kata sandi berulang kali mengunci akun login untuk sementara (perlindungan brute force).
 
+- **Kata sandi sementara kedaluwarsa setelah 3 hari** jika belum dipakai (ADR-0028). Akun login lalu dinonaktifkan:
+  orang tersebut melihat "Kata sandi sementara Anda sudah kedaluwarsa. Mintalah yang baru kepada administrator akademi
+  Anda." di halaman masuk. Baris administrator menampilkan **Kata sandi sementara kedaluwarsa** di samping **Undangan
+  tertunda**; gunakan **Buat kata sandi sementara baru** (tombol kunci) untuk memberi yang baru, yang sekaligus
+  mengaktifkan kembali akun login. Pemeriksaan berjalan di latar belakang setiap kali kata sandi sementara dibuat atau
+  seseorang masuk untuk pertama kali, jadi kata sandi yang kedaluwarsa bisa masih berfungsi sebentar sampai peristiwa
+  berikutnya. Orang yang sudah memilih kata sandinya sendiri tidak pernah terpengaruh.
+
 ## Siklus hidup dan artinya
 | Status | Arti |
 |---|---|
