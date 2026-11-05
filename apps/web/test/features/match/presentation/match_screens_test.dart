@@ -63,6 +63,15 @@ Future<Harness> pumpParent(WidgetTester tester, FakeGame game, String location) 
   location: location,
 );
 
+Future<Harness> pumpPlayer(WidgetTester tester, FakeGame game, String location) => pumpAs(
+  tester,
+  roles: {TenantRole.player},
+  ownPlayerId: 'p1',
+  core: coreWithTeam(),
+  game: game,
+  location: location,
+);
+
 String? textOf(WidgetTester tester, String key) => tester.widget<Text>(find.byKey(Key(key))).data;
 
 Future<void> tapAction(WidgetTester tester, String player, String action) async {
@@ -289,6 +298,22 @@ void main() {
       await tapKey(tester, 'box-copy');
       expect(copied, contains('Nosotros 2 – 3 Lobos'));
       expect(copied, contains('Ana Ruiz: 2 pts'));
+    });
+
+    testWidgets('PLAYER sees their own box score line and no other player\'s', (tester) async {
+      final game = gameWith();
+      game.server.preload(fin, [
+        RecordedEvent(PeriodStart(_meta('e1', 600))),
+        RecordedEvent(Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true)),
+        RecordedEvent(Shot(_meta('e3', 450), playerId: 'p2', points: 3, made: true)),
+        RecordedEvent(PeriodEnd(_meta('e4', 0))),
+      ], personId: 'coach');
+      await pumpPlayer(tester, game, '/matches/$fin');
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('box-score')), findsOneWidget);
+      expect(find.text('#4 Ana Ruiz *'), findsOneWidget);
+      expect(find.textContaining('Bo Gil'), findsNothing);
     });
 
     testWidgets('match menu: start a scheduled match', (tester) async {

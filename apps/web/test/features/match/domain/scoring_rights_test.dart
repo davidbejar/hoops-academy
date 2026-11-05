@@ -4,9 +4,9 @@ import 'package:hoops_app/features/match/domain/scoring_rights.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 void main() {
-  ScoringRights rights(Set<TenantRole> roles, {Set<String> staff = const {}, Set<String> linked = const {}}) =>
+  ScoringRights rights(Set<TenantRole> roles, {Set<String> staff = const {}, Set<String> linked = const {}, String? own}) =>
       ScoringRights.of(
-        Capabilities(roles: roles, staffTeamIds: staff, linkedPlayerIds: linked, personId: 'me'),
+        Capabilities(roles: roles, staffTeamIds: staff, linkedPlayerIds: linked, personId: 'me', ownPlayerId: own),
         teamId: 'team-a',
       );
 
@@ -46,5 +46,13 @@ void main() {
   test('PLAYER and a parent without links are read-only', () {
     expect(rights({TenantRole.player}).canScore, isFalse);
     expect(rights({TenantRole.parent}).canScore, isFalse);
+  });
+
+  test('PLAYER sees their own line and no other player\'s, and still cannot score', () {
+    final r = rights({TenantRole.player}, own: 'p1');
+    expect(r.canSeeLine('p1'), isTrue);
+    expect(r.canSeeLine('p2'), isFalse);
+    expect(r.canScore, isFalse);
+    expect(r.canRecordFor('p1'), isFalse);
   });
 }
