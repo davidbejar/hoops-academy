@@ -1282,6 +1282,12 @@ abstract class AppLocalizations {
   /// **'Baja'**
   String get statusWithdrawn;
 
+  /// No description provided for @statusRejected.
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazado'**
+  String get statusRejected;
+
   /// No description provided for @playerNew.
   ///
   /// In es, this message translates to:

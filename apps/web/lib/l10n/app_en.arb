@@ -197,6 +197,7 @@
   "statusOrphan": "Orphan",
   "statusPendingApproval": "Pending approval",
   "statusWithdrawn": "Withdrawn",
+  "statusRejected": "Rejected",
   "playerNew": "New player",
   "playerNewRequest": "Request new player",
   "playerGivenName": "First name",

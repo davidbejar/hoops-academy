@@ -53,6 +53,7 @@ extension PlayerStatusLabel on api.PlayerStatus {
     if (this == api.PlayerStatus.PENDING_APPROVAL) {
       return l.statusPendingApproval;
     }
+    if (this == api.PlayerStatus.REJECTED) return l.statusRejected;
     return l.statusWithdrawn;
   }
 }

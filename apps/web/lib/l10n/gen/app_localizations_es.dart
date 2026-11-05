@@ -649,6 +649,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statusWithdrawn => 'Baja';
 
   @override
+  String get statusRejected => 'Rechazado';
+
+  @override
   String get playerNew => 'Nuevo jugador';
 
   @override

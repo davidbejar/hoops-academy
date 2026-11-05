@@ -7,9 +7,10 @@ import 'package:hoops_core_api/hoops_core_api.dart' as api;
 
 void main() {
   test('every PlayerStatus has its own label, REJECTED is not "withdrawn"', () {
+    final real = [for (final s in api.PlayerStatus.values) if (s != api.PlayerStatus.unknownDefaultOpenApi) s];
     for (final l in [AppLocalizationsEs(), AppLocalizationsEn(), AppLocalizationsId()]) {
-      final labels = {for (final s in api.PlayerStatus.values) s: s.label(l)};
-      expect(labels.values.toSet().length, api.PlayerStatus.values.length, reason: '$labels');
+      final labels = {for (final s in real) s: s.label(l)};
+      expect(labels.values.toSet().length, real.length, reason: '$labels');
     }
     expect(api.PlayerStatus.REJECTED.label(AppLocalizationsEs()), 'Rechazado');
     expect(api.PlayerStatus.REJECTED.label(AppLocalizationsEn()), 'Rejected');

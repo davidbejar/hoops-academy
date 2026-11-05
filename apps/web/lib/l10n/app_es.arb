@@ -322,6 +322,7 @@
   "statusOrphan": "Sin equipo válido",
   "statusPendingApproval": "Pendiente de aprobación",
   "statusWithdrawn": "Baja",
+  "statusRejected": "Rechazado",
   "playerNew": "Nuevo jugador",
   "playerNewRequest": "Solicitar nuevo jugador",
   "playerGivenName": "Nombre",

@@ -197,6 +197,7 @@
   "statusOrphan": "Tanpa tim valid",
   "statusPendingApproval": "Menunggu persetujuan",
   "statusWithdrawn": "Mengundurkan diri",
+  "statusRejected": "Ditolak",
   "playerNew": "Pemain baru",
   "playerNewRequest": "Ajukan pemain baru",
   "playerGivenName": "Nama depan",

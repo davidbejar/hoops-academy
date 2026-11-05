@@ -643,6 +643,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get statusWithdrawn => 'Mengundurkan diri';
 
   @override
+  String get statusRejected => 'Ditolak';
+
+  @override
   String get playerNew => 'Pemain baru';
 
   @override
