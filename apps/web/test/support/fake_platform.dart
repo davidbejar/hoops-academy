@@ -36,6 +36,7 @@ api.TenantAdmin adminOf(
   String? email,
   api.InvitationStatus status = api.InvitationStatus.ACCEPTED,
   Set<api.TenantRole> otherRoles = const {},
+  api.TemporaryPasswordStatus temporaryPassword = api.TemporaryPasswordStatus.NONE,
 }) => api.TenantAdmin(
   (b) => b
     ..personId = personId
@@ -43,6 +44,7 @@ api.TenantAdmin adminOf(
     ..familyName = family
     ..email = email ?? '${given.toLowerCase()}@example.org'
     ..invitationStatus = status
+    ..temporaryPasswordStatus = temporaryPassword
     ..otherRoles = SetBuilder<api.TenantRole>(otherRoles),
 );
 
@@ -200,6 +202,7 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
       ..familyName = a.familyName
       ..email = a.email
       ..invitationStatus = a.invitationStatus
+      ..temporaryPasswordStatus = a.temporaryPasswordStatus
       ..otherRoles = SetBuilder<api.TenantRole>(a.otherRoles)
       ..temporaryPassword = password,
   );
@@ -240,7 +243,10 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
         final admin = _admins(tenantId).firstWhere((a) => a.personId == personId);
         if (admin.invitationStatus != api.InvitationStatus.PENDING) throw problem(409, 'INVITATION_NOT_PENDING');
         reissuedFor.add(personId);
-        return _withPassword(admin, '$reissuedPrefix${reissuedFor.length}');
+        final renewed = admin.rebuild((b) => b..temporaryPasswordStatus = api.TemporaryPasswordStatus.ACTIVE);
+        final admins = _admins(tenantId);
+        admins[admins.indexOf(admin)] = renewed;
+        return _withPassword(renewed, '$reissuedPrefix${reissuedFor.length}');
       });
 }
 

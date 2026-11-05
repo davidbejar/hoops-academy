@@ -99,6 +99,7 @@ class FakeMembersRepository with Faulty implements MembersRepository {
       ..roles = SetBuilder<api.TenantRole>(m.roles)
       ..active = m.active
       ..invitationStatus = m.invitationStatus
+      ..temporaryPasswordStatus = m.temporaryPasswordStatus
       ..createdAt = m.createdAt
       ..temporaryPassword = password,
   );
@@ -139,7 +140,9 @@ class FakeMembersRepository with Faulty implements MembersRepository {
       );
     }
     reissuedFor.add(personId);
-    return withPassword(m, 'Reissued-${reissuedFor.length}');
+    final renewed = (m as api.$Member).rebuild((b) => b.temporaryPasswordStatus = api.TemporaryPasswordStatus.ACTIVE);
+    members[members.indexOf(m)] = renewed;
+    return withPassword(renewed, 'Reissued-${reissuedFor.length}');
   });
   @override
   Future<api.Member> replaceRoles(String personId, Set<api.TenantRole> roles) => run('replaceRoles', () {

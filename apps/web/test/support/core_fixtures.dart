@@ -107,6 +107,7 @@ api.Member member(
   bool active = true,
   String? email,
   api.InvitationStatus invitation = api.InvitationStatus.ACCEPTED,
+  api.TemporaryPasswordStatus temporaryPassword = api.TemporaryPasswordStatus.NONE,
 }) => api.Member(
   (b) => b
     ..personId = id
@@ -117,6 +118,7 @@ api.Member member(
     ..roles = SetBuilder<api.TenantRole>(roles)
     ..active = active
     ..invitationStatus = invitation
+    ..temporaryPasswordStatus = temporaryPassword
     ..createdAt = DateTime.utc(2026, 1, 1),
 );
 

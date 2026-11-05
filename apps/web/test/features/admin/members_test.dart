@@ -185,6 +185,41 @@ void main() {
       expect(find.text('Reissued-1'), findsNothing);
     });
 
+    testWidgets('an expired temporary password is labelled in the list and next to the re-issue button', (tester) async {
+      final core = FakeCore(
+        members: FakeMembersRepository([
+          member('m6', 'Eva Expirada', invitation: api.InvitationStatus.PENDING,
+              temporaryPassword: api.TemporaryPasswordStatus.EXPIRED),
+          member('m7', 'Ivo Vigente', invitation: api.InvitationStatus.PENDING,
+              temporaryPassword: api.TemporaryPasswordStatus.ACTIVE),
+        ]),
+      );
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);
+      expect(find.byKey(const Key('member-password-expired-m6')), findsOneWidget);
+      expect(find.byKey(const Key('member-password-expired-m7')), findsNothing);
+      expect(find.text('Contraseña temporal caducada'), findsOneWidget);
+
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '$path/m6');
+      expect(find.byKey(const Key('member-password-expired')), findsOneWidget);
+      expect(find.byKey(const Key('member-issue-password')), findsOneWidget);
+      await tapKey(tester, 'member-issue-password');
+      await tapKey(tester, 'temp-password-done');
+      expect(core.members.reissuedFor, ['m6']);
+      expect(find.byKey(const Key('member-password-expired')), findsNothing);
+    });
+
+    testWidgets('a pending member whose temporary password is still valid shows no expiry label', (tester) async {
+      final core = FakeCore(
+        members: FakeMembersRepository([
+          member('m7', 'Ivo Vigente', invitation: api.InvitationStatus.PENDING,
+              temporaryPassword: api.TemporaryPasswordStatus.ACTIVE),
+        ]),
+      );
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: '$path/m7');
+      expect(find.byKey(const Key('member-password-expired')), findsNothing);
+      expect(find.text('Invitación pendiente'), findsOneWidget);
+    });
+
     testWidgets('re-issue is not offered for an inactive pending member', (tester) async {
       final core = FakeCore(
         members: FakeMembersRepository([

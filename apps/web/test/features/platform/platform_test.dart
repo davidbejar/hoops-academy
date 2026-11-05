@@ -407,6 +407,21 @@ void main() {
       expect(find.text('Reissued-1'), findsNothing);
     });
 
+    testWidgets('an expired temporary password is labelled next to the re-issue button until a new one is issued',
+        (tester) async {
+      final cy = adminOf('p-cy', 'Cy', 'Late', email: 'cy@example.org', status: api.InvitationStatus.PENDING,
+          temporaryPassword: api.TemporaryPasswordStatus.EXPIRED);
+      final repo = repoWith([ana, bea, cy]);
+      await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 2400));
+      expect(find.byKey(const Key('admin-password-expired-p-cy')), findsOneWidget);
+      expect(find.byKey(const Key('admin-password-expired-p-bea')), findsNothing);
+      expect(find.text('Contraseña temporal caducada'), findsOneWidget);
+      expect(find.byKey(const Key('admin-issue-p-cy')), findsOneWidget);
+      await tapKey2(tester, 'admin-issue-p-cy');
+      await tapKey2(tester, 'temp-password-done');
+      expect(find.byKey(const Key('admin-password-expired-p-cy')), findsNothing);
+    });
+
     testWidgets('a second re-issue shows the new password, never the previous one', (tester) async {
       final repo = repoWith([ana, bea]);
       await _pumpPlatform(tester, repo, location: '/platform/t-a', size: const Size(360, 1800));
