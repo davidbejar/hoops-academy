@@ -3,6 +3,7 @@ package com.hoopsacademy.core.application.members;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.problem.DomainRuleViolation;
 import com.hoopsacademy.core.application.port.AppUserRepository;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.core.application.port.AuditLog;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
@@ -32,7 +33,6 @@ public class LoginEmailSync {
 
     public static final String LOGIN_SHARED = "LOGIN_SHARED";
     public static final String LOGIN_REQUIRES_EMAIL = "LOGIN_REQUIRES_EMAIL";
-    private static final String LOGIN_EMAIL_CHANGED = "member.login_email_changed";
 
     /** Who may move a login that is also linked to a person of another tenant. */
     public enum SharedLogin {
@@ -105,10 +105,10 @@ public class LoginEmailSync {
         Person person = move.person();
         String email = person.data().email();
         appUsers.save(move.login().withEmail(email));
-        audit.record(AuditEvent.of(LOGIN_EMAIL_CHANGED, "person", person.id().value(), Map.of()));
+        audit.record(AuditEvent.of(AuditAction.MEMBER_LOGIN_EMAIL_CHANGED, person.id().value()));
         for (IndexedMembership other : move.sharedWith()) {
             sharedLoginPersons.changeEmail(other, move.login().id(), email,
-                    AuditEvent.of(LOGIN_EMAIL_CHANGED, "person", other.person().value(), Map.of()));
+                    AuditEvent.of(AuditAction.MEMBER_LOGIN_EMAIL_CHANGED, other.person().value()));
         }
         identityProvider.updateLogin(new LoginUpdate(move.login().subject(), email,
                 person.data().givenName(), person.data().familyName()));

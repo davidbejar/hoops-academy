@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.application.members;
 
 import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantContext;
@@ -77,7 +78,7 @@ public class MemberProvisioning {
                 Map.of("personId", person.id().value().toString(), "roles", person.roles().stream().map(Enum::name).sorted().toList(),
                         "login", login.isPresent())));
         authzCache.invalidate(tenantContext.requireTenantId());
-        audit.record(AuditEvent.of("member.invited", "person", person.id().value(), Map.of(
+        audit.record(AuditEvent.of(AuditAction.MEMBER_INVITED, person.id().value(), Map.of(
                 "roles", person.roles().stream().map(Enum::name).sorted().toList(), "login", login.isPresent())));
         return new WithTemporaryPassword<>(person, temporaryPasswords.forCreated(person.id(), login));
     }

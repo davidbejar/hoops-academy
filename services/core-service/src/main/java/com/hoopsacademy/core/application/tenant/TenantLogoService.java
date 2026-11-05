@@ -3,6 +3,7 @@ package com.hoopsacademy.core.application.tenant;
 import java.util.Map;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.application.port.LogoRepository;
@@ -32,7 +33,7 @@ public class TenantLogoService {
     public StoredLogo upload(byte[] content) {
         LogoImage image = LogoImage.of(content);
         StoredLogo stored = logos.save(image, clock.instant());
-        audit.record(AuditEvent.of("tenant.logo_replaced", "tenant", tenantContext.requireTenantId(),
+        audit.record(AuditEvent.of(AuditAction.TENANT_LOGO_REPLACED, tenantContext.requireTenantId(),
                 Map.of("contentType", image.format().mediaType(), "sizeBytes", content.length)));
         return stored;
     }
@@ -47,6 +48,6 @@ public class TenantLogoService {
         if (!logos.delete()) {
             throw new NotFoundException("No logo stored");
         }
-        audit.record(AuditEvent.of("tenant.logo_removed", "tenant", tenantContext.requireTenantId()));
+        audit.record(AuditEvent.of(AuditAction.TENANT_LOGO_REMOVED, tenantContext.requireTenantId()));
     }
 }

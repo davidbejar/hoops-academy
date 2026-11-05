@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.application.members;
 
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.core.application.port.AuditLog;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
@@ -21,8 +22,6 @@ import java.util.Optional;
  */
 @ApplicationScoped
 public class TemporaryPasswords {
-
-    public static final String ISSUED = "member.temporary_password_issued";
 
     private final TemporaryPasswordGenerator generator;
     private final IdentityProviderPort identityProvider;
@@ -48,7 +47,7 @@ public class TemporaryPasswords {
 
     public TemporaryPassword issue(PersonId person, String subject) {
         TemporaryPassword password = generator.next();
-        audit.record(AuditEvent.of(ISSUED, "person", person.value()));
+        audit.record(AuditEvent.of(AuditAction.MEMBER_TEMPORARY_PASSWORD_ISSUED, person.value()));
         boolean wasExpired = logins.issued(subject, clock.instant());
         identityProvider.setTemporaryPassword(subject, password);
         if (wasExpired) {

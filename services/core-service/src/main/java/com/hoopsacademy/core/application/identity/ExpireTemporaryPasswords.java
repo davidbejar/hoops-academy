@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.application.identity;
 
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.PendingLoginPersons;
@@ -22,15 +23,13 @@ import org.jboss.logging.Logger;
  * <ul>
  *   <li>the person chose a password of their own (Keycloak) ⇒ the issue time is only forgotten, nothing expires;</li>
  *   <li>otherwise ⇒ expired: the expiry time is set, every academy where the login has a PENDING person gets the
- *       audit row {@value #EXPIRED} (target that person, no personal data), and the Keycloak login is disabled LAST,
+ *       audit row {@code member.temporary_password_expired} (target that person, no personal data), and the Keycloak login is disabled LAST,
  *       so a Keycloak failure rolls the login's transaction back and the next sweep retries it.</li>
  * </ul>
  * Runs from {@code TemporaryPasswordSweepJob} under its cluster lock; a failure of one login never stops the others.
  */
 @ApplicationScoped
 public class ExpireTemporaryPasswords {
-
-    public static final String EXPIRED = "member.temporary_password_expired";
 
     private static final Logger LOG = Logger.getLogger(ExpireTemporaryPasswords.class);
 
@@ -85,7 +84,8 @@ public class ExpireTemporaryPasswords {
             return Outcome.FORGOTTEN;
         }
         logins.expired(subject, now);
-        pendingPersons.recordForEach(subject, login.get(), person -> AuditEvent.of(EXPIRED, "person", person.value()));
+        pendingPersons.recordForEach(subject, login.get(),
+                person -> AuditEvent.of(AuditAction.MEMBER_TEMPORARY_PASSWORD_EXPIRED, person.value()));
         identityProvider.disable(subject);
         return Outcome.EXPIRED;
     }

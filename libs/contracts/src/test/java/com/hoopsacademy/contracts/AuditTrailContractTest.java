@@ -43,7 +43,7 @@ class AuditTrailContractTest {
     @Test
     void theTargetTypesAreAnEnum() {
         assertThat(schema("AuditTargetType").getEnum()).map(String::valueOf)
-                .containsExactlyInAnyOrder("person", "player", "team", "tenant", "approval_request", "guardian_link");
+                .containsExactlyInAnyOrder("person", "player", "tenant", "approval_request", "guardian_link");
     }
 
     @Test

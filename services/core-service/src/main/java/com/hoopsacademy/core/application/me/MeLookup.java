@@ -4,6 +4,9 @@ import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.application.authz.MemberAuthz;
 import com.hoopsacademy.core.application.authz.MembershipLookup;
 import com.hoopsacademy.core.application.port.AppUserRepository;
+import com.hoopsacademy.core.application.port.AuditAction;
+import com.hoopsacademy.core.application.port.AuditEvent;
+import com.hoopsacademy.core.application.port.AuditLog;
 import com.hoopsacademy.core.application.port.LogoRepository;
 import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.port.MembershipRepository.IndexedMembership;
@@ -32,10 +35,11 @@ public class MeLookup {
     private final PersonRepository persons;
     private final TemporaryPasswordLogins temporaryPasswords;
     private final TemporaryPasswordSweeps sweeps;
+    private final AuditLog audit;
 
     public MeLookup(AppUserRepository appUsers, MembershipRepository memberships, MembershipLookup membershipLookup,
             TenantProfileRepository profiles, LogoRepository logos, PersonRepository persons,
-            TemporaryPasswordLogins temporaryPasswords, TemporaryPasswordSweeps sweeps) {
+            TemporaryPasswordLogins temporaryPasswords, TemporaryPasswordSweeps sweeps, AuditLog audit) {
         this.appUsers = appUsers;
         this.memberships = memberships;
         this.membershipLookup = membershipLookup;
@@ -44,6 +48,7 @@ public class MeLookup {
         this.persons = persons;
         this.temporaryPasswords = temporaryPasswords;
         this.sweeps = sweeps;
+        this.audit = audit;
     }
 
     /** The caller's login; super admins are registered on first sight, anybody else must have been provisioned. */
@@ -87,7 +92,8 @@ public class MeLookup {
     }
 
     /**
-     * The first successful /me in this tenant (after the first sign-in) marks the invitation accepted. Signing in
+     * The first successful /me in this tenant (after the first sign-in) marks the invitation accepted and records
+     * {@code member.invitation_accepted} with the person as actor (WP34). Signing in
      * means the temporary password has been replaced (Keycloak issues no token before), so nothing is left to expire;
      * the acceptance also starts a background sweep of the others (ADR-0028).
      */
@@ -96,6 +102,8 @@ public class MeLookup {
                 .filter(person -> person.invitationStatus() == InvitationStatus.PENDING)
                 .ifPresent(person -> {
                     persons.update(person.acceptInvitation());
+                    audit.recordAs(person.id(),
+                            AuditEvent.of(AuditAction.MEMBER_INVITATION_ACCEPTED, person.id().value()));
                     temporaryPasswords.used(subject);
                     sweeps.request();
                 });

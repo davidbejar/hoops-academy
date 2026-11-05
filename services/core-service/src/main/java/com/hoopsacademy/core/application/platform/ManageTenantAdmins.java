@@ -15,6 +15,7 @@ import com.hoopsacademy.core.application.members.MemberProvisioning;
 import com.hoopsacademy.core.application.members.MemberQueries;
 import com.hoopsacademy.core.application.members.MemberView;
 import com.hoopsacademy.core.application.members.TemporaryPasswords;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.core.application.port.AuditLog;
 import com.hoopsacademy.core.application.port.NewIdentity;
@@ -99,7 +100,7 @@ public class ManageTenantAdmins {
     public MemberView update(TenantId tenant, PersonId id, PersonalDataChanges changes) {
         return inTenant(tenant, () -> {
             requireActiveAdmin(id);
-            audit.record(AuditEvent.of("admin.updated", "person", id.value(), Map.of("fields", new ChangedFields()
+            audit.record(AuditEvent.of(AuditAction.ADMIN_UPDATED, id.value(), Map.of("fields", new ChangedFields()
                     .field("givenName", changes.givenName()).field("familyName", changes.familyName())
                     .field("email", changes.email()).names())));
             return commands.updateData(id, changes, SharedLogin.SYNC);
@@ -116,7 +117,7 @@ public class ManageTenantAdmins {
             } else {
                 commands.replaceRoles(id, otherRoles);
             }
-            audit.record(AuditEvent.of("admin.removed", "person", id.value(),
+            audit.record(AuditEvent.of(AuditAction.ADMIN_REMOVED, id.value(),
                     Map.of("membershipDeactivated", otherRoles.isEmpty())));
             return null;
         });
@@ -129,7 +130,7 @@ public class ManageTenantAdmins {
     public WithTemporaryPassword<MemberView> issueTemporaryPassword(TenantId tenant, PersonId id) {
         return inTenant(tenant, () -> {
             requireActiveAdmin(id);
-            audit.record(AuditEvent.of("admin.temporary_password_issued", "person", id.value()));
+            audit.record(AuditEvent.of(AuditAction.ADMIN_TEMPORARY_PASSWORD_ISSUED, id.value()));
             return issueTemporaryPassword.handle(id, SharedLogin.SYNC);
         });
     }
@@ -156,7 +157,7 @@ public class ManageTenantAdmins {
         Set<TenantRole> roles = EnumSet.of(TenantRole.ADMIN);
         roles.addAll(member.roles());
         commands.replaceRoles(member.id(), roles);
-        audit.record(AuditEvent.of("admin.added", "person", member.id().value(), Map.of("invited", false)));
+        audit.record(AuditEvent.of(AuditAction.ADMIN_ADDED, member.id().value(), Map.of("invited", false)));
         Optional<TemporaryPassword> password = member.userId() == null
                 ? giveLogin(persons.find(member.id()).orElseThrow())
                 : Optional.empty();
@@ -166,7 +167,7 @@ public class ManageTenantAdmins {
     private AddedAdmin invite(PersonalData admin) {
         WithTemporaryPassword<MemberView> invited =
                 inviteMember.handle(new InviteMemberCommand(admin, Set.of(TenantRole.ADMIN), true));
-        audit.record(AuditEvent.of("admin.added", "person", invited.value().person().id().value(),
+        audit.record(AuditEvent.of(AuditAction.ADMIN_ADDED, invited.value().person().id().value(),
                 Map.of("invited", true)));
         return new AddedAdmin(invited.value(), true, invited.temporaryPassword());
     }

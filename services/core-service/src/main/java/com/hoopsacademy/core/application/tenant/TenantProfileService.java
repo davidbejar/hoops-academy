@@ -4,6 +4,7 @@ import java.util.Map;
 import com.hoopsacademy.core.application.shared.ChangedFields;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.application.port.LogoRepository;
@@ -39,7 +40,7 @@ public class TenantProfileService {
     public TenantProfileView update(TenantProfileChanges changes) {
         TenantProfile changed = current().apply(changes);
         profiles.save(changed);
-        audit.record(AuditEvent.of("tenant.profile_changed", "tenant", tenantContext.requireTenantId(),
+        audit.record(AuditEvent.of(AuditAction.TENANT_PROFILE_CHANGED, tenantContext.requireTenantId(),
                 Map.of("fields", new ChangedFields().field("name", changes.name())
                         .field("timezone", changes.timezone()).field("defaultLocale", changes.defaultLocale())
                         .field("contactEmail", changes.contactEmail()).field("websiteUrl", changes.websiteUrl())

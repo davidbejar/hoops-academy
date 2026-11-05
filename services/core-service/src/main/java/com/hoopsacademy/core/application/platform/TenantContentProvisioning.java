@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.application.platform;
 
 import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.core.application.members.MemberProvisioning;
 import com.hoopsacademy.core.application.port.OutboxEvent;
@@ -44,7 +45,7 @@ public class TenantContentProvisioning {
         hooks.forEach(hook -> hook.onTenantCreated(tenant));
         outbox.write(new OutboxEvent(tenant.id(), "tenant.created", "tenant", tenant.id().toString(),
                 Map.of("slug", tenant.slug().value(), "name", tenant.name())));
-        audit.record(AuditEvent.of("tenant.created", "tenant", tenant.id(), Map.of("slug", tenant.slug().value())));
+        audit.record(AuditEvent.of(AuditAction.TENANT_CREATED, tenant.id(), Map.of("slug", tenant.slug().value())));
         return members.create(firstAdmin, Optional.of(login));
     }
 }

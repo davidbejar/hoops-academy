@@ -7,6 +7,7 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.port.MembershipRepository.IndexedMembership;
@@ -104,7 +105,7 @@ class SharedLoginPersonsTest {
     @Test
     void theLinkedPersonGetsTheEmailAndTheOtherTenantAnAuditRow() {
         boolean changed = inHome(() -> shared.changeEmail(link(linked), new UserId(login), "new@example.com",
-                AuditEvent.of("member.login_email_changed", "person", linked)));
+                AuditEvent.of(AuditAction.MEMBER_LOGIN_EMAIL_CHANGED, linked)));
 
         assertThat(changed).isTrue();
         assertThat(emailOf(other, linked)).isEqualTo("new@example.com");
@@ -118,7 +119,7 @@ class SharedLoginPersonsTest {
     @Test
     void aPersonThatDoesNotLinkTheLoginIsNeverChanged() {
         boolean changed = inHome(() -> shared.changeEmail(link(bystander), new UserId(login), "new@example.com",
-                AuditEvent.of("member.login_email_changed", "person", bystander)));
+                AuditEvent.of(AuditAction.MEMBER_LOGIN_EMAIL_CHANGED, bystander)));
 
         assertThat(changed).isFalse();
         assertThat(emailOf(other, bystander)).isEqualTo("by@example.com");
@@ -139,7 +140,7 @@ class SharedLoginPersonsTest {
             persons.update(persons.find(new PersonId(homePerson)).orElseThrow()
                     .withData(PersonalDataChanges.none().withGivenName(Patch.of("Renamed"))));
             shared.changeEmail(link(linked), new UserId(login), "new@example.com",
-                    AuditEvent.of("member.login_email_changed", "person", linked));
+                    AuditEvent.of(AuditAction.MEMBER_LOGIN_EMAIL_CHANGED, linked));
             return (Object[]) em.createNativeQuery("""
                     select current_setting('app.tenant_id', true), (select count(*) from core.person)""")
                     .getSingleResult();

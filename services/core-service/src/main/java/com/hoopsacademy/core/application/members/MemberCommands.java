@@ -2,6 +2,7 @@ package com.hoopsacademy.core.application.members;
 
 import com.hoopsacademy.core.application.shared.ChangedFields;
 import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantContext;
@@ -75,7 +76,7 @@ public class MemberCommands {
         }
         Optional<LoginEmailSync.LoginMove> loginMove = loginSync.plan(current, changed, sharedLogin);
         persons.update(changed);
-        audit.record(AuditEvent.of("member.updated", "person", id.value(), Map.of("fields", new ChangedFields()
+        audit.record(AuditEvent.of(AuditAction.MEMBER_UPDATED, id.value(), Map.of("fields", new ChangedFields()
                 .field("givenName", changes.givenName()).field("familyName", changes.familyName())
                 .field("email", changes.email()).field("phone", changes.phone())
                 .field("birthDate", changes.birthDate()).field("gender", changes.gender())
@@ -96,7 +97,7 @@ public class MemberCommands {
             players.create(id, PlayerStatus.ACTIVE);
         }
         membershipChanged(changed, "ROLES_REPLACED");
-        audit.record(AuditEvent.of("member.roles_replaced", "person", id.value(), Map.of(
+        audit.record(AuditEvent.of(AuditAction.MEMBER_ROLES_REPLACED, id.value(), Map.of(
                 "before", roleNames(current), "after", roleNames(changed))));
         return queries.view(changed);
     }
@@ -112,7 +113,7 @@ public class MemberCommands {
         persons.update(changed);
         memberships.unregister(id);
         membershipChanged(changed, "DEACTIVATED");
-        audit.record(AuditEvent.of("member.deactivated", "person", id.value(), Map.of("roles", roleNames(changed))));
+        audit.record(AuditEvent.of(AuditAction.MEMBER_DEACTIVATED, id.value(), Map.of("roles", roleNames(changed))));
         return queries.view(changed);
     }
 

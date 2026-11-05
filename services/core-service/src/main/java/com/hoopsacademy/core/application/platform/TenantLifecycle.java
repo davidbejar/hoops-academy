@@ -2,6 +2,7 @@ package com.hoopsacademy.core.application.platform;
 
 import com.hoopsacademy.core.application.shared.ChangedFields;
 import com.hoopsacademy.core.application.port.PlatformAuditLog;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantId;
@@ -46,17 +47,17 @@ public class TenantLifecycle {
 
     @Transactional
     public Tenant suspend(TenantId id, String reason) {
-        return transition(id, "tenant.suspended", reason, tenant -> tenant.suspend(reason, clock.instant()));
+        return transition(id, AuditAction.TENANT_SUSPENDED, reason, tenant -> tenant.suspend(reason, clock.instant()));
     }
 
     @Transactional
     public Tenant reactivate(TenantId id) {
-        return transition(id, "tenant.reactivated", null, Tenant::reactivate);
+        return transition(id, AuditAction.TENANT_REACTIVATED, null, Tenant::reactivate);
     }
 
     @Transactional
     public Tenant withdraw(TenantId id, String reason) {
-        return transition(id, "tenant.withdrawn", reason,
+        return transition(id, AuditAction.TENANT_WITHDRAWN, reason,
                 tenant -> tenant.withdraw(reason, clock.instant(), withdrawnRetention));
     }
 
@@ -64,21 +65,21 @@ public class TenantLifecycle {
     public Tenant changeMasterData(TenantId id, Patch<String> name, Patch<ZoneId> timezone, Patch<AppLocale> locale) {
         Tenant changed = load(id).changeMasterData(name, timezone, locale);
         tenants.update(changed);
-        audit.record(id, AuditEvent.of("tenant.master_data_changed", "tenant", id, Map.of("fields",
+        audit.record(id, AuditEvent.of(AuditAction.TENANT_MASTER_DATA_CHANGED, id, Map.of("fields",
                 new ChangedFields().field("name", name).field("timezone", timezone).field("defaultLocale", locale)
                         .names())));
         return changed;
     }
 
-    private Tenant transition(TenantId id, String eventType, String reason, UnaryOperator<Tenant> change) {
+    private Tenant transition(TenantId id, AuditAction action, String reason, UnaryOperator<Tenant> change) {
         Tenant changed = change.apply(load(id));
         tenants.update(changed);
         Map<String, Object> payload = new HashMap<>(Map.of("status", changed.status().name()));
         if (reason != null) {
             payload.put("reason", reason);
         }
-        outbox.write(new OutboxEvent(id, eventType, "tenant", id.toString(), payload));
-        audit.record(id, AuditEvent.of(eventType, "tenant", id, payload));
+        outbox.write(new OutboxEvent(id, action.wireName(), "tenant", id.toString(), payload));
+        audit.record(id, AuditEvent.of(action, id, payload));
         authzCache.invalidate(id);
         return changed;
     }

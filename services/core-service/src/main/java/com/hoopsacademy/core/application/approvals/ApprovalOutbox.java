@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.application.approvals;
 
 import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.port.OutboxEvent;
@@ -29,28 +30,28 @@ public class ApprovalOutbox {
 
     /** A requester withdrew their own PENDING request (audit only, no integration event). */
     public void cancelled(ApprovalRequest request) {
-        audit.record(AuditEvent.of("approval.cancelled", "approval_request", request.id().value(), Map.of(
+        audit.record(AuditEvent.of(AuditAction.APPROVAL_CANCELLED, request.id().value(), Map.of(
                 "action", request.action().name(), "playerId", request.player().value().toString())));
     }
 
     public void requested(ApprovalRequest request) {
-        write("player.requested", request);
+        write(AuditAction.PLAYER_REQUESTED, request);
     }
 
     /** An approval, including an ADMIN's auto-approved action. */
     public void approved(ApprovalRequest request) {
-        write("player.approved", request);
+        write(AuditAction.PLAYER_APPROVED, request);
     }
 
     public void rejected(ApprovalRequest request) {
-        write("player.rejected", request);
+        write(AuditAction.PLAYER_REJECTED, request);
     }
 
     public void withdrawn(ApprovalRequest request) {
-        write("player.withdrawn", request);
+        write(AuditAction.PLAYER_WITHDRAWN, request);
     }
 
-    private void write(String type, ApprovalRequest request) {
+    private void write(AuditAction action, ApprovalRequest request) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("approvalRequestId", request.id().value().toString());
         payload.put("action", request.action().name());
@@ -60,8 +61,8 @@ public class ApprovalOutbox {
         if (request.decidedBy() != null) {
             payload.put("decidedBy", request.decidedBy().value().toString());
         }
-        outbox.write(new OutboxEvent(tenantContext.requireTenantId(), type, "player",
+        outbox.write(new OutboxEvent(tenantContext.requireTenantId(), action.wireName(), "player",
                 request.player().value().toString(), payload));
-        audit.record(AuditEvent.of(type, "player", request.player().value(), payload));
+        audit.record(AuditEvent.of(action, request.player().value(), payload));
     }
 }

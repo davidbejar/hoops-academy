@@ -18,6 +18,11 @@ record AuditActor(String subject, UUID personId) {
         return new AuditActor(callerSubject().orElse(SYSTEM), person);
     }
 
+    /** The same caller acting as {@code person} of the bound tenant. */
+    AuditActor as(UUID person) {
+        return new AuditActor(subject, person);
+    }
+
     /** The same caller in another tenant's trail, where the bound tenant's person id means nothing. */
     AuditActor withoutPerson() {
         return new AuditActor(subject, null);

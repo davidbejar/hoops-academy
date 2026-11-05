@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.application.members;
 
 import com.hoopsacademy.core.application.port.AuditLog;
+import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.problem.DomainRuleViolation;
@@ -70,7 +71,7 @@ public class GuardianLinkService {
         GuardianLink link = new GuardianLink(GuardianLinkId.random(), guardianId, playerId, clock.instant());
         links.insert(link);
         authzCache.invalidate(tenantContext.requireTenantId());
-        audit.record(AuditEvent.of("guardian_link.created", "guardian_link", link.id().value(), Map.of(
+        audit.record(AuditEvent.of(AuditAction.GUARDIAN_LINK_CREATED, link.id().value(), Map.of(
                 "guardianPersonId", guardianId.value().toString(), "playerId", playerId.value().toString())));
         return withNames(List.of(link), Map.of(playerId, playerPerson)).get(0);
     }
@@ -80,7 +81,7 @@ public class GuardianLinkService {
         links.find(id).orElseThrow(() -> new NotFoundException("Guardian link not found"));
         links.delete(id);
         authzCache.invalidate(tenantContext.requireTenantId());
-        audit.record(AuditEvent.of("guardian_link.removed", "guardian_link", id.value()));
+        audit.record(AuditEvent.of(AuditAction.GUARDIAN_LINK_REMOVED, id.value()));
     }
 
     @Transactional

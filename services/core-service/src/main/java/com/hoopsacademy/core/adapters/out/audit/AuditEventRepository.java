@@ -24,12 +24,12 @@ final class AuditEventRepository {
                 .setParameter("tenant", tenant.value())
                 .setParameter("actor", actor.subject())
                 .setParameter("person", actor.personId())
-                .setParameter("action", event.action())
-                .setParameter("targetType", event.targetType())
+                .setParameter("action", event.action().wireName())
+                .setParameter("targetType", event.targetType().wireName())
                 .setParameter("targetId", event.targetId())
                 .setParameter("metadata", toJson(json, event))
                 .executeUpdate();
-        LOG.infof("audit action=%s target=%s:%s actor=%s tenant=%s", event.action(), event.targetType(),
+        LOG.infof("audit action=%s target=%s:%s actor=%s tenant=%s", event.action().wireName(), event.targetType().wireName(),
                 event.targetId(), actor.subject(), tenant);
     }
 
