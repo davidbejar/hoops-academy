@@ -257,6 +257,7 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
   final Map<String, List<ath.AttendanceEntry>> attendanceBySession;
   final List<String> sessionQueries = [];
   ath.CreateTrainingSessionRequest? createdSession;
+  ath.UpdateTrainingSessionRequest? updatedSession;
   List<ath.AttendanceInput>? recorded;
   String? cancelledReason;
   ath.TrainingScheduleInput? createdSchedule;
@@ -293,6 +294,7 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
         ..startsAt = request.startsAt
         ..durationMinutes = request.durationMinutes
         ..location = request.location
+        ..planId = request.planId
         ..status = ath.TrainingSessionStatus.PLANNED,
     );
     sessionList.add(s);
@@ -301,7 +303,17 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
 
   @override
   Future<ath.TrainingSession> updateSession(String sessionId, ath.UpdateTrainingSessionRequest request) =>
-      run('updateSession', () => sessionList.firstWhere((s) => s.id == sessionId));
+      run('updateSession', () {
+        updatedSession = request;
+        final i = sessionList.indexWhere((s) => s.id == sessionId);
+        sessionList[i] = sessionList[i].rebuild((b) => b
+          ..startsAt = request.startsAt ?? b.startsAt
+          ..durationMinutes = request.durationMinutes ?? b.durationMinutes
+          ..location = request.location ?? b.location
+          ..planId = request.planId ?? b.planId
+          ..notes = request.notes ?? b.notes);
+        return sessionList[i];
+      });
 
   @override
   Future<ath.TrainingSession> cancelSession(String sessionId, String reason) => run('cancelSession', () {
