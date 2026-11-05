@@ -117,10 +117,6 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 ### Backend
 - **Remove `resendTenantAdminInvitation`** (WP24): deprecated alias of `issueTenantAdminTemporaryPassword` kept in core
   2.3.0 so the pre-WP25 web build keeps working; drop it in core 3.0.0 once WP25 uses the new operation.
-- **→ WP31. Shared login, other tenants' contact e-mail** (WP22): when the super admin moves a login used in several
-  academies, only the edited tenant's `core.person.email` changes; the other academies keep their per-tenant e-mail for
-  that person (Keycloak and `core.app_user` have the new one). Decided (7): propagate to every academy in the same
-  transaction.
 - **Keycloak ahead of the database** (WP22, as ADR-0013): a commit failure right after a successful login update leaves
   Keycloak with the new e-mail; no repair job detects `app_user.email` ≠ Keycloak e-mail yet.
 - **Parents via the guardian flow** get no login (WP5 note); WP17 covered players only (ADMIN add + approval).
@@ -164,6 +160,8 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP31 (decision 7): a shared login's e-mail moved by the super admin reaches every academy that uses it, in the
+  same transaction (ADR-0026); 409 `EMAIL_TAKEN` when another member of such an academy already uses the address.
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.
 - Keycloak `core-service` service account lacked realm-management `manage-users`/`view-users` — fixed in commit 85e3ca0.
 - `Problem.code` alignment between contracts and common — done in WP2a.
