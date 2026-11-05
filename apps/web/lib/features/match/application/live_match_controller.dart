@@ -5,12 +5,15 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../core/session/capabilities.dart';
 import '../data/local/match_store.dart';
+import '../data/matches_repository.dart';
+import '../data/official_figures.dart';
 import '../domain/match_event.dart';
 import '../domain/pending_event.dart';
 import '../domain/projector/event_ordering.dart';
 import '../domain/projector/merge.dart';
 import '../domain/projector/projection.dart';
 import '../domain/projector/projector.dart';
+import '../domain/projector/team_figures.dart';
 import '../domain/scoring_rights.dart';
 import '../domain/stat_action.dart';
 import 'match_providers.dart';
@@ -55,6 +58,7 @@ class LiveMatch {
     required this.roster,
     required this.rules,
     required this.projection,
+    required this.team,
     required this.own,
     required this.synced,
     required this.log,
@@ -65,7 +69,14 @@ class LiveMatch {
   final gen.Match match;
   final List<RosterPlayer> roster;
   final MatchRules rules;
+  /// Local replay of the events this device knows. For a caller with a
+  /// filtered feed (not ADMIN / team staff, ADR-0028) it holds their own and
+  /// linked players' lines only; use [team] for the score and totals.
   final Projection projection;
+
+  /// Score, period scores and team totals: the local replay for staff, the
+  /// server's box score reconciled with local events for everyone else.
+  final TeamFigures team;
   final List<PendingEvent> own;
   final List<StoredEvent> synced;
   final List<LogEntry> log;
@@ -103,6 +114,12 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
   bool _fromCache = false;
   List<StoredEvent> _synced = const [];
   List<PendingEvent> _own = const [];
+
+  /// Server snapshot of the team figures; null for staff (full feed).
+  OfficialFigures? _official;
+  bool _refreshing = false;
+  bool _refreshAgain = false;
+  bool _disposed = false;
 
   MatchStore get _store => ref.read(matchStoreProvider);
 
@@ -144,11 +161,15 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     _rights = ScoringRights.of(caps, teamId: _match.teamId);
     _synced = await store.syncedEvents(matchId);
     _own = await store.ownEvents(matchId);
+    _disposed = false;
+    _official = _rights.staff ? null : officialScoreOf(_match);
+    if (!_rights.staff) await _refreshOfficial(repo);
 
     final subs = [
       store.watchSyncedEvents(matchId).listen((e) {
         _synced = e;
         _emit();
+        if (!_rights.staff) unawaited(_refreshOfficial(repo));
       }),
       store.watchOwnEvents(matchId).listen((e) {
         _own = e;
@@ -156,10 +177,15 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
       }),
     ];
     worker.watch(matchId);
+    // Events the filtered feed hides still change the score: poll the box
+    // score at the feed's cadence while the screen is open.
+    final poll = _rights.staff ? null : ref.read(syncTimersProvider).every(const Duration(seconds: 15), () => _refreshOfficial(repo));
     ref.onDispose(() {
+      _disposed = true;
       for (final s in subs) {
         unawaited(s.cancel());
       }
+      poll?.cancel();
       worker.unwatch();
     });
     return _compose();
@@ -172,9 +198,36 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     if (state.hasValue) state = AsyncData(_compose());
   }
 
+  /// Fetches the server's team figures (ADR-0028); offline keeps the last.
+  Future<void> _refreshOfficial(MatchesRepository repo) async {
+    if (_refreshing) {
+      _refreshAgain = true;
+      return;
+    }
+    _refreshing = true;
+    try {
+      do {
+        _refreshAgain = false;
+        try {
+          _official = officialFiguresOf(await repo.boxScore(matchId));
+          if (!_disposed) _emit();
+        } on Object {
+          // Offline or failing: the previous snapshot stays.
+        }
+      } while (_refreshAgain && !_disposed);
+    } finally {
+      _refreshing = false;
+    }
+  }
+
   LiveMatch _compose() {
     final rules = MatchRules(periodCount: _match.periodCount, periodMinutes: _match.periodMinutes);
-    final projection = project(rules, _roster, mergeEvents(_synced, _own));
+    final events = mergeEvents(_synced, _own);
+    final projection = project(rules, _roster, events);
+    final official = _official;
+    final team = official == null
+        ? TeamFigures.of(projection)
+        : reconcileTeamFigures(official: official, rules: rules, roster: _roster, events: events);
     final ownById = {for (final p in _own) p.event.id: p};
     final syncedById = {for (final s in _synced) s.event.id: s};
     final all = <RecordedEvent>[
@@ -207,6 +260,7 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
       roster: _roster,
       rules: rules,
       projection: projection,
+      team: team,
       own: _own,
       synced: _synced,
       log: log,

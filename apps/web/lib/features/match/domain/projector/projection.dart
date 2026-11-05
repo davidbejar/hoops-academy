@@ -59,6 +59,29 @@ class StatLine {
     unsportsmanlikeFouls: unsportsmanlikeFouls + o.unsportsmanlikeFouls,
     secondsPlayed: secondsPlayed + o.secondsPlayed,
   );
+
+  /// Field-wise difference (may be negative: a change between two projections).
+  StatLine operator -(StatLine o) => this + o._negated;
+
+  StatLine get _negated => StatLine(
+    points: -points,
+    fg1Made: -fg1Made,
+    fg1Attempted: -fg1Attempted,
+    fg2Made: -fg2Made,
+    fg2Attempted: -fg2Attempted,
+    fg3Made: -fg3Made,
+    fg3Attempted: -fg3Attempted,
+    assists: -assists,
+    offensiveRebounds: -offensiveRebounds,
+    defensiveRebounds: -defensiveRebounds,
+    turnovers: -turnovers,
+    steals: -steals,
+    blocks: -blocks,
+    personalFouls: -personalFouls,
+    technicalFouls: -technicalFouls,
+    unsportsmanlikeFouls: -unsportsmanlikeFouls,
+    secondsPlayed: -secondsPlayed,
+  );
 }
 
 /// Inconsistencies the projector reports (open set on the wire).

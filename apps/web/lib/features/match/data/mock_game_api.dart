@@ -1,4 +1,5 @@
 import '../../../core/mock/mock_core_api.dart';
+import '../domain/feed_visibility.dart';
 import '../domain/match_event.dart';
 import '../domain/projector/projection.dart';
 import '../domain/projector/projector.dart';
@@ -232,8 +233,12 @@ class MockGameApi {
     return MockResult.json(200, {'results': results, 'lastServerSeq': m['lastServerSeq']});
   }
 
+  /// Filtered like game-service (ADR-0028): staff read every event, anybody
+  /// else team-level events plus those of linked players.
   MockResult _feed(String matchId, int after, int limit) {
-    final all = [for (final s in _events[matchId] ?? <_Stored>[]) if (s.seq > after) s];
+    final stored = _events[matchId] ?? <_Stored>[];
+    final visible = visibleFeed(stored, (s) => MatchEvent.fromJson(s.json), visiblePlayers: _staff ? null : {...linkedPlayerIds});
+    final all = [for (final s in visible) if (s.seq > after) s];
     final page = all.take(limit).toList();
     final voided = _project(matchId).voidedBy;
     return MockResult.json(200, {
@@ -247,7 +252,7 @@ class MockGameApi {
             'voidedByEventId': voided[s.json['id']],
           },
       ],
-      'lastServerSeq': page.isEmpty ? after : page.last.seq,
+      'lastServerSeq': stored.isEmpty ? 0 : stored.last.seq,
       'hasMore': all.length > page.length,
     });
   }

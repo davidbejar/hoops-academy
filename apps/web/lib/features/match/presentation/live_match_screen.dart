@@ -203,7 +203,7 @@ class _ScoreHeader extends ConsumerWidget {
                 Expanded(
                   child: Column(children: [
                     Text(l.matchUs, style: theme.textTheme.labelMedium),
-                    Text('${p.summary.teamScore}', key: const Key('score-team'), style: scoreStyle),
+                    Text('${live.team.teamScore}', key: const Key('score-team'), style: scoreStyle),
                   ]),
                 ),
                 Column(
@@ -215,7 +215,7 @@ class _ScoreHeader extends ConsumerWidget {
                 Expanded(
                   child: Column(children: [
                     Text(live.match.opponentName, style: theme.textTheme.labelMedium, overflow: TextOverflow.ellipsis),
-                    Text('${p.summary.opponentScore}', key: const Key('score-opponent'), style: scoreStyle),
+                    Text('${live.team.opponentScore}', key: const Key('score-opponent'), style: scoreStyle),
                   ]),
                 ),
               ],
@@ -368,6 +368,18 @@ class _CourtPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    if (!live.rights.canRunMatch) {
+      // Filtered feed (ADR-0028): other players' substitutions are not in it,
+      // so who is on court is unknown; one list, the linked player tappable.
+      return ListView(
+        key: const Key('court-panel'),
+        padding: const EdgeInsets.all(AppTokens.spaceSm),
+        children: [
+          _SectionTitle(l.navPlayers, key: const Key('players-all')),
+          _PlayerGrid(players: live.roster, live: live, onTap: (p) => _statSheet(context, ref, p)),
+        ],
+      );
+    }
     final onCourt = live.projection.live.onCourt;
     final court = [for (final r in live.roster) if (onCourt.contains(r.playerId)) r];
     final bench = [for (final r in live.roster) if (!onCourt.contains(r.playerId)) r];
@@ -475,7 +487,7 @@ class _CourtPanel extends ConsumerWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
+  const _SectionTitle(this.text, {super.key});
   final String text;
 
   @override
@@ -547,7 +559,8 @@ class _PlayerTile extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(player.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleSmall),
-                        Text('${stats?.points ?? 0} PTS · ${stats?.personalFouls ?? 0} PF', style: theme.textTheme.bodySmall),
+                        if (live.rights.canSeeLine(player.playerId))
+                          Text('${stats?.points ?? 0} PTS · ${stats?.personalFouls ?? 0} PF', style: theme.textTheme.bodySmall),
                       ],
                     ),
                   ),
