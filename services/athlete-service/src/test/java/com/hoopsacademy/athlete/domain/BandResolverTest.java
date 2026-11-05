@@ -173,6 +173,57 @@ class BandResolverTest {
         assertThat(BandResolver.bandsAreOrdered(sprint, true)).isFalse();
     }
 
+    @Test
+    void ordersCompareTheReferenceEdgeOfEachBandAndAllowEqualEdges() {
+        // higher is better reads the minimums: ascending here although the maximums are not
+        var byMinimum = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "2.0", "4.0", false),
+                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, "2.0", "3.0", false));
+        // lower is better reads the maximums: ascending here, which is out of order, although the minimums descend
+        var byMaximum = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "4.0", "5.0", false),
+                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, "3.5", "5.5", false));
+
+        var equalMaximums = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "4.0", "5.0", false),
+                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, "3.0", "5.0", false));
+
+        assertThat(BandResolver.bandsAreOrdered(byMinimum, true)).isTrue();
+        assertThat(BandResolver.bandsAreOrdered(byMaximum, false)).isFalse();
+        assertThat(BandResolver.bandsAreOrdered(equalMaximums, false)).isTrue();
+    }
+
+    @Test
+    void bandsWithoutAReferenceEdgeAreSkippedWhenCheckingTheOrder() {
+        var ordered = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "1", null, false),
+                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, null, null, false),
+                norm(true, Gender.MALE, 12, 12, NormBand.EXCELLENT, "3", null, false));
+        var unordered = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "3", null, false),
+                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, null, null, false),
+                norm(true, Gender.MALE, 12, 12, NormBand.EXCELLENT, "1", null, false));
+
+        assertThat(BandResolver.bandsAreOrdered(ordered, true)).isTrue();
+        assertThat(BandResolver.bandsAreOrdered(unordered, true)).isFalse();
+    }
+
+    @Test
+    void aNormContainsValuesFromItsMinimumUpToButExcludingItsMaximum() {
+        var bounded = norm(false, Gender.MALE, 12, 12, NormBand.AVERAGE, "10", "20", false);
+        var open = norm(false, Gender.MALE, 12, 12, NormBand.AVERAGE, null, null, false);
+
+        assertThat(bounded.containsValue(v("9.99"))).isFalse();
+        assertThat(bounded.containsValue(v("10"))).isTrue();
+        assertThat(bounded.containsValue(v("19.99"))).isTrue();
+        assertThat(bounded.containsValue(v("20"))).isFalse();
+        assertThat(open.containsValue(v("-5"))).isTrue();
+    }
+
+    @Test
+    void aTenantRowOfAnotherTestTypeHidesNoGlobalRow() {
+        var global = norm(true, Gender.MALE, 12, 13, NormBand.AVERAGE, null, null, false);
+        var otherType = PhysicalTestNorm.of(NormId.random(), TestTypeId.random(), Gender.MALE, 12, 13, NormBand.AVERAGE,
+                null, null, false, "src", false);
+
+        assertThat(BandResolver.effective(List.of(global, otherType))).containsExactlyInAnyOrder(global, otherType);
+    }
+
     // ---- age
     @Test
     void ageIsCountedInFullYearsOnTheMeasurementDate() {
@@ -191,6 +242,13 @@ class BandResolverTest {
         assertThatThrownBy(() -> norm(false, Gender.MALE, 12, 14, NormBand.AVERAGE, "2", "2", false))
                 .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("NORM_INVALID_VALUE_RANGE");
         assertThat(norm(false, Gender.MALE, 12, 12, NormBand.AVERAGE, null, null, false).minValue()).isEmpty();
+        assertThat(PhysicalTestNorm.of(NormId.random(), TYPE, Gender.MALE, 12, 12, NormBand.AVERAGE, null, null, false,
+                "s".repeat(500), false).source()).hasSize(500);
+        assertThat(PhysicalTestNorm.of(NormId.random(), TYPE, Gender.MALE, 12, 12, NormBand.AVERAGE, null, null, false,
+                null, false).source()).isNull();
+        assertThatThrownBy(() -> PhysicalTestNorm.of(NormId.random(), TYPE, Gender.MALE, 12, 12, NormBand.AVERAGE, null,
+                null, false, "s".repeat(501), false))
+                .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("INVALID_NORM");
     }
 
     @Test

@@ -24,7 +24,11 @@ class DomainModelTest {
         assertThatThrownBy(() -> TrainingSchedule.create(TEAM, DayOfWeek.MONDAY, LocalTime.NOON, 14, null, LocalDate.of(2026, 1, 1), null))
                 .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("INVALID_DURATION");
         assertThatThrownBy(() -> TrainingSchedule.create(TEAM, DayOfWeek.MONDAY, LocalTime.NOON, 481, null, LocalDate.of(2026, 1, 1), null))
-                .isInstanceOf(TrainingRuleViolation.class);
+                .isInstanceOfSatisfying(TrainingRuleViolation.class, e -> assertThat(e.code()).isEqualTo("INVALID_DURATION"));
+        for (int inclusiveBound : new int[] {15, 480}) {
+            assertThat(TrainingSchedule.create(TEAM, DayOfWeek.MONDAY, LocalTime.NOON, inclusiveBound, null,
+                    LocalDate.of(2026, 1, 1), null).durationMinutes()).isEqualTo(inclusiveBound);
+        }
         assertThatThrownBy(() -> TrainingSchedule.create(TEAM, DayOfWeek.MONDAY, LocalTime.NOON, 60, null,
                 LocalDate.of(2026, 2, 1), LocalDate.of(2026, 1, 31)))
                 .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("INVALID_VALIDITY_RANGE");
@@ -42,6 +46,8 @@ class DomainModelTest {
         assertThat(s.occursOn(LocalDate.of(2026, 1, 5))).isTrue();   // a Monday
         assertThat(s.occursOn(LocalDate.of(2026, 1, 6))).isFalse();
         assertThat(s.ended().isValidOn(LocalDate.of(2026, 1, 5))).isFalse();
+        assertThat(s.changedTo(s.dayOfWeek(), s.startTime(), 60, null, s.validFrom(), null)
+                .isValidOn(LocalDate.of(2099, 1, 1))).isTrue();
         assertThat(s.changedTo(DayOfWeek.FRIDAY, LocalTime.NOON, 45, "Gym", s.validFrom(), null).id()).isEqualTo(s.id());
     }
 
@@ -71,9 +77,10 @@ class DomainModelTest {
 
         assertThat(cancelled.isCancelled()).isTrue();
         assertThat(cancelled.cancelReason()).isEqualTo("Hall closed");
-        assertThatThrownBy(() -> cancelled.cancelled("again")).isInstanceOf(TrainingStateConflict.class);
+        assertThatThrownBy(() -> cancelled.cancelled("again")).isInstanceOfSatisfying(TrainingStateConflict.class,
+                e -> assertThat(e.code()).isEqualTo("SESSION_NOT_PLANNED"));
         assertThatThrownBy(() -> cancelled.edited(T0, 60, null, null, null, SessionStatus.PLANNED))
-                .isInstanceOf(TrainingStateConflict.class);
+                .isInstanceOfSatisfying(TrainingStateConflict.class, e -> assertThat(e.code()).isEqualTo("SESSION_CANCELLED"));
     }
 
     @Test
@@ -117,6 +124,8 @@ class DomainModelTest {
         var player = PlayerId.random();
 
         assertThat(new Attendance(session, player, AttendanceStatus.LATE, 10, null, COACH, T0).minutesLate()).isEqualTo(10);
+        assertThat(new Attendance(session, player, AttendanceStatus.LATE, 1, null, COACH, T0).minutesLate()).isEqualTo(1);
+        assertThat(new Attendance(session, player, AttendanceStatus.LATE, 480, null, COACH, T0).minutesLate()).isEqualTo(480);
         assertThat(new Attendance(session, player, AttendanceStatus.PRESENT, null, "ok", COACH, T0).minutesLate()).isNull();
         assertThatThrownBy(() -> new Attendance(session, player, AttendanceStatus.LATE, null, null, COACH, T0))
                 .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("MINUTES_LATE_REQUIRED");
@@ -139,6 +148,8 @@ class DomainModelTest {
         assertThat(absence.covers(LocalDate.of(2026, 11, 6))).isFalse();
         assertThat(absence.overlaps(LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 9))).isTrue();
         assertThat(absence.overlaps(LocalDate.of(2026, 11, 6), LocalDate.of(2026, 11, 9))).isFalse();
+        assertThat(absence.overlaps(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 3))).isTrue();
+        assertThat(absence.overlaps(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 2))).isFalse();
         assertThat(absence.changedTo(absence.fromDate(), absence.fromDate(), null).toDate()).isEqualTo(absence.fromDate());
         assertThatThrownBy(() -> PlannedAbsence.announce(player, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 4), null, COACH, T0))
                 .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("INVALID_DATE_RANGE");
@@ -182,8 +193,21 @@ class DomainModelTest {
         var second = PlannedAbsence.announce(player, day, day, null, COACH, T0.plusSeconds(5));
 
         var sheet = AttendanceSheet.build(List.of(player), List.of(), List.of(second, first), day);
+        var sheetInCreationOrder = AttendanceSheet.build(List.of(player), List.of(), List.of(first, second), day);
 
         assertThat(sheet.get(0).plannedAbsence()).contains(first);
+        assertThat(sheetInCreationOrder.get(0).plannedAbsence()).contains(first);
+    }
+
+    @Test
+    void sheetListsPlayersByTheirId() {
+        var first = new PlayerId(UUID.fromString("00000000-0000-4000-8000-000000000001"));
+        var second = new PlayerId(UUID.fromString("00000000-0000-4000-8000-000000000002"));
+        var third = new PlayerId(UUID.fromString("00000000-0000-4000-8000-000000000003"));
+
+        var sheet = AttendanceSheet.build(List.of(third, first, second), List.of(), List.of(), LocalDate.of(2026, 11, 3));
+
+        assertThat(sheet).extracting(AttendanceEntry::playerId).containsExactly(first, second, third);
     }
 
     @Test

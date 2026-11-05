@@ -129,6 +129,19 @@ class HealthDomainTest {
         assertThat(availability.expectedReturnOn()).isEmpty();
     }
 
+    @Test
+    void bodyPartAndDescriptionHaveInclusiveMaximumLengths() {
+        assertThat(Injury.report(PLAYER, TODAY, "x".repeat(Injury.MAX_BODY_PART), "d".repeat(Injury.MAX_DESCRIPTION),
+                InjurySeverity.MINOR, null, COACH, NOW).bodyPart()).hasSize(80);
+        for (Runnable invalid : List.<Runnable>of(
+                () -> Injury.report(PLAYER, TODAY, null, null, InjurySeverity.MINOR, null, COACH, NOW),
+                () -> Injury.report(PLAYER, TODAY, "x".repeat(81), null, InjurySeverity.MINOR, null, COACH, NOW),
+                () -> Injury.report(PLAYER, TODAY, "knee", "d".repeat(2001), InjurySeverity.MINOR, null, COACH, NOW))) {
+            assertThatThrownBy(invalid::run).isInstanceOf(DomainRuleViolation.class).extracting("code")
+                    .isEqualTo("INVALID_INJURY");
+        }
+    }
+
     // ---- body measurement invariants
     @Test
     void aMeasurementNeedsHeightOrWeightWithinRange() {
@@ -145,6 +158,35 @@ class HealthDomainTest {
                 .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("MEASUREMENT_OUT_OF_RANGE");
     }
 
+    @Test
+    void measurementRangesIncludeTheirBoundsOnEverySide() {
+        for (String[] heightAndWeight : new String[][] {{"50", "10"}, {"250", "250"}}) {
+            BodyMeasurement edge = BodyMeasurement.record(PLAYER, TODAY, new BigDecimal(heightAndWeight[0]),
+                    new BigDecimal(heightAndWeight[1]), COACH, NOW);
+            assertThat(edge.heightCm()).isPresent();
+        }
+        for (String[] heightAndWeight : new String[][] {{"250.1", null}, {null, "9.99"}}) {
+            assertThatThrownBy(() -> BodyMeasurement.record(PLAYER, TODAY,
+                    heightAndWeight[0] == null ? null : new BigDecimal(heightAndWeight[0]),
+                    heightAndWeight[1] == null ? null : new BigDecimal(heightAndWeight[1]), COACH, NOW))
+                    .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("MEASUREMENT_OUT_OF_RANGE");
+        }
+    }
+
+    @Test
+    void aChangedMeasurementKeepsItsIdentityAndCreationTime() {
+        BodyMeasurement first = BodyMeasurement.record(PLAYER, TODAY, new BigDecimal("150"), null, COACH, NOW);
+
+        BodyMeasurement changed = first.changedTo(TODAY.plusDays(1), null, new BigDecimal("40.456"), NOW.plusSeconds(60));
+
+        assertThat(changed.id()).isEqualTo(first.id());
+        assertThat(changed.createdAt()).isEqualTo(NOW);
+        assertThat(changed.updatedAt()).isEqualTo(NOW.plusSeconds(60));
+        assertThat(changed.measuredOn()).isEqualTo(TODAY.plusDays(1));
+        assertThat(changed.heightCm()).isEmpty();
+        assertThat(changed.weightKg()).contains(new BigDecimal("40.46"));
+    }
+
     // ---- test type invariants
     @Test
     void aCustomTestTypeIsNotGlobalAndHasAWellFormedCode() {
@@ -156,6 +198,39 @@ class HealthDomainTest {
                 .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("INVALID_TEST_TYPE");
         assertThatThrownBy(() -> PhysicalTestType.custom("X", "Shuttle", "s", false, null))
                 .isInstanceOf(DomainRuleViolation.class);
+    }
+
+    @Test
+    void testTypeFieldsHaveInclusiveLimits() {
+        PhysicalTestType longest = PhysicalTestType.custom("C".repeat(32), "n".repeat(120), "u".repeat(16), true,
+                "d".repeat(2000));
+        assertThat(longest.name()).hasSize(120);
+        for (Runnable invalid : List.<Runnable>of(
+                () -> PhysicalTestType.custom(null, "Shuttle", "s", false, null),
+                () -> PhysicalTestType.custom("SHUTTLE", null, "s", false, null),
+                () -> PhysicalTestType.custom("SHUTTLE", " ", "s", false, null),
+                () -> PhysicalTestType.custom("SHUTTLE", "n".repeat(121), "s", false, null),
+                () -> PhysicalTestType.custom("SHUTTLE", "Shuttle", null, false, null),
+                () -> PhysicalTestType.custom("SHUTTLE", "Shuttle", "", false, null),
+                () -> PhysicalTestType.custom("SHUTTLE", "Shuttle", "u".repeat(17), false, null),
+                () -> PhysicalTestType.custom("SHUTTLE", "Shuttle", "s", false, "d".repeat(2001)))) {
+            assertThatThrownBy(invalid::run).isInstanceOf(DomainRuleViolation.class).extracting("code")
+                    .isEqualTo("INVALID_TEST_TYPE");
+        }
+    }
+
+    @Test
+    void aCustomTestTypeCanBeChangedButKeepsItsCode() {
+        PhysicalTestType custom = PhysicalTestType.custom("MY_SHUTTLE", "Shuttle", "s", false, null);
+
+        PhysicalTestType changed = custom.changedTo("Shuttle run", "sec", true, "5 x 10 m");
+
+        assertThat(changed.id()).isEqualTo(custom.id());
+        assertThat(changed.code()).isEqualTo("MY_SHUTTLE");
+        assertThat(changed.name()).isEqualTo("Shuttle run");
+        assertThat(changed.unit()).isEqualTo("sec");
+        assertThat(changed.higherIsBetter()).isTrue();
+        assertThat(changed.global()).isFalse();
     }
 
     @Test

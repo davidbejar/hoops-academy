@@ -10,6 +10,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class SessionMaterialiserTest {
@@ -24,6 +25,18 @@ class SessionMaterialiserTest {
 
     static List<ZonedDateTime> localStarts(List<PlannedSlot> slots, ZoneId zone) {
         return slots.stream().map(s -> s.startsAt().atZone(zone)).toList();
+    }
+
+    @Test
+    void slotsStartingTogetherAreOrderedByScheduleId() {
+        var later = new TrainingSchedule(new ScheduleId(UUID.fromString("00000000-0000-4000-8000-000000000002")),
+                TEAM, DayOfWeek.MONDAY, LocalTime.of(18, 0), 60, "Court B", LocalDate.of(2026, 1, 1), null, true);
+        var earlier = new TrainingSchedule(new ScheduleId(UUID.fromString("00000000-0000-4000-8000-000000000001")),
+                TEAM, DayOfWeek.MONDAY, LocalTime.of(18, 0), 60, "Court A", LocalDate.of(2026, 1, 1), null, true);
+
+        var slots = SessionMaterialiser.slots(List.of(later, earlier), LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 2), MADRID);
+
+        assertThat(slots).extracting(PlannedSlot::location).containsExactly("Court A", "Court B");
     }
 
     @Test

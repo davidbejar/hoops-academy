@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.problem.AccessDeniedException;
+import com.hoopsacademy.common.problem.NotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -43,6 +44,57 @@ class PlanDomainTest {
         assertThatThrownBy(() -> item("x", 481)).isInstanceOf(TrainingRuleViolation.class);
         assertThatThrownBy(() -> TrainingPlan.create(" ", null, COACH, List.of(), NOW))
                 .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("INVALID_PLAN");
+    }
+
+    @Test
+    void itemLimitsAreInclusiveAndEveryCountIsChecked() {
+        PlanItem smallest = PlanItem.draft("x", null, 1, 1, 1, null);
+        PlanItem largest = PlanItem.draft("t".repeat(120), null, 480, 100, 1000, null);
+
+        assertThat(List.of(smallest.durationMinutes(), smallest.sets(), smallest.repetitions())).containsExactly(1, 1, 1);
+        assertThat(List.of(largest.durationMinutes(), largest.sets(), largest.repetitions())).containsExactly(480, 100, 1000);
+        for (Runnable invalid : List.<Runnable>of(
+                () -> PlanItem.draft(null, null, null, null, null, null),
+                () -> PlanItem.draft("t".repeat(121), null, null, null, null, null),
+                () -> PlanItem.draft("x", null, null, 0, null, null),
+                () -> PlanItem.draft("x", null, null, 101, null, null),
+                () -> PlanItem.draft("x", null, null, null, 0, null),
+                () -> PlanItem.draft("x", null, null, null, 1001, null))) {
+            assertThatThrownBy(invalid::run).isInstanceOfSatisfying(TrainingRuleViolation.class,
+                    e -> assertThat(e.code()).isEqualTo("INVALID_ITEM"));
+        }
+    }
+
+    @Test
+    void planNamesAreOneTo120Characters() {
+        assertThat(TrainingPlan.create("n".repeat(120), null, COACH, List.of(), NOW).name()).hasSize(120);
+        assertThatThrownBy(() -> TrainingPlan.create(null, null, COACH, List.of(), NOW))
+                .isInstanceOf(TrainingRuleViolation.class);
+        assertThatThrownBy(() -> TrainingPlan.create("n".repeat(121), null, COACH, List.of(), NOW))
+                .isInstanceOf(TrainingRuleViolation.class);
+    }
+
+    @Test
+    void renamingAndDescribingKeepTheItems() {
+        TrainingPlan plan = plan(item("Warm-up", 10));
+
+        TrainingPlan renamed = plan.renamed("Free throws", NOW.plusSeconds(1));
+        TrainingPlan described = renamed.described("Ten in a row", NOW.plusSeconds(2));
+
+        assertThat(described.name()).isEqualTo("Free throws");
+        assertThat(described.description()).isEqualTo("Ten in a row");
+        assertThat(described.items()).isEqualTo(plan.items());
+        assertThat(described.updatedAt()).isEqualTo(NOW.plusSeconds(2));
+    }
+
+    @Test
+    void itemsAreFoundByIdAndAnUnknownItemCannotBeReplaced() {
+        PlanItem warmUp = item("Warm-up", 10);
+        TrainingPlan plan = plan(warmUp);
+
+        assertThat(plan.item(warmUp.id())).isEqualTo(plan.items().get(0));
+        assertThatThrownBy(() -> plan.withItemReplaced(item("Stranger", 5), NOW))
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -92,6 +144,8 @@ class PlanDomainTest {
         assertThatThrownBy(() -> plan.reordered(List.of(ids.get(0), ids.get(0), ids.get(1)), NOW))
                 .isInstanceOf(TrainingRuleViolation.class);
         assertThatThrownBy(() -> plan.reordered(List.of(ids.get(0), ids.get(1), PlanItemId.random()), NOW))
+                .isInstanceOf(TrainingRuleViolation.class);
+        assertThatThrownBy(() -> plan.reordered(List.of(ids.get(0), ids.get(1), ids.get(2), ids.get(0)), NOW))
                 .isInstanceOf(TrainingRuleViolation.class);
     }
 
@@ -179,6 +233,9 @@ class PlanDomainTest {
 
         PlanProgress progress = PlanProgress.of(assignment, List.of(done, partial, none), completions);
 
+        assertThat(progress.counts()).containsEntry(CompletionStatus.DONE, 1).containsEntry(CompletionStatus.PARTIAL, 1)
+                .containsEntry(CompletionStatus.NOT_DONE, 0);
+
         assertThat(progress.total()).isEqualTo(3);
         assertThat(progress.count(CompletionStatus.DONE)).isEqualTo(1);
         assertThat(progress.count(CompletionStatus.PARTIAL)).isEqualTo(1);
@@ -186,6 +243,18 @@ class PlanDomainTest {
         assertThat(progress.notRecorded()).isEqualTo(1);
         assertThat(progress.players()).hasSize(3);
         assertThat(progress.players().get(2).completion()).isEmpty();
+    }
+
+    @Test
+    void theLastOfSeveralCompletionsOfAPlayerCounts() {
+        AssignmentId assignment = AssignmentId.random();
+        PlayerId player = PlayerId.random();
+        PlanCompletion earlier = PlanCompletion.record(assignment, player, CompletionStatus.PARTIAL, null, COACH, NOW);
+        PlanCompletion later = PlanCompletion.record(assignment, player, CompletionStatus.DONE, null, COACH, NOW);
+
+        PlanProgress progress = PlanProgress.of(assignment, List.of(player), List.of(earlier, later));
+
+        assertThat(progress.players().get(0).completion()).contains(later);
     }
 
     @Test
