@@ -60,13 +60,11 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 ## Open
 
 ### Product / contract decisions
-- **→ WP34. Audit read API**: `core.audit_event` has no endpoint. Decided (8): ADMIN reads their academy's events, super
-  admin reads everything, filters by date range and event type, names resolved at read time; no retention job (v2 purge).
-- **→ WP29. Contract `allOf` + `additionalProperties: false`** (WP18b): e.g. `AgeCategory = allOf[AgeCategoryInput, {id}]` cannot
-  validate any real response; tests and e2e mute those errors. Drop `additionalProperties:false` from composed members
-  (or move to `unevaluatedProperties` with OpenAPI 3.1).
-- **→ WP29. `MatchEvent` oneOf/discriminator** is not resolvable by the atlassian validator for feed responses (WP18b); e2e reads
-  the feed unvalidated.
+- **Audit rows with free text** (found in WP34): `tenant.suspended` / `tenant.withdrawn` store the super admin's `reason`
+  in the audit metadata, against the no-personal-data rule, and academy admins now read those rows. Decide: keep (the
+  reason is meant for them) or move it out of the audit row. Also: rows done from the platform show the super admin's
+  Keycloak `sub` to academy admins; could be shown as "platform administrator".
+- **Feed filter in SQL** (WP33): for non-staff callers the feed filter walks all of a match's events in memory.
 - **Template i18n** (WP9): `nameKey`/`locale` on `TrainingPlanSummary`; the 10 templates are English-only in the DB.
 
 ### Security (from `docs/security/review-2026-11.md`)
@@ -157,6 +155,12 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP34 (decision 8): audit trail read API (`GET /api/core/audit-events` for ADMIN under RLS, `GET /platform/audit-events`
+  for super_admin through a platform read policy), filters by date range and action, `AuditAction` enum kept equal to
+  the contract and `docs/domain/audit-events.md` by a test, `member.invitation_accepted` recorded, Activity screens in
+  the admin hub and the platform console (ADR-0029, core 2.5.0). No retention (v2 purge job).
+- WP29: contracts without `allOf` composition (plain objects + `x-extends`), no muted validation anywhere, e2e validates
+  requests and the match-event feed (ADR-0027; core 2.3.1, game 2.0.1, athlete 2.0.1).
 - WP33 (decision 5, F-01): the match event feed applies the box-score visibility rule server-side (team-level events
   for every member, player events only for own or linked players, voids follow their event); parents and players
   take the score from the server box score (ADR-0030, game 2.1.0). Follow-up: the filter walks all events in memory
