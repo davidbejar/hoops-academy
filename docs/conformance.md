@@ -63,9 +63,10 @@ Deferred-v2: S-15, V-01, V-02.)
 7. **Players see their own line in the live box score** since WP28 (S-46); no longer a gap.
 8. **Billing is seams only** and the outbox is written but never published (WP19 not built) (S-15, S-16).
 9. **CI** is green on GitHub since 2026-11-02 (`ci` incl. OWASP dependency-check with a valid NVD key, `e2e` journey
-   on the runner, `images` built, scanned and pushed to ghcr.io); last run on `origin/main` ebdd49f (2026-11-05, after
-   WP35). Mutation testing runs on demand (`just mutation`, WP37: scores 99.1–100 %, baselines kept); the
-   `mutation.yml` workflow has not run on GitHub yet (WP36/WP37 not pushed when this was written).
+   on the runner, `images` built, scanned and pushed to ghcr.io); on 3b59360 (after WP37 and WP36) `e2e`, `images` and the
+   manual `mutation` run are green, while `ci` failed in `trivy-fs` only (KSV-0014 on the new `umbrella-tls.yaml`
+   snapshot, missing from `.trivyignore.yaml`; FOLLOW-UPS). Mutation testing runs on demand (`just mutation`, WP37:
+   scores 99.1–100 %, baselines kept).
 10. **Withdrawn/suspended tenants**: members are blocked at once in core but up to 30 s later in game/athlete (membership
     cache); Keycloak logins themselves stay enabled; both accepted by design on 2026-11-05 (decision 6, ADR-0025: a
     login may belong to other academies); no purge job (R-15).
@@ -82,7 +83,7 @@ Deferred-v2: S-15, V-01, V-02.)
 | S-06 | Frontend: avoid Node, use something different | Implemented | Flutter/Dart only; sqlite3.wasm fetched + `dart compile js` for the drift worker (`tool/fetch_web_db_assets.sh`) | no `package.json` in the repo; WP11/WP13. (A one-off `deno` run checked `sw.js` in WP14; not part of the toolchain) |
 | S-07 | Backend with docker compose, but with Podman | Implemented | `infra/compose/compose.yaml` (Postgres 17, Keycloak 26.8.1, MailHog, nginx) + `e2e/bin/services-up.sh` | WP1 checks; **e2e journey 20/20 green on compose, three consecutive runs** (WP18b) |
 | S-08 | Then, when the app works, kind + Helm + Tilt | Partial | `deploy/kind/{up,down,secrets,seed-users,smoke}.sh`, `Tiltfile`, `just kind-up` / `just tilt` | WP16: `tilt ci` green for game + athlete + web; WP18: core/game/athlete via Helm + smoke. WP30: the Tiltfile runs `scripts/sync-chart-files.sh` before rendering; WP36: Gateway API routes and rate limits checked on kind. Gap: no `tilt ci` with core |
-| S-09 | Write tests for everything | Partial | JUnit 5/AssertJ/jqwik/REST Assured/WireMock/ArchUnit/Testcontainers as non-owner roles; `flutter test`; e2e module | 1,970 JVM tests (after WP37), 608 Flutter tests (CI, ebdd49f), 21 e2e steps on compose and kind; JaCoCo gates (≥ 80 %, domain ≥ 90 %) met; all three CI workflows green since 2026-11-02; mutation testing on demand (PIT, WP37: common 99.1 %, core 99.6 %, game 99.5 %, athlete 100 %). Gaps: browser smoke executed only locally (mock + real), several WPs admit code written before its tests |
+| S-09 | Write tests for everything | Partial | JUnit 5/AssertJ/jqwik/REST Assured/WireMock/ArchUnit/Testcontainers as non-owner roles; `flutter test`; e2e module | 1,970 JVM tests, 608 Flutter tests (CI run 42112940234 on 3b59360), 21 e2e steps on compose and kind; JaCoCo gates (≥ 80 %, domain ≥ 90 %) met; all three CI workflows green since 2026-11-02; mutation testing on demand (PIT, WP37: common 99.1 %, core 99.6 %, game 99.5 %, athlete 100 %). Gaps: browser smoke executed only locally (mock + real), several WPs admit code written before its tests |
 | S-10 | One big git project or several: your choice | Implemented | single monorepo (ADR-0002) | repo layout |
 | S-11 | A lightweight database that works well in k8s | Implemented | PostgreSQL 17, one database, schema per service, CloudNativePG on kind (`charts/databases`) | WP16 CNPG clusters healthy, managed roles reconciled; RLS suites. (Postgres rather than an embedded DB: chosen for RLS and CNPG) |
 | S-12 | Make sure secrets are not pushed to git | Implemented | `.env` ignored, `.env.example` placeholders, gitleaks pre-commit + CI, realm export without credentials, Secrets from `.env` (ADR-0012) | WP0 (fake AWS key blocked), WP16/WP17 `helm template … \| gitleaks detect --pipe` clean, `gitleaks detect --no-git` hits only in ignored `.env`; `NoBuiltInCredentialsTest` (game, athlete) |
@@ -189,18 +190,18 @@ reason; none is a silent gap.
 | One login, several academies | an invite of an e-mail that already signs in links that login without asking its owner and reveals that it exists (F-11, accepted by design); logins stay enabled when an academy is suspended or withdrawn | ADR-0025 |
 
 ## Verification baseline
-- **Backend**: CI `ci` run 42077952795 on ebdd49f (2026-11-05, `origin/main` after WP35): common-quarkus 172, contracts
-  146, core-service 760, game-service 238, athlete-service 586 = **1,902 tests**, 0 failures / errors / skipped. After
-  WP37 (mutation-killing unit tests and scope checks; fresh `./mvnw -B -ntp -T 1C verify` in the WP37 handover, local,
-  on top of ebdd49f): **1,970 tests**, 0 failures, every coverage gate met. WP36 changed no Java code. (WP26 baseline on
-  ec3360e: 1,760; WP20 review: 1,467.)
-- **Flutter**: CI run 42077952795 on ebdd49f: **608 tests passed** (`GOLDEN_DIFF_TOLERANCE=0.06`). The date-dependent
+- **Backend**: CI `ci` run 42112940234 on 3b59360 (2026-11-05 21:28 UTC, `main` after WP37 and WP36): common-quarkus
+  186, contracts 146, core-service 770, game-service 255, athlete-service 613 = **1,970 tests**, 0 failures / errors /
+  skipped; the same total as the fresh local `./mvnw -B -ntp -T 1C verify` in the WP37 handover, every coverage gate
+  met. (CI on ebdd49f after WP35: 1,902; WP26 baseline on ec3360e: 1,760; WP20 review: 1,467.) The run's `trivy-fs`
+  job failed on KSV-0014 in the new snapshot `umbrella-tls.yaml` (see FOLLOW-UPS); every other job passed.
+- **Flutter**: same run: **608 tests passed** (`GOLDEN_DIFF_TOLERANCE=0.06`; unchanged since WP35). The date-dependent
   week-calendar golden was fixed on main (commit 7e13cec: "today" comes from `nowProvider`).
-- **e2e**: CI `e2e` run 42077952884 on ebdd49f (compose stack on the runner): `JourneyTest` 21 tests, 0 failures /
-  errors / skipped, 69.2 s, requests and responses validated (ADR-0027). On kind (WP36, 2026-11-06, local): 21 tests,
-  0 failures, 0 skipped, 159 s through the Envoy Gateway; the MailHog checks inside the journey are skipped there (Mailpit's API is
+- **e2e**: CI `e2e` run 42112940232 on 3b59360 (compose stack on the runner): `JourneyTest` 21 tests, 0 failures /
+  errors / skipped, 71.7 s, requests and responses validated (ADR-0027). On kind (WP36, local): 21 tests, 0 failures,
+  0 skipped, 159 s through the Envoy Gateway; the MailHog checks inside the journey are skipped there (Mailpit's API is
   `/api/v1`).
-- **Mutation** (WP37, local, `just mutation`): common-quarkus 99.1 %, core 99.6 %, game 99.5 %, athlete 100 %;
-  baselines 95 / 95 / 95 / 100.
-- **Charts**: `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED (CI `helm-chart-tests` in run 42077952795; after WP36,
-  local: 74 checks, kubeconform 144/144, 5 snapshots).
+- **Mutation**: WP37 local `just mutation`: common-quarkus 99.1 %, core 99.6 %, game 99.5 %, athlete 100 %; baselines
+  95 / 95 / 95 / 100. The `mutation` workflow (run 42112955113 on 3b59360, manual) passed for all four modules.
+- **Charts**: `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED (CI `helm-chart-tests` in run 42112940234; WP36 local:
+  74 checks, kubeconform 144/144, 5 snapshots).

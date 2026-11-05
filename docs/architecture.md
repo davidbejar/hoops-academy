@@ -162,26 +162,26 @@ player names at roster creation so offline sync never depends on core. The exact
 service's Flyway migrations.
 
 ## 8. Testing strategy and current counts
-Per-module counts are from the CI `ci` run 42077952795 on ebdd49f (2026-11-05, after WP35; surefire and `flutter test`
-reports); the totals after WP37 are from the WP37 handover. They change with every commit.
+Counts are from the CI `ci` run 42112940234 on 3b59360 (`main` after WP37 and WP36, 2026-11-05 21:28 UTC; surefire and
+`flutter test` reports); they equal the fresh local runs in the WP37 handover (JVM) and after WP35 (Flutter). They
+change with every commit.
 
 | Layer | Kinds of test | Count |
 |---|---|---|
-| `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON | 172 |
+| `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON | 186 |
 | `libs/contracts` | OpenAPI convention tests, JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation, strict-validator compatibility (no `allOf`, ADR-0027) | 146 |
-| `services/core-service` | domain unit and jqwik property tests (eligibility), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, cross-tenant access through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile) | 760 |
-| `services/game-service` | domain/projection tests with shared vectors, feed visibility (ADR-0030), ingest API tests, WireMock peers, RLS suites, contract validation | 238 |
-| `services/athlete-service` | domain, norm seed and band resolver tests, role matrix, RLS suites (incl. nullable-tenant tables), contract validation | 586 |
+| `services/core-service` | domain unit and jqwik property tests (eligibility), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, cross-tenant access through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile) | 770 |
+| `services/game-service` | domain/projection tests with shared vectors, feed visibility (ADR-0030), ingest API tests, WireMock peers, RLS suites, contract validation | 255 |
+| `services/athlete-service` | domain, norm seed and band resolver tests, role matrix, RLS suites (incl. nullable-tenant tables), contract validation | 613 |
 | `apps/web` | `flutter test`: unit, provider, widget per role and state, goldens (360 px), projector vectors, sync worker, sign-out, service worker / CSP / build guards, l10n key parity | 608 |
 | `e2e` | black-box journey through the gateway with real Keycloak logins: 21 ordered steps, two tenants, every request and response validated against the OpenAPI | 21 steps, green on compose (CI) and on kind (WP36) |
 | Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform, Gateway API route and policy assertions, gitleaks; `deploy/kind/ratelimit-check.sh` on kind | script |
 | Mutation (on demand) | PIT per module (`just mutation [module]`, workflow `mutation.yml` manual + monthly; never in `verify`), baselines 95 / 95 / 95 / 100 % for common / core / game / athlete; see [`quality/mutation.md`](quality/mutation.md) | scores 99.1 / 99.6 / 99.5 / 100 % (WP37) |
 
-JVM total: **1,902 tests** in the CI run above (0 failures); **1,970** after WP37 (fresh `./mvnw -B -ntp -T 1C verify`
-in the WP37 handover, on top of ebdd49f; WP36 changed no Java code), line coverage above the gates (80 % overall, 90 % in
-`domain`). Flutter: **608 tests** (CI run 42077952795), analyze clean. e2e: **21/21 green on compose** in every CI
-`e2e` run on `main` (last: run 42077952884 on ebdd49f) and **green on kind** for the first time in WP36 (21 tests,
-159 s, through the Envoy Gateway on :8090). Browser-level checks: `apps/web/tool/web_smoke.sh` runs locally with a
+JVM total: **1,970 tests** (0 failures), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter:
+**608 tests**, analyze clean. e2e: **21/21 green on compose** in every CI `e2e` run on `main` (last: run 42112940232 on
+3b59360) and **green on kind** for the first time in WP36 (21 tests, 159 s, through the Envoy Gateway on :8090).
+Mutation: the `mutation` workflow (run 42112955113 on 3b59360, manual) passed for all four modules. Browser-level checks: `apps/web/tool/web_smoke.sh` runs locally with a
 hand-installed chromedriver (last green in WP35, mock mode); Lighthouse and the airplane-mode reload have not run.
 Statement-by-statement evidence: [`conformance.md`](conformance.md).
 
