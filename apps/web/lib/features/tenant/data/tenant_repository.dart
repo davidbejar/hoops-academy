@@ -29,6 +29,7 @@ class ApiTenantRepository implements TenantRepository {
       name: p.name,
       defaultLocaleCode: p.defaultLocale.name,
       hasLogo: p.hasLogo,
+      timezone: p.timezone,
     );
   }
 

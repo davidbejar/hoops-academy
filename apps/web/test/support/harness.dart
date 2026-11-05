@@ -47,8 +47,9 @@ class FakeMeRepository implements MeRepository {
 }
 
 class FakeTenantRepository implements TenantRepository {
-  FakeTenantRepository({this.defaultLocale = 'es', this.logoBytes});
+  FakeTenantRepository({this.defaultLocale = 'es', this.logoBytes, this.timezone});
   final String defaultLocale;
+  final String? timezone;
   final Uint8List? logoBytes;
 
   /// `revalidate` flag of every logo fetch (cache-busting checks).
@@ -60,6 +61,7 @@ class FakeTenantRepository implements TenantRepository {
     name: 'profile-$tenantId',
     defaultLocaleCode: defaultLocale,
     hasLogo: logoBytes != null,
+    timezone: timezone,
   );
 
   @override
