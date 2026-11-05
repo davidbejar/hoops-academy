@@ -74,6 +74,8 @@ custom_build(
 )
 
 # ---------------------------------------------------------------------------------------------------- helm
+# The chart carries copies of the realm and init SQL; refresh them from their sources before rendering.
+local('scripts/sync-chart-files.sh', quiet=True)
 helm_set = []
 for svc in ALL_SERVICES:
     if svc not in services:

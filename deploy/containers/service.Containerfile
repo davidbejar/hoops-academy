@@ -10,7 +10,9 @@
 #                     `./mvnw package` (fast inner loop for Tilt; use service-prebuilt.containerignore).
 ARG APP_SOURCE=maven
 ARG MAVEN_IMAGE=docker.io/library/maven:3-eclipse-temurin-21
-ARG RUNTIME_IMAGE=registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
+# Pinned by digest (trivy DS-0001). Digest = multi-arch index of tag 1.24 (ubi9/openjdk-21-runtime, resolved 2026-11-05);
+# bump tag and digest together.
+ARG RUNTIME_IMAGE=registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24@sha256:cfa544effa28c5c57197a4c9d460812e70efc0965e6f518e1c2e787ff3cb9335
 
 # ---------- stage 1a: build with Maven ---------------------------------------------------------------------------
 FROM ${MAVEN_IMAGE} AS app-maven

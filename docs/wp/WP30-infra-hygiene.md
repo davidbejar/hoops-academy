@@ -40,3 +40,9 @@ Four small items from FOLLOW-UPS "Infra, CI, e2e". No application code.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md (WP26 owns them); notes go in this file's Handover.
 - Finish per the `work-package` skill: verification with evidence, `## Handover` appended.
 - Final report to the orchestrator, at most 300 words: built, verified (commands and results), left out and why.
+
+## Handover
+- Built: (1) `e2e/bin/services-up.sh` waits for HTTP 200 + `"status":"UP"`, comment fixed, shellcheck clean (loop var `_`, SC1091 disabled for optional sourced files); runbook sentence updated. (2) Tiltfile runs `scripts/sync-chart-files.sh` before `helm(...)`. (3) `service.Containerfile` `RUNTIME_IMAGE` pinned to `ubi9/openjdk-21-runtime:1.24@sha256:cfa544ef...b9335` (multi-arch index of tag 1.24, resolved 2026-11-05; comment says bump tag and digest together). (4) Guava pin in root `pom.xml` kept: without it Quarkus BOM 3.40.1.1 still resolves guava 33.6.0-jre (checked in core, game and athlete); the pin gives 33.7.2-jre.
+- Verified: `shellcheck e2e/bin/services-up.sh` clean; services-up.sh against the compose stack printed core/game/athlete ready and each `/q/health/ready` returned UP, then services-down and `just down`; `tilt alpha tiltfile-result` parsed (Error null, with a temporary .env, removed); `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED (there is no `just helm-test` recipe); `podman build` of game-service (APP_SOURCE=host) with the pinned digest succeeded; `./mvnw -B -ntp -q validate` green. Pom unchanged, so the full `verify` was not required.
+- Decisions/ADRs: none.
+- Open points: the digest is not auto-bumped (no Renovate/Dependabot for Containerfile ARGs); the guava pin can go once the Quarkus BOM ships >= 33.7.2.

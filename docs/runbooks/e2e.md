@@ -20,8 +20,7 @@ just services-down
 ```
 `services-up.sh` builds the three fast-jars once, then starts them with the secrets of `.env` (never printed) on
 8081/8082/8083 and polls `/q/health/ready` of each. All three services have `quarkus-smallrye-health` since WP17
-(readiness includes the database; game/athlete add an informational `core-service` check). The script still treats
-any HTTP answer as "up" (its comment predates WP17); use `curl -s localhost:808x/q/health/ready` for the real state.
+(readiness includes the database; game/athlete add an informational `core-service` check). The script waits for HTTP 200 with `"status":"UP"` from each (180 s budget).
 
 Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin@hoops-academy.com` is the
 platform super admin), `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` and `CORE_SERVICE_CLIENT_SECRET` in `.env`.

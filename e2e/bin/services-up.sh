@@ -2,6 +2,7 @@
 # Builds (once) and starts core/game/athlete fast-jars in the background against the compose stack.
 # Env comes from the repo .env (never printed). Logs + pids in e2e/target/services/.
 #   e2e/bin/services-up.sh [--no-build]
+# shellcheck disable=SC1091  # env.sh and .env are optional and not followed
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
@@ -23,10 +24,10 @@ for s in core game athlete; do
   echo $! >"$OUT/$s.pid"
 done
 for s in core game athlete; do
-  for i in $(seq 1 90); do
-    # game/athlete have no smallrye-health (404): any HTTP answer means the server is up (Flyway ran before listening)
-    c=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$(port $s)/q/health/ready" || true)
-    if [ "$c" != 000 ] && [ -n "$c" ]; then echo "$s ready"; continue 2; fi
+  for _ in $(seq 1 90); do
+    # ready = HTTP 200 and "status":"UP" (all three services have quarkus-smallrye-health; Flyway ran before listening)
+    body=$(curl -s -w '\n%{http_code}' "http://localhost:$(port $s)/q/health/ready" || true)
+    if [ "${body##*$'\n'}" = 200 ] && printf '%s' "$body" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"'; then echo "$s ready"; continue 2; fi
     sleep 2
   done
   echo "$s NOT ready after 180 s, see $OUT/$s.log" >&2; exit 1
