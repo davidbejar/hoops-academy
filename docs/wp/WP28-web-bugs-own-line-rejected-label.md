@@ -34,3 +34,9 @@ Two small defects in `apps/web`, both from the WP20 review.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md (WP26 owns them); notes go in this file's Handover.
 - Finish per the `work-package` skill: fresh full verification, checklist with evidence, `## Handover` appended.
 - Final report to the orchestrator, at most 300 words: built, verified (commands and numbers), left out and why.
+
+## Handover
+- Built: `ScoringRights` gained `ownPlayerId` (set from `Capabilities` only when `isSelf`), so `canSeeLine` lets a PLAYER see their own line and no other (box score and share text; `canScore`/`canRecordFor` unchanged). `PlayerStatus.REJECTED` now maps to new `statusRejected` (es "Rechazado", en "Rejected", id "Ditolak"); `flutter gen-l10n` regenerated `lib/l10n/gen`.
+- Tests (each committed red before the fix): `scoring_rights_test.dart` (PLAYER own line), `match_screens_test.dart` (PLAYER box score widget test), new `test/core/labels_test.dart` (all statuses distinct, REJECTED in 3 languages).
+- Verified: `flutter analyze` no issues; `flutter test` full run 541 tests, 540 pass, 1 fails. The failure, `test/golden/training_health_golden_test.dart` "week calendar, ADMIN, 360x780" (1.61 % pixel diff), also fails without my changes (checked via git stash), so it is pre-existing and unrelated (training week calendar). l10n parity test green. No golden affected by this WP, none regenerated. Nothing changed outside apps/web (plus this file).
+- Open points: the training week golden is red on this branch base; needs its own fix (possibly date-dependent).
