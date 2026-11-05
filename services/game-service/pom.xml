@@ -206,7 +206,8 @@
       </activation>
       <properties>
         <pit.skip>false</pit.skip>
-        <pit.mutationThreshold>0</pit.mutationThreshold>
+        <!-- baseline (docs/quality/mutation.md): 99.5 % on 2026-11-06, rounded down to a multiple of 5 -->
+        <pit.mutationThreshold>95</pit.mutationThreshold>
       </properties>
     </profile>
   </profiles>

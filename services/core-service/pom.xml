@@ -230,7 +230,10 @@
       </activation>
       <properties>
         <pit.skip>false</pit.skip>
-        <pit.mutationThreshold>0</pit.mutationThreshold>
+        <!-- baseline (docs/quality/mutation.md): 99.6 % on 2026-11-06, rounded down to a multiple of 5 -->
+        <pit.mutationThreshold>95</pit.mutationThreshold>
+        <!-- equivalent: TemporaryPassword.hashCode only has to agree with equals; any constant (PIT's 0) does -->
+        <pit.excludedMethods>hashCode</pit.excludedMethods>
       </properties>
     </profile>
     <!-- ./mvnw -pl services/core-service verify -Pkeycloak-it : runs ONLY the @Tag("keycloak") tests -->

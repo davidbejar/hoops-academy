@@ -55,6 +55,8 @@
     <pit.mutators>STRONGER</pit.mutators>
     <pit.threads>4</pit.threads>
     <pit.mutationThreshold>0</pit.mutationThreshold>
+    <!-- methods whose only surviving mutants are equivalent; each module lists its own with the reason -->
+    <pit.excludedMethods></pit.excludedMethods>
   </properties>
 
   <dependencyManagement>
@@ -235,6 +237,7 @@
             <skip>${pit.skip}</skip>
             <targetClasses>${pit.targetClasses}</targetClasses>
             <targetTests>${pit.targetTests}</targetTests>
+            <excludedMethods>${pit.excludedMethods}</excludedMethods>
             <mutators><mutator>${pit.mutators}</mutator></mutators>
             <mutationThreshold>${pit.mutationThreshold}</mutationThreshold>
             <threads>${pit.threads}</threads>

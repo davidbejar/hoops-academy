@@ -1,0 +1,38 @@
+name: mutation
+
+# WP37 (docs/quality/mutation.md): mutation testing with PIT on demand and once a month, never on push or pull
+# request. Each module fails below its baseline (mutationThreshold in its `mutation` profile); the HTML + XML reports
+# are kept as artifacts either way.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 1 * *'
+
+permissions:
+  contents: read
+
+jobs:
+  pit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [common-quarkus, core-service, game-service, athlete-service]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: extractions/setup-just@v2
+      - name: Mutation testing (${{ matrix.module }})
+        run: just mutation ${{ matrix.module }}
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pit-reports-${{ matrix.module }}
+          path: '*/${{ matrix.module }}/target/pit-reports'
+          if-no-files-found: warn
