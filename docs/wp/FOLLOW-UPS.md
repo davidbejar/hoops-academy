@@ -60,9 +60,6 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 ## Open
 
 ### Product / contract decisions
-- **→ WP33. F-01 event feed** (Medium): `GET /api/game/matches/{id}/events` returns every player's events to
-  PARENT/PLAYER members; the box score hides them. Decided (5): filter server-side to team-level events + own/linked
-  players; align `docs/domain/authz-matrix.md` and the guides.
 - **→ WP34. Audit read API**: `core.audit_event` has no endpoint. Decided (8): ADMIN reads their academy's events, super
   admin reads everything, filters by date range and event type, names resolved at read time; no retention job (v2 purge).
 - **→ WP29. Contract `allOf` + `additionalProperties: false`** (WP18b): e.g. `AgeCategory = allOf[AgeCategoryInput, {id}]` cannot
@@ -160,6 +157,10 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP33 (decision 5, F-01): the match event feed applies the box-score visibility rule server-side (team-level events
+  for every member, player events only for own or linked players, voids follow their event); parents and players
+  take the score from the server box score (ADR-0030, game 2.1.0). Follow-up: the filter walks all events in memory
+  for non-staff callers; move it into SQL if feeds grow large.
 - WP32 (decision 4, F-23): unused temporary passwords expire after 3 days; swept in the background on issuance and
   first sign-in under a cluster lock, the Keycloak login disabled with an es/en/id message, re-issue re-enables
   (ADR-0028, core 2.4.0 `temporaryPasswordStatus`). Known: expiry happens at the first sweep after the 3 days.
