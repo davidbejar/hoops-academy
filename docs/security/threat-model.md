@@ -1,6 +1,6 @@
 # Threat model — Hoops Academy (STRIDE per trust boundary)
 
-Version 2026-11 (WP17). Scope: compose stack and kind/Helm deployment; three Quarkus services; Keycloak realm
+Version 2026-11 (WP17; edge updated for Gateway API with Envoy Gateway, WP36 / ADR-0031). Scope: compose stack and kind/Helm deployment; three Quarkus services; Keycloak realm
 `academy`; PostgreSQL 17 with RLS; Flutter Web PWA. Companion documents: `review-2026-11.md` (findings),
 `asvs-checklist.md` (controls with evidence), ADR-0005/0006/0011/0012/0013/0017.
 
@@ -22,9 +22,9 @@ a developer/CI pipeline (supply chain).
 ## Data-flow overview
 ```
 Browser (PWA, IndexedDB/drift, localStorage tokens)
-   │  HTTPS (ingress) / HTTP (compose :8080)
+   │  HTTPS (Gateway) / HTTP (compose :8080, kind :8090)
    ▼
-nginx / ingress-nginx ──/auth──▶ Keycloak ──▶ Postgres (keycloak db)
+nginx / Envoy Gateway ──/auth──▶ Keycloak ──▶ Postgres (keycloak db)
    │  /api/core,/platform  /api/game  /api/athlete      (/internal → 403, /auth/admin → 403, /q/** not routed)
    ▼
 core-service ◀──/internal (client-credentials token, role `service`)── game-service, athlete-service
@@ -32,19 +32,19 @@ core-service ◀──/internal (client-credentials token, role `service`)──
    └──────── Postgres `hoops` (core_app / core_platform / game_app / athlete_app; *_migrator for Flyway) ─┘
 ```
 
-## 1. Browser ↔ nginx / ingress
+## 1. Browser ↔ nginx / Envoy Gateway
 | STRIDE | Threat | Mitigations (evidence) | Residual |
 |---|---|---|---|
 | S | Stolen/forged bearer token | Keycloak-signed JWT validated by `quarkus-oidc` (issuer, signature, expiry); PKCE S256 public client `web` (realm export) | No audience check (Info, review F-14) |
-| S | Credential stuffing / brute force on login and token endpoint | Keycloak brute-force detection; password policy `length(12) and notUsername and notEmail`; nginx/ingress `limit_req` on `/auth/realms/*/protocol/openid-connect/token` (429) | No MFA (ASVS gap) |
+| S | Credential stuffing / brute force on login and token endpoint | Keycloak brute-force detection; password policy `length(12) and notUsername and notEmail`; per-IP rate limit on `/auth/realms/*/protocol/openid-connect/token` and the login form (429): nginx `limit_req` (compose), Envoy Gateway local rate limit 60/min (chart, ADR-0031) | No MFA (ASVS gap) |
 | T | Tampering with requests (tenant header, ids) | Server-side authz: `TenantHeaderFilter` (membership → else 404), `@RequiresTenantRole` + `Authz` checks, RLS | — |
 | T | XSS / script injection into the SPA | CSP `script-src 'self' 'wasm-unsafe-eval'` (+ hash for the inline SW registration, gstatic while CanvasKit is CDN-loaded), no HTML sinks in the app (Flutter review); API responses carry `CSP: default-src 'none'` and `nosniff` | gstatic allowed until `--no-web-resources-cdn` (F-09) |
 | T | Clickjacking | `X-Frame-Options: DENY` + `frame-ancestors 'none'` at nginx and services | — |
 | R | User denies an administrative action | `core.audit_event` with actor sub + person (ADR-0017); read by the academy ADMIN and the super admin (ADR-0029, WP34) | No retention job yet (v2) |
 | I | Enumeration of tenants/members via status codes | Non-members get 404 (never 403); uniform Problem bodies without internals | Invite reveals existing Keycloak account (F-11) |
 | I | Stale SPA/service worker served after a fix | `Cache-Control: no-cache` for `index.html`, `sw.js`, `flutter_service_worker.js` | — |
-| D | Flooding `events:batch` / large bodies | `limit_req` on `events:batch`; batch ≤ 500 events; 2 MB body limit → 413 Problem; nginx `client_max_body_size` | No per-tenant quotas |
-| E | Reaching internal or admin surfaces | `/internal/**` → 403 at nginx and ingress (+ NetworkPolicy); `/auth/admin/**` → 403 unless `HOOPS_EXPOSE_KC_ADMIN=true` (compose) / `keycloak.exposeAdminConsole` (Helm); `/q/**` not routed | — |
+| D | Flooding `events:batch` / large bodies | per-IP rate limit on `events:batch` (nginx `limit_req`; Envoy Gateway local limit 120/min, `%3A` form included); batch ≤ 500 events; 2 MB body limit in the services → 413 Problem; nginx `client_max_body_size` (compose) | No per-tenant quotas; Envoy local limits are per replica with burst = rate; no body-size limit at the Gateway (the services enforce 2 MB) |
+| E | Reaching internal or admin surfaces | `/internal/**` → 403 at nginx and the Gateway (deny HTTPRoute to the web 403 location, + NetworkPolicy); `/auth/admin/**` → 403 unless `HOOPS_EXPOSE_KC_ADMIN=true` (compose) / `keycloak.exposeAdminConsole` (Helm); `/q/**` not routed | — |
 
 ## 2. Services ↔ Keycloak
 | STRIDE | Threat | Mitigations | Residual |
@@ -54,16 +54,16 @@ core-service ◀──/internal (client-credentials token, role `service`)──
 | R | Unattributed user provisioning | `member.invited` audit + Keycloak admin events (Keycloak side) | — |
 | I | Over-privileged service account | `core-service` SA holds only `manage-users`/`view-users`; game/athlete hold only realm role `service` | `manage-users` is broad (Keycloak has no finer role) |
 | D | Keycloak outage blocks onboarding | 502 `IDENTITY_PROVIDER_UNAVAILABLE`, nothing committed (saga); token validation uses cached JWKS | — |
-| E | Admin console exposure | Blocked at proxy/ingress; kind uses `start` (not `start-dev`); `sslRequired: external` | Admin user from env in compose (dev only) |
+| E | Admin console exposure | Blocked at nginx / the Gateway; kind uses `start` (not `start-dev`); `sslRequired: external` | Admin user from env in compose (dev only) |
 
 ## 3. game / athlete ↔ core (`/internal`)
 | STRIDE | Threat | Mitigations | Residual |
 |---|---|---|---|
-| S | A user token calling `/internal/**` | `@RolesAllowed("service")` (realm role held only by the three service accounts); `/internal` blocked at proxy/ingress | — |
+| S | A user token calling `/internal/**` | `@RolesAllowed("service")` (realm role held only by the three service accounts); `/internal` blocked at nginx / the Gateway | — |
 | T | Forged tenant id in internal calls | Internal endpoints bind `TenantScope.runAs(tenantId)` → RLS; authz context comes from core's DB, never from the caller | — |
 | I | Over-sharing in authz/roster responses | DTOs limited to ids, roles, team ids, display names | — |
 | D | core outage cascades | 2 s timeouts, 30 s cache, 503 `UPSTREAM_UNAVAILABLE` Problems; readiness stays UP with a `core: unreachable` indicator | — |
-| E | Compromised game pod reads core data | NetworkPolicy (same namespace + ingress controller only); `service` role reaches `/internal` only | A compromised pod can query any tenant's authz via `/internal` (by design) |
+| E | Compromised game pod reads core data | NetworkPolicy (same namespace + the Envoy Gateway namespace `envoy-gateway-system` only); `service` role reaches `/internal` only | A compromised pod can query any tenant's authz via `/internal` (by design) |
 
 ## 4. Services ↔ PostgreSQL
 | STRIDE | Threat | Mitigations | Residual |
@@ -97,5 +97,5 @@ core-service ◀──/internal (client-credentials token, role `service`)──
 | E | — | No server-side image processing (no decoder attack surface) | — |
 
 ## Out of scope / assumptions
-TLS termination and certificates in production (ingress choice open, FOLLOW-UPS); backup encryption; Keycloak
+TLS certificates in production (the Gateway's HTTPS listener terminates TLS with a Secret created outside the chart, ADR-0031; none issued); backup encryption; Keycloak
 server hardening beyond the realm export; DDoS beyond per-IP rate limits; email deliverability (SPF/DKIM).

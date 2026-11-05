@@ -25,7 +25,7 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | 2.2.1 | Allow-list validation against business expectations | Met | Bean Validation on DTOs + contract validation of every request/response (`Contract.*` filters); `ProblemExceptionMappersTest.invalidBodyIsValidationProblem`; logo magic bytes `TenantLogoResourceTest.svgGifAndUnknownTypesAreUnsupported`; event JSON Schema (`libs/contracts/events`) |
 | 2.2.2 | Validation at a trusted service layer | Met | Server-side validation as above; client-side logo checks are UX only (Flutter review) |
 | 2.3.1 | Business flows in sequence | Met | Approval state machine `ApprovalRequest` (NOT_PENDING 409, `aDecidedRequestCannotBeDecidedAgain`); optimistic locking → 409 `CONCURRENT_MODIFICATION` (`twoConcurrentDecisionsHaveExactlyOneWinner`); measurement same-day race → 409 `MEASUREMENT_EXISTS_FOR_DATE` (`athlete MeasurementSameDayRaceTest`) |
-| V2 (anti-automation) | Rate limits on expensive/abusable functions | Met | nginx `limit_req` zones for the token endpoint and `events:batch` (429); ingress-nginx `limit-rpm` Ingresses (`deploy/helm/tests/run.sh` assertions); `events:batch` ≤ 500 events |
+| V2 (anti-automation) | Rate limits on expensive/abusable functions | Met | nginx `limit_req` zones for the token endpoint and `events:batch` (429); Envoy Gateway local rate limits per client IP in the chart (`BackendTrafficPolicy`, 60/min token endpoint and login form, 120/min `events:batch`, ADR-0031; `deploy/helm/tests/run.sh` assertions, `deploy/kind/ratelimit-check.sh` on kind, WP36; ingress-nginx `limit-rpm` until WP36); `events:batch` ≤ 500 events |
 
 ## V3 Web Frontend Security
 | ID | Requirement | Status | Evidence |
@@ -33,7 +33,7 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | V3 (CSP) | Content-Security-Policy with no unsafe script sources | Partial | `infra/compose/nginx.conf` and `deploy/containers/web-nginx.conf`: `script-src 'self' 'wasm-unsafe-eval'` + hash of the inline SW registration. `https://www.gstatic.com` and `fonts.gstatic.com` are allowed until the web build self-hosts CanvasKit (F-09). `style-src 'unsafe-inline'` is needed by the Flutter engine |
 | V3 (headers) | nosniff, frame protection, referrer policy, COOP | Met | nginx (SPA) + services (`common SecurityHeadersTest`: X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, CSP `default-src 'none'`, CORP) |
 | V3 (CORS) | CORS allow-list, no wildcard with credentials | Met | `common CorsTest` (allowed 5173 origin, foreign origin gets no ACAO, no credentials); `hoops.cors.origins` |
-| V3 (HSTS) | HSTS on HTTPS | Partial | ingress-nginx sets HSTS on TLS hosts by default. Compose is HTTP-only (dev); the production ingress is still open (FOLLOW-UPS) |
+| V3 (HSTS) | HSTS on HTTPS | Partial | The chart's HTTPS listener sets HSTS (`max-age=31536000; includeSubDomains`) through a `ClientTrafficPolicy` (Envoy Gateway, ADR-0031); off on kind (it would pin every `localhost` port). Compose is HTTP-only (dev); no production deployment exists yet |
 | V3 (cache) | Sensitive/app-shell caching controls | Met | `Cache-Control: no-cache` for `index.html`, `sw.js`, `flutter_service_worker.js` (nginx); logo `private, max-age` (`TenantLogoResourceTest`) |
 
 ## V4 API and Web Service
@@ -58,7 +58,7 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | 6.2.5 / 6.2.7 / 6.2.8 | No composition rules; paste allowed; no truncation | Met | Policy has no character-class rules; Keycloak login form |
 | 6.2.10 | No forced rotation | Met | No `forceExpiredPasswordChange` in the policy |
 | 6.2.12 | Breached-password check | Gap | Not available in stock Keycloak 26 without an extension |
-| 6.3.1 | Brute-force / credential-stuffing controls | Met | `bruteForceProtected: true` (realm), token-endpoint `limit_req` (nginx/ingress) |
+| 6.3.1 | Brute-force / credential-stuffing controls | Met | `bruteForceProtected: true` (realm), token-endpoint rate limit (nginx `limit_req` / Envoy Gateway local rate limit) |
 | 6.3.2 | No default accounts | Met | Realm export has no users; seed users are dev-only scripts; Keycloak admin from env, compose only |
 | 6.3.3 | MFA or documented factor combination | Gap | OTP not required (product decision: minors/parents; offer optional OTP for ADMIN/super_admin — follow-up) |
 
@@ -90,13 +90,13 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
 | 11.x | Approved algorithms | Met (delegated) | Keycloak RS256 signing keys; SHA-256 logo ETag (non-security use); no custom crypto |
-| 12.1.1 / 12.2.1 / 12.2.2 | TLS 1.2+ externally, trusted certs | Partial | Realm `sslRequired: external`; kind ingress uses a self-signed default cert; production TLS depends on the ingress choice (FOLLOW-UPS). Compose is HTTP on localhost (dev only) |
+| 12.1.1 / 12.2.1 / 12.2.2 | TLS 1.2+ externally, trusted certs | Partial | Realm `sslRequired: external`; the Gateway's HTTPS listener terminates TLS with a certificate Secret created outside the chart (kind: self-signed `hoops-gateway-tls`, ADR-0031); no production certificate yet. Compose is HTTP on localhost (dev only) |
 
 ## V13 Configuration
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
 | V13 (secrets) | No secrets in code/config; secret management | Met | ADR-0012, gitleaks pre-commit + CI (`ci.yml` `secrets-scan`), no defaults in game/athlete (`NoBuiltInCredentialsTest`), `helm template \| gitleaks` in `deploy/helm/tests/run.sh` |
-| V13 (debug/admin surfaces) | No debug or admin endpoints exposed | Met | `/q/**` not routed (smoke check), `/auth/admin` 403 at nginx/ingress unless explicitly enabled, `/internal` 403, Keycloak `start` (not `start-dev`) in kind |
+| V13 (debug/admin surfaces) | No debug or admin endpoints exposed | Met | `/q/**` not routed (smoke check), `/auth/admin` 403 at nginx / the Gateway unless explicitly enabled, `/internal` 403, Keycloak `start` (not `start-dev`) in kind |
 | V13 (dependencies) | Components free of known vulnerabilities | Partial | CI: OWASP dependency-check `-Psecurity-scan` (CVSS ≥ 7 fails, suppression file), `trivy fs`, Trivy image scan (HIGH/CRITICAL, ignore-unfixed). The local NVD run was not completed (see WP17 handover) |
 
 ## V14 Data Protection
@@ -132,9 +132,9 @@ V1.5 XML parsers (no XML), V17 WebRTC, GraphQL/SOAP sections of V4, own password
 server-side templating/HTML sanitisation.
 
 ## Open gaps summary (→ FOLLOW-UPS.md)
-- F-01 game event feed authz (8.2.2).
+- F-01 game event feed authz (8.2.2) — fixed in WP33 (ADR-0030).
 - F-03 / F-07 / F-08 web logout and storage (7.4.1, 14.3.1).
 - 6.2.4 password blocklist, 6.2.12 breached passwords, 6.3.3 MFA for privileged roles.
 - Token audience (V9).
 - 16.3.1 Keycloak events, 16.3.2 authorization-failure logging, 16.4.3 log shipping.
-- Production TLS/HSTS (ingress choice); SBOM.
+- Production TLS certificates (the Gateway API chart supports them, ADR-0031; none issued); SBOM.
