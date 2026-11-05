@@ -17,7 +17,8 @@ academia que la vincule.
 
 ## Partidos
 **Partidos** lista los encuentros de tu equipo con su estado (Programado, En juego, Finalizado, Cancelado). Puedes abrir un
-partido en juego y seguir el marcador, las jugadas y las estadísticas ("Solo lectura"). No puedes anotar estadísticas:
+partido en juego y seguir el marcador oficial, las jugadas del equipo y las tuyas, y las estadísticas ("Solo lectura");
+las jugadas y números de otros jugadores no se muestran. No puedes anotar estadísticas:
 pídelo a un entrenador o a una familia vinculada. En las estadísticas ves los totales del equipo; tus propios números están en Yo > Estadísticas de la temporada.
 
 ## Entrenos y planes

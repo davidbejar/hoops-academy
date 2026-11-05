@@ -15,7 +15,7 @@ statistics on top of the same packages. Port 8082, schema `game`, contract `libs
 | Operation | Path | Who |
 |---|---|---|
 | submitMatchEvents | `POST /api/game/matches/{id}/events:batch` | per event: ADMIN / team staff any type; PARENT stat events of linked players + VOID of own events; others `NOT_AUTHORIZED` |
-| listMatchEvents | `GET /api/game/matches/{id}/events?after=&limit=` | any tenant member |
+| listMatchEvents | `GET /api/game/matches/{id}/events?after=&limit=` | any tenant member; filtered (WP33, ADR-0028): ADMIN/team staff every event, others team-level events + own/linked players' events (`StatVisibility` + `EventVisibility`, the box score's rule) |
 | getBoxScore | `GET /api/game/matches/{id}/box-score` | any member; player lines: ADMIN/team staff all, PARENT linked, PLAYER self |
 | getPlayerSeasonStats | `GET /api/game/players/{id}/season-stats?seasonId=` | ADMIN, COACH, ASSISTANT_COACH, linked PARENT, PLAYER self; others 404 |
 

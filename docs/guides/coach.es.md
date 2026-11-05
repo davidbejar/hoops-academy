@@ -42,6 +42,8 @@ La vista en vivo tiene una cabecera (marcador, periodo, reloj) y tres pestañas:
   en pista).
 - **Finalizar partido** lo cierra. Después todavía se puede corregir.
 Varias personas (dos entrenadores, familias) pueden anotar a la vez; sus jugadas se ordenan por tiempo de juego.
+Tú (y la administración) ves todas las jugadas. Familias y jugadores ven las jugadas del equipo (periodos, puntos del
+rival, tiempos muertos, notas del equipo) y solo las de sus hijos o las propias, con el marcador oficial.
 
 ## 3. Sin conexión y el aviso "N sin sincronizar"
 Cada jugada se guarda primero en el dispositivo y se envía en segundo plano. Puedes seguir anotando sin red mientras la

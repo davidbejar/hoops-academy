@@ -15,7 +15,8 @@ keluar). Jika **Saya** berisi "Akun Anda belum terhubung ke pemain", minta admin
 
 ## Pertandingan
 **Pertandingan** menampilkan laga tim Anda beserta statusnya (Terjadwal, Berlangsung, Selesai, Dibatalkan). Anda dapat
-membuka pertandingan yang berlangsung dan mengikuti skor, catatan, dan statistik ("Hanya baca"). Anda tidak dapat mencatat
+membuka pertandingan yang berlangsung dan mengikuti skor resmi, catatan tim dan catatan Anda sendiri, serta statistik
+("Hanya baca"); catatan dan angka pemain lain tidak ditampilkan. Anda tidak dapat mencatat
 statistik: minta pelatih atau orang tua yang terkait. Statistik pertandingan menampilkan total tim; angka Anda sendiri ada di Saya > Statistik musim.
 
 ## Latihan dan rencana

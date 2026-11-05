@@ -20,8 +20,8 @@ tersedia:
 
 ## 2. Mencatat statistik anak Anda saat pertandingan
 1. **Pertandingan**, buka pertandingan yang **Berlangsung**.
-2. Label **"Mode keluarga: hanya pemain Anda"** muncul. Hanya anak Anda yang terkait yang dapat diketuk, di lapangan atau
-   cadangan; tidak ada kontrol jam, babak, skor lawan, time-out, atau pergantian pemain.
+2. Label **"Mode keluarga: hanya pemain Anda"** muncul. **Pemain** menampilkan daftar pemain pertandingan; hanya anak
+   Anda yang terkait yang dapat diketuk. Tidak ada kontrol jam, babak, skor lawan, time-out, atau pergantian pemain.
 3. Ketuk anak Anda lalu pilih aksi: 2 PT / 3 PT / LB masuk atau gagal, Asis, rebound, Curi bola, Blok, Turnover, atau
    pelanggaran.
 4. Aksi undo membatalkan catatan terakhir Anda. Anda hanya dapat **Batalkan** (void) catatan yang Anda buat sendiri;
@@ -31,6 +31,9 @@ tersedia:
    lagi untuk sinkronisasi; data tetap tersimpan", silakan masuk kembali.
 Setelah pertandingan selesai, catatan Anda hanya diterima bila dibuat sebelum pertandingan berakhir.
 Tab **Statistik** hanya menampilkan baris anak Anda dan total tim.
+Catatan dan angka anak lain bersifat pribadi: **Catatan** hanya menampilkan catatan tim (babak, poin lawan, time-out,
+catatan tim) dan catatan anak Anda, sedangkan skor, skor per babak, dan total tim adalah angka resmi dari server
+(diperbarui setiap beberapa detik saat online; catatan yang baru Anda buat langsung dihitung).
 
 ## 3. Ketidakhadiran
 **Latihan > Ketidakhadiran > Ketidakhadiran baru**: pilih anak, **Dari**, **Sampai**, dan alasan (opsional). Pelatih akan

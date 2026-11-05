@@ -39,6 +39,8 @@ The live view has a header (score, period, clock) and three tabs: **Court**, **P
   (fix with Void)" means the entered plays contradict each other (for example a substitution of someone not on court).
 - **Finish match** ends it. Corrections stay possible afterwards.
 Several people (two coaches, parents) can score at once; their plays are merged by game time.
+You (and the admin) see every play. Parents and players see team plays (periods, opponent points, timeouts, team notes)
+plus their own children's or their own plays only, with the official score.
 
 ## 3. Working offline and the "N unsynced" banner
 Every play is written to the device first, then sent in the background. You can keep scoring with no network as long as

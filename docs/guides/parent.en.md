@@ -19,8 +19,8 @@ says "You have no linked players", ask the administrator to link your child to y
 
 ## 2. Entering stats for your child during a match
 1. **Matches**, open a live match (status **Live**).
-2. The chip **"Family mode: your players only"** is shown. Only your linked children can be tapped on the court or the
-   bench; there is no clock, period, opponent score, timeout or substitution control.
+2. The chip **"Family mode: your players only"** is shown. **Players** lists the match roster; only your linked children
+   can be tapped. There is no clock, period, opponent score, timeout or substitution control.
 3. Tap your child, then the action: 2 PT / 3 PT / FT made or missed, Assist, rebounds, Steal, Block, Turnover or a foul.
 4. **Undo** voids your last play. You can **Void** only plays you recorded yourself. A coach's play cannot be voided by you.
 5. Each play shows **Pending**, **Sending**, **Synced** or **Rejected**. Without network the plays wait on the device and
@@ -28,6 +28,9 @@ says "You have no linked players", ask the administrator to link your child to y
    sync; your data is kept", sign in again.
 After the match is finished, your plays are accepted only if you recorded them before it finished.
 The **Box score** tab shows only your children's lines plus team totals.
+Other children's plays and numbers stay private: **Plays** shows team plays (periods, opponent points, timeouts, team
+notes) and your children's plays only, and the score, period scores and team totals are the official ones from the
+server (refreshed every few seconds while online; plays you just entered count at once).
 
 ## 3. Absences
 **Training > Absences > New absence**: pick the child, **From**, **To** and an optional reason. Coaches then see the child

@@ -40,6 +40,8 @@ Tampilan langsung punya header (skor, babak, jam) dan tiga tab: **Lapangan**, **
   (perbaiki dengan Batalkan)" berarti catatan saling bertentangan (mis. pergantian pemain yang tidak ada di lapangan).
 - **Selesaikan pertandingan** mengakhirinya. Koreksi tetap bisa dilakukan setelahnya.
 Beberapa orang (dua pelatih, orang tua) dapat mencatat bersamaan; catatan mereka digabung menurut waktu pertandingan.
+Anda (dan admin) melihat semua catatan. Orang tua dan pemain hanya melihat catatan tim (babak, poin lawan, time-out,
+catatan tim) serta catatan anak mereka atau diri sendiri, dengan skor resmi.
 
 ## 3. Bekerja offline dan banner "N belum tersinkron"
 Setiap catatan disimpan dulu di perangkat, lalu dikirim di latar belakang. Anda bisa terus mencatat tanpa jaringan selama

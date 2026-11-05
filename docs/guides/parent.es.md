@@ -20,8 +20,8 @@ jugadores** dice "No tienes jugadores vinculados", pide que vinculen a tu hijo o
 
 ## 2. Anotar estadísticas de tu hijo en un partido
 1. **Partidos**, abre un partido en juego (estado **En juego**).
-2. Aparece la etiqueta **"Modo familia: solo tus jugadores"**. Solo puedes tocar a tus hijos vinculados, en pista o en el
-   banquillo; no hay reloj, periodos, marcador rival, tiempos muertos ni sustituciones.
+2. Aparece la etiqueta **"Modo familia: solo tus jugadores"**. **Jugadores** lista la convocatoria; solo puedes tocar a
+   tus hijos vinculados. No hay reloj, periodos, marcador rival, tiempos muertos ni sustituciones.
 3. Toca a tu hijo y elige la acción: 2 PT / 3 PT / TL anotado o fallado, Asistencia, rebotes, Robo, Tapón, Pérdida o falta.
 4. **Deshacer** anula tu última jugada. Solo puedes **Anular** jugadas que hayas registrado tú; las del entrenador no.
 5. Cada jugada muestra **Pendiente**, **Enviando**, **Sincronizada** o **Rechazada**. Sin red, las jugadas esperan en el
@@ -29,6 +29,9 @@ jugadores** dice "No tienes jugadores vinculados", pide que vinculen a tu hijo o
    nuevo para sincronizar; los datos se conservan", inicia sesión otra vez.
 Cuando el partido ha finalizado, tus jugadas solo se aceptan si las registraste antes de que acabara.
 La pestaña **Estadísticas** muestra solo las líneas de tus hijos y los totales del equipo.
+Las jugadas y números de otros niños son privados: **Jugadas** muestra las jugadas del equipo (periodos, puntos del rival,
+tiempos muertos, notas del equipo) y solo las de tus hijos, y el marcador, los parciales y los totales del equipo son los
+oficiales del servidor (se actualizan cada pocos segundos con conexión; lo que acabas de anotar cuenta al momento).
 
 ## 3. Ausencias
 **Entrenos > Ausencias > Nueva ausencia**: elige al jugador, **Desde**, **Hasta** y un motivo opcional. Los entrenadores

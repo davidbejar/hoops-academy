@@ -16,7 +16,8 @@ sign out). If **Me** says "Your account is not linked to a player yet", ask your
 
 ## Matches
 **Matches** lists your team's games with status (Scheduled, Live, Finished, Cancelled). You can open a live match and follow
-the score, the plays and the box score ("Read only"). You cannot enter statistics: ask a coach or a linked parent.
+the official score, the team's plays and your own, and the box score ("Read only"); other players' plays and numbers
+are not shown. You cannot enter statistics: ask a coach or a linked parent.
 The box score shows team totals; your own numbers are under Me > Season statistics.
 
 ## Training and plans
