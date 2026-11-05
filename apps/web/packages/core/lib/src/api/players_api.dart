@@ -28,11 +28,11 @@ class PlayersApi {
   const PlayersApi(this._dio, this._serializers);
 
   /// Add a player (ADMIN directly, COACH via approval request)
-  /// ADMIN: the player is created ACTIVE (and assigned to &#x60;teamId&#x60; if given, eligibility-checked → 422), an auto-approved audit request is recorded; answers **201**. COACH without ADMIN: the player is created PENDING_APPROVAL with a PENDING ADD_PLAYER request; answers **202**. Assistant coaches cannot add (403). Entitlement-checked (billing seam). Authz: ADMIN; COACH (for own teams). With an &#x60;email&#x60; the ADMIN-added player gets a login (as &#x60;inviteMember&#x60;: a new login&#39;s temporary password is returned once in &#x60;temporaryPassword&#x60;; 502 when Keycloak fails — nothing is created); a COACH-requested player gets it when the request is approved.
+  /// ADMIN: the player is created ACTIVE (and assigned to &#x60;teamId&#x60; if given, eligibility-checked → 422), an auto-approved audit request is recorded; answers **201**. COACH without ADMIN: the player is created PENDING_APPROVAL with a PENDING ADD_PLAYER request; answers **202**. Assistant coaches cannot add (403). Entitlement-checked (billing seam). Authz: ADMIN; COACH (for own teams). With an &#x60;email&#x60; the ADMIN-added player gets a login (as &#x60;inviteMember&#x60;: a new login&#39;s temporary password is returned once in &#x60;temporaryPassword&#x60;; 502 when Keycloak fails — nothing is created); a COACH-requested player gets it when the request is approved. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [createPlayerRequest]
+  /// * [createPlayerRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -42,7 +42,7 @@ class PlayersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PlayerCommandResult] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PlayerCommandResult>> createPlayer({
+  Future<Response<PlayerCommandResult>> createPlayer({ 
     required String xTenantId,
     required CreatePlayerRequest createPlayerRequest,
     CancelToken? cancelToken,
@@ -136,7 +136,7 @@ class PlayersApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [playerId]
+  /// * [playerId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -146,7 +146,7 @@ class PlayersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Player] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Player>> getPlayer({
+  Future<Response<Player>> getPlayer({ 
     required String xTenantId,
     required String playerId,
     CancelToken? cancelToken,
@@ -220,8 +220,8 @@ class PlayersApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [playerId]
-  /// * [seasonId]
+  /// * [playerId] 
+  /// * [seasonId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -231,7 +231,7 @@ class PlayersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<EligibleTeam>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<EligibleTeam>>> listEligibleTeams({
+  Future<Response<BuiltList<EligibleTeam>>> listEligibleTeams({ 
     required String xTenantId,
     required String playerId,
     required String seasonId,
@@ -307,12 +307,12 @@ class PlayersApi {
   }
 
   /// List players
-  /// Authz: ADMIN and team staff see all players; PARENT sees linked players; PLAYER sees self. PENDING_APPROVAL players are visible to admins and their requester only. &#x60;status&#x3D;ORPHAN&#x60; is the orphan dashboard.
+  /// Authz: ADMIN and team staff see all players; PARENT sees linked players; PLAYER sees self. PENDING_APPROVAL players are visible to admins and their requester only. &#x60;status&#x3D;ORPHAN&#x60; is the orphan dashboard. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [status]
-  /// * [teamId]
+  /// * [status] 
+  /// * [teamId] 
   /// * [q] - Case-insensitive match on name.
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
@@ -325,7 +325,7 @@ class PlayersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PlayerPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PlayerPage>> listPlayers({
+  Future<Response<PlayerPage>> listPlayers({ 
     required String xTenantId,
     PlayerStatus? status,
     String? teamId,
@@ -408,12 +408,12 @@ class PlayersApi {
   }
 
   /// Withdraw a player (ADMIN directly, COACH via approval request)
-  /// ADMIN: the player becomes WITHDRAWN and open assignments are closed; answers **200**. COACH without ADMIN: a PENDING WITHDRAW_PLAYER request is created and the player stays ACTIVE; answers **202**. One PENDING request per (action, player) (409). Authz: ADMIN; COACH (own teams).
+  /// ADMIN: the player becomes WITHDRAWN and open assignments are closed; answers **200**. COACH without ADMIN: a PENDING WITHDRAW_PLAYER request is created and the player stays ACTIVE; answers **202**. One PENDING request per (action, player) (409). Authz: ADMIN; COACH (own teams). 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [playerId]
-  /// * [withdrawPlayerRequest]
+  /// * [playerId] 
+  /// * [withdrawPlayerRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -423,7 +423,7 @@ class PlayersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PlayerCommandResult] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PlayerCommandResult>> withdrawPlayer({
+  Future<Response<PlayerCommandResult>> withdrawPlayer({ 
     required String xTenantId,
     required String playerId,
     WithdrawPlayerRequest? withdrawPlayerRequest,

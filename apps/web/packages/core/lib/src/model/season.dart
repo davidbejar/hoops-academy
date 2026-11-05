@@ -12,11 +12,11 @@ part 'season.g.dart';
 /// Season
 ///
 /// Properties:
-/// * [name]
-/// * [startsOn]
-/// * [endsOn]
+/// * [name] 
+/// * [startsOn] 
+/// * [endsOn] 
 /// * [referenceYear] - Year used by the BIRTH_YEAR age rule (age = referenceYear − birth year).
-/// * [id]
+/// * [id] 
 /// * [current] - Today (tenant time zone) lies within the season.
 @BuiltValue()
 abstract class Season implements Built<Season, SeasonBuilder> {
@@ -186,3 +186,5 @@ class _$SeasonSerializer implements PrimitiveSerializer<Season> {
     return result.build();
   }
 }
+
+

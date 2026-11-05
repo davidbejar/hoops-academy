@@ -16,17 +16,17 @@ part 'approval_request_with_password.g.dart';
 /// A decided request and, when approving created the player's login, that login's temporary password.
 ///
 /// Properties:
-/// * [id]
-/// * [action]
-/// * [status]
-/// * [player]
-/// * [payload]
-/// * [requestedBy]
-/// * [requestedAt]
-/// * [decidedBy]
-/// * [decidedAt]
-/// * [decisionNote]
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+/// * [id] 
+/// * [action] 
+/// * [status] 
+/// * [player] 
+/// * [payload] 
+/// * [requestedBy] 
+/// * [requestedAt] 
+/// * [decidedBy] 
+/// * [decidedAt] 
+/// * [decisionNote] 
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
 @BuiltValue()
 abstract class ApprovalRequestWithPassword implements Built<ApprovalRequestWithPassword, ApprovalRequestWithPasswordBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -61,7 +61,7 @@ abstract class ApprovalRequestWithPassword implements Built<ApprovalRequestWithP
   @BuiltValueField(wireName: r'decisionNote')
   String? get decisionNote;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
@@ -283,3 +283,5 @@ class _$ApprovalRequestWithPasswordSerializer implements PrimitiveSerializer<App
     return result.build();
   }
 }
+
+

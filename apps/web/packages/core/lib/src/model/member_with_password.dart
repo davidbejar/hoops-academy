@@ -7,6 +7,7 @@ import 'package:hoops_core_api/src/model/date.dart';
 import 'package:hoops_core_api/src/model/invitation_status.dart';
 import 'package:hoops_core_api/src/model/gender.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:hoops_core_api/src/model/temporary_password_status.dart';
 import 'package:hoops_core_api/src/model/tenant_role.dart';
 import 'package:hoops_core_api/src/model/locale.dart';
 import 'package:built_value/built_value.dart';
@@ -17,22 +18,23 @@ part 'member_with_password.g.dart';
 /// A member and, when this call created or re-issued their login's password, that password.
 ///
 /// Properties:
-/// * [personId]
+/// * [personId] 
 /// * [userId] - Platform user (login) of the person; null for persons without login (e.g. young players).
-/// * [givenName]
-/// * [familyName]
-/// * [displayName]
-/// * [email]
-/// * [phone]
-/// * [birthDate]
-/// * [gender]
-/// * [locale]
-/// * [roles]
+/// * [givenName] 
+/// * [familyName] 
+/// * [displayName] 
+/// * [email] 
+/// * [phone] 
+/// * [birthDate] 
+/// * [gender] 
+/// * [locale] 
+/// * [roles] 
 /// * [playerId] - Set when the member holds the PLAYER role.
-/// * [active]
-/// * [invitationStatus]
-/// * [createdAt]
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+/// * [active] 
+/// * [invitationStatus] 
+/// * [temporaryPasswordStatus] 
+/// * [createdAt] 
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
 @BuiltValue()
 abstract class MemberWithPassword implements Built<MemberWithPassword, MemberWithPasswordBuilder> {
   @BuiltValueField(wireName: r'personId')
@@ -82,10 +84,14 @@ abstract class MemberWithPassword implements Built<MemberWithPassword, MemberWit
   InvitationStatus get invitationStatus;
   // enum invitationStatusEnum {  NONE,  PENDING,  ACCEPTED,  };
 
+  @BuiltValueField(wireName: r'temporaryPasswordStatus')
+  TemporaryPasswordStatus get temporaryPasswordStatus;
+  // enum temporaryPasswordStatusEnum {  ACTIVE,  EXPIRED,  NONE,  };
+
   @BuiltValueField(wireName: r'createdAt')
   DateTime get createdAt;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
@@ -195,6 +201,11 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
     yield serializers.serialize(
       object.invitationStatus,
       specifiedType: const FullType(InvitationStatus),
+    );
+    yield r'temporaryPasswordStatus';
+    yield serializers.serialize(
+      object.temporaryPasswordStatus,
+      specifiedType: const FullType(TemporaryPasswordStatus),
     );
     yield r'createdAt';
     yield serializers.serialize(
@@ -336,6 +347,13 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
           ) as InvitationStatus;
           result.invitationStatus = valueDes;
           break;
+        case r'temporaryPasswordStatus':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(TemporaryPasswordStatus),
+          ) as TemporaryPasswordStatus;
+          result.temporaryPasswordStatus = valueDes;
+          break;
         case r'createdAt':
           final valueDes = serializers.deserialize(
             value,
@@ -379,3 +397,5 @@ class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPa
     return result.build();
   }
 }
+
+

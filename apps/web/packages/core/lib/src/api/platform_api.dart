@@ -35,11 +35,11 @@ class PlatformApi {
   const PlatformApi(this._dio, this._serializers);
 
   /// Add an administrator to a tenant
-  /// When an active member of the tenant has this e-mail, they gain the ADMIN role (200; their names are kept; a member without a login is given one). Otherwise a new member is invited with the ADMIN role through the onboarding saga (201). A login created by this call gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login is linked and gets none (the person signs in with their own). 409 &#x60;EMAIL_TAKEN&#x60; when a deactivated member has the e-mail, &#x60;LOGIN_ALREADY_MEMBER&#x60; when the login already belongs to another member of the tenant, &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is kept). Authz: super_admin.
+  /// When an active member of the tenant has this e-mail, they gain the ADMIN role (200; their names are kept; a member without a login is given one). Otherwise a new member is invited with the ADMIN role through the onboarding saga (201). A login created by this call gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login is linked and gets none (the person signs in with their own). 409 &#x60;EMAIL_TAKEN&#x60; when a deactivated member has the e-mail, &#x60;LOGIN_ALREADY_MEMBER&#x60; when the login already belongs to another member of the tenant, &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is kept). Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
-  /// * [addTenantAdminRequest]
+  /// * [tenantId] 
+  /// * [addTenantAdminRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -49,7 +49,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantAdminWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantAdminWithPassword>> addTenantAdmin({
+  Future<Response<TenantAdminWithPassword>> addTenantAdmin({ 
     required String tenantId,
     required AddTenantAdminRequest addTenantAdminRequest,
     CancelToken? cancelToken,
@@ -138,10 +138,10 @@ class PlatformApi {
   }
 
   /// Onboard a tenant
-  /// Atomically creates the tenant, its default settings, the seeded age categories (U8 … U18, SENIOR) and the first ADMIN membership. A new Keycloak login for the admin gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login (the e-mail already signs in elsewhere) is linked and gets none. Authz: super_admin.
+  /// Atomically creates the tenant, its default settings, the seeded age categories (U8 … U18, SENIOR) and the first ADMIN membership. A new Keycloak login for the admin gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login (the e-mail already signs in elsewhere) is linked and gets none. Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [createTenantRequest]
+  /// * [createTenantRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -151,7 +151,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantWithPassword>> createTenant({
+  Future<Response<TenantWithPassword>> createTenant({ 
     required CreateTenantRequest createTenantRequest,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -242,7 +242,7 @@ class PlatformApi {
   /// Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId]
+  /// * [tenantId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -252,7 +252,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> getTenant({
+  Future<Response<Tenant>> getTenant({ 
     required String tenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -320,10 +320,10 @@ class PlatformApi {
   }
 
   /// Usage statistics of a tenant across all services
-  /// Aggregates &#x60;/internal/usage/{tenantId}&#x60; of core, game and athlete. A service that does not answer is listed in &#x60;unavailableServices&#x60; instead of failing the whole request. Authz: super_admin.
+  /// Aggregates &#x60;/internal/usage/{tenantId}&#x60; of core, game and athlete. A service that does not answer is listed in &#x60;unavailableServices&#x60; instead of failing the whole request. Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
+  /// * [tenantId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -333,7 +333,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantUsage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantUsage>> getTenantUsage({
+  Future<Response<TenantUsage>> getTenantUsage({ 
     required String tenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -401,10 +401,10 @@ class PlatformApi {
   }
 
   /// Daily usage snapshots of a tenant (trend)
-  /// One snapshot per UTC day, written by the nightly snapshot job and by every &#x60;GET .../usage&#x60; (a snapshot with unavailable services never replaces a complete one of the same day). Ordered by &#x60;date&#x60; ascending. Defaults: &#x60;to&#x60; &#x3D; today (UTC), &#x60;from&#x60; &#x3D; &#x60;to&#x60; − 89 days; the range may span at most 366 days (400). Authz: super_admin.
+  /// One snapshot per UTC day, written by the nightly snapshot job and by every &#x60;GET .../usage&#x60; (a snapshot with unavailable services never replaces a complete one of the same day). Ordered by &#x60;date&#x60; ascending. Defaults: &#x60;to&#x60; &#x3D; today (UTC), &#x60;from&#x60; &#x3D; &#x60;to&#x60; − 89 days; the range may span at most 366 days (400). Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
+  /// * [tenantId] 
   /// * [from] - First UTC day (inclusive).
   /// * [to] - Last UTC day (inclusive).
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -416,7 +416,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantUsageHistory] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantUsageHistory>> getTenantUsageHistory({
+  Future<Response<TenantUsageHistory>> getTenantUsageHistory({ 
     required String tenantId,
     Date? from,
     Date? to,
@@ -492,11 +492,11 @@ class PlatformApi {
   }
 
   /// Issue a new temporary password for a pending administrator
-  /// Replaces the password of the administrator&#39;s login by a new temporary password, returned once in &#x60;temporaryPassword&#x60; (always present here); Keycloak asks for a new password at the first sign-in. Also repairs a pending login that has no password at all. Only while the invitation is PENDING and the person has not chosen a password of their own (409 &#x60;INVITATION_NOT_PENDING&#x60; otherwise, also for an administrator without a login); 404 when the person is not an active administrator; 409 &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed). Authz: super_admin.
+  /// Replaces the password of the administrator&#39;s login by a new temporary password, returned once in &#x60;temporaryPassword&#x60; (always present here); Keycloak asks for a new password at the first sign-in. Also repairs a pending login that has no password at all, and renews an expired one (&#x60;temporaryPasswordStatus&#x60; EXPIRED: the login is enabled again, ADR-0028). Only while the invitation is PENDING and the person has not chosen a password of their own (409 &#x60;INVITATION_NOT_PENDING&#x60; otherwise, also for an administrator without a login); 404 when the person is not an active administrator; 409 &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed). Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
-  /// * [personId]
+  /// * [tenantId] 
+  /// * [personId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -506,7 +506,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantAdminWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantAdminWithPassword>> issueTenantAdminTemporaryPassword({
+  Future<Response<TenantAdminWithPassword>> issueTenantAdminTemporaryPassword({ 
     required String tenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -575,10 +575,10 @@ class PlatformApi {
   }
 
   /// List the administrators of a tenant
-  /// Active members holding the ADMIN role, ordered by family and given name. The only tenant content the platform reads (identity of the administrators, ADR-0023). 404 for an unknown tenant; 409 &#x60;TENANT_WITHDRAWN&#x60; for a withdrawn one (ACTIVE and SUSPENDED tenants are managed). Authz: super_admin.
+  /// Active members holding the ADMIN role, ordered by family and given name. The only tenant content the platform reads (identity of the administrators, ADR-0023). 404 for an unknown tenant; 409 &#x60;TENANT_WITHDRAWN&#x60; for a withdrawn one (ACTIVE and SUSPENDED tenants are managed). Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
+  /// * [tenantId] 
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -590,7 +590,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantAdminPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantAdminPage>> listTenantAdmins({
+  Future<Response<TenantAdminPage>> listTenantAdmins({ 
     required String tenantId,
     int? page = 0,
     int? size = 50,
@@ -669,7 +669,7 @@ class PlatformApi {
   /// Authz: super_admin.
   ///
   /// Parameters:
-  /// * [status]
+  /// * [status] 
   /// * [q] - Case-insensitive match on name or slug.
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
@@ -682,7 +682,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantPage>> listTenants({
+  Future<Response<TenantPage>> listTenants({ 
     TenantStatus? status,
     String? q,
     int? page = 0,
@@ -764,7 +764,7 @@ class PlatformApi {
   /// Only SUSPENDED tenants can be reactivated (409 otherwise). Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId]
+  /// * [tenantId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -774,7 +774,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> reactivateTenant({
+  Future<Response<Tenant>> reactivateTenant({ 
     required String tenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -842,11 +842,11 @@ class PlatformApi {
   }
 
   /// Remove an administrator
-  /// Drops the ADMIN role; a person whose only role was ADMIN is deactivated in this tenant. The Keycloak login is never deleted or disabled (it may be used in other academies). 409 &#x60;LAST_ADMIN&#x60; for the tenant&#39;s last active administrator (the &#x60;detail&#x60; explains that another administrator must be added first); 404 when the person is not an active administrator; 409 &#x60;TENANT_WITHDRAWN&#x60;. Authz: super_admin.
+  /// Drops the ADMIN role; a person whose only role was ADMIN is deactivated in this tenant. The Keycloak login is never deleted or disabled (it may be used in other academies). 409 &#x60;LAST_ADMIN&#x60; for the tenant&#39;s last active administrator (the &#x60;detail&#x60; explains that another administrator must be added first); 404 when the person is not an active administrator; 409 &#x60;TENANT_WITHDRAWN&#x60;. Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
-  /// * [personId]
+  /// * [tenantId] 
+  /// * [personId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -856,7 +856,7 @@ class PlatformApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> removeTenantAdmin({
+  Future<Response<void>> removeTenantAdmin({ 
     required String tenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -897,11 +897,11 @@ class PlatformApi {
   }
 
   /// Deprecated alias of issueTenantAdminTemporaryPassword
-  /// Deprecated since 2.3.0, removed in 3.0.0: use &#x60;issueTenantAdminTemporaryPassword&#x60; (&#x60;POST .../temporary-password&#x60;). Same behaviour, answers 202. Authz: super_admin.
+  /// Deprecated since 2.3.0, removed in 3.0.0: use &#x60;issueTenantAdminTemporaryPassword&#x60; (&#x60;POST .../temporary-password&#x60;). Same behaviour, answers 202. Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
-  /// * [personId]
+  /// * [tenantId] 
+  /// * [personId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -912,7 +912,7 @@ class PlatformApi {
   /// Returns a [Future] containing a [Response] with a [TenantAdminWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
   @Deprecated('This operation has been deprecated')
-  Future<Response<TenantAdminWithPassword>> resendTenantAdminInvitation({
+  Future<Response<TenantAdminWithPassword>> resendTenantAdminInvitation({ 
     required String tenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -984,8 +984,8 @@ class PlatformApi {
   /// Logins to the tenant are blocked until it is reactivated. Authz: super_admin.
   ///
   /// Parameters:
-  /// * [tenantId]
-  /// * [tenantLifecycleRequest]
+  /// * [tenantId] 
+  /// * [tenantLifecycleRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -995,7 +995,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> suspendTenant({
+  Future<Response<Tenant>> suspendTenant({ 
     required String tenantId,
     required TenantLifecycleRequest tenantLifecycleRequest,
     CancelToken? cancelToken,
@@ -1087,8 +1087,8 @@ class PlatformApi {
   /// Authz: super_admin. Absent fields are left unchanged.
   ///
   /// Parameters:
-  /// * [tenantId]
-  /// * [updateTenantRequest]
+  /// * [tenantId] 
+  /// * [updateTenantRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1098,7 +1098,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> updateTenant({
+  Future<Response<Tenant>> updateTenant({ 
     required String tenantId,
     required UpdateTenantRequest updateTenantRequest,
     CancelToken? cancelToken,
@@ -1187,12 +1187,12 @@ class PlatformApi {
   }
 
   /// Edit an administrator&#39;s names or e-mail
-  /// Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and e-mail; no e-mail is sent, the password is unchanged), also when the login is used in other academies: then the same person&#39;s e-mail changes in every academy where they are an active member, in the same transaction, with one &#x60;member.login_email_changed&#x60; audit event per academy (ADR-0023, ADR-0024, ADR-0026). 404 when the person is not an active administrator of the tenant; 409 &#x60;EMAIL_TAKEN&#x60; (another member of this academy or of an academy sharing the login, or another login, uses the address), &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed in any academy). Authz: super_admin.
+  /// Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and e-mail; no e-mail is sent, the password is unchanged), also when the login is used in other academies: then the same person&#39;s e-mail changes in every academy where they are an active member, in the same transaction, with one &#x60;member.login_email_changed&#x60; audit event per academy (ADR-0023, ADR-0024, ADR-0026). 404 when the person is not an active administrator of the tenant; 409 &#x60;EMAIL_TAKEN&#x60; (another member of this academy or of an academy sharing the login, or another login, uses the address), &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed in any academy). Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
-  /// * [personId]
-  /// * [updateTenantAdminRequest]
+  /// * [tenantId] 
+  /// * [personId] 
+  /// * [updateTenantAdminRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1202,7 +1202,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantAdmin] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantAdmin>> updateTenantAdmin({
+  Future<Response<TenantAdmin>> updateTenantAdmin({ 
     required String tenantId,
     required String personId,
     required UpdateTenantAdminRequest updateTenantAdminRequest,
@@ -1292,11 +1292,11 @@ class PlatformApi {
   }
 
   /// Withdraw a tenant
-  /// Terminal state: logins are blocked immediately, data is retained until &#x60;retainUntil&#x60; (purge job is v2). Authz: super_admin.
+  /// Terminal state: logins are blocked immediately, data is retained until &#x60;retainUntil&#x60; (purge job is v2). Authz: super_admin. 
   ///
   /// Parameters:
-  /// * [tenantId]
-  /// * [tenantLifecycleRequest]
+  /// * [tenantId] 
+  /// * [tenantLifecycleRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1306,7 +1306,7 @@ class PlatformApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Tenant] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Tenant>> withdrawTenant({
+  Future<Response<Tenant>> withdrawTenant({ 
     required String tenantId,
     required TenantLifecycleRequest tenantLifecycleRequest,
     CancelToken? cancelToken,

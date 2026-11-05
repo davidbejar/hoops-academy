@@ -12,10 +12,10 @@ part 'add_tenant_admin_request.g.dart';
 /// AddTenantAdminRequest
 ///
 /// Properties:
-/// * [email]
-/// * [givenName]
-/// * [familyName]
-/// * [locale]
+/// * [email] 
+/// * [givenName] 
+/// * [familyName] 
+/// * [locale] 
 @BuiltValue()
 abstract class AddTenantAdminRequest implements Built<AddTenantAdminRequest, AddTenantAdminRequestBuilder> {
   @BuiltValueField(wireName: r'email')
@@ -156,3 +156,5 @@ class _$AddTenantAdminRequestSerializer implements PrimitiveSerializer<AddTenant
     return result.build();
   }
 }
+
+

@@ -84,6 +84,7 @@ import 'package:hoops_core_api/src/model/team_ref.dart';
 import 'package:hoops_core_api/src/model/team_roster.dart';
 import 'package:hoops_core_api/src/model/team_staff_assignment.dart';
 import 'package:hoops_core_api/src/model/team_staff_member.dart';
+import 'package:hoops_core_api/src/model/temporary_password_status.dart';
 import 'package:hoops_core_api/src/model/tenant.dart';
 import 'package:hoops_core_api/src/model/tenant_admin.dart';
 import 'package:hoops_core_api/src/model/tenant_admin_page.dart';
@@ -185,6 +186,7 @@ part 'serializers.g.dart';
   TeamRoster,
   TeamStaffAssignment,
   TeamStaffMember,
+  TemporaryPasswordStatus,
   Tenant,
   TenantAdmin,
   TenantAdminPage,

@@ -18,6 +18,8 @@ class _$TenantAdminWithPassword extends TenantAdminWithPassword {
   @override
   final InvitationStatus invitationStatus;
   @override
+  final TemporaryPasswordStatus temporaryPasswordStatus;
+  @override
   final BuiltSet<TenantRole> otherRoles;
   @override
   final String? temporaryPassword;
@@ -32,6 +34,7 @@ class _$TenantAdminWithPassword extends TenantAdminWithPassword {
       required this.familyName,
       this.email,
       required this.invitationStatus,
+      required this.temporaryPasswordStatus,
       required this.otherRoles,
       this.temporaryPassword})
       : super._();
@@ -53,6 +56,7 @@ class _$TenantAdminWithPassword extends TenantAdminWithPassword {
         familyName == other.familyName &&
         email == other.email &&
         invitationStatus == other.invitationStatus &&
+        temporaryPasswordStatus == other.temporaryPasswordStatus &&
         otherRoles == other.otherRoles &&
         temporaryPassword == other.temporaryPassword;
   }
@@ -65,6 +69,7 @@ class _$TenantAdminWithPassword extends TenantAdminWithPassword {
     _$hash = $jc(_$hash, familyName.hashCode);
     _$hash = $jc(_$hash, email.hashCode);
     _$hash = $jc(_$hash, invitationStatus.hashCode);
+    _$hash = $jc(_$hash, temporaryPasswordStatus.hashCode);
     _$hash = $jc(_$hash, otherRoles.hashCode);
     _$hash = $jc(_$hash, temporaryPassword.hashCode);
     _$hash = $jf(_$hash);
@@ -79,6 +84,7 @@ class _$TenantAdminWithPassword extends TenantAdminWithPassword {
           ..add('familyName', familyName)
           ..add('email', email)
           ..add('invitationStatus', invitationStatus)
+          ..add('temporaryPasswordStatus', temporaryPasswordStatus)
           ..add('otherRoles', otherRoles)
           ..add('temporaryPassword', temporaryPassword))
         .toString();
@@ -111,6 +117,13 @@ class TenantAdminWithPasswordBuilder
   set invitationStatus(InvitationStatus? invitationStatus) =>
       _$this._invitationStatus = invitationStatus;
 
+  TemporaryPasswordStatus? _temporaryPasswordStatus;
+  TemporaryPasswordStatus? get temporaryPasswordStatus =>
+      _$this._temporaryPasswordStatus;
+  set temporaryPasswordStatus(
+          TemporaryPasswordStatus? temporaryPasswordStatus) =>
+      _$this._temporaryPasswordStatus = temporaryPasswordStatus;
+
   SetBuilder<TenantRole>? _otherRoles;
   SetBuilder<TenantRole> get otherRoles =>
       _$this._otherRoles ??= SetBuilder<TenantRole>();
@@ -134,6 +147,7 @@ class TenantAdminWithPasswordBuilder
       _familyName = $v.familyName;
       _email = $v.email;
       _invitationStatus = $v.invitationStatus;
+      _temporaryPasswordStatus = $v.temporaryPasswordStatus;
       _otherRoles = $v.otherRoles.toBuilder();
       _temporaryPassword = $v.temporaryPassword;
       _$v = null;
@@ -170,6 +184,10 @@ class TenantAdminWithPasswordBuilder
                 invitationStatus,
                 r'TenantAdminWithPassword',
                 'invitationStatus'),
+            temporaryPasswordStatus: BuiltValueNullFieldError.checkNotNull(
+                temporaryPasswordStatus,
+                r'TenantAdminWithPassword',
+                'temporaryPasswordStatus'),
             otherRoles: otherRoles.build(),
             temporaryPassword: temporaryPassword,
           );

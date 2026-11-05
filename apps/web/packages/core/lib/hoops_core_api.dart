@@ -92,6 +92,7 @@ export 'package:hoops_core_api/src/model/team_ref.dart';
 export 'package:hoops_core_api/src/model/team_roster.dart';
 export 'package:hoops_core_api/src/model/team_staff_assignment.dart';
 export 'package:hoops_core_api/src/model/team_staff_member.dart';
+export 'package:hoops_core_api/src/model/temporary_password_status.dart';
 export 'package:hoops_core_api/src/model/tenant.dart';
 export 'package:hoops_core_api/src/model/tenant_admin.dart';
 export 'package:hoops_core_api/src/model/tenant_admin_page.dart';
@@ -119,3 +120,4 @@ export 'package:hoops_core_api/src/model/update_tenant_profile_request.dart';
 export 'package:hoops_core_api/src/model/update_tenant_request.dart';
 export 'package:hoops_core_api/src/model/usage_report.dart';
 export 'package:hoops_core_api/src/model/withdraw_player_request.dart';
+

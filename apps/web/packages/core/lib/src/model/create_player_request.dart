@@ -13,10 +13,10 @@ part 'create_player_request.g.dart';
 /// CreatePlayerRequest
 ///
 /// Properties:
-/// * [givenName]
-/// * [familyName]
-/// * [birthDate]
-/// * [gender]
+/// * [givenName] 
+/// * [familyName] 
+/// * [birthDate] 
+/// * [gender] 
 /// * [email] - When present the player gets a login (a new login's temporary password is returned once).
 /// * [teamId] - Optional team to assign (eligibility-checked; applied on approval for the coach path).
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
@@ -234,3 +234,5 @@ class _$CreatePlayerRequestSerializer implements PrimitiveSerializer<CreatePlaye
     return result.build();
   }
 }
+
+

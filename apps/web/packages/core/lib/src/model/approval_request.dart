@@ -16,16 +16,16 @@ part 'approval_request.g.dart';
 /// ApprovalRequest
 ///
 /// Properties:
-/// * [id]
-/// * [action]
-/// * [status]
-/// * [player]
-/// * [payload]
-/// * [requestedBy]
-/// * [requestedAt]
-/// * [decidedBy]
-/// * [decidedAt]
-/// * [decisionNote]
+/// * [id] 
+/// * [action] 
+/// * [status] 
+/// * [player] 
+/// * [payload] 
+/// * [requestedBy] 
+/// * [requestedAt] 
+/// * [decidedBy] 
+/// * [decidedAt] 
+/// * [decisionNote] 
 @BuiltValue()
 abstract class ApprovalRequest implements Built<ApprovalRequest, ApprovalRequestBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -263,3 +263,5 @@ class _$ApprovalRequestSerializer implements PrimitiveSerializer<ApprovalRequest
     return result.build();
   }
 }
+
+

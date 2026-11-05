@@ -18,6 +18,8 @@ class _$TenantAdmin extends TenantAdmin {
   @override
   final InvitationStatus invitationStatus;
   @override
+  final TemporaryPasswordStatus temporaryPasswordStatus;
+  @override
   final BuiltSet<TenantRole> otherRoles;
 
   factory _$TenantAdmin([void Function(TenantAdminBuilder)? updates]) =>
@@ -29,6 +31,7 @@ class _$TenantAdmin extends TenantAdmin {
       required this.familyName,
       this.email,
       required this.invitationStatus,
+      required this.temporaryPasswordStatus,
       required this.otherRoles})
       : super._();
   @override
@@ -47,6 +50,7 @@ class _$TenantAdmin extends TenantAdmin {
         familyName == other.familyName &&
         email == other.email &&
         invitationStatus == other.invitationStatus &&
+        temporaryPasswordStatus == other.temporaryPasswordStatus &&
         otherRoles == other.otherRoles;
   }
 
@@ -58,6 +62,7 @@ class _$TenantAdmin extends TenantAdmin {
     _$hash = $jc(_$hash, familyName.hashCode);
     _$hash = $jc(_$hash, email.hashCode);
     _$hash = $jc(_$hash, invitationStatus.hashCode);
+    _$hash = $jc(_$hash, temporaryPasswordStatus.hashCode);
     _$hash = $jc(_$hash, otherRoles.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -71,6 +76,7 @@ class _$TenantAdmin extends TenantAdmin {
           ..add('familyName', familyName)
           ..add('email', email)
           ..add('invitationStatus', invitationStatus)
+          ..add('temporaryPasswordStatus', temporaryPasswordStatus)
           ..add('otherRoles', otherRoles))
         .toString();
   }
@@ -100,6 +106,13 @@ class TenantAdminBuilder implements Builder<TenantAdmin, TenantAdminBuilder> {
   set invitationStatus(InvitationStatus? invitationStatus) =>
       _$this._invitationStatus = invitationStatus;
 
+  TemporaryPasswordStatus? _temporaryPasswordStatus;
+  TemporaryPasswordStatus? get temporaryPasswordStatus =>
+      _$this._temporaryPasswordStatus;
+  set temporaryPasswordStatus(
+          TemporaryPasswordStatus? temporaryPasswordStatus) =>
+      _$this._temporaryPasswordStatus = temporaryPasswordStatus;
+
   SetBuilder<TenantRole>? _otherRoles;
   SetBuilder<TenantRole> get otherRoles =>
       _$this._otherRoles ??= SetBuilder<TenantRole>();
@@ -118,6 +131,7 @@ class TenantAdminBuilder implements Builder<TenantAdmin, TenantAdminBuilder> {
       _familyName = $v.familyName;
       _email = $v.email;
       _invitationStatus = $v.invitationStatus;
+      _temporaryPasswordStatus = $v.temporaryPasswordStatus;
       _otherRoles = $v.otherRoles.toBuilder();
       _$v = null;
     }
@@ -151,6 +165,10 @@ class TenantAdminBuilder implements Builder<TenantAdmin, TenantAdminBuilder> {
             email: email,
             invitationStatus: BuiltValueNullFieldError.checkNotNull(
                 invitationStatus, r'TenantAdmin', 'invitationStatus'),
+            temporaryPasswordStatus: BuiltValueNullFieldError.checkNotNull(
+                temporaryPasswordStatus,
+                r'TenantAdmin',
+                'temporaryPasswordStatus'),
             otherRoles: otherRoles.build(),
           );
     } catch (_) {

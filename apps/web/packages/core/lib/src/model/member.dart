@@ -7,6 +7,7 @@ import 'package:hoops_core_api/src/model/date.dart';
 import 'package:hoops_core_api/src/model/invitation_status.dart';
 import 'package:hoops_core_api/src/model/gender.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:hoops_core_api/src/model/temporary_password_status.dart';
 import 'package:hoops_core_api/src/model/tenant_role.dart';
 import 'package:hoops_core_api/src/model/locale.dart';
 import 'package:built_value/built_value.dart';
@@ -17,21 +18,22 @@ part 'member.g.dart';
 /// Member
 ///
 /// Properties:
-/// * [personId]
+/// * [personId] 
 /// * [userId] - Platform user (login) of the person; null for persons without login (e.g. young players).
-/// * [givenName]
-/// * [familyName]
-/// * [displayName]
-/// * [email]
-/// * [phone]
-/// * [birthDate]
-/// * [gender]
-/// * [locale]
-/// * [roles]
+/// * [givenName] 
+/// * [familyName] 
+/// * [displayName] 
+/// * [email] 
+/// * [phone] 
+/// * [birthDate] 
+/// * [gender] 
+/// * [locale] 
+/// * [roles] 
 /// * [playerId] - Set when the member holds the PLAYER role.
-/// * [active]
-/// * [invitationStatus]
-/// * [createdAt]
+/// * [active] 
+/// * [invitationStatus] 
+/// * [temporaryPasswordStatus] 
+/// * [createdAt] 
 @BuiltValue()
 abstract class Member implements Built<Member, MemberBuilder> {
   @BuiltValueField(wireName: r'personId')
@@ -80,6 +82,10 @@ abstract class Member implements Built<Member, MemberBuilder> {
   @BuiltValueField(wireName: r'invitationStatus')
   InvitationStatus get invitationStatus;
   // enum invitationStatusEnum {  NONE,  PENDING,  ACCEPTED,  };
+
+  @BuiltValueField(wireName: r'temporaryPasswordStatus')
+  TemporaryPasswordStatus get temporaryPasswordStatus;
+  // enum temporaryPasswordStatusEnum {  ACTIVE,  EXPIRED,  NONE,  };
 
   @BuiltValueField(wireName: r'createdAt')
   DateTime get createdAt;
@@ -190,6 +196,11 @@ class _$MemberSerializer implements PrimitiveSerializer<Member> {
     yield serializers.serialize(
       object.invitationStatus,
       specifiedType: const FullType(InvitationStatus),
+    );
+    yield r'temporaryPasswordStatus';
+    yield serializers.serialize(
+      object.temporaryPasswordStatus,
+      specifiedType: const FullType(TemporaryPasswordStatus),
     );
     yield r'createdAt';
     yield serializers.serialize(
@@ -324,6 +335,13 @@ class _$MemberSerializer implements PrimitiveSerializer<Member> {
           ) as InvitationStatus;
           result.invitationStatus = valueDes;
           break;
+        case r'temporaryPasswordStatus':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(TemporaryPasswordStatus),
+          ) as TemporaryPasswordStatus;
+          result.temporaryPasswordStatus = valueDes;
+          break;
         case r'createdAt':
           final valueDes = serializers.deserialize(
             value,
@@ -359,3 +377,5 @@ class _$MemberSerializer implements PrimitiveSerializer<Member> {
     return result.build();
   }
 }
+
+

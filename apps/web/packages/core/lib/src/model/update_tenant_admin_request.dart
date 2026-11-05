@@ -11,9 +11,9 @@ part 'update_tenant_admin_request.g.dart';
 /// UpdateTenantAdminRequest
 ///
 /// Properties:
-/// * [givenName]
-/// * [familyName]
-/// * [email]
+/// * [givenName] 
+/// * [familyName] 
+/// * [email] 
 @BuiltValue()
 abstract class UpdateTenantAdminRequest implements Built<UpdateTenantAdminRequest, UpdateTenantAdminRequestBuilder> {
   @BuiltValueField(wireName: r'givenName')
@@ -144,3 +144,5 @@ class _$UpdateTenantAdminRequestSerializer implements PrimitiveSerializer<Update
     return result.build();
   }
 }
+
+

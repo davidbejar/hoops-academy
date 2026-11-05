@@ -36,6 +36,8 @@ class _$Member extends Member {
   @override
   final InvitationStatus invitationStatus;
   @override
+  final TemporaryPasswordStatus temporaryPasswordStatus;
+  @override
   final DateTime createdAt;
 
   factory _$Member([void Function(MemberBuilder)? updates]) =>
@@ -56,6 +58,7 @@ class _$Member extends Member {
       this.playerId,
       required this.active,
       required this.invitationStatus,
+      required this.temporaryPasswordStatus,
       required this.createdAt})
       : super._();
   @override
@@ -83,6 +86,7 @@ class _$Member extends Member {
         playerId == other.playerId &&
         active == other.active &&
         invitationStatus == other.invitationStatus &&
+        temporaryPasswordStatus == other.temporaryPasswordStatus &&
         createdAt == other.createdAt;
   }
 
@@ -103,6 +107,7 @@ class _$Member extends Member {
     _$hash = $jc(_$hash, playerId.hashCode);
     _$hash = $jc(_$hash, active.hashCode);
     _$hash = $jc(_$hash, invitationStatus.hashCode);
+    _$hash = $jc(_$hash, temporaryPasswordStatus.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -125,6 +130,7 @@ class _$Member extends Member {
           ..add('playerId', playerId)
           ..add('active', active)
           ..add('invitationStatus', invitationStatus)
+          ..add('temporaryPasswordStatus', temporaryPasswordStatus)
           ..add('createdAt', createdAt))
         .toString();
   }
@@ -191,6 +197,13 @@ class MemberBuilder implements Builder<Member, MemberBuilder> {
   set invitationStatus(InvitationStatus? invitationStatus) =>
       _$this._invitationStatus = invitationStatus;
 
+  TemporaryPasswordStatus? _temporaryPasswordStatus;
+  TemporaryPasswordStatus? get temporaryPasswordStatus =>
+      _$this._temporaryPasswordStatus;
+  set temporaryPasswordStatus(
+          TemporaryPasswordStatus? temporaryPasswordStatus) =>
+      _$this._temporaryPasswordStatus = temporaryPasswordStatus;
+
   DateTime? _createdAt;
   DateTime? get createdAt => _$this._createdAt;
   set createdAt(DateTime? createdAt) => _$this._createdAt = createdAt;
@@ -216,6 +229,7 @@ class MemberBuilder implements Builder<Member, MemberBuilder> {
       _playerId = $v.playerId;
       _active = $v.active;
       _invitationStatus = $v.invitationStatus;
+      _temporaryPasswordStatus = $v.temporaryPasswordStatus;
       _createdAt = $v.createdAt;
       _$v = null;
     }
@@ -260,6 +274,8 @@ class MemberBuilder implements Builder<Member, MemberBuilder> {
                 active, r'Member', 'active'),
             invitationStatus: BuiltValueNullFieldError.checkNotNull(
                 invitationStatus, r'Member', 'invitationStatus'),
+            temporaryPasswordStatus: BuiltValueNullFieldError.checkNotNull(
+                temporaryPasswordStatus, r'Member', 'temporaryPasswordStatus'),
             createdAt: BuiltValueNullFieldError.checkNotNull(
                 createdAt, r'Member', 'createdAt'),
           );

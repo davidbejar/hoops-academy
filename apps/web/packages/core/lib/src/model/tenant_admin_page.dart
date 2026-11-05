@@ -14,8 +14,8 @@ part 'tenant_admin_page.g.dart';
 /// TenantAdminPage
 ///
 /// Properties:
-/// * [items]
-/// * [page]
+/// * [items] 
+/// * [page] 
 @BuiltValue()
 abstract class TenantAdminPage implements Built<TenantAdminPage, TenantAdminPageBuilder> {
   @BuiltValueField(wireName: r'items')
@@ -122,3 +122,5 @@ class _$TenantAdminPageSerializer implements PrimitiveSerializer<TenantAdminPage
     return result.build();
   }
 }
+
+

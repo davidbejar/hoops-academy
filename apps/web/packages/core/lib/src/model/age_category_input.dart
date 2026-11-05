@@ -11,8 +11,8 @@ part 'age_category_input.g.dart';
 /// AgeCategoryInput
 ///
 /// Properties:
-/// * [code]
-/// * [name]
+/// * [code] 
+/// * [name] 
 /// * [maxAge] - Inclusive maximum age; null = senior (no limit).
 /// * [rank] - Ordering; higher rank = older category.
 @BuiltValue()
@@ -156,3 +156,5 @@ class _$AgeCategoryInputSerializer implements PrimitiveSerializer<AgeCategoryInp
     return result.build();
   }
 }
+
+

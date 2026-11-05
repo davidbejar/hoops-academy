@@ -5,6 +5,7 @@
 // ignore_for_file: unused_element
 import 'package:hoops_core_api/src/model/invitation_status.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:hoops_core_api/src/model/temporary_password_status.dart';
 import 'package:hoops_core_api/src/model/tenant_role.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -14,13 +15,14 @@ part 'tenant_admin_with_password.g.dart';
 /// An administrator and, when this call created or re-issued their login's password, that password.
 ///
 /// Properties:
-/// * [personId]
-/// * [givenName]
-/// * [familyName]
-/// * [email]
-/// * [invitationStatus]
+/// * [personId] 
+/// * [givenName] 
+/// * [familyName] 
+/// * [email] 
+/// * [invitationStatus] 
+/// * [temporaryPasswordStatus] 
 /// * [otherRoles] - The person's tenant roles besides ADMIN (removing the administrator keeps these).
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
 @BuiltValue()
 abstract class TenantAdminWithPassword implements Built<TenantAdminWithPassword, TenantAdminWithPasswordBuilder> {
   @BuiltValueField(wireName: r'personId')
@@ -39,11 +41,15 @@ abstract class TenantAdminWithPassword implements Built<TenantAdminWithPassword,
   InvitationStatus get invitationStatus;
   // enum invitationStatusEnum {  NONE,  PENDING,  ACCEPTED,  };
 
+  @BuiltValueField(wireName: r'temporaryPasswordStatus')
+  TemporaryPasswordStatus get temporaryPasswordStatus;
+  // enum temporaryPasswordStatusEnum {  ACTIVE,  EXPIRED,  NONE,  };
+
   /// The person's tenant roles besides ADMIN (removing the administrator keeps these).
   @BuiltValueField(wireName: r'otherRoles')
   BuiltSet<TenantRole> get otherRoles;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
@@ -96,6 +102,11 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
     yield serializers.serialize(
       object.invitationStatus,
       specifiedType: const FullType(InvitationStatus),
+    );
+    yield r'temporaryPasswordStatus';
+    yield serializers.serialize(
+      object.temporaryPasswordStatus,
+      specifiedType: const FullType(TemporaryPasswordStatus),
     );
     yield r'otherRoles';
     yield serializers.serialize(
@@ -168,6 +179,13 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
           ) as InvitationStatus;
           result.invitationStatus = valueDes;
           break;
+        case r'temporaryPasswordStatus':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(TemporaryPasswordStatus),
+          ) as TemporaryPasswordStatus;
+          result.temporaryPasswordStatus = valueDes;
+          break;
         case r'otherRoles':
           final valueDes = serializers.deserialize(
             value,
@@ -211,3 +229,5 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
     return result.build();
   }
 }
+
+

@@ -27,12 +27,12 @@ class ApprovalRequestsApi {
   const ApprovalRequestsApi(this._dio, this._serializers);
 
   /// Approve a pending request
-  /// Executes the action. ADD_PLAYER activates the player and applies the optional team assignment through the eligibility-checked command — if that is INELIGIBLE the answer is 422 and the request stays PENDING. A requested player with an e-mail and no login gets one: a new login&#39;s temporary password is returned once in &#x60;temporaryPassword&#x60; (502 when Keycloak fails — the request stays PENDING). Only PENDING requests can be decided (409 &#x60;NOT_PENDING&#x60;). Authz: ADMIN.
+  /// Executes the action. ADD_PLAYER activates the player and applies the optional team assignment through the eligibility-checked command — if that is INELIGIBLE the answer is 422 and the request stays PENDING. A requested player with an e-mail and no login gets one: a new login&#39;s temporary password is returned once in &#x60;temporaryPassword&#x60; (502 when Keycloak fails — the request stays PENDING). Only PENDING requests can be decided (409 &#x60;NOT_PENDING&#x60;). Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [approvalRequestId]
-  /// * [approvalDecisionRequest]
+  /// * [approvalRequestId] 
+  /// * [approvalDecisionRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -42,7 +42,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequestWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequestWithPassword>> approveApprovalRequest({
+  Future<Response<ApprovalRequestWithPassword>> approveApprovalRequest({ 
     required String xTenantId,
     required String approvalRequestId,
     ApprovalDecisionRequest? approvalDecisionRequest,
@@ -137,7 +137,7 @@ class ApprovalRequestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [approvalRequestId]
+  /// * [approvalRequestId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -147,7 +147,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequest] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequest>> cancelApprovalRequest({
+  Future<Response<ApprovalRequest>> cancelApprovalRequest({ 
     required String xTenantId,
     required String approvalRequestId,
     CancelToken? cancelToken,
@@ -221,7 +221,7 @@ class ApprovalRequestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [approvalRequestId]
+  /// * [approvalRequestId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -231,7 +231,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequest] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequest>> getApprovalRequest({
+  Future<Response<ApprovalRequest>> getApprovalRequest({ 
     required String xTenantId,
     required String approvalRequestId,
     CancelToken? cancelToken,
@@ -305,9 +305,9 @@ class ApprovalRequestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [status]
-  /// * [action]
-  /// * [playerId]
+  /// * [status] 
+  /// * [action] 
+  /// * [playerId] 
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -319,7 +319,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequestPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequestPage>> listApprovalRequests({
+  Future<Response<ApprovalRequestPage>> listApprovalRequests({ 
     required String xTenantId,
     ApprovalStatus? status,
     ApprovalAction? action,
@@ -402,12 +402,12 @@ class ApprovalRequestsApi {
   }
 
   /// Reject a pending request
-  /// A rejected ADD_PLAYER leaves the pending player REJECTED; a rejected WITHDRAW_PLAYER leaves the player as it was. The reason (&#x60;note&#x60;) is required and shown to the requesting coach. Only PENDING requests can be decided (409). Authz: ADMIN.
+  /// A rejected ADD_PLAYER leaves the pending player REJECTED; a rejected WITHDRAW_PLAYER leaves the player as it was. The reason (&#x60;note&#x60;) is required and shown to the requesting coach. Only PENDING requests can be decided (409). Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [approvalRequestId]
-  /// * [rejectApprovalRequest]
+  /// * [approvalRequestId] 
+  /// * [rejectApprovalRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -417,7 +417,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequest] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequest>> rejectApprovalRequest({
+  Future<Response<ApprovalRequest>> rejectApprovalRequest({ 
     required String xTenantId,
     required String approvalRequestId,
     required RejectApprovalRequest rejectApprovalRequest,

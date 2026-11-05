@@ -36,6 +36,8 @@ class _$MemberWithPassword extends MemberWithPassword {
   @override
   final InvitationStatus invitationStatus;
   @override
+  final TemporaryPasswordStatus temporaryPasswordStatus;
+  @override
   final DateTime createdAt;
   @override
   final String? temporaryPassword;
@@ -59,6 +61,7 @@ class _$MemberWithPassword extends MemberWithPassword {
       this.playerId,
       required this.active,
       required this.invitationStatus,
+      required this.temporaryPasswordStatus,
       required this.createdAt,
       this.temporaryPassword})
       : super._();
@@ -89,6 +92,7 @@ class _$MemberWithPassword extends MemberWithPassword {
         playerId == other.playerId &&
         active == other.active &&
         invitationStatus == other.invitationStatus &&
+        temporaryPasswordStatus == other.temporaryPasswordStatus &&
         createdAt == other.createdAt &&
         temporaryPassword == other.temporaryPassword;
   }
@@ -110,6 +114,7 @@ class _$MemberWithPassword extends MemberWithPassword {
     _$hash = $jc(_$hash, playerId.hashCode);
     _$hash = $jc(_$hash, active.hashCode);
     _$hash = $jc(_$hash, invitationStatus.hashCode);
+    _$hash = $jc(_$hash, temporaryPasswordStatus.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
     _$hash = $jc(_$hash, temporaryPassword.hashCode);
     _$hash = $jf(_$hash);
@@ -133,6 +138,7 @@ class _$MemberWithPassword extends MemberWithPassword {
           ..add('playerId', playerId)
           ..add('active', active)
           ..add('invitationStatus', invitationStatus)
+          ..add('temporaryPasswordStatus', temporaryPasswordStatus)
           ..add('createdAt', createdAt)
           ..add('temporaryPassword', temporaryPassword))
         .toString();
@@ -201,6 +207,13 @@ class MemberWithPasswordBuilder
   set invitationStatus(InvitationStatus? invitationStatus) =>
       _$this._invitationStatus = invitationStatus;
 
+  TemporaryPasswordStatus? _temporaryPasswordStatus;
+  TemporaryPasswordStatus? get temporaryPasswordStatus =>
+      _$this._temporaryPasswordStatus;
+  set temporaryPasswordStatus(
+          TemporaryPasswordStatus? temporaryPasswordStatus) =>
+      _$this._temporaryPasswordStatus = temporaryPasswordStatus;
+
   DateTime? _createdAt;
   DateTime? get createdAt => _$this._createdAt;
   set createdAt(DateTime? createdAt) => _$this._createdAt = createdAt;
@@ -231,6 +244,7 @@ class MemberWithPasswordBuilder
       _playerId = $v.playerId;
       _active = $v.active;
       _invitationStatus = $v.invitationStatus;
+      _temporaryPasswordStatus = $v.temporaryPasswordStatus;
       _createdAt = $v.createdAt;
       _temporaryPassword = $v.temporaryPassword;
       _$v = null;
@@ -276,6 +290,10 @@ class MemberWithPasswordBuilder
                 active, r'MemberWithPassword', 'active'),
             invitationStatus: BuiltValueNullFieldError.checkNotNull(
                 invitationStatus, r'MemberWithPassword', 'invitationStatus'),
+            temporaryPasswordStatus: BuiltValueNullFieldError.checkNotNull(
+                temporaryPasswordStatus,
+                r'MemberWithPassword',
+                'temporaryPasswordStatus'),
             createdAt: BuiltValueNullFieldError.checkNotNull(
                 createdAt, r'MemberWithPassword', 'createdAt'),
             temporaryPassword: temporaryPassword,

@@ -12,9 +12,9 @@ part 'season_input.g.dart';
 /// SeasonInput
 ///
 /// Properties:
-/// * [name]
-/// * [startsOn]
-/// * [endsOn]
+/// * [name] 
+/// * [startsOn] 
+/// * [endsOn] 
 /// * [referenceYear] - Year used by the BIRTH_YEAR age rule (age = referenceYear − birth year).
 @BuiltValue()
 abstract class SeasonInput implements Built<SeasonInput, SeasonInputBuilder> {
@@ -153,3 +153,5 @@ class _$SeasonInputSerializer implements PrimitiveSerializer<SeasonInput> {
     return result.build();
   }
 }
+
+

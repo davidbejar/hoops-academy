@@ -5,6 +5,7 @@
 // ignore_for_file: unused_element
 import 'package:hoops_core_api/src/model/invitation_status.dart';
 import 'package:built_collection/built_collection.dart';
+import 'package:hoops_core_api/src/model/temporary_password_status.dart';
 import 'package:hoops_core_api/src/model/tenant_role.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -14,11 +15,12 @@ part 'tenant_admin.g.dart';
 /// An administrator of a tenant as the platform sees it (identity only, ADR-0023).
 ///
 /// Properties:
-/// * [personId]
-/// * [givenName]
-/// * [familyName]
-/// * [email]
-/// * [invitationStatus]
+/// * [personId] 
+/// * [givenName] 
+/// * [familyName] 
+/// * [email] 
+/// * [invitationStatus] 
+/// * [temporaryPasswordStatus] 
 /// * [otherRoles] - The person's tenant roles besides ADMIN (removing the administrator keeps these).
 @BuiltValue()
 abstract class TenantAdmin implements Built<TenantAdmin, TenantAdminBuilder> {
@@ -37,6 +39,10 @@ abstract class TenantAdmin implements Built<TenantAdmin, TenantAdminBuilder> {
   @BuiltValueField(wireName: r'invitationStatus')
   InvitationStatus get invitationStatus;
   // enum invitationStatusEnum {  NONE,  PENDING,  ACCEPTED,  };
+
+  @BuiltValueField(wireName: r'temporaryPasswordStatus')
+  TemporaryPasswordStatus get temporaryPasswordStatus;
+  // enum temporaryPasswordStatusEnum {  ACTIVE,  EXPIRED,  NONE,  };
 
   /// The person's tenant roles besides ADMIN (removing the administrator keeps these).
   @BuiltValueField(wireName: r'otherRoles')
@@ -91,6 +97,11 @@ class _$TenantAdminSerializer implements PrimitiveSerializer<TenantAdmin> {
     yield serializers.serialize(
       object.invitationStatus,
       specifiedType: const FullType(InvitationStatus),
+    );
+    yield r'temporaryPasswordStatus';
+    yield serializers.serialize(
+      object.temporaryPasswordStatus,
+      specifiedType: const FullType(TemporaryPasswordStatus),
     );
     yield r'otherRoles';
     yield serializers.serialize(
@@ -156,6 +167,13 @@ class _$TenantAdminSerializer implements PrimitiveSerializer<TenantAdmin> {
           ) as InvitationStatus;
           result.invitationStatus = valueDes;
           break;
+        case r'temporaryPasswordStatus':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(TemporaryPasswordStatus),
+          ) as TemporaryPasswordStatus;
+          result.temporaryPasswordStatus = valueDes;
+          break;
         case r'otherRoles':
           final valueDes = serializers.deserialize(
             value,
@@ -191,3 +209,5 @@ class _$TenantAdminSerializer implements PrimitiveSerializer<TenantAdmin> {
     return result.build();
   }
 }
+
+

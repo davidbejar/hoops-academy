@@ -16,14 +16,14 @@ part 'invite_member_request.g.dart';
 /// InviteMemberRequest
 ///
 /// Properties:
-/// * [givenName]
-/// * [familyName]
-/// * [email]
-/// * [phone]
-/// * [birthDate]
-/// * [gender]
-/// * [locale]
-/// * [roles]
+/// * [givenName] 
+/// * [familyName] 
+/// * [email] 
+/// * [phone] 
+/// * [birthDate] 
+/// * [gender] 
+/// * [locale] 
+/// * [roles] 
 /// * [sendInvitation] - Give the member a login (requires `email`); a new login's temporary password is returned once.
 @BuiltValue()
 abstract class InviteMemberRequest implements Built<InviteMemberRequest, InviteMemberRequestBuilder> {
@@ -258,3 +258,5 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
     return result.build();
   }
 }
+
+
