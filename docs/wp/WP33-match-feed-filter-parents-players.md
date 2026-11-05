@@ -43,3 +43,37 @@ COACH, ASSISTANT_COACH) keep the full feed.
   `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built:
+  - **game-service**: `domain.PlayerVisibility` (everyone / only some players), `domain.events.EventVisibility`
+    (player events follow their player; PERIOD_START/END, OPPONENT_SCORE, TIMEOUT, NOTE without player are team-level;
+    a VOID follows its target through VOID-of-VOID chains, unknown target or cycle = visible), `application.StatVisibility`
+    (the one rule: ADMIN / staff of the match's team everything, else PARENT-linked + PLAYER-own). `GetBoxScore` now uses
+    it; `GetMatchEvents` filters with it (filtered callers: whole match read, filter, then `after`/`limit`/`hasMore` over
+    visible events; `lastServerSeq` stays the match's). Resource unchanged.
+  - **Contract** game **2.1.0** (description only, wire unchanged): which types are team-level, VOID rule, seq gaps,
+    team figures from `getBoxScore`. `scripts/gen-api.sh game` (core not regenerated; whitespace normalised).
+  - **Web**: offline sync needed no change (cursor = max held `serverSeq`, never gap-free; only staff and parents post,
+    parents only about linked players, so their events come back). But the live screen scored from the local replay,
+    which a filtered feed breaks: `domain/projector/team_figures.dart` (`reconcileTeamFigures` = box-score snapshot +
+    local events after its `lastServerSeq` / unsynced), `LiveMatch.team`; controller fetches `GET box-score` for
+    non-staff on build, on feed changes and every 15 s; offline fallback = cached match score (period scores / totals
+    hidden). Court for non-staff = one "Players" list (subs of others are hidden); tile numbers only for own/linked.
+    `feed_visibility.dart` mirrors the rule for `MockGameApi` and the test fakes.
+  - Docs: ADR-0028, ADR-0021 §3, authz matrix feed row + note, security review F-01 → Fixed, conformance S-30/R-11,
+    guides parent/player/coach (es/en/id), game-service README.
+- Verified (fresh, 2026-11-05):
+  - Red first: `MatchEventFeedRoleMatrixTest` 16/26 failed (the 8 filtered callers × 2) before the change; unit tests
+    and web tests failed to compile / asserted 2 instead of 5. Negative control: periodic refresh disabled → controller
+    test fails.
+  - `./mvnw -B -ntp -T 1C clean verify`: BUILD SUCCESS; contracts 134, common 172, game **238** (was 196), athlete 586,
+    core 701; 0 failures; all coverage checks met (game lines 98.6 %, domain 98.8 %).
+  - `just web-test`: 556 passed; `flutter analyze`: no issues. `just isolation-check`: 6 tests passed.
+- Decisions/ADRs: ADR-0028 (substitutions are player events; COACH of another team gets the filtered feed like the box
+  score; VOID visibility; unfiltered `lastServerSeq`; client team figures from the box score).
+- Open points / follow-ups:
+  - Filtered feed reads all events of the match per request; push the filter into SQL if it ever shows up in profiles.
+  - Hidden players' events reach a parent's score with the next refresh (≤ 15 s online).
+  - ADR number: the WP32 brief may also claim 0028 — renumber on merge if WP32 lands first.
+  - Commits carry `Co-Authored-By: Claude Opus 5.5` (the model that did the work), not the brief's "Fable 5.1" line.
