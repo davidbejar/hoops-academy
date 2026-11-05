@@ -46,9 +46,11 @@ Deferred-v2: S-15, V-01, V-02.)
 3. **Event feed visibility (F-01).** Any member can read the full event feed of a match, so a parent can rebuild other
    children's stat lines that the box score hides. Decided 2026-11-05: filter server-side for PARENT/PLAYER, planned in
    WP33 (S-30, R-11).
-4. **Fitness norms are mostly placeholders.** 120 of 628 norm rows are sourced (Cooper 12-min 13–19, beep test 9–17);
-   the rest are flagged "reference pending" in the UI, and the Cooper figures are not verified against the 1968 paper
-   (S-44). Research of the cited tables: WP27.
+4. **Fitness norms are partly placeholders.** Since WP27 (2026-11-05), 370 of 630 norm rows are sourced (beep test
+   8–18 FitBack 2023; sit-and-reach 9–17 Catley & Tomkinson 2013; 20 m sprint 8–17 Cossio-Bolaños 2026; T-test and
+   vertical jump 14–15 Mascherini 2022; Cooper 12-min 13–19). The remaining 260 (Cooper 8–12, T-test and vertical jump
+   outside 14–15, a few edge ages) stay flagged "reference pending" in the UI; the Cooper figures are not verified
+   against the 1968 paper (S-44). Sources, mapping rules and open leads: `docs/domain/norms.md`.
 5. **Birthday → orphan works differently from the literal spec** under the default `BIRTH_YEAR` rule: a birthday changes
    nothing; orphans arise at season rollover, and the player's status only flips to ORPHAN when the old season ends
    (the rollover report lists them at once). `BIRTHDAY` mode behaves literally (S-24, R-05).

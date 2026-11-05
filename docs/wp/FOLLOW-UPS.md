@@ -125,8 +125,11 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **`staffTeamIds` / `playerTeamIds`** include teams of ended seasons while a staff row / assignment is open.
 - **Unassigning an invalidated assignment** leaves its OPEN eligibility case open (resolve via the case API).
 - **Backfill REJECTED** (WP2c): players rejected before core `V8` stay WITHDRAWN (pre-release data; accepted).
-- **→ WP27. Fitness norms** (WP10b): replace placeholders with cited five-band tables (Tomkinson 2017 for the beep test,
-  ALPHA-Fit/HELENA for sit-and-reach, sprint / T-test / vertical jump sources) and obtain a primary Cooper table.
+- **Fitness norms, remaining placeholders** (after WP27: 260 of 630 rows): Cooper 8–12 (no youth table found), T-test and
+  vertical jump outside 14–15 (lead: Moreno-Gonzalez et al., BMC Pediatr 2026, doi:10.1186/s12887-026-07796-1, not
+  fetchable yet), edge ages that repeat the nearest cited age; the girls' T-test placeholders run ~1.2 s too fast; the
+  Cooper figures are not traced to the 1968 paper; check the Catley PDF against the BMJ copy. The sit-and-reach scale is
+  now "20 cm = toes" (Catley): the web UI should show the unit hint. Details: `docs/domain/norms.md`.
 - **Dependency hygiene**: `dependency:analyze` lists Quarkus extensions as "unused" (false positives, runtime-only) and
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
@@ -160,6 +163,8 @@ Work packages run as parallel agents in git worktrees under `$HOME`, merged in w
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP27 (decision 11): 370 of 630 norm rows cited (FitBack 2023 beep test 8–18, Catley & Tomkinson 2013 sit-and-reach
+  9–17, Cossio-Bolaños 2026 sprint 8–17, Mascherini 2022 T-test and vertical jump 14–15); remaining gaps tracked above.
 - WP31 (decision 7): a shared login's e-mail moved by the super admin reaches every academy that uses it, in the
   same transaction (ADR-0026); 409 `EMAIL_TAKEN` when another member of such an academy already uses the address.
 - nginx `/platform/**` → core (WP2b handover) — fixed in commit 3418100.

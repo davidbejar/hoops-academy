@@ -75,11 +75,11 @@ service worker exists since WP14b.)
 - List pagination UI and a category filter on `GET /players` (contract); `nameKey`/`locale` for plan templates; mock mode
   lacks athlete and platform screens.
 
-## Norms research completion (WP10b) → WP27
-Only BEEP_TEST ages 9-17 (a school sample, not athletes) and COOPER_12MIN ages 13-19 (a secondary-source table, not traced to
-the 1968 paper) are flagged as sourced; everything else is a placeholder shown as "reference pending". Replace with cited
-tables (FITNESSGRAM Healthy Fitness Zone, ALPHA-Fit/Eurofit percentiles, published youth vertical-jump and T-test norms),
-re-verify the Cooper figures, update `R__physical_test_norms.sql` and `domain/norms.md`. Data work; schema and UI are ready.
+## Norms research completion (WP10b → WP27, done 2026-11-05; remainder open)
+WP27 sourced 370 of 630 rows (beep test 8-18, sit-and-reach 9-17, 20 m sprint 8-17, T-test and vertical jump 14-15; Cooper
+13-19 kept). Still "reference pending": Cooper 8-12 (no youth table found), T-test and vertical jump outside 14-15 (best
+lead: Moreno-Gonzalez et al., BMC Pediatr 2026, not fetchable yet), and a few edge ages that repeat the nearest cited
+age. The Cooper figures are still not traced to the 1968 paper. Sources, mapping rules and leads: `domain/norms.md`.
 
 ## Platform and operations
 - **Production ingress → WP36.** ingress-nginx is in upstream retirement; decided 2026-11-05: Gateway API with Envoy
