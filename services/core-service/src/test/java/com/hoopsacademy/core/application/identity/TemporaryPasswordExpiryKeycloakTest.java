@@ -20,7 +20,6 @@ import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import java.net.CookieManager;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -182,8 +181,7 @@ class TemporaryPasswordExpiryKeycloakTest {
      * authorization code + PKCE, theme {@code hoops}) in {@code locale}.
      */
     private static String browserSignIn(String username, String password, String locale) throws Exception {
-        HttpClient browser = HttpClient.newBuilder().cookieHandler(new CookieManager())
-                .followRedirects(HttpClient.Redirect.NORMAL).build();
+        HttpClient browser = HttpClient.newHttpClient(); // cookies by hand: Keycloak marks them Secure, even on http
         String verifier = UUID.randomUUID() + "-" + UUID.randomUUID();
         String challenge = Base64.getUrlEncoder().withoutPadding().encodeToString(
                 MessageDigest.getInstance("SHA-256").digest(verifier.getBytes(StandardCharsets.US_ASCII)));
@@ -192,8 +190,11 @@ class TemporaryPasswordExpiryKeycloakTest {
         URI authorize = URI.create(realm + "/protocol/openid-connect/auth?" + form(Map.of("client_id", "web",
                 "redirect_uri", "http://localhost:8080/", "response_type", "code", "scope", "openid",
                 "code_challenge", challenge, "code_challenge_method", "S256", "ui_locales", locale)));
-        String loginPage = browser.send(HttpRequest.newBuilder(authorize).GET().build(),
-                HttpResponse.BodyHandlers.ofString()).body();
+        HttpResponse<String> login = browser.send(HttpRequest.newBuilder(authorize).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        String loginPage = login.body();
+        String cookies = login.headers().allValues("Set-Cookie").stream()
+                .map(cookie -> cookie.split(";", 2)[0]).collect(Collectors.joining("; "));
         Matcher action = Pattern.compile("<form[^>]*id=\"kc-form-login\"[^>]*action=\"([^\"]+)\"").matcher(loginPage);
         if (!action.find()) {
             action = Pattern.compile("action=\"([^\"]+login-actions/authenticate[^\"]*)\"").matcher(loginPage);
@@ -202,6 +203,7 @@ class TemporaryPasswordExpiryKeycloakTest {
         URI submit = URI.create(action.group(1).replace("&amp;", "&"));
         HttpRequest post = HttpRequest.newBuilder(submit)
                 .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Cookie", cookies)
                 .POST(HttpRequest.BodyPublishers.ofString(form(Map.of("username", username, "password", password,
                         "credentialId", ""))))
                 .build();
