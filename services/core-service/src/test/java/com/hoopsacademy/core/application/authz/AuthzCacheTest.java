@@ -24,9 +24,10 @@ class AuthzCacheTest {
 
     @Test
     void cachesForTheTtlThenReloads() {
-        assertThat(load()).isPresent();
+        Optional<MemberAuthz> loaded = load();
+        assertThat(loaded).isPresent();
         clock.advance(Duration.ofSeconds(9));
-        load();
+        assertThat(load()).isSameAs(loaded);
         assertThat(loads).hasValue(1);
         clock.advance(Duration.ofSeconds(1));
         load();

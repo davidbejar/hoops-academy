@@ -22,6 +22,12 @@ class AuditFilterTest {
     }
 
     @Test
+    void eitherBoundMayBeOpen() {
+        assertThat(new AuditFilter(Optional.of(T), Optional.empty(), Set.of()).from()).contains(T);
+        assertThat(new AuditFilter(Optional.empty(), Optional.of(T), Set.of()).to()).contains(T);
+    }
+
+    @Test
     void openBoundsAndNoActionsMeanEverything() {
         AuditFilter all = AuditFilter.all();
         assertThat(all.from()).isEmpty();

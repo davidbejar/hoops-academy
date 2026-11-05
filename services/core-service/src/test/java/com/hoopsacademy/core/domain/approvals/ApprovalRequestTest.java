@@ -66,6 +66,8 @@ class ApprovalRequestTest {
                     .extracting("code").isEqualTo(ApprovalRequest.NOT_PENDING);
             assertThatThrownBy(() -> decided.reject(admin, "n", T1)).isInstanceOf(ConflictException.class);
             assertThatThrownBy(() -> decided.cancel(coach, T1)).isInstanceOf(ConflictException.class);
+            // the state is checked before the requester: a decided request is a conflict for everybody
+            assertThatThrownBy(() -> decided.cancel(admin, T1)).isInstanceOf(ConflictException.class);
         }
     }
 

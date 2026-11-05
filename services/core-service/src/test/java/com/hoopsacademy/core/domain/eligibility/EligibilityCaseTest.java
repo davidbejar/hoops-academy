@@ -36,6 +36,7 @@ class EligibilityCaseTest {
         assertThat(resolved.resolvedAt()).isEqualTo(later);
         assertThat(resolved.resolutionNote()).isEqualTo("ok");
         assertThat(open.resolve(CaseResolution.REMOVED_FROM_TEAM, admin, " ", later).resolutionNote()).isNull();
+        assertThat(open.resolve(CaseResolution.REMOVED_FROM_TEAM, admin, null, later).resolutionNote()).isNull();
         assertThatThrownBy(() -> resolved.resolve(CaseResolution.DISMISSED, admin, null, later))
                 .isInstanceOf(ConflictException.class)
                 .extracting(e -> ((ConflictException) e).code()).isEqualTo(EligibilityCase.NOT_OPEN);

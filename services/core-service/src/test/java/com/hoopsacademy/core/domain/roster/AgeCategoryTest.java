@@ -20,6 +20,8 @@ class AgeCategoryTest {
         AgeCategory senior = new AgeCategory(AgeCategoryId.random(), "SENIOR", "Senior", null, 6);
         assertThat(senior.admitsAge(80)).isTrue();
         assertThat(senior.isUnlimited()).isTrue();
+        assertThat(new AgeCategory(AgeCategoryId.random(), "U4", "Tiny", 3, 0).maxAge()).isEqualTo(3);
+        assertThat(new AgeCategory(AgeCategoryId.random(), "U99", "Veterans", 99, 0).maxAge()).isEqualTo(99);
         for (Runnable invalid : List.<Runnable>of(
                 () -> new AgeCategory(AgeCategoryId.random(), "u12", "x", 11, 0),
                 () -> new AgeCategory(AgeCategoryId.random(), "U12345678901234567", "x", 11, 0),

@@ -24,6 +24,7 @@ class TeamPlayerTest {
         assertThat(assignment.jersey()).isEqualTo(JerseyNumber.of("7"));
         assertThatThrownBy(() -> TeamPlayer.assign(TeamId.random(), PlayerId.random(), null, JOINED, -1))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThat(TeamPlayer.assign(TeamId.random(), PlayerId.random(), null, JOINED, 0).playUpLevels()).isZero();
     }
 
     @Test
@@ -59,6 +60,7 @@ class TeamPlayerTest {
         assertThat(JerseyNumber.ofNullable(null)).isNull();
         assertThat(JerseyNumber.ofNullable("0")).isEqualTo(JerseyNumber.of("0"));
         assertThat(JerseyNumber.of("0")).isNotEqualTo(JerseyNumber.of("00"));
+        assertThatThrownBy(() -> JerseyNumber.of(null)).isInstanceOf(DomainRuleViolation.class);
         for (String invalid : new String[] {"", "100", "7a", " 7"}) {
             assertThatThrownBy(() -> JerseyNumber.of(invalid)).isInstanceOf(DomainRuleViolation.class);
         }

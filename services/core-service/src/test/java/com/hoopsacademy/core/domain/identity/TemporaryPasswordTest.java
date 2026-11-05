@@ -32,12 +32,15 @@ class TemporaryPasswordTest {
         // username = e-mail (ADR-0023); the realm refuses passwords equal to either (notUsername, notEmail)
         assertThatThrownBy(() -> TemporaryPassword.of("someone@example.com"))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageNotContaining("someone");
+        assertThatThrownBy(() -> TemporaryPassword.of("@starts-with-an-at"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void equalityFollowsTheValueWithoutExposingIt() {
         assertThat(TemporaryPassword.of(FAKE)).isEqualTo(TemporaryPassword.of(FAKE))
                 .hasSameHashCodeAs(TemporaryPassword.of(FAKE))
-                .isNotEqualTo(TemporaryPassword.of(FAKE + "x"));
+                .isNotEqualTo(TemporaryPassword.of(FAKE + "x"))
+                .isNotEqualTo(FAKE);
     }
 }

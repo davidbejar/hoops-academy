@@ -23,6 +23,10 @@ class SeasonTest {
                 .isInstanceOf(DomainRuleViolation.class);
         assertThatThrownBy(() -> new Season(SeasonId.random(), "x", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 1), 2101))
                 .isInstanceOf(DomainRuleViolation.class);
+        assertThat(new Season(SeasonId.random(), "x", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 1), 2000)
+                .referenceYear()).isEqualTo(2000);
+        assertThat(new Season(SeasonId.random(), "x", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 1), 2100)
+                .referenceYear()).isEqualTo(2100);
         assertThatThrownBy(() -> new Season(SeasonId.random(), "", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 1), 2026))
                 .isInstanceOf(DomainRuleViolation.class);
         assertThatThrownBy(() -> new Season(SeasonId.random(), "x", null, LocalDate.of(2026, 9, 1), 2026))
@@ -53,6 +57,10 @@ class SeasonTest {
 
     @Test
     void changesAreAppliedAndRevalidated() {
+        assertThat(new SeasonChanges(Patch.of("Next"), Patch.absent(), Patch.absent(), Patch.absent())
+                .changesReferenceYear()).isFalse();
+        assertThat(new SeasonChanges(Patch.absent(), Patch.absent(), Patch.absent(), Patch.of(2027))
+                .changesReferenceYear()).isTrue();
         Season renamed = season.apply(new SeasonChanges(Patch.of("Next"), Patch.absent(), Patch.absent(), Patch.of(2027)));
         assertThat(renamed.name()).isEqualTo("Next");
         assertThat(renamed.referenceYear()).isEqualTo(2027);

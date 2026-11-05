@@ -3,6 +3,8 @@ package com.hoopsacademy.core.application.members;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.core.domain.identity.TemporaryPassword;
+import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -48,6 +50,46 @@ class TemporaryPasswordGeneratorTest {
     void usesTheInjectedSourceOfRandomness() {
         assertThat(new TemporaryPasswordGenerator(new Random(7)).next())
                 .isEqualTo(new TemporaryPasswordGenerator(new Random(7)).next());
+    }
+
+    @Test
+    void discardsEveryDrawThatMissesACharacterClass() {
+        int upper = TemporaryPasswordGenerator.ALPHABET.indexOf('A');
+        int lower = TemporaryPasswordGenerator.ALPHABET.indexOf('a');
+        int digit = TemporaryPasswordGenerator.ALPHABET.indexOf('2');
+        Random scripted = new ScriptedRandom(
+                draw(lower, digit),  // no upper-case letter
+                draw(upper, digit),  // no lower-case letter
+                draw(upper, lower),  // no digit
+                draw(upper, lower, digit));
+
+        assertThat(new TemporaryPasswordGenerator(scripted).next().reveal()).isEqualTo("A".repeat(14) + "a2");
+    }
+
+    /** One candidate: the given alphabet indexes at the end, padded in front with the first of them. */
+    private static int[] draw(int... tail) {
+        int[] indexes = new int[TemporaryPasswordGenerator.LENGTH];
+        Arrays.fill(indexes, tail[0]);
+        System.arraycopy(tail, 0, indexes, indexes.length - tail.length, tail.length);
+        return indexes;
+    }
+
+    /** Answers nextInt with the scripted alphabet indexes, candidate after candidate. */
+    private static final class ScriptedRandom extends Random {
+        private final ArrayDeque<Integer> indexes = new ArrayDeque<>();
+
+        ScriptedRandom(int[]... candidates) {
+            for (int[] candidate : candidates) {
+                for (int index : candidate) {
+                    indexes.add(index);
+                }
+            }
+        }
+
+        @Override
+        public int nextInt(int bound) {
+            return indexes.removeFirst();
+        }
     }
 
     @Test

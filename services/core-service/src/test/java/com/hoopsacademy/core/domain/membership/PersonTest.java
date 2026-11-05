@@ -47,7 +47,20 @@ class PersonTest {
     @Test
     void atLeastOneRole() {
         assertThatThrownBy(() -> Person.create(PersonId.random(), ADULT, Set.of(), NOW))
-                .isInstanceOf(DomainRuleViolation.class);
+                .isInstanceOfSatisfying(DomainRuleViolation.class, e -> assertThat(e.code()).isEqualTo("ROLES_REQUIRED"));
+        assertThatThrownBy(() -> Person.create(PersonId.random(), ADULT, null, NOW))
+                .isInstanceOfSatisfying(DomainRuleViolation.class, e -> assertThat(e.code()).isEqualTo("ROLES_REQUIRED"));
+    }
+
+    @Test
+    void rolesAnswerWhetherThePersonIsAdminOrPlayer() {
+        Person admin = Person.create(PersonId.random(), ADULT, Set.of(ADMIN), NOW);
+        Person player = Person.create(PersonId.random(), KID, Set.of(PLAYER), NOW);
+
+        assertThat(admin.isAdmin()).isTrue();
+        assertThat(admin.isPlayer()).isFalse();
+        assertThat(player.isAdmin()).isFalse();
+        assertThat(player.isPlayer()).isTrue();
     }
 
     @Test

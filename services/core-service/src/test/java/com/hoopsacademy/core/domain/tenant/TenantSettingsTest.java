@@ -21,6 +21,7 @@ class TenantSettingsTest {
         assertThatThrownBy(() -> new TenantSettings(AgeRule.BIRTHDAY, 1, -1)).isInstanceOf(DomainRuleViolation.class);
         assertThatThrownBy(() -> new TenantSettings(null, 1, 1)).isInstanceOf(DomainRuleViolation.class);
         assertThat(new TenantSettings(AgeRule.BIRTHDAY, 0, 120).maxPlayUpLevels()).isZero();
+        assertThat(new TenantSettings(AgeRule.BIRTHDAY, null, 0).attendanceLateThresholdMinutes()).isZero();
     }
 
     @Test

@@ -40,7 +40,10 @@ class LogoImageTest {
     void rejectsSvgGifEmptyAndRiffWithoutWebp() {
         byte[] riffWave = Arrays.copyOf(WEBP, WEBP.length);
         riffWave[8] = 'W'; riffWave[9] = 'A'; riffWave[10] = 'V'; riffWave[11] = 'E';
-        for (byte[] content : new byte[][] {SVG, GIF, new byte[0], riffWave, bytes(0x89, 'P'), bytes(0xFF, 0xD8)}) {
+        byte[] webpWithoutRiff = Arrays.copyOf(WEBP, WEBP.length);
+        webpWithoutRiff[0] = 'X';
+        for (byte[] content : new byte[][] {SVG, GIF, new byte[0], riffWave, webpWithoutRiff, bytes(0x89, 'P'),
+            bytes(0xFF, 0xD8)}) {
             assertThatThrownBy(() -> LogoImage.of(content)).isInstanceOf(UnsupportedLogoFormatException.class);
         }
     }
@@ -60,6 +63,22 @@ class LogoImageTest {
                 java.security.MessageDigest.getInstance("SHA-256").digest(PNG));
         assertThat(LogoImage.of(PNG).etag()).isEqualTo("\"" + sha256 + "\"");
         assertThat(LogoImage.of(PNG).etag()).isNotEqualTo(LogoImage.of(JPEG).etag());
+    }
+
+    @Test
+    void aSignatureMayFillTheWholeContent() {
+        assertThat(ImageFormat.detect(bytes(0xFF, 0xD8, 0xFF))).contains(ImageFormat.JPEG);
+    }
+
+    @Test
+    void aStoredLogoIsRestoredAsSavedWithACopyOfItsBytes() {
+        byte[] stored = PNG.clone();
+        LogoImage restored = LogoImage.restore(ImageFormat.PNG, stored, "\"stored-etag\"");
+        stored[0] = 0;
+
+        assertThat(restored.format()).isEqualTo(ImageFormat.PNG);
+        assertThat(restored.etag()).isEqualTo("\"stored-etag\"");
+        assertThat(restored.bytes()).isEqualTo(PNG);
     }
 
     @Test
