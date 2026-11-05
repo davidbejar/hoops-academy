@@ -133,6 +133,13 @@ class EventAuthorizationTest {
     }
 
     @Test
+    void aMemberWhoIsNoLongerAParentMayNotVoidWhatTheyRecordedAsOne() {
+        AuthzContext formerParent = caller(PARENT_PERSON, Set.of(TenantRole.PLAYER), Set.of(), Set.of(LINKED.value()), null);
+
+        assertThat(allowed(formerParent, match(), event(s -> s.voidOf(1, 500, Script.eventId(2))))).isFalse();
+    }
+
+    @Test
     void afterTheFinalWhistleOnlyStaffCorrectionsAndParentEventsRecordedBeforeItCount() {
         MatchEvent shot = event(s -> s.shot(1, 500, LINKED, 2, true)); // recorded at BASE + 3 s
         Match finishedLater = finishedAt(Script.BASE.plusSeconds(60));

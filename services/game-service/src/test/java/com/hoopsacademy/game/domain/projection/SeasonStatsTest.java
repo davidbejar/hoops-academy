@@ -26,6 +26,21 @@ class SeasonStatsTest {
     }
 
     @Test
+    void aMatchCountsAsPlayedWhenStartedOrWithAnyActivity() {
+        assertThat(match(true, StatLine.ZERO).played()).isTrue();
+        assertThat(match(false, line(0, 1, 0, 0, 0)).played()).isTrue();
+        assertThat(match(false, StatLine.ZERO).played()).isFalse();
+    }
+
+    @Test
+    void addingLinesAddsEveryCounter() {
+        StatLine ones = new StatLine(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+        StatLine counting = new StatLine(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
+
+        assertThat(counting.plus(ones)).isEqualTo(new StatLine(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18));
+    }
+
+    @Test
     void totalsSumEveryMatchAndAveragesUseGamesPlayed() {
         SeasonLine first = match(true, line(10, 2, 1, 3, 1200));
         SeasonLine second = match(false, line(5, 1, 0, 1, 600));

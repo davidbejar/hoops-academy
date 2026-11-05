@@ -1,6 +1,7 @@
 package com.hoopsacademy.game.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.problem.CodedProblemException;
@@ -38,6 +39,40 @@ class MatchTest {
         assertThat(m.periodCount()).isEqualTo(4);
         assertThat(m.periodMinutes()).isEqualTo(10);
         assertThat(m.version()).isZero();
+    }
+
+    @Test
+    void scheduleKeepsGivenPeriodSettingsTeamSeasonAndCreator() {
+        TeamId team = TeamId.of(UUID.randomUUID());
+        SeasonId season = SeasonId.of(UUID.randomUUID());
+        UUID creator = UUID.randomUUID();
+
+        Match m = Match.schedule(MatchId.random(), team, season, "Rivals", HomeAway.AWAY, LATER, null, 2, 12, creator);
+
+        assertThat(m.periodCount()).isEqualTo(2);
+        assertThat(m.periodMinutes()).isEqualTo(12);
+        assertThat(m.teamId()).isEqualTo(team);
+        assertThat(m.seasonId()).isEqualTo(season);
+        assertThat(m.createdByPersonId()).isEqualTo(creator);
+    }
+
+    @Test
+    void periodSettingsAndOpponentNameAcceptTheirWholeRange() {
+        Match shortest = schedule("R", 1, 1);
+        Match longest = schedule("R".repeat(120), 8, 60);
+
+        assertThat(List.of(shortest.periodCount(), shortest.periodMinutes(), longest.periodCount(), longest.periodMinutes()))
+                .containsExactly(1, 1, 8, 60);
+        assertThat(longest.opponentName()).hasSize(120);
+        for (Runnable invalid : List.<Runnable>of(() -> schedule("R", 0, 10), () -> schedule("R", 4, 0),
+                () -> schedule("R".repeat(121), 4, 10), () -> schedule(null, 4, 10))) {
+            assertThatThrownBy(invalid::run).isInstanceOf(DomainRuleViolation.class);
+        }
+    }
+
+    private static Match schedule(String opponent, int periodCount, int periodMinutes) {
+        return Match.schedule(MatchId.random(), TeamId.of(UUID.randomUUID()), SeasonId.of(UUID.randomUUID()), opponent,
+                HomeAway.HOME, LATER, null, periodCount, periodMinutes, UUID.randomUUID());
     }
 
     @Test
@@ -110,6 +145,8 @@ class MatchTest {
     @Test
     void cancelNeedsAReason() {
         assertThatThrownBy(() -> scheduled().cancel(" ", NOW)).isInstanceOf(DomainRuleViolation.class);
+        assertThatThrownBy(() -> scheduled().cancel(null, NOW)).isInstanceOf(DomainRuleViolation.class)
+                .extracting("code").isEqualTo("REASON_REQUIRED");
     }
 
     @Test
@@ -133,9 +170,24 @@ class MatchTest {
     }
 
     @Test
+    void updateWithoutValuesKeepsEveryField() {
+        Match m = scheduled();
+
+        m.update(null, null, null, false, "ignored without venueGiven", null, null);
+
+        assertThat(m.opponentName()).isEqualTo("Rivals");
+        assertThat(m.homeAway()).isEqualTo(HomeAway.HOME);
+        assertThat(m.scheduledAt()).isEqualTo(LATER);
+        assertThat(m.venue()).isEqualTo("Gym");
+        assertThat(m.periodCount()).isEqualTo(4);
+        assertThat(m.periodMinutes()).isEqualTo(10);
+    }
+
+    @Test
     void periodSettingsAreFrozenOnceLive() {
         Match m = live();
         assertThatThrownBy(() -> m.update(null, null, null, false, null, 2, null)).isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> m.update(null, null, null, false, null, null, 12)).isInstanceOf(ConflictException.class);
         m.update("Other", null, null, false, null, null, null);
         assertThat(m.opponentName()).isEqualTo("Other");
     }
@@ -146,6 +198,16 @@ class MatchTest {
         m.finish(LATER);
         assertThatThrownBy(() -> m.update("x", null, null, false, null, null, null)).isInstanceOf(ConflictException.class);
         assertThatThrownBy(m::requireRosterEditable).isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void theRosterStaysEditableUntilTheMatchIsFinishedOrCancelled() {
+        Match cancelled = scheduled();
+        cancelled.cancel("rain", NOW);
+
+        assertThatCode(scheduled()::requireRosterEditable).doesNotThrowAnyException();
+        assertThatCode(live()::requireRosterEditable).doesNotThrowAnyException();
+        assertThatThrownBy(cancelled::requireRosterEditable).isInstanceOf(ConflictException.class);
     }
 
     @Test

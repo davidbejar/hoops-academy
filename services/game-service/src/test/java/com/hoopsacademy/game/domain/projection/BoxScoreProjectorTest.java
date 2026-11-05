@@ -118,6 +118,18 @@ class BoxScoreProjectorTest {
     }
 
     @Test
+    void aVoidItselfNeverMovesTheClockOrThePeriods() {
+        Script s = new Script().start(1, 600).shot(1, 500, P1, 2, true);
+        s.voidOf(2, 700, s.last()).end(1, 0);
+
+        Projection p = project(s);
+
+        assertThat(p.warnings()).isEmpty();
+        assertThat(line(p, P1).stats().secondsPlayed()).isEqualTo(600);
+        assertThat(p.summary().periodScores()).hasSize(4);
+    }
+
+    @Test
     void voidOfAVoidIsIgnoredWithAWarningAndTheFirstVoidStillApplies() {
         Script s = new Script().start(1, 600).shot(1, 500, P1, 2, true);
         EventId shot = s.last();

@@ -43,6 +43,8 @@ class MinutesTest {
                         .start(1, 600).shot(1, 450, P1, 2, true), 150, 0),
                 row("clock beyond the period length is clamped", () -> new Script()
                         .start(1, 900).end(1, 0), 600, 0, "CLOCK_OUT_OF_RANGE"),
+                row("substitution in the break after the last period adds no time", () -> new Script()
+                        .start(1, 600).shot(1, 30, P1, 2, true).end(1, 0).subOut(2, 600, P1).subIn(2, 600, P2), 600, 0),
                 row("no period events, no minutes", () -> new Script()
                         .subIn(1, 300, P2).subOut(1, 100, P2), 0, 0));
     }
