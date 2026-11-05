@@ -72,10 +72,19 @@ just kind-up --deploy --from-host
 helm upgrade --install hoops deploy/helm/hoops -n hoops -f values.prod.yaml \
   --set core.image.tag=<sha> --set game.image.tag=<sha> --set athlete.image.tag=<sha> --set web.image.tag=<sha>
 ```
+Edge prerequisites (ADR-0031): the cluster runs Envoy Gateway (kind pins v1.9.3 with Gateway API v1.6.1 CRDs,
+`deploy/kind/up.sh`) and provides a GatewayClass (default name `envoy-gateway`; `--set gateway.gatewayClass.create=true`
+renders one). The chart creates the Gateway `hoops` and the HTTPRoutes; for HTTPS create a `kubernetes.io/tls` Secret
+first (e.g. cert-manager) and set `gateway.tls.enabled=true`, `gateway.tls.certificateRefs[0].name=<secret>`,
+`gateway.hostname=<host>`, `global.publicUrl` / `keycloak.publicUrl=https://<host>`; behind a load balancer that appends
+`X-Forwarded-For` set `gateway.clientIPDetection.numTrustedHops`. The Gateway is ready when
+`kubectl -n hoops get gateway hoops` shows `PROGRAMMED True`; its address is the Envoy Service in `envoy-gateway-system`.
+Values renamed in chart 0.2.0: `ingress.*` -> `route.*`, `networkPolicy.ingressControllerNamespace` -> `gatewayNamespace`.
 Order that matters: Secrets -> CNPG clusters -> Keycloak -> services (Flyway runs on start as `*_migrator`) -> web.
 Services restart a few times on first install until `hoops-db-rw` is ready; they converge by themselves (WP18).
 Database migrations are forward-only; roll back by deploying a compatible previous image or restoring (`backup-restore.md`).
-Run `deploy/kind/smoke.sh core game athlete` (or the equivalent checks) after every deploy.
+Run `deploy/kind/smoke.sh core game athlete` (or the equivalent checks) after every deploy; on kind,
+`deploy/kind/ratelimit-check.sh` proves the edge rate limits (it leaves this client limited for up to a minute).
 
 ## 5. Tag and record
 (design) Tag the commit `vX.Y.Z` after the images for that SHA exist and the smoke test passes; record the contract

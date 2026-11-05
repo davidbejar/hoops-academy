@@ -30,18 +30,23 @@ Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; used to check that
 ## Run on kind
 ```bash
 source scripts/env.sh
-just kind-up --deploy --from-host        # cluster, ingress, CNPG, secrets, images, helm install (docs/runbooks/kind.md)
+just kind-up --deploy --from-host        # cluster, Envoy Gateway, CNPG, secrets, images, helm install (docs/runbooks/kind.md)
 deploy/kind/seed-users.sh
-deploy/kind/smoke.sh core game athlete   # pods, issuer, /internal 403, tokens, seeded superadmin@hoops-academy.com through core
-# the ingress exposes only realm `academy` (the Admin API of the master realm answers 403): port-forward Keycloak and MailHog
+deploy/kind/smoke.sh core game athlete   # pods, gateway, issuer, /internal 403, tokens, seeded superadmin through core
+# the gateway exposes only realm `academy` (the Admin API of the master realm answers 403): port-forward Keycloak and MailHog
 kubectl --context kind-hoops -n hoops port-forward svc/keycloak 18080:8080 &
 kubectl --context kind-hoops -n hoops port-forward svc/mailhog 18025:8025 &
 E2E_KEYCLOAK_ADMIN_URL=http://localhost:18080/auth E2E_MAILHOG_URL=http://localhost:18025 \
   ./mvnw -pl e2e test -De2e.baseUrl=http://localhost:8090
+deploy/kind/ratelimit-check.sh           # optional, afterwards: burst -> 429 (limits this client for up to a minute)
 just kind-down
 ```
 On kind the services run in the cluster (`just kind-up` leaves them restarting until `hoops-db` is up); do not start
 `services-up.sh`. The chart ships a MailHog pod; the no-e-mail checks are skipped when `E2E_MAILHOG_URL` is unreachable.
+`http://localhost:8090` reaches the Envoy Gateway through kind's port mapping to the NodePort of Service
+`envoy-gateway-system/hoops-gateway` (ADR-0031). On a cluster without that mapping, port-forward the Gateway's Envoy
+Service instead: `kubectl -n envoy-gateway-system port-forward svc/hoops-gateway 8090:80` (keep `localhost:8090`, the
+issuer is `http://localhost:8090/auth/realms/academy`).
 
 ## What the journey covers (ordered, `JourneyTest`)
 1. super admin creates a tenant with its first admin; the response carries the admin's temporary password once
@@ -82,6 +87,10 @@ use the shortcut outside local/CI stacks.
 On compose the full journey is green: 20 tests, 0 failures, about 70 s, three consecutive runs on the same stack
 (reproduced by the orchestrator). On kind only `deploy/kind/smoke.sh core game athlete` passed (WP18); the journey on
 kind was blocked by the realm defect at that time and has not been re-run since the fix.
+
+WP36 (2026-11-06): the journey is green **on kind through the Envoy Gateway**: 21 tests, 0 failures, 0 skipped, 159 s
+(Keycloak Admin API through the port-forward as above). The MailHog checks were skipped: the chart's SMTP sink is
+Mailpit, whose API is `/api/v1`, so `E2E_MAILHOG_URL` answered 404 for MailHog's `/api/v2/messages`.
 
 ## Known limits
 - The realm must be the current `infra/keycloak/realm-academy.json` (every client has the Keycloak 25+ `basic` scope, so

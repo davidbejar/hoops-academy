@@ -1,7 +1,7 @@
 # Runbook — Hoops Academy on kind (Podman) with Helm and Tilt
 
 WP16. Local Kubernetes that mirrors production packaging: container images, the `hoops` umbrella chart,
-CloudNativePG for PostgreSQL 17, Keycloak 26.8.1 in production mode, ingress-nginx. The compose stack
+CloudNativePG for PostgreSQL 17, Keycloak 26.8.1 in production mode, Envoy Gateway (Gateway API, ADR-0031). The compose stack
 (`just up`, :8080) keeps working side by side; kind uses **:8090** (http) and **:8453** (https).
 
 ## Prerequisites
@@ -10,7 +10,8 @@ CloudNativePG for PostgreSQL 17, Keycloak 26.8.1 in production mode, ingress-ngi
 - `.env` at the repo root (`cp .env.example .env`, replace every `change-me-*`; `DEV_USER_PASSWORD` ≥ 12 chars).
   `up.sh`/Tilt fail if `.env` or a key is missing.
 - Capacity: the full stack requests ~1.5 CPU / ~2.5 GiB inside the kind node (Keycloak 512 Mi–1 Gi, three
-  services 192–448 Mi, two Postgres 192–512 Mi, ingress, CNPG operator, control plane ~1 GiB).
+  services 192–448 Mi, two Postgres 192–512 Mi, Envoy Gateway controller 256 Mi + one Envoy proxy 64–256 Mi, CNPG
+  operator, control plane ~1 GiB).
 
 ### Rootless vs rootful Podman
 kind's Podman provider works best on a **rootful** machine. Rootless needs cgroup v2 with the
@@ -25,7 +26,8 @@ podman machine start
 ## Start
 ```bash
 source scripts/env.sh
-just kind-up          # cluster "hoops" + ingress-nginx controller-v1.15.1 + CNPG 1.30.1 + ns hoops + Secrets from .env
+just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.9.3 (Gateway API v1.6.1 CRDs) + CNPG 1.30.1
+                      # + ns hoops + Secrets from .env + self-signed TLS Secret hoops-gateway-tls
 just tilt             # = tilt up: builds 4 images with Podman, kind-loads them, deploys the chart, port-forwards
 deploy/kind/seed-users.sh   # dev users <name>@hoops-academy.com (superadmin, admin1, coach1, assistant1, parent1, player1)
 ```
@@ -48,11 +50,20 @@ the container), `--skip-flutter` (reuse `apps/web/build/web`).
 | `http://localhost:8090/internal/**` | **403** (routed to the web nginx `location /internal`) |
 | Tilt port-forwards | Keycloak `:18080`, core `:18081`, game `:18082`, athlete `:18083` |
 
+How the gateway is wired: the chart renders GatewayClass `envoy-gateway` (kind only, `gateway.gatewayClass.create`),
+Gateway `hoops` (listeners `http` :80, `https` :443 with `hoops-gateway-tls`), one HTTPRoute per prefix, the exact
+health routes, the rate-limited routes with their `BackendTrafficPolicy` (60/min token + login form, 120/min
+`events:batch`, per client IP) and one `ClientTrafficPolicy` per listener. The `EnvoyProxy` `hoops` makes Envoy Gateway
+create the proxy Service `envoy-gateway-system/hoops-gateway` as a NodePort (30080/30443), which `kind-config.yaml`
+maps to `127.0.0.1:8090/8453`. Status: `kubectl -n hoops get gateway,httproute` (`PROGRAMMED True`, routes `Accepted`);
+`kubectl -n hoops describe backendtrafficpolicy` shows whether a policy attached.
+
 In-cluster: services reach Keycloak at `http://keycloak:8080/auth` (back-channel; `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`
 keeps the token issuer on the public URL), Postgres at `hoops-db-rw:5432/hoops`, Keycloak's DB at `keycloak-db-rw`.
 
-HTTPS on :8453 is mapped but ingress-nginx serves its self-signed default certificate; Keycloak's hostname is the
-http URL, so use http locally. Moving to https = a TLS Secret on the ingresses + `keycloak.publicUrl=https://localhost:8453`.
+HTTPS on :8453 terminates at the Gateway with the self-signed `hoops-gateway-tls` (created by `up.sh`, 365 days;
+delete the Secret and re-run `up.sh` to renew); Keycloak's hostname is the http URL, so use http locally. Moving to
+https = `keycloak.publicUrl` / `global.publicUrl` `https://localhost:8453`. HSTS is off on kind (`gateway.tls.hsts: ""`).
 
 ## Smoke checks
 ```bash
@@ -60,7 +71,11 @@ kubectl -n hoops get pods                                   # all Running/Ready
 curl -s http://localhost:8090/auth/realms/academy/.well-known/openid-configuration | jq -r .issuer
 curl -s http://localhost:8090/api/game/q/health/ready       # {"status":"UP",...}
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8090/internal/x   # 403
+deploy/kind/smoke.sh core game athlete      # all of the above and more (pods, gateway, tokens, seeded superadmin)
+deploy/kind/ratelimit-check.sh              # burst -> 429 per client IP (limits this client for up to a minute)
 ```
+Server-side validation of the chart against the installed CRDs:
+`helm template hoops deploy/helm/hoops -n hoops -f deploy/helm/hoops/values-kind.yaml | kubectl --context kind-hoops -n hoops apply --dry-run=server -f -`.
 
 ## Images
 `scripts/build-images.sh [--from-host] [--kind-load] [--push] [core-service|game-service|athlete-service|web]`
@@ -99,7 +114,7 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
 ## Troubleshooting
 - Rootless kind on this Podman machine (cgroup v2, `cpu io memory pids` delegated) works: `kind create cluster` Ready
   after 17 s with kindest/node v1.37.0. Rootful is only needed if your machine lacks the delegated controllers.
-- `ingress-nginx`/CNPG rollout timeouts on the very first `kind-up`: images are pulled inside the node; on a slow link
+- Envoy Gateway/CNPG rollout timeouts on the very first `kind-up`: images are pulled inside the node; on a slow link
   that takes minutes. `up.sh` waits up to 15 min and is idempotent — just re-run it.
 - All three services use HTTP probes on `/q/health/live|ready|started` (WP17 added `quarkus-smallrye-health` to
   game/athlete and removed the TCP overrides). game/athlete readiness reports `core-service: reachable|unreachable` as
@@ -116,14 +131,33 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
 - Realm changes are not applied to an existing Keycloak DB (import = IGNORE_EXISTING): delete the
   `keycloak-db` Cluster (`kubectl -n hoops delete cluster keycloak-db`) and let Helm/Tilt recreate it.
 - DB init SQL runs once (`postInitApplicationSQLRefs`); to re-run, delete the `hoops-db` Cluster (data loss).
-- ingress-nginx: Kubernetes SIG Network announced its retirement (best-effort maintenance only). It is pinned and fine
-  for local use; the production ingress (a Gateway API implementation) is an open decision.
+- `flutter build web` hangs at "Compiling lib/main.dart" with `font-subset` processes at 0 % CPU (seen 2026-11-06):
+  stop it and build with `--no-tree-shake-icons` (`cd apps/web && flutter build web --release --pwa-strategy=offline-first
+  --no-tree-shake-icons`), then `scripts/build-images.sh web --skip-web-build --kind-load`.
+- A pod stuck in `Pulling image` for many minutes (kubelet pulls one image at a time, so it blocks the others): pull it on
+  the host (`podman pull <image>`), `podman save -o /tmp/x.tar <image>`, `kind load image-archive /tmp/x.tar --name hoops`,
+  then `podman exec hoops-control-plane systemctl restart containerd` and delete the pod.
+- Tokens rejected as expired (401) by Testcontainers tests or Keycloak in Podman: the Podman VM clock drifted (seen 59 min
+  after the Mac slept; chrony refused to step). Compare `date -u` with `podman machine ssh date -u`; fix with
+  `podman machine ssh "sudo date -u -s @$(date +%s)"`.
+- `curl localhost:8090` refused or hangs: the Envoy proxy pod is not Ready yet
+  (`kubectl -n envoy-gateway-system get pods`) or the Gateway is not programmed (`kubectl -n hoops describe gateway hoops`).
+  A cluster created before WP36 maps 8090 to node port 80 (ingress-nginx): `just kind-down && just kind-up`.
+- `up.sh: Gateway API CRDs are vX, Envoy Gateway ... needs vY`: CRDs of another version were installed before (e.g. by
+  another tool). Apply the bundled CRDs as in ADR-0031 "Upgrade path", or recreate the cluster.
+- Every request answers 429: this client used its bucket (`deploy/kind/ratelimit-check.sh` does that on purpose); wait
+  one minute. The limit only covers the token endpoint, the login form and `events:batch`.
 
 ## Verification status
 WP16: game + athlete + web deployed with `tilt ci`, `smoke.sh game athlete` passed. WP18: core, game and athlete
 deployed with `up.sh --deploy` + Helm, `smoke.sh core game athlete` passed (superadmin@hoops-academy.com `/api/core/me`, `/platform/tenants`).
-The WP17 ingress rules (rate limits, admin deny) were checked by rendering and chart assertions only, and the e2e
-journey (`docs/runbooks/e2e.md`) has not been run green on kind.
+WP36 (2026-11-06, Envoy Gateway v1.9.3, Gateway API v1.6.1, kindest/node v1.36.4, rootless 2-CPU machine): Gateway
+`Programmed`, all 12 HTTPRoutes `Accepted`/`ResolvedRefs`, both BackendTrafficPolicies and ClientTrafficPolicies
+`Accepted`; `kubectl apply --dry-run=server` of the rendered chart clean; `smoke.sh core game athlete` passed (incl.
+encoded/dotted deny paths, `events:batch` and `%3A` forwarding, back-channel URLs on :8090); the e2e journey passed on
+kind (21 tests, 0 failures, 159 s); `ratelimit-check.sh` passed (429 after one bucket, `%3A` shares it, another client IP
+keeps its own); https on :8453 answers with the self-signed certificate, no HSTS. `tilt ci` was not re-run (the Tiltfile
+evaluates; gateway objects are grouped under the `gateway`, `keycloak`, service and `web` resources).
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.

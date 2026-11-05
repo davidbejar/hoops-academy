@@ -27,7 +27,7 @@ flowchart LR
 ```mermaid
 flowchart TB
   B["Browser: Flutter Web PWA<br/>Drift/IndexedDB outbox, caching service worker"]
-  N["nginx (compose) / ingress-nginx (kind)<br/>routing, rate limits, security headers"]
+  N["nginx (compose) / Envoy Gateway (kind, Helm)<br/>routing, rate limits, security headers"]
   KC["Keycloak 26<br/>realm academy"]
   CORE["core-service :8081<br/>tenancy, identity, roster, eligibility,<br/>approvals, platform, usage, audit"]
   GAME["game-service :8082<br/>matches, event ingest, projections"]
@@ -51,14 +51,14 @@ flowchart TB
   CORE -->|"Admin API"| KC
 ```
 Locally: `podman compose` (Postgres, Keycloak, MailHog, nginx on :8080) plus the three services on the host. On kind: Helm
-umbrella chart `hoops`, CloudNativePG clusters, Keycloak, ingress on :8090 (`runbooks/kind.md`). A fourth `web` image
+umbrella chart `hoops`, CloudNativePG clusters, Keycloak, Envoy Gateway (Gateway API, ADR-0031) on :8090 (`runbooks/kind.md`). A fourth `web` image
 (nginx-unprivileged) serves the PWA there.
 
 ## 3. Request flow: tenant header and row-level security
 ```mermaid
 sequenceDiagram
   participant W as Web app
-  participant X as nginx / ingress
+  participant X as nginx / gateway
   participant S as Service (e.g. game)
   participant C as core-service
   participant D as PostgreSQL

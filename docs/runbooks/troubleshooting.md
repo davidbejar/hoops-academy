@@ -52,11 +52,13 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
 - **Symptom:** `POST /api/game/matches/{id}/events:batch` fails with 404/400 through the proxy but works against the service
   on :8082.
 - **Cause:** the path contains a colon (a Google-style custom method). A proxy rule that rewrites the URI or percent-decodes
-  and re-encodes it changes it. nginx (compose) and the Helm ingress forward it unchanged, both `events:batch` and
-  `events%3Abatch`; the chart has an assertion for the regex Ingress without rewrite (WP2c, WP17). The same applies to
-  `:copy`, `:archive`, `:unarchive` on athlete paths.
-- **Fix:** do not add `rewrite-target` to the game/athlete Ingresses; keep the regex Ingress. Write test requests with the
-  literal colon. Rate limits answer 429 (`events` zone: 120 r/min, burst 60), not 404.
+  and re-encodes it changes it. nginx (compose) and the Envoy Gateway (Helm/kind) forward it unchanged, both `events:batch`
+  and `events%3Abatch` (Envoy normalises paths but never decodes the reserved `%3A`). The chart has an assertion for the
+  regex HTTPRoute `game-service-events-batch` without rewrite (WP2c, WP17, WP36). The same applies to `:copy`,
+  `:archive`, `:unarchive` on athlete paths. Quarkus REST itself answers 404 for the percent-encoded form.
+- **Fix:** do not add a `URLRewrite` filter to the game/athlete routes; keep the regex route. Write test requests with the
+  literal colon. Rate limits answer 429 (compose `events` zone: 120 r/min, burst 60; Envoy Gateway: 120/min per client IP),
+  not 404.
 
 ## Flutter dev server (`flutter run`, port 5173): CORS, redirect URI
 - **Symptom:** login redirect error "Invalid parameter: redirect_uri", or browser CORS errors on `/api/*` and `/auth/*`.
