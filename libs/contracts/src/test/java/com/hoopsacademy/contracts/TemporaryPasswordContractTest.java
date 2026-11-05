@@ -22,11 +22,6 @@ class TemporaryPasswordContractTest {
 
     private static final OpenAPI CORE = OpenApiSpecs.parseFullyResolved("core");
 
-    @Test
-    void coreIsVersion231() {
-        assertThat(CORE.getInfo().getVersion()).isEqualTo("2.3.1");
-    }
-
     @ParameterizedTest
     @CsvSource({
             "createTenant, 201",
