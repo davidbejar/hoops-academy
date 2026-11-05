@@ -23,6 +23,10 @@
     <!-- tests tagged "keycloak" need a Keycloak container: run with -Pkeycloak-it -->
     <surefire.excludedGroups>keycloak</surefire.excludedGroups>
     <surefire.groups></surefire.groups>
+    <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
+         run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
+    <pit.targetClasses>com.hoopsacademy.core.domain.*,com.hoopsacademy.core.application.members.LoginProvisioning*,com.hoopsacademy.core.application.members.TemporaryPasswordGenerator*,com.hoopsacademy.core.application.authz.AuthzCache*,com.hoopsacademy.core.application.audit.AuditActorKind*,com.hoopsacademy.core.application.port.AuditFilter*,com.hoopsacademy.core.application.port.AuditAction*</pit.targetClasses>
+    <pit.targetTests>com.hoopsacademy.core.domain.*,com.hoopsacademy.core.application.members.LoginProvisioningTest*,com.hoopsacademy.core.application.members.TemporaryPasswordGeneratorTest*,com.hoopsacademy.core.application.authz.AuthzCacheTest*,com.hoopsacademy.core.application.audit.AuditActorKindTest*,com.hoopsacademy.core.application.port.AuditFilterTest*,com.hoopsacademy.core.application.port.AuditActionCompletenessTest*</pit.targetTests>
   </properties>
 
   <dependencies>
@@ -218,6 +222,17 @@
   </build>
 
   <profiles>
+    <!-- just mutation core-service (or -Pmutation): PIT on the rule code above; fails below the recorded baseline -->
+    <profile>
+      <id>mutation</id>
+      <activation>
+        <property><name>mutation</name><value>core-service</value></property>
+      </activation>
+      <properties>
+        <pit.skip>false</pit.skip>
+        <pit.mutationThreshold>0</pit.mutationThreshold>
+      </properties>
+    </profile>
     <!-- ./mvnw -pl services/core-service verify -Pkeycloak-it : runs ONLY the @Tag("keycloak") tests -->
     <profile>
       <id>keycloak-it</id>

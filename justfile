@@ -25,6 +25,20 @@ db-role-check:
 unit:
     source scripts/env.sh && ./mvnw -q -T 1C test
 
+# Mutation testing on demand (docs/quality/mutation.md): PIT on one module's rule code, or on every configured module
+# in turn; fails below the module's baseline. Reports in <module>/target/pit-reports. MODULE: an artifactId or "all"
+mutation MODULE="all":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source scripts/env.sh
+    modules="{{MODULE}}"
+    if [ "$modules" = all ]; then modules="common-quarkus core-service game-service athlete-service"; fi
+    for module in $modules; do
+      start=$SECONDS
+      ./mvnw -B -ntp -Dmutation="$module" -pl ":$module" -am test-compile org.pitest:pitest-maven:mutationCoverage
+      echo "mutation $module: $((SECONDS - start)) s"
+    done
+
 # Start the local stack (Postgres, Keycloak, proxy, mail)
 up:
     podman compose --env-file .env -f infra/compose/compose.yaml up -d --wait

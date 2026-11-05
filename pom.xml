@@ -47,6 +47,14 @@
     <!-- quality gates (overridable per module) -->
     <jacoco.line.minimum>0.80</jacoco.line.minimum>
     <skipITs>false</skipITs>
+
+    <!-- mutation testing (WP37): a module's `mutation` profile sets pit.skip=false and its targets -->
+    <pit.skip>true</pit.skip>
+    <pit.targetClasses>com.hoopsacademy.*.domain.*</pit.targetClasses>
+    <pit.targetTests></pit.targetTests>
+    <pit.mutators>STRONGER</pit.mutators>
+    <pit.threads>4</pit.threads>
+    <pit.mutationThreshold>0</pit.mutationThreshold>
   </properties>
 
   <dependencyManagement>
@@ -150,6 +158,8 @@
             <systemPropertyVariables>
               <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
               <maven.home>${maven.home}</maven.home>
+              <!-- read by MutationScopeTest (WP37): PIT's test globs must name pure unit tests only -->
+              <pit.targetTests>${pit.targetTests}</pit.targetTests>
             </systemPropertyVariables>
           </configuration>
         </plugin>
@@ -218,9 +228,21 @@
               <version>${pitest-junit5.version}</version>
             </dependency>
           </dependencies>
+          <!-- WP37 (docs/quality/mutation.md): on demand only, never bound to a phase. Skipped unless the module's
+               `mutation` profile is active (-Dmutation=<artifactId>, or -Pmutation for every module); that profile
+               sets the module's targets and its baseline threshold. -->
           <configuration>
-            <targetClasses><param>com.hoopsacademy.*.domain.*</param></targetClasses>
-            <mutationThreshold>70</mutationThreshold>
+            <skip>${pit.skip}</skip>
+            <targetClasses>${pit.targetClasses}</targetClasses>
+            <targetTests>${pit.targetTests}</targetTests>
+            <mutators><mutator>${pit.mutators}</mutator></mutators>
+            <mutationThreshold>${pit.mutationThreshold}</mutationThreshold>
+            <threads>${pit.threads}</threads>
+            <outputFormats>
+              <outputFormat>HTML</outputFormat>
+              <outputFormat>XML</outputFormat>
+            </outputFormats>
+            <reportsDirectory>${project.build.directory}/pit-reports</reportsDirectory>
             <timestampedReports>false</timestampedReports>
           </configuration>
         </plugin>

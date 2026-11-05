@@ -17,6 +17,10 @@
     <!-- not managed by the parent / Quarkus BOM -->
     <assertj.version>3.27.7</assertj.version>
     <wiremock.version>3.13.2</wiremock.version>
+    <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
+         run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
+    <pit.targetClasses>com.hoopsacademy.athlete.domain.*</pit.targetClasses>
+    <pit.targetTests>com.hoopsacademy.athlete.domain.*</pit.targetTests>
   </properties>
 
   <dependencies>
@@ -166,4 +170,18 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- just mutation athlete-service (or -Pmutation): PIT on the rule code above; fails below the recorded baseline -->
+    <profile>
+      <id>mutation</id>
+      <activation>
+        <property><name>mutation</name><value>athlete-service</value></property>
+      </activation>
+      <properties>
+        <pit.skip>false</pit.skip>
+        <pit.mutationThreshold>0</pit.mutationThreshold>
+      </properties>
+    </profile>
+  </profiles>
 </project>

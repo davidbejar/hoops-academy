@@ -18,6 +18,10 @@
     <jacoco.line.minimum>0.85</jacoco.line.minimum>
     <!-- not managed by the parent / Quarkus BOM -->
     <assertj.version>3.27.7</assertj.version>
+    <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
+         run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
+    <pit.targetClasses>com.hoopsacademy.common.tenancy.TenantId*,com.hoopsacademy.common.tenancy.TenantContext*,com.hoopsacademy.common.tenancy.AuthzContext*,com.hoopsacademy.common.problem.Problem,com.hoopsacademy.common.problem.Problem$*,com.hoopsacademy.common.problem.ProblemType*,com.hoopsacademy.common.client.CoreRosterClient*,com.hoopsacademy.common.client.RosterAuthzResolver*,com.hoopsacademy.common.client.TenantHeaderPropagationFilter*,com.hoopsacademy.common.client.ServiceTokenClientFilter*</pit.targetClasses>
+    <pit.targetTests>com.hoopsacademy.common.tenancy.TenantIdTest*,com.hoopsacademy.common.tenancy.TenantContextTest*,com.hoopsacademy.common.tenancy.AuthzContextTest*,com.hoopsacademy.common.problem.ProblemTest*,com.hoopsacademy.common.client.CoreRosterClientTest*,com.hoopsacademy.common.client.RosterAuthzResolverTest*,com.hoopsacademy.common.client.TenantHeaderPropagationFilterTest*,com.hoopsacademy.common.client.ServiceTokenClientFilterTest*</pit.targetTests>
   </properties>
 
   <dependencies>
@@ -173,4 +177,18 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- just mutation common-quarkus (or -Pmutation): PIT on the rule code above; fails below the recorded baseline -->
+    <profile>
+      <id>mutation</id>
+      <activation>
+        <property><name>mutation</name><value>common-quarkus</value></property>
+      </activation>
+      <properties>
+        <pit.skip>false</pit.skip>
+        <pit.mutationThreshold>0</pit.mutationThreshold>
+      </properties>
+    </profile>
+  </profiles>
 </project>

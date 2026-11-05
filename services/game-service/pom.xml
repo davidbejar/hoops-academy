@@ -17,6 +17,10 @@
     <assertj.version>3.27.7</assertj.version>
     <wiremock.version>3.13.2</wiremock.version>
     <json-schema-validator.version>2.0.8</json-schema-validator.version>
+    <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
+         run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
+    <pit.targetClasses>com.hoopsacademy.game.domain.*,com.hoopsacademy.game.application.EventAuthorization*,com.hoopsacademy.game.application.StatVisibility*</pit.targetClasses>
+    <pit.targetTests>com.hoopsacademy.game.domain.*,com.hoopsacademy.game.application.EventAuthorizationTest*,com.hoopsacademy.game.application.StatVisibilityTest*</pit.targetTests>
   </properties>
 
   <dependencies>
@@ -192,4 +196,18 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- just mutation game-service (or -Pmutation): PIT on the rule code above; fails below the recorded baseline -->
+    <profile>
+      <id>mutation</id>
+      <activation>
+        <property><name>mutation</name><value>game-service</value></property>
+      </activation>
+      <properties>
+        <pit.skip>false</pit.skip>
+        <pit.mutationThreshold>0</pit.mutationThreshold>
+      </properties>
+    </profile>
+  </profiles>
 </project>
