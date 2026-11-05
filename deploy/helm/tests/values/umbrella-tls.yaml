@@ -1,0 +1,13 @@
+# Umbrella chart behind a cloud load balancer with TLS (WP36): HTTPS listener with a certificate Secret created outside
+# the chart, HSTS on the HTTPS listener, client IP taken from X-Forwarded-For (one trusted hop), a fixed host name.
+global:
+  publicUrl: https://hoops.example.test
+keycloak:
+  publicUrl: https://hoops.example.test
+gateway:
+  hostname: hoops.example.test
+  tls:
+    enabled: true
+    certificateRefs: [{name: hoops-example-test-tls}]
+  clientIPDetection:
+    numTrustedHops: 1

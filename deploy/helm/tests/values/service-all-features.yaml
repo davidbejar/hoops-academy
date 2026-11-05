@@ -8,12 +8,12 @@ env:
 secretEnv:
   - {name: DEMO_PASSWORD, secretName: demo-db, key: password}
 existingSecret: demo-extra
-ingress:
-  host: hoops.example.test
+route:
+  hostnames: [hoops.example.test]
   paths: [/api/demo, /platform]
   health: {enabled: true, prefix: /api/demo}
   rateLimits:
-    - {name: batch, path: "/api/demo/items/[^/]+/things:batch", rpm: 120, burstMultiplier: 2}
+    - {name: batch, path: "/api/demo/items/[^/]+/things(:|%3[Aa])batch", rpm: 120}
     - {name: plain, path: /api/demo/slow, rpm: 10}
 pdb: {enabled: true, minAvailable: 1}
 hpa: {enabled: true, minReplicas: 2, maxReplicas: 4}
