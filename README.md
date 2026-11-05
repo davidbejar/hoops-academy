@@ -98,13 +98,16 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages WP0–WP25 are done, with
-handovers in `docs/wp/` (WP19, the optional events/Redpanda package, and billing are not built). As of 2026-11-05: backend
-`./mvnw verify` runs 1,760 tests green; `flutter test` runs 538 tests (one week-calendar golden fails locally during the
-week of 2026-11-02 only, see FOLLOW-UPS); the 21-step e2e journey is green on a compose stack (CI `e2e` workflow). The
-CI workflows `ci`, `e2e` and `images` are green on `origin/main` since 2026-11-02 and publish the four images to
-ghcr.io. The browser smoke (`apps/web/tool/web_smoke.sh`, mock and real backend) and the browser login check ran green
-on 2026-11-02 (not run in CI). Known gaps: the e2e journey has not been run on kind, the Lighthouse and airplane-mode
-checks have not been run, and most of the norms table is placeholders marked "reference pending" (WP27). The plan of
-2026-11-05 (WP26–WP36) and open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); what the system does for each
-spec statement, with evidence: [`docs/conformance.md`](docs/conformance.md).
+Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP37 are done**, with
+handovers in `docs/wp/` (WP19, the optional events/Redpanda package, and billing are not built). As of 2026-11-06:
+backend `./mvnw verify` runs **1,970 tests** green and `flutter test` **608 tests** (CI run on 3b59360, after WP37); the
+21-step e2e journey is green on a compose stack (CI `e2e` workflow) and, since WP36, on kind. The Helm chart (0.2.0)
+uses Gateway API with Envoy Gateway (ADR-0031). Mutation testing (PIT) runs on demand with `just mutation` and in the
+`mutation.yml` workflow (manual + monthly), never in every build (scores 99.1–100 %, `docs/quality/mutation.md`). 370 of
+630 fitness norm rows are cited from published tables; the rest are flagged "reference pending"
+(`docs/domain/norms.md`). The CI workflows `e2e` and `images` are green on `main` (the four images go to ghcr.io,
+public); `ci` was green from 2026-11-02 until 3b59360, where only its Trivy job fails on an unlisted chart snapshot
+(FOLLOW-UPS). The browser smoke (`apps/web/tool/web_smoke.sh`) runs locally, not in CI; the Lighthouse and airplane-mode
+checks have not been run. Open items and the product owner's pending decisions:
+[`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); current state: [`docs/HANDOVER.md`](docs/HANDOVER.md); what the system
+does for each spec statement, with evidence: [`docs/conformance.md`](docs/conformance.md).
