@@ -27,12 +27,15 @@ final teamNamesProvider = Provider<Map<String, String>>((ref) {
 
 // ------------------------------------------------------------------- calendar
 
+/// The wall clock. Overridden in tests (goldens) so "today" does not depend on the day the test runs.
+final nowProvider = Provider<DateTime Function()>((_) => DateTime.now);
+
 /// Monday of the week on screen.
 class WeekStart extends Notifier<DateTime> {
   @override
-  DateTime build() => startOfWeek(DateTime.now());
+  DateTime build() => startOfWeek(ref.read(nowProvider)());
   void shift(int weeks) => state = addWeeks(state, weeks);
-  void today() => state = startOfWeek(DateTime.now());
+  void today() => state = startOfWeek(ref.read(nowProvider)());
   void set(DateTime monday) => state = startOfWeek(monday);
 }
 

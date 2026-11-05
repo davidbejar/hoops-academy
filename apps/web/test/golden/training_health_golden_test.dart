@@ -13,10 +13,9 @@ import '../support/fake_athlete.dart';
 import '../support/pump_helpers.dart';
 
 /// Regenerate with `flutter test --update-goldens test/golden`.
-class _FixedWeek extends WeekStart {
-  @override
-  DateTime build() => DateTime(2026, 11, 2);
-}
+/// "Today" is pinned to Monday 2026-11-02 (the week shown and the highlighted day), so the picture is the same on
+/// any day the test runs.
+DateTime _today() => DateTime(2026, 11, 2);
 
 DateTime _day(int offset) => DateTime(2026, 11, 2 + offset);
 
@@ -37,7 +36,7 @@ void main() {
       roles: {TenantRole.admin},
       core: athleteCore(),
       athlete: athlete,
-      overrides: [weekStartProvider.overrideWith(_FixedWeek.new)],
+      overrides: [nowProvider.overrideWithValue(_today)],
       location: '/training',
     );
     await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/training_week_360x780.png'));

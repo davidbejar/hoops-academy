@@ -179,7 +179,7 @@ class WeekCalendar extends ConsumerWidget {
     final theme = Theme.of(context);
     final byDay = groupByDay(sessions, (s) => s.startsAt);
     final names = ref.watch(teamNamesProvider);
-    final today = DateTime.now();
+    final today = ref.watch(nowProvider)();
     return ListView(
       key: const Key('week-calendar'),
       padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
