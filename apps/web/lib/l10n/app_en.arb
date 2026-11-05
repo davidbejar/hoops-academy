@@ -423,6 +423,8 @@
   "sessionNoLocation": "No location",
   "sessionPlan": "Plan",
   "sessionNoPlan": "No plan attached",
+  "sessionEdit": "Edit session",
+  "sessionUpdated": "Session updated",
   "sessionNotes": "Notes",
   "sessionCancelReasonLine": "Cancelled: {reason}",
   "@sessionCancelReasonLine": {

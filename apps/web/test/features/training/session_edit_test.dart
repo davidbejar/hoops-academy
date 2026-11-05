@@ -49,8 +49,10 @@ void main() {
       expect(sent.location, 'Pista 3');
       expect(sent.durationMinutes, 75);
       expect(sent.planId, 'plan-1');
+      expect(find.byKey(const Key('form-submit')), findsNothing); // dialog closed
       expect(find.text('Sesión actualizada'), findsOneWidget);
-      expect(find.textContaining('Pista 3'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Pista 3', skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('invalid duration is rejected before sending', (tester) async {

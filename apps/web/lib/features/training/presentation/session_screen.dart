@@ -11,6 +11,7 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/training_providers.dart';
 import 'training_labels.dart';
+import 'training_screen.dart' show SessionDialog;
 
 class SessionDetailScreen extends ConsumerWidget {
   const SessionDetailScreen({super.key, required this.sessionId});
@@ -86,6 +87,16 @@ class _Body extends ConsumerWidget {
             ),
           ),
         ),
+        if (staff && planned)
+          Padding(
+            padding: const EdgeInsets.only(top: AppTokens.spaceSm),
+            child: OutlinedButton.icon(
+              key: const Key('session-edit'),
+              icon: const Icon(Icons.edit_outlined),
+              label: Text(l.sessionEdit),
+              onPressed: () => showDialog<bool>(context: context, builder: (_) => SessionDialog(session: s)),
+            ),
+          ),
         if (staff && planned)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceSm),

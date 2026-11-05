@@ -1317,6 +1317,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionNoPlan => 'No plan attached';
 
   @override
+  String get sessionEdit => 'Edit session';
+
+  @override
+  String get sessionUpdated => 'Session updated';
+
+  @override
   String get sessionNotes => 'Notes';
 
   @override
@@ -1326,9 +1332,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionNew => 'New session';
-
-  @override
-  String get sessionEdit => 'Edit session';
 
   @override
   String get sessionTeam => 'Team';

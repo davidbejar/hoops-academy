@@ -423,6 +423,8 @@
   "sessionNoLocation": "Tanpa lokasi",
   "sessionPlan": "Rencana",
   "sessionNoPlan": "Tanpa rencana",
+  "sessionEdit": "Ubah sesi",
+  "sessionUpdated": "Sesi diperbarui",
   "sessionNotes": "Catatan",
   "sessionCancelReasonLine": "Dibatalkan: {reason}",
   "@sessionCancelReasonLine": {

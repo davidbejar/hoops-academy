@@ -1322,6 +1322,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get sessionNoPlan => 'Tanpa rencana';
 
   @override
+  String get sessionEdit => 'Ubah sesi';
+
+  @override
+  String get sessionUpdated => 'Sesi diperbarui';
+
+  @override
   String get sessionNotes => 'Catatan';
 
   @override
@@ -1331,9 +1337,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get sessionNew => 'Sesi baru';
-
-  @override
-  String get sessionEdit => 'Ubah sesi';
 
   @override
   String get sessionTeam => 'Tim';

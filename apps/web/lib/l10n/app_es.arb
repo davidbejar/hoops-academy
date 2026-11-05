@@ -762,6 +762,8 @@
   "sessionNoLocation": "Sin lugar indicado",
   "sessionPlan": "Plan",
   "sessionNoPlan": "Sin plan asignado",
+  "sessionEdit": "Editar sesión",
+  "sessionUpdated": "Sesión actualizada",
   "sessionNotes": "Notas",
   "sessionCancelReasonLine": "Cancelada: {reason}",
   "@sessionCancelReasonLine": {

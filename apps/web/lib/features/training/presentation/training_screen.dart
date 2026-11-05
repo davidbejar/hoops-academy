@@ -260,9 +260,10 @@ class SessionTile extends ConsumerWidget {
   }
 }
 
-/// Ad-hoc session creation.
+/// Ad-hoc session creation, or editing of [session] (the team cannot change).
 class SessionDialog extends ConsumerStatefulWidget {
-  const SessionDialog({super.key});
+  const SessionDialog({super.key, this.session});
+  final ath.TrainingSession? session;
 
   @override
   ConsumerState<SessionDialog> createState() => _SessionDialogState();
@@ -270,12 +271,76 @@ class SessionDialog extends ConsumerStatefulWidget {
 
 class _SessionDialogState extends ConsumerState<SessionDialog> {
   final _form = GlobalKey<FormState>();
-  final _duration = TextEditingController(text: '90');
-  final _location = TextEditingController();
-  final _notes = TextEditingController();
-  String? _teamId;
-  late DateTime _date = ref.read(tenantZoneProvider).today(DateTime.now());
-  TimeOfDay _time = const TimeOfDay(hour: 18, minute: 0);
+  late final _duration = TextEditingController(
+    text: '${widget.session?.durationMinutes ?? 90}',
+  );
+  late final _location = TextEditingController(
+    text: widget.session?.location ?? '',
+  );
+  late final _notes = TextEditingController(text: widget.session?.notes ?? '');
+  late String? _teamId = widget.session?.teamId;
+  String? _planId;
+  late DateTime _date =
+      _initialWall()?.copyWith(hour: 0, minute: 0) ??
+      ref.read(tenantZoneProvider).today(DateTime.now());
+  late TimeOfDay _time = _initialTime();
+
+  @override
+  void initState() {
+    super.initState();
+    _planId = widget.session?.planId;
+  }
+
+  DateTime? _initialWall() {
+    final s = widget.session;
+    return s == null ? null : ref.read(tenantZoneProvider).wall(s.startsAt);
+  }
+
+  TimeOfDay _initialTime() {
+    final w = _initialWall();
+    return w == null
+        ? const TimeOfDay(hour: 18, minute: 0)
+        : TimeOfDay(hour: w.hour, minute: w.minute);
+  }
+
+  Future<void> _submit(BuildContext context, AppLocalizations l) {
+    final startsAt = ref
+        .read(tenantZoneProvider)
+        .instant(
+          DateTime(
+            _date.year,
+            _date.month,
+            _date.day,
+            _time.hour,
+            _time.minute,
+          ),
+        );
+    final duration = int.parse(_duration.text);
+    final location = _location.text.trim().isEmpty
+        ? null
+        : _location.text.trim();
+    final notes = _notes.text.trim().isEmpty ? null : _notes.text.trim();
+    return widget.session == null
+        ? ref
+              .read(weekSessionsProvider.notifier)
+              .create(
+                teamId: _teamId!,
+                startsAt: startsAt,
+                durationMinutes: duration,
+                location: location,
+                planId: _planId,
+                notes: notes,
+              )
+        : ref
+              .read(sessionDetailProvider(widget.session!.id).notifier)
+              .edit(
+                startsAt: startsAt,
+                durationMinutes: duration,
+                location: location,
+                planId: _planId,
+                notes: notes,
+              );
+  }
 
   @override
   void dispose() {
@@ -293,32 +358,35 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
       for (final t in ref.watch(teamsProvider).value ?? const <api.Team>[])
         if (caps.canManageTraining(t.id)) t,
     ];
+    final editing = widget.session != null;
+    final plans =
+        ref.watch(planLibraryProvider(false)).value ??
+        const <ath.TrainingPlanSummary>[];
     return FormDialog(
-      title: l.sessionNew,
+      title: editing ? l.sessionEdit : l.sessionNew,
       formKey: _form,
-      canSubmit: teams.isNotEmpty,
+      canSubmit: editing || teams.isNotEmpty,
       onSubmit: () => runAction(
         context,
-        () => ref.read(weekSessionsProvider.notifier).create(
-          teamId: _teamId!,
-          startsAt: ref.read(tenantZoneProvider).instant(DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute)),
-          durationMinutes: int.parse(_duration.text),
-          location: _location.text.trim().isEmpty ? null : _location.text.trim(),
-          notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-        ),
-        success: l.sessionCreated,
+        () => _submit(context, l),
+        success: editing ? l.sessionUpdated : l.sessionCreated,
       ),
       children: [
-        DropdownButtonFormField<String>(
-          key: const Key('session-team'),
-          initialValue: _teamId,
-          isExpanded: true,
-          decoration: InputDecoration(labelText: l.sessionTeam),
-          items: [for (final t in teams) DropdownMenuItem(value: t.id, child: Text(t.displayLabel))],
-          validator: (v) => v == null ? l.fieldRequired : null,
-          onChanged: (v) => setState(() => _teamId = v),
-        ),
-        formGap,
+        if (!editing) ...[
+          DropdownButtonFormField<String>(
+            key: const Key('session-team'),
+            initialValue: _teamId,
+            isExpanded: true,
+            decoration: InputDecoration(labelText: l.sessionTeam),
+            items: [
+              for (final t in teams)
+                DropdownMenuItem(value: t.id, child: Text(t.displayLabel)),
+            ],
+            validator: (v) => v == null ? l.fieldRequired : null,
+            onChanged: (v) => setState(() => _teamId = v),
+          ),
+          formGap,
+        ],
         DateField(
           key: const Key('session-date'),
           label: l.sessionDate,
@@ -354,6 +422,32 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
           key: const Key('session-location'),
           controller: _location,
           decoration: InputDecoration(labelText: l.sessionLocation),
+        ),
+        formGap,
+        DropdownButtonFormField<String?>(
+          key: const Key('session-plan'),
+          initialValue: _planId,
+          isExpanded: true,
+          decoration: InputDecoration(labelText: l.sessionPlan),
+          items: [
+            // The API cannot detach a plan (a missing planId means "unchanged"), so editing a session that has one
+            // offers no "no plan" choice.
+            if (widget.session?.planId == null)
+              DropdownMenuItem<String?>(
+                value: null,
+                child: Text(l.sessionNoPlan),
+              ),
+            for (final p in plans)
+              DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
+            if (_planId != null && plans.every((p) => p.id != _planId))
+              DropdownMenuItem<String?>(
+                value: _planId,
+                child: Text(
+                  ref.watch(planDetailProvider(_planId!)).value?.name ?? '…',
+                ),
+              ),
+          ],
+          onChanged: (v) => setState(() => _planId = v),
         ),
         formGap,
         TextFormField(

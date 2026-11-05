@@ -2500,6 +2500,18 @@ abstract class AppLocalizations {
   /// **'Sin plan asignado'**
   String get sessionNoPlan;
 
+  /// No description provided for @sessionEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar sesión'**
+  String get sessionEdit;
+
+  /// No description provided for @sessionUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión actualizada'**
+  String get sessionUpdated;
+
   /// No description provided for @sessionNotes.
   ///
   /// In es, this message translates to:
@@ -2517,12 +2529,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Nueva sesión'**
   String get sessionNew;
-
-  /// No description provided for @sessionEdit.
-  ///
-  /// In es, this message translates to:
-  /// **'Editar sesión'**
-  String get sessionEdit;
 
   /// No description provided for @sessionTeam.
   ///
