@@ -30,3 +30,4 @@ says so in its header ("Supersedes", "Records"), and the earlier one carries an 
 | [0023](0023-super-admin-manages-academy-admins-email-as-login.md) | Super admin manages academy administrators; e-mail as login; shared-login rule |
 | [0024](0024-temporary-password-replaces-setup-email.md) | Temporary password at first sign-in replaces the setup and verification e-mails |
 | [0025](0025-one-login-many-academies-easy-sign-up.md) | One login, many academies; easy sign-up over account-linking safeguards |
+| [0027](0027-contracts-without-allof-composition.md) | Contracts without allOf composition, validated strictly everywhere |

@@ -1187,7 +1187,7 @@ class PlatformApi {
   }
 
   /// Edit an administrator&#39;s names or e-mail
-  /// Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and e-mail; no e-mail is sent, the password is unchanged), also when the login is used in other academies (ADR-0023, ADR-0024). 404 when the person is not an active administrator of the tenant; 409 &#x60;EMAIL_TAKEN&#x60; (another member or login uses the address), &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed). Authz: super_admin.
+  /// Merge patch; absent fields are left unchanged. An e-mail change also moves the login (Keycloak username and e-mail; no e-mail is sent, the password is unchanged), also when the login is used in other academies: then the same person&#39;s e-mail changes in every academy where they are an active member, in the same transaction, with one &#x60;member.login_email_changed&#x60; audit event per academy (ADR-0023, ADR-0024, ADR-0026). 404 when the person is not an active administrator of the tenant; 409 &#x60;EMAIL_TAKEN&#x60; (another member of this academy or of an academy sharing the login, or another login, uses the address), &#x60;TENANT_WITHDRAWN&#x60;; 502 when Keycloak fails (nothing is changed in any academy). Authz: super_admin.
   ///
   /// Parameters:
   /// * [tenantId]

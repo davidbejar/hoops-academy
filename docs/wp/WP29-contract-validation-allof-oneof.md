@@ -33,7 +33,7 @@ Goal: no muted validation anywhere; every response in tests and e2e is validated
 ## Acceptance
 - [x] No validation whitelist / ignore left in services, common-quarkus test support or e2e (grep evidence; only deliberate test modes remain, see Handover)
 - [x] `./mvnw -B -ntp -T 1C verify` green (fresh; module totals in the handover)
-- [ ] `just web-test` green if packages were regenerated — 537/538: the one failure is a pre-existing date-dependent golden (Handover)
+- [x] `just web-test` green if packages were regenerated (after the rebase onto main with the golden fix: 541 passed)
 - [x] `libs/contracts/README.md` quirk section updated (what is gone, what remains)
 - [x] Handover appended
 
@@ -55,7 +55,7 @@ Goal: no muted validation anywhere; every response in tests and e2e is validated
   - Root cause: swagger-request-validator (default config) injects `additionalProperties: false` into every object
     schema with `properties`; no schema had an explicit `false`. So each `allOf` part rejected the other parts' fields,
     and the `MatchEvent` variants (each `allOf[MatchEventBase, {type}, …]`) never matched (`discriminator.oneOf.no_match_found`).
-  - Contracts (ADR-0025): the 33 composed schemas are plain objects (core 7: `*WithPassword`, `InviteMemberRequest`,
+  - Contracts (ADR-0027): the 33 composed schemas are plain objects (core 7: `*WithPassword`, `InviteMemberRequest`,
     `Season`, `AgeCategory`; athlete 11; game: the 15 `<Type>Event`s). Each names its bases in `x-extends`; field groups
     that are not wire types (`PersonalData`, `AuditInfo`, `MatchEventBase`, `PlayerAttribution`) moved to
     `components.x-mixins` (openapi-generator's strict validate rejects unused schemas). `MatchEvent` keeps
@@ -85,7 +85,7 @@ Goal: no muted validation anywhere; every response in tests and e2e is validated
     `approvalRequest`/`plan` now `.replace(...)`). Generated files were run through the repo's trailing-whitespace /
     end-of-file hooks like the earlier committed generation.
   - Docs: libs/contracts README (convention, validation section, quirks: allOf/discriminator gone, colons remain),
-    ADR-0025, docs/runbooks/e2e.md.
+    ADR-0027, docs/runbooks/e2e.md.
 - Verified:
   - `./mvnw -B -ntp -T 1C verify` (fresh): BUILD SUCCESS; common-quarkus 172, contracts 134, core 691, game 196,
     athlete 581 tests, 0 failures; all coverage checks met; openapi-generator strict validate of the 3 specs OK.
@@ -97,7 +97,7 @@ Goal: no muted validation anywhere; every response in tests and e2e is validated
     2026-11-02, so the golden fails on any other day; pre-existing, not touched (app code, WP28/WP35 territory).
   - Grep evidence (`Level.(IGNORE|WARN|INFO)|withResolveCombinators|additionalProperties|Whitelist|isAllOfArtifact|Unvalidated`
     over services/*/src/test, libs/common-quarkus/src, e2e/src): only the 4 deliberate lines listed above.
-- Decisions/ADRs: ADR-0025 (no allOf composition, `x-extends`/`x-mixins`, default strict validator; supersedes the
+- Decisions/ADRs: ADR-0027 (no allOf composition, `x-extends`/`x-mixins`, default strict validator; supersedes the
   derived-copy sentence of ADR-0016 §2).
 - Open points / follow-ups:
   - ~100 response-only call sites (athlete `lenient`, core `RESPONSES_ONLY`) send valid requests and could use the
@@ -107,3 +107,10 @@ Goal: no muted validation anywhere; every response in tests and e2e is validated
     [PhysicalTestNormInput]`, copy any new input field) and re-bump athlete; regenerate the Dart package.
   - My `./mvnw -pl libs/contracts install` put this branch's contracts jar into the shared `~/.m2` once; builds that
     do not use the reactor (`-am`) pick it up until someone installs again.
+- Rebase onto main (WP26/27/28/30/31 + week-golden fix), no textual conflicts. ADR renamed 0025 → **ADR-0027**
+  (0025 is WP26's, 0026 WP31's; note: the WP32 brief also announces an "ADR-0027" and will need the next free number)
+  and indexed in docs/adr/README.md (the index has no 0026 row yet). WP31's new `Contract.FAILURES` call (502) now
+  uses `Contract.CORE`; core/game service READMEs describe the strict filters. athlete.yaml was not changed by WP27,
+  so athlete 2.0.1 stands; core 2.3.1 includes WP31's description change; `just gen-api` re-run (only
+  `platform_api.dart` doc comment changed). Fresh: `./mvnw -B -ntp -T 1C verify` BUILD SUCCESS (common 172,
+  contracts 134, core 701, game 196, athlete 586, coverage met); `flutter analyze` clean; `flutter test` 541 passed.

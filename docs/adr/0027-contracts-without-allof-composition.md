@@ -1,4 +1,4 @@
-# ADR-0025: Contracts without allOf composition, validated strictly everywhere
+# ADR-0027: Contracts without allOf composition, validated strictly everywhere
 
 - Status: Accepted
 - Date: 2026-11-05

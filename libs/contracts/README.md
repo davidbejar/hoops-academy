@@ -35,7 +35,7 @@ The jar ships these files as classpath resources: `classpath:openapi/core.yaml`,
 - Ids are `uuid`; dates `date`; instants `date-time` (UTC). Unbounded lists use the `<Resource>Page` envelope
   `{items, page}`; small bounded lists are plain arrays.
 - Names follow `docs/domain/glossary.md`; the `Authz:` line of each operation summarises `docs/domain/authz-matrix.md`.
-- **No `allOf` composition** (`StrictValidatorCompatibilityTest`, ADR-0025): every request and response object is a
+- **No `allOf` composition** (`StrictValidatorCompatibilityTest`, ADR-0027): every request and response object is a
   plain object, and `allOf` only wraps a single `$ref` (to add `nullable`, a description or a narrowing `enum`). A
   schema that carries the fields of another one repeats them and names its bases in `x-extends: [Base, …]`
   (`AgeCategory` → `AgeCategoryInput`, `ShotEvent` → `MatchEventBase, PlayerAttribution`, …); the test keeps every

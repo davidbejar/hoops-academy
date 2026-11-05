@@ -266,7 +266,7 @@ class PlatformAdminResourceTest {
         UUID parent = sharedWith(other);
         KeycloakStubs.loginUpdateFails(keycloak);
 
-        given().filter(Contract.FAILURES).contentType(ContentType.JSON).body("{\"email\":\"lost@example.com\"}")
+        given().filter(Contract.CORE).contentType(ContentType.JSON).body("{\"email\":\"lost@example.com\"}")
                 .patch(admins() + "/" + admin).then().statusCode(502);
 
         assertThat(emailOf(tenant, admin)).isEqualTo(oldEmail());

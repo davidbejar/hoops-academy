@@ -57,8 +57,9 @@ source scripts/env.sh
   (`WireMockResource`, stubs in `KeycloakStubs` / `UsageStubs`).
 - Roster fixtures: `RosterDb` (seasons around the real "today", default ladder, teams, staff, players, assignments,
   cases); `Members.signInAs(tenant, person, roles, staffTeams)` for staff-relative authz.
-- Every REST-assured exchange is validated against `core.yaml` (`Contract.CORE`, `allOf` flattened); negative tests that send bodies
-  the contract forbids use `Contract.RESPONSES_ONLY`, failure-path tests (502/500) use `Contract.FAILURES`.
+- Every REST-assured exchange is validated against `core.yaml` (`Contract.CORE`, the validator's default strict
+  configuration, ADR-0027); negative tests that send bodies the contract forbids use `Contract.RESPONSES_ONLY`, the
+  fault-injection tests that provoke an undeclared 500 use `Contract.UNEXPECTED_FAILURE` (declared 502s use `CORE`).
 - `@Tag("keycloak")` tests import `infra/keycloak/realm-academy.json` into `quay.io/keycloak/keycloak:26.8.1`; they are
   excluded from the default surefire run (`surefire.excludedGroups=keycloak`) and meant for CI.
 

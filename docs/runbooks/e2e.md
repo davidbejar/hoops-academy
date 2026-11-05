@@ -3,7 +3,7 @@
 The `e2e/` Maven module drives the whole platform from the outside, through the gateway, with real Keycloak logins:
 two academies, five roles, three services. It is a black box (REST Assured over HTTP, nothing internal on the
 classpath); every API request and response is validated against `libs/contracts/openapi/<service>.yaml` read from
-disk (`openapi-request-validator-restassured`, default strict configuration, nothing muted; ADR-0025).
+disk (`openapi-request-validator-restassured`, default strict configuration, nothing muted; ADR-0027).
 
 `./mvnw verify` at the root does **not** run it: the module's tests are skipped unless `-De2e.baseUrl=...` or the
 environment variable `E2E_BASE_URL` is set.

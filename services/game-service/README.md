@@ -78,6 +78,6 @@ source scripts/env.sh && ./mvnw -pl services/game-service verify
 ```
 Needs Podman for the Postgres Testcontainer; core-service and Keycloak's token endpoint are WireMock
 (`support/CoreWireMockResource`, wiremock-standalone). REST tests use `@TenantUser` (the common test-jar resolver) and
-validate every response against `/openapi/game.yaml` (event payloads: see `support/Contract.BATCH/FEED` and
-`support/EventSchema`). Tests use a random HTTP port (`%test.quarkus.http.test-port=0`). `RealAuthzResolverTest` runs the production resolver by excluding
+validate every request and response against `/openapi/game.yaml`, match events included (`support/Contract.FILTER`,
+default strict configuration, ADR-0027; the feed is also checked per event by `support/EventSchema`). Tests use a random HTTP port (`%test.quarkus.http.test-port=0`). `RealAuthzResolverTest` runs the production resolver by excluding
 `TestAuthzContextResolver` through a `QuarkusTestProfile` (`quarkus.arc.exclude-types`).
