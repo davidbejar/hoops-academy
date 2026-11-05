@@ -124,6 +124,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu cuenta aún no pertenece a ninguna academia. Pide a un administrador que te invite.';
 
   @override
+  String get notMemberTitle => 'Todavía no eres miembro de ninguna academia';
+
+  @override
+  String notMemberBody(String email) {
+    return 'Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con este correo: $email';
+  }
+
+  @override
+  String get notMemberBodyNoEmail =>
+      'Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con el correo con el que has iniciado sesión.';
+
+  @override
   String get profileLoadFailed => 'No hemos podido cargar tu perfil';
 
   @override

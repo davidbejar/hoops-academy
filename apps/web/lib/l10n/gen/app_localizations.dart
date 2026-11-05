@@ -310,6 +310,24 @@ abstract class AppLocalizations {
   /// **'Tu cuenta aún no pertenece a ninguna academia. Pide a un administrador que te invite.'**
   String get noAccessBody;
 
+  /// No description provided for @notMemberTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no eres miembro de ninguna academia'**
+  String get notMemberTitle;
+
+  /// No description provided for @notMemberBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con este correo: {email}'**
+  String notMemberBody(String email);
+
+  /// No description provided for @notMemberBodyNoEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con el correo con el que has iniciado sesión.'**
+  String get notMemberBodyNoEmail;
+
   /// No description provided for @profileLoadFailed.
   ///
   /// In es, this message translates to:

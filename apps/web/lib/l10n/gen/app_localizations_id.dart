@@ -123,6 +123,18 @@ class AppLocalizationsId extends AppLocalizations {
       'Akun Anda belum tergabung di akademi mana pun. Minta administrator untuk mengundang Anda.';
 
   @override
+  String get notMemberTitle => 'Anda belum menjadi anggota akademi mana pun';
+
+  @override
+  String notMemberBody(String email) {
+    return 'Anda belum menjadi anggota akademi mana pun. Minta administrator akademi untuk menambahkan Anda dengan e-mail ini: $email';
+  }
+
+  @override
+  String get notMemberBodyNoEmail =>
+      'Anda belum menjadi anggota akademi mana pun. Minta administrator akademi untuk menambahkan Anda dengan e-mail yang Anda gunakan untuk masuk.';
+
+  @override
   String get profileLoadFailed => 'Kami tidak dapat memuat profil Anda';
 
   @override

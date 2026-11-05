@@ -59,6 +59,12 @@
   "rolePlayer": "Jugador",
   "noAccessTitle": "Sin acceso a ninguna academia",
   "noAccessBody": "Tu cuenta aún no pertenece a ninguna academia. Pide a un administrador que te invite.",
+  "notMemberTitle": "Todavía no eres miembro de ninguna academia",
+  "notMemberBody": "Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con este correo: {email}",
+  "@notMemberBody": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "notMemberBodyNoEmail": "Todavía no eres miembro de ninguna academia. Pide a un administrador de la academia que te añada con el correo con el que has iniciado sesión.",
   "profileLoadFailed": "No hemos podido cargar tu perfil",
   "errorNetwork": "No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.",
   "errorTimeout": "El servidor tarda demasiado en responder. Inténtalo de nuevo.",

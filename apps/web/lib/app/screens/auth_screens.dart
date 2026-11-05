@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_providers.dart';
+import '../../core/auth/signed_in_email.dart';
 import '../sign_out.dart';
 import '../../core/config/app_config.dart';
 import '../../core/errors/app_error.dart';
@@ -16,30 +17,75 @@ class SplashScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l = AppLocalizations.of(context);
     final me = ref.watch(currentUserProvider);
     return Scaffold(
       body: SafeArea(
         child: me.hasError && !me.isLoading
-            ? Column(
-                children: [
-                  Expanded(
-                    child: AppErrorView(
-                      error: AppError.of(me.error!),
-                      onRetry: () => ref.invalidate(currentUserProvider),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(AppTokens.spaceMd),
-                    child: TextButton(
-                      key: const Key('splash-sign-out'),
-                      onPressed: () => confirmAndSignOut(context, ref),
-                      child: Text(l.signOut),
-                    ),
-                  ),
-                ],
-              )
+            ? (_isNotMember(me.error!)
+                  ? _NotAMember(email: ref.watch(signedInEmailProvider).value)
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: AppErrorView(
+                            error: AppError.of(me.error!),
+                            onRetry: () => ref.invalidate(currentUserProvider),
+                          ),
+                        ),
+                        const _SplashSignOut(),
+                      ],
+                    ))
             : const LoadingView(),
+      ),
+    );
+  }
+}
+
+bool _isNotMember(Object error) =>
+    AppError.of(error).kind == AppErrorKind.notFound;
+
+class _SplashSignOut extends ConsumerWidget {
+  const _SplashSignOut();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Padding(
+    padding: const EdgeInsets.all(AppTokens.spaceMd),
+    child: TextButton(
+      key: const Key('splash-sign-out'),
+      onPressed: () => confirmAndSignOut(context, ref),
+      child: Text(AppLocalizations.of(context).signOut),
+    ),
+  );
+}
+
+/// `/me` answered 404: the login exists but no academy knows this e-mail.
+class _NotAMember extends StatelessWidget {
+  const _NotAMember({required this.email});
+
+  final String? email;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Center(
+      key: const Key('not-a-member'),
+      child: Padding(
+        padding: const EdgeInsets.all(AppTokens.spaceLg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.group_off_outlined, size: 64, color: theme.colorScheme.primary),
+            const SizedBox(height: AppTokens.spaceMd),
+            Text(l.notMemberTitle, textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
+            const SizedBox(height: AppTokens.spaceSm),
+            Text(
+              email == null ? l.notMemberBodyNoEmail : l.notMemberBody(email!),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppTokens.spaceLg),
+            const _SplashSignOut(),
+          ],
+        ),
       ),
     );
   }

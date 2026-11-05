@@ -35,6 +35,12 @@
   "rolePlayer": "Pemain",
   "noAccessTitle": "Tidak ada akses ke akademi mana pun",
   "noAccessBody": "Akun Anda belum tergabung di akademi mana pun. Minta administrator untuk mengundang Anda.",
+  "notMemberTitle": "Anda belum menjadi anggota akademi mana pun",
+  "notMemberBody": "Anda belum menjadi anggota akademi mana pun. Minta administrator akademi untuk menambahkan Anda dengan e-mail ini: {email}",
+  "@notMemberBody": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "notMemberBodyNoEmail": "Anda belum menjadi anggota akademi mana pun. Minta administrator akademi untuk menambahkan Anda dengan e-mail yang Anda gunakan untuk masuk.",
   "profileLoadFailed": "Kami tidak dapat memuat profil Anda",
   "errorNetwork": "Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.",
   "errorTimeout": "Server terlalu lama merespons. Coba lagi.",

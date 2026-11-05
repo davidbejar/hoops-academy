@@ -35,6 +35,12 @@
   "rolePlayer": "Player",
   "noAccessTitle": "No access to any academy",
   "noAccessBody": "Your account does not belong to any academy yet. Ask an administrator to invite you.",
+  "notMemberTitle": "You are not a member of an academy yet",
+  "notMemberBody": "You are not a member of an academy yet. Ask an academy administrator to add you with this e-mail: {email}",
+  "@notMemberBody": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "notMemberBodyNoEmail": "You are not a member of an academy yet. Ask an academy administrator to add you with the e-mail you signed in with.",
   "profileLoadFailed": "We could not load your profile",
   "errorNetwork": "Cannot reach the server. Check your connection and try again.",
   "errorTimeout": "The server is taking too long to respond. Try again.",
