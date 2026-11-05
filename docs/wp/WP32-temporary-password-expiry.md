@@ -5,7 +5,7 @@ WP25, WP31. Skills: test-driven-development, tenant-isolation-testing, quarkus-h
 flutter-feature (console labels), verification-before-completion. Worktree: `~/code/hoops-wt/wp32-temp-password-expiry`,
 branch `wp32-temp-password-expiry`.
 
-Decision 4 of 2026-11-05 (ADR-0025 records the sign-up philosophy; this WP adds ADR-0026). The product owner does not
+Decision 4 of 2026-11-05 (ADR-0025 records the sign-up philosophy; this WP adds ADR-0027). The product owner does not
 want a cron job. A temporary password older than 3 days is expired; the clean-up runs in the background when an
 infrequent event happens.
 
@@ -21,6 +21,12 @@ infrequent event happens.
 - Jobs run one-at-a-time across replicas with `TenantScope.runExclusive("<svc>.<job>", work)` (advisory lock; see
   `adapters/in/scheduler/OnboardingRepairJob` for the pattern and its tests).
 - The realm uses the custom login theme `hoops` (`infra/keycloak/...`, `apps/web`? find the theme directory).
+
+## Notes from WP31 (merged)
+- `LoginEmailSync` now takes a `SharedLoginPersons` port; `LoginMove` has a `sharedWith` list; new port methods
+  `MembershipRepository.inOtherTenants` and `AuditLog.recordFor(tenant, event)`. Rule: only native SQL may run while
+  another academy is bound (`JpaSharedLoginPersonRepository`, ADR-0026). The sweep writes audit rows for other
+  academies through `recordFor`.
 
 ## Scope
 1. **Migration** `V<next>__temporary_password_expiry.sql`: `core.app_user.temporary_password_issued_at timestamptz`,
@@ -47,7 +53,7 @@ infrequent event happens.
    need a re-import: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
 7. **Web console** (small): pending member / admin rows show "Temporary password expired" when the status is
    EXPIRED, next to the existing re-issue button; es/en/id; widget test.
-8. **Docs**: ADR-0026 (expiry without a scheduler: trigger, lock, accepted gap until the next sweep, why disable
+8. **Docs**: ADR-0027 (expiry without a scheduler: trigger, lock, accepted gap until the next sweep, why disable
    rather than delete the credential); guides for admins and super admin (what the person sees, what to click);
    `docs/domain/authz-matrix.md` unchanged; `docs/security/review-2026-11.md` item "temporary passwords never expire"
    → resolved by WP32.
@@ -60,7 +66,7 @@ infrequent event happens.
       after the sweep; after re-issue it can, and Keycloak asks for a new password
 - [ ] `./mvnw -B -ntp -T 1C verify` green and `./mvnw -pl services/core-service -am verify -Pkeycloak-it` green
       (fresh; totals in the handover); `just web-test` green; `just isolation-check` and `just db-role-check` green
-- [ ] Handover appended, ADR-0026 written
+- [ ] Handover appended, ADR-0027 written
 
 ## Working rules
 - Work only in your worktree on your branch; `source scripts/env.sh` first. Do not touch `main`, do not push.

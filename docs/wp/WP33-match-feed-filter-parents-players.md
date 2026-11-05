@@ -33,7 +33,7 @@ COACH, ASSISTANT_COACH) keep the full feed.
 - [ ] Failing tests first (application rule unit tests + role-matrix API test), then the change
 - [ ] `./mvnw -B -ntp -T 1C verify` green (fresh; totals), `just web-test` green, `just isolation-check` green
 - [ ] Authz matrix and contract updated; handover appended; ADR only if a visibility rule needed a judgment call
-      (then ADR-0027)
+      (then ADR-0028)
 
 ## Working rules
 - Work only in your worktree on your branch; `source scripts/env.sh` first. Do not touch `main`, do not push.

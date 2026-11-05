@@ -10,6 +10,10 @@ Decision 8 of 2026-11-05. `core.audit_event` (V9: `tenant_id`, `actor_sub`, `act
 (`AuditEvent.of("member.invited", …)` etc.) and read by nothing. Metadata holds no personal data by rule
 (`AuditEvent` javadoc): names are resolved at read time.
 
+## Notes from WP31 (merged)
+- `AuditLog.recordFor(tenant, event)` writes a row for another academy (native SQL, immediate); `WP32` adds
+  `member.temporary_password_expired` the same way.
+
 ## Scope
 - **Contract** (core, minor bump): `GET /api/core/audit-events?from&to&action&page&size` for ADMIN (own academy
   only; non-members 404 as always) and `GET /platform/audit-events?tenantId&from&to&action&page&size` for
