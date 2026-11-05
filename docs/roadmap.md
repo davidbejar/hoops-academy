@@ -2,8 +2,8 @@
 
 Sources: `wp/FOLLOW-UPS.md`, the WP handovers, `security/review-2026-11.md`, `PLAN.md`. Items are grouped by theme, not
 ordered by date; there are no committed dates. IDs F-nn refer to the security review. "Seam" means the extension point
-already exists in v1. Items that the plan of 2026-11-05 (`wp/FOLLOW-UPS.md`, WP26–WP36) assigns to a work package are
-marked **→ WPnn**. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
+already exists in v1. The plan of 2026-11-05 (`wp/FOLLOW-UPS.md`, WP26–WP37) is done (all twelve merged by
+2026-11-06); the items it closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
 items below are deliberately not planned.
 
 ## Product and billing
@@ -17,8 +17,8 @@ items below are deliberately not planned.
 - **Super admin who is also a member.** Done in the Profile menu (Platform console); only a product check remains.
 - **Parents without a login via the guardian flow.** WP17 covered players only; parents get a login through the member
   invitation. Decide whether a guardian entered with a player should be invited automatically.
-- **Shared login e-mail → WP31.** Member e-mail changes are synced to Keycloak since WP22; when the super admin moves a
-  login used in several academies, every academy's `core.person.email` will follow (decision 7).
+- **Audit trail content (WP34, product decision open).** `tenant.suspended` / `tenant.withdrawn` rows carry the super
+  admin's free-text reason, and rows done from the platform show the super admin's Keycloak `sub` to academy admins.
 - **If it goes commercial (ADR-0025).** F-11 (invite links an existing login without consent and reveals it) and F-22
   (pre-account hijacking) are accepted by design today. Before real users: verify the e-mail before linking an existing
   login into another academy, ask for consent and notify on a link, give invites a uniform response.
@@ -43,24 +43,17 @@ invitation reminders. Depends on events (above) to avoid polling. (The "new vers
 service worker exists since WP14b.)
 
 ## Security follow-ups (`security/review-2026-11.md`)
-- **F-01 event-feed visibility → WP33.** `GET /api/game/matches/{id}/events` returns all players' stat events to PARENT
-  and PLAYER members, while the box score hides them. Decided 2026-11-05: filter server-side to team-level events plus own
-  or linked players; align `domain/authz-matrix.md` and the guides.
-- **F-23 temporary password expiry → WP32.** A temporary password older than 3 days is expired by an event-triggered
-  background sweep that disables the login in Keycloak; re-issue re-enables.
 - **F-07/F-08 residuals.** WP14b fixed sign-out (F-03: local forget first, Drift wipe, no `offline_access`; ADR-0019). Still
   open: scope cached `roster`/`matchJson`/`ownEvents` by tenant and person and wipe on a subject change; enable
   refresh-token rotation in the realm.
 - **F-09/F-10/F-19/F-20** were fixed in WP14b (no CDN, pinned `sqlite3.wasm`, network-only prefixes incl. `/platform`,
-  release-build guards; ADR-0018). Re-check the service-worker prefixes against the production ingress.
+  release-build guards; ADR-0018). The network-only prefixes match the Gateway API routes (re-checked 2026-11-06).
 - **F-14 token audience.** Audience mapper per service and `quarkus.oidc.token.audience`.
-- **Audit read API → WP34.** `core.audit_event` is written but has no endpoint: ADMIN reads their academy's events, the
-  super admin everything, filtered by date range and event type. No retention job; old rows go with the v2 purge job.
 - **ASVS gaps.** Password blocklist (6.2.4) and breached-password check (6.2.12), optional OTP for ADMIN and super admin
   (6.3.3), Keycloak login events (16.3.1), authorization-failure logging (16.3.2), log shipping or an OTel collector
   (16.4.3), SBOM.
-- **→ WP30.** Pin the `ubi9/openjdk-21-runtime` tag (trivy DS-0001); drop the guava pin once the Quarkus BOM ships
-  >= 33.7.2.
+- **Image and dependency pins.** The `ubi9/openjdk-21-runtime` digest is pinned (WP30) but not auto-bumped; drop the
+  guava pin once the Quarkus BOM ships >= 33.7.2.
 
 ## Web offline and quality
 - **Chromedriver-based browser tests.** `apps/web/tool/web_smoke.sh` (the `flutter drive` smoke) ran green in mock and
@@ -69,9 +62,11 @@ service worker exists since WP14b.)
 - **Verify the offline cold start in a real browser**: install/activate/reload of `sw.js` in airplane mode, replacement of a
   previously registered Flutter worker, the wasm/IndexedDB path.
 - Two tabs on one device can allocate the same `clientSeq` (visible `CLIENT_SEQ_CONFLICT`); add a cross-tab lock if it matters.
-- **→ WP35.** Calendar uses the device time zone (use the tenant zone from `AuthzSummary.timezone`); availability badge
-  in rosters and match setup; usage trend chart (`getTenantUsageHistory` is generated, unused); editing sessions (plan
-  picker), measurements, results and absences in the UI; a "not a member of an academy yet" state.
+- **Contract gaps found in WP35 (decision open).** `Update*Request` bodies cannot clear a field (null = unchanged), so a
+  session's plan, a location or a note cannot be removed; `/me` memberships carry no tenant `timezone` (the app makes an
+  extra profile call); test types have no rename-code or delete operation.
+- **Mutation testing** runs on demand and monthly (WP37, `docs/quality/mutation.md`); rule code reached only by
+  container tests (`TenantScope`, exception mappers, use cases) is outside PIT's scope until pure rules are extracted.
 - List pagination UI and a category filter on `GET /players` (contract); `nameKey`/`locale` for plan templates; mock mode
   lacks athlete and platform screens.
 
@@ -82,14 +77,17 @@ lead: Moreno-Gonzalez et al., BMC Pediatr 2026, not fetchable yet), and a few ed
 age. The Cooper figures are still not traced to the 1968 paper. Sources, mapping rules and leads: `domain/norms.md`.
 
 ## Platform and operations
-- **Production ingress → WP36.** ingress-nginx is in upstream retirement; decided 2026-11-05: Gateway API with Envoy
-  Gateway. Re-check the rate-limit, `/internal` 403 and `events:batch` pass-through rules on the new controller.
+- **Gateway (WP36, ADR-0031).** The chart runs on Gateway API with Envoy Gateway; the e2e journey is green on kind.
+  Still open: local rate limits hold per Envoy replica with a burst equal to the rate (global rate limiting with Redis
+  when the proxy runs more than one replica); no body-size limit at the gateway (the services reject > 2 MB); a
+  production certificate and cluster.
 - **External Secrets Operator manifests** and a rollout trigger for rotated secrets (ADR-0012); encryption at rest for Secrets.
 - **Backups.** Implement and rehearse CNPG backups (`runbooks/backup-restore.md` is a design).
 - **Observability.** OTel collector and dashboards (traces are off by default), alerting on audit and authz failures.
 - **Release.** `ci`, `e2e` and `images` are green on GitHub since 2026-11-02 (NVD key valid, images pushed to ghcr.io per
   commit). No release has been cut yet (no git tag): follow `runbooks/release.md`.
-- **→ WP30.** The Tiltfile should call `scripts/sync-chart-files.sh` before rendering the chart.
+- **`tilt ci` with core-service** has not been run (WP16 covered game/athlete/web; WP30 made the Tiltfile sync the chart
+  files; not re-run after WP36).
 - Scale: the usage snapshot job and the eligibility sweep iterate tenants sequentially (fine for tens of tenants); snapshots
   are never pruned.
 
