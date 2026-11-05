@@ -52,8 +52,9 @@ owner) set BOTH secrets `REGISTRY_USERNAME`/`REGISTRY_PASSWORD`; setting only on
 `org.opencontainers.image.source` label (build arg `SOURCE_URL`, derived from the `origin` remote by
 `scripts/build-images.sh`) so ghcr.io links each package to this repository.
 
-The first push creates each ghcr.io package **private**. Either make the packages public (package settings on github.com,
-fine for a public repo) or give the cluster a pull secret and reference it from the chart:
+The first push creates each ghcr.io package **private**. The four Hoops Academy packages are **public** (verified
+2026-11-05: an anonymous pull works), so a cluster needs no secret. For a private fork, either make the packages public
+(package settings on github.com, fine for a public repo) or give the cluster a pull secret and reference it from the chart:
 ```bash
 kubectl -n hoops create secret docker-registry ghcr-pull --docker-server=ghcr.io \
   --docker-username=<owner> --docker-password=<PAT with read:packages>

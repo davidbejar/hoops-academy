@@ -1,6 +1,6 @@
 # ADR-0021: Authorization refinements beyond the authz matrix
 
-- Status: Accepted (records decisions taken in WP4, WP6, WP7, WP8, WP9, WP10; one item open, see F-01)
+- Status: Accepted (records decisions taken in WP4, WP6, WP7, WP8, WP9, WP10; F-01 decided on 2026-11-05: filtered feed, built in WP33)
 - Date: 2026-11-02
 - Related: `docs/domain/authz-matrix.md` (the oracle), ADR-0005, ADR-0014 §3–4
 
@@ -38,6 +38,6 @@ collects them so the matrix, the guides and the role-matrix tests can be read to
 ## Consequences
 - Role-matrix tests encode these rules: `TeamPlayerResourceTest`, `EligibilityCaseResourceTest`, `MatchResourceTest`,
   `EventAuthorizationTest`, `MatchEventResourceTest`, `RoleMatrixTest`, `PlanRoleMatrixTest`, `HealthRoleMatrixTest`.
-- The matrix document should gain these qualifiers once F-01 is decided.
+- The matrix document gains these qualifiers with WP33 (F-01 decided on 2026-11-05: team-level events for everyone, player events only for own or linked players).
 - Training reads for all staff and health reads limited to own teams are intentionally different (health data of minors
   is more sensitive).

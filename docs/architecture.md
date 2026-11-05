@@ -175,9 +175,9 @@ met; `flutter test` in `apps/web`; the e2e journey on the compose stack). They c
 | `apps/web` | `flutter test`: unit, provider, widget per role and state, goldens (360 px), projector vectors, sync worker, sign-out, service worker / CSP / build guards, l10n key parity | 477 |
 | `e2e` | black-box journey through the gateway with real Keycloak logins: 20 ordered steps, two tenants, every response validated against the OpenAPI | 20 steps, green on compose |
 | Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform, policy assertions, gitleaks | script |
-JVM total: **1,467 tests** (WP17: 1,461; WP20 added `CoreReachabilityCheckTest` 4 and `CoreHealthEndpointsTest` 2), line
-coverage common 95.0 %, core 98.6 %, game 98.5 %, athlete 97.2 % (gates: 80 % overall, 90 % in `domain`). Flutter: 477
-tests, analyze clean. e2e: **20/20 green on compose** (WP18b, three consecutive runs; re-run green in the WP20 review,
+JVM total: **1,760 tests** (fresh `verify` on 2026-11-05, 0 failures; 1,467 at WP20, the rest from WP21–WP25 and the
+isolation/role suites), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: 541 tests
+(2026-11-05), analyze clean. e2e: **20/20 green on compose** (WP18b, three consecutive runs; re-run green in the WP20 review,
 about 70 s); never run green on kind (only `deploy/kind/smoke.sh core game athlete`). Browser-level checks
 (`flutter drive`, Lighthouse, service-worker offline reload) have never run because chromedriver is missing; the CI
 workflows have never run. Statement-by-statement evidence: [`conformance.md`](conformance.md).
