@@ -1,11 +1,19 @@
 package com.hoopsacademy.game.application;
 
+import com.hoopsacademy.game.domain.Match;
 import com.hoopsacademy.game.domain.MatchId;
+import com.hoopsacademy.game.domain.PlayerVisibility;
+import com.hoopsacademy.game.domain.events.EventVisibility;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.List;
 
-/** Merge feed for other devices (contract listMatchEvents); any member who may view the match may read it. */
+/**
+ * Merge feed for other devices (contract listMatchEvents); any member who may view the match may read it, filtered by
+ * {@link StatVisibility} and {@link EventVisibility} (ADR-0028): ADMIN and staff of the team read every event,
+ * anybody else the team-level events plus those of their own or linked players. Paging walks the visible events only;
+ * {@code lastServerSeq} is the match's highest sequence number for every caller.
+ */
 @ApplicationScoped
 public class GetMatchEvents {
 
@@ -18,17 +26,33 @@ public class GetMatchEvents {
 
     private final MatchLookup lookup;
     private final MatchEventRepository events;
+    private final CurrentCaller caller;
 
-    GetMatchEvents(MatchLookup lookup, MatchEventRepository events) {
+    GetMatchEvents(MatchLookup lookup, MatchEventRepository events, CurrentCaller caller) {
         this.lookup = lookup;
         this.events = events;
+        this.caller = caller;
     }
 
     @Transactional
     public EventFeed handle(MatchId matchId, long after, int limit) {
-        lookup.require(matchId);
-        List<StoredEvent> page = events.after(matchId, after, limit + 1);
+        Match match = lookup.require(matchId);
+        PlayerVisibility viewer = StatVisibility.forTeam(caller.authz(), match.teamId());
+        List<StoredEvent> page = viewer.seesAll()
+                ? events.after(matchId, after, limit + 1)
+                : visibleAfter(matchId, viewer, after, limit + 1);
         boolean hasMore = page.size() > limit;
         return new EventFeed(hasMore ? page.subList(0, limit) : page, events.lastServerSeq(matchId), hasMore);
+    }
+
+    /** VOID targets may lie before {@code after}, so the whole match is read to decide visibility. */
+    private List<StoredEvent> visibleAfter(MatchId matchId, PlayerVisibility viewer, long after, int limit) {
+        List<StoredEvent> all = events.findByMatch(matchId);
+        EventVisibility visibility = EventVisibility.of(all.stream().map(s -> s.recorded().event()).toList(), viewer);
+        return all.stream()
+                .filter(s -> s.recorded().serverSeq() > after)
+                .filter(s -> visibility.visible(s.recorded().event()))
+                .limit(limit)
+                .toList();
     }
 }

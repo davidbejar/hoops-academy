@@ -1,11 +1,10 @@
 package com.hoopsacademy.game.application;
 
-import com.hoopsacademy.common.tenancy.AuthzContext;
-import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.game.domain.Match;
 import com.hoopsacademy.game.domain.MatchId;
 import com.hoopsacademy.game.domain.MatchRoster;
 import com.hoopsacademy.game.domain.PlayerId;
+import com.hoopsacademy.game.domain.PlayerVisibility;
 import com.hoopsacademy.game.domain.RosterEntry;
 import com.hoopsacademy.game.domain.projection.Projection;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,9 +14,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Box score from the stored projection (contract getBoxScore). ADMIN and staff of the team see every player line,
- * a PARENT the lines of linked players, a PLAYER their own; scores, totals and match warnings are visible to every
- * member. A match without events is projected on the fly (all zeros).
+ * Box score from the stored projection (contract getBoxScore). Player lines follow {@link StatVisibility} (ADMIN and
+ * staff of the team all, a PARENT linked players, a PLAYER their own); scores, totals and match warnings are visible to
+ * every member. A match without events is projected on the fly (all zeros).
  */
 @ApplicationScoped
 public class GetBoxScore {
@@ -48,10 +47,8 @@ public class GetBoxScore {
     }
 
     private Set<PlayerId> visiblePlayers(Match match, MatchRoster roster) {
-        AuthzContext authz = caller.authz();
-        boolean seesAll = authz.hasRole(TenantRole.ADMIN) || authz.isStaffOf(match.teamId().value());
-        return roster.entries().stream().map(RosterEntry::playerId)
-                .filter(p -> seesAll || authz.isGuardianOf(p.value()) || authz.isSelf(p.value()))
+        PlayerVisibility viewer = StatVisibility.forTeam(caller.authz(), match.teamId());
+        return roster.entries().stream().map(RosterEntry::playerId).filter(viewer::sees)
                 .collect(Collectors.toUnmodifiableSet());
     }
 }
