@@ -26,11 +26,12 @@ Future<Harness> pumpAs(
   FakePlatform? platform,
   bool superAdmin = false,
   String? ownPlayerId,
+  String? timezone,
   List<Override> overrides = const [],
 }) async {
   final h = Harness(
     me: FakeMeRepository(
-      userWith([membershipWithRoles(roles, staffTeamIds: staffTeamIds, linkedPlayerIds: linkedPlayerIds, ownPlayerId: ownPlayerId)], superAdmin: superAdmin),
+      userWith([membershipWithRoles(roles, staffTeamIds: staffTeamIds, linkedPlayerIds: linkedPlayerIds, ownPlayerId: ownPlayerId, timezone: timezone)], superAdmin: superAdmin),
     ),
     core: core,
     game: game,

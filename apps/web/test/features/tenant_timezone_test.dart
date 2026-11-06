@@ -31,7 +31,7 @@ void main() {
       roles: {TenantRole.admin},
       core: athleteCore(),
       athlete: athlete,
-      tenant: FakeTenantRepository(timezone: 'Asia/Jakarta'),
+      timezone: 'Asia/Jakarta',
       location: '/training',
     );
     expect(find.text('19:00 – 20:30'), findsOneWidget);
@@ -50,7 +50,7 @@ void main() {
       staffTeamIds: {teamA},
       core: coreWithTeam(),
       game: gameWith(),
-      tenant: FakeTenantRepository(timezone: 'Asia/Jakarta'),
+      timezone: 'Asia/Jakarta',
       location: '/matches',
     );
     // 2026-11-14 10:00Z is 17:00 in Jakarta

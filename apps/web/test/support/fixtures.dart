@@ -34,6 +34,7 @@ TenantMembership membershipWithRoles(
   Set<String> linkedPlayerIds = const {},
   String personId = 'person-me',
   String? ownPlayerId,
+  String? timezone,
 }) =>
     TenantMembership(
       personId: personId,
@@ -45,4 +46,5 @@ TenantMembership membershipWithRoles(
       slug: 'role-test',
       hasLogo: false,
       roles: roles,
+      timezone: timezone,
     );

@@ -65,6 +65,7 @@ void main() {
     // logo prove the header interceptor works through the generated client.
     expect(container.read(tenantProfileProvider).value?.name, 'Academia Demo');
     expect(container.read(tenantLogoProvider).value, isNotEmpty);
+    expect(container.read(tenantZoneProvider).label, 'Europe/Madrid'); // from /me, not the profile
 
     // The demo data behind the admin / roster screens (real generated client).
     await tester.tap(navLabel('Equipos'));
