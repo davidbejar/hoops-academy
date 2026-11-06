@@ -60,4 +60,74 @@ services behind `events.enabled`, so the publisher and the replica consumers run
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- **Built:**
+  - Chart 0.7.0, `hoops-service` 0.5.0. A subchart sees only its own values and `global`, so the umbrella cannot hand
+    `.Values.events` to the services: `global.events.enabled` mirrors `events.enabled`, and `templates/events-checks.yaml`
+    (renders nothing) refuses a release where the two differ. With it the subchart derives the client itself (plain env
+    in its ConfigMap, the password as a `secretKeyRef`): `KAFKA_BOOTSTRAP_SERVERS=redpanda.<namespace>.svc.cluster.local:9092`,
+    `KAFKA_SECURITY_PROTOCOL=SASL_PLAINTEXT`, `KAFKA_SASL_USERNAME=<service>`, `KAFKA_SASL_PASSWORD` from
+    `hoops-redpanda-<service>`/`password`. Without it the subchart applies `<service>.events.offEnv`: core
+    `CORE_OUTBOX_POLL_INTERVAL=off`, game `GAME_ROSTER_CONSUMER_ENABLED=false`, athlete `ATHLETE_ROSTER_CONSUMER_ENABLED=false`
+    (`env` may override them, e.g. for a managed Kafka). New values: `global.events.enabled`, `<service>.events.offEnv`,
+    `game.rosterSource` / `athlete.rosterSource` (default `rest`, mapped to `GAME_ROSTER_SOURCE` / `ATHLETE_ROSTER_SOURCE`
+    through the templated `env`); `values-kind.yaml` sets `global.events.enabled: true` and keeps `rest`. The render also fails
+    when a service lacks its `events.users` entry with Secret `hoops-redpanda-<service>`, when `rosterSource` is not
+    `rest|replica`, when it is `replica` without events, and when `env`/`secretEnv` sets `KAFKA_*` while events are on.
+  - `deploy/helm/tests/run.sh`: block "services on the event broker" (22 assertions, committed red first in `1a104ab`):
+    the four keys and the Secret reference on all three Deployments; Secret names equal to `secrets.sh`, the ESO render and
+    the bootstrap Job; events off: no `KAFKA_*`, publisher and consumers off; roster sources; the athlete flip changes only
+    `ATHLETE_ROSTER_SOURCE` and the checksum; the five refusals; the subchart alone and with `global.events.enabled`.
+    Snapshots re-recorded (chart labels, the new env, the Secret refs and checksums).
+  - `deploy/kind/smoke.sh` block "events": publisher readiness `UP`/`OK`, `broker_available`, a SCRAM login per client
+    (Kafka client metrics), then a seeded academy (first admin = the seeded `admin1`, linked without a temporary password;
+    season, team, player), `hoops_outbox_pending` 0 with the published total up by at least 5, both groups' lag 0, applied
+    up by at least 5, parked 0, game lists the team's matches and athlete answers the player's availability (200). The
+    roster source of each service is printed. Two existing `rp ... | grep -q` checks rewritten (SIGPIPE + pipefail made them
+    flaky: "Healthy: true" reported as a failure once).
+  - `deploy/kind/up.sh` restarts core-service when its log shows `SASL authentication failed` after the install (below);
+    Tiltfile: core-service depends on `redpanda-bootstrap`, comment updated; `tilt alpha tiltfile-result` evaluates (14
+    resources). `.trivyignore.yaml` KSV-0109 statement names the `redpanda-bootstrap` script ConfigMap too.
+  - Docs: `events.md` "Kubernetes (chart, WP71)" (env table, refusals, how to watch, the flip, the fresh-install restart,
+    Secret rotation), `kind.md` (what runs where, smoke line, troubleshooting entry, verification status WP71),
+    `release.md` (chart 0.7.0; both switches; the broker Secrets before the upgrade; restart core once after a fresh install).
+- **Verified:**
+  - `deploy/helm/tests/run.sh`: ALL CHART TESTS PASSED, 134 ok (112 + 22), kubeconform 230/230. 15 mutations, one per new
+    assertion (port, Secret name, off env per service, a `KAFKA_*` leak with events off, roster env, flip, `secrets.sh`
+    name, each guard, the mirror helper), each killed by its assertion. `shellcheck -S warning` (run.sh, deploy/kind/*.sh),
+    `actionlint` clean; `trivy fs --scanners misconfig --severity HIGH,CRITICAL --ignorefile .trivyignore.yaml` exit 0
+    (KSV-0109 still fires on both ConfigMaps without the ignore file). `kubectl apply --dry-run=server` of the kind render clean.
+  - kind (compose stopped to keep the 2-CPU VM free): fresh `up.sh --deploy --from-host` 5 min 56 s (an earlier cluster
+    6 min 53 s). Found: the bootstrap Job is a post-install hook and runs only after `--wait`, so all three services start
+    before their users exist (core 14, game and athlete 10 `SASL authentication failed` each). The consumers recover; core's
+    idempotent producer does not: records expire ("Expiring 1 record(s) ... 8000 ms"), `hoops_outbox_pending` 6,
+    `DEGRADED`, until a restart (then 6 published in 10 s). Steady state recovers: user deleted + broker restarted -> 2
+    pending, `DEGRADED`; Job re-run -> 0 pending 10 s later, no restart. Re-run of `up.sh` with the fixed restart branch
+    2 min 56 s (`restart core-service` step).
+  - `smoke.sh core game athlete`, `rest`: SMOKE PASSED, 46 checks, 10 s: `outbox-publisher: UP OK`, broker available 1,
+    SCRAM logins core 2 / game 3 / athlete 3, academy `smoke-1793978327`, published 6 -> 12, game applied 6 -> 12 and athlete
+    6 -> 12 (+6 each: tenant, 2 persons, team, player, team-player), group lag 0, parked 0, max event lag 0.84 / 0.87 s,
+    game 200, athlete `available=true` (roster source rest).
+  - `helm upgrade ... -f values-kind.yaml --set athlete.rosterSource=replica --wait` (revision 3, 11 s): only the athlete pod
+    was replaced, log `Roster source: REPLICA (replica consumer on)`. Smoke: SMOKE PASSED, 46 checks, 14 s: published
+    12 -> 18, game 12 -> 18 (lag 0.41 s), athlete 0 -> 6 after its restart (lag 5.15 s), parked 0, athlete answered from the
+    replica. core scaled to 0: athlete still 200 for that player, 404 for an unknown one, core 503. Third smoke after core
+    came back: PASSED (46). Cluster deleted afterwards.
+- **Decisions/ADRs:** no new ADR (decision 48 as briefed). The mirror `global.events.enabled` plus a refusing guard instead
+  of a single key: Helm gives a subchart no access to its parent's values; renaming the switch to `global.*` would have
+  broken the documented `events.enabled`. The bootstrap address, user and Secret name follow the service's name by
+  convention (no per-service knobs), checked against `events.users`. The start-up race is mitigated in `up.sh`/Tilt, not in
+  the chart (an init container waiting for the user would deadlock with `--wait`, since the Job runs after it).
+- **Open points / follow-ups:**
+  - core-service (not my files): the idempotent producer must recover when its first producer-id request failed
+    authentication (e.g. recreate the emitter, or a liveness signal after a long `DEGRADED` with backlog and no send since
+    start). Until then every fresh Helm install needs `kubectl rollout restart deploy/core-service` after the Job.
+  - Secret rotation of `hoops-redpanda-<service>`: only that service's pod needs a restart (env var; Helm does not roll it,
+    the checksum covers the ConfigMap only), after the Job (`helm upgrade`) set the new password; the superuser restarts
+    `redpanda-0` (events.md).
+  - ADR-0037 cutover still needs: core's backfill of pre-WP67 aggregates, a shadow period with parked 0 and lag in seconds,
+    `just e2e` green with `replica` for both services, the producer fix above; then flip the defaults. The game flip was not
+    run on kind; `applied_event` pruning is still open.
+  - Not run: a deploy with `events.enabled=false` (no broker warnings: render assertions only), `tilt ci`, `--eso` with events.
+  - Docs pass: ADR-0036 and ADR-0037 mention `events.enabled` alone (now with `global.events.enabled`; ADR-0037's "the chart
+    wires the services' Kafka client" is done); `docs/architecture.md`; HANDOVER/FOLLOW-UPS (producer fix). compose was
+    stopped for the proof (`just down`) and started again afterwards.

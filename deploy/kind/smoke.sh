@@ -74,12 +74,12 @@ if kubectl "${CTX[@]}" get statefulset redpanda >/dev/null 2>&1; then
   rp() { kubectl "${CTX[@]}" exec redpanda-0 -c redpanda -- bash -c "$1" 2>&1; }
   # shellcheck disable=SC2016 # expanded inside the container
   as_admin='RPK_USER=admin RPK_PASS="$RP_ADMIN_PASSWORD" RPK_SASL_MECHANISM=SCRAM-SHA-256'
-  rp 'rpk cluster health' | grep -q 'Healthy: *true' && ok "rpk cluster health: healthy" || bad "rpk cluster health: $(rp 'rpk cluster health' | tr '\n' ' ')"
+  rp 'rpk cluster health' | grep 'Healthy: *true' >/dev/null && ok "rpk cluster health: healthy" || bad "rpk cluster health: $(rp 'rpk cluster health' | tr '\n' ' ')"
   st=$(kubectl "${CTX[@]}" get job redpanda-bootstrap -o jsonpath='{.status.succeeded}' 2>/dev/null || true)
   [ "$st" = 1 ] && ok "Job redpanda-bootstrap succeeded" || bad "Job redpanda-bootstrap succeeded='$st'"
   anon=$(rp 'rpk topic list' || true)   # fails on purpose; pipefail would hide the match
   echo "$anon" | grep -q 'SASL is required' && ok "Kafka without a login refused (SASL required)" || bad "Kafka without a login: $anon"
-  rp "$as_admin rpk cluster config get kafka_enable_authorization" | grep -qx true && ok "ACLs enforced (kafka_enable_authorization)" || bad "kafka_enable_authorization not true"
+  rp "$as_admin rpk cluster config get kafka_enable_authorization" | grep -x true >/dev/null && ok "ACLs enforced (kafka_enable_authorization)" || bad "kafka_enable_authorization not true"
   topics=$(rp "$as_admin rpk topic list" | awk 'NR > 1 && $2 == 1 {print $1}' | sort | tr '\n' ' ')
   [ "$topics" = "core.guardian-link core.person core.player core.team core.team-player core.team-staff core.tenant " ] \
     && ok "7 topics, 1 partition each: $topics" || bad "topics: '$topics'"
@@ -209,7 +209,7 @@ if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CT
       applied=$(echo "$m" | total 'hoops_roster_replica_events_total{.*outcome="applied"')
       before=$([ "$s" = game ] && echo "$before_g" || echo "$before_a")
       parked=$(echo "$m" | total hoops_roster_replica_parked_total)
-      lag=$(echo "$m" | { grep '^hoops_roster_replica_lag_seconds' || true; } | awk '$NF > max {max = $NF} END {printf "%.2f", max}')
+      lag=$(echo "$m" | { grep '^hoops_roster_replica_lag_seconds' || true; } | LC_ALL=C awk '$2 > max {max = $2} END {printf "%.2f", max}')
       [ "$(group_lag "$s-service.roster")" = 0 ] && [ "$applied" -ge $((before + 5)) ] && [ "$parked" = 0 ] \
         && ok "$s replica: group lag 0, applied $before -> $applied (+$((applied - before))), parked 0, max event lag ${lag} s" \
         || bad "$s replica: lag $(group_lag "$s-service.roster"), applied $before -> $applied, parked $parked"

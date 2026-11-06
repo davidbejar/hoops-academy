@@ -181,6 +181,10 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
 - Realm changes are not applied to an existing Keycloak DB (import = IGNORE_EXISTING): delete the
   `keycloak-db` Cluster (`kubectl -n hoops delete cluster keycloak-db`) and let Helm/Tilt recreate it.
 - DB init SQL runs once (`postInitApplicationSQLRefs`); to re-run, delete the `hoops-db` Cluster (data loss).
+- core's publisher stays `DEGRADED` after a fresh install, its log shows `SASL authentication failed` and then only
+  "Expiring 1 record(s) ...": it started before the Job `redpanda-bootstrap` created its broker user and its idempotent
+  producer does not recover from that first failure. `kubectl -n hoops rollout restart deploy/core-service` (`up.sh` does
+  it; `events.md` "Kubernetes (chart, WP71)").
 - `flutter build web` hangs at "Compiling lib/main.dart" with `font-subset` processes at 0 % CPU (seen 2026-11-06):
   stop it and build with `--no-tree-shake-icons` (`cd apps/web && flutter build web --release --pwa-strategy=offline-first
   --no-tree-shake-icons`), then `scripts/build-images.sh web --skip-web-build --kind-load`.
@@ -276,6 +280,20 @@ Job logged in with the new password. ESO: the four broker `ExternalSecret`s sync
 as `.env` by SHA-256, basic-auth, username = user, owned by the ExternalSecret). `apply --dry-run=server` of the render
 clean. Not run: `tilt ci` (the Tiltfile evaluates with and without `--eso`), the full `up.sh --eso --deploy` path.
 Cluster deleted.
+WP71 (2026-11-06, chart 0.7.0, services on the broker, compose stopped for the proof): `up.sh --deploy --from-host` on a
+fresh cluster 5 min 56 s; the services started before the Job created their users (14 `SASL authentication failed` in
+core's log, 10 per consumer). game and athlete reconnected by themselves; core's producer did not (every record expired,
+`hoops_outbox_pending` 6) until a restart, after which the 6 events went out within 10 s. A user deleted while core runs
+(broker restarted to force a reconnect) healed by itself 10 s after the Job restored it, so only the very first login
+matters: `up.sh` now restarts core when its log shows the failure (re-run 2 min 56 s, `restart core-service` step), Tilt
+deploys core after `redpanda-bootstrap`. `smoke.sh core game athlete` passed with `rest` (46 checks, 10 s: publisher `UP`
+/`OK`, three SCRAM logins, seeded academy published 6 -> 12, game and athlete applied +6 each, group lag 0, parked 0, max
+event lag 0.84 / 0.87 s). `helm upgrade ... --set athlete.rosterSource=replica`: only the athlete pod was replaced, log
+`Roster source: REPLICA (replica consumer on)`; the smoke passed again (46 checks, 14 s: published 12 -> 18, both replicas
++6, parked 0, athlete answered the new player's availability from the replica). With core scaled to 0, athlete still
+answered 200 for that player and 404 for an unknown one (core 503); a third smoke after core came back passed. `apply
+--dry-run=server` of the render clean. Not run: a deploy with `events.enabled=false` (render assertions only), the game
+flip, `tilt ci`, `--eso`. Cluster deleted.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.

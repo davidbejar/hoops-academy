@@ -135,7 +135,8 @@ if [ "$DEPLOY" = 1 ]; then
   # WP71: the Job redpanda-bootstrap (a post-install hook) creates the broker users only after --wait, so on a fresh install
   # the services start before their users exist. The consumers recover by themselves; core's idempotent producer does not
   # when its very first producer-id request failed authentication (it does after later failures). Restart it once.
-  if "${K[@]}" -n "$NS" logs deploy/core-service 2>/dev/null | grep -q 'SASL authentication failed'; then
+  # (grep without -q: with -q it stops at the first match, kubectl dies of SIGPIPE and pipefail turns the match false.)
+  if "${K[@]}" -n "$NS" logs deploy/core-service 2>/dev/null | grep 'SASL authentication failed' >/dev/null; then
     step "restart core-service (it started before its broker user existed)"
     "${K[@]}" -n "$NS" rollout restart deployment/core-service
     "${K[@]}" -n "$NS" rollout status deployment/core-service --timeout=600s
