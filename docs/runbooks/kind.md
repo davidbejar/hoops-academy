@@ -203,6 +203,19 @@ address family; `smoke.sh core game athlete` passed; `ratelimit-check.sh` passed
 `hoops/hoops/*`, NOPERM on other keys, GET, EVAL, FLUSHALL, KEYS, SET, ACL, INFO, SCRIPT, MULTI); `redis-down` passed
 (130 requests, 0 x 429, 15 s; #121 again after Redis was back with a freshly written ACL file). The password appeared
 in no log, pod spec, Envoy Gateway config or chart render. Re-running `up.sh` left the controller untouched.
+WP63 (2026-11-06, chart 0.4.0 on a fresh cluster): `up.sh --deploy --from-host` 9 min 5 s cold; Gateway `Programmed`, both
+BackendTrafficPolicies and both ClientTrafficPolicies `Accepted`; `smoke.sh core game athlete` passed (3 s);
+`ratelimit-check.sh` and `redis-down` passed (numbers as WP46: first 429 at #121 / #61, tight bursts 20 and 10 passed,
+ACL probe, 130/130 passed with Redis down, #121 again after). Two Envoy replicas (`kubectl -n hoops patch envoyproxy
+hoops --type merge -p '{"spec":{"provider":{"kubernetes":{"envoyDeployment":{"replicas":2}}}}}'`): first 429 at #121,
+tight burst 20 passed / 40 x 429, the burst split 97/107 and 123/123 access-log lines across the two pods. `tilt ci --
+--from-host` after `up.sh` on a fresh cluster: "All workloads are healthy", `up.sh` + `tilt ci` 9 min 9 s, no Tiltfile
+change. Controller-restart branch of `up.sh`: with `rateLimit.timeout` 100ms -> 150ms in `EG_VALUES` the re-run printed
+`deployment.apps/envoy-gateway restarted`, the ConfigMap showed 150ms and the proxies' `envoy.filters.http.ratelimit`
+filters `"timeout": "0.150s"` (admin `:19000/config_dump`); changed back, restarted again, 100ms. A re-run without a
+change does not restart. e2e journey on kind (Keycloak and Mailpit port-forwards 18080 / 18025): 21/21, mail checks
+included, 71 s (25 tests with `MailSinkTest`). The Podman VM (2 CPUs) was shared with other builds (load average 25-37):
+see the load note under Troubleshooting.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.

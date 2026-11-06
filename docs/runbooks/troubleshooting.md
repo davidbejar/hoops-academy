@@ -87,6 +87,13 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
   `deploy/helm/tests/run.sh` asserts it). Check the service's view:
   `kubectl -n envoy-gateway-system port-forward deploy/envoy-ratelimit 6070` and `curl -s localhost:6070/rlconfig`
   must list a MINUTE and a SECOND entry per route rule and address family.
+- **Symptom D:** `ratelimit-check.sh` fails only on a busy machine (first 429 at #69 / #94 / #144 instead of #61 / #121,
+  a tight burst of 30-55 passing, 503 on the other routes, `envoy-gateway` and `envoy-ratelimit` restarted once).
+- **Cause D:** the Podman VM is starved (`podman machine ssh cat /proc/loadavg` far above the CPU count, e.g. parallel
+  Testcontainers builds): the paced burst then spans more than one calendar-minute window, the burst is dispatched over
+  several seconds, DNS lookups of `ratelimit-redis` time out and probes restart the controller and the rate limit pod.
+- **Fix D:** not a limiter bug. Wait until the load is below ~5 and re-run the mode that failed (`ratelimit-check.sh
+  events|token|redis-down`); the numbers are then exact.
 
 ## Flutter dev server (`flutter run`, port 5173): CORS, redirect URI
 - **Symptom:** login redirect error "Invalid parameter: redirect_uri", or browser CORS errors on `/api/*` and `/auth/*`.
