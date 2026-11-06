@@ -41,7 +41,7 @@
     <dependency><!-- REST Assured's Apache HttpClient 4 needs it; the Quarkus BOM replaces it with jcl-over-slf4j elsewhere -->
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
-      <version>1.3.5</version>
+      <version>1.4.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
