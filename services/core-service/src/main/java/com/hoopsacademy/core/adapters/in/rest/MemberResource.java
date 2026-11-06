@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
-import com.hoopsacademy.core.adapters.in.shared.MergePatch;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.members.InviteMember;
@@ -42,6 +42,7 @@ import jakarta.ws.rs.core.UriInfo;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /** Members, their roles and deactivation — ADMIN only (authz matrix: "Members, roles, guardian links"). */
@@ -49,6 +50,9 @@ import java.util.UUID;
 @RequiresTenantRole(TenantRole.ADMIN)
 @Produces(MediaType.APPLICATION_JSON)
 public class MemberResource {
+
+    /** {@code UpdateMemberRequest.clear} (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("email", "phone", "birthDate", "gender");
 
     /** Contract {@code ReplaceMemberRolesRequest}. */
     public record ReplaceRolesRequest(
@@ -108,16 +112,16 @@ public class MemberResource {
     @Path("/{personId}")
     @Consumes(MediaType.APPLICATION_JSON)
     public MemberDto update(@PathParam("personId") UUID personId, @NotNull JsonNode body) {
-        MergePatch patch = MergePatch.of(body);
+        PatchBody patch = PatchBody.of(body, UPDATE_CLEARABLE);
         PersonalDataChanges changes = new PersonalDataChanges(
-                patch.requiredText("givenName", 80),
-                patch.requiredText("familyName", 80),
-                patch.email("email", true),
+                patch.nonBlankText("givenName", 80),
+                patch.nonBlankText("familyName", 80),
+                patch.email("email"),
                 patch.text("phone", 32),
-                patch.parsed("birthDate", true, LocalDate::parse),
-                patch.parsed("gender", true, Gender::valueOf),
-                patch.parsed("locale", false, AppLocale::fromCode));
-        patch.validate(true);
+                patch.parsed("birthDate", LocalDate::parse),
+                patch.parsed("gender", Gender::valueOf),
+                patch.parsed("locale", AppLocale::fromCode));
+        patch.validate();
         return MemberDto.of(commands.updateData(new PersonId(personId), changes));
     }
 

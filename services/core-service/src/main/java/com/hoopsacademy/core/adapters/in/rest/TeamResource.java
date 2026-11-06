@@ -2,7 +2,7 @@ package com.hoopsacademy.core.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
-import com.hoopsacademy.core.adapters.in.shared.MergePatch;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.application.roster.TeamService;
 import com.hoopsacademy.core.application.roster.TeamService.NewTeam;
 import com.hoopsacademy.core.application.roster.TeamService.TeamQuery;
@@ -40,12 +40,16 @@ import jakarta.ws.rs.core.UriInfo;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /** Teams and team staff (any member reads; ADMIN writes). Assignments live in {@link TeamPlayerResource}. */
 @Path("/api/core/teams")
 @Produces(MediaType.APPLICATION_JSON)
 public class TeamResource {
+
+    /** {@code UpdateTeamRequest.clear} (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("alias");
 
     /** Contract {@code CreateTeamRequest}. */
     public record CreateTeamRequest(@NotNull UUID seasonId, @NotNull @Size(min = 1, max = Team.MAX_NAME) String name,
@@ -100,13 +104,13 @@ public class TeamResource {
     @Path("/{teamId}")
     @Consumes(MediaType.APPLICATION_JSON)
     public TeamDto update(@PathParam("teamId") UUID id, @NotNull JsonNode body) {
-        MergePatch patch = MergePatch.of(body);
+        PatchBody patch = PatchBody.of(body, UPDATE_CLEARABLE);
         TeamChanges changes = new TeamChanges(
-                patch.requiredText("name", Team.MAX_NAME),
+                patch.nonBlankText("name", Team.MAX_NAME),
                 patch.text("alias", Team.MAX_ALIAS),
-                patch.parsed("ageCategoryId", false, value -> new AgeCategoryId(UUID.fromString(value))),
-                patch.parsed("genderPolicy", false, GenderPolicy::valueOf));
-        patch.validate(true);
+                patch.parsed("ageCategoryId", value -> new AgeCategoryId(UUID.fromString(value))),
+                patch.parsed("genderPolicy", GenderPolicy::valueOf));
+        patch.validate();
         return TeamDto.of(teams.update(new TeamId(id), changes));
     }
 

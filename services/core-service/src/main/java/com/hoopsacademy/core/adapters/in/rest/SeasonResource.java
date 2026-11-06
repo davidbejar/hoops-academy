@@ -1,7 +1,7 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hoopsacademy.core.adapters.in.shared.MergePatch;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.application.roster.RolloverSeason;
 import com.hoopsacademy.core.application.roster.SeasonService;
 import com.hoopsacademy.core.application.roster.SeasonService.NewSeason;
@@ -79,13 +79,13 @@ public class SeasonResource {
     @Path("/{seasonId}")
     @Consumes(MediaType.APPLICATION_JSON)
     public SeasonDto update(@PathParam("seasonId") UUID id, @NotNull JsonNode body) {
-        MergePatch patch = MergePatch.of(body);
+        PatchBody patch = PatchBody.of(body);
         SeasonChanges changes = new SeasonChanges(
-                patch.requiredText("name", Season.MAX_NAME),
-                patch.parsed("startsOn", false, LocalDate::parse),
-                patch.parsed("endsOn", false, LocalDate::parse),
-                patch.integer("referenceYear", false, Season.MIN_REFERENCE_YEAR, Season.MAX_REFERENCE_YEAR));
-        patch.validate(true);
+                patch.nonBlankText("name", Season.MAX_NAME),
+                patch.parsed("startsOn", LocalDate::parse),
+                patch.parsed("endsOn", LocalDate::parse),
+                patch.integer("referenceYear", Season.MIN_REFERENCE_YEAR, Season.MAX_REFERENCE_YEAR));
+        patch.validate();
         return SeasonDto.of(seasons.update(new SeasonId(id), changes));
     }
 

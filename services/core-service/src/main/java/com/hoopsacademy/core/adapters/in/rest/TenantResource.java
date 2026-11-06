@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
-import com.hoopsacademy.core.adapters.in.shared.MergePatch;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.application.tenant.TenantProfileService;
 import com.hoopsacademy.core.application.tenant.TenantSettingsService;
 import com.hoopsacademy.core.domain.shared.AppLocale;
@@ -18,11 +18,15 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Set;
 
 /** Academy profile and settings: any member reads (non-members never get here: 404), ADMIN writes. */
 @Path("/api/core/tenant")
 @Produces(MediaType.APPLICATION_JSON)
 public class TenantResource {
+
+    /** {@code UpdateTenantProfileRequest.clear} (ADR-0032). */
+    private static final Set<String> PROFILE_CLEARABLE = Set.of("contactEmail", "websiteUrl");
 
     private final TenantProfileService profiles;
     private final TenantSettingsService settings;
@@ -41,14 +45,14 @@ public class TenantResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresTenantRole(TenantRole.ADMIN)
     public TenantProfileDto updateProfile(@NotNull JsonNode body) {
-        MergePatch patch = MergePatch.of(body);
+        PatchBody patch = PatchBody.of(body, PROFILE_CLEARABLE);
         TenantProfileChanges changes = new TenantProfileChanges(
-                patch.requiredText("name", 120),
-                patch.parsed("timezone", false, Constraints::zone),
-                patch.parsed("defaultLocale", false, AppLocale::fromCode),
-                patch.email("contactEmail", true),
-                patch.parsed("websiteUrl", true, TenantResource::httpUrl));
-        patch.validate(true);
+                patch.nonBlankText("name", 120),
+                patch.parsed("timezone", Constraints::zone),
+                patch.parsed("defaultLocale", AppLocale::fromCode),
+                patch.email("contactEmail"),
+                patch.parsed("websiteUrl", TenantResource::httpUrl));
+        patch.validate();
         return TenantProfileDto.of(profiles.update(changes));
     }
 

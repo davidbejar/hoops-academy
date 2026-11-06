@@ -1,10 +1,8 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hoopsacademy.common.problem.Problem;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
-import com.hoopsacademy.core.adapters.in.shared.InvalidRequestException;
-import com.hoopsacademy.core.adapters.in.shared.MergePatch;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.adapters.in.shared.Params;
 import com.hoopsacademy.core.application.roster.AssignPlayerToTeam;
 import com.hoopsacademy.core.application.roster.AssignPlayerToTeam.Assignment;
@@ -32,6 +30,7 @@ import jakarta.ws.rs.core.Response;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /** A team's player assignments (eligibility-checked) and the per-player eligibility check. */
@@ -39,6 +38,8 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 public class TeamPlayerResource {
 
+    /** {@code UpdateTeamPlayerRequest.clear} (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("jerseyNumber");
     private static final java.util.regex.Pattern JERSEY = java.util.regex.Pattern.compile(Constraints.JERSEY);
 
     /** Contract {@code AssignPlayerRequest}. */
@@ -75,14 +76,11 @@ public class TeamPlayerResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public TeamPlayerDto renumber(@PathParam("teamId") UUID team, @PathParam("playerId") UUID player,
             @NotNull JsonNode body) {
-        MergePatch patch = MergePatch.of(body);
-        Patch<String> jersey = patch.matching("jerseyNumber", true, JERSEY);
-        patch.validate(true);
-        if (!jersey.isPresent()) {
-            throw new InvalidRequestException(List.of(new Problem.Violation("jerseyNumber", "is required")));
-        }
+        PatchBody patch = PatchBody.of(body, UPDATE_CLEARABLE);
+        Patch<String> jersey = patch.matching("jerseyNumber", JERSEY);
+        patch.validate();
         return TeamPlayerDto.of(assignments.renumber(new TeamId(team), new PlayerId(player),
-                JerseyNumber.ofNullable(jersey.applyTo(null))));
+                jersey.map(JerseyNumber::ofNullable)));
     }
 
     @DELETE

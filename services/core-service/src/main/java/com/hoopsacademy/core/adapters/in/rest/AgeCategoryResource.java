@@ -2,7 +2,7 @@ package com.hoopsacademy.core.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
-import com.hoopsacademy.core.adapters.in.shared.MergePatch;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.application.roster.AgeCategoryService;
 import com.hoopsacademy.core.application.roster.AgeCategoryService.NewAgeCategory;
 import com.hoopsacademy.core.domain.roster.AgeCategory;
@@ -26,6 +26,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /** The tenant's age categories (any member reads; ADMIN writes). */
@@ -33,6 +34,8 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 public class AgeCategoryResource {
 
+    /** {@code UpdateAgeCategoryRequest.clear} (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("maxAge");
     private static final java.util.regex.Pattern CODE = java.util.regex.Pattern.compile(Constraints.CATEGORY_CODE);
 
     /** Contract {@code AgeCategoryInput}. */
@@ -63,13 +66,13 @@ public class AgeCategoryResource {
     @Path("/{ageCategoryId}")
     @Consumes(MediaType.APPLICATION_JSON)
     public AgeCategoryDto update(@PathParam("ageCategoryId") UUID id, @NotNull JsonNode body) {
-        MergePatch patch = MergePatch.of(body);
+        PatchBody patch = PatchBody.of(body, UPDATE_CLEARABLE);
         AgeCategoryChanges changes = new AgeCategoryChanges(
-                patch.matching("code", false, CODE),
-                patch.requiredText("name", 60),
-                patch.integer("maxAge", true, AgeCategory.MIN_AGE, AgeCategory.MAX_AGE),
-                patch.integer("rank", false, 0, Integer.MAX_VALUE));
-        patch.validate(true);
+                patch.matching("code", CODE),
+                patch.nonBlankText("name", 60),
+                patch.integer("maxAge", AgeCategory.MIN_AGE, AgeCategory.MAX_AGE),
+                patch.integer("rank", 0, Integer.MAX_VALUE));
+        patch.validate();
         return AgeCategoryDto.of(categories.update(new AgeCategoryId(id), changes));
     }
 

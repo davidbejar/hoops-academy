@@ -3,7 +3,7 @@ package com.hoopsacademy.core.adapters.in.platform;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
-import com.hoopsacademy.core.adapters.in.shared.MergePatch;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.members.MemberView;
@@ -76,13 +76,13 @@ public class PlatformAdminResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public TenantAdminDto update(@PathParam("tenantId") UUID tenantId, @PathParam("personId") UUID personId,
             @NotNull JsonNode body) {
-        MergePatch patch = MergePatch.of(body);
+        PatchBody patch = PatchBody.of(body);
         PersonalDataChanges changes = PersonalDataChanges.none()
-                .withGivenName(patch.requiredText("givenName", 80))
-                .withFamilyName(patch.requiredText("familyName", 80))
-                .withEmail(patch.email("email", false));
+                .withGivenName(patch.nonBlankText("givenName", 80))
+                .withFamilyName(patch.nonBlankText("familyName", 80))
+                .withEmail(patch.email("email"));
         patch.allowOnly("givenName", "familyName", "email");
-        patch.validate(true);
+        patch.validate();
         return TenantAdminDto.of(admins.update(new TenantId(tenantId), new PersonId(personId), changes));
     }
 

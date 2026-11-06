@@ -1,8 +1,11 @@
 package com.hoopsacademy.core.domain.shared;
 
+import java.util.function.Function;
+
 /**
- * One field of a partial update (JSON merge-patch semantics): absent = keep the current value, present with a
- * value = replace, present with {@code null} = clear.
+ * One field of a partial update: absent = keep the current value, present with a value = replace, present with
+ * {@code null} = clear (the REST adapter reads a field named in the request's {@code clear} list as the latter,
+ * ADR-0032).
  */
 public final class Patch<T> {
 
@@ -37,5 +40,13 @@ public final class Patch<T> {
 
     public T applyTo(T current) {
         return present ? value : current;
+    }
+
+    /** The same patch over a converted value; absent stays absent and a clear stays a clear. */
+    public <R> Patch<R> map(Function<T, R> converter) {
+        if (!present) {
+            return absent();
+        }
+        return of(value == null ? null : converter.apply(value));
     }
 }

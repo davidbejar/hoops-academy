@@ -12,6 +12,7 @@ import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.roster.JerseyNumber;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamPlayer;
+import com.hoopsacademy.core.domain.shared.Patch;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.List;
@@ -49,8 +50,9 @@ public class TeamPlayerService {
 
     @Transactional
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
-    public TeamPlayerView renumber(TeamId team, PlayerId player, JerseyNumber jersey) {
+    public TeamPlayerView renumber(TeamId team, PlayerId player, Patch<JerseyNumber> change) {
         TeamPlayer open = openAssignment(team, player);
+        JerseyNumber jersey = change.applyTo(open.jersey());
         if (jersey != null && assignments.jerseyTaken(team, jersey, Optional.of(open.id()))) {
             throw new ConflictException("Jersey " + jersey.value() + " is already used on the team",
                     AssignPlayerToTeam.JERSEY_TAKEN);

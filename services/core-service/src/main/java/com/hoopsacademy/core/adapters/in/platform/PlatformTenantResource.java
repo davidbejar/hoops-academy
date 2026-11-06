@@ -5,7 +5,7 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
 import com.hoopsacademy.core.adapters.in.shared.InvalidRequestException;
-import com.hoopsacademy.core.adapters.in.shared.MergePatch;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.Params;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
@@ -111,11 +111,11 @@ public class PlatformTenantResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/{tenantId}")
     public TenantDto update(@PathParam("tenantId") UUID id, @NotNull JsonNode body) {
-        MergePatch patch = MergePatch.of(body);
-        Patch<String> name = patch.requiredText("name", 120);
-        Patch<ZoneId> timezone = patch.parsed("timezone", false, Constraints::zone);
-        Patch<AppLocale> locale = patch.parsed("defaultLocale", false, AppLocale::fromCode);
-        patch.validate(true);
+        PatchBody patch = PatchBody.of(body);
+        Patch<String> name = patch.nonBlankText("name", 120);
+        Patch<ZoneId> timezone = patch.parsed("timezone", Constraints::zone);
+        Patch<AppLocale> locale = patch.parsed("defaultLocale", AppLocale::fromCode);
+        patch.validate();
         return TenantDto.of(lifecycle.changeMasterData(new TenantId(id), name, timezone, locale));
     }
 
