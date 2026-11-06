@@ -5,22 +5,11 @@
 #   deploy/kind/secrets.sh | kubectl apply -f -          (used by up.sh; the Tiltfile reads the same output)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-ENV_FILE="${ENV_FILE:-.env}"
 NS="${HOOPS_NAMESPACE:-hoops}"
 EG_NS=envoy-gateway-system
-[ -f "$ENV_FILE" ] || { echo "secrets.sh: $ENV_FILE not found - copy .env.example to .env and set real values" >&2; exit 1; }
-set -a; # shellcheck disable=SC1090
-. "./$ENV_FILE"; set +a
-
-REQUIRED=(CORE_MIGRATOR_PASSWORD CORE_APP_PASSWORD CORE_PLATFORM_PASSWORD GAME_MIGRATOR_PASSWORD GAME_APP_PASSWORD
-          ATHLETE_MIGRATOR_PASSWORD ATHLETE_APP_PASSWORD KEYCLOAK_ADMIN KEYCLOAK_ADMIN_PASSWORD KC_DB_PASSWORD
-          CORE_SERVICE_CLIENT_SECRET GAME_SERVICE_CLIENT_SECRET ATHLETE_SERVICE_CLIENT_SECRET DEV_USER_PASSWORD
-          RATELIMIT_REDIS_PASSWORD)
-missing=0
-for v in "${REQUIRED[@]}"; do
-  if [ -z "${!v:-}" ]; then echo "secrets.sh: missing $v in $ENV_FILE" >&2; missing=1; fi
-done
-[ "$missing" = 0 ] || exit 1
+# shellcheck source=deploy/kind/env-keys.sh
+. deploy/kind/env-keys.sh
+load_env secrets.sh
 
 LABEL=app.kubernetes.io/part-of=hoops-academy
 emit() { kubectl create secret generic "$@" -n "${SECRET_NS:-$NS}" --dry-run=client -o yaml \

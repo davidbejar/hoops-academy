@@ -6,11 +6,14 @@
 #   tilt ci game-service athlete-service -- --services=game-service,athlete-service   subset + their dependencies
 # Images: custom_build -> scripts/build-images.sh (podman build + `kind load image-archive`); no registry, no BuildKit.
 # Secrets: rendered from .env by deploy/kind/secrets.sh into memory and applied as k8s objects; never written to disk.
+#   tilt up -- --eso              on a cluster from `deploy/kind/up.sh --eso` (WP65): no secrets.sh, the chart's
+#                                 ExternalSecrets (externalSecrets.enabled=true) and the External Secrets Operator make them
 
 config.define_string_list('to-run', args=True, usage='resources to run (default: all); dependencies are included')
 config.define_string_list('services', args=False, usage='services to build/deploy (default: all three)')
 config.define_bool('from-host', args=False, usage='package with ./mvnw on the host and copy the fast-jar (faster)')
 config.define_bool('skip-flutter', args=False, usage='reuse apps/web/build/web instead of running flutter build web')
+config.define_bool('eso', args=False, usage='Secrets from the External Secrets Operator (cluster from `deploy/kind/up.sh --eso`)')
 cfg = config.parse()
 if cfg.get('to-run'):
     config.set_enabled_resources(cfg.get('to-run'))
@@ -22,6 +25,7 @@ for svc in services:
     if svc not in ALL_SERVICES:
         fail('unknown service %s (expected one of %s)' % (svc, ALL_SERVICES))
 from_host = cfg.get('from-host', False)
+eso = cfg.get('eso', False)
 
 allow_k8s_contexts('kind-hoops')
 if k8s_context() != 'kind-hoops':
@@ -33,11 +37,13 @@ os.putenv('KIND_EXPERIMENTAL_PROVIDER', 'podman')
 # ---------------------------------------------------------------------------------------------------- secrets
 # Equivalent of secret_from_dict() for every key in .env: the YAML only lives in Tilt's memory; Tilt redacts the values
 # in its logs/UI (secret_settings default). Missing .env => fail with a clear message.
-if not os.path.exists('.env'):
-    fail('.env missing: cp .env.example .env and set values')
-watch_file('.env')
-secrets_yaml = local('deploy/kind/secrets.sh', quiet=True, echo_off=True)
-k8s_yaml(secrets_yaml)
+# With --eso the Secrets come from ESO instead (the ExternalSecrets are part of the chart below).
+if not eso:
+    if not os.path.exists('.env'):
+        fail('.env missing: cp .env.example .env and set values')
+    watch_file('.env')
+    secrets_yaml = local('deploy/kind/secrets.sh', quiet=True, echo_off=True)
+    k8s_yaml(secrets_yaml)
 
 # ---------------------------------------------------------------------------------------------------- images
 SERVICE_DEPS = {
@@ -80,6 +86,8 @@ helm_set = []
 for svc in ALL_SERVICES:
     if svc not in services:
         helm_set.append('%s.enabled=false' % svc.replace('-service', ''))
+if eso:
+    helm_set.append('externalSecrets.enabled=true')
 k8s_yaml(helm(
     'deploy/helm/hoops',
     name='hoops',
@@ -94,14 +102,17 @@ watch_file('infra/db/init/01_roles_schemas.sql')
 # ---------------------------------------------------------------------------------------------------- resources
 # Ordering: secrets -> databases -> keycloak -> services | web (services and web do not wait on each other, so a
 # broken service image never blocks the rest).
+SECRET_NAMES = ['hoops-db-core-migrator', 'hoops-db-core-app', 'hoops-db-core-platform',
+                'hoops-db-game-migrator', 'hoops-db-game-app', 'hoops-db-athlete-migrator', 'hoops-db-athlete-app',
+                'keycloak-db-app', 'keycloak-admin', 'hoops-oidc-core-service', 'hoops-oidc-game-service',
+                'hoops-oidc-athlete-service', 'hoops-ratelimit-redis']
+# --eso: the ExternalSecrets (same names; ESO creates the Secrets, which Tilt does not track); hoops-dev-users is only
+# rendered by secrets.sh. envoy-ratelimit-redis-auth is the REDIS_AUTH of the rate limit pods (WP46).
+SECRET_KIND = 'externalsecret' if eso else 'secret'
 k8s_resource(
     new_name='secrets',
-    objects=['%s:secret' % n for n in [
-        'hoops-db-core-migrator', 'hoops-db-core-app', 'hoops-db-core-platform',
-        'hoops-db-game-migrator', 'hoops-db-game-app', 'hoops-db-athlete-migrator', 'hoops-db-athlete-app',
-        'keycloak-db-app', 'keycloak-admin', 'hoops-oidc-core-service', 'hoops-oidc-game-service',
-        'hoops-oidc-athlete-service', 'hoops-dev-users', 'hoops-ratelimit-redis']] +
-        ['envoy-ratelimit-redis-auth:secret:envoy-gateway-system'],  # REDIS_AUTH of the rate limit pods (WP46)
+    objects=['%s:%s' % (n, SECRET_KIND) for n in SECRET_NAMES + ([] if eso else ['hoops-dev-users'])] +
+        ['envoy-ratelimit-redis-auth:%s:envoy-gateway-system' % SECRET_KIND],
     labels=['infra'],
 )
 k8s_resource(

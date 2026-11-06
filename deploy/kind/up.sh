@@ -2,8 +2,12 @@
 # Creates the Hoops Academy kind cluster (Podman provider) with Envoy Gateway (Gateway API), the CloudNativePG
 # operator, namespace `hoops`, the Secrets from .env and a self-signed TLS Secret for the Gateway's HTTPS listener. Then either run `tilt up` (inner loop) or pass --deploy to build the
 # images, load them into kind and `helm upgrade --install` the umbrella chart without Tilt.
+# --eso (WP65, ADR-0012 amendment): no deploy/kind/secrets.sh; the External Secrets Operator (ESO_VERSION) is installed with
+# a ClusterSecretStore `hoops` backed by one bootstrap Secret built from .env (deploy/kind/eso-store.sh), and the chart is
+# deployed with externalSecrets.enabled=true, so ESO writes every Secret (`tilt up -- --eso` does the same with Tilt).
+# Pick the mode when the cluster is created; to switch, `just kind-down` first.
 #
-#   deploy/kind/up.sh [--deploy] [--from-host]
+#   deploy/kind/up.sh [--deploy] [--from-host] [--eso]
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -15,6 +19,9 @@ ENVOY_GATEWAY_VERSION="v1.9.3"
 GATEWAY_API_VERSION="v1.6.1"
 CNPG_VERSION="1.30.1"
 CNPG_BRANCH="release-${CNPG_VERSION%.*}"
+# External Secrets Operator (--eso): API external-secrets.io/v1. The chart tests validate the ExternalSecrets against this
+# version's CRD (deploy/helm/tests/schemas, regenerate with update-eso.sh when bumping).
+ESO_VERSION="v2.14.0"
 # Global rate limiting (WP40, ADR-0033): Envoy Gateway deploys its rate limit service (Deployment envoy-ratelimit) with
 # a Redis backend; values-kind.yaml deploys that Redis in namespace $NS (rateLimit.redis.enabled). failClosed=false:
 # when the rate limit service or Redis does not answer within the timeout, requests pass (fail open). Other clusters
@@ -32,16 +39,17 @@ EG_VALUES=(
   --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.memory=32Mi
   --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.limits.memory=128Mi
 )
-DEPLOY=0 BUILD_FLAGS=()
+DEPLOY=0 ESO=0 BUILD_FLAGS=()
 for a in "$@"; do
   case "$a" in
     --deploy) DEPLOY=1 ;;
+    --eso) ESO=1 ;;
     --from-host) BUILD_FLAGS+=(--from-host) ;;
     *) echo "up.sh: unknown argument $a" >&2; exit 2 ;;
   esac
 done
 
-for t in podman kind kubectl helm openssl; do command -v "$t" >/dev/null || { echo "up.sh: $t not found" >&2; exit 1; }; done
+for t in podman kind kubectl helm openssl jq; do command -v "$t" >/dev/null || { echo "up.sh: $t not found" >&2; exit 1; }; done
 [ -f .env ] || { echo "up.sh: .env missing (cp .env.example .env and set values)" >&2; exit 1; }
 # shellcheck disable=SC1091
 source scripts/env.sh >/dev/null
@@ -59,9 +67,22 @@ kubectl config use-context "kind-$CLUSTER" >/dev/null
 K=(kubectl --context "kind-$CLUSTER")
 
 # Secrets first (ADR-0012): the rate limit pods of Envoy Gateway read their Redis login from envoy-gateway-system.
-step "namespaces $NS + envoy-gateway-system, secrets from .env"
-for n in "$NS" envoy-gateway-system; do "${K[@]}" create namespace "$n" --dry-run=client -o yaml | "${K[@]}" apply -f -; done
-HOOPS_NAMESPACE="$NS" deploy/kind/secrets.sh | "${K[@]}" apply -f -
+if [ "$ESO" = 0 ]; then
+  step "namespaces $NS + envoy-gateway-system, secrets from .env"
+  for n in "$NS" envoy-gateway-system; do "${K[@]}" create namespace "$n" --dry-run=client -o yaml | "${K[@]}" apply -f -; done
+  HOOPS_NAMESPACE="$NS" deploy/kind/secrets.sh | "${K[@]}" apply -f -
+else
+  # The ExternalSecrets come with the chart, so the Secrets appear only once it is deployed; until then the envoy-ratelimit
+  # pods wait for envoy-ratelimit-redis-auth (CreateContainerConfigError), which resolves itself.
+  step "namespaces $NS + envoy-gateway-system + hoops-secret-store, External Secrets Operator $ESO_VERSION"
+  for n in "$NS" envoy-gateway-system hoops-secret-store; do
+    "${K[@]}" create namespace "$n" --dry-run=client -o yaml | "${K[@]}" apply -f -
+  done
+  helm --kube-context "kind-$CLUSTER" upgrade --install external-secrets oci://ghcr.io/external-secrets/charts/external-secrets \
+    --version "${ESO_VERSION#v}" -n external-secrets --create-namespace --wait --timeout 15m
+  HOOPS_NAMESPACE="$NS" deploy/kind/eso-store.sh | "${K[@]}" apply -f -
+  "${K[@]}" wait clustersecretstore/hoops --for=condition=Ready --timeout=120s
+fi
 
 step "Envoy Gateway $ENVOY_GATEWAY_VERSION (Gateway API $GATEWAY_API_VERSION CRDs)"
 # `helm upgrade` never updates CRDs: on a version bump apply them first (docs/adr/0031-gateway-api.md, upgrade path).
@@ -106,6 +127,7 @@ if [ "$DEPLOY" = 1 ]; then
   scripts/sync-chart-files.sh   # realm JSON + init SQL copies inside the charts (no symlinks; helm package works)
   VALUES=(-f deploy/helm/hoops/values-kind.yaml)
   [ ! -f deploy/helm/hoops/values-local.yaml ] || VALUES+=(-f deploy/helm/hoops/values-local.yaml)
+  [ "$ESO" = 0 ] || VALUES+=(--set externalSecrets.enabled=true)
   helm --kube-context "kind-$CLUSTER" upgrade --install hoops deploy/helm/hoops -n "$NS" "${VALUES[@]}" \
     --wait --timeout 15m
 fi
@@ -113,6 +135,6 @@ fi
 cat <<MSG
 
 kind cluster '$CLUSTER' ready.  Gateway: http://localhost:8090  (https://localhost:8453 is optional, self-signed)
-Next: tilt up            (or: deploy/kind/up.sh --deploy)
+Next: tilt up            (or: deploy/kind/up.sh --deploy; with --eso: tilt up -- --eso)
       deploy/kind/seed-users.sh   once Keycloak is Ready
 MSG
