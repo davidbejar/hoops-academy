@@ -49,4 +49,35 @@ can cherry-pick it, and tell the orchestrator.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built: admin (hub, members list/detail/invite, academy profile + logo, seasons + rollover, age categories), platform
+  (academies list, academy detail with admins section, usage dashboard, usage trend), audit log, profile, me / my
+  players hub and tenant avatar now use the kit and tokens: `PageBody` + `PageHeader`, `ListRow` + `InitialsAvatar`,
+  `SectionCard`, `StatusChip`, `NoticeBanner`, `HoopsSpace/HoopsRadius`; `AppTokens`, `Card`, `ListTile`, `InfoChip`,
+  `CircleAvatar` and raw `colorScheme` meanings are gone from the six features (grep proof: no match for
+  `AppTokens|Card(|ListTile(|InfoChip|ChipTone|Color(0x|fontSize|CircleAvatar|colorScheme.|EmptyView` in
+  `lib/features/{admin,platform,audit,profile,me,tenant}`; the only `*ListTile` left are `CheckboxListTile` in the
+  rollover wizard and the audit action filter dialog). `TenantAvatar` (API unchanged) now draws `InitialsAvatar`.
+  Platform usage: per-service `SectionCard` with label / value / single-hue bar rows, a warning `NoticeBanner` for
+  unavailable services, the trend card below, as in `platform_usage.png`. New kit widget `IconTile` (commit
+  `feat(web): kit: IconTile`, with test and light/dark golden), used by the admin hub, audit entries and profile.
+- Verified (all fresh, in the worktree): `dart format --set-exit-if-changed lib test` 0 changed; `flutter analyze` no
+  issues; `flutter test` 877 passed, 0 failed; `tool/web_smoke.sh` (mock journey in Chrome) "All tests passed". Goldens re-recorded and
+  viewed: `test/golden/goldens/audit_activity_{360x780,360x780_dark,1024x768}.png`,
+  `platform_admins_{360x780,360x780_dark,1024x768,last_360x780}.png`, `platform_admin_add_360x780.png`,
+  `temporary_password_{360x780,360x780_dark,1024x768}.png`; new `test/golden/platform_usage_golden_test.dart` with
+  `platform_usage_{360x1900,360x1900_dark,1024x1400}.png` and `platform_list_360x780{,_dark}.png`;
+  `goldens/kit/icon_tile_{light,dark}.png`. Changed outside my files only because my screens appear in them:
+  `home_admin_*` / `home_parent_360x780` (admin hub, shell avatar), `teams_list_360x780`, `training_week_360x780`,
+  `live_match_360x780` (the shell's academy avatar is now the kit one). Merge note: WP73 / WP74 re-record the last
+  three too; on a PNG conflict re-run `flutter test --update-goldens` of that file after the merge.
+- Decisions/ADRs: none new (ADR-0040 applies). Status chips never sit next to a long name on a phone: the member row
+  shows one chip (inactive, else password expired, else pending), the detail page shows all, the chip is capped to
+  120 px and wraps. The platform "add administrator" button moved from the card header into the card body (the header
+  row overflowed at 360). Pages are lazy lists, so widget tests that tap a control far down now use a taller view
+  (`size: Size(360, 1100)`) or `scrollUntilVisible` (`tapKeyScrolling` in members_test); `mock_mode_test` asserts
+  `ListRow` instead of `ListTile` on the platform activity page.
+- Open points / follow-ups: `AsyncBody` still renders `EmptyView` for empty lists (core, not mine): switching it to
+  `EmptyState` would restyle every empty list. The usage trend chart card (`GrowthChart`) belongs to the health
+  feature (WP73) and keeps its own card look; bars use the chart palette (blue series, as in the mock-up), not the
+  accent. Sign-in / loading screens under `lib/app/screens` were already styled: nothing to report. `CheckboxListTile`
+  inside a `SectionCard` needs a transparent `Material` ancestor (kit follow-up: let `SectionCard` provide one).

@@ -51,33 +51,13 @@ class AdminScreen extends StatelessWidget {
             for (final (icon, label, path, key) in entries)
               ListRow(
                 key: Key(key),
-                leading: _EntryIcon(icon),
+                leading: IconTile(icon),
                 title: label,
                 onTap: () => context.go(path),
               ),
           ],
         ),
       ],
-    );
-  }
-}
-
-class _EntryIcon extends StatelessWidget {
-  const _EntryIcon(this.icon);
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = HoopsTokens.colorsOf(context).tone(HoopsTone.accent);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.container,
-        borderRadius: BorderRadius.circular(HoopsRadius.sm),
-      ),
-      child: SizedBox.square(
-        dimension: HoopsSize.iconTile - 4,
-        child: Icon(icon, color: colors.onContainer),
-      ),
     );
   }
 }

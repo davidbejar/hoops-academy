@@ -57,20 +57,36 @@ void main() {
     ),
   ]);
 
-  Future<void> pump(WidgetTester tester, Size size) => pumpAs(
-    tester,
-    roles: {TenantRole.admin},
-    core: FakeCore(),
-    location: '/admin/activity',
-    size: size,
-    overrides: trail.overrides,
-  );
+  Future<void> pump(
+    WidgetTester tester,
+    Size size, {
+    Brightness brightness = Brightness.light,
+  }) {
+    tester.platformDispatcher.platformBrightnessTestValue = brightness;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    return pumpAs(
+      tester,
+      roles: {TenantRole.admin},
+      core: FakeCore(),
+      location: '/admin/activity',
+      size: size,
+      overrides: trail.overrides,
+    );
+  }
 
   testWidgets('academy activity, 360x780', (tester) async {
     await pump(tester, const Size(360, 780));
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/audit_activity_360x780.png'),
+    );
+  });
+
+  testWidgets('academy activity, 360x780, dark', (tester) async {
+    await pump(tester, const Size(360, 780), brightness: Brightness.dark);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/audit_activity_360x780_dark.png'),
     );
   });
 

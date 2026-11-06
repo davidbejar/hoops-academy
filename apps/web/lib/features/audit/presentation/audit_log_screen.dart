@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../platform/application/platform_providers.dart'
     show isSuperAdminProvider, tenantDetailProvider;
@@ -68,51 +67,51 @@ class AuditLogView extends ConsumerWidget {
     return Column(
       key: const Key('audit-log'),
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppTokens.spaceMd,
-            AppTokens.spaceMd,
-            AppTokens.spaceMd,
-            0,
-          ),
-          child: Wrap(
-            spacing: AppTokens.spaceSm,
-            runSpacing: AppTokens.spaceSm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              OutlinedButton.icon(
-                key: const Key('audit-range'),
-                icon: const Icon(Icons.date_range),
-                label: Text(
-                  query.hasRange ? _range(query, locale) : l.auditAnyTime,
-                ),
-                onPressed: () => _pickRange(context, query, notifier),
+        ContentFrame(
+          child: Padding(
+            padding: const EdgeInsets.only(top: HoopsSpace.md),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: HoopsSpace.sm,
+                runSpacing: HoopsSpace.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    key: const Key('audit-range'),
+                    icon: const Icon(Icons.date_range),
+                    label: Text(
+                      query.hasRange ? _range(query, locale) : l.auditAnyTime,
+                    ),
+                    onPressed: () => _pickRange(context, query, notifier),
+                  ),
+                  if (query.hasRange)
+                    IconButton(
+                      key: const Key('audit-range-clear'),
+                      tooltip: l.auditClearRange,
+                      icon: const Icon(Icons.close),
+                      onPressed: notifier.clearRange,
+                    ),
+                  OutlinedButton.icon(
+                    key: const Key('audit-actions'),
+                    icon: const Icon(Icons.filter_list),
+                    label: Text(
+                      query.actions.isEmpty
+                          ? l.auditAllActions
+                          : l.auditSelectedActions(query.actions.length),
+                    ),
+                    onPressed: () async {
+                      final picked = await showDialog<Set<api.AuditAction>>(
+                        context: context,
+                        builder: (_) =>
+                            AuditActionFilterDialog(selected: query.actions),
+                      );
+                      if (picked != null) notifier.setActions(picked);
+                    },
+                  ),
+                ],
               ),
-              if (query.hasRange)
-                IconButton(
-                  key: const Key('audit-range-clear'),
-                  tooltip: l.auditClearRange,
-                  icon: const Icon(Icons.close),
-                  onPressed: notifier.clearRange,
-                ),
-              OutlinedButton.icon(
-                key: const Key('audit-actions'),
-                icon: const Icon(Icons.filter_list),
-                label: Text(
-                  query.actions.isEmpty
-                      ? l.auditAllActions
-                      : l.auditSelectedActions(query.actions.length),
-                ),
-                onPressed: () async {
-                  final picked = await showDialog<Set<api.AuditAction>>(
-                    context: context,
-                    builder: (_) =>
-                        AuditActionFilterDialog(selected: query.actions),
-                  );
-                  if (picked != null) notifier.setActions(picked);
-                },
-              ),
-            ],
+            ),
           ),
         ),
         Expanded(
@@ -124,11 +123,15 @@ class AuditLogView extends ConsumerWidget {
             builder: (context, p) => Column(
               children: [
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(AppTokens.spaceMd),
+                  child: PageBody(
                     children: [
-                      for (final e in p.items)
-                        AuditEntryTile(entry: e, showTenant: showTenant),
+                      Column(
+                        spacing: HoopsSpace.gap,
+                        children: [
+                          for (final e in p.items)
+                            AuditEntryTile(entry: e, showTenant: showTenant),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -185,20 +188,15 @@ class AuditEntryTile extends StatelessWidget {
     final when = DateFormat.yMMMd(locale).add_Hm().format(entry.at.toLocal());
     final actor = entry.actorName ?? entry.actorKind.label(l);
     final target = entry.targetName ?? entry.targetType.label(l);
-    return Card(
-      child: ListTile(
-        key: Key('audit-${entry.id}'),
-        leading: Icon(_icon(entry.targetType)),
-        title: Text(entry.action.label(l)),
-        subtitle: Text(
-          [
-            if (showTenant && entry.tenantName != null) entry.tenantName!,
-            target,
-            '${l.auditByActor(actor)} · $when',
-          ].join('\n'),
-        ),
-        isThreeLine: true,
-      ),
+    return ListRow(
+      key: Key('audit-${entry.id}'),
+      leading: IconTile(_icon(entry.targetType)),
+      title: entry.action.label(l),
+      subtitle: [
+        if (showTenant && entry.tenantName != null) entry.tenantName!,
+        target,
+        '${l.auditByActor(actor)} · $when',
+      ].join('\n'),
     );
   }
 
@@ -226,8 +224,8 @@ class _Pager extends StatelessWidget {
     final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppTokens.spaceMd,
-        vertical: AppTokens.spaceXs,
+        horizontal: HoopsSpace.md,
+        vertical: HoopsSpace.xs,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

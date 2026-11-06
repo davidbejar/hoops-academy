@@ -27,8 +27,11 @@ void main() {
   Future<void> pumpDetail(
     WidgetTester tester,
     Size size,
-    List<api.TenantAdmin> admins,
-  ) async {
+    List<api.TenantAdmin> admins, {
+    Brightness brightness = Brightness.light,
+  }) async {
+    tester.platformDispatcher.platformBrightnessTestValue = brightness;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     final h = Harness(
       me: FakeMeRepository(userWith(const [], superAdmin: true)),
       core: FakeCore(),
@@ -48,6 +51,19 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/platform_admins_360x780.png'),
+    );
+  });
+
+  testWidgets('academy detail with administrators, 360x780, dark', (
+    tester,
+  ) async {
+    await pumpDetail(tester, const Size(360, 780), [
+      ana,
+      bea,
+    ], brightness: Brightness.dark);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/platform_admins_360x780_dark.png'),
     );
   });
 

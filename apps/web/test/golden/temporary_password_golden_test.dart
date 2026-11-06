@@ -23,7 +23,13 @@ void main() {
     email: 'ana.ruiz@club-norte.example',
   );
 
-  Future<void> pumpDialog(WidgetTester tester, Size size) async {
+  Future<void> pumpDialog(
+    WidgetTester tester,
+    Size size, {
+    Brightness brightness = Brightness.light,
+  }) async {
+    tester.platformDispatcher.platformBrightnessTestValue = brightness;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     final repo = FakePlatformRepository(
       tenants: [tenantOf('t-a', 'Club Norte')],
       admins: {
@@ -37,7 +43,15 @@ void main() {
     );
     await h.pump(tester, size: size);
     await h.go(tester, '/platform/t-a');
-    await tester.tap(find.byKey(const Key('admin-issue-p-bea')));
+    final issue = find.byKey(const Key('admin-issue-p-bea'));
+    await tester.scrollUntilVisible(
+      issue,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(issue);
+    await tester.pumpAndSettle();
+    await tester.tap(issue);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
   }
@@ -47,6 +61,14 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/temporary_password_360x780.png'),
+    );
+  });
+
+  testWidgets('temporary password dialog, 360x780, dark', (tester) async {
+    await pumpDialog(tester, const Size(360, 780), brightness: Brightness.dark);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/temporary_password_360x780_dark.png'),
     );
   });
 

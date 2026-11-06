@@ -9,6 +9,7 @@ import 'package:hoops_app/app/router.dart';
 import 'package:hoops_app/core/config/app_config.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/core/storage/preferences.dart';
+import 'package:hoops_app/core/ui/list_row.dart';
 import 'package:hoops_app/features/match/application/match_providers.dart';
 import 'package:hoops_app/features/match/data/local/match_database.dart';
 import 'package:hoops_app/features/match/data/local/match_store.dart';
@@ -221,7 +222,7 @@ void main() {
       expect(find.byKey(const Key('usage-trend-error')), findsNothing);
       expect(find.byKey(const Key('usage-trend')), findsOneWidget);
       await go('/platform/activity');
-      expect(find.byType(ListTile), findsWidgets);
+      expect(find.byType(ListRow), findsWidgets);
     },
   );
 }

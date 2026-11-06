@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../app/sign_out.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/http/mock_api_adapter.dart';
@@ -10,6 +9,7 @@ import '../../../core/l10n/locale_controller.dart';
 import '../../../core/mock/mock_reload.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_providers.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../me/application/me_providers.dart';
 
@@ -47,73 +47,80 @@ class ProfileScreen extends ConsumerWidget {
       _ => null,
     };
     final current = ref.watch(effectiveLocaleProvider).languageCode;
-    final theme = Theme.of(context);
+    final c = HoopsTokens.colorsOf(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(l.profileTitle)),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppTokens.maxContentWidth,
+        child: PageBody(
+          children: [
+            if (user != null)
+              ListRow(
+                leading: InitialsAvatar(name: user.displayName),
+                title: user.displayName,
+                subtitle: user.email,
+                trailing: const SizedBox.shrink(),
+              ),
+            if (user != null &&
+                (user.memberships.length > 1 ||
+                    user.superAdmin ||
+                    ref.watch(appConfigProvider).mockApi))
+              Column(
+                spacing: HoopsSpace.gap,
+                children: [
+                  if (user.memberships.length > 1)
+                    ListRow(
+                      key: const Key('switch-academy'),
+                      leading: const IconTile(Icons.swap_horiz),
+                      title: l.switchAcademy,
+                      onTap: () => context.go('/tenants'),
+                    ),
+                  if (user.superAdmin)
+                    ListRow(
+                      key: const Key('open-platform'),
+                      leading: const IconTile(Icons.apartment_outlined),
+                      title: l.profilePlatform,
+                      onTap: () => context.go('/platform'),
+                    ),
+                  if (ref.watch(appConfigProvider).mockApi)
+                    ListRow(
+                      key: const Key('reset-demo-data'),
+                      leading: const IconTile(
+                        Icons.restart_alt,
+                        tone: HoopsTone.neutral,
+                      ),
+                      title: l.profileResetDemo,
+                      onTap: () => _resetDemo(ref),
+                    ),
+                ],
+              ),
+            SectionCard(
+              title: l.language,
+              child: Column(
+                spacing: HoopsSpace.sm,
+                children: [
+                  for (final code in supportedLanguageCodes)
+                    ListRow(
+                      key: Key('lang-$code'),
+                      title: _languageName(l, code),
+                      trailing: code == current
+                          ? Icon(Icons.check_circle, color: c.brand)
+                          : const SizedBox.shrink(),
+                      onTap: () => _pickLanguage(ref, code),
+                    ),
+                ],
+              ),
             ),
-            child: ListView(
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
-              children: [
-                if (user != null)
-                  ListTile(
-                    leading: const CircleAvatar(child: Icon(Icons.person)),
-                    title: Text(user.displayName),
-                    subtitle: user.email == null ? null : Text(user.email!),
-                  ),
-                if (user != null && user.memberships.length > 1)
-                  ListTile(
-                    key: const Key('switch-academy'),
-                    leading: const Icon(Icons.swap_horiz),
-                    title: Text(l.switchAcademy),
-                    onTap: () => context.go('/tenants'),
-                  ),
-                if (user != null && user.superAdmin)
-                  ListTile(
-                    key: const Key('open-platform'),
-                    leading: const Icon(Icons.apartment_outlined),
-                    title: Text(l.profilePlatform),
-                    onTap: () => context.go('/platform'),
-                  ),
-                if (ref.watch(appConfigProvider).mockApi)
-                  ListTile(
-                    key: const Key('reset-demo-data'),
-                    leading: const Icon(Icons.restart_alt),
-                    title: Text(l.profileResetDemo),
-                    onTap: () => _resetDemo(ref),
-                  ),
-                const Divider(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTokens.spaceMd,
-                    vertical: AppTokens.spaceSm,
-                  ),
-                  child: Text(l.language, style: theme.textTheme.titleSmall),
-                ),
-                for (final code in supportedLanguageCodes)
-                  ListTile(
-                    key: Key('lang-$code'),
-                    title: Text(_languageName(l, code)),
-                    trailing: code == current ? const Icon(Icons.check) : null,
-                    selected: code == current,
-                    onTap: () => _pickLanguage(ref, code),
-                  ),
-                const Divider(),
-                const SizedBox(height: AppTokens.spaceSm),
-                OutlinedButton.icon(
-                  key: const Key('sign-out-button'),
-                  icon: const Icon(Icons.logout),
-                  label: Text(l.signOut),
-                  onPressed: () => confirmAndSignOut(context, ref),
-                ),
-              ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                key: const Key('sign-out-button'),
+                icon: const Icon(Icons.logout),
+                label: Text(l.signOut),
+                onPressed: () => confirmAndSignOut(context, ref),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

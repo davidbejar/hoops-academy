@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/async_body.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../health/presentation/player_health_view.dart';
 import '../../training/application/training_providers.dart';
@@ -40,26 +40,22 @@ class _PlayerHubState extends ConsumerState<PlayerHub> {
       HubTab.plans: l.meTabPlans,
       HubTab.health: l.healthTitle,
     };
-    return ListView(
-      padding: const EdgeInsets.all(AppTokens.spaceMd),
-      children: [
-        Text(
-          ref.watch(playerNameProvider(id)) ?? '',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: AppTokens.spaceSm),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton.icon(
+    return PageBody(
+      header: PageHeader(
+        title: ref.watch(playerNameProvider(id)) ?? '',
+        actions: [
+          OutlinedButton.icon(
             key: const Key('hub-season-stats'),
             icon: const Icon(Icons.bar_chart),
             label: Text(l.meSeasonStats),
             onPressed: () => context.go('/matches/stats/$id'),
           ),
-        ),
-        const SizedBox(height: AppTokens.spaceSm),
+        ],
+      ),
+      children: [
         Wrap(
-          spacing: AppTokens.spaceSm,
+          spacing: HoopsSpace.sm,
+          runSpacing: HoopsSpace.sm,
           children: [
             for (final t in HubTab.values)
               ChoiceChip(
@@ -70,7 +66,6 @@ class _PlayerHubState extends ConsumerState<PlayerHub> {
               ),
           ],
         ),
-        const SizedBox(height: AppTokens.spaceSm),
         switch (_tab) {
           HubTab.training => _Upcoming(playerId: id),
           HubTab.plans => _Plans(playerId: id),
@@ -92,14 +87,16 @@ class _Upcoming extends ConsumerWidget {
     final names = ref.watch(teamNamesProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.gap,
       children: [
-        Text(l.meUpcoming, style: Theme.of(context).textTheme.titleMedium),
+        Text(l.meUpcoming, style: Theme.of(context).textTheme.titleLarge),
         AsyncBody<List<ath.TrainingSession>>(
           value: ref.watch(upcomingSessionsProvider(playerId)),
           onRetry: () => ref.invalidate(upcomingSessionsProvider(playerId)),
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.meNoUpcoming,
           builder: (context, data) => Column(
+            spacing: HoopsSpace.gap,
             children: [
               for (final s in data)
                 SessionTile(session: s, teamName: names[s.teamId]),
@@ -132,6 +129,7 @@ class _Plans extends ConsumerWidget {
       isEmpty: (d) => d.assignments.isEmpty,
       emptyMessage: l.mePlansEmpty,
       builder: (context, view) => Column(
+        spacing: HoopsSpace.gap,
         children: [
           for (final a in view.assignments)
             Column(
@@ -139,10 +137,7 @@ class _Plans extends ConsumerWidget {
               children: [
                 AssignmentCard(assignment: a, view: view),
                 Padding(
-                  padding: const EdgeInsets.only(
-                    left: AppTokens.spaceSm,
-                    bottom: AppTokens.spaceSm,
-                  ),
+                  padding: const EdgeInsets.only(left: HoopsSpace.sm),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: CompletionControl(
