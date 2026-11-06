@@ -19,8 +19,8 @@
     <json-schema-validator.version>2.0.8</json-schema-validator.version>
     <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
          run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
-    <pit.targetClasses>com.hoopsacademy.game.domain.*,com.hoopsacademy.game.application.EventAuthorization*,com.hoopsacademy.game.application.StatVisibility*</pit.targetClasses>
-    <pit.targetTests>com.hoopsacademy.game.domain.*,com.hoopsacademy.game.application.EventAuthorizationTest*,com.hoopsacademy.game.application.StatVisibilityTest*</pit.targetTests>
+    <pit.targetClasses>com.hoopsacademy.game.domain.*,com.hoopsacademy.game.application.EventAuthorization*,com.hoopsacademy.game.application.StatVisibility*,com.hoopsacademy.game.application.replica.ReplicaAuthzResolver*,com.hoopsacademy.game.application.replica.ReplicaRosterPort*,com.hoopsacademy.game.application.replica.ReplicaPlayer*,com.hoopsacademy.game.application.replica.ReplicaTenant*,com.hoopsacademy.game.application.replica.ReplicaPerson*</pit.targetClasses>
+    <pit.targetTests>com.hoopsacademy.game.domain.*,com.hoopsacademy.game.application.EventAuthorizationTest*,com.hoopsacademy.game.application.StatVisibilityTest*,com.hoopsacademy.game.application.replica.ReplicaAuthzResolverTest*,com.hoopsacademy.game.application.replica.ReplicaRosterPortTest*</pit.targetTests>
     <!-- tests tagged "keycloak" need a Keycloak container: run with -Pkeycloak-it -->
     <surefire.excludedGroups>keycloak</surefire.excludedGroups>
     <surefire.groups></surefire.groups>
