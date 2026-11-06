@@ -16,7 +16,8 @@ import java.util.UUID;
 /**
  * Turns the aggregates one transaction changed into outbox rows, at the end of that transaction (see
  * {@link RosterChanges}): one {@code <aggregate>.changed} event with the aggregate's whole current state per aggregate
- * (state transfer, ADR-0036), or {@code <aggregate>.removed} with its identity when it is gone. Derived state is
+ * (state transfer, ADR-0036), or {@code <aggregate>.removed} with its identity when it is gone by then, whatever deleted
+ * it (WP81: every aggregate; the identity is the aggregate id, plus the ends of a staff entry or a guardian link). Derived state is
  * followed: a person who is a player changes the player's event too (name, birth date, gender), a season the events
  * of its teams (season dates).
  */
@@ -45,19 +46,22 @@ public class RosterEventAppender {
 
     private void append(TenantId tenant, RosterChange change, Deque<RosterChange> pending) {
         switch (change) {
-            case RosterChange.Person person -> {
-                RosterStates.PersonState state = states.person(person.id()).orElseThrow(() -> missing(change));
+            case RosterChange.Person person -> states.person(person.id()).ifPresentOrElse(state -> {
                 changed(tenant, EventTopic.PERSON, person.id().value(), RosterPayloads.person(state));
                 state.player().ifPresent(player -> pending.add(new RosterChange.Player(player)));
-            }
-            case RosterChange.Player player -> changed(tenant, EventTopic.PLAYER, player.id().value(),
-                    RosterPayloads.player(states.player(player.id()).orElseThrow(() -> missing(change))));
-            case RosterChange.Team team -> changed(tenant, EventTopic.TEAM, team.id().value(),
-                    RosterPayloads.team(states.team(team.id()).orElseThrow(() -> missing(change))));
+            }, () -> removed(tenant, EventTopic.PERSON, person.id().value()));
+            case RosterChange.Player player -> states.player(player.id()).ifPresentOrElse(
+                    state -> changed(tenant, EventTopic.PLAYER, player.id().value(), RosterPayloads.player(state)),
+                    () -> removed(tenant, EventTopic.PLAYER, player.id().value()));
+            case RosterChange.Team team -> states.team(team.id()).ifPresentOrElse(
+                    state -> changed(tenant, EventTopic.TEAM, team.id().value(), RosterPayloads.team(state)),
+                    () -> removed(tenant, EventTopic.TEAM, team.id().value()));
             case RosterChange.Season season ->
                     states.teamsOfSeason(season.id()).forEach(team -> pending.add(new RosterChange.Team(team)));
-            case RosterChange.TeamPlayer assignment -> changed(tenant, EventTopic.TEAM_PLAYER, assignment.id().value(),
-                    RosterPayloads.teamPlayer(states.teamPlayer(assignment.id()).orElseThrow(() -> missing(change))));
+            case RosterChange.TeamPlayer assignment -> states.teamPlayer(assignment.id()).ifPresentOrElse(
+                    state -> changed(tenant, EventTopic.TEAM_PLAYER, assignment.id().value(),
+                            RosterPayloads.teamPlayer(state)),
+                    () -> removed(tenant, EventTopic.TEAM_PLAYER, assignment.id().value()));
             case RosterChange.TeamStaff entry -> {
                 UUID id = EventTopic.teamStaffId(entry.team().value(), entry.person().value());
                 states.teamStaff(entry.team(), entry.person()).ifPresentOrElse(
@@ -73,8 +77,9 @@ public class RosterEventAppender {
                         () -> removed(tenant, EventTopic.GUARDIAN_LINK, link.id().value(),
                                 RosterPayloads.guardianLink(identity)));
             }
-            case RosterChange.Tenant ignored -> changed(tenant, EventTopic.TENANT, tenant.value(),
-                    RosterPayloads.tenant(states.tenant().orElseThrow(() -> missing(change))));
+            case RosterChange.Tenant ignored -> states.tenant().ifPresentOrElse(
+                    state -> changed(tenant, EventTopic.TENANT, tenant.value(), RosterPayloads.tenant(state)),
+                    () -> outbox.write(TenantEvents.removed(tenant)));
         }
     }
 
@@ -83,12 +88,14 @@ public class RosterEventAppender {
                 topic.topic()));
     }
 
+    /** An aggregate whose id is its whole identity: the payload is empty. */
+    private void removed(TenantId tenant, EventTopic topic, UUID aggregate) {
+        removed(tenant, topic, aggregate, Map.of());
+    }
+
     private void removed(TenantId tenant, EventTopic topic, UUID aggregate, Map<String, Object> identity) {
         outbox.write(new OutboxEvent(tenant, topic.removedType(), topic.aggregate(), aggregate.toString(), identity,
                 topic.topic()));
     }
 
-    private static IllegalStateException missing(RosterChange change) {
-        return new IllegalStateException("Changed aggregate not found in the bound tenant: " + change);
-    }
 }

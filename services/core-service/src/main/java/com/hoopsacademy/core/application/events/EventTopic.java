@@ -5,27 +5,25 @@ import java.util.UUID;
 
 /**
  * The topics core publishes its roster aggregates to (ADR-0036, contracts {@code libs/contracts/events/<topic>.schema.json}):
- * {@code core.<aggregate>}, event types {@code <aggregate>.changed} and, where a record can disappear,
- * {@code <aggregate>.removed}.
+ * {@code core.<aggregate>}, event types {@code <aggregate>.changed} and {@code <aggregate>.removed} (every aggregate,
+ * WP81; a removal is followed by a tombstone).
  */
 public enum EventTopic {
-    PERSON("person", false),
-    PLAYER("player", false),
-    TEAM("team", false),
-    TEAM_PLAYER("team-player", false),
-    TEAM_STAFF("team-staff", true),
-    GUARDIAN_LINK("guardian-link", true),
-    TENANT("tenant", false);
+    PERSON("person"),
+    PLAYER("player"),
+    TEAM("team"),
+    TEAM_PLAYER("team-player"),
+    TEAM_STAFF("team-staff"),
+    GUARDIAN_LINK("guardian-link"),
+    TENANT("tenant");
 
     /** Major version of every topic's contract: the topics carry no {@code .v<n>} suffix yet. */
     public static final int VERSION = 1;
 
     private final String aggregate;
-    private final boolean removable;
 
-    EventTopic(String aggregate, boolean removable) {
+    EventTopic(String aggregate) {
         this.aggregate = aggregate;
-        this.removable = removable;
     }
 
     public String topic() {
@@ -41,14 +39,11 @@ public enum EventTopic {
     }
 
     public String removedType() {
-        if (!removable) {
-            throw new IllegalStateException(topic() + " has no removed events");
-        }
         return aggregate + ".removed";
     }
 
     public boolean isRemovedType(String type) {
-        return removable && removedType().equals(type);
+        return removedType().equals(type);
     }
 
     public static EventTopic ofTopic(String topic) {
