@@ -111,3 +111,7 @@ public); `ci` was green from 2026-11-02 until 3b59360, where only its Trivy job 
 checks have not been run. Open items and the product owner's pending decisions:
 [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); current state: [`docs/HANDOVER.md`](docs/HANDOVER.md); what the system
 does for each spec statement, with evidence: [`docs/conformance.md`](docs/conformance.md).
+
+## License
+GNU Affero General Public License v3.0 ([LICENSE](LICENSE)): anyone who runs a modified version as a network service
+must make their changes available under the same terms.
