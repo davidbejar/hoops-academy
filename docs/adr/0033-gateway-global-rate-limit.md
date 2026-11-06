@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-11-06
 - Related: decision 18 of 2026-11-06, WP40, ADR-0031 (its decision 4 is replaced here), ADR-0017 (HTTP hardening),
-  ADR-0012 (Secrets)
+  ADR-0012 (Secrets); amended by decision 27 of 2026-11-06 (WP46: Redis ACL, per-second burst cap)
 
 ## Context
 ADR-0031 limited the token endpoint, the login form and `events:batch` with Envoy Gateway **local** rate limits: a token
@@ -72,6 +72,52 @@ twice as many requests (expected from the design, not measured).
 - Limited requests pay one gRPC call plus one Redis round trip; only the three limited routes do.
 - Behind a load balancer, `gateway.clientIPDetection.numTrustedHops` still decides which IP is counted (ADR-0031).
 - The compose nginx keeps `limit_req` (per process, burst 30 / 60); the limits there are local by nature.
+
+## Amendment 2026-11-06 (decision 27, WP46): Redis ACL and a per-second burst cap
+Points 3 and 5 change; the rest stands.
+
+**Redis ACL (replaces "No password inside the cluster" in point 3).** The NetworkPolicy stays, and Redis now also
+authenticates and authorizes: `ratelimit-redis` starts with `--aclfile`, written into a memory `emptyDir` by an init
+container from the Secret `hoops-ratelimit-redis` (key `password`, hashed with SHA-256 into the file). The `default` user
+is `off` with no password and no permissions; the only user, `ratelimit` (`rateLimit.redis.acl.user`), may run
+`+ping +incrby +expire` on the keys `~<namespace>/<gateway>/*`. That is everything envoyproxy/ratelimit (image
+`5ae0682e`) sends: `PING` when it connects, then per descriptor an `INCRBY` + `EXPIRE` pipeline (not `MULTI`), plus
+`AUTH`, which Redis always allows. `GET` (only with `STOP_CACHE_KEY_INCREMENT_WHEN_OVERLIMIT`) and `EVAL` (only for
+negative hits addends) are not used by Envoy Gateway and are refused, like every admin, scripting and keyspace command.
+Its keys start with the rate limit domain, which Envoy Gateway sets to the listener name `<namespace>/<gateway>/<listener>`,
+hence the pattern (`rateLimit.redis.acl.keyPattern` overrides it, e.g. for a `CACHE_KEY_PREFIX`).
+
+The rate limit pods log in with `REDIS_AUTH=ratelimit:<password>` (envoyproxy/ratelimit splits user and password at
+the first colon and sends `AUTH <user> <password>`), set through Envoy Gateway's
+`provider.kubernetes.rateLimitDeployment.container.env` from the Secret `envoy-gateway-system/envoy-ratelimit-redis-auth`
+(key `auth`). Envoy Gateway v1.9 has no credential field of its own; `redis.urlRef` (URL from a Secret) would work with
+`redis://user:pass@host` URLs, but envoyproxy/ratelimit logs the URL unmasked at start ("Creating single with urls"),
+so the credentials stay out of the URL. Both Secrets come from `.env` (`RATELIMIT_REDIS_PASSWORD`) through
+`deploy/kind/secrets.sh` on kind and are created by the operator on other clusters before the install (ADR-0012). A
+wrong password or key pattern is not an outage: the rate limit service gets `WRONGPASS` / `NOPERM`, and the gateway
+fails open as in point 4, so `ratelimit-check.sh` (a 429 at rpm+1) is the proof that the login works. Rotation
+restarts Redis and the `envoy-ratelimit` pods (`docs/runbooks/rotate-secrets.md`).
+
+**Per-second burst cap (amends point 5).** Every limited route gets a second global rule per client IP with
+`unit: Second`: 10/s on the token endpoint and the login form, 20/s on `events:batch` (`route.rateLimit.rps` in the
+Keycloak chart, `route.rateLimits[].rps` in the service chart; 0 or unset = no such rule). Around a minute boundary a
+client still gets at most `rpm` per minute window, but no longer 2 x `rpm` within a few seconds: the burst rate is
+capped at `rps`, so 2 x 60 token requests take at least 12 s instead of a fraction of one. The per-second rule also
+carries an always-true selector `path: {type: PathPrefix, value: /}`: Envoy Gateway v1.9.3 builds the descriptor of a
+`sourceCIDR` selector without the rule index, so two rules with equal selectors got one descriptor. Without the path
+selector the first kind run showed it: the rate limit service config held only the MINUTE entry, every request was
+counted twice against it (first 429 at #31 instead of #61 on the token endpoint, #61 instead of #121 on
+`events:batch`) and no per-second limit existed. The path selector adds a `rule-<n>-path` descriptor, so each rule
+has its own counter (`/rlconfig` of `envoy-ratelimit` lists MINUTE and SECOND entries). The chart tests assert the selector. Both rules count every
+request (also rejected ones), so a client over the per-second cap also uses up its minute. Normal use is far below:
+a bench flushes its outbox sequentially, one batch of up to 500 events per request.
+
+Proof on kind (2026-11-06, Envoy Gateway v1.9.3, ratelimit `5ae0682e`, Redis 8.10.3, 1 Envoy replica):
+`deploy/kind/ratelimit-check.sh` now paces the per-minute bursts below `rps` (first 429 still at #121 / #61), adds a
+tight burst with `curl --parallel` (60 `events:batch` at once: 20 passed, 40 x 429; 40 token requests at once: 10
+passed, 30 x 429) and an `acl` mode (anonymous `NOAUTH`, `default` `WRONGPASS`, the rate limit user gets `NOPERM` for
+other keys and for GET, EVAL, FLUSHALL, KEYS, SET, ACL, INFO, SCRIPT, MULTI). `redis-down` still fails open (130
+requests, no 429). Details in the WP46 handover.
 
 ## Alternatives considered
 - **Local limits divided by the replica count**: wrong as soon as an HPA changes the count or the load balancer

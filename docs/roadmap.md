@@ -80,9 +80,9 @@ age. The Cooper figures are still not traced to the 1968 paper. Sources, mapping
 ## Platform and operations
 - **Gateway (WP36, ADR-0031).** The chart runs on Gateway API with Envoy Gateway; the e2e journey is green on kind.
   Rate limits are global since WP40 (ADR-0033: Envoy Gateway's rate limit service + Redis, shared by every Envoy
-  replica, fail open). Still open: a Redis ACL as defense in depth beyond the NetworkPolicy, exercising the
-  controller-restart branch of `deploy/kind/up.sh`; accepted: fixed one-minute windows (up to 2 × the limit across a
-  boundary) and no body-size limit at the gateway (the services reject > 2 MB); a production certificate and cluster.
+  replica, fail open); since WP46 Redis has an ACL (only the rate limit user, only `PING`/`INCRBY`/`EXPIRE`) and every
+  limited route a per-second burst cap next to its per-minute limit (ADR-0033 amendment). Still open: exercising the
+  controller-restart branch of `deploy/kind/up.sh`; accepted: no body-size limit at the gateway (the services reject > 2 MB); a production certificate and cluster.
 - **External Secrets Operator manifests** and a rollout trigger for rotated secrets (ADR-0012); encryption at rest for Secrets.
 - **Backups.** Implement and rehearse CNPG backups (`runbooks/backup-restore.md` is a design).
 - **Observability.** OTel collector and dashboards (traces are off by default), alerting on audit and authz failures.

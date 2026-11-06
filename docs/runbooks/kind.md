@@ -55,11 +55,16 @@ the container), `--skip-flutter` (reuse `apps/web/build/web`).
 
 How the gateway is wired: the chart renders GatewayClass `envoy-gateway` (kind only, `gateway.gatewayClass.create`),
 Gateway `hoops` (listeners `http` :80, `https` :443 with `hoops-gateway-tls`), one HTTPRoute per prefix, the exact
-health routes, the rate-limited routes with their `BackendTrafficPolicy` (global limits, ADR-0033: 60/min token + login
-form, 120/min `events:batch`, per client IP, one counter shared by every Envoy replica) and one `ClientTrafficPolicy` per
-listener. The counters live in `ratelimit-redis` (namespace `hoops`, `rateLimit.redis.enabled` in `values-kind.yaml`),
-read and written only by Envoy Gateway's `envoy-gateway-system/envoy-ratelimit` pods, which `up.sh` enables with
-`config.envoyGateway.rateLimit` (Redis backend, `failClosed=false`, 100 ms timeout). The `EnvoyProxy` `hoops` makes Envoy Gateway
+health routes, the rate-limited routes with their `BackendTrafficPolicy` (global limits, ADR-0033: 60/min and 10/s token +
+login form, 120/min and 20/s `events:batch`, per client IP, one counter shared by every Envoy replica) and one
+`ClientTrafficPolicy` per listener. The counters live in `ratelimit-redis` (namespace `hoops`, `rateLimit.redis.enabled`
+in `values-kind.yaml`), read and written only by Envoy Gateway's `envoy-gateway-system/envoy-ratelimit` pods, which
+`up.sh` enables with `config.envoyGateway.rateLimit` (Redis backend, `failClosed=false`, 100 ms timeout). Two layers
+guard Redis: its NetworkPolicy and an ACL (WP46) whose only user `ratelimit` may `PING`/`INCRBY`/`EXPIRE` the keys
+`hoops/hoops/*`; the `default` user is off. The password is `RATELIMIT_REDIS_PASSWORD` in `.env` (add it to an older
+`.env`, see `.env.example`); `secrets.sh` renders it as `hoops/hoops-ratelimit-redis` and as
+`envoy-gateway-system/envoy-ratelimit-redis-auth` (`REDIS_AUTH` of the rate limit pods), and `up.sh` applies the Secrets
+before it installs Envoy Gateway. The `EnvoyProxy` `hoops` makes Envoy Gateway
 create the proxy Service `envoy-gateway-system/hoops-gateway` as a NodePort (30080/30443), which `kind-config.yaml`
 maps to `127.0.0.1:8090/8453`. Status: `kubectl -n hoops get gateway,httproute` (`PROGRAMMED True`, routes `Accepted`);
 `kubectl -n hoops describe backendtrafficpolicy` shows whether a policy attached.
@@ -78,9 +83,11 @@ curl -s http://localhost:8090/auth/realms/academy/.well-known/openid-configurati
 curl -s http://localhost:8090/api/game/q/health/ready       # {"status":"UP",...}
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8090/internal/x   # 403
 deploy/kind/smoke.sh core game athlete      # all of the above and more (pods, gateway, tokens, seeded superadmin)
-deploy/kind/ratelimit-check.sh              # burst -> first 429 at rpm+1 per client IP, with any number of Envoy replicas
-                                            # (waits for a fresh one-minute window per burst, ~1-2 min; limits this client
-                                            # until that window ends)
+deploy/kind/ratelimit-check.sh              # paced burst -> first 429 at rpm+1 per client IP, with any number of Envoy
+                                            # replicas; tight burst (all at once) -> 429 from the per-second rule; Redis ACL
+                                            # (waits for a fresh one-minute window per burst, ~5 min in all; limits this
+                                            # client until that window ends)
+deploy/kind/ratelimit-check.sh acl          # only the ACL proof: limited user, default user off, no anonymous access
 deploy/kind/ratelimit-check.sh redis-down   # stops ratelimit-redis: requests pass (fail open), then the limit is back
 ```
 Server-side validation of the chart against the installed CRDs:
@@ -112,9 +119,11 @@ Server-side validation of the chart against the installed CRDs:
   the snapshot diff (it also changes when the realm JSON or init SQL change — on purpose).
 
 ## Secrets
-See ADR-0012. `deploy/kind/secrets.sh` prints the 13 Secrets from `.env`; nothing is written to disk. Rotate locally:
+See ADR-0012. `deploy/kind/secrets.sh` prints the 15 Secrets from `.env` (14 in `hoops`, the rate limit service's Redis login
+`envoy-ratelimit-redis-auth` in `envoy-gateway-system`); nothing is written to disk. Rotate locally:
 edit `.env`, `deploy/kind/secrets.sh | kubectl apply -f -` (or let Tilt pick up `.env`), then restart consumers
-(`kubectl -n hoops rollout restart deploy`). CNPG re-applies role passwords automatically. The Keycloak admin and
+(`kubectl -n hoops rollout restart deploy`; after `RATELIMIT_REDIS_PASSWORD` also
+`kubectl -n envoy-gateway-system rollout restart deploy/envoy-ratelimit`). CNPG re-applies role passwords automatically. The Keycloak admin and
 client secrets only apply on the first realm import/bootstrap — for an existing DB change them in Keycloak too.
 
 Measured on the 2-CPU rootless machine (warm caches): `tilt ci` for game + athlete + web ≈ 4-5 min; first ever
@@ -160,6 +169,9 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
 - `envoy-ratelimit` restarts once right after `just kind-up` (`creating redis connection error`): Redis only exists after
   the chart is deployed. It reconnects by itself; `kubectl -n envoy-gateway-system logs deploy/envoy-ratelimit` shows
   `redis connection re-established`.
+- `envoy-ratelimit` logs `WRONGPASS` or `NOPERM`: the Redis login Secrets differ (re-run `secrets.sh` and restart both
+  sides, `docs/runbooks/rotate-secrets.md`) or the ACL key pattern does not match the domain `hoops/hoops/<listener>`.
+  The gateway then fails open. `secrets.sh: missing RATELIMIT_REDIS_PASSWORD`: an `.env` from before WP46; add the key.
 - No 429 at all on the limited routes: the rate limit service or Redis is down and the gateway fails open (ADR-0033).
   Check `kubectl -n envoy-gateway-system get pods -l app.kubernetes.io/name=envoy-ratelimit`,
   `kubectl -n hoops get pods -l app.kubernetes.io/name=ratelimit-redis`, and that `envoy-gateway-config` has a
@@ -182,6 +194,14 @@ the burst); `ratelimit-check.sh redis-down` passed (130 requests with Redis at 0
 #121 again once Redis was back); the Redis NetworkPolicy refused a pod in `hoops` and an unlabelled pod in
 `envoy-gateway-system` and admitted a pod with the `envoy-ratelimit` label. `tilt ci` was not re-run (the Tiltfile
 evaluates; gateway objects are grouped under the `gateway`, `keycloak`, service and `web` resources).
+WP46 (2026-11-06, same versions, chart 0.4.0: Redis ACL + per-second caps, 1 Envoy replica): `apply --dry-run=server`
+clean; Gateway `Programmed`, both policies `Accepted`; `/rlconfig` lists a MINUTE and a SECOND entry per route rule and
+address family; `smoke.sh core game athlete` passed; `ratelimit-check.sh` passed: paced bursts first 429 at #121
+(`events:batch`, 250 in 31 s) and #61 (token, 130 in 31 s), tight bursts 60 at once -> 20 passed / 40 x 429 and
+40 at once -> 10 passed / 30 x 429, ACL probe (anonymous NOAUTH, `default` WRONGPASS, `ratelimit` PONG/INCRBY/EXPIRE on
+`hoops/hoops/*`, NOPERM on other keys, GET, EVAL, FLUSHALL, KEYS, SET, ACL, INFO, SCRIPT, MULTI); `redis-down` passed
+(130 requests, 0 x 429, 15 s; #121 again after Redis was back with a freshly written ACL file). The password appeared
+in no log, pod spec, Envoy Gateway config or chart render. Re-running `up.sh` left the controller untouched.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.

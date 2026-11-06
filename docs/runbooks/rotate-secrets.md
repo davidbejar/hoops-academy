@@ -15,6 +15,7 @@ file and have **not been executed end to end**. Items marked (design) do not exi
 | `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD` | `.env`; Secret `keycloak-admin` | Keycloak bootstrap admin, seed script, e2e |
 | `CORE_/GAME_/ATHLETE_SERVICE_CLIENT_SECRET` | `.env`; Secrets `hoops-oidc-<service>` (key `client-secret`) | realm import (`${..._CLIENT_SECRET}`) and each service's client credentials |
 | `DEV_USER_PASSWORD` | `.env`; Secret `hoops-dev-users` | seeded dev users (local only) |
+| `RATELIMIT_REDIS_PASSWORD` | `.env`; Secrets `hoops/hoops-ratelimit-redis` (key `password`) and `envoy-gateway-system/envoy-ratelimit-redis-auth` (key `auth` = `ratelimit:<password>`) | Redis ACL user of `ratelimit-redis` (read at Redis start); Envoy Gateway's `envoy-ratelimit` pods (`REDIS_AUTH`, ADR-0033 amendment) |
 
 ## A. Compose (`.env`)
 1. Edit `.env` with new random values (for example `openssl rand -base64 24`). Never paste them into a shell history
@@ -40,10 +41,13 @@ So a changed env var alone changes nothing on an existing Keycloak.
 ## C. kind (Kubernetes Secrets)
 ```bash
 # edit .env first
-deploy/kind/secrets.sh | kubectl apply -f -          # 13 Secrets rendered from .env, values never on argv or disk
-kubectl -n hoops rollout restart deploy               # services read env at start
+deploy/kind/secrets.sh | kubectl apply -f -          # 15 Secrets rendered from .env, values never on argv or disk
+kubectl -n hoops rollout restart deploy               # services read env at start (ratelimit-redis rewrites its ACL file)
+kubectl -n envoy-gateway-system rollout restart deploy/envoy-ratelimit   # after RATELIMIT_REDIS_PASSWORD changed
 ```
 `secrets.sh` fails fast if `.env` or a key is missing. Tilt applies the same output from memory.
+`RATELIMIT_REDIS_PASSWORD`: until both Redis and `envoy-ratelimit` restarted, the rate limit service gets `WRONGPASS`
+and the gateway fails open (no 429, ADR-0033), so restart both together and re-run `deploy/kind/ratelimit-check.sh token`.
 Caveats from `kind.md`: Keycloak admin and client secrets apply only on the first import; for an existing DB change them
 in Keycloak too, or delete the `keycloak-db` Cluster (`kubectl -n hoops delete cluster keycloak-db`) to re-import.
 

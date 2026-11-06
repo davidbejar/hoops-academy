@@ -64,7 +64,8 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
 - **Symptom A:** a client gets 429 on the token endpoint, the login form or `events:batch` although it sent fewer than 60 /
   120 requests in the last 60 s.
 - **Cause A:** the limits are global fixed windows per calendar minute (ADR-0033), shared by every Envoy replica and
-  every client behind the same IP. Behind a load balancer without `gateway.clientIPDetection.numTrustedHops`, Envoy
+  every client behind the same IP; and since WP46 also per second (10/s token + login form, 20/s `events:batch`), so a
+  client that fires many requests at once gets 429 for the rest of that second. Behind a load balancer without `gateway.clientIPDetection.numTrustedHops`, Envoy
   counts the balancer's IP, so all clients share one counter.
 - **Fix A:** wait for the next minute; set `numTrustedHops` to the number of proxies that append `X-Forwarded-For`.
 - **Symptom B:** no 429 at all on those routes (`deploy/kind/ratelimit-check.sh` fails with `first 429 at #0`).
@@ -72,9 +73,20 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
   Redis is down or unreachable, or Envoy Gateway was installed without `config.envoyGateway.rateLimit.backend`.
 - **Fix B:** `kubectl -n envoy-gateway-system get pods -l app.kubernetes.io/name=envoy-ratelimit` and its logs
   (`creating redis connection error` = Redis unreachable: check `ratelimit-redis` in `hoops` or the external Redis and
-  its NetworkPolicy); `kubectl -n envoy-gateway-system get configmap envoy-gateway-config -o yaml` must show
+  its NetworkPolicy; `WRONGPASS` = the two Redis login Secrets differ or one side was not restarted after a rotation,
+  `docs/runbooks/rotate-secrets.md`; `NOPERM ... access a key` = `rateLimit.redis.acl.keyPattern` does not match the
+  rate limit domain `<namespace>/<gateway>/<listener>`; `envoy-ratelimit` in `CreateContainerConfigError` = Secret
+  `envoy-gateway-system/envoy-ratelimit-redis-auth` missing); `kubectl -n envoy-gateway-system get configmap envoy-gateway-config -o yaml` must show
   `rateLimit.backend`, else install Envoy Gateway with the values in `docs/runbooks/release.md` section 4. The policies
   must report `Accepted=True` (`kubectl -n hoops describe backendtrafficpolicy`).
+- **Symptom C:** the first 429 comes at half the per-minute number, and a burst is not cut per second.
+- **Cause C:** two rules of one BackendTrafficPolicy with equal client selectors share one descriptor in Envoy Gateway
+  v1.9 (the `sourceCIDR` descriptor has no rule index): each request counts twice against the first rule's limit, the
+  second limit is lost (ADR-0033 amendment).
+- **Fix C:** keep the always-true `path: {type: PathPrefix, value: /}` selector on the per-second rules (the chart does,
+  `deploy/helm/tests/run.sh` asserts it). Check the service's view:
+  `kubectl -n envoy-gateway-system port-forward deploy/envoy-ratelimit 6070` and `curl -s localhost:6070/rlconfig`
+  must list a MINUTE and a SECOND entry per route rule and address family.
 
 ## Flutter dev server (`flutter run`, port 5173): CORS, redirect URI
 - **Symptom:** login redirect error "Invalid parameter: redirect_uri", or browser CORS errors on `/api/*` and `/auth/*`.

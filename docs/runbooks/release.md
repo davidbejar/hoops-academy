@@ -94,7 +94,8 @@ helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v1.9
   --set config.envoyGateway.rateLimit.backend.type=Redis \
   --set config.envoyGateway.rateLimit.backend.redis.url=<host:port> \
   --set config.envoyGateway.rateLimit.failClosed=false \
-  --set config.envoyGateway.rateLimit.timeout=100ms
+  --set config.envoyGateway.rateLimit.timeout=100ms \
+  --set-json 'config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.env=[{"name":"REDIS_AUTH","valueFrom":{"secretKeyRef":{"name":"envoy-ratelimit-redis-auth","key":"auth"}}}]'
 # optional: resources of the envoy-ratelimit pods (kind: requests 10m / 32Mi, limit 128Mi)
 #   --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.cpu=...
 ```
@@ -103,8 +104,21 @@ Envoy Gateway then creates Deployment `envoy-gateway-system/envoy-ratelimit` (po
 (`--set rateLimit.redis.enabled=true`, URL `ratelimit-redis.<namespace>.svc.cluster.local:6379`; its NetworkPolicy
 admits only those pods, so a different Envoy Gateway namespace or pod label needs `rateLimit.redis.clientNamespace` /
 `clientPodLabels`) or an external one (`rateLimit.redis.url=<host:port>`, informational: `helm install` prints the
-Envoy Gateway value to set). A password- or TLS-protected Redis is configured on the Envoy Gateway side
-(`redis.urlRef` to a Secret in `envoy-gateway-system`, `redis.tls.certificateRef`), not in this chart. Check: every policy
+Envoy Gateway value to set). Redis login (chart 0.4.0, ADR-0033 amendment): the chart's Redis has an ACL whose only
+user `ratelimit` may run `PING`/`INCRBY`/`EXPIRE` on the keys `<namespace>/<gateway>/*`; create two Secrets from one
+random password **before** the install (ADR-0012; on kind `deploy/kind/secrets.sh` does it from `.env`
+`RATELIMIT_REDIS_PASSWORD`):
+```bash
+pw=$(openssl rand -hex 24)   # in a shell without history; never in git
+kubectl -n hoops create secret generic hoops-ratelimit-redis --from-file=password=<(printf '%s' "$pw")
+kubectl -n envoy-gateway-system create secret generic envoy-ratelimit-redis-auth --from-file=auth=<(printf 'ratelimit:%s' "$pw")
+unset pw
+```
+The `REDIS_AUTH` env above hands the second one to the rate limit pods. An external Redis with a password uses the
+same `REDIS_AUTH` Secret (`<user>:<password>`, or just the password for `requirepass`); TLS is
+`redis.tls.certificateRef`. Do not put credentials into `redis.url` / `redis.urlRef`: the rate limit service logs the
+URL unmasked. The per-second burst caps (10/s token + login form, 20/s `events:batch`) need nothing on the Envoy
+Gateway side. Check: every policy
 reports `Accepted=True` in `kubectl -n hoops get backendtrafficpolicy -o jsonpath='{range .items[*]}{.metadata.name}
 {.status.ancestors[*].conditions[?(@.type=="Accepted")].status}{"\n"}{end}'` and
 `kubectl -n envoy-gateway-system rollout status deploy/envoy-ratelimit` succeeds.
