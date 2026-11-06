@@ -199,7 +199,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP72 | Web: design system (tokens, theme, shared widgets, shell) to the landing-page look | Opus | Running |
+| 1 | WP72 | Web: design system (tokens, theme, shared widgets, shell) to the landing-page look | Opus | Done (ADR-0040; web 865 tests; 21 new + 16 re-recorded goldens) |
 | 1 | WP78 | Athlete: session references any plan directly; exercise search inside templates and quick-add | Opus | Running |
 | 1 | WP81 | Core: producer recovery, `.removed` events on deletion, backfill and shadow period | Opus | Running |
 | 1 | WP83 | CI: SAST (CodeQL, Semgrep, find-sec-bugs) and DAST (ZAP API scan, full scan on kind) gates, findings triaged | Opus | Running |
