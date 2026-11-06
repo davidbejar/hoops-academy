@@ -8,6 +8,7 @@ import com.hoopsacademy.game.application.MatchEventRepository;
 import com.hoopsacademy.game.application.Recorder;
 import com.hoopsacademy.game.application.StoredEvent;
 import com.hoopsacademy.game.domain.MatchId;
+import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.PlayerVisibility;
 import com.hoopsacademy.game.domain.events.EventId;
 import com.hoopsacademy.game.domain.events.MatchEvent;
@@ -31,6 +32,42 @@ class JpaMatchEventRepository extends JdbcRepository implements MatchEventReposi
             id, server_seq, device_id, client_seq, type, player_id, period, clock_seconds_remaining, payload::text as payload,
             recorded_by_person_id, recorded_by_display_name, recorded_at_client, received_at, voided_by""";
 
+    /**
+     * The feed of a filtered viewer in one statement, the SQL form of {@code EventVisibility} (ADR-0030; checked against
+     * it by {@code FeedVisibilityQueryPropertyTest}). An event with a player is visible when that player is, one without
+     * is team-level. A VOID follows its target through VOID-of-VOID chains ({@code chain}: the VOIDs of the page range,
+     * each with the target still to resolve and the VOIDs passed); it is hidden only when the chain ends in an event of
+     * this match about a hidden player, so an unknown target (or one in another match) and a cycle leave it visible.
+     * VOID targets may lie before {@code after}, so they are looked up by id in the whole match.
+     */
+    private static final String VISIBLE_AFTER = """
+            with recursive feed as (
+                select cast(? as uuid) as match_id, cast(? as bigint) as after_seq, cast(? as uuid[]) as players
+            ), chain (origin, target, passed) as (
+                select e.id, cast(e.payload->>'targetEventId' as uuid), array[e.id]
+                  from game.match_event e, feed f
+                 where e.match_id = f.match_id and e.server_seq > f.after_seq and e.type = 'VOID'
+                union all
+                select c.origin, cast(t.payload->>'targetEventId' as uuid), c.passed || t.id
+                  from chain c
+                  join game.match_event t on t.id = c.target
+                  join feed f on t.match_id = f.match_id
+                 where t.type = 'VOID' and t.id <> all(c.passed)
+            ), hidden_void as (
+                select c.origin
+                  from chain c
+                  join game.match_event t on t.id = c.target
+                  join feed f on t.match_id = f.match_id
+                 where t.type <> 'VOID' and t.player_id is not null and t.player_id <> all(f.players)
+            )
+            select %s
+              from game.match_event e, feed f
+             where e.match_id = f.match_id and e.server_seq > f.after_seq
+               and case when e.type = 'VOID' then not exists (select 1 from hidden_void h where h.origin = e.id)
+                        else e.player_id is null or e.player_id = any(f.players) end
+             order by e.server_seq
+             limit ?""".formatted(COLUMNS);
+
     private final EntityManager em;
     private final ObjectMapper json;
 
@@ -52,15 +89,20 @@ class JpaMatchEventRepository extends JdbcRepository implements MatchEventReposi
 
     @Override
     public List<StoredEvent> after(MatchId matchId, PlayerVisibility viewer, long after, int limit) {
-        if (!viewer.seesAll()) {
-            throw new UnsupportedOperationException("WP60: filtered feed query");
+        if (viewer.seesAll()) {
+            return query("select " + COLUMNS + " from game.match_event where match_id = ? and server_seq > ? order by server_seq limit ?",
+                    s -> {
+                        s.setObject(1, matchId.value());
+                        s.setLong(2, after);
+                        s.setInt(3, limit);
+                    }, this::toStored);
         }
-        return query("select " + COLUMNS + " from game.match_event where match_id = ? and server_seq > ? order by server_seq limit ?",
-                s -> {
-                    s.setObject(1, matchId.value());
-                    s.setLong(2, after);
-                    s.setInt(3, limit);
-                }, this::toStored);
+        return query(VISIBLE_AFTER, s -> {
+            s.setObject(1, matchId.value());
+            s.setLong(2, after);
+            s.setArray(3, s.getConnection().createArrayOf("uuid", viewer.players().stream().map(PlayerId::value).toArray()));
+            s.setInt(4, limit);
+        }, this::toStored);
     }
 
     @Override

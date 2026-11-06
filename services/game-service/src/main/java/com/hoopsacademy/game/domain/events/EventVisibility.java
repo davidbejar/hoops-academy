@@ -12,7 +12,8 @@ import java.util.Set;
  * (statistics, substitutions, a note about a player) is visible when that player is; team-level events (period start
  * and end, opponent score, timeouts, notes about nobody) are visible to everyone. A VOID is visible when the event it
  * voids is, following VOID-of-VOID chains; a VOID whose target is unknown, or that ends in a cycle of VOIDs, names no
- * player and is visible.
+ * player and is visible. The feed query of the persistence adapter applies this rule in SQL (WP60) and is checked
+ * against this class on random matches; this class stays the definition.
  */
 public final class EventVisibility {
 
