@@ -76,6 +76,31 @@ class InternalResourceTest {
     }
 
     @Test
+    void teamsOfEndedSeasonsLeaveTheSummaryWhileTheStaffRowAndTheAssignmentStayOpen() {
+        LocalDate today = RosterDb.TODAY;
+        UUID ended = RosterDb.season(tenant, "Ended", today.minusDays(300), today.minusDays(1), RosterDb.YEAR - 1);
+        UUID endsToday = RosterDb.season(tenant, "Ends today", today, today, RosterDb.YEAR);
+        UUID upcoming = RosterDb.season(tenant, "Upcoming", today.plusDays(1), today.plusDays(200), RosterDb.YEAR);
+        var categories = RosterDb.defaultCategories(tenant);
+        UUID oldTeam = RosterDb.team(tenant, ended, "Seniors", categories.get("SENIOR"), "MIXED");
+        UUID todayTeam = RosterDb.team(tenant, endsToday, "Seniors", categories.get("SENIOR"), "MIXED");
+        UUID nextTeam = RosterDb.team(tenant, upcoming, "U12", categories.get("U12"), "MIXED");
+        String coach = "coach-" + UUID.randomUUID();
+        UUID coachPerson = CoreDb.person(tenant, CoreDb.login(coach), "Coach", "C", null, null, null, TenantRole.COACH);
+        RosterDb.staff(tenant, oldTeam, coachPerson, "COACH");
+        RosterDb.staff(tenant, todayTeam, coachPerson, "COACH");
+        RosterDb.staff(tenant, nextTeam, coachPerson, "COACH");
+        RosterDb.assignment(tenant, oldTeam, ownPlayer, "4");
+        RosterDb.assignment(tenant, todayTeam, ownPlayer, "4");
+        RosterDb.assignment(tenant, nextTeam, child, "7");
+
+        given().filter(Contract.CORE).get("/internal/authz/{t}/{s}", tenant, coach).then().statusCode(200)
+                .body("staffTeamIds", containsInAnyOrder(todayTeam.toString(), nextTeam.toString()));
+        given().filter(Contract.CORE).get("/internal/authz/{t}/{s}", tenant, subject).then().statusCode(200)
+                .body("playerTeamIds", containsInAnyOrder(todayTeam.toString(), nextTeam.toString()));
+    }
+
+    @Test
     void aMemberWithoutPlayersHasNoPlayerTeams() {
         String coach = "coach-" + UUID.randomUUID();
         CoreDb.person(tenant, CoreDb.login(coach), "Coach", "C", null, null, null, TenantRole.COACH);
