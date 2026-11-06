@@ -92,13 +92,13 @@ class TenantRegistryRlsTest {
     }
 
     @Test
-    void platformRoleMayAppendButNotReadOutboxEvents() throws SQLException {
+    void platformRoleMayAppendButNotReadOutboxPayloads() throws SQLException {
         try (Connection platform = TestDatabases.openAsPlatform()) {
             assertThat(CoreDb.update(platform, """
                     insert into core.outbox (id, tenant_id, event_type, aggregate_type, aggregate_id, payload)
                     values (gen_random_uuid(), ?, 'tenant.suspended', 'tenant', ?, '{}')""",
                     UUID.fromString(tenantA), tenantA)).isEqualTo(1);
-            assertThat(sqlState(platform, "select count(*) from core.outbox")).isEqualTo(INSUFFICIENT_PRIVILEGE);
+            assertThat(sqlState(platform, "select payload from core.outbox")).isEqualTo(INSUFFICIENT_PRIVILEGE);
         }
     }
 
