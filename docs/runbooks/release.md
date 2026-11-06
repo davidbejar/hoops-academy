@@ -1,14 +1,14 @@
 # Runbook: release
 
 Status: describes the process the repository's tooling supports. **No release has been cut yet**: the Maven version is
-`0.1.0-SNAPSHOT` and the Helm chart `0.3.0` (2026-11-06); the workflows in `.github/workflows` run on GitHub since
+`0.1.0-SNAPSHOT` and the Helm chart `0.4.0` (2026-11-06); the workflows in `.github/workflows` run on GitHub since
 2026-11-02 and `images` pushes every commit's images to `ghcr.io/davidbejar/hoops-academy` (public). Steps marked
 (design) are not implemented.
 
 ## 1. What is versioned
 | Artifact | Version source | Rule |
 |---|---|---|
-| OpenAPI contracts | `info.version` in `libs/contracts/openapi/{core,game,athlete,common}.yaml` (now core 2.6.0, game 2.1.0, athlete 2.1.0, common 1.1.0) | SemVer; policy in `libs/contracts/README.md` |
+| OpenAPI contracts | `info.version` in `libs/contracts/openapi/{core,game,athlete,common}.yaml` (now core 2.7.0, game 2.2.0, athlete 2.1.0, common 1.1.0) | SemVer; policy in `libs/contracts/README.md` |
 | Maven modules and service jars | root `pom.xml` (`0.1.0-SNAPSHOT`) | one version for the repo |
 | Container images | tag `dev` locally; `${{ github.sha }}` in `images.yml` | immutable, per commit |
 | Helm chart | `deploy/helm/hoops/Chart.yaml` (`version`, `appVersion`) | bump with every chart change |
@@ -39,7 +39,8 @@ just e2e                       # journey on compose (docs/runbooks/e2e.md)
 Also: ADR for any decision taken, handover notes in `docs/wp`, `docs/roadmap.md` updated.
 Dependency bumps arrive as weekly grouped Dependabot PRs (`.github/dependabot.yml`: Maven with Quarkus in its own
 group, pub for `apps/web`, GitHub Actions); `ci` and `e2e` run on each PR. Container base images, the chart's image
-tags and the Envoy Gateway / kind pins are bumped by hand.
+tags and the Envoy Gateway / kind pins are bumped by hand. Ignored on purpose: semver-major updates of
+`com.networknt:json-schema-validator` (WP43; 3.x cannot share a classpath with the strict validator's networknt 2.x).
 GitHub Actions are pinned to commit SHAs (`uses: owner/action@<40-hex> # vX.Y.Z`); Dependabot updates SHA and comment together, and a new action must be added pinned the same way.
 Realm or init-SQL changes: run `scripts/sync-chart-files.sh` (copies into the charts; the chart test fails on drift) and
 refresh snapshots with `deploy/helm/tests/run.sh --update` after reviewing the diff.

@@ -51,12 +51,16 @@ flowchart TB
   CORE -->|"Admin API"| KC
 ```
 Locally: `podman compose` (Postgres, Keycloak, MailHog, nginx on :8080) plus the three services on the host. On kind: Helm
-umbrella chart `hoops` (0.3.0), CloudNativePG clusters, Keycloak, Mailpit (Service `mailhog`), Envoy Gateway (Gateway API,
-ADR-0031) on :8090 with its rate limit service and the chart's in-memory `ratelimit-redis` (global rate limits,
-ADR-0033) (`runbooks/kind.md`). A fourth `web` image (nginx-unprivileged) serves the PWA there. Without any backend the
-web app runs in demo mode (`--dart-define=HOOPS_MOCK_API=true`): an in-process mock serves `/api/core`, `/api/game`,
-`/api/athlete` and `/platform` through the generated clients, so every screen is reachable (the demo user is a super
-admin unless `HOOPS_MOCK_SUPER_ADMIN=false`).
+umbrella chart `hoops` (0.4.0), CloudNativePG clusters, Keycloak, Mailpit (Service `mailhog`), Envoy Gateway (Gateway API,
+ADR-0031) on :8090 with its rate limit service and the chart's in-memory `ratelimit-redis` (global rate limits with
+per-minute and per-second rules; Redis ACL user `ratelimit`, ADR-0033 and its amendment) (`runbooks/kind.md`). A
+fourth `web` image (nginx-unprivileged) serves the PWA there. Without any backend the web app runs in demo mode
+(`--dart-define=HOOPS_MOCK_API=true`): an in-process mock serves `/api/core`, `/api/game`, `/api/athlete` and
+`/platform` through the generated clients, so every screen is reachable (the demo user is a super admin unless
+`HOOPS_MOCK_SUPER_ADMIN=false`). The mocks share one roster per academy (the core mock owns teams,
+players and guardian links; the athlete and game mocks read it) and filter by role per the authz matrix
+(`lib/core/mock/mock_authz.dart`; `HOOPS_MOCK_ROLES` switches roles in the demo academy). The web code is formatted
+with `dart format` (80 columns, generated packages excluded; `just web-format-check` runs in CI).
 
 ## 3. Request flow: tenant header and row-level security
 ```mermaid
@@ -166,27 +170,28 @@ player names at roster creation so offline sync never depends on core. The exact
 service's Flyway migrations.
 
 ## 8. Testing strategy and current counts
-JVM counts are from the fresh local `./mvnw -B -ntp -T 1C clean verify` after WP39 was rebased on WP38 (2026-11-06);
-the Flutter count from `just web-test` after WP41 (2026-11-06). They change with every commit.
+JVM counts are from the fresh local `./mvnw -B -ntp -T 1C clean verify` after WP44 was rebased on WP45 (2026-11-06);
+the Flutter count from `just web-test` after WP49 (2026-11-06). They change with every commit.
 
 | Layer | Kinds of test | Count |
 |---|---|---|
 | `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON | 186 |
-| `libs/contracts` | OpenAPI convention tests, JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation, strict-validator compatibility (no `allOf`, ADR-0027), `clear`-list convention (ADR-0032) | 152 |
-| `services/core-service` | domain unit and jqwik property tests (eligibility), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, cross-tenant access through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile) | 773 |
-| `services/game-service` | domain/projection tests with shared vectors, feed visibility (ADR-0030), ingest API tests, WireMock peers, RLS suites, contract validation | 255 |
+| `libs/contracts` | OpenAPI convention tests, JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation, strict-validator compatibility (no `allOf`, ADR-0027), `clear`-list convention per service (ADR-0032) | 157 |
+| `services/core-service` | domain unit and jqwik property tests (eligibility), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, cross-tenant access through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile) | 784 |
+| `services/game-service` | domain/projection tests with shared vectors, feed visibility (ADR-0030), ingest API tests, WireMock peers, RLS suites, contract validation | 259 |
 | `services/athlete-service` | domain, norm seed and band resolver tests, role matrix, RLS suites (incl. nullable-tenant tables), contract validation | 653 |
-| `apps/web` | `flutter test`: unit, provider, widget per role and state, goldens (360 px), projector vectors, sync worker, sign-out, service worker / CSP / build guards, l10n key parity, demo mock routes through the generated clients | 646 |
+| `apps/web` | `flutter test`: unit, provider, widget per role and state, goldens (360 px), projector vectors, sync worker, sign-out, service worker / CSP / build guards, l10n key parity, demo mock routes, shared rosters and role filtering through the generated clients | 668 |
 | `e2e` | black-box journey through the gateway with real Keycloak logins: 21 ordered steps, two tenants, every request and response validated against the OpenAPI, mail checks against MailHog or Mailpit; `MailSinkTest` unit tests run in every `verify` | 4 unit + 21 steps, green on compose (CI) and on kind with the mail checks (WP42) |
-| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform, Gateway API route and policy assertions, gitleaks; `deploy/kind/ratelimit-check.sh` on kind | script |
-| Mutation (on demand) | PIT per module (`just mutation [module]`, workflow `mutation.yml` manual + monthly; never in `verify`), baselines 95 / 95 / 95 / 100 % for common / core / game / athlete; see [`quality/mutation.md`](quality/mutation.md) | scores 99.1 / 99.6 / 99.5 / 100 % (WP37); athlete 430/430 after WP39 |
+| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform, Gateway API route and policy assertions, gitleaks; `deploy/kind/ratelimit-check.sh` on kind (per-minute, per-second, Redis ACL, Redis down) | 85 checks (WP46) |
+| Mutation (on demand) | PIT per module (`just mutation [module]`, workflow `mutation.yml` manual + monthly; never in `verify`), baselines 95 / 95 / 95 / 100 % for common / core / game / athlete; see [`quality/mutation.md`](quality/mutation.md) | scores 99.1 / 99.6 / 99.5 / 100 % (WP37); athlete 430/430 after WP39, core 498/499 after WP44, game 399/401 after WP45 |
 
-JVM total: **2,019 tests** (0 failures; plus the e2e module's 4 unit tests, the 21 journey steps skipped without a
-stack), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **646 tests**, analyze clean. e2e:
+JVM total: **2,039 tests** (0 failures; plus the e2e module's 4 unit tests, the 21 journey steps skipped without a
+stack), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **668 tests**, analyze and format
+check clean. e2e:
 **21/21 green on compose** in every CI `e2e` run on `main` and **21/21 on kind with the mail checks** (WP42, 72 s through
 the Envoy Gateway on :8090); `tilt ci` green on a fresh kind cluster (5 min 55 s). Browser-level checks:
 `apps/web/tool/web_smoke.sh` runs locally with a hand-installed chromedriver (last green in WP41, mock mode, through
-training and the platform console); Lighthouse and the airplane-mode reload have not run.
+training and the platform console; again in WP47); Lighthouse and the airplane-mode reload have not run.
 Statement-by-statement evidence: [`conformance.md`](conformance.md).
 
 ## 9. Security posture
@@ -198,13 +203,17 @@ Statement-by-statement evidence: [`conformance.md`](conformance.md).
   admin console hidden unless explicitly exposed.
 - Data: non-owner DB roles without `BYPASSRLS`; append-only audit trail ([ADR-0017](adr/0017-audit-trail-observability-and-http-hardening.md)); no PII in audit metadata; Problem+JSON without stack traces.
 - Supply chain: gitleaks (pre-commit and CI), Trivy (filesystem and images), dependency-check (CI, needs an NVD key), non-root
-  images, Dependabot (weekly grouped updates for Maven, pub and GitHub Actions; automated security fixes).
+  images, GitHub Actions pinned to commit SHAs with the tag as a comment (WP50), Dependabot (weekly grouped updates for
+  Maven, pub and GitHub Actions, SHA and comment bumped together; automated security fixes; semver-major updates of
+  `json-schema-validator` ignored until the strict OpenAPI validator moves to networknt 3.x, WP43).
 - Findings (status 2026-11-06): 18 fixed (F-01 in WP33, F-23 in WP32, F-03/F-09/F-10/F-19/F-20 in WP14b); partly fixed
   F-07 (offline DB scoping) and F-08 (refresh-token rotation); accepted F-11 and F-22 by design (ADR-0025) and F-14
   (token audience) for now.
 - Edge: nginx locally; Gateway API with Envoy Gateway in the chart (ADR-0031): per-IP global rate limits shared by
-  every Envoy replica (Envoy Gateway's rate limit service with a Redis counter store behind a NetworkPolicy and an ACL,
-  per-minute limits plus per-second burst caps; fail open when Redis is down, ADR-0033 and its WP46 amendment), `/internal` and the Keycloak admin console routed to a 403, HSTS on the HTTPS listener; no
+  every Envoy replica (Envoy Gateway's rate limit service with a Redis counter store behind a NetworkPolicy and an ACL
+  whose only user `ratelimit` may run `PING`/`INCRBY`/`EXPIRE` on the rate-limit keys; per-minute limits plus per-second
+  burst caps, 10/s token + login form and 20/s `events:batch`; fail open when Redis is down, ADR-0033 and its WP46
+  amendment), `/internal` and the Keycloak admin console routed to a 403, HSTS on the HTTPS listener; no
   body-size limit at the gateway (the services reject bodies above 2 MB, accepted in ADR-0033).
 Documents: [`security/review-2026-11.md`](security/review-2026-11.md) (23 findings: 0 critical, 0 high, 6 medium),
 [`security/threat-model.md`](security/threat-model.md), [`security/asvs-checklist.md`](security/asvs-checklist.md).

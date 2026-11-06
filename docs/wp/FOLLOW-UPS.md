@@ -1,7 +1,8 @@
 # Cross-cutting follow-ups (owned by the orchestrator)
 
 Collected from the WP handovers and the WP20 review (2026-11-02); reconciled with the product interview of 2026-11-05
-(WP26), with the WP26–WP37 handovers on 2026-11-06 and with the WP38–WP42 handovers on the evening of 2026-11-06.
+(WP26), with the WP26–WP37 handovers on 2026-11-06, with the WP38–WP42 handovers on the evening of 2026-11-06 and with
+the WP43–WP51 handovers (third round) later that evening.
 Grouped by area; **[v2]** marks items that are out of v1 by decision (PLAN §8, roadmap); **→ WPnn** marked an item the plans below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
 closed them. The statement-by-statement status of the spec is in [`../conformance.md`](../conformance.md).
 
@@ -90,24 +91,26 @@ WP38, WP40, WP39, WP42, WP41 (WP39 rebased on WP38 and re-verified).
     `scripts/hooks/_common.sh`); no manual step. `ApprovalPayload.empty()` is deleted in WP38.
 
 ## Plan (2026-11-06, third round)
-Decided in the second interview of 2026-11-06 (decisions 24–32). Same mechanics; the `dart format` pass runs alone at
-the end because it touches every web file.
+Decided in the second interview of 2026-11-06 (decisions 24–33). Same mechanics; the `dart format` pass runs alone at
+the end because it touches every web file. **All nine are done**: merged into `main` on 2026-11-06 in the order WP50,
+WP48, WP43, WP45, WP46, WP44, WP51, WP47, WP49 (WP44 rebased on WP45 and re-verified).
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP43 | json-schema-validator 3.x migration (Dependabot #3) | Opus | Running |
-| 1 | WP46 | Gateway: Redis ACL for the rate-limit service, per-second burst cap | Opus | Running |
-| 1 | WP48 | Web: injury edit dialog | Sonnet | Running |
-| 1 | WP50 | GitHub Actions pinned to commit SHAs | Sonnet | Running |
-| 2 | WP44 | Core adopts the `clear` list (ADR-0032) | Opus | After wave 1 |
-| 2 | WP45 | Game adopts the `clear` list (ADR-0032) | Sonnet | After wave 1 |
-| 3 | WP47 | Web: demo mock parity (shared rosters, role filtering) | Sonnet | After WP44, WP45 |
-| 4 | WP49 | Web: `dart format` policy (80 columns) and CI check | Sonnet | Last, alone |
-| 3 | WP51 | `wp-round` skill: how a round is planned and run; CLAUDE.md pointer; HANDOVER conventions trimmed | Opus | After WP44 |
+| 1 | WP43 | json-schema-validator 3.x migration (Dependabot #3) | Opus | Done (not migrated: stays 2.0.8, Dependabot ignores the major, #3 closed; migration recorded) |
+| 1 | WP46 | Gateway: Redis ACL for the rate-limit service, per-second burst cap | Opus | Done (ADR-0033 amended; chart 0.4.0) |
+| 1 | WP48 | Web: injury edit dialog | Sonnet | Done (no contract change) |
+| 1 | WP50 | GitHub Actions pinned to commit SHAs | Sonnet | Done (31 refs in four workflows) |
+| 2 | WP44 | Core adopts the `clear` list (ADR-0032) | Opus | Done (ADR-0032; core 2.7.0) |
+| 2 | WP45 | Game adopts the `clear` list (ADR-0032) | Sonnet | Done (ADR-0032; game 2.2.0) |
+| 3 | WP47 | Web: demo mock parity (shared rosters, role filtering) | Sonnet | Done (no contract change; web 668 tests) |
+| 4 | WP49 | Web: `dart format` policy (80 columns) and CI check | Sonnet | Done (`just web-format-check` in CI) |
+| 3 | WP51 | `wp-round` skill: how a round is planned and run; CLAUDE.md pointer; HANDOVER conventions trimmed | Opus | Done (`.claude/skills/wp-round`) |
 
 ### Decisions of 2026-11-06, second interview (product owner)
 24. **Dependabot.** Green PRs are merged (done: #1 actions, #2 Maven minor/patch, #4 cupertino_icons 2.0; the
-    regenerated Dart clients differed only by whitespace). #3 (json-schema-validator 3.x) is fixed by migration → WP43.
+    regenerated Dart clients differed only by whitespace). #3 (json-schema-validator 3.x) is fixed by migration → WP43
+    (outcome: not migrated, the strict validator still needs 2.x; see Resolved).
 25. **`.claude/skills/flutter-feature/SKILL.md`** front-matter quoting: committed.
 26. **ADR-0032 everywhere** → WP44 (core 2.7.0), WP45 (game 2.2.0): null = unchanged, `clear` empties.
 27. **Gateway hardening** → WP46: Redis ACL for the rate-limit service and a per-second rule next to the per-minute
@@ -128,10 +131,9 @@ the end because it touches every web file.
 ## Open
 
 ### Product / contract decisions
-- **`clear` list in core and game** (WP39, ADR-0032): only athlete has adopted it. Core still reads a PATCH as a merge
-  patch (an explicit `null` clears) and game has no clearable update yet; each adopts ADR-0032 in its own WP (add the
-  spec to `ADOPTED` in `UpdateRequestClearListContractTest`). In athlete an explicit `null` no longer clears (now
-  "unchanged", decision 17); a client that relied on it must name the field in `clear`.
+- **`clear` lists the app does not send yet** (WP44): no web dialog edits a member's personal data or the academy's
+  contact e-mail / website, so `UpdateMemberRequest.clear` and `UpdateTenantProfileRequest.clear` are unused by the app.
+  In all three services an explicit `null` is now "unchanged" (ADR-0032); a client must name the field in `clear`.
 - **Stored audit row keeps the super admin's subject** (WP38, ADR-0029 amendment): only the academy read masks platform
   actors; the row itself keeps the `sub` for accountability (by design). The v2 purge job is its only clean-up.
 - **Feed filter in SQL** (WP33): for non-staff callers the feed filter walks all of a match's events in memory.
@@ -151,14 +153,18 @@ the end because it touches every web file.
 - **Browser-level tests**: `apps/web/tool/web_smoke.sh` ran green in mock mode on 2026-11-02 (chromedriver 156 installed
   by hand from Chrome for Testing; the Homebrew cask is disabled). Still open: the Lighthouse installability check and the
   airplane-mode cold-start check (README "Offline cold start"); add chromedriver to CI.
-- **Injury edit dialog** (WP39): no dialog edits an injury's description or dates, so `UpdateInjuryRequest.clear` is
-  not used by the app yet.
-- **Demo mock limits** (WP41): `/api/athlete/*` serves the demo academy only (Club Norte is PARENT with no data); the
-  athlete mock applies no role-based authorization (the real service filters); its team rosters are fixed (Mini A, Mini
-  B, Infantil A), not read from the core mock, so players added in the demo do not appear on attendance sheets, and
-  the game mock's roster ids differ; no `/internal/usage`; `updateTenant` is mocked but no screen calls it.
-- **`dart format` policy** (WP41): the new mock files were formatted with `dart format -l 120` (long, unjoined lines);
-  no repo-wide line length or format check is decided.
+- **Jersey cannot be removed in the app** (WP44): the jersey dialog still requires a value (`noteDialog(required:
+  true)`), although the API removes a jersey with `{clear: [jerseyNumber]}`.
+- **No match edit UI** (WP45): only match creation exists; `MatchesRepository.update` (sends `clear` for an emptied
+  venue) is the ready hook for an edit dialog (opponent, date, venue).
+- **Demo mock limits** (WP47): core reads are not role-filtered (teams / players lists show everything to PARENT /
+  PLAYER); the demo COACH is always staff of Mini A (the staff list does not include the demo user); PARENT + PLAYER on
+  one login is only partly handled; plan completions and assignment progress filter by visible players, not by team;
+  no suspended-tenant behaviour; `HOOPS_MOCK_ROLES` switches roles in Academia Demo only (Club Norte is the PARENT
+  case); no `/internal/usage`; matches and players created in the demo are not persisted across reloads.
+- **`curly_braces_in_flow_control_structures` lint disabled** (WP49): `dart format` puts `if (x) return y;` on two
+  lines (87 infos); the rule is off in `apps/web/analysis_options.yaml` instead of adding braces. Re-enable it with a
+  braces-only pass if wanted.
 - **Fonts**: glyphs outside Roboto (CJK, emoji) render as tofu; bundle a Noto subset if a language needs it.
 - **Same-device two-tab clientSeq race** (WP13): accepted for now (second event is `CLIENT_SEQ_CONFLICT`, visible).
 
@@ -172,6 +178,8 @@ the end because it touches every web file.
   2.3.0 so the pre-WP25 web build keeps working; drop it in core 3.0.0 once WP25 uses the new operation.
 - **Keycloak ahead of the database** (WP22, as ADR-0013): a commit failure right after a successful login update leaves
   Keycloak with the new e-mail; no repair job detects `app_user.email` ≠ Keycloak e-mail yet.
+- **No-op PATCH writes an empty audit row** (WP44): `{"phone": null}` (unchanged) still records `member.updated` with
+  no fields (pre-existing behaviour for unchanged values).
 - **Parents via the guardian flow** get no login (WP5 note); WP17 covered players only (ADMIN add + approval).
 - **Entitlement seam** has no test of a denial path (the noop implementation always allows).
 - **Usage snapshots** are never pruned; the snapshot job aggregates tenants sequentially (fine for tens of tenants).
@@ -189,21 +197,30 @@ the end because it touches every web file.
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
-- **Redis ACL for the rate limiter** (WP40, ADR-0033): `ratelimit-redis` has no password and relies on its
-  NetworkPolicy (which, like the chart's other policies, needs an enforcing CNI); an ACL (`-@scripting -@dangerous`)
-  would add defense in depth. Not done because it needs a kind re-test.
-- **Fixed-window rate limits** (WP40, ADR-0033, accepted): a client can send up to 2 × the per-minute limit across a
-  minute boundary; per-IP limits can still be dodged by rotating addresses (an IPv6 /64).
-- **`up.sh` controller restart** (WP40): the branch of `deploy/kind/up.sh` that restarts the Envoy Gateway controller
-  when its rate-limit config changes has not been exercised (only the unchanged path).
+- **Per-IP limits** (WP40, ADR-0033, accepted): they can be dodged by rotating addresses (an IPv6 /64). The
+  minute-boundary doubling is closed by the per-second caps (WP46, see Resolved).
+- **Rate-limit Redis password rotation** (WP46): Redis reads the ACL file at start and `envoy-ratelimit` reads
+  `REDIS_AUTH` at start, so a new `RATELIMIT_REDIS_PASSWORD` needs both restarted together (no checksum trigger;
+  documented in `runbooks/rotate-secrets.md`).
+- **Wrong Redis login fails open silently** (WP46): limits stop applying and only `WRONGPASS` / `NOPERM` in the
+  `envoy-ratelimit` logs show it; no alert.
+- **Not re-run after WP46** (WP40/WP46): `ratelimit-check.sh` with 2 Envoy replicas, `tilt ci`, and the branch of
+  `deploy/kind/up.sh` that restarts the Envoy Gateway controller when its rate-limit config changes (only the unchanged
+  path has run).
+- **Envoy Gateway descriptor collision** (WP46): v1.9.3 builds the `sourceCIDR` descriptor without the rule index, so a
+  per-minute and a per-second rule on the same route collapse into one; worked around with an always-true
+  `path: {type: PathPrefix, value: /}` selector on the per-second rules (ADR-0033 amendment). Report it upstream and
+  drop the selector once fixed.
 - **No gateway body-size limit** (WP36; accepted, decision 18): Envoy streams bodies; the services reject bodies above
   2 MB with a 413 Problem. A gateway limit needs `BackendTrafficPolicy.requestBuffer`, which buffers every request.
 - **Port 18080 while Tilt runs** (WP42): Tilt's Keycloak port-forward holds 18080, so the runbook's 18080 forward for
   the journey on kind only works after `tilt ci` / `tilt up` has exited (use another local port, e.g. 18081). In the
   Tilt UI `mailhog` and the services' NetworkPolicies are still "uncategorized" (pre-existing, cosmetic).
-- **Dependabot majors** (2026-11-06): PR #3 (`com.networknt:json-schema-validator` 2.0.8 → 3.0.8) is red: the 3.x API
-  no longer takes a Jackson `JsonNode` in `getSchema` / `validate` (`MatchEventJsonSchemaTest` does not compile), so it
-  needs a small code change or a pin to 2.x; PR #4 (`cupertino_icons` 2.0.0) is green. Majors are not grouped.
+- **json-schema-validator 3.x** (WP43): blocked while `swagger-request-validator` (`openapi-request-validator-core`
+  3.0.0, ADR-0027) is built on networknt 2.x (same class names, one classpath). When it moves to networknt 3.x: drop the
+  maven `ignore` entry in `.github/dependabot.yml` and apply the migration recorded in the WP43 handover (pass JSON
+  text instead of a Jackson 2 tree in `MatchEventJsonSchemaTest`, `MatchEventDecoder`, `EventSchema`; one version in
+  the root pom). `MatchEventDecoderTest.schemaViolationMessagesKeepTheirWording` turns red if the wording changes.
 - **Keycloak CSP hardening**: realm `browserSecurityHeaders`, so the accepted ZAP alerts under `/auth/realms/` can go
   (`.zap/baseline.conf`). (The CI workflows themselves are green on `origin/main` since 2026-11-02; see Resolved.)
 - **dependency-check NVD cache** (2026-11-05): the "Save NVD data" step runs `if: always()`, so a failed or cancelled
@@ -225,6 +242,30 @@ the end because it touches every web file.
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP44 / WP45 (decision 26): ADR-0032 everywhere. Core 2.7.0 carries `clear` on five update requests (tenant profile,
+  member, age category, team, team player; `MergePatch` replaced by `PatchBody`, `CLEAR_CONFLICT` for value + clear)
+  and game 2.2.0 on `UpdateMatchRequest` (`venue`); the web team, age-category and jersey edits and the demo mocks
+  honour it; `UpdateRequestClearListContractTest` lists athlete, core and game as adopted.
+- WP46 (decision 27): `ratelimit-redis` has an ACL (`default` off; only user `ratelimit`, `PING`/`INCRBY`/`EXPIRE` on
+  the rate-limit keys, password from `.env` `RATELIMIT_REDIS_PASSWORD`) and every limited route a per-second burst cap
+  next to its per-minute limit (10/s token + login form, 20/s `events:batch`), so a minute-boundary burst can no longer
+  double the limit; `ratelimit-check.sh` incl. the `acl` mode passed on kind (ADR-0033 amendment, chart 0.4.0).
+- WP48 (decision 29): injury edit dialog in the health screen (body part, severity, dates, description, expected and
+  actual return; emptied fields named in `clear`), for ADMIN, staff and linked PARENT. The edit cannot reopen a
+  recovered injury (status stays with the "Mark recovered" action, by contract).
+- WP49 (decision 30): `apps/web` (not the generated packages) is formatted with default `dart format` (80 columns);
+  `just web-format` / `just web-format-check`, the check runs in the CI flutter job before `flutter analyze`.
+- WP50 (decision 31): the 31 `uses:` refs in `ci.yml`, `e2e.yml`, `images.yml` and `mutation.yml` are pinned to commit
+  SHAs with the tag as a comment; Dependabot bumps SHA and comment together (`runbooks/release.md`, ASVS V15).
+- WP47 (decision 28): the demo mocks share one roster per academy (core owns it; athlete and game read it, ids match),
+  filter by role per the authz matrix (`lib/core/mock/mock_authz.dart`: 404 not visible, 403 visible but not allowed)
+  and Club Norte has its own core, athlete and game data. Remaining limits under "Web app".
+- WP51 (decision 33): the round procedure (interview, briefs, waves, models, merge protocol, traps, docs pass) is the
+  skill `.claude/skills/wp-round` with a brief template; CLAUDE.md points to it; HANDOVER keeps state and environment
+  facts only.
+- WP43 / Dependabot #3 (decision 24): `json-schema-validator` stays on 2.0.8 (3.x cannot share a classpath with the
+  strict validator's networknt 2.x); Dependabot ignores its semver-major updates; PR #3 closed on 2026-11-06 with that
+  reason. Re-apply the recorded migration later (open item under "Infra, CI, e2e").
 - WP38 (decision 16): audit rows with free text: academy ADMINs keep reading the super admin's `reason`, and platform
   actors are masked on the academy path ("Platform administrator", no subject / person / name); the super admin's view
   is unchanged (ADR-0029 amendment, core 2.6.0). Core `ApprovalPayload.empty()` (dead code found by WP37) deleted.
@@ -345,7 +386,9 @@ the end because it touches every web file.
   shows it once; re-issue for pending admins and members.
 - CI workflows (`ci`, `e2e`, `images`) first ran on GitHub on 2026-11-02 and are green on `origin/main` since 5ab1f71
   (2026-11-02); last checked on 2026-11-06: `ci`, `e2e` and `images` green on bb68194 (WP39) and 33441be (WP41), `ci` and
-  `e2e` on ba4e948 (WP42) and 625a5f9 (Dependabot). Runner-only fixes
+  `e2e` on ba4e948 (WP42) and 625a5f9 (Dependabot); third round: `ci`, `e2e` and `images` green on 71e459a (WP50, the
+  first run with SHA-pinned actions), a99c211 (WP44), fbb71ef (WP47) and b2ef8d5 (WP49, first run of the format
+  check). Runner-only fixes
   landed on 2026-11-02 (`git log --grep ci`). Notes kept: the e2e workflow's throw-away `.env` must set
   `HOOPS_EXPOSE_KC_ADMIN=true`; dependency-check needs `secrets.NVD_API_KEY`.
 - NVD key activation: `NVD_API_KEY` is valid since 2026-11-02 (commit 929d1df); dependency-check green with the cached

@@ -36,5 +36,5 @@ says so in its header ("Supersedes", "Records"), and the earlier one carries an 
 | [0029](0029-audit-trail-read-api.md) | Reading the audit trail: academy ADMINs under RLS, the super admin through a platform read policy (amended 2026-11-06: platform actors masked on the academy path) |
 | [0030](0030-match-event-feed-filtered-by-player-visibility.md) | Match event feed filtered by player visibility (F-01) |
 | [0031](0031-gateway-api.md) | Gateway API with Envoy Gateway replaces ingress-nginx (routes, local rate limits per client IP, kind NodePort; its rate-limit decision replaced by ADR-0033) |
-| [0032](0032-update-requests-clear-list.md) | Update requests name the fields to clear in a `clear` list (absent or null = unchanged) |
-| [0033](0033-gateway-global-rate-limit.md) | Global rate limits at the gateway: Envoy rate limit service + Redis, shared by every Envoy replica, fail open |
+| [0032](0032-update-requests-clear-list.md) | Update requests name the fields to clear in a `clear` list (absent or null = unchanged; adopted by athlete 2.1.0, core 2.7.0, game 2.2.0) |
+| [0033](0033-gateway-global-rate-limit.md) | Global rate limits at the gateway: Envoy rate limit service + Redis, shared by every Envoy replica, fail open (amended 2026-11-06: Redis ACL, per-second burst caps; chart 0.4.0) |
