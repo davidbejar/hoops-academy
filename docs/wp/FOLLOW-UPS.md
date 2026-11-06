@@ -131,8 +131,9 @@ WP48, WP43, WP45, WP46, WP44, WP51, WP47, WP49 (WP44 rebased on WP45 and re-veri
 ## Plan (2026-11-06, fourth round)
 Decided in the third interview of 2026-11-06 (decisions 34–51). Same mechanics (`wp-round` skill). One kind user
 per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events work. **All twenty are done**: merged
-into `main` on 2026-11-06 in the order WP52, WP60, WP56, WP58, WP70, WP59, WP61, WP57, WP53, WP55, WP63, WP65, WP64,
-WP54, WP62, WP66, WP67, WP69, WP68, WP71 (WP71 added by the orchestrator after the WP67/WP69 handovers).
+into `main` on 2026-11-06 in the order WP64, WP55, WP52, WP60, WP63, WP56, WP58, WP53, WP70, WP59, WP65, WP61, WP57,
+WP54, WP62, WP66, WP67, WP69, WP68, WP71 (history order; WP71 added by the orchestrator after the WP67/WP69
+handovers).
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
@@ -215,7 +216,7 @@ WP54, WP62, WP66, WP67, WP69, WP68, WP71 (WP71 added by the orchestrator after t
 - **Keycloak master realm CSP** (WP57): the master realm (admin console, local only with `HOOPS_EXPOSE_KC_ADMIN=true`)
   keeps Keycloak's default CSP, so a local ZAP run with the console exposed blocks on it (as before WP57).
 - **Double Referrer-Policy on `/auth/`** (WP57): nginx adds `strict-origin-when-cross-origin` after Keycloak's
-  `no-referrer` (browsers use the last); align in `infra/nginx`.
+  `no-referrer` (browsers use the last); align in `infra/compose/nginx.conf`.
 - **Offline end-session** is skipped, not queued (SSO session lives until its 4 h idle timeout) — accepted, ADR-0019.
 
 ### Web app (`apps/web`)
