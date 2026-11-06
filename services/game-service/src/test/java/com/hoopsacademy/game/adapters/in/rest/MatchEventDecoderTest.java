@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,6 +56,39 @@ class MatchEventDecoderTest {
         assertThat(decoded).isInstanceOf(SubmittedEvent.Invalid.class);
         assertThat(decoded.eventId()).isEqualTo(UUID.fromString(shot.get("id").asText()));
         assertThat(((SubmittedEvent.Invalid) decoded).message()).contains("points");
+    }
+
+    /**
+     * The exact wording of {@code results[].message} for typical schema violations (client-facing text). Pinned so a
+     * validator upgrade cannot change it silently (WP43, json-schema-validator 2.x to 3.x).
+     */
+    @Test
+    void schemaViolationMessagesKeepTheirWording() throws IOException {
+        ObjectNode noPoints = example("SHOT");
+        ((ObjectNode) noPoints.get("payload")).remove("points");
+        ObjectNode fourPoints = example("SHOT");
+        ((ObjectNode) fourPoints.get("payload")).put("points", 4);
+        ObjectNode noPlayer = example("REBOUND");
+        noPlayer.remove("playerId");
+        ObjectNode noSequence = example("PERIOD_START");
+        noSequence.remove("clientSeq");
+        SoftAssertions soft = new SoftAssertions();
+
+        soft.assertThat(messageOf(noPoints)).isEqualTo("/payload: required property 'points' not found");
+        soft.assertThat(messageOf(fourPoints)).isEqualTo("/payload/points: does not have a value in the enumeration [1, 2, 3]");
+        soft.assertThat(messageOf(example("SHOT").put("type", "DUNK"))).isEqualTo("/type: does not have a value in the enumeration"
+                + " [\"PERIOD_START\", \"PERIOD_END\", \"SUB_IN\", \"SUB_OUT\", \"SHOT\", \"ASSIST\", \"REBOUND\", \"TURNOVER\","
+                + " \"STEAL\", \"BLOCK\", \"FOUL\", \"OPPONENT_SCORE\", \"TIMEOUT\", \"VOID\", \"NOTE\"]");
+        soft.assertThat(messageOf(noPlayer)).isEqualTo(": required property 'playerId' not found");
+        soft.assertThat(messageOf(noSequence))
+                .isEqualTo(": required property 'clientSeq' not found; : required property 'clientSeq' not found");
+        soft.assertThat(messageOf(example("ASSIST").put("clientSeq", "seven")))
+                .isEqualTo("/clientSeq: string found, integer expected; /clientSeq: string found, integer expected");
+        soft.assertAll();
+    }
+
+    private String messageOf(JsonNode event) {
+        return ((SubmittedEvent.Invalid) decoder.decode(event)).message();
     }
 
     @Test
