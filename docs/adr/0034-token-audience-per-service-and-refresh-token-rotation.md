@@ -64,8 +64,8 @@ calls game's and athlete's `/internal/usage` with its own. No user token is forw
   older realm. Until then every API call answers 401. kind always imports a fresh realm (chart copy synced by
   `scripts/sync-chart-files.sh`).
 - `deploy/kind/smoke.sh` called each service's API with that service's own token and expected "not 401"; under
-  decision 2 that is a 401 by design. The check must call a service the token is for (core's token on game or
-  athlete, game's or athlete's token on core).
+  decision 2 that is a 401 by design. It now calls core with game's token and game and athlete with core's (not 401),
+  and each service with its own token (401).
 - A new service or a new caller needs a mapper on the calling client and the callee's audience in its properties;
   `RealmTokenPolicyTest` lists the expected audiences per client.
 - Residual (F-08): tokens are still in browser storage (XSS would read them; none found). A stolen refresh token works
