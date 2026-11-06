@@ -21,6 +21,8 @@ of the remote secret `hoops` when the chart runs with `externalSecrets.enabled=t
 | `hoops-oidc-core-service`, `hoops-oidc-game-service`, `hoops-oidc-athlete-service` | `client-secret` | `<SVC>_SERVICE_CLIENT_SECRET` | Keycloak realm import (`${..._CLIENT_SECRET}`, first import only); each service's client credentials |
 | `hoops-ratelimit-redis` | `password` | `RATELIMIT_REDIS_PASSWORD` | `ratelimit-redis` init container (hashes it into the ACL file at pod start) |
 | `envoy-gateway-system/envoy-ratelimit-redis-auth` | `auth` = `ratelimit:<password>` | `RATELIMIT_REDIS_PASSWORD` | Envoy Gateway's `envoy-ratelimit` pods (`REDIS_AUTH`, ADR-0033 amendment) |
+| `hoops-redpanda-admin` | basic-auth, `username` = `admin`, `password` | `REDPANDA_ADMIN_PASSWORD` | Redpanda superuser: `RP_BOOTSTRAP_USER` of `redpanda-0` (first bootstrap only), the `redpanda-bootstrap` Job, operators' `rpk` (ADR-0036) |
+| `hoops-redpanda-core-service`, `hoops-redpanda-game-service`, `hoops-redpanda-athlete-service` | basic-auth, `username` = broker user, `password` | `REDPANDA_<SVC>_SERVICE_PASSWORD` | the `redpanda-bootstrap` Job (sets the SCRAM password on every install/upgrade); the services from WP67-WP69 |
 | `hoops-dev-users` | `password` | `DEV_USER_PASSWORD` | nothing in the cluster: `seed-users.sh` and `smoke.sh` read `.env` (rendered by `secrets.sh` only, not by ESO) |
 | `hoops-gateway-tls` | kubernetes.io/tls | none: self-signed by `up.sh` (kind), cert-manager elsewhere | Gateway `hoops` HTTPS listener (`gateway.tls.certificateRefs`) |
 
@@ -52,10 +54,14 @@ So a changed env var alone changes nothing on an existing Keycloak.
 ## C. kind (Kubernetes Secrets)
 ```bash
 # edit .env first
-deploy/kind/secrets.sh | kubectl apply -f -          # 15 Secrets rendered from .env, values never on argv or disk
+deploy/kind/secrets.sh | kubectl apply -f -          # 19 Secrets rendered from .env, values never on argv or disk
 kubectl -n hoops rollout restart deploy               # services read env at start (ratelimit-redis rewrites its ACL file)
 kubectl -n envoy-gateway-system rollout restart deploy/envoy-ratelimit   # after RATELIMIT_REDIS_PASSWORD changed
 ```
+`REDPANDA_<SVC>_SERVICE_PASSWORD` (WP66): the broker keeps its own SCRAM credentials; the `redpanda-bootstrap` Job copies
+the Secret's password to the broker on every `helm upgrade` (with Tilt: when the Job is re-applied). Then restart the
+service that logs in with it. `REDPANDA_ADMIN_PASSWORD` is used by the broker only at its first bootstrap: change the
+broker first, then the Secret (`docs/runbooks/events.md`, "Rotate the superuser"), otherwise the Job can no longer log in.
 `secrets.sh` fails fast if `.env` or a key is missing. Tilt applies the same output from memory.
 `RATELIMIT_REDIS_PASSWORD`: until both Redis and `envoy-ratelimit` restarted, the rate limit service gets `WRONGPASS`
 and the gateway fails open (no 429, ADR-0033), so restart both together and re-run `deploy/kind/ratelimit-check.sh token`.
@@ -92,6 +98,8 @@ ESO's copies (ADR-0012 amendment). Never edit them with `kubectl`: ESO overwrite
    | `KC_DB_PASSWORD` | nothing: `initdb.secret` is read at bootstrap only | `ALTER ROLE keycloak PASSWORD ...` in `keycloak-db` first (section D), then `deploy/keycloak` |
    | `KEYCLOAK_ADMIN*`, `*_SERVICE_CLIENT_SECRET` | nothing: Keycloak applies them on the first start/import only | change them in Keycloak first (section B), then the service (client secret) or nothing (admin) |
    | `RATELIMIT_REDIS_PASSWORD` | both Secrets change together (one property) | `deploy/ratelimit-redis` in `hoops` and `deploy/envoy-ratelimit` in `envoy-gateway-system`; until both restarted the gateway fails open (section C) |
+   | `REDPANDA_<SVC>_SERVICE_PASSWORD` | nothing on the broker until the `redpanda-bootstrap` Job runs (`helm upgrade`) | the service of that user, after the Job |
+   | `REDPANDA_ADMIN_PASSWORD` | nothing: the broker reads it at bootstrap only | change the broker's `admin` password first (`events.md`), then the source |
 4. Check: `deploy/kind/smoke.sh core game athlete` (kind) or the deploy checks of `release.md`.
 
 Migrating an install from pre-created Secrets to ESO: create the store and the source values first, then

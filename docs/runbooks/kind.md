@@ -1,7 +1,8 @@
 # Runbook — Hoops Academy on kind (Podman) with Helm and Tilt
 
 WP16. Local Kubernetes that mirrors production packaging: container images, the `hoops` umbrella chart,
-CloudNativePG for PostgreSQL 17, Keycloak 26.8.1 in production mode, Envoy Gateway (Gateway API, ADR-0031). The compose stack
+CloudNativePG for PostgreSQL 17, Keycloak 26.8.1 in production mode, Envoy Gateway (Gateway API, ADR-0031), Redpanda as the
+event broker (ADR-0036). The compose stack
 (`just up`, :8080) keeps working side by side; kind uses **:8090** (http) and **:8453** (https).
 
 ## Prerequisites
@@ -11,7 +12,8 @@ CloudNativePG for PostgreSQL 17, Keycloak 26.8.1 in production mode, Envoy Gatew
   `up.sh`/Tilt fail if `.env` or a key is missing.
 - Capacity: the full stack requests ~1.5 CPU / ~2.5 GiB inside the kind node (Keycloak 512 Mi–1 Gi, three
   services 192–448 Mi, two Postgres 192–512 Mi, Envoy Gateway controller 256 Mi + one Envoy proxy 64–256 Mi, its
-  rate limit service `envoy-ratelimit` 32–128 Mi + `ratelimit-redis` 16–64 Mi, CNPG operator, control plane ~1 GiB).
+  rate limit service `envoy-ratelimit` 32–128 Mi + `ratelimit-redis` 16–64 Mi, `redpanda` 512–768 Mi with a 1 Gi volume,
+  CNPG operator, control plane ~1 GiB).
 
 ### Rootless vs rootful Podman
 kind's Podman provider works best on a **rootful** machine. Rootless needs cgroup v2 with the
@@ -53,6 +55,7 @@ the container), `--skip-flutter` (reuse `apps/web/build/web`).
 | `http://localhost:8090/api/athlete/` | `athlete-service:8083` |
 | `http://localhost:8090/api/<svc>/q/health[/live\|ready\|started]` | rewritten to `/q/health…` of the service (nothing else under `/q`) |
 | `http://localhost:8090/internal/**` | **403** (routed to the web nginx `location /internal`) |
+| (not routed) `redpanda.hoops.svc.cluster.local:9092` | Redpanda `redpanda-0` (Kafka API, SASL/SCRAM; only from the services' pods) |
 | Tilt port-forwards | Keycloak `:18080`, core `:18081`, game `:18082`, athlete `:18083` |
 
 How the gateway is wired: the chart renders GatewayClass `envoy-gateway` (kind only, `gateway.gatewayClass.create`),
@@ -71,6 +74,14 @@ create the proxy Service `envoy-gateway-system/hoops-gateway` as a NodePort (300
 maps to `127.0.0.1:8090/8453`. Status: `kubectl -n hoops get gateway,httproute` (`PROGRAMMED True`, routes `Accepted`);
 `kubectl -n hoops describe backendtrafficpolicy` shows whether a policy attached.
 
+Event broker (WP66, ADR-0036, `events.enabled` in `values-kind.yaml`): StatefulSet `redpanda` (one node, developer mode,
+512M Seastar memory, PVC `data-redpanda-0`), headless Service `redpanda` (Kafka 9092, admin 9644). SASL/SCRAM on Kafka,
+basic auth on the admin API, ACLs enforced; the NetworkPolicy admits Kafka only from the three services and the Job
+`redpanda-bootstrap`, the admin API only from that Job. The Job (a Helm post-install/upgrade hook; a plain Job for Tilt,
+resource `redpanda-bootstrap`) sets the cluster properties, the users `core-service`, `game-service`, `athlete-service`
+with the passwords of `hoops-redpanda-<service>`, their ACLs and the seven topics. `rpk`, consumer groups, rotation:
+`docs/runbooks/events.md`. The services do not connect yet (WP67-WP69).
+
 In-cluster: services reach Keycloak at `http://keycloak:8080/auth` (back-channel; `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`
 keeps the token issuer on the public URL), Postgres at `hoops-db-rw:5432/hoops`, Keycloak's DB at `keycloak-db-rw`.
 
@@ -84,7 +95,7 @@ kubectl -n hoops get pods                                   # all Running/Ready
 curl -s http://localhost:8090/auth/realms/academy/.well-known/openid-configuration | jq -r .issuer
 curl -s http://localhost:8090/api/game/q/health/ready       # {"status":"UP",...}
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8090/internal/x   # 403
-deploy/kind/smoke.sh core game athlete      # all of the above and more (pods, gateway, tokens, seeded superadmin)
+deploy/kind/smoke.sh core game athlete      # all of the above and more (pods, gateway, event broker, tokens, seeded superadmin)
 deploy/kind/ratelimit-check.sh              # paced burst -> first 429 at rpm+1 per client IP, with any number of Envoy
                                             # replicas; tight burst (all at once) -> 429 from the per-second rule; Redis ACL
                                             # (waits for a fresh one-minute window per burst, ~5 min in all; limits this
@@ -123,8 +134,9 @@ With `--set externalSecrets.enabled=true` the render also holds `envoy-gateway-s
   the snapshot diff (it also changes when the realm JSON or init SQL change — on purpose).
 
 ## Secrets
-See ADR-0012. `deploy/kind/secrets.sh` prints the 15 Secrets from `.env` (14 in `hoops`, the rate limit service's Redis login
-`envoy-ratelimit-redis-auth` in `envoy-gateway-system`); nothing is written to disk. Rotate locally:
+See ADR-0012. `deploy/kind/secrets.sh` prints the 19 Secrets from `.env` (18 in `hoops`, among them the four event broker logins
+`hoops-redpanda-*` from `REDPANDA_*_PASSWORD`, WP66; the rate limit service's Redis login `envoy-ratelimit-redis-auth` in
+`envoy-gateway-system`); nothing is written to disk. Rotate locally:
 edit `.env`, `deploy/kind/secrets.sh | kubectl apply -f -` (or let Tilt pick up `.env`), then restart consumers
 (`kubectl -n hoops rollout restart deploy`; after `RATELIMIT_REDIS_PASSWORD` also
 `kubectl -n envoy-gateway-system rollout restart deploy/envoy-ratelimit`). CNPG re-applies role passwords automatically. The Keycloak admin and
@@ -136,7 +148,7 @@ client secrets only apply on the first realm import/bootstrap — for an existin
 secret manager, one Secret `hoops-secret-store/hoops` with a key per `.env` value (not `DEV_USER_PASSWORD`), a reader
 ServiceAccount allowed only `get secrets` there, and the `ClusterSecretStore` `hoops` (Kubernetes provider) that only the
 namespaces `hoops` and `envoy-gateway-system` may use. With `--deploy` (or `tilt up -- --eso`) the chart runs with
-`externalSecrets.enabled=true`: 14 `ExternalSecret`s (13 in `hoops`, `envoy-ratelimit-redis-auth` in
+`externalSecrets.enabled=true`: 18 `ExternalSecret`s (17 in `hoops`, the four broker logins included, `envoy-ratelimit-redis-auth` in
 `envoy-gateway-system`) and ESO writes the Secrets, with the same names and keys, refreshed every minute
 (`values-kind.yaml`). Until the chart is deployed the `envoy-ratelimit` pods wait for their Secret
 (`CreateContainerConfigError`), which resolves itself. Status: `kubectl get clustersecretstore hoops` (`READY True`),
@@ -246,6 +258,21 @@ reference set, value replaced) and deleted with it. `apply --dry-run=server` of 
 `tilt up -- --eso` evaluated only (`tilt alpha tiltfile-result`: `secrets` holds the 14 ExternalSecrets). The Podman VM
 (load average up to 118 from other agents' builds) restarted the kind control plane once mid-proof; everything recovered
 without intervention.
+WP66 (2026-11-06, chart 0.6.0, Redpanda v26.2.6, fresh cluster, freshly imported realm): `up.sh --deploy --from-host`
+7 min 20 s; `redpanda-0` Ready about 45 s after the pull (116 MB image), read-only root FS, developer mode, 512M; the Job
+`redpanda-bootstrap` succeeded on its first run (5 cluster properties, 3 users with ACLs, 7 topics). `smoke.sh core game
+athlete` passed (all checks, incl. the new event broker block and the ADR-0034 audience checks WP56 asked for). Throwaway
+pods with the Redpanda image: an unlabelled pod in `hoops` could not open a TCP connection to `redpanda:9092` (timeout); a
+pod labelled `core-service` with its user produced to `core.person` but not to `game.x` (`TOPIC_AUTHORIZATION_FAILED`) and
+could not reach the admin API; a pod labelled `game-service` consumed that record in group `game-service.wp66`, was
+refused group `athlete-service.x` (`GROUP_AUTHORIZATION_FAILED`) and producing (`CLUSTER_AUTHORIZATION_FAILED`); a wrong
+password got `SASL_AUTHENTICATION_FAILED`. Rotation: a new `REDPANDA_GAME_SERVICE_PASSWORD` failed until `helm upgrade`
+re-ran the Job, then worked (the first attempt found the HTTP 500 on re-creating a user, fixed in the Job); the superuser
+rotation of `events.md` (PUT, Secret, restart) worked, the topics and users survived the restart on the PVC, and the next
+Job logged in with the new password. ESO: the four broker `ExternalSecret`s synced against `eso-store.sh` (same values
+as `.env` by SHA-256, basic-auth, username = user, owned by the ExternalSecret). `apply --dry-run=server` of the render
+clean. Not run: `tilt ci` (the Tiltfile evaluates with and without `--eso`), the full `up.sh --eso --deploy` path.
+Cluster deleted.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.

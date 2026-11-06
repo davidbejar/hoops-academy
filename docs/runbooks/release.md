@@ -1,7 +1,7 @@
 # Runbook: release
 
 Status: describes the process the repository's tooling supports. **No release has been cut yet**: the Maven version is
-`0.1.0-SNAPSHOT` and the Helm chart `0.5.0` (2026-11-06); the workflows in `.github/workflows` run on GitHub since
+`0.1.0-SNAPSHOT` and the Helm chart `0.6.0` (2026-11-06); the workflows in `.github/workflows` run on GitHub since
 2026-11-02 and `images` pushes every commit's images to `ghcr.io/davidbejar/hoops-academy` (public). Steps marked
 (design) are not implemented.
 
@@ -132,6 +132,23 @@ secret is not called `hoops`, `externalSecrets.remoteKey`. The remote secret hol
 `envoy-ratelimit-redis-auth` in `envoy-gateway-system`, so the release needs `create externalsecrets` there) and none of
 the Secrets above are created by hand. Limit the store to the namespaces `hoops` and `envoy-gateway-system`
 (`spec.conditions`). Check: `kubectl -n hoops get externalsecret` all `SecretSynced` before the pods start.
+
+Event broker (chart 0.6.0, WP66, ADR-0036): `--set events.enabled=true` renders one Redpanda node (StatefulSet `redpanda`,
+pinned image, PVC `events.redpanda.storage`, default Seastar memory 1G in a 1.5 Gi limit, `developerMode` false) and the
+post-install/upgrade Job `redpanda-bootstrap` (users, ACLs, topics). Create its four logins **before** the install
+(kubernetes.io/basic-auth, username = broker user; on kind `deploy/kind/secrets.sh` from `.env` `REDPANDA_*_PASSWORD`, with
+ESO `externalSecrets.events.properties`):
+```bash
+for u in admin core-service game-service athlete-service; do   # in a shell without history; never in git
+  kubectl -n hoops create secret generic "hoops-redpanda-$u" --type=kubernetes.io/basic-auth \
+    --from-literal=username="$u" --from-file=password=<(openssl rand -hex 24 | tr -d '\n')
+done
+```
+The storage class needs ReadWriteOnce volumes; the NetworkPolicy needs a CNI that enforces it and DNS pods labelled
+`k8s-app: kube-dns` in `kube-system` (egress of the broker). Check: `kubectl -n hoops logs job/redpanda-bootstrap` ends
+with `bootstrap done`; `kubectl -n hoops exec redpanda-0 -- rpk cluster health` says `Healthy: true`
+(`docs/runbooks/events.md`). Multi-node or a managed Kafka: keep `events.enabled=false` and point the services at it
+(ADR-0036, decision 8).
 
 Order that matters: Secrets -> CNPG clusters -> Keycloak -> services (Flyway runs on start as `*_migrator`) -> web.
 Services restart a few times on first install until `hoops-db-rw` is ready; they converge by themselves (WP18).
