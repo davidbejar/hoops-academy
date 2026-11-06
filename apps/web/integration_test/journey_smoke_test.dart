@@ -27,6 +27,7 @@ const _real = bool.fromEnvironment('HOOPS_E2E_REAL');
 // Fixture ids of lib/features/match/data/mock_game_api.dart (live match vs Tigres, starter Ana Ruiz).
 const _liveMatch = '0190b6a0-0000-7000-8000-00000000c001';
 const _starter = 'p-ana';
+const _demoTenant = '11111111-1111-4111-8111-111111111111'; // mockTenantAId
 
 /// Pumps frames until [finder] matches or [timeout] passes (the live screen has timers, so no pumpAndSettle).
 Future<void> pumpUntil(
@@ -142,6 +143,29 @@ void main() {
         findsNothing,
         reason: 'every own event is acknowledged by the server',
       );
+
+      // training (WP41): the week calendar lists the demo sessions served by the mock athlete API
+      await pumpUntil(tester, _navItem('Entrenos'));
+      await tester.tap(_navItem('Entrenos'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('week-calendar')), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('session-ses-'),
+        ),
+        findsWidgets,
+        reason: 'a week of demo sessions',
+      );
+
+      // platform console (WP41): the mock user is a super admin; the profile menu opens the tenant list
+      await tester.tap(find.byKey(const Key('profile-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('open-platform')));
+      await tester.pumpAndSettle();
+      expect(find.text('Academia Sur'), findsWidgets, reason: 'the platform lists every demo academy');
+      await tester.tap(find.byKey(const Key('tenant-$_demoTenant')));
+      await tester.pumpAndSettle();
+      expect(find.text('Administradores'), findsWidgets);
     },
     skip: !_mock,
   );

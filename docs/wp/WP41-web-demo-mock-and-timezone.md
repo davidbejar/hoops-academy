@@ -41,3 +41,42 @@ the training / health screens; the academy time zone comes from `/me`, without t
   `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built (all in `apps/web`; no contract, service or generated-package change):
+  1. **Time zone from `/me`**: `TenantMembership.timezone` (from `authz.timezone`); `tenantZoneProvider` reads the current
+     membership in the session and no longer depends on `tenantProfileProvider` (device-zone fallback kept). Tests: the two
+     zone tests in `tenant_timezone_test.dart` now set the zone on the membership (`pumpAs(timezone:)`), `mock_mode_test`
+     asserts `Europe/Madrid` without a profile call. `FakeTenantRepository.timezone` removed.
+  2. **Demo mock** (`lib/core/mock/mock_platform_api.dart`, `mock_athlete_api.dart`, helper `mock_query.dart`, wired in
+     `core/http/mock_api_adapter.dart`). The demo user is now a super admin by default
+     (`--dart-define=HOOPS_MOCK_SUPER_ADMIN=false` turns it off) so the profile menu opens the platform console.
+     - `/platform/*` (super admin only, else 403): tenants list (status, q) / create (temporary password once) / get /
+       patch / suspend / reactivate / withdraw (retainUntil); admins list / add / patch / delete / temporary-password /
+       resend-invitation (409 `INVITATION_NOT_PENDING`, `TENANT_WITHDRAWN`); usage; usage history (6 snapshots over four
+       months, one partial); audit-events (paged, tenantId / action / from / to filters, platform actor unmasked).
+       Data: Academia Demo, Club Norte, Academia Sur (suspended).
+     - `/api/athlete/*` (demo academy only, others 404): training-schedules, training-sessions (+ cancel, attendance
+       GET/PUT with absence and injury overlay, LATE needs minutes), planned-absences, training-plans (+ `:copy`,
+       `:archive`, `:unarchive`, items add / update / delete / reorder; templates read-only), plan-assignments (+ progress,
+       completions PUT), plan-completions, injuries, players/{id}/availability, body-measurements, physical-test-types
+       (create, rename code with 409, delete incl. `TEST_TYPE_HAS_RESULTS` 409, global = 404), physical-test-results (band
+       computed from norms at read time), physical-test-norms (EFFECTIVE / GLOBAL / TENANT, create, replace, delete). Every
+       update honours the WP39 `clear` list (400 if a property is both given and cleared). Seed: two weeks back and three
+       weeks ahead of sessions for Mini A and Infantil A, attendance on finished ones, 2 absences, 1 template-copy plan +
+       2 templates, 2 injuries (one open), 5 measurements, 3 test types with norms, 6 results.
+  3. **Browser smoke**: `integration_test/journey_smoke_test.dart` (run by `tool/web_smoke.sh`) now continues after the
+     match event with the training week calendar and the platform console (profile menu -> tenant list -> tenant detail).
+- Verified (fresh): `flutter analyze` no issues; `just web-test` 646 passed, 0 failed (l10n parity included);
+  `tool/web_smoke.sh` mock mode (chromedriver at /opt/homebrew/bin) "All tests passed". Guard test:
+  `test/core/mock_athlete_platform_api_test.dart` (18 tests) calls every route through the generated clients and the
+  repositories; `test/app/mock_mode_test.dart` has a second test that opens training, plans, absences, assignments, player
+  health, test types, norms, platform list / detail (with the usage trend) and activity in the full app.
+- Goldens changed: none.
+- Still unreachable or simplified in mock mode: `/api/athlete` serves the demo academy only (Club Norte is PARENT with no
+  data); no role-based authorization in the athlete mock (a PARENT/PLAYER sees what the screens show, the real service
+  filters); team rosters in the athlete mock are fixed (Mini A: Ana, Leo; Mini B: Mía; Infantil A: Dani), not read from
+  the core mock, so new players added in the demo do not appear in attendance sheets; the game mock's roster ids differ
+  from the athlete ones; `updateTenant` (PATCH) exists in the mock but no screen calls it; no `/internal/usage`.
+- Open points: the new mock files were formatted with `dart format -l 120` (long, unjoined lines); the repo's own
+  mock files use long lines, a repo-wide `dart format` policy is not decided. Commits carry the brief's Fable 5.1 line.
