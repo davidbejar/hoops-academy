@@ -2,6 +2,7 @@ package com.hoopsacademy.game.support;
 
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -72,7 +73,8 @@ public final class ReplicaDb {
         while (rs.next()) {
             Map<String, Object> row = new LinkedHashMap<>();
             for (int i = 1; i <= meta.getColumnCount(); i++) {
-                row.put(meta.getColumnLabel(i), rs.getObject(i));
+                Object value = rs.getObject(i);
+                row.put(meta.getColumnLabel(i), value instanceof Array array ? List.of((Object[]) array.getArray()) : value);
             }
             rows.add(row);
         }
