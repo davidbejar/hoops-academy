@@ -35,7 +35,9 @@ Node; Secrets never in git or in rendered manifests; tenant isolation must not d
    bootstrap Job with its ConfigMap. It follows the conventions of `ratelimit-redis`: non-root (uid 101), read-only root
    FS (the node configuration is a read-only ConfigMap; the `redpanda` binary runs directly, not `rpk redpanda start`,
    which rewrites `redpanda.yaml`), all capabilities dropped, no service account token, memory limit. Behind
-   `events.enabled` (off by default, on in `values-kind.yaml` with `developer_mode` and 512M). A production cluster may
+   `events.enabled` (off by default, on in `values-kind.yaml` with `developer_mode` and 512M; since chart 0.7.0, WP71,
+   `global.events.enabled` must be set to the same value, because the service subcharts see only `global`: the
+   render refuses a release where the two differ). A production cluster may
    prefer the Redpanda operator; the services only see a bootstrap address and SCRAM credentials, so that swap does not
    touch them.
 4. **Topics `<producer>.<aggregate>`**, from the WP19 brief: `core.person`, `core.player`, `core.team`,
@@ -84,7 +86,10 @@ Node; Secrets never in git or in rendered manifests; tenant isolation must not d
    and a `ScramLoginModule` JAAS config with the service's user and the `password` key of `hoops-redpanda-<service>`.
    WP67: core's outbox publisher, producer keyed as in 5, at-least-once. WP68/WP69: consumers in groups
    `<service>.<projection>`, idempotent upserts (duplicate `eventId` ignored, older `occurredAt` never overwrites
-   newer), tenant bound per event.
+   newer), tenant bound per event. *Done in WP71 (chart 0.7.0)*: with `events.enabled` and `global.events.enabled`
+   both true each service subchart sets `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_SECURITY_PROTOCOL=SASL_PLAINTEXT`,
+   `KAFKA_SASL_USERNAME` and `KAFKA_SASL_PASSWORD` (a `secretKeyRef` to `hoops-redpanda-<service>`); without them it
+   switches the publisher and the consumers off (`<service>.events.offEnv`).
 
 ## Consequences
 - One more stateful workload on kind (512 Mi request, 768 Mi limit, 1 Gi volume) and in compose (1 CPU, 1 GiB limit,

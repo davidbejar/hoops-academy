@@ -39,7 +39,9 @@ key, and both paths must give the same answers.
 5. **Other failures stop the consumer and lose nothing.** Offsets are committed after processing (at least once).
    A failure that is not a contract violation (database unreachable) is retried a few times in place, then fails the
    channel: the messaging health checks (liveness and readiness) turn DOWN, the orchestrator restarts the pod, and it
-   resumes from the last committed offset, which is still before the failed event. A valid event is never parked or
+   resumes from the last committed offset, which is still before the failed event (WP68 proved it:
+   `RosterConsumerFailureTest`, readiness and liveness 503 while the database is UP). The consumer runs in both
+   modes (7), so a stopped consumer takes the pod out of service in `rest` mode as well. A valid event is never parked or
    skipped. The broker being unreachable is not a failure: the Kafka connector's readiness check is off, the client
    reconnects, and the replica stays readable but stale, visible in the lag metric. The consumer can be switched off
    (escape hatch) without touching the REST path.
@@ -63,7 +65,12 @@ Not in WP68/WP69. All of:
 - core publishes a snapshot of the aggregates that existed before WP67 (a backfill that appends one `.changed` per
   aggregate to the outbox). Until then a replica only knows what changed after core's publisher went live, which is
   enough for fresh environments (compose after a reset, kind, e2e) but not for data that predates WP67.
-- the chart wires the services' Kafka client (bootstrap, SASL user and Secret, `events.enabled`).
+- ~~the chart wires the services' Kafka client (bootstrap, SASL user and Secret, `events.enabled`)~~ — done in WP71
+  (chart 0.7.0): behind `events.enabled` together with `global.events.enabled`, which must match (a subchart sees only
+  `global`; the render refuses a release where the two differ); `game.rosterSource` / `athlete.rosterSource` set the
+  switch, and `replica` without events is refused. The athlete flip is proven on kind; the game flip is not run yet.
+- core's producer recovers when the broker users appear after it started (WP71 found that a fresh Helm install needs
+  a core restart after the bootstrap Job; `FOLLOW-UPS.md`).
 - the replica has run in the shadow in an environment for a while with `hoops_roster_replica_parked_total` at 0 and
   the lag metric in seconds, and `just e2e` is green with `replica` for both services.
 Then the default flips; the REST adapter stays as the fallback switch until a later decision removes it.
@@ -99,3 +106,26 @@ Then the default flips; the REST adapter stays as the fallback switch until a la
 - Metrics: `hoops_roster_replica_events_total{topic,outcome}` (outcome `applied`, `duplicate`, `stale`, `tombstone`),
   `hoops_roster_replica_parked_total{topic}`, `hoops_roster_replica_lag_seconds{topic}` (age of the last processed
   event when it was processed), plus the Kafka client's own `kafka_consumer_fetch_manager_records_lag*`.
+
+## athlete-service (WP69)
+- Tables (`V6__roster_replica.sql`; V5 stays unused): `athlete.tenant_ref` (primary key `tenant_id`), `person_ref`,
+  `player_ref`, `team_ref`, `team_player_ref`, `team_staff_ref`, `guardian_link_ref`, `applied_event` (all tenant
+  tables, generic RLS suites), `parked_event` (global, primary key `(topic, partition, kafka_offset)`, so a replay
+  parks a record once; `athlete_app` may only insert).
+- Same channel layout as game: `core-roster` on the seven `core.*` topics, group `athlete-service.roster`,
+  `auto.offset.reset=earliest`, blocking and ordered, connector readiness check off. A database failure is retried
+  `hoops.roster.replica.max-attempts` times (5, backoff 0.5 s doubling) before the channel fails.
+- `hoops.roster.source` = `ATHLETE_ROSTER_SOURCE`; consumer `hoops.roster.consumer.enabled` =
+  `ATHLETE_ROSTER_CONSUMER_ENABLED` (default true, off in the default test profile); `replica` with the consumer off
+  fails at startup. `RosterSourceProducer` produces both the `RosterPort` and the `AuthzContextResolver` (it replaces
+  common's `@DefaultBean` `RosterAuthzResolver`, which it still builds for `rest`), so `CoreRosterAdapter` and
+  `ReplicaRosterRepository` are `@Typed` to their classes.
+- A tenant event also refreshes `athlete.tenant_registry` (the nightly materialisation knows the tenant and its zone
+  before anyone calls). A tenant event whose aggregate id is not its tenant id is parked.
+- Metrics: the names of game's (`hoops_roster_replica_events_total{topic,outcome}`, `..._parked_total{topic}`,
+  `..._lag_seconds{topic}`).
+- Proof: `RosterPortContract` and `MembershipContract` run on both sources (REST: WireMock core; replica: core
+  events built against the contracts), `ApplyRosterEventTest` (duplicate, stale, same instant, soft removals, tenant
+  per event), `CoreRosterConsumerTest` and `RosterReplayTest` on Dev Services Redpanda, `ReplicaSourceApiTest`
+  (`source=replica` through the API without any core-service). On kind (WP71) `athlete.rosterSource=replica` replaced
+  only the athlete pod and kept answering with core scaled to 0.
