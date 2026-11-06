@@ -6,6 +6,76 @@ part of 'update_tenant_profile_request.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const UpdateTenantProfileRequestClearEnum
+    _$updateTenantProfileRequestClearEnum_contactEmail =
+    const UpdateTenantProfileRequestClearEnum._('contactEmail');
+const UpdateTenantProfileRequestClearEnum
+    _$updateTenantProfileRequestClearEnum_websiteUrl =
+    const UpdateTenantProfileRequestClearEnum._('websiteUrl');
+const UpdateTenantProfileRequestClearEnum
+    _$updateTenantProfileRequestClearEnum_unknownDefaultOpenApi =
+    const UpdateTenantProfileRequestClearEnum._('unknownDefaultOpenApi');
+
+UpdateTenantProfileRequestClearEnum
+    _$updateTenantProfileRequestClearEnumValueOf(String name) {
+  switch (name) {
+    case 'contactEmail':
+      return _$updateTenantProfileRequestClearEnum_contactEmail;
+    case 'websiteUrl':
+      return _$updateTenantProfileRequestClearEnum_websiteUrl;
+    case 'unknownDefaultOpenApi':
+      return _$updateTenantProfileRequestClearEnum_unknownDefaultOpenApi;
+    default:
+      return _$updateTenantProfileRequestClearEnum_unknownDefaultOpenApi;
+  }
+}
+
+final BuiltSet<UpdateTenantProfileRequestClearEnum>
+    _$updateTenantProfileRequestClearEnumValues = BuiltSet<
+        UpdateTenantProfileRequestClearEnum>(const <UpdateTenantProfileRequestClearEnum>[
+  _$updateTenantProfileRequestClearEnum_contactEmail,
+  _$updateTenantProfileRequestClearEnum_websiteUrl,
+  _$updateTenantProfileRequestClearEnum_unknownDefaultOpenApi,
+]);
+
+Serializer<UpdateTenantProfileRequestClearEnum>
+    _$updateTenantProfileRequestClearEnumSerializer =
+    _$UpdateTenantProfileRequestClearEnumSerializer();
+
+class _$UpdateTenantProfileRequestClearEnumSerializer
+    implements PrimitiveSerializer<UpdateTenantProfileRequestClearEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'contactEmail': 'contactEmail',
+    'websiteUrl': 'websiteUrl',
+    'unknownDefaultOpenApi': 'unknown_default_open_api',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'contactEmail': 'contactEmail',
+    'websiteUrl': 'websiteUrl',
+    'unknown_default_open_api': 'unknownDefaultOpenApi',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[
+    UpdateTenantProfileRequestClearEnum
+  ];
+  @override
+  final String wireName = 'UpdateTenantProfileRequestClearEnum';
+
+  @override
+  Object serialize(
+          Serializers serializers, UpdateTenantProfileRequestClearEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  UpdateTenantProfileRequestClearEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      UpdateTenantProfileRequestClearEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$UpdateTenantProfileRequest extends UpdateTenantProfileRequest {
   @override
   final String? name;
@@ -17,6 +87,8 @@ class _$UpdateTenantProfileRequest extends UpdateTenantProfileRequest {
   final String? contactEmail;
   @override
   final String? websiteUrl;
+  @override
+  final BuiltSet<UpdateTenantProfileRequestClearEnum>? clear;
 
   factory _$UpdateTenantProfileRequest(
           [void Function(UpdateTenantProfileRequestBuilder)? updates]) =>
@@ -27,7 +99,8 @@ class _$UpdateTenantProfileRequest extends UpdateTenantProfileRequest {
       this.timezone,
       this.defaultLocale,
       this.contactEmail,
-      this.websiteUrl})
+      this.websiteUrl,
+      this.clear})
       : super._();
   @override
   UpdateTenantProfileRequest rebuild(
@@ -46,7 +119,8 @@ class _$UpdateTenantProfileRequest extends UpdateTenantProfileRequest {
         timezone == other.timezone &&
         defaultLocale == other.defaultLocale &&
         contactEmail == other.contactEmail &&
-        websiteUrl == other.websiteUrl;
+        websiteUrl == other.websiteUrl &&
+        clear == other.clear;
   }
 
   @override
@@ -57,6 +131,7 @@ class _$UpdateTenantProfileRequest extends UpdateTenantProfileRequest {
     _$hash = $jc(_$hash, defaultLocale.hashCode);
     _$hash = $jc(_$hash, contactEmail.hashCode);
     _$hash = $jc(_$hash, websiteUrl.hashCode);
+    _$hash = $jc(_$hash, clear.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -68,7 +143,8 @@ class _$UpdateTenantProfileRequest extends UpdateTenantProfileRequest {
           ..add('timezone', timezone)
           ..add('defaultLocale', defaultLocale)
           ..add('contactEmail', contactEmail)
-          ..add('websiteUrl', websiteUrl))
+          ..add('websiteUrl', websiteUrl)
+          ..add('clear', clear))
         .toString();
   }
 }
@@ -99,6 +175,12 @@ class UpdateTenantProfileRequestBuilder
   String? get websiteUrl => _$this._websiteUrl;
   set websiteUrl(String? websiteUrl) => _$this._websiteUrl = websiteUrl;
 
+  SetBuilder<UpdateTenantProfileRequestClearEnum>? _clear;
+  SetBuilder<UpdateTenantProfileRequestClearEnum> get clear =>
+      _$this._clear ??= SetBuilder<UpdateTenantProfileRequestClearEnum>();
+  set clear(SetBuilder<UpdateTenantProfileRequestClearEnum>? clear) =>
+      _$this._clear = clear;
+
   UpdateTenantProfileRequestBuilder() {
     UpdateTenantProfileRequest._defaults(this);
   }
@@ -111,6 +193,7 @@ class UpdateTenantProfileRequestBuilder
       _defaultLocale = $v.defaultLocale;
       _contactEmail = $v.contactEmail;
       _websiteUrl = $v.websiteUrl;
+      _clear = $v.clear?.toBuilder();
       _$v = null;
     }
     return this;
@@ -130,14 +213,28 @@ class UpdateTenantProfileRequestBuilder
   UpdateTenantProfileRequest build() => _build();
 
   _$UpdateTenantProfileRequest _build() {
-    final _$result = _$v ??
-        _$UpdateTenantProfileRequest._(
-          name: name,
-          timezone: timezone,
-          defaultLocale: defaultLocale,
-          contactEmail: contactEmail,
-          websiteUrl: websiteUrl,
-        );
+    _$UpdateTenantProfileRequest _$result;
+    try {
+      _$result = _$v ??
+          _$UpdateTenantProfileRequest._(
+            name: name,
+            timezone: timezone,
+            defaultLocale: defaultLocale,
+            contactEmail: contactEmail,
+            websiteUrl: websiteUrl,
+            clear: _clear?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'clear';
+        _clear?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'UpdateTenantProfileRequest', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

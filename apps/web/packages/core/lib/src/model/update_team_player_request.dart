@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -12,11 +13,17 @@ part 'update_team_player_request.g.dart';
 ///
 /// Properties:
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateTeamPlayerRequest implements Built<UpdateTeamPlayerRequest, UpdateTeamPlayerRequestBuilder> {
   /// Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
   @BuiltValueField(wireName: r'jerseyNumber')
   String? get jerseyNumber;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateTeamPlayerRequestClearEnum>? get clear;
+  // enum clearEnum {  jerseyNumber,  };
 
   UpdateTeamPlayerRequest._();
 
@@ -41,11 +48,20 @@ class _$UpdateTeamPlayerRequestSerializer implements PrimitiveSerializer<UpdateT
     UpdateTeamPlayerRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'jerseyNumber';
-    yield object.jerseyNumber == null ? null : serializers.serialize(
-      object.jerseyNumber,
-      specifiedType: const FullType.nullable(String),
-    );
+    if (object.jerseyNumber != null) {
+      yield r'jerseyNumber';
+      yield serializers.serialize(
+        object.jerseyNumber,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateTeamPlayerRequestClearEnum)]),
+      );
+    }
   }
 
   @override
@@ -77,6 +93,14 @@ class _$UpdateTeamPlayerRequestSerializer implements PrimitiveSerializer<UpdateT
           if (valueDes == null) continue;
           result.jerseyNumber = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTeamPlayerRequestClearEnum)]),
+          ) as BuiltSet<UpdateTeamPlayerRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -106,4 +130,19 @@ class _$UpdateTeamPlayerRequestSerializer implements PrimitiveSerializer<UpdateT
   }
 }
 
+
+class UpdateTeamPlayerRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'jerseyNumber')
+  static const UpdateTeamPlayerRequestClearEnum jerseyNumber = _$updateTeamPlayerRequestClearEnum_jerseyNumber;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateTeamPlayerRequestClearEnum unknownDefaultOpenApi = _$updateTeamPlayerRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateTeamPlayerRequestClearEnum> get serializer => _$updateTeamPlayerRequestClearEnumSerializer;
+
+  const UpdateTeamPlayerRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateTeamPlayerRequestClearEnum> get values => _$updateTeamPlayerRequestClearEnumValues;
+  static UpdateTeamPlayerRequestClearEnum valueOf(String name) => _$updateTeamPlayerRequestClearEnumValueOf(name);
+}
 

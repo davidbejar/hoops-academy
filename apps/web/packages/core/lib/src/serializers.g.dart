@@ -107,13 +107,18 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TenantUsageUnavailableServicesEnum.serializer)
       ..add(TenantWithPassword.serializer)
       ..add(UpdateAgeCategoryRequest.serializer)
+      ..add(UpdateAgeCategoryRequestClearEnum.serializer)
       ..add(UpdateMeRequest.serializer)
       ..add(UpdateMemberRequest.serializer)
+      ..add(UpdateMemberRequestClearEnum.serializer)
       ..add(UpdateSeasonRequest.serializer)
       ..add(UpdateTeamPlayerRequest.serializer)
+      ..add(UpdateTeamPlayerRequestClearEnum.serializer)
       ..add(UpdateTeamRequest.serializer)
+      ..add(UpdateTeamRequestClearEnum.serializer)
       ..add(UpdateTenantAdminRequest.serializer)
       ..add(UpdateTenantProfileRequest.serializer)
+      ..add(UpdateTenantProfileRequestClearEnum.serializer)
       ..add(UpdateTenantRequest.serializer)
       ..add(UsageReport.serializer)
       ..add(UsageReportServiceEnum.serializer)
@@ -261,7 +266,27 @@ Serializers _$serializers = (Serializers().toBuilder()
           () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => ListBuilder<String>()))
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdateAgeCategoryRequestClearEnum)]),
+          () => SetBuilder<UpdateAgeCategoryRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltSet, const [const FullType(UpdateMemberRequestClearEnum)]),
+          () => SetBuilder<UpdateMemberRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdateTeamPlayerRequestClearEnum)]),
+          () => SetBuilder<UpdateTeamPlayerRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltSet, const [const FullType(UpdateTeamRequestClearEnum)]),
+          () => SetBuilder<UpdateTeamRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdateTenantProfileRequestClearEnum)]),
+          () => SetBuilder<UpdateTenantProfileRequestClearEnum>()))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

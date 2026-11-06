@@ -590,7 +590,7 @@ class MembersApi {
   }
 
   /// Update a member&#39;s personal data
-  /// Absent fields are left unchanged; &#x60;null&#x60; clears an optional field. Changing the &#x60;email&#x60; of a member with a login (&#x60;userId&#x60;) also moves the login (ADR-0023): the Keycloak username and e-mail become the new address (no e-mail is sent, the password is unchanged, ADR-0024). 409 &#x60;EMAIL_TAKEN&#x60; when another member of the tenant or another login uses the address; 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may move it); 422 &#x60;LOGIN_REQUIRES_EMAIL&#x60; when the e-mail of a member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN. 
+  /// Absent or &#x60;null&#x60; fields are left unchanged; the optional fields named in &#x60;clear&#x60; are emptied (ADR-0032). Changing the &#x60;email&#x60; of a member with a login (&#x60;userId&#x60;) also moves the login (ADR-0023): the Keycloak username and e-mail become the new address (no e-mail is sent, the password is unchanged, ADR-0024). 409 &#x60;EMAIL_TAKEN&#x60; when another member of the tenant or another login uses the address; 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may move it); 422 &#x60;LOGIN_REQUIRES_EMAIL&#x60; when the e-mail of a member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

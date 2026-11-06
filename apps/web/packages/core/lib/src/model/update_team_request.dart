@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_core_api/src/model/gender_policy.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -16,6 +17,7 @@ part 'update_team_request.g.dart';
 /// * [alias] 
 /// * [ageCategoryId] 
 /// * [genderPolicy] 
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateTeamRequest implements Built<UpdateTeamRequest, UpdateTeamRequestBuilder> {
   @BuiltValueField(wireName: r'name')
@@ -30,6 +32,11 @@ abstract class UpdateTeamRequest implements Built<UpdateTeamRequest, UpdateTeamR
   @BuiltValueField(wireName: r'genderPolicy')
   GenderPolicy? get genderPolicy;
   // enum genderPolicyEnum {  MALE,  FEMALE,  MIXED,  };
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateTeamRequestClearEnum>? get clear;
+  // enum clearEnum {  alias,  };
 
   UpdateTeamRequest._();
 
@@ -80,6 +87,13 @@ class _$UpdateTeamRequestSerializer implements PrimitiveSerializer<UpdateTeamReq
       yield serializers.serialize(
         object.genderPolicy,
         specifiedType: const FullType(GenderPolicy),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateTeamRequestClearEnum)]),
       );
     }
   }
@@ -137,6 +151,14 @@ class _$UpdateTeamRequestSerializer implements PrimitiveSerializer<UpdateTeamReq
           if (valueDes == null) continue;
           result.genderPolicy = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTeamRequestClearEnum)]),
+          ) as BuiltSet<UpdateTeamRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -166,4 +188,19 @@ class _$UpdateTeamRequestSerializer implements PrimitiveSerializer<UpdateTeamReq
   }
 }
 
+
+class UpdateTeamRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'alias')
+  static const UpdateTeamRequestClearEnum alias = _$updateTeamRequestClearEnum_alias;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateTeamRequestClearEnum unknownDefaultOpenApi = _$updateTeamRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateTeamRequestClearEnum> get serializer => _$updateTeamRequestClearEnumSerializer;
+
+  const UpdateTeamRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateTeamRequestClearEnum> get values => _$updateTeamRequestClearEnumValues;
+  static UpdateTeamRequestClearEnum valueOf(String name) => _$updateTeamRequestClearEnumValueOf(name);
+}
 

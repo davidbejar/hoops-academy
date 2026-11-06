@@ -1025,7 +1025,7 @@ class TeamsApi {
   }
 
   /// Update an open assignment (jersey number)
-  /// Jersey numbers are unique among open assignments of the team (409). Authz: ADMIN; COACH of this team.
+  /// Jersey numbers are unique among open assignments of the team (409); &#x60;clear: [jerseyNumber]&#x60; removes it (ADR-0032). Authz: ADMIN; COACH of this team.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

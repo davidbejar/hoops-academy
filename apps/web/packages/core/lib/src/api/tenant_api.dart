@@ -532,7 +532,7 @@ class TenantApi {
   }
 
   /// Update the academy profile
-  /// Authz: ADMIN. Absent fields are left unchanged.
+  /// Authz: ADMIN. Absent or null fields are left unchanged; the fields named in &#x60;clear&#x60; are emptied (ADR-0032).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

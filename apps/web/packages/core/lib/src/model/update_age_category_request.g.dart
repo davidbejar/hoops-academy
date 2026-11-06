@@ -6,6 +6,66 @@ part of 'update_age_category_request.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const UpdateAgeCategoryRequestClearEnum
+    _$updateAgeCategoryRequestClearEnum_maxAge =
+    const UpdateAgeCategoryRequestClearEnum._('maxAge');
+const UpdateAgeCategoryRequestClearEnum
+    _$updateAgeCategoryRequestClearEnum_unknownDefaultOpenApi =
+    const UpdateAgeCategoryRequestClearEnum._('unknownDefaultOpenApi');
+
+UpdateAgeCategoryRequestClearEnum _$updateAgeCategoryRequestClearEnumValueOf(
+    String name) {
+  switch (name) {
+    case 'maxAge':
+      return _$updateAgeCategoryRequestClearEnum_maxAge;
+    case 'unknownDefaultOpenApi':
+      return _$updateAgeCategoryRequestClearEnum_unknownDefaultOpenApi;
+    default:
+      return _$updateAgeCategoryRequestClearEnum_unknownDefaultOpenApi;
+  }
+}
+
+final BuiltSet<UpdateAgeCategoryRequestClearEnum>
+    _$updateAgeCategoryRequestClearEnumValues = BuiltSet<
+        UpdateAgeCategoryRequestClearEnum>(const <UpdateAgeCategoryRequestClearEnum>[
+  _$updateAgeCategoryRequestClearEnum_maxAge,
+  _$updateAgeCategoryRequestClearEnum_unknownDefaultOpenApi,
+]);
+
+Serializer<UpdateAgeCategoryRequestClearEnum>
+    _$updateAgeCategoryRequestClearEnumSerializer =
+    _$UpdateAgeCategoryRequestClearEnumSerializer();
+
+class _$UpdateAgeCategoryRequestClearEnumSerializer
+    implements PrimitiveSerializer<UpdateAgeCategoryRequestClearEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'maxAge': 'maxAge',
+    'unknownDefaultOpenApi': 'unknown_default_open_api',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'maxAge': 'maxAge',
+    'unknown_default_open_api': 'unknownDefaultOpenApi',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[UpdateAgeCategoryRequestClearEnum];
+  @override
+  final String wireName = 'UpdateAgeCategoryRequestClearEnum';
+
+  @override
+  Object serialize(
+          Serializers serializers, UpdateAgeCategoryRequestClearEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  UpdateAgeCategoryRequestClearEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      UpdateAgeCategoryRequestClearEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$UpdateAgeCategoryRequest extends UpdateAgeCategoryRequest {
   @override
   final String? code;
@@ -15,12 +75,15 @@ class _$UpdateAgeCategoryRequest extends UpdateAgeCategoryRequest {
   final int? maxAge;
   @override
   final int? rank;
+  @override
+  final BuiltSet<UpdateAgeCategoryRequestClearEnum>? clear;
 
   factory _$UpdateAgeCategoryRequest(
           [void Function(UpdateAgeCategoryRequestBuilder)? updates]) =>
       (UpdateAgeCategoryRequestBuilder()..update(updates))._build();
 
-  _$UpdateAgeCategoryRequest._({this.code, this.name, this.maxAge, this.rank})
+  _$UpdateAgeCategoryRequest._(
+      {this.code, this.name, this.maxAge, this.rank, this.clear})
       : super._();
   @override
   UpdateAgeCategoryRequest rebuild(
@@ -38,7 +101,8 @@ class _$UpdateAgeCategoryRequest extends UpdateAgeCategoryRequest {
         code == other.code &&
         name == other.name &&
         maxAge == other.maxAge &&
-        rank == other.rank;
+        rank == other.rank &&
+        clear == other.clear;
   }
 
   @override
@@ -48,6 +112,7 @@ class _$UpdateAgeCategoryRequest extends UpdateAgeCategoryRequest {
     _$hash = $jc(_$hash, name.hashCode);
     _$hash = $jc(_$hash, maxAge.hashCode);
     _$hash = $jc(_$hash, rank.hashCode);
+    _$hash = $jc(_$hash, clear.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -58,7 +123,8 @@ class _$UpdateAgeCategoryRequest extends UpdateAgeCategoryRequest {
           ..add('code', code)
           ..add('name', name)
           ..add('maxAge', maxAge)
-          ..add('rank', rank))
+          ..add('rank', rank)
+          ..add('clear', clear))
         .toString();
   }
 }
@@ -84,6 +150,12 @@ class UpdateAgeCategoryRequestBuilder
   int? get rank => _$this._rank;
   set rank(int? rank) => _$this._rank = rank;
 
+  SetBuilder<UpdateAgeCategoryRequestClearEnum>? _clear;
+  SetBuilder<UpdateAgeCategoryRequestClearEnum> get clear =>
+      _$this._clear ??= SetBuilder<UpdateAgeCategoryRequestClearEnum>();
+  set clear(SetBuilder<UpdateAgeCategoryRequestClearEnum>? clear) =>
+      _$this._clear = clear;
+
   UpdateAgeCategoryRequestBuilder() {
     UpdateAgeCategoryRequest._defaults(this);
   }
@@ -95,6 +167,7 @@ class UpdateAgeCategoryRequestBuilder
       _name = $v.name;
       _maxAge = $v.maxAge;
       _rank = $v.rank;
+      _clear = $v.clear?.toBuilder();
       _$v = null;
     }
     return this;
@@ -114,13 +187,27 @@ class UpdateAgeCategoryRequestBuilder
   UpdateAgeCategoryRequest build() => _build();
 
   _$UpdateAgeCategoryRequest _build() {
-    final _$result = _$v ??
-        _$UpdateAgeCategoryRequest._(
-          code: code,
-          name: name,
-          maxAge: maxAge,
-          rank: rank,
-        );
+    _$UpdateAgeCategoryRequest _$result;
+    try {
+      _$result = _$v ??
+          _$UpdateAgeCategoryRequest._(
+            code: code,
+            name: name,
+            maxAge: maxAge,
+            rank: rank,
+            clear: _clear?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'clear';
+        _clear?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'UpdateAgeCategoryRequest', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

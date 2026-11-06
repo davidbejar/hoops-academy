@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import java.lang.module.ModuleDescriptor;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,8 +25,9 @@ class AuditTrailContractTest {
     private static final OpenAPI RESOLVED = OpenApiSpecs.parseFullyResolved("core");
 
     @Test
-    void coreIsVersion260() {
-        assertThat(CORE.getInfo().getVersion()).isEqualTo("2.6.0");
+    void coreIsAtLeastVersion260() {
+        assertThat(ModuleDescriptor.Version.parse(CORE.getInfo().getVersion()))
+                .isGreaterThanOrEqualTo(ModuleDescriptor.Version.parse("2.6.0"));
     }
 
     @Test

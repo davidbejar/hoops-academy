@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 2.6.0
+  version: 2.7.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -543,7 +543,7 @@ paths:
       operationId: updateTenantProfile
       tags: [Tenant]
       summary: Update the academy profile
-      description: 'Authz: ADMIN. Absent fields are left unchanged.'
+      description: 'Authz: ADMIN. Absent or null fields are left unchanged; the fields named in `clear` are emptied (ADR-0032).'
       requestBody:
         required: true
         content:
@@ -765,7 +765,7 @@ paths:
       tags: [Members]
       summary: Update a member's personal data
       description: |
-        Absent fields are left unchanged; `null` clears an optional field.
+        Absent or `null` fields are left unchanged; the optional fields named in `clear` are emptied (ADR-0032).
         Changing the `email` of a member with a login (`userId`) also moves the login (ADR-0023): the Keycloak
         username and e-mail become the new address (no e-mail is sent, the password is unchanged, ADR-0024). 409 `EMAIL_TAKEN` when another member of the tenant
         or another login uses the address; 409 `LOGIN_SHARED` when the login is also used by an active member of
@@ -1112,7 +1112,7 @@ paths:
       operationId: updateAgeCategory
       tags: [AgeCategories]
       summary: Update an age category
-      description: 'Authz: ADMIN. Changing `maxAge` re-evaluates eligibility of affected teams.'
+      description: 'Authz: ADMIN. Changing `maxAge` (or clearing it, ADR-0032) re-evaluates eligibility of affected teams.'
       requestBody:
         required: true
         content:
@@ -1357,7 +1357,7 @@ paths:
       operationId: updateTeamPlayer
       tags: [Teams]
       summary: Update an open assignment (jersey number)
-      description: 'Jersey numbers are unique among open assignments of the team (409). Authz: ADMIN; COACH of this team.'
+      description: 'Jersey numbers are unique among open assignments of the team (409); `clear: [jerseyNumber]` removes it (ADR-0032). Authz: ADMIN; COACH of this team.'
       requestBody:
         required: true
         content:
@@ -2445,6 +2445,13 @@ components:
         defaultLocale: {$ref: './common.yaml#/components/schemas/Locale'}
         contactEmail: {type: string, format: email, nullable: true}
         websiteUrl: {type: string, format: uri, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [contactEmail, websiteUrl]
     TenantSettings:
       type: object
       required: [ageRule, maxPlayUpLevels]
@@ -2597,6 +2604,13 @@ components:
           allOf: [{$ref: './common.yaml#/components/schemas/Gender'}]
           nullable: true
         locale: {$ref: './common.yaml#/components/schemas/Locale'}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [email, phone, birthDate, gender]
     ReplaceMemberRolesRequest:
       type: object
       required: [roles]
@@ -2763,6 +2777,13 @@ components:
         name: {type: string, minLength: 1, maxLength: 60}
         maxAge: {type: integer, format: int32, minimum: 3, maximum: 99, nullable: true}
         rank: {type: integer, format: int32, minimum: 0}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [maxAge]
 
     # ---------------- teams
     TeamRef:
@@ -2811,6 +2832,13 @@ components:
         alias: {type: string, maxLength: 40, nullable: true}
         ageCategoryId: {type: string, format: uuid}
         genderPolicy: {$ref: '#/components/schemas/GenderPolicy'}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [alias]
     TeamStaffAssignment:
       type: object
       required: [role]
@@ -2861,11 +2889,18 @@ components:
           description: Defaults to today (tenant time zone).
     UpdateTeamPlayerRequest:
       type: object
-      required: [jerseyNumber]
+      minProperties: 1
       properties:
         jerseyNumber:
           allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
           nullable: true
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [jerseyNumber]
     EligibilityCheck:
       type: object
       required: [playerId, teamId, asOf, result, reasons]

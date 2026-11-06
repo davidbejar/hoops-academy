@@ -5,6 +5,7 @@
 // ignore_for_file: unused_element
 import 'package:hoops_core_api/src/model/date.dart';
 import 'package:hoops_core_api/src/model/gender.dart';
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_core_api/src/model/locale.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -21,6 +22,7 @@ part 'update_member_request.g.dart';
 /// * [birthDate] 
 /// * [gender] 
 /// * [locale] 
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateMemberRequest implements Built<UpdateMemberRequest, UpdateMemberRequestBuilder> {
   @BuiltValueField(wireName: r'givenName')
@@ -45,6 +47,11 @@ abstract class UpdateMemberRequest implements Built<UpdateMemberRequest, UpdateM
   @BuiltValueField(wireName: r'locale')
   Locale? get locale;
   // enum localeEnum {  es,  en,  id,  };
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateMemberRequestClearEnum>? get clear;
+  // enum clearEnum {  email,  phone,  birthDate,  gender,  };
 
   UpdateMemberRequest._();
 
@@ -116,6 +123,13 @@ class _$UpdateMemberRequestSerializer implements PrimitiveSerializer<UpdateMembe
       yield serializers.serialize(
         object.locale,
         specifiedType: const FullType(Locale),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateMemberRequestClearEnum)]),
       );
     }
   }
@@ -197,6 +211,14 @@ class _$UpdateMemberRequestSerializer implements PrimitiveSerializer<UpdateMembe
           if (valueDes == null) continue;
           result.locale = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateMemberRequestClearEnum)]),
+          ) as BuiltSet<UpdateMemberRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -226,4 +248,25 @@ class _$UpdateMemberRequestSerializer implements PrimitiveSerializer<UpdateMembe
   }
 }
 
+
+class UpdateMemberRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'email')
+  static const UpdateMemberRequestClearEnum email = _$updateMemberRequestClearEnum_email;
+  @BuiltValueEnumConst(wireName: r'phone')
+  static const UpdateMemberRequestClearEnum phone = _$updateMemberRequestClearEnum_phone;
+  @BuiltValueEnumConst(wireName: r'birthDate')
+  static const UpdateMemberRequestClearEnum birthDate = _$updateMemberRequestClearEnum_birthDate;
+  @BuiltValueEnumConst(wireName: r'gender')
+  static const UpdateMemberRequestClearEnum gender = _$updateMemberRequestClearEnum_gender;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateMemberRequestClearEnum unknownDefaultOpenApi = _$updateMemberRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateMemberRequestClearEnum> get serializer => _$updateMemberRequestClearEnumSerializer;
+
+  const UpdateMemberRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateMemberRequestClearEnum> get values => _$updateMemberRequestClearEnumValues;
+  static UpdateMemberRequestClearEnum valueOf(String name) => _$updateMemberRequestClearEnumValueOf(name);
+}
 

@@ -311,12 +311,12 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<Membership>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(ApprovalRequest)]),
-        () => ListBuilder<ApprovalRequest>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltSet, [FullType(String)]),
         () => SetBuilder<String>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ApprovalRequest)]),
+        () => ListBuilder<ApprovalRequest>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),

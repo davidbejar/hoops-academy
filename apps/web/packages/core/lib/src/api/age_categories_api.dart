@@ -266,7 +266,7 @@ class AgeCategoriesApi {
   }
 
   /// Update an age category
-  /// Authz: ADMIN. Changing &#x60;maxAge&#x60; re-evaluates eligibility of affected teams.
+  /// Authz: ADMIN. Changing &#x60;maxAge&#x60; (or clearing it, ADR-0032) re-evaluates eligibility of affected teams.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

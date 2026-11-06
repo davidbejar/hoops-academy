@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_core_api/src/model/locale.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -17,6 +18,7 @@ part 'update_tenant_profile_request.g.dart';
 /// * [defaultLocale] 
 /// * [contactEmail] 
 /// * [websiteUrl] 
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateTenantProfileRequest implements Built<UpdateTenantProfileRequest, UpdateTenantProfileRequestBuilder> {
   @BuiltValueField(wireName: r'name')
@@ -34,6 +36,11 @@ abstract class UpdateTenantProfileRequest implements Built<UpdateTenantProfileRe
 
   @BuiltValueField(wireName: r'websiteUrl')
   String? get websiteUrl;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateTenantProfileRequestClearEnum>? get clear;
+  // enum clearEnum {  contactEmail,  websiteUrl,  };
 
   UpdateTenantProfileRequest._();
 
@@ -91,6 +98,13 @@ class _$UpdateTenantProfileRequestSerializer implements PrimitiveSerializer<Upda
       yield serializers.serialize(
         object.websiteUrl,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateTenantProfileRequestClearEnum)]),
       );
     }
   }
@@ -156,6 +170,14 @@ class _$UpdateTenantProfileRequestSerializer implements PrimitiveSerializer<Upda
           if (valueDes == null) continue;
           result.websiteUrl = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTenantProfileRequestClearEnum)]),
+          ) as BuiltSet<UpdateTenantProfileRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -185,4 +207,21 @@ class _$UpdateTenantProfileRequestSerializer implements PrimitiveSerializer<Upda
   }
 }
 
+
+class UpdateTenantProfileRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'contactEmail')
+  static const UpdateTenantProfileRequestClearEnum contactEmail = _$updateTenantProfileRequestClearEnum_contactEmail;
+  @BuiltValueEnumConst(wireName: r'websiteUrl')
+  static const UpdateTenantProfileRequestClearEnum websiteUrl = _$updateTenantProfileRequestClearEnum_websiteUrl;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateTenantProfileRequestClearEnum unknownDefaultOpenApi = _$updateTenantProfileRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateTenantProfileRequestClearEnum> get serializer => _$updateTenantProfileRequestClearEnumSerializer;
+
+  const UpdateTenantProfileRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateTenantProfileRequestClearEnum> get values => _$updateTenantProfileRequestClearEnumValues;
+  static UpdateTenantProfileRequestClearEnum valueOf(String name) => _$updateTenantProfileRequestClearEnumValueOf(name);
+}
 
