@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'mock_authz.dart';
 import 'mock_query.dart';
+
+/// Which demo academy a [MockCoreApi] stands for: Academia Demo (full data) or Club Norte (one team, the user is a PARENT).
+enum MockAcademy { demo, norte }
 
 /// Result of a mocked core-service call.
 class MockResult {
@@ -29,21 +33,23 @@ class MockResult {
 /// Enough behaviour to click through every WP12 flow: eligibility with
 /// play-up, approvals, rollover with orphans, cases, logo upload.
 class MockCoreApi {
-  MockCoreApi({required Uint8List initialLogo, this.roles = const ['ADMIN', 'COACH']}) : _logo = initialLogo {
+  MockCoreApi({Uint8List? initialLogo, this.roles = const ['ADMIN', 'COACH'], this.academy = MockAcademy.demo})
+    : _logo = initialLogo {
     _seed();
   }
 
-  /// Roles of the signed-in demo user (`/me` and the mock's own authz).
+  /// Roles of the signed-in demo user in this academy (`/me` and the mock's own authz).
   final List<String> roles;
+  final MockAcademy academy;
 
   // ------------------------------------------------------------------ state
   Uint8List? _logo;
   int _logoVersion = 1;
-  final Map<String, Object?> _profile = {
-    'slug': 'demo',
-    'name': 'Academia Demo',
+  late final Map<String, Object?> _profile = {
+    'slug': academy == MockAcademy.demo ? 'demo' : 'norte',
+    'name': academy == MockAcademy.demo ? 'Academia Demo' : 'Club Norte',
     'timezone': 'Europe/Madrid',
-    'defaultLocale': 'es',
+    'defaultLocale': academy == MockAcademy.demo ? 'es' : 'en',
     'contactEmail': null,
     'websiteUrl': null,
   };
@@ -61,6 +67,16 @@ class MockCoreApi {
 
   static const meId = '00000000-0000-4000-8000-0000000000a1';
   static const ownTeamId = 'team-mini-a';
+  static const norteTeamId = 'team-norte-a';
+
+  /// The user's own player in the demo academy when the PLAYER role is on (the player record carries the login's person).
+  static const demoSelfPlayerId = 'p-leo';
+
+  /// The team the demo user coaches, whose match and sessions the game and athlete mocks seed.
+  String get homeTeamId => academy == MockAcademy.demo ? ownTeamId : norteTeamId;
+
+  /// The players of the academy's first team, in roster order (jersey, name).
+  List<String> get homeRoster => rosterOf(homeTeamId).toList();
 
   String _id(String prefix) => '$prefix-${_seq++}';
   static String _now() => DateTime.now().toUtc().toIso8601String();
@@ -103,39 +119,71 @@ class MockCoreApi {
       'id': id, 'seasonId': 'season-2026', 'name': name, 'alias': alias,
       'ageCategory': _categories.firstWhere((c) => c['id'] == cat), 'genderPolicy': policy, 'playerCount': 0,
     };
-    _teams.addAll([
-      team(ownTeamId, 'Mini A', 'Leones', 'cat-u12', 'MIXED'),
-      team('team-mini-b', 'Mini B', null, 'cat-u12', 'FEMALE'),
-      team('team-inf-a', 'Infantil A', 'Halcones', 'cat-u14', 'MIXED'),
-    ]);
+    final demo = academy == MockAcademy.demo;
+    _teams.addAll(demo
+        ? [
+            team(ownTeamId, 'Mini A', 'Leones', 'cat-u12', 'MIXED'),
+            team('team-mini-b', 'Mini B', null, 'cat-u12', 'FEMALE'),
+            team('team-inf-a', 'Infantil A', 'Halcones', 'cat-u14', 'MIXED'),
+          ]
+        : [team(norteTeamId, 'Norte A', 'Osos', 'cat-u12', 'MIXED')]);
     _members.addAll([
       _member('a1', 'Casey', 'Coach', roles),
-      _member('m-ana', 'Alicia', 'Admin', ['ADMIN']),
-      _member('m-tom', 'Tomás', 'Entrenador', ['COACH']),
-      _member('m-ada', 'Ada', 'Asistente', ['ASSISTANT_COACH']),
-      _member('m-pat', 'Pat', 'Padre', ['PARENT']),
+      if (demo) ...[
+        _member('m-ana', 'Alicia', 'Admin', ['ADMIN']),
+        _member('m-tom', 'Tomás', 'Entrenador', ['COACH']),
+        _member('m-ada', 'Ada', 'Asistente', ['ASSISTANT_COACH']),
+        _member('m-pat', 'Pat', 'Padre', ['PARENT']),
+      ] else
+        _member('m-nadia', 'Nadia', 'Admin', ['ADMIN']),
     ]);
-    _staff[ownTeamId] = [
-      {'person': _person('m-tom', 'Tomás Entrenador'), 'role': 'COACH', 'since': '2026-09-01'},
-    ];
-    final seed = [
-      ('p-ana', 'Ana', 'Ruiz', 2015, 'FEMALE', ownTeamId, '7'),
-      ('p-leo', 'Leo', 'Gil', 2014, 'MALE', ownTeamId, '10'),
-      ('p-mia', 'Mía', 'Soto', 2016, 'FEMALE', 'team-mini-b', '4'),
-      ('p-dan', 'Dani', 'López', 2013, 'MALE', 'team-inf-a', '9'),
-      ('p-eva', 'Eva', 'Mar', 2012, 'FEMALE', null, null),
-    ];
+    if (demo) {
+      _staff[ownTeamId] = [
+        {'person': _person('m-tom', 'Tomás Entrenador'), 'role': 'COACH', 'since': '2026-09-01'},
+      ];
+    }
+    final seed = demo
+        ? [
+            ('p-ana', 'Ana', 'Ruiz', 2015, 'FEMALE', ownTeamId, '7'),
+            ('p-leo', 'Leo', 'Gil', 2014, 'MALE', ownTeamId, '10'),
+            ('p-sara', 'Sara', 'Vidal', 2015, 'FEMALE', ownTeamId, '4'),
+            ('p-iker', 'Iker', 'Sanz', 2014, 'MALE', ownTeamId, '5'),
+            ('p-noa', 'Noa', 'Pardo', 2015, 'FEMALE', ownTeamId, '8'),
+            ('p-hugo', 'Hugo', 'Rey', 2014, 'MALE', ownTeamId, '11'),
+            ('p-lia', 'Lía', 'Marín', 2015, 'FEMALE', ownTeamId, '13'),
+            ('p-mia', 'Mía', 'Soto', 2016, 'FEMALE', 'team-mini-b', '4'),
+            ('p-dan', 'Dani', 'López', 2013, 'MALE', 'team-inf-a', '9'),
+            ('p-eva', 'Eva', 'Mar', 2012, 'FEMALE', null, null),
+          ]
+        : [
+            ('p-nora', 'Nora', 'Vega', 2015, 'FEMALE', norteTeamId, '7'),
+            ('p-nico', 'Nico', 'Ibarra', 2014, 'MALE', norteTeamId, '10'),
+            ('p-nuria', 'Nuria', 'Cano', 2015, 'FEMALE', norteTeamId, '4'),
+            ('p-nacho', 'Nacho', 'Prieto', 2014, 'MALE', norteTeamId, '5'),
+            ('p-neus', 'Neus', 'Roca', 2015, 'FEMALE', norteTeamId, '8'),
+          ];
     for (final (id, given, family, year, gender, teamId, jersey) in seed) {
+      final isSelf = demo && id == demoSelfPlayerId && roles.contains('PLAYER');
       _players.add({
-        'id': id, 'personId': 'person-$id', 'givenName': given, 'familyName': family,
+        'id': id, 'personId': isSelf ? 'a1' : 'person-$id', 'givenName': given, 'familyName': family,
         'displayName': '$given $family', 'birthDate': '$year-04-12', 'gender': gender,
         'status': teamId == null ? 'ORPHAN' : 'ACTIVE', 'teams': <Object?>[], 'createdAt': _now(),
       });
       if (teamId != null) _assign(teamId, id, jersey);
     }
-    _links.add({
-      'id': 'link-1', 'guardian': _person('m-pat', 'Pat Padre'), 'player': _ref('p-ana', 'Ana Ruiz'), 'createdAt': _now(),
-    });
+    if (demo) {
+      _links.add({
+        'id': 'link-1', 'guardian': _person('m-pat', 'Pat Padre'), 'player': _ref('p-ana', 'Ana Ruiz'), 'createdAt': _now(),
+      });
+    }
+    if (roles.contains('PARENT')) {
+      final child = demo ? _ref('p-ana', 'Ana Ruiz') : _ref('p-nora', 'Nora Vega');
+      _links.add({'id': 'link-me', 'guardian': _person('a1', 'Casey Coach'), 'player': child, 'createdAt': _now()});
+    }
+    if (!demo) {
+      _recount();
+      return;
+    }
     _approvals.addAll([
       _approval('ap-1', 'ADD_PLAYER', 'PENDING', 'p-new', 'Lucas Mora', 'Visto en el torneo de Navidad'),
       _approval('ap-2', 'WITHDRAW_PLAYER', 'PENDING', 'p-leo', 'Leo Gil', null, reason: 'Se muda de ciudad'),
@@ -159,6 +207,52 @@ class MockCoreApi {
     'payload': {'note': ?note, 'reason': ?reason},
     'requestedBy': _person('a1', 'Casey Coach'), 'requestedAt': _now(),
   };
+
+  // ------------------------------------------------------------ roster, shared with the athlete and game mocks
+  /// Ids of the players assigned to [teamId] (jersey order is the list order of the team's players).
+  Set<String> rosterOf(String teamId) => {
+    for (final p in _players)
+      if ((p['teams']! as List).any((a) => ((a as Map)['team'] as Map)['id'] == teamId)) p['id']! as String,
+  };
+
+  Set<String> _teamsOf(String playerId) => {
+    for (final p in _players.where((p) => p['id'] == playerId))
+      for (final a in p['teams']! as List) ((a as Map)['team'] as Map)['id']! as String,
+  };
+
+  /// A player as the other mocks need it: name, birth year (the norm bands use it), gender and jersey on [teamId].
+  ({String id, String name, int birthYear, String gender, String? jersey})? playerFacts(String id, {String? teamId}) {
+    final p = _players.where((p) => p['id'] == id).firstOrNull;
+    if (p == null) return null;
+    final team = teamId ?? _teamsOf(id).firstOrNull;
+    final jersey = team == null
+        ? null
+        : (p['teams']! as List).cast<Map<String, Object?>>().where((a) => (a['team'] as Map)['id'] == team).firstOrNull?['jerseyNumber'];
+    return (
+      id: id,
+      name: p['displayName']! as String,
+      birthYear: int.parse((p['birthDate']! as String).substring(0, 4)),
+      gender: p['gender']! as String,
+      jersey: jersey as String?,
+    );
+  }
+
+  /// What the demo user may see here, from the roles and the live roster and links (authz matrix).
+  MockAuthz get authz => MockAuthz(
+    roles: roles.toSet(),
+    staffTeamIds: roles.contains('COACH') || roles.contains('ASSISTANT_COACH') ? {homeTeamId} : <String>{},
+    linkedPlayerIds: {
+      for (final l in _links)
+        if (roles.contains('PARENT') && (l['guardian']! as Map)['personId'] == 'a1') (l['player']! as Map)['id']! as String,
+    },
+    selfPlayerIds: {
+      for (final p in _players)
+        if (roles.contains('PLAYER') && p['personId'] == 'a1') p['id']! as String,
+    },
+    teamsOf: _teamsOf,
+    rosterOf: rosterOf,
+    allTeamIds: {for (final t in _teams) t['id']! as String},
+  );
 
   // ------------------------------------------------------------ domain logic
   Map<String, Object?> _playerById(String id) => _players.firstWhere((p) => p['id'] == id);
@@ -258,6 +352,9 @@ class MockCoreApi {
     final sub = seg.length > 4 ? seg[4] : null;
     final b = body is Map ? body.cast<String, Object?>() : <String, Object?>{};
     bool is_(String m) => method == m;
+
+    final denied = _guard(res, method, id, sub);
+    if (denied != null) return denied;
 
     switch (res) {
       case 'tenant':
@@ -380,6 +477,25 @@ class MockCoreApi {
         }
     }
     return const MockResult.json(404, {'title': 'Not found', 'status': 404});
+  }
+
+  static const _forbidden = MockResult.json(403, {'title': 'Forbidden', 'status': 403, 'type': 'urn:hoops:problem:mock'});
+
+  /// The role rules of `docs/domain/authz-matrix.md` for the admin / roster half: 403 for a member who may not.
+  MockResult? _guard(String res, String method, String? id, String? sub) {
+    final a = authz;
+    if (a.admin) return null;
+    final write = method != 'GET';
+    final allowed = switch (res) {
+      'tenant' || 'seasons' || 'age-categories' => !write,
+      'members' || 'guardian-links' || 'audit-events' => false,
+      'approval-requests' => a.staff && !write,
+      'eligibility-cases' => a.coachRole,
+      'teams' => !write || (sub == 'players' && id != null && a.canManageTeam(id)),
+      'players' => !write || a.coachRole,
+      _ => true,
+    };
+    return allowed ? null : _forbidden;
   }
 
   Map<String, Object?> _rollover(String fromId) {

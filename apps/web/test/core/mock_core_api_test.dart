@@ -111,7 +111,7 @@ void main() {
     final teams = ApiTeamsRepository(client, t);
     final list = await teams.list(seasonId: 'season-2026');
     expect(list.map((x) => x.name), containsAll(['Mini A', 'Mini B', 'Infantil A']));
-    expect((await teams.roster('team-mini-a')).length, 2);
+    expect((await teams.roster('team-mini-a')).length, 7);
     expect((await teams.staff('team-mini-a')).single.role, api.StaffRole.COACH);
 
     // Mía (2016, female) is U10-age: playing in Mini B (U12) is one level up.
@@ -184,7 +184,7 @@ void main() {
   test('players: filters, create (admin = direct), eligible teams, withdraw', () async {
     final players = ApiPlayersRepository(client, t);
     expect((await players.list(status: api.PlayerStatus.ORPHAN)).single.displayName, 'Eva Mar');
-    expect((await players.list(teamId: 'team-mini-a')).length, 2);
+    expect((await players.list(teamId: 'team-mini-a')).length, 7);
 
     final created = await players.create(
       api.CreatePlayerRequest((b) => b

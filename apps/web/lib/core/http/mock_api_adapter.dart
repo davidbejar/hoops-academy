@@ -20,7 +20,8 @@ final _logoPng = base64Decode(
 /// In-memory stand-in for core-service (`--dart-define=HOOPS_MOCK_API=true`).
 ///
 /// Serves `/api/core/**` (me, tenant, admin and roster), `/api/game/**`,
-/// `/api/athlete/**` (demo academy only) and `/platform/**` (super admin
+/// `/api/athlete/**` for both demo academies (each with its own roster, shared by the three mocks, and the demo
+/// user's roles there: [roles] in Academia Demo, PARENT in Club Norte) and `/platform/**` (super admin
 /// only), and enforces the same header contract as the
 /// real service (bearer on everything, `X-Tenant-Id` on tenant paths), so the
 /// shell's interceptors are exercised even without a backend.
@@ -28,10 +29,12 @@ class MockApiAdapter implements HttpClientAdapter {
   MockApiAdapter({List<String>? roles, bool? superAdmin})
     : _roles = roles ?? _rolesFromEnvironment(),
       _superAdmin = superAdmin ?? _superAdminFromEnvironment(),
-      _core = MockCoreApi(initialLogo: _logoPng, roles: roles ?? _rolesFromEnvironment()),
-      _game = MockGameApi(roles: roles ?? _rolesFromEnvironment()),
-      _athlete = MockAthleteApi(),
-      _platform = MockPlatformApi(tenantAId: mockTenantAId, tenantBId: mockTenantBId);
+      _platform = MockPlatformApi(tenantAId: mockTenantAId, tenantBId: mockTenantBId) {
+    _academies = {
+      mockTenantAId: _Academy(MockCoreApi(initialLogo: _logoPng, roles: _roles)),
+      mockTenantBId: _Academy(MockCoreApi(academy: MockAcademy.norte, roles: const ['PARENT'])),
+    };
+  }
 
   /// `--dart-define=HOOPS_MOCK_ROLES=COACH` (comma separated) switches the
   /// demo user's roles in the first academy to try the role variants.
@@ -46,9 +49,7 @@ class MockApiAdapter implements HttpClientAdapter {
 
   final List<String> _roles;
   final bool _superAdmin;
-  final MockCoreApi _core;
-  final MockGameApi _game;
-  final MockAthleteApi _athlete;
+  late final Map<String, _Academy> _academies;
   final MockPlatformApi _platform;
   String _locale = 'es';
 
@@ -92,65 +93,32 @@ class MockApiAdapter implements HttpClientAdapter {
     }
 
     final tenant = options.headers['X-Tenant-Id'] as String?;
-    if (path.startsWith('/api/athlete/')) {
-      if (tenant != mockTenantAId) {
-        return _problem(tenant == null ? 400 : 404, tenant == null ? 'X-Tenant-Id is required' : 'Not found');
+    final isTenantPath = path.startsWith('/api/athlete/') || path.startsWith('/api/game/') || path.startsWith('/api/core/');
+    if (!isTenantPath) return _problem(404, 'Not found');
+    final academy = _academies[tenant];
+    if (academy == null) {
+      return _problem(tenant == null ? 400 : 404, tenant == null ? 'X-Tenant-Id is required' : 'Not found');
+    }
+    Uint8List? bytes;
+    if (requestStream != null) {
+      final chunks = <int>[];
+      await for (final c in requestStream) {
+        chunks.addAll(c);
       }
-      final data = options.data;
-      final result = _athlete.handle(
-        method: method,
-        path: path,
-        query: options.queryParameters,
-        body: data is String && data.isNotEmpty ? jsonDecode(data) : data,
-      );
+      bytes = Uint8List.fromList(chunks);
+    }
+    final data = options.data;
+    final body = data is String && data.isNotEmpty ? jsonDecode(data) : data;
+    if (path.startsWith('/api/athlete/')) {
+      final result = academy.athlete.handle(method: method, path: path, query: options.queryParameters, body: body);
       return _result(result ?? const MockResult.json(404, {'title': 'Not found', 'status': 404}));
     }
     if (path.startsWith('/api/game/')) {
-      if (tenant != mockTenantAId) {
-        return _problem(tenant == null ? 400 : 404, tenant == null ? 'X-Tenant-Id is required' : 'Not found');
-      }
-      final data = options.data;
-      final result = _game.handle(
-        method: method,
-        path: path,
-        query: options.queryParameters,
-        body: data is String && data.isNotEmpty ? jsonDecode(data) : data,
-      );
-      if (result != null) {
-        return ResponseBody.fromBytes(
-          MockCoreApi.encode(result),
-          result.status,
-          headers: {
-            Headers.contentTypeHeader: [result.status >= 400 ? 'application/problem+json' : 'application/json'],
-          },
-        );
-      }
+      final result = academy.game.handle(method: method, path: path, query: options.queryParameters, body: body);
+      if (result != null) return _result(result);
     }
     if (path.startsWith('/api/core/')) {
-      if (tenant != mockTenantAId && tenant != mockTenantBId) {
-        return _problem(
-          tenant == null ? 400 : 404,
-          tenant == null ? 'X-Tenant-Id is required' : 'Not found',
-        );
-      }
-      if (tenant == mockTenantBId) {
-        // The second academy only has a PARENT membership and no data.
-        if (path == '/api/core/tenant') return _json(_profile(tenant!));
-        return path == '/api/core/tenant/logo'
-            ? _problem(404, 'No logo')
-            : _problem(403, 'Forbidden');
-      }
-      Uint8List? bytes;
-      if (requestStream != null) {
-        final chunks = <int>[];
-        await for (final c in requestStream) {
-          chunks.addAll(c);
-        }
-        bytes = Uint8List.fromList(chunks);
-      }
-      final data = options.data;
-      final body = data is String && data.isNotEmpty ? jsonDecode(data) : data;
-      final result = _core.handle(
+      final result = academy.core.handle(
         tenantId: tenant!,
         method: method,
         path: path,
@@ -162,14 +130,11 @@ class MockApiAdapter implements HttpClientAdapter {
         if (result.status == 304) {
           return ResponseBody.fromString('', 304);
         }
-        final isError = result.status >= 400;
         return ResponseBody.fromBytes(
           MockCoreApi.encode(result),
           result.status,
           headers: {
-            Headers.contentTypeHeader: [
-              isError ? 'application/problem+json' : result.contentType,
-            ],
+            Headers.contentTypeHeader: [result.status >= 400 ? 'application/problem+json' : result.contentType],
             for (final e in result.headers.entries) e.key: [e.value],
           },
         );
@@ -195,7 +160,7 @@ class MockApiAdapter implements HttpClientAdapter {
     'superAdmin': _superAdmin,
     'memberships': [
       _membership(mockTenantAId, 'demo', 'Academia Demo', true, _roles),
-      _membership(mockTenantBId, 'norte', 'Club Norte', false, ['PARENT']),
+      _membership(mockTenantBId, 'norte', 'Club Norte', false, const ['PARENT']),
     ],
   };
 
@@ -216,24 +181,11 @@ class MockApiAdapter implements HttpClientAdapter {
     'personId': 'a1',
     'roles': roles,
     'authz': {
-      'staffTeamIds': roles.contains('COACH') || roles.contains('ASSISTANT_COACH')
-          ? <String>[MockCoreApi.ownTeamId]
-          : <String>[],
-      'linkedPlayerIds': id == mockTenantAId && roles.contains('PARENT') ? <String>['p-ana'] : <String>[],
-      'playerTeamIds': id == mockTenantAId && (roles.contains('PARENT') || roles.contains('PLAYER'))
-          ? <String>[MockCoreApi.ownTeamId]
-          : <String>[],
+      'staffTeamIds': _academies[id]!.core.authz.staffTeamIds.toList(),
+      'linkedPlayerIds': _academies[id]!.core.authz.linkedPlayerIds.toList(),
+      'playerTeamIds': _academies[id]!.core.authz.playerTeamIds.toList(),
       'timezone': 'Europe/Madrid',
     },
-  };
-
-  Map<String, Object?> _profile(String id) => {
-    'id': id,
-    'slug': id == mockTenantAId ? 'demo' : 'norte',
-    'name': id == mockTenantAId ? 'Academia Demo' : 'Club Norte',
-    'timezone': 'Europe/Madrid',
-    'defaultLocale': id == mockTenantAId ? 'es' : 'en',
-    'hasLogo': id == mockTenantAId,
   };
 
   ResponseBody _json(Object body) => ResponseBody.fromString(
@@ -258,4 +210,13 @@ class MockApiAdapter implements HttpClientAdapter {
 
   @override
   void close({bool force = false}) {}
+}
+
+/// One demo academy: its core data and the athlete and game mocks reading the same roster.
+class _Academy {
+  _Academy(this.core) : athlete = MockAthleteApi(core: core), game = MockGameApi(core: core);
+
+  final MockCoreApi core;
+  final MockAthleteApi athlete;
+  final MockGameApi game;
 }

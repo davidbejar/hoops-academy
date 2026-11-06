@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +9,9 @@ import 'package:hoops_app/app/router.dart';
 import 'package:hoops_app/core/config/app_config.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/core/storage/preferences.dart';
+import 'package:hoops_app/features/match/application/match_providers.dart';
+import 'package:hoops_app/features/match/data/local/match_database.dart';
+import 'package:hoops_app/features/match/data/local/match_store.dart';
 import 'package:hoops_app/features/tenant/application/tenant_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,10 +31,14 @@ void main() {
     );
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
+    // The Norte parent lands on the match list, which caches the matches in the local store.
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    final store = MatchStore(MatchDatabase(DatabaseConnection(NativeDatabase.memory(), closeStreamsSynchronously: true)));
     final container = ProviderContainer(
       retry: (_, _) => null,
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        matchStoreProvider.overrideWithValue(store),
         appConfigProvider.overrideWithValue(
           AppConfig(
             issuer: Uri.parse('http://unused'),
@@ -86,7 +95,7 @@ void main() {
     expect(navLabel('Admin'), findsNothing);
     expect(container.read(tenantLogoProvider).value, isNull); // 404 -> initials
 
-    // WP47: Club Norte has its own training week and health data, the PARENT reaches only the linked player's.
+    // WP47: Club Norte has its own training week and health data, the PARENT's hub shows the linked player.
     container.read(routerProvider).go('/training');
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('week-calendar')), findsOneWidget);
@@ -94,9 +103,11 @@ void main() {
       find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('session-ses-sch-norte')),
       findsWidgets,
     );
-    container.read(routerProvider).go('/players/p-nora/health');
+    container.read(routerProvider).go('/my-players');
     await tester.pumpAndSettle();
-    expect(find.textContaining('muñeca derecha'), findsWidgets);
+    expect(find.text('Nora Vega'), findsWidgets);
+    expect(find.text('Upcoming training'), findsWidgets);
+    expect(find.text('Health and fitness'), findsWidgets);
   });
 
   testWidgets('WP41: the platform console and the training / health screens show the demo data', (tester) async {

@@ -1,36 +1,39 @@
 import '../time/tenant_zone.dart';
+import 'mock_authz.dart';
 import 'mock_core_api.dart';
 import 'mock_query.dart';
 
-/// In-memory stand-in for athlete-service (`/api/athlete/**`) for the demo academy, dev mock mode only: a week of
+/// In-memory stand-in for athlete-service (`/api/athlete/**`) for one demo academy, dev mock mode only: a week of
 /// training sessions with attendance, planned absences, plans, injuries, measurements and physical tests with norm
-/// bands. The team rosters are the demo academy's (see [MockCoreApi]); the `clear` lists of update requests follow
-/// ADR-0032. Authorization by role is not modelled (the screens hide what a role may not do).
+/// bands. The team rosters and the players' facts are read from [core] (one source per academy, WP47); the `clear`
+/// lists of update requests follow ADR-0032. What a role sees and may change follows `docs/domain/authz-matrix.md`
+/// through `core.authz`: a staff member their teams, a guardian the linked players, a player himself; a player or
+/// team the user may not see is a 404, a visible one they may not change a 403.
 class MockAthleteApi {
-  MockAthleteApi({DateTime Function()? now, String zone = 'Europe/Madrid'})
+  MockAthleteApi({required this.core, DateTime Function()? now, String zone = 'Europe/Madrid'})
     : _now = now ?? DateTime.now,
-      _zone = TenantZone.of(zone) {
+      _zone = TenantZone.of(zone),
+      _home = core.homeTeamId {
     _seed();
   }
+
+  final MockCoreApi core;
+  final String _home;
 
   final DateTime Function() _now;
   final TenantZone _zone;
 
-  static const ownTeamId = MockCoreApi.ownTeamId;
   static const _recorder = {'personId': 'a1', 'displayName': 'Casey Coach'};
 
-  /// Roster per team and the data the norm bands need (birth year, gender), as in the demo academy's core data.
-  static const _teamPlayers = {
-    'team-mini-a': ['p-ana', 'p-leo'],
-    'team-mini-b': ['p-mia'],
-    'team-inf-a': ['p-dan'],
-  };
-  static const _playerFacts = {
-    'p-ana': (2015, 'FEMALE'),
-    'p-leo': (2014, 'MALE'),
-    'p-mia': (2016, 'FEMALE'),
-    'p-dan': (2013, 'MALE'),
-  };
+  MockAuthz get _az => core.authz;
+
+  Set<String> _roster(String? teamId) => teamId == null ? const {} : core.rosterOf(teamId);
+
+  /// The seeded cast of the home team: three players for the health and fitness data (the third from another team in
+  /// the demo academy, so it has no sessions of the first two).
+  String get _a => _home == MockCoreApi.ownTeamId ? 'p-ana' : 'p-nora';
+  String get _b => _home == MockCoreApi.ownTeamId ? 'p-leo' : 'p-nico';
+  String get _c => _home == MockCoreApi.ownTeamId ? 'p-mia' : 'p-nuria';
 
   final _schedules = <Map<String, Object?>>[];
   final _sessions = <Map<String, Object?>>[];
@@ -72,13 +75,22 @@ class MockAthleteApi {
       'validFrom': _dayIn(-120),
       'validUntil': null,
     };
-    _schedules.addAll([
-      schedule('sch-mon', ownTeamId, 'MONDAY', '17:30', 90, 'Pabellón Norte'),
-      schedule('sch-wed', ownTeamId, 'WEDNESDAY', '17:30', 90, 'Pabellón Norte'),
-      schedule('sch-fri', ownTeamId, 'FRIDAY', '17:00', 60, 'Pista exterior'),
-      schedule('sch-tue', 'team-inf-a', 'TUESDAY', '18:30', 90, 'Pabellón Sur'),
-      schedule('sch-thu', 'team-inf-a', 'THURSDAY', '18:30', 90, 'Pabellón Sur'),
-    ]);
+    final demo = _home == MockCoreApi.ownTeamId;
+    _schedules.addAll(
+      demo
+          ? [
+              schedule('sch-mon', _home, 'MONDAY', '17:30', 90, 'Pabellón Norte'),
+              schedule('sch-wed', _home, 'WEDNESDAY', '17:30', 90, 'Pabellón Norte'),
+              schedule('sch-fri', _home, 'FRIDAY', '17:00', 60, 'Pista exterior'),
+              schedule('sch-tue', 'team-inf-a', 'TUESDAY', '18:30', 90, 'Pabellón Sur'),
+              schedule('sch-thu', 'team-inf-a', 'THURSDAY', '18:30', 90, 'Pabellón Sur'),
+            ]
+          : [
+              schedule('sch-norte-tue', _home, 'TUESDAY', '18:00', 90, 'Polideportivo Norte'),
+              schedule('sch-norte-thu', _home, 'THURSDAY', '18:00', 90, 'Polideportivo Norte'),
+              schedule('sch-norte-sat', _home, 'SATURDAY', '10:00', 60, 'Pista exterior'),
+            ],
+    );
     const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
     final today = _today;
     for (var offset = -14; offset <= 21; offset++) {
@@ -100,7 +112,7 @@ class MockAthleteApi {
       }
     }
     // The first upcoming session of Mini A is cancelled, the next one carries the warm-up plan.
-    final upcoming = _sessions.where((s) => s['teamId'] == ownTeamId && s['status'] == 'PLANNED').toList();
+    final upcoming = _sessions.where((s) => s['teamId'] == _home && s['status'] == 'PLANNED').toList();
     if (upcoming.length > 1) {
       upcoming[0]
         ..['status'] = 'CANCELLED'
@@ -109,11 +121,11 @@ class MockAthleteApi {
     }
     // Attendance of the finished sessions of Mini A: mostly present, one late, one absent.
     var n = 0;
-    for (final s in _sessions.where((s) => s['teamId'] == ownTeamId && s['status'] == 'DONE')) {
+    for (final s in _sessions.where((s) => s['teamId'] == _home && s['status'] == 'DONE')) {
       final sheet = _attendance['${s['id']}'] = {};
-      for (final p in _teamPlayers[ownTeamId]!) {
-        final late = n % 4 == 1 && p == 'p-leo';
-        final absent = n % 5 == 2 && p == 'p-ana';
+      for (final p in _roster(_home)) {
+        final late = n % 4 == 1 && p == _b;
+        final absent = n % 5 == 2 && p == _a;
         sheet[p] = {
           'status': absent ? 'ABSENT' : (late ? 'LATE' : 'PRESENT'),
           'minutesLate': late ? 10 : null,
@@ -125,8 +137,8 @@ class MockAthleteApi {
       n++;
     }
     _absences.addAll([
-      _absence('abs-1', 'p-ana', _dayIn(2), _dayIn(3), 'Torneo de ajedrez'),
-      _absence('abs-2', 'p-leo', _dayIn(-20), _dayIn(-18), 'Vacaciones'),
+      _absence('abs-1', _a, _dayIn(2), _dayIn(3), 'Torneo de ajedrez'),
+      _absence('abs-2', _b, _dayIn(-20), _dayIn(-18), 'Vacaciones'),
     ]);
   }
 
@@ -200,7 +212,7 @@ class MockAthleteApi {
     _assignments.add({
       'id': 'asg-1',
       'planId': 'plan-warmup',
-      'teamId': ownTeamId,
+      'teamId': _home,
       'playerId': null,
       'dueOn': _dayIn(5),
       'notes': 'Para la semana que viene',
@@ -210,7 +222,7 @@ class MockAthleteApi {
     _completions.add({
       'id': 'cmp-1',
       'assignmentId': 'asg-1',
-      'playerId': 'p-ana',
+      'playerId': _a,
       'status': 'DONE',
       'comment': null,
       'recordedBy': _recorder,
@@ -219,12 +231,13 @@ class MockAthleteApi {
   }
 
   void _seedHealth() {
+    final demo = _home == MockCoreApi.ownTeamId;
     _injuries.addAll([
       {
         'id': 'inj-1',
-        'playerId': 'p-leo',
+        'playerId': demo ? _b : _a,
         'occurredOn': _dayIn(-6),
-        'bodyPart': 'rodilla izquierda',
+        'bodyPart': demo ? 'rodilla izquierda' : 'muñeca derecha',
         'severity': 'MODERATE',
         'description': 'Golpe en un entrenamiento',
         'expectedReturnOn': _dayIn(12),
@@ -235,7 +248,7 @@ class MockAthleteApi {
       },
       {
         'id': 'inj-2',
-        'playerId': 'p-ana',
+        'playerId': demo ? _a : _b,
         'occurredOn': _dayIn(-60),
         'bodyPart': 'tobillo derecho',
         'severity': 'MINOR',
@@ -257,11 +270,11 @@ class MockAthleteApi {
       'recordedAt': _stamp,
     };
     _measurements.addAll([
-      body('bm-1', 'p-ana', 200, 142.0, 34.5),
-      body('bm-2', 'p-ana', 100, 144.5, 36.0),
-      body('bm-3', 'p-ana', 10, 146.0, 37.2),
-      body('bm-4', 'p-leo', 150, 150.5, 40.0),
-      body('bm-5', 'p-leo', 15, 153.0, 42.5),
+      body('bm-1', _a, 200, 142.0, 34.5),
+      body('bm-2', _a, 100, 144.5, 36.0),
+      body('bm-3', _a, 10, 146.0, 37.2),
+      body('bm-4', _b, 150, 150.5, 40.0),
+      body('bm-5', _b, 15, 153.0, 42.5),
     ]);
   }
 
@@ -331,12 +344,12 @@ class MockAthleteApi {
       'recordedBy': _recorder,
       'recordedAt': _stamp,
     });
-    result('tr-1', 'p-ana', 'tt-sprint', 120, 4.3);
-    result('tr-2', 'p-ana', 'tt-sprint', 20, 4.05, notes: 'Pista seca');
-    result('tr-3', 'p-ana', 'tt-jump', 20, 24.0);
-    result('tr-4', 'p-leo', 'tt-sprint', 20, 3.95);
-    result('tr-5', 'p-leo', 'tt-reach', 20, 12.0);
-    result('tr-6', 'p-mia', 'tt-jump', 20, 21.0);
+    result('tr-1', _a, 'tt-sprint', 120, 4.3);
+    result('tr-2', _a, 'tt-sprint', 20, 4.05, notes: 'Pista seca');
+    result('tr-3', _a, 'tt-jump', 20, 24.0);
+    result('tr-4', _b, 'tt-sprint', 20, 3.95);
+    result('tr-5', _b, 'tt-reach', 20, 12.0);
+    result('tr-6', _c, 'tt-jump', 20, 21.0);
   }
 
   // ------------------------------------------------------------------ routing
@@ -395,6 +408,33 @@ class MockAthleteApi {
   Map<String, Object?>? _byId(List<Map<String, Object?>> list, String? id) =>
       list.where((e) => e['id'] == id).firstOrNull;
 
+  static const _forbidden = MockResult.json(403, {
+    'title': 'Forbidden',
+    'status': 403,
+    'type': 'urn:hoops:problem:mock',
+  });
+
+  static bool _writes(String method) => method != 'GET';
+
+  /// A team the user may read (404 otherwise) and, for a change, manage (403 otherwise).
+  MockResult? _gateTeam(String? team, String method) {
+    if (team == null || !_az.canSeeTeam(team)) return _notFound;
+    return _writes(method) && !_az.canManageTeam(team) ? _forbidden : null;
+  }
+
+  /// A player the user may read (404 otherwise) and, for a change, write for (403 otherwise). [self] lets the
+  /// player himself record (planned absences, plan completions); [staffOnly] is for results (guardians read).
+  MockResult? _gatePlayer(String? player, String method, {bool self = false, bool staffOnly = false}) {
+    if (player == null || !_az.canSeePlayer(player)) return _notFound;
+    if (!_writes(method)) return null;
+    final ok = staffOnly
+        ? _az.staff && _az.canWritePlayer(player)
+        : (self ? _az.canRecordFor(player) : _az.canWritePlayer(player));
+    return ok ? null : _forbidden;
+  }
+
+  MockResult? _staffOnly(String method) => _writes(method) && !_az.staff ? _forbidden : null;
+
   /// Generic update of a stored row: given properties replace, `clear` ones become null.
   MockResult _patch(
     Map<String, Object?> row,
@@ -413,10 +453,12 @@ class MockAthleteApi {
         final team = q.text('teamId');
         return MockResult.json(200, [
           for (final s in _schedules)
-            if (team == null || s['teamId'] == team) s,
+            if ((team == null || s['teamId'] == team) && _az.canSeeTeam('${s['teamId']}')) s,
         ]);
       }
       if (method == 'POST') {
+        final denied = _gateTeam(b['teamId'] as String?, method);
+        if (denied != null) return denied;
         final s = {'id': _id('sch'), 'location': null, 'validUntil': null, ...b};
         _schedules.add(s);
         return MockResult.json(201, s);
@@ -425,6 +467,8 @@ class MockAthleteApi {
     }
     final s = _byId(_schedules, id);
     if (s == null) return _notFound;
+    final denied = _gateTeam('${s['teamId']}', method);
+    if (denied != null) return denied;
     return switch (method) {
       'GET' => MockResult.json(200, s),
       'PATCH' => _patch(s, b, {'location', 'validUntil'}),
@@ -446,12 +490,15 @@ class MockAthleteApi {
         final items = [
           for (final s in _sessions)
             if ((team == null || s['teamId'] == team) &&
+                _az.canSeeTeam('${s['teamId']}') &&
                 _inRange(_date(_zone.wall(DateTime.parse('${s['startsAt']}'))), from, to))
               s,
         ]..sort((a, c) => '${a['startsAt']}'.compareTo('${c['startsAt']}'));
         return q.page(items, defaultSize: 200);
       }
       if (method == 'POST') {
+        final denied = _gateTeam(b['teamId'] as String?, method);
+        if (denied != null) return denied;
         final s = <String, Object?>{
           'id': _id('ses'),
           'scheduleId': null,
@@ -469,6 +516,8 @@ class MockAthleteApi {
     }
     final s = _byId(_sessions, id);
     if (s == null) return _notFound;
+    final denied = _gateTeam('${s['teamId']}', method);
+    if (denied != null) return denied;
     if (rest.isEmpty) {
       if (method == 'GET') return MockResult.json(200, s);
       if (method == 'PATCH') {
@@ -484,6 +533,7 @@ class MockAthleteApi {
       return MockResult.json(200, s);
     }
     if (rest[0] == 'attendance') {
+      if (!_az.canManageTeam('${s['teamId']}')) return _forbidden; // attendance is for staff only
       if (method == 'GET') return MockResult.json(200, _sheet(s));
       if (method == 'PUT') return _record(s, b);
     }
@@ -499,7 +549,7 @@ class MockAthleteApi {
     return {
       'sessionId': session['id'],
       'entries': [
-        for (final p in _teamPlayers['${session['teamId']}'] ?? const <String>[])
+        for (final p in _roster('${session['teamId']}'))
           () {
             final absence = _absences
                 .where((a) => a['playerId'] == p && _inRange(day, '${a['fromDate']}', '${a['toDate']}'))
@@ -524,7 +574,7 @@ class MockAthleteApi {
 
   MockResult _record(Map<String, Object?> session, Map<String, Object?> b) {
     final entries = (b['entries'] as List<Object?>? ?? const []).cast<Map<String, Object?>>();
-    final players = _teamPlayers['${session['teamId']}'] ?? const <String>[];
+    final players = _roster('${session['teamId']}');
     for (final e in entries) {
       if (!players.contains(e['playerId'])) return mockProblem(404, 'Not found');
       final late = e['status'] == 'LATE';
@@ -553,14 +603,17 @@ class MockAthleteApi {
         final to = q.date('to');
         return q.page([
           for (final a in _absences)
-            if ((player == null || a['playerId'] == player) &&
-                (team == null || (_teamPlayers[team] ?? const []).contains(a['playerId'])) &&
+            if (_az.canSeePlayer('${a['playerId']}') &&
+                (player == null || a['playerId'] == player) &&
+                (team == null || _roster(team).contains(a['playerId'])) &&
                 (from == null || '${a['toDate']}'.compareTo(from) >= 0) &&
                 (to == null || '${a['fromDate']}'.compareTo(to) <= 0))
               a,
         ], defaultSize: 100);
       }
       if (method == 'POST') {
+        final denied = _gatePlayer(b['playerId'] as String?, method, self: true);
+        if (denied != null) return denied;
         final a = _absence(
           _id('abs'),
           '${b['playerId']}',
@@ -575,6 +628,8 @@ class MockAthleteApi {
     }
     final a = _byId(_absences, id);
     if (a == null) return _notFound;
+    final denied = _gatePlayer('${a['playerId']}', method, self: true);
+    if (denied != null) return denied;
     return switch (method) {
       'GET' => MockResult.json(200, a),
       'PATCH' => _patch(a, b, {'reason'}),
@@ -609,6 +664,8 @@ class MockAthleteApi {
   }
 
   MockResult? _plansRoute(String method, String? idAndAction, List<String> rest, MockQuery q, Map<String, Object?> b) {
+    final readOnlyRole = _staffOnly(method);
+    if (readOnlyRole != null) return readOnlyRole;
     if (idAndAction == null) {
       if (method == 'GET') {
         final template = q.text('template');
@@ -736,8 +793,12 @@ class MockAthleteApi {
     };
   }
 
+  /// A team assignment is visible with its team, a player's with the player.
+  bool _assignmentVisible(Map<String, Object?> a) =>
+      a['playerId'] != null ? _az.canSeePlayer('${a['playerId']}') : _az.canSeeTeam('${a['teamId']}');
+
   Iterable<String> _targets(Map<String, Object?> a) =>
-      a['playerId'] != null ? ['${a['playerId']}'] : (_teamPlayers['${a['teamId']}'] ?? const <String>[]);
+      a['playerId'] != null ? ['${a['playerId']}'] : _roster('${a['teamId']}');
 
   MockResult? _assignmentsRoute(String method, String? id, List<String> rest, MockQuery q, Map<String, Object?> b) {
     if (id == null) {
@@ -746,9 +807,10 @@ class MockAthleteApi {
         final player = q.text('playerId');
         return q.page([
           for (final a in _assignments)
-            if ((team == null ||
+            if (_assignmentVisible(a) &&
+                (team == null ||
                     a['teamId'] == team ||
-                    _targets(a).any((p) => (_teamPlayers[team] ?? const []).contains(p))) &&
+                    _targets(a).any((p) => _roster(team).contains(p))) &&
                 (player == null || _targets(a).contains(player)))
               _assignmentView(a),
         ], defaultSize: 100);
@@ -758,6 +820,10 @@ class MockAthleteApi {
         if (plan == null) return mockProblem(404, 'Not found');
         if (plan['archived'] == true) return mockProblem(409, 'Conflict', code: 'PLAN_ARCHIVED');
         if ((b['teamId'] == null) == (b['playerId'] == null)) return mockProblem(400, 'Bad Request');
+        final denied = b['teamId'] != null
+            ? _gateTeam(b['teamId'] as String?, method)
+            : _gatePlayer(b['playerId'] as String?, method);
+        if (denied != null || !_az.staff) return denied ?? _forbidden;
         final a = {
           'id': _id('asg'),
           'teamId': b['teamId'],
@@ -774,8 +840,9 @@ class MockAthleteApi {
       return null;
     }
     final a = _byId(_assignments, id);
-    if (a == null) return _notFound;
+    if (a == null || !_assignmentVisible(a)) return _notFound;
     if (rest.isEmpty) {
+      if (_writes(method) && !_az.staff) return _forbidden;
       if (method == 'GET') return MockResult.json(200, _assignmentView(a));
       if (method == 'DELETE') {
         _assignments.remove(a);
@@ -788,6 +855,8 @@ class MockAthleteApi {
     if (rest[0] == 'completions' && rest.length == 2 && method == 'PUT') {
       final player = rest[1];
       if (!_targets(a).contains(player)) return mockProblem(404, 'Not found');
+      final denied = _gatePlayer(player, method, self: true);
+      if (denied != null) return denied;
       final existing = _completions.where((c) => c['assignmentId'] == id && c['playerId'] == player).firstOrNull;
       final row = existing ?? {'id': _id('cmp'), 'assignmentId': id, 'playerId': player};
       row
@@ -802,7 +871,7 @@ class MockAthleteApi {
   }
 
   Map<String, Object?> _progress(Map<String, Object?> a) {
-    final targets = _targets(a).toList();
+    final targets = _targets(a).where(_az.canSeePlayer).toList();
     final byPlayer = {for (final c in _completions.where((c) => c['assignmentId'] == a['id'])) '${c['playerId']}': c};
     int count(String status) =>
         byPlayer.values.where((c) => c['status'] == status && targets.contains(c['playerId'])).length;
@@ -822,7 +891,8 @@ class MockAthleteApi {
     final player = q.text('playerId');
     return [
       for (final c in _completions)
-        if ((assignment == null || c['assignmentId'] == assignment) && (player == null || c['playerId'] == player)) c,
+        if (_az.canSeePlayer('${c['playerId']}') &&
+            (assignment == null || c['assignmentId'] == assignment) && (player == null || c['playerId'] == player)) c,
     ];
   }
 
@@ -835,13 +905,16 @@ class MockAthleteApi {
         final status = q.text('status');
         return q.page([
           for (final i in _injuries)
-            if ((player == null || i['playerId'] == player) &&
-                (team == null || (_teamPlayers[team] ?? const []).contains(i['playerId'])) &&
+            if (_az.canSeePlayer('${i['playerId']}') &&
+                (player == null || i['playerId'] == player) &&
+                (team == null || _roster(team).contains(i['playerId'])) &&
                 (status == null || i['status'] == status))
               i,
         ], defaultSize: 100);
       }
       if (method == 'POST') {
+        final denied = _gatePlayer(b['playerId'] as String?, method);
+        if (denied != null) return denied;
         final i = <String, Object?>{
           'id': _id('inj'),
           'description': null,
@@ -859,6 +932,8 @@ class MockAthleteApi {
     }
     final i = _byId(_injuries, id);
     if (i == null) return _notFound;
+    final denied = _gatePlayer('${i['playerId']}', method);
+    if (denied != null) return denied;
     return switch (method) {
       'GET' => MockResult.json(200, i),
       'PATCH' => _patch(i, b, {'description', 'expectedReturnOn', 'actualReturnOn'}),
@@ -871,6 +946,8 @@ class MockAthleteApi {
   }
 
   MockResult _availability(String player) {
+    final denied = _gatePlayer(player, 'GET');
+    if (denied != null) return denied;
     final open = _injuries.where((i) => i['playerId'] == player && i['status'] == 'OPEN').toList();
     final returns = [
       for (final i in open)
@@ -890,11 +967,13 @@ class MockAthleteApi {
         final player = q.text('playerId');
         final items = [
           for (final m in _measurements)
-            if (player == null || m['playerId'] == player) m,
+            if (_az.canSeePlayer('${m['playerId']}') && (player == null || m['playerId'] == player)) m,
         ]..sort((a, c) => '${c['measuredOn']}'.compareTo('${a['measuredOn']}'));
         return MockResult.json(200, items);
       }
       if (method == 'POST') {
+        final denied = _gatePlayer(b['playerId'] as String?, method);
+        if (denied != null) return denied;
         if (b['heightCm'] == null && b['weightKg'] == null) return mockProblem(400, 'Bad Request');
         final m = <String, Object?>{
           'id': _id('bm'),
@@ -911,6 +990,8 @@ class MockAthleteApi {
     }
     final m = _byId(_measurements, id);
     if (m == null) return _notFound;
+    final denied = _gatePlayer('${m['playerId']}', method);
+    if (denied != null) return denied;
     return switch (method) {
       'PATCH' => _patch(m, b, {'heightCm', 'weightKg'}),
       'DELETE' => () {
@@ -923,6 +1004,7 @@ class MockAthleteApi {
 
   // ------------------------------------------------------------------ physical tests
   MockResult? _typesRoute(String method, String? id, Map<String, Object?> b) {
+    if (_writes(method) && !_az.admin) return _forbidden;
     if (id == null) {
       if (method == 'GET') return MockResult.json(200, _types);
       if (method == 'POST') {
@@ -956,10 +1038,10 @@ class MockAthleteApi {
   }
 
   int? _ageOn(String player, String measuredOn) {
-    final facts = _playerFacts[player];
+    final facts = core.playerFacts(player);
     if (facts == null) return null;
     final on = DateTime.parse(measuredOn);
-    final birthday = DateTime(facts.$1, 4, 12);
+    final birthday = DateTime(facts.birthYear, 4, 12);
     return on.year - birthday.year - ((on.month * 100 + on.day) < (birthday.month * 100 + birthday.day) ? 1 : 0);
   }
 
@@ -973,7 +1055,7 @@ class MockAthleteApi {
 
   Map<String, Object?> _resultView(Map<String, Object?> r) {
     final type = _byId(_types, '${r['testTypeId']}');
-    final facts = _playerFacts['${r['playerId']}'];
+    final facts = core.playerFacts('${r['playerId']}');
     final age = _ageOn('${r['playerId']}', '${r['measuredOn']}');
     Map<String, Object?>? norm;
     if (facts != null && age != null) {
@@ -982,7 +1064,7 @@ class MockAthleteApi {
         final min = (n['minValue'] as num?)?.toDouble();
         final max = (n['maxValue'] as num?)?.toDouble();
         return n['testTypeId'] == r['testTypeId'] &&
-            n['gender'] == facts.$2 &&
+            n['gender'] == facts.gender &&
             age >= (n['minAge']! as int) &&
             age <= (n['maxAge']! as int) &&
             (min == null || value >= min) &&
@@ -1010,14 +1092,17 @@ class MockAthleteApi {
         final type = q.text('testTypeId');
         final items = [
           for (final r in _results)
-            if ((player == null || r['playerId'] == player) &&
-                (team == null || (_teamPlayers[team] ?? const []).contains(r['playerId'])) &&
+            if (_az.canSeePlayer('${r['playerId']}') &&
+                (player == null || r['playerId'] == player) &&
+                (team == null || _roster(team).contains(r['playerId'])) &&
                 (type == null || r['testTypeId'] == type))
               r,
         ]..sort((a, c) => '${c['measuredOn']}'.compareTo('${a['measuredOn']}'));
         return q.page([for (final r in items) _resultView(r)], defaultSize: 200);
       }
       if (method == 'POST') {
+        final denied = _gatePlayer(b['playerId'] as String?, method, staffOnly: true);
+        if (denied != null) return denied;
         if (_byId(_types, '${b['testTypeId']}') == null) return mockProblem(404, 'Not found');
         final r = <String, Object?>{
           'id': _id('tr'),
@@ -1033,6 +1118,8 @@ class MockAthleteApi {
     }
     final r = _byId(_results, id);
     if (r == null) return _notFound;
+    final denied = _gatePlayer('${r['playerId']}', method, staffOnly: true);
+    if (denied != null) return denied;
     return switch (method) {
       'GET' => MockResult.json(200, _resultView(r)),
       'PATCH' => _patch(r, b, {'notes'}, _resultView),
@@ -1045,6 +1132,7 @@ class MockAthleteApi {
   }
 
   MockResult? _normsRoute(String method, String? id, MockQuery q, Map<String, Object?> b) {
+    if (_writes(method) && !_az.admin) return _forbidden;
     if (id == null) {
       if (method == 'GET') {
         final scope = q.text('scope') ?? 'EFFECTIVE';

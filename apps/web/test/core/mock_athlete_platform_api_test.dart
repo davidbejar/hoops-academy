@@ -436,7 +436,7 @@ void main() {
 
     Future<String> doneSessionId(Dio d, String teamId) async {
       final r = await call(d, 'GET', '/api/athlete/training-sessions', query: {'teamId': teamId});
-      return items(r).cast<Map>().firstWhere((s) => s['status'] == 'DONE')['id'] as String;
+      return items(r).cast<Map<String, dynamic>>().firstWhere((s) => s['status'] == 'DONE')['id'] as String;
     }
 
     Future<Set<String>> injuryPlayers(Dio d) async =>
@@ -577,7 +577,7 @@ void main() {
       expect(items(matches), isNotEmpty);
       expect(items(matches).every((m) => (m as Map)['teamId'] == 'team-norte-a'), isTrue);
       final me = await call(d, 'GET', '/api/core/me');
-      final norteMembership = ((me.data as Map)['memberships'] as List).cast<Map>().firstWhere((m) => m['tenant']['id'] == norte);
+      final norteMembership = ((me.data as Map)['memberships'] as List).cast<Map<String, dynamic>>().firstWhere((m) => m['tenant']['id'] == norte);
       expect(norteMembership['authz']['linkedPlayerIds'], ['p-nora']);
       expect(norteMembership['authz']['playerTeamIds'], ['team-norte-a']);
       expect((await call(d, 'GET', '/api/athlete/players/p-ana/availability')).statusCode, 404, reason: 'a Demo player');
