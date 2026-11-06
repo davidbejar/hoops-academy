@@ -46,3 +46,39 @@ academy, every PLATFORM-kind actor is shown as "Platform administrator". The sup
   port clash, re-run that module alone with `-Dquarkus.http.test-port=0`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built:
+  - Contract core **2.6.0**: `AuditActor.subject` nullable ("null when the actor is masked for the caller (platform actors
+    seen from an academy)"), still required; `listAuditEvents` and the info say the super admin is masked. No new field
+    (no test needed one: `kind` = PLATFORM already tells the client). Dart core client regenerated (`scripts/gen-api.sh
+    core`); web `AuditEntry.actorSubject` is now `String?`.
+  - Core: the rule lives in the read use case. `AuditEntry` now carries an `AuditEntry.Actor` (kind, subject, person,
+    name); `ReadAuditTrail` applies `Actor.maskedForAcademy()` (PLATFORM → no subject/person/name; PERSON and SYSTEM as
+    stored); `ReadPlatformAuditTrail` does not. Metadata untouched (the `reason` stays). `AuditDtos.ActorDto.subject` is
+    `@JsonInclude(ALWAYS)` because core serialises with `non_null` and the contract keeps `subject` required.
+  - Web: label `auditActorPlatform` is now "Platform administrator" / "Administrador de la plataforma" / "Administrator
+    platform" (existing key, value changed; no new key). The mock API masks the super admin on the academy list.
+  - Dead code: `ApprovalPayload.empty()` deleted (no caller anywhere); `docs/quality/mutation.md` updated.
+  - Docs: ADR-0029 "Amendment 2026-11-06"; authz matrix row "Academy activity"; `docs/domain/audit-events.md` (Actor
+    rule); threat model row R; admin guides en/es/id §10 (label and "identity not shown, reason shown").
+- Verified (fresh, 2026-11-06):
+  - Red first: `test(contracts)` 87faf74 (3 failures), `test(core)` a60bfd8 (`AuditEventResourceTest` 2 failures: subject
+    still returned; `AuditEntryTest` red by compilation), `test(web)` 1677916 (5 failures: old label, mock subject) —
+    each before its `feat`.
+  - `./mvnw -B -ntp -q -pl libs/contracts verify`: 147 tests, BUILD SUCCESS.
+  - `./mvnw -B -ntp -T 1C clean verify -Dquarkus.http.test-port=0`: BUILD SUCCESS — contracts 147, common-quarkus 186,
+    game 255, athlete 613, core 773 = **1,974 tests**, 0 failures/errors/skips; all coverage checks met. New/changed:
+    `AuditEventResourceTest` (+`theSuperAdminIsMaskedWhileTheSuspensionReasonIsKept`; the PLATFORM row of the listing
+    test now asserts null subject/person/name), `PlatformAuditEventResourceTest` (subject and `reason` still shown to the
+    super admin), `AuditEntryTest` 2, `AuditTrailContractTest` (+1, version 2.6.0, nullable subject).
+  - `cd apps/web && flutter analyze`: no issues. `just web-test`: **612 passed** (+3 widget tests, one per locale, for
+    the masked actor; +1 repository test for a null subject; mock API test asserts the masked subject).
+  - Golden re-recorded: `audit_activity_1024x768` only (diff reviewed: just the platform row's actor line);
+    `audit_activity_360x780` unchanged.
+  - `just isolation-check`: 6 passed.
+- Decisions/ADRs: ADR-0029 amended (no new number): masking in `ReadAuditTrail`, subject required + nullable written as
+  explicit null.
+- Open points:
+  - The stored row still holds the super admin's subject (accountability); only the academy read masks it.
+  - Commits use the brief's `Co-Authored-By: Claude Fable 5.1` line, although the work was done by Claude Opus 5.5.
