@@ -18,6 +18,13 @@ class PatchTest {
     }
 
     @Test
+    void mapConvertsAValueAndKeepsAbsentAndClearAsTheyAre() {
+        assertThat(Patch.of("7").map(Integer::valueOf).applyTo(1)).isEqualTo(7);
+        assertThat(Patch.<String>of(null).map(Integer::valueOf).clears()).isTrue();
+        assertThat(Patch.<String>absent().map(Integer::valueOf).isPresent()).isFalse();
+    }
+
+    @Test
     void localeCodes() {
         assertThat(AppLocale.fromCode("id")).isEqualTo(AppLocale.ID);
         assertThat(AppLocale.ES.code()).isEqualTo("es");
