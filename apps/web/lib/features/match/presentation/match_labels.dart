@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/live_match_controller.dart';
 import '../domain/match_event.dart';
@@ -20,17 +20,22 @@ String statusLabel(AppLocalizations l, gen.MatchStatus s) => switch (s) {
   _ => l.matchStatusScheduled,
 };
 
-Widget statusChip(AppLocalizations l, gen.MatchStatus s) => InfoChip(
+/// The match state as a chip: LIVE is the accent with a dot (ADR-0040).
+Widget statusChip(AppLocalizations l, gen.MatchStatus s) => StatusChip(
   statusLabel(l, s),
   key: Key('status-${s.name}'),
   tone: switch (s) {
-    gen.MatchStatus.LIVE => ChipTone.warn,
-    gen.MatchStatus.FINISHED => ChipTone.good,
-    gen.MatchStatus.CANCELLED => ChipTone.bad,
-    _ => ChipTone.neutral,
+    gen.MatchStatus.LIVE => HoopsTone.accent,
+    gen.MatchStatus.FINISHED => HoopsTone.success,
+    gen.MatchStatus.CANCELLED => HoopsTone.danger,
+    _ => HoopsTone.neutral,
   },
-  icon: s == gen.MatchStatus.LIVE ? Icons.circle : null,
+  dot: s == gen.MatchStatus.LIVE,
 );
+
+/// [base] with tabular figures, so a running clock or a score does not jump.
+TextStyle tabular(TextStyle base) =>
+    base.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 
 String actionLabel(AppLocalizations l, StatAction a) => switch (a) {
   StatAction.twoMade => l.matchAction2ptMade,

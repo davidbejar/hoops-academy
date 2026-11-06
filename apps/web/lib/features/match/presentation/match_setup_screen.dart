@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/live_match_controller.dart';
@@ -18,6 +17,9 @@ import '../../health/presentation/player_health_view.dart'
 import '../data/matches_repository.dart';
 import '../domain/pending_event.dart';
 import '../domain/projector/projector.dart';
+
+/// Room for a two-digit jersey number and its label.
+const _jerseyFieldWidth = HoopsSpace.xxxl + HoopsSpace.md;
 
 class SetupData {
   const SetupData(this.match, this.teamRoster, this.matchRoster);
@@ -166,43 +168,71 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
     final selected = _lines.values.where((e) => e.selected).length;
     final starters = _lines.values.where((e) => e.selected && e.starter).length;
     return Form(
       key: _form,
       child: Column(
         children: [
-          ListTile(
-            title: Text(l.matchSetupHint),
-            subtitle: Text(
-              l.matchSetupSummary(selected, starters),
-              key: const Key('setup-summary'),
-            ),
-          ),
           Expanded(
             child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: HoopsSpace.md),
               children: [
+                ContentFrame(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: HoopsSpace.xs,
+                    children: [
+                      Text(
+                        l.matchSetupHint,
+                        style: text.bodyMedium!.copyWith(color: c.inkMuted),
+                      ),
+                      Text(
+                        l.matchSetupSummary(selected, starters),
+                        key: const Key('setup-summary'),
+                        style: text.titleMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: HoopsSpace.md),
                 for (final p in widget.data.teamRoster)
-                  _row(context, l, p, _lines[p.player.id]!),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: HoopsSpace.sm),
+                    child: ContentFrame(
+                      child: _row(context, l, p, _lines[p.player.id]!),
+                    ),
+                  ),
               ],
             ),
           ),
-          if (_error != null)
-            Text(
-              _error!,
-              key: const Key('setup-error'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
-            child: SizedBox(
-              width: double.infinity,
-              height: AppTokens.minTapTarget,
-              child: FilledButton.icon(
-                key: const Key('setup-save'),
-                onPressed: _busy ? null : _save,
-                icon: const Icon(Icons.check),
-                label: Text(l.save),
+          ContentFrame(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: HoopsSpace.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: HoopsSpace.sm,
+                children: [
+                  if (_error != null)
+                    Text(
+                      _error!,
+                      key: const Key('setup-error'),
+                      style: text.bodyMedium!.copyWith(
+                        color: c.danger.foreground,
+                      ),
+                    ),
+                  SizedBox(
+                    height: HoopsSize.minTapTarget,
+                    child: FilledButton.icon(
+                      key: const Key('setup-save'),
+                      onPressed: _busy ? null : _save,
+                      icon: const Icon(Icons.check),
+                      label: Text(l.save),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -211,63 +241,83 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
     );
   }
 
+  /// One player on a card: plays (checkbox), availability, jersey, starter.
   Widget _row(
     BuildContext context,
     AppLocalizations l,
     api.TeamPlayer p,
     _Line line,
-  ) => Padding(
-    key: Key('setup-${p.player.id}'),
-    padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceSm),
-    child: Row(
-      children: [
-        Checkbox(
-          key: Key('setup-include-${p.player.id}'),
-          value: line.selected,
-          onChanged: (v) => setState(() {
-            line.selected = v ?? false;
-            if (!line.selected) line.starter = false;
-          }),
+  ) {
+    final c = HoopsTokens.colorsOf(context);
+    return DecoratedBox(
+      key: Key('setup-${p.player.id}'),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(HoopsRadius.md),
+        border: Border.all(color: line.selected ? c.borderStrong : c.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          HoopsSpace.xs,
+          HoopsSpace.sm,
+          HoopsSpace.sm,
+          HoopsSpace.sm,
         ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(p.player.displayName, overflow: TextOverflow.ellipsis),
-              // Information only: the coach decides who plays.
-              AvailabilityBadge(playerId: p.player.id),
-            ],
-          ),
-        ),
-        SizedBox(
-          width: 64,
-          child: TextFormField(
-            key: Key('setup-jersey-${p.player.id}'),
-            controller: line.jersey,
-            enabled: line.selected,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l.matchJersey,
-              isDense: true,
+        child: Row(
+          children: [
+            Checkbox(
+              key: Key('setup-include-${p.player.id}'),
+              value: line.selected,
+              onChanged: (v) => setState(() {
+                line.selected = v ?? false;
+                if (!line.selected) line.starter = false;
+              }),
             ),
-            validator: (v) {
-              final t = (v ?? '').trim();
-              return t.isEmpty || RegExp(r'^[0-9]{1,2}$').hasMatch(t)
-                  ? null
-                  : l.fieldRequired;
-            },
-          ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    p.player.displayName,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  // Information only: the coach decides who plays.
+                  AvailabilityBadge(playerId: p.player.id),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: _jerseyFieldWidth,
+              child: TextFormField(
+                key: Key('setup-jersey-${p.player.id}'),
+                controller: line.jersey,
+                enabled: line.selected,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: l.matchJersey,
+                  isDense: true,
+                ),
+                validator: (v) {
+                  final t = (v ?? '').trim();
+                  return t.isEmpty || RegExp(r'^[0-9]{1,2}$').hasMatch(t)
+                      ? null
+                      : l.fieldRequired;
+                },
+              ),
+            ),
+            const SizedBox(width: HoopsSpace.sm),
+            FilterChip(
+              key: Key('setup-starter-${p.player.id}'),
+              label: Text(l.matchStarter),
+              selected: line.starter,
+              onSelected: line.selected
+                  ? (v) => setState(() => line.starter = v)
+                  : null,
+            ),
+          ],
         ),
-        const SizedBox(width: AppTokens.spaceSm),
-        FilterChip(
-          key: Key('setup-starter-${p.player.id}'),
-          label: Text(l.matchStarter),
-          selected: line.starter,
-          onSelected: line.selected
-              ? (v) => setState(() => line.starter = v)
-              : null,
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }

@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../app/theme.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/live_match_controller.dart';
 import '../domain/projector/projection.dart';
 import 'match_labels.dart';
+
+/// Narrowest team total tile: two in a row on a phone, four from tablets.
+const _teamTileMinWidth = 120.0;
+
+/// Height of the table's rows.
+const _rowHeight = HoopsSize.minTapTarget - HoopsSpace.sm;
 
 /// Live / final box score from the local projection (same rules as the
 /// server). PARENT sees linked players' lines only, like `GET box-score`;
@@ -18,7 +24,9 @@ class BoxScoreView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
+    final gutter = WidthClass.of(context).gutter;
     final p = live.projection;
     final periodScores = live.team.periodScores;
     final totals = live.team.teamTotals;
@@ -44,98 +52,115 @@ class BoxScoreView extends StatelessWidget {
     ];
     return ListView(
       key: const Key('box-score'),
-      padding: const EdgeInsets.all(AppTokens.spaceMd),
+      padding: EdgeInsets.symmetric(
+        horizontal: gutter,
+        vertical: HoopsSpace.md,
+      ),
       children: [
         if (periodScores != null) ...[
-          Text(l.matchPeriodScores, style: theme.textTheme.titleSmall),
-          const SizedBox(height: AppTokens.spaceXs),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final s in periodScores)
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppTokens.spaceMd),
-                    child: Column(
+          SectionCard(
+            title: l.matchPeriodScores,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                spacing: HoopsSpace.lg,
+                children: [
+                  for (final s in periodScores)
+                    Column(
                       children: [
                         Text(
                           periodLabel(l, s.period, live.rules.periodCount),
-                          style: theme.textTheme.labelSmall,
+                          style: text.labelMedium!.copyWith(color: c.inkMuted),
                         ),
                         Text(
                           '${s.team}–${s.opponent}',
                           key: Key('period-score-${s.period}'),
+                          style: tabular(text.titleMedium!),
                         ),
                       ],
                     ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: HoopsSpace.gap),
+        ],
+        SectionCard(
+          title: l.matchTabBox,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columnSpacing: HoopsSpace.md,
+              horizontalMargin: HoopsSpace.sm,
+              headingRowHeight: _rowHeight,
+              dataRowMinHeight: _rowHeight,
+              dataRowMaxHeight: _rowHeight,
+              columns: [
+                DataColumn(label: Text(l.navPlayers)),
+                for (final col in cols)
+                  DataColumn(label: Text(col), numeric: true),
+              ],
+              rows: [
+                for (final line in lines)
+                  DataRow(
+                    key: ValueKey('box-${line.playerId}'),
+                    cells: [
+                      DataCell(
+                        Text(_name(line), overflow: TextOverflow.ellipsis),
+                      ),
+                      for (final v in _values(line.stats))
+                        DataCell(Text(v, style: tabular(text.bodyMedium!))),
+                    ],
+                  ),
+                if (totals != null)
+                  DataRow(
+                    key: const ValueKey('box-totals'),
+                    color: WidgetStatePropertyAll(c.surfaceMuted),
+                    cells: [
+                      DataCell(Text(l.matchTotals, style: text.titleSmall)),
+                      for (final v in _values(totals))
+                        DataCell(Text(v, style: tabular(text.titleSmall!))),
+                    ],
                   ),
               ],
             ),
-          ),
-          const SizedBox(height: AppTokens.spaceMd),
-        ],
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columnSpacing: AppTokens.spaceMd,
-            horizontalMargin: 0,
-            headingRowHeight: 36,
-            dataRowMinHeight: 36,
-            dataRowMaxHeight: 40,
-            columns: [
-              DataColumn(label: Text(l.navPlayers)),
-              for (final c in cols) DataColumn(label: Text(c), numeric: true),
-            ],
-            rows: [
-              for (final line in lines)
-                DataRow(
-                  key: ValueKey('box-${line.playerId}'),
-                  cells: [
-                    DataCell(
-                      Text(_name(line), overflow: TextOverflow.ellipsis),
-                    ),
-                    for (final v in _values(line.stats)) DataCell(Text(v)),
-                  ],
-                ),
-              if (totals != null)
-                DataRow(
-                  key: const ValueKey('box-totals'),
-                  cells: [
-                    DataCell(
-                      Text(
-                        l.matchTotals,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    for (final v in _values(totals))
-                      DataCell(
-                        Text(
-                          v,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                  ],
-                ),
-            ],
           ),
         ),
-        if (warnings > 0 && live.rights.canRunMatch)
-          Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceMd),
-            child: Row(
-              children: [
-                Icon(Icons.warning_amber, color: theme.colorScheme.tertiary),
-                const SizedBox(width: AppTokens.spaceSm),
-                Expanded(
-                  child: Text(
-                    l.matchWarnings(warnings),
-                    key: const Key('box-warnings'),
-                  ),
-                ),
-              ],
-            ),
+        if (totals != null) ...[
+          const SizedBox(height: HoopsSpace.gap),
+          ResponsiveGrid(
+            key: const Key('box-team-tiles'),
+            minTileWidth: _teamTileMinWidth,
+            spacing: HoopsSpace.sm,
+            children: [
+              StatTile(label: l.matchColPts, value: '${totals.points}'),
+              StatTile(label: l.matchColReb, value: '${totals.rebounds}'),
+              StatTile(label: l.matchColAst, value: '${totals.assists}'),
+              StatTile(
+                label: l.matchColTov,
+                value: '${totals.turnovers}',
+                tone: HoopsTone.neutral,
+              ),
+            ],
           ),
-        const SizedBox(height: AppTokens.spaceMd),
+        ],
+        if (warnings > 0 && live.rights.canRunMatch) ...[
+          const SizedBox(height: HoopsSpace.gap),
+          Row(
+            children: [
+              Icon(Icons.warning_amber, color: c.warning.foreground),
+              const SizedBox(width: HoopsSpace.sm),
+              Expanded(
+                child: Text(
+                  l.matchWarnings(warnings),
+                  key: const Key('box-warnings'),
+                  style: text.bodyMedium!.copyWith(color: c.warning.foreground),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: HoopsSpace.md),
         Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(

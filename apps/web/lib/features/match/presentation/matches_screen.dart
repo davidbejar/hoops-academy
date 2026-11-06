@@ -4,20 +4,21 @@ import 'package:go_router/go_router.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import 'package:intl/intl.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
-import '../../../core/ui/timezone_note.dart';
+import '../../../core/ui/date_field.dart';
+import '../../../core/ui/kit.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/match_providers.dart';
 import 'match_labels.dart';
 import 'sync_banner.dart';
+
+/// Room under the last row so the extended FAB never covers it.
+const _fabClearance = HoopsSpace.xxxl + HoopsSpace.lg;
 
 /// Matches of the caller's teams (deferred module behind the Matches tab).
 class MatchesScreen extends ConsumerWidget {
@@ -29,6 +30,8 @@ class MatchesScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final caps = ref.watch(capabilitiesProvider);
     final list = ref.watch(matchListProvider);
+    final zone = ref.watch(tenantZoneProvider).label;
+    final width = WidthClass.of(context);
     return Scaffold(
       floatingActionButton: caps.canCreateMatches
           ? FloatingActionButton.extended(
@@ -44,39 +47,54 @@ class MatchesScreen extends ConsumerWidget {
       body: Column(
         children: [
           const SyncBanner(),
-          const TimezoneNote(),
-          if (caps.canSeeModule) const _TeamFilter(),
-          if (list.value?.fromCache ?? false)
-            Padding(
-              padding: const EdgeInsets.all(AppTokens.spaceSm),
-              child: InfoChip(
-                l.matchCachedData,
-                key: const Key('match-list-cached'),
-                icon: Icons.cloud_off,
+          Padding(
+            padding: EdgeInsets.only(top: width.sectionGap),
+            child: ContentFrame(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PageHeader(
+                    title: l.navMatches,
+                    subtitle: zone == null ? null : l.timesShownIn(zone),
+                  ),
+                  if (caps.canSeeModule) ...[
+                    const SizedBox(height: HoopsSpace.md),
+                    const _TeamFilter(),
+                  ],
+                  if (list.value?.fromCache ?? false) ...[
+                    const SizedBox(height: HoopsSpace.gap),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: StatusChip(
+                        l.matchCachedData,
+                        key: const Key('match-list-cached'),
+                        tone: HoopsTone.warning,
+                        icon: Icons.cloud_off,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
+          ),
           Expanded(
             child: AsyncBody<MatchList>(
               value: list,
               onRetry: () => ref.invalidate(matchListProvider),
               isEmpty: (d) => d.matches.isEmpty,
               emptyMessage: l.matchListEmpty,
-              builder: (context, data) => Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: AppTokens.maxContentWidth,
+              builder: (context, data) => RefreshIndicator(
+                onRefresh: () => ref.refresh(matchListProvider.future),
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(
+                    top: HoopsSpace.md,
+                    bottom: _fabClearance,
                   ),
-                  child: RefreshIndicator(
-                    onRefresh: () => ref.refresh(matchListProvider.future),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.only(bottom: 88),
-                      itemCount: data.matches.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, i) =>
-                          MatchTile(match: data.matches[i]),
-                    ),
-                  ),
+                  itemCount: data.matches.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: HoopsSpace.gap),
+                  itemBuilder: (context, i) =>
+                      ContentFrame(child: MatchTile(match: data.matches[i])),
                 ),
               ),
             ),
@@ -95,29 +113,23 @@ class _TeamFilter extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final teams = ref.watch(teamsProvider).value ?? const <api.Team>[];
     final selected = ref.watch(matchTeamFilterProvider);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppTokens.spaceMd,
-        AppTokens.spaceMd,
-        AppTokens.spaceMd,
-        0,
-      ),
-      child: DropdownButtonFormField<String?>(
-        key: const Key('match-team-filter'),
-        initialValue: teams.any((t) => t.id == selected) ? selected : null,
-        isExpanded: true,
-        decoration: InputDecoration(labelText: l.matchTeam),
-        items: [
-          DropdownMenuItem<String?>(child: Text(l.matchAllTeams)),
-          for (final t in teams)
-            DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
-        ],
-        onChanged: (v) => ref.read(matchTeamFilterProvider.notifier).select(v),
-      ),
+    return DropdownButtonFormField<String?>(
+      key: const Key('match-team-filter'),
+      initialValue: teams.any((t) => t.id == selected) ? selected : null,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l.matchTeam),
+      items: [
+        DropdownMenuItem<String?>(child: Text(l.matchAllTeams)),
+        for (final t in teams)
+          DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
+      ],
+      onChanged: (v) => ref.read(matchTeamFilterProvider.notifier).select(v),
     );
   }
 }
 
+/// One match on its card: opponent, kick-off (academy zone), home / away,
+/// the state chip and, once played, the score.
 class MatchTile extends ConsumerWidget {
   const MatchTile({super.key, required this.match});
   final gen.Match match;
@@ -125,6 +137,7 @@ class MatchTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final text = Theme.of(context).textTheme;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final when = DateFormat.yMMMd(locale)
         .add_Hm()
@@ -132,24 +145,32 @@ class MatchTile extends ConsumerWidget {
     final played =
         match.status == gen.MatchStatus.LIVE ||
         match.status == gen.MatchStatus.FINISHED;
-    return ListTile(
+    return ListRow(
       key: Key('match-${match.id}'),
-      minVerticalPadding: AppTokens.spaceSm,
-      leading: const CircleAvatar(child: Icon(Icons.sports_basketball)),
-      title: Text(l.matchVs(match.opponentName)),
-      subtitle: Text(
-        '$when · ${match.homeAway == gen.HomeAway.AWAY ? l.matchAway : l.matchHome}',
-      ),
+      // Phones give the opponent and the kick-off the whole width.
+      leading: WidthClass.of(context).isCompact
+          ? null
+          : InitialsAvatar(
+              name: match.opponentName,
+              tone: match.status == gen.MatchStatus.LIVE
+                  ? HoopsTone.accent
+                  : HoopsTone.neutral,
+            ),
+      title: l.matchVs(match.opponentName),
+      subtitle:
+          '$when · ${match.homeAway == gen.HomeAway.AWAY ? l.matchAway : l.matchHome}',
       trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           statusChip(l, match.status),
-          if (played)
+          if (played) ...[
+            const SizedBox(height: HoopsSpace.xs),
             Text(
               '${match.score.team} – ${match.score.opponent}',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: tabular(text.titleMedium!),
             ),
+          ],
         ],
       ),
       onTap: () => context.go('/matches/${match.id}'),
@@ -170,10 +191,10 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
   final _opponent = TextEditingController();
   String? _teamId;
   gen.HomeAway _homeAway = gen.HomeAway.HOME;
-  late DateTime _date = ref
+  late final DateTime _today = ref
       .read(tenantZoneProvider)
-      .today(DateTime.now())
-      .add(const Duration(days: 1));
+      .today(DateTime.now());
+  late DateTime _date = _today.add(const Duration(days: 1));
 
   @override
   void dispose() {
@@ -220,12 +241,14 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
           validator: (v) => v == null ? l.fieldRequired : null,
           onChanged: (v) => setState(() => _teamId = v),
         ),
+        formGap,
         TextFormField(
           key: const Key('match-new-opponent'),
           controller: _opponent,
           decoration: InputDecoration(labelText: l.matchOpponent),
-          validator: (v) => (v ?? '').trim().isEmpty ? l.fieldRequired : null,
+          validator: (v) => requiredValidator(l, v),
         ),
+        formGap,
         SegmentedButton<gen.HomeAway>(
           segments: [
             ButtonSegment(value: gen.HomeAway.HOME, label: Text(l.matchHome)),
@@ -234,28 +257,15 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
           selected: {_homeAway},
           onSelectionChanged: (s) => setState(() => _homeAway = s.single),
         ),
-        ListTile(
+        formGap,
+        DateField(
           key: const Key('match-new-date'),
-          contentPadding: EdgeInsets.zero,
-          title: Text(l.matchDate),
-          subtitle: Text(
-            DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag())
-                .format(_date),
-          ),
-          trailing: const Icon(Icons.calendar_today),
-          onTap: () async {
-            final today = ref.read(tenantZoneProvider).today(DateTime.now());
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: _date,
-              firstDate: today.subtract(const Duration(days: 365)),
-              lastDate: today.add(const Duration(days: 365)),
-            );
-            if (picked != null)
-              setState(
-                () => _date = DateTime(picked.year, picked.month, picked.day),
-              );
-          },
+          label: l.matchDate,
+          value: _date,
+          firstDate: _today.subtract(const Duration(days: 365)),
+          lastDate: _today.add(const Duration(days: 365)),
+          onChanged: (d) =>
+              setState(() => _date = DateTime(d.year, d.month, d.day)),
         ),
       ],
     );

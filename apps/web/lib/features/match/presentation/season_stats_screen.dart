@@ -4,16 +4,18 @@ import 'package:go_router/go_router.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import 'package:intl/intl.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
 import '../../roster/application/roster_providers.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/match_providers.dart';
 import 'match_labels.dart';
+
+/// Narrowest average tile: two in a row on a phone, four from tablets.
+const _averageTileMinWidth = 140.0;
 
 /// `GET /players/{id}/season-stats?seasonId=` for (player, season).
 final seasonStatsProvider =
@@ -48,22 +50,19 @@ class _SeasonStatsScreenState extends ConsumerState<SeasonStatsScreen> {
         children: [
           if (seasons.length > 1)
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppTokens.spaceMd,
-                AppTokens.spaceMd,
-                AppTokens.spaceMd,
-                0,
-              ),
-              child: DropdownButtonFormField<String>(
-                key: const Key('stats-season'),
-                initialValue: seasonId,
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l.seasonStatsSeason),
-                items: [
-                  for (final s in seasons)
-                    DropdownMenuItem(value: s.id, child: Text(s.name)),
-                ],
-                onChanged: (v) => setState(() => _seasonId = v),
+              padding: const EdgeInsets.only(top: HoopsSpace.md),
+              child: ContentFrame(
+                child: DropdownButtonFormField<String>(
+                  key: const Key('stats-season'),
+                  initialValue: seasonId,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: l.seasonStatsSeason),
+                  items: [
+                    for (final s in seasons)
+                      DropdownMenuItem(value: s.id, child: Text(s.name)),
+                  ],
+                  onChanged: (v) => setState(() => _seasonId = v),
+                ),
               ),
             ),
           Expanded(
@@ -98,75 +97,87 @@ class _StatsBody extends ConsumerWidget {
       isEmpty: (s) => s.gamesPlayed == 0 && s.matches.isEmpty,
       emptyMessage: l.seasonStatsEmpty,
       builder: (context, s) {
-        final theme = Theme.of(context);
+        final text = Theme.of(context).textTheme;
         final locale = Localizations.localeOf(context).toLanguageTag();
         final avg = NumberFormat('0.0', locale);
         final t = s.totals;
-        return ListView(
+        final zone = ref.watch(tenantZoneProvider);
+        return PageBody(
           key: const Key('season-stats'),
-          padding: const EdgeInsets.all(AppTokens.spaceMd),
-          children: [
-            Text(
-              l.seasonStatsGames(s.gamesPlayed, s.gamesStarted),
+          // Full width, so the heading starts at the frame's edge.
+          header: SizedBox(
+            width: double.infinity,
+            child: PageHeader(
               key: const Key('stats-games'),
-              style: theme.textTheme.titleMedium,
+              title: l.seasonStatsGames(s.gamesPlayed, s.gamesStarted),
             ),
-            const SizedBox(height: AppTokens.spaceMd),
-            Text(l.seasonStatsAverages, style: theme.textTheme.titleSmall),
-            const SizedBox(height: AppTokens.spaceXs),
-            Wrap(
-              spacing: AppTokens.spaceSm,
-              runSpacing: AppTokens.spaceSm,
-              children: [
-                _Metric(
-                  key: const Key('avg-points'),
-                  label: l.seasonStatsPoints,
-                  value: avg.format(s.averages.points),
-                ),
-                _Metric(
-                  label: l.seasonStatsRebounds,
-                  value: avg.format(s.averages.rebounds),
-                ),
-                _Metric(
-                  label: l.seasonStatsAssists,
-                  value: avg.format(s.averages.assists),
-                ),
-                _Metric(
-                  label: l.seasonStatsMinutes,
-                  value: avg.format(s.averages.minutesPlayed),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTokens.spaceMd),
-            Text(l.seasonStatsTotals, style: theme.textTheme.titleSmall),
-            Text(
-              '${t.points} ${l.matchColPts} · ${t.offensiveRebounds + t.defensiveRebounds} ${l.matchColReb} · '
-              '${t.assists} ${l.matchColAst} · ${t.steals} ${l.matchColStl} · ${t.blocks} ${l.matchColBlk} · '
-              '${t.turnovers} ${l.matchColTov} · ${t.personalFouls} ${l.matchColPf}',
-              key: const Key('stats-totals'),
-            ),
-            const SizedBox(height: AppTokens.spaceMd),
-            Text(l.seasonStatsMatches, style: theme.textTheme.titleSmall),
-            for (final m in s.matches)
-              ListTile(
-                key: Key('stats-match-${m.matchId}'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.matchVs(m.opponentName)),
-                subtitle: Text(
-                  DateFormat.yMMMd(
-                    locale,
-                  ).format(ref.watch(tenantZoneProvider).wall(m.scheduledAt)),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('${m.stats.points} ${l.matchColPts}'),
-                    const SizedBox(width: AppTokens.spaceSm),
-                    statusChip(l, m.status),
-                  ],
-                ),
-                onTap: () => context.go('/matches/${m.matchId}'),
+          ),
+          children: [
+            _Section(
+              title: l.seasonStatsAverages,
+              child: ResponsiveGrid(
+                minTileWidth: _averageTileMinWidth,
+                children: [
+                  StatTile(
+                    key: const Key('avg-points'),
+                    label: l.seasonStatsPoints,
+                    value: avg.format(s.averages.points),
+                  ),
+                  StatTile(
+                    label: l.seasonStatsRebounds,
+                    value: avg.format(s.averages.rebounds),
+                  ),
+                  StatTile(
+                    label: l.seasonStatsAssists,
+                    value: avg.format(s.averages.assists),
+                  ),
+                  StatTile(
+                    label: l.seasonStatsMinutes,
+                    value: avg.format(s.averages.minutesPlayed),
+                    tone: HoopsTone.neutral,
+                  ),
+                ],
               ),
+            ),
+            _Section(
+              title: l.seasonStatsMatches,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: HoopsSpace.gap,
+                children: [
+                  for (final m in s.matches)
+                    ListRow(
+                      key: Key('stats-match-${m.matchId}'),
+                      title: l.matchVs(m.opponentName),
+                      subtitle: DateFormat.yMMMd(locale)
+                          .format(zone.wall(m.scheduledAt)),
+                      trailing: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        spacing: HoopsSpace.xs,
+                        children: [
+                          statusChip(l, m.status),
+                          Text(
+                            '${m.stats.points} ${l.matchColPts}',
+                            style: tabular(text.titleSmall!),
+                          ),
+                        ],
+                      ),
+                      onTap: () => context.go('/matches/${m.matchId}'),
+                    ),
+                ],
+              ),
+            ),
+            SectionCard(
+              title: l.seasonStatsTotals,
+              child: Text(
+                '${t.points} ${l.matchColPts} · ${t.offensiveRebounds + t.defensiveRebounds} ${l.matchColReb} · '
+                '${t.assists} ${l.matchColAst} · ${t.steals} ${l.matchColStl} · ${t.blocks} ${l.matchColBlk} · '
+                '${t.turnovers} ${l.matchColTov} · ${t.personalFouls} ${l.matchColPf}',
+                key: const Key('stats-totals'),
+                style: tabular(text.bodyLarge!),
+              ),
+            ),
           ],
         );
       },
@@ -174,28 +185,22 @@ class _StatsBody extends ConsumerWidget {
   }
 }
 
-class _Metric extends StatelessWidget {
-  const _Metric({super.key, required this.label, required this.value});
-  final String label;
-  final String value;
+/// A titled block of the page whose content brings its own cards.
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child});
+  final String title;
+  final Widget child;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: 96,
-    padding: const EdgeInsets.all(AppTokens.spaceSm),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(AppTokens.radiusSm),
-    ),
-    child: Column(
-      children: [
-        Text(value, style: Theme.of(context).textTheme.headlineSmall),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall,
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    spacing: HoopsSpace.gap,
+    children: [
+      Semantics(
+        header: true,
+        child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+      ),
+      child,
+    ],
   );
 }
