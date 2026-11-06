@@ -1,0 +1,7 @@
+# Cluster properties Redpanda applies when the local broker bootstraps (first start on an empty redpanda-data volume;
+# later changes: `podman exec hoops-redpanda rpk cluster config set <key> <value>`). ADR-0036.
+# Topics are created explicitly (`just events-topics`), never by a producer's first write.
+auto_create_topics_enabled: false
+# No usage reports to Redpanda from a developer machine.
+enable_metrics_reporter: false
+default_topic_replications: 1

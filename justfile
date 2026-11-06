@@ -39,9 +39,14 @@ mutation MODULE="all":
       echo "mutation $module: $((SECONDS - start)) s"
     done
 
-# Start the local stack (Postgres, Keycloak, proxy, mail)
+# Start the local stack (Postgres, Keycloak, proxy, mail, Redpanda + its topics)
 up:
     podman compose --env-file .env -f infra/compose/compose.yaml up -d --wait
+    just events-topics
+
+# Event topics on the local Redpanda (idempotent; ADR-0036). `just up` runs it.
+events-topics:
+    infra/compose/redpanda-topics.sh
 
 down:
     podman compose --env-file .env -f infra/compose/compose.yaml down

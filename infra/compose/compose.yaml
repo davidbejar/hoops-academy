@@ -86,6 +86,44 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # Event broker (WP66, ADR-0036): single Redpanda node in dev-container mode, no auth (local only; kind and the chart
+  # use SASL/SCRAM + ACLs). Same image pin as the chart (events.redpanda.image) and the Quarkus Dev Services
+  # (libs/common-quarkus); deploy/helm/tests/run.sh fails when they differ. Topics: `just events-topics` (run by `just up`).
+  # Kafka API: localhost:19092 for the services in quarkus:dev on the host, redpanda:9092 inside the compose network.
+  redpanda:
+    image: docker.io/redpandadata/redpanda:v26.2.6@sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce
+    container_name: hoops-redpanda
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --default-log-level=warn
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda:33145
+    environment:
+      HOME: /tmp
+    ports:
+      - "127.0.0.1:19092:19092"
+      - "127.0.0.1:19644:9644"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+      # Cluster properties at bootstrap: no topic auto-creation, no metrics reporter.
+      - ./redpanda-bootstrap.yaml:/etc/redpanda/.bootstrap.yaml:ro
+    mem_limit: 1g
+    cpus: 1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9644/v1/status/ready >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+
   nginx:
     image: docker.io/library/nginx:1.30-alpine
     container_name: hoops-nginx
@@ -113,3 +151,4 @@ services:
 
 volumes:
   pgdata:
+  redpanda-data:

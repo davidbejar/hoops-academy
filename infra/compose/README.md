@@ -1,7 +1,8 @@
 # Local stack (compose)
 
 Services: `postgres` (17, db `hoops` + db `keycloak`), `keycloak` (26.8.1, `start-dev --import-realm`),
-`mailhog` (SMTP 1025, UI 8025), `nginx` (:8080, the only public entry point). Container names: `hoops-<service>`.
+`mailhog` (SMTP 1025, UI 8025), `nginx` (:8080, the only public entry point), `redpanda` (event broker, WP66, Kafka API
+`localhost:19092`, admin API `localhost:19644`, no auth). Container names: `hoops-<service>`.
 
 ```
 cp .env.example .env     # then replace every change-me-* value (git-ignored)
@@ -14,6 +15,9 @@ just down                             # stop; add `-v` via podman compose to als
 - `compose.yaml` – stack definition. Reads secrets from `.env` (`--env-file .env`); missing vars fail fast.
 - `nginx.conf` – `/auth/`→Keycloak, `/api/{core,game,athlete}/`→host ports 8081/8082/8083 via
   `host.containers.internal`, `/internal/`→403, `/`→`web-placeholder/` (until the Flutter app, WP11).
+- `redpanda-bootstrap.yaml` – cluster properties at the broker's first start (no topic auto-creation, no metrics reporter).
+- `redpanda-topics.sh` – the seven event topics (`just events-topics`, run by `just up`; idempotent). ADR-0036,
+  `docs/runbooks/events.md`.
 - `postgres-keycloak-init.sh` – compose-only: creates db/role `keycloak` (kept out of `infra/db/init`, which is
   shared with Testcontainers/CNPG).
 - `../db/init/*` – roles, schemas, RLS helpers, passwords (see `infra/db/README.md`).
