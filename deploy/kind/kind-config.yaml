@@ -17,3 +17,17 @@ nodes:
         hostPort: 8453
         listenAddress: "127.0.0.1"
         protocol: TCP
+    # WP87: one control plane, so no leader election. With it, kube-controller-manager and kube-scheduler exit when they
+    # cannot renew their lease within 10 s, which a starved Podman VM (load 30-60 from parallel builds) causes every few
+    # minutes, and every restart stalls the deploy (CNPG webhook unreachable, pods unscheduled).
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        controllerManager:
+          extraArgs:
+            - name: leader-elect
+              value: "false"
+        scheduler:
+          extraArgs:
+            - name: leader-elect
+              value: "false"
