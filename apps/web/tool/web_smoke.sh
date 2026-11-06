@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Browser smoke of the Flutter app (WP18): runs integration_test/journey_smoke_test.dart in Chrome with `flutter drive`.
 #
-#   tool/web_smoke.sh                 # mock mode: login -> academy -> live match -> event -> sync -> training week -> platform console (no backend needed)
+#   tool/web_smoke.sh                 # mock mode: landing -> login -> academy -> live match -> event -> sync -> training week -> platform console (no backend needed)
 #   tool/web_smoke.sh --real          # real mode: boots against http://localhost:5173 + the compose Keycloak (stack up)
 #   tool/web_smoke.sh --compile-only  # no chromedriver needed: proves the test + app compile for the web
 #

@@ -4,7 +4,8 @@
 Covers the part `integration_test/login_smoke_test.dart` cannot reach (the Keycloak form is another page), with
 headless Chrome driven over the W3C WebDriver HTTP protocol (stdlib only, no Node, no selenium):
 
-  1. open the app, enable Flutter's semantics tree and tap the sign-in button,
+  1. open the app, enable Flutter's semantics tree and tap sign-in: on the landing page (WP70), then on the login
+     screen, until the Keycloak form is reached,
   2. fill the Keycloak form (user, password from DEV_USER_PASSWORD in the repo .env; never printed),
   2b. with --set-new-password, a first sign-in with a temporary password (ADR-0024): require Keycloak's branded
      "update password" page and set the new password from HOOPS_E2E_NEW_PASSWORD (never printed),
@@ -156,6 +157,7 @@ return [...document.querySelectorAll('[role="button"]')].some(el =>
 """
 
 
+HAS_KC_FORM = "return !!document.getElementById('kc-login')"
 HAS_HOOPS_THEME = ("return [...document.querySelectorAll('link[rel=stylesheet]')]"
                    ".some(l => l.href.includes('/login/hoops/css/hoops.css'))")
 HAS_UPDATE_PASSWORD = "return !!document.getElementById('password-new')"
@@ -194,11 +196,19 @@ def main():
 
         print(f"1/5 open {opts.app} and tap sign-in (boot timeout {opts.boot_timeout}s)")
         wd.get(opts.app)
-        wait_for("sign-in button in the semantics tree",
-                 lambda: wd.js(CLICK_SIGN_IN, list(SIGN_IN_LABELS)) == "clicked", opts.boot_timeout, 2)
+
+        def towards_keycloak():
+            # The anonymous root is the landing page (WP70): its sign-in opens the login screen, whose sign-in
+            # starts the redirect. Tap whichever is shown until the Keycloak form is there.
+            if wd.js(HAS_KC_FORM):
+                return True
+            wd.js(CLICK_SIGN_IN, list(SIGN_IN_LABELS))
+            return False
+
+        wait_for("sign-in (landing, then login screen) leading to Keycloak", towards_keycloak, opts.boot_timeout, 2)
 
         print("2/5 Keycloak login form")
-        wait_for("Keycloak form", lambda: wd.js("return !!document.getElementById('kc-login')"), 60)
+        wait_for("Keycloak form", lambda: wd.js(HAS_KC_FORM), 60)
         print(f"    at {wd.url().split('?')[0]}")
         if not wd.js(HAS_HOOPS_THEME):
             print("FAIL: Keycloak serves its stock login page, not the branded `hoops` theme (ADR-0022)")

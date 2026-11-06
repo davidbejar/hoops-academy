@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoops_app/features/landing/presentation/widgets/device_frame.dart';
 
 import '../../tool/sw_manifest.dart';
 
@@ -98,6 +99,19 @@ void main() {
         '.last_build_id',
       ]) {
         expect(files, isNot(contains(unwanted)), reason: unwanted);
+      }
+    });
+
+    test('precaches the landing page screenshots (WP70)', () {
+      // Flutter serves a pubspec asset `assets/x` at `assets/assets/x`.
+      for (final shot in LandingShot.values) {
+        File('${build.path}/assets/${shot.asset}')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('png');
+      }
+      final files = collectPrecache(build);
+      for (final shot in LandingShot.values) {
+        expect(files, contains('assets/${shot.asset}'));
       }
     });
 

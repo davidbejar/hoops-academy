@@ -1,4 +1,4 @@
-// WP18 browser smoke: login -> academy -> matches -> open the live match -> enter one event -> it syncs.
+// WP18 browser smoke: landing (WP70) -> login -> academy -> matches -> open the live match -> enter one event -> it syncs.
 //
 //   # mock mode (in-memory core + game API, nothing else needed) - needs chromedriver, see tool/web_smoke.sh
 //   flutter drive --driver=test_driver/integration_test.dart \
@@ -96,6 +96,12 @@ void main() {
       await app.main();
       await tester.pumpAndSettle();
 
+      // the anonymous root is the landing page (WP70); its sign-in leads to the login screen
+      expect(find.byKey(const Key('landing-hero')), findsOneWidget);
+      expect(find.byKey(const Key('landing-header-sign-in')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('landing-header-sign-in')));
+      await tester.pumpAndSettle();
+
       // login (the mock OIDC port signs in without leaving the page)
       await tester.tap(find.byKey(const Key('login-button')));
       await tester.pumpAndSettle();
@@ -177,9 +183,12 @@ void main() {
   );
 
   testWidgets(
-    'real mode: boots against the real origin and shows the login screen without the mock banner',
+    'real mode: boots against the real origin to the landing; sign in shows the login screen without the mock banner',
     (tester) async {
       await app.main();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('landing-hero')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('landing-header-sign-in')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('login-button')), findsOneWidget);
       expect(find.byKey(const Key('mock-banner')), findsNothing);

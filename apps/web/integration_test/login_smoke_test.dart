@@ -22,10 +22,15 @@ const _mock = bool.fromEnvironment('HOOPS_MOCK_API');
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('boots to the login screen', (tester) async {
+  testWidgets('boots to the landing; its sign-in shows the login screen', (
+    tester,
+  ) async {
     await app.main();
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const Key('landing-hero')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('landing-header-sign-in')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('login-button')), findsOneWidget);
   });
 
@@ -35,6 +40,8 @@ void main() {
     await app.main();
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byKey(const Key('landing-header-sign-in')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('login-button')));
     await tester.pumpAndSettle();
 
