@@ -62,6 +62,9 @@ public class ManageAssignments {
         if (plan.archived()) {
             throw new DomainRuleViolation("An archived plan cannot be assigned", "PLAN_ARCHIVED");
         }
+        if (plan.session().isPresent()) {
+            throw new DomainRuleViolation("The plan of a session cannot be assigned; copy it first", "PLAN_OF_A_SESSION");
+        }
         access.requireMayAssign(caller, assignment);
         assignments.save(assignment);
         return new AssignmentView(assignment, plan);

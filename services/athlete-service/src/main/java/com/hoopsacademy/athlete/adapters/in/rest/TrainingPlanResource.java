@@ -2,6 +2,7 @@ package com.hoopsacademy.athlete.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.athlete.application.ManagePlans;
+import com.hoopsacademy.athlete.application.QuickAddItems;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItemId;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
@@ -48,11 +49,13 @@ public class TrainingPlanResource {
     private static final String ACCEPT_LANGUAGE = "Accept-Language";
 
     private final ManagePlans plans;
+    private final QuickAddItems quickAdd;
     private final TenantContext tenant;
     private final CallerActor actors;
 
-    TrainingPlanResource(ManagePlans plans, TenantContext tenant, CallerActor actors) {
+    TrainingPlanResource(ManagePlans plans, QuickAddItems quickAdd, TenantContext tenant, CallerActor actors) {
         this.plans = plans;
+        this.quickAdd = quickAdd;
         this.tenant = tenant;
         this.actors = actors;
     }
@@ -136,6 +139,15 @@ public class TrainingPlanResource {
     public List<PlanDtos.Item> reorder(@PathParam("planId") UUID planId, @Valid @NotNull PlanDtos.ReorderRequest request) {
         var order = request.itemIds().stream().map(PlanItemId::new).toList();
         return plans.reorder(caller(), new PlanId(planId), order).stream().map(PlanDtos.Item::from).toList();
+    }
+
+    /** Quick-add (athlete 2.3.0, ADR-0041): copies items of readable plans to the end of this tenant plan. */
+    @POST
+    @Path("/{planId}/items:copy")
+    public PlanDtos.Plan copyItems(@PathParam("planId") UUID planId, @Valid @NotNull PlanDtos.CopyItemsRequest request,
+            @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
+        return PlanDtos.Plan.from(quickAdd.toPlan(caller(), new PlanId(planId), request.refs(),
+                AcceptLanguage.negotiate(acceptLanguage)));
     }
 
     @PATCH

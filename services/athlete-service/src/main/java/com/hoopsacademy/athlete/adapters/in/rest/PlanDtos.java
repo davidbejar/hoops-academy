@@ -1,7 +1,12 @@
 package com.hoopsacademy.athlete.adapters.in.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.hoopsacademy.athlete.application.ManagePlans;
+import com.hoopsacademy.athlete.application.QuickAddItems;
+import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItem;
+import com.hoopsacademy.athlete.domain.PlanItemId;
+import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.TrainingPlan;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -33,6 +38,23 @@ final class PlanDtos {
 
     record ReorderRequest(@NotNull @NotEmpty List<@NotNull UUID> itemIds) {}
 
+    record ItemRef(@NotNull UUID planId, @NotNull UUID itemId) {
+
+        QuickAddItems.ItemRef toRef() {
+            return new QuickAddItems.ItemRef(new PlanId(planId), new PlanItemId(itemId));
+        }
+    }
+
+    /** Quick-add (athlete 2.3.0): 1 to 50 items of readable plans, copied in this order. */
+    record CopyItemsRequest(@NotNull @Size(min = 1, max = 50) List<@Valid @NotNull ItemRef> items) {
+
+        List<QuickAddItems.ItemRef> refs() {
+            return items.stream().map(ItemRef::toRef).toList();
+        }
+    }
+
+    record ItemMatch(UUID id, UUID planId, String title) {}
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Item(UUID id, int position, String title, String description, Integer durationMinutes, Integer sets,
             Integer repetitions, String videoUrl) {
@@ -43,25 +65,36 @@ final class PlanDtos {
         }
     }
 
+    /** {@code matchedItems} is null (absent) unless a search matched item titles. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Summary(UUID id, String name, String nameKey, String description, boolean template, UUID sourceTemplateId,
-            int itemCount, int totalDurationMinutes, boolean archived) {
+            int itemCount, int totalDurationMinutes, boolean archived, UUID sessionId, List<ItemMatch> matchedItems) {
 
         static Summary from(TrainingPlan p) {
             return new Summary(p.id().value(), p.name(), p.nameKey().orElse(null), p.description(), p.template(),
                     p.sourcePlanId().map(id -> id.value()).orElse(null), p.itemCount(), p.totalDurationMinutes(),
-                    p.archived());
+                    p.archived(), p.session().map(SessionId::value).orElse(null), null);
+        }
+
+        static Summary from(ManagePlans.PlanHit hit) {
+            Summary s = from(hit.plan());
+            List<ItemMatch> matches = hit.matchedItems().stream()
+                    .map(i -> new ItemMatch(i.id().value(), s.id(), i.title())).toList();
+            return new Summary(s.id(), s.name(), s.nameKey(), s.description(), s.template(), s.sourceTemplateId(),
+                    s.itemCount(), s.totalDurationMinutes(), s.archived(), s.sessionId(),
+                    matches.isEmpty() ? null : matches);
         }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Plan(UUID id, String name, String nameKey, String description, boolean template, UUID sourceTemplateId,
-            int itemCount, int totalDurationMinutes, boolean archived, List<Item> items) {
+            int itemCount, int totalDurationMinutes, boolean archived, UUID sessionId, List<Item> items) {
 
         static Plan from(TrainingPlan p) {
             Summary s = Summary.from(p);
             return new Plan(s.id(), s.name(), s.nameKey(), s.description(), s.template(), s.sourceTemplateId(),
-                    s.itemCount(), s.totalDurationMinutes(), s.archived(), p.items().stream().map(Item::from).toList());
+                    s.itemCount(), s.totalDurationMinutes(), s.archived(), s.sessionId(),
+                    p.items().stream().map(Item::from).toList());
         }
     }
 }

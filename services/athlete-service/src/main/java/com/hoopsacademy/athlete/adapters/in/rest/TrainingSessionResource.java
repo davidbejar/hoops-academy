@@ -2,6 +2,7 @@ package com.hoopsacademy.athlete.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.athlete.application.ManageSessions;
+import com.hoopsacademy.athlete.application.QuickAddItems;
 import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.SessionStatus;
 import com.hoopsacademy.athlete.domain.TeamId;
@@ -16,6 +17,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -38,11 +40,25 @@ public class TrainingSessionResource {
     private static final Set<String> UPDATE_CLEARABLE = Set.of("location", "planId", "notes");
 
     private final ManageSessions sessions;
+    private final QuickAddItems quickAdd;
     private final TenantContext tenant;
+    private final CallerActor actors;
 
-    TrainingSessionResource(ManageSessions sessions, TenantContext tenant) {
+    TrainingSessionResource(ManageSessions sessions, QuickAddItems quickAdd, TenantContext tenant, CallerActor actors) {
         this.sessions = sessions;
+        this.quickAdd = quickAdd;
         this.tenant = tenant;
+        this.actors = actors;
+    }
+
+    /** Quick-add (athlete 2.3.0, ADR-0041): copies items of readable plans to the end of the session's own plan. */
+    @POST
+    @Path("/{sessionId}/items")
+    public PlanDtos.Plan copyItems(@PathParam("sessionId") UUID sessionId,
+            @Valid @NotNull PlanDtos.CopyItemsRequest request, @HeaderParam("Accept-Language") String acceptLanguage) {
+        AuthzContext caller = caller();
+        return PlanDtos.Plan.from(quickAdd.toSession(caller, actors.of(caller), new SessionId(sessionId),
+                request.refs(), AcceptLanguage.negotiate(acceptLanguage)));
     }
 
     @GET

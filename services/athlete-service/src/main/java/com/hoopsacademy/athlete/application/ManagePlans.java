@@ -26,6 +26,9 @@ public class ManagePlans {
 
     public record NewPlan(String name, String description, List<ItemFields> items) {}
 
+    /** A listed plan (as shown) with the items whose title matched the search, empty without a search (decision 54). */
+    public record PlanHit(TrainingPlan plan, List<PlanItem> matchedItems) {}
+
     /** Item content as given by a client (also the merged result of a partial change). */
     public record ItemFields(String title, String description, Integer durationMinutes, Integer sets,
             Integer repetitions, String videoUrl) {
@@ -55,11 +58,13 @@ public class ManagePlans {
         this.clock = clock;
     }
 
+    /** Tenant plans (ad-hoc session plans excluded) or templates; {@code query} matches the name or an item title. */
     @Transactional
-    public PageResult<TrainingPlan> list(boolean templates, Optional<String> query, ContentLocale language, int page,
+    public PageResult<PlanHit> list(boolean templates, Optional<String> query, ContentLocale language, int page,
             int size) {
         return plans.search(new PlanRepository.Search(templates, false, query, language, page, size))
-                .map(plan -> plan.localized(language));
+                .map(plan -> plan.localized(language))
+                .map(plan -> new PlanHit(plan, query.map(plan::itemsMatching).orElse(List.of())));
     }
 
     @Transactional

@@ -8,6 +8,7 @@ import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItem;
 import com.hoopsacademy.athlete.domain.PlanItemId;
+import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.TrainingPlan;
 import com.hoopsacademy.common.tenancy.CurrentTenant;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -45,6 +46,7 @@ class PlanJpaRepository implements PlanRepository {
             entity.authorPersonId = plan.author().map(a -> a.personId().value()).orElse(null);
             entity.authorName = plan.author().map(Actor::displayName).orElse(null);
             entity.sourcePlanId = plan.sourcePlanId().map(PlanId::value).orElse(null);
+            entity.sessionId = plan.session().map(SessionId::value).orElse(null);
         }
         entity.name = plan.name();
         entity.description = plan.description();
@@ -95,12 +97,6 @@ class PlanJpaRepository implements PlanRepository {
         return withItems(entities);
     }
 
-    @Override
-    public boolean exists(PlanId id) {
-        return em.createQuery("select count(p) from PlanEntity p where p.id = :id", Long.class)
-                .setParameter("id", id.value()).getSingleResult() > 0;
-    }
-
     /**
      * The name a caller reading {@code :language} is shown: the translation, else the English one, else the own name.
      * Equivalent to {@code TrainingPlan.localized} because V4 keeps a template's own language out of its i18n.
@@ -110,14 +106,27 @@ class PlanJpaRepository implements PlanRepository {
             + "cast(function('jsonb_extract_path_text', p.i18n, '" + ContentLocale.FALLBACK.code() + "', 'name') as String), "
             + "p.name)";
 
+    /** The title of an item {@code i} as shown for {@code :language}, by the same rule as {@link #SHOWN_NAME}. */
+    private static final String SHOWN_TITLE = "coalesce("
+            + "cast(function('jsonb_extract_path_text', i.i18n, :language, 'title') as String), "
+            + "cast(function('jsonb_extract_path_text', i.i18n, '" + ContentLocale.FALLBACK.code() + "', 'title') as String), "
+            + "i.title)";
+
+    /**
+     * Ad-hoc session plans are never listed. {@code q} matches the shown name or the shown title of an item; without a
+     * trigram index (the migrator may not create extensions, ADR-0041) the item side is a correlated EXISTS over
+     * {@code plan_item_plan_idx}, fine for the few hundred plans of an academy and the ten templates.
+     */
     @Override
     public PageResult<TrainingPlan> search(Search search) {
         StringBuilder where = new StringBuilder(search.templates() ? " where p.ownerTenantId is null"
-                : " where p.ownerTenantId is not null");
+                : " where p.ownerTenantId is not null and p.sessionId is null");
         if (!search.includeArchived()) {
             where.append(" and p.archived = false");
         }
-        search.query().ifPresent(q -> where.append(" and lower(" + SHOWN_NAME + ") like :q escape '\\'"));
+        search.query().ifPresent(q -> where.append(" and (lower(" + SHOWN_NAME + ") like :q escape '\\'"
+                + " or exists (select i.id from PlanItemEntity i where i.planId = p.id"
+                + " and lower(" + SHOWN_TITLE + ") like :q escape '\\'))"));
         var select = em.createQuery("select p from PlanEntity p" + where + " order by " + SHOWN_NAME + ", p.id",
                 PlanEntity.class).setParameter("language", search.language().code());
         var count = em.createQuery("select count(p) from PlanEntity p" + where, Long.class);
@@ -167,6 +176,7 @@ class PlanJpaRepository implements PlanRepository {
         return new TrainingPlan(new PlanId(e.id), e.nameKey, e.name, e.description, author, e.template, e.locale,
                 TemplateTextsJson.read(e.i18n, "name"), e.archived,
                 e.sourcePlanId == null ? null : new PlanId(e.sourcePlanId),
+                e.sessionId == null ? null : new SessionId(e.sessionId),
                 items.stream().sorted(java.util.Comparator.comparingInt(i -> i.position))
                         .map(i -> new PlanItem(new PlanItemId(i.id), i.position, i.title, i.description,
                                 i.durationMinutes, i.sets, i.repetitions, i.videoUrl,

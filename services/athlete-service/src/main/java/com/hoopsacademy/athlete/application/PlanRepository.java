@@ -26,8 +26,6 @@ public interface PlanRepository {
 
     List<TrainingPlan> findAll(Collection<PlanId> ids);
 
-    boolean exists(PlanId id);
-
     PageResult<TrainingPlan> search(Search search);
 
     void delete(PlanId id);

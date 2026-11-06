@@ -56,6 +56,10 @@ class PlanEntity {
     @Column(name = "source_plan_id")
     UUID sourcePlanId;
 
+    /** V7: the session this ad-hoc plan belongs to (ADR-0041); null for templates and ordinary plans. */
+    @Column(name = "ad_hoc_for_session", updatable = false)
+    UUID sessionId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     Instant createdAt;
 

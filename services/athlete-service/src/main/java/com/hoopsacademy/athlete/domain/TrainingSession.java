@@ -63,12 +63,22 @@ public record TrainingSession(
                 SessionStatus.CANCELLED, notes, reason, manuallyEdited);
     }
 
-    /** Applies staff edits (every argument is the NEW value); a cancelled session is frozen. */
-    public TrainingSession edited(Instant newStart, int newDurationMinutes, String newLocation, UUID newPlanId,
-            String newNotes, SessionStatus newStatus) {
+    /** @throws TrainingStateConflict {@code SESSION_CANCELLED}: a cancelled session is frozen */
+    public void requireChangeable() {
         if (isCancelled()) {
             throw new TrainingStateConflict("A cancelled session cannot be changed", "SESSION_CANCELLED");
         }
+    }
+
+    /** The session with another plan (a staff edit, so a re-plan keeps it). */
+    public TrainingSession withPlan(UUID newPlanId) {
+        return edited(startsAt, durationMinutes(), location, newPlanId, notes, status);
+    }
+
+    /** Applies staff edits (every argument is the NEW value); a cancelled session is frozen. */
+    public TrainingSession edited(Instant newStart, int newDurationMinutes, String newLocation, UUID newPlanId,
+            String newNotes, SessionStatus newStatus) {
+        requireChangeable();
         if (newStatus == SessionStatus.CANCELLED) {
             throw new TrainingRuleViolation("Use the cancel operation to cancel a session", "USE_CANCEL");
         }

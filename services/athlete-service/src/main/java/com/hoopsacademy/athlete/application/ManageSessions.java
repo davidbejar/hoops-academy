@@ -90,10 +90,10 @@ public class ManageSessions {
     public TrainingSession createAdHoc(AuthzContext caller, NewSession request) {
         access.requireManage(caller, request.teamId());
         roster.teamRoster(caller.tenantId(), request.teamId());
-        requirePlanExists(request.planId());
         zones.remember(caller);
         TrainingSession session = TrainingSession.adHoc(request.teamId(), request.startsAt(),
                 request.durationMinutes(), request.location(), request.planId(), request.notes());
+        requireAttachable(request.planId(), session.id());
         sessions.save(session);
         return session;
     }
@@ -102,7 +102,7 @@ public class ManageSessions {
     public TrainingSession update(AuthzContext caller, SessionId id, SessionChange change) {
         TrainingSession current = sessions.find(id).orElseThrow(() -> new NotFoundException("Session not found"));
         access.requireManage(caller, current.teamId());
-        change.planId().flatMap(p -> p).ifPresent(this::requirePlanExists);
+        change.planId().flatMap(p -> p).ifPresent(planId -> requireAttachable(planId, id));
         TrainingSession edited = current.edited(
                 change.startsAt().orElse(current.startsAt()),
                 change.durationMinutes().orElse(current.durationMinutes()),
@@ -111,13 +111,27 @@ public class ManageSessions {
                 Patches.apply(change.notes(), current.notes()),
                 change.status().orElse(current.status()));
         sessions.save(edited);
+        deleteOwnPlanLeftBehind(current, edited);
         return edited;
     }
 
-    /** A plan or template visible to the tenant; the edit marks the session {@code manually_edited}, so a re-plan keeps it. */
-    private void requirePlanExists(UUID planId) {
-        if (planId != null && !plans.exists(new PlanId(planId))) {
-            throw new NotFoundException("Plan not found");
+    /**
+     * Any plan the tenant reads, referenced directly (decision 53: a tenant plan or a template, no assignment needed;
+     * another tenant's plan is invisible, so 404), except the ad-hoc plan of another session. The edit marks the
+     * session {@code manually_edited}, so a re-plan keeps it.
+     */
+    private void requireAttachable(UUID planId, SessionId session) {
+        if (planId != null) {
+            plans.find(new PlanId(planId)).orElseThrow(() -> new NotFoundException("Plan not found"))
+                    .requireAttachableTo(session);
+        }
+    }
+
+    /** A session's ad-hoc plan exists only while the session references it (ADR-0041). */
+    private void deleteOwnPlanLeftBehind(TrainingSession before, TrainingSession after) {
+        if (before.planId() != null && !before.planId().equals(after.planId())) {
+            plans.find(new PlanId(before.planId())).filter(plan -> plan.isAdHocFor(before.id()))
+                    .ifPresent(plan -> plans.delete(plan.id()));
         }
     }
 
