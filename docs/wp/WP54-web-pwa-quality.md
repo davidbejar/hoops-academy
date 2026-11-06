@@ -43,4 +43,23 @@ check, and cached match reads are scoped by tenant and person (F-07 residual).
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built: (1) `apps/web/tool/lighthouse.sh`: Lighthouse 11.7.1 (pinned `femtopixel/google-lighthouse`; v12 dropped the PWA
+  category) in a Podman pod with `nginx:1.27-alpine` serving `build/web` on localhost; prints score and checks, exit 1 on a
+  failure; documented in `docs/runbooks/e2e.md`. (2) `tool/offline_cold_start.sh` + `.py` (stdlib WebDriver): online load until
+  `sw.js` controls the page (185 files cached), static server stopped + offline emulation, reload, shell renders, mock
+  sign-in, live match opens with the offline banner; README "Offline cold start" updated. (3) F-07: `MatchStore.roster`,
+  `saveRoster`, `matchJson`, `ownEvents`, `watchOwnEvents` now require tenant (+ person); drift schema v2 (roster cache keyed
+  by tenant, `device.owner_sub`); `MatchStore.bindOwner(sub)` wipes when another `sub` owns the DB, driven by
+  `matchOwnerProvider` (token `sub`, awaited by the live match and match list notifiers). (4) Added the missing platform
+  counter labels (`trainingSchedules`, `finishedMatches`, `membersAdmin`, `membersCoach`) in es/en/id. F-07 row updated.
+- Verified: Lighthouse PWA score 1; installable-manifest, splash-screen, themed-omnibox, viewport, maskable-icon pass,
+  content-width n/a, three manual audits; no manifest/icon/SW change was needed. `tool/offline_cold_start.sh` green.
+  Red tests first (commit a367884: `match_store_scope_test.dart`, 8 tests), then `match_owner_test.dart`,
+  `usage_counter_label_test.dart`. Fresh: `flutter analyze` no issues; `dart format ... lib test integration_test tool`
+  0 changed; `flutter test` 777 passed; `tool/web_smoke.sh` All tests passed.
+- Decisions/ADRs: none. A DB without an owner (fresh or pre-WP54) adopts the first `sub` instead of wiping; mock mode
+  (non-JWT token) binds nothing. The wipe on a `sub` change discards that device's unsynced events of the previous user.
+- Open points / follow-ups: Lighthouse does not test colour contrast and the Flutter canvas has no DOM text, so the
+  white-on-#E8590C (about 3.6:1) note from WP70 is unverified and unchanged. The offline check runs against the mock API
+  (in-process), so the cached-read fallback is covered by unit tests, not the browser script. `synced_events` reads are
+  still keyed by matchId only (covered by the wipe on sub change). Not wired into CI.
