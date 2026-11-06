@@ -2,8 +2,8 @@
 # Bootstrap Job of the chart's Redpanda (WP66, ADR-0036): makes the broker match the values on every install and upgrade.
 #   1. cluster properties (CONFIG_DIR/cluster-config: "<key> <value>" lines), e.g. kafka_enable_authorization true
 #   2. one SCRAM-SHA-256 user per service (CONFIG_DIR/users: "<index> <name> <produce> <consume> <groups>", comma
-#      separated prefixes, "-" for none; the password is $USER_PASSWORD_<index>): created, or its password set again
-#      (that is how a rotated Secret reaches the broker)
+#      separated prefixes, "-" for none; the password is $USER_PASSWORD_<index>): created when missing, otherwise its
+#      password is set again (that is how a rotated Secret reaches the broker)
 #   3. prefixed ACLs: produce = write+describe on topics, consume = read+describe on topics, groups = read+describe on
 #      consumer groups (an ACL removed from the values stays until deleted by hand, docs/runbooks/events.md)
 #   4. topics (CONFIG_DIR/topics, CONFIG_DIR/topic-config "<key>=<value>" lines, $PARTITIONS): created when missing,
@@ -34,11 +34,11 @@ while read -r key value; do
 done < "$CONFIG_DIR/cluster-config"
 
 json_escape() { local s="${1//\\/\\\\}"; s="${s//\"/\\\"}"; printf '%s' "$s"; }
+admin_netrc() { printf 'machine %s login %s password %s\n' "$admin_host" "$SUPERUSER" "$SUPERUSER_PASSWORD"; }
 admin_call() { # method path name password -> HTTP status; JSON body on stdin, admin login from a netrc on an fd
   printf '{"username":"%s","password":"%s","algorithm":"SCRAM-SHA-256"}' "$(json_escape "$3")" "$(json_escape "$4")" |
     curl -s -o /dev/null -w '%{http_code}' -X "$1" -H 'Content-Type: application/json' --data-binary @- \
-      --netrc-file <(printf 'machine %s login %s password %s\n' "$admin_host" "$SUPERUSER" "$SUPERUSER_PASSWORD") \
-      "$ADMIN_URL$2"
+      --netrc-file <(admin_netrc) "$ADMIN_URL$2"
 }
 acl() { # principal operations resource-type prefixes
   local p IFS=,
@@ -50,15 +50,19 @@ acl() { # principal operations resource-type prefixes
 }
 
 log "users and ACLs"
+# Existing users get their password set again (PUT); a POST for an existing user with another password answers 500.
+existing_users=$(curl -sf --netrc-file <(admin_netrc) "$ADMIN_URL/v1/security/users")
 while read -r index name produce consume groups; do
   [ -n "$index" ] || continue
   var="USER_PASSWORD_$index"; pw="${!var:-}"
   [ -n "$pw" ] || { log "user $name: empty password (Secret)"; exit 1; }
-  code=$(admin_call POST /v1/security/users "$name" "$pw")
-  case "$code" in 2??) ;; 400|409) ;; *) log "user $name: create -> HTTP $code"; exit 1 ;; esac
-  code=$(admin_call PUT "/v1/security/users/$name" "$name" "$pw")
-  case "$code" in 2??) log "  user $name (SCRAM-SHA-256) present, password from its Secret" ;;
-    *) log "user $name: set password -> HTTP $code"; exit 1 ;; esac
+  if grep -q "\"$name\"" <<<"$existing_users"; then
+    code=$(admin_call PUT "/v1/security/users/$name" "$name" "$pw"); what="password set again"
+  else
+    code=$(admin_call POST /v1/security/users "$name" "$pw"); what="created"
+  fi
+  case "$code" in 2??) log "  user $name (SCRAM-SHA-256) $what from its Secret" ;;
+    *) log "user $name: $what -> HTTP $code"; exit 1 ;; esac
   acl "$name" write,describe topic "$produce"
   acl "$name" read,describe topic "$consume"
   acl "$name" read,describe group "$groups"

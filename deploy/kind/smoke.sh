@@ -76,7 +76,8 @@ if kubectl "${CTX[@]}" get statefulset redpanda >/dev/null 2>&1; then
   rp 'rpk cluster health' | grep -q 'Healthy: *true' && ok "rpk cluster health: healthy" || bad "rpk cluster health: $(rp 'rpk cluster health' | tr '\n' ' ')"
   st=$(kubectl "${CTX[@]}" get job redpanda-bootstrap -o jsonpath='{.status.succeeded}' 2>/dev/null || true)
   [ "$st" = 1 ] && ok "Job redpanda-bootstrap succeeded" || bad "Job redpanda-bootstrap succeeded='$st'"
-  rp 'rpk topic list' | grep -q 'SASL' && ok "Kafka without a login refused (SASL required)" || bad "Kafka answered without a login"
+  anon=$(rp 'rpk topic list' || true)   # fails on purpose; pipefail would hide the match
+  echo "$anon" | grep -q 'SASL is required' && ok "Kafka without a login refused (SASL required)" || bad "Kafka without a login: $anon"
   rp "$as_admin rpk cluster config get kafka_enable_authorization" | grep -qx true && ok "ACLs enforced (kafka_enable_authorization)" || bad "kafka_enable_authorization not true"
   topics=$(rp "$as_admin rpk topic list" | awk 'NR > 1 && $2 == 1 {print $1}' | sort | tr '\n' ' ')
   [ "$topics" = "core.guardian-link core.person core.player core.team core.team-player core.team-staff core.tenant " ] \
