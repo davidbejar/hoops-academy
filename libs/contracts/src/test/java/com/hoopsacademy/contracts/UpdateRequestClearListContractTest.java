@@ -129,7 +129,10 @@ class UpdateRequestClearListContractTest {
             assertThat(updates.get(nothingToClear).getProperties()).as(nothingToClear).doesNotContainKey("clear");
         }
         assertThat(updates.get("UpdateTeamPlayerRequest").getMinProperties()).as("clear alone is a body").isEqualTo(1);
-        assertThat(OpenApiSpecs.parse("core").getOpenAPI().getInfo().getVersion()).isEqualTo("2.7.0");
+        assertThat(java.lang.module.ModuleDescriptor.Version.parse(
+                OpenApiSpecs.parse("core").getOpenAPI().getInfo().getVersion()))
+                .as("core adopted clear in 2.7.0").isGreaterThanOrEqualTo(
+                        java.lang.module.ModuleDescriptor.Version.parse("2.7.0"));
     }
 
     private static List<String> clearEnum(Map<String, Schema> updates, String name) {

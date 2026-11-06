@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 2.7.0
+  version: 2.8.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -796,18 +796,26 @@ paths:
     post:
       operationId: issueMemberTemporaryPassword
       tags: [Members]
-      summary: Issue a new temporary password for a pending member
+      summary: Issue a new temporary password for a pending member (or a first login for a guardian)
       description: |
         Replaces the password of the member's login by a new temporary password, returned once in
-        `temporaryPassword` (always present here); Keycloak asks for a new password at the first sign-in. Also renews
-        an expired temporary password (`temporaryPasswordStatus` EXPIRED: the login is enabled again, ADR-0028). Only
-        for an active member whose invitation is PENDING and who has not chosen a password of their own (409
-        `INVITATION_NOT_PENDING` otherwise, also for a member without a login); 409 `LOGIN_SHARED` when the login is
-        also used by an active member of another academy (only the platform super admin may reset it); 502 when
-        Keycloak fails (nothing is changed). Authz: ADMIN.
+        `temporaryPassword`; Keycloak asks for a new password at the first sign-in. Also renews an expired temporary
+        password (`temporaryPasswordStatus` EXPIRED: the login is enabled again, ADR-0028). Only for an active member
+        whose invitation is PENDING and who has not chosen a password of their own (409 `INVITATION_NOT_PENDING`
+        otherwise, also for a member without a login); 409 `LOGIN_SHARED` when the login is also used by an active
+        member of another academy (only the platform super admin may reset it); 502 when Keycloak fails (nothing is
+        changed).
+
+        Guardians without a login (core 2.8.0, ADR-0024 amendment): an active member with the PARENT role, an
+        e-mail and no login gets one. A login created by this call comes with `temporaryPassword` (invitation
+        PENDING); when the e-mail already signs in (another academy, ADR-0025) that login is linked, its password is
+        never touched, the invitation is ACCEPTED and `temporaryPassword` is absent. 409 `LOGIN_ALREADY_MEMBER` when
+        that login already belongs to another member of this academy. Authz: ADMIN.
       responses:
         '200':
-          description: The member (still PENDING) with the new temporary password.
+          description: |
+            The member with the new temporary password (still PENDING); a guardian whose existing login was linked
+            comes back ACCEPTED without one.
           headers:
             Cache-Control: {$ref: '#/components/headers/NoStore'}
           content:
@@ -918,6 +926,41 @@ paths:
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+  /api/core/guardians:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    post:
+      operationId: createGuardian
+      tags: [GuardianLinks]
+      summary: Add a new guardian to a player
+      description: |
+        Creates a member with the PARENT role and links them to the player in one step (core 2.8.0). With an `email`
+        the guardian gets a login like an invited member (ADR-0024): a login created by this call comes with
+        `temporaryPassword`, shown once (`Cache-Control: no-store`); an e-mail that already signs in (another academy,
+        ADR-0025) is linked, keeps its password and the response has no `temporaryPassword`. Without an e-mail the
+        guardian has no login (one can be issued later, `issueMemberTemporaryPassword`). To link an existing member
+        use `createGuardianLink`. 404 unknown player; 409 `EMAIL_TAKEN` (a member of this academy already uses the
+        e-mail) or `LOGIN_ALREADY_MEMBER`; 502 when Keycloak fails (nothing is created). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateGuardianRequest'}
+      responses:
+        '201':
+          description: Guardian created and linked.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GuardianLinkWithPassword'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
   /api/core/guardian-links/{guardianLinkId}:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -2395,7 +2438,9 @@ components:
       properties:
         staffTeamIds:
           type: array
-          description: Teams where the caller is COACH or ASSISTANT_COACH staff.
+          description: |
+            Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the
+            academy's time zone) even while the staff row is still open (core 2.8.0).
           items: {type: string, format: uuid}
         linkedPlayerIds:
           type: array
@@ -2410,7 +2455,8 @@ components:
           type: array
           description: |
             Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player
-            (PARENT); empty for other roles.
+            (PARENT); empty for other roles. Teams whose season has ended are left out even while the assignment is
+            still open (core 2.8.0).
           items: {type: string, format: uuid}
         timezone:
           type: string
@@ -2643,6 +2689,32 @@ components:
       required: [guardianPersonId, playerId]
       properties:
         guardianPersonId: {type: string, format: uuid}
+        playerId: {type: string, format: uuid}
+    GuardianLinkWithPassword:
+      description: A guardian link and, when this call created the guardian's login, its temporary password.
+      type: object
+      x-extends: [GuardianLink]
+      required: [id, guardian, player, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        guardian: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        player: {$ref: '#/components/schemas/PlayerRef'}
+        createdAt: {type: string, format: date-time}
+        temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
+    CreateGuardianRequest:
+      description: A new guardian (member with the PARENT role) of `playerId`.
+      type: object
+      required: [givenName, familyName, playerId]
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Gives the guardian a login; a new login's temporary password is returned once.
+        phone: {type: string, maxLength: 32}
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
         playerId: {type: string, format: uuid}
 
     # ---------------- seasons & categories
@@ -3138,6 +3210,7 @@ components:
           items: {$ref: '#/components/schemas/TenantRole'}
         staffTeamIds:
           type: array
+          description: Teams the caller is staff of; teams whose season has ended are left out (core 2.8.0).
           items: {type: string, format: uuid}
         linkedPlayerIds:
           type: array
@@ -3149,7 +3222,9 @@ components:
           description: The subject's own player id when they hold the PLAYER role.
         playerTeamIds:
           type: array
-          description: Teams with an open, valid assignment of the own player or of a linked player.
+          description: |
+            Teams with an open, valid assignment of the own player or of a linked player; teams whose season has
+            ended are left out (core 2.8.0).
           items: {type: string, format: uuid}
         timezone:
           type: string
