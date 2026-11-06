@@ -182,8 +182,12 @@ spec:
             - sourceCIDR: {type: Distinct, value: {{ . | quote }}}
           limit: {requests: {{ $rpm }}, unit: Minute}
         {{- if $rps }}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: {{ . | quote }}}
+            - path: {type: PathPrefix, value: /}
           limit: {requests: {{ $rps }}, unit: Second}
         {{- end }}
         {{- end }}

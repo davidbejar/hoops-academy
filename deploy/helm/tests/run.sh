@@ -99,11 +99,13 @@ for p in /auth/realms/academy/protocol/openid-connect/token /auth/realms/academy
   routes_to keycloak-ratelimited "$p" PathPrefix keycloak && ok "rate-limited route $p -> keycloak" || bad "rate-limited route $p"
 done
 ratelimited() { # BackendTrafficPolicy $1 (of file $4, default umbrella-kind) targets HTTPRoute $1 with global rules per
-  # client IP (IPv4 + IPv6): $2 requests/minute and, WP46, $3 requests/second (burst cap; 0 = no per-second rule)
+  # client IP (IPv4 + IPv6): $2 requests/minute and, WP46, $3 requests/second (burst cap; 0 = no per-second rule), the
+  # latter with an always-true path selector so its descriptor differs from the per-minute rule's (Envoy Gateway v1.9)
   local d; d=$(doc "$1" BackendTrafficPolicy "${4:-$R}")
   echo "$d" | grep -q "kind: HTTPRoute, name: $1}" && [ "$(echo "$d" | grep -c "requests: $2, unit: Minute")" = 2 ] \
     && [ "$(echo "$d" | grep -c "unit: Second")" = $((${3:-0} > 0 ? 2 : 0)) ] \
     && { [ "${3:-0}" = 0 ] || [ "$(echo "$d" | grep -c "requests: $3, unit: Second")" = 2 ]; } \
+    && [ "$(echo "$d" | grep -c -- '- path: {type: PathPrefix, value: /}')" = $((${3:-0} > 0 ? 2 : 0)) ] \
     && [ "$(echo "$d" | grep -c -- '- clientSelectors:')" = $((${3:-0} > 0 ? 4 : 2)) ] \
     && echo "$d" | grep -q '^    global:$' && ! echo "$d" | grep -q '^    local:$' \
     && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}' && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "::/0"}'; }
