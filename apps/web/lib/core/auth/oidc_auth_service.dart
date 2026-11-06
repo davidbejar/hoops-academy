@@ -7,6 +7,7 @@ import 'package:oidc_default_store/oidc_default_store.dart';
 import '../config/app_config.dart';
 import 'auth_service.dart';
 import 'end_session_redirect.dart';
+import 'serial_refresh.dart';
 
 /// Keycloak (OIDC authorization code + PKCE) via `package:oidc`.
 ///
@@ -15,7 +16,9 @@ import 'end_session_redirect.dart';
 /// started with, where [init] completes the code exchange. Tokens live in the
 /// package's store (browser storage on web). Access tokens are refreshed
 /// proactively (`refreshBefore`) by the package, with the 401 interceptor as a
-/// backstop.
+/// backstop. Keycloak rotates the refresh token on every refresh and ends the
+/// session when a spent one comes back; [SerialRefresh] keeps all tabs on the
+/// newest token.
 class OidcAuthService implements AuthService {
   OidcAuthService(
     AppConfig config, {
@@ -25,29 +28,34 @@ class OidcAuthService implements AuthService {
   }) : _clientId = config.clientId,
        _location = location ?? (() => Uri.base),
        postLogoutRedirectUri = origin,
-       _manager =
-           manager ??
-           OidcUserManager.lazy(
-             discoveryDocumentUri: OidcUtils.getOpenIdConfigWellKnownUri(
-               config.issuer,
-             ),
-             clientCredentials: OidcClientAuthentication.none(
-               clientId: config.clientId,
-             ),
-             store: OidcDefaultStore(),
-             settings: OidcUserManagerSettings(
-               scope: config.scopes,
-               redirectUri: origin.resolve('redirect.html'),
-               postLogoutRedirectUri: origin.resolve('redirect.html'),
-               refreshBefore: (_) => const Duration(seconds: 60),
-               options: const OidcPlatformSpecificOptions(
-                 web: OidcPlatformSpecificOptions_Web(
-                   navigationMode:
-                       OidcPlatformSpecificOptions_Web_NavigationMode.samePage,
-                 ),
-               ),
-             ),
-           );
+       _manager = manager ?? _defaultManager(config, origin);
+
+  static OidcUserManager _defaultManager(AppConfig config, Uri origin) {
+    final store = OidcDefaultStore();
+    return OidcUserManager.lazy(
+      discoveryDocumentUri: OidcUtils.getOpenIdConfigWellKnownUri(
+        config.issuer,
+      ),
+      clientCredentials: OidcClientAuthentication.none(
+        clientId: config.clientId,
+      ),
+      store: store,
+      settings: OidcUserManagerSettings(
+        scope: config.scopes,
+        redirectUri: origin.resolve('redirect.html'),
+        postLogoutRedirectUri: origin.resolve('redirect.html'),
+        refreshBefore: (_) => const Duration(seconds: 60),
+        // refresh tokens rotate (ADR-0034): one tab at a time, newest token
+        hooks: OidcUserManagerHooks(token: SerialRefresh.fromStore(store).hook),
+        options: const OidcPlatformSpecificOptions(
+          web: OidcPlatformSpecificOptions_Web(
+            navigationMode:
+                OidcPlatformSpecificOptions_Web_NavigationMode.samePage,
+          ),
+        ),
+      ),
+    );
+  }
 
   static const _revokeTimeout = Duration(seconds: 3);
   final String _clientId;
