@@ -125,8 +125,7 @@ exposed a production defect: **no production code was changed** in WP37.
 | game `EventVisibility.visible` | `seesAll()` fast path forced false | a viewer who sees all players sees every player event through the slow path as well | listed; the method has 11 detected mutants |
 | game `ProjectionRun.apply` | `lastClock` updated while no period runs | `lastClock` is only read by `finish` while a period runs, and every period start sets it first | listed; the method has 14 killed mutants |
 
-Not equivalent but left alone: core `ApprovalPayload.empty()` (no coverage) is not called anywhere — dead code for a
-later clean-up rather than something to pin with a test.
+Not equivalent: core `ApprovalPayload.empty()` (no coverage) was not called anywhere — dead code, deleted in WP38.
 
 ## Changing the baseline
 
