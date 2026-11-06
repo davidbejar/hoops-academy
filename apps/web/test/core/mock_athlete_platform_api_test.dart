@@ -31,7 +31,10 @@ void main() {
   });
 
   ath.Date today() => ath.Date.now();
-  ath.Date inDays(int d) => DateTime.now().add(Duration(days: d)).toDate();
+  ath.Date inDays(int d) {
+    final day = DateTime.now().add(Duration(days: d));
+    return ath.Date(day.year, day.month, day.day);
+  }
 
   group('platform', () {
     test('only the super admin may call it', () async {
@@ -120,8 +123,8 @@ void main() {
       expect(platform.map((e) => e.actorSubject), everyElement(isNotNull), reason: 'the super admin sees who acted');
       final one = await repo.platform(const AuditQuery(), tenantId: mockTenantBId);
       expect(one.items.map((e) => e.tenantId).toSet(), {mockTenantBId});
-      final created = await repo.platform(const AuditQuery(actions: {api.AuditAction.tenantCreated}));
-      expect(created.items.map((e) => e.action).toSet(), {api.AuditAction.tenantCreated});
+      final created = await repo.platform(const AuditQuery(actions: {api.AuditAction.tenantPeriodCreated}));
+      expect(created.items.map((e) => e.action).toSet(), {api.AuditAction.tenantPeriodCreated});
     });
   });
 
@@ -203,7 +206,7 @@ void main() {
           ..startTime = '11:00'
           ..clear = clearList({ath.UpdateTrainingScheduleRequestClearEnum.location: null, ath.UpdateTrainingScheduleRequestClearEnum.validUntil: null})),
       );
-      expect((u.startTime, u.location, u.validUntil), ('11:00', isNull, isNull));
+      expect([u.startTime, u.location, u.validUntil], ['11:00', isNull, isNull]);
       await repo.deleteSchedule(s.id);
       expect((await repo.schedules(teamId: team)).any((x) => x.id == s.id), isFalse);
     });
@@ -244,7 +247,7 @@ void main() {
           ..title = 'Libres'
           ..clear = clearList({ath.UpdatePlanItemRequestClearEnum.sets: null})),
       );
-      expect((changed.title, changed.sets), ('Libres', isNull));
+      expect([changed.title, changed.sets], ['Libres', isNull]);
       final full = await repo.plan(copy.id);
       final order = full.items.reversed.map((i) => i.id).toList();
       expect((await repo.reorder(copy.id, order)).map((i) => i.id), order);
@@ -255,7 +258,7 @@ void main() {
           ..name = 'Otra'
           ..clear = clearList({ath.UpdateTrainingPlanRequestClearEnum.description: null})),
       );
-      expect((renamed.name, renamed.description), ('Otra', isNull));
+      expect([renamed.name, renamed.description], ['Otra', isNull]);
       await repo.deletePlan(copy.id);
       await expectLater(
         repo.plan(copy.id),
@@ -306,7 +309,7 @@ void main() {
           ..actualReturnOn = today()
           ..clear = clearList({ath.UpdateInjuryRequestClearEnum.expectedReturnOn: null, ath.UpdateInjuryRequestClearEnum.description: null})),
       );
-      expect((u.status, u.expectedReturnOn, u.description), (ath.InjuryStatus.RECOVERED, isNull, isNull));
+      expect([u.status, u.expectedReturnOn, u.description], [ath.InjuryStatus.RECOVERED, isNull, isNull]);
       await repo.deleteInjury(i.id);
       expect((await repo.injuries()).any((x) => x.id == i.id), isFalse);
     });
@@ -323,7 +326,7 @@ void main() {
         m.id,
         ath.UpdateBodyMeasurementRequest((b) => b..clear = clearList({ath.UpdateBodyMeasurementRequestClearEnum.weightKg: null})),
       );
-      expect((u.heightCm, u.weightKg), (150, isNull));
+      expect([u.heightCm, u.weightKg], [150, isNull]);
       await repo.deleteMeasurement(m.id);
       expect((await repo.measurements('p-ana')).any((x) => x.id == m.id), isFalse);
     });
@@ -334,7 +337,7 @@ void main() {
       expect(types.any((x) => x.global), isTrue);
       await expectLater(
         repo.deleteType(types.firstWhere((x) => x.global).id),
-        throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 403)),
+        throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 404)),
       );
       final created = await repo.createType(ath.PhysicalTestTypeInput((b) => b
         ..code = 'PLANK'
@@ -356,7 +359,7 @@ void main() {
           ..code = 'PLANK_60'
           ..clear = clearList({ath.UpdatePhysicalTestTypeRequestClearEnum.description: null})),
       );
-      expect((renamed.code, renamed.description), ('PLANK_60', isNull));
+      expect([renamed.code, renamed.description], ['PLANK_60', isNull]);
       await repo.deleteType(created.id);
       expect((await repo.types()).any((x) => x.id == created.id), isFalse);
     });
@@ -381,7 +384,7 @@ void main() {
           ..value = 3.4
           ..clear = clearList({ath.UpdatePhysicalTestResultRequestClearEnum.notes: null})),
       );
-      expect((u.value, u.notes), (3.4, isNull));
+      expect([u.value, u.notes], [3.4, isNull]);
       await repo.deleteResult(r.id);
       expect((await repo.results(testTypeId: type.id)).any((x) => x.id == r.id), isFalse);
     });
@@ -402,8 +405,8 @@ void main() {
         ..maxValue = 4);
       final n = await repo.createNorm(input);
       expect((n.global, n.referencePending), (false, true));
-      final r = await repo.replaceNorm(n.id, input.rebuild((b) => b..source = 'Estudio X'));
-      expect((r.source, r.referencePending), ('Estudio X', false));
+      final r = await repo.replaceNorm(n.id, input.rebuild((b) => b..source_ = 'Estudio X'));
+      expect((r.source_, r.referencePending), ('Estudio X', false));
       expect(await repo.norms(scope: 'TENANT'), hasLength(1));
       await repo.deleteNorm(n.id);
       expect(await repo.norms(scope: 'TENANT'), isEmpty);
