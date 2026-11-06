@@ -48,7 +48,18 @@ public class RosterEventDecoder {
 
         /** @param eventId the record's event id when it could be read */
         record Invalid(Optional<UUID> eventId, String reason) implements Decoded {}
+
+        /**
+         * A valid event game does not apply (WP81): core publishes a removal for every aggregate, but the replica
+         * soft-removes only staff entries and guardian links; persons, players, teams, assignments and tenants keep
+         * their row until WP82. Counted {@code ignored}, never parked.
+         */
+        record Ignored(EventEnvelope envelope, String type) implements Decoded {}
     }
+
+    /** The removals of {@link Decoded.Ignored}. */
+    private static final Set<String> NOT_APPLIED = Set.of("person.removed", "player.removed", "team.removed",
+            "team-player.removed", "tenant.removed");
 
     private static final int MAX_REASON_LENGTH = 1000;
     /** The topics of the contracts this decoder knows (the channel subscribes to the same list). */
@@ -87,8 +98,12 @@ public class RosterEventDecoder {
         if (!expectedKey.equals(key)) {
             return invalid(eventId, "key " + key + " is not " + expectedKey);
         }
+        String type = event.get("type").asText();
+        if (NOT_APPLIED.contains(type)) {
+            return new Decoded.Ignored(envelope, type);
+        }
         try {
-            return new Decoded.Valid(event(envelope, event.get("type").asText(), event.get("payload")));
+            return new Decoded.Valid(event(envelope, type, event.get("payload")));
         } catch (InvalidEvent e) {
             return invalid(eventId, e.getMessage());
         }

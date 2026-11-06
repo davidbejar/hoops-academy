@@ -30,7 +30,7 @@ class ReplicaMetrics {
         });
     }
 
-    /** @param outcome applied, duplicate, stale or tombstone */
+    /** @param outcome applied, duplicate, stale, tombstone or ignored (a removal game does not apply yet, WP81) */
     void processed(String topic, String outcome) {
         Counter.builder("hoops.roster.replica.events").description("Roster events processed by the replica consumer")
                 .tag("topic", topic).tag("outcome", outcome).register(registry).increment();

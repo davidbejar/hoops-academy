@@ -48,6 +48,9 @@ public class CoreEventDecoder {
     /** Parked reasons are bounded (they are stored and logged). */
     static final int MAX_REASON_LENGTH = 500;
     private static final int MAX_ERRORS = 5;
+    /** The removals of {@link DecodedEvent.Ignored} (WP81; soft removal of these is WP82). */
+    private static final Set<String> NOT_APPLIED = Set.of("person.removed", "player.removed", "team.removed",
+            "team-player.removed", "tenant.removed");
     private static final Pattern UUID_FORMAT =
             Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
 
@@ -89,6 +92,9 @@ public class CoreEventDecoder {
         }
         if (topic.get() == RosterTopic.TENANT && !json.get("aggregateId").equals(json.get("tenantId"))) {
             return invalid(eventId, "a tenant event's aggregateId is not its tenantId");
+        }
+        if (NOT_APPLIED.contains(json.get("type").asText())) {
+            return new DecodedEvent.Ignored(json.get("type").asText(), Instant.parse(json.get("occurredAt").asText()));
         }
         try {
             return new Valid(new RosterEvent(eventId.orElseThrow(), TenantId.parse(json.get("tenantId").asText()),

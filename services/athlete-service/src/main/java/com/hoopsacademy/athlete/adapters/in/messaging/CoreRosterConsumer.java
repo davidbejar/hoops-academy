@@ -13,6 +13,7 @@ import io.smallrye.common.annotation.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -31,7 +32,8 @@ import org.jboss.logging.Logger;
  * to apply. A failure to apply (the database) is retried with backoff; after the last attempt the channel fails,
  * which turns the liveness check DOWN so the pod restarts from the last committed offset (at least once, idempotent).
  * Metrics (same names as game's): {@code hoops_roster_replica_events_total{topic,outcome}} (applied, duplicate, stale,
- * tombstone), {@code hoops_roster_replica_parked_total{topic}}, {@code hoops_roster_replica_lag_seconds{topic}}.
+ * tombstone, ignored: a removal athlete does not apply yet, WP81), {@code hoops_roster_replica_parked_total{topic}},
+ * {@code hoops_roster_replica_lag_seconds{topic}}.
  */
 @ApplicationScoped
 public class CoreRosterConsumer {
@@ -69,6 +71,10 @@ public class CoreRosterConsumer {
         }
         switch (decoder.decode(record.topic(), record.key(), record.value())) {
             case Valid valid -> applyWithRetries(record, valid.event());
+            case DecodedEvent.Ignored ignored -> {
+                count(record.topic(), "ignored");
+                recordLag(record.topic(), ignored.occurredAt());
+            }
             case Invalid invalid -> park(record, invalid);
         }
     }
@@ -76,7 +82,7 @@ public class CoreRosterConsumer {
     private void applyWithRetries(ConsumerRecord<String, String> record, RosterEvent event) {
         Outcome outcome = withRetries(record, () -> apply.apply(event));
         count(record.topic(), outcome.name().toLowerCase(Locale.ROOT));
-        recordLag(record.topic(), event);
+        recordLag(record.topic(), event.occurredAt());
     }
 
     private void park(ConsumerRecord<String, String> record, Invalid invalid) {
@@ -113,8 +119,8 @@ public class CoreRosterConsumer {
     }
 
     /** How old the topic's latest event was when the replica applied it. */
-    private void recordLag(String topic, RosterEvent event) {
-        long millis = Math.max(0, clock.millis() - event.occurredAt().toEpochMilli());
+    private void recordLag(String topic, Instant occurredAt) {
+        long millis = Math.max(0, clock.millis() - occurredAt.toEpochMilli());
         lagMillis.computeIfAbsent(topic, t -> metrics.gauge("hoops.roster.replica.lag.seconds",
                 Tags.of("topic", t), new AtomicLong(), v -> v.get() / 1000.0)).set(millis);
     }
