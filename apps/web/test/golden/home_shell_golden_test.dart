@@ -12,7 +12,10 @@ void main() {
     WidgetTester tester,
     Size size, {
     Set<TenantRole> roles = const {TenantRole.admin},
+    Brightness brightness = Brightness.light,
   }) async {
+    tester.platformDispatcher.platformBrightnessTestValue = brightness;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     final h = Harness(
       me: FakeMeRepository(userWith([membershipWithRoles(roles)])),
       core: FakeCore(),
@@ -41,6 +44,30 @@ void main() {
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/home_parent_360x780.png'),
+    );
+  });
+
+  testWidgets('home shell, ADMIN, 1280x800 (extended rail)', (tester) async {
+    await pumpHome(tester, const Size(1280, 800));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/home_admin_1280x800.png'),
+    );
+  });
+
+  testWidgets('home shell, ADMIN, 360x780, dark', (tester) async {
+    await pumpHome(tester, const Size(360, 780), brightness: Brightness.dark);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/home_admin_360x780_dark.png'),
+    );
+  });
+
+  testWidgets('home shell, ADMIN, 1024x768, dark', (tester) async {
+    await pumpHome(tester, const Size(1024, 768), brightness: Brightness.dark);
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/home_admin_1024x768_dark.png'),
     );
   });
 }

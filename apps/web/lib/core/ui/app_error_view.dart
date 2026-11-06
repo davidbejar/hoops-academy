@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../design/tokens.dart';
 import '../errors/app_error.dart';
+import 'empty_state.dart';
 
 extension AppErrorMessage on AppError {
   /// Localised, user-facing text for this error (never raw server text).
@@ -29,38 +30,18 @@ class AppErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceLg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-            const SizedBox(height: AppTokens.spaceMd),
-            Text(
-              error.message(l),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge,
+    return EmptyState(
+      icon: Icons.error_outline,
+      tone: HoopsTone.danger,
+      title: error.message(l),
+      message: error.traceId == null ? null : l.errorReference(error.traceId!),
+      action: onRetry == null
+          ? null
+          : FilledButton(
+              key: const Key('retry-button'),
+              onPressed: onRetry,
+              child: Text(l.retry),
             ),
-            if (error.traceId != null) ...[
-              const SizedBox(height: AppTokens.spaceSm),
-              Text(
-                l.errorReference(error.traceId!),
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-            if (onRetry != null) ...[
-              const SizedBox(height: AppTokens.spaceMd),
-              FilledButton(
-                key: const Key('retry-button'),
-                onPressed: onRetry,
-                child: Text(l.retry),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }
@@ -79,16 +60,8 @@ class EmptyView extends StatelessWidget {
   final String? message;
 
   @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceLg),
-        child: Text(
-          message ?? l.emptyTitle,
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => EmptyState(
+    icon: Icons.inbox_outlined,
+    title: message ?? AppLocalizations.of(context).emptyTitle,
+  );
 }

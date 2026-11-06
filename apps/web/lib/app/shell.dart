@@ -9,9 +9,11 @@ import '../core/navigation/destinations.dart';
 import '../core/pwa/update_providers.dart';
 import '../core/session/session.dart';
 import '../core/session/session_providers.dart';
+import '../core/design/tokens.dart';
+import '../core/ui/list_row.dart';
+import '../core/ui/notice_banner.dart';
 import '../features/tenant/presentation/tenant_avatar.dart';
 import '../l10n/gen/app_localizations.dart';
-import 'theme.dart';
 
 /// Scaffold around every role destination: tenant header, banners and the
 /// role-aware navigation (bottom bar on phones, rail on wide screens).
@@ -35,71 +37,54 @@ class AppShell extends ConsumerWidget {
       (d) => location == d.path || location.startsWith('${d.path}/'),
     );
     final selectedIndex = selected < 0 ? 0 : selected;
-    final wide = MediaQuery.sizeOf(context).width >= AppTokens.wideBreakpoint;
+    final width = WidthClass.of(context);
     final showNav = destinations.length > 1;
     final online = ref.watch(onlineProvider).value ?? true;
     final mock = ref.watch(appConfigProvider).mockApi;
-    final membership = session.membership;
-    final canSwitch = session.user.memberships.length > 1;
+    final c = HoopsTokens.colorsOf(context);
 
     void go(int i) => context.go(destinations[i].path);
 
     final body = Column(
       children: [
-        if (!online) const _Banner(key: Key('offline-banner'), offline: true),
+        if (!online)
+          NoticeBanner(
+            key: const Key('offline-banner'),
+            tone: HoopsTone.warning,
+            icon: Icons.cloud_off,
+            message: l.offlineBanner,
+          ),
         if (ref.watch(updateAvailableProvider)) const _UpdateBanner(),
         if (mock)
-          _Banner(key: const Key('mock-banner'), text: l.mockModeBanner),
+          NoticeBanner(
+            key: const Key('mock-banner'),
+            icon: Icons.science_outlined,
+            message: l.mockModeBanner,
+          ),
         Expanded(child: child),
       ],
     );
 
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: AppTokens.spaceMd,
-        title: InkWell(
-          key: const Key('tenant-chip'),
-          borderRadius: BorderRadius.circular(AppTokens.radiusSm),
-          onTap: canSwitch ? () => context.go('/tenants') : null,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: AppTokens.minTapTarget,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (membership != null) ...[
-                  TenantAvatar(name: membership.tenantName),
-                  const SizedBox(width: AppTokens.spaceSm),
-                ],
-                Flexible(
-                  child: Text(
-                    membership?.tenantName ?? l.appName,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (canSwitch) const Icon(Icons.arrow_drop_down),
-              ],
-            ),
-          ),
-        ),
+        titleSpacing: width.gutter - HoopsSpace.sm,
+        title: _TenantChip(session: session),
         actions: [
-          IconButton(
-            key: const Key('profile-button'),
-            tooltip: l.profileTitle,
-            icon: const Icon(Icons.account_circle_outlined),
-            iconSize: 28,
-            onPressed: () => context.go('/profile'),
-          ),
+          _ProfileButton(name: session.user.displayName),
+          SizedBox(width: width.gutter - HoopsSpace.sm),
         ],
       ),
-      body: wide && showNav
+      body: !width.isCompact && showNav
           ? Row(
               children: [
                 NavigationRail(
                   selectedIndex: selectedIndex,
-                  labelType: NavigationRailLabelType.all,
+                  extended: width == WidthClass.expanded,
+                  labelType: width == WidthClass.expanded
+                      ? NavigationRailLabelType.none
+                      : NavigationRailLabelType.all,
                   onDestinationSelected: go,
+                  leading: _RailBrand(extended: width == WidthClass.expanded),
                   destinations: [
                     for (final d in destinations)
                       NavigationRailDestination(
@@ -109,59 +94,140 @@ class AppShell extends ConsumerWidget {
                       ),
                   ],
                 ),
-                const VerticalDivider(width: 1),
+                VerticalDivider(width: 1, color: c.border),
                 Expanded(child: body),
               ],
             )
           : body,
-      bottomNavigationBar: !wide && showNav
-          ? NavigationBar(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: go,
-              destinations: [
-                for (final d in destinations)
-                  NavigationDestination(
-                    icon: Icon(d.icon),
-                    selectedIcon: Icon(d.selectedIcon),
-                    label: d.label(l),
-                  ),
-              ],
+      bottomNavigationBar: width.isCompact && showNav
+          ? DecoratedBox(
+              key: const Key('nav-bar-frame'),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: c.border)),
+              ),
+              child: NavigationBar(
+                selectedIndex: selectedIndex,
+                onDestinationSelected: go,
+                destinations: [
+                  for (final d in destinations)
+                    NavigationDestination(
+                      icon: Icon(d.icon),
+                      selectedIcon: Icon(d.selectedIcon),
+                      label: d.label(l),
+                    ),
+                ],
+              ),
             )
           : null,
     );
   }
 }
 
-class _Banner extends StatelessWidget {
-  const _Banner({super.key, this.offline = false, this.text});
+/// The academy (logo or initials + name); opens the switcher when the user
+/// belongs to more than one academy.
+class _TenantChip extends StatelessWidget {
+  const _TenantChip({required this.session});
 
-  final bool offline;
-  final String? text;
+  final Ready session;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final l = AppLocalizations.of(context);
-    return Material(
-      color: offline ? scheme.errorContainer : scheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTokens.spaceMd,
-          vertical: AppTokens.spaceSm,
-        ),
-        child: Row(
-          children: [
-            Icon(offline ? Icons.cloud_off : Icons.science_outlined, size: 18),
-            const SizedBox(width: AppTokens.spaceSm),
-            Expanded(
-              child: Text(
-                offline ? l.offlineBanner : text!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+    final c = HoopsTokens.colorsOf(context);
+    final membership = session.membership;
+    final canSwitch = session.user.memberships.length > 1;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: InkWell(
+        key: const Key('tenant-chip'),
+        borderRadius: BorderRadius.circular(HoopsRadius.md),
+        onTap: canSwitch ? () => context.go('/tenants') : null,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: HoopsSize.minTapTarget),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: HoopsSpace.sm),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (membership != null) ...[
+                  TenantAvatar(name: membership.tenantName, radius: 18),
+                  const SizedBox(width: HoopsSpace.gap),
+                ],
+                Flexible(
+                  child: Text(
+                    membership?.tenantName ?? l.appName,
+                    overflow: TextOverflow.ellipsis,
+                    style: HoopsType.brand(Theme.of(context).textTheme, c),
+                  ),
+                ),
+                if (canSwitch) ...[
+                  const SizedBox(width: HoopsSpace.xs),
+                  Icon(Icons.expand_more, color: c.inkMuted),
+                ],
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// The signed-in person's initials; opens the profile.
+class _ProfileButton extends StatelessWidget {
+  const _ProfileButton({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    key: const Key('profile-button'),
+    tooltip: AppLocalizations.of(context).profileTitle,
+    padding: EdgeInsets.zero,
+    icon: InitialsAvatar(name: name, size: 36, tone: HoopsTone.neutral),
+    onPressed: () => context.go('/profile'),
+  );
+}
+
+/// The landing's basketball mark at the top of the rail.
+class _RailBrand extends StatelessWidget {
+  const _RailBrand({required this.extended});
+
+  final bool extended;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = HoopsTokens.colorsOf(context);
+    const mark = Icon(
+      Icons.sports_basketball,
+      color: HoopsColors.brandOrange,
+      size: 28,
+    );
+    return Padding(
+      key: const Key('rail-brand'),
+      padding: const EdgeInsets.only(top: HoopsSpace.sm, bottom: HoopsSpace.lg),
+      child: extended
+          ? SizedBox(
+              width: 200,
+              child: Row(
+                children: [
+                  const SizedBox(width: HoopsSpace.md),
+                  mark,
+                  const SizedBox(width: HoopsSpace.sm + 2),
+                  Flexible(
+                    child: Text(
+                      AppLocalizations.of(context).appName,
+                      overflow: TextOverflow.ellipsis,
+                      style: HoopsType.brand(
+                        Theme.of(context).textTheme,
+                        c,
+                      ).copyWith(fontSize: 17),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : mark,
     );
   }
 }
@@ -172,33 +238,16 @@ class _UpdateBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
     final l = AppLocalizations.of(context);
-    return Material(
+    return NoticeBanner(
       key: const Key('update-banner'),
-      color: scheme.tertiaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTokens.spaceMd,
-          vertical: AppTokens.spaceXs,
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.system_update_alt, size: 18),
-            const SizedBox(width: AppTokens.spaceSm),
-            Expanded(
-              child: Text(
-                l.updateAvailable,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            TextButton(
-              key: const Key('update-reload'),
-              onPressed: ref.read(updateAvailableProvider.notifier).reload,
-              child: Text(l.updateReload),
-            ),
-          ],
-        ),
+      tone: HoopsTone.info,
+      icon: Icons.system_update_alt,
+      message: l.updateAvailable,
+      action: TextButton(
+        key: const Key('update-reload'),
+        onPressed: ref.read(updateAvailableProvider.notifier).reload,
+        child: Text(l.updateReload),
       ),
     );
   }

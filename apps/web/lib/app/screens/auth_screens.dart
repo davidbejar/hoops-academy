@@ -7,10 +7,11 @@ import '../../core/auth/signed_in_email.dart';
 import '../sign_out.dart';
 import '../../core/config/app_config.dart';
 import '../../core/errors/app_error.dart';
+import '../../core/design/tokens.dart';
 import '../../core/ui/app_error_view.dart';
+import '../../core/ui/empty_state.dart';
 import '../../features/me/application/me_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
-import '../theme.dart';
 
 /// Shown while auth/profile initialise, and when loading `/me` failed.
 class SplashScreen extends ConsumerWidget {
@@ -49,7 +50,7 @@ class _SplashSignOut extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.all(AppTokens.spaceMd),
+    padding: const EdgeInsets.all(HoopsSpace.md),
     child: TextButton(
       key: const Key('splash-sign-out'),
       onPressed: () => confirmAndSignOut(context, ref),
@@ -67,35 +68,12 @@ class _NotAMember extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Center(
+    return EmptyState(
       key: const Key('not-a-member'),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceLg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.group_off_outlined,
-              size: 64,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(height: AppTokens.spaceMd),
-            Text(
-              l.notMemberTitle,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppTokens.spaceSm),
-            Text(
-              email == null ? l.notMemberBodyNoEmail : l.notMemberBody(email!),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppTokens.spaceLg),
-            const _SplashSignOut(),
-          ],
-        ),
-      ),
+      icon: Icons.group_off_outlined,
+      title: l.notMemberTitle,
+      message: email == null ? l.notMemberBodyNoEmail : l.notMemberBody(email!),
+      action: const _SplashSignOut(),
     );
   }
 }
@@ -127,40 +105,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final c = HoopsTokens.colorsOf(context);
     final mock = ref.watch(appConfigProvider).mockApi;
     return Scaffold(
       body: SafeArea(
         child: Stack(
           children: [
             Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppTokens.spaceLg),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(HoopsSpace.lg),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.sports_basketball,
-                        size: 72,
-                        color: theme.colorScheme.primary,
+                      Center(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: c.accentSoft,
+                            borderRadius: BorderRadius.circular(HoopsRadius.lg),
+                          ),
+                          child: const SizedBox.square(
+                            dimension: 72,
+                            child: Icon(
+                              Icons.sports_basketball,
+                              size: 40,
+                              color: HoopsColors.brandOrange,
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: AppTokens.spaceMd),
-                      Text(
-                        l.appName,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineMedium,
+                      const SizedBox(height: HoopsSpace.lg),
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          l.appName,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.headlineLarge,
+                        ),
                       ),
-                      const SizedBox(height: AppTokens.spaceSm),
+                      const SizedBox(height: HoopsSpace.sm),
                       Text(
                         l.signInSubtitle,
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyLarge,
+                        style: theme.textTheme.bodyLarge!.copyWith(
+                          color: c.inkMuted,
+                        ),
                       ),
-                      const SizedBox(height: AppTokens.spaceXl),
+                      const SizedBox(height: HoopsSpace.xl),
                       FilledButton(
                         key: const Key('login-button'),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                        ),
                         onPressed: _busy ? null : _signIn,
                         child: _busy
                             ? const SizedBox.square(
@@ -172,7 +170,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             : Text(l.signIn),
                       ),
                       if (mock) ...[
-                        const SizedBox(height: AppTokens.spaceMd),
+                        const SizedBox(height: HoopsSpace.md),
                         Text(
                           l.mockModeBanner,
                           textAlign: TextAlign.center,
@@ -186,10 +184,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             // Back to the public landing page (WP70).
             Positioned(
-              top: AppTokens.spaceSm,
-              left: AppTokens.spaceSm,
+              top: HoopsSpace.sm,
+              left: HoopsSpace.sm,
               child: TextButton.icon(
                 key: const Key('login-back'),
+                style: TextButton.styleFrom(foregroundColor: c.ink),
                 onPressed: () => context.go('/'),
                 icon: const Icon(Icons.arrow_back),
                 label: Text(l.landingBack),
@@ -208,36 +207,16 @@ class NoAccessScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
-        child: Center(
+        child: EmptyState(
           key: const Key('no-access'),
-          child: Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceLg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.lock_outline,
-                  size: 64,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: AppTokens.spaceMd),
-                Text(
-                  l.noAccessTitle,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleLarge,
-                ),
-                const SizedBox(height: AppTokens.spaceSm),
-                Text(l.noAccessBody, textAlign: TextAlign.center),
-                const SizedBox(height: AppTokens.spaceLg),
-                OutlinedButton(
-                  onPressed: () => confirmAndSignOut(context, ref),
-                  child: Text(l.signOut),
-                ),
-              ],
-            ),
+          icon: Icons.lock_outline,
+          title: l.noAccessTitle,
+          message: l.noAccessBody,
+          action: OutlinedButton(
+            onPressed: () => confirmAndSignOut(context, ref),
+            child: Text(l.signOut),
           ),
         ),
       ),

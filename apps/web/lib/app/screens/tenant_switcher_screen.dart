@@ -8,7 +8,7 @@ import '../../core/session/session_providers.dart';
 import '../../core/tenancy/tenant_selection.dart';
 import '../../features/me/domain/current_user.dart';
 import '../../l10n/gen/app_localizations.dart';
-import '../theme.dart';
+import '../../core/ui/kit.dart';
 
 /// Lists the caller's academies (from `/me`) and stores the choice.
 class TenantSwitcherScreen extends ConsumerWidget {
@@ -26,44 +26,39 @@ class TenantSwitcherScreen extends ConsumerWidget {
     final activeId = ref.watch(activeTenantIdProvider);
     final memberships = user?.memberships ?? const <TenantMembership>[];
 
+    final c = HoopsTokens.colorsOf(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(l.switchAcademy),
         automaticallyImplyLeading: activeId != null,
       ),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppTokens.maxContentWidth,
-            ),
-            child: ListView(
-              key: const Key('tenant-list'),
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
-              children: [
-                Text(
-                  l.chooseAcademyTitle,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: AppTokens.spaceXs),
-                Text(l.chooseAcademySubtitle),
-                const SizedBox(height: AppTokens.spaceMd),
-                for (final m in memberships)
-                  Card(
-                    child: ListTile(
+        child: ListView(
+          key: const Key('tenant-list'),
+          padding: EdgeInsets.symmetric(
+            vertical: WidthClass.of(context).sectionGap,
+          ),
+          children: [
+            ContentFrame(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PageHeader(
+                    title: l.chooseAcademyTitle,
+                    subtitle: l.chooseAcademySubtitle,
+                  ),
+                  const SizedBox(height: HoopsSpace.lg),
+                  for (final m in memberships) ...[
+                    ListRow(
                       key: Key('tenant-${m.tenantId}'),
-                      leading: CircleAvatar(
-                        child: Text(_initial(m.tenantName)),
-                      ),
-                      title: Text(m.tenantName),
-                      subtitle: Text(
-                        l.rolesInAcademy(
-                          m.roles.map((r) => r.label(l)).join(', '),
-                        ),
+                      leading: InitialsAvatar(name: m.tenantName),
+                      title: m.tenantName,
+                      subtitle: l.rolesInAcademy(
+                        m.roles.map((r) => r.label(l)).join(', '),
                       ),
                       trailing: m.tenantId == activeId
-                          ? const Icon(Icons.check_circle)
-                          : const Icon(Icons.chevron_right),
+                          ? Icon(Icons.check_circle, color: c.brand)
+                          : Icon(Icons.chevron_right, color: c.inkMuted),
                       onTap: () async {
                         await ref
                             .read(selectedTenantIdProvider.notifier)
@@ -71,15 +66,14 @@ class TenantSwitcherScreen extends ConsumerWidget {
                         if (context.mounted) context.go('/');
                       },
                     ),
-                  ),
-              ],
+                    const SizedBox(height: HoopsSpace.gap),
+                  ],
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
-
-  static String _initial(String name) =>
-      name.isEmpty ? '?' : name.substring(0, 1).toUpperCase();
 }
