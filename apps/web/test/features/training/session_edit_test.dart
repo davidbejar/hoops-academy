@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
@@ -53,6 +54,34 @@ void main() {
       expect(find.text('Sesión actualizada'), findsOneWidget);
       await tester.pumpAndSettle();
       expect(find.textContaining('Pista 3', skipOffstage: false), findsOneWidget);
+    });
+
+    testWidgets('emptying the location and choosing no plan clears both; untouched notes stay', (tester) async {
+      final athlete = weekAthlete();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: athlete, location: '/training/session/s1');
+      await tapKey(tester, 'session-edit');
+      await tester.enterText(find.byKey(const Key('session-location')), '  ');
+      await tapKey(tester, 'session-plan');
+      await tester.tap(find.text('Sin plan asignado').last);
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'form-submit');
+      final sent = athlete.training.updatedSession!;
+      expect(sent.clear, {ath.UpdateTrainingSessionRequestClearEnum.location, ath.UpdateTrainingSessionRequestClearEnum.planId});
+      expect(sent.notes, 'Traer botella');
+      final stored = athlete.training.sessionList.firstWhere((s) => s.id == 's1');
+      expect((stored.location, stored.planId, stored.notes), (null, null, 'Traer botella'));
+    });
+
+    testWidgets('a session without a plan sends no clear when the fields keep their values', (tester) async {
+      final athlete = weekAthlete();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: athlete, location: '/training/session/s2');
+      await tapKey(tester, 'session-edit');
+      await tester.enterText(find.byKey(const Key('session-notes')), 'Petos');
+      await tapKey(tester, 'session-plan');
+      await tester.tap(find.text('Tiro básico').last);
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'form-submit');
+      expect(athlete.training.updatedSession!.clear, isNull);
     });
 
     testWidgets('invalid duration is rejected before sending', (tester) async {

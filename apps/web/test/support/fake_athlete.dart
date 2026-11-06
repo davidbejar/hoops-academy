@@ -1,3 +1,4 @@
+import 'package:built_collection/built_collection.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/health/application/health_providers.dart';
@@ -8,6 +9,10 @@ import 'package:hoops_app/features/training/data/plans_repository.dart';
 import 'package:hoops_app/features/training/data/training_repository.dart';
 
 import 'fake_repos.dart' show Faulty;
+
+/// An update field as the server applies it (ADR-0032): named in `clear` = null, null = unchanged.
+T? patched<T, E>(BuiltSet<E>? clear, E name, T? value, T? current) =>
+    (clear?.contains(name) ?? false) ? null : value ?? current;
 
 // ------------------------------------------------------------------ fixtures
 
@@ -263,6 +268,7 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
   ath.TrainingScheduleInput? createdSchedule;
   ath.PlannedAbsenceInput? createdAbsence;
   ath.UpdatePlannedAbsenceRequest? updatedAbsence;
+  ath.UpdateTrainingScheduleRequest? updatedSchedule;
 
   @override
   Future<List<ath.TrainingSession>> sessions({String? teamId, required ath.Date from, required ath.Date to}) =>
@@ -310,9 +316,9 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
         sessionList[i] = sessionList[i].rebuild((b) => b
           ..startsAt = request.startsAt ?? b.startsAt
           ..durationMinutes = request.durationMinutes ?? b.durationMinutes
-          ..location = request.location ?? b.location
-          ..planId = request.planId ?? b.planId
-          ..notes = request.notes ?? b.notes);
+          ..location = patched(request.clear, ath.UpdateTrainingSessionRequestClearEnum.location, request.location, b.location)
+          ..planId = patched(request.clear, ath.UpdateTrainingSessionRequestClearEnum.planId, request.planId, b.planId)
+          ..notes = patched(request.clear, ath.UpdateTrainingSessionRequestClearEnum.notes, request.notes, b.notes));
         return sessionList[i];
       });
 
@@ -350,12 +356,14 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
 
   @override
   Future<ath.TrainingSchedule> updateSchedule(String scheduleId, ath.UpdateTrainingScheduleRequest request) => run('updateSchedule', () {
+    updatedSchedule = request;
     final i = scheduleList.indexWhere((s) => s.id == scheduleId);
     scheduleList[i] = scheduleList[i].rebuild((b) => b
       ..dayOfWeek = request.dayOfWeek
       ..startTime = '${request.startTime}:00'
       ..durationMinutes = request.durationMinutes
-      ..location = request.location);
+      ..location = patched(request.clear, ath.UpdateTrainingScheduleRequestClearEnum.location, request.location, b.location)
+      ..validUntil = patched(request.clear, ath.UpdateTrainingScheduleRequestClearEnum.validUntil, request.validUntil, b.validUntil));
     return scheduleList[i];
   });
 
@@ -404,7 +412,7 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
     absenceList[i] = absenceList[i].rebuild((b) => b
       ..fromDate = request.fromDate ?? b.fromDate
       ..toDate = request.toDate ?? b.toDate
-      ..reason = request.reason ?? b.reason);
+      ..reason = patched(request.clear, ath.UpdatePlannedAbsenceRequestClearEnum.reason, request.reason, b.reason));
     return absenceList[i];
   });
 
@@ -480,9 +488,19 @@ class FakePlansRepository with Faulty implements PlansRepository {
 
   @override
   Future<ath.PlanItem> updateItem(String planId, String itemId, ath.UpdatePlanItemRequest request) => run('updateItem', () {
+    updatedItem = request;
     final p = _get(planId);
     final items = [
-      for (final i in p.items) i.id == itemId ? i.rebuild((b) => b..title = request.title ?? b.title) : i,
+      for (final i in p.items)
+        i.id == itemId
+            ? i.rebuild((b) => b
+                ..title = request.title ?? b.title
+                ..description = patched(request.clear, ath.UpdatePlanItemRequestClearEnum.description, request.description, b.description)
+                ..durationMinutes = patched(request.clear, ath.UpdatePlanItemRequestClearEnum.durationMinutes, request.durationMinutes, b.durationMinutes)
+                ..sets = patched(request.clear, ath.UpdatePlanItemRequestClearEnum.sets, request.sets, b.sets)
+                ..repetitions = patched(request.clear, ath.UpdatePlanItemRequestClearEnum.repetitions, request.repetitions, b.repetitions)
+                ..videoUrl = patched(request.clear, ath.UpdatePlanItemRequestClearEnum.videoUrl, request.videoUrl, b.videoUrl))
+            : i,
     ];
     _put(_recount(p, items));
     return items.firstWhere((i) => i.id == itemId);
@@ -495,6 +513,7 @@ class FakePlansRepository with Faulty implements PlansRepository {
   });
 
   List<String>? lastOrder;
+  ath.UpdatePlanItemRequest? updatedItem;
 
   @override
   Future<List<ath.PlanItem>> reorder(String planId, List<String> itemIds) => run('reorder', () {
@@ -599,8 +618,8 @@ class FakeHealthRepository with Faulty implements HealthRepository {
         final i = measurementList.indexWhere((m) => m.id == id);
         measurementList[i] = measurementList[i].rebuild((b) => b
           ..measuredOn = request.measuredOn ?? b.measuredOn
-          ..heightCm = request.heightCm ?? b.heightCm
-          ..weightKg = request.weightKg ?? b.weightKg);
+          ..heightCm = patched(request.clear, ath.UpdateBodyMeasurementRequestClearEnum.heightCm, request.heightCm, b.heightCm)
+          ..weightKg = patched(request.clear, ath.UpdateBodyMeasurementRequestClearEnum.weightKg, request.weightKg, b.weightKg));
         return measurementList[i];
       });
 
@@ -622,6 +641,7 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
   ath.PhysicalTestTypeInput? createdType;
   ath.UpdatePhysicalTestResultRequest? updatedResult;
   ath.UpdatePhysicalTestTypeRequest? updatedType;
+  Object? deleteTypeError;
 
   @override
   Future<List<ath.PhysicalTestType>> types() => run('types', () => [...typeList]);
@@ -640,12 +660,20 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
         updatedType = request;
         final i = typeList.indexWhere((t) => t.id == id);
         typeList[i] = typeList[i].rebuild((b) => b
+          ..code = request.code ?? b.code
           ..name = request.name ?? b.name
           ..unit = request.unit ?? b.unit
           ..higherIsBetter = request.higherIsBetter ?? b.higherIsBetter
-          ..description = request.description ?? b.description);
+          ..description = patched(request.clear, ath.UpdatePhysicalTestTypeRequestClearEnum.description, request.description, b.description));
         return typeList[i];
       });
+
+  /// Like the server: a type that results use is a 409 `TEST_TYPE_HAS_RESULTS` (set [deleteTypeError] to override).
+  @override
+  Future<void> deleteType(String id) => run('deleteType', () {
+    if (deleteTypeError != null) throw deleteTypeError!;
+    typeList.removeWhere((t) => t.id == id);
+  });
 
   @override
   Future<List<ath.PhysicalTestResult>> results({String? playerId, String? teamId, String? testTypeId}) => run(
@@ -675,7 +703,7 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
         resultList[i] = resultList[i].rebuild((b) => b
           ..measuredOn = request.measuredOn ?? b.measuredOn
           ..value = request.value ?? b.value
-          ..notes = request.notes ?? b.notes);
+          ..notes = patched(request.clear, ath.UpdatePhysicalTestResultRequestClearEnum.notes, request.notes, b.notes));
         return resultList[i];
       });
 

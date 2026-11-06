@@ -6,6 +6,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
 import '../../support/fake_athlete.dart';
+import '../../support/fake_platform.dart' show problem;
 import '../../support/pump_helpers.dart';
 
 final _jump = testType('ty-jump', 'VJ', 'Salto vertical', 'cm');
@@ -191,6 +192,19 @@ void main() {
       expect(find.textContaining('149.5'), findsWidgets);
     });
 
+    testWidgets('emptying the weight clears it; the height stays', (tester) async {
+      final a = _athlete();
+      await _staff(tester, a);
+      await tapKey(tester, 'health-tab-growth');
+      await tapKey(tester, 'measurement-edit-m3');
+      await enter(tester, 'growth-weight', '');
+      await tapKey(tester, 'form-submit');
+      expect(a.health.updatedMeasurement!.clear, {ath.UpdateBodyMeasurementRequestClearEnum.weightKg});
+      expect(a.health.updatedMeasurement!.heightCm, 148);
+      final stored = a.health.measurementList.firstWhere((m) => m.id == 'm3');
+      expect((stored.heightCm, stored.weightKg), (148, null));
+    });
+
     testWidgets('delete asks first, then removes the measurement', (tester) async {
       final a = _athlete();
       await _staff(tester, a);
@@ -225,6 +239,18 @@ void main() {
       await tapKey(tester, 'form-submit');
       expect(a.fitness.updatedResult!.value, 38.5);
       expect(a.fitness.resultList.firstWhere((r) => r.id == 'r3').value, 38.5);
+    });
+
+    testWidgets('emptying the notes of a result clears them', (tester) async {
+      final a = _athlete();
+      a.fitness.resultList[2] = a.fitness.resultList[2].rebuild((b) => b..notes = 'Con viento');
+      await _staff(tester, a);
+      await tapKey(tester, 'health-tab-tests');
+      await tapKey(tester, 'result-edit-r3');
+      await enter(tester, 'result-notes', '');
+      await tapKey(tester, 'form-submit');
+      expect(a.fitness.updatedResult!.clear, {ath.UpdatePhysicalTestResultRequestClearEnum.notes});
+      expect(a.fitness.resultList[2].notes, isNull);
     });
 
     testWidgets('delete asks first, then removes the result', (tester) async {
@@ -334,6 +360,43 @@ void main() {
       expect(a.fitness.updatedType!.name, 'Test club 2');
       expect(a.fitness.createdType, isNull);
       expect(find.text('Test club 2 (pts)'), findsOneWidget);
+    });
+
+    testWidgets('ADMIN changes the code of a custom type and clears its description', (tester) async {
+      final a = _athlete();
+      a.fitness.typeList[2] = a.fitness.typeList[2].rebuild((b) => b..description = 'Circuito');
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/players/tests', size: const Size(360, 1400));
+      await tapKey(tester, 'type-edit-ty-custom');
+      await enter(tester, 'type-code', 'cus_2');
+      await enter(tester, 'type-description', '');
+      await tapKey(tester, 'form-submit');
+      expect(a.fitness.updatedType!.code, 'CUS_2');
+      expect(a.fitness.updatedType!.clear, {ath.UpdatePhysicalTestTypeRequestClearEnum.description});
+      expect(find.textContaining('CUS_2'), findsOneWidget);
+      expect(find.textContaining('Circuito'), findsNothing);
+    });
+
+    testWidgets('ADMIN deletes a custom type after confirming; global types have no delete button', (tester) async {
+      final a = _athlete();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/players/tests', size: const Size(360, 1400));
+      expect(find.byKey(const Key('type-delete-ty-jump')), findsNothing);
+      await tapKey(tester, 'type-delete-ty-custom');
+      await tapKey(tester, 'dialog-cancel');
+      expect(a.fitness.typeList.length, 3);
+      await tapKey(tester, 'type-delete-ty-custom');
+      await tapKey(tester, 'dialog-confirm');
+      expect(a.fitness.typeList.map((t) => t.id), isNot(contains('ty-custom')));
+      expect(find.text('Test club (pts)'), findsNothing);
+      expect(find.text('Tipo de prueba eliminado'), findsOneWidget);
+    });
+
+    testWidgets('a type with results is not deleted and the reason is shown', (tester) async {
+      final a = _athlete()..fitness.deleteTypeError = problem(409, 'TEST_TYPE_HAS_RESULTS');
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/players/tests', size: const Size(360, 1400));
+      await tapKey(tester, 'type-delete-ty-custom');
+      await tapKey(tester, 'dialog-confirm');
+      expect(find.text('Este tipo de prueba tiene resultados y no se puede eliminar'), findsOneWidget);
+      expect(find.text('Test club (pts)'), findsOneWidget);
     });
 
     testWidgets('a coach sees the list but not the create button', (tester) async {

@@ -195,6 +195,28 @@ void main() {
       expect(i.status, ath.InjuryStatus.RECOVERED);
     });
 
+    test('a measurement update names the emptied weight in clear (ADR-0032)', () async {
+      final a = _Adapter((_) => {'id': uuid, 'playerId': uuid, 'measuredOn': '2026-10-10', 'heightCm': 150.0, ..._audit()});
+      await ApiHealthRepository(_athlete(a), tenant).updateMeasurement(
+        uuid,
+        ath.UpdateBodyMeasurementRequest((b) => b
+          ..heightCm = 150.0
+          ..clear.add(ath.UpdateBodyMeasurementRequestClearEnum.weightKg)),
+      );
+      expect(a.body, {'heightCm': 150.0, 'clear': ['weightKg']});
+    });
+
+    test('a custom test type is renamed and deleted', () async {
+      final a = _Adapter((_) => {'id': uuid, 'code': 'CUS_2', 'name': 'Club', 'unit': 'pts', 'higherIsBetter': true, 'global': false});
+      final repo = ApiFitnessRepository(_athlete(a), tenant);
+      final t = await repo.updateType(uuid, ath.UpdatePhysicalTestTypeRequest((b) => b..code = 'CUS_2'));
+      expect(a.body, {'code': 'CUS_2'});
+      expect(t.code, 'CUS_2');
+      await repo.deleteType(uuid);
+      expect(a.last!.method, 'DELETE');
+      expect(a.last!.path, '/api/athlete/physical-test-types/$uuid');
+    });
+
     test('measurements are listed per player', () async {
       final a = _Adapter((_) => [
         {'id': uuid, 'playerId': uuid, 'measuredOn': '2026-10-10', 'heightCm': 148.5, ..._audit()},

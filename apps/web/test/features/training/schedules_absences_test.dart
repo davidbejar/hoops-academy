@@ -54,6 +54,20 @@ void main() {
       expect(sent.validUntil, isNull);
     });
 
+    testWidgets('editing a schedule with an emptied location clears it (and the open end date)', (tester) async {
+      final a = athlete();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/training/schedules');
+      await tapKey(tester, 'schedule-sch1');
+      await enter(tester, 'schedule-location', '');
+      await tapKey(tester, 'form-submit');
+      expect(a.training.updatedSchedule!.clear, {
+        ath.UpdateTrainingScheduleRequestClearEnum.location,
+        ath.UpdateTrainingScheduleRequestClearEnum.validUntil,
+      });
+      expect(a.training.scheduleList.first.location, isNull);
+      expect(find.textContaining('Pabellón Norte'), findsNothing);
+    });
+
     testWidgets('delete asks for confirmation', (tester) async {
       final a = athlete();
       await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/training/schedules');
@@ -85,6 +99,17 @@ void main() {
       expect(a.training.updatedAbsence!.reason, 'Torneo');
       expect(a.training.createdAbsence, isNull);
       expect(find.textContaining('Torneo'), findsOneWidget);
+    });
+
+    testWidgets('emptying the reason clears it', (tester) async {
+      final a = athlete();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: a, location: '/training/absences');
+      await tapKey(tester, 'absence-edit-a1');
+      await enter(tester, 'absence-reason', '');
+      await tapKey(tester, 'form-submit');
+      expect(a.training.updatedAbsence!.clear, {ath.UpdatePlannedAbsenceRequestClearEnum.reason});
+      expect(a.training.absenceList.single.reason, isNull);
+      expect(find.textContaining('Viaje'), findsNothing);
     });
 
     testWidgets('a coach of nobody, without rights to the player, sees no edit button', (tester) async {

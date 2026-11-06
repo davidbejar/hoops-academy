@@ -107,6 +107,24 @@ void main() {
       expect(find.text('Slides defensivos'), findsOneWidget);
     });
 
+    testWidgets('editing an item clears the emptied sets, repetitions and video; the duration stays', (tester) async {
+      final plans = _plans();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: FakeAthlete(plans: plans), location: '/training/plans/plan-1');
+      await tapKey(tester, 'item-menu-i2');
+      await tester.tap(find.text('Editar').last);
+      await tester.pumpAndSettle();
+      await enter(tester, 'item-sets', '');
+      await enter(tester, 'item-reps', '');
+      await enter(tester, 'item-video', '');
+      await tapKey(tester, 'form-submit');
+      final clear = plans.updatedItem!.clear!;
+      expect(clear, containsAll([ath.UpdatePlanItemRequestClearEnum.sets, ath.UpdatePlanItemRequestClearEnum.repetitions, ath.UpdatePlanItemRequestClearEnum.videoUrl]));
+      expect(clear, isNot(contains(ath.UpdatePlanItemRequestClearEnum.durationMinutes)));
+      final item = plans.planList.firstWhere((p) => p.id == 'plan-1').items.firstWhere((i) => i.id == 'i2');
+      expect((item.durationMinutes, item.sets, item.repetitions, item.videoUrl), (20, null, null, null));
+      expect(find.text('https://v.example/tl'), findsNothing);
+    });
+
     testWidgets('moving an item down sends the new permutation to the repository', (tester) async {
       final plans = _plans();
       await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: FakeAthlete(plans: plans), location: '/training/plans/plan-1');
