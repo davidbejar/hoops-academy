@@ -10,9 +10,13 @@ public class FailingProvisioningHook implements TenantProvisioningHook {
 
     public static final String SLUG_PREFIX = "fail-db";
 
+    /** The id of the last tenant whose provisioning this hook failed. */
+    public static volatile String lastFailed;
+
     @Override
     public void onTenantCreated(Tenant tenant) {
         if (tenant.slug().value().startsWith(SLUG_PREFIX)) {
+            lastFailed = tenant.id().toString();
             throw new IllegalStateException("simulated database failure while provisioning " + tenant.slug());
         }
     }

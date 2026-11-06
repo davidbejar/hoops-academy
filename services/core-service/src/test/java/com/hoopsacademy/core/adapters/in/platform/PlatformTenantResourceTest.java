@@ -20,17 +20,18 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
-import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.RosterEvents;
 import com.hoopsacademy.core.testsupport.FailingProvisioningHook;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.PasswordLeaks;
+import com.hoopsacademy.core.testsupport.RosterDb;
+import com.hoopsacademy.core.testsupport.RosterEvents;
 import com.hoopsacademy.core.testsupport.Slugs;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
@@ -38,6 +39,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -201,6 +203,10 @@ class PlatformTenantResourceTest {
         assertThat(CoreDb.countAsPlatform("select count(*) from core.tenant where slug = ?", slug)).isZero();
         keycloak.verify(1, userDeleted(sub));
         keycloak.verify(0, anyPasswordReset());
+        // WP81: the deleted registry row publishes its removal (the tenant transaction's tenant.changed rolled back)
+        List<JsonNode> events = RosterEvents.of(FailingProvisioningHook.lastFailed, "core.tenant");
+        assertThat(events).extracting(event -> event.get("type").asText()).containsExactly("tenant.removed");
+        RosterEvents.assertValid("core.tenant", events.getFirst());
     }
 
     @Test

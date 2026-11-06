@@ -2,14 +2,17 @@ package com.hoopsacademy.core.application.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.adapters.in.scheduler.OnboardingRepairJob;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.RosterEvents;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +48,12 @@ class OnboardingRepairTest {
                 orphan)).isZero();
         assertThat(registryRows(provisioned)).isEqualTo(1);
         assertThat(registryRows(fresh)).as("still inside the grace period").isEqualTo(1);
+        List<JsonNode> removed = RosterEvents.of(orphan, "core.tenant");
+        assertThat(removed).as("WP81: the deletion publishes tenant.removed").extracting(e -> e.get("type").asText())
+                .containsExactly("tenant.removed");
+        RosterEvents.assertValid("core.tenant", removed.getFirst());
+        assertThat(removed.getFirst().get("aggregateId").asText()).isEqualTo(orphan);
+        assertThat(RosterEvents.of(fresh, "core.tenant")).isEmpty();
     }
 
     @Test

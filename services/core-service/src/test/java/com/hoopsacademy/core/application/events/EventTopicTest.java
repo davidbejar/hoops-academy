@@ -21,12 +21,14 @@ class EventTopicTest {
     }
 
     @Test
-    void onlyTeamStaffAndGuardianLinksHaveRemovedEvents() {
+    void everyTopicHasARemovedEvent() {
+        assertThat(Arrays.stream(EventTopic.values()).map(EventTopic::removedType)).containsExactly("person.removed",
+                "player.removed", "team.removed", "team-player.removed", "team-staff.removed", "guardian-link.removed",
+                "tenant.removed");
         assertThat(EventTopic.TEAM_STAFF.isRemovedType("team-staff.removed")).isTrue();
         assertThat(EventTopic.TEAM_STAFF.isRemovedType("team-staff.changed")).isFalse();
-        assertThat(EventTopic.PERSON.isRemovedType("person.removed")).isFalse();
-        assertThatThrownBy(EventTopic.PERSON::removedType).isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("core.person");
+        assertThat(EventTopic.PERSON.isRemovedType("person.removed")).isTrue();
+        assertThat(EventTopic.PERSON.isRemovedType("team.removed")).isFalse();
     }
 
     @Test

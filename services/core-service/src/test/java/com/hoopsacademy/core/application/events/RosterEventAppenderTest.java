@@ -1,7 +1,6 @@
 package com.hoopsacademy.core.application.events;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -157,22 +156,40 @@ class RosterEventAppenderTest {
                 Map.entry("status", "SUSPENDED"), Map.entry("timezone", "Asia/Jakarta"), Map.entry("defaultLocale", "id"));
     }
 
+    /** WP81 (decision 59): whatever deleted it, an aggregate reported changed but gone at commit is removed. */
     @Test
-    void anAggregateThatCannotDisappearButIsMissingFailsTheTransaction() {
-        PersonId ghost = new PersonId(UUID.randomUUID());
+    void anAggregateThatIsGoneAtTheEndOfTheTransactionIsRemovedWithAnEmptyPayload() {
+        PersonId person = new PersonId(UUID.randomUUID());
+        PlayerId player = new PlayerId(UUID.randomUUID());
+        TeamId team = new TeamId(UUID.randomUUID());
+        TeamPlayerId assignment = new TeamPlayerId(UUID.randomUUID());
 
-        assertThatThrownBy(() -> appender.append(TENANT, List.of(new RosterChange.Person(ghost))))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining(ghost.value().toString());
-        assertThatThrownBy(() -> appender.append(TENANT, List.of(new RosterChange.Player(new PlayerId(UUID.randomUUID())))))
-                .isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> appender.append(TENANT, List.of(new RosterChange.Team(new TeamId(UUID.randomUUID())))))
-                .isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> appender.append(TENANT,
-                List.of(new RosterChange.TeamPlayer(new TeamPlayerId(UUID.randomUUID())))))
-                .isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> appender.append(TENANT, List.of(new RosterChange.Tenant())))
-                .isInstanceOf(IllegalStateException.class);
-        assertThat(written).isEmpty();
+        appender.append(TENANT, List.of(new RosterChange.Person(person), new RosterChange.Player(player),
+                new RosterChange.Team(team), new RosterChange.TeamPlayer(assignment), new RosterChange.Tenant()));
+
+        assertThat(written).extracting(OutboxEvent::type).containsExactly("person.removed", "player.removed",
+                "team.removed", "team-player.removed", "tenant.removed");
+        assertThat(written).extracting(OutboxEvent::topic).containsExactly("core.person", "core.player", "core.team",
+                "core.team-player", "core.tenant");
+        assertThat(written).extracting(OutboxEvent::aggregateId).containsExactly(person.value().toString(),
+                player.value().toString(), team.value().toString(), assignment.value().toString(),
+                TENANT.value().toString());
+        assertThat(written).extracting(OutboxEvent::aggregateType).containsExactly("person", "player", "team",
+                "team-player", "tenant");
+        assertThat(written).extracting(OutboxEvent::payload).containsOnly(Map.of());
+        assertThat(written).extracting(OutboxEvent::tenant).containsOnly(TENANT);
+    }
+
+    @Test
+    void thePlatformRemovesATenantWithAnEmptyPayloadKeyedByItself() {
+        OutboxEvent event = TenantEvents.removed(TENANT);
+
+        assertThat(event.topic()).isEqualTo("core.tenant");
+        assertThat(event.type()).isEqualTo("tenant.removed");
+        assertThat(event.tenant()).isEqualTo(TENANT);
+        assertThat(event.aggregateType()).isEqualTo("tenant");
+        assertThat(event.aggregateId()).isEqualTo(TENANT.value().toString());
+        assertThat(event.payload()).isEmpty();
     }
 
     @Test
