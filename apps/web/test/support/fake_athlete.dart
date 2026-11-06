@@ -117,12 +117,14 @@ ath.TrainingPlan planOf(
   bool template = false,
   List<ath.PlanItem> items = const [],
   String? description,
+  String? sessionId,
 }) => ath.TrainingPlan(
   (b) => b
     ..id = id
     ..name = name
     ..description = description
     ..template = template
+    ..sessionId = sessionId
     ..itemCount = items.length
     ..totalDurationMinutes = items.fold<int>(
       0,
@@ -138,6 +140,7 @@ ath.TrainingPlanSummary summaryOf(ath.TrainingPlan p) =>
         ..name = p.name
         ..description = p.description
         ..template = p.template
+        ..sessionId = p.sessionId
         ..itemCount = p.itemCount
         ..totalDurationMinutes = p.totalDurationMinutes,
     );
@@ -291,6 +294,10 @@ ath.PhysicalTestResult testResult(
 // --------------------------------------------------------------------- fakes
 
 class FakeTrainingRepository with Faulty implements TrainingRepository {
+  /// The plans quick-adds read from and write to (set by [FakeAthlete]).
+  FakePlansRepository? plans;
+  final List<List<ath.PlanItemRef>> quickAdded = [];
+
   FakeTrainingRepository({
     List<ath.TrainingSession>? sessions,
     List<ath.TrainingSchedule>? schedules,
@@ -339,6 +346,56 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
   @override
   Future<ath.TrainingSession> session(String sessionId) =>
       run('session', () => sessionList.firstWhere((s) => s.id == sessionId));
+
+  /// Like athlete 2.3.0: copies go to the session's own plan, created on the
+  /// first quick-add with the items of the plan it referenced.
+  @override
+  Future<ath.TrainingPlan> copyItemsToSession(
+    String sessionId,
+    List<ath.PlanItemRef> items,
+  ) => run('copyItemsToSession', () {
+    quickAdded.add(items);
+    final store = plans!;
+    final index = sessionList.indexWhere((s) => s.id == sessionId);
+    final session = sessionList[index];
+    final current = store.planList
+        .where((p) => p.id == session.planId)
+        .firstOrNull;
+    var own = current?.sessionId == sessionId
+        ? current!
+        : planOf(
+            'own-$sessionId',
+            current?.name ?? 'Sesión',
+            items: current?.items.toList() ?? const [],
+            sessionId: sessionId,
+          );
+    final copies = [
+      for (final ref in items)
+        store.planList
+            .firstWhere((p) => p.id == ref.planId)
+            .items
+            .firstWhere((i) => i.id == ref.itemId),
+    ];
+    final all = [...own.items, ...copies];
+    own = planOf(
+      own.id,
+      own.name,
+      sessionId: sessionId,
+      items: [
+        for (var n = 0; n < all.length; n++)
+          all[n].rebuild(
+            (b) => b
+              ..id = '${own.id}-i$n'
+              ..position = n,
+          ),
+      ],
+    );
+    store.planList
+      ..removeWhere((p) => p.id == own.id)
+      ..add(own);
+    sessionList[index] = session.rebuild((b) => b..planId = own.id);
+    return own;
+  });
 
   @override
   Future<ath.TrainingSession> createSession(
@@ -581,20 +638,38 @@ class FakePlansRepository with Faulty implements PlansRepository {
           ),
       );
 
+  /// Like athlete 2.3.0: a session's own plan is never listed; [query]
+  /// matches the name or item titles, the latter reported in `matchedItems`.
   @override
   Future<List<ath.TrainingPlanSummary>> plans({
     required bool templates,
     String? query,
   }) => run('plans', () {
     lastQuery = query;
+    final q = query?.toLowerCase();
     return [
       for (final p in planList)
-        if (p.template == templates &&
-            (query == null ||
-                p.name.toLowerCase().contains(query.toLowerCase())))
-          summaryOf(p),
+        if (p.template == templates && p.sessionId == null)
+          if (q == null)
+            summaryOf(p)
+          else if (_matches(p, q) case final found
+              when found.isNotEmpty || p.name.toLowerCase().contains(q))
+            summaryOf(p).rebuild((b) {
+              if (found.isNotEmpty) b.matchedItems.replace(found);
+            }),
     ];
   });
+
+  static List<ath.PlanItemMatch> _matches(ath.TrainingPlan p, String q) => [
+    for (final i in p.items)
+      if (i.title.toLowerCase().contains(q))
+        ath.PlanItemMatch(
+          (b) => b
+            ..id = i.id
+            ..planId = p.id
+            ..title = i.title,
+        ),
+  ];
 
   @override
   Future<ath.TrainingPlan> plan(String planId) =>
@@ -1167,7 +1242,9 @@ class FakeAthlete {
   }) : training = training ?? FakeTrainingRepository(),
        plans = plans ?? FakePlansRepository(),
        health = health ?? FakeHealthRepository(),
-       fitness = fitness ?? FakeFitnessRepository();
+       fitness = fitness ?? FakeFitnessRepository() {
+    this.training.plans = this.plans;
+  }
 
   final FakeTrainingRepository training;
   final FakePlansRepository plans;
