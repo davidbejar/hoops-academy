@@ -46,6 +46,7 @@ class ApiMeRepository implements MeRepository {
           staffTeamIds: m.authz.staffTeamIds.toSet(),
           linkedPlayerIds: m.authz.linkedPlayerIds.toSet(),
           ownPlayerId: m.authz.ownPlayerId,
+          timezone: m.authz.timezone,
           roles: {
             for (final r in m.roles) ?_role(r),
           },

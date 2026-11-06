@@ -13,6 +13,7 @@ class TenantMembership {
     this.staffTeamIds = const {},
     this.linkedPlayerIds = const {},
     this.ownPlayerId,
+    this.timezone,
   });
 
   final String tenantId;
@@ -32,6 +33,9 @@ class TenantMembership {
 
   /// The caller's own player (PLAYER role), from `/me.authz.ownPlayerId`.
   final String? ownPlayerId;
+
+  /// IANA zone of the academy, from `/me.authz.timezone` (null: device zone).
+  final String? timezone;
 }
 
 /// The caller as returned by `GET /api/core/me`, without transport types.
