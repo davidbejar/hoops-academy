@@ -2,7 +2,7 @@ apiVersion: v2
 name: hoops
 description: Hoops Academy umbrella chart - core/game/athlete services, web, Keycloak, CloudNativePG databases.
 type: application
-version: 0.5.0
+version: 0.6.0
 appVersion: "0.1.0"
 # Subcharts are vendored (unpacked) under charts/; `hoops-service` is instantiated three times via aliases.
 dependencies:

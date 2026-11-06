@@ -21,3 +21,9 @@ for the rate limit pods. Both Secrets exist before the install (docs/runbooks/re
 {{- end }}
 Check: kubectl -n {{ .Release.Namespace }} describe backendtrafficpolicy   (every policy Accepted=True)
        kubectl -n envoy-gateway-system rollout status deploy/envoy-ratelimit
+{{- if .Values.events.enabled }}
+
+Event broker (ADR-0036): Redpanda redpanda-0 in {{ .Release.Namespace }}, Kafka API redpanda.{{ .Release.Namespace }}.svc.cluster.local:9092
+(SASL_PLAINTEXT, SCRAM-SHA-256; users {{ range $i, $u := .Values.events.users }}{{ if $i }}, {{ end }}{{ $u.name }}{{ end }}). The Job redpanda-bootstrap sets users, ACLs and topics after
+every install/upgrade. Check: kubectl -n {{ .Release.Namespace }} exec redpanda-0 -- rpk cluster health   (docs/runbooks/events.md)
+{{- end }}

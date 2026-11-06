@@ -75,6 +75,55 @@ rateLimit:
       keyPattern: ""
 
 # ---------------------------------------------------------------------------------------------------------------
+# Event broker (WP66, ADR-0036): one Redpanda node (StatefulSet `redpanda`, headless Service, 1 persistent volume) for the
+# v2 events (ADR-0008: core's outbox -> topics -> replicas in game and athlete, WP67-WP69). Off by default; on in
+# values-kind.yaml. Clients: bootstrap redpanda.<namespace>.svc.cluster.local:9092, SASL_PLAINTEXT, SCRAM-SHA-256, one
+# user per service (its name = the service's app.kubernetes.io/name label, which the NetworkPolicy admits).
+events:
+  enabled: false
+  redpanda:
+    # Same pin as infra/compose/compose.yaml and the Quarkus Dev Services (libs/common-quarkus); run.sh checks it.
+    image:
+      repository: docker.io/redpandadata/redpanda
+      tag: v26.2.6
+      digest: sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce
+    runAsUser: 101              # user `redpanda` of the image
+    runAsGroup: 101
+    smp: 1                      # Seastar shards (cores); one is plenty for seven one-partition topics
+    memory: 1G                  # Seastar memory (--memory); keep the container limit about 50 % above it
+    logLevel: info
+    # true relaxes Redpanda's production checks (memory per core, fsync) for small shared nodes: kind only.
+    developerMode: false
+    extraArgs: []
+    resources: {requests: {cpu: 200m, memory: 1Gi}, limits: {memory: 1536Mi}}
+    storage: {size: 5Gi, storageClassName: ""}
+    # Cluster properties (scalars): written to .bootstrap.yaml and set again by the bootstrap Job on every install/upgrade.
+    clusterConfig:
+      kafka_enable_authorization: true   # ACLs enforced (without it any authenticated user may do anything)
+      admin_api_require_auth: true       # admin API: superuser basic auth (status endpoints stay open for probes)
+      auto_create_topics_enabled: false  # topics only from the bootstrap Job
+      enable_metrics_reporter: false     # no usage reports to Redpanda (egress is closed anyway)
+      default_topic_replications: 1
+  # Superuser for the bootstrap Job and operators (rpk); created by Redpanda at bootstrap. Secret: key `password`.
+  superuser: {name: admin, passwordSecret: hoops-redpanda-admin}
+  # SCRAM users with prefixed ACLs: produce = write+describe on topics, consume = read+describe on topics, groups =
+  # read+describe on consumer groups. Secrets: kubernetes.io/basic-auth with username = name (ADR-0012).
+  users:
+    - {name: core-service,    passwordSecret: hoops-redpanda-core-service,    produce: [core.]}
+    - {name: game-service,    passwordSecret: hoops-redpanda-game-service,    consume: [core.], groups: [game-service.]}
+    - {name: athlete-service, passwordSecret: hoops-redpanda-athlete-service, consume: [core.], groups: [athlete-service.]}
+  # Topics `<producer>.<aggregate>` (WP19 brief), keyed by `<tenant id>:<aggregate id>`. Compacted: the latest event per
+  # key stays, so a replica is rebuilt by replaying from the start; tombstones (deletes) stay 7 days. Same list and settings
+  # as infra/compose/redpanda-topics.sh (run.sh checks it).
+  topics:
+    partitions: 1
+    config:
+      cleanup.policy: compact
+      retention.ms: "-1"
+      delete.retention.ms: "604800000"
+    names: [core.person, core.player, core.team, core.team-player, core.team-staff, core.guardian-link, core.tenant]
+
+# ---------------------------------------------------------------------------------------------------------------
 # Secrets from the External Secrets Operator (WP65, ADR-0012 amendment). false (default): every Secret below exists
 # before the install (kind: deploy/kind/secrets.sh from .env). true: the chart renders one ExternalSecret per Secret
 # (external-secrets.io/v1, ESO >= 1.0; kind pins the version in deploy/kind/up.sh) and ESO writes the Secrets from
@@ -114,6 +163,15 @@ externalSecrets:
     enabled: true
     property: RATELIMIT_REDIS_PASSWORD
     authSecret: {name: envoy-ratelimit-redis-auth, key: auth}
+  # The event broker's logins (WP66), only with events.enabled: one kubernetes.io/basic-auth Secret per events user and the
+  # superuser (username = the user's name), password from the property named here per user.
+  events:
+    enabled: true
+    properties:
+      admin: REDPANDA_ADMIN_PASSWORD
+      core-service: REDPANDA_CORE_SERVICE_PASSWORD
+      game-service: REDPANDA_GAME_SERVICE_PASSWORD
+      athlete-service: REDPANDA_ATHLETE_SERVICE_PASSWORD
 
 databases:
   enabled: true

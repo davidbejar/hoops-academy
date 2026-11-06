@@ -1,0 +1,284 @@
+{{- /*
+Event broker (WP66, ADR-0036), behind events.enabled (on in values-kind.yaml): one Redpanda node as a StatefulSet with a
+persistent volume, the Kafka API on 9092 and the admin API on 9644, both behind a headless Service `redpanda`.
+Access control in three layers: the NetworkPolicy (Kafka only from the pods of the event users, i.e. the services, and
+the bootstrap Job; the admin API only from the Job), SASL/SCRAM-SHA-256 on the Kafka listener and basic auth on the
+admin API (admin_api_require_auth), and ACLs (kafka_enable_authorization: without it every authenticated user may do
+everything). The superuser is created by Redpanda itself at bootstrap from RP_BOOTSTRAP_USER; the post-install /
+post-upgrade Job `redpanda-bootstrap` (files/redpanda-bootstrap.sh) then sets the cluster properties again, creates
+the service users with their passwords from Secrets, their prefixed ACLs and the topics. No Secret is rendered: the
+Secrets exist before the install (ADR-0012; kind: deploy/kind/secrets.sh) or come from the External Secrets Operator.
+*/ -}}
+{{- $ev := .Values.events -}}
+{{- if $ev.enabled }}
+{{- $rp := $ev.redpanda }}
+{{- $host := printf "redpanda-0.redpanda.%s.svc.cluster.local" .Release.Namespace }}
+{{- $image := printf "%s:%s%s" $rp.image.repository $rp.image.tag (ternary (printf "@%s" $rp.image.digest) "" (ne $rp.image.digest "")) }}
+{{- $labels := dict "app.kubernetes.io/name" "redpanda" "app.kubernetes.io/part-of" "hoops-academy" "app.kubernetes.io/component" "event-broker" }}
+{{- $jobLabels := dict "app.kubernetes.io/name" "redpanda-bootstrap" "app.kubernetes.io/part-of" "hoops-academy" "app.kubernetes.io/component" "event-broker" }}
+{{- $podSecurity := dict "runAsNonRoot" true "runAsUser" $rp.runAsUser "runAsGroup" $rp.runAsGroup "fsGroup" $rp.runAsGroup "seccompProfile" (dict "type" "RuntimeDefault") }}
+{{- $containerSecurity := dict "allowPrivilegeEscalation" false "readOnlyRootFilesystem" true "capabilities" (dict "drop" (list "ALL")) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redpanda-config
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+data:
+  # Node configuration (read-only mount; Redpanda keeps its node id and the cluster configuration in its data volume).
+  redpanda.yaml: |
+    redpanda:
+      data_directory: /var/lib/redpanda/data
+      empty_seed_starts_cluster: true
+      seed_servers: []
+      developer_mode: {{ $rp.developerMode }}
+      rpc_server: {address: 0.0.0.0, port: 33145}
+      advertised_rpc_api: {address: {{ $host }}, port: 33145}
+      kafka_api:
+        - {name: internal, address: 0.0.0.0, port: 9092, authentication_method: sasl}
+      advertised_kafka_api:
+        - {name: internal, address: {{ $host }}, port: 9092}
+      admin:
+        - {name: internal, address: 0.0.0.0, port: 9644}
+  # Cluster properties applied once, when the cluster is created (the bootstrap Job sets the scalar ones again on every
+  # install/upgrade, so an existing volume converges too).
+  .bootstrap.yaml: |
+    superusers: [{{ $ev.superuser.name }}]
+    {{- range $k, $v := $rp.clusterConfig }}
+    {{ $k }}: {{ $v }}
+    {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redpanda
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  # Headless: the clients' bootstrap address redpanda.<namespace>.svc:9092 resolves to the pod, which advertises
+  # redpanda-0.redpanda.<namespace>.svc.cluster.local (stable across restarts).
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector: {app.kubernetes.io/name: redpanda}
+  ports:
+    - {name: kafka, port: 9092, targetPort: kafka}
+    - {name: admin, port: 9644, targetPort: admin}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redpanda
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  serviceName: redpanda
+  replicas: 1
+  revisionHistoryLimit: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels: {app.kubernetes.io/name: redpanda}
+  template:
+    metadata:
+      labels:
+        {{- toYaml $labels | nindent 8 }}
+      annotations:
+        # Node configuration and bootstrap properties change -> restart (they are read at start).
+        checksum/config: {{ list .Release.Namespace $rp $ev.superuser | toJson | sha256sum | trunc 16 | quote }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        {{- toYaml $podSecurity | nindent 8 }}
+      containers:
+        - name: redpanda
+          image: {{ $image | quote }}
+          imagePullPolicy: IfNotPresent
+          # The redpanda binary itself (not `rpk redpanda start`, which rewrites redpanda.yaml): one shard, a fixed
+          # Seastar memory below the container limit, overprovisioned (no CPU pinning on a shared node).
+          command: [/usr/bin/redpanda]
+          args:
+            - --redpanda-cfg
+            - /etc/redpanda/redpanda.yaml
+            - --smp
+            - {{ $rp.smp | quote }}
+            - --memory
+            - {{ $rp.memory | quote }}
+            - --reserve-memory
+            - 0M
+            - --overprovisioned
+            - --default-log-level={{ $rp.logLevel }}
+            {{- range $rp.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
+          env:
+            - name: HOME
+              value: /tmp
+            # The superuser, created by Redpanda when the cluster bootstraps (empty volume). Rotation: docs/runbooks/events.md.
+            - name: RP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ $ev.superuser.passwordSecret }}, key: password}
+            - name: RP_BOOTSTRAP_USER
+              value: "{{ $ev.superuser.name }}:$(RP_ADMIN_PASSWORD):SCRAM-SHA-256"
+          ports:
+            - {name: kafka, containerPort: 9092}
+            - {name: admin, containerPort: 9644}
+            - {name: rpc, containerPort: 33145}
+          # /v1/status/ready answers without a login (admin_api_require_auth exempts the status endpoints).
+          startupProbe:
+            httpGet: {path: /v1/status/ready, port: admin}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /v1/status/ready, port: admin}
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: {port: kafka}
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            {{- toYaml $rp.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml $containerSecurity | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/redpanda/data}
+            - {name: config, mountPath: /etc/redpanda, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: config, configMap: {name: redpanda-config}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 16Mi}}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- toYaml $labels | nindent 10 }}
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with $rp.storage.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests: {storage: {{ $rp.storage.size }}}
+---
+# Kafka (9092) only from the event users' pods (app.kubernetes.io/name = user name = the service's name) and the bootstrap
+# Job; the admin API (9644) only from the Job. Egress: DNS only (the broker resolves its advertised name), no internet
+# (the metrics reporter is off as well).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redpanda
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: redpanda}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  {{- range $ev.users }}
+                  - {{ .name }}
+                  {{- end }}
+                  - redpanda-bootstrap
+      ports:
+        - {port: kafka, protocol: TCP}
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: redpanda-bootstrap}
+      ports:
+        - {port: admin, protocol: TCP}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redpanda-bootstrap
+  labels:
+    {{- toYaml $jobLabels | nindent 4 }}
+data:
+  bootstrap.sh: |
+    {{- .Files.Get "files/redpanda-bootstrap.sh" | nindent 4 }}
+  cluster-config: |
+    {{- range $k, $v := $rp.clusterConfig }}
+    {{ $k }} {{ $v }}
+    {{- end }}
+  users: |
+    {{- range $i, $u := $ev.users }}
+    {{ $i }} {{ $u.name }} {{ join "," ($u.produce | default (list "-")) }} {{ join "," ($u.consume | default (list "-")) }} {{ join "," ($u.groups | default (list "-")) }}
+    {{- end }}
+  topics: |
+    {{- range $ev.topics.names }}
+    {{ . }}
+    {{- end }}
+  topic-config: |
+    {{- range $k, $v := $ev.topics.config }}
+    {{ $k }}={{ $v }}
+    {{- end }}
+---
+# Runs after every install/upgrade (Helm waits for it with --wait; Tilt applies it like any Job and it waits for the
+# broker itself). Idempotent; a failed run is retried (backoffLimit) and the previous Job is replaced on the next upgrade.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redpanda-bootstrap
+  labels:
+    {{- toYaml $jobLabels | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        {{- toYaml $jobLabels | nindent 8 }}
+      annotations:
+        checksum/config: {{ list $ev (.Files.Get "files/redpanda-bootstrap.sh") | toJson | sha256sum | trunc 16 | quote }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        {{- toYaml (omit $podSecurity "fsGroup") | nindent 8 }}
+      containers:
+        - name: bootstrap
+          image: {{ $image | quote }}
+          imagePullPolicy: IfNotPresent
+          command: [bash, /bootstrap/bootstrap.sh]
+          env:
+            - {name: CONFIG_DIR, value: /bootstrap}
+            - {name: BROKERS, value: "{{ $host }}:9092"}
+            - {name: ADMIN_URL, value: "http://{{ $host }}:9644"}
+            - {name: PARTITIONS, value: {{ $ev.topics.partitions | quote }}}
+            - {name: SUPERUSER, value: {{ $ev.superuser.name | quote }}}
+            - name: SUPERUSER_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ $ev.superuser.passwordSecret }}, key: password}
+            {{- range $i, $u := $ev.users }}
+            - name: USER_PASSWORD_{{ $i }}
+              valueFrom:
+                secretKeyRef: {name: {{ $u.passwordSecret }}, key: password}
+            {{- end }}
+          resources: {requests: {cpu: 10m, memory: 32Mi}, limits: {memory: 128Mi}}
+          securityContext:
+            {{- toYaml $containerSecurity | nindent 12 }}
+          volumeMounts:
+            - {name: bootstrap, mountPath: /bootstrap, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: bootstrap, configMap: {name: redpanda-bootstrap}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 16Mi}}
+{{- end }}

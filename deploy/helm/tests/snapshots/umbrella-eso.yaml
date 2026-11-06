@@ -227,6 +227,51 @@ spec:
   egress: []
 
 ---
+# Source: hoops/templates/redpanda.yaml
+# Kafka (9092) only from the event users' pods (app.kubernetes.io/name = user name = the service's name) and the bootstrap
+# Job; the admin API (9644) only from the Job. Egress: DNS only (the broker resolves its advertised name), no internet
+# (the metrics reporter is off as well).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redpanda
+  labels:
+    app.kubernetes.io/component: event-broker
+    app.kubernetes.io/name: redpanda
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: redpanda}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - core-service
+                  - game-service
+                  - athlete-service
+                  - redpanda-bootstrap
+      ports:
+        - {port: kafka, protocol: TCP}
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: redpanda-bootstrap}
+      ports:
+        - {port: admin, protocol: TCP}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+
+---
 # Source: hoops/charts/athlete/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -10942,6 +10987,158 @@ data:
     
 
 ---
+# Source: hoops/templates/redpanda.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redpanda-config
+  labels:
+    app.kubernetes.io/component: event-broker
+    app.kubernetes.io/name: redpanda
+    app.kubernetes.io/part-of: hoops-academy
+data:
+  # Node configuration (read-only mount; Redpanda keeps its node id and the cluster configuration in its data volume).
+  redpanda.yaml: |
+    redpanda:
+      data_directory: /var/lib/redpanda/data
+      empty_seed_starts_cluster: true
+      seed_servers: []
+      developer_mode: true
+      rpc_server: {address: 0.0.0.0, port: 33145}
+      advertised_rpc_api: {address: redpanda-0.redpanda.hoops.svc.cluster.local, port: 33145}
+      kafka_api:
+        - {name: internal, address: 0.0.0.0, port: 9092, authentication_method: sasl}
+      advertised_kafka_api:
+        - {name: internal, address: redpanda-0.redpanda.hoops.svc.cluster.local, port: 9092}
+      admin:
+        - {name: internal, address: 0.0.0.0, port: 9644}
+  # Cluster properties applied once, when the cluster is created (the bootstrap Job sets the scalar ones again on every
+  # install/upgrade, so an existing volume converges too).
+  .bootstrap.yaml: |
+    superusers: [admin]
+    admin_api_require_auth: true
+    auto_create_topics_enabled: false
+    default_topic_replications: 1
+    enable_metrics_reporter: false
+    kafka_enable_authorization: true
+
+---
+# Source: hoops/templates/redpanda.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redpanda-bootstrap
+  labels:
+    app.kubernetes.io/component: event-broker
+    app.kubernetes.io/name: redpanda-bootstrap
+    app.kubernetes.io/part-of: hoops-academy
+data:
+  bootstrap.sh: |
+    #!/usr/bin/env bash
+    # Bootstrap Job of the chart's Redpanda (WP66, ADR-0036): makes the broker match the values on every install and upgrade.
+    #   1. cluster properties (CONFIG_DIR/cluster-config: "<key> <value>" lines), e.g. kafka_enable_authorization true
+    #   2. one SCRAM-SHA-256 user per service (CONFIG_DIR/users: "<index> <name> <produce> <consume> <groups>", comma
+    #      separated prefixes, "-" for none; the password is $USER_PASSWORD_<index>): created, or its password set again
+    #      (that is how a rotated Secret reaches the broker)
+    #   3. prefixed ACLs: produce = write+describe on topics, consume = read+describe on topics, groups = read+describe on
+    #      consumer groups (an ACL removed from the values stays until deleted by hand, docs/runbooks/events.md)
+    #   4. topics (CONFIG_DIR/topics, CONFIG_DIR/topic-config "<key>=<value>" lines, $PARTITIONS): created when missing,
+    #      configuration applied again when present (partitions are never changed here)
+    # Logs in as the superuser $SUPERUSER / $SUPERUSER_PASSWORD (the broker created it at bootstrap from RP_BOOTSTRAP_USER).
+    # Passwords stay in environment variables and stdin: rpk reads RPK_USER/RPK_PASS, curl reads the admin login from a
+    # netrc on a file descriptor and the JSON body from stdin, so no secret is on a command line.
+    set -euo pipefail
+    : "${BROKERS:?}" "${ADMIN_URL:?}" "${SUPERUSER:?}" "${CONFIG_DIR:?}" "${PARTITIONS:?}"
+    : "${SUPERUSER_PASSWORD:?the superuser Secret has an empty password}"
+    export HOME=/tmp RPK_BROKERS="$BROKERS" RPK_ADMIN_HOSTS="${ADMIN_URL#http://}" RPK_USER="$SUPERUSER" \
+      RPK_PASS="$SUPERUSER_PASSWORD" RPK_SASL_MECHANISM=SCRAM-SHA-256
+    admin_host="${RPK_ADMIN_HOSTS%%:*}"
+    log() { printf '%s %s\n' "$(date -u +%H:%M:%S)" "$*"; }
+    
+    log "waiting for $ADMIN_URL/v1/status/ready"
+    for i in $(seq 1 60); do
+      curl -sf -o /dev/null "$ADMIN_URL/v1/status/ready" && break
+      [ "$i" = 60 ] && { log "broker not ready after 5 min"; exit 1; }
+      sleep 5
+    done
+    
+    log "cluster properties"
+    while read -r key value; do
+      [ -n "$key" ] || continue
+      rpk cluster config set "$key" "$value" >/dev/null
+      log "  $key = $(rpk cluster config get "$key")"
+    done < "$CONFIG_DIR/cluster-config"
+    
+    json_escape() { local s="${1//\\/\\\\}"; s="${s//\"/\\\"}"; printf '%s' "$s"; }
+    admin_call() { # method path name password -> HTTP status; JSON body on stdin, admin login from a netrc on an fd
+      printf '{"username":"%s","password":"%s","algorithm":"SCRAM-SHA-256"}' "$(json_escape "$3")" "$(json_escape "$4")" |
+        curl -s -o /dev/null -w '%{http_code}' -X "$1" -H 'Content-Type: application/json' --data-binary @- \
+          --netrc-file <(printf 'machine %s login %s password %s\n' "$admin_host" "$SUPERUSER" "$SUPERUSER_PASSWORD") \
+          "$ADMIN_URL$2"
+    }
+    acl() { # principal operations resource-type prefixes
+      local p IFS=,
+      [ "$4" = - ] && return 0
+      for p in $4; do
+        rpk security acl create --allow-principal "User:$1" --operation "$2" "--$3" "$p" --resource-pattern-type prefixed >/dev/null
+        log "  ACL User:$1 $2 on $3 prefix $p"
+      done
+    }
+    
+    log "users and ACLs"
+    while read -r index name produce consume groups; do
+      [ -n "$index" ] || continue
+      var="USER_PASSWORD_$index"; pw="${!var:-}"
+      [ -n "$pw" ] || { log "user $name: empty password (Secret)"; exit 1; }
+      code=$(admin_call POST /v1/security/users "$name" "$pw")
+      case "$code" in 2??) ;; 400|409) ;; *) log "user $name: create -> HTTP $code"; exit 1 ;; esac
+      code=$(admin_call PUT "/v1/security/users/$name" "$name" "$pw")
+      case "$code" in 2??) log "  user $name (SCRAM-SHA-256) present, password from its Secret" ;;
+        *) log "user $name: set password -> HTTP $code"; exit 1 ;; esac
+      acl "$name" write,describe topic "$produce"
+      acl "$name" read,describe topic "$consume"
+      acl "$name" read,describe group "$groups"
+    done < "$CONFIG_DIR/users"
+    
+    log "topics"
+    create_flags=() set_flags=()
+    while read -r kv; do [ -n "$kv" ] && create_flags+=(-c "$kv") && set_flags+=(--set "$kv"); done < "$CONFIG_DIR/topic-config"
+    existing=$(rpk topic list | awk 'NR > 1 {print $1}')
+    while read -r topic; do
+      [ -n "$topic" ] || continue
+      if grep -qx -- "$topic" <<<"$existing"; then
+        rpk topic alter-config "$topic" "${set_flags[@]}" >/dev/null; log "  kept    $topic"
+      else
+        rpk topic create "$topic" -p "$PARTITIONS" -r 1 "${create_flags[@]}" >/dev/null; log "  created $topic"
+      fi
+    done < "$CONFIG_DIR/topics"
+    rpk topic list
+    log "bootstrap done"
+    
+  cluster-config: |
+    admin_api_require_auth true
+    auto_create_topics_enabled false
+    default_topic_replications 1
+    enable_metrics_reporter false
+    kafka_enable_authorization true
+  users: |
+    0 core-service core. - -
+    1 game-service - core. game-service.
+    2 athlete-service - core. athlete-service.
+  topics: |
+    core.person
+    core.player
+    core.team
+    core.team-player
+    core.team-staff
+    core.guardian-link
+    core.tenant
+  topic-config: |
+    cleanup.policy=compact
+    delete.retention.ms=604800000
+    retention.ms=-1
+
+---
 # Source: hoops/charts/athlete/templates/service.yaml
 apiVersion: v1
 kind: Service
@@ -11084,6 +11281,26 @@ spec:
   selector: {app.kubernetes.io/name: ratelimit-redis}
   ports:
     - {name: redis, port: 6379, targetPort: redis}
+
+---
+# Source: hoops/templates/redpanda.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redpanda
+  labels:
+    app.kubernetes.io/component: event-broker
+    app.kubernetes.io/name: redpanda
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  # Headless: the clients' bootstrap address redpanda.<namespace>.svc:9092 resolves to the pod, which advertises
+  # redpanda-0.redpanda.<namespace>.svc.cluster.local (stable across restarts).
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector: {app.kubernetes.io/name: redpanda}
+  ports:
+    - {name: kafka, port: 9092, targetPort: kafka}
+    - {name: admin, port: 9644, targetPort: admin}
 
 ---
 # Source: hoops/charts/athlete/templates/deployment.yaml
@@ -11792,6 +12009,117 @@ spec:
         - name: data
           emptyDir: {sizeLimit: 16Mi}
         - {name: acl, emptyDir: {medium: Memory, sizeLimit: 1Mi}}
+
+---
+# Source: hoops/templates/redpanda.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redpanda
+  labels:
+    app.kubernetes.io/component: event-broker
+    app.kubernetes.io/name: redpanda
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  serviceName: redpanda
+  replicas: 1
+  revisionHistoryLimit: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels: {app.kubernetes.io/name: redpanda}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: event-broker
+        app.kubernetes.io/name: redpanda
+        app.kubernetes.io/part-of: hoops-academy
+      annotations:
+        # Node configuration and bootstrap properties change -> restart (they are read at start).
+        checksum/config: "1e5f79be201d0e60"
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 101
+        runAsGroup: 101
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: redpanda
+          image: "docker.io/redpandadata/redpanda:v26.2.6@sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce"
+          imagePullPolicy: IfNotPresent
+          # The redpanda binary itself (not `rpk redpanda start`, which rewrites redpanda.yaml): one shard, a fixed
+          # Seastar memory below the container limit, overprovisioned (no CPU pinning on a shared node).
+          command: [/usr/bin/redpanda]
+          args:
+            - --redpanda-cfg
+            - /etc/redpanda/redpanda.yaml
+            - --smp
+            - "1"
+            - --memory
+            - "512M"
+            - --reserve-memory
+            - 0M
+            - --overprovisioned
+            - --default-log-level=info
+          env:
+            - name: HOME
+              value: /tmp
+            # The superuser, created by Redpanda when the cluster bootstraps (empty volume). Rotation: docs/runbooks/events.md.
+            - name: RP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: hoops-redpanda-admin, key: password}
+            - name: RP_BOOTSTRAP_USER
+              value: "admin:$(RP_ADMIN_PASSWORD):SCRAM-SHA-256"
+          ports:
+            - {name: kafka, containerPort: 9092}
+            - {name: admin, containerPort: 9644}
+            - {name: rpc, containerPort: 33145}
+          # /v1/status/ready answers without a login (admin_api_require_auth exempts the status endpoints).
+          startupProbe:
+            httpGet: {path: /v1/status/ready, port: admin}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /v1/status/ready, port: admin}
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: {port: kafka}
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            limits:
+              memory: 768Mi
+            requests:
+              cpu: 50m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/redpanda/data}
+            - {name: config, mountPath: /etc/redpanda, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: config, configMap: {name: redpanda-config}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 16Mi}}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/component: event-broker
+          app.kubernetes.io/name: redpanda
+          app.kubernetes.io/part-of: hoops-academy
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests: {storage: 1Gi}
 
 ---
 # Source: hoops/charts/game/templates/httproute.yaml
@@ -12513,6 +12841,126 @@ spec:
       remoteRef: {key: hoops, property: RATELIMIT_REDIS_PASSWORD}
 
 ---
+# Source: hoops/templates/externalsecrets.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: hoops-redpanda-admin
+  labels:
+    app.kubernetes.io/component: secrets
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  refreshInterval: "1m"
+  secretStoreRef: {kind: ClusterSecretStore, name: hoops}
+  target:
+    name: hoops-redpanda-admin
+    creationPolicy: Owner
+    deletionPolicy: Retain
+    template:
+      engineVersion: v2
+      type: kubernetes.io/basic-auth
+      metadata:
+        labels:
+          app.kubernetes.io/component: secrets
+          app.kubernetes.io/part-of: hoops-academy
+      mergePolicy: Merge
+      data:
+        username: admin
+  data:
+    - secretKey: password
+      remoteRef: {key: hoops, property: REDPANDA_ADMIN_PASSWORD}
+
+---
+# Source: hoops/templates/externalsecrets.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: hoops-redpanda-core-service
+  labels:
+    app.kubernetes.io/component: secrets
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  refreshInterval: "1m"
+  secretStoreRef: {kind: ClusterSecretStore, name: hoops}
+  target:
+    name: hoops-redpanda-core-service
+    creationPolicy: Owner
+    deletionPolicy: Retain
+    template:
+      engineVersion: v2
+      type: kubernetes.io/basic-auth
+      metadata:
+        labels:
+          app.kubernetes.io/component: secrets
+          app.kubernetes.io/part-of: hoops-academy
+      mergePolicy: Merge
+      data:
+        username: core-service
+  data:
+    - secretKey: password
+      remoteRef: {key: hoops, property: REDPANDA_CORE_SERVICE_PASSWORD}
+
+---
+# Source: hoops/templates/externalsecrets.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: hoops-redpanda-game-service
+  labels:
+    app.kubernetes.io/component: secrets
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  refreshInterval: "1m"
+  secretStoreRef: {kind: ClusterSecretStore, name: hoops}
+  target:
+    name: hoops-redpanda-game-service
+    creationPolicy: Owner
+    deletionPolicy: Retain
+    template:
+      engineVersion: v2
+      type: kubernetes.io/basic-auth
+      metadata:
+        labels:
+          app.kubernetes.io/component: secrets
+          app.kubernetes.io/part-of: hoops-academy
+      mergePolicy: Merge
+      data:
+        username: game-service
+  data:
+    - secretKey: password
+      remoteRef: {key: hoops, property: REDPANDA_GAME_SERVICE_PASSWORD}
+
+---
+# Source: hoops/templates/externalsecrets.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: hoops-redpanda-athlete-service
+  labels:
+    app.kubernetes.io/component: secrets
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  refreshInterval: "1m"
+  secretStoreRef: {kind: ClusterSecretStore, name: hoops}
+  target:
+    name: hoops-redpanda-athlete-service
+    creationPolicy: Owner
+    deletionPolicy: Retain
+    template:
+      engineVersion: v2
+      type: kubernetes.io/basic-auth
+      metadata:
+        labels:
+          app.kubernetes.io/component: secrets
+          app.kubernetes.io/part-of: hoops-academy
+      mergePolicy: Merge
+      data:
+        username: athlete-service
+  data:
+    - secretKey: password
+      remoteRef: {key: hoops, property: REDPANDA_ATHLETE_SERVICE_PASSWORD}
+
+---
 # Source: hoops/templates/gateway.yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -12957,3 +13405,76 @@ spec:
       backendRefs:
         - {name: web, port: 8080}
       timeouts: {request: 60s}
+---
+# Source: hoops/templates/redpanda.yaml
+# Runs after every install/upgrade (Helm waits for it with --wait; Tilt applies it like any Job and it waits for the
+# broker itself). Idempotent; a failed run is retried (backoffLimit) and the previous Job is replaced on the next upgrade.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redpanda-bootstrap
+  labels:
+    app.kubernetes.io/component: event-broker
+    app.kubernetes.io/name: redpanda-bootstrap
+    app.kubernetes.io/part-of: hoops-academy
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: event-broker
+        app.kubernetes.io/name: redpanda-bootstrap
+        app.kubernetes.io/part-of: hoops-academy
+      annotations:
+        checksum/config: "15b9658d6268103c"
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsGroup: 101
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bootstrap
+          image: "docker.io/redpandadata/redpanda:v26.2.6@sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce"
+          imagePullPolicy: IfNotPresent
+          command: [bash, /bootstrap/bootstrap.sh]
+          env:
+            - {name: CONFIG_DIR, value: /bootstrap}
+            - {name: BROKERS, value: "redpanda-0.redpanda.hoops.svc.cluster.local:9092"}
+            - {name: ADMIN_URL, value: "http://redpanda-0.redpanda.hoops.svc.cluster.local:9644"}
+            - {name: PARTITIONS, value: "1"}
+            - {name: SUPERUSER, value: "admin"}
+            - name: SUPERUSER_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: hoops-redpanda-admin, key: password}
+            - name: USER_PASSWORD_0
+              valueFrom:
+                secretKeyRef: {name: hoops-redpanda-core-service, key: password}
+            - name: USER_PASSWORD_1
+              valueFrom:
+                secretKeyRef: {name: hoops-redpanda-game-service, key: password}
+            - name: USER_PASSWORD_2
+              valueFrom:
+                secretKeyRef: {name: hoops-redpanda-athlete-service, key: password}
+          resources: {requests: {cpu: 10m, memory: 32Mi}, limits: {memory: 128Mi}}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: bootstrap, mountPath: /bootstrap, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: bootstrap, configMap: {name: redpanda-bootstrap}}
+        - {name: tmp, emptyDir: {medium: Memory, sizeLimit: 16Mi}}
+

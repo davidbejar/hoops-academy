@@ -15,6 +15,14 @@ gateway:
     serviceType: NodePort
     nodePorts: {http: 30080, https: 30443}
     resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 256Mi}}
+# Event broker (WP66, ADR-0036): small Redpanda in developer mode (relaxed memory/fsync checks for the shared 2-CPU VM).
+events:
+  enabled: true
+  redpanda:
+    memory: 512M
+    developerMode: true
+    resources: {requests: {cpu: 50m, memory: 512Mi}, limits: {memory: 768Mi}}
+    storage: {size: 1Gi}
 # Counter store of the global rate limits; deploy/kind/up.sh points Envoy Gateway at ratelimit-redis.hoops:6379.
 rateLimit:
   redis: {enabled: true}
