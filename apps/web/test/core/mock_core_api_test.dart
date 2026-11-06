@@ -134,6 +134,53 @@ void main() {
     await teams.unassign('team-inf-a', 'p-leo');
   });
 
+  test('update requests honour clear like the server (ADR-0032)', () async {
+    final tenantApi = client.getTenantApi();
+    await tenantApi.updateTenantProfile(
+      xTenantId: t,
+      updateTenantProfileRequest: api.UpdateTenantProfileRequest((b) => b
+        ..contactEmail = 'info@demo.io'
+        ..websiteUrl = 'https://demo.io'),
+    );
+    final cleared = (await tenantApi.updateTenantProfile(
+      xTenantId: t,
+      updateTenantProfileRequest: api.UpdateTenantProfileRequest(
+        (b) => b.clear.add(api.UpdateTenantProfileRequestClearEnum.contactEmail),
+      ),
+    )).data!;
+    expect(cleared.contactEmail, isNull);
+    expect(cleared.websiteUrl, 'https://demo.io');
+    await expectLater(
+      tenantApi.updateTenantProfile(
+        xTenantId: t,
+        updateTenantProfileRequest: api.UpdateTenantProfileRequest((b) => b
+          ..websiteUrl = 'https://x.io'
+          ..clear.add(api.UpdateTenantProfileRequestClearEnum.websiteUrl)),
+      ),
+      throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 400)),
+    );
+
+    final cats = ApiAgeCategoriesRepository(client, t);
+    final c = await cats.create(code: 'U18', name: 'Junior', maxAge: 17, rank: 5);
+    expect((await cats.update(c.id, code: 'U18', name: 'Junior', rank: 5)).maxAge, isNull);
+
+    final teams = ApiTeamsRepository(client, t);
+    final team = (await teams.list(seasonId: 'season-2026')).firstWhere((x) => x.alias != null);
+    final renamed = await teams.update(
+      team.id,
+      api.UpdateTeamRequest((b) => b
+        ..name = 'Renamed'
+        ..clear.add(api.UpdateTeamRequestClearEnum.alias)),
+    );
+    expect(renamed.alias, isNull);
+    expect(renamed.name, 'Renamed');
+
+    final first = (await teams.roster('team-mini-a')).first;
+    expect(first.jerseyNumber, isNotNull);
+    expect((await teams.setJersey('team-mini-a', first.player.id, null)).jerseyNumber, isNull);
+    expect((await teams.setJersey('team-mini-a', first.player.id, '44')).jerseyNumber, '44');
+  });
+
   test('players: filters, create (admin = direct), eligible teams, withdraw', () async {
     final players = ApiPlayersRepository(client, t);
     expect((await players.list(status: api.PlayerStatus.ORPHAN)).single.displayName, 'Eva Mar');

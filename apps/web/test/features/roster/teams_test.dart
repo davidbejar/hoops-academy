@@ -170,6 +170,33 @@ void main() {
       expect(find.text('No hemos encontrado lo que buscas.'), findsOneWidget);
     });
 
+    testWidgets('editing a team with the alias emptied names alias in clear (ADR-0032)', (tester) async {
+      final core = coreWithTeams();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);
+
+      await tapKey(tester, 'team-edit');
+      expect(find.widgetWithText(TextFormField, 'Leones'), findsOneWidget);
+      await enter(tester, 'team-alias', '  ');
+      await tapKey(tester, 'form-submit');
+
+      final sent = core.teams.lastUpdate!;
+      expect(sent.alias, isNull);
+      expect(sent.clear, {api.UpdateTeamRequestClearEnum.alias});
+      expect(sent.name, 'Mini A');
+    });
+
+    testWidgets('editing a team that keeps its alias sends no clear', (tester) async {
+      final core = coreWithTeams();
+      await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);
+
+      await tapKey(tester, 'team-edit');
+      await enter(tester, 'team-alias', 'Lobos');
+      await tapKey(tester, 'form-submit');
+
+      expect(core.teams.lastUpdate!.alias, 'Lobos');
+      expect(core.teams.lastUpdate!.clear, isNull);
+    });
+
     testWidgets('unassign asks for confirmation; jersey change saves', (tester) async {
       final core = coreWithTeams();
       await pumpAs(tester, roles: {TenantRole.admin}, core: core, location: path);

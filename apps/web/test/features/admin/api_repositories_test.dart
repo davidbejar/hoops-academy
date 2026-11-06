@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/admin/data/academy_repository.dart';
+import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
 import 'package:hoops_app/features/admin/data/seasons_repository.dart';
 import 'package:hoops_app/features/roster/data/approvals_repository.dart';
 import 'package:hoops_app/features/roster/data/teams_repository.dart';
@@ -109,6 +110,47 @@ void main() {
     expect(adapter.last!.method, 'POST');
     expect(adapter.last!.path, '/api/core/teams/t1/players');
     expect(jsonDecode(utf8.decode(adapter.body!)), {'playerId': 'p1', 'jerseyNumber': '7'});
+  });
+
+  Map<String, Object?> teamPlayerJson(String? jersey) => {
+    'player': {'id': 'p1', 'displayName': 'Ana Ruiz'},
+    'teamId': 't1',
+    'jerseyNumber': jersey,
+    'joinedOn': '2026-09-01',
+    'playUpLevels': 0,
+    'playerStatus': 'ACTIVE',
+  };
+
+  test('a jersey change sends the number; removing it names jerseyNumber in clear (ADR-0032)', () async {
+    final (client, adapter) = clientWith((_) => teamPlayerJson('7'));
+    final repo = ApiTeamsRepository(client, tenant);
+
+    await repo.setJersey('t1', 'p1', '7');
+    expect(adapter.last!.method, 'PATCH');
+    expect(jsonDecode(utf8.decode(adapter.body!)), {'jerseyNumber': '7'});
+
+    await repo.setJersey('t1', 'p1', null);
+    expect(jsonDecode(utf8.decode(adapter.body!)), {
+      'clear': ['jerseyNumber'],
+    });
+  });
+
+  test('an age category update without maxAge names maxAge in clear (ADR-0032)', () async {
+    final (client, adapter) = clientWith(
+      (_) => {'id': 'c1', 'code': 'SEN', 'name': 'Senior', 'rank': 9},
+    );
+    final repo = ApiAgeCategoriesRepository(client, tenant);
+
+    await repo.update('c1', code: 'SEN', name: 'Senior', rank: 9);
+    expect(jsonDecode(utf8.decode(adapter.body!)), {
+      'code': 'SEN',
+      'name': 'Senior',
+      'rank': 9,
+      'clear': ['maxAge'],
+    });
+
+    await repo.update('c1', code: 'SEN', name: 'Senior', maxAge: 40, rank: 9);
+    expect(jsonDecode(utf8.decode(adapter.body!)), {'code': 'SEN', 'name': 'Senior', 'maxAge': 40, 'rank': 9});
   });
 
   test('reject sends the note; approve without a note sends an empty body object', () async {
