@@ -226,8 +226,9 @@ class ScheduleApiTest {
     void endingAScheduleRemovesFutureSessionsButKeepsThoseWithAttendance() {
         String team = "51000000-0000-4000-8000-0000000000c6";
         core.roster(TENANT, team, PLAYER);
-        String schedule = createSchedule(TENANT, team, "FRIDAY", "19:00");
         LocalDate today = LocalDate.now(ZONE);
+        // tomorrow's weekday: a fixed day made today's session past (kept) when the test ran after 19:00 on that day
+        String schedule = createSchedule(TENANT, team, today.plusDays(1).getDayOfWeek().name(), "19:00");
         String kept = api(TENANT).queryParam("teamId", team).queryParam("from", today.toString())
                 .queryParam("to", today.plusDays(30).toString()).get("/api/athlete/training-sessions")
                 .then().extract().path("items[1].id");
