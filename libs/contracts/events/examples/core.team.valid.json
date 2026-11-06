@@ -1,0 +1,36 @@
+[
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000021",
+    "type": "team.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "3c4d5e6f-7081-4923-a4b5-c6d7e8f90a1b",
+    "occurredAt": "2026-11-06T10:18:00Z",
+    "payload": {
+      "seasonId": "4d5e6f70-8192-4a34-b5c6-d7e8f90a1b2c",
+      "seasonStartDate": "2026-09-01",
+      "seasonEndDate": "2027-06-30",
+      "name": "Lions",
+      "alias": "L",
+      "ageCategoryId": "5e6f7081-92a3-4b45-86d7-e8f90a1b2c3d",
+      "genderPolicy": "MIXED"
+    }
+  },
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000022",
+    "type": "team.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "6f708192-a3b4-4c56-97e8-f90a1b2c3d4e",
+    "occurredAt": "2026-11-06T10:18:30Z",
+    "payload": {
+      "seasonId": "4d5e6f70-8192-4a34-b5c6-d7e8f90a1b2c",
+      "seasonStartDate": "2026-09-01",
+      "seasonEndDate": "2027-06-30",
+      "name": "Cubs",
+      "alias": null,
+      "ageCategoryId": "5e6f7081-92a3-4b45-86d7-e8f90a1b2c3d",
+      "genderPolicy": "FEMALE"
+    }
+  }
+]

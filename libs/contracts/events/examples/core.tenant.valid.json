@@ -1,0 +1,32 @@
+[
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000061",
+    "type": "tenant.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "occurredAt": "2026-11-06T10:00:00Z",
+    "payload": {
+      "slug": "lions-academy",
+      "name": "Lions Academy",
+      "status": "ACTIVE",
+      "timezone": "Europe/Madrid",
+      "defaultLocale": "es"
+    }
+  },
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000062",
+    "type": "tenant.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "occurredAt": "2026-11-06T11:00:00Z",
+    "payload": {
+      "slug": "lions-academy",
+      "name": "Lions Academy",
+      "status": "SUSPENDED",
+      "timezone": "Asia/Jakarta",
+      "defaultLocale": "id"
+    }
+  }
+]

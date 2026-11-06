@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hoops.academy/contracts/events/core.guardian-link.schema.json",
+  "title": "core.guardian-link",
+  "description": "A guardian (PARENT) linked to a player. Key `<tenantId>:<guardianLinkId>`. Unlinking emits `guardian-link.removed`, then a tombstone (null value) for the same key. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "type",
+    "version",
+    "tenantId",
+    "aggregateId",
+    "occurredAt",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "Unique per event (the outbox row id); the same id on every redelivery."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "guardian-link.changed",
+        "guardian-link.removed"
+      ]
+    },
+    "version": {
+      "const": 1,
+      "description": "Major version of the topic's contract (a breaking change is a new topic `<topic>.v2`)."
+    },
+    "tenantId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "The academy the event belongs to; consumers bind it per event."
+    },
+    "aggregateId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "Id of the aggregate; the Kafka key is `<tenantId>:<aggregateId>`."
+    },
+    "occurredAt": {
+      "$ref": "#/$defs/Instant",
+      "description": "When core wrote the change (UTC)."
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$"
+    },
+    "Date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "GuardianLinkChanged": {
+      "type": "object",
+      "description": "The link (it has no state besides its two ends).",
+      "additionalProperties": false,
+      "required": [
+        "guardianPersonId",
+        "playerId"
+      ],
+      "properties": {
+        "guardianPersonId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      }
+    },
+    "GuardianLinkRemoved": {
+      "type": "object",
+      "description": "The link that was removed (identity only).",
+      "additionalProperties": false,
+      "required": [
+        "guardianPersonId",
+        "playerId"
+      ],
+      "properties": {
+        "guardianPersonId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "guardian-link.changed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/GuardianLinkChanged"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "guardian-link.removed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/GuardianLinkRemoved"
+          }
+        }
+      }
+    }
+  ]
+}

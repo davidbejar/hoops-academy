@@ -8,6 +8,8 @@
 | `openapi/athlete.yaml` | athlete-service: `/api/athlete/**`, `/internal/usage/{tenantId}` |
 | `events/match-event.schema.json` | JSON Schema 2020-12 of a match event (`$defs` per type, dispatch on `type`) |
 | `events/examples/match-events.valid.json` | One valid event per type — shared test vectors |
+| `events/core.<aggregate>.schema.json` | JSON Schema 2020-12 of the roster events core publishes on topic `core.<aggregate>` (seven topics, section "Events") |
+| `events/examples/core.<aggregate>.valid.json` | Valid events of each topic (every type) — shared test vectors for the consumers |
 
 The jar ships these files as classpath resources: `classpath:openapi/core.yaml`, `classpath:events/match-event.schema.json`, …
 
@@ -49,6 +51,34 @@ The jar ships these files as classpath resources: `classpath:openapi/core.yaml`,
   null are named in `clear: [<name>, …]`, an `enum` of exactly the request's optional, nullable properties
   (`uniqueItems`), so a typo or a required property fails the strict validator. A property both in `clear` and given a
   value is a 400. Reason: the generated Dart clients omit null properties, so they cannot send an explicit null.
+
+## Events (core roster topics, `CoreEventSchemasTest`)
+
+core writes every change of a person, player, team, team assignment, team staff entry, guardian link or academy to its
+transactional outbox in the same transaction and publishes it to Redpanda (ADR-0008 amended, ADR-0036, WP67). One
+schema file per topic, `events/<topic>.schema.json`; the consumers (game, athlete) validate what they read against it.
+
+- **Topics** `core.person`, `core.player`, `core.team`, `core.team-player`, `core.team-staff`, `core.guardian-link`,
+  `core.tenant` (the list of `infra/compose/redpanda-topics.sh`; the test fails when the two differ). Kafka key
+  `<tenantId>:<aggregateId>`; value the JSON envelope below.
+- **Envelope** (identical in every file): `eventId` (uuid, the outbox row id: the same on every redelivery),
+  `type`, `version`, `tenantId`, `aggregateId` (uuid), `occurredAt` (UTC instant, `…Z`), `payload`. Closed objects
+  (`additionalProperties: false`).
+- **Types** `<aggregate>.changed` on every topic; `<aggregate>.removed` only where a record can disappear
+  (`team-staff`, `guardian-link`). A payload is a `$defs/<Aggregate><Verb>` object; every field is required and an
+  absent value is an explicit `null`.
+- **State transfer**: a `changed` event carries the whole current aggregate (the topics are compacted, ADR-0036), not
+  the fields that changed; a `removed` event carries the identity only and is followed by a tombstone (null value) for
+  the same key.
+- **Delivery**: at least once, in outbox order per key. Consumers ignore an `eventId` they have applied and never let an
+  older `occurredAt` overwrite a newer one; they bind the tenant from `tenantId`, never from a request.
+- **Versioning**: `version` is the topic's major version, `1` for an unsuffixed topic. An **additive** change (a new
+  payload field, a new `.removed` type, a new enum value consumers may treat as unknown) keeps the topic and the
+  version: consumers must accept it after they are updated, so add the field to the schema first, deploy the
+  consumers, then the producer. A **breaking** change (removing or renaming a field, changing a type or the meaning
+  of a value, a new key) is a new topic `<topic>.v2` with `version` 2 and its own schema file
+  `events/<topic>.v2.schema.json`; core publishes both until every consumer has moved, then the old topic is retired
+  (ADR needed).
 
 ## Versioning policy
 

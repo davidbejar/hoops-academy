@@ -1,0 +1,30 @@
+[
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000001",
+    "type": "person.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "9f0e1d2c-3b4a-4596-8877-665544332211",
+    "occurredAt": "2026-11-06T10:15:30.123456Z",
+    "payload": {
+      "displayName": "Cora Coach",
+      "subject": "5c6d7e8f-0a1b-4c2d-8e3f-405162738495",
+      "roles": ["ASSISTANT_COACH", "COACH"],
+      "active": true
+    }
+  },
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000002",
+    "type": "person.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "1a2b3c4d-5e6f-4789-9abc-def012345678",
+    "occurredAt": "2026-11-06T10:16:00Z",
+    "payload": {
+      "displayName": "Pablo Player",
+      "subject": null,
+      "roles": ["PLAYER"],
+      "active": false
+    }
+  }
+]

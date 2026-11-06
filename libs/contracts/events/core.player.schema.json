@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hoops.academy/contracts/events/core.player.schema.json",
+  "title": "core.player",
+  "description": "A player record of an academy; name, birth date and gender come from the player's person, so a change of those emits a `player.changed` too. Key `<tenantId>:<playerId>`. Players are never deleted (status WITHDRAWN / REJECTED). Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "type",
+    "version",
+    "tenantId",
+    "aggregateId",
+    "occurredAt",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "Unique per event (the outbox row id); the same id on every redelivery."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "player.changed"
+      ]
+    },
+    "version": {
+      "const": 1,
+      "description": "Major version of the topic's contract (a breaking change is a new topic `<topic>.v2`)."
+    },
+    "tenantId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "The academy the event belongs to; consumers bind it per event."
+    },
+    "aggregateId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "Id of the aggregate; the Kafka key is `<tenantId>:<aggregateId>`."
+    },
+    "occurredAt": {
+      "$ref": "#/$defs/Instant",
+      "description": "When core wrote the change (UTC)."
+    },
+    "payload": {
+      "$ref": "#/$defs/PlayerChanged"
+    }
+  },
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$"
+    },
+    "Date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "PlayerChanged": {
+      "type": "object",
+      "description": "The player's current state.",
+      "additionalProperties": false,
+      "required": [
+        "personId",
+        "displayName",
+        "status",
+        "birthDate",
+        "gender"
+      ],
+      "properties": {
+        "personId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 161,
+          "description": "The person's given and family name."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING_APPROVAL",
+            "ACTIVE",
+            "ORPHAN",
+            "WITHDRAWN",
+            "REJECTED"
+          ]
+        },
+        "birthDate": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gender": {
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "MALE",
+                "FEMALE"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

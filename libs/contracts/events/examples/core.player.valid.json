@@ -1,0 +1,32 @@
+[
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000011",
+    "type": "player.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "7e6d5c4b-3a29-4180-8f7e-6d5c4b3a2918",
+    "occurredAt": "2026-11-06T10:16:00Z",
+    "payload": {
+      "personId": "1a2b3c4d-5e6f-4789-9abc-def012345678",
+      "displayName": "Pablo Player",
+      "status": "ACTIVE",
+      "birthDate": "2014-03-09",
+      "gender": "MALE"
+    }
+  },
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000012",
+    "type": "player.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "8f7e6d5c-4b3a-4291-9a8b-7c6d5e4f3a2b",
+    "occurredAt": "2026-11-06T10:17:00Z",
+    "payload": {
+      "personId": "2b3c4d5e-6f70-4891-8abc-def012345679",
+      "displayName": "Paula Pending",
+      "status": "PENDING_APPROVAL",
+      "birthDate": null,
+      "gender": null
+    }
+  }
+]

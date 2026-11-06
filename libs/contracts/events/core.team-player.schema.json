@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hoops.academy/contracts/events/core.team-player.schema.json",
+  "title": "core.team-player",
+  "description": "A player's assignment to a team (core.team_player). Key `<tenantId>:<teamPlayerId>`. Never deleted: `leftOn` closes it, `invalidReason` marks an assignment the eligibility rules invalidated. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "type",
+    "version",
+    "tenantId",
+    "aggregateId",
+    "occurredAt",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "Unique per event (the outbox row id); the same id on every redelivery."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "team-player.changed"
+      ]
+    },
+    "version": {
+      "const": 1,
+      "description": "Major version of the topic's contract (a breaking change is a new topic `<topic>.v2`)."
+    },
+    "tenantId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "The academy the event belongs to; consumers bind it per event."
+    },
+    "aggregateId": {
+      "$ref": "#/$defs/Uuid",
+      "description": "Id of the aggregate; the Kafka key is `<tenantId>:<aggregateId>`."
+    },
+    "occurredAt": {
+      "$ref": "#/$defs/Instant",
+      "description": "When core wrote the change (UTC)."
+    },
+    "payload": {
+      "$ref": "#/$defs/TeamPlayerChanged"
+    }
+  },
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$"
+    },
+    "Date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "TeamPlayerChanged": {
+      "type": "object",
+      "description": "The assignment's current state.",
+      "additionalProperties": false,
+      "required": [
+        "teamId",
+        "playerId",
+        "jerseyNumber",
+        "joinedOn",
+        "leftOn",
+        "playUpLevels",
+        "invalidReason"
+      ],
+      "properties": {
+        "teamId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "playerId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "jerseyNumber": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]{1,2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "joinedOn": {
+          "$ref": "#/$defs/Date"
+        },
+        "leftOn": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "playUpLevels": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "invalidReason": {
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "CATEGORY_TOO_LOW",
+                "PLAY_UP_LIMIT_EXCEEDED",
+                "GENDER_POLICY",
+                "MISSING_BIRTH_DATE",
+                "MISSING_GENDER",
+                "PLAYER_NOT_ACTIVE"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

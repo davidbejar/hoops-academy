@@ -1,0 +1,26 @@
+[
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000051",
+    "type": "guardian-link.changed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "a3b4c5d6-e7f8-4091-a2b3-c4d5e6f70819",
+    "occurredAt": "2026-11-06T10:22:00Z",
+    "payload": {
+      "guardianPersonId": "b4c5d6e7-f809-41a2-b3c4-d5e6f7081920",
+      "playerId": "7e6d5c4b-3a29-4180-8f7e-6d5c4b3a2918"
+    }
+  },
+  {
+    "eventId": "0190b6a1-0000-7000-8000-000000000052",
+    "type": "guardian-link.removed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "a3b4c5d6-e7f8-4091-a2b3-c4d5e6f70819",
+    "occurredAt": "2026-11-06T10:23:00Z",
+    "payload": {
+      "guardianPersonId": "b4c5d6e7-f809-41a2-b3c4-d5e6f7081920",
+      "playerId": "7e6d5c4b-3a29-4180-8f7e-6d5c4b3a2918"
+    }
+  }
+]
