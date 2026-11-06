@@ -56,3 +56,45 @@ ADR).
   small (the kind values) and delete it when done.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- **Built:** chart 0.3.0 (umbrella; `keycloak` and `hoops-service` subcharts 0.3.0). The token endpoint, login form and
+  `events:batch` BackendTrafficPolicies use `rateLimit.global.rules` (same per-IP numbers, `sourceCIDR Distinct` v4 + v6,
+  `%3A` regex), no `local` rules; `rateLimit.type` is not written because Envoy Gateway v1.9.3's CRD marks it
+  deprecated ("Use Global and/or Local fields directly"). `ratelimit-redis` (Redis 8.10.3-alpine, tag-pinned with
+  optional digest; in memory only, 24 MB LRU, `CONFIG` renamed away, uid 999, read-only root FS, drop ALL, no SA token,
+  16–64 Mi) behind `rateLimit.redis.enabled` (on in `values-kind.yaml`), or `rateLimit.redis.url` for an external Redis.
+  Its NetworkPolicy admits only `envoy-gateway-system` pods labelled `app.kubernetes.io/name: envoy-ratelimit` and denies
+  all egress. New chart NOTES list the Envoy Gateway values. `deploy/kind/up.sh` pins
+  `config.envoyGateway.rateLimit` (backend Redis `ratelimit-redis.<ns>.svc.cluster.local:6379`, `failClosed=false`,
+  `timeout=100ms`, envoy-ratelimit 10m/32–128 Mi) and restarts the controller when its config changes.
+  `ratelimit-check.sh` waits for a fresh one-minute window and asserts the first 429 at rpm+1 exactly, plus that every
+  Envoy replica served part of the burst; its new `redis-down` mode stops Redis, expects no 429, restarts Redis and
+  re-checks. The Tiltfile groups Redis as resource `ratelimit-redis` (infra). ADR-0033 written; ADR-0031 marks
+  decision 4 replaced.
+- **Docs:** ADR README row; `release.md` section 4 carries the Envoy Gateway values for other clusters (there is no
+  `docs/runbooks/deploy.md`: the deploy runbook is that section); `kind.md` (wiring, capacity, checks, troubleshooting,
+  verification); `troubleshooting.md` (429 too early / never); `architecture.md` edge paragraph; threat model (rows +
+  new Redis tampering row), ASVS checklist, security review F-04 wording, roadmap.
+- **Verified:** `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED (79 checks, kubeconform 147/147, 5 snapshots re-recorded
+  after reviewing the diff; 0 `local:` in any render, and the new assertions fail on the old render); `helm package`
+  OK; `shellcheck -S warning` (deploy/kind/*.sh, run.sh) and `actionlint` clean; `tilt alpha tiltfile-result` evaluates.
+  On kind (Envoy Gateway v1.9.3, ratelimit image `5ae0682e`, `up.sh --deploy --from-host`):
+  `kubectl apply --dry-run=server` clean; Gateway Programmed; both BackendTrafficPolicies `Accepted=True`;
+  `smoke.sh core game athlete` SMOKE PASSED. `ratelimit-check.sh` PASSED with **1 replica** (events:batch 250 sent,
+  120 passed, first 429 at #121; token 130 sent, 60 passed, first 429 at #61) and with **2 replicas** (identical
+  numbers; both replicas in the access logs; the client IP Envoy sees is the SNAT'd node IP for both).
+  **Redis down** (`ratelimit-check.sh redis-down`, 2 replicas): 130 requests in 15 s, all passed, 0 × 429 (fail open;
+  each one waits up to the 100 ms timeout); envoy-ratelimit stayed up and reconnected by itself; after Redis was back
+  the first 429 was #121 again. NetworkPolicy probe: a `hoops` pod and an unlabelled `envoy-gateway-system` pod time
+  out, a pod with the envoy-ratelimit label gets `+PONG`. Re-running `up.sh` on the live cluster left the controller
+  untouched (config unchanged). Cluster deleted with `deploy/kind/down.sh`. `just test` not run: no Java, pom,
+  contract, web or compose file changed.
+- **Decisions/ADRs:** ADR-0033 (global limits, Redis without password behind the NetworkPolicy, `failClosed=false`,
+  timeout 100 ms instead of 20 ms, fixed windows allow up to 2 × rpm across a minute boundary, no gateway body-size
+  limit accepted).
+- **Open points / follow-ups:** the restart-on-config-change branch of `up.sh` was not exercised (only the unchanged
+  path). A Redis ACL (`-@scripting -@dangerous`) would be defense-in-depth beyond the NetworkPolicy; not done because it
+  needs a kind re-test. The NetworkPolicy needs an enforcing CNI, as do the chart's other policies. Per-IP limits can be
+  dodged by rotating addresses (an IPv6 /64), as before. `tilt ci` not run (WP42); `mailhog` and the service
+  NetworkPolicies are still "uncategorized" in Tilt (pre-existing). The orchestrator could add a HANDOVER line.
