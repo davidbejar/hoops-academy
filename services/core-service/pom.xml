@@ -27,8 +27,8 @@
     <surefire.groups></surefire.groups>
     <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
          run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
-    <pit.targetClasses>com.hoopsacademy.core.domain.*,com.hoopsacademy.core.application.members.LoginProvisioning*,com.hoopsacademy.core.application.members.TemporaryPasswordGenerator*,com.hoopsacademy.core.application.authz.AuthzCache*,com.hoopsacademy.core.application.audit.AuditActorKind*,com.hoopsacademy.core.application.port.AuditFilter*,com.hoopsacademy.core.application.port.AuditAction*,com.hoopsacademy.core.application.events.EventTopic*,com.hoopsacademy.core.application.events.RosterPayloads*,com.hoopsacademy.core.application.events.RosterEventAppender*,com.hoopsacademy.core.application.events.EventEnvelopes*,com.hoopsacademy.core.application.events.TenantEvents*</pit.targetClasses>
-    <pit.targetTests>com.hoopsacademy.core.domain.*,com.hoopsacademy.core.application.members.LoginProvisioningTest*,com.hoopsacademy.core.application.members.TemporaryPasswordGeneratorTest*,com.hoopsacademy.core.application.authz.AuthzCacheTest*,com.hoopsacademy.core.application.audit.AuditActorKindTest*,com.hoopsacademy.core.application.port.AuditFilterTest*,com.hoopsacademy.core.application.port.AuditActionCompletenessTest*,com.hoopsacademy.core.application.events.EventTopicTest*,com.hoopsacademy.core.application.events.RosterEventAppenderTest*,com.hoopsacademy.core.application.events.EventEnvelopesTest*</pit.targetTests>
+    <pit.targetClasses>com.hoopsacademy.core.domain.*,com.hoopsacademy.core.application.members.LoginProvisioning*,com.hoopsacademy.core.application.members.TemporaryPasswordGenerator*,com.hoopsacademy.core.application.authz.AuthzCache*,com.hoopsacademy.core.application.audit.AuditActorKind*,com.hoopsacademy.core.application.port.AuditFilter*,com.hoopsacademy.core.application.port.AuditAction*,com.hoopsacademy.core.application.events.EventTopic*,com.hoopsacademy.core.application.events.RosterPayloads*,com.hoopsacademy.core.application.events.RosterEventAppender*,com.hoopsacademy.core.application.events.EventEnvelopes*,com.hoopsacademy.core.application.events.TenantEvents*,com.hoopsacademy.core.adapters.out.events.KafkaEventBroker*</pit.targetClasses>
+    <pit.targetTests>com.hoopsacademy.core.domain.*,com.hoopsacademy.core.application.members.LoginProvisioningTest*,com.hoopsacademy.core.application.members.TemporaryPasswordGeneratorTest*,com.hoopsacademy.core.application.authz.AuthzCacheTest*,com.hoopsacademy.core.application.audit.AuditActorKindTest*,com.hoopsacademy.core.application.port.AuditFilterTest*,com.hoopsacademy.core.application.port.AuditActionCompletenessTest*,com.hoopsacademy.core.application.events.EventTopicTest*,com.hoopsacademy.core.application.events.RosterEventAppenderTest*,com.hoopsacademy.core.application.events.EventEnvelopesTest*,com.hoopsacademy.core.adapters.out.events.KafkaEventBrokerTest*</pit.targetTests>
   </properties>
 
   <dependencies>
@@ -93,10 +93,11 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
     </dependency>
-    <!-- outbox publisher (WP67, ADR-0036): Kafka producer to Redpanda; version from the Quarkus BOM -->
+    <!-- outbox publisher (WP67, ADR-0036): a plain Kafka producer to Redpanda that core can replace (WP81), with the
+         kafka.* configuration and Dev Services Redpanda; version from the Quarkus BOM -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-messaging-kafka</artifactId>
+      <artifactId>quarkus-kafka-client</artifactId>
     </dependency>
 
     <!-- ===== test ===== -->
@@ -146,6 +147,12 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers-postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- a SASL/SCRAM broker of the pinned Redpanda image whose users appear after core started (WP81); BOM version -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-redpanda</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
