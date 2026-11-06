@@ -21,6 +21,9 @@
          run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
     <pit.targetClasses>com.hoopsacademy.athlete.domain.*</pit.targetClasses>
     <pit.targetTests>com.hoopsacademy.athlete.domain.*</pit.targetTests>
+    <!-- tests tagged "keycloak" need a Keycloak container: run with -Pkeycloak-it -->
+    <surefire.excludedGroups>keycloak</surefire.excludedGroups>
+    <surefire.groups></surefire.groups>
   </properties>
 
   <dependencies>
@@ -120,6 +123,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.github.dasniko</groupId>
+      <artifactId>testcontainers-keycloak</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
@@ -154,6 +162,10 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <groups>${surefire.groups}</groups>
+          <excludedGroups>${surefire.excludedGroups}</excludedGroups>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -182,6 +194,15 @@
         <pit.skip>false</pit.skip>
         <!-- baseline (docs/quality/mutation.md): 100 % on 2026-11-06, rounded down to a multiple of 5 -->
         <pit.mutationThreshold>100</pit.mutationThreshold>
+      </properties>
+    </profile>
+    <!-- ./mvnw -pl services/athlete-service verify -Pkeycloak-it : runs ONLY the @Tag("keycloak") tests -->
+    <profile>
+      <id>keycloak-it</id>
+      <properties>
+        <surefire.groups>keycloak</surefire.groups>
+        <surefire.excludedGroups></surefire.excludedGroups>
+        <jacoco.skip>true</jacoco.skip>
       </properties>
     </profile>
   </profiles>

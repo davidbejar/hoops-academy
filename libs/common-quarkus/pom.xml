@@ -122,6 +122,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- RealmKeycloakResource (test-jar): real Keycloak with the academy realm for bearer-token tests -->
+      <groupId>com.github.dasniko</groupId>
+      <artifactId>testcontainers-keycloak</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>

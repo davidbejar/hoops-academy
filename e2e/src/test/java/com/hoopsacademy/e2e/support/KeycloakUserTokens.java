@@ -44,7 +44,18 @@ public final class KeycloakUserTokens {
 
     /** @return the access token of {@code username}. */
     public String login(String username, String password) {
-        return login(username, password, null);
+        return signIn(username, password, null).get("access_token").asText();
+    }
+
+    /** @return the whole token response of a sign-in of {@code username} (access, refresh and id token). */
+    public JsonNode signIn(String username, String password) {
+        return signIn(username, password, null);
+    }
+
+    /** Refresh-token grant of client {@code web}: the raw answer (a rejected refresh token is a 400). */
+    public HttpResponse<String> refresh(String refreshToken) {
+        return Http.postForm(Http.client(null), issuer + "/protocol/openid-connect/token", Map.of(
+                "grant_type", "refresh_token", "client_id", "web", "refresh_token", refreshToken));
     }
 
     /**
@@ -55,10 +66,10 @@ public final class KeycloakUserTokens {
      * @return the access token of {@code username}, now signed in with {@code newPassword}
      */
     public String firstLogin(String username, String temporaryPassword, String newPassword) {
-        return login(username, temporaryPassword, newPassword);
+        return signIn(username, temporaryPassword, newPassword).get("access_token").asText();
     }
 
-    private String login(String username, String password, String newPassword) {
+    private JsonNode signIn(String username, String password, String newPassword) {
         byte[] v = new byte[48];
         RANDOM.nextBytes(v);
         String verifier = b64url(v);
@@ -108,10 +119,9 @@ public final class KeycloakUserTokens {
         if (!state.equals(params.get("state")) || params.get("code") == null) {
             throw new IllegalStateException("state mismatch or missing code for " + username);
         }
-        JsonNode tokens = Http.json(Http.postForm(http, issuer + "/protocol/openid-connect/token", Map.of(
+        return Http.json(Http.postForm(http, issuer + "/protocol/openid-connect/token", Map.of(
                 "grant_type", "authorization_code", "client_id", "web", "code", params.get("code"),
                 "redirect_uri", redirect, "code_verifier", verifier)), 200);
-        return tokens.get("access_token").asText();
     }
 
     private HttpResponse<String> updatePassword(HttpClient http, Map<String, String> jar, String username,

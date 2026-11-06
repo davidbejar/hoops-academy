@@ -581,6 +581,39 @@ class JourneyTest {
         assertEquals(401, io.restassured.RestAssured.given().baseUri(E2eEnv.baseUrl()).get("/api/core/teams").statusCode());
     }
 
+    @Test
+    @Order(52)
+    void everyServiceRejectsATokenThatIsNotForItsAudience() {
+        // a service's own client-credentials token is minted for the services it calls (ADR-0034), never for itself
+        Map<String, String> ownApi = Map.of("core", "/api/core/me", "game", "/api/game/matches",
+                "athlete", "/api/athlete/training-schedules");
+        ownApi.forEach((service, path) -> {
+            String own = tokens.serviceToken(service + "-service", service.toUpperCase() + "_SERVICE_CLIENT_SECRET");
+            assertEquals(401, io.restassured.RestAssured.given().baseUri(E2eEnv.baseUrl()).auth().oauth2(own)
+                    .get(path).statusCode(), path + " with " + service + "-service's own token");
+        });
+        // the same kind of token passes authentication where it is meant to go (core calls game and athlete)
+        String core = tokens.serviceToken("core-service", "CORE_SERVICE_CLIENT_SECRET");
+        assertThat(io.restassured.RestAssured.given().baseUri(E2eEnv.baseUrl()).auth().oauth2(core)
+                .get("/api/game/matches").statusCode()).isNotEqualTo(401);
+    }
+
+    @Test
+    @Order(53)
+    void aRefreshTokenWorksOnceAndIsRejectedWhenUsedAgain() {
+        String first = tokens.signIn("superadmin@hoops-academy.com", E2eEnv.required("DEV_USER_PASSWORD"))
+                .get("refresh_token").asText();
+
+        var rotated = tokens.refresh(first);
+        assertEquals(200, rotated.statusCode(), rotated.body());
+        String second = io.restassured.path.json.JsonPath.from(rotated.body()).getString("refresh_token");
+        assertThat(second).isNotBlank().isNotEqualTo(first);
+
+        var reused = tokens.refresh(first);
+        assertEquals(400, reused.statusCode(), "a used refresh token must be refused (rotation + reuse detection)");
+        assertThat(reused.body()).contains("invalid_grant");
+    }
+
     // ------------------------------------------------------------------------------------------ lifecycle
 
     @Test
