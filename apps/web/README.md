@@ -140,7 +140,7 @@ guardian links), `/admin/seasons[/:id/rollover]`, `/admin/age-categories`; `/tea
 (eligibility cases); `/players`, `/players/new`, `/players/requests` (approvals inbox / "my requests"),
 `/players/:playerId`. Sub-pages are `ModulePage`s of a `FeatureModule` (own deferred library each).
 Shared building blocks for later modules: `core/session/capabilities.dart`, `core/ui/{async_body,actions,
-form_dialog,page_scaffold,labels}.dart`, `core/api/api.dart` (client + `Date`), `features/roster/presentation/
+form_dialog,page_scaffold,labels}.dart` (since WP72 also the kit, see "Design system"), `core/api/api.dart` (client + `Date`), `features/roster/presentation/
 eligibility_widgets.dart` (eligibility badge / panel, play-up badge).
 
 ### Training, health, profile and platform (WP14)
@@ -191,6 +191,44 @@ Demo: `flutter run -d chrome --web-port 5173 --dart-define=HOOPS_MOCK_API=true -
 (team Mini A: a LIVE match vs Tigres, a SCHEDULED one to set up, a FINISHED one with a box score) or
 `HOOPS_MOCK_ROLES=PARENT` (linked to Ana Ruiz: family mode). Switch the browser offline in DevTools to watch the
 queue grow and drain.
+
+## Design system (WP72, ADR-0040)
+The app takes the landing page's look: one basketball orange on a warm off-white / near-black canvas, white or
+graphite cards with hairline borders, heavy headings. Light and dark follow the system setting.
+
+| Where | What |
+|---|---|
+| `lib/core/design/tokens.dart` | **Tokens** (one import): `HoopsColors` (theme extension; canvas, surface, surfaceMuted, surfaceRaised, ink, inkMuted, border, borderStrong, accent/onAccent, accentText, accentSoft/onAccentSoft, inverse, brand, tones), `HoopsTone` + `ToneColors`, `HoopsSpace`, `HoopsRadius`, `HoopsElevation`, `HoopsMotion`, `HoopsSize`, `WidthClass` (compact < 720 ≤ medium < 1024 ≤ expanded, gutter / section gap), `HoopsType`, `contrastRatio` |
+| `lib/app/theme.dart` | `buildTheme(brightness)`: every Material role mapped to a token (no seed), component themes; `AppTokens` = legacy aliases |
+| `lib/core/ui/kit.dart` | **Kit** (one import, re-exports the tokens): `PageHeader`, `PageBody`, `ContentFrame`, `SubPage`, `SectionCard`, `StatTile`, `EmptyState`, `StatusChip` (`InfoChip` maps onto it), `ListRow` + `InitialsAvatar`, `ResponsiveGrid`, `NoticeBanner`, `showActionSheet` + `SheetAction`, `FormDialog` |
+
+Rules:
+- Colours: `final c = HoopsTokens.colorsOf(context);` then `c.ink`, `c.inkMuted`, `c.surface`, `c.tone(HoopsTone.danger)`
+  … Never `Color(0x…)`, never a raw `colorScheme.xContainer` for a meaning (use a tone).
+- Spacing / radii / sizes from `HoopsSpace`, `HoopsRadius`, `HoopsSize`; page gutters from `WidthClass.of(context)`.
+- Text from `Theme.of(context).textTheme` (headline* are w800, title* w700); `HoopsType.eyebrow/statValue/brand` take
+  the text theme so they keep its font family.
+- Orange fills (`accent`) carry `onAccent` labels; `brand` (`#E8590C`) is for icons and marks only (3.4:1).
+- A new colour role adds its text/background pairs to `HoopsColors.textPairs` or `controlPairs`;
+  `test/core/design/contrast_test.dart` fails below 4.5:1 (text) or 3:1 (controls).
+- Each kit widget: widget test in `test/core/ui/`, light + dark golden in `test/golden/kit_golden_test.dart`.
+
+### Wave 2 checklist (WP73 training/health, WP74 match, WP75 admin/platform/auth/profile)
+| Today in the feature screens | Replace with |
+|---|---|
+| `Scaffold` / `ListView(padding: …)` + a `Text(…, style: headlineSmall)` title | `PageBody(header: PageHeader(title:, subtitle:, eyebrow:, actions:), children: [...])`; sub-pages keep `SubPage` and put a `ContentFrame` / `PageBody` inside |
+| `Card(child: ListTile(leading: CircleAvatar(...), ...))` (47 `Card`, 41 `ListTile` in 20 files) | `ListRow(title:, subtitle:, leading: InitialsAvatar(name:), trailing:, onTap:)` with `HoopsSpace.gap` between rows |
+| `Card` + `Padding` + title `Row` blocks (detail pages, charts) | `SectionCard(title:, subtitle:, actions:, child:)` |
+| `InfoChip(…, tone: ChipTone.x)` (47 uses) and coloured `Container` labels | `StatusChip(label, tone: HoopsTone.x, icon:, dot:)`; match LIVE = `accent` + `dot`, finished = `success`, injured = `danger`, roles = `info` / `neutral` |
+| counters / KPIs as `Text` in rows (platform usage, attendance, box score totals) | `StatTile(label:, value:, icon:, caption:, tone:)` in a `ResponsiveGrid(minTileWidth: 160)` |
+| `EmptyView(message:)`, centred `Text` empty states, placeholders | `EmptyState(icon:, title:, message:, action:)` (or `AsyncBody(emptyMessage:, emptyAction:)`, which renders it) |
+| `PopupMenuButton` / `showModalBottomSheet` action lists on phones (live match, plans, roster) | `showActionSheet(context, title:, actions: [SheetAction(icon:, label:, value:, destructive:)])` |
+| local banners (`MaterialBanner`, coloured strips) | `NoticeBanner(message:, tone:, icon:, action:)` |
+| `colorScheme.primary/secondaryContainer/…` for meaning, `Color(0x…)` (`players_screen`, `teams_screen`, `live_match_screen`, `plans_screen`), literal `fontSize:` / `EdgeInsets.all(n)` | tokens: `c.tone(...)`, `c.accentText`, `HoopsSpace.*`, `textTheme.*` |
+| `AppTokens.spaceX` | `HoopsSpace.x` (same values; `AppTokens` goes once no screen uses it) |
+| `AlertDialog` forms | `FormDialog` (`confirmDialog` / `noteDialog` already themed) |
+Goldens of a restyled screen are re-recorded by that WP (`flutter test --update-goldens test/golden/<file>`); review
+the PNGs in light and dark.
 
 ## Generated API clients
 ```bash

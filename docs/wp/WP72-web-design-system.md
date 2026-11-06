@@ -58,4 +58,68 @@ and restyles the shell; the feature screens follow in wave 2 with your widgets.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - **Tokens** `apps/web/lib/core/design/` (import `tokens.dart`): `HoopsColors` (ThemeExtension, light + dark: canvas
+    `#FAF7F2`/`#0E0F11`, surface, surfaceMuted, surfaceRaised, ink, inkMuted, border, borderStrong, accent/onAccent,
+    accentText, accentSoft/onAccentSoft, inverse, brand `#E8590C`, tones neutral/success/warning/danger/info as
+    `ToneColors`, the WP14 `ChartPalette` carried), `HoopsTone`, `HoopsSpace`, `HoopsRadius`, `HoopsElevation`,
+    `HoopsMotion`, `HoopsSize`, `WidthClass` (720 / 1024, gutters 16/24/32), `HoopsType`, `contrastRatio`,
+    `HoopsTokens.colorsOf(context)`. `AppTokens` kept as aliases onto the new scale.
+  - **Theme** `lib/app/theme.dart`: `hoopsColorScheme` (every role from a token, no seed, no surface tint) +
+    component themes (app bar, navigation bar/rail, cards, chips, filled/outlined/text/elevated/icon buttons, FAB,
+    segmented buttons, outlined inputs, dialogs, bottom sheets, popup menus/menus, snack bars, tooltips, list tiles,
+    tabs, data tables, dividers, progress, badges, expansion tiles).
+  - **Kit** `lib/core/ui/` (import `kit.dart`): `PageHeader`, `PageBody`, `ContentFrame` (device-aware gutters),
+    `SubPage` (API kept), `SectionCard`, `StatTile`, `EmptyState`, `StatusChip` (`InfoChip`/`ChipTone` kept, mapped
+    onto it: good → success, warn → warning, bad → danger), `ListRow` + `InitialsAvatar`, `ResponsiveGrid`,
+    `NoticeBanner`, `showActionSheet` + `SheetAction` + `ActionSheetList`, `FormDialog` (API kept).
+    `AppErrorView`, `EmptyView`, `ModulePlaceholder` now render through `EmptyState` (keys and texts unchanged).
+  - **Shell** `lib/app/shell.dart`: canvas app bar with hairline, academy logo/initials + name in the brand line,
+    `expand_more` when switchable, profile = the person's initials (`profile-button` kept), offline / demo / update
+    notices as `NoticeBanner` (warning / accent / info; keys kept), bottom bar on a surface with a top hairline
+    (`nav-bar-frame`), rail from 720 px with the basketball mark (`rail-brand`), extended with labels from 1024 px.
+    `screens/`: login (brand tile, heavy title, full-width button), tenant switcher (`PageHeader` + `ListRow`, keys
+    kept), not-a-member and no-access (`EmptyState`). Every route and behaviour unchanged.
+  - No `lib/features/**` file was edited (no shared API broke, so no mechanical edits were needed). No font added.
+- Verified (2026-11-07, worktree `wp72-web-design-system`):
+  - Red first: contrast/theme tests failed to compile before the tokens; kit tests before the widgets; the
+    `InfoChip` mapping test failed (orange container) before the mapping; `shell_test` failed (no `nav-bar-frame`,
+    `rail-brand`, not extended) before the shell. Mutation check of the contrast test: setting `accent` back to
+    `#E8590C` fails it with `onAccent/accent: 3.58`.
+  - `flutter analyze`: no issues. `just web-format-check`: 327 files, 0 changed.
+  - `just web-test` (fresh): **865 passed**, 0 failed (baseline before WP72: 778). New: 10 `contrast_test`
+    (WCAG maths + every token pair light/dark + the theme's on-colours), 19 `theme_test`, 32 kit widget tests in
+    `test/core/ui/` (status chip, list row, section card, stat tile, empty state, responsive grid, notice banner,
+    action sheet, page layout, form dialog), 5 `shell_test`, 18 kit goldens, 3 shell goldens.
+  - `tool/web_smoke.sh` (mock mode, Chrome/chromedriver 156): All tests passed.
+  - Goldens: new `goldens/kit/{status_chip,list_row,section_card,stat_tile,empty_state,notice_banner,page_header,
+    form_dialog,action_sheet}_{light,dark}.png`, `home_admin_1280x800.png`, `home_admin_360x780_dark.png`,
+    `home_admin_1024x768_dark.png`. Re-recorded because the shell / theme changed (every screen inherits it):
+    `home_admin_360x780`, `home_admin_1024x768`, `home_parent_360x780`, `audit_activity_{360x780,1024x768}`,
+    `growth_chart_360x780`, `live_match_360x780`, `platform_admin_add_360x780`, `platform_admins_{360x780,1024x768}`,
+    `platform_admins_last_360x780`, `player_detail_360x780`, `teams_list_360x780`,
+    `temporary_password_{360x780,1024x768}`, `training_week_360x780`. Landing goldens unchanged (the label style
+    keeps the default line height on purpose). `assets/landing/*.png` untouched.
+  - Visual review in real fonts (Roboto from the SDK, demo mock, light + dark, 360 and 1280 px: login, switcher,
+    admin, teams, training, health, matches, live match) with a throw-away copy of `landing_screens_capture.dart`
+    writing to `build/`; not committed.
+- Decisions/ADRs: ADR-0040 (indexed at the end of `docs/adr/README.md`). Button contrast: fills use orange 700
+  `#C2410C` + white (5.18:1) in light, `#F2783A` + near-black (6.63:1) in dark; `#E8590C` only for marks (3.35:1 on
+  the canvas, fine for non-text); orange text `#B4380A` (5.6:1). Warning text darkened to `#A14A08`.
+- Open points / follow-ups:
+  - **Wave 2 checklist** (also in `apps/web/README.md` "Design system"): pages → `PageBody` + `PageHeader` (sub-pages
+    keep `SubPage`); `Card(ListTile(CircleAvatar))` (47 `Card` / 41 `ListTile` in 20 files) → `ListRow` +
+    `InitialsAvatar`; titled card blocks → `SectionCard`; `InfoChip` (47 uses) and coloured `Container` labels →
+    `StatusChip` with a `HoopsTone` (LIVE = accent + dot, finished = success, injured = danger, roles = info/neutral);
+    counters/KPIs (platform usage, attendance, box totals) → `StatTile` in `ResponsiveGrid`; `EmptyView` / centred
+    texts → `EmptyState`; `PopupMenuButton` / `showModalBottomSheet` action lists → `showActionSheet`; raw
+    `colorScheme.*` for meaning (22 hits in 15 files) and `Color(0x…)` (`players_screen`, `teams_screen`,
+    `live_match_screen`, `plans_screen`) → tokens; `AppTokens.*` → `HoopsSpace.*`; `AlertDialog` forms → `FormDialog`.
+    Each WP re-records its own goldens and reviews them in light and dark.
+  - After wave 2: delete `AppTokens` and `InfoChip`/`ChipTone` once unused; point `LandingPalette` at `HoopsColors`
+    (same values today).
+  - `features/tenant/presentation/tenant_avatar.dart` still draws its own `CircleAvatar` (primaryContainer); WP75
+    can switch it to `InitialsAvatar(image:)`.
+  - The black outline round FABs in goldens is flutter_test's shadow stand-in (`debugDisableShadows`), not a border.
+  - The pre-commit isolation hook timed out once on a Testcontainers wait under load (other agents building);
+    the retry passed.
