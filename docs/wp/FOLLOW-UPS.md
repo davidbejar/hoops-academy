@@ -89,6 +89,38 @@ WP38, WP40, WP39, WP42, WP41 (WP39 rebased on WP38 and re-verified).
 23. **Podman VM clock drift**: the hook scripts resync the VM clock before each check (done 2026-11-06,
     `scripts/hooks/_common.sh`); no manual step. `ApprovalPayload.empty()` is deleted in WP38.
 
+## Plan (2026-11-06, third round)
+Decided in the second interview of 2026-11-06 (decisions 24–32). Same mechanics; the `dart format` pass runs alone at
+the end because it touches every web file.
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP43 | json-schema-validator 3.x migration (Dependabot #3) | Opus | Running |
+| 1 | WP46 | Gateway: Redis ACL for the rate-limit service, per-second burst cap | Opus | Running |
+| 1 | WP48 | Web: injury edit dialog | Sonnet | Running |
+| 1 | WP50 | GitHub Actions pinned to commit SHAs | Sonnet | Running |
+| 2 | WP44 | Core adopts the `clear` list (ADR-0032) | Opus | After wave 1 |
+| 2 | WP45 | Game adopts the `clear` list (ADR-0032) | Sonnet | After wave 1 |
+| 3 | WP47 | Web: demo mock parity (shared rosters, role filtering) | Sonnet | After WP44, WP45 |
+| 4 | WP49 | Web: `dart format` policy (80 columns) and CI check | Sonnet | Last, alone |
+
+### Decisions of 2026-11-06, second interview (product owner)
+24. **Dependabot.** Green PRs are merged (done: #1 actions, #2 Maven minor/patch, #4 cupertino_icons 2.0; the
+    regenerated Dart clients differed only by whitespace). #3 (json-schema-validator 3.x) is fixed by migration → WP43.
+25. **`.claude/skills/flutter-feature/SKILL.md`** front-matter quoting: committed.
+26. **ADR-0032 everywhere** → WP44 (core 2.7.0), WP45 (game 2.2.0): null = unchanged, `clear` empties.
+27. **Gateway hardening** → WP46: Redis ACL for the rate-limit service and a per-second rule next to the per-minute
+    one so a minute-boundary burst cannot double the limit.
+28. **Demo mock parity** → WP47: one roster source for the three mocks, role filtering per the authz matrix, data for
+    every demo academy.
+29. **Injury edit dialog** → WP48.
+30. **Dart formatting** → WP49: default `dart format` (80 columns) for `apps/web` (not the generated packages), CI
+    check.
+31. **Actions pinned to commit SHAs** → WP50; Dependabot maintains them. The kind runbook's 18080 port-forward clash
+    with Tilt stays as documented.
+32. **Audit storage**: the stored audit row keeps the super admin's subject (accountability); only the academy read
+    path masks it (WP38). Accepted. S-08 (`tilt ci` with core) is Implemented, as the docs pass recorded.
+
 ## Open
 
 ### Product / contract decisions

@@ -1,6 +1,6 @@
 ---
 name: flutter-feature
-description: Conventions for adding a screen or feature to the Hoops Academy Flutter Web PWA (apps/web): folder layout, Riverpod providers, generated API clients, localisation (es/en/id), offline rules and the tests each feature needs. Use when changing anything under apps/web.
+description: "Conventions for adding a screen or feature to the Hoops Academy Flutter Web PWA (apps/web): folder layout, Riverpod providers, generated API clients, localisation (es/en/id), offline rules and the tests each feature needs. Use when changing anything under apps/web."
 ---
 
 # Adding a feature to apps/web
