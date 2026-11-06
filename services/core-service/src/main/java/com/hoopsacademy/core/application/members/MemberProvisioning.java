@@ -4,10 +4,13 @@ import com.hoopsacademy.core.application.port.AuditLog;
 import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.ConflictException;
+import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantContext;
+import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.authz.AuthzCache;
 import com.hoopsacademy.core.application.port.AppUserRepository;
 import com.hoopsacademy.core.application.port.MembershipRepository;
+import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.application.port.OutboxEvent;
 import com.hoopsacademy.core.application.port.OutboxWriter;
 import com.hoopsacademy.core.application.port.PersonRepository;
@@ -17,6 +20,8 @@ import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.identity.AppUser;
 import com.hoopsacademy.core.domain.membership.InvitationStatus;
 import com.hoopsacademy.core.domain.membership.Person;
+import com.hoopsacademy.core.domain.membership.PersonId;
+import com.hoopsacademy.core.domain.membership.PersonalData;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -66,6 +71,16 @@ public class MemberProvisioning {
 
     @Transactional
     public WithTemporaryPassword<Person> create(Person draft, Optional<ProvisionedIdentity> login) {
+        Person person = insert(draft, login);
+        return new WithTemporaryPassword<>(person, temporaryPasswords.forCreated(person.id(), login));
+    }
+
+    /**
+     * {@link #create} without the temporary password, for a caller that writes more rows in the same transaction and
+     * then issues the password itself as its last step (ADR-0024).
+     */
+    @Transactional
+    public Person insert(Person draft, Optional<ProvisionedIdentity> login) {
         requireEmailAvailable(draft.data().email());
         Person person = login.map(identity -> linkLogin(draft, identity)).orElse(draft);
         persons.insert(person);
@@ -80,7 +95,42 @@ public class MemberProvisioning {
         authzCache.invalidate(tenantContext.requireTenantId());
         audit.record(AuditEvent.of(AuditAction.MEMBER_INVITED, person.id().value(), Map.of(
                 "roles", person.roles().stream().map(Enum::name).sorted().toList(), "login", login.isPresent())));
-        return new WithTemporaryPassword<>(person, temporaryPasswords.forCreated(person.id(), login));
+        return person;
+    }
+
+    /**
+     * The login a guardian may get from the academy ADMIN's "issue temporary password" action (ADR-0024 amendment,
+     * WP58): an active PARENT member with an e-mail and no login. Empty for anyone else (the re-issue rules apply).
+     */
+    @Transactional
+    public Optional<NewIdentity> missingGuardianLogin(PersonId id) {
+        Person person = persons.find(id).orElseThrow(() -> new NotFoundException("Member not found"));
+        PersonalData data = person.data();
+        if (!person.active() || person.userId() != null || !person.roles().contains(TenantRole.PARENT)
+                || data.email() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new NewIdentity(data.email(), data.givenName(), data.familyName(), data.locale()));
+    }
+
+    /**
+     * Links {@code login} to a member who has none yet (409 {@code INVITATION_NOT_PENDING} if they got one in the
+     * meantime), indexes the membership, records {@code member.invited} ({@code login: true}) and — last — the
+     * temporary password of a login this request created; an existing login keeps its own (invitation ACCEPTED).
+     */
+    @Transactional
+    public WithTemporaryPassword<Person> grantLogin(PersonId id, ProvisionedIdentity login) {
+        Person person = persons.find(id).orElseThrow(() -> new NotFoundException("Member not found"));
+        if (!person.active() || person.userId() != null) {
+            throw new ConflictException("The member already has a login", IssueTemporaryPassword.INVITATION_NOT_PENDING);
+        }
+        Person linked = linkLogin(person, login);
+        persons.update(linked);
+        memberships.register(login.subject(), linked.id());
+        authzCache.invalidate(tenantContext.requireTenantId());
+        audit.record(AuditEvent.of(AuditAction.MEMBER_INVITED, id.value(), Map.of(
+                "roles", linked.roles().stream().map(Enum::name).sorted().toList(), "login", true)));
+        return new WithTemporaryPassword<>(linked, temporaryPasswords.forCreated(id, Optional.of(login)));
     }
 
     /** Links {@code identity} to the draft (409 when that login is already a member) and indexes the membership. */

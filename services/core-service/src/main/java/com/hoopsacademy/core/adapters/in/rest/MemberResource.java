@@ -7,8 +7,8 @@ import com.hoopsacademy.core.adapters.in.shared.Constraints;
 import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
+import com.hoopsacademy.core.application.members.Guardians;
 import com.hoopsacademy.core.application.members.InviteMember;
-import com.hoopsacademy.core.application.members.IssueTemporaryPassword;
 import com.hoopsacademy.core.application.members.MemberCommands;
 import com.hoopsacademy.core.application.members.MemberQueries;
 import com.hoopsacademy.core.application.members.MemberView;
@@ -59,14 +59,14 @@ public class MemberResource {
             @NotNull @NotEmpty List<@NotNull @Pattern(regexp = Constraints.TENANT_ROLE) String> roles) {}
 
     private final InviteMember inviteMember;
-    private final IssueTemporaryPassword issueTemporaryPassword;
+    private final Guardians guardians;
     private final MemberQueries queries;
     private final MemberCommands commands;
 
-    public MemberResource(InviteMember inviteMember, IssueTemporaryPassword issueTemporaryPassword,
+    public MemberResource(InviteMember inviteMember, Guardians guardians,
             MemberQueries queries, MemberCommands commands) {
         this.inviteMember = inviteMember;
-        this.issueTemporaryPassword = issueTemporaryPassword;
+        this.guardians = guardians;
         this.queries = queries;
         this.commands = commands;
     }
@@ -93,12 +93,15 @@ public class MemberResource {
                 .entity(member).build();
     }
 
-    /** A new temporary password while the invitation is pending (ADR-0024); shown once, never cached. */
+    /**
+     * A new temporary password while the invitation is pending (ADR-0024), or a guardian's first login (WP58); shown
+     * once, never cached.
+     */
     @POST
     @Path("/{personId}/temporary-password")
     public Response issueTemporaryPassword(@PathParam("personId") UUID personId) {
         return WithPasswordDto.noStore(Response.ok())
-                .entity(WithPasswordDto.of(issueTemporaryPassword.handle(new PersonId(personId)), MemberDto::of))
+                .entity(WithPasswordDto.of(guardians.issueTemporaryPassword(new PersonId(personId)), MemberDto::of))
                 .build();
     }
 

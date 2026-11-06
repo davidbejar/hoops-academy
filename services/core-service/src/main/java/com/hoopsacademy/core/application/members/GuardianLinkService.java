@@ -12,8 +12,10 @@ import com.hoopsacademy.core.application.authz.AuthzCache;
 import com.hoopsacademy.core.application.port.GuardianLinkRepository;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
+import com.hoopsacademy.core.application.port.ProvisionedIdentity;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.membership.GuardianLink;
 import com.hoopsacademy.core.domain.membership.GuardianLinkId;
 import com.hoopsacademy.core.domain.membership.Person;
@@ -45,23 +47,55 @@ public class GuardianLinkService {
     private final PlayerRepository players;
     private final AuthzCache authzCache;
     private final AuditLog audit;
+    private final MemberProvisioning provisioning;
+    private final TemporaryPasswords temporaryPasswords;
     private final Clock clock;
 
     public GuardianLinkService(TenantContext tenantContext, GuardianLinkRepository links, PersonRepository persons,
-            PlayerRepository players, AuthzCache authzCache, AuditLog audit, Clock clock) {
+            PlayerRepository players, AuthzCache authzCache, AuditLog audit, MemberProvisioning provisioning,
+            TemporaryPasswords temporaryPasswords, Clock clock) {
         this.tenantContext = tenantContext;
         this.links = links;
         this.persons = persons;
         this.players = players;
         this.authzCache = authzCache;
         this.audit = audit;
+        this.provisioning = provisioning;
+        this.temporaryPasswords = temporaryPasswords;
         this.clock = clock;
     }
 
     @Transactional
     public LinkView create(PersonId guardianId, PlayerId playerId) {
         Person guardian = persons.find(guardianId).orElseThrow(() -> new NotFoundException("Guardian not found"));
-        PersonId playerPerson = players.personOf(playerId).orElseThrow(() -> new NotFoundException("Player not found"));
+        return link(guardian, playerId);
+    }
+
+    /** 404 for an unknown player — checked before a login is provisioned for a new guardian. */
+    @Transactional
+    public void requirePlayer(PlayerId playerId) {
+        playerPerson(playerId);
+    }
+
+    /**
+     * The tenant transaction of a new guardian ({@link Guardians#add}): the PARENT member (with the login, if any),
+     * the link, and — last — the temporary password of a login this request created (ADR-0024).
+     */
+    @Transactional
+    public WithTemporaryPassword<LinkView> createWithNewGuardian(Person draft, PlayerId playerId,
+            Optional<ProvisionedIdentity> login) {
+        Person guardian = provisioning.insert(draft, login);
+        LinkView view = link(guardian, playerId);
+        return new WithTemporaryPassword<>(view, temporaryPasswords.forCreated(guardian.id(), login));
+    }
+
+    private PersonId playerPerson(PlayerId playerId) {
+        return players.personOf(playerId).orElseThrow(() -> new NotFoundException("Player not found"));
+    }
+
+    private LinkView link(Person guardian, PlayerId playerId) {
+        PersonId guardianId = guardian.id();
+        PersonId playerPerson = playerPerson(playerId);
         if (!guardian.roles().contains(TenantRole.PARENT)) {
             throw new DomainRuleViolation("The guardian must hold the PARENT role", GUARDIAN_NOT_PARENT);
         }
