@@ -128,6 +128,55 @@ WP48, WP43, WP45, WP46, WP44, WP51, WP47, WP49 (WP44 rebased on WP45 and re-veri
     pass) becomes `.claude/skills/wp-round`; CLAUDE.md keeps one pointer line per skill; HANDOVER keeps state and
     environment facts only; memory keeps what the repo cannot derive.
 
+## Plan (2026-11-06, fourth round)
+Decided in the third interview of 2026-11-06 (decisions 34–48). Same mechanics (`wp-round` skill). One kind user
+per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events work.
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP52 | Web: match edit, jersey removal, member data and academy contact edits | Sonnet | Running |
+| 1 | WP56 | Realm and services: token audience per service (F-14), refresh-token rotation (F-08) | Opus | Running |
+| 1 | WP58 | Core: no-op PATCH audit rows, ended-season team ids, logins for guardians | Opus | Running |
+| 1 | WP60 | Game: feed visibility filter in SQL | Opus | Running |
+| 1 | WP63 | kind: proofs re-run on chart 0.4.0 (2 replicas, tilt ci, controller restart) | Sonnet | Running |
+| 1 | WP64 | CI: NVD cache on success only, dependency-check findings reviewed | Sonnet | Running |
+| 2 | WP53 | Web: demo mock role-filtered core reads, COACH on staff, persistence | Sonnet | After wave 1 |
+| 2 | WP55 | CI: browser smoke and login round trip on the runner | Sonnet | After WP64 |
+| 2 | WP57 | Keycloak: CSP headers, password blocklist, optional OTP | Opus | After WP56 |
+| 2 | WP59 | Core 3.0.0: remove the deprecated `resendTenantAdminInvitation` alias | Opus | After WP58 |
+| 2 | WP61 | Athlete: training-plan templates in es/en/id | Opus | After wave 1 |
+| 2 | WP65 | Chart: Secrets from the External Secrets Operator | Opus | After WP63 |
+| 3 | WP54 | Web: PWA installability, airplane-mode cold start, F-07 cache keys | Sonnet | After WP53 |
+| 3 | WP62 | Athlete: remaining fitness-norm placeholders | Opus | After WP61 |
+| 3 | WP66 | Events infra: Redpanda in compose, chart and kind; Dev Services | Opus | After WP65 |
+| 4 | WP67 | Core: outbox publisher and the event contracts | Opus | After WP66, alone |
+| 5 | WP68 | Game: roster replica from core events behind `RosterPort` | Opus | After WP67 |
+| 5 | WP69 | Athlete: roster replica from core events behind `RosterPort` | Opus | After WP67 |
+
+### Decisions of 2026-11-06, third interview (product owner)
+34. **Web edits → WP52**: match edit dialog, jersey removal, member personal data, academy contact.
+35. **Demo mock → WP53**: role-filtered core reads, the demo COACH on the staff list, changes persisted in the
+    browser with a reset action.
+36. **PWA → WP54**: Lighthouse installability (from a container, no Node on the host), scripted airplane-mode cold
+    start, F-07 cache keys by tenant + person.
+37. **Browser checks in CI → WP55**: mock-mode smoke in `ci`, login round trip in `e2e`.
+38. **Token audience and refresh rotation → WP56** (F-14, F-08; ADR-0034).
+39. **Keycloak hardening → WP57**: CSP headers (ZAP acceptances removed), password blocklist, OTP optional for
+    everyone (no breached-password extension; ADR-0038).
+40. **Core fixes → WP58**: no-op PATCH writes no audit row; ended seasons leave `staffTeamIds`/`playerTeamIds`;
+    guardians added with an e-mail get a login with a temporary password (core 2.8.0).
+41. **Deprecated alias removed → WP59**: core 3.0.0 (ADR-0035).
+42. **Feed filter in SQL → WP60.**
+43. **Template i18n → WP61** (athlete 2.2.0).
+44. **Fitness norms → WP62**: another research pass on the 260 uncited rows.
+45. **kind proofs → WP63**: 2 replicas, `tilt ci`, the controller-restart branch, on chart 0.4.0.
+46. **CI → WP64**: NVD cache saved on success only; dependency-check findings below the gate reviewed once.
+47. **External Secrets Operator → WP65** (ADR-0012 amendment).
+48. **v2 events start → WP66, WP67, WP68, WP69**: Redpanda (ADR-0036), core outbox publisher with event contracts
+    in `libs/contracts/events`, game and athlete replicas behind `RosterPort` with `hoops.roster.source` (ADR-0037).
+    Not started: billing, the purge job (stay in v2).
+49. **Envoy Gateway descriptor collision**: the orchestrator drafts the upstream issue text; the owner files it.
+
 ## Open
 
 ### Product / contract decisions
