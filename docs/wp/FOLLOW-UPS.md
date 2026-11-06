@@ -1,8 +1,8 @@
 # Cross-cutting follow-ups (owned by the orchestrator)
 
 Collected from the WP handovers and the WP20 review (2026-11-02); reconciled with the product interview of 2026-11-05
-(WP26), with the WP26–WP37 handovers on 2026-11-06, with the WP38–WP42 handovers on the evening of 2026-11-06 and with
-the WP43–WP51 handovers (third round) later that evening.
+(WP26), with the WP26–WP37 handovers on 2026-11-06, with the WP38–WP42 handovers on the evening of 2026-11-06, with
+the WP43–WP51 handovers (third round) later that evening and with the WP52–WP71 handovers (fourth round) that night.
 Grouped by area; **[v2]** marks items that are out of v1 by decision (PLAN §8, roadmap); **→ WPnn** marked an item the plans below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
 closed them. The statement-by-statement status of the spec is in [`../conformance.md`](../conformance.md).
 
@@ -129,30 +129,32 @@ WP48, WP43, WP45, WP46, WP44, WP51, WP47, WP49 (WP44 rebased on WP45 and re-veri
     environment facts only; memory keeps what the repo cannot derive.
 
 ## Plan (2026-11-06, fourth round)
-Decided in the third interview of 2026-11-06 (decisions 34–48). Same mechanics (`wp-round` skill). One kind user
-per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events work.
+Decided in the third interview of 2026-11-06 (decisions 34–51). Same mechanics (`wp-round` skill). One kind user
+per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events work. **All twenty are done**: merged
+into `main` on 2026-11-06 in the order WP52, WP60, WP56, WP58, WP70, WP59, WP61, WP57, WP53, WP55, WP63, WP65, WP64,
+WP54, WP62, WP66, WP67, WP69, WP68, WP71 (WP71 added by the orchestrator after the WP67/WP69 handovers).
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP52 | Web: match edit, jersey removal, member data and academy contact edits | Sonnet | Running |
-| 1 | WP56 | Realm and services: token audience per service (F-14), refresh-token rotation (F-08) | Opus | Running |
-| 1 | WP58 | Core: no-op PATCH audit rows, ended-season team ids, logins for guardians | Opus | Running |
-| 1 | WP60 | Game: feed visibility filter in SQL | Opus | Running |
-| 1 | WP63 | kind: proofs re-run on chart 0.4.0 (2 replicas, tilt ci, controller restart) | Sonnet | Running |
-| 1 | WP64 | CI: NVD cache on success only, dependency-check findings reviewed | Sonnet | Running |
-| 2 | WP53 | Web: demo mock role-filtered core reads, COACH on staff, persistence | Sonnet | After wave 1 |
-| 2 | WP55 | CI: browser smoke and login round trip on the runner | Sonnet | After WP64 |
-| 2 | WP57 | Keycloak: CSP headers, password blocklist, optional OTP | Opus | After WP56 |
-| 2 | WP59 | Core 3.0.0: remove the deprecated `resendTenantAdminInvitation` alias | Opus | After WP58 |
-| 2 | WP61 | Athlete: training-plan templates in es/en/id | Opus | After wave 1 |
-| 2 | WP65 | Chart: Secrets from the External Secrets Operator | Opus | After WP63 |
-| 3 | WP54 | Web: PWA installability, airplane-mode cold start, F-07 cache keys | Sonnet | After WP53 |
+| 1 | WP52 | Web: match edit, jersey removal, member data and academy contact edits | Sonnet | Done (no contract change; web 690 tests) |
+| 1 | WP56 | Realm and services: token audience per service (F-14), refresh-token rotation (F-08) | Opus | Done (ADR-0034; common 1.1.1; F-08, F-14 fixed; e2e 23/23) |
+| 1 | WP58 | Core: no-op PATCH audit rows, ended-season team ids, logins for guardians | Opus | Done (ADR-0024 amendment; core 2.8.0; mutation 99.8 %) |
+| 1 | WP60 | Game: feed visibility filter in SQL | Opus | Done (ADR-0030 amendment; 4 statements per page; game 324 tests) |
+| 1 | WP63 | kind: proofs re-run on chart 0.4.0 (2 replicas, tilt ci, controller restart) | Sonnet | Done (no code change; all proofs passed, journey 21/21 on kind) |
+| 1 | WP64 | CI: NVD cache on success only, dependency-check findings reviewed | Sonnet | Done (cache saved on success; 2 CPE false positives suppressed) |
+| 2 | WP53 | Web: demo mock role-filtered core reads, COACH on staff, persistence | Sonnet | Done (no contract change; web 713 tests) |
+| 2 | WP55 | CI: browser smoke and login round trip on the runner | Sonnet | Done (`web-browser` in `ci`, login round trip in `e2e`; Chrome 157) |
+| 2 | WP57 | Keycloak: CSP headers, password blocklist, optional OTP | Opus | Done (ADR-0038; ASVS 6.2.4 met; F-24 fixed) |
+| 2 | WP59 | Core 3.0.0: remove the deprecated `resendTenantAdminInvitation` alias | Opus | Done (ADR-0035; core 3.0.0) |
+| 2 | WP61 | Athlete: training-plan templates in es/en/id | Opus | Done (athlete 2.2.0; mutation 100 %) |
+| 2 | WP65 | Chart: Secrets from the External Secrets Operator | Opus | Done (ADR-0012 amendment; chart 0.5.0; 14/14 synced on kind) |
+| 3 | WP54 | Web: PWA installability, airplane-mode cold start, F-07 cache keys | Sonnet | Done (Lighthouse PWA score 1; airplane-mode check green; F-07 fixed; web 777 tests) |
 | 3 | WP62 | Athlete: remaining fitness-norm placeholders | Opus | Done (475/630 cited; athlete 679 tests, mutation 100 %) |
 | 3 | WP66 | Events infra: Redpanda in compose, chart and kind; Dev Services | Opus | Done (ADR-0036; chart 0.6.0; kind smoke 35 checks) |
 | 4 | WP67 | Core: outbox publisher and the event contracts | Opus | Done (ADR-0008 amendment; 7 event schemas; core 871 tests, mutation 99.6 %) |
 | 5 | WP68 | Game: roster replica from core events behind `RosterPort` | Opus | Done (ADR-0037; game 411 tests, mutation 99.5 %; e2e 23/23 on replica) |
 | 5 | WP69 | Athlete: roster replica from core events behind `RosterPort` | Opus | Done (athlete 790 tests, mutation 100 %; e2e 23/23 on replica) |
-| 2 | WP70 | Web: public landing page (teaser, features, roadmap, invitation request placeholder) | Opus (copy by Fable) | After WP52 |
+| 2 | WP70 | Web: public landing page (teaser, features, roadmap, invitation request placeholder) | Opus (copy by Fable) | Done (no contract change; web 724 tests) |
 | 6 | WP71 | Chart: services wired to the broker behind `events.enabled`, outbox and replicas proven on kind (orchestrator addition after the WP67/WP69 handovers: no WP owned the chart) | Opus | Done (chart 0.7.0; kind smoke 46 checks, athlete replica flip proven) |
 
 ### Decisions of 2026-11-06, third interview (product owner)
@@ -198,72 +200,105 @@ per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events wo
   = e-mail or nothing (decide); rate-limited and spam-guarded at the gateway; audit rows. To decide before the WP:
   a request by a parent or coach for a new academy (reject, or create the academy with that person as its first
   ADMIN, or hold until an admin confirms); players never request a new academy.
-- **`clear` lists the app does not send yet** (WP44): no web dialog edits a member's personal data or the academy's
-  contact e-mail / website, so `UpdateMemberRequest.clear` and `UpdateTenantProfileRequest.clear` are unused by the app.
-  In all three services an explicit `null` is now "unchanged" (ADR-0032); a client must name the field in `clear`.
+- **Landing form name** (WP70): the name field is optional because the copy has no validation message for it; decide
+  in the sign-up WP above.
 - **Stored audit row keeps the super admin's subject** (WP38, ADR-0029 amendment): only the academy read masks platform
   actors; the row itself keeps the `sub` for accountability (by design). The v2 purge job is its only clean-up.
-- **Feed filter in SQL** (WP33): for non-staff callers the feed filter walks all of a match's events in memory.
-- **Template i18n** (WP9): `nameKey`/`locale` on `TrainingPlanSummary`; the 10 templates are English-only in the DB.
+- **`homeAway` of a match with events** (WP52): the contract does not say whether it may change; the edit dialog
+  allows it and the server decides.
+- **Ended seasons** (WP58, decision 40): coaches lose core, game and athlete access to teams of ended seasons; history
+  views for past seasons, if wanted, need their own rule.
 
 ### Security (from `docs/security/review-2026-11.md`)
-- **F-07 residual (apps/web)**: cached reads (`roster`, `matchJson`, `ownEvents`) are keyed by matchId only; add
-  tenant + person columns (drift migration) and wipe when a *different* `sub` signs in after an expired session.
-- **F-08 residual (realm)**: refresh-token rotation / reuse detection in `infra/keycloak/realm-academy.json`; the realm
-  still lists `offline_access` as an optional scope.
-- **F-14 token audience**: audience mapper per service + `quarkus.oidc.token.audience`.
-- **ASVS gaps**: password blocklist (6.2.4), breached passwords (6.2.12), optional OTP for ADMIN/super_admin (6.3.3),
-  Keycloak login events (16.3.1), authorization-failure logging (16.3.2), log shipping / OTel collector (16.4.3), SBOM.
+- **ASVS gaps**: breached passwords (6.2.12), OTP only optional (6.3.3 Partial by decision 39), Keycloak login events
+  (16.3.1), authorization-failure logging (16.3.2), log shipping / OTel collector (16.4.3), SBOM.
+- **Keycloak master realm CSP** (WP57): the master realm (admin console, local only with `HOOPS_EXPOSE_KC_ADMIN=true`)
+  keeps Keycloak's default CSP, so a local ZAP run with the console exposed blocks on it (as before WP57).
+- **Double Referrer-Policy on `/auth/`** (WP57): nginx adds `strict-origin-when-cross-origin` after Keycloak's
+  `no-referrer` (browsers use the last); align in `infra/nginx`.
 - **Offline end-session** is skipped, not queued (SSO session lives until its 4 h idle timeout) — accepted, ADR-0019.
 
 ### Web app (`apps/web`)
-- **Browser-level tests**: `apps/web/tool/web_smoke.sh` ran green in mock mode on 2026-11-02 (chromedriver 156 installed
-  by hand from Chrome for Testing; the Homebrew cask is disabled). Still open: the Lighthouse installability check and the
-  airplane-mode cold-start check (README "Offline cold start"); add chromedriver to CI.
-- **Jersey cannot be removed in the app** (WP44): the jersey dialog still requires a value (`noteDialog(required:
-  true)`), although the API removes a jersey with `{clear: [jerseyNumber]}`.
-- **No match edit UI** (WP45): only match creation exists; `MatchesRepository.update` (sends `clear` for an emptied
-  venue) is the ready hook for an edit dialog (opponent, date, venue).
-- **Demo mock limits** (WP47): core reads are not role-filtered (teams / players lists show everything to PARENT /
-  PLAYER); the demo COACH is always staff of Mini A (the staff list does not include the demo user); PARENT + PLAYER on
-  one login is only partly handled; plan completions and assignment progress filter by visible players, not by team;
-  no suspended-tenant behaviour; `HOOPS_MOCK_ROLES` switches roles in Academia Demo only (Club Norte is the PARENT
-  case); no `/internal/usage`; matches and players created in the demo are not persisted across reloads.
+- **Account console link** (WP57): no profile-menu entry to `<issuer>/account` (es/en/id) yet, so OTP set-up is reached
+  at `/auth/realms/academy/account` by hand.
+- **Match edit entry** (WP52): the edit dialog is reachable from the live match screen only, not from the list tile.
+- **Member edits** (WP52): the self-service profile does not expose name or `locale` edits; the member dialog does not
+  pre-block clearing the e-mail of a member with a login (the server's 422 `LOGIN_REQUIRES_EMAIL` is shown).
+- **Guardian first login from the member page** (WP58): `features/admin` member detail offers "new temporary password"
+  only while PENDING, so a guardian without a login gets the action from the player detail only (one condition:
+  `userId == null && email != null && PARENT`); the guardian login state comes from one list of up to 100 PARENT members.
+- **Template language switch** (WP61): changing the UI language does not refetch the cached plan providers, so
+  templates stay in the old language until the list reloads (needs an explicit `Accept-Language` in
+  `lib/core/http/interceptors.dart` and the plan notifiers watching `effectiveLocaleProvider`).
+- **Demo mock limits** (WP47, WP53): members stay ADMIN-only (403); replay re-stamps `createdAt` / `now`-derived fields
+  and re-draws temporary passwords; a log from an older mock build may replay differently (bump the `v1` key when
+  seeds change); a locale change (`PATCH /me`) is not stored; the logo and long logs share the browser quota; the reset
+  reloads without a confirm dialog; roles per academy only by dart-define; plan completions and assignment progress
+  filter by visible players, not by team; no suspended-tenant behaviour; no `/internal/usage`.
+- **Landing contrast** (WP54, WP70): white on `#E8590C` buttons is about 3.6:1 (AA for large text only; labels are
+  17 px bold), unverified because Lighthouse sees no DOM text in the Flutter canvas; the landing screenshots are
+  light-theme captures in dark mode too.
+- **PWA scripts not in CI** (WP54): `tool/lighthouse.sh` and `tool/offline_cold_start.sh` run locally only; the offline
+  check runs against the in-process mock API, so the cached-read fallback is covered by unit tests only.
+- **`synced_events` keyed by matchId** (WP54): the other cached reads are tenant + person scoped since F-07; this one
+  relies on the wipe when another `sub` signs in.
+- **Local chromedriver** (WP55): the hand-installed local chromedriver is 156, CI pins Chrome for Testing and
+  chromedriver 157.0.8103.38; update the local one when Chrome moves.
+- **Two-tab refresh soak** (WP56): no control run without `SerialRefresh` in a real browser (the unit test and the
+  Keycloak test show the failure mode).
 - **`curly_braces_in_flow_control_structures` lint disabled** (WP49): `dart format` puts `if (x) return y;` on two
   lines (87 infos); the rule is off in `apps/web/analysis_options.yaml` instead of adding braces. Re-enable it with a
   braces-only pass if wanted.
 - **Fonts**: glyphs outside Roboto (CJK, emoji) render as tofu; bundle a Noto subset if a language needs it.
 - **Same-device two-tab clientSeq race** (WP13): accepted for now (second event is `CLIENT_SEQ_CONFLICT`, visible).
-
 - **Dev login origin** (ADR-0022): `flutter run` on :5173 is another origin than Keycloak on :8080, so the address bar
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
-- **Browser login round trip in CI**: `apps/web/tool/browser_login_check.py` (stdlib WebDriver) runs locally only; add it
-  with chromedriver to the e2e job.
 
 ### Backend
-- **Remove `resendTenantAdminInvitation`** (WP24): deprecated alias of `issueTenantAdminTemporaryPassword` kept in core
-  2.3.0 so the pre-WP25 web build keeps working; drop it in core 3.0.0 once WP25 uses the new operation.
+- **core producer never recovers after a failed first SASL login** (WP71): when the broker users appear after core
+  started (fresh Helm install: the bootstrap Job is a post-install hook), core's idempotent producer keeps expiring
+  records (`hoops_outbox_pending` stays up, `DEGRADED`) until a restart. Needs a core-service fix (recreate the emitter,
+  or a liveness signal after a long `DEGRADED` with backlog and no send since start).
+- **Athlete Testcontainers flake under load** (WP59, WP60, WP61, WP69): `AthleteDatabaseRoleTest` and
+  `ReplicaAuthzRulesTest` fail with "localhost:2375 failed to respond" when Quarkus restarts for a class while 5–6
+  builds share the 2-CPU Podman VM; green alone. Looks like a stale docker-java connection to the Podman socket.
+- **Deletions publish nothing** (WP67): `deleteUnprovisioned` (tenant deletion) writes no event; persons, players,
+  teams, assignments and tenants have no `.removed` type (never deleted today).
 - **Keycloak ahead of the database** (WP22, as ADR-0013): a commit failure right after a successful login update leaves
   Keycloak with the new e-mail; no repair job detects `app_user.email` ≠ Keycloak e-mail yet.
-- **No-op PATCH writes an empty audit row** (WP44): `{"phone": null}` (unchanged) still records `member.updated` with
-  no fields (pre-existing behaviour for unchanged values).
-- **Parents via the guardian flow** get no login (WP5 note); WP17 covered players only (ADMIN add + approval).
 - **Entitlement seam** has no test of a denial path (the noop implementation always allows).
 - **Usage snapshots** are never pruned; the snapshot job aggregates tenants sequentially (fine for tens of tenants).
-- **`staffTeamIds` / `playerTeamIds`** include teams of ended seasons while a staff row / assignment is open.
 - **Unassigning an invalidated assignment** leaves its OPEN eligibility case open (resolve via the case API).
 - **Backfill REJECTED** (WP2c): players rejected before core `V8` stay WITHDRAWN (pre-release data; accepted).
-- **Fitness norms, remaining placeholders** (after WP27: 260 of 630 rows): Cooper 8–12 (no youth table found), T-test and
-  vertical jump outside 14–15 (lead: Moreno-Gonzalez et al., BMC Pediatr 2026, doi:10.1186/s12887-026-07796-1, not
-  fetchable yet), edge ages that repeat the nearest cited age; the girls' T-test placeholders run ~1.2 s too fast; the
-  Cooper figures are not traced to the 1968 paper; check the Catley PDF against the BMJ copy. The sit-and-reach scale is
-  now "20 cm = toes" (Catley): the web UI should show the unit hint. Details: `docs/domain/norms.md`.
+- **Fitness norms, remaining placeholders** (after WP62: 155 of 630 rows): T-test and vertical jump 8–11 (80; best lead
+  Moreno-Gonzalez et al., BMC Pediatr 2026, doi:10.1186/s12887-026-07796-1, still behind a bot challenge), T-test 16–18
+  and vertical jump girls 17–18 repeating the nearest cited age (45), sit-and-reach 8 and 18 (20), 20 m sprint 18 (10);
+  the Cooper teenage table is not traced to a primary source; check the Catley PDF against the BMJ copy. The
+  sit-and-reach scale is "20 cm = toes" (Catley): the web UI should show the unit hint. Details: `docs/domain/norms.md`.
 - **Mutation scope** (WP37): rule code reached only by container tests (`TenantScope`, `ProblemExceptionMappers`, use
   cases) is outside PIT's scope; extracting pure rules from them would let PIT cover them.
 - **Dependency hygiene**: `dependency:analyze` lists Quarkus extensions as "unused" (false positives, runtime-only) and
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
+- **Fresh Helm installs need a core restart** (WP71): `kubectl rollout restart deploy/core-service` after the bootstrap
+  Job (`deploy/kind/up.sh` and Tilt do it on kind) until the producer fix above. Not run on kind: a deploy with
+  `events.enabled=false` (render assertions only), the game replica flip, `tilt ci` on chart 0.7.0, `--eso` with the
+  events, `up.sh --eso --deploy` (image build path) and a live `tilt up -- --eso` (WP65).
+- **Broker Secret rotation restarts by hand** (WP71): a new `hoops-redpanda-<service>` password reaches the broker with
+  the next `helm upgrade` (bootstrap Job), but the service pod needs a manual restart (env var; the checksum covers the
+  ConfigMap only); the superuser needs a `redpanda-0` restart (`runbooks/events.md`).
+- **Redpanda outside kind** (WP66): the default (non-kind) sizing is unproven; the bootstrap Job never deletes ACLs or
+  changes partition counts.
+- **Rotation rollout with ESO** (WP65): a rotated secret reaches the Secret, not the pods (no Reloader or similar); the
+  ESO chart is pinned by version only (digest
+  `sha256:0e3d45f11522f2730ff55deef57bc43e0ff4aadc00bdab5557fa4d354b0c3ab7` observed).
+- **Load-sensitive rate-limit checks** (WP63): `ratelimit-check.sh` fails on the 2-CPU Podman VM when its load average
+  is above ~5 (DNS timeouts to `ratelimit-redis`, runbook troubleshooting symptom D); a guard that warns on high load
+  is not built.
+- **dependency-check suppressions** (WP64): check in a `dependency-check` report that keycloak-admin-client
+  CVE-2026-0871 and opentelemetry-api CVE-2026-54285 show as suppressed (else adjust the packageUrl regex); they expire
+  2027-05-01.
 - **Per-IP limits** (WP40, ADR-0033, accepted): they can be dodged by rotating addresses (an IPv6 /64). The
   minute-boundary doubling is closed by the per-second caps (WP46, see Resolved).
 - **Rate-limit Redis password rotation** (WP46): Redis reads the ACL file at start and `envoy-ratelimit` reads
@@ -271,13 +306,11 @@ per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events wo
   documented in `runbooks/rotate-secrets.md`).
 - **Wrong Redis login fails open silently** (WP46): limits stop applying and only `WRONGPASS` / `NOPERM` in the
   `envoy-ratelimit` logs show it; no alert.
-- **Not re-run after WP46** (WP40/WP46): `ratelimit-check.sh` with 2 Envoy replicas, `tilt ci`, and the branch of
-  `deploy/kind/up.sh` that restarts the Envoy Gateway controller when its rate-limit config changes (only the unchanged
-  path has run).
 - **Envoy Gateway descriptor collision** (WP46): v1.9.3 builds the `sourceCIDR` descriptor without the rule index, so a
   per-minute and a per-second rule on the same route collapse into one; worked around with an always-true
-  `path: {type: PathPrefix, value: /}` selector on the per-second rules (ADR-0033 amendment). Report it upstream and
-  drop the selector once fixed.
+  `path: {type: PathPrefix, value: /}` selector on the per-second rules (ADR-0033 amendment). The issue text is drafted
+  in `docs/upstream/envoy-gateway-global-ratelimit-descriptor-collision.md` (decision 49); the owner files it; drop the
+  selector once fixed.
 - **No gateway body-size limit** (WP36; accepted, decision 18): Envoy streams bodies; the services reject bodies above
   2 MB with a 413 Problem. A gateway limit needs `BackendTrafficPolicy.requestBuffer`, which buffers every request.
 - **Port 18080 while Tilt runs** (WP42): Tilt's Keycloak port-forward holds 18080, so the runbook's 18080 forward for
@@ -288,27 +321,92 @@ per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events wo
   maven `ignore` entry in `.github/dependabot.yml` and apply the migration recorded in the WP43 handover (pass JSON
   text instead of a Jackson 2 tree in `MatchEventJsonSchemaTest`, `MatchEventDecoder`, `EventSchema`; one version in
   the root pom). `MatchEventDecoderTest.schemaViolationMessagesKeepTheirWording` turns red if the wording changes.
-- **Keycloak CSP hardening**: realm `browserSecurityHeaders`, so the accepted ZAP alerts under `/auth/realms/` can go
-  (`.zap/baseline.conf`). (The CI workflows themselves are green on `origin/main` since 2026-11-02; see Resolved.)
-- **dependency-check NVD cache** (2026-11-05): the "Save NVD data" step runs `if: always()`, so a failed or cancelled
-  run can save a broken cache that later runs restore (the 2026-11-05 run restored `nvd-Linux-41422780377`, saved by
-  the failed run 41422780377, and took 77 min; that cache has been deleted). Save on success only, or delete the key by
-  hand (`gh cache delete`) when the job runs > 40 min. No WP yet.
+  The replica decoders of WP68/WP69 use the same 2.0.8.
 - **Image pins** (WP30): the `ubi9/openjdk-21-runtime` digest is pinned but not auto-bumped (Dependabot covers Maven, pub
   and GitHub Actions only, not Containerfile ARGs, chart image tags or the kind pins); drop the guava pin in the root
   pom once the Quarkus BOM ships ≥ 33.7.2.
 - **Optimised Keycloak image** (read-only root FS; KSV-0014 accepted until 2027-03-31).
-- **External Secrets Operator manifests** (ADR-0012).
 
 ### v2 (by decision)
-- **[v2] Events**: outbox publisher + Redpanda + `*_ref` replicas behind `RosterPort` (WP19 brief; `core.outbox` is
-  already written and never read).
+- **[v2] Events, default flip** (ADR-0037 "When rest flips"): outbox, broker and both replicas are built and proven
+  behind `hoops.roster.source=rest` (WP66–WP69, WP71). Before `replica` becomes the default: a core backfill that
+  appends one `.changed` per aggregate older than WP67, the core producer fix above, a shadow period with
+  `hoops_roster_replica_parked_total` at 0 and lag in seconds, `just e2e` green with `replica` for both services at
+  once, and the game flip on kind.
+- **[v2] Replica housekeeping** (WP68, WP69): `applied_event` grows one row per event (prune rows older than the 7-day
+  tombstone retention, not automated); `parked_event` has no retention.
+- **[v2] Fail-stop consumer and health** (WP68, ADR-0037 §5): a consumer that exhausts its retries turns liveness and
+  readiness DOWN, so a long database outage restarts game/athlete pods also in `rest` mode (the consumer runs in both
+  modes); revisit if it bites.
 - **[v2] Billing module** on the existing seams (`billing.*`, `EntitlementService`, outbox events).
 - **[v2] Purge job** for withdrawn tenants after the retention period; also the only clean-up of old
   `core.audit_event` rows (decision 8: no separate retention job).
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+Fourth round (WP52–WP71, 2026-11-06; each line names the open item it closed):
+- WP52 (decision 34): **`clear` lists the app does not send yet** (WP44), **Jersey cannot be removed in the app** (WP44)
+  and **No match edit UI** (WP45): the web app has a match edit dialog (opponent, home/away, date and time in the
+  academy zone, clearable venue, periods while SCHEDULED), a jersey dialog whose empty value sends
+  `clear: [jerseyNumber]`, a member personal-data dialog and the academy contact e-mail / website, all clearable.
+- WP53 (decision 35): **Demo mock limits** (WP47), the main part: core reads are filtered per role (404 not visible),
+  the demo user's staff row is seeded on every academy's home team (`staffTeamIds` follows it), `HOOPS_MOCK_ROLES`
+  applies to both academies, successful writes persist in the browser per academy and roles (`hoops.mock.v1.*`) and
+  the profile menu resets the demo data. Residual limits stay under "Web app".
+- WP54 (decision 36): **Browser-level tests**, the Lighthouse and airplane-mode part: `tool/lighthouse.sh` (Lighthouse
+  11.7.1 in a Podman pod) gives PWA score 1 with every installability audit passing; `tool/offline_cold_start.sh`
+  reloads the app offline from `sw.js` and opens a live match with the offline banner. **F-07 residual (apps/web)**:
+  cached roster, match JSON and own events are keyed by tenant (+ person) (drift schema v2) and the DB is wiped when
+  another `sub` signs in (`MatchStore.bindOwner`). Also the missing platform counter labels in es/en/id.
+- WP55 (decision 37): **Browser-level tests**, the CI part, and **Browser login round trip in CI**: `ci` job
+  `web-browser` runs `web_smoke.sh` in mock mode on pinned Chrome for Testing + chromedriver 157; the `e2e` job runs
+  "Browser login round trip (first sign-in, temporary password)" (`tool/ci_login_check.sh`); both green on `main`
+  (e.g. runs 42234657432 and 42234657458 on cbb19d3).
+- WP56 (decision 38): **F-08 residual (realm)** and **F-14 token audience**: realm audience mappers per client (least
+  privilege) with `quarkus.oidc.token.audience` per service, refresh-token rotation with reuse detection, web tabs
+  refreshing one at a time (`SerialRefresh`); ADR-0034, common 1.1.1. `offline_access` stays an optional realm scope
+  that the web client does not request.
+- WP57 (decision 39): **Keycloak CSP hardening** and the ASVS 6.2.4 / 6.3.3 part of **ASVS gaps**: realm
+  `browserSecurityHeaders` with a CSP defining every directive (ZAP acceptances for `/auth/realms/` removed but the
+  session-iframe one; residual `script-src 'unsafe-inline'` accepted, F-24), a 10,000-entry password blocklist, OTP
+  optional for every login (ADR-0038).
+- WP58 (decision 40): **No-op PATCH writes an empty audit row** (no row and no write when nothing changes),
+  **`staffTeamIds` / `playerTeamIds`** (teams of ended seasons dropped in the academy's time zone) and **Parents via
+  the guardian flow** (`createGuardian` gives a guardian with an e-mail a login and temporary password; core 2.8.0,
+  ADR-0024 amendment).
+- WP59 (decision 41): **Remove `resendTenantAdminInvitation`**: core 3.0.0 drops the alias (ADR-0035); the demo mock
+  dropped its path too (99926fd).
+- WP60 (decision 42): **Feed filter in SQL**: one statement per page for filtered viewers (recursive CTE over VOID
+  chains), checked against `EventVisibility` on 60 random matches; 4 statements per page for every caller (ADR-0030
+  amendment).
+- WP61 (decision 43): **Template i18n**: the 10 global templates carry es/en/id texts (`name_key` + `i18n` jsonb on the
+  existing tables), resolved from `Accept-Language` (header wins, `en` fallback); plans expose `nameKey` (athlete
+  2.2.0).
+- WP62 (decision 44): **Fitness norms, remaining placeholders**, second pass: 370 → 475 of 630 rows cited (Balague 1982
+  Cooper 8–12, Lesinski 2020 T-test 12–13, Leone 2025 vertical jump 12–17); placeholders 260 → 155 (open item
+  rewritten).
+- WP63 (decision 45): **Not re-run after WP46**: on chart 0.4.0 `ratelimit-check.sh` passed with 1 and 2 Envoy replicas
+  (incl. `acl` and `redis-down`), `tilt ci` was green on a fresh cluster, the controller-restart branch of `up.sh`
+  restarted on a changed config and not otherwise, the journey ran 21/21 on kind. No code change.
+- WP64 (decision 46): **dependency-check NVD cache**: "Save NVD data" runs `if: success()`; the findings below the gate
+  were reviewed once (3 hits, 2 CVEs, all CPE false positives, suppressed until 2027-05-01;
+  `docs/security/review-2026-11.md`).
+- WP65 (decision 47): **External Secrets Operator manifests**: chart 0.5.0 renders 14 `ExternalSecret`s behind
+  `externalSecrets.enabled`, `up.sh --eso` installs ESO v2.14.0 with a Kubernetes-provider store; 14/14 synced and a
+  rotation proven on kind (ADR-0012 amendment).
+- WP66–WP69, WP71 (decision 48): **[v2] Events**, built behind the default `rest`: Redpanda in compose, chart (0.6.0)
+  and Dev Services with SASL/SCRAM per service and ACLs (ADR-0036); core's outbox publisher and the seven event
+  schemas (ADR-0008 amendment); game and athlete roster replicas behind `RosterPort` with `hoops.roster.source`
+  (ADR-0037); the chart wires the services to the broker behind `events.enabled` + `global.events.enabled` (0.7.0) and
+  the kind smoke proves publish → apply end to end, with the athlete replica flip. The default flip and housekeeping
+  stay under "v2". The game/athlete "Unrecognized configuration key quarkus.kafka.devservices.*" warnings (WP67) went
+  away with their Kafka extension (WP68, WP69).
+- WP70 (decision 50): public landing page at the anonymous root (`/`, `/welcome`) with the es/en/id copy of
+  `docs/marketing/landing-copy.md` and the invitation form as a placeholder (decision 51 stays open).
+- Decision 49: the Envoy Gateway descriptor collision issue text is drafted (7b21a48); filing it is the owner's action
+  (open item kept).
+
+Earlier rounds:
 - WP44 / WP45 (decision 26): ADR-0032 everywhere. Core 2.7.0 carries `clear` on five update requests (tenant profile,
   member, age category, team, team player; `MergePatch` replaced by `PatchBody`, `CLEAR_CONFLICT` for value + clear)
   and game 2.2.0 on `UpdateMatchRequest` (`venue`); the web team, age-category and jersey edits and the demo mocks
