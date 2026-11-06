@@ -35,4 +35,12 @@ below the CVSS 7 gate are reviewed once and either suppressed with a reason and 
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built: `Save NVD data` now `if: success()` (report upload stays `if: always()`, restore keys unchanged); 2 suppressions
+  (keycloak-admin-client/CVE-2026-0871, opentelemetry-api*/CVE-2026-54285, until 2027-05-01, with notes); findings table
+  in docs/security/review-2026-11.md.
+- Verified: `actionlint .github/workflows/ci.yml` clean; `xmllint` on the suppressions OK; findings read from the JSON of
+  green main run 42181980179 (3 hits, 2 CVEs, all CVSS < 7, all CPE false positives; compose runs Keycloak 26.8.1, above the fix).
+  Local `-Psecurity-scan dependency-check:aggregate` NOT run: no NVD_API_KEY locally. Watch job `dependency-check` of `ci`
+  after the push: suppressions applied (report shows them as suppressed), and a cancelled/failed run saves no cache.
+- Decisions/ADRs: none.
+- Open points: if the CI report still shows the CVEs, the packageUrl regex needs adjusting.

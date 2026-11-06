@@ -15,4 +15,18 @@
     <packageUrl regex="true">^pkg:maven/io\.quarkus/quarkus-flyway-postgresql@.*$</packageUrl>
     <cpe>cpe:/a:postgresql:postgresql</cpe>
   </suppress>
+  <suppress until="2027-05-01Z">
+    <notes>False positive (WP64, 2026-11-06): CVE-2026-0871 is a Keycloak *server* flaw (user-profile unmanaged attributes, fixed in
+    server 26.4.0). keycloak-admin-client is the REST client library we call from core-service; it contains none of the server
+    code. The server runs from the Keycloak image, scanned by Trivy in images.yml. Review when the CPE match changes.</notes>
+    <packageUrl regex="true">^pkg:maven/org\.keycloak/keycloak-admin-client@.*$</packageUrl>
+    <cve>CVE-2026-0871</cve>
+  </suppress>
+  <suppress until="2027-05-01Z">
+    <notes>False positive (WP64, 2026-11-06): CVE-2026-54285 affects the opentelemetry-js package @opentelemetry/core (CPE
+    opentelemetry:opentelemetry for node.js, fixed 2.8.0). The matched artifacts are the Java opentelemetry-api jars, which
+    contain no JavaScript baggage propagator. Review when the CPE match changes.</notes>
+    <packageUrl regex="true">^pkg:maven/io\.opentelemetry/opentelemetry-api(-incubator)?@.*$</packageUrl>
+    <cve>CVE-2026-54285</cve>
+  </suppress>
 </suppressions>

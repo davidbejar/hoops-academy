@@ -78,7 +78,7 @@ jobs:
           java-version: '21'
           cache: maven
       # The NVD mirror (~400k records, hours to fetch from scratch) is cached across runs. restore/save are split so the
-      # data is kept even when the scan itself fails (a plain actions/cache skips the save on a failed job).
+      # data is saved only when the scan succeeded, so a failed or cancelled run cannot poison the cache (WP64).
       - name: Restore NVD data
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -93,7 +93,7 @@ jobs:
           ./mvnw -B -ntp -Psecurity-scan verify -DskipTests -Djacoco.skip=true \
             -DnvdApiKey="$NVD_API_KEY" -DossindexAnalyzerEnabled=false -Dformats=HTML,JSON
       - name: Save NVD data
-        if: always()
+        if: success()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
