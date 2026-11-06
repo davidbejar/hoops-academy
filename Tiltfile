@@ -138,7 +138,8 @@ k8s_resource(
 # namespace, installed by `just kind-up`) are its only clients.
 k8s_resource('ratelimit-redis', objects=['ratelimit-redis:networkpolicy'], resource_deps=['secrets'], labels=['infra'])
 # Event broker (WP66, ADR-0036; events.enabled in values-kind.yaml). The bootstrap Job (a Helm post-install hook, a plain
-# Job for Tilt) waits for the broker itself, then sets users, ACLs and topics; the services do not use it yet (WP67-WP69).
+# Job for Tilt) waits for the broker itself, then sets users, ACLs and topics. The services connect to it (WP71: core's
+# publisher, the game/athlete replica consumers); they need not wait for it, their Kafka clients reconnect by themselves.
 k8s_resource('redpanda', objects=['redpanda-config:configmap', 'redpanda:networkpolicy'],
              resource_deps=['secrets'], labels=['infra'])
 k8s_resource('redpanda-bootstrap', objects=['redpanda-bootstrap:configmap'], resource_deps=['redpanda'], labels=['infra'])

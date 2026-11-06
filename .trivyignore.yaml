@@ -16,6 +16,8 @@ misconfigurations:
       - "**/helm/tests/snapshots/*.yaml"
     statement: >-
       ConfigMap keycloak-password-blocklist holds the public password denylist (WP57, ADR-0038: the 10,000 most common
-      passwords, from SecLists), not a secret; the rule fires on the key name and the word "password". The chart stores
-      every real credential in Secrets (chart test "no Secret rendered" + gitleaks on the render).
+      passwords, from SecLists), and ConfigMap redpanda-bootstrap the broker bootstrap script (WP66, ADR-0036: it reads
+      the passwords from env vars fed by Secrets and never contains one); neither is a secret, the rule fires on the
+      word "password" in them. The chart stores every real credential in Secrets (chart test "no Secret rendered" +
+      gitleaks on the render; the bootstrap script test "no password on a command line").
     expired_at: 2027-05-01
