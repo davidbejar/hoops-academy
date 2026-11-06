@@ -34,6 +34,12 @@ void main() {
                   value: 'void',
                   destructive: true,
                 ),
+                SheetAction(
+                  icon: Icons.timer,
+                  label: 'Tiempo muerto',
+                  value: 'timeout',
+                  key: Key('menu-timeout'),
+                ),
               ],
             );
             onResult?.call(result);
@@ -74,5 +80,14 @@ void main() {
       tester.getSize(find.byKey(const Key('sheet-action-two'))).height,
       greaterThanOrEqualTo(48),
     );
+  });
+
+  testWidgets('an action keeps the key the caller gives it', (tester) async {
+    final results = <String?>[];
+    await open(tester, onResult: results.add);
+    expect(find.byKey(const Key('sheet-action-timeout')), findsNothing);
+    await tester.tap(find.byKey(const Key('menu-timeout')));
+    await tester.pumpAndSettle();
+    expect(results, ['timeout']);
   });
 }

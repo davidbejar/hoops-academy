@@ -11,6 +11,7 @@ class SheetAction<T> {
     required this.value,
     this.subtitle,
     this.destructive = false,
+    this.key,
   });
 
   final IconData icon;
@@ -20,6 +21,10 @@ class SheetAction<T> {
 
   /// Drawn in the danger colour (delete, void, remove).
   final bool destructive;
+
+  /// Key of the action's tile; defaults to `sheet-action-<value>`. Lets a
+  /// screen that moves a menu into a sheet keep the keys its tests use.
+  final Key? key;
 }
 
 /// Bottom sheet listing [actions]; completes with the chosen value, or null
@@ -67,7 +72,7 @@ class ActionSheetList<T> extends StatelessWidget {
               ),
             for (final a in actions)
               _ActionTile(
-                key: Key('sheet-action-${a.value}'),
+                key: a.key ?? Key('sheet-action-${a.value}'),
                 action: a,
                 color: a.destructive ? c.danger.foreground : c.ink,
                 onTap: () => Navigator.of(context).pop(a.value),
