@@ -36,6 +36,7 @@ import 'package:hoops_core_api/src/model/audit_target_type.dart';
 import 'package:hoops_core_api/src/model/authz_context.dart';
 import 'package:hoops_core_api/src/model/authz_summary.dart';
 import 'package:hoops_core_api/src/model/create_guardian_link_request.dart';
+import 'package:hoops_core_api/src/model/create_guardian_request.dart';
 import 'package:hoops_core_api/src/model/create_player_request.dart';
 import 'package:hoops_core_api/src/model/create_team_request.dart';
 import 'package:hoops_core_api/src/model/create_tenant_request.dart';
@@ -52,6 +53,7 @@ import 'package:hoops_core_api/src/model/gender.dart';
 import 'package:hoops_core_api/src/model/gender_policy.dart';
 import 'package:hoops_core_api/src/model/guardian_link.dart';
 import 'package:hoops_core_api/src/model/guardian_link_page.dart';
+import 'package:hoops_core_api/src/model/guardian_link_with_password.dart';
 import 'package:hoops_core_api/src/model/invitation_status.dart';
 import 'package:hoops_core_api/src/model/invite_member_request.dart';
 import 'package:hoops_core_api/src/model/locale.dart';
@@ -147,6 +149,7 @@ part 'serializers.g.dart';
   AuthzContext,
   AuthzSummary,
   CreateGuardianLinkRequest,
+  CreateGuardianRequest,
   CreatePlayerRequest,
   CreateTeamRequest,
   CreateTenantRequest,
@@ -163,6 +166,7 @@ part 'serializers.g.dart';
   GenderPolicy,
   GuardianLink,
   GuardianLinkPage,
+  GuardianLinkWithPassword,
   InvitationStatus,
   InviteMemberRequest,
   Locale,

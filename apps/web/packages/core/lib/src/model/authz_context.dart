@@ -19,10 +19,10 @@ part 'authz_context.g.dart';
 /// * [tenantId] 
 /// * [tenantStatus] 
 /// * [roles] 
-/// * [staffTeamIds] 
+/// * [staffTeamIds] - Teams the caller is staff of; teams whose season has ended are left out (core 2.8.0).
 /// * [linkedPlayerIds] 
 /// * [ownPlayerId] - The subject's own player id when they hold the PLAYER role.
-/// * [playerTeamIds] - Teams with an open, valid assignment of the own player or of a linked player.
+/// * [playerTeamIds] - Teams with an open, valid assignment of the own player or of a linked player; teams whose season has ended are left out (core 2.8.0). 
 /// * [timezone] - IANA time zone of the tenant.
 @BuiltValue()
 abstract class AuthzContext implements Built<AuthzContext, AuthzContextBuilder> {
@@ -42,6 +42,7 @@ abstract class AuthzContext implements Built<AuthzContext, AuthzContextBuilder> 
   @BuiltValueField(wireName: r'roles')
   BuiltSet<TenantRole> get roles;
 
+  /// Teams the caller is staff of; teams whose season has ended are left out (core 2.8.0).
   @BuiltValueField(wireName: r'staffTeamIds')
   BuiltList<String> get staffTeamIds;
 
@@ -52,7 +53,7 @@ abstract class AuthzContext implements Built<AuthzContext, AuthzContextBuilder> 
   @BuiltValueField(wireName: r'ownPlayerId')
   String? get ownPlayerId;
 
-  /// Teams with an open, valid assignment of the own player or of a linked player.
+  /// Teams with an open, valid assignment of the own player or of a linked player; teams whose season has ended are left out (core 2.8.0). 
   @BuiltValueField(wireName: r'playerTeamIds')
   BuiltList<String> get playerTeamIds;
 

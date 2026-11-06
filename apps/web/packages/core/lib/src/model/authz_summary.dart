@@ -12,14 +12,14 @@ part 'authz_summary.g.dart';
 /// The caller's scope within the tenant (what the UI may offer; the server re-checks every call).
 ///
 /// Properties:
-/// * [staffTeamIds] - Teams where the caller is COACH or ASSISTANT_COACH staff.
+/// * [staffTeamIds] - Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the academy's time zone) even while the staff row is still open (core 2.8.0). 
 /// * [linkedPlayerIds] - Players linked to the caller as guardian (PARENT).
 /// * [ownPlayerId] - The caller's own player id when they hold the PLAYER role (null otherwise).
-/// * [playerTeamIds] - Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. 
+/// * [playerTeamIds] - Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. Teams whose season has ended are left out even while the assignment is still open (core 2.8.0). 
 /// * [timezone] - IANA time zone of the tenant (calendar days of sessions, birthdays, availability).
 @BuiltValue()
 abstract class AuthzSummary implements Built<AuthzSummary, AuthzSummaryBuilder> {
-  /// Teams where the caller is COACH or ASSISTANT_COACH staff.
+  /// Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the academy's time zone) even while the staff row is still open (core 2.8.0). 
   @BuiltValueField(wireName: r'staffTeamIds')
   BuiltList<String> get staffTeamIds;
 
@@ -31,7 +31,7 @@ abstract class AuthzSummary implements Built<AuthzSummary, AuthzSummaryBuilder> 
   @BuiltValueField(wireName: r'ownPlayerId')
   String? get ownPlayerId;
 
-  /// Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. 
+  /// Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. Teams whose season has ended are left out even while the assignment is still open (core 2.8.0). 
   @BuiltValueField(wireName: r'playerTeamIds')
   BuiltList<String> get playerTeamIds;
 
