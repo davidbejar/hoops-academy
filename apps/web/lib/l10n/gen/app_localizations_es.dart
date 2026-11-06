@@ -2118,6 +2118,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profilePlatform => 'Consola de plataforma';
 
   @override
+  String get profileResetDemo => 'Restablecer datos de demostración';
+
+  @override
   String get mePlansEmpty => 'Sin planes asignados';
 
   @override

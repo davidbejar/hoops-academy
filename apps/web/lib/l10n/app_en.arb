@@ -875,6 +875,7 @@
   "myPlayersTitle": "My players",
   "myPlayersEmpty": "You have no linked players",
   "profilePlatform": "Platform console",
+  "profileResetDemo": "Reset demo data",
   "mePlansEmpty": "No assigned plans",
   "platformTitle": "Platform",
   "platformSearchHint": "Search by name or slug",

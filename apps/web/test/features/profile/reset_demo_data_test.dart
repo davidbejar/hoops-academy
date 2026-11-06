@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/config/app_config.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';

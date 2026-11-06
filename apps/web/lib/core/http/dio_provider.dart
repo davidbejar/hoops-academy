@@ -22,7 +22,9 @@ final Provider<Dio> dioProvider = Provider<Dio>((ref) {
       headers: {'Accept': 'application/json, application/problem+json'},
     ),
   );
-  if (config.mockApi) dio.httpClientAdapter = MockApiAdapter();
+  if (config.mockApi) {
+    dio.httpClientAdapter = ref.watch(mockApiAdapterProvider);
+  }
   dio.interceptors.addAll(
     buildInterceptors(
       dio: dio,

@@ -3964,6 +3964,12 @@ abstract class AppLocalizations {
   /// **'Consola de plataforma'**
   String get profilePlatform;
 
+  /// No description provided for @profileResetDemo.
+  ///
+  /// In es, this message translates to:
+  /// **'Restablecer datos de demostración'**
+  String get profileResetDemo;
+
   /// No description provided for @mePlansEmpty.
   ///
   /// In es, this message translates to:

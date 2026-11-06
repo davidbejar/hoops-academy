@@ -2103,6 +2103,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profilePlatform => 'Platform console';
 
   @override
+  String get profileResetDemo => 'Reset demo data';
+
+  @override
   String get mePlansEmpty => 'No assigned plans';
 
   @override

@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme.dart';
 import '../../../app/sign_out.dart';
+import '../../../core/config/app_config.dart';
+import '../../../core/http/mock_api_adapter.dart';
 import '../../../core/l10n/locale_controller.dart';
+import '../../../core/mock/mock_reload.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
@@ -26,6 +29,12 @@ class ProfileScreen extends ConsumerWidget {
     } on Object {
       // The local choice already applies; the server copy catches up later.
     }
+  }
+
+  /// Demo mode only: forgets what was changed (browser storage and the running mock) and starts the page afresh.
+  Future<void> _resetDemo(WidgetRef ref) async {
+    await ref.read(mockApiAdapterProvider).reset();
+    reloadPage();
   }
 
   @override
@@ -70,6 +79,13 @@ class ProfileScreen extends ConsumerWidget {
                     leading: const Icon(Icons.apartment_outlined),
                     title: Text(l.profilePlatform),
                     onTap: () => context.go('/platform'),
+                  ),
+                if (ref.watch(appConfigProvider).mockApi)
+                  ListTile(
+                    key: const Key('reset-demo-data'),
+                    leading: const Icon(Icons.restart_alt),
+                    title: Text(l.profileResetDemo),
+                    onTap: () => _resetDemo(ref),
                   ),
                 const Divider(),
                 Padding(

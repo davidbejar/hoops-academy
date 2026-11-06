@@ -1214,6 +1214,7 @@
   "myPlayersTitle": "Mis jugadores",
   "myPlayersEmpty": "No tienes jugadores vinculados",
   "profilePlatform": "Consola de plataforma",
+  "profileResetDemo": "Restablecer datos de demostración",
   "mePlansEmpty": "Sin planes asignados",
   "platformTitle": "Plataforma",
   "platformSearchHint": "Buscar por nombre o identificador",

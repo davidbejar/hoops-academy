@@ -84,6 +84,12 @@ class MockCoreApi {
   /// The user's own player in the demo academy when the PLAYER role is on (the player record carries the login's person).
   static const demoSelfPlayerId = 'p-leo';
 
+  /// The same in Club Norte.
+  static const norteSelfPlayerId = 'p-nico';
+
+  String get _selfPlayerId =>
+      academy == MockAcademy.demo ? demoSelfPlayerId : norteSelfPlayerId;
+
   /// The team the demo user coaches, whose match and sessions the game and athlete mocks seed.
   String get homeTeamId =>
       academy == MockAcademy.demo ? ownTeamId : norteTeamId;
@@ -232,15 +238,21 @@ class MockCoreApi {
       ] else
         _member('m-nadia', 'Nadia', 'Admin', ['ADMIN']),
     ]);
-    if (demo) {
-      _staff[ownTeamId] = [
+    _staff[homeTeamId] = [
+      if (demo)
         {
           'person': _person('m-tom', 'Tomás Entrenador'),
           'role': 'COACH',
           'since': '2026-09-01',
         },
-      ];
-    }
+      // the demo user's own staff row, so the team staff list and `/me` agree (COACH wins over ASSISTANT_COACH)
+      if (roles.contains('COACH') || roles.contains('ASSISTANT_COACH'))
+        {
+          'person': _person('a1', 'Casey Coach'),
+          'role': roles.contains('COACH') ? 'COACH' : 'ASSISTANT_COACH',
+          'since': '2026-09-01',
+        },
+    ];
     final seed = demo
         ? [
             ('p-ana', 'Ana', 'Ruiz', 2015, 'FEMALE', ownTeamId, '7'),
@@ -262,7 +274,7 @@ class MockCoreApi {
             ('p-neus', 'Neus', 'Roca', 2015, 'FEMALE', norteTeamId, '8'),
           ];
     for (final (id, given, family, year, gender, teamId, jersey) in seed) {
-      final isSelf = demo && id == demoSelfPlayerId && roles.contains('PLAYER');
+      final isSelf = id == _selfPlayerId && roles.contains('PLAYER');
       _players.add({
         'id': id,
         'personId': isSelf ? 'a1' : 'person-$id',
@@ -318,7 +330,15 @@ class MockCoreApi {
         null,
         reason: 'Se muda de ciudad',
       ),
-      _approval('ap-3', 'ADD_PLAYER', 'APPROVED', 'p-mia', 'Mía Soto', null),
+      _approval(
+        'ap-3',
+        'ADD_PLAYER',
+        'APPROVED',
+        'p-mia',
+        'Mía Soto',
+        null,
+        by: _person('m-tom', 'Tomás Entrenador'),
+      ),
     ]);
     _cases.add({
       'id': 'case-1',
@@ -358,13 +378,14 @@ class MockCoreApi {
     String pname,
     String? note, {
     String? reason,
+    Map<String, Object?>? by,
   }) => {
     'id': id,
     'action': action,
     'status': status,
     'player': _ref(pid, pname),
     'payload': {'note': ?note, 'reason': ?reason},
-    'requestedBy': _person('a1', 'Casey Coach'),
+    'requestedBy': by ?? _person('a1', 'Casey Coach'),
     'requestedAt': _now(),
   };
 
@@ -409,7 +430,11 @@ class MockCoreApi {
   MockAuthz get authz => MockAuthz(
     roles: roles.toSet(),
     staffTeamIds: roles.contains('COACH') || roles.contains('ASSISTANT_COACH')
-        ? {homeTeamId}
+        ? {
+            for (final e in _staff.entries)
+              if (e.value.any((s) => (s['person']! as Map)['personId'] == 'a1'))
+                e.key,
+          }
         : <String>{},
     linkedPlayerIds: {
       for (final l in _links)
@@ -671,7 +696,9 @@ class MockCoreApi {
                         (l['player']! as Map)['id'] == query['playerId']) &&
                     (query['guardianPersonId'] == null ||
                         (l['guardian']! as Map)['personId'] ==
-                            query['guardianPersonId']))
+                            query['guardianPersonId']) &&
+                    (authz.admin ||
+                        (l['guardian']! as Map)['personId'] == 'a1'))
                   l,
             ]),
           );
@@ -714,13 +741,15 @@ class MockCoreApi {
             200,
             _page([
               for (final c in _cases)
-                if (query['status'] == null || c['status'] == query['status'])
+                if (_mayReadCase(c) &&
+                    (query['status'] == null || c['status'] == query['status']))
                   c,
             ]),
           );
         }
         if (id != null && sub == 'resolve' && is_('POST')) {
-          final c = _cases.firstWhere((c) => c['id'] == id);
+          final c = _cases.where((c) => c['id'] == id).firstOrNull;
+          if (c == null || !_mayReadCase(c)) return _notFound;
           if (b['resolution'] == 'REASSIGNED') {
             _assign(
               b['targetTeamId']! as String,
@@ -743,6 +772,19 @@ class MockCoreApi {
     return const MockResult.json(404, {'title': 'Not found', 'status': 404});
   }
 
+  static const _notFound = MockResult.json(404, {
+    'title': 'Not found',
+    'status': 404,
+  });
+
+  /// A coach reads the approval requests he asked for; the admin all of them.
+  bool _mayReadApproval(Map<String, Object?> a) =>
+      authz.admin || (a['requestedBy']! as Map)['personId'] == 'a1';
+
+  /// A coach reads the eligibility cases of his teams; the admin all of them.
+  bool _mayReadCase(Map<String, Object?> c) =>
+      authz.admin || authz.staffTeamIds.contains((c['team']! as Map)['id']);
+
   static const _forbidden = MockResult.json(403, {
     'title': 'Forbidden',
     'status': 403,
@@ -756,7 +798,8 @@ class MockCoreApi {
     final write = method != 'GET';
     final allowed = switch (res) {
       'tenant' || 'seasons' || 'age-categories' => !write,
-      'members' || 'guardian-links' || 'guardians' || 'audit-events' => false,
+      'guardian-links' => !write && a.roles.contains('PARENT'),
+      'members' || 'guardians' || 'audit-events' => false,
       'approval-requests' => a.staff && !write,
       'eligibility-cases' => a.coachRole,
       'teams' =>
@@ -963,7 +1006,8 @@ class MockCoreApi {
         200,
         _page([
           for (final t in _teams)
-            if ((q['seasonId'] == null || t['seasonId'] == q['seasonId']) &&
+            if (authz.canSeeTeam(t['id']! as String) &&
+                (q['seasonId'] == null || t['seasonId'] == q['seasonId']) &&
                 (q['ageCategoryId'] == null ||
                     (t['ageCategory']! as Map)['id'] == q['ageCategoryId']))
               t,
@@ -985,8 +1029,8 @@ class MockCoreApi {
       return MockResult.json(201, t);
     }
     final t = _teams.where((t) => t['id'] == id).firstOrNull;
-    if (t == null)
-      return const MockResult.json(404, {'title': 'Not found', 'status': 404});
+    if (t == null || (method == 'GET' && !authz.canSeeTeam(id!)))
+      return _notFound;
     if (sub == null && method == 'GET') return MockResult.json(200, t);
     if (sub == null && method == 'PATCH') {
       final error = mockApplyUpdate(
@@ -1029,9 +1073,12 @@ class MockCoreApi {
         return MockResult.json(200, [
           for (final p in _players)
             if ((p['teams']! as List).any(
-              (a) => ((a as Map)['team'] as Map)['id'] == id,
-            ))
-              _teamPlayer(id!, p['id']! as String),
+                  (a) => ((a as Map)['team'] as Map)['id'] == id,
+                ) &&
+                (authz.canManageTeam(id!) ||
+                    authz.coachRole ||
+                    authz.canSeePlayer(p['id']! as String)))
+              _teamPlayer(id, p['id']! as String),
         ]);
       }
       if (playerId == null && method == 'POST') {
@@ -1048,8 +1095,10 @@ class MockCoreApi {
           _assign(id, pid, b['jerseyNumber'] as String?),
         );
       }
-      if (playerId != null && tail == 'eligibility' && method == 'GET')
+      if (playerId != null && tail == 'eligibility' && method == 'GET') {
+        if (!authz.canSeePlayer(playerId)) return _notFound;
         return MockResult.json(200, _check(id!, playerId));
+      }
       if (playerId != null && method == 'DELETE') {
         final p = _playerById(playerId);
         (p['teams']! as List).removeWhere(
@@ -1090,7 +1139,8 @@ class MockCoreApi {
         200,
         _page([
           for (final p in _players)
-            if ((q['status'] == null || p['status'] == q['status']) &&
+            if (authz.canSeePlayer(p['id']! as String) &&
+                (q['status'] == null || p['status'] == q['status']) &&
                 (q['teamId'] == null ||
                     (p['teams']! as List).any(
                       (a) => ((a as Map)['team'] as Map)['id'] == q['teamId'],
@@ -1134,15 +1184,14 @@ class MockCoreApi {
       });
     }
     final p = _players.where((p) => p['id'] == id).firstOrNull;
-    if (p == null)
-      return const MockResult.json(404, {'title': 'Not found', 'status': 404});
+    if (p == null || !authz.canSeePlayer(id!)) return _notFound;
     if (sub == null && method == 'GET')
       return MockResult.json(200, _playerJson(p));
     if (sub == 'eligible-teams' && method == 'GET') {
       return MockResult.json(200, [
         for (final t in _teams)
           if (t['seasonId'] == (q['seasonId'] ?? 'season-2026'))
-            {'team': t, 'eligibility': _check(t['id']! as String, id!)},
+            {'team': t, 'eligibility': _check(t['id']! as String, id)},
       ]);
     }
     if (sub == 'withdraw' && method == 'POST') {
@@ -1156,7 +1205,7 @@ class MockCoreApi {
         _id('ap'),
         'WITHDRAW_PLAYER',
         admin ? 'APPROVED' : 'PENDING',
-        id!,
+        id,
         p['displayName']! as String,
         null,
         reason: b['reason'] as String?,
@@ -1182,13 +1231,14 @@ class MockCoreApi {
         200,
         _page([
           for (final a in _approvals)
-            if (q['status'] == null || a['status'] == q['status']) a,
+            if (_mayReadApproval(a) &&
+                (q['status'] == null || a['status'] == q['status']))
+              a,
         ]),
       );
     }
     final a = _approvals.where((a) => a['id'] == id).firstOrNull;
-    if (a == null)
-      return const MockResult.json(404, {'title': 'Not found', 'status': 404});
+    if (a == null || !_mayReadApproval(a)) return _notFound;
     if (sub == null && method == 'GET') return MockResult.json(200, a);
     if (a['status'] != 'PENDING')
       return const MockResult.json(409, {

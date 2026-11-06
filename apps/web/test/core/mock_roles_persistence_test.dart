@@ -72,8 +72,14 @@ void main() {
       final d = asRoles(['COACH']);
       final admin = asRoles(['ADMIN']);
       expect(ids(await get(admin, '/api/core/approval-requests')).length, 3);
-      expect(ids(await get(d, '/api/core/approval-requests')), {'ap-1', 'ap-2'});
-      expect((await get(d, '/api/core/approval-requests/ap-3')).statusCode, 404);
+      expect(ids(await get(d, '/api/core/approval-requests')), {
+        'ap-1',
+        'ap-2',
+      });
+      expect(
+        (await get(d, '/api/core/approval-requests/ap-3')).statusCode,
+        404,
+      );
       expect(ids(await get(d, '/api/core/eligibility-cases')), {'case-1'});
     });
 
@@ -83,11 +89,9 @@ void main() {
       expect(await players(d), {'p-ana'});
       expect((await get(d, '/api/core/players/p-leo')).statusCode, 404);
       expect((await get(d, '/api/core/players/p-ana')).statusCode, 200);
-      expect(
-        ids(await get(d, '/api/core/teams/$mini/players'), 'teamId'),
-        {mini},
-        reason: 'the roster shows her child only',
-      );
+      expect(ids(await get(d, '/api/core/teams/$mini/players'), 'teamId'), {
+        mini,
+      }, reason: 'the roster shows her child only');
       expect(
         (((await get(d, '/api/core/teams/$mini/players')).data) as List).length,
         1,
@@ -128,13 +132,12 @@ void main() {
     test('a row on Mini A, in the team staff list and in /me', () async {
       final d = asRoles(['COACH']);
       final staff = (await get(d, '/api/core/teams/$mini/staff')).data as List;
-      final me = staff.cast<Map>().firstWhere(
-        (s) => (s['person'] as Map)['personId'] == 'a1',
+      final me = staff.cast<Map<String, dynamic>>().firstWhere(
+        (s) => (s['person'] as Map<String, dynamic>)['personId'] == 'a1',
       );
       expect(me['role'], 'COACH');
       final authz =
-          (((await get(d, '/api/core/me')).data as Map)['memberships']
-                  as List)
+          (((await get(d, '/api/core/me')).data as Map)['memberships'] as List)
               .first['authz'];
       expect(authz['staffTeamIds'], [mini]);
     });
@@ -143,7 +146,7 @@ void main() {
       final d = asRoles(['ASSISTANT_COACH']);
       final staff = (await get(d, '/api/core/teams/$mini/staff')).data as List;
       expect(
-        staff.cast<Map>().map((s) => s['role']),
+        staff.cast<Map<String, dynamic>>().map((s) => s['role']),
         contains('ASSISTANT_COACH'),
       );
     });
@@ -152,7 +155,9 @@ void main() {
       final d = asRoles(['ADMIN']);
       final staff = (await get(d, '/api/core/teams/$mini/staff')).data as List;
       expect(
-        staff.cast<Map>().map((s) => (s['person'] as Map)['personId']),
+        staff.cast<Map<String, dynamic>>().map(
+          (s) => (s['person'] as Map<String, dynamic>)['personId'],
+        ),
         isNot(contains('a1')),
       );
     });
@@ -183,26 +188,22 @@ void main() {
     });
 
     test('norteRoles switches the second academy too', () async {
-      final adapter = MockApiAdapter(
-        roles: ['COACH'],
-        norteRoles: ['COACH'],
-      );
+      final adapter = MockApiAdapter(roles: ['COACH'], norteRoles: ['COACH']);
       final d = dioFor(adapter, tenant: norte);
       expect((await players(d)).length, 5);
       final staff =
           (await get(d, '/api/core/teams/team-norte-a/staff')).data as List;
       expect(
-        staff.cast<Map>().map((s) => (s['person'] as Map)['personId']),
+        staff.cast<Map<String, dynamic>>().map(
+          (s) => (s['person'] as Map<String, dynamic>)['personId'],
+        ),
         contains('a1'),
       );
       final me = (await get(d, '/api/core/me')).data as Map;
-      expect(
-        (me['memberships'] as List).map((m) => (m as Map)['roles']),
-        [
-          ['COACH'],
-          ['COACH'],
-        ],
-      );
+      expect((me['memberships'] as List).map((m) => (m as Map)['roles']), [
+        ['COACH'],
+        ['COACH'],
+      ]);
     });
 
     test('a PLAYER in Club Norte is Nico', () async {
@@ -251,10 +252,7 @@ void main() {
         '/api/core/players',
         data: newPlayer('Otro'),
       );
-      expect(
-        (next.data as Map)['player']['id'],
-        isNot(equals(id)),
-      );
+      expect((next.data as Map)['player']['id'], isNot(equals(id)));
     });
 
     test('failed requests and reads are not stored', () async {
@@ -268,7 +266,11 @@ void main() {
 
     test('the logo bytes and the other academy are kept apart', () async {
       final store = MemoryMockStore();
-      final a = MockApiAdapter(roles: ['ADMIN'], store: store);
+      final a = MockApiAdapter(
+        roles: ['ADMIN'],
+        norteRoles: ['ADMIN'],
+        store: store,
+      );
       final d = dioFor(a);
       final bytes = Uint8List.fromList([0x89, 0x50, 0x4E, 0x47, 7, 7, 7]);
       expect(
@@ -282,11 +284,15 @@ void main() {
         )).statusCode,
         200,
       );
-      await dioFor(a, tenant: norte).patch<dynamic>(
-        '/api/core/tenant',
-        data: {'name': 'Norte 2'},
+      await dioFor(
+        a,
+        tenant: norte,
+      ).patch<dynamic>('/api/core/tenant', data: {'name': 'Norte 2'});
+      final b = MockApiAdapter(
+        roles: ['ADMIN'],
+        norteRoles: ['ADMIN'],
+        store: store,
       );
-      final b = MockApiAdapter(roles: ['ADMIN'], store: store);
       final logo = await dioFor(b).get<List<int>>(
         '/api/core/tenant/logo',
         options: Options(responseType: ResponseType.bytes),
@@ -302,14 +308,16 @@ void main() {
       );
     });
 
-    test('other roles start from the seed (the key carries the roles)', () async {
-      final store = MemoryMockStore();
-      await dioFor(
-        MockApiAdapter(roles: ['ADMIN'], store: store),
-      ).post<dynamic>('/api/core/players', data: newPlayer('Nuevo'));
-      final coach = dioFor(MockApiAdapter(roles: ['COACH'], store: store));
-      expect((await players(coach)).length, 7);
-    });
+    test(
+      'other roles start from the seed (the key carries the roles)',
+      () async {
+        final store = MemoryMockStore();
+        await dioFor(MockApiAdapter(roles: ['ADMIN'], store: store))
+            .post<dynamic>('/api/core/players', data: newPlayer('Nuevo'));
+        final coach = dioFor(MockApiAdapter(roles: ['COACH'], store: store));
+        expect((await players(coach)).length, 7);
+      },
+    );
 
     test('reset clears the store and the running mock', () async {
       final store = MemoryMockStore();
