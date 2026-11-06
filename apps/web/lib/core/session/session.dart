@@ -46,6 +46,9 @@ class Ready extends SessionState {
 /// Routes any signed-in user may open regardless of role.
 const _commonPaths = {'/profile', '/tenants'};
 
+/// The public landing page (WP70): `/` and its alias `/welcome`.
+const landingPaths = {'/', '/welcome'};
+
 /// The auth/tenant/role guard as a pure function: returns the path to go to,
 /// or null to stay on [location].
 String? redirectFor(SessionState session, String location) {
@@ -53,6 +56,13 @@ String? redirectFor(SessionState session, String location) {
 
   switch (session) {
     case _Simple(:final phase):
+      // While auth initialises the landing routes stay put: the root route
+      // shows the splash until the status is known (no flash for a signed-in
+      // user), and a cold start at `/` can still become the landing.
+      if (landingPaths.contains(location) &&
+          (phase == _Phase.initializing || phase == _Phase.signedOut)) {
+        return null;
+      }
       return switch (phase) {
         _Phase.initializing ||
         _Phase.loadingProfile ||

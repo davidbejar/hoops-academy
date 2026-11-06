@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/auth/auth_providers.dart';
+import '../core/auth/auth_service.dart';
 import '../core/navigation/destinations.dart';
 import '../core/session/session.dart';
 import '../core/session/session_providers.dart';
+import '../core/ui/app_error_view.dart';
 import '../core/ui/deferred_screen.dart';
+import '../features/landing/presentation/landing_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import 'screens/auth_screens.dart';
 import 'screens/tenant_switcher_screen.dart';
@@ -43,13 +47,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 
+  // No initialLocation: a cold start keeps the browser's path, so an
+  // anonymous visit to `/` can become the landing (WP70).
   final router = GoRouter(
-    initialLocation: '/splash',
     refreshListenable: refresh,
     redirect: (context, state) =>
         redirectFor(ref.read(sessionProvider), state.uri.path),
     routes: [
-      GoRoute(path: '/', builder: (_, _) => const SplashScreen()),
+      GoRoute(path: '/', builder: (_, _) => const _LandingGate()),
+      GoRoute(path: '/welcome', builder: (_, _) => const _LandingGate()),
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/no-access', builder: (_, _) => const NoAccessScreen()),
@@ -71,3 +77,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// The landing for anonymous visitors; the splash while the auth status is
+/// still unknown, so a signed-in user never sees the landing flash by.
+class _LandingGate extends ConsumerWidget {
+  const _LandingGate();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) =>
+      ref.watch(authStatusProvider) == AuthStatus.unknown
+      ? const Scaffold(body: LoadingView())
+      : const LandingScreen();
+}

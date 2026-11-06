@@ -69,6 +69,9 @@ void main() {
       UncontrolledProviderScope(container: container, child: const HoopsApp()),
     );
     await tester.pumpAndSettle();
+    // Anonymous root: the landing page (WP70); its header leads to the login.
+    await tester.tap(find.byKey(const Key('landing-header-sign-in')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('login-button')));
     await tester.pumpAndSettle();
 
@@ -168,6 +171,8 @@ void main() {
           child: const HoopsApp(),
         ),
       );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('landing-header-sign-in')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('login-button')));
       await tester.pumpAndSettle();

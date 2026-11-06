@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/signed_in_email.dart';
@@ -129,55 +130,72 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final mock = ref.watch(appConfigProvider).mockApi;
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Padding(
-              padding: const EdgeInsets.all(AppTokens.spaceLg),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Icon(
-                    Icons.sports_basketball,
-                    size: 72,
-                    color: theme.colorScheme.primary,
+        child: Stack(
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTokens.spaceLg),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Icon(
+                        Icons.sports_basketball,
+                        size: 72,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(height: AppTokens.spaceMd),
+                      Text(
+                        l.appName,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: AppTokens.spaceSm),
+                      Text(
+                        l.signInSubtitle,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: AppTokens.spaceXl),
+                      FilledButton(
+                        key: const Key('login-button'),
+                        onPressed: _busy ? null : _signIn,
+                        child: _busy
+                            ? const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(l.signIn),
+                      ),
+                      if (mock) ...[
+                        const SizedBox(height: AppTokens.spaceMd),
+                        Text(
+                          l.mockModeBanner,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: AppTokens.spaceMd),
-                  Text(
-                    l.appName,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: AppTokens.spaceSm),
-                  Text(
-                    l.signInSubtitle,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: AppTokens.spaceXl),
-                  FilledButton(
-                    key: const Key('login-button'),
-                    onPressed: _busy ? null : _signIn,
-                    child: _busy
-                        ? const SizedBox.square(
-                            dimension: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(l.signIn),
-                  ),
-                  if (mock) ...[
-                    const SizedBox(height: AppTokens.spaceMd),
-                    Text(
-                      l.mockModeBanner,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
-          ),
+            // Back to the public landing page (WP70).
+            Positioned(
+              top: AppTokens.spaceSm,
+              left: AppTokens.spaceSm,
+              child: TextButton.icon(
+                key: const Key('login-back'),
+                onPressed: () => context.go('/'),
+                icon: const Icon(Icons.arrow_back),
+                label: Text(l.landingBack),
+              ),
+            ),
+          ],
         ),
       ),
     );

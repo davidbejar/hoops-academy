@@ -2,17 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/session/session.dart';
 import 'package:hoops_app/core/session/session_providers.dart';
+import 'package:hoops_app/features/landing/presentation/landing_screen.dart';
 
 import '../support/fixtures.dart';
 import '../support/harness.dart';
 
 void main() {
-  testWidgets('signed-out users land on the login screen', (tester) async {
+  testWidgets('signed-out users land on the landing page (WP70)', (
+    tester,
+  ) async {
     final h = Harness(
       me: FakeMeRepository(userWith([tenantNorth])),
       signedIn: false,
     );
     await h.pump(tester);
+
+    expect(find.byType(LandingScreen), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+  });
+
+  testWidgets('signed-out users opening an app route get the login screen', (
+    tester,
+  ) async {
+    final h = Harness(
+      me: FakeMeRepository(userWith([tenantNorth])),
+      signedIn: false,
+    );
+    await h.pump(tester);
+    await h.go(tester, '/teams');
 
     expect(find.byKey(const Key('login-button')), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
@@ -25,6 +42,8 @@ void main() {
     );
     await h.pump(tester);
 
+    await tester.tap(find.byKey(const Key('landing-header-sign-in')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('login-button')));
     await tester.pumpAndSettle();
 

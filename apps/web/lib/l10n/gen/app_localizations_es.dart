@@ -33,6 +33,203 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get landingEyebrow => 'Pensado solo para academias de baloncesto';
+
+  @override
+  String get landingHeadline =>
+      'Dirige tu academia como un programa, no como una hoja de cálculo.';
+
+  @override
+  String get landingSubheadline =>
+      'Plantillas, elegibilidad, estadísticas en vivo, asistencia a entrenamientos y desarrollo de jugadores, en un solo sitio que funciona a pie de pista, incluso sin cobertura.';
+
+  @override
+  String get landingRequestInvitation => 'Solicitar una invitación';
+
+  @override
+  String get landingSignIn => 'Iniciar sesión';
+
+  @override
+  String get landingProofLine =>
+      'Código abierto · Español, inglés e indonesio · Funciona sin conexión en cualquier móvil u ordenador';
+
+  @override
+  String get landingWhyTitle =>
+      'Una app genérica de club no sabe lo que es una falta en el último cuarto.';
+
+  @override
+  String get landingWhyBody =>
+      'Hoops Academy no es una plantilla de club deportivo con el baloncesto añadido. Categorías de edad, reglas de jugar en categoría superior, hojas de estadísticas, quintetos, pruebas físicas con baremos de baloncesto: las reglas del juego son las reglas del programa. Tú configuras tu academia, no el deporte.';
+
+  @override
+  String get landingFeatureRosterTitle =>
+      'Plantillas que hacen cumplir las reglas';
+
+  @override
+  String get landingFeatureRosterBody =>
+      'Temporadas, categorías de edad, equipos y jugadores con reglas de categoría superior y aprobaciones integradas. El cambio de temporada sube a todos de un solo paso, y nadie juega donde no es elegible.';
+
+  @override
+  String get landingFeatureStatsTitle =>
+      'Estadísticas desde el banquillo, con o sin cobertura';
+
+  @override
+  String get landingFeatureStatsBody =>
+      'Anota el partido desde un móvil en la mesa. Varias personas pueden registrar a la vez, la hoja de estadísticas se actualiza en vivo y, si el pabellón no tiene cobertura, los eventos se sincronizan al volver a tener conexión.';
+
+  @override
+  String get landingFeatureTrainingTitle =>
+      'Planes, sesiones y quién vino de verdad';
+
+  @override
+  String get landingFeatureTrainingBody =>
+      'Calendario semanal en la zona horaria de tu academia, planes de entrenamiento reutilizables, asistencia en dos toques y ausencias previstas para que el entrenador lo sepa antes de empezar.';
+
+  @override
+  String get landingFeatureHealthTitle =>
+      'Crecimiento, lesiones y forma física con baremos reales';
+
+  @override
+  String get landingFeatureHealthBody =>
+      'Altura y peso a lo largo del tiempo, lesiones con fecha de vuelta y disponibilidad, y pruebas físicas valoradas con baremos publicados por edad y sexo, para que un niño de 12 años se compare con niños de 12 años.';
+
+  @override
+  String get landingFeatureFamiliesTitle =>
+      'Las familias ven lo que importa, nada más';
+
+  @override
+  String get landingFeatureFamiliesBody =>
+      'Los padres siguen las sesiones, la disponibilidad y los eventos de partido de sus propios hijos. Los jugadores ven su propia línea. Entrenadores y administradores ven sus equipos. El acceso sigue al rol, sin configurar nada.';
+
+  @override
+  String get landingFeatureAcademiesTitle =>
+      'Cada academia es una isla; las personas no';
+
+  @override
+  String get landingFeatureAcademiesBody =>
+      'Los datos de cada academia están aislados a nivel de base de datos. Un entrenador que trabaja en dos academias, o un padre con hijos en dos, usa un solo acceso y cambia con un toque.';
+
+  @override
+  String get landingRoleAdmin => 'Administrador';
+
+  @override
+  String get landingRoleAdminLine =>
+      'Configura la temporada una vez; aprobaciones, elegibilidad y el registro de actividad hacen el resto.';
+
+  @override
+  String get landingRoleCoach => 'Entrenador';
+
+  @override
+  String get landingRoleCoachLine =>
+      'Tus equipos, tus sesiones, tu hoja de partido, en el móvil que llevas en el bolsillo.';
+
+  @override
+  String get landingRoleParent => 'Padre o madre';
+
+  @override
+  String get landingRoleParentLine =>
+      'Sabe cuándo hay entrenamiento, si tu hijo puede jugar y qué tal lo hizo el sábado.';
+
+  @override
+  String get landingRolePlayer => 'Jugador';
+
+  @override
+  String get landingRolePlayerLine =>
+      'Tus estadísticas, tus pruebas, tu progreso. Solo tuyos.';
+
+  @override
+  String get landingCostTitle => 'Menos programas, menos suscripciones';
+
+  @override
+  String get landingCostBody =>
+      'Una sola herramienta sustituye a la hoja de inscripciones, la app de estadísticas, el grupo de chat para la asistencia y la carpeta de PDFs de pruebas físicas. Es código abierto y gratuita durante el acceso anticipado; cuando lleguen los planes serán por academia, no por entrenador ni por jugador.';
+
+  @override
+  String get landingNextTitle => 'En camino';
+
+  @override
+  String get landingNextNotificationsTitle => 'Notificaciones';
+
+  @override
+  String get landingNextNotificationsLine =>
+      'Recordatorios de entrenamiento, cambios de quinteto y resultados en tu móvil.';
+
+  @override
+  String get landingNextSignupTitle => 'Alta sin invitación';
+
+  @override
+  String get landingNextSignupLine =>
+      'Las academias se darán de alta desde esta página; hoy es por invitación.';
+
+  @override
+  String get landingNextIntegrationsTitle => 'Integraciones';
+
+  @override
+  String get landingNextIntegrationsLine =>
+      'Plantillas y eventos de partido publicados para las herramientas que ya usas.';
+
+  @override
+  String get landingNextReportsTitle => 'Informes de temporada';
+
+  @override
+  String get landingNextReportsLine =>
+      'Asistencia, minutos y desarrollo por jugador, listos para compartir con las familias.';
+
+  @override
+  String get landingJoinTitle => 'Solicita una invitación';
+
+  @override
+  String get landingJoinIntro =>
+      'Hoops Academy funciona solo por invitación durante el acceso anticipado. Cuéntanos de tu academia y te responderemos.';
+
+  @override
+  String get landingJoinName => 'Tu nombre';
+
+  @override
+  String get landingJoinEmail => 'Correo electrónico';
+
+  @override
+  String get landingJoinRole => 'Tu rol';
+
+  @override
+  String get landingJoinRoleAdmin => 'Administrador de la academia';
+
+  @override
+  String get landingJoinRoleCoach => 'Entrenador';
+
+  @override
+  String get landingJoinRoleParent => 'Padre o madre';
+
+  @override
+  String get landingJoinAcademy => 'Nombre de la academia';
+
+  @override
+  String get landingJoinSubmit => 'Enviar solicitud';
+
+  @override
+  String get landingJoinConfirmation =>
+      'Gracias. Durante el acceso anticipado las invitaciones se envían a mano; te escribiremos a la dirección indicada.';
+
+  @override
+  String get landingJoinEmailInvalid => 'Introduce un correo válido';
+
+  @override
+  String get landingJoinRoleMissing => 'Elige tu rol';
+
+  @override
+  String get landingJoinAcademyMissing => 'Introduce el nombre de tu academia';
+
+  @override
+  String get landingFooterLicense =>
+      'Hoops Academy es software libre bajo la GNU AGPL v3.';
+
+  @override
+  String get landingFooterSource => 'Código fuente en GitHub.';
+
+  @override
+  String get landingBack => 'Volver';
+
+  @override
   String get offlineBanner =>
       'Sin conexión. Los datos pueden no estar actualizados.';
 

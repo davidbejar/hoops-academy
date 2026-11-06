@@ -33,6 +33,203 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get landingEyebrow => 'Dibuat khusus untuk akademi basket';
+
+  @override
+  String get landingHeadline =>
+      'Kelola akademimu seperti sebuah program, bukan lembar kerja.';
+
+  @override
+  String get landingSubheadline =>
+      'Roster, kelayakan, statistik pertandingan langsung, kehadiran latihan, dan perkembangan pemain, dalam satu tempat yang bekerja di pinggir lapangan, bahkan tanpa sinyal.';
+
+  @override
+  String get landingRequestInvitation => 'Minta undangan';
+
+  @override
+  String get landingSignIn => 'Masuk';
+
+  @override
+  String get landingProofLine =>
+      'Sumber terbuka · Bahasa Spanyol, Inggris, dan Indonesia · Bekerja offline di ponsel atau laptop apa pun';
+
+  @override
+  String get landingWhyTitle =>
+      'Aplikasi klub generik tidak tahu apa itu foul di kuarter keempat.';
+
+  @override
+  String get landingWhyBody =>
+      'Hoops Academy bukan templat klub olahraga yang ditempeli basket. Kategori usia, aturan main di kategori atas, box score, lima pemain di lapangan, tes kebugaran dengan norma basket: aturan permainan adalah aturan perangkat lunaknya. Kamu mengatur akademimu, bukan olahraganya.';
+
+  @override
+  String get landingFeatureRosterTitle => 'Roster yang menegakkan aturan';
+
+  @override
+  String get landingFeatureRosterBody =>
+      'Musim, kategori usia, tim, dan pemain dengan aturan main di kategori atas serta persetujuan bawaan. Pergantian musim menaikkan semua orang dalam satu langkah, dan tidak ada yang bermain di tempat yang tidak layak.';
+
+  @override
+  String get landingFeatureStatsTitle =>
+      'Statistik dari bangku cadangan, dengan atau tanpa sinyal';
+
+  @override
+  String get landingFeatureStatsBody =>
+      'Catat pertandingan dari ponsel di meja pencatat. Beberapa orang bisa mencatat sekaligus, box score diperbarui langsung, dan jika aula tidak ada sinyal, kejadian disinkronkan saat kembali online.';
+
+  @override
+  String get landingFeatureTrainingTitle =>
+      'Rencana, sesi, dan siapa yang benar-benar hadir';
+
+  @override
+  String get landingFeatureTrainingBody =>
+      'Kalender mingguan dalam zona waktu akademimu, rencana latihan yang bisa dipakai ulang, kehadiran dalam dua ketukan, dan absen terencana supaya pelatih tahu sebelum latihan dimulai.';
+
+  @override
+  String get landingFeatureHealthTitle =>
+      'Pertumbuhan, cedera, dan kebugaran dengan norma nyata';
+
+  @override
+  String get landingFeatureHealthBody =>
+      'Tinggi dan berat dari waktu ke waktu, cedera dengan tanggal kembali dan ketersediaan, serta tes fisik yang dinilai dengan norma usia dan jenis kelamin yang terpublikasi, sehingga anak 12 tahun dibandingkan dengan anak 12 tahun.';
+
+  @override
+  String get landingFeatureFamiliesTitle =>
+      'Keluarga melihat yang penting, tidak lebih';
+
+  @override
+  String get landingFeatureFamiliesBody =>
+      'Orang tua mengikuti sesi, ketersediaan, dan kejadian pertandingan anak mereka sendiri. Pemain melihat catatannya sendiri. Pelatih dan admin melihat tim mereka. Akses mengikuti peran, secara otomatis.';
+
+  @override
+  String get landingFeatureAcademiesTitle =>
+      'Setiap akademi adalah pulau; orangnya tidak';
+
+  @override
+  String get landingFeatureAcademiesBody =>
+      'Data setiap akademi terisolasi di tingkat basis data. Pelatih yang bekerja di dua akademi, atau orang tua dengan anak di dua akademi, memakai satu login dan berpindah dengan satu ketukan.';
+
+  @override
+  String get landingRoleAdmin => 'Admin';
+
+  @override
+  String get landingRoleAdminLine =>
+      'Siapkan musim sekali; persetujuan, kelayakan, dan jejak aktivitas mengurus sisanya.';
+
+  @override
+  String get landingRoleCoach => 'Pelatih';
+
+  @override
+  String get landingRoleCoachLine =>
+      'Tim, sesi, dan lembar pertandinganmu, di ponsel yang ada di sakumu.';
+
+  @override
+  String get landingRoleParent => 'Orang tua';
+
+  @override
+  String get landingRoleParentLine =>
+      'Tahu kapan latihan, apakah anakmu boleh bermain, dan bagaimana penampilannya hari Sabtu.';
+
+  @override
+  String get landingRolePlayer => 'Pemain';
+
+  @override
+  String get landingRolePlayerLine =>
+      'Statistikmu, tesmu, kemajuanmu. Hanya milikmu.';
+
+  @override
+  String get landingCostTitle =>
+      'Lebih sedikit perangkat lunak, lebih sedikit langganan';
+
+  @override
+  String get landingCostBody =>
+      'Satu alat menggantikan lembar pendaftaran, aplikasi statistik, grup chat untuk kehadiran, dan folder PDF tes kebugaran. Sumber terbuka dan gratis selama akses awal; ketika paket hadir, harganya per akademi, bukan per pelatih atau per pemain.';
+
+  @override
+  String get landingNextTitle => 'Segera hadir';
+
+  @override
+  String get landingNextNotificationsTitle => 'Notifikasi';
+
+  @override
+  String get landingNextNotificationsLine =>
+      'Pengingat latihan, perubahan susunan, dan hasil pertandingan di ponselmu.';
+
+  @override
+  String get landingNextSignupTitle => 'Pendaftaran mandiri';
+
+  @override
+  String get landingNextSignupLine =>
+      'Akademi mendaftar dari halaman ini; saat ini masih lewat undangan.';
+
+  @override
+  String get landingNextIntegrationsTitle => 'Integrasi';
+
+  @override
+  String get landingNextIntegrationsLine =>
+      'Roster dan kejadian pertandingan dipublikasikan untuk alat yang sudah kamu pakai.';
+
+  @override
+  String get landingNextReportsTitle => 'Laporan musim';
+
+  @override
+  String get landingNextReportsLine =>
+      'Kehadiran, menit bermain, dan perkembangan per pemain, siap dibagikan ke keluarga.';
+
+  @override
+  String get landingJoinTitle => 'Minta undangan';
+
+  @override
+  String get landingJoinIntro =>
+      'Hoops Academy hanya lewat undangan selama akses awal. Ceritakan tentang akademimu dan kami akan menghubungimu.';
+
+  @override
+  String get landingJoinName => 'Namamu';
+
+  @override
+  String get landingJoinEmail => 'Email';
+
+  @override
+  String get landingJoinRole => 'Peranmu';
+
+  @override
+  String get landingJoinRoleAdmin => 'Admin akademi';
+
+  @override
+  String get landingJoinRoleCoach => 'Pelatih';
+
+  @override
+  String get landingJoinRoleParent => 'Orang tua';
+
+  @override
+  String get landingJoinAcademy => 'Nama akademi';
+
+  @override
+  String get landingJoinSubmit => 'Kirim permintaan';
+
+  @override
+  String get landingJoinConfirmation =>
+      'Terima kasih. Selama akses awal, undangan dikirim secara manual; kami akan menulis ke alamat di atas.';
+
+  @override
+  String get landingJoinEmailInvalid => 'Masukkan email yang valid';
+
+  @override
+  String get landingJoinRoleMissing => 'Pilih peranmu';
+
+  @override
+  String get landingJoinAcademyMissing => 'Masukkan nama akademimu';
+
+  @override
+  String get landingFooterLicense =>
+      'Hoops Academy adalah perangkat lunak bebas di bawah GNU AGPL v3.';
+
+  @override
+  String get landingFooterSource => 'Kode sumber di GitHub.';
+
+  @override
+  String get landingBack => 'Kembali';
+
+  @override
   String get offlineBanner => 'Anda sedang offline. Data mungkin sudah usang.';
 
   @override

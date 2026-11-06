@@ -17,10 +17,43 @@ void main() {
       expect(redirectFor(const SessionState.initializing(), '/splash'), isNull);
     });
 
-    test('signed-out users are sent to /login from anywhere', () {
+    test('signed-out users are sent to /login from any app route', () {
       expect(redirectFor(const SessionState.signedOut(), '/teams'), '/login');
       expect(redirectFor(const SessionState.signedOut(), '/splash'), '/login');
       expect(redirectFor(const SessionState.signedOut(), '/login'), isNull);
+    });
+
+    test('signed-out users stay on the landing at / and /welcome (WP70)', () {
+      expect(redirectFor(const SessionState.signedOut(), '/'), isNull);
+      expect(redirectFor(const SessionState.signedOut(), '/welcome'), isNull);
+    });
+
+    test('while auth initialises the landing routes stay put (WP70)', () {
+      // The root route shows the splash until the auth status is known, so a
+      // cold start at / can still become the landing.
+      expect(redirectFor(const SessionState.initializing(), '/'), isNull);
+      expect(
+        redirectFor(const SessionState.initializing(), '/welcome'),
+        isNull,
+      );
+      expect(
+        redirectFor(const SessionState.loadingProfile(), '/'),
+        '/splash',
+        reason: 'signed in: the splash stays for the profile load',
+      );
+    });
+
+    test('signed-in sessions leave the landing for the app (WP70)', () {
+      final ready = SessionState.ready(
+        user: userWith([tenantNorth]),
+        membership: tenantNorth,
+      );
+      expect(redirectFor(ready, '/welcome'), '/admin');
+      final picking = SessionState.needsTenant(
+        userWith([tenantNorth, tenantSouth]),
+      );
+      expect(redirectFor(picking, '/'), '/tenants');
+      expect(redirectFor(picking, '/welcome'), '/tenants');
     });
 
     test('a failed profile load stays on the splash (which offers retry)', () {

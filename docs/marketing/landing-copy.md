@@ -249,3 +249,7 @@ screenshots or illustrated mock-ups of the app (the demo mock can be captured), 
 - Language switch labels: Español · English · Bahasa Indonesia
 - Link labels: en: Sign in / Privacy · es: Iniciar sesión / Privacidad · id: Masuk / Privasi (the privacy link
   points to the existing policy page if one exists; otherwise omit the link, do not invent a policy)
+
+## 9. Login screen (added in WP70)
+
+- Link back to this page, top left of the sign-in screen: en: Back · es: Volver · id: Kembali

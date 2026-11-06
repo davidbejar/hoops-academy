@@ -90,6 +90,10 @@ flutter:
   generate: true
   uses-material-design: true
 
+  # Landing page screenshots of the demo mock (WP70).
+  assets:
+    - assets/landing/
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

@@ -142,6 +142,342 @@ abstract class AppLocalizations {
   /// **'Sesión iniciada como {name}'**
   String signedInAs(String name);
 
+  /// No description provided for @landingEyebrow.
+  ///
+  /// In es, this message translates to:
+  /// **'Pensado solo para academias de baloncesto'**
+  String get landingEyebrow;
+
+  /// No description provided for @landingHeadline.
+  ///
+  /// In es, this message translates to:
+  /// **'Dirige tu academia como un programa, no como una hoja de cálculo.'**
+  String get landingHeadline;
+
+  /// No description provided for @landingSubheadline.
+  ///
+  /// In es, this message translates to:
+  /// **'Plantillas, elegibilidad, estadísticas en vivo, asistencia a entrenamientos y desarrollo de jugadores, en un solo sitio que funciona a pie de pista, incluso sin cobertura.'**
+  String get landingSubheadline;
+
+  /// No description provided for @landingRequestInvitation.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitar una invitación'**
+  String get landingRequestInvitation;
+
+  /// No description provided for @landingSignIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión'**
+  String get landingSignIn;
+
+  /// No description provided for @landingProofLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Código abierto · Español, inglés e indonesio · Funciona sin conexión en cualquier móvil u ordenador'**
+  String get landingProofLine;
+
+  /// No description provided for @landingWhyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Una app genérica de club no sabe lo que es una falta en el último cuarto.'**
+  String get landingWhyTitle;
+
+  /// No description provided for @landingWhyBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoops Academy no es una plantilla de club deportivo con el baloncesto añadido. Categorías de edad, reglas de jugar en categoría superior, hojas de estadísticas, quintetos, pruebas físicas con baremos de baloncesto: las reglas del juego son las reglas del programa. Tú configuras tu academia, no el deporte.'**
+  String get landingWhyBody;
+
+  /// No description provided for @landingFeatureRosterTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Plantillas que hacen cumplir las reglas'**
+  String get landingFeatureRosterTitle;
+
+  /// No description provided for @landingFeatureRosterBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporadas, categorías de edad, equipos y jugadores con reglas de categoría superior y aprobaciones integradas. El cambio de temporada sube a todos de un solo paso, y nadie juega donde no es elegible.'**
+  String get landingFeatureRosterBody;
+
+  /// No description provided for @landingFeatureStatsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas desde el banquillo, con o sin cobertura'**
+  String get landingFeatureStatsTitle;
+
+  /// No description provided for @landingFeatureStatsBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Anota el partido desde un móvil en la mesa. Varias personas pueden registrar a la vez, la hoja de estadísticas se actualiza en vivo y, si el pabellón no tiene cobertura, los eventos se sincronizan al volver a tener conexión.'**
+  String get landingFeatureStatsBody;
+
+  /// No description provided for @landingFeatureTrainingTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Planes, sesiones y quién vino de verdad'**
+  String get landingFeatureTrainingTitle;
+
+  /// No description provided for @landingFeatureTrainingBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Calendario semanal en la zona horaria de tu academia, planes de entrenamiento reutilizables, asistencia en dos toques y ausencias previstas para que el entrenador lo sepa antes de empezar.'**
+  String get landingFeatureTrainingBody;
+
+  /// No description provided for @landingFeatureHealthTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crecimiento, lesiones y forma física con baremos reales'**
+  String get landingFeatureHealthTitle;
+
+  /// No description provided for @landingFeatureHealthBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Altura y peso a lo largo del tiempo, lesiones con fecha de vuelta y disponibilidad, y pruebas físicas valoradas con baremos publicados por edad y sexo, para que un niño de 12 años se compare con niños de 12 años.'**
+  String get landingFeatureHealthBody;
+
+  /// No description provided for @landingFeatureFamiliesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Las familias ven lo que importa, nada más'**
+  String get landingFeatureFamiliesTitle;
+
+  /// No description provided for @landingFeatureFamiliesBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Los padres siguen las sesiones, la disponibilidad y los eventos de partido de sus propios hijos. Los jugadores ven su propia línea. Entrenadores y administradores ven sus equipos. El acceso sigue al rol, sin configurar nada.'**
+  String get landingFeatureFamiliesBody;
+
+  /// No description provided for @landingFeatureAcademiesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada academia es una isla; las personas no'**
+  String get landingFeatureAcademiesTitle;
+
+  /// No description provided for @landingFeatureAcademiesBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Los datos de cada academia están aislados a nivel de base de datos. Un entrenador que trabaja en dos academias, o un padre con hijos en dos, usa un solo acceso y cambia con un toque.'**
+  String get landingFeatureAcademiesBody;
+
+  /// No description provided for @landingRoleAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador'**
+  String get landingRoleAdmin;
+
+  /// No description provided for @landingRoleAdminLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Configura la temporada una vez; aprobaciones, elegibilidad y el registro de actividad hacen el resto.'**
+  String get landingRoleAdminLine;
+
+  /// No description provided for @landingRoleCoach.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrenador'**
+  String get landingRoleCoach;
+
+  /// No description provided for @landingRoleCoachLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus equipos, tus sesiones, tu hoja de partido, en el móvil que llevas en el bolsillo.'**
+  String get landingRoleCoachLine;
+
+  /// No description provided for @landingRoleParent.
+  ///
+  /// In es, this message translates to:
+  /// **'Padre o madre'**
+  String get landingRoleParent;
+
+  /// No description provided for @landingRoleParentLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Sabe cuándo hay entrenamiento, si tu hijo puede jugar y qué tal lo hizo el sábado.'**
+  String get landingRoleParentLine;
+
+  /// No description provided for @landingRolePlayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador'**
+  String get landingRolePlayer;
+
+  /// No description provided for @landingRolePlayerLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus estadísticas, tus pruebas, tu progreso. Solo tuyos.'**
+  String get landingRolePlayerLine;
+
+  /// No description provided for @landingCostTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Menos programas, menos suscripciones'**
+  String get landingCostTitle;
+
+  /// No description provided for @landingCostBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Una sola herramienta sustituye a la hoja de inscripciones, la app de estadísticas, el grupo de chat para la asistencia y la carpeta de PDFs de pruebas físicas. Es código abierto y gratuita durante el acceso anticipado; cuando lleguen los planes serán por academia, no por entrenador ni por jugador.'**
+  String get landingCostBody;
+
+  /// No description provided for @landingNextTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'En camino'**
+  String get landingNextTitle;
+
+  /// No description provided for @landingNextNotificationsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones'**
+  String get landingNextNotificationsTitle;
+
+  /// No description provided for @landingNextNotificationsLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorios de entrenamiento, cambios de quinteto y resultados en tu móvil.'**
+  String get landingNextNotificationsLine;
+
+  /// No description provided for @landingNextSignupTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Alta sin invitación'**
+  String get landingNextSignupTitle;
+
+  /// No description provided for @landingNextSignupLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Las academias se darán de alta desde esta página; hoy es por invitación.'**
+  String get landingNextSignupLine;
+
+  /// No description provided for @landingNextIntegrationsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Integraciones'**
+  String get landingNextIntegrationsTitle;
+
+  /// No description provided for @landingNextIntegrationsLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Plantillas y eventos de partido publicados para las herramientas que ya usas.'**
+  String get landingNextIntegrationsLine;
+
+  /// No description provided for @landingNextReportsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Informes de temporada'**
+  String get landingNextReportsTitle;
+
+  /// No description provided for @landingNextReportsLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Asistencia, minutos y desarrollo por jugador, listos para compartir con las familias.'**
+  String get landingNextReportsLine;
+
+  /// No description provided for @landingJoinTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicita una invitación'**
+  String get landingJoinTitle;
+
+  /// No description provided for @landingJoinIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoops Academy funciona solo por invitación durante el acceso anticipado. Cuéntanos de tu academia y te responderemos.'**
+  String get landingJoinIntro;
+
+  /// No description provided for @landingJoinName.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu nombre'**
+  String get landingJoinName;
+
+  /// No description provided for @landingJoinEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo electrónico'**
+  String get landingJoinEmail;
+
+  /// No description provided for @landingJoinRole.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu rol'**
+  String get landingJoinRole;
+
+  /// No description provided for @landingJoinRoleAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador de la academia'**
+  String get landingJoinRoleAdmin;
+
+  /// No description provided for @landingJoinRoleCoach.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrenador'**
+  String get landingJoinRoleCoach;
+
+  /// No description provided for @landingJoinRoleParent.
+  ///
+  /// In es, this message translates to:
+  /// **'Padre o madre'**
+  String get landingJoinRoleParent;
+
+  /// No description provided for @landingJoinAcademy.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre de la academia'**
+  String get landingJoinAcademy;
+
+  /// No description provided for @landingJoinSubmit.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar solicitud'**
+  String get landingJoinSubmit;
+
+  /// No description provided for @landingJoinConfirmation.
+  ///
+  /// In es, this message translates to:
+  /// **'Gracias. Durante el acceso anticipado las invitaciones se envían a mano; te escribiremos a la dirección indicada.'**
+  String get landingJoinConfirmation;
+
+  /// No description provided for @landingJoinEmailInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce un correo válido'**
+  String get landingJoinEmailInvalid;
+
+  /// No description provided for @landingJoinRoleMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige tu rol'**
+  String get landingJoinRoleMissing;
+
+  /// No description provided for @landingJoinAcademyMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce el nombre de tu academia'**
+  String get landingJoinAcademyMissing;
+
+  /// No description provided for @landingFooterLicense.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoops Academy es software libre bajo la GNU AGPL v3.'**
+  String get landingFooterLicense;
+
+  /// No description provided for @landingFooterSource.
+  ///
+  /// In es, this message translates to:
+  /// **'Código fuente en GitHub.'**
+  String get landingFooterSource;
+
+  /// No description provided for @landingBack.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver'**
+  String get landingBack;
+
   /// No description provided for @offlineBanner.
   ///
   /// In es, this message translates to:
