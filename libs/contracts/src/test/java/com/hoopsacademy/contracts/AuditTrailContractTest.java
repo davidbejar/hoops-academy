@@ -24,8 +24,8 @@ class AuditTrailContractTest {
     private static final OpenAPI RESOLVED = OpenApiSpecs.parseFullyResolved("core");
 
     @Test
-    void coreIsVersion250() {
-        assertThat(CORE.getInfo().getVersion()).isEqualTo("2.5.0");
+    void coreIsVersion260() {
+        assertThat(CORE.getInfo().getVersion()).isEqualTo("2.6.0");
     }
 
     @Test
@@ -55,6 +55,9 @@ class AuditTrailContractTest {
 
         Schema<?> actor = schema("AuditActor");
         assertThat(actor.getRequired()).containsExactlyInAnyOrder("kind", "subject");
+        assertThat(property(actor, "subject").getNullable()).isTrue();
+        assertThat(property(actor, "subject").getDescription())
+                .contains("null when the actor is masked for the caller (platform actors seen from an academy)");
         assertThat(property(actor, "personId").getNullable()).isTrue();
         assertThat(property(actor, "displayName").getNullable()).isTrue();
         assertThat(schema("AuditActorKind").getEnum()).map(String::valueOf)
@@ -63,6 +66,12 @@ class AuditTrailContractTest {
         Schema<?> target = schema("AuditTarget");
         assertThat(target.getRequired()).containsExactlyInAnyOrder("type", "id");
         assertThat(property(target, "displayName").getNullable()).isTrue();
+    }
+
+    @Test
+    void theAcademyListMasksPlatformActors() {
+        // WP38, decision 16 of 2026-11-06: academy ADMINs read the reason, not who the super admin is
+        assertThat(operation("listAuditEvents").getDescription()).contains("Platform administrator");
     }
 
     @Test
