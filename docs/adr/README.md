@@ -12,7 +12,7 @@ says so in its header ("Supersedes", "Records"), and the earlier one carries an 
 | [0005](0005-keycloak-authentication-only.md) | Keycloak for authentication; tenant roles owned by core-service |
 | [0006](0006-rls-multitenancy.md) | Shared schema multitenancy with Postgres Row-Level Security |
 | [0007](0007-three-services.md) | Three services for v1: core, game, athlete |
-| [0008](0008-sync-rest-then-outbox.md) | Synchronous REST behind a RosterPort for v1; outbox + Redpanda for v2 |
+| [0008](0008-sync-rest-then-outbox.md) | Synchronous REST behind a RosterPort for v1; outbox + Redpanda for v2 (amended 2026-11-06: core outbox and publisher implemented, WP67) |
 | [0009](0009-tenant-logo-in-postgres.md) | Academy logo stored in Postgres, served by core-service |
 | [0010](0010-age-rule-birth-year-default.md) | Age categories computed by birth year vs season by default |
 | [0011](0011-tenant-binding-in-transactions.md) | Binding the tenant to transactions and to Hibernate |

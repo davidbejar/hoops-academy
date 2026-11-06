@@ -96,3 +96,37 @@ delete pvc data-redpanda-0`, then `helm upgrade` (or Tilt) recreates both and th
   (Seastar's memory, `--memory`); kind uses 512M with a 768Mi limit.
 - The bootstrap Job fails: `kubectl -n hoops logs job/redpanda-bootstrap`; it waits up to 5 min for the broker and is
   retried 6 times.
+
+## Core publisher (WP67)
+core appends every roster change to `core.outbox` in the same transaction and publishes it (ADR-0008 amended). The
+contracts are `libs/contracts/events/core.<aggregate>.schema.json`.
+
+| Setting | Default | What |
+|---|---|---|
+| `hoops.outbox.poll-interval` (`CORE_OUTBOX_POLL_INTERVAL`) | `1s` | publisher period; `off` stops publishing (the outbox still fills) |
+| `hoops.outbox.batch-size` (`CORE_OUTBOX_BATCH_SIZE`) | `100` | rows per transaction and tenant |
+| `hoops.outbox.send-timeout` (`CORE_OUTBOX_SEND_TIMEOUT`) | `PT10S` | wait for the broker's acknowledgement before the run gives up |
+| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
+| `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `core-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-core-service` Secret (SCRAM-SHA-256) |
+
+Watch it:
+```bash
+curl -s localhost:8081/q/health/ready | jq '.checks[] | select(.name == "outbox-publisher")'   # state OK | DEGRADED
+curl -s localhost:8081/q/metrics | grep '^hoops_outbox'        # published_total{topic}, pending, lag_seconds, broker_available
+podman exec -it hoops-redpanda rpk topic consume core.team -o start -f '%k %v\n'
+```
+Backlog per tenant (as the schema owner or `core_platform`; payloads stay unreadable to the platform role):
+```sql
+select tenant_id, count(*), min(occurred_at) from core.outbox
+ where published_at is null and topic is not null group by tenant_id order by 3;
+```
+- **Broker down**: the API keeps working, `state` turns `DEGRADED`, `hoops_outbox_broker_available` 0 and the lag grows.
+  Nothing to do in core: when the broker is back the next runs drain the backlog in order. A run stops at the first
+  failed send and retries next period.
+- **A row that never goes out** while others do: another transaction holds its lock (or an older row of the same
+  aggregate). Find it in `pg_locks` / `pg_stat_activity`; the publisher never skips ahead of it for that aggregate.
+- **Republish** (a consumer lost a topic and replaying it is not enough): `update core.outbox set published_at = null
+  where topic = 'core.<aggregate>' and tenant_id = '<id>'` as the schema owner; the events go out again with their
+  original `eventId`, which the consumers ignore if they have applied it. Prefer replaying the compacted topic.
+- Rows with `topic` null are core's internal v1 notifications (`player.approved`, `tenant.suspended`, ...): never
+  published, kept for billing and audits.
