@@ -29,11 +29,11 @@ flips). ADR-0037 reserved (replica design, idempotency, replay, cutover).
 5. **Docs**: ADR-0037; `docs/runbooks/events.md` game section; `docs/architecture.md` is the docs pass's.
 
 ## Acceptance
-- [ ] Red tests first; RLS suites green for the new tables; `./mvnw -B -ntp -pl services/game-service -am verify
+- [x] Red tests first; RLS suites green for the new tables; `./mvnw -B -ntp -pl services/game-service -am verify
       -Dquarkus.http.test-port=0` green (totals); `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` green
       (fresh; totals)
-- [ ] Port contract tests green on both adapters; replay test green; duplicate and out-of-order delivery tests green
-- [ ] `just mutation game-service` at or above baseline; `just e2e` 21/21 on compose with `replica` for game
+- [x] Port contract tests green on both adapters; replay test green; duplicate and out-of-order delivery tests green
+- [x] `just mutation game-service` at or above baseline; `just e2e` 21/21 on compose with `replica` for game
       (evidence); ADR-0037 written and indexed (append at the end of `docs/adr/README.md`); handover appended
 
 ## Working rules
@@ -49,4 +49,57 @@ flips). ADR-0037 reserved (replica design, idempotency, replay, cutover).
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- **Built:**
+  - `V4__roster_replica.sql`: `game.tenant_ref`, `person_ref`, `player_ref`, `team_ref`, `team_player_ref`,
+    `team_staff_ref`, `guardian_link_ref` (tenant tables, PK `(tenant_id, id)`, each row keeps `occurred_at` +
+    `event_id`, soft `removed`, no FKs between them), `applied_event` (idempotency), `parked_event` (global,
+    `game_app` insert only; declared in `GameRlsSchemaMetaTest.globalTables()`).
+  - Consumer (`adapters.in.messaging`): `RosterEventDecoder` (JSON Schema from the contracts jar, key
+    `<tenantId>:<aggregateId>`, tenant event = own tenant, known zone), `RosterEventConsumer` (channel `core-roster` over
+    the 7 topics, group `game-service.roster`, `@Blocking` ordered; tombstone skipped, invalid parked + acked, valid
+    applied with 3 attempts then fail-stop), `ReplicaMetrics` (`hoops_roster_replica_events_total{topic,outcome}`,
+    `_parked_total{topic}`, `_lag_seconds{topic}`).
+  - Application (`application.replica`): `ReplicateRoster` (`TenantScope.runAs(event tenant)`, eventId dedup,
+    `occurred_at <=` guard: APPLIED/DUPLICATE/STALE; park), `ReplicaRosterPort` and `ReplicaAuthzResolver` with core's
+    `/internal` rules, `RosterReplicaQueries`/`RosterReplica` ports, `JdbcRosterReplicaRepository`.
+  - `hoops.roster.source` (`GAME_ROSTER_SOURCE`, default `rest`): `RosterSourceSelection` produces both `RosterPort` and
+    `AuthzContextResolver` (common's `RosterAuthzResolver` stays the REST one; adapters are `@Typed`).
+  - `just events-replay game|athlete` (`infra/compose/events-replay.sh`: refuses while the group has members, truncates
+    `<svc>.*_ref` + `applied_event` as the owner, seeks every `<svc>-service.*` group to start). ADR-0037, runbook section.
+- **Verified:**
+  - `./mvnw -B -ntp -pl services/game-service -am verify -Dquarkus.http.test-port=0`: BUILD SUCCESS, 3:37 min, game 411
+    tests (was 324), coverage met.
+  - `./mvnw -B -ntp -T 1C clean verify -Dquarkus.http.test-port=0` (fresh): BUILD SUCCESS, 4:13 min; common 186,
+    contracts 223, core 871, game 411, athlete 679, e2e 27 (23 skipped offline), 0 failures, all coverage gates met.
+  - RLS: `GameRlsIsolationTest` 14 tables (8 new), `GameRlsSchemaMetaTest`, `RosterReplicaSchemaTest` (parked rows
+    unreadable/unchangeable by `game_app`, 42501), `GameDatabaseRoleTest`.
+  - Port contract on both adapters: `RosterPortContractTest` 6 cases x {REST, REPLICA}, `AuthzContextContractTest` 10 cases
+    x {REST, REPLICA}; `ReplicaRosterSourceTest` (replica mode: authorised + match created, 0 calls to core).
+  - Duplicates/out-of-order/tenant per event: `ReplicateRosterTest` (10), `RosterEventConsumerTest` (6, Dev Services
+    Redpanda v26.2.6), `RosterConsumerFailureTest` (retry, then fail-stop: liveness + readiness 503, DB UP),
+    `RosterConsumerSwitchedOffTest`. Replay: `RosterReplayTest` (history of 2 academies with renames, closed assignment,
+    removals + tombstones, redeliveries; answers equal core's, then truncate + seek to start, rebuilt rows equal).
+  - `just mutation game-service`: 438/440 killed (99.5 %, baseline 95); scope now includes `ReplicaAuthzResolver`,
+    `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant`, `ReplicaPerson` (39/39 killed).
+  - `GAME_ROSTER_SOURCE=replica just e2e`: JourneyTest 23/23 (27 with MailSinkTest), game log "Roster source: replica";
+    replica of the e2e tenant 32 events, consume lag avg 6 ms / max 30 ms, end to end max 0.97 s, 0 parked, group lag 0.
+    First attempt failed step 10 (404): consume lag was 1 to 4 s (connector pause + 1 s poll timeout); fixed with
+    `poll-timeout=100`, `fetch.max.wait.ms=100`. Then `just events-replay game` + restart: row counts and content hashes
+    identical before/after. (Ran with `QUARKUS_FLYWAY_IGNORE_MIGRATION_PATTERNS='*:future'` because WP69's athlete V6 was
+    already applied to the shared compose DB; not needed after both merges.)
+- **Decisions/ADRs:** ADR-0037 (shared design + game section; point 5 records the fail-stop health semantics: the
+  generic messaging readiness check also turns DOWN on a failed channel). One channel/one group instead of one per
+  topic (single seek). Removals soft, tombstones skipped. No REST fallback on a replica miss.
+- **Open points / follow-ups:**
+  - Config keys: `hoops.roster.source` (`GAME_ROSTER_SOURCE`, `rest`), `mp.messaging.incoming.core-roster.enabled`
+    (`GAME_ROSTER_CONSUMER_ENABLED`, `true`), `hoops.roster.replica.apply-attempts` (3), `%prod.kafka.bootstrap.servers`
+    (`KAFKA_BOOTSTRAP_SERVERS`, `localhost:19092`), `KAFKA_SECURITY_PROTOCOL` (`PLAINTEXT`), `KAFKA_SASL_USERNAME`
+    (`game-service`), `KAFKA_SASL_PASSWORD`.
+  - Chart (not touched): game's Deployment needs `KAFKA_BOOTSTRAP_SERVERS=redpanda.<ns>.svc.cluster.local:9092`,
+    `KAFKA_SECURITY_PROTOCOL=SASL_PLAINTEXT`, `KAFKA_SASL_PASSWORD` from `hoops-redpanda-game-service`, behind
+    `events.enabled`; without it the consumer only retries connecting (pods stay ready, `rest` unaffected); without
+    `events.enabled` set `GAME_ROSTER_CONSUMER_ENABLED=false`. kind not run.
+  - Flip to `replica` needs a core backfill of aggregates older than WP67 (core-service, not here) and the chart wiring.
+  - `applied_event` grows one row per event: pruning older than 7 days is a follow-up.
+  - Docs pass: `docs/quality/mutation.md` game row (classes, 440 mutants), `docs/architecture.md`; the `justfile`
+    recipe and `infra/compose/events-replay.sh` are generic for athlete too (tell WP69/merge).
