@@ -45,6 +45,9 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
 - Never above Opus for an agent. Write the model in the brief header and pass it on the agent call.
 
 ## Mechanics
+0. Keep the Mac awake for the whole round: `caffeinate -dims -t 28800 &` (8 h; note the pid) before the first agent
+   starts. Host sleep stalls the Podman VM clock (tokens look expired, hooks time out) and suspends the agents' builds.
+   Kill it at close-out. The same applies to any long single task (full verify, kind proofs, mutation runs).
 1. Per WP: `git worktree add -b <wp-slug> ~/code/hoops-wt/<wp-slug> main` (under `$HOME`: the Podman machine
    cannot see `/tmp`). Never switch branches in a shared checkout; a session without the main checkout pushes with
    `git push origin <branch>:main`.
@@ -84,3 +87,4 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
 - [ ] README status, `docs/conformance.md`, `docs/roadmap.md`, `docs/architecture.md`, `docs/adr/README.md` links.
 - [ ] CI state on `main` observed with `gh run list -b main` (run ids in HANDOVER).
 - [ ] Push; update the orchestrator's memory note (progress, what the repo cannot derive).
+- [ ] `kill` the `caffeinate` started in Mechanics 0.

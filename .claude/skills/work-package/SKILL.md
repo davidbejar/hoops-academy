@@ -9,9 +9,11 @@ description: How an agent starts, executes and hands over a Hoops Academy work p
 1. Read `CLAUDE.md`, the WP brief `docs/wp/WP<n>-*.md`, and the ADRs it references. Read `docs/PLAN.md` sections
    it points to. Do not read the whole plan.
 2. `source scripts/env.sh && just doctor` (or at least `./mvnw -q validate`).
-3. Write the acceptance criteria from the brief as a checklist at the top of your working notes; add any you
+3. If no orchestrator is keeping the Mac awake (`pgrep caffeinate` prints nothing), run `caffeinate -dims -t 14400 &`
+   so a long build, kind proof or mutation run is not suspended by host sleep (which also stalls the Podman VM clock).
+4. Write the acceptance criteria from the brief as a checklist at the top of your working notes; add any you
    discover.
-4. Skills to apply: `test-driven-development` (always), `clean-code` (always), `quarkus-hexagonal-service` or
+5. Skills to apply: `test-driven-development` (always), `clean-code` (always), `quarkus-hexagonal-service` or
    `flutter-feature` (by area), `tenant-isolation-testing` (any table/endpoint), `owasp-security` (auth, uploads,
    config, deps), `systematic-debugging` (any failure).
 
