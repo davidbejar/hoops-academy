@@ -26,7 +26,9 @@ import org.junit.jupiter.params.provider.FieldSource;
  */
 class UpdateRequestClearListContractTest {
 
-    private static final List<String> ADOPTED = List.of("athlete");
+    private static final List<String> ADOPTED = List.of(
+            "athlete",
+            "game");
     private static final String TEST_TYPE = "/api/athlete/physical-test-types/0190b6a0-0000-7000-8000-000000000001";
     private static final String SESSION = "/api/athlete/training-sessions/0190b6a0-0000-7000-8000-000000000002";
     private static final String TENANT = "0190b6a0-0000-7000-8000-0000000000aa";
@@ -145,5 +147,14 @@ class UpdateRequestClearListContractTest {
     private static io.swagger.v3.oas.models.PathItem testTypeOperations() {
         OpenAPI api = OpenApiSpecs.parse("athlete").getOpenAPI();
         return api.getPaths().get("/api/athlete/physical-test-types/{testTypeId}");
+    }
+
+    @Test
+    void theGameMatchUpdateCanClearOnlyItsVenue() {
+        var game = OpenApiSpecs.parse("game").getOpenAPI();
+        Schema<?> clear = (Schema<?>) updateRequests("game").get("UpdateMatchRequest").getProperties().get("clear");
+
+        assertThat(game.getInfo().getVersion()).isEqualTo("2.2.0");
+        assertThat(clear.getItems().getEnum()).map(String::valueOf).containsExactly("venue");
     }
 }

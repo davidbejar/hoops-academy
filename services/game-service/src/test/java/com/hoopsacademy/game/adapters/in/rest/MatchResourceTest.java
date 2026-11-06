@@ -65,6 +65,11 @@ class MatchResourceTest {
         return given().filter(Contract.FILTER).header("X-Tenant-Id", A).contentType(ContentType.JSON);
     }
 
+    /** Responses are still validated; the request is not (the body is invalid on purpose). */
+    private static io.restassured.specification.RequestSpecification lenientTenantA() {
+        return given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", A).contentType(ContentType.JSON);
+    }
+
     private ValidatableResponse create(String team) {
         return asTenantA().body(newMatchBody(team)).post("/api/game/matches").then();
     }
@@ -233,8 +238,38 @@ class MatchResourceTest {
         asTenantA().body("{\"opponentName\":\"Bulls\",\"periodCount\":2,\"venue\":\"Away gym\"}")
                 .patch("/api/game/matches/" + id).then().statusCode(200)
                 .body("opponentName", equalTo("Bulls")).body("periodCount", equalTo(2)).body("venue", equalTo("Away gym"));
-        asTenantA().body("{\"venue\":null}").patch("/api/game/matches/" + id).then().statusCode(200)
-                .body("venue", nullValue()).body("opponentName", equalTo("Bulls"));
+        asTenantA().body("{\"venue\":null,\"opponentName\":\"Hawks\"}").patch("/api/game/matches/" + id).then()
+                .statusCode(200).body("venue", equalTo("Away gym")).body("opponentName", equalTo("Hawks"));
+        asTenantA().body("{\"clear\":[\"venue\"]}").patch("/api/game/matches/" + id).then().statusCode(200)
+                .body("venue", nullValue()).body("opponentName", equalTo("Hawks"));
+    }
+
+    @Test
+    @TenantUser(tenant = A, roles = TenantRole.COACH, staffTeams = TEAM)
+    void clearAndAValueForTheSameFieldIsAClearConflict() {
+        UUID id = seed.match(A, TEAM, MatchStatus.SCHEDULED);
+
+        lenientTenantA().body("{\"venue\":\"Gym\",\"clear\":[\"venue\"]}").patch("/api/game/matches/" + id).then()
+                .statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
+    }
+
+    @Test
+    @TenantUser(tenant = A, roles = TenantRole.COACH, staffTeams = TEAM)
+    void clearRejectsUnknownNonClearableAndDuplicateNames() {
+        UUID id = seed.match(A, TEAM, MatchStatus.SCHEDULED);
+
+        for (String clear : new String[] {"[\"opponentName\"]", "[\"nope\"]", "[\"venue\",\"venue\"]", "\"venue\""}) {
+            lenientTenantA().body("{\"clear\":" + clear + "}").patch("/api/game/matches/" + id).then().statusCode(400)
+                    .body("violations[0].field", equalTo("clear"));
+        }
+    }
+
+    @Test
+    @TenantUser(tenant = A, roles = TenantRole.COACH, staffTeams = TEAM)
+    void emptyClearListAloneIsAnEmptyPatch() {
+        UUID id = seed.match(A, TEAM, MatchStatus.SCHEDULED);
+
+        lenientTenantA().body("{\"clear\":[]}").patch("/api/game/matches/" + id).then().statusCode(400);
     }
 
     @Test

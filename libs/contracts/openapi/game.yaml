@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — game-service API
-  version: 2.1.0
+  version: 2.2.0
   description: |
     Match operations and statistics (offline-first, event-sourced).
 
@@ -474,6 +474,13 @@ components:
         venue: {type: string, maxLength: 200, nullable: true}
         periodCount: {type: integer, format: int32, minimum: 1, maximum: 8}
         periodMinutes: {type: integer, format: int32, minimum: 1, maximum: 60}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [venue]
     CancelMatchRequest:
       type: object
       required: [reason]
