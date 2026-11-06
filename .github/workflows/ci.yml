@@ -191,7 +191,9 @@ jobs:
       - name: ZAP baseline
         run: |
           mkdir -p zap && cp .zap/baseline.conf zap/ && chmod -R 777 zap
-          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+          # ZAP 2.17.0, `stable` of 2026-10-26, pinned by digest (same image as scripts/zap-api-scan.sh)
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238 \
             zap-baseline.py -t http://localhost:8080/ -c baseline.conf -J zap.json -r zap.html -I
       - name: Gate (High/Medium not accepted in .zap/baseline.conf)
         run: python3 scripts/zap-gate.py zap/zap.json .zap/baseline.conf

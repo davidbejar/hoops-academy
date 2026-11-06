@@ -2,6 +2,7 @@ name: e2e
 
 # End-to-end journeys (e2e/) against the compose stack on the runner: Postgres, Keycloak, MailHog and nginx run as
 # containers, the three services as fast-jars on the host (same scripts as `just e2e`, docs/runbooks/e2e.md).
+# Then, on the same stack, the ZAP API scans of the three services (WP83, ADR-0045).
 # Podman is used (preinstalled on ubuntu-24.04 runners) because infra/compose/nginx.conf reaches the host through
 # host.containers.internal and infra/keycloak/seed-users.sh uses `podman exec`.
 on:
@@ -16,7 +17,7 @@ permissions:
 jobs:
   journeys:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 100 # journeys ~25 min + three ZAP API scans of at most ~20 min each
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
@@ -85,6 +86,23 @@ jobs:
           start=$(date +%s)
           tool/ci_login_check.sh
           echo "browser login check took $(( $(date +%s) - start )) s" | tee -a "$GITHUB_STEP_SUMMARY"
+      # Active ZAP scan of each service's OpenAPI contract through nginx, signed in as the platform super admin
+      # (PKCE login, token refreshed by .zap/hooks/bearer_refresh.py). Fails on a High/Medium alert not accepted in
+      # .zap/api-<service>.conf (scripts/zap-gate.py). Runs last: the scan writes junk data into the throw-away stack.
+      - name: ZAP API scans (core, game, athlete)
+        env:
+          ZAP_ENGINE: podman
+          ZAP_WORK_DIR: ${{ github.workspace }}/zap-api
+          ZAP_MAX_SCAN_MINUTES: '15'
+        run: |
+          rc=0
+          for svc in core game athlete; do
+            echo "### ZAP API scan: $svc" >> "$GITHUB_STEP_SUMMARY"
+            scripts/zap-api-scan.sh "$svc" http://localhost:8080 > "zap-$svc.out" 2>&1 || rc=1
+            tail -n 40 "zap-$svc.out"
+            grep -E '^(ZAP alerts|BLOCKING|EXPIRED|CONFIG|zap-api-scan)' "zap-$svc.out" >> "$GITHUB_STEP_SUMMARY" || true
+          done
+          exit "$rc"
       - name: Service logs on failure
         if: failure()
         run: |
@@ -104,3 +122,12 @@ jobs:
             e2e/target/surefire-reports/
             e2e/target/services/*.log
             browser-login-artifacts/
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: zap-api-reports
+          if-no-files-found: ignore
+          path: |
+            zap-api/*/zap-api-*.json
+            zap-api/*/zap-api-*.html
+            zap-api/*/zap-api-*.log
