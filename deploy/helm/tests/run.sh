@@ -277,6 +277,68 @@ e=$(awk 'BEGIN{RS="\n---\n"} /\nkind: ExternalSecret\n/ && /name: hoops-redpanda
   && all_of es_login \
   && ok "ESO: four broker logins (basic-auth, username = user, REDPANDA_*_PASSWORD)" || bad "ESO broker logins"
 
+echo "== services on the event broker (WP71, ADR-0036/0037)"
+# events.enabled (umbrella) is mirrored in global.events.enabled, the only value the service subcharts see; the subchart
+# derives the Kafka client from it, the umbrella refuses a render where the two differ or the wiring is half done.
+D="$WORK/umbrella-default.yaml"
+mkdir -p "$WORK/extra"
+upper() { echo "$1" | tr '[:lower:]' '[:upper:]'; }
+for s in core game athlete; do
+  u="$s-service"; c=$(doc "$u-env" ConfigMap); d=$(doc "$u" Deployment)
+  echo "$c" | grep -qx '  KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"' \
+    && echo "$c" | grep -qx '  KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"' && echo "$c" | grep -qx "  KAFKA_SASL_USERNAME: \"$u\"" \
+    && echo "$d" | grep -A5 -- '- name: KAFKA_SASL_PASSWORD$' | grep -q "name: hoops-redpanda-$u$" \
+    && echo "$d" | grep -A5 -- '- name: KAFKA_SASL_PASSWORD$' | grep -q 'key: password$' \
+    && ! echo "$c" | grep -q 'KAFKA_SASL_PASSWORD' \
+    && ok "events on: $u gets redpanda.hoops...:9092, SASL_PLAINTEXT, user $u, password from Secret hoops-redpanda-$u" \
+    || bad "events on: $u Kafka client"
+  ! echo "$c" | grep -q '_OUTBOX_POLL_INTERVAL: "off"\|_ROSTER_CONSUMER_ENABLED: "false"' \
+    && ok "events on: $u publisher/consumer not switched off" || bad "events on: $u switched off"
+  # the Secret the Deployment reads is the one secrets.sh and the ESO render create and the bootstrap Job gives the user
+  grep -Eq "^basic_auth hoops-redpanda-$u +$u +REDPANDA_$(upper "$s")_SERVICE_PASSWORD$" deploy/kind/secrets.sh \
+    && doc "hoops-redpanda-$u" ExternalSecret "$WORK/umbrella-eso.yaml" | grep -qx "        username: $u" \
+    && doc redpanda-bootstrap Job | grep -q "secretKeyRef: {name: hoops-redpanda-$u, key: password}" \
+    && doc redpanda-bootstrap ConfigMap | grep -Eq "^    [0-9]+ $u " \
+    && ok "Secret hoops-redpanda-$u: same name in secrets.sh, ESO and the bootstrap Job (broker user $u)" \
+    || bad "Secret hoops-redpanda-$u differs between the Deployment, secrets.sh, ESO and the bootstrap Job"
+done
+! grep -q 'KAFKA_' "$D" && ok "events off: no KAFKA_* in any workload" || bad "events off: KAFKA_* rendered"
+doc core-service-env ConfigMap "$D" | grep -qx '  CORE_OUTBOX_POLL_INTERVAL: "off"' \
+  && ok "events off: core publisher off (CORE_OUTBOX_POLL_INTERVAL=off)" || bad "events off: core publisher"
+for s in game athlete; do
+  doc "$s-service-env" ConfigMap "$D" | grep -qx "  $(upper "$s")_ROSTER_CONSUMER_ENABLED: \"false\"" \
+    && ok "events off: $s consumer off ($(upper "$s")_ROSTER_CONSUMER_ENABLED=false)" || bad "events off: $s consumer"
+  for f in "$R" "$D"; do
+    doc "$s-service-env" ConfigMap "$f" | grep -qx "  $(upper "$s")_ROSTER_SOURCE: \"rest\"" || { bad "$s roster source in $(basename "$f")"; continue 2; }
+  done
+  ok "$s roster source rest by default and on kind"
+done
+! grep -q 'ROSTER_SOURCE\|ROSTER_CONSUMER\|OUTBOX_POLL' "$WORK/service-defaults.yaml" && ! grep -q 'KAFKA_' "$WORK/service-defaults.yaml" \
+  && ok "service chart alone: no broker client, no switches" || bad "service chart defaults carry event settings"
+a=$(doc demo-service-env ConfigMap "$WORK/service-all.yaml")
+echo "$a" | grep -qx '  KAFKA_SASL_USERNAME: "demo-service"' && echo "$a" | grep -qx '  KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"' \
+  && ! echo "$a" | grep -q 'DEMO_EVENTS' && doc demo-service Deployment "$WORK/service-all.yaml" | grep -A5 -- '- name: KAFKA_SASL_PASSWORD$' | grep -q 'name: hoops-redpanda-demo-service$' \
+  && ok "service chart with global.events.enabled: client named after the service, events.offEnv not applied" || bad "service chart events on"
+# Cutover of one service (ADR-0037): only athlete's ConfigMap (and so its checksum) changes.
+helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set athlete.rosterSource=replica > "$WORK/extra/replica.yaml"
+doc athlete-service-env ConfigMap "$WORK/extra/replica.yaml" | grep -qx '  ATHLETE_ROSTER_SOURCE: "replica"' \
+  && [ "$(diff "$R" "$WORK/extra/replica.yaml" | grep -c '^[<>]')" = 4 ] \
+  && [ "$(diff "$R" "$WORK/extra/replica.yaml" | grep '^[<>]' | grep -vc 'ATHLETE_ROSTER_SOURCE\|checksum/env')" = 0 ] \
+  && ok "--set athlete.rosterSource=replica changes ATHLETE_ROSTER_SOURCE (and the pod checksum) only" || bad "athlete replica flip"
+refused() { # message helm-args...: the render fails and names the message
+  local m="$1"; shift
+  ! helm template hoops "$CHART" -n hoops "$@" >/dev/null 2>"$WORK/extra/refused.txt" && grep -q -- "$m" "$WORK/extra/refused.txt"; }
+K=(-f "$CHART/values-kind.yaml")
+refused 'global.events.enabled' --set events.enabled=true && refused 'global.events.enabled' "${K[@]}" --set global.events.enabled=false \
+  && ok "events.enabled and global.events.enabled must agree (broker and clients switch together)" || bad "events switch mismatch rendered"
+refused 'rosterSource' --set athlete.rosterSource=replica && refused 'rosterSource' "${K[@]}" --set game.rosterSource=cache \
+  && ok "rosterSource: rest|replica only, replica only with events" || bad "rosterSource guard"
+refused 'KAFKA_BOOTSTRAP_SERVERS' "${K[@]}" --set core.env.KAFKA_BOOTSTRAP_SERVERS=elsewhere:9092 \
+  && refused 'KAFKA_SASL_PASSWORD' "${K[@]}" --set-json 'game.secretEnv=[{"name":"KAFKA_SASL_PASSWORD","secretName":"x","key":"password"}]' \
+  && ok "events on: KAFKA_* in env/secretEnv refused (the chart sets the client)" || bad "KAFKA_* override rendered"
+refused 'hoops-redpanda-core-service' "${K[@]}" --set-json 'events.users=[{"name":"core-service","passwordSecret":"other","produce":["core."]},{"name":"game-service","passwordSecret":"hoops-redpanda-game-service","consume":["core."],"groups":["game-service."]},{"name":"athlete-service","passwordSecret":"hoops-redpanda-athlete-service","consume":["core."],"groups":["athlete-service."]}]' \
+  && ok "events on: every service needs events user <service> with Secret hoops-redpanda-<service>" || bad "events.users guard"
+
 echo "== external secrets (WP65, ADR-0012 amendment; umbrella-eso)"
 E="$WORK/umbrella-eso.yaml"
 for f in umbrella-default umbrella-kind umbrella-tls service-defaults service-all; do
