@@ -209,6 +209,20 @@ handovers).
   allows it and the server decides.
 - **Ended seasons** (WP58, decision 40): coaches lose core, game and athlete access to teams of ended seasons; history
   views for past seasons, if wanted, need their own rule.
+- **Training plans in a session without pre-assignment** (product owner, 2026-11-06): today a plan must be
+  assigned to the team before a session can select it. Wanted: add any plan (tenant plan or global template) to a
+  session directly; assignment stays as an optional shortcut. Athlete contract change (session item accepts a plan
+  id, or a plan is copied into the session on the fly) + web session dialog.
+- **Exercises as first-class, searchable items** (product owner, 2026-11-06): the physical tests (Cooper, T-test,
+  sprint, ...) are only reachable inside templates. Wanted: a predefined exercise catalogue (the template items,
+  localised like the templates, WP61) listed and searchable on its own; the plan/session search finds an exercise by
+  name even when it is embedded in a template (typing "cooper" finds it); quick-add of one or several exercises to a
+  session or plan without going through a template. Templates stay as curated collections.
+- **App UI redesign to the landing-page look** (product owner, 2026-11-06): the landing page's device mock-ups
+  (WP70, `apps/web/assets/landing/*.png`) look attractive and the app itself does not, and the two do not match.
+  Wanted: one visual design system (colour, type, spacing, cards, navigation) applied to the whole app, aligned with
+  the landing page; then re-capture the screenshots from the redesigned app (`landing_screens_capture.dart`).
+  Large: plan as its own round (design tokens + theme first, then screens by feature), goldens re-recorded.
 
 ### Security (from `docs/security/review-2026-11.md`)
 - **ASVS gaps**: breached passwords (6.2.12), OTP only optional (6.3.3 Partial by decision 39), Keycloak login events
@@ -254,6 +268,10 @@ handovers).
 - **Same-device two-tab clientSeq race** (WP13): accepted for now (second event is `CLIENT_SEQ_CONFLICT`, visible).
 - **Dev login origin** (ADR-0022): `flutter run` on :5173 is another origin than Keycloak on :8080, so the address bar
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
+- **Landing page language switch and screenshots** (product owner, 2026-11-06): the language menu is in the footer;
+  move it to the top (header, next to Sign in). The device mock-ups are Spanish-only PNGs: show the screenshots in
+  the selected language (capture per locale with `landing_screens_capture.dart`, three sets, or render the mock
+  screens live instead of PNGs).
 
 ### Backend
 - **core producer never recovers after a failed first SASL login** (WP71): when the broker users appear after core
@@ -280,6 +298,10 @@ handovers).
   cases) is outside PIT's scope; extracting pure rules from them would let PIT cover them.
 - **Dependency hygiene**: `dependency:analyze` lists Quarkus extensions as "unused" (false positives, runtime-only) and
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
+- **Mutation testing, next round** (product owner, 2026-11-06): widen the PIT scope beyond the rule code (use
+  cases, adapters reached by container tests, the replica apply rules are in since WP68), raise the baselines to the
+  current scores (core 99.6, game 99.5, athlete 100), add a Dart mutation pass for the web rule code (no Node:
+  a Dart-based tool or a hand-written mutant script), and run another round of killing survivors.
 
 ### Infra, CI, e2e
 - **Fresh Helm installs need a core restart** (WP71): `kubectl rollout restart deploy/core-service` after the bootstrap
@@ -327,6 +349,12 @@ handovers).
   and GitHub Actions only, not Containerfile ARGs, chart image tags or the kind pins); drop the guava pin in the root
   pom once the Quarkus BOM ships ≥ 33.7.2.
 - **Optimised Keycloak image** (read-only root FS; KSV-0014 accepted until 2027-03-31).
+- **SAST and DAST, next round** (product owner, 2026-11-06): today CI has gitleaks (secrets), Trivy fs
+  (misconfiguration + dependencies), OWASP dependency-check (CVEs) and a ZAP *baseline* (passive DAST) against the
+  compose stack. Missing: a real SAST pass on the code (CodeQL for Java, or Semgrep with the Java/Dart rulesets and
+  find-sec-bugs/SpotBugs in `verify`), ZAP *active* scanning (the API scan driven by the OpenAPI contracts with a
+  logged-in token, plus the full scan against nginx/Keycloak on kind), and then a second round of fixes with the
+  findings recorded in `docs/security/review-2026-11.md`.
 
 ### v2 (by decision)
 - **[v2] Events, default flip** (ADR-0037 "When rest flips"): outbox, broker and both replicas are built and proven
