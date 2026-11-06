@@ -17,3 +17,5 @@ linter:
     always_declare_return_types: true
     unawaited_futures: true
     avoid_print: true
+    # dart format puts a one-line `if (x) return y;` on two lines; this lint then flags it.
+    curly_braces_in_flow_control_structures: false

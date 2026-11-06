@@ -41,6 +41,8 @@ jobs:
           cache: true
       - run: flutter pub get
         working-directory: apps/web
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test tool
+        working-directory: apps/web
       - run: flutter analyze
         working-directory: apps/web
       - run: flutter test

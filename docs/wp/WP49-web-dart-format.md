@@ -30,3 +30,10 @@ Decision 30 of 2026-11-06: `apps/web` follows the default `dart format` (80 colu
   bypass it. End every commit message with the line `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built: format commit `style(web): dart format (80 columns)` = 192 files changed, 17751 insertions(+), 6603 deletions(-) (lib, test, integration_test, tool only). Tooling commit: `just web-format`, `just web-format-check`, ci.yml flutter job runs the check before `flutter analyze`, CLAUDE.md line, flutter-feature sentence, analysis_options.
+- Excluded: `packages/*` (owned by `just gen-api`), `build/`, `web/`. Generated `lib/l10n/gen/*` and `match_database.g.dart` are inside the formatted dirs but were already formatted, so they came out unchanged (the check covers them and is green).
+- Lint alignment: after formatting, `flutter analyze` reported 87 `curly_braces_in_flow_control_structures` infos (the formatter puts `if (x) return y;` on two lines). The rule is disabled in `apps/web/analysis_options.yaml` rather than adding braces (not a formatting-only change). So the format commit alone is not analyze-clean; the tooling commit that follows is.
+- Verified: before: analyze clean, `flutter test` +668 all passed. After both commits: `just web-format-check` 256 files, 0 changed; `flutter analyze` no issues; `flutter test` +668 all passed (goldens unchanged); `actionlint` clean on ci.yml.
+- Open points: none.

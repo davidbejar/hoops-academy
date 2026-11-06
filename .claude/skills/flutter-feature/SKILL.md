@@ -27,6 +27,7 @@ lib/
   server 403/404 gracefully.
 - **Errors**: map Problem+JSON to `AppError` once (core/errors); screens show localized messages.
 - **Offline** (live match only): write to Drift first, sync in background; never block the UI on network.
+- **Formatting**: `apps/web` uses the default `dart format` (80 columns); run `just web-format` before committing, CI fails on unformatted files.
 - **Mobile-first**: design for 360 px width; test goldens at 360×780 and 1024×768.
 
 ## Tests per feature (TDD)

@@ -26,6 +26,7 @@ just db-role-check           # no service connects as table owner / superuser / 
 just mutation [module]       # PIT on the rule code, on demand (not in verify); fails below the baseline; docs/quality/mutation.md
 ./mvnw -pl services/core-service quarkus:dev
 just web-test                # flutter test
+just web-format              # dart format apps/web (80 columns); CI runs web-format-check
 just scan                    # gitleaks + dependency-check
 ```
 
