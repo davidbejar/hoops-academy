@@ -32,6 +32,8 @@ Non-members of a tenant receive **404** for every tenant resource.
 | A tenant's administrators (list, add, edit names/e-mail, remove, new temporary password while PENDING) | `super_admin` (platform, `/platform/tenants/{id}/admins`) — identity of the admins only, ADR-0023, ADR-0024; tenant ADMINs manage them as members | | | | |
 | Audit trail of every academy (`GET /platform/audit-events`, optionally one `tenantId`) | `super_admin` (platform) only — actions, ids and metadata; names of academies and of their active administrators only (ADR-0023, ADR-0029). A super_admin without membership calling `/api/core/audit-events` gets 404 like any non-member | | | | |
 | Guardian logins: add a new guardian to a player (`POST /api/core/guardians`; with an e-mail a login, its temporary password shown once, or an existing login linked, ADR-0025) and give a guardian without a login a first one (`POST /api/core/members/{id}/temporary-password`, PARENT with an e-mail; WP58) | yes | – | – | – | – |
+| Attach any academy plan or template to a session (no assignment needed, decision 53) and quick-add exercises to it (`POST /api/athlete/training-sessions/{id}/items`, ADR-0041: copies items of any readable plan or template into the session's own plan, created on first use) | yes | team | team | – | – |
+| Quick-add exercises to a tenant plan (`POST /api/athlete/training-plans/{id}/items:copy`, ADR-0041; templates read-only) | yes | yes | yes | – | – |
 
 Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of
