@@ -1,6 +1,6 @@
 # ADR-0030: Match event feed filtered by player visibility
 
-- Status: Accepted
+- Status: Accepted; amended 2026-11-06 (WP60, decision 42) — filter moved to SQL, §4 below
 - Date: 2026-11-05
 - Related: ADR-0021 §3 (match visibility; F-01 open there until now), ADR-0014 (ingest and projection),
   `docs/security/review-2026-11.md` F-01, decision 5 of 2026-11-05, WP33
@@ -30,6 +30,13 @@ the caller's own or linked players; staff keep the full feed. Several details we
    caller the use case reads the whole match (VOID targets may lie before `after`) and filters in memory; staff keep
    the indexed `after` query. `lastServerSeq` stays the match's highest sequence number for every caller (it is on the
    match resource for every member already and says nothing about who scored).
+   *Amendment (WP60, decision 42 of 2026-11-06): filter moved to SQL (WP60).* Every caller's page is now one query
+   (`MatchEventRepository.after(match, viewer, after, limit)`): for a filtered caller it keeps events without a player
+   or of a visible player, and resolves VOIDs with a recursive CTE over the whole match (same chain, cycle and
+   unknown-target rules); `EventVisibility` stays the definition, and `FeedVisibilityQueryPropertyTest` compares the
+   query with it on random matches. A feed page costs four statements whatever the match size
+   (`FeedPageStatementCountTest`); the existing `(match_id, server_seq)` index and the primary key serve it, no
+   migration.
 5. **Clients of filtered callers take team figures from the server.** The feed no longer lets them rebuild the score.
    The web app (live match, not staff) shows `GET box-score`'s score, period scores and team totals, refreshed when the
    feed changes and every 15 s while the screen is open, plus the effect of the caller's events the snapshot does not
@@ -45,8 +52,8 @@ the caller's own or linked players; staff keep the full feed. Several details we
   `StatVisibilityTest`, `PlayerVisibilityTest`; web `team_figures_test`, `feed_visibility_test`, controller and widget
   tests for PARENT / PLAYER / staff.
 - Game contract 2.1.0 documents the filtering (wire format unchanged); the authz matrix gains the feed row.
-- A filtered caller's feed request costs a full read of the match's events (a few hundred rows). If that ever matters,
-  push the player filter into SQL and resolve VOIDs with a join; the rule stays in `EventVisibility`.
+- ~~A filtered caller's feed request costs a full read of the match's events.~~ Done by WP60: the filter runs in SQL,
+  the rule stays in `EventVisibility`.
 - Events of hidden players that arrive after the last box-score snapshot reach a parent's score with the next refresh
   (≤ 15 s online). A VOID that arrives before its target (not produced by the app) may stay visible after the target
   turns out hidden; it carries no player.
