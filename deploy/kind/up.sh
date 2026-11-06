@@ -18,10 +18,14 @@ CNPG_BRANCH="release-${CNPG_VERSION%.*}"
 # Global rate limiting (WP40, ADR-0033): Envoy Gateway deploys its rate limit service (Deployment envoy-ratelimit) with
 # a Redis backend; values-kind.yaml deploys that Redis in namespace $NS (rateLimit.redis.enabled). failClosed=false:
 # when the rate limit service or Redis does not answer within the timeout, requests pass (fail open). Other clusters
-# set the same keys in the operator's Envoy Gateway install (docs/runbooks/deploy.md).
+# set the same keys in the operator's Envoy Gateway install (docs/runbooks/release.md section 4).
+# Redis ACL (WP46): the rate limit pods log in as user `ratelimit` with REDIS_AUTH=<user>:<password> from Secret
+# envoy-ratelimit-redis-auth (deploy/kind/secrets.sh). Not in the URL: envoyproxy/ratelimit logs the URL unmasked
+# ("Creating single with urls ..."), so redis.urlRef with credentials would leak the password into its log.
 EG_VALUES=(
   --set config.envoyGateway.rateLimit.backend.type=Redis
   --set "config.envoyGateway.rateLimit.backend.redis.url=ratelimit-redis.${NS}.svc.cluster.local:6379"
+  --set-json 'config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.env=[{"name":"REDIS_AUTH","valueFrom":{"secretKeyRef":{"name":"envoy-ratelimit-redis-auth","key":"auth"}}}]'
   --set config.envoyGateway.rateLimit.failClosed=false
   --set config.envoyGateway.rateLimit.timeout=100ms
   --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.cpu=10m
@@ -54,6 +58,11 @@ fi
 kubectl config use-context "kind-$CLUSTER" >/dev/null
 K=(kubectl --context "kind-$CLUSTER")
 
+# Secrets first (ADR-0012): the rate limit pods of Envoy Gateway read their Redis login from envoy-gateway-system.
+step "namespaces $NS + envoy-gateway-system, secrets from .env"
+for n in "$NS" envoy-gateway-system; do "${K[@]}" create namespace "$n" --dry-run=client -o yaml | "${K[@]}" apply -f -; done
+HOOPS_NAMESPACE="$NS" deploy/kind/secrets.sh | "${K[@]}" apply -f -
+
 step "Envoy Gateway $ENVOY_GATEWAY_VERSION (Gateway API $GATEWAY_API_VERSION CRDs)"
 # `helm upgrade` never updates CRDs: on a version bump apply them first (docs/adr/0031-gateway-api.md, upgrade path).
 eg_config() { "${K[@]}" -n envoy-gateway-system get configmap envoy-gateway-config -o jsonpath='{.data}' 2>/dev/null || true; }
@@ -79,9 +88,7 @@ crd_version=$("${K[@]}" get crd gateways.gateway.networking.k8s.io \
   || { echo "up.sh: Gateway API CRDs are $crd_version, Envoy Gateway $ENVOY_GATEWAY_VERSION needs $GATEWAY_API_VERSION" >&2; exit 1; }
 echo "Gateway API CRDs $crd_version"
 
-step "namespace $NS + secrets from .env"
-"${K[@]}" create namespace "$NS" --dry-run=client -o yaml | "${K[@]}" apply -f -
-HOOPS_NAMESPACE="$NS" deploy/kind/secrets.sh | "${K[@]}" apply -f -
+step "TLS secret for the Gateway"
 # Self-signed certificate for https://localhost:8453 (the Gateway's HTTPS listener). Generated once per cluster in a
 # temporary directory that is removed again; never committed. Keycloak's issuer stays the http URL.
 if ! "${K[@]}" -n "$NS" get secret hoops-gateway-tls >/dev/null 2>&1; then
