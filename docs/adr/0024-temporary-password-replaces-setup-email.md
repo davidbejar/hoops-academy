@@ -23,7 +23,10 @@ take the account over.
    passes it on privately. Keycloak stores it as a temporary credential (`reset-password`, `temporary: true`), which adds
    the required action `UPDATE_PASSWORD`: the first sign-in with it lands on Keycloak's "update password" page (direct
    grants answer "Account is not fully set up"). Paths: `createTenant`, `addTenantAdmin` (also a promoted member without
-   a login), `inviteMember`, `createPlayer` (ADMIN path), `approveApprovalRequest` (ADD_PLAYER).
+   a login), `inviteMember`, `createPlayer` (ADMIN path), `approveApprovalRequest` (ADD_PLAYER). *Amended (WP58,
+   core 2.8.0): also `createGuardian` (a new guardian with an e-mail), and `issueMemberTemporaryPassword` gives an
+   active PARENT member with an e-mail and no login a first login (§2 applies: an existing login is linked, ACCEPTED,
+   no password; audit `member.invited` + `member.temporary_password_issued`).*
 2. **Only for logins this request created** (`ProvisionedIdentity.created()`). An existing login (the e-mail already
    signs in elsewhere) is linked as before (invitation ACCEPTED) and its password is never touched.
 3. **Saga unchanged, Keycloak last.** `TemporaryPasswords.issue` is the last statement of the tenant transaction: audit

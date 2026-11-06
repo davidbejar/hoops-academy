@@ -37,7 +37,7 @@ appearing in all three.
 | `guardian_link.removed` | guardian_link | – | ADMIN |
 | `member.deactivated` | person | `roles` (roles left, normally none) | ADMIN |
 | `member.invitation_accepted` | person | – | the person, at the first sign-in (`GET /api/core/me` turns PENDING into ACCEPTED; actor = that person) |
-| `member.invited` | person | `roles`, `login` (a login was created or linked) | ADMIN, onboarding, approval of ADD_PLAYER with e-mail |
+| `member.invited` | person | `roles`, `login` (a login was created or linked) | ADMIN, onboarding, approval of ADD_PLAYER with e-mail, a new guardian (`POST /api/core/guardians`), a guardian's first login (`login: true`, WP58) |
 | `member.login_email_changed` | person | – | super admin moving a shared login's e-mail (written in every academy that uses the login, ADR-0026) |
 | `member.roles_replaced` | person | `before`, `after` (role names) | ADMIN |
 | `member.temporary_password_expired` | person | – | `system`: the expiry sweep, in every academy where the login's person is PENDING (ADR-0028) |

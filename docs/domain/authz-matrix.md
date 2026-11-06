@@ -1,7 +1,9 @@
 # Authorization matrix (oracle for role-matrix tests)
 
 Roles are per tenant and additive (a user may hold several). "team staff" = COACH or ASSISTANT_COACH with a
-`team_staff` row for the team in question. "linked" = PARENT with a `guardian_link` to the player.
+`team_staff` row for the team in question. "linked" = PARENT with a `guardian_link` to the player. Teams whose season
+has ended (academy time zone) count neither as staffed nor as a player's team, even while the staff row or the
+assignment is still open (`staffTeamIds` / `playerTeamIds`, core 2.8.0, WP58).
 Non-members of a tenant receive **404** for every tenant resource.
 
 | Capability | ADMIN | COACH (team staff) | ASSISTANT_COACH (team staff) | PARENT (linked) | PLAYER (self) |
@@ -29,6 +31,7 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Tenant lifecycle, usage statistics | `super_admin` (platform) only — cannot read tenant content | | | | |
 | A tenant's administrators (list, add, edit names/e-mail, remove, new temporary password while PENDING) | `super_admin` (platform, `/platform/tenants/{id}/admins`) — identity of the admins only, ADR-0023, ADR-0024; tenant ADMINs manage them as members | | | | |
 | Audit trail of every academy (`GET /platform/audit-events`, optionally one `tenantId`) | `super_admin` (platform) only — actions, ids and metadata; names of academies and of their active administrators only (ADR-0023, ADR-0029). A super_admin without membership calling `/api/core/audit-events` gets 404 like any non-member | | | | |
+| Guardian logins: add a new guardian to a player (`POST /api/core/guardians`; with an e-mail a login, its temporary password shown once, or an existing login linked, ADR-0025) and give a guardian without a login a first one (`POST /api/core/members/{id}/temporary-password`, PARENT with an e-mail; WP58) | yes | – | – | – | – |
 
 Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of
