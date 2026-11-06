@@ -412,6 +412,8 @@ data:
       "resetPasswordAllowed": true,
       "verifyEmail": false,
       "accessTokenLifespan": 300,
+      "revokeRefreshToken": true,
+      "refreshTokenMaxReuse": 0,
       "ssoSessionIdleTimeout": 14400,
       "ssoSessionMaxLifespan": 43200,
       "bruteForceProtected": true,
@@ -484,6 +486,44 @@ data:
           ],
           "optionalClientScopes": [
             "offline_access"
+          ],
+          "protocolMappers": [
+            {
+              "name": "audience core-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "core-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
+            },
+            {
+              "name": "audience game-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "game-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
+            },
+            {
+              "name": "audience athlete-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "athlete-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
+            }
           ]
         },
         {
@@ -508,7 +548,33 @@ data:
             "roles",
             "email"
           ],
-          "optionalClientScopes": []
+          "optionalClientScopes": [],
+          "protocolMappers": [
+            {
+              "name": "audience game-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "game-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
+            },
+            {
+              "name": "audience athlete-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "athlete-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
+            }
+          ]
         },
         {
           "clientId": "game-service",
@@ -532,7 +598,21 @@ data:
             "roles",
             "email"
           ],
-          "optionalClientScopes": []
+          "optionalClientScopes": [],
+          "protocolMappers": [
+            {
+              "name": "audience core-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "core-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
+            }
+          ]
         },
         {
           "clientId": "athlete-service",
@@ -556,7 +636,21 @@ data:
             "roles",
             "email"
           ],
-          "optionalClientScopes": []
+          "optionalClientScopes": [],
+          "protocolMappers": [
+            {
+              "name": "audience core-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "core-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
+            }
+          ]
         }
       ],
       "users": [
@@ -1240,7 +1334,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: keycloak-0.4.0
       annotations:
-        checksum/realm: 2d6e143dc23e9fd710c4c1b1f9e9cf0d2bb4d3982eb49b987be6866229d152e7
+        checksum/realm: 92c10562b1d2f334c1d8721b5309af540845615cf379b653529a2bcd315a6304
         checksum/theme: 6f5bf442b0336d3b3146e3a7a5ca8492556e1ab9214618e0c584065a68338629
     spec:
       automountServiceAccountToken: false

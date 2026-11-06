@@ -82,9 +82,10 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 |---|---|---|---|
 | V9 (signature/issuer/exp) | Token integrity and validity checked | Met | `quarkus-oidc` (JWKS, issuer = public URL; `smoke.sh` issuer check in kind) |
 | V9 (subject) | Caller identified by the immutable `sub` claim | Met | `CallerSubject` rejects a JWT without `sub` with a 401 (`common MissingSubjectTest`, `core MeWithoutSubjectTest`); realm clients carry the `basic` scope |
-| V9 (audience) | Token intended for this service | Gap (accepted) | No `aud` check: a realm token for client `web` is accepted by every service by design (F-14). Follow-up: an audience mapper + `quarkus.oidc.token.audience` |
+| V9 (audience) | Token intended for this service | Met | `quarkus.oidc.token.audience` per service and realm audience mappers per client, least privilege (WP56, ADR-0034, F-14): `TokenAudienceKeycloakTest` in core, game and athlete (real Keycloak; another audience is a 401 even with the role `service`), `RealmTokenPolicyTest`, e2e `everyServiceRejectsATokenThatIsNotForItsAudience` |
 | V10 (PKCE, public client) | Code flow with PKCE S256, no implicit flow | Met | realm `web` client: public, `pkce.code.challenge.method=S256`, implicit off; Flutter oidc package validates state/nonce (Flutter review) |
 | V10 (redirect URIs) | Exact redirect URI allow-list | Met | realm `web` client: explicit URIs (8080, 5173, kind publicUrl rewrite), no wildcards beyond the path |
+| V10 (refresh-token rotation) | Public client refresh tokens rotated, a reused one refused | Met | Realm `revokeRefreshToken: true`, `refreshTokenMaxReuse: 0` (WP56, ADR-0034, F-08): `RealmRefreshTokenRotationKeycloakTest`, e2e `aRefreshTokenWorksOnceAndIsRejectedWhenUsedAgain`; a reuse ends the session; web tabs refresh one at a time under a Web Lock (`SerialRefresh`, `oidc_refresh_rotation_test.dart`) |
 
 ## V11 / V12 Cryptography and Communication
 | ID | Requirement | Status | Evidence |
@@ -134,8 +135,8 @@ server-side templating/HTML sanitisation.
 
 ## Open gaps summary (→ FOLLOW-UPS.md)
 - F-01 game event feed authz (8.2.2) — fixed in WP33 (ADR-0030).
-- F-03 / F-07 / F-08 web logout and storage (7.4.1, 14.3.1).
+- F-03 / F-07 / F-08 web logout and storage (7.4.1, 14.3.1); F-08 refresh-token rotation done in WP56.
 - 6.2.4 password blocklist, 6.2.12 breached passwords, 6.3.3 MFA for privileged roles.
-- Token audience (V9).
+- Token audience (V9) — done in WP56 (ADR-0034).
 - 16.3.1 Keycloak events, 16.3.2 authorization-failure logging, 16.4.3 log shipping.
 - Production TLS certificates (the Gateway API chart supports them, ADR-0031; none issued); SBOM.

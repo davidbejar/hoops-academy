@@ -96,6 +96,12 @@ WP42 (2026-11-06): `MailSink` (was `MailHog`) detects either API, the skip is go
 test time, `just e2e` 2:03 in total) and on kind through the Gateway after `tilt ci` (72 s). `MailSinkTest` runs in every `verify`
 (the module no longer skips its tests by default; the journeys still assume `e2e.baseUrl`).
 
+WP56 (2026-11-06): two more steps, 23 tests: `everyServiceRejectsATokenThatIsNotForItsAudience` (each service's own
+client-credentials token is a 401 at its own API, ADR-0034) and `aRefreshTokenWorksOnceAndIsRejectedWhenUsedAgain`
+(rotation with reuse detection). Green on compose, 23/23, 73 s, on a stack whose realm predates WP56 after `just
+seed-users` added the audience mappers and the rotation settings. A realm without them answers 401 to every call of the
+journey: run `just seed-users` or re-import the realm (`docs/runbooks/local-stack.md`).
+
 ## Known limits
 - The realm must be the current `infra/keycloak/realm-academy.json` (every client has the Keycloak 25+ `basic` scope, so
   access tokens carry `sub`; fixed in WP17, finding F-21). The suite fails fast if a token has no `sub`, and the services
