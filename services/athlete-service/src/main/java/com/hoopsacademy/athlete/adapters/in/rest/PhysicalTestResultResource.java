@@ -27,6 +27,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/api/athlete/physical-test-results")
@@ -34,6 +35,9 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH, TenantRole.ASSISTANT_COACH, TenantRole.PARENT, TenantRole.PLAYER})
 public class PhysicalTestResultResource {
+
+    /** The clear enum of the request schema in athlete.yaml (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("notes");
 
     private final ManageTestResults results;
     private final TenantContext tenant;
@@ -73,7 +77,7 @@ public class PhysicalTestResultResource {
     @PATCH
     @Path("/{resultId}")
     public HealthDtos.ResultResponse update(@PathParam("resultId") UUID resultId, JsonNode body) {
-        PatchBody patch = new PatchBody(body);
+        PatchBody patch = new PatchBody(body, UPDATE_CLEARABLE);
         var change = new ManageTestResults.ResultChange(
                 patch.required("measuredOn", PatchBody.fromText(LocalDate::parse, "an ISO date")),
                 patch.required("value", node -> {

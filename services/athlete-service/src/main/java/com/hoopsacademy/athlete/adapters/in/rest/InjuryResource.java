@@ -28,6 +28,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/api/athlete/injuries")
@@ -35,6 +36,9 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH, TenantRole.ASSISTANT_COACH, TenantRole.PARENT, TenantRole.PLAYER})
 public class InjuryResource {
+
+    /** The clear enum of the request schema in athlete.yaml (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("description", "expectedReturnOn", "actualReturnOn");
 
     private final ManageInjuries injuries;
     private final TenantContext tenant;
@@ -73,7 +77,7 @@ public class InjuryResource {
     @PATCH
     @Path("/{injuryId}")
     public HealthDtos.InjuryResponse update(@PathParam("injuryId") UUID injuryId, JsonNode body) {
-        PatchBody patch = new PatchBody(body);
+        PatchBody patch = new PatchBody(body, UPDATE_CLEARABLE);
         var isoDate = PatchBody.fromText(LocalDate::parse, "an ISO date");
         var change = new ManageInjuries.InjuryChange(
                 patch.required("occurredOn", isoDate),

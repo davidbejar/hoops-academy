@@ -33,9 +33,9 @@ class TestTypeJpaRepository implements TestTypeRepository {
             entity = new TestTypeEntity();
             entity.id = type.id().value();
             entity.ownerTenantId = currentTenant.tenantId().orElseThrow(() -> new IllegalStateException("No tenant bound")).value();
-            entity.code = type.code();
             entity.createdAt = Instant.now();
         }
+        entity.code = type.code();
         entity.name = type.name();
         entity.unit = type.unit();
         entity.higherIsBetter = type.higherIsBetter();
@@ -71,6 +71,15 @@ class TestTypeJpaRepository implements TestTypeRepository {
     public boolean codeExists(String code) {
         return em.createQuery("select count(t) from TestTypeEntity t where t.code = :code", Long.class)
                 .setParameter("code", code).getSingleResult() > 0;
+    }
+
+    @Override
+    public void delete(TestTypeId id) {
+        TestTypeEntity entity = em.find(TestTypeEntity.class, id.value());
+        if (entity != null) {
+            em.remove(entity);
+            em.flush();
+        }
     }
 
     private static PhysicalTestType toDomain(TestTypeEntity e) {

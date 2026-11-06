@@ -61,6 +61,12 @@ class TestResultJpaRepository implements TestResultRepository {
     }
 
     @Override
+    public boolean existsForType(TestTypeId type) {
+        return em.createQuery("select count(r) from TestResultEntity r where r.testTypeId = :type", Long.class)
+                .setParameter("type", type.value()).getSingleResult() > 0;
+    }
+
+    @Override
     public PageResult<PhysicalTestResult> search(Collection<PlayerId> players, Optional<TestTypeId> type, LocalDate from,
             LocalDate to, int page, int size) {
         if (players != null && players.isEmpty()) {

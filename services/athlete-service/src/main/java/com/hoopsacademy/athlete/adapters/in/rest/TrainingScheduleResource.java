@@ -24,6 +24,7 @@ import jakarta.ws.rs.core.Response;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/api/athlete/training-schedules")
@@ -31,6 +32,9 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH, TenantRole.ASSISTANT_COACH, TenantRole.PARENT, TenantRole.PLAYER})
 public class TrainingScheduleResource {
+
+    /** The clear enum of the request schema in athlete.yaml (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("location", "validUntil");
 
     private final ManageSchedules schedules;
     private final TenantContext tenant;
@@ -64,7 +68,7 @@ public class TrainingScheduleResource {
     @PATCH
     @Path("/{scheduleId}")
     public ScheduleDtos.Response update(@PathParam("scheduleId") UUID scheduleId, JsonNode body) {
-        PatchBody patch = new PatchBody(body);
+        PatchBody patch = new PatchBody(body, UPDATE_CLEARABLE);
         var change = new ManageSchedules.ScheduleChange(
                 patch.required("dayOfWeek", PatchBody.fromText(s -> DayOfWeek.valueOf(s), "a day of week such as MONDAY")),
                 patch.required("startTime", PatchBody.fromText(s -> Requests.time("startTime", s), "HH:mm")),

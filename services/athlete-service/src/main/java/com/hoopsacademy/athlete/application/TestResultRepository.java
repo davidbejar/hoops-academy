@@ -21,4 +21,7 @@ public interface TestResultRepository {
             LocalDate to, int page, int size);
 
     long count();
+
+    /** Does any result of the tenant use the test type? */
+    boolean existsForType(TestTypeId type);
 }

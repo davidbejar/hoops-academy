@@ -22,4 +22,7 @@ public interface TestTypeRepository {
 
     /** Does a visible type (global or the tenant's) already use the code? */
     boolean codeExists(String code);
+
+    /** Deletes one of the tenant's types; the database removes the tenant's norms for it with it. */
+    void delete(TestTypeId id);
 }

@@ -9,6 +9,7 @@ import com.hoopsacademy.common.tenancy.TenantRole;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
@@ -18,13 +19,20 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Path("/api/athlete/physical-test-types")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH, TenantRole.ASSISTANT_COACH, TenantRole.PARENT, TenantRole.PLAYER})
 public class PhysicalTestTypeResource {
+
+    /** The clear enum of the request schema in athlete.yaml (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("description");
+
+    private static final Pattern CODE = Pattern.compile("[A-Z0-9_]{2,32}");
 
     private final ManageTestTypes types;
     private final TenantContext tenant;
@@ -55,8 +63,9 @@ public class PhysicalTestTypeResource {
     @PATCH
     @Path("/{testTypeId}")
     public HealthDtos.TestTypeResponse update(@PathParam("testTypeId") UUID testTypeId, JsonNode body) {
-        PatchBody patch = new PatchBody(body);
+        PatchBody patch = new PatchBody(body, UPDATE_CLEARABLE);
         var change = new ManageTestTypes.TypeChange(
+                patch.required("code", PatchBody.fromText(PhysicalTestTypeResource::code, "A-Z, 0-9 or _ (2-32 characters)")),
                 patch.required("name", PatchBody.nonBlankText(120)),
                 patch.required("unit", PatchBody.nonBlankText(16)),
                 patch.required("higherIsBetter", node -> {
@@ -67,5 +76,19 @@ public class PhysicalTestTypeResource {
                 }),
                 patch.nullable("description", PatchBody.text(2000)));
         return HealthDtos.TestTypeResponse.from(types.update(tenant.requireAuthz(), new TestTypeId(testTypeId), change));
+    }
+
+    @DELETE
+    @Path("/{testTypeId}")
+    public Response delete(@PathParam("testTypeId") UUID testTypeId) {
+        types.delete(tenant.requireAuthz(), new TestTypeId(testTypeId));
+        return Response.noContent().build();
+    }
+
+    private static String code(String raw) {
+        if (!CODE.matcher(raw).matches()) {
+            throw new IllegalArgumentException(raw);
+        }
+        return raw;
     }
 }

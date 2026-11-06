@@ -24,6 +24,7 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Injuries | write | write | write | linked (write) | read (self) |
 | Height / weight | write | write | write | linked (write) | read (self) |
 | Physical test results | write | write | write | read | read (self) |
+| Physical test types and norms (global ones read-only; tenant types: create, edit incl. `code`, delete while no result uses it) | write | read | read | read | read |
 | Academy activity (audit trail, `GET /api/core/audit-events`, ADR-0029) — the super admin's actions show as "Platform administrator" (no subject, person or name; metadata such as a suspension `reason` intact; WP38) | read | – | – | – | – |
 | Tenant lifecycle, usage statistics | `super_admin` (platform) only — cannot read tenant content | | | | |
 | A tenant's administrators (list, add, edit names/e-mail, remove, new temporary password while PENDING) | `super_admin` (platform, `/platform/tenants/{id}/admins`) — identity of the admins only, ADR-0023, ADR-0024; tenant ADMINs manage them as members | | | | |

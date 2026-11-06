@@ -21,7 +21,7 @@ class TestTypeEntity {
     @Column(name = "owner_tenant_id", updatable = false)
     UUID ownerTenantId;
 
-    @Column(name = "code", nullable = false, updatable = false)
+    @Column(name = "code", nullable = false)
     String code;
 
     @Column(name = "name", nullable = false)

@@ -27,6 +27,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/api/athlete/training-plans")
@@ -34,6 +35,10 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH, TenantRole.ASSISTANT_COACH, TenantRole.PARENT, TenantRole.PLAYER})
 public class TrainingPlanResource {
+
+    /** The clear enums of the request schemas in athlete.yaml (ADR-0032). */
+    private static final Set<String> PLAN_CLEARABLE = Set.of("description");
+    private static final Set<String> ITEM_CLEARABLE = Set.of("description", "durationMinutes", "sets", "repetitions", "videoUrl");
 
     private static final int MAX_NAME = 120;
     private static final int MAX_TEXT = 4000;
@@ -77,7 +82,7 @@ public class TrainingPlanResource {
     @PATCH
     @Path("/{planId}")
     public PlanDtos.Plan update(@PathParam("planId") UUID planId, JsonNode body) {
-        PatchBody patch = new PatchBody(body);
+        PatchBody patch = new PatchBody(body, PLAN_CLEARABLE);
         var change = new ManagePlans.PlanChange(patch.required("name", PatchBody.nonBlankText(MAX_NAME)),
                 patch.nullable("description", PatchBody.text(MAX_TEXT)));
         return PlanDtos.Plan.from(plans.update(caller(), new PlanId(planId), change));
@@ -129,7 +134,7 @@ public class TrainingPlanResource {
     @PATCH
     @Path("/{planId}/items/{itemId}")
     public PlanDtos.Item updateItem(@PathParam("planId") UUID planId, @PathParam("itemId") UUID itemId, JsonNode body) {
-        PatchBody patch = new PatchBody(body);
+        PatchBody patch = new PatchBody(body, ITEM_CLEARABLE);
         var change = new ManagePlans.ItemChange(
                 patch.required("title", PatchBody.nonBlankText(120)),
                 patch.nullable("description", PatchBody.text(MAX_TEXT)),

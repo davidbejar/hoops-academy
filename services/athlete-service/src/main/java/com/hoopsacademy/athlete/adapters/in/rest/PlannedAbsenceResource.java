@@ -26,6 +26,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/api/athlete/planned-absences")
@@ -33,6 +34,9 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH, TenantRole.ASSISTANT_COACH, TenantRole.PARENT, TenantRole.PLAYER})
 public class PlannedAbsenceResource {
+
+    /** The clear enum of the request schema in athlete.yaml (ADR-0032). */
+    private static final Set<String> UPDATE_CLEARABLE = Set.of("reason");
 
     private final ManagePlannedAbsences absences;
     private final TenantContext tenant;
@@ -72,7 +76,7 @@ public class PlannedAbsenceResource {
     @PATCH
     @Path("/{absenceId}")
     public AbsenceDtos.Response update(@PathParam("absenceId") UUID absenceId, JsonNode body) {
-        PatchBody patch = new PatchBody(body);
+        PatchBody patch = new PatchBody(body, UPDATE_CLEARABLE);
         var change = new ManagePlannedAbsences.AbsenceChange(
                 patch.required("fromDate", PatchBody.fromText(LocalDate::parse, "an ISO date")),
                 patch.required("toDate", PatchBody.fromText(LocalDate::parse, "an ISO date")),

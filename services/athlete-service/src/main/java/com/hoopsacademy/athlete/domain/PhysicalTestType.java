@@ -24,11 +24,12 @@ public record PhysicalTestType(TestTypeId id, String code, String name, String u
     }
 
     /** @throws AccessDeniedException {@code TEST_TYPE_IS_GLOBAL} for a platform type */
-    public PhysicalTestType changedTo(String newName, String newUnit, boolean newHigherIsBetter, String newDescription) {
+    public PhysicalTestType changedTo(String newCode, String newName, String newUnit, boolean newHigherIsBetter,
+            String newDescription) {
         if (global) {
             throw new AccessDeniedException("Global test types are read-only", "TEST_TYPE_IS_GLOBAL");
         }
-        return new PhysicalTestType(id, code, newName, newUnit, newHigherIsBetter, newDescription, false);
+        return new PhysicalTestType(id, newCode, newName, newUnit, newHigherIsBetter, newDescription, false);
     }
 
     private static boolean isBlank(String text) {
