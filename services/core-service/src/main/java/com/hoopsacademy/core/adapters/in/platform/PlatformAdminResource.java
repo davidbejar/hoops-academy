@@ -98,19 +98,8 @@ public class PlatformAdminResource {
     @Path("/{personId}/temporary-password")
     public Response issueTemporaryPassword(@PathParam("tenantId") UUID tenantId,
             @PathParam("personId") UUID personId) {
-        return WithPasswordDto.noStore(Response.ok()).entity(temporaryPassword(tenantId, personId)).build();
-    }
-
-    /** Deprecated alias of {@link #issueTemporaryPassword} (contract 2.3.0, removed in 3.0.0); answers 202. */
-    @Deprecated(since = "core 2.3.0", forRemoval = true)
-    @POST
-    @Path("/{personId}/resend-invitation")
-    public Response resendInvitation(@PathParam("tenantId") UUID tenantId, @PathParam("personId") UUID personId) {
-        return WithPasswordDto.noStore(Response.accepted()).entity(temporaryPassword(tenantId, personId)).build();
-    }
-
-    private WithPasswordDto<TenantAdminDto> temporaryPassword(UUID tenantId, UUID personId) {
-        return WithPasswordDto.of(admins.issueTemporaryPassword(new TenantId(tenantId), new PersonId(personId)),
-                TenantAdminDto::of);
+        WithPasswordDto<TenantAdminDto> issued = WithPasswordDto.of(
+                admins.issueTemporaryPassword(new TenantId(tenantId), new PersonId(personId)), TenantAdminDto::of);
+        return WithPasswordDto.noStore(Response.ok()).entity(issued).build();
     }
 }
