@@ -416,6 +416,32 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
   Future<void> finishMatch() =>
       _transition(ref.read(matchesRepositoryProvider).finish);
 
+  /// Edits the descriptive fields of the match (staff only); the periods are sent only when given.
+  Future<void> updateMatch({
+    required String opponentName,
+    required DateTime scheduledAt,
+    required gen.HomeAway homeAway,
+    String? venue,
+    int? periodCount,
+    int? periodMinutes,
+  }) async {
+    _requireStaff('match data');
+    await _transition(
+      (id) => ref
+          .read(matchesRepositoryProvider)
+          .update(
+            id,
+            opponentName: opponentName,
+            scheduledAt: scheduledAt,
+            homeAway: homeAway,
+            venue: venue,
+            periodCount: periodCount,
+            periodMinutes: periodMinutes,
+          ),
+    );
+    ref.invalidate(matchListProvider);
+  }
+
   Future<void> _transition(Future<gen.Match> Function(String id) call) async {
     _requireStaff('match state');
     _match = await call(matchId);

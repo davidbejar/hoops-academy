@@ -1732,6 +1732,42 @@ abstract class AppLocalizations {
   /// **'Partido creado'**
   String get matchCreated;
 
+  /// No description provided for @matchEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar partido'**
+  String get matchEdit;
+
+  /// No description provided for @matchVenue.
+  ///
+  /// In es, this message translates to:
+  /// **'Pabellón'**
+  String get matchVenue;
+
+  /// No description provided for @matchTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora'**
+  String get matchTime;
+
+  /// No description provided for @matchPeriodCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Periodos'**
+  String get matchPeriodCount;
+
+  /// No description provided for @matchPeriodMinutes.
+  ///
+  /// In es, this message translates to:
+  /// **'Minutos por periodo'**
+  String get matchPeriodMinutes;
+
+  /// No description provided for @matchUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'Partido actualizado'**
+  String get matchUpdated;
+
   /// No description provided for @matchSetup.
   ///
   /// In es, this message translates to:

@@ -17,6 +17,7 @@ import '../domain/pending_event.dart';
 import '../domain/projector/projector.dart';
 import '../domain/stat_action.dart';
 import 'box_score_view.dart';
+import 'match_edit_dialog.dart';
 import 'match_labels.dart';
 import 'sync_banner.dart';
 
@@ -110,6 +111,21 @@ class _StaffMenu extends ConsumerWidget {
         switch (v) {
           case 'setup':
             context.go('/matches/${live.match.id}/setup');
+          case 'edit':
+            await showDialog<bool>(
+              context: context,
+              builder: (_) => MatchEditDialog(
+                match: live.match,
+                save: (e) => ctl.updateMatch(
+                  opponentName: e.opponentName,
+                  scheduledAt: e.scheduledAt,
+                  homeAway: e.homeAway,
+                  venue: e.venue,
+                  periodCount: e.periodCount,
+                  periodMinutes: e.periodMinutes,
+                ),
+              ),
+            );
           case 'start':
             await runAction(context, ctl.startMatch);
           case 'finish':
@@ -130,6 +146,12 @@ class _StaffMenu extends ConsumerWidget {
             value: 'setup',
             key: const Key('menu-setup'),
             child: Text(l.matchSetup),
+          ),
+        if (status != gen.MatchStatus.CANCELLED)
+          PopupMenuItem(
+            value: 'edit',
+            key: const Key('menu-edit'),
+            child: Text(l.matchEdit),
           ),
         if (status == gen.MatchStatus.SCHEDULED)
           PopupMenuItem(

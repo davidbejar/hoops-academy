@@ -886,6 +886,24 @@ class AppLocalizationsId extends AppLocalizations {
   String get matchCreated => 'Pertandingan dibuat';
 
   @override
+  String get matchEdit => 'Ubah pertandingan';
+
+  @override
+  String get matchVenue => 'Tempat';
+
+  @override
+  String get matchTime => 'Jam';
+
+  @override
+  String get matchPeriodCount => 'Babak';
+
+  @override
+  String get matchPeriodMinutes => 'Menit per babak';
+
+  @override
+  String get matchUpdated => 'Pertandingan diperbarui';
+
+  @override
   String get matchSetup => 'Daftar pemain';
 
   @override

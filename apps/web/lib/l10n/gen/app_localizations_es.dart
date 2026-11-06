@@ -893,6 +893,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchCreated => 'Partido creado';
 
   @override
+  String get matchEdit => 'Editar partido';
+
+  @override
+  String get matchVenue => 'Pabellón';
+
+  @override
+  String get matchTime => 'Hora';
+
+  @override
+  String get matchPeriodCount => 'Periodos';
+
+  @override
+  String get matchPeriodMinutes => 'Minutos por periodo';
+
+  @override
+  String get matchUpdated => 'Partido actualizado';
+
+  @override
   String get matchSetup => 'Convocatoria';
 
   @override

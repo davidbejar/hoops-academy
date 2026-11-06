@@ -883,6 +883,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchCreated => 'Match created';
 
   @override
+  String get matchEdit => 'Edit match';
+
+  @override
+  String get matchVenue => 'Venue';
+
+  @override
+  String get matchTime => 'Time';
+
+  @override
+  String get matchPeriodCount => 'Periods';
+
+  @override
+  String get matchPeriodMinutes => 'Minutes per period';
+
+  @override
+  String get matchUpdated => 'Match updated';
+
+  @override
   String get matchSetup => 'Match roster';
 
   @override
