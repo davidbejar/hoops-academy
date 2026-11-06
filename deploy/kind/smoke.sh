@@ -9,6 +9,8 @@
 # client-credentials tokens from Keycloak, and that each API rejects anonymous calls (401), accepts a token minted for
 # it (anything but 401: core's token at game and athlete, game's token at core) and rejects a token that is not for it
 # (the service's own token, 401: ADR-0034 audiences). Client secrets are read from .env and sent as form bodies over stdin.
+# Load (WP87, troubleshooting symptom D): prints the Podman VM and host load; on a busy machine (deploy/kind/load-guard.sh)
+# it warns and waits three times as long for the events (270 s instead of 90 s).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 BASE="${HOOPS_BASE_URL:-http://localhost:8090}"
@@ -19,6 +21,13 @@ ok()  { printf '  ok   %s\n' "$*"; }
 bad() { printf '  FAIL %s\n' "$*"; fail=1; }
 warn() { printf '  WARN %s\n' "$*"; }
 code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+# shellcheck source=deploy/kind/load-guard.sh
+. deploy/kind/load-guard.sh
+
+echo "== machine load"
+PATIENCE=90
+if machine_busy; then warn "busy machine: $LOAD_LINE; event checks wait 270 s (troubleshooting symptom D)"; PATIENCE=270
+else ok "quiet machine: $LOAD_LINE"; fi
 
 echo "== pods"
 kubectl "${CTX[@]}" get pods -o wide
@@ -160,7 +169,7 @@ if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CT
   # sum of the samples of metric $1, 0 when absent (field 2: the value; an OpenMetrics exemplar may follow it)
   total() { { grep "^$1" || true; } | awk '{s += $2} END {printf "%d", s}'; }
   group_lag() { rp "$as_admin rpk group describe $1" | awk '$1 == "TOTAL-LAG" {print $2}'; }
-  eventually() { for _ in $(seq 90); do "$@" && return 0; sleep 1; done; return 1; }
+  eventually() { for _ in $(seq "$PATIENCE"); do "$@" && return 0; sleep 1; done; return 1; }
   pub=$(curl -s "$BASE/api/core/q/health/ready" | jq -r '.checks[] | select(.name == "outbox-publisher") | "\(.status) \(.data.state)"')
   [ "$pub" = "UP OK" ] && ok "core readiness outbox-publisher: $pub" || bad "core readiness outbox-publisher: '$pub' (want UP OK)"
   [ "$(metrics core-service | total hoops_outbox_broker_available)" = 1 ] && ok "core: hoops_outbox_broker_available 1" \

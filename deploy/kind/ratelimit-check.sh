@@ -9,6 +9,9 @@
 # (EVAL, GET, FLUSHALL, CONFIG, ... refused), and neither an anonymous client nor the `default` user gets in.
 # redis-down: stops the ratelimit-redis Deployment, checks that requests pass (failClosed=false: fail open), starts it
 # again and checks that the limit is back.
+# Load guard (WP87, troubleshooting symptom D): the bursts need a quiet machine. Above HOOPS_MAX_LOAD_PER_CPU (default 2)
+# per CPU of the Podman VM or the host (deploy/kind/load-guard.sh) they are skipped and the script ends INCOMPLETE (exit 3);
+# HOOPS_LOAD_WAIT=<seconds> waits for a quiet machine first, HOOPS_LOAD_GUARD=off runs them anyway. The ACL check always runs.
 # The rate limit service counts fixed windows aligned to the clock, so every burst first waits for the next minute
 # (up to a minute each). Side effect: this client IP is limited on the checked routes until that window ends.
 set -euo pipefail
@@ -21,6 +24,8 @@ WHAT="${1:-all}"
 fail=0
 ok()  { printf '  ok   %s\n' "$*"; }
 bad() { printf '  FAIL %s\n' "$*"; fail=1; }
+# shellcheck source=deploy/kind/load-guard.sh
+. "$(dirname "$0")/load-guard.sh"
 
 fresh_window() { # sleep until the cluster clock (HTTP Date of an unlimited route) is 1 s into the next minute
   local s
@@ -134,9 +139,21 @@ replicas_served() { # $1 = text unique to the burst's requests (match id of this
   ok "$n Envoy replica(s) shared the burst (access-log lines per replica):$served"
 }
 
+echo "== machine load"
+TIMING=1 skipped=""
+if wait_for_quiet_machine; then ok "quiet machine: $LOAD_LINE"
+elif [ "${HOOPS_LOAD_GUARD:-on}" = off ]; then
+  echo "  WARN busy machine: $LOAD_LINE; timing checks run anyway (HOOPS_LOAD_GUARD=off): expect troubleshooting symptom D"
+else
+  echo "  WARN busy machine: $LOAD_LINE; the bursts are skipped (re-run when it is quiet, HOOPS_LOAD_WAIT=<s> to wait)"
+  TIMING=0
+fi
+want() { [ "$WHAT" = "$1" ] || { [ "$WHAT" = all ] && [ "$1" != redis-down ]; }; }
+timed() { [ "$TIMING" = 1 ] || { skipped="$skipped $1"; return 1; }; }   # $1 = mode; records it when skipped
+
 match="00000000-0000-0000-0000-$(printf '%012d' $$)"
 EVENTS=(-X POST -H 'Content-Type: application/json' --data '[]' "$BASE/api/game/matches/$match/events:batch")
-if [ "$WHAT" = all ] || [ "$WHAT" = events ]; then
+if want events && timed events; then
   echo "== events:batch (120/min and 20/s per client IP)"
   burst "POST /api/game/matches/<id>/events:batch" 120 20 "${EVENTS[@]}"
   replicas_served "$match"
@@ -153,7 +170,7 @@ if [ "$WHAT" = all ] || [ "$WHAT" = events ]; then
     || bad "another client IP got '${code:-no answer}': $out"
   tight_burst "POST /api/game/matches/<id>/events:batch" 120 20 "${EVENTS[@]}"
 fi
-if [ "$WHAT" = all ] || [ "$WHAT" = token ]; then
+if want token && timed token; then
   echo "== token endpoint (60/min and 10/s per client IP)"
   TOKEN=(-X POST -d 'grant_type=client_credentials&client_id=ratelimit-check&client_secret=wrong'
          "$BASE/auth/realms/academy/protocol/openid-connect/token")
@@ -162,11 +179,11 @@ if [ "$WHAT" = all ] || [ "$WHAT" = token ]; then
   [ "$c" = 200 ] && ok "rest of /auth not limited (discovery -> 200)" || bad "discovery -> $c"
   tight_burst "POST /auth/realms/academy/protocol/openid-connect/token" 60 10 "${TOKEN[@]}"
 fi
-if [ "$WHAT" = all ] || [ "$WHAT" = acl ]; then
+if want acl; then
   echo "== Redis ACL (user of the rate limit service)"
   acl_check
 fi
-if [ "$WHAT" = redis-down ]; then
+if want redis-down && timed redis-down; then
   echo "== Redis down (failClosed=false: fail open)"
   K=(kubectl "${CTX[@]}" -n "$NS")
   "${K[@]}" scale deployment/ratelimit-redis --replicas=0 >/dev/null
@@ -181,4 +198,6 @@ if [ "$WHAT" = redis-down ]; then
   burst "POST /api/game/matches/<id>/events:batch after Redis is back" 120 20 "${EVENTS[@]}"
 fi
 
-[ "$fail" = 0 ] && echo "RATE LIMIT CHECK PASSED" || { echo "RATE LIMIT CHECK FAILED"; exit 1; }
+[ "$fail" = 0 ] || { echo "RATE LIMIT CHECK FAILED"; exit 1; }
+[ -z "$skipped" ] || { echo "RATE LIMIT CHECK INCOMPLETE: skipped on a busy machine:$skipped"; exit 3; }
+echo "RATE LIMIT CHECK PASSED"
