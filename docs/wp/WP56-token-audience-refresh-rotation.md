@@ -80,8 +80,14 @@ ADR-0034 reserved for you.
     both tabs signed in after 150 s, Keycloak session kept client `web`, last access 13 s before the end.
 - Decisions/ADRs: ADR-0034 (indexed).
 - Open points:
-  - `deploy/kind/smoke.sh` (WP63's file) calls each service with that service's own token and expects "not 401"; by
-    ADR-0034 that is now a 401. Fix: call game or athlete with core's token and core with game's or athlete's.
+  - `deploy/kind/smoke.sh` (after WP63 merged): the token checks now call core with game-service's token and game and
+    athlete with core-service's token (expect not 401), and each service with its own token (expect 401); gateway,
+    discovery and PKCE checks unchanged; `shellcheck -S warning` clean. Proven on compose only (kind held by WP65):
+    the script's token block run verbatim with `BASE=http://localhost:8080` passed all six checks (core 404, game 400,
+    athlete 400 with the right token; 401 anonymous and with the own token), and directly on 8081-8083
+    `/internal/usage/<uuid>` answered 200 with the calling service's token and 401 with the own token. **Next kind
+    user (WP66) must re-run** `deploy/kind/smoke.sh core game athlete` on a freshly imported realm (also the journey
+    through the Gateway, 23 tests).
   - The volume reset (`podman volume rm hoops_pgdata`) was refused by the permission system; the fresh import of the
     realm file is proven by the Testcontainers tests instead.
   - No control run of the soak without `SerialRefresh` in a real browser (the unit test and the Keycloak test show

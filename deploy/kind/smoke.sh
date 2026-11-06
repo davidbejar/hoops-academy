@@ -4,8 +4,9 @@
 # core is deployed since WP18: with `core` in the list the script also logs the seeded `superadmin` in (PKCE, no browser)
 # and checks GET /api/core/me (200, superAdmin=true) and GET /platform/tenants (200).
 # Checks: pods Ready, Gateway programmed, OIDC issuer, /internal -> 403, web /, each service's /q/health/ready via the gateway,
-# a client-credentials token from Keycloak, and that each API rejects anonymous calls (401) but accepts the token's
-# signature/issuer (anything but 401). The client secret is read from .env and sent as a form body over stdin.
+# client-credentials tokens from Keycloak, and that each API rejects anonymous calls (401), accepts a token minted for
+# it (anything but 401: core's token at game and athlete, game's token at core) and rejects a token that is not for it
+# (the service's own token, 401: ADR-0034 audiences). Client secrets are read from .env and sent as form bodies over stdin.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 BASE="${HOOPS_BASE_URL:-http://localhost:8090}"
@@ -63,23 +64,34 @@ if [[ " ${SERVICES[*]} " == *" game "* ]]; then
   echo "$body" | grep -q 'events%3Abatch' && ok "events%3Abatch forwarded undecoded" || bad "events%3Abatch: $body"
 fi
 
-echo "== tokens (client credentials, realm role 'service')"
-# A secured GET endpoint per service (anonymous -> 401; a valid token -> anything else, e.g. 400/404 without tenant).
+echo "== tokens (client credentials, realm role 'service'; audiences per ADR-0034)"
+# A secured GET endpoint per service (anonymous -> 401; a token for it -> anything else, e.g. 400/404 without tenant).
 api_path() { case "$1" in core) echo /api/core/me ;; game) echo /api/game/matches ;; athlete) echo /api/athlete/training-schedules ;; esac; }
+# A service's client-credentials token is for the services it calls, never for itself: core calls game and athlete,
+# game and athlete call core.
+caller_of() { case "$1" in core) echo game ;; game|athlete) echo core ;; esac; }
 set -a; . ./.env; set +a
-for s in "${SERVICES[@]}"; do
-  var="$(echo "$s" | tr '[:lower:]' '[:upper:]')_SERVICE_CLIENT_SECRET"
-  token=$(printf 'grant_type=client_credentials&client_id=%s-service&client_secret=%s' "$s" "${!var}" |
+service_token() {  # $1 = core|game|athlete -> access token of client <$1>-service (empty on failure)
+  local var
+  var="$(echo "$1" | tr '[:lower:]' '[:upper:]')_SERVICE_CLIENT_SECRET"
+  printf 'grant_type=client_credentials&client_id=%s-service&client_secret=%s' "$1" "${!var}" |
     curl -s -X POST "$BASE/auth/realms/academy/protocol/openid-connect/token" \
-      -H 'Content-Type: application/x-www-form-urlencoded' --data-binary @- | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
-  [ -n "$token" ] || { bad "$s-service: no token"; continue; }
+      -H 'Content-Type: application/x-www-form-urlencoded' --data-binary @- | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
+}
+for s in "${SERVICES[@]}"; do
+  caller=$(caller_of "$s")
+  token=$(service_token "$caller")
+  own=$(service_token "$s")
+  [ -n "$token" ] && [ -n "$own" ] || { bad "$s: no token from $caller-service or $s-service"; continue; }
   iss=$(echo "$token" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | sed -n 's/.*"iss":"\([^"]*\)".*/\1/p' || true)
-  [ "$iss" = "$BASE/auth/realms/academy" ] && ok "$s-service token iss $iss" || bad "$s-service token iss '$iss'"
+  [ "$iss" = "$BASE/auth/realms/academy" ] && ok "$caller-service token iss $iss" || bad "$caller-service token iss '$iss'"
   p=$(api_path "$s")
   anon=$(code "$BASE$p")
   authd=$(code -H "Authorization: Bearer $token" "$BASE$p")
-  [ "$anon" = 401 ] && [ "$authd" != 401 ] && ok "$p anonymous 401, with token $authd" \
-    || bad "$p anonymous $anon, with token $authd"
+  wrong=$(code -H "Authorization: Bearer $own" "$BASE$p")
+  [ "$anon" = 401 ] && [ "$authd" != 401 ] && [ "$wrong" = 401 ] \
+    && ok "$p anonymous 401, $caller-service token $authd, own $s-service token 401 (not its audience)" \
+    || bad "$p anonymous $anon, $caller-service token $authd, own $s-service token $wrong (want 401 / not 401 / 401)"
 done
 
 if [[ " ${SERVICES[*]} " == *" core "* ]]; then
