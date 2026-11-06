@@ -69,7 +69,7 @@ jobs:
       # it and make `google-chrome` a wrapper around the pinned build with the flags a headless runner needs.
       - name: Make the pinned Chrome the only google-chrome
         run: |
-          sudo rm -rf /opt/google/chrome
+          sudo rm -rf /opt/google/chrome /usr/bin/google-chrome   # the latter is a symlink into the former
           printf '#!/bin/sh\nexec "%s" --no-sandbox --disable-dev-shm-usage "$@"\n' "${{ steps.chrome.outputs.chrome-path }}" | sudo tee /usr/bin/google-chrome >/dev/null
           sudo chmod +x /usr/bin/google-chrome
           google-chrome --version
