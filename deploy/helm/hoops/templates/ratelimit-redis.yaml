@@ -19,6 +19,11 @@ metadata:
   name: ratelimit-redis
   labels:
     {{- toYaml $labels | nindent 4 }}
+  {{- if dig "reloader" "enabled" false (.Values.global | default dict) }}
+  annotations:
+    # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
+    secret.reloader.stakater.com/auto: "true"
+  {{- end }}
 spec:
   replicas: 1
   revisionHistoryLimit: 3

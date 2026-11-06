@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.5.0
+    helm.sh/chart: athlete-0.6.0
 spec:
   podSelector:
     matchLabels:
@@ -43,7 +43,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.5.0
+    helm.sh/chart: core-0.6.0
 spec:
   podSelector:
     matchLabels:
@@ -105,7 +105,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.5.0
+    helm.sh/chart: game-0.6.0
 spec:
   podSelector:
     matchLabels:
@@ -136,7 +136,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 spec:
   podSelector:
     matchLabels:
@@ -284,7 +284,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.5.0
+    helm.sh/chart: athlete-0.6.0
 data:
   QUARKUS_HTTP_PORT: "8083"
   ATHLETE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -310,7 +310,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.5.0
+    helm.sh/chart: core-0.6.0
 data:
   QUARKUS_HTTP_PORT: "8081"
   ATHLETE_SERVICE_URL: "http://athlete-service:8083"
@@ -472,7 +472,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.5.0
+    helm.sh/chart: game-0.6.0
 data:
   QUARKUS_HTTP_PORT: "8082"
   GAME_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -498,7 +498,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 data:
   hoops-password-blocklist.txt: |
     123qweasdzxc
@@ -10516,7 +10516,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 data:
   realm-academy.json: |
     {
@@ -10836,7 +10836,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 data:
   basketball.svg: |
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><!-- Material Icons "sports_basketball" (Apache-2.0), the app's logo icon --><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM5.23 7.75C6.1 8.62 6.7 9.74 6.91 11H4.07c.17-1.24.6-2.31 1.16-3.25zM4.07 13h2.84c-.21 1.26-.81 2.38-1.68 3.25-.56-.94-.99-2.01-1.16-3.25zM11 19.93c-1.73-.22-3.29-1-4.49-2.14 1.3-1.24 2.19-2.91 2.42-4.79H11v6.93zM11 11H8.93C8.69 9.12 7.81 7.44 6.5 6.2c1.2-1.13 2.76-1.92 4.5-2.13V11zm8.93 0h-2.84c.21-1.26.81-2.38 1.68-3.25.56.94.99 2.01 1.16 3.25zM13 4.07c1.73.22 3.29.99 4.5 2.13-1.31 1.24-2.19 2.92-2.43 4.8H13V4.07zm0 15.86V13h2.07c.24 1.88 1.12 3.55 2.42 4.79-1.2 1.15-2.76 1.92-4.49 2.14zm5.77-3.68c-.87-.86-1.46-1.99-1.68-3.25h2.84c-.17 1.24-.6 2.31-1.16 3.25z"/></svg>
@@ -11167,7 +11167,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.5.0
+    helm.sh/chart: athlete-0.6.0
 spec:
   type: ClusterIP
   selector:
@@ -11192,7 +11192,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.5.0
+    helm.sh/chart: core-0.6.0
 spec:
   type: ClusterIP
   selector:
@@ -11217,7 +11217,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.5.0
+    helm.sh/chart: game-0.6.0
 spec:
   type: ClusterIP
   selector:
@@ -11242,7 +11242,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 spec:
   selector:
     app.kubernetes.io/name: keycloak
@@ -11331,7 +11331,10 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.5.0
+    helm.sh/chart: athlete-0.6.0
+  annotations:
+    # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
+    secret.reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -11348,9 +11351,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: athlete-0.5.0
+        helm.sh/chart: athlete-0.6.0
       annotations:
-        checksum/env: 28c67d9aefc6214a7e01ea7e998ac841ba9482608fe7ae805317e3fe26e446f3
+        checksum/env: e07ae1d5eb2e5c03ba153dfed509c16e1987e6f8b0e9621528eb57b9aded7126
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8083"
@@ -11444,7 +11447,10 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.5.0
+    helm.sh/chart: core-0.6.0
+  annotations:
+    # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
+    secret.reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -11461,9 +11467,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: core-0.5.0
+        helm.sh/chart: core-0.6.0
       annotations:
-        checksum/env: 0c55be50b3bd776149289ed8ae6044ad49b28de143e4bd1e48848af50ee021ae
+        checksum/env: 8d03d13e5cc84041560143c48542d91f966519ca940e65aac385f1dc980d68a9
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8081"
@@ -11562,7 +11568,10 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.5.0
+    helm.sh/chart: game-0.6.0
+  annotations:
+    # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
+    secret.reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -11579,9 +11588,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: game-0.5.0
+        helm.sh/chart: game-0.6.0
       annotations:
-        checksum/env: fdb3b1427f56f070ba4f541f3f4432de9887fe5375082f4fc1f1c0cfbe4b6599
+        checksum/env: e6f2c63098ddc28e6cd3ec03ea097ffe5d87d9496fdc329688eb583488d2cf8b
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"
@@ -11675,7 +11684,10 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
+  annotations:
+    # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
+    secret.reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -11693,11 +11705,11 @@ spec:
         app.kubernetes.io/component: identity
         app.kubernetes.io/version: "26.8.1"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: keycloak-0.4.0
+        helm.sh/chart: keycloak-0.5.0
       annotations:
-        checksum/realm: 2c9cbb3d6ee24bd1fce6452ebfc3ca030fe1e979cb14aa0e130912ff0e54b761
-        checksum/theme: 961d6e6b5f312d523a9fb0d2a1198d80307a501024f82fade537fed86e214f30
-        checksum/blocklist: d93f97ee1ae759acaad87364c8d3e913d4159b130998cc51a2cddca9fa991875
+        checksum/realm: db7e9c6a8b09245e0e2fd03691b8f9d569c3ff28045410eb4ad5d5224e537e96
+        checksum/theme: 7c4460da41862635509b1de67c77bd4130b289fc8cf62939fcd2342508a75d6f
+        checksum/blocklist: d1395df3bc5d7565aad8f5b64f7576358a0db58af72571c9c61d1a6dff9174d9
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -11938,6 +11950,9 @@ metadata:
     app.kubernetes.io/component: rate-limit-store
     app.kubernetes.io/name: ratelimit-redis
     app.kubernetes.io/part-of: hoops-academy
+  annotations:
+    # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
+    secret.reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -12051,6 +12066,9 @@ metadata:
     app.kubernetes.io/component: event-broker
     app.kubernetes.io/name: redpanda
     app.kubernetes.io/part-of: hoops-academy
+  annotations:
+    # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
+    secret.reloader.stakater.com/auto: "true"
 spec:
   serviceName: redpanda
   replicas: 1
@@ -12169,7 +12187,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.5.0
+    helm.sh/chart: game-0.6.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: game-service-events-batch}
@@ -12214,7 +12232,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: keycloak-ratelimited}
@@ -12496,7 +12514,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.5.0
+    helm.sh/chart: athlete-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -12521,7 +12539,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.5.0
+    helm.sh/chart: athlete-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -12576,7 +12594,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.5.0
+    helm.sh/chart: core-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -12600,7 +12618,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.5.0
+    helm.sh/chart: core-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -12625,7 +12643,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.5.0
+    helm.sh/chart: core-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -12680,7 +12698,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.5.0
+    helm.sh/chart: game-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -12705,7 +12723,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.5.0
+    helm.sh/chart: game-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -12762,7 +12780,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.5.0
+    helm.sh/chart: game-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -12788,7 +12806,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 spec:
   parentRefs:
     - name: hoops
@@ -12819,7 +12837,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 spec:
   parentRefs:
     - name: hoops
@@ -12858,7 +12876,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.4.0
+    helm.sh/chart: keycloak-0.5.0
 spec:
   parentRefs:
     - name: hoops

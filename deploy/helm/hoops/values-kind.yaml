@@ -4,6 +4,7 @@
 global:
   publicUrl: http://localhost:8090
   events: {enabled: true}       # = events.enabled below (the services' Kafka client, WP71)
+  reloader: {enabled: true}     # pods roll when a Secret they read changes (Reloader from up.sh, WP87)
 gateway:
   gatewayClass: {create: true}
   tls:

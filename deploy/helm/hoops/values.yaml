@@ -17,6 +17,11 @@ global:
   # services' Kafka client hangs off this copy. Always set both (the render fails when they differ).
   events:
     enabled: false
+  # Stakater Reloader (WP87, ADR-0012 amendment): annotate every Deployment/StatefulSet that reads a Secret with
+  # secret.reloader.stakater.com/auto, so a rotated Secret rolls its pods. Needs a Reloader controller in the cluster
+  # (kind: deploy/kind/up.sh installs it); without one the annotation does nothing. Global: the subcharts read it too.
+  reloader:
+    enabled: false
 
 # ---------------------------------------------------------------------------------------------------------------
 # Edge (WP36, ADR-0031): Gateway API Gateway implemented by Envoy Gateway (pinned version: deploy/kind/up.sh).
