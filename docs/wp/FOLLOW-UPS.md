@@ -149,10 +149,11 @@ per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events wo
 | 3 | WP54 | Web: PWA installability, airplane-mode cold start, F-07 cache keys | Sonnet | After WP53 |
 | 3 | WP62 | Athlete: remaining fitness-norm placeholders | Opus | Done (475/630 cited; athlete 679 tests, mutation 100 %) |
 | 3 | WP66 | Events infra: Redpanda in compose, chart and kind; Dev Services | Opus | Done (ADR-0036; chart 0.6.0; kind smoke 35 checks) |
-| 4 | WP67 | Core: outbox publisher and the event contracts | Opus | After WP66, alone |
+| 4 | WP67 | Core: outbox publisher and the event contracts | Opus | Done (ADR-0008 amendment; 7 event schemas; core 871 tests, mutation 99.6 %) |
 | 5 | WP68 | Game: roster replica from core events behind `RosterPort` | Opus | After WP67 |
-| 5 | WP69 | Athlete: roster replica from core events behind `RosterPort` | Opus | After WP67 |
+| 5 | WP69 | Athlete: roster replica from core events behind `RosterPort` | Opus | Done (athlete 790 tests, mutation 100 %; e2e 23/23 on replica) |
 | 2 | WP70 | Web: public landing page (teaser, features, roadmap, invitation request placeholder) | Opus (copy by Fable) | After WP52 |
+| 6 | WP71 | Chart: services wired to the broker behind `events.enabled`, outbox and replicas proven on kind (orchestrator addition after the WP67/WP69 handovers: no WP owned the chart) | Opus | After WP68, WP69 |
 
 ### Decisions of 2026-11-06, third interview (product owner)
 34. **Web edits → WP52**: match edit dialog, jersey removal, member personal data, academy contact.
