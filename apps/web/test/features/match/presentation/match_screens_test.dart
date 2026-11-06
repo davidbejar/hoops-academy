@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/errors/app_error.dart';
+import 'package:hoops_app/core/ui/kit.dart';
 import 'package:hoops_app/features/match/application/match_providers.dart';
 import 'package:hoops_app/features/match/domain/match_event.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
@@ -108,6 +109,17 @@ Future<void> tapAction(
   await tapKey(tester, 'player-$player');
   await tapKey(tester, 'action-$action');
   await clearSnackBars(tester);
+}
+
+/// Scrolls [key] into view, lets that scroll lay out, then taps it: with
+/// the sync banner up, the bench sits below the fold of a 360x780 phone in
+/// the test font (`tapKey` taps the pre-scroll position).
+Future<void> scrollAndTap(WidgetTester tester, String key) async {
+  final f = find.byKey(Key(key));
+  await tester.ensureVisible(f);
+  await tester.pumpAndSettle();
+  await tester.tap(f);
+  await tester.pumpAndSettle();
 }
 
 /// Lets the confirmation snack bar expire so it does not cover the bench.
@@ -276,7 +288,7 @@ void main() {
         expect(textOf(tester, 'score-opponent'), '2');
 
         // Substitution: tap a bench player, choose who leaves.
-        await tapKey(tester, 'player-p6');
+        await scrollAndTap(tester, 'player-p6');
         await tapKey(tester, 'sub-out-p5');
         final own = await tester.runAsync(
           () => game.store.ownEvents(
@@ -613,7 +625,7 @@ void main() {
   group('season stats', () {
     testWidgets('populated, reached from the player detail', (tester) async {
       final game = gameWith();
-      game.matches.seasonStatsResult = _seasonStats();
+      game.matches.seasonStatsResult = seasonStatsFixture();
       await pumpAs(
         tester,
         roles: {TenantRole.coach},
@@ -633,7 +645,7 @@ void main() {
 
     testWidgets('empty and error', (tester) async {
       final game = gameWith();
-      game.matches.seasonStatsResult = _seasonStats(empty: true);
+      game.matches.seasonStatsResult = seasonStatsFixture(empty: true);
       await pumpParent(tester, game, '/matches/stats/p1');
       expect(find.text('Sin partidos en esta temporada'), findsOneWidget);
     });
@@ -646,6 +658,147 @@ void main() {
         );
       await pumpParent(tester, game, '/matches/stats/p1');
       expect(find.text('Reintentar'), findsWidgets);
+    });
+  });
+
+  group('design system (WP74, ADR-0040)', () {
+    StatusChip chip(WidgetTester tester, String key) =>
+        tester.widget<StatusChip>(find.byKey(Key(key)));
+
+    testWidgets('match list: rows on cards, status chips carry a tone', (
+      tester,
+    ) async {
+      await pumpCoach(tester, gameWith(), '/matches');
+      expect(
+        find.ancestor(
+          of: find.text('vs Tigres'),
+          matching: find.byType(ListRow),
+        ),
+        findsOneWidget,
+      );
+      expect(chip(tester, 'status-LIVE').tone, HoopsTone.accent);
+      expect(chip(tester, 'status-LIVE').dot, isTrue);
+      expect(chip(tester, 'status-FINISHED').tone, HoopsTone.success);
+      expect(chip(tester, 'status-SCHEDULED').tone, HoopsTone.neutral);
+      expect(find.byType(PageHeader), findsOneWidget);
+    });
+
+    testWidgets('live match: the staff menu is an action sheet', (
+      tester,
+    ) async {
+      await pumpCoach(tester, gameWith(), '/matches/$live');
+      expect(find.byType(PopupMenuButton<String>), findsNothing);
+      await tapKey(tester, 'match-menu');
+      expect(
+        find.byWidgetPredicate((w) => w is ActionSheetList),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('menu-finish')), findsOneWidget);
+    });
+
+    testWidgets('live match: the timeout choice is an action sheet', (
+      tester,
+    ) async {
+      await pumpCoach(tester, gameWith(), '/matches/$live');
+      await tapKey(tester, 'period-start');
+      await tapKey(tester, 'timeout-menu');
+      expect(find.byType(ActionSheetList<TimeoutSide>), findsOneWidget);
+    });
+
+    testWidgets('live match: large targets for one-hand scoring', (
+      tester,
+    ) async {
+      await pumpCoach(tester, gameWith(), '/matches/$live');
+      for (final key in ['period-start', 'opponent-1', 'undo', 'player-p1']) {
+        expect(
+          tester.getSize(find.byKey(Key(key))).height,
+          greaterThanOrEqualTo(HoopsSize.minTapTarget),
+          reason: key,
+        );
+      }
+      await tapKey(tester, 'player-p1');
+      expect(
+        tester.getSize(find.byKey(const Key('action-2pt-made'))).height,
+        greaterThanOrEqualTo(HoopsSize.minTapTarget + HoopsSpace.sm),
+      );
+      expect(
+        tester.getBottomLeft(find.byKey(const Key('action-foul-u'))).dy,
+        greaterThan(780 / 2),
+        reason: 'the stat buttons sit in the lower half, near the thumb',
+      );
+    });
+
+    testWidgets('sync banner: warning while unsynced, danger when rejected', (
+      tester,
+    ) async {
+      final game = gameWith()..server.offline = true;
+      await pumpCoach(tester, game, '/matches/$live');
+      await tapKey(tester, 'period-start');
+      final banner = tester.widget<NoticeBanner>(
+        find.byKey(const Key('sync-banner')),
+      );
+      expect(banner.tone, HoopsTone.warning);
+      expect(find.byKey(const Key('sync-retry')), findsOneWidget);
+    });
+
+    testWidgets('box score: period scores and the table on section cards', (
+      tester,
+    ) async {
+      final game = gameWith();
+      game.server.preload(fin, [
+        RecordedEvent(PeriodStart(_meta('e1', 600))),
+        RecordedEvent(
+          Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true),
+        ),
+        RecordedEvent(PeriodEnd(_meta('e4', 0))),
+      ], personId: 'coach');
+      await pumpCoach(tester, game, '/matches/$fin');
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.ancestor(
+          of: find.byType(DataTable),
+          matching: find.byType(SectionCard),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('period-score-1')),
+          matching: find.byType(SectionCard),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('season stats: averages as stat tiles, matches as rows', (
+      tester,
+    ) async {
+      final game = gameWith();
+      game.matches.seasonStatsResult = seasonStatsFixture();
+      await pumpParent(tester, game, '/matches/stats/p1');
+      expect(find.byKey(const Key('avg-points')), findsOneWidget);
+      expect(
+        tester.widget(find.byKey(const Key('avg-points'))),
+        isA<StatTile>(),
+      );
+      expect(find.byType(StatTile), findsNWidgets(4));
+      expect(
+        tester.widget(find.byKey(Key('stats-match-$fin'))),
+        isA<ListRow>(),
+      );
+    });
+
+    testWidgets('setup: a match without roster shows the empty state', (
+      tester,
+    ) async {
+      final game = gameWith();
+      game.matches.rosters.remove(live);
+      await pumpCoach(tester, game, '/matches/$live');
+      expect(find.byType(EmptyState), findsOneWidget);
+      expect(find.byKey(const Key('open-setup')), findsOneWidget);
     });
   });
 }
@@ -683,7 +836,7 @@ gen.StatLine _line(int points) => gen.StatLine(
     ..secondsPlayed = 600,
 );
 
-gen.PlayerSeasonStats _seasonStats({bool empty = false}) =>
+gen.PlayerSeasonStats seasonStatsFixture({bool empty = false}) =>
     gen.PlayerSeasonStats(
       (b) => b
         ..playerId = 'p1'
