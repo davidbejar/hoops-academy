@@ -5,8 +5,17 @@ misconfigurations:
       - "**/helm/tests/snapshots/umbrella-default.yaml"
       - "**/helm/tests/snapshots/umbrella-kind.yaml"
       - "**/helm/tests/snapshots/umbrella-tls.yaml"
+      - "**/helm/tests/snapshots/umbrella-eso.yaml"
     statement: >-
       Keycloak only: `start` (non-optimized) re-augments into /opt/keycloak/lib at boot, so its root FS must be
       writable (WP16). Every other container is read-only, enforced by deploy/helm/tests/run.sh
       ("readOnlyRootFilesystem (all but keycloak)"). Fix: pre-built `kc.sh build` image + `start --optimized`.
     expired_at: 2027-03-31
+  - id: KSV-0109
+    paths:
+      - "**/helm/tests/snapshots/*.yaml"
+    statement: >-
+      ConfigMap keycloak-password-blocklist holds the public password denylist (WP57, ADR-0038: the 10,000 most common
+      passwords, from SecLists), not a secret; the rule fires on the key name and the word "password". The chart stores
+      every real credential in Secrets (chart test "no Secret rendered" + gitleaks on the render).
+    expired_at: 2027-05-01
