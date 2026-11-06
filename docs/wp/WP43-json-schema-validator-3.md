@@ -43,3 +43,56 @@ is then current); do not touch the PR.
   that module alone with `-Dquarkus.http.test-port=0`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Outcome: **not migrated, by decision.** The orchestrator chose option B on 2026-11-06: stay on
+  `com.networknt:json-schema-validator` 2.0.8. Dependabot now ignores its semver-major updates
+  (`.github/dependabot.yml`, maven block, with the reason as a comment). PR #3 was not touched. It stays open until
+  someone closes it (the ignore rule only stops new major PRs).
+- Root cause (systematic-debugging): every red job on PR #3 (backend, dependency-check, trivy-fs, zap-baseline,
+  journeys) fails at the same `testCompile` of `MatchEventJsonSchemaTest`. 3.0.0 (changelog: "Upgrade to Jackson 3 and
+  JDK 17", #1219) keeps the package and class names (`SchemaRegistry`, `Schema`, `Error`, `SpecificationVersion`).
+  Its tree arguments are now `tools.jackson.databind.JsonNode` (Jackson 3) instead of `com.fasterxml…JsonNode`. 3.0.8
+  pulls `tools.jackson.core:jackson-databind` 3.2.1 and `jackson-dataformat-yaml` 3.2.1.
+- Blocker: the strict OpenAPI validator `com.atlassian.oai:openapi-request-validator-core` 3.0.0 (ADR-0027) depends
+  on networknt 2.0.1. It calls `SchemaRegistry.getSchema(com.fasterxml JsonNode)` and
+  `Schema.validate(com.fasterxml JsonNode)` (checked with `javap`). 3.0.0 is still its newest release on Maven
+  Central (checked 2026-11-06, `lastUpdated` 2026-05-13). Both lines use the same class names, so they cannot share a
+  classpath. With 3.0.8, `./mvnw -pl libs/contracts verify` gave 152 tests with 5 errors, all
+  `NoSuchMethodError: 'com.networknt.schema.Schema com.networknt.schema.SchemaRegistry.getSchema(com.fasterxml.jackson.databind.JsonNode)'`:
+  three in `StrictValidatorCompatibilityTest` (`aFeedOfEveryEventTypePassesTheStrictValidator`,
+  `theStrictValidatorRejectsAPayloadThatDoesNotMatchTheType`, `theStrictValidatorRejectsAnUndeclaredEventProperty`)
+  and two in `UpdateRequestClearListContractTest`. The game-service `Contract` filter would fail the same way.
+  Managing the version in the root pom would also break core, athlete and e2e, because they get the validator
+  transitively.
+- Migration ready for our own three usages: pass the JSON text instead of a Jackson 2 tree. Both 2.0.8 and 3.0.8 have
+  `SchemaRegistry.getSchema(String, InputFormat)` / `getSchema(InputStream)` and
+  `Schema.validate(String, InputFormat)`:
+  - `MatchEventJsonSchemaTest`: `registry.getSchema(schemaDocument.toString(), InputFormat.JSON)`, plus a helper
+    `validate(Schema s, JsonNode n) { return s.validate(n.toString(), InputFormat.JSON); }` used for the meta-schema
+    and every event. With 3.0.8 it was green: 25 tests, including the Draft 2020-12 meta-schema check and the
+    `$ref`/`$defs`/if-then dispatch. No schema edit was needed. `MatchEventSchemaConsistencyTest` was green too (5).
+  - `MatchEventDecoder`: `schema.validate(json.toString(), InputFormat.JSON)` and
+    `getSchema(in, InputFormat.JSON)` (the stream directly, no `mapper.readTree`). `EventSchema` (test support):
+    the same. `Error.getInstanceLocation()` / `getMessage()` are unchanged, so the `results[].message` mapping stays.
+  - One version in the root `pom.xml` (property plus `dependencyManagement`) replaces the two module properties, once
+    the strict validator moves to networknt 3.x.
+- Built (kept): `MatchEventDecoderTest.schemaViolationMessagesKeepTheirWording` (commit 5e958e8) pins the exact
+  `results[].message` of six violations on 2.0.8. A later bump that changes the wording turns it red. The 3.x
+  wording was never measured in game-service, because its test classpath needs the strict validator.
+- Verified (2.0.8, fresh, 2026-11-06):
+  - `./mvnw -B -ntp -pl libs/contracts verify`: 152 tests, 0 failures, BUILD SUCCESS.
+  - `./mvnw -B -ntp -pl services/game-service -am verify -Dquarkus.http.test-port=0`: common-quarkus 186,
+    contracts 152, game-service 256, BUILD SUCCESS.
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`: common 186, contracts 152, game 256, athlete 653,
+    core 773, e2e 25 (21 journeys skipped without a stack, as usual). 2045 tests, 0 failures, coverage gates
+    passed, BUILD SUCCESS.
+  - `just mutation game-service`: 401 mutations, 399 killed (99.5 %), test strength 99 %. This equals the baseline
+    in `docs/quality/mutation.md` (threshold 95).
+  - The `.github/dependabot.yml` change parses as valid YAML (Ruby `YAML.load_file`). The maven `ignore` entry is
+    `{dependency-name: com.networknt:json-schema-validator, update-types: [version-update:semver-major]}`.
+- Decisions/ADRs: no new ADR. Option B keeps ADR-0027 as it is. Option A, a shaded module that relocates networknt
+  3.x, was rejected as too much build complexity for a test-only gain.
+- Open points: (1) once swagger-request-validator ships on networknt 3.x, remove the Dependabot ignore entry and
+  apply the migration above (this needs a FOLLOW-UPS entry, which I may not write). (2) PR #3 is still open: it can
+  be closed by hand, or with `@dependabot ignore this major version`, which matches the new rule.
