@@ -57,6 +57,8 @@ void main() {
       api.AuditActorKind.PLATFORM,
     });
     expect(page.items.first.action, api.AuditAction.memberPeriodInvited);
+    final platform = page.items.where((e) => e.actorKind == api.AuditActorKind.PLATFORM);
+    expect(platform.map((e) => e.actorSubject), everyElement(isNull), reason: 'masked like the server (WP38)');
   });
 
   test('seasons, categories, rollover with orphans and opened cases', () async {

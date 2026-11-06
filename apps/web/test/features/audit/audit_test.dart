@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/audit/application/audit_providers.dart';
 import 'package:hoops_app/features/audit/domain/audit_entry.dart';
 import 'package:hoops_app/features/audit/presentation/audit_labels.dart';
+import 'package:hoops_app/features/audit/presentation/audit_log_screen.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 
@@ -27,6 +29,7 @@ List<AuditEntry> _trail() => [
     'e3',
     api.AuditAction.adminPeriodAdded,
     actorKind: api.AuditActorKind.PLATFORM,
+    actorSubject: null, // masked by the server for an academy (core 2.6.0, WP38)
     actorName: null,
     targetName: 'Ana Ruiz',
   ),
@@ -106,7 +109,7 @@ void main() {
       expect(inTile('e2', 'Contraseña temporal caducada'), findsOneWidget);
       expect(inTile('e2', 'Por Sistema'), findsOneWidget);
       expect(inTile('e2', 'Persona'), findsOneWidget, reason: 'an unnamed target shows its type');
-      expect(inTile('e3', 'Por Administración de la plataforma'), findsOneWidget);
+      expect(inTile('e3', 'Por Administrador de la plataforma'), findsOneWidget);
       expect(inTile('e4', 'Club Norte'), findsOneWidget);
       expect(repo.academyQueries.single.$1, isNotNull, reason: 'scoped to the active academy');
     });
@@ -224,6 +227,37 @@ void main() {
   });
 
   group('labels', () {
+    const platformActor = {'es': 'Administrador de la plataforma', 'en': 'Platform administrator', 'id': 'Administrator platform'};
+    for (final MapEntry(key: code, value: label) in platformActor.entries) {
+      testWidgets('a masked platform actor reads "$label" in $code (WP38)', (tester) async {
+        final entry = auditEntry(
+          'm1',
+          api.AuditAction.tenantPeriodSuspended,
+          actorKind: api.AuditActorKind.PLATFORM,
+          actorSubject: null,
+          actorName: null,
+          targetType: api.AuditTargetType.tenant,
+          targetName: 'Club Norte',
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: Locale(code),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: Scaffold(body: AuditEntryTile(entry: entry)),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final l = lookupAppLocalizations(Locale(code));
+        expect(find.textContaining(l.auditByActor(label)), findsOneWidget);
+      });
+    }
+
     for (final locale in AppLocalizations.supportedLocales) {
       test('one distinct label per action in ${locale.languageCode}', () {
         final l = lookupAppLocalizations(locale);

@@ -11,6 +11,7 @@ AuditEntry auditEntry(
   api.AuditAction action, {
   DateTime? at,
   api.AuditActorKind actorKind = api.AuditActorKind.PERSON,
+  String? actorSubject = 'sub',
   String? actorName = 'Ana Ruiz',
   api.AuditTargetType targetType = api.AuditTargetType.person,
   String? targetName = 'Leo Gil',
@@ -21,7 +22,7 @@ AuditEntry auditEntry(
   at: at ?? DateTime.utc(2026, 11, 3, 9, 30),
   action: action,
   actorKind: actorKind,
-  actorSubject: 'sub-$id',
+  actorSubject: actorSubject,
   actorName: actorName,
   targetType: targetType,
   targetId: 'target-$id',

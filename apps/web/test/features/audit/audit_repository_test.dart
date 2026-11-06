@@ -54,6 +54,17 @@ void main() {
     expect(e.tenantName, isNull);
   });
 
+  test('a masked platform actor (null subject, core 2.6.0) is read as such', () async {
+    final masked = {'kind': 'PLATFORM', 'subject': null, 'personId': null, 'displayName': null};
+    final (client, _) = clientWith((_) => _page([_event(extra: {'actor': masked})]));
+
+    final e = (await ApiAuditRepository(client).academy(tenant, const AuditQuery())).items.single;
+
+    expect(e.actorKind, api.AuditActorKind.PLATFORM);
+    expect(e.actorSubject, isNull);
+    expect(e.actorName, isNull);
+  });
+
   test('the platform list carries the academy and may narrow to one', () async {
     final (client, adapter) = clientWith(
       (_) => _page([_event(extra: {'tenantId': 't-a', 'tenantName': 'Club Norte'})]),
