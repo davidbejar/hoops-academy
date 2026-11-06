@@ -206,7 +206,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 | 1 | WP87 | Chart: Reloader on Secret rotation, remaining kind proofs, rate-limit load guard, Testcontainers flake | Opus | Running |
 | 2 | WP73 | Web redesign: training, plans, sessions, health and fitness screens | Opus | After wave 1 |
 | 2 | WP74 | Web redesign: live match, match list and match statistics screens | Opus | After wave 1 |
-| 2 | WP75 | Web redesign: admin, platform, auth, profile and shell screens | Sonnet | After wave 1 |
+| 2 | WP75 | Web redesign: admin, platform, auth, profile and shell screens | Sonnet | Done (web 877 tests; kit IconTile; platform usage goldens) |
 | 2 | WP80 | Season history: read-only access to past seasons for former staff and admins (core, game, athlete, web) | Opus | After wave 1 |
 | 2 | WP86 | Chart: OpenTelemetry collector, services' logs and traces exported, proven on kind | Opus | After wave 1 |
 | 2 | WP89 | CI: scheduled bump of image digests, chart image tags and kind pins | Sonnet | After wave 1 |
