@@ -332,8 +332,8 @@ void main() {
       await tapKey(tester, 'roster-menu-p1');
       await tester.tap(find.text('Cambiar dorsal'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byKey(const Key('note-field')), '12');
-      await tapKey(tester, 'dialog-confirm');
+      await tester.enterText(find.byKey(const Key('jersey-field')), '12');
+      await tapKey(tester, 'form-submit');
       expect(core.teams.rosters['t1']!.first.jerseyNumber, '12');
 
       await tapKey(tester, 'roster-menu-p1');
@@ -346,6 +346,48 @@ void main() {
       await tapKey(tester, 'dialog-confirm');
       expect(core.teams.calls, contains('unassign'));
       expect(find.text('Ana Ruiz'), findsNothing);
+    });
+
+    testWidgets('the jersey dialog opens with the current number and an empty '
+        'value removes it', (tester) async {
+      final core = coreWithTeams();
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: core,
+        location: path,
+      );
+      await tapKey(tester, 'roster-menu-p1');
+      await tester.tap(find.text('Cambiar dorsal'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextFormField>(find.byKey(const Key('jersey-field')))
+            .controller!
+            .text,
+        '7',
+      );
+      await tester.enterText(find.byKey(const Key('jersey-field')), '  ');
+      await tapKey(tester, 'form-submit');
+      expect(core.teams.rosters['t1']!.first.jerseyNumber, isNull);
+      expect(find.byKey(const Key('jersey-field')), findsNothing);
+    });
+
+    testWidgets('a server error keeps the jersey dialog open', (tester) async {
+      final core = coreWithTeams();
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: core,
+        location: path,
+      );
+      await tapKey(tester, 'roster-menu-p1');
+      await tester.tap(find.text('Cambiar dorsal'));
+      await tester.pumpAndSettle();
+      core.teams.failWith = const AppError(kind: AppErrorKind.server);
+      await tester.enterText(find.byKey(const Key('jersey-field')), '');
+      await tapKey(tester, 'form-submit');
+      expect(find.byKey(const Key('jersey-field')), findsOneWidget);
     });
 
     testWidgets('add and remove team staff (admin)', (tester) async {
