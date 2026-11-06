@@ -46,3 +46,48 @@ the generated Dart client cannot send; after this WP null means unchanged and `c
   that module alone with `-Dquarkus.http.test-port=0`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built:
+  - Contract core **2.7.0**: `clear` (array, `uniqueItems`, enum of exactly the optional nullable properties) on
+    `UpdateTenantProfileRequest` (contactEmail, websiteUrl), `UpdateMemberRequest` (email, phone, birthDate, gender),
+    `UpdateAgeCategoryRequest` (maxAge), `UpdateTeamRequest` (alias), `UpdateTeamPlayerRequest` (jerseyNumber; no
+    longer `required`, now `minProperties: 1`, so `{clear: [jerseyNumber]}` is the body that removes a jersey).
+    **No `clear`** (nothing nullable): `UpdateTenantAdminRequest`, `UpdateTenantRequest`, `UpdateMeRequest`,
+    `UpdateSeasonRequest`. `UpdateRequestClearListContractTest`: `ADOPTED = athlete, core` plus a core block
+    (exact enums, the four without `clear`, 2.7.0, strict-validator cases); the core block sits above the athlete
+    test-type tests, the file is otherwise unchanged. `AuditTrailContractTest` now checks "core ≥ 2.6.0" instead of
+    pinning 2.6.0. Dart `apps/web/packages/core` regenerated (athlete/game regeneration noise not committed).
+  - core-service: `MergePatch` → `PatchBody` (`adapters/in/shared`). A member is nullable exactly when the resource
+    declares it clearable (`UPDATE_CLEARABLE` / `PROFILE_CLEARABLE` next to each resource = the contract enum);
+    absent or `null` = unchanged; `null` on a non-clearable member = 400; named in `clear` = set to null; value +
+    `clear` = 400 violation code `CLEAR_CONFLICT`; unknown, non-clearable, duplicate or malformed `clear` = 400 on
+    `clear` (code `INVALID_VALUE`); `{}` or `{clear: []}` alone = 400. Violations are still collected into one 400.
+    `Patch.map` (domain); `TeamPlayerService.renumber` takes a `Patch<JerseyNumber>`, so `{jerseyNumber: null}` is a
+    no-op (was 400 "is required").
+  - Web: team edit (alias), age-category edit (maxAge) and jersey change (null jersey) send `clear` via `clearList`;
+    `mock_core_api.dart` applies profile / category / team / team-player PATCHes through `mockApplyUpdate` (clear
+    honoured, value + clear = 400). The academy profile dialog edits no clearable field, there is no member edit
+    dialog, and season / me / platform tenant / admin have nothing to clear: unchanged.
+  - ADR-0032 "Adoption" gained the core line. `docs/domain/authz-matrix.md` unchanged (no rule moved).
+- Tests switched from `null` to `clear` (each now also asserts `null` = unchanged): `AgeCategoryResourceTest`
+  (`maxAge`), `TeamResourceTest` (`alias`), `TenantResourceTest.adminEditsTheProfileAndClearsTheNamedFields`
+  (`contactEmail`, renamed), `MemberResourceTest.patchClearsOnlyTheNamedFieldsAndKeepsInvariants` (`phone`,
+  `birthDate`, `gender` → 422; renamed), `MemberResourceTest.aMemberWithALoginKeepsAnEmail` (`email` → 422
+  `LOGIN_REQUIRES_EMAIL`), `TeamPlayerResourceTest.adminAssignsListsRenumbersAndUnassigns` (`jerseyNumber`),
+  `MergePatchTest` → `PatchBodyTest`. New 400 cases in `SeasonResourceTest` and `PlatformAdminResourceTest`.
+- Unaffected, proven by unchanged green tests: the shared-login e-mail rule (ADR-0026) —
+  `MemberResourceTest.emailChangeMovesTheLoginInKeycloakAndCore`, the `LOGIN_SHARED` test,
+  `aDeactivatedMembershipElsewhereDoesNotShareTheLogin`, `PlatformAdminResourceTest`; audit rows — the
+  `member.updated` and `tenant.profile_changed` assertions now also run on a `clear` (field listed, value not).
+- Verified (fresh, 2026-11-06): `./mvnw -B -ntp -T 1C clean verify -Dquarkus.http.test-port=0` BUILD SUCCESS,
+  2,034 JVM tests (contracts 155, common-quarkus 186, core 784, game 256, athlete 653; e2e 25 with 21 skipped),
+  all coverage checks met; `./mvnw -pl libs/contracts verify` green; `just mutation core-service` 498/499 killed
+  (99.8 %, baseline 99.6 %, threshold 95); `flutter analyze` no issues; `just web-test` (flutter test) 656 passed.
+  Goldens: none changed (no screen layout changed).
+- Open points: the jersey dialog still requires a value (`noteDialog(required: true)`), so the app cannot remove a
+  jersey yet although the repository and API can; no web dialog edits a member's personal data or the academy's
+  contact e-mail / website, so `UpdateMemberRequest.clear` and `UpdateTenantProfileRequest.clear` are unused by the
+  app; `docs/roadmap.md` still lists core under "`clear` list in core and game" (left for the orchestrator, WP45
+  edits the same line); a no-op PATCH (`{"phone": null}`) still writes a `member.updated` row with no fields
+  (pre-existing behaviour for unchanged values).

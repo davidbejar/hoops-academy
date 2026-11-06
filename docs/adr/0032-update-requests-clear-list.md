@@ -35,10 +35,12 @@ in generated code that is never edited, and every new client generator would bri
   `UpdateBodyMeasurementRequest`, `UpdatePhysicalTestResultRequest`, `UpdateInjuryRequest`,
   `UpdateTrainingPlanRequest`, `UpdatePlanItemRequest`, `UpdateTrainingScheduleRequest`,
   `UpdatePhysicalTestTypeRequest`).
-- **core and game later**, one contract minor bump each: add `clear` to their `Update*Request`s, switch `MergePatch`
-  (core) from "null clears" to "null is unchanged, `clear` clears", add the spec to `ADOPTED` in the contract test,
-  regenerate the Dart package and send `clear` from the dialogs that can empty a field. Until then core keeps the
-  merge-patch reading of `null`.
+- **core 2.7.0 (WP44):** `UpdateTenantProfileRequest` (contactEmail, websiteUrl), `UpdateMemberRequest` (email, phone,
+  birthDate, gender), `UpdateAgeCategoryRequest` (maxAge), `UpdateTeamRequest` (alias), `UpdateTeamPlayerRequest`
+  (jerseyNumber, no longer required; `minProperties: 1`). `UpdateTenantAdminRequest`, `UpdateTenantRequest`,
+  `UpdateMeRequest` and `UpdateSeasonRequest` have nothing nullable and get no `clear`. Core's `MergePatch` became
+  `PatchBody` (a member is nullable exactly when the resource declares it clearable; violations are still collected
+  into one 400, `CLEAR_CONFLICT` and `INVALID_VALUE` as violation codes).
 - **game 2.2.0 (WP45):** `UpdateMatchRequest` (`venue` is its only clearable property). game-service reads a `null` as
   unchanged, answers 400 `CLEAR_CONFLICT` for a value that is also in `clear`, and the web repository's `update` names
   an emptied venue in `clear`.
