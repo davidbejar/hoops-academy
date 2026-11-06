@@ -2480,6 +2480,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get usageCounter_bodyMeasurements => 'Medidas corporales';
 
   @override
+  String get usageCounter_trainingSchedules => 'Horarios de entreno';
+
+  @override
+  String get usageCounter_finishedMatches => 'Partidos terminados';
+
+  @override
+  String get usageCounter_membersAdmin => 'Miembros: administradores';
+
+  @override
+  String get usageCounter_membersCoach => 'Miembros: entrenadores';
+
+  @override
   String get signOutUnsyncedTitle => 'Hay eventos sin sincronizar';
 
   @override

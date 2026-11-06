@@ -182,6 +182,10 @@ String usageCounterLabel(AppLocalizations l, String key) => switch (key) {
   'physicalTestResults' => l.usageCounter_physicalTestResults,
   'injuries' => l.usageCounter_injuries,
   'bodyMeasurements' => l.usageCounter_bodyMeasurements,
+  'trainingSchedules' => l.usageCounter_trainingSchedules,
+  'finishedMatches' => l.usageCounter_finishedMatches,
+  'membersAdmin' => l.usageCounter_membersAdmin,
+  'membersCoach' => l.usageCounter_membersCoach,
   _ => key, // counters are additive: unknown keys show as they come
 };
 

@@ -4612,6 +4612,30 @@ abstract class AppLocalizations {
   /// **'Medidas corporales'**
   String get usageCounter_bodyMeasurements;
 
+  /// No description provided for @usageCounter_trainingSchedules.
+  ///
+  /// In es, this message translates to:
+  /// **'Horarios de entreno'**
+  String get usageCounter_trainingSchedules;
+
+  /// No description provided for @usageCounter_finishedMatches.
+  ///
+  /// In es, this message translates to:
+  /// **'Partidos terminados'**
+  String get usageCounter_finishedMatches;
+
+  /// No description provided for @usageCounter_membersAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembros: administradores'**
+  String get usageCounter_membersAdmin;
+
+  /// No description provided for @usageCounter_membersCoach.
+  ///
+  /// In es, this message translates to:
+  /// **'Miembros: entrenadores'**
+  String get usageCounter_membersCoach;
+
   /// No description provided for @signOutUnsyncedTitle.
   ///
   /// In es, this message translates to:

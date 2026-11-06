@@ -2465,6 +2465,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageCounter_bodyMeasurements => 'Body measurements';
 
   @override
+  String get usageCounter_trainingSchedules => 'Training schedules';
+
+  @override
+  String get usageCounter_finishedMatches => 'Finished matches';
+
+  @override
+  String get usageCounter_membersAdmin => 'Members: admins';
+
+  @override
+  String get usageCounter_membersCoach => 'Members: coaches';
+
+  @override
   String get signOutUnsyncedTitle => 'Events not synced yet';
 
   @override

@@ -2472,6 +2472,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get usageCounter_bodyMeasurements => 'Pengukuran tubuh';
 
   @override
+  String get usageCounter_trainingSchedules => 'Jadwal latihan';
+
+  @override
+  String get usageCounter_finishedMatches => 'Pertandingan selesai';
+
+  @override
+  String get usageCounter_membersAdmin => 'Anggota: admin';
+
+  @override
+  String get usageCounter_membersCoach => 'Anggota: pelatih';
+
+  @override
   String get signOutUnsyncedTitle => 'Ada kejadian yang belum disinkronkan';
 
   @override

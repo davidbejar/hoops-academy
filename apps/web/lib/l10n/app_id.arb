@@ -1011,6 +1011,10 @@
   "usageCounter_physicalTestResults": "Hasil tes",
   "usageCounter_injuries": "Cedera",
   "usageCounter_bodyMeasurements": "Pengukuran tubuh",
+  "usageCounter_trainingSchedules": "Jadwal latihan",
+  "usageCounter_finishedMatches": "Pertandingan selesai",
+  "usageCounter_membersAdmin": "Anggota: admin",
+  "usageCounter_membersCoach": "Anggota: pelatih",
   "signOutUnsyncedTitle": "Ada kejadian yang belum disinkronkan",
   "signOutUnsyncedBody": "{count} kejadian pertandingan belum disinkronkan dari perangkat ini. Jika keluar sekarang, kejadian itu akan hilang selamanya. Sambungkan internet dan tunggu sinkronisasi, atau keluar dan buang.",
   "@signOutUnsyncedBody": {

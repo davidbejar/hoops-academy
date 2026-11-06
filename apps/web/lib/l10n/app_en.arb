@@ -1011,6 +1011,10 @@
   "usageCounter_physicalTestResults": "Test results",
   "usageCounter_injuries": "Injuries",
   "usageCounter_bodyMeasurements": "Body measurements",
+  "usageCounter_trainingSchedules": "Training schedules",
+  "usageCounter_finishedMatches": "Finished matches",
+  "usageCounter_membersAdmin": "Members: admins",
+  "usageCounter_membersCoach": "Members: coaches",
   "signOutUnsyncedTitle": "Events not synced yet",
   "signOutUnsyncedBody": "{count, plural, one{1 match event is} other{{count} match events are}} not synced from this device. Signing out now discards them for good. Connect and wait for the sync, or sign out and discard them.",
   "@signOutUnsyncedBody": {

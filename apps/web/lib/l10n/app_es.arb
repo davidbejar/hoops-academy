@@ -1350,6 +1350,10 @@
   "usageCounter_physicalTestResults": "Resultados de pruebas",
   "usageCounter_injuries": "Lesiones",
   "usageCounter_bodyMeasurements": "Medidas corporales",
+  "usageCounter_trainingSchedules": "Horarios de entreno",
+  "usageCounter_finishedMatches": "Partidos terminados",
+  "usageCounter_membersAdmin": "Miembros: administradores",
+  "usageCounter_membersCoach": "Miembros: entrenadores",
   "signOutUnsyncedTitle": "Hay eventos sin sincronizar",
   "signOutUnsyncedBody": "{count, plural, one{Hay 1 evento de partido sin sincronizar} other{Hay {count} eventos de partido sin sincronizar}} en este dispositivo. Si cierras sesión ahora se perderán para siempre. Conéctate y espera a que se sincronicen, o cierra sesión y descártalos.",
   "@signOutUnsyncedBody": {
