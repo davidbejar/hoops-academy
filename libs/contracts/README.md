@@ -64,12 +64,12 @@ schema file per topic, `events/<topic>.schema.json`; the consumers (game, athlet
 - **Envelope** (identical in every file): `eventId` (uuid, the outbox row id: the same on every redelivery),
   `type`, `version`, `tenantId`, `aggregateId` (uuid), `occurredAt` (UTC instant, `…Z`), `payload`. Closed objects
   (`additionalProperties: false`).
-- **Types** `<aggregate>.changed` on every topic; `<aggregate>.removed` only where a record can disappear
-  (`team-staff`, `guardian-link`). A payload is a `$defs/<Aggregate><Verb>` object; every field is required and an
+- **Types** `<aggregate>.changed` and `<aggregate>.removed` on every topic (WP81: every deletion in core publishes a
+  removal; `team-staff` and `guardian-link` since WP67). A payload is a `$defs/<Aggregate><Verb>` object; every field is required and an
   absent value is an explicit `null`.
 - **State transfer**: a `changed` event carries the whole current aggregate (the topics are compacted, ADR-0036), not
-  the fields that changed; a `removed` event carries the identity only and is followed by a tombstone (null value) for
-  the same key.
+  the fields that changed; a `removed` event carries the identity only (an empty payload where the aggregate id is the
+  identity) and is followed by a tombstone (null value) for the same key.
 - **Delivery**: at least once, in outbox order per key. Consumers ignore an `eventId` they have applied and never let an
   older `occurredAt` overwrite a newer one; they bind the tenant from `tenantId`, never from a request.
 - **Versioning**: `version` is the topic's major version, `1` for an unsuffixed topic. An **additive** change (a new

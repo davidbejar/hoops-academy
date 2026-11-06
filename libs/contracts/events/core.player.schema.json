@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hoops.academy/contracts/events/core.player.schema.json",
   "title": "core.player",
-  "description": "A player record of an academy; name, birth date and gender come from the player's person, so a change of those emits a `player.changed` too. Key `<tenantId>:<playerId>`. Players are never deleted (status WITHDRAWN / REJECTED). Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
+  "description": "A player record of an academy; name, birth date and gender come from the player's person, so a change of those emits a `player.changed` too. Key `<tenantId>:<playerId>`. Withdrawing or rejecting a player is a `player.changed` (status WITHDRAWN / REJECTED); deleting a player record emits `player.removed` (empty payload), then a tombstone (null value) for the same key. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -22,7 +22,8 @@
     "type": {
       "type": "string",
       "enum": [
-        "player.changed"
+        "player.changed",
+        "player.removed"
       ]
     },
     "version": {
@@ -42,7 +43,7 @@
       "description": "When core wrote the change (UTC)."
     },
     "payload": {
-      "$ref": "#/$defs/PlayerChanged"
+      "type": "object"
     }
   },
   "$defs": {
@@ -117,6 +118,53 @@
           ]
         }
       }
+    },
+    "PlayerRemoved": {
+      "type": "object",
+      "description": "The player that was deleted: the aggregate id is its identity, nothing else is sent.",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "player.changed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/PlayerChanged"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "player.removed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/PlayerRemoved"
+          }
+        }
+      }
+    }
+  ]
 }

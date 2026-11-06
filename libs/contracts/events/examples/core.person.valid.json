@@ -26,5 +26,14 @@
       "roles": ["PLAYER"],
       "active": false
     }
+  },
+  {
+    "eventId": "0190b6a1-0000-7000-8000-0000000000a1",
+    "type": "person.removed",
+    "version": 1,
+    "tenantId": "2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10",
+    "aggregateId": "9f0e1d2c-3b4a-4596-8877-665544332211",
+    "occurredAt": "2026-11-06T12:00:00Z",
+    "payload": {}
   }
 ]

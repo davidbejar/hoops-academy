@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hoops.academy/contracts/events/core.tenant.schema.json",
   "title": "core.tenant",
-  "description": "An academy (tenant): master data and lifecycle status. The aggregate id is the tenant id. Key `<tenantId>:<tenantId>`. Tenants are never deleted: WITHDRAWN is terminal. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
+  "description": "An academy (tenant): master data and lifecycle status. The aggregate id is the tenant id. Key `<tenantId>:<tenantId>`. WITHDRAWN is terminal (a `tenant.changed`); deleting an academy (an onboarding that never finished) emits `tenant.removed` (empty payload), then a tombstone (null value) for the same key. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -22,7 +22,8 @@
     "type": {
       "type": "string",
       "enum": [
-        "tenant.changed"
+        "tenant.changed",
+        "tenant.removed"
       ]
     },
     "version": {
@@ -42,7 +43,7 @@
       "description": "When core wrote the change (UTC)."
     },
     "payload": {
-      "$ref": "#/$defs/TenantChanged"
+      "type": "object"
     }
   },
   "$defs": {
@@ -105,6 +106,53 @@
           ]
         }
       }
+    },
+    "TenantRemoved": {
+      "type": "object",
+      "description": "The academy that was deleted: the aggregate id is its identity, nothing else is sent.",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "tenant.changed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/TenantChanged"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "tenant.removed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/TenantRemoved"
+          }
+        }
+      }
+    }
+  ]
 }

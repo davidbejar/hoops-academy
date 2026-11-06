@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hoops.academy/contracts/events/core.team.schema.json",
   "title": "core.team",
-  "description": "A team of an academy with its season's dates (authorisation keeps teams whose season has not ended), so a change of the season's dates emits a `team.changed` for each of its teams. Key `<tenantId>:<teamId>`. Teams are never deleted. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
+  "description": "A team of an academy with its season's dates (authorisation keeps teams whose season has not ended), so a change of the season's dates emits a `team.changed` for each of its teams. Key `<tenantId>:<teamId>`. Deleting a team emits `team.removed` (empty payload), then a tombstone (null value) for the same key. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -22,7 +22,8 @@
     "type": {
       "type": "string",
       "enum": [
-        "team.changed"
+        "team.changed",
+        "team.removed"
       ]
     },
     "version": {
@@ -42,7 +43,7 @@
       "description": "When core wrote the change (UTC)."
     },
     "payload": {
-      "$ref": "#/$defs/TeamChanged"
+      "type": "object"
     }
   },
   "$defs": {
@@ -113,6 +114,53 @@
           ]
         }
       }
+    },
+    "TeamRemoved": {
+      "type": "object",
+      "description": "The team that was deleted: the aggregate id is its identity, nothing else is sent.",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "team.changed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/TeamChanged"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "team.removed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/TeamRemoved"
+          }
+        }
+      }
+    }
+  ]
 }

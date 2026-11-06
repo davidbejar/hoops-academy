@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hoops.academy/contracts/events/core.person.schema.json",
   "title": "core.person",
-  "description": "A member of an academy (person + tenant roles + login). Key `<tenantId>:<personId>`. Persons are never deleted: `active` false is a deactivated member. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
+  "description": "A member of an academy (person + tenant roles + login). Key `<tenantId>:<personId>`. Deactivating a member is a `person.changed` with `active` false; deleting a person record emits `person.removed` (empty payload: the aggregate id is the identity), then a tombstone (null value) for the same key. Envelope common to every core topic (libs/contracts/README.md, section Events): published by core's outbox publisher, at least once, in outbox order per key; consumers ignore a known `eventId` and never let an older `occurredAt` overwrite a newer one.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -22,7 +22,8 @@
     "type": {
       "type": "string",
       "enum": [
-        "person.changed"
+        "person.changed",
+        "person.removed"
       ]
     },
     "version": {
@@ -42,7 +43,7 @@
       "description": "When core wrote the change (UTC)."
     },
     "payload": {
-      "$ref": "#/$defs/PersonChanged"
+      "type": "object"
     }
   },
   "$defs": {
@@ -112,6 +113,53 @@
           "description": "False once the member is deactivated."
         }
       }
+    },
+    "PersonRemoved": {
+      "type": "object",
+      "description": "The person that was deleted: the aggregate id is its identity, nothing else is sent.",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "person.changed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/PersonChanged"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "person.removed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "#/$defs/PersonRemoved"
+          }
+        }
+      }
+    }
+  ]
 }
