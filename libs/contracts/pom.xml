@@ -18,7 +18,7 @@
     <!-- Contract-test libraries: versions pinned here on purpose (not managed by the parent). -->
     <swagger-parser.version>2.1.48</swagger-parser.version>
     <!-- 2.0.x is the newest line on Jackson 2 (3.x moved to tools.jackson / Jackson 3). -->
-    <json-schema-validator.version>2.0.8</json-schema-validator.version>
+    <json-schema-validator.version>3.0.8</json-schema-validator.version>
     <assertj.version>3.27.7</assertj.version>
     <contracts.openapi.dir>${project.basedir}/openapi</contracts.openapi.dir>
   </properties>
