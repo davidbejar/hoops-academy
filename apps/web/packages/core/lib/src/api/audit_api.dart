@@ -23,7 +23,7 @@ class AuditApi {
   const AuditApi(this._dio, this._serializers);
 
   /// The academy&#39;s audit trail
-  /// Administrative actions recorded in this academy (by its members, by the super admin and by the platform&#39;s background jobs), newest first. Actor and target names are resolved at read time while the person, player or academy still exists; metadata never holds personal data (&#x60;docs/domain/audit-events.md&#x60;). &#x60;from&#x60; must be before &#x60;to&#x60; (400). Retention: none in v1 (a purge job is a v2 item); rows are append-only. Authz: ADMIN. 
+  /// Administrative actions recorded in this academy (by its members, by the super admin and by the platform&#39;s background jobs), newest first. Actor and target names are resolved at read time while the person, player or academy still exists; metadata never holds personal data (&#x60;docs/domain/audit-events.md&#x60;). The super admin is masked: a PLATFORM actor carries no &#x60;subject&#x60;, &#x60;personId&#x60; or &#x60;displayName&#x60; (the web shows \&quot;Platform administrator\&quot;); the metadata, such as the &#x60;reason&#x60; of &#x60;tenant.suspended&#x60;, is unchanged. &#x60;from&#x60; must be before &#x60;to&#x60; (400). Retention: none in v1 (a purge job is a v2 item); rows are append-only. Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

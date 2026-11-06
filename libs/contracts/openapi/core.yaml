@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 2.5.0
+  version: 2.6.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -23,7 +23,8 @@ info:
 
     Audit trail (ADR-0017, ADR-0029, core 2.5.0): `GET /api/core/audit-events` (ADMIN, own academy) and
     `GET /platform/audit-events` (super_admin, every academy) read the administrative actions recorded by core. No
-    retention in v1: rows are kept until a purge job exists (v2).
+    retention in v1: rows are kept until a purge job exists (v2). Since core 2.6.0 (decision 16 of 2026-11-06) the
+    academy list masks the super admin: a PLATFORM actor has a null `subject`, `personId` and `displayName` there.
 
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
@@ -1777,7 +1778,9 @@ paths:
       description: |
         Administrative actions recorded in this academy (by its members, by the super admin and by the platform's
         background jobs), newest first. Actor and target names are resolved at read time while the person, player or
-        academy still exists; metadata never holds personal data (`docs/domain/audit-events.md`). `from` must
+        academy still exists; metadata never holds personal data (`docs/domain/audit-events.md`). The super admin
+        is masked: a PLATFORM actor carries no `subject`, `personId` or `displayName` (the web shows
+        "Platform administrator"); the metadata, such as the `reason` of `tenant.suspended`, is unchanged. `from` must
         be before `to` (400). Retention: none in v1 (a purge job is a v2 item); rows are append-only. Authz: ADMIN.
       parameters:
         - $ref: '#/components/parameters/AuditFrom'
@@ -2023,7 +2026,10 @@ components:
         kind: {$ref: '#/components/schemas/AuditActorKind'}
         subject:
           type: string
-          description: The login (token subject) that acted, or `system`.
+          nullable: true
+          description: |
+            The login (token subject) that acted, or `system`;
+            null when the actor is masked for the caller (platform actors seen from an academy).
         personId: {type: string, format: uuid, nullable: true}
         displayName:
           type: string

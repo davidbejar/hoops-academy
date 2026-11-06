@@ -13,7 +13,7 @@ part 'audit_actor.g.dart';
 ///
 /// Properties:
 /// * [kind] 
-/// * [subject] - The login (token subject) that acted, or `system`.
+/// * [subject] - The login (token subject) that acted, or `system`; null when the actor is masked for the caller (platform actors seen from an academy). 
 /// * [personId] 
 /// * [displayName] - Given and family name of the person while the person exists; null when not resolved.
 @BuiltValue()
@@ -22,9 +22,9 @@ abstract class AuditActor implements Built<AuditActor, AuditActorBuilder> {
   AuditActorKind get kind;
   // enum kindEnum {  PERSON,  PLATFORM,  SYSTEM,  };
 
-  /// The login (token subject) that acted, or `system`.
+  /// The login (token subject) that acted, or `system`; null when the actor is masked for the caller (platform actors seen from an academy). 
   @BuiltValueField(wireName: r'subject')
-  String get subject;
+  String? get subject;
 
   @BuiltValueField(wireName: r'personId')
   String? get personId;
@@ -62,9 +62,9 @@ class _$AuditActorSerializer implements PrimitiveSerializer<AuditActor> {
       specifiedType: const FullType(AuditActorKind),
     );
     yield r'subject';
-    yield serializers.serialize(
+    yield object.subject == null ? null : serializers.serialize(
       object.subject,
-      specifiedType: const FullType(String),
+      specifiedType: const FullType.nullable(String),
     );
     if (object.personId != null) {
       yield r'personId';
@@ -113,8 +113,9 @@ class _$AuditActorSerializer implements PrimitiveSerializer<AuditActor> {
         case r'subject':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(String),
-          ) as String;
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
           result.subject = valueDes;
           break;
         case r'personId':

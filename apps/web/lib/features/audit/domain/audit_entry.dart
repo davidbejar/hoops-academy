@@ -8,9 +8,9 @@ class AuditEntry {
     required this.at,
     required this.action,
     required this.actorKind,
-    required this.actorSubject,
     required this.targetType,
     required this.targetId,
+    this.actorSubject,
     this.actorName,
     this.targetName,
     this.tenantId,
@@ -21,7 +21,8 @@ class AuditEntry {
   final DateTime at;
   final api.AuditAction action;
   final api.AuditActorKind actorKind;
-  final String actorSubject;
+  /// Null when the server masks the actor (the super admin seen from an academy, core 2.6.0).
+  final String? actorSubject;
   final String? actorName;
   final api.AuditTargetType targetType;
   final String targetId;

@@ -10,7 +10,7 @@ class _$AuditActor extends AuditActor {
   @override
   final AuditActorKind kind;
   @override
-  final String subject;
+  final String? subject;
   @override
   final String? personId;
   @override
@@ -20,10 +20,7 @@ class _$AuditActor extends AuditActor {
       (AuditActorBuilder()..update(updates))._build();
 
   _$AuditActor._(
-      {required this.kind,
-      required this.subject,
-      this.personId,
-      this.displayName})
+      {required this.kind, this.subject, this.personId, this.displayName})
       : super._();
   @override
   AuditActor rebuild(void Function(AuditActorBuilder) updates) =>
@@ -117,8 +114,7 @@ class AuditActorBuilder implements Builder<AuditActor, AuditActorBuilder> {
         _$AuditActor._(
           kind: BuiltValueNullFieldError.checkNotNull(
               kind, r'AuditActor', 'kind'),
-          subject: BuiltValueNullFieldError.checkNotNull(
-              subject, r'AuditActor', 'subject'),
+          subject: subject,
           personId: personId,
           displayName: displayName,
         );
