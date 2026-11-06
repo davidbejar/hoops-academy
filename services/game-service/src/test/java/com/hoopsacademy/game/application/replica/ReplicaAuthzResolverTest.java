@@ -47,6 +47,7 @@ class ReplicaAuthzResolverTest {
         assertThat(context.personId()).isEqualTo(PERSON);
         assertThat(context.tenantId()).isEqualTo(TENANT);
         assertThat(context.roles()).containsExactly(TenantRole.COACH);
+        assertThat(replica.teamQueries).as("no own or linked players: no assignment lookup").isEmpty();
     }
 
     @Test

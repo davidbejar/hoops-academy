@@ -29,6 +29,7 @@ class FakeRosterQueries implements RosterReplicaQueries {
     final Map<UUID, Set<TeamId>> staff = new HashMap<>();
     final Map<PlayerId, Set<TeamId>> assignments = new HashMap<>();
     final List<Collection<PlayerId>> playerQueries = new ArrayList<>();
+    final List<Collection<PlayerId>> teamQueries = new ArrayList<>();
 
     @Override
     public Optional<ReplicaTenant> tenant(TenantId tenantId) {
@@ -73,6 +74,7 @@ class FakeRosterQueries implements RosterReplicaQueries {
 
     @Override
     public Set<TeamId> openValidTeamsOf(Collection<PlayerId> playerIds) {
+        teamQueries.add(List.copyOf(playerIds));
         Set<TeamId> result = new HashSet<>();
         playerIds.forEach(id -> result.addAll(assignments.getOrDefault(id, Set.of())));
         return result;
