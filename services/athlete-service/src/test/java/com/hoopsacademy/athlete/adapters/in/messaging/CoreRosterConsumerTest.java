@@ -2,9 +2,11 @@ package com.hoopsacademy.athlete.adapters.in.messaging;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.athlete.adapters.out.persistence.ReplicaRosterRepository;
 import com.hoopsacademy.athlete.application.TeamRoster;
+import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.support.CoreEvents;
@@ -79,6 +81,8 @@ class CoreRosterConsumerTest {
 
         CoreTopics.await("the roster", TIMEOUT, () -> roster().map(r -> r.playerIds().size() == 1 && r.staff().size() == 1)
                 .orElse(false));
+        CoreTopics.await("the guardian link (topics are read independently)", TIMEOUT,
+                () -> count("athlete.guardian_link_ref") == 1);
 
         TeamRoster roster = roster().orElseThrow();
         assertThat(roster.teamName()).isEqualTo("U12");
@@ -107,14 +111,14 @@ class CoreRosterConsumerTest {
     void aRecordThatBreaksTheContractIsParkedAndTheNextOneIsApplied() {
         CoreEvents.Record valid = CoreEvents.team(tenant, team, "U12", SEASON_END);
         CoreEvents.Record broken = valid.withValue(valid.value().replace("\"name\":\"U12\"", "\"name\":42"));
-        double parkedBefore = events("core.team", "parked");
+        double parkedBefore = parked("core.team");
 
         topics.publish(broken, CoreEvents.team(tenant, team, "After the broken one", SEASON_END));
 
         CoreTopics.await("the event after the broken one", TIMEOUT,
                 () -> roster().map(r -> r.teamName().equals("After the broken one")).orElse(false));
         assertThat(parkedReasons(broken.key())).singleElement().satisfies(reason -> assertThat(reason).contains("/payload/name"));
-        assertThat(events("core.team", "parked")).isGreaterThanOrEqualTo(parkedBefore + 1);
+        assertThat(parked("core.team")).isGreaterThanOrEqualTo(parkedBefore + 1);
     }
 
     @Test
@@ -132,27 +136,38 @@ class CoreRosterConsumerTest {
     }
 
     @Test
+    void theAppRoleCannotReadWhatParkedRecordsSaid() throws SQLException {
+        try (Connection app = RlsTestDatabase.fromConfig().openAsApp();
+                PreparedStatement ps = app.prepareStatement("select reason from athlete.parked_event")) {
+            assertThatThrownBy(ps::executeQuery).isInstanceOf(SQLException.class)
+                    .satisfies(e -> assertThat(((SQLException) e).getSQLState()).isEqualTo("42501"));
+        }
+    }
+
+    @Test
     void tombstonesAreSkipped() {
         UUID coach = UUID.randomUUID();
+        UUID assistant = UUID.randomUUID();
+        CoreEvents.Record teamEvent = CoreEvents.team(tenant, team, "U12", SEASON_END);
+        CoreEvents.Record added = CoreEvents.teamStaff(tenant, team, coach, "COACH");
         CoreEvents.Record removed = CoreEvents.teamStaffRemoved(tenant, team, coach);
+        CoreEvents.Record marker = CoreEvents.teamStaff(tenant, team, assistant, "ASSISTANT_COACH");
         double tombstonesBefore = events("core.team-staff", "tombstone");
-        topics.publish(CoreEvents.team(tenant, team, "U12", SEASON_END), CoreEvents.teamStaff(tenant, team, coach, "COACH"),
-                removed).tombstone(removed.topic(), removed.key());
-        CoreEvents.Record marker = CoreEvents.teamStaff(tenant, team, UUID.randomUUID(), "ASSISTANT_COACH");
-        topics.publish(marker);
 
-        CoreTopics.await("the staff entry after the tombstone", TIMEOUT,
-                () -> roster().map(r -> r.staff().size() == 1).orElse(false));
+        topics.publish(teamEvent, added, removed).tombstone(removed.topic(), removed.key()).publish(marker);
+
+        CoreTopics.await("only the staff entry after the tombstone", TIMEOUT,
+                () -> roster().map(r -> r.staff().equals(List.of(new PersonId(assistant)))).orElse(false));
         assertThat(events("core.team-staff", "tombstone")).isGreaterThanOrEqualTo(tombstonesBefore + 1);
     }
 
     @Test
-    void theReplicaDelayIsMeasuredPerTopic() {
+    void theReplicaLagIsMeasuredPerTopic() {
         CoreEvents.Record marker = CoreEvents.team(tenant, team, "U12", SEASON_END);
         topics.publish(marker);
         awaitTeam(marker);
 
-        assertThat(metrics()).containsPattern(Pattern.compile("hoops_roster_replica_delay_seconds\\{[^}]*topic=\"core.team\""));
+        assertThat(metrics()).containsPattern(Pattern.compile("hoops_roster_replica_lag_seconds\\{[^}]*topic=\"core.team\""));
     }
 
     private void awaitTeam(CoreEvents.Record teamEvent) {
@@ -173,10 +188,17 @@ class CoreRosterConsumerTest {
         return given().get("/q/metrics").then().statusCode(200).extract().asString();
     }
 
-    /** The events_total counter of one topic and outcome (0 before the first one). */
+    /** The events_total counter of one topic and outcome (0 before the first one); an exemplar may follow the value. */
     static double events(String topic, String outcome) {
         Pattern line = Pattern.compile("^hoops_roster_replica_events_total\\{(?=[^}]*outcome=\"" + outcome + "\")(?=[^}]*topic=\""
-                + Pattern.quote(topic) + "\")[^}]*} (\\S+)$", Pattern.MULTILINE);
+                + Pattern.quote(topic) + "\")[^}]*} (\\S+)", Pattern.MULTILINE);
+        var matcher = line.matcher(metrics());
+        return matcher.find() ? Double.parseDouble(matcher.group(1)) : 0;
+    }
+
+    static double parked(String topic) {
+        Pattern line = Pattern.compile("^hoops_roster_replica_parked_total\\{[^}]*topic=\"" + Pattern.quote(topic)
+                + "\"[^}]*} (\\S+)", Pattern.MULTILINE);
         var matcher = line.matcher(metrics());
         return matcher.find() ? Double.parseDouble(matcher.group(1)) : 0;
     }
@@ -197,8 +219,9 @@ class CoreRosterConsumerTest {
         }
     }
 
+    /** Read as the schema owner: the app role may only insert into parked_event. */
     private static List<String> parkedReasons(String key) {
-        try (Connection c = RlsTestDatabase.fromConfig().openAsApp();
+        try (Connection c = RlsTestDatabase.fromConfig().openAsMigrator();
                 PreparedStatement ps = c.prepareStatement("select reason from athlete.parked_event where record_key = ?")) {
             ps.setString(1, key);
             try (ResultSet rs = ps.executeQuery()) {

@@ -26,7 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * Core's roster events as core's outbox publisher sends them (WP67 contracts, libs/contracts/events): envelope, key
  * {@code <tenant>:<aggregate>}, one topic per aggregate. A stand-in for core: the tests feed athlete's replica with these
  * records instead of running core. Every record is validated against its topic's schema when it is built, so a fixture
- * that drifts from the contract fails here and not in the code under test.
+ * that drifts from the contract fails here and not in the code under test. A record's {@code occurredAt} is taken when
+ * it is BUILT (a JVM-wide increasing clock), so build records in the order core would have written them.
  */
 public final class CoreEvents {
 

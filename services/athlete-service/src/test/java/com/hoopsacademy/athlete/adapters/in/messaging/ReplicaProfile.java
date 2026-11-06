@@ -13,7 +13,7 @@ public class ReplicaProfile implements QuarkusTestProfile {
     public Map<String, String> getConfigOverrides() {
         return Map.of(
                 "hoops.roster.source", "replica",
-                "hoops.roster.replica.consume", "true",
+                "hoops.roster.consumer.enabled", "true",
                 "quarkus.arc.exclude-types", "com.hoopsacademy.common.testing.TestAuthzContextResolver",
                 "hoops.core.url", "http://localhost:1");
     }

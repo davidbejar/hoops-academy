@@ -191,6 +191,24 @@ class CoreEventDecoderTest {
     }
 
     @Test
+    void aTenantEventAboutAnotherTenantIsAViolation() {
+        TenantId tenant = TenantId.random();
+        String other = TenantId.random().toString();
+        CoreEvents.Record record = CoreEvents.tenant(tenant, "ACTIVE", "Europe/Madrid");
+        String value = record.value().replace("\"aggregateId\":\"" + tenant + "\"", "\"aggregateId\":\"" + other + "\"");
+
+        DecodedEvent decoded = decoder.decode(record.topic(), tenant + ":" + other, value);
+
+        assertThat(decoded).isInstanceOf(Invalid.class);
+        assertThat(((Invalid) decoded).reason()).contains("tenant event");
+    }
+
+    @Test
+    void aTombstoneIsNotAnEvent() {
+        assertThat(decoder.decode("core.team-staff", "k", null)).isInstanceOf(Invalid.class);
+    }
+
+    @Test
     void malformedJsonIsInvalidWithoutAnEventId() {
         DecodedEvent decoded = decoder.decode("core.person", "k", "{not json");
 

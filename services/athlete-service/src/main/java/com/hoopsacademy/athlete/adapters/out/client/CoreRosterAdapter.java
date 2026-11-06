@@ -11,6 +11,7 @@ import com.hoopsacademy.common.client.CoreInternalClient;
 import com.hoopsacademy.common.client.CoreRosterClient;
 import com.hoopsacademy.common.tenancy.TenantId;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Typed;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,9 +20,11 @@ import org.jboss.logging.Logger;
 
 /**
  * {@link RosterPort} over common-quarkus' {@link CoreRosterClient} (core {@code /internal}, cached, 404 → not found,
- * anything else → 503 UPSTREAM_UNAVAILABLE, ADR-0008); this adapter only maps to athlete's types.
+ * anything else → 503 UPSTREAM_UNAVAILABLE, ADR-0008); this adapter only maps to athlete's types. The use cases get it
+ * (or the replica) through {@code RosterSourceProducer} (hoops.roster.source).
  */
 @ApplicationScoped
+@Typed(CoreRosterAdapter.class)
 public class CoreRosterAdapter implements RosterPort {
 
     private static final Logger LOG = Logger.getLogger(CoreRosterAdapter.class);

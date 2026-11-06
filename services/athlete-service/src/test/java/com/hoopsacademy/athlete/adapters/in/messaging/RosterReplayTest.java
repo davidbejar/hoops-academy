@@ -69,7 +69,7 @@ class RosterReplayTest {
         try (CoreTopics topics = new CoreTopics()) {
             publishFixture(topics);
         }
-        CoreTopics.await("the fixture in the replica", TIMEOUT, () -> matchesFixture(snapshot()));
+        awaitFixture("the fixture in the replica");
         Snapshot before = snapshot();
 
         empty();
@@ -79,6 +79,14 @@ class RosterReplayTest {
 
         CoreTopics.await("the replica rebuilt from the topics", TIMEOUT, () -> snapshot().equals(before));
         assertThat(matchesFixture(snapshot())).isTrue();
+    }
+
+    private void awaitFixture(String what) {
+        try {
+            CoreTopics.await(what, TIMEOUT, () -> matchesFixture(snapshot()));
+        } catch (AssertionError timedOut) {
+            throw new AssertionError(timedOut.getMessage() + "; the replica answers " + snapshot(), timedOut);
+        }
     }
 
     private void publishFixture(CoreTopics topics) {
@@ -91,8 +99,9 @@ class RosterReplayTest {
                 CoreEvents.teamStaff(tenant, team, coach, "COACH"),
                 CoreEvents.person(tenant, parent, "Pat Parent", "kc-" + parent, List.of("PARENT"), true));
         UUID removedCoach = UUID.randomUUID();
+        CoreEvents.Record staffAdded = CoreEvents.teamStaff(tenant, team, removedCoach, "ASSISTANT_COACH");
         CoreEvents.Record staffRemoved = CoreEvents.teamStaffRemoved(tenant, team, removedCoach);
-        topics.publish(CoreEvents.teamStaff(tenant, team, removedCoach, "ASSISTANT_COACH"), staffRemoved)
+        topics.publish(staffAdded, staffRemoved)
                 .tombstone(staffRemoved.topic(), staffRemoved.key());
         for (int i = 0; i < players.size(); i++) {
             UUID person = UUID.randomUUID();

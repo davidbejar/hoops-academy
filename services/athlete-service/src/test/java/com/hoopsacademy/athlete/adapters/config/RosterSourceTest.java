@@ -22,7 +22,7 @@ class RosterSourceTest {
     @Test
     void replicaWithoutTheConsumerWouldNeverChangeAndFailsAtStartup() {
         assertThatThrownBy(() -> RosterSource.of("replica", false)).isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("hoops.roster.replica.consume");
+                .hasMessageContaining("hoops.roster.consumer.enabled");
     }
 
     @Test
