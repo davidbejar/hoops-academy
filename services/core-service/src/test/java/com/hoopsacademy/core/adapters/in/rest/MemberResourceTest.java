@@ -477,6 +477,86 @@ class MemberResourceTest {
     }
 
     @Test
+    void aGuardianWithoutALoginGetsAFirstOneWithATemporaryPassword() {
+        UUID parent = CoreDb.person(tenant, "Pia", "Parent", "pia.first@example.com", TenantRole.PARENT);
+        String sub = UUID.randomUUID().toString();
+        KeycloakStubs.createdUserGets(keycloak, sub);
+
+        var response = issue(parent).statusCode(200).header("Cache-Control", "no-store")
+                .body("temporaryPassword", notNullValue())
+                .body("invitationStatus", equalTo("PENDING"))
+                .body("userId", notNullValue())
+                .extract();
+
+        keycloak.verify(1, userCreated());
+        keycloak.verify(1, temporaryPasswordSet(sub));
+        assertThat(temporaryPasswordSentFor(keycloak, sub)).isEqualTo(response.path("temporaryPassword"));
+        assertThat(CoreDb.count(tenant, "select count(*) from core.user_membership_index where keycloak_sub = ?", sub))
+                .isEqualTo(1);
+        assertThat(CoreDb.auditActions(tenant)).endsWith("member.invited", "member.temporary_password_issued");
+        assertThat(CoreDb.auditRow(tenant, "member.invited")).containsEntry("targetId", parent.toString());
+        member(parent).statusCode(200).body("invitationStatus", equalTo("PENDING"));
+    }
+
+    @Test
+    void theFirstTemporaryPasswordOfAGuardianIsNeverStoredOrLogged() {
+        UUID parent = CoreDb.person(tenant, "Sec", "Parent", "sec.first@example.com", TenantRole.PARENT);
+        try (LogCapture logs = LogCapture.start()) {
+            String password = issue(parent).statusCode(200).extract().path("temporaryPassword");
+            PasswordLeaks.assertNeverStoredOrLogged(tenant, password, logs);
+        }
+    }
+
+    @Test
+    void aGuardianWhoseEmailAlreadySignsInElsewhereIsLinkedWithoutAPassword() {
+        String sub = UUID.randomUUID().toString();
+        String email = "shared.guardian@example.com";
+        KeycloakStubs.existingUser(keycloak, email, sub);
+        String other = Members.newTenant();
+        CoreDb.person(other, CoreDb.appUser(sub, email), "Pia", "Parent", email, null, null, TenantRole.PARENT);
+        UUID parent = CoreDb.person(tenant, "Pia", "Parent", email, TenantRole.PARENT);
+
+        issue(parent).statusCode(200).header("Cache-Control", "no-store")
+                .body("$", not(hasKey("temporaryPassword")))
+                .body("invitationStatus", equalTo("ACCEPTED"));
+
+        keycloak.verify(0, userCreated());
+        keycloak.verify(0, anyPasswordReset());
+        assertThat(CoreDb.auditActions(tenant)).endsWith("member.invited")
+                .doesNotContain("member.temporary_password_issued");
+        assertThat(CoreDb.auditActions(other)).isEmpty();
+        issue(parent).statusCode(409).body("code", equalTo("INVITATION_NOT_PENDING"));
+    }
+
+    @Test
+    void onlyAGuardianWithAnEmailGetsAFirstLogin() {
+        issue(CoreDb.person(tenant, "No", "Mail", null, TenantRole.PARENT)).statusCode(409)
+                .body("code", equalTo("INVITATION_NOT_PENDING"));
+        issue(CoreDb.person(tenant, "Cole", "Coach", "cole.nologin@example.com", TenantRole.COACH)).statusCode(409)
+                .body("code", equalTo("INVITATION_NOT_PENDING"));
+        UUID gone = CoreDb.person(tenant, "Gone", "Parent", "gone.parent@example.com", TenantRole.PARENT);
+        CoreDb.inTenant(tenant, c -> CoreDb.update(c, "update core.person set active = false where id = ?", gone));
+        issue(gone).statusCode(409).body("code", equalTo("INVITATION_NOT_PENDING"));
+
+        keycloak.verify(0, userCreated());
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("member.invited", "member.temporary_password_issued");
+    }
+
+    @Test
+    void aKeycloakFailureLeavesTheGuardianWithoutALogin() {
+        UUID parent = CoreDb.person(tenant, "Kay", "Parent", "kfail.guardian@example.com", TenantRole.PARENT);
+        String sub = UUID.randomUUID().toString();
+        KeycloakStubs.createdUserGets(keycloak, sub);
+        KeycloakStubs.temporaryPasswordFails(keycloak);
+
+        issue(parent).statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
+
+        keycloak.verify(1, userDeleted(sub));
+        member(parent).statusCode(200).body("userId", nullValue()).body("invitationStatus", equalTo("NONE"));
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("member.invited", "member.temporary_password_issued");
+    }
+
+    @Test
     void aKeycloakFailureLeavesNoAuditRow() {
         UUID coach = coachWithLogin(UUID.randomUUID().toString(), "kc.down@example.com", "PENDING");
         KeycloakStubs.temporaryPasswordFails(keycloak);
