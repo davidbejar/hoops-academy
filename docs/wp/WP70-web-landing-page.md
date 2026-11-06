@@ -58,4 +58,57 @@ it in the copy file in the same commit and say so in the handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - `apps/web/lib/features/landing/**`: `LandingScreen` (header, hero, why basketball-only, six feature cards,
+    four roles, why it costs less on a contrasting band, coming next, invitation request, footer), own palette
+    (`#E8590C` on off-white `#FAF7F2` / near-black `#0E0F11`, system light/dark), width classes compact < 720 ≤
+    medium < 1024 ≤ wide (hero side by side from 960 px, features 3×2 / 2 / 1, roles 4 / 2 / 1, roadmap 4 / 2 / 1),
+    `Reveal` entrance motion (fade + 24 px lift once in view, skipped with the platform's "disable animations"),
+    phone `DeviceFrame`, faint court markings behind the hero. No network calls; the GitHub link goes through an
+    `ExternalLinkOpener` port (`window.open`, `noopener`).
+  - Routes: `/` and `/welcome` render the landing for anonymous sessions (`redirectFor` keeps them while auth
+    initialises or is signed out; every other app route still goes to `/login`; signed-in sessions are redirected to
+    the app as before). The router no longer forces `initialLocation: '/splash'` so a cold start at `/` can become
+    the landing; the root shows a plain loading view while the auth status is unknown (no landing flash for a
+    signed-in user; the splash stays for the profile load). Login screen: "Back" link (`login-back`) to `/`.
+  - Screenshots used (demo mock, Academia Demo, Spanish, 360×780 @2x, real Roboto + Material icons):
+    `assets/landing/live_match.png` (vs Tigres, hero front), `training_week.png` (hero back), `player_health.png`
+    (Leo Gil's injury, next to "why basketball-only"), `platform_usage.png` (usage trend, on the cost band); 496 KiB
+    total. Regenerate with `flutter test test/golden/landing_screens_capture.dart` (no `_test` suffix, never run by
+    `flutter test`); `HOOPS_CAPTURE_LANDING=1` also writes full-page review pictures to `build/landing_review/`.
+  - Invitation form (placeholder, decision 51): name (optional; the copy has no message for it), e-mail, role
+    (admin / coach / parent, no player), academy name; client validation with the copy's three messages; on a valid
+    send nothing leaves the page: the form is cleared and the confirmation text shown (hidden again on the next
+    edit). Domain `InvitationRequest` documents the follow-up in FOLLOW-UPS ("Invitation-only sign-up").
+  - Footer: AGPL line + "Source code on GitHub." link (the copy's sentence rendered as two keys, text unchanged),
+    language switch reusing `localePreferenceProvider` (stored choice), sign-in link. No privacy link: no policy page
+    exists.
+- Verified (2026-11-06, worktree `wp70-landing`):
+  - Red first: `test/core/redirect_test.dart` (2 new cases failed before `redirectFor` changed), landing widget and
+    domain tests written before the screens.
+  - `flutter analyze`: no issues. `just web-format-check`: 277 files, 0 changed.
+  - `just web-test` (fresh): **724 passed**, 0 failed. New: 6 `invitation_request_test`, 19 `landing_screen_test`
+    (copy of every section in es/en/id, default Spanish, sign-in / footer sign-in / Back, scroll to the form,
+    `/welcome` for anonymous and signed-in users, validation messages, malformed e-mail, confirmation + cleared form,
+    confirmation hides on edit, language switch persisted, GitHub link, no privacy link, splash while auth unknown,
+    reduced motion, fade-in), 4 redirect cases, 1 auth-guard case, 1 service-worker precache case; l10n parity green.
+  - Goldens added: `landing_360x780.png`, `landing_360x780_dark.png`, `landing_1280x800.png`,
+    `landing_1280x800_dark.png` (test font, as the other goldens; screenshots decoded before capture).
+  - `tool/web_smoke.sh` (mock mode, Chrome/chromedriver 156): All tests passed; the journey now starts with
+    "landing shown → header sign-in → login".
+  - `HOOPS_ALLOW_HTTP_ISSUER=1 tool/build_web.sh`: release build OK, `sw.js` precaches the four
+    `assets/assets/landing/*.png` (184 files).
+- Decisions/ADRs: none new (decisions 50/51 applied). Copy change: one string added to the copy file, section 9
+  "Login screen": Back / Volver / Kembali (`landingBack`); no existing string changed.
+- Open points / follow-ups:
+  - Outside the owned files but required by the route change: `test/app/auth_guard_test.dart`,
+    `test/app/mock_mode_test.dart`, `integration_test/*_smoke_test.dart`, `test/tool/sw_manifest_test.dart`,
+    `lib/core/session/session.dart` and `tool/browser_login_check.py` (now taps sign-in on the landing, then on the
+    login screen, until the Keycloak form appears). The real-Keycloak check (`ci_login_check.sh`) was not run
+    locally (needs the stack); CI's browser job will exercise it.
+  - For WP54 (Lighthouse): white on `#E8590C` buttons is about 3.6:1 (AA only for large text; labels are 17 px bold);
+    small orange text uses `#C2410C` on light. The screenshots are light-theme captures also in dark mode.
+  - Seen while capturing: the platform tenant detail shows the raw metric key `trainingSchedules` in its per-module
+    counters (missing label); the capture is scrolled past it. Not fixed (not in scope).
+  - The landing assets are precached like every build file, so the landing also opens offline; the app's offline
+    cold start is unchanged.
