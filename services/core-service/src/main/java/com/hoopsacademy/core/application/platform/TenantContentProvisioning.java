@@ -3,6 +3,7 @@ package com.hoopsacademy.core.application.platform;
 import com.hoopsacademy.core.application.port.AuditLog;
 import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.members.MemberProvisioning;
 import com.hoopsacademy.core.application.port.OutboxEvent;
 import com.hoopsacademy.core.application.port.OutboxWriter;
@@ -28,9 +29,11 @@ public class TenantContentProvisioning {
     private final MemberProvisioning members;
     private final Instance<TenantProvisioningHook> hooks;
     private final AuditLog audit;
+    private final RosterChanges changes;
 
     public TenantContentProvisioning(TenantSettingsRepository settings, OutboxWriter outbox,
-            MemberProvisioning members, Instance<TenantProvisioningHook> hooks, AuditLog audit) {
+            MemberProvisioning members, Instance<TenantProvisioningHook> hooks, AuditLog audit, RosterChanges changes) {
+        this.changes = changes;
         this.settings = settings;
         this.outbox = outbox;
         this.members = members;
@@ -43,6 +46,7 @@ public class TenantContentProvisioning {
     public WithTemporaryPassword<Person> provision(Tenant tenant, Person firstAdmin, ProvisionedIdentity login) {
         settings.create(TenantSettings.defaults());
         hooks.forEach(hook -> hook.onTenantCreated(tenant));
+        changes.tenant();
         outbox.write(new OutboxEvent(tenant.id(), "tenant.created", "tenant", tenant.id().toString(),
                 Map.of("slug", tenant.slug().value(), "name", tenant.name())));
         audit.record(AuditEvent.of(AuditAction.TENANT_CREATED, tenant.id(), Map.of("slug", tenant.slug().value())));

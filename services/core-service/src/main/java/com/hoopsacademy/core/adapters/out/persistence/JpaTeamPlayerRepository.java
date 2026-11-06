@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.TeamPlayerRepository;
 import com.hoopsacademy.core.domain.eligibility.EligibilityReason;
 import com.hoopsacademy.core.domain.membership.PlayerId;
@@ -20,9 +21,11 @@ import java.util.stream.Collectors;
 class JpaTeamPlayerRepository implements TeamPlayerRepository {
 
     private final EntityManager em;
+    private final RosterChanges changes;
 
-    JpaTeamPlayerRepository(EntityManager em) {
+    JpaTeamPlayerRepository(EntityManager em, RosterChanges changes) {
         this.em = em;
+        this.changes = changes;
     }
 
     @Override
@@ -32,12 +35,14 @@ class JpaTeamPlayerRepository implements TeamPlayerRepository {
         copy(assignment, row);
         em.persist(row);
         ConstraintConflicts.flush(em, "TEAM_PLAYER_CONFLICT", "The player or jersey is already on the team");
+        changes.teamPlayer(assignment.id());
     }
 
     @Override
     public void update(TeamPlayer assignment) {
         copy(assignment, em.find(TeamPlayerEntity.class, assignment.id().value()));
         ConstraintConflicts.flush(em, "JERSEY_NUMBER_TAKEN", "The jersey number is already used on the team");
+        changes.teamPlayer(assignment.id());
     }
 
     @Override

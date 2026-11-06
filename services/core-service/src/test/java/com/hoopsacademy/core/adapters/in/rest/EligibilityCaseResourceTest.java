@@ -105,7 +105,6 @@ class EligibilityCaseResourceTest {
                 assignment)).isEqualTo(1);
         assertThat(RosterDb.playerStatus(tenant, tom)).isEqualTo("ORPHAN");
         assertThat(RosterEvents.state(tenant, "core.team-player", assignment).get("leftOn").isNull()).isFalse();
-        assertThat(RosterEvents.state(tenant, "core.player", tom).get("status").asText()).isEqualTo("ORPHAN");
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.TeamRepository;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -25,10 +26,12 @@ import java.util.stream.Collectors;
 class JpaTeamRepository implements TeamRepository {
 
     private final EntityManager em;
+    private final RosterChanges changes;
     private final Clock clock;
 
-    JpaTeamRepository(EntityManager em, Clock clock) {
+    JpaTeamRepository(EntityManager em, Clock clock, RosterChanges changes) {
         this.em = em;
+        this.changes = changes;
         this.clock = clock;
     }
 
@@ -40,12 +43,14 @@ class JpaTeamRepository implements TeamRepository {
         copy(team, row);
         em.persist(row);
         ConstraintConflicts.flush(em, "TEAM_NAME_TAKEN", "A team with this name exists in the season");
+        changes.team(team.id());
     }
 
     @Override
     public void update(Team team) {
         copy(team, em.find(TeamEntity.class, team.id().value()));
         ConstraintConflicts.flush(em, "TEAM_NAME_TAKEN", "A team with this name exists in the season");
+        changes.team(team.id());
     }
 
     @Override

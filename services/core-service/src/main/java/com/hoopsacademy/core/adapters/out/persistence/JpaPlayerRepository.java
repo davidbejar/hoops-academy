@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.membership.PersonId;
@@ -27,10 +28,12 @@ class JpaPlayerRepository implements PlayerRepository {
     private static final UUID NO_ONE = new UUID(0, 0);
 
     private final EntityManager em;
+    private final RosterChanges changes;
     private final Clock clock;
 
-    JpaPlayerRepository(EntityManager em, Clock clock) {
+    JpaPlayerRepository(EntityManager em, Clock clock, RosterChanges changes) {
         this.em = em;
+        this.changes = changes;
         this.clock = clock;
     }
 
@@ -42,7 +45,9 @@ class JpaPlayerRepository implements PlayerRepository {
         row.status = status.name();
         row.createdAt = clock.instant();
         em.persist(row);
-        return new PlayerId(row.id);
+        PlayerId id = new PlayerId(row.id);
+        changes.player(id);
+        return id;
     }
 
     @Override
@@ -148,7 +153,10 @@ class JpaPlayerRepository implements PlayerRepository {
     public void updateStatus(PlayerId player, PlayerStatus status) {
         em.createQuery("select p from PlayerEntity p where p.id = :id", PlayerEntity.class)
                 .setParameter("id", player.value()).getResultStream().findFirst()
-                .ifPresent(row -> row.status = status.name());
+                .ifPresent(row -> {
+                    row.status = status.name();
+                    changes.player(player);
+                });
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.TeamStaffRepository;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.roster.StaffRole;
@@ -17,9 +18,11 @@ import java.util.stream.Collectors;
 class JpaTeamStaffRepository implements TeamStaffRepository {
 
     private final EntityManager em;
+    private final RosterChanges changes;
 
-    JpaTeamStaffRepository(EntityManager em) {
+    JpaTeamStaffRepository(EntityManager em, RosterChanges changes) {
         this.em = em;
+        this.changes = changes;
     }
 
     @Override
@@ -45,12 +48,14 @@ class JpaTeamStaffRepository implements TeamStaffRepository {
         if (existing == null) {
             em.persist(row);
         }
+        changes.teamStaff(member.team(), member.person());
     }
 
     @Override
     public void delete(TeamId team, PersonId person) {
         em.createQuery("delete from TeamStaffEntity s where s.teamId = :team and s.personId = :person")
                 .setParameter("team", team.value()).setParameter("person", person.value()).executeUpdate();
+        changes.teamStaff(team, person);
     }
 
     @Override

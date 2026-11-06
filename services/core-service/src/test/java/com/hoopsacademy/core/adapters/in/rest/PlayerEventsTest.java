@@ -49,6 +49,7 @@ class PlayerEventsTest {
         lions = RosterDb.team(tenant, season, "Lions", RosterDb.defaultCategories(tenant).get("U12"), "MIXED");
         coach = CoreDb.person(tenant, "Cora", "Coach", null, TenantRole.COACH);
         RosterDb.staff(tenant, lions, coach, "COACH");
+        RosterDb.callerPerson(tenant);
         Members.signIn(tenant, TenantRole.ADMIN);
     }
 

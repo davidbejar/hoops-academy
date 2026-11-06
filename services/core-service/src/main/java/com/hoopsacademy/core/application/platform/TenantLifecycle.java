@@ -7,6 +7,7 @@ import com.hoopsacademy.core.application.port.AuditEvent;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.application.authz.AuthzCache;
+import com.hoopsacademy.core.application.events.TenantEvents;
 import com.hoopsacademy.core.application.port.OutboxEvent;
 import com.hoopsacademy.core.application.port.PlatformOutboxWriter;
 import com.hoopsacademy.core.application.port.TenantRepository;
@@ -23,7 +24,10 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-/** Super-admin lifecycle and master-data changes (platform datasource); status changes are published to the outbox. */
+/**
+ * Super-admin lifecycle and master-data changes (platform datasource): each change appends {@code tenant.changed} (the
+ * roster event, WP67); status changes also keep their internal v1 notification.
+ */
 @ApplicationScoped
 public class TenantLifecycle {
 
@@ -73,6 +77,7 @@ public class TenantLifecycle {
             return before;
         }
         tenants.update(changed);
+        outbox.write(TenantEvents.changed(changed));
         audit.record(id, AuditEvent.of(AuditAction.TENANT_MASTER_DATA_CHANGED, id, Map.of("fields", fields.names())));
         return changed;
     }
@@ -85,6 +90,7 @@ public class TenantLifecycle {
             payload.put("reason", reason);
         }
         outbox.write(new OutboxEvent(id, action.wireName(), "tenant", id.toString(), payload));
+        outbox.write(TenantEvents.changed(changed));
         audit.record(id, AuditEvent.of(action, id, payload));
         authzCache.invalidate(id);
         return changed;

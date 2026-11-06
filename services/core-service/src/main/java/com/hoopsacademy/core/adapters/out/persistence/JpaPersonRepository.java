@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -33,9 +34,11 @@ import java.util.stream.Collectors;
 class JpaPersonRepository implements PersonRepository {
 
     private final EntityManager em;
+    private final RosterChanges changes;
 
-    JpaPersonRepository(EntityManager em) {
+    JpaPersonRepository(EntityManager em, RosterChanges changes) {
         this.em = em;
+        this.changes = changes;
     }
 
     @Override
@@ -46,6 +49,7 @@ class JpaPersonRepository implements PersonRepository {
         copy(person, row);
         em.persist(row);
         person.roles().forEach(role -> em.persist(new MembershipRoleEntity(row.id, role.name())));
+        changes.person(person.id());
     }
 
     @Override
@@ -58,6 +62,7 @@ class JpaPersonRepository implements PersonRepository {
                         .setParameter("person", row.id).setParameter("role", role.name()).executeUpdate());
         person.roles().stream().filter(role -> !stored.contains(role))
                 .forEach(role -> em.persist(new MembershipRoleEntity(row.id, role.name())));
+        changes.person(person.id());
     }
 
     @Override

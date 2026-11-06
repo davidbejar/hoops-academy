@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.platform;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.core.application.port.OutboxEvent;
@@ -18,20 +19,23 @@ class PlatformOutboxRepository implements PlatformOutboxWriter {
 
     PlatformOutboxRepository(@PersistenceUnit("platform") EntityManager em, ObjectMapper json) {
         this.em = em;
-        this.json = json;
+        // event payloads spell an absent value as an explicit null (the application mapper omits nulls)
+        this.json = json.copy().setDefaultPropertyInclusion(
+                JsonInclude.Value.construct(JsonInclude.Include.ALWAYS, JsonInclude.Include.ALWAYS));
     }
 
     @Override
     public void write(OutboxEvent event) {
         em.createNativeQuery("""
-                insert into core.outbox (id, tenant_id, event_type, aggregate_type, aggregate_id, payload)
-                values (:id, :tenant, :type, :aggregateType, :aggregateId, cast(:payload as jsonb))""")
+                insert into core.outbox (id, tenant_id, event_type, aggregate_type, aggregate_id, payload, topic)
+                values (:id, :tenant, :type, :aggregateType, :aggregateId, cast(:payload as jsonb), :topic)""")
                 .setParameter("id", UUID.randomUUID())
                 .setParameter("tenant", event.tenant().value())
                 .setParameter("type", event.type())
                 .setParameter("aggregateType", event.aggregateType())
                 .setParameter("aggregateId", event.aggregateId())
                 .setParameter("payload", toJson(event.payload()))
+                .setParameter("topic", event.topic())
                 .executeUpdate();
     }
 

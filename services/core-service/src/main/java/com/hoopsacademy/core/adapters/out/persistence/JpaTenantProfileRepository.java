@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
 import com.hoopsacademy.common.tenancy.TenantId;
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.TenantProfileRepository;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.domain.tenant.TenantProfile;
@@ -15,8 +16,10 @@ class JpaTenantProfileRepository implements TenantProfileRepository {
 
     private final EntityManager em;
     private final BoundTenant boundTenant;
+    private final RosterChanges changes;
 
-    JpaTenantProfileRepository(EntityManager em, BoundTenant boundTenant) {
+    JpaTenantProfileRepository(EntityManager em, BoundTenant boundTenant, RosterChanges changes) {
+        this.changes = changes;
         this.em = em;
         this.boundTenant = boundTenant;
     }
@@ -34,6 +37,7 @@ class JpaTenantProfileRepository implements TenantProfileRepository {
         row.defaultLocale = profile.defaultLocale().code();
         row.contactEmail = profile.contactEmail();
         row.websiteUrl = profile.websiteUrl();
+        changes.tenant();
     }
 
     private static TenantProfile toDomain(TenantRowEntity row) {

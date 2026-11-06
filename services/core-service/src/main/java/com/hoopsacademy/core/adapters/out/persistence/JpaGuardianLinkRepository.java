@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.GuardianLinkRepository;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -19,9 +20,11 @@ import java.util.stream.Collectors;
 class JpaGuardianLinkRepository implements GuardianLinkRepository {
 
     private final EntityManager em;
+    private final RosterChanges changes;
 
-    JpaGuardianLinkRepository(EntityManager em) {
+    JpaGuardianLinkRepository(EntityManager em, RosterChanges changes) {
         this.em = em;
+        this.changes = changes;
     }
 
     @Override
@@ -32,6 +35,7 @@ class JpaGuardianLinkRepository implements GuardianLinkRepository {
         row.playerId = link.player().value();
         row.createdAt = link.createdAt();
         em.persist(row);
+        changes.guardianLink(link.id(), link.guardian(), link.player());
     }
 
     @Override
@@ -52,6 +56,7 @@ class JpaGuardianLinkRepository implements GuardianLinkRepository {
 
     @Override
     public void delete(GuardianLinkId id) {
+        find(id).ifPresent(link -> changes.guardianLink(link.id(), link.guardian(), link.player()));
         em.createQuery("delete from GuardianLinkEntity g where g.id = :id").setParameter("id", id.value())
                 .executeUpdate();
     }

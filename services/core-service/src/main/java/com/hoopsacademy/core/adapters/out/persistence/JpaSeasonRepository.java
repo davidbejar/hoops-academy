@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.SeasonRepository;
 import com.hoopsacademy.core.domain.roster.Season;
 import com.hoopsacademy.core.domain.roster.SeasonId;
@@ -17,10 +18,12 @@ class JpaSeasonRepository implements SeasonRepository {
     private static final String OVERLAP_MESSAGE = "The season overlaps another season";
 
     private final EntityManager em;
+    private final RosterChanges changes;
     private final Clock clock;
 
-    JpaSeasonRepository(EntityManager em, Clock clock) {
+    JpaSeasonRepository(EntityManager em, Clock clock, RosterChanges changes) {
         this.em = em;
+        this.changes = changes;
         this.clock = clock;
     }
 
@@ -38,6 +41,7 @@ class JpaSeasonRepository implements SeasonRepository {
     public void update(Season season) {
         copy(season, em.find(SeasonEntity.class, season.id().value()));
         ConstraintConflicts.flush(em, OVERLAP, OVERLAP_MESSAGE);
+        changes.season(season.id());
     }
 
     @Override
