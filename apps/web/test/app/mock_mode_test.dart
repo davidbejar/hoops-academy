@@ -85,6 +85,18 @@ void main() {
     expect(navLabel('My players'), findsOneWidget);
     expect(navLabel('Admin'), findsNothing);
     expect(container.read(tenantLogoProvider).value, isNull); // 404 -> initials
+
+    // WP47: Club Norte has its own training week and health data, the PARENT reaches only the linked player's.
+    container.read(routerProvider).go('/training');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('week-calendar')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('session-ses-sch-norte')),
+      findsWidgets,
+    );
+    container.read(routerProvider).go('/players/p-nora/health');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('muñeca derecha'), findsWidgets);
   });
 
   testWidgets('WP41: the platform console and the training / health screens show the demo data', (tester) async {

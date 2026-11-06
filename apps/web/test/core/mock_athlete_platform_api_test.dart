@@ -413,10 +413,191 @@ void main() {
     });
   });
 
-  test('athlete routes are for the demo academy only', () async {
-    await expectLater(
-      ApiHealthRepository(athlete, mockTenantBId).injuries(),
-      throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 404)),
-    );
+  // ------------------------------------------------------------------ WP47: shared rosters and role filtering
+  group('WP47 one roster source and the authorization matrix', () {
+    const norte = mockTenantBId;
+
+    /// Raw calls (any status comes back) as [roles] in [tenant]; `/me` tells which player ids the login is linked to.
+    Dio rawDio(List<String> roles, {String tenant = t}) => Dio(
+      BaseOptions(
+        baseUrl: 'http://mock',
+        headers: {'Authorization': 'Bearer x', 'X-Tenant-Id': tenant},
+        validateStatus: (_) => true,
+      ),
+    )..httpClientAdapter = MockApiAdapter(roles: roles);
+
+    Future<Response<dynamic>> call(Dio d, String method, String path, {Object? body, Map<String, dynamic>? query}) =>
+        d.request<dynamic>(path, data: body, queryParameters: query, options: Options(method: method));
+
+    List<dynamic> items(Response<dynamic> r) => (r.data as Map)['items'] as List<dynamic>;
+
+    Future<Set<String>> sessionTeams(Dio d) async =>
+        {for (final s in items(await call(d, 'GET', '/api/athlete/training-sessions'))) (s as Map)['teamId'] as String};
+
+    Future<String> doneSessionId(Dio d, String teamId) async {
+      final r = await call(d, 'GET', '/api/athlete/training-sessions', query: {'teamId': teamId});
+      return items(r).cast<Map>().firstWhere((s) => s['status'] == 'DONE')['id'] as String;
+    }
+
+    Future<Set<String>> injuryPlayers(Dio d) async =>
+        {for (final i in items(await call(d, 'GET', '/api/athlete/injuries'))) (i as Map)['playerId'] as String};
+
+    Map<String, Object?> injury(String player) => {
+      'playerId': player,
+      'occurredOn': '2026-11-01',
+      'bodyPart': 'muñeca',
+      'severity': 'MINOR',
+    };
+
+    test('a player added in the roster shows in the attendance sheet, a move takes it out; ids match across mocks', () async {
+      final d = rawDio(['ADMIN']);
+      final created = await call(d, 'POST', '/api/core/players', body: {
+        'givenName': 'Nuevo', 'familyName': 'Jugador', 'birthDate': '2015-02-01', 'gender': 'MALE', 'teamId': team,
+      });
+      expect(created.statusCode, 201);
+      final id = (created.data as Map)['player']['id'] as String;
+
+      final sheet = await call(d, 'GET', '/api/athlete/training-sessions/${await doneSessionId(d, team)}/attendance');
+      expect(((sheet.data as Map)['entries'] as List).map((e) => (e as Map)['playerId']), contains(id));
+
+      final roster = await call(d, 'PUT', '/api/game/matches/0190b6a0-0000-7000-8000-00000000c001/roster', body: {
+        'entries': [
+          {'playerId': id, 'jerseyNumber': '3', 'isStarter': true},
+        ],
+      });
+      expect(((roster.data as Map)['entries'] as List).single['displayName'], 'Nuevo Jugador');
+
+      expect((await call(d, 'DELETE', '/api/core/teams/$team/players/$id')).statusCode, 204);
+      final after = await call(d, 'GET', '/api/athlete/training-sessions/${await doneSessionId(d, team)}/attendance');
+      expect(((after.data as Map)['entries'] as List).map((e) => (e as Map)['playerId']), isNot(contains(id)));
+    });
+
+    test('the live match roster is the team roster of the core mock', () async {
+      final d = rawDio(['ADMIN']);
+      final coreIds = ((await call(d, 'GET', '/api/core/teams/$team/players')).data as List).map((p) => (p as Map)['player']['id']).toSet();
+      final r = await call(d, 'GET', '/api/game/matches/0190b6a0-0000-7000-8000-00000000c001/roster');
+      final gameIds = ((r.data as Map)['entries'] as List).map((e) => (e as Map)['playerId']).toSet();
+      expect(coreIds, containsAll(gameIds));
+      expect(gameIds, isNotEmpty);
+    });
+
+    test('ADMIN: every team, attendance, members, audit trail', () async {
+      final d = rawDio(['ADMIN']);
+      expect(await sessionTeams(d), {'team-mini-a', 'team-inf-a'});
+      expect((await call(d, 'GET', '/api/athlete/training-sessions/${await doneSessionId(d, team)}/attendance')).statusCode, 200);
+      expect((await call(d, 'GET', '/api/core/members')).statusCode, 200);
+      expect((await call(d, 'GET', '/api/core/audit-events')).statusCode, 200);
+      expect(await injuryPlayers(d), {'p-ana', 'p-leo'});
+    });
+
+    for (final role in ['COACH', 'ASSISTANT_COACH']) {
+      test('$role (staff of Mini A): own team only, no admin screens, no test types', () async {
+        final d = rawDio([role]);
+        expect(await sessionTeams(d), {'team-mini-a'});
+        expect((await call(d, 'GET', '/api/athlete/training-sessions/${await doneSessionId(d, team)}/attendance')).statusCode, 200);
+        final other = await call(d, 'GET', '/api/athlete/training-sessions', query: {'teamId': 'team-inf-a'});
+        expect(items(other), isEmpty);
+        expect((await call(d, 'POST', '/api/athlete/injuries', body: injury('p-dan'))).statusCode, 404, reason: 'not my team');
+        expect((await call(d, 'POST', '/api/athlete/injuries', body: injury('p-ana'))).statusCode, 201);
+        expect((await call(d, 'POST', '/api/athlete/physical-test-types', body: {
+          'code': 'X', 'name': 'X', 'unit': 'cm', 'higherIsBetter': true,
+        })).statusCode, 403);
+        expect((await call(d, 'GET', '/api/core/members')).statusCode, 403);
+        expect((await call(d, 'GET', '/api/core/audit-events')).statusCode, 403);
+        expect((await call(d, 'POST', '/api/core/seasons', body: {'name': 'x'})).statusCode, 403);
+      });
+    }
+
+    test('PARENT (linked to Ana): her team\'s sessions, no attendance, only her health data, read-only tests', () async {
+      final d = rawDio(['PARENT']);
+      expect(await sessionTeams(d), {'team-mini-a'});
+      expect((await call(d, 'GET', '/api/athlete/training-sessions/${await doneSessionId(d, team)}/attendance')).statusCode, 403);
+      expect(await injuryPlayers(d), {'p-ana'});
+      expect((await call(d, 'GET', '/api/athlete/injuries/inj-1')).statusCode, 404, reason: 'Leo\'s injury');
+      expect((await call(d, 'POST', '/api/athlete/injuries', body: injury('p-ana'))).statusCode, 201);
+      expect((await call(d, 'POST', '/api/athlete/injuries', body: injury('p-leo'))).statusCode, 404);
+      expect((await call(d, 'GET', '/api/athlete/players/p-leo/availability')).statusCode, 404);
+      expect((await call(d, 'GET', '/api/athlete/players/p-ana/availability')).statusCode, 200);
+      final absences = await call(d, 'GET', '/api/athlete/planned-absences');
+      expect(items(absences).map((a) => (a as Map)['playerId']).toSet(), {'p-ana'});
+      final results = await call(d, 'GET', '/api/athlete/physical-test-results');
+      expect(items(results).map((r) => (r as Map)['playerId']).toSet(), {'p-ana'});
+      expect((await call(d, 'POST', '/api/athlete/physical-test-results', body: {
+        'playerId': 'p-ana', 'testTypeId': 'tt-sprint', 'measuredOn': '2026-11-01', 'value': 4.0,
+      })).statusCode, 403, reason: 'results are read-only for a parent');
+      expect((await call(d, 'POST', '/api/athlete/training-plans', body: {'name': 'x'})).statusCode, 403);
+      expect((await call(d, 'POST', '/api/athlete/planned-absences', body: {
+        'playerId': 'p-leo', 'fromDate': '2026-12-01', 'toDate': '2026-12-02',
+      })).statusCode, 404);
+      expect((await call(d, 'GET', '/api/core/members')).statusCode, 403);
+    });
+
+    test('PLAYER (is Leo): own health data read-only, own absences, own results', () async {
+      final d = rawDio(['PLAYER']);
+      expect(await sessionTeams(d), {'team-mini-a'});
+      expect((await call(d, 'GET', '/api/athlete/training-sessions/${await doneSessionId(d, team)}/attendance')).statusCode, 403);
+      expect(await injuryPlayers(d), {'p-leo'});
+      expect((await call(d, 'POST', '/api/athlete/injuries', body: injury('p-leo'))).statusCode, 403);
+      expect((await call(d, 'POST', '/api/athlete/body-measurements', body: {'playerId': 'p-leo', 'measuredOn': '2026-11-01', 'heightCm': 150.0})).statusCode, 403);
+      final results = await call(d, 'GET', '/api/athlete/physical-test-results');
+      expect(items(results).map((r) => (r as Map)['playerId']).toSet(), {'p-leo'});
+      expect((await call(d, 'POST', '/api/athlete/planned-absences', body: {
+        'playerId': 'p-leo', 'fromDate': '2026-12-01', 'toDate': '2026-12-02',
+      })).statusCode, 201);
+      expect((await call(d, 'POST', '/api/athlete/planned-absences', body: {
+        'playerId': 'p-ana', 'fromDate': '2026-12-01', 'toDate': '2026-12-02',
+      })).statusCode, 404);
+      expect((await call(d, 'GET', '/api/athlete/players/p-ana/availability')).statusCode, 404);
+    });
+
+    test('game: PLAYER reads team events and his own; PARENT hers; staff all; a stranger\'s season stats are 404', () async {
+      const feed = '/api/game/matches/0190b6a0-0000-7000-8000-00000000c001/events';
+      Future<Set<Object?>> players(List<String> roles) async {
+        final r = await call(rawDio(roles), 'GET', feed);
+        return {for (final e in (r.data as Map)['events'] as List) (e as Map)['event']['playerId']};
+      }
+
+      expect(await players(['PLAYER']), {null, 'p-leo'});
+      expect(await players(['PARENT']), {null, 'p-ana'});
+      expect(await players(['ASSISTANT_COACH']), containsAll([null, 'p-ana', 'p-leo']));
+      final box = await call(rawDio(['PLAYER']), 'GET', '/api/game/matches/0190b6a0-0000-7000-8000-00000000c003/box-score');
+      expect(((box.data as Map)['players'] as List).map((p) => (p as Map)['playerId']), ['p-leo']);
+      expect((await call(rawDio(['PLAYER']), 'GET', '/api/game/players/p-ana/season-stats')).statusCode, 404);
+      expect((await call(rawDio(['PLAYER']), 'GET', '/api/game/players/p-leo/season-stats')).statusCode, 200);
+    });
+
+    test('Club Norte has its own roster, sessions, health data and matches; the PARENT sees only the linked player', () async {
+      final d = rawDio(['ADMIN'], tenant: norte); // the roles argument is for the first academy: Norte is always PARENT
+      final sessions = await call(d, 'GET', '/api/athlete/training-sessions');
+      expect(sessions.statusCode, 200);
+      final teams = {for (final s in items(sessions)) (s as Map)['teamId']};
+      expect(teams, {'team-norte-a'});
+      expect(await injuryPlayers(d), {'p-nora'});
+      final matches = await call(d, 'GET', '/api/game/matches');
+      expect(items(matches), isNotEmpty);
+      expect(items(matches).every((m) => (m as Map)['teamId'] == 'team-norte-a'), isTrue);
+      final me = await call(d, 'GET', '/api/core/me');
+      final norteMembership = ((me.data as Map)['memberships'] as List).cast<Map>().firstWhere((m) => m['tenant']['id'] == norte);
+      expect(norteMembership['authz']['linkedPlayerIds'], ['p-nora']);
+      expect(norteMembership['authz']['playerTeamIds'], ['team-norte-a']);
+      expect((await call(d, 'GET', '/api/athlete/players/p-ana/availability')).statusCode, 404, reason: 'a Demo player');
+      expect((await call(d, 'GET', '/api/core/members')).statusCode, 403);
+    });
+
+    test('platform data exists for every academy the super admin can open', () async {
+      final d = rawDio(['ADMIN']);
+      for (final id in [t, norte]) {
+        expect((await call(d, 'GET', '/platform/tenants/$id/usage')).statusCode, 200);
+        expect((await call(d, 'GET', '/platform/tenants/$id/usage/history')).statusCode, 200);
+        expect(items(await call(d, 'GET', '/platform/audit-events', query: {'tenantId': id})), isNotEmpty);
+      }
+    });
+
+    test('a non-member of the academy gets 404 on every service', () async {
+      final d = rawDio(['ADMIN'], tenant: '99999999-9999-4999-8999-999999999999');
+      for (final path in ['/api/core/teams', '/api/athlete/injuries', '/api/game/matches']) {
+        expect((await call(d, 'GET', path)).statusCode, 404, reason: path);
+      }
+    });
   });
 }
