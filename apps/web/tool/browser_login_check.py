@@ -14,6 +14,8 @@ headless Chrome driven over the W3C WebDriver HTTP protocol (stdlib only, no Nod
 Needs: compose stack up + `just seed-users`, the app served on an origin the realm's `web` client allows
 (http://localhost:5173 via `flutter run`/start.sh), chromedriver matching Chrome's major version on PATH.
 
+Headless by default (--headed opens a window). CI: HOOPS_E2E_ARTIFACT_DIR=<dir> saves the last screenshot there.
+
   python3 -I apps/web/tool/browser_login_check.py [--app http://localhost:5173/] [--user coach1@hoops-academy.com] [--headed]
   HOOPS_E2E_PASSWORD=<temporary> HOOPS_E2E_NEW_PASSWORD=<new> python3 -I ... --user <new login> --set-new-password
 """
@@ -72,6 +74,11 @@ class WebDriver:
 
     def js(self, script, *args):
         return self.cmd("POST", "/execute/sync", {"script": script, "args": list(args)})
+
+    def save_screenshot(self, path):
+        import base64
+        with open(path, "wb") as out:
+            out.write(base64.b64decode(self.cmd("GET", "/screenshot")))
 
     def quit(self):
         try:
@@ -261,8 +268,23 @@ def main():
         return 0
     finally:
         if wd:
+            _save_evidence(wd)
             wd.quit()
         driver_proc.terminate()
+
+
+def _save_evidence(wd):
+    """CI: HOOPS_E2E_ARTIFACT_DIR collects the last screenshot and URL (uploaded on failure; no page text, no secrets)."""
+    out = os.environ.get("HOOPS_E2E_ARTIFACT_DIR")
+    if not out:
+        return
+    try:
+        os.makedirs(out, exist_ok=True)
+        wd.save_screenshot(os.path.join(out, "login-check-last.png"))
+        with open(os.path.join(out, "login-check-last-url.txt"), "w", encoding="utf-8") as f:
+            f.write(wd.url().split("?")[0] + "\n")
+    except Exception as err:  # noqa: BLE001 - evidence is best effort
+        print(f"    (no evidence saved: {err})")
 
 
 def _up(port):

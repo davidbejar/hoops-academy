@@ -111,6 +111,16 @@ first two (see the script header). The Homebrew `chromedriver` cask is disabled 
 `xattr -d com.apple.quarantine` on it. The script drives the `web-server` device: with `-d chrome`, `flutter drive`
 never launches a browser and hangs forever after "Waiting for connection from debug service".
 
+### Browser checks in CI (WP55)
+- `ci.yml` job `web-browser`: Chrome for Testing 157.0.8103.38 + matching chromedriver (`browser-actions/setup-chrome`,
+  pinned SHA), then `apps/web/tool/web_smoke.sh` in mock mode; `flutter drive` runs the browser headless by default.
+  Reproduce locally: `cd apps/web && tool/web_smoke.sh` (chromedriver on PATH or `CHROMEDRIVER=...`; Chrome major must match).
+- `e2e.yml` job `journeys`, step "Browser login round trip": `apps/web/tool/ci_login_check.sh` creates a Keycloak user with
+  a temporary password (kcadm), builds the release app, serves `build/web` on :5173 and runs
+  `browser_login_check.py --set-new-password` (headless unless `--headed`). On failure the last screenshot and URL are in the
+  `e2e-reports` artifact (`browser-login-artifacts/`). Locally: `just up && just seed-users`, then `apps/web/tool/ci_login_check.sh`.
+- Bump Chrome and chromedriver together (`chrome-version` in both workflows); the version must be a Chrome for Testing release.
+
 ## CI
 `.github/workflows/e2e.yml`: Podman + podman-compose on `ubuntu-24.04`, throw-away `.env` with random secrets, the
 same scripts as `just e2e`, service logs and surefire reports uploaded on failure. Not executed from a workstation.

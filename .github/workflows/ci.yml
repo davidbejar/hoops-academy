@@ -51,6 +51,37 @@ jobs:
           # goldens are recorded on macOS; Linux renders the test font/shapes a few % differently (test/flutter_test_config.dart)
           GOLDEN_DIFF_TOLERANCE: "0.06"
 
+  # Browser-level smoke in headless Chrome for Testing (WP55, decision 37): the mock-mode journey through
+  # `flutter drive` (login -> academy -> live match -> event -> sync -> training -> platform console). Chrome and the
+  # matching chromedriver are pinned; bump both together. The login round trip against the real stack is in e2e.yml.
+  web-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+      - id: chrome
+        uses: browser-actions/setup-chrome@39ce663831f86d2ea36cbda0a8143709cdfcc410 # v2.2.0
+        with:
+          chrome-version: 157.0.8103.38
+          install-chromedriver: true
+      - run: flutter pub get
+        working-directory: apps/web
+      - name: Web smoke (mock mode, headless)
+        working-directory: apps/web
+        env:
+          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
+          CHROMEDRIVER: ${{ steps.chrome.outputs.chromedriver-path }}
+        run: |
+          "$CHROME_EXECUTABLE" --version
+          "$CHROMEDRIVER" --version
+          start=$(date +%s)
+          tool/web_smoke.sh
+          echo "web smoke took $(( $(date +%s) - start )) s" | tee -a "$GITHUB_STEP_SUMMARY"
+
   helm-chart-tests:
     runs-on: ubuntu-latest
     steps:

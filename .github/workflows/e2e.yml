@@ -56,6 +56,26 @@ jobs:
           e2e/bin/services-up.sh --no-build
       - name: Journeys
         run: ./mvnw -B -ntp -pl e2e test -De2e.baseUrl=http://localhost:8080
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+      - id: chrome
+        uses: browser-actions/setup-chrome@39ce663831f86d2ea36cbda0a8143709cdfcc410 # v2.2.0
+        with:
+          chrome-version: 157.0.8103.38
+          install-chromedriver: true
+      - name: Browser login round trip (first sign-in, temporary password)
+        # headless Chrome + chromedriver against the stack: app -> Keycloak `hoops` theme -> update-password -> signed in
+        working-directory: apps/web
+        env:
+          CHROMEDRIVER: ${{ steps.chrome.outputs.chromedriver-path }}
+          HOOPS_E2E_ARTIFACT_DIR: ${{ github.workspace }}/browser-login-artifacts
+        run: |
+          flutter pub get
+          start=$(date +%s)
+          tool/ci_login_check.sh
+          echo "browser login check took $(( $(date +%s) - start )) s" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Service logs on failure
         if: failure()
         run: |
@@ -74,3 +94,4 @@ jobs:
           path: |
             e2e/target/surefire-reports/
             e2e/target/services/*.log
+            browser-login-artifacts/

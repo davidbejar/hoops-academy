@@ -36,4 +36,17 @@ Decision 37 of 2026-11-06: the browser-level checks run in CI, not only on the o
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built: `ci.yml` job `web-browser` (flutter-action + setup-chrome v2.2.0 pinned SHA, Chrome for Testing and chromedriver
+  157.0.8103.38, `web_smoke.sh` mock mode headless, runtime written to the step summary). `e2e.yml` job `journeys`: flutter
+  + Chrome steps and "Browser login round trip" running new `apps/web/tool/ci_login_check.sh` (temporary-password user via
+  kcadm, release build on :5173, `browser_login_check.py --set-new-password`); screenshot/URL saved by the check to
+  `HOOPS_E2E_ARTIFACT_DIR` and uploaded with `e2e-reports`. Both scripts were already headless (`flutter drive` defaults to
+  headless, the login check only opens a window with `--headed`), so no flag was needed. Runbook section in `docs/runbooks/e2e.md`
+  (the web runbook is that file's "Browser smoke" section).
+- Verified: `actionlint .github/workflows/*.yml` clean. Local `tool/web_smoke.sh` (mock, headless default, chromedriver 156):
+  "All tests passed", about 78 s. `browser_login_check.py` only syntax/`--help` checked: the compose stack was down (WP56 owns
+  it), so `ci_login_check.sh` and the login check were NOT run live.
+- Decisions/ADRs: none. CI Chrome 157.0.8103.38 (stable at 2026-11-05) differs from the local chromedriver 156; pin is per workflow.
+- Open points: orchestrator to push and watch jobs `web-browser` (ci.yml) and `journeys` (e2e.yml, step "Browser login round
+  trip"); the login step is unproven (build served by python http.server on :5173, API CORS to :8080 untested, `kc` quoting).
+  CI runtimes to be read from the step summaries after the first run.
