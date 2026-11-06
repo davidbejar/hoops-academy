@@ -159,8 +159,9 @@ class TrainingPlanApiTest {
     @Test
     @TenantUser(tenant = TENANT, roles = TenantRole.COACH, staffTeams = TEAM)
     void copyingATemplateCreatesAnIndependentTenantPlan() {
+        // since 2.3.0 "Warm-up" also finds the templates with a warm-up item (decision 54)
         String template = api(TENANT).queryParam("template", true).queryParam("q", "Warm-up").get(PLANS)
-                .then().extract().path("items[0].id");
+                .then().extract().path("items.find { it.nameKey == 'warm-up-mobility' }.id");
         int templateItems = api(TENANT).get(PLANS + "/" + template).then().extract().path("items.size()");
 
         String copy = copy(api(TENANT), template, Map.of("name", "U12 warm-up"))

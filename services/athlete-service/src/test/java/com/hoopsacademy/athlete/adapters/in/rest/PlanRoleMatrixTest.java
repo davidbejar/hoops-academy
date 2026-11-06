@@ -260,4 +260,51 @@ class PlanRoleMatrixTest {
         assertThat(api(TENANT).body(Map.of("status", "DONE")).put(ASSIGNMENTS + "/" + assignment + "/completions/" + CHILD)
                 .then().extract().statusCode()).isEqualTo(expected);
     }
+
+    // ------------------------------------------------------------------ quick-add (WP78, ADR-0041)
+    private Map<String, Object> templateItem() {
+        act(ADMIN);
+        String template = api(TENANT).queryParam("template", true).get("/api/athlete/training-plans").then()
+                .extract().path("items[0].id");
+        String item = api(TENANT).get("/api/athlete/training-plans/" + template).then().extract().path("items[0].id");
+        return Map.of("items", java.util.List.of(Map.of("planId", template, "itemId", item)));
+    }
+
+    static Stream<Arguments> quickAddToPlan() {
+        return Stream.of(
+                Arguments.of(ADMIN, 200), Arguments.of(COACH_OF_TEAM, 200), Arguments.of(ASSISTANT_OF_TEAM, 200),
+                Arguments.of(COACH_OF_OTHER, 200), Arguments.of(PARENT_LINKED, 403), Arguments.of(PLAYER_SELF, 403),
+                Arguments.of(COACH_AND_PARENT, 200), Arguments.of(ADMIN_AND_PLAYER, 200), Arguments.of(NO_ROLE, 403));
+    }
+
+    @ParameterizedTest(name = "quick-add to a plan: {0} -> {1}")
+    @MethodSource("quickAddToPlan")
+    void quickAddToAPlan(Caller caller, int expected) {
+        Map<String, Object> body = templateItem();
+        act(caller);
+
+        assertThat(api(TENANT).urlEncodingEnabled(false).body(body)
+                .post("/api/athlete/training-plans/" + plan + "/items:copy").then().extract().statusCode())
+                .isEqualTo(expected);
+    }
+
+    static Stream<Arguments> quickAddToSession() {
+        return Stream.of(
+                Arguments.of(ADMIN, 200), Arguments.of(COACH_OF_TEAM, 200), Arguments.of(ASSISTANT_OF_TEAM, 200),
+                Arguments.of(COACH_OF_OTHER, 403), Arguments.of(PARENT_LINKED, 403), Arguments.of(PARENT_UNLINKED, 403),
+                Arguments.of(PLAYER_SELF, 403), Arguments.of(COACH_AND_PARENT, 403), Arguments.of(ADMIN_AND_PLAYER, 200),
+                Arguments.of(NO_ROLE, 403));
+    }
+
+    @ParameterizedTest(name = "quick-add to a session of the team: {0} -> {1}")
+    @MethodSource("quickAddToSession")
+    void quickAddToASession(Caller caller, int expected) {
+        Map<String, Object> body = templateItem();
+        String session = api(TENANT).body(Map.of("teamId", TEAM, "startsAt", "2028-01-10T17:00:00Z", "durationMinutes", 60))
+                .post("/api/athlete/training-sessions").then().statusCode(201).extract().path("id");
+        act(caller);
+
+        assertThat(api(TENANT).body(body).post("/api/athlete/training-sessions/" + session + "/items").then().extract()
+                .statusCode()).isEqualTo(expected);
+    }
 }

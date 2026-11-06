@@ -151,6 +151,35 @@ class TemplateRlsIsolationTest {
     }
 
     @Test
+    void aSessionPlanBelongsToASessionOfTheSameTenant() throws SQLException {
+        UUID sessionOfB = UUID.randomUUID();
+        UUID sessionOfA = UUID.randomUUID();
+        try (Connection app = db.openAsApp()) {
+            app.setAutoCommit(false);
+            bind(app, tenantB);
+            insertSession(app, tenantB, sessionOfB);
+            bind(app, tenantA);
+            insertSession(app, tenantA, sessionOfA);
+            // V7: the composite foreign key (owner_tenant_id, ad_hoc_for_session) ties the plan to a session of its owner
+            assertThat(sqlStateOf(app, "insert into athlete.training_plan (id, owner_tenant_id, name, is_template, "
+                    + "ad_hoc_for_session) values (gen_random_uuid(), '" + tenantA + "', 'p', false, ?)", sessionOfB))
+                    .isEqualTo("23503");
+        }
+        try (Connection app = db.openAsApp()) {
+            app.setAutoCommit(false);
+            bind(app, tenantA);
+            insertSession(app, tenantA, sessionOfA);
+            assertThat(sqlStateOf(app, "insert into athlete.training_plan (id, owner_tenant_id, name, is_template, "
+                    + "ad_hoc_for_session) values (gen_random_uuid(), '" + tenantA + "', 'p', false, ?)", sessionOfA))
+                    .isEqualTo("no error");
+            assertThat(sqlStateOf(app, "insert into athlete.training_plan (id, owner_tenant_id, name, is_template, "
+                    + "ad_hoc_for_session) values (gen_random_uuid(), '" + tenantA + "', 'q', false, ?)", sessionOfA))
+                    .as("one plan per session").isEqualTo("23505");
+            app.rollback();
+        }
+    }
+
+    @Test
     void withoutATenantTenantRowsRaiseInsteadOfLeaking() throws SQLException {
         try (Connection app = db.openAsApp()) {
             assertThat(sqlStateOf(app, "select count(*) from athlete.training_plan")).isEqualTo(INSUFFICIENT_PRIVILEGE);
@@ -203,6 +232,11 @@ class TemplateRlsIsolationTest {
                 id, tenant.value(), template);
         exec(c, "insert into athlete.plan_item (id, plan_id, owner_tenant_id, position, title) values (gen_random_uuid(), ?, ?, 0, 'Item')",
                 id, tenant.value());
+    }
+
+    private static void insertSession(Connection c, TenantId tenant, UUID id) throws SQLException {
+        exec(c, "insert into athlete.training_session (id, tenant_id, team_id, starts_at, ends_at) "
+                + "values (?, ?, gen_random_uuid(), now(), now() + interval '1 hour')", id, tenant.value());
     }
 
     /** Templates are written by the migrator only (the seed migration lifts FORCE for the duration of its transaction). */
