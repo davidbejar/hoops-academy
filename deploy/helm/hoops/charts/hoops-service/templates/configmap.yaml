@@ -4,8 +4,30 @@ metadata:
   name: {{ include "hoops-service.fullname" . }}-env
   labels:
     {{- include "hoops-service.labels" . | nindent 4 }}
+{{- /*
+env (templated) over the event broker client (WP71, ADR-0036): with events on, the Kafka client of the broker the umbrella
+deploys (Service redpanda of this namespace, SASL/SCRAM user = this service's name, its password from Secret
+hoops-redpanda-<name> in the Deployment); with events off, events.offEnv (the service's switches that stop the publisher
+or the consumer, so no pod looks for a broker). env may override offEnv, never the Kafka client.
+*/}}
+{{- $env := dict }}
+{{- if include "hoops-service.eventsEnabled" . }}
+{{- range $k, $_ := .Values.env }}
+{{- if hasPrefix "KAFKA_" $k }}{{ fail (printf "%s: env.%s is set by the chart while events are on (global.events.enabled)" (include "hoops-service.fullname" $) $k) }}{{ end }}
+{{- end }}
+{{- $_ := set $env "KAFKA_BOOTSTRAP_SERVERS" (printf "redpanda.%s.svc.cluster.local:9092" .Release.Namespace) }}
+{{- $_ := set $env "KAFKA_SECURITY_PROTOCOL" "SASL_PLAINTEXT" }}
+{{- $_ := set $env "KAFKA_SASL_USERNAME" (include "hoops-service.fullname" .) }}
+{{- else }}
+{{- range $k, $v := (.Values.events | default dict).offEnv }}
+{{- $_ := set $env $k (toString $v) }}
+{{- end }}
+{{- end }}
+{{- range $k, $v := .Values.env }}
+{{- $_ := set $env $k (tpl (toString $v) $) }}
+{{- end }}
 data:
   QUARKUS_HTTP_PORT: {{ .Values.port | quote }}
-  {{- range $k, $v := .Values.env }}
-  {{ $k }}: {{ tpl (toString $v) $ | quote }}
+  {{- range $k, $v := $env }}
+  {{ $k }}: {{ $v | quote }}
   {{- end }}

@@ -47,3 +47,9 @@ hostnames:
   {{- end }}
 {{- end }}
 {{- end -}}
+
+{{/* Event broker client (WP71, ADR-0036): on when the umbrella's events.enabled is on, which reaches the subchart as its
+mirror global.events.enabled (a subchart sees only its own values and global). "true" or empty. */}}
+{{- define "hoops-service.eventsEnabled" -}}
+{{- if (((.Values.global | default dict).events | default dict).enabled) }}true{{ end -}}
+{{- end -}}

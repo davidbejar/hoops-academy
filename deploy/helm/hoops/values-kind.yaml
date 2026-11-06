@@ -3,6 +3,7 @@
 # Keep requests small: the Podman machine is 2 CPU / 8 GiB and also runs the compose stack.
 global:
   publicUrl: http://localhost:8090
+  events: {enabled: true}       # = events.enabled below (the services' Kafka client, WP71)
 gateway:
   gatewayClass: {create: true}
   tls:
@@ -16,6 +17,7 @@ gateway:
     nodePorts: {http: 30080, https: 30443}
     resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 256Mi}}
 # Event broker (WP66, ADR-0036): small Redpanda in developer mode (relaxed memory/fsync checks for the shared 2-CPU VM).
+# The services connect to it (WP71): core publishes, game and athlete feed their replicas; roster source stays rest.
 events:
   enabled: true
   redpanda:

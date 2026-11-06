@@ -13,6 +13,10 @@ global:
     name: hoops
     namespace: ""
     requestTimeout: 60s
+  # Mirror of events.enabled for the service subcharts (WP71): a subchart sees only its own values and `global`, so the
+  # services' Kafka client hangs off this copy. Always set both (the render fails when they differ).
+  events:
+    enabled: false
 
 # ---------------------------------------------------------------------------------------------------------------
 # Edge (WP36, ADR-0031): Gateway API Gateway implemented by Envoy Gateway (pinned version: deploy/kind/up.sh).
@@ -79,6 +83,10 @@ rateLimit:
 # v2 events (ADR-0008: core's outbox -> topics -> replicas in game and athlete, WP67-WP69). Off by default; on in
 # values-kind.yaml. Clients: bootstrap redpanda.<namespace>.svc.cluster.local:9092, SASL_PLAINTEXT, SCRAM-SHA-256, one
 # user per service (its name = the service's app.kubernetes.io/name label, which the NetworkPolicy admits).
+# The services (WP71): with events.enabled each one gets that client (KAFKA_BOOTSTRAP_SERVERS, KAFKA_SECURITY_PROTOCOL,
+# KAFKA_SASL_USERNAME = its name, KAFKA_SASL_PASSWORD from Secret hoops-redpanda-<name>, which must be its events.users
+# entry); without it core's publisher and the game/athlete consumers are off (<service>.events.offEnv). Switch it together
+# with global.events.enabled (the copy the subcharts see).
 events:
   enabled: false
   redpanda:
@@ -200,6 +208,9 @@ core:
     KEYCLOAK_URL: http://keycloak:8080/auth
     GAME_SERVICE_URL: http://game-service:8082
     ATHLETE_SERVICE_URL: http://athlete-service:8083
+  # Without the event broker (events.enabled off) the outbox publisher stops (the outbox still fills; WP67).
+  events:
+    offEnv: {CORE_OUTBOX_POLL_INTERVAL: "off"}
   secretEnv:
     - {name: CORE_APP_PASSWORD,          secretName: hoops-db-core-app,       key: password}
     - {name: CORE_PLATFORM_PASSWORD,     secretName: hoops-db-core-platform,  key: password}
@@ -229,6 +240,13 @@ game:
     QUARKUS_OTEL_SDK_DISABLED: "true"
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
+    GAME_ROSTER_SOURCE: '{{ .Values.rosterSource }}'
+  # Where the roster and the authorisation context come from (ADR-0037, WP68): rest = core's /internal API, replica = the
+  # local replica fed by core's events (needs events.enabled). The default flips only per ADR-0037 "When rest flips".
+  rosterSource: rest
+  # Without the event broker the replica consumer is off (no broker warnings in the log).
+  events:
+    offEnv: {GAME_ROSTER_CONSUMER_ENABLED: "false"}
   secretEnv:
     - {name: GAME_APP_PASSWORD,          secretName: hoops-db-game-app,       key: password}
     - {name: GAME_MIGRATOR_PASSWORD,     secretName: hoops-db-game-migrator,  key: password}
@@ -251,6 +269,13 @@ athlete:
     QUARKUS_OTEL_SDK_DISABLED: "true"
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
+    ATHLETE_ROSTER_SOURCE: '{{ .Values.rosterSource }}'
+  # Where the roster and the authorisation context come from (ADR-0037, WP69): rest = core's /internal API, replica = the
+  # local replica fed by core's events (needs events.enabled). The default flips only per ADR-0037 "When rest flips".
+  rosterSource: rest
+  # Without the event broker the replica consumer is off (no broker warnings in the log).
+  events:
+    offEnv: {ATHLETE_ROSTER_CONSUMER_ENABLED: "false"}
   secretEnv:
     - {name: ATHLETE_APP_PASSWORD,          secretName: hoops-db-athlete-app,       key: password}
     - {name: ATHLETE_MIGRATOR_PASSWORD,     secretName: hoops-db-athlete-migrator,  key: password}

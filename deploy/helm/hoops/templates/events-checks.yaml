@@ -1,0 +1,36 @@
+{{- /*
+Services on the event broker (WP71, ADR-0036/0037). Renders nothing; refuses a half-configured release:
+- events.enabled (broker, Job, NetworkPolicy, ESO logins) and global.events.enabled (the mirror the service subcharts read
+  to wire their Kafka client) must agree;
+- with events on, every enabled service needs its events user (name = the service's name) with Secret
+  hoops-redpanda-<name>, the Secret its Deployment reads KAFKA_SASL_PASSWORD from;
+- game/athlete rosterSource is rest or replica, and replica needs the events (the consumer feeds the replica).
+*/ -}}
+{{- $on := .Values.events.enabled | default false -}}
+{{- $mirror := ((.Values.global | default dict).events | default dict).enabled | default false -}}
+{{- if ne $on $mirror }}
+{{- fail (printf "events.enabled (%v) and global.events.enabled (%v) must be equal: set both (the service subcharts see only global)" $on $mirror) }}
+{{- end }}
+{{- range $alias := list "core" "game" "athlete" }}
+{{- $svc := index $.Values $alias }}
+{{- if $svc.enabled }}
+{{- if $on }}
+{{- $want := printf "hoops-redpanda-%s" $svc.fullnameOverride }}
+{{- $found := false }}
+{{- range $.Values.events.users }}
+{{- if and (eq .name $svc.fullnameOverride) (eq .passwordSecret $want) }}{{ $found = true }}{{ end }}
+{{- end }}
+{{- if not $found }}
+{{- fail (printf "events.users needs {name: %s, passwordSecret: %s}: %s reads its broker password from that Secret" $svc.fullnameOverride $want $alias) }}
+{{- end }}
+{{- end }}
+{{- if hasKey $svc "rosterSource" }}
+{{- if not (has $svc.rosterSource (list "rest" "replica")) }}
+{{- fail (printf "%s.rosterSource must be rest or replica, not %v" $alias $svc.rosterSource) }}
+{{- end }}
+{{- if and (eq $svc.rosterSource "replica") (not $on) }}
+{{- fail (printf "%s.rosterSource=replica needs events.enabled (the replica is fed by core's events)" $alias) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

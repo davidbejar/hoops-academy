@@ -51,7 +51,15 @@ spec:
             - secretRef:
                 name: {{ . }}
             {{- end }}
-          {{- with .Values.secretEnv }}
+          {{- $secretEnv := .Values.secretEnv }}
+          {{- if include "hoops-service.eventsEnabled" . }}
+          {{- range $secretEnv }}
+          {{- if hasPrefix "KAFKA_" .name }}{{ fail (printf "%s: secretEnv %s is set by the chart while events are on (global.events.enabled)" $fullname .name) }}{{ end }}
+          {{- end }}
+          {{- /* Broker password of this service's SCRAM user (WP71): Secret hoops-redpanda-<name>, created before the install. */}}
+          {{- $secretEnv = append $secretEnv (dict "name" "KAFKA_SASL_PASSWORD" "secretName" (printf "hoops-redpanda-%s" $fullname) "key" "password") }}
+          {{- end }}
+          {{- with $secretEnv }}
           env:
             {{- range . }}
             - name: {{ .name }}

@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.4.0
+    helm.sh/chart: hoops-service-0.5.0
 spec:
   podSelector:
     matchLabels:
@@ -42,7 +42,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.4.0
+    helm.sh/chart: hoops-service-0.5.0
 data:
   QUARKUS_HTTP_PORT: "8080"
 
@@ -59,7 +59,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.4.0
+    helm.sh/chart: hoops-service-0.5.0
 spec:
   type: ClusterIP
   selector:
@@ -84,7 +84,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.4.0
+    helm.sh/chart: hoops-service-0.5.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -101,9 +101,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: hoops-service-0.4.0
+        helm.sh/chart: hoops-service-0.5.0
       annotations:
-        checksum/env: 8e302222e33594fcc55a218c9475e01ff61275ca2a83be4715c4f93dfd4104cc
+        checksum/env: 63decec0268e9672c8613e9448201043c62d2eceeceaa6d44a5e8fe7c5d3e509
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8080"
