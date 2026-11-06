@@ -115,6 +115,20 @@ void main() {
         ],
       ),
     ),
+    'icon_tile': (
+      const Size(360, 120),
+      () => const Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          IconTile(Icons.history),
+          IconTile(Icons.business_outlined, tone: HoopsTone.info),
+          IconTile(Icons.check_circle_outline, tone: HoopsTone.success),
+          IconTile(Icons.warning_amber_rounded, tone: HoopsTone.warning),
+          IconTile(Icons.block, tone: HoopsTone.danger, size: 56),
+        ],
+      ),
+    ),
   };
 
   for (final MapEntry(key: name, value: (size, build)) in cases.entries) {
