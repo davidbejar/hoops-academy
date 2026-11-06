@@ -240,8 +240,9 @@ class PhysicalTestApiTest {
 
     @Test
     void aPlaceholderNormGivesABandButIsFlaggedReferencePending() {
-        api(TENANT).body(result(BOY, typeId("VERTICAL_JUMP"), "2026-06-01", 40.0)).post(RESULTS).then().statusCode(201)
-                .body("ageAtMeasurement", equalTo(16)).body("expectedBand", notNullValue()).body("referencePending", equalTo(true));
+        // boy born 2010-01-15: 18 on 2028-06-01; vertical jump at 18 repeats the cited age-17 centiles (placeholder)
+        api(TENANT).body(result(BOY, typeId("VERTICAL_JUMP"), "2028-06-01", 40.0)).post(RESULTS).then().statusCode(201)
+                .body("ageAtMeasurement", equalTo(18)).body("expectedBand", notNullValue()).body("referencePending", equalTo(true));
     }
 
     @Test

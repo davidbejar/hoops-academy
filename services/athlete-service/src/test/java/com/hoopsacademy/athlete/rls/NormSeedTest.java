@@ -95,11 +95,11 @@ class NormSeedTest {
 
     @Test
     void theSourcedCooperBlocksAreTheCooperTableForTeenagers() throws Exception {
-        List<SeedNorm> cooper = load().stream().filter(n -> n.code().equals("COOPER_12MIN") && !n.norm().referencePending()).toList();
+        List<SeedNorm> cooper = rows("COOPER_12MIN").stream().filter(n -> n.norm().minAge() >= 13).toList();
 
         assertThat(cooper).isNotEmpty().allSatisfy(n -> {
+            assertThat(n.norm().referencePending()).isFalse();
             assertThat(n.source()).contains("Cooper").contains("1968");
-            assertThat(n.norm().minAge()).isGreaterThanOrEqualTo(13);
         });
         // 14 year old boys: 2400-2700 m is above average, from 2700 m excellent (Cooper 1968, 13-14 years)
         var boys14 = cooper.stream().map(SeedNorm::norm).toList();
@@ -107,6 +107,25 @@ class NormSeedTest {
                 new java.math.BigDecimal("2500"));
         assertThat(resolved.expectedBand()).contains(NormBand.ABOVE_AVERAGE);
         assertThat(resolved.referencePending()).isFalse();
+    }
+
+    @Test
+    void theCooperRunFrom8To12FollowsTheBarcelonaSchoolTable() throws Exception {
+        List<SeedNorm> children = rows("COOPER_12MIN").stream().filter(n -> n.norm().maxAge() <= 12).toList();
+
+        assertThat(children).hasSize(2 * 5 * 5).allSatisfy(n -> {
+            assertThat(n.norm().referencePending()).as(n.norm().minAge() + " pending").isFalse();
+            assertThat(n.source()).contains("Balague").contains("1982").contains("Tabla I");
+        });
+        // Balague et al. 1982, Tabla I: boys 7-8 P20 = 1772 m, boys 11-12 P80 = 2705 m
+        assertThat(band(children, Gender.MALE, 8, "1771")).isEqualTo(NormBand.POOR);
+        assertThat(band(children, Gender.MALE, 8, "1772")).isEqualTo(NormBand.BELOW_AVERAGE);
+        assertThat(band(children, Gender.MALE, 12, "2704")).isEqualTo(NormBand.ABOVE_AVERAGE);
+        assertThat(band(children, Gender.MALE, 12, "2705")).isEqualTo(NormBand.EXCELLENT);
+        // girls 9-10: the printed P60 (2134 m) is above the printed P70 (2123 m), a misprint; the seed uses
+        // mean 1952 + 0.2533 * SD 328 = 2035 m, the normal model that reproduces the rest of the row
+        assertThat(band(children, Gender.FEMALE, 10, "2034")).as("Balague 1982 girls 9-10 P60 = 2035 m").isEqualTo(NormBand.AVERAGE);
+        assertThat(band(children, Gender.FEMALE, 10, "2035")).as("Balague 1982 girls 9-10 P60 = 2035 m").isEqualTo(NormBand.ABOVE_AVERAGE);
     }
 
     @Test
@@ -154,17 +173,53 @@ class NormSeedTest {
     }
 
     @Test
-    void theTTestAndVerticalJumpAreCitedOnlyAt14And15() throws Exception {
-        for (String code : List.of("AGILITY_T_TEST", "VERTICAL_JUMP")) {
-            assertThat(rows(code)).allSatisfy(n -> {
-                boolean florence = n.norm().minAge() >= 14 && n.norm().maxAge() <= 15;
-                assertThat(n.norm().referencePending()).as(code + " " + n.norm().minAge()).isEqualTo(!florence);
-                assertThat(n.source().contains("Mascherini")).as(code + " " + n.norm().minAge()).isEqualTo(florence);
-            });
-        }
+    void theTTestIsCitedFrom12To15AndRepeatsAge15Above() throws Exception {
+        List<SeedNorm> ttest = rows("AGILITY_T_TEST");
+
+        assertThat(ttest).allSatisfy(n -> {
+            int age = n.norm().minAge();
+            String where = "T-test " + n.norm().gender() + " " + age;
+            assertThat(n.norm().referencePending()).as(where).isEqualTo(age < 12 || age > 15);
+            assertThat(n.source().contains("Lesinski")).as(where).isEqualTo(age == 12 || age == 13);
+            assertThat(n.source().contains("Mascherini")).as(where).isEqualTo(age >= 14);
+        });
+        // Lesinski et al. 2020, Table 3 (elite young athletes): boys 13 P80 (performance) = 10.30 s, girls 12 P20 = 12.79 s
+        assertThat(band(ttest, Gender.MALE, 13, "10.29")).isEqualTo(NormBand.EXCELLENT);
+        assertThat(band(ttest, Gender.MALE, 13, "10.30")).isEqualTo(NormBand.ABOVE_AVERAGE);
+        assertThat(band(ttest, Gender.FEMALE, 12, "12.78")).isEqualTo(NormBand.BELOW_AVERAGE);
+        assertThat(band(ttest, Gender.FEMALE, 12, "12.79")).isEqualTo(NormBand.POOR);
         // Mascherini et al. 2022, Table 2 (boys, first class): T-agility P10 10.2, P25 10.7 -> P20 = 10.53 s
-        assertThat(band(rows("AGILITY_T_TEST"), Gender.MALE, 14, "10.52")).isEqualTo(NormBand.EXCELLENT);
-        assertThat(band(rows("AGILITY_T_TEST"), Gender.MALE, 14, "10.53")).isEqualTo(NormBand.ABOVE_AVERAGE);
+        assertThat(band(ttest, Gender.MALE, 14, "10.52")).isEqualTo(NormBand.EXCELLENT);
+        assertThat(band(ttest, Gender.MALE, 14, "10.53")).isEqualTo(NormBand.ABOVE_AVERAGE);
+        // 16-18 repeat the age-15 Florentine centiles (Table 5, girls: AVERAGE from 12.18 s)
+        for (int age = 16; age <= 18; age++) {
+            assertThat(band(ttest, Gender.FEMALE, age, "12.17")).as("girls " + age).isEqualTo(NormBand.ABOVE_AVERAGE);
+            assertThat(band(ttest, Gender.FEMALE, age, "12.18")).as("girls " + age).isEqualTo(NormBand.AVERAGE);
+        }
+    }
+
+    @Test
+    void theVerticalJumpIsCitedFrom12To17() throws Exception {
+        List<SeedNorm> jump = rows("VERTICAL_JUMP");
+
+        assertThat(jump).allSatisfy(n -> {
+            int age = n.norm().minAge();
+            boolean quebec = age == 12 || age == 13 || age == 16 || (age == 17 && n.norm().gender() == Gender.MALE);
+            String where = "jump " + n.norm().gender() + " " + age;
+            assertThat(n.norm().referencePending()).as(where).isEqualTo(!quebec && age != 14 && age != 15);
+            assertThat(n.source().contains("Leone")).as(where).isEqualTo(quebec || age >= 17);
+            assertThat(n.source().contains("Mascherini")).as(where).isEqualTo(age == 14 || age == 15);
+        });
+        // Leone et al. 2025, Table 5: boys 16 L 1.00, M 42.3, S 0.253 -> P20 = 33.3 cm; girls 13 L 1.00, M 25.3, S 0.349 -> P80 = 32.7 cm
+        assertThat(band(jump, Gender.MALE, 16, "33.2")).isEqualTo(NormBand.POOR);
+        assertThat(band(jump, Gender.MALE, 16, "33.3")).isEqualTo(NormBand.BELOW_AVERAGE);
+        assertThat(band(jump, Gender.FEMALE, 13, "32.6")).isEqualTo(NormBand.ABOVE_AVERAGE);
+        assertThat(band(jump, Gender.FEMALE, 13, "32.7")).isEqualTo(NormBand.EXCELLENT);
+        // boys 18 repeat boys 17 (M 41.6, S 0.305, L 1.01 -> P80 = 52.3 cm); girls 17-18 repeat girls 16 (P20 = 23.4 cm)
+        assertThat(band(jump, Gender.MALE, 18, "52.3")).isEqualTo(NormBand.EXCELLENT);
+        assertThat(band(jump, Gender.MALE, 18, "52.2")).isEqualTo(NormBand.ABOVE_AVERAGE);
+        assertThat(band(jump, Gender.FEMALE, 17, "23.4")).isEqualTo(NormBand.BELOW_AVERAGE);
+        assertThat(band(jump, Gender.FEMALE, 18, "23.3")).isEqualTo(NormBand.POOR);
     }
 
     @Test
@@ -172,9 +227,19 @@ class NormSeedTest {
         Map<String, Long> pending = load().stream().filter(n -> n.norm().referencePending())
                 .collect(Collectors.groupingBy(SeedNorm::code, Collectors.counting()));
 
-        // docs/domain/norms.md, "Per test: sources and status"
-        assertThat(pending).containsExactlyInAnyOrderEntriesOf(Map.of("COOPER_12MIN", 50L, "SIT_AND_REACH", 20L,
-                "SPRINT_20M", 10L, "VERTICAL_JUMP", 90L, "AGILITY_T_TEST", 90L));
+        // docs/domain/norms.md, "Per test: sources and status" (WP62: 155 placeholder rows, 475 cited of 630)
+        assertThat(pending).containsExactlyInAnyOrderEntriesOf(Map.of("SIT_AND_REACH", 20L, "SPRINT_20M", 10L,
+                "VERTICAL_JUMP", 55L, "AGILITY_T_TEST", 70L));
+    }
+
+    @Test
+    void placeholderRowsDoNotExceedTheRecordedCount() throws Exception {
+        List<SeedNorm> all = load();
+        long placeholders = all.stream().filter(n -> n.norm().referencePending()).count();
+
+        assertThat(all).hasSize(630);
+        assertThat(placeholders).as("placeholder rows (docs/domain/norms.md)").isLessThanOrEqualTo(155);
+        assertThat(all.size() - placeholders).as("cited rows").isGreaterThanOrEqualTo(475);
     }
 
     @Test
