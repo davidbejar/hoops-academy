@@ -40,6 +40,9 @@ abstract class MatchesRepository {
     required String opponentName,
     required DateTime scheduledAt,
     String? venue,
+    gen.HomeAway? homeAway,
+    int? periodCount,
+    int? periodMinutes,
   });
   Future<gen.Match> start(String matchId);
   Future<gen.Match> finish(String matchId);
@@ -110,6 +113,9 @@ class ApiMatchesRepository implements MatchesRepository {
     required String opponentName,
     required DateTime scheduledAt,
     String? venue,
+    gen.HomeAway? homeAway,
+    int? periodCount,
+    int? periodMinutes,
   }) => _guard(
     () async => (await _matches.updateMatch(
       xTenantId: _tenant,
@@ -118,7 +124,10 @@ class ApiMatchesRepository implements MatchesRepository {
         (b) => b
           ..opponentName = opponentName
           ..scheduledAt = scheduledAt.toUtc()
+          ..homeAway = homeAway
           ..venue = venue
+          ..periodCount = periodCount
+          ..periodMinutes = periodMinutes
           ..clear = clearList({gen.UpdateMatchRequestClearEnum.venue: venue}),
       ),
     )).data!,

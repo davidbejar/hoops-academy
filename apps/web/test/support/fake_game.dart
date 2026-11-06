@@ -96,6 +96,20 @@ class FakeMatchesRepository with Faulty implements MatchesRepository {
   final Map<String, List<RosterPlayer>> rosters;
   gen.PlayerSeasonStats? seasonStatsResult;
   final List<List<RosterInput>> replacedRosters = [];
+
+  /// Every `update` call as the dialog made it (a null venue is sent in `clear`).
+  final List<
+    ({
+      String matchId,
+      String opponentName,
+      DateTime scheduledAt,
+      String? venue,
+      gen.HomeAway? homeAway,
+      int? periodCount,
+      int? periodMinutes,
+    })
+  >
+  updates = [];
   String? lastSeasonStatsSeason;
 
   gen.Match _get(String id) => matches.firstWhere((m) => m.id == id);
@@ -138,11 +152,26 @@ class FakeMatchesRepository with Faulty implements MatchesRepository {
     required String opponentName,
     required DateTime scheduledAt,
     String? venue,
+    gen.HomeAway? homeAway,
+    int? periodCount,
+    int? periodMinutes,
   }) => run('update', () {
+    updates.add((
+      matchId: matchId,
+      opponentName: opponentName,
+      scheduledAt: scheduledAt.toUtc(),
+      venue: venue,
+      homeAway: homeAway,
+      periodCount: periodCount,
+      periodMinutes: periodMinutes,
+    ));
     final m = _get(matchId).rebuild(
       (b) => b
         ..opponentName = opponentName
         ..scheduledAt = scheduledAt.toUtc()
+        ..homeAway = homeAway ?? b.homeAway
+        ..periodCount = periodCount ?? b.periodCount
+        ..periodMinutes = periodMinutes ?? b.periodMinutes
         ..venue = venue,
     );
     _put(m);
