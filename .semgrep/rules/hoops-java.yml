@@ -1,0 +1,130 @@
+# Repository Semgrep rules for the Java services (WP83, ADR-0045). Tests: .semgrep/tests/hoops-java.java
+# (`semgrep --test --config .semgrep/rules .semgrep/tests`). ERROR findings fail the semgrep workflow unless accepted
+# in .semgrep/accepted.json (reason + expiry).
+rules:
+  - id: hoops-permitall-on-api-resource
+    languages: [java]
+    severity: ERROR
+    message: >-
+      @PermitAll on a resource under /api, /platform or /internal opens a tenant, platform or service API to anonymous
+      callers. Use @RequiresTenantRole / @RolesAllowed (CLAUDE.md rule 3, docs/domain/authz-matrix.md).
+    metadata:
+      category: security
+      cwe: ["CWE-862: Missing Authorization"]
+      owasp: ["A01:2025 - Broken Access Control"]
+      confidence: HIGH
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @jakarta.annotation.security.PermitAll
+              class $C { ... }
+          - pattern: |
+              @jakarta.annotation.security.PermitAll
+              $RET $M(...) { ... }
+      - pattern-either:
+          - pattern-inside: |
+              @jakarta.ws.rs.Path("$P")
+              class $K { ... }
+          - pattern-inside: |
+              @jakarta.ws.rs.Path("$P")
+              $RET $M2(...) { ... }
+      - metavariable-regex:
+          metavariable: $P
+          regex: ^/?(api|platform|internal)(/|$)
+
+  - id: hoops-no-tenant-check-bypass
+    languages: [java]
+    severity: ERROR
+    message: >-
+      A switch that skips, bypasses or disables the tenant check: tenant isolation has no off switch (CLAUDE.md rule 2).
+      Use a platform path (/platform) or a service call (/internal) with its own authorization instead.
+    metadata:
+      category: security
+      cwe: ["CWE-639: Authorization Bypass Through User-Controlled Key"]
+      owasp: ["A01:2025 - Broken Access Control"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $T $NAME;
+          - pattern: $T $NAME = $V;
+          - pattern: $RET $NAME(...) { ... }
+          - pattern: $RET $NAME(...);
+          - pattern: $X.$NAME(...)
+          - pattern: $NAME(...)
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^(skip|bypass|disable|ignore|suppress)_?tenant_?(check|filter|isolation|scope|guard|rls|security)?s?$
+
+  - id: hoops-no-rls-bypass-sql
+    languages: [java]
+    severity: ERROR
+    message: >-
+      SQL that turns row-level security off or changes role from application code. The services connect as non-owner
+      roles bound by RLS (CLAUDE.md rule 2, `just db-role-check`); nothing at runtime may leave that role.
+    metadata:
+      category: security
+      cwe: ["CWE-284: Improper Access Control"]
+      owasp: ["A01:2025 - Broken Access Control"]
+      confidence: HIGH
+    patterns:
+      - pattern: '"$SQL"'
+      - metavariable-regex:
+          metavariable: $SQL
+          regex: (?is).*(row_security\s*(=|to)\s*off|\bset\s+(session\s+|local\s+)?role\b|\bbypassrls\b|\bsession_authorization\b)
+
+  - id: hoops-tenant-switch-outside-tenancy
+    languages: [java]
+    severity: ERROR
+    message: >-
+      set_config(...) outside libs/common-quarkus tenancy rebinds the transaction's tenant (or another app.* setting)
+      by hand. Only the tenancy interceptor binds the tenant; a deliberate cross-tenant lookup must be reviewed and
+      accepted in .semgrep/accepted.json with its reason.
+    paths:
+      exclude:
+        - "libs/common-quarkus/src/main/java/com/hoopsacademy/common/tenancy/*.java"
+    metadata:
+      category: security
+      cwe: ["CWE-639: Authorization Bypass Through User-Controlled Key"]
+      owasp: ["A01:2025 - Broken Access Control"]
+      confidence: MEDIUM
+    patterns:
+      - pattern: '"$SQL"'
+      - metavariable-regex:
+          metavariable: $SQL
+          regex: (?is).*\bset_config\s*\(
+
+  - id: hoops-sql-concat-from-parameter
+    languages: [java]
+    mode: taint
+    severity: ERROR
+    message: >-
+      A method parameter reaches the SQL/JPQL text of a query: build the statement from constants and bind every value
+      as a parameter (`:name` / `?`). Choosing between constant fragments is fine; splicing a value is not.
+    metadata:
+      category: security
+      cwe: ["CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"]
+      owasp: ["A05:2025 - Injection"]
+      confidence: MEDIUM
+    pattern-sources:
+      - patterns:
+          - pattern-inside: |
+              $RET $M(..., String $P, ...) { ... }
+          - pattern: $P
+    pattern-sanitizers:
+      - pattern: $X.equals(...)
+      - pattern: $X.isEmpty()
+      - pattern: $X.isBlank()
+      - pattern: $X == null
+      - pattern: $X != null
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $EM.createQuery($SQL, ...)
+              - pattern: $EM.createNativeQuery($SQL, ...)
+              - pattern: $C.prepareStatement($SQL, ...)
+              - pattern: $C.prepareCall($SQL, ...)
+              - pattern: $S.executeQuery($SQL)
+              - pattern: $S.executeUpdate($SQL, ...)
+              - pattern: $S.execute($SQL, ...)
+              - pattern: $S.addBatch($SQL)
+          - focus-metavariable: $SQL

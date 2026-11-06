@@ -1,0 +1,22 @@
+# Paths the Semgrep workflow does not scan (WP83, ADR-0045). Semgrep reads this file from the scan root; it replaces
+# Semgrep's built-in defaults, so build output and dependencies are listed here too.
+# Build output, caches, dependencies
+**/target/
+**/build/
+**/.dart_tool/
+**/node_modules/
+.mvn/
+# Generated Dart API clients (just gen-api; their source of truth is libs/contracts, scanned as OpenAPI only)
+apps/web/packages/
+# Test code and test fixtures: deliberate secrets, raw SQL and insecure set-ups belong there (SAST covers shipped code)
+**/src/test/
+apps/web/test/
+apps/web/integration_test/
+apps/web/test_driver/
+e2e/
+.semgrep/tests/
+# Helm templates are Go templates, not YAML (rendered charts are checked by deploy/helm/tests and trivy config)
+deploy/helm/**/templates/
+# Vendored third-party web assets (sqlite3 wasm, drift worker build output), not our code
+apps/web/web/sqlite3.wasm
+apps/web/web/drift_worker.js

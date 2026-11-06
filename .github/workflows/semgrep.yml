@@ -1,0 +1,59 @@
+name: semgrep
+
+# SAST with Semgrep (WP83, ADR-0045) in a pinned container: registry rulesets p/java and p/owasp-top-ten plus the
+# repository rules in .semgrep/rules (tenancy, authorization and SQL rules for Java, the Flutter app's rules for Dart;
+# the registry has no Dart security ruleset). Paths not scanned: .semgrepignore (tests, generated clients, build
+# output). Gate: an ERROR finding not accepted in .semgrep/accepted.json fails the job (scripts/sarif-gate.py); the
+# SARIF goes to code scanning. How to triage: docs/security/sast-dast.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '29 4 * * 1' # weekly: the registry rulesets change
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SEMGREP_IMAGE: docker.io/semgrep/semgrep:1.183.0@sha256:2e45517a85e13a9cca14a2a00df6bb48affd66b8ebfae1b0991cd57578362fb0
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # upload the SARIF to code scanning
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Tests of the gate scripts and the repository rules
+        run: |
+          python3 -m unittest discover -s scripts/tests
+          docker run --rm -v "$PWD:/src:ro" -w /src/.semgrep "$SEMGREP_IMAGE" \
+            semgrep --test --metrics off --config rules tests
+      - name: Semgrep scan
+        run: |
+          mkdir -p semgrep-out && chmod 777 semgrep-out
+          docker run --rm -v "$PWD:/src:ro" -v "$PWD/semgrep-out:/out" -w /src "$SEMGREP_IMAGE" \
+            semgrep scan --metrics off --config p/java --config p/owasp-top-ten --config .semgrep/rules \
+            --sarif-output=/out/semgrep.sarif --json-output=/out/semgrep.json .
+      - name: Gate (ERROR not accepted in .semgrep/accepted.json)
+        run: python3 -I scripts/sarif-gate.py --fail-on error --baseline .semgrep/accepted.json semgrep-out/semgrep.sarif | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: always() && hashFiles('semgrep-out/semgrep.sarif') != ''
+        with:
+          sarif_file: semgrep-out/semgrep.sarif
+          category: semgrep
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: semgrep-sarif
+          path: semgrep-out/

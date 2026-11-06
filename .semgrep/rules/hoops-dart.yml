@@ -1,0 +1,104 @@
+# Repository Semgrep rules for the Flutter web app (WP83, ADR-0045). The Semgrep registry has no Dart/Flutter security
+# ruleset (only an AI-SDK detector), so these encode the app's own rules. Tests: .semgrep/tests/hoops-dart.dart.
+rules:
+  - id: hoops-dart-window-open-without-noopener
+    languages: [dart]
+    severity: ERROR
+    message: >-
+      A new tab opened without `noopener`: the opened page can navigate this window (reverse tabnabbing). Use
+      openInNewTab (features 'noopener,noreferrer').
+    metadata:
+      category: security
+      cwe: ["CWE-1022: Use of Web Link to Untrusted Target with window.opener Access"]
+      owasp: ["A01:2025 - Broken Access Control"]
+      confidence: HIGH
+    pattern-either:
+      - pattern: $OPEN($URL, '_blank')
+      - patterns:
+          - pattern: $OPEN($URL, '_blank', $FEATURES)
+          - metavariable-regex:
+              metavariable: $FEATURES
+              regex: ^(?!.*noopener).*$
+
+  - id: hoops-dart-secret-in-preferences
+    languages: [dart]
+    severity: ERROR
+    message: >-
+      A token, password or secret written to SharedPreferences (localStorage on the web, readable by any script on the
+      origin and kept after sign-out). OIDC tokens belong to the oidc package's store only; never persist passwords.
+    metadata:
+      category: security
+      cwe: ["CWE-922: Insecure Storage of Sensitive Information"]
+      owasp: ["A04:2025 - Cryptographic Failures"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $PREFS.setString($KEY, $VALUE)
+          - pattern: $PREFS.setStringList($KEY, $VALUE)
+      - pattern-either:
+          - patterns:
+              - pattern: $PREFS.$SET($KEY, ...)
+              - metavariable-regex:
+                  metavariable: $KEY
+                  regex: (?i).*(token|password|passwd|secret|credential)
+          - patterns:
+              - pattern: $PREFS.$SET(..., $VALUE)
+              - metavariable-regex:
+                  metavariable: $VALUE
+                  regex: (?i).*(token|password|passwd|secret|credential)
+
+  - id: hoops-dart-unsafe-html
+    languages: [dart]
+    severity: ERROR
+    message: >-
+      HTML assigned without sanitising: script injection on the app's origin, where the tokens live. Render text with
+      Flutter widgets; if HTML is unavoidable, sanitise it with an allow-list first.
+    metadata:
+      category: security
+      cwe: ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"]
+      owasp: ["A05:2025 - Injection"]
+      confidence: HIGH
+    pattern-either:
+      - pattern: $E.innerHTML = $X
+      - pattern: $E.innerHtml = $X
+      - pattern: $E.setInnerHtml($X, ...)
+      - pattern: $E.outerHTML = $X
+      - pattern: document.write($X)
+      - pattern: $W.document.write($X)
+
+  - id: hoops-dart-print-secret
+    languages: [dart]
+    severity: ERROR
+    message: >-
+      A token, password or secret printed to the console (browser devtools, CI logs, crash reports). Log the event,
+      never the value.
+    metadata:
+      category: security
+      cwe: ["CWE-532: Insertion of Sensitive Information into Log File"]
+      owasp: ["A09:2025 - Security Logging and Alerting Failures"]
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: print($...ARGS)
+          - pattern: debugPrint($...ARGS)
+          - pattern: log($...ARGS)
+          - patterns:
+              - pattern: $LOGGER.$LEVEL($...ARGS)
+              - metavariable-regex:
+                  metavariable: $LEVEL
+                  regex: ^(finest|finer|fine|config|info|warning|severe|shout|log|trace|debug|error|d|i|w|e|t|v)$
+      - metavariable-regex:
+          metavariable: $...ARGS
+          regex: (?i).*(access_?token|refresh_?token|id_?token|bearer|password|passwd|secret)
+
+  - id: hoops-dart-tls-bypass
+    languages: [dart]
+    severity: ERROR
+    message: Certificate validation switched off; every connection can be intercepted.
+    metadata:
+      category: security
+      cwe: ["CWE-295: Improper Certificate Validation"]
+      owasp: ["A04:2025 - Cryptographic Failures"]
+      confidence: HIGH
+    # Semgrep's Dart parser cannot parse a lambda in a pattern; a regex over the assignment instead
+    pattern-regex: badCertificateCallback\s*=\s*\([^)]*\)\s*(=>\s*true\b|\{\s*return\s+true\s*;?\s*\})

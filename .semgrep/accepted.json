@@ -1,0 +1,168 @@
+{
+  "_comment": [
+    "Semgrep findings of ERROR level accepted after review (WP83, ADR-0045). The semgrep workflow fails on any other ERROR finding (scripts/sarif-gate.py --fail-on error).",
+    "Every entry needs rule, path, fingerprint (scripts/sarif-gate.py --suggest prints it), reason and expires (at most six months ahead); after expiry the finding blocks again. 'line' is informational."
+  ],
+  "accepted": [
+    {
+      "rule": "python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args",
+      "path": "apps/web/tool/browser_login_check.py",
+      "line": 190,
+      "fingerprint": "d934fc0b6a0f767c",
+      "reason": "Developer/CI test tool, not shipped: CHROMEDRIVER names the chromedriver binary to start, set by the developer or the e2e workflow (trusted environment), passed as an argv list without a shell.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args",
+      "path": "apps/web/tool/offline_cold_start.py",
+      "line": 147,
+      "fingerprint": "d934fc0b6a0f767c",
+      "reason": "Developer/CI test tool, not shipped: CHROMEDRIVER names the chromedriver binary to start, set by the developer or the CI workflow (trusted environment), passed as an argv list without a shell.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/ReplicaMembershipRepository.java",
+      "line": 101,
+      "fingerprint": "5c0b00200b358c42",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "java.lang.security.audit.formatted-sql-string.formatted-sql-string",
+      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/RosterReplicaRepository.java",
+      "line": 178,
+      "fingerprint": "dadc297db78936df",
+      "reason": "False positive (reviewed in WP83): upsert() appends the constant NOT_NEWER guard to the constant statements of its private callers; every value is a bound parameter.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/RosterReplicaRepository.java",
+      "line": 178,
+      "fingerprint": "dadc297db78936df",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/TenantRegistryRepository.java",
+      "line": 71,
+      "fingerprint": "115a3e0d53319d31",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "java.lang.security.audit.formatted-sql-string.formatted-sql-string",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/audit/AuditEventQueryRepository.java",
+      "line": 55,
+      "fingerprint": "5a8e52feb357e991",
+      "reason": "Same finding as hoops-sql-concat-from-parameter on these lines (registry rule): constant fragments only, values bound. Defense in depth for WP84 (review Round 5, SD-08).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/audit/AuditEventQueryRepository.java",
+      "line": 55,
+      "fingerprint": "5a8e52feb357e991",
+      "reason": "False positive (reviewed in WP83): page()/count() splice the column list and FROM clause they are given; both callers (JpaAuditTrail, PlatformJpaAuditTrail) pass static constants and every filter value is bound. Defense in depth for WP84: make the fragments a closed type instead of String (review Round 5, SD-08).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "java.lang.security.audit.formatted-sql-string.formatted-sql-string",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/audit/AuditEventQueryRepository.java",
+      "line": 64,
+      "fingerprint": "320f750a4a27c6af",
+      "reason": "Same finding as hoops-sql-concat-from-parameter on these lines (registry rule): constant fragments only, values bound. Defense in depth for WP84 (review Round 5, SD-08).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/audit/AuditEventQueryRepository.java",
+      "line": 64,
+      "fingerprint": "320f750a4a27c6af",
+      "reason": "False positive (reviewed in WP83): page()/count() splice the column list and FROM clause they are given; both callers (JpaAuditTrail, PlatformJpaAuditTrail) pass static constants and every filter value is bound. Defense in depth for WP84: make the fragments a closed type instead of String (review Round 5, SD-08).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaAuditNameRepository.java",
+      "line": 57,
+      "fingerprint": "4551b34c6f5b7466",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaMembershipRepository.java",
+      "line": 97,
+      "fingerprint": "449d9db2c19205b0",
+      "reason": "By design (ADR-0026): the login's membership index is read through the own_memberships subject policy (nil tenant + app.subject); refuses to run inside a tenant-bound transaction and restores app.subject.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaMembershipRepository.java",
+      "line": 107,
+      "fingerprint": "2e1cd33a9eaa2068",
+      "reason": "By design (ADR-0026): the login's membership index is read through the own_memberships subject policy (nil tenant + app.subject); refuses to run inside a tenant-bound transaction and restores app.subject.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaPendingLoginPersonRepository.java",
+      "line": 91,
+      "fingerprint": "de843d8aecc87df5",
+      "reason": "By design (ADR-0028): the temporary-password sweep runs with no tenant bound and sets app.tenant_id per academy (transaction-local) so each academy's RLS policies decide; both settings are restored, also on failure.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaRosterStateRepository.java",
+      "line": 161,
+      "fingerprint": "86d58315cc1fc314",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaRosterStateRepository.java",
+      "line": 165,
+      "fingerprint": "6fea643942d0d708",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaSharedLoginPersonRepository.java",
+      "line": 90,
+      "fingerprint": "2a3ed1e1630dd139",
+      "reason": "By design (ADR-0026): person rows of another academy that shares the login are written with app.tenant_id set to that academy for native statements only, still as core_app so its RLS policies decide; the bound tenant is restored afterwards.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/game-service/src/main/java/com/hoopsacademy/game/adapters/out/persistence/JdbcRepository.java",
+      "line": 36,
+      "fingerprint": "50b25623c84362ba",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/game-service/src/main/java/com/hoopsacademy/game/adapters/out/persistence/JdbcRepository.java",
+      "line": 51,
+      "fingerprint": "50b25623c84362ba",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/game-service/src/main/java/com/hoopsacademy/game/adapters/out/persistence/JdbcRepository.java",
+      "line": 60,
+      "fingerprint": "50b25623c84362ba",
+      "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    }
+  ]
+}
