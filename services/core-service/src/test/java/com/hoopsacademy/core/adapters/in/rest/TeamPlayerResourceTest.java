@@ -74,7 +74,10 @@ class TeamPlayerResourceTest {
         request().get(TEAMS + lions).then().body("playerCount", equalTo(1));
 
         patchJersey(lions, uma, "\"00\"").statusCode(200).body("jerseyNumber", equalTo("00"));
-        patchJersey(lions, uma, "null").statusCode(200).body("jerseyNumber", nullValue());
+        patchJersey(lions, uma, "null").statusCode(200).body("jerseyNumber", equalTo("00"));
+        patchBody(lions, uma, "{\"clear\":[\"jerseyNumber\"]}").statusCode(200).body("jerseyNumber", nullValue());
+        patchBody(lions, uma, "{\"jerseyNumber\":\"5\",\"clear\":[\"jerseyNumber\"]}").statusCode(400)
+                .body("violations.field", contains("jerseyNumber")).body("violations.code", contains("CLEAR_CONFLICT"));
         request().delete(TEAMS + lions + "/players/" + uma).then().statusCode(204);
         assertThat(RosterDb.playerStatus(tenant, uma)).isEqualTo("ORPHAN");
         request().get(TEAMS + lions + "/players").then().body("", empty());
@@ -263,6 +266,10 @@ class TeamPlayerResourceTest {
                 ? given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant) : request();
         return spec.contentType(ContentType.JSON).body("{\"jerseyNumber\":" + jersey + "}")
                 .patch(TEAMS + team + "/players/" + player).then();
+    }
+
+    private ValidatableResponse patchBody(UUID team, UUID player, String json) {
+        return request().contentType(ContentType.JSON).body(json).patch(TEAMS + team + "/players/" + player).then();
     }
 
     private ValidatableResponse check(UUID team, UUID player, String asOf) {

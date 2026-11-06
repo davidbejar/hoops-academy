@@ -62,7 +62,7 @@ class TenantResourceTest {
     }
 
     @Test
-    void adminEditsTheProfileWithMergePatchSemantics() {
+    void adminEditsTheProfileAndClearsTheNamedFields() {
         Members.signIn(tenant, TenantRole.ADMIN);
         patchProfile("{\"name\":\"Hoops Bandung\",\"timezone\":\"Asia/Jakarta\",\"defaultLocale\":\"id\","
                 + "\"contactEmail\":\"info@example.com\",\"websiteUrl\":\"https://hoops.example.com\"}")
@@ -74,9 +74,13 @@ class TenantResourceTest {
         assertThat(CoreDb.auditRow(tenant, "tenant.profile_changed").get("metadata"))
                 .contains("name", "timezone", "contactEmail").doesNotContain("info@example.com");
         patchProfile("{\"contactEmail\":null}").statusCode(200)
+                .body("contactEmail", equalTo("info@example.com"));
+        patchProfile("{\"clear\":[\"contactEmail\"]}").statusCode(200)
                 .body("contactEmail", nullValue())
                 .body("websiteUrl", equalTo("https://hoops.example.com"))
                 .body("name", equalTo("Hoops Bandung"));
+        assertThat(CoreDb.auditRow(tenant, "tenant.profile_changed").get("metadata")).contains("contactEmail")
+                .doesNotContain("websiteUrl", "name");
     }
 
     @Test
@@ -86,6 +90,12 @@ class TenantResourceTest {
                 .body("{}").patch(PROFILE).then().statusCode(400);
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"name\":null}").patch(PROFILE).then().statusCode(400).body("violations.field", hasItem("name"));
+        given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+                .body("{\"clear\":[\"name\"]}").patch(PROFILE).then().statusCode(400)
+                .body("violations.field", hasItem("clear"));
+        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+                .body("{\"websiteUrl\":\"https://x.example.com\",\"clear\":[\"websiteUrl\"]}").patch(PROFILE).then()
+                .statusCode(400).body("violations.code", hasItem("CLEAR_CONFLICT"));
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"websiteUrl\":\"javascript:alert(1)\"}").patch(PROFILE).then().statusCode(400);
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)

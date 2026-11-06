@@ -324,6 +324,8 @@ class PlatformAdminResourceTest {
                 .patch(admins() + "/" + admin).then().statusCode(400);
         given().filter(Contract.RESPONSES_ONLY).contentType(ContentType.JSON).body("{\"email\":null}")
                 .patch(admins() + "/" + admin).then().statusCode(400);
+        given().filter(Contract.RESPONSES_ONLY).contentType(ContentType.JSON).body("{\"clear\":[\"email\"]}")
+                .patch(admins() + "/" + admin).then().statusCode(400);
         given().filter(Contract.RESPONSES_ONLY).contentType(ContentType.JSON).body("{}")
                 .patch(admins() + "/" + admin).then().statusCode(400);
         keycloak.verify(0, anyLoginUpdate());

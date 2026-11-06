@@ -65,7 +65,11 @@ class AgeCategoryResourceTest {
 
         patch(mini, "{\"name\":\"Minis\",\"maxAge\":7}").statusCode(200).body("name", equalTo("Minis")).body("maxAge", equalTo(7));
         patch(open, "{\"maxAge\":30}").statusCode(200).body("maxAge", equalTo(30));
-        patch(open, "{\"maxAge\":null}").statusCode(200).body("maxAge", nullValue());
+        patch(open, "{\"maxAge\":null}").statusCode(200).body("maxAge", equalTo(30));
+        patch(open, "{\"clear\":[\"maxAge\"]}").statusCode(200).body("maxAge", nullValue());
+        patch(open, "{\"maxAge\":31,\"clear\":[\"maxAge\"]}").statusCode(400)
+                .body("violations.code", contains("CLEAR_CONFLICT"));
+        patch(open, "{\"clear\":[]}").statusCode(400);
         request().delete(CATEGORIES + "/" + open).then().statusCode(204);
         request().delete(CATEGORIES + "/" + open).then().statusCode(404);
         patch(UUID.randomUUID().toString(), "{\"name\":\"x\"}").statusCode(404);

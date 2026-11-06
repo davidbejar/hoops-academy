@@ -206,16 +206,25 @@ class MemberResourceTest {
     // ------------------------------------------------------------------ update
 
     @Test
-    void patchUsesMergeSemanticsAndKeepsInvariants() {
+    void patchClearsOnlyTheNamedFieldsAndKeepsInvariants() {
         UUID kid = CoreDb.person(tenant, null, "Leo", "Kid", null, LocalDate.of(2014, 1, 1), "MALE", TenantRole.PLAYER);
         patch(kid, "{\"givenName\":\"Leon\",\"phone\":\"+34 600 000 000\",\"locale\":\"en\"}").statusCode(200)
                 .body("givenName", equalTo("Leon")).body("phone", equalTo("+34 600 000 000"))
                 .body("locale", equalTo("en"));
-        patch(kid, "{\"phone\":null}").statusCode(200).body("phone", nullValue()).body("givenName", equalTo("Leon"));
+        patch(kid, "{\"clear\":[\"phone\"]}").statusCode(200).body("phone", nullValue()).body("givenName", equalTo("Leon"));
         assertThat(CoreDb.auditActions(tenant)).filteredOn("member.updated"::equals).hasSize(2);
         assertThat(CoreDb.auditRow(tenant, "member.updated").get("metadata")).contains("phone")
-                .doesNotContain("+34 600 000 000");
-        patch(kid, "{\"birthDate\":null}").statusCode(422).body("code", equalTo("PLAYER_REQUIRES_BIRTH_AND_GENDER"));
+                .doesNotContain("+34 600 000 000", "givenName");
+        patch(kid, "{\"phone\":\"1\"}").statusCode(200);
+        patch(kid, "{\"phone\":null,\"birthDate\":null}").statusCode(200).body("phone", equalTo("1"))
+                .body("birthDate", equalTo("2014-01-01"));
+        patch(kid, "{\"clear\":[\"birthDate\"]}").statusCode(422).body("code", equalTo("PLAYER_REQUIRES_BIRTH_AND_GENDER"));
+        patch(kid, "{\"clear\":[\"gender\"]}").statusCode(422).body("code", equalTo("PLAYER_REQUIRES_BIRTH_AND_GENDER"));
+        patch(kid, "{\"phone\":\"2\",\"clear\":[\"phone\"]}").statusCode(400)
+                .body("violations.field", contains("phone")).body("violations.code", contains("CLEAR_CONFLICT"));
+        given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+                .body("{\"clear\":[\"givenName\"]}").patch(MEMBERS + "/" + kid).then().statusCode(400)
+                .body("violations.field", contains("clear"));
         patch(kid, "{\"email\":\"ada@example.com\"}").statusCode(409).body("code", equalTo("EMAIL_TAKEN"));
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"gender\":\"OTHER\",\"givenName\":\"\"}").patch(MEMBERS + "/" + kid).then().statusCode(400)
@@ -314,7 +323,8 @@ class MemberResourceTest {
     @Test
     void aMemberWithALoginKeepsAnEmail() {
         UUID coach = coachWithLogin(UUID.randomUUID().toString(), "needed@example.com");
-        patch(coach, "{\"email\":null}").statusCode(422).body("code", equalTo("LOGIN_REQUIRES_EMAIL"));
+        patch(coach, "{\"clear\":[\"email\"]}").statusCode(422).body("code", equalTo("LOGIN_REQUIRES_EMAIL"));
+        patch(coach, "{\"email\":null}").statusCode(200).body("email", equalTo("needed@example.com"));
         keycloak.verify(0, KeycloakStubs.anyLoginUpdate());
     }
 

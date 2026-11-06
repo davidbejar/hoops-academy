@@ -76,8 +76,12 @@ class TeamResourceTest {
                 .body("page.totalPages", equalTo(2));
 
         patch(lions, "{\"name\":\"Big Lions\",\"alias\":null,\"ageCategoryId\":\"" + categories.get("U14") + "\"}")
-                .statusCode(200).body("name", equalTo("Big Lions")).body("alias", nullValue())
+                .statusCode(200).body("name", equalTo("Big Lions")).body("alias", equalTo("L"))
                 .body("ageCategory.code", equalTo("U14"));
+        patch(lions, "{\"clear\":[\"alias\"]}").statusCode(200).body("alias", nullValue())
+                .body("name", equalTo("Big Lions"));
+        patch(lions, "{\"alias\":\"BL\",\"clear\":[\"alias\"]}").statusCode(400)
+                .body("violations.field", contains("alias")).body("violations.code", contains("CLEAR_CONFLICT"));
         patch(cubs, "{\"name\":\"Big Lions\"}").statusCode(409).body("code", equalTo("TEAM_NAME_TAKEN"));
         request().get(TEAMS + "/" + UUID.randomUUID()).then().statusCode(404);
         patch(UUID.randomUUID().toString(), "{\"name\":\"x\"}").statusCode(404);

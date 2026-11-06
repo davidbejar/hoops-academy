@@ -86,6 +86,8 @@ class SeasonResourceTest {
         requestUnchecked().contentType(ContentType.JSON).body("{}").patch(SEASONS + "/" + id).then().statusCode(400);
         requestUnchecked().contentType(ContentType.JSON).body("{\"referenceYear\":\"x\",\"name\":null}")
                 .patch(SEASONS + "/" + id).then().statusCode(400);
+        requestUnchecked().contentType(ContentType.JSON).body("{\"clear\":[\"name\"]}")
+                .patch(SEASONS + "/" + id).then().statusCode(400).body("violations.field", contains("clear"));
     }
 
     @ParameterizedTest
