@@ -55,6 +55,56 @@ public final class CoreStubs {
         return this;
     }
 
+    /** A team roster with full player rows ({@code [id, displayName, birthDate, gender, status]}) and staff person ids. */
+    public CoreStubs rosterOf(String tenant, String team, String teamName, List<String[]> players, List<String> staff) {
+        String rows = players.stream()
+                .map(p -> "{\"playerId\":\"%s\",\"displayName\":\"%s\",\"birthDate\":\"%s\",\"gender\":\"%s\",\"status\":\"%s\"}"
+                        .formatted(p[0], p[1], p[2], p[3], p[4]))
+                .collect(Collectors.joining(","));
+        String staffRows = staff.stream().map(id -> "{\"personId\":\"%s\",\"role\":\"COACH\"}".formatted(id))
+                .collect(Collectors.joining(","));
+        wireMock.register(get(urlPathEqualTo("/internal/teams/" + team + "/roster"))
+                .withQueryParam("tenantId", equalTo(tenant))
+                .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody(
+                        "{\"tenantId\":\"%s\",\"teamId\":\"%s\",\"seasonId\":\"%s\",\"teamName\":\"%s\",\"players\":[%s],\"staff\":[%s]}"
+                                .formatted(tenant, team, UUID.randomUUID(), teamName, rows, staffRows))));
+        return this;
+    }
+
+    /** The players batch answers these full rows ({@code [id, displayName, birthDate, gender, status]}). */
+    public CoreStubs playerBriefs(String tenant, List<String[]> players) {
+        String rows = players.stream()
+                .map(p -> "{\"id\":\"%s\",\"displayName\":\"%s\",\"birthDate\":\"%s\",\"gender\":\"%s\",\"status\":\"%s\"}"
+                        .formatted(p[0], p[1], p[2], p[3], p[4]))
+                .collect(Collectors.joining(","));
+        wireMock.register(post(urlPathEqualTo("/internal/players:batch"))
+                .withQueryParam("tenantId", equalTo(tenant))
+                .willReturn(aResponse().withHeader("Content-Type", "application/json")
+                        .withBody("{\"players\":[%s]}".formatted(rows))));
+        return this;
+    }
+
+    /**
+     * A full {@code AuthzContext} answer: person id, roles, staff teams, linked players, own player (or null), player
+     * teams and zone ({@code null} = absent), tenant status.
+     */
+    public CoreStubs memberContext(String tenant, String sub, UUID personId, String status, String timezone,
+            List<String> roles, List<UUID> staffTeams, List<UUID> linked, UUID ownPlayer, List<UUID> playerTeams) {
+        wireMock.register(get(urlPathEqualTo("/internal/authz/" + tenant + "/" + sub))
+                .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody(
+                        ("{\"sub\":\"%s\",\"personId\":\"%s\",\"tenantId\":\"%s\",\"tenantStatus\":\"%s\",\"roles\":%s,"
+                                + "\"staffTeamIds\":%s,\"linkedPlayerIds\":%s,\"ownPlayerId\":%s,\"playerTeamIds\":%s%s}")
+                                .formatted(sub, personId, tenant, status, json(roles), json(strings(staffTeams)),
+                                        json(strings(linked)), ownPlayer == null ? "null" : "\"" + ownPlayer + "\"",
+                                        json(strings(playerTeams)),
+                                        timezone == null ? "" : ",\"timezone\":\"" + timezone + "\""))));
+        return this;
+    }
+
+    private static List<String> strings(List<UUID> ids) {
+        return ids.stream().map(UUID::toString).toList();
+    }
+
     public CoreStubs rosterNotFound(String tenant, String team) {
         wireMock.register(get(urlPathEqualTo("/internal/teams/" + team + "/roster"))
                 .withQueryParam("tenantId", equalTo(tenant))

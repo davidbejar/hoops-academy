@@ -41,7 +41,9 @@ class AthleteGenericRlsIsolationTest extends GenericRlsIsolationTest {
                 "athlete.body_measurement", Map.of(
                         "height_cm", (c, t) -> 170.5),
                 "athlete.physical_test_result", Map.of(
-                        "test_type_id", AthleteGenericRlsIsolationTest::insertTestType));
+                        "test_type_id", AthleteGenericRlsIsolationTest::insertTestType),
+                "athlete.person_ref", Map.of(
+                        "roles", (c, t) -> "{COACH}"));
     }
 
     /** A tenant plan of the same tenant, as the composite foreign key of an assignment requires. */
