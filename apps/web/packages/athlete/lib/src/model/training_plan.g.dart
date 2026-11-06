@@ -12,6 +12,8 @@ class _$TrainingPlan extends TrainingPlan {
   @override
   final String name;
   @override
+  final String? nameKey;
+  @override
   final String? description;
   @override
   final bool template;
@@ -32,6 +34,7 @@ class _$TrainingPlan extends TrainingPlan {
   _$TrainingPlan._(
       {required this.id,
       required this.name,
+      this.nameKey,
       this.description,
       required this.template,
       this.sourceTemplateId,
@@ -53,6 +56,7 @@ class _$TrainingPlan extends TrainingPlan {
     return other is TrainingPlan &&
         id == other.id &&
         name == other.name &&
+        nameKey == other.nameKey &&
         description == other.description &&
         template == other.template &&
         sourceTemplateId == other.sourceTemplateId &&
@@ -67,6 +71,7 @@ class _$TrainingPlan extends TrainingPlan {
     var _$hash = 0;
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, name.hashCode);
+    _$hash = $jc(_$hash, nameKey.hashCode);
     _$hash = $jc(_$hash, description.hashCode);
     _$hash = $jc(_$hash, template.hashCode);
     _$hash = $jc(_$hash, sourceTemplateId.hashCode);
@@ -83,6 +88,7 @@ class _$TrainingPlan extends TrainingPlan {
     return (newBuiltValueToStringHelper(r'TrainingPlan')
           ..add('id', id)
           ..add('name', name)
+          ..add('nameKey', nameKey)
           ..add('description', description)
           ..add('template', template)
           ..add('sourceTemplateId', sourceTemplateId)
@@ -105,6 +111,10 @@ class TrainingPlanBuilder
   String? _name;
   String? get name => _$this._name;
   set name(String? name) => _$this._name = name;
+
+  String? _nameKey;
+  String? get nameKey => _$this._nameKey;
+  set nameKey(String? nameKey) => _$this._nameKey = nameKey;
 
   String? _description;
   String? get description => _$this._description;
@@ -145,6 +155,7 @@ class TrainingPlanBuilder
     if ($v != null) {
       _id = $v.id;
       _name = $v.name;
+      _nameKey = $v.nameKey;
       _description = $v.description;
       _template = $v.template;
       _sourceTemplateId = $v.sourceTemplateId;
@@ -179,6 +190,7 @@ class TrainingPlanBuilder
                 id, r'TrainingPlan', 'id'),
             name: BuiltValueNullFieldError.checkNotNull(
                 name, r'TrainingPlan', 'name'),
+            nameKey: nameKey,
             description: description,
             template: BuiltValueNullFieldError.checkNotNull(
                 template, r'TrainingPlan', 'template'),

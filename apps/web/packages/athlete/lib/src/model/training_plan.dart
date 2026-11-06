@@ -14,8 +14,9 @@ part 'training_plan.g.dart';
 ///
 /// Properties:
 /// * [id]
-/// * [name]
-/// * [description]
+/// * [name] - Templates in the negotiated language (`Accept-Language`, fallback `en`); tenant plans as stored.
+/// * [nameKey] - Stable key of a global template's texts (e.g. `form-shooting`), the same in every language; null for tenant plans (copies included).
+/// * [description] - Same language rule as `name`.
 /// * [template] - Global, read-only template (copy before use).
 /// * [sourceTemplateId] - Template (or plan) this plan was copied from.
 /// * [itemCount]
@@ -27,9 +28,15 @@ abstract class TrainingPlan implements Built<TrainingPlan, TrainingPlanBuilder> 
   @BuiltValueField(wireName: r'id')
   String get id;
 
+  /// Templates in the negotiated language (`Accept-Language`, fallback `en`); tenant plans as stored.
   @BuiltValueField(wireName: r'name')
   String get name;
 
+  /// Stable key of a global template's texts (e.g. `form-shooting`), the same in every language; null for tenant plans (copies included).
+  @BuiltValueField(wireName: r'nameKey')
+  String? get nameKey;
+
+  /// Same language rule as `name`.
   @BuiltValueField(wireName: r'description')
   String? get description;
 
@@ -87,6 +94,13 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
       object.name,
       specifiedType: const FullType(String),
     );
+    if (object.nameKey != null) {
+      yield r'nameKey';
+      yield serializers.serialize(
+        object.nameKey,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
     if (object.description != null) {
       yield r'description';
       yield serializers.serialize(
@@ -164,6 +178,14 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
             specifiedType: const FullType(String),
           ) as String;
           result.name = valueDes;
+          break;
+        case r'nameKey':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.nameKey = valueDes;
           break;
         case r'description':
           final valueDes = serializers.deserialize(

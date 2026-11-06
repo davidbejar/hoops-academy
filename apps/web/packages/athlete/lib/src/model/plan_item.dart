@@ -8,7 +8,7 @@ import 'package:built_value/serializer.dart';
 
 part 'plan_item.g.dart';
 
-/// PlanItem
+/// The `title` and `description` of a template's item follow the plan's language rule (`TrainingPlan.name`).
 ///
 /// Properties:
 /// * [title]
