@@ -65,6 +65,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TimeoutPayloadSideEnum.serializer)
       ..add(TurnoverEvent.serializer)
       ..add(UpdateMatchRequest.serializer)
+      ..add(UpdateMatchRequestClearEnum.serializer)
       ..add(UsageReport.serializer)
       ..add(UsageReportServiceEnum.serializer)
       ..add(VoidEvent.serializer)
@@ -109,7 +110,11 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(
               BuiltMap, const [const FullType(String), const FullType(int)]),
-          () => MapBuilder<String, int>()))
+          () => MapBuilder<String, int>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltSet, const [const FullType(UpdateMatchRequestClearEnum)]),
+          () => SetBuilder<UpdateMatchRequestClearEnum>()))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

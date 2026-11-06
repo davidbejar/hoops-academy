@@ -133,12 +133,36 @@ part 'serializers.g.dart';
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(MatchRosterEntryInput)]),
-        () => ListBuilder<MatchRosterEntryInput>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MatchEvent)]),
         () => ListBuilder<MatchEvent>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlayerMatchLine)]),
+        () => ListBuilder<PlayerMatchLine>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltSet, [FullType(String)]),
+        () => SetBuilder<String>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(StoredMatchEvent)]),
+        () => ListBuilder<StoredMatchEvent>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(MatchRosterEntry)]),
+        () => ListBuilder<MatchRosterEntry>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlayerMatchStats)]),
+        () => ListBuilder<PlayerMatchStats>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(ProblemViolation)]),
+        () => ListBuilder<ProblemViolation>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(MatchRosterEntryInput)]),
+        () => ListBuilder<MatchRosterEntryInput>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(MatchEventResult)]),
@@ -149,36 +173,16 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<PeriodScore>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(PlayerMatchLine)]),
-        () => ListBuilder<PlayerMatchLine>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(StoredMatchEvent)]),
-        () => ListBuilder<StoredMatchEvent>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(ProjectionWarning)]),
         () => ListBuilder<ProjectionWarning>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(MatchRosterEntry)]),
-        () => ListBuilder<MatchRosterEntry>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(Match)]),
         () => ListBuilder<Match>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(PlayerMatchStats)]),
-        () => ListBuilder<PlayerMatchStats>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltMap, [FullType(String), FullType(int)]),
         () => MapBuilder<String, int>(),
-      )
-      ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(ProblemViolation)]),
-        () => ListBuilder<ProblemViolation>(),
       )
       ..add(const OneOfSerializer())
       ..add(const AnyOfSerializer())

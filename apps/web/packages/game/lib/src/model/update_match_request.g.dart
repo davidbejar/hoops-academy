@@ -6,6 +6,63 @@ part of 'update_match_request.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const UpdateMatchRequestClearEnum _$updateMatchRequestClearEnum_venue =
+    const UpdateMatchRequestClearEnum._('venue');
+const UpdateMatchRequestClearEnum
+    _$updateMatchRequestClearEnum_unknownDefaultOpenApi =
+    const UpdateMatchRequestClearEnum._('unknownDefaultOpenApi');
+
+UpdateMatchRequestClearEnum _$updateMatchRequestClearEnumValueOf(String name) {
+  switch (name) {
+    case 'venue':
+      return _$updateMatchRequestClearEnum_venue;
+    case 'unknownDefaultOpenApi':
+      return _$updateMatchRequestClearEnum_unknownDefaultOpenApi;
+    default:
+      return _$updateMatchRequestClearEnum_unknownDefaultOpenApi;
+  }
+}
+
+final BuiltSet<UpdateMatchRequestClearEnum>
+    _$updateMatchRequestClearEnumValues =
+    BuiltSet<UpdateMatchRequestClearEnum>(const <UpdateMatchRequestClearEnum>[
+  _$updateMatchRequestClearEnum_venue,
+  _$updateMatchRequestClearEnum_unknownDefaultOpenApi,
+]);
+
+Serializer<UpdateMatchRequestClearEnum>
+    _$updateMatchRequestClearEnumSerializer =
+    _$UpdateMatchRequestClearEnumSerializer();
+
+class _$UpdateMatchRequestClearEnumSerializer
+    implements PrimitiveSerializer<UpdateMatchRequestClearEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'venue': 'venue',
+    'unknownDefaultOpenApi': 'unknown_default_open_api',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'venue': 'venue',
+    'unknown_default_open_api': 'unknownDefaultOpenApi',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[UpdateMatchRequestClearEnum];
+  @override
+  final String wireName = 'UpdateMatchRequestClearEnum';
+
+  @override
+  Object serialize(Serializers serializers, UpdateMatchRequestClearEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  UpdateMatchRequestClearEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      UpdateMatchRequestClearEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$UpdateMatchRequest extends UpdateMatchRequest {
   @override
   final String? opponentName;
@@ -19,6 +76,8 @@ class _$UpdateMatchRequest extends UpdateMatchRequest {
   final int? periodCount;
   @override
   final int? periodMinutes;
+  @override
+  final BuiltSet<UpdateMatchRequestClearEnum>? clear;
 
   factory _$UpdateMatchRequest(
           [void Function(UpdateMatchRequestBuilder)? updates]) =>
@@ -30,7 +89,8 @@ class _$UpdateMatchRequest extends UpdateMatchRequest {
       this.scheduledAt,
       this.venue,
       this.periodCount,
-      this.periodMinutes})
+      this.periodMinutes,
+      this.clear})
       : super._();
   @override
   UpdateMatchRequest rebuild(
@@ -50,7 +110,8 @@ class _$UpdateMatchRequest extends UpdateMatchRequest {
         scheduledAt == other.scheduledAt &&
         venue == other.venue &&
         periodCount == other.periodCount &&
-        periodMinutes == other.periodMinutes;
+        periodMinutes == other.periodMinutes &&
+        clear == other.clear;
   }
 
   @override
@@ -62,6 +123,7 @@ class _$UpdateMatchRequest extends UpdateMatchRequest {
     _$hash = $jc(_$hash, venue.hashCode);
     _$hash = $jc(_$hash, periodCount.hashCode);
     _$hash = $jc(_$hash, periodMinutes.hashCode);
+    _$hash = $jc(_$hash, clear.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -74,7 +136,8 @@ class _$UpdateMatchRequest extends UpdateMatchRequest {
           ..add('scheduledAt', scheduledAt)
           ..add('venue', venue)
           ..add('periodCount', periodCount)
-          ..add('periodMinutes', periodMinutes))
+          ..add('periodMinutes', periodMinutes)
+          ..add('clear', clear))
         .toString();
   }
 }
@@ -108,6 +171,12 @@ class UpdateMatchRequestBuilder
   set periodMinutes(int? periodMinutes) =>
       _$this._periodMinutes = periodMinutes;
 
+  SetBuilder<UpdateMatchRequestClearEnum>? _clear;
+  SetBuilder<UpdateMatchRequestClearEnum> get clear =>
+      _$this._clear ??= SetBuilder<UpdateMatchRequestClearEnum>();
+  set clear(SetBuilder<UpdateMatchRequestClearEnum>? clear) =>
+      _$this._clear = clear;
+
   UpdateMatchRequestBuilder() {
     UpdateMatchRequest._defaults(this);
   }
@@ -121,6 +190,7 @@ class UpdateMatchRequestBuilder
       _venue = $v.venue;
       _periodCount = $v.periodCount;
       _periodMinutes = $v.periodMinutes;
+      _clear = $v.clear?.toBuilder();
       _$v = null;
     }
     return this;
@@ -140,15 +210,29 @@ class UpdateMatchRequestBuilder
   UpdateMatchRequest build() => _build();
 
   _$UpdateMatchRequest _build() {
-    final _$result = _$v ??
-        _$UpdateMatchRequest._(
-          opponentName: opponentName,
-          homeAway: homeAway,
-          scheduledAt: scheduledAt,
-          venue: venue,
-          periodCount: periodCount,
-          periodMinutes: periodMinutes,
-        );
+    _$UpdateMatchRequest _$result;
+    try {
+      _$result = _$v ??
+          _$UpdateMatchRequest._(
+            opponentName: opponentName,
+            homeAway: homeAway,
+            scheduledAt: scheduledAt,
+            venue: venue,
+            periodCount: periodCount,
+            periodMinutes: periodMinutes,
+            clear: _clear?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'clear';
+        _clear?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'UpdateMatchRequest', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

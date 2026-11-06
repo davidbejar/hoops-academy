@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_game_api/src/model/home_away.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -18,6 +19,7 @@ part 'update_match_request.g.dart';
 /// * [venue] 
 /// * [periodCount] 
 /// * [periodMinutes] 
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateMatchRequest implements Built<UpdateMatchRequest, UpdateMatchRequestBuilder> {
   @BuiltValueField(wireName: r'opponentName')
@@ -38,6 +40,11 @@ abstract class UpdateMatchRequest implements Built<UpdateMatchRequest, UpdateMat
 
   @BuiltValueField(wireName: r'periodMinutes')
   int? get periodMinutes;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateMatchRequestClearEnum>? get clear;
+  // enum clearEnum {  venue,  };
 
   UpdateMatchRequest._();
 
@@ -102,6 +109,13 @@ class _$UpdateMatchRequestSerializer implements PrimitiveSerializer<UpdateMatchR
       yield serializers.serialize(
         object.periodMinutes,
         specifiedType: const FullType(int),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateMatchRequestClearEnum)]),
       );
     }
   }
@@ -175,6 +189,14 @@ class _$UpdateMatchRequestSerializer implements PrimitiveSerializer<UpdateMatchR
           if (valueDes == null) continue;
           result.periodMinutes = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateMatchRequestClearEnum)]),
+          ) as BuiltSet<UpdateMatchRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -204,4 +226,19 @@ class _$UpdateMatchRequestSerializer implements PrimitiveSerializer<UpdateMatchR
   }
 }
 
+
+class UpdateMatchRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'venue')
+  static const UpdateMatchRequestClearEnum venue = _$updateMatchRequestClearEnum_venue;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateMatchRequestClearEnum unknownDefaultOpenApi = _$updateMatchRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateMatchRequestClearEnum> get serializer => _$updateMatchRequestClearEnumSerializer;
+
+  const UpdateMatchRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateMatchRequestClearEnum> get values => _$updateMatchRequestClearEnumValues;
+  static UpdateMatchRequestClearEnum valueOf(String name) => _$updateMatchRequestClearEnumValueOf(name);
+}
 
