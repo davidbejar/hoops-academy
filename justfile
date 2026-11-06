@@ -52,6 +52,10 @@ events-topics:
 events-replay SERVICE:
     infra/compose/events-replay.sh {{SERVICE}}
 
+# Publish core's roster aggregates that have no event yet (WP81; idempotent): just events-backfill [<tenant-id>] [force]
+events-backfill *ARGS:
+    infra/compose/events-backfill.sh {{ARGS}}
+
 down:
     podman compose --env-file .env -f infra/compose/compose.yaml down
 

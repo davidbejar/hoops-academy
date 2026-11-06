@@ -36,6 +36,7 @@ public enum AuditAction {
     PLAYER_REQUESTED("player.requested", PLAYER),
     PLAYER_WITHDRAWN("player.withdrawn", PLAYER),
     TENANT_CREATED("tenant.created", TENANT),
+    TENANT_EVENTS_BACKFILLED("tenant.events_backfilled", TENANT),
     TENANT_LOGO_REMOVED("tenant.logo_removed", TENANT),
     TENANT_LOGO_REPLACED("tenant.logo_replaced", TENANT),
     TENANT_MASTER_DATA_CHANGED("tenant.master_data_changed", TENANT),

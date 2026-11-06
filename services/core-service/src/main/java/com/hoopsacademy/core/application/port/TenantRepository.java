@@ -22,6 +22,9 @@ public interface TenantRepository {
 
     PageResult<Tenant> list(Optional<TenantStatus> status, Optional<String> query, PageRequest page);
 
+    /** Ids of every registered tenant, oldest first (the events backfill, WP81). */
+    java.util.List<TenantId> ids();
+
     /** Ids of the tenants registered in {@code [from, to)} (onboarding repair). */
     java.util.List<TenantId> createdBetween(java.time.Instant from, java.time.Instant to);
 

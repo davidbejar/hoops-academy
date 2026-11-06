@@ -48,6 +48,7 @@ appearing in all three.
 | `player.requested` | player | `approvalRequestId`, `action`, `playerId`, `status`, `requestedBy` | COACH request (also an outbox event) |
 | `player.withdrawn` | player | as `player.approved` | ADMIN withdrawal or approved WITHDRAW_PLAYER (also an outbox event) |
 | `tenant.created` | tenant | `slug` | super admin, onboarding |
+| `tenant.events_backfilled` | tenant | `force`, `events` (count appended), `topics` (topic names) | super admin, `POST /platform/events/backfill` (WP81) |
 | `tenant.logo_removed` | tenant | – | ADMIN |
 | `tenant.logo_replaced` | tenant | `contentType`, `sizeBytes` | ADMIN |
 | `tenant.master_data_changed` | tenant | `fields` (`name`, `timezone`, `defaultLocale`) | super admin |

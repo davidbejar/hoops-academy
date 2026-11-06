@@ -458,6 +458,33 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
 
+  /platform/events/backfill:
+    post:
+      operationId: backfillRosterEvents
+      tags: [Platform]
+      summary: Publish the roster aggregates that have no event yet
+      description: |
+        Appends one `<aggregate>.changed` event (libs/contracts/events) to the outbox for every live roster aggregate of
+        every academy (or of `tenantId`) that has no roster event yet (data older than the outbox publisher, WP67), or
+        for every live aggregate with `force`. The publisher sends them like any other change, in outbox order per aggregate.
+        Idempotent without `force`: a second run appends nothing. Each academy that got events gets an audit row
+        `tenant.events_backfilled`. Runs synchronously (WP81, ADR-0037 "When rest flips"). Authz: super_admin.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EventBackfillRequest'}
+      responses:
+        '200':
+          description: What the run appended.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EventBackfill'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
   # ------------------------------------------------------------------ me
   /api/core/me:
     get:
@@ -2021,6 +2048,7 @@ components:
         - player.requested
         - player.withdrawn
         - tenant.created
+        - tenant.events_backfilled
         - tenant.logo_removed
         - tenant.logo_replaced
         - tenant.master_data_changed
@@ -2112,6 +2140,39 @@ components:
           type: array
           items: {$ref: '#/components/schemas/PlatformAuditEvent'}
         page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    EventBackfillRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+          description: Only this academy (404 when unknown); every academy when absent.
+        force:
+          type: boolean
+          default: false
+          description: Also aggregates that have events already (a fresh snapshot of everything).
+    EventBackfill:
+      type: object
+      required: [force, tenants, failed, appended, appendedByTopic]
+      properties:
+        force: {type: boolean}
+        tenants:
+          type: integer
+          minimum: 0
+          description: Academies examined.
+        failed:
+          type: integer
+          minimum: 0
+          description: Academies whose backfill failed (logged; the others went on). Run again to retry them.
+        appended:
+          type: integer
+          minimum: 0
+          description: Events appended to the outbox (all topics).
+        appendedByTopic:
+          type: object
+          description: Events appended per topic (`core.<aggregate>`); topics without any are left out.
+          additionalProperties: {type: integer, minimum: 0}
     PlayerStatus:
       type: string
       description: |

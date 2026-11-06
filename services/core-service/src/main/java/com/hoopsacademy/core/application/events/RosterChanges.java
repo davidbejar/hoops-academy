@@ -78,6 +78,11 @@ public class RosterChanges {
         record(new RosterChange.Tenant());
     }
 
+    /** Any change, e.g. the events backfill republishing an aggregate that has no event yet (WP81). */
+    public void report(RosterChange change) {
+        record(change);
+    }
+
     private void record(RosterChange change) {
         if (transactions.getTransactionKey() == null) {
             throw new IllegalStateException("Roster changes are written inside a transaction: " + change);
