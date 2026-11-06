@@ -76,6 +76,11 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
   handover and the docs pass applies it.
 - The Podman VM clock drifts after host sleep and Keycloak tokens look expired. The hooks resync it; by hand:
   `podman machine ssh "sudo date -u -s @$(date +%s)"`.
+- Action pins: a release tag may be an annotated tag object; `git/ref/tags/<tag>` then returns `type: tag` and the
+  pin must be the dereferenced commit (`git/tags/<sha>.object.sha`). Actions cannot check out a tag object SHA
+  (WP55 pinned one; the orchestrator's spot-check caught it).
+- Hook under load: with five or more parallel builds the isolation check's Keycloak container can miss its 120 s
+  wait and the commit is blocked; retry when a build finishes instead of bypassing.
 - Commit trailers: a brief that fixes the `Co-Authored-By` line gets that line from every model (WP38, WP41 noted
   it); drop the line from the brief to have agents name the model that did the work.
 

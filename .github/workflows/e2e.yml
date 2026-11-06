@@ -65,11 +65,16 @@ jobs:
         with:
           chrome-version: 157.0.8103.38
           install-chromedriver: true
+      # chromedriver looks up `google-chrome` before anything on PATH, so the runner's own Chrome (another major) wins
+      # over the action's; point that name at the pinned build.
+      - name: Make the pinned Chrome the default google-chrome
+        run: sudo ln -sf "${{ steps.chrome.outputs.chrome-path }}" /usr/bin/google-chrome && google-chrome --version
       - name: Browser login round trip (first sign-in, temporary password)
         # headless Chrome + chromedriver against the stack: app -> Keycloak `hoops` theme -> update-password -> signed in
         working-directory: apps/web
         env:
           CHROMEDRIVER: ${{ steps.chrome.outputs.chromedriver-path }}
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
           HOOPS_E2E_ARTIFACT_DIR: ${{ github.workspace }}/browser-login-artifacts
         run: |
           flutter pub get

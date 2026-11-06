@@ -4,7 +4,7 @@
 #   2. builds the release web app against the local issuer and serves build/web on :5173 (the origin the realm allows),
 #   3. runs browser_login_check.py --set-new-password.
 # Needs: stack up (`just up`), .env (KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD), flutter, python3, chromedriver
-# matching Chrome on PATH (or CHROMEDRIVER). Optional: HOOPS_E2E_ARTIFACT_DIR for the failure screenshot.
+# matching Chrome on PATH (or CHROMEDRIVER; CHROME = Chrome binary). Optional: HOOPS_E2E_ARTIFACT_DIR for the failure screenshot.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 if [ -f .env ]; then set -a; . ./.env; set +a; fi

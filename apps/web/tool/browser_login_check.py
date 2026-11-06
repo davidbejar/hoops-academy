@@ -50,7 +50,10 @@ class WebDriver:
         args = ["--window-size=390,844", "--no-first-run", "--lang=es"]
         if not headed:
             args += ["--headless=new", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
-        caps = {"capabilities": {"alwaysMatch": {"browserName": "chrome", "goog:chromeOptions": {"args": args}}}}
+        chrome_options = {"args": args}
+        if os.environ.get("CHROME"):  # binary to drive (CI: the pinned Chrome for Testing); default: chromedriver's lookup
+            chrome_options["binary"] = os.environ["CHROME"]
+        caps = {"capabilities": {"alwaysMatch": {"browserName": "chrome", "goog:chromeOptions": chrome_options}}}
         self.session = self._call("POST", "/session", caps)["sessionId"]
 
     def _call(self, method, path, body=None):
