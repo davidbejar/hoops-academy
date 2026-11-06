@@ -31,7 +31,7 @@ jobs:
     env:
       IMAGE: localhost/hoops/${{ matrix.service }}:${{ github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build (multi-stage, Maven inside the container)
         run: |
           podman build -f deploy/containers/service.Containerfile \
@@ -71,7 +71,7 @@ jobs:
     env:
       IMAGE: localhost/hoops/web:${{ github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: true}
       - name: flutter build web
@@ -109,8 +109,8 @@ jobs:
   charts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
       - name: Install kubeconform + gitleaks
         run: |
           curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin kubeconform
