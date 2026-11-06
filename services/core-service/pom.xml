@@ -20,6 +20,8 @@
     <!-- not managed by the parent / Quarkus BOM -->
     <assertj.version>3.27.7</assertj.version>
     <wiremock.version>3.13.2</wiremock.version>
+    <!-- same line as libs/contracts and game-service (Jackson 2) -->
+    <json-schema-validator.version>2.0.8</json-schema-validator.version>
     <!-- tests tagged "keycloak" need a Keycloak container: run with -Pkeycloak-it -->
     <surefire.excludedGroups>keycloak</surefire.excludedGroups>
     <surefire.groups></surefire.groups>
@@ -91,6 +93,11 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
     </dependency>
+    <!-- outbox publisher (WP67, ADR-0036): Kafka producer to Redpanda; version from the Quarkus BOM -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-messaging-kafka</artifactId>
+    </dependency>
 
     <!-- ===== test ===== -->
     <dependency>
@@ -102,6 +109,13 @@
     <dependency>
       <groupId>com.hoopsacademy</groupId>
       <artifactId>contracts</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- the outbox payloads and published events are validated against libs/contracts/events (WP67) -->
+    <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>${json-schema-validator.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

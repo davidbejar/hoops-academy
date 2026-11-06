@@ -212,7 +212,7 @@ echo "== event broker (WP66, ADR-0036)"
 V=deploy/helm/hoops/values.yaml
 chart_img=$(awk '/^events:/ {e=1} e && /^      repository: / {r=$2} e && /^      tag: / {t=$2} e && /^      digest: / {print r ":" t "@" $2; exit}' "$V")
 compose_img=$(sed -n 's/^    image: \(docker.io\/redpandadata\/redpanda:.*\)$/\1/p' infra/compose/compose.yaml)
-devsvc_img=$(sed -n 's/^# *quarkus.kafka.devservices.image-name=\(.*\)$/\1/p' libs/common-quarkus/src/main/resources/META-INF/microprofile-config.properties)
+devsvc_img=$(sed -n 's/^\(# *\)\{0,1\}quarkus.kafka.devservices.image-name=\(.*\)$/\2/p' libs/common-quarkus/src/main/resources/META-INF/microprofile-config.properties)
 [ -n "$chart_img" ] && [ "$chart_img" = "$compose_img" ] && [ "${chart_img%@*}" = "$devsvc_img" ] \
   && ok "Redpanda pin ${chart_img%@*} (digest pinned) in chart, compose and Dev Services" \
   || bad "Redpanda pins differ: chart '$chart_img', compose '$compose_img', Dev Services '$devsvc_img'"
