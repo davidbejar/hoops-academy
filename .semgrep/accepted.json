@@ -57,7 +57,7 @@
       "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/audit/AuditEventQueryRepository.java",
       "line": 55,
       "fingerprint": "5a8e52feb357e991",
-      "reason": "Same finding as hoops-sql-concat-from-parameter on these lines (registry rule): constant fragments only, values bound. Defense in depth for WP84 (review Round 5, SD-08).",
+      "reason": "Same finding as hoops-sql-concat-from-parameter on these lines (registry rule): constant fragments only, values bound. Defense in depth for WP84 (review Round 5, SD-05).",
       "expires": "2027-05-06"
     },
     {
@@ -65,7 +65,7 @@
       "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/audit/AuditEventQueryRepository.java",
       "line": 55,
       "fingerprint": "5a8e52feb357e991",
-      "reason": "False positive (reviewed in WP83): page()/count() splice the column list and FROM clause they are given; both callers (JpaAuditTrail, PlatformJpaAuditTrail) pass static constants and every filter value is bound. Defense in depth for WP84: make the fragments a closed type instead of String (review Round 5, SD-08).",
+      "reason": "False positive (reviewed in WP83): page()/count() splice the column list and FROM clause they are given; both callers (JpaAuditTrail, PlatformJpaAuditTrail) pass static constants and every filter value is bound. Defense in depth for WP84: make the fragments a closed type instead of String (review Round 5, SD-05).",
       "expires": "2027-05-06"
     },
     {
@@ -73,7 +73,7 @@
       "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/audit/AuditEventQueryRepository.java",
       "line": 64,
       "fingerprint": "320f750a4a27c6af",
-      "reason": "Same finding as hoops-sql-concat-from-parameter on these lines (registry rule): constant fragments only, values bound. Defense in depth for WP84 (review Round 5, SD-08).",
+      "reason": "Same finding as hoops-sql-concat-from-parameter on these lines (registry rule): constant fragments only, values bound. Defense in depth for WP84 (review Round 5, SD-05).",
       "expires": "2027-05-06"
     },
     {
@@ -81,7 +81,7 @@
       "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/audit/AuditEventQueryRepository.java",
       "line": 64,
       "fingerprint": "320f750a4a27c6af",
-      "reason": "False positive (reviewed in WP83): page()/count() splice the column list and FROM clause they are given; both callers (JpaAuditTrail, PlatformJpaAuditTrail) pass static constants and every filter value is bound. Defense in depth for WP84: make the fragments a closed type instead of String (review Round 5, SD-08).",
+      "reason": "False positive (reviewed in WP83): page()/count() splice the column list and FROM clause they are given; both callers (JpaAuditTrail, PlatformJpaAuditTrail) pass static constants and every filter value is bound. Defense in depth for WP84: make the fragments a closed type instead of String (review Round 5, SD-05).",
       "expires": "2027-05-06"
     },
     {
