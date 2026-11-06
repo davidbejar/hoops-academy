@@ -62,7 +62,9 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
       child: AsyncBody<LiveMatch>(
         value: value,
         onRetry: () => ref.invalidate(liveMatchProvider(widget.matchId)),
-        builder: (context, m) => m.roster.isEmpty ? _NoRoster(live: m) : _LiveBody(live: m, clock: _clock),
+        builder: (context, m) => m.roster.isEmpty
+            ? _NoRoster(live: m)
+            : _LiveBody(live: m, clock: _clock),
       ),
     );
   }
@@ -111,18 +113,36 @@ class _StaffMenu extends ConsumerWidget {
           case 'start':
             await runAction(context, ctl.startMatch);
           case 'finish':
-            if (await confirmDialog(context, message: l.matchFinishConfirm, confirmLabel: l.matchFinish) && context.mounted) {
+            if (await confirmDialog(
+                  context,
+                  message: l.matchFinishConfirm,
+                  confirmLabel: l.matchFinish,
+                ) &&
+                context.mounted) {
               await runAction(context, ctl.finishMatch);
             }
         }
       },
       itemBuilder: (_) => [
-        if (status != gen.MatchStatus.FINISHED && status != gen.MatchStatus.CANCELLED)
-          PopupMenuItem(value: 'setup', key: const Key('menu-setup'), child: Text(l.matchSetup)),
+        if (status != gen.MatchStatus.FINISHED &&
+            status != gen.MatchStatus.CANCELLED)
+          PopupMenuItem(
+            value: 'setup',
+            key: const Key('menu-setup'),
+            child: Text(l.matchSetup),
+          ),
         if (status == gen.MatchStatus.SCHEDULED)
-          PopupMenuItem(value: 'start', key: const Key('menu-start'), child: Text(l.matchStart)),
+          PopupMenuItem(
+            value: 'start',
+            key: const Key('menu-start'),
+            child: Text(l.matchStart),
+          ),
         if (status == gen.MatchStatus.LIVE)
-          PopupMenuItem(value: 'finish', key: const Key('menu-finish'), child: Text(l.matchFinish)),
+          PopupMenuItem(
+            value: 'finish',
+            key: const Key('menu-finish'),
+            child: Text(l.matchFinish),
+          ),
       ],
     );
   }
@@ -143,11 +163,20 @@ class _LiveBody extends StatelessWidget {
         children: [
           const SyncBanner(),
           _ScoreHeader(live: live, clock: clock),
-          if (live.fromCache) InfoChip(l.matchCachedData, key: const Key('live-cached'), icon: Icons.cloud_off),
+          if (live.fromCache)
+            InfoChip(
+              l.matchCachedData,
+              key: const Key('live-cached'),
+              icon: Icons.cloud_off,
+            ),
           if (live.rights.parentMode)
             Padding(
               padding: const EdgeInsets.only(top: AppTokens.spaceXs),
-              child: InfoChip(l.matchParentMode, key: const Key('parent-mode'), icon: Icons.family_restroom),
+              child: InfoChip(
+                l.matchParentMode,
+                key: const Key('parent-mode'),
+                icon: Icons.family_restroom,
+              ),
             )
           else if (!live.rights.canScore)
             Padding(
@@ -190,33 +219,65 @@ class _ScoreHeader extends ConsumerWidget {
     final p = live.projection;
     final staff = live.rights.canRunMatch && !live.finished;
     final ctl = ref.read(liveMatchProvider(live.match.id).notifier);
-    final period = p.live.period == 0 ? l.matchBeforeStart : periodLabel(l, p.live.period, live.rules.periodCount);
-    final scoreStyle = theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold);
+    final period = p.live.period == 0
+        ? l.matchBeforeStart
+        : periodLabel(l, p.live.period, live.rules.periodCount);
+    final scoreStyle = theme.textTheme.displaySmall?.copyWith(
+      fontWeight: FontWeight.bold,
+    );
     return Material(
       color: theme.colorScheme.surfaceContainer,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, AppTokens.spaceSm),
+        padding: const EdgeInsets.fromLTRB(
+          AppTokens.spaceMd,
+          AppTokens.spaceSm,
+          AppTokens.spaceMd,
+          AppTokens.spaceSm,
+        ),
         child: Column(
           children: [
             Row(
               children: [
                 Expanded(
-                  child: Column(children: [
-                    Text(l.matchUs, style: theme.textTheme.labelMedium),
-                    Text('${live.team.teamScore}', key: const Key('score-team'), style: scoreStyle),
-                  ]),
+                  child: Column(
+                    children: [
+                      Text(l.matchUs, style: theme.textTheme.labelMedium),
+                      Text(
+                        '${live.team.teamScore}',
+                        key: const Key('score-team'),
+                        style: scoreStyle,
+                      ),
+                    ],
+                  ),
                 ),
                 Column(
                   children: [
-                    Text(period, key: const Key('period-label'), style: theme.textTheme.titleMedium),
-                    if (staff) _ClockControl(clock: clock) else statusChip(l, live.match.status),
+                    Text(
+                      period,
+                      key: const Key('period-label'),
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    if (staff)
+                      _ClockControl(clock: clock)
+                    else
+                      statusChip(l, live.match.status),
                   ],
                 ),
                 Expanded(
-                  child: Column(children: [
-                    Text(live.match.opponentName, style: theme.textTheme.labelMedium, overflow: TextOverflow.ellipsis),
-                    Text('${live.team.opponentScore}', key: const Key('score-opponent'), style: scoreStyle),
-                  ]),
+                  child: Column(
+                    children: [
+                      Text(
+                        live.match.opponentName,
+                        style: theme.textTheme.labelMedium,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        '${live.team.opponentScore}',
+                        key: const Key('score-opponent'),
+                        style: scoreStyle,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -233,25 +294,43 @@ class _ScoreHeader extends ConsumerWidget {
                         label: l.matchEndPeriod(period),
                         onPressed: () async {
                           clock.pause();
-                          await runAction(context, () => ctl.endPeriod(clock: clock.remaining));
+                          await runAction(
+                            context,
+                            () => ctl.endPeriod(clock: clock.remaining),
+                          );
                         },
                       )
                     else
                       _HeaderButton(
                         key: const Key('period-start'),
                         icon: Icons.play_circle_outline,
-                        label: l.matchStartPeriod(periodLabel(l, live.nextPeriod, live.rules.periodCount)),
+                        label: l.matchStartPeriod(
+                          periodLabel(
+                            l,
+                            live.nextPeriod,
+                            live.rules.periodCount,
+                          ),
+                        ),
                         onPressed: () async {
-                          final seconds = live.rules.periodSeconds(live.nextPeriod);
+                          final seconds = live.rules.periodSeconds(
+                            live.nextPeriod,
+                          );
                           clock.set(seconds);
-                          await runAction(context, () => ctl.startPeriod(clock: seconds));
+                          await runAction(
+                            context,
+                            () => ctl.startPeriod(clock: seconds),
+                          );
                         },
                       ),
                     for (final points in const [1, 2, 3])
                       _HeaderButton(
                         key: Key('opponent-$points'),
                         label: l.matchOpponentPoints(points),
-                        onPressed: () => runAction(context, () => ctl.opponentScore(points, clock: clock.remaining)),
+                        onPressed: () => runAction(
+                          context,
+                          () =>
+                              ctl.opponentScore(points, clock: clock.remaining),
+                        ),
                       ),
                     PopupMenuButton<TimeoutSide>(
                       key: const Key('timeout-menu'),
@@ -259,11 +338,20 @@ class _ScoreHeader extends ConsumerWidget {
                       icon: const Icon(Icons.timer_outlined),
                       onSelected: (side) {
                         clock.pause();
-                        runAction(context, () => ctl.timeout(side, clock: clock.remaining));
+                        runAction(
+                          context,
+                          () => ctl.timeout(side, clock: clock.remaining),
+                        );
                       },
                       itemBuilder: (_) => [
-                        PopupMenuItem(value: TimeoutSide.own, child: Text(l.matchTimeoutOwn)),
-                        PopupMenuItem(value: TimeoutSide.opponent, child: Text(l.matchTimeoutOpponent)),
+                        PopupMenuItem(
+                          value: TimeoutSide.own,
+                          child: Text(l.matchTimeoutOwn),
+                        ),
+                        PopupMenuItem(
+                          value: TimeoutSide.opponent,
+                          child: Text(l.matchTimeoutOpponent),
+                        ),
                       ],
                     ),
                     _UndoButton(matchId: live.match.id),
@@ -271,7 +359,10 @@ class _ScoreHeader extends ConsumerWidget {
                 ),
               ),
             ] else if (live.rights.parentMode && !live.finished)
-              Align(alignment: Alignment.centerRight, child: _UndoButton(matchId: live.match.id)),
+              Align(
+                alignment: Alignment.centerRight,
+                child: _UndoButton(matchId: live.match.id),
+              ),
           ],
         ),
       ),
@@ -280,7 +371,12 @@ class _ScoreHeader extends ConsumerWidget {
 }
 
 class _HeaderButton extends StatelessWidget {
-  const _HeaderButton({super.key, required this.label, required this.onPressed, this.icon});
+  const _HeaderButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+  });
   final String label;
   final IconData? icon;
   final VoidCallback onPressed;
@@ -292,7 +388,11 @@ class _HeaderButton extends StatelessWidget {
       height: AppTokens.minTapTarget,
       child: icon == null
           ? OutlinedButton(onPressed: onPressed, child: Text(label))
-          : FilledButton.tonalIcon(onPressed: onPressed, icon: Icon(icon), label: Text(label)),
+          : FilledButton.tonalIcon(
+              onPressed: onPressed,
+              icon: Icon(icon),
+              label: Text(label),
+            ),
     ),
   );
 }
@@ -311,8 +411,17 @@ class _UndoButton extends ConsumerWidget {
       onPressed: () async {
         final messenger = ScaffoldMessenger.of(context);
         var done = false;
-        final ok = await runAction(context, () async => done = await ref.read(liveMatchProvider(matchId).notifier).undo());
-        if (ok) messenger.showSnackBar(SnackBar(content: Text(done ? l.matchUndone : l.matchNothingToUndo)));
+        final ok = await runAction(
+          context,
+          () async =>
+              done = await ref.read(liveMatchProvider(matchId).notifier).undo(),
+        );
+        if (ok)
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(done ? l.matchUndone : l.matchNothingToUndo),
+            ),
+          );
       },
     );
   }
@@ -338,7 +447,11 @@ class _ClockControl extends StatelessWidget {
             icon: const Icon(Icons.remove),
             onPressed: () => clock.adjust(-10),
           ),
-          Text(formatClock(clock.remaining), key: const Key('clock-value'), style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            formatClock(clock.remaining),
+            key: const Key('clock-value'),
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           IconButton(
             key: const Key('clock-plus'),
             tooltip: l.matchClockPlus,
@@ -376,26 +489,42 @@ class _CourtPanel extends ConsumerWidget {
         padding: const EdgeInsets.all(AppTokens.spaceSm),
         children: [
           _SectionTitle(l.navPlayers, key: const Key('players-all')),
-          _PlayerGrid(players: live.roster, live: live, onTap: (p) => _statSheet(context, ref, p)),
+          _PlayerGrid(
+            players: live.roster,
+            live: live,
+            onTap: (p) => _statSheet(context, ref, p),
+          ),
         ],
       );
     }
     final onCourt = live.projection.live.onCourt;
-    final court = [for (final r in live.roster) if (onCourt.contains(r.playerId)) r];
-    final bench = [for (final r in live.roster) if (!onCourt.contains(r.playerId)) r];
+    final court = [
+      for (final r in live.roster)
+        if (onCourt.contains(r.playerId)) r,
+    ];
+    final bench = [
+      for (final r in live.roster)
+        if (!onCourt.contains(r.playerId)) r,
+    ];
     return ListView(
       key: const Key('court-panel'),
       padding: const EdgeInsets.all(AppTokens.spaceSm),
       children: [
         _SectionTitle(l.matchOnCourt),
-        _PlayerGrid(players: court, live: live, onTap: (p) => _statSheet(context, ref, p)),
+        _PlayerGrid(
+          players: court,
+          live: live,
+          onTap: (p) => _statSheet(context, ref, p),
+        ),
         const SizedBox(height: AppTokens.spaceSm),
         _SectionTitle(l.matchBench),
         _PlayerGrid(
           players: bench,
           live: live,
           bench: true,
-          onTap: (p) => live.rights.canRunMatch ? _subSheet(context, ref, p, court) : _statSheet(context, ref, p),
+          onTap: (p) => live.rights.canRunMatch
+              ? _subSheet(context, ref, p, court)
+              : _statSheet(context, ref, p),
         ),
       ],
     );
@@ -403,7 +532,11 @@ class _CourtPanel extends ConsumerWidget {
 
   int? get _clockValue => live.rights.canRunMatch ? clock.remaining : null;
 
-  Future<void> _statSheet(BuildContext context, WidgetRef ref, RosterPlayer p) async {
+  Future<void> _statSheet(
+    BuildContext context,
+    WidgetRef ref,
+    RosterPlayer p,
+  ) async {
     final l = AppLocalizations.of(context);
     final action = await showModalBottomSheet<StatAction>(
       context: context,
@@ -411,13 +544,21 @@ class _CourtPanel extends ConsumerWidget {
       isScrollControlled: true,
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, 0, AppTokens.spaceMd, AppTokens.spaceMd),
+          padding: const EdgeInsets.fromLTRB(
+            AppTokens.spaceMd,
+            0,
+            AppTokens.spaceMd,
+            AppTokens.spaceMd,
+          ),
           child: Column(
             key: const Key('action-sheet'),
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(l.matchStatsFor(p.displayName), style: Theme.of(ctx).textTheme.titleMedium),
+              Text(
+                l.matchStatsFor(p.displayName),
+                style: Theme.of(ctx).textTheme.titleMedium,
+              ),
               const SizedBox(height: AppTokens.spaceSm),
               GridView.count(
                 crossAxisCount: 3,
@@ -430,9 +571,15 @@ class _CourtPanel extends ConsumerWidget {
                   for (final a in StatAction.values)
                     FilledButton.tonal(
                       key: Key('action-${a.code}'),
-                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                      ),
                       onPressed: () => Navigator.pop(ctx, a),
-                      child: Text(actionLabel(l, a), textAlign: TextAlign.center, maxLines: 2),
+                      child: Text(
+                        actionLabel(l, a),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                      ),
                     ),
                 ],
               ),
@@ -444,19 +591,30 @@ class _CourtPanel extends ConsumerWidget {
     if (action == null || !context.mounted) return;
     final ok = await runAction(
       context,
-      () => ref.read(liveMatchProvider(live.match.id).notifier).recordStat(p.playerId, action, clock: _clockValue),
+      () => ref
+          .read(liveMatchProvider(live.match.id).notifier)
+          .recordStat(p.playerId, action, clock: _clockValue),
     );
     if (ok && context.mounted) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(
-          content: Text(l.matchRecorded(actionLabel(l, action), p.displayName)),
-          duration: const Duration(seconds: 2),
-        ));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              l.matchRecorded(actionLabel(l, action), p.displayName),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
     }
   }
 
-  Future<void> _subSheet(BuildContext context, WidgetRef ref, RosterPlayer incoming, List<RosterPlayer> court) async {
+  Future<void> _subSheet(
+    BuildContext context,
+    WidgetRef ref,
+    RosterPlayer incoming,
+    List<RosterPlayer> court,
+  ) async {
     final l = AppLocalizations.of(context);
     final out = await showModalBottomSheet<RosterPlayer>(
       context: context,
@@ -481,7 +639,13 @@ class _CourtPanel extends ConsumerWidget {
     if (out == null || !context.mounted) return;
     await runAction(
       context,
-      () => ref.read(liveMatchProvider(live.match.id).notifier).substitute(out: out.playerId, into: incoming.playerId, clock: clock.remaining),
+      () => ref
+          .read(liveMatchProvider(live.match.id).notifier)
+          .substitute(
+            out: out.playerId,
+            into: incoming.playerId,
+            clock: clock.remaining,
+          ),
     );
   }
 }
@@ -492,13 +656,21 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceXs, vertical: AppTokens.spaceXs),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppTokens.spaceXs,
+      vertical: AppTokens.spaceXs,
+    ),
     child: Text(text, style: Theme.of(context).textTheme.titleSmall),
   );
 }
 
 class _PlayerGrid extends StatelessWidget {
-  const _PlayerGrid({required this.players, required this.live, required this.onTap, this.bench = false});
+  const _PlayerGrid({
+    required this.players,
+    required this.live,
+    required this.onTap,
+    this.bench = false,
+  });
   final List<RosterPlayer> players;
   final LiveMatch live;
   final bool bench;
@@ -512,14 +684,30 @@ class _PlayerGrid extends StatelessWidget {
       return Wrap(
         spacing: AppTokens.spaceXs,
         runSpacing: AppTokens.spaceXs,
-        children: [for (final p in players) SizedBox(width: width, child: _PlayerTile(player: p, live: live, bench: bench, onTap: onTap))],
+        children: [
+          for (final p in players)
+            SizedBox(
+              width: width,
+              child: _PlayerTile(
+                player: p,
+                live: live,
+                bench: bench,
+                onTap: onTap,
+              ),
+            ),
+        ],
       );
     },
   );
 }
 
 class _PlayerTile extends StatelessWidget {
-  const _PlayerTile({required this.player, required this.live, required this.bench, required this.onTap});
+  const _PlayerTile({
+    required this.player,
+    required this.live,
+    required this.bench,
+    required this.onTap,
+  });
   final RosterPlayer player;
   final LiveMatch live;
   final bool bench;
@@ -539,7 +727,9 @@ class _PlayerTile extends StatelessWidget {
     final enabled = _enabled;
     return Card(
       margin: EdgeInsets.zero,
-      color: bench ? theme.colorScheme.surfaceContainerHighest : theme.colorScheme.primaryContainer,
+      color: bench
+          ? theme.colorScheme.surfaceContainerHighest
+          : theme.colorScheme.primaryContainer,
       child: InkWell(
         key: Key('player-${player.playerId}'),
         onTap: enabled ? () => onTap(player) : null,
@@ -552,15 +742,26 @@ class _PlayerTile extends StatelessWidget {
               padding: const EdgeInsets.all(AppTokens.spaceSm),
               child: Row(
                 children: [
-                  CircleAvatar(radius: 18, child: Text(player.jerseyNumber ?? '-')),
+                  CircleAvatar(
+                    radius: 18,
+                    child: Text(player.jerseyNumber ?? '-'),
+                  ),
                   const SizedBox(width: AppTokens.spaceSm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(player.displayName, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleSmall),
+                        Text(
+                          player.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall,
+                        ),
                         if (live.rights.canSeeLine(player.playerId))
-                          Text('${stats?.points ?? 0} PTS · ${stats?.personalFouls ?? 0} PF', style: theme.textTheme.bodySmall),
+                          Text(
+                            '${stats?.points ?? 0} PTS · ${stats?.personalFouls ?? 0} PF',
+                            style: theme.textTheme.bodySmall,
+                          ),
                       ],
                     ),
                   ),
@@ -605,7 +806,9 @@ class _EventLog extends ConsumerWidget {
           ),
           title: Text(
             describeEvent(l, live, e.event),
-            style: e.voided ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
+            style: e.voided
+                ? const TextStyle(decoration: TextDecoration.lineThrough)
+                : null,
           ),
           subtitle: Text(
             [if (e.voided) l.matchVoided, syncLabel(l, e)].join(' · '),
@@ -618,7 +821,11 @@ class _EventLog extends ConsumerWidget {
                   tooltip: l.matchDiscard,
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
-                    if (await confirmDialog(context, message: l.matchDiscardConfirm, confirmLabel: l.matchDiscard) &&
+                    if (await confirmDialog(
+                          context,
+                          message: l.matchDiscardConfirm,
+                          confirmLabel: l.matchDiscard,
+                        ) &&
                         context.mounted) {
                       await runAction(context, () => ctl.discard(e.event.id));
                     }
@@ -630,7 +837,11 @@ class _EventLog extends ConsumerWidget {
                   tooltip: l.matchVoidEvent,
                   icon: const Icon(Icons.block),
                   onPressed: () async {
-                    if (await confirmDialog(context, message: l.matchVoidConfirm, confirmLabel: l.matchVoidEvent) &&
+                    if (await confirmDialog(
+                          context,
+                          message: l.matchVoidConfirm,
+                          confirmLabel: l.matchVoidEvent,
+                        ) &&
                         context.mounted) {
                       await runAction(context, () => ctl.voidEvent(e.event.id));
                     }

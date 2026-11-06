@@ -22,8 +22,10 @@ enum MatchEventType {
   const MatchEventType(this.wire);
   final String wire;
 
-  static MatchEventType fromWire(String wire) =>
-      values.firstWhere((t) => t.wire == wire, orElse: () => throw FormatException('unknown event type $wire'));
+  static MatchEventType fromWire(String wire) => values.firstWhere(
+    (t) => t.wire == wire,
+    orElse: () => throw FormatException('unknown event type $wire'),
+  );
 }
 
 enum ReboundKind {
@@ -32,7 +34,8 @@ enum ReboundKind {
 
   const ReboundKind(this.wire);
   final String wire;
-  static ReboundKind fromWire(String w) => values.firstWhere((v) => v.wire == w);
+  static ReboundKind fromWire(String w) =>
+      values.firstWhere((v) => v.wire == w);
 }
 
 enum FoulKind {
@@ -51,7 +54,8 @@ enum TimeoutSide {
 
   const TimeoutSide(this.wire);
   final String wire;
-  static TimeoutSide fromWire(String w) => values.firstWhere((v) => v.wire == w);
+  static TimeoutSide fromWire(String w) =>
+      values.firstWhere((v) => v.wire == w);
 }
 
 /// Fields every event carries.
@@ -121,7 +125,8 @@ sealed class MatchEvent {
   static MatchEvent fromJson(Map<String, Object?> json) {
     final meta = EventMeta.fromJson(json);
     final player = json['playerId'] as String?;
-    final payload = (json['payload'] as Map?)?.cast<String, Object?>() ?? const {};
+    final payload =
+        (json['payload'] as Map?)?.cast<String, Object?>() ?? const {};
     String p() => player ?? (throw const FormatException('playerId required'));
     int points() => (payload['points']! as num).toInt();
     return switch (MatchEventType.fromWire(json['type']! as String)) {
@@ -129,17 +134,40 @@ sealed class MatchEvent {
       MatchEventType.periodEnd => PeriodEnd(meta),
       MatchEventType.subIn => SubIn(meta, playerId: p()),
       MatchEventType.subOut => SubOut(meta, playerId: p()),
-      MatchEventType.shot => Shot(meta, playerId: p(), points: points(), made: payload['made']! as bool),
+      MatchEventType.shot => Shot(
+        meta,
+        playerId: p(),
+        points: points(),
+        made: payload['made']! as bool,
+      ),
       MatchEventType.assist => Assist(meta, playerId: p()),
-      MatchEventType.rebound => Rebound(meta, playerId: p(), kind: ReboundKind.fromWire(payload['kind']! as String)),
+      MatchEventType.rebound => Rebound(
+        meta,
+        playerId: p(),
+        kind: ReboundKind.fromWire(payload['kind']! as String),
+      ),
       MatchEventType.turnover => Turnover(meta, playerId: p()),
       MatchEventType.steal => Steal(meta, playerId: p()),
       MatchEventType.block => Block(meta, playerId: p()),
-      MatchEventType.foul => Foul(meta, playerId: p(), kind: FoulKind.fromWire(payload['kind']! as String)),
+      MatchEventType.foul => Foul(
+        meta,
+        playerId: p(),
+        kind: FoulKind.fromWire(payload['kind']! as String),
+      ),
       MatchEventType.opponentScore => OpponentScore(meta, points: points()),
-      MatchEventType.timeout => Timeout(meta, side: TimeoutSide.fromWire(payload['side']! as String)),
-      MatchEventType.voidEvent => VoidEvent(meta, target: payload['targetEventId']! as String),
-      MatchEventType.note => Note(meta, playerId: player, text: payload['text']! as String),
+      MatchEventType.timeout => Timeout(
+        meta,
+        side: TimeoutSide.fromWire(payload['side']! as String),
+      ),
+      MatchEventType.voidEvent => VoidEvent(
+        meta,
+        target: payload['targetEventId']! as String,
+      ),
+      MatchEventType.note => Note(
+        meta,
+        playerId: player,
+        text: payload['text']! as String,
+      ),
     };
   }
 }
@@ -185,9 +213,13 @@ final class SubOut extends MatchEvent {
 
 /// [points] 1 = free throw, 2 = field goal, 3 = three-pointer.
 final class Shot extends PlayerStat {
-  Shot(super.meta, {required String playerId, required this.points, required this.made})
-    : assert(points >= 1 && points <= 3),
-      super(player: playerId);
+  Shot(
+    super.meta, {
+    required String playerId,
+    required this.points,
+    required this.made,
+  }) : assert(points >= 1 && points <= 3),
+       super(player: playerId);
   final int points;
   final bool made;
   @override
@@ -197,13 +229,15 @@ final class Shot extends PlayerStat {
 }
 
 final class Assist extends PlayerStat {
-  const Assist(super.meta, {required String playerId}) : super(player: playerId);
+  const Assist(super.meta, {required String playerId})
+    : super(player: playerId);
   @override
   MatchEventType get type => MatchEventType.assist;
 }
 
 final class Rebound extends PlayerStat {
-  const Rebound(super.meta, {required String playerId, required this.kind}) : super(player: playerId);
+  const Rebound(super.meta, {required String playerId, required this.kind})
+    : super(player: playerId);
   final ReboundKind kind;
   @override
   MatchEventType get type => MatchEventType.rebound;
@@ -212,7 +246,8 @@ final class Rebound extends PlayerStat {
 }
 
 final class Turnover extends PlayerStat {
-  const Turnover(super.meta, {required String playerId}) : super(player: playerId);
+  const Turnover(super.meta, {required String playerId})
+    : super(player: playerId);
   @override
   MatchEventType get type => MatchEventType.turnover;
 }
@@ -230,7 +265,8 @@ final class Block extends PlayerStat {
 }
 
 final class Foul extends PlayerStat {
-  const Foul(super.meta, {required String playerId, required this.kind}) : super(player: playerId);
+  const Foul(super.meta, {required String playerId, required this.kind})
+    : super(player: playerId);
   final FoulKind kind;
   @override
   MatchEventType get type => MatchEventType.foul;
@@ -268,7 +304,8 @@ final class VoidEvent extends MatchEvent {
 
 /// Free text, optionally about a player; no effect on statistics.
 final class Note extends MatchEvent {
-  const Note(super.meta, {String? playerId, required this.text}) : _player = playerId;
+  const Note(super.meta, {String? playerId, required this.text})
+    : _player = playerId;
   final String? _player;
   final String text;
   @override

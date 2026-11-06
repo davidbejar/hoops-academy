@@ -13,7 +13,9 @@ void main() {
     expect(find.byKey(const Key('no-access')), findsOneWidget);
   });
 
-  testWidgets('exactly one membership is auto-selected, no switcher', (tester) async {
+  testWidgets('exactly one membership is auto-selected, no switcher', (
+    tester,
+  ) async {
     final h = Harness(me: FakeMeRepository(userWith([tenantNorth])));
     await h.pump(tester);
 
@@ -22,8 +24,12 @@ void main() {
     expect(h.container.read(activeTenantIdProvider), tenantNorth.tenantId);
   });
 
-  testWidgets('several memberships list every academy with its roles', (tester) async {
-    final h = Harness(me: FakeMeRepository(userWith([tenantNorth, tenantSouth])));
+  testWidgets('several memberships list every academy with its roles', (
+    tester,
+  ) async {
+    final h = Harness(
+      me: FakeMeRepository(userWith([tenantNorth, tenantSouth])),
+    );
     await h.pump(tester);
 
     expect(find.byKey(const Key('tenant-list')), findsOneWidget);
@@ -34,8 +40,12 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
   });
 
-  testWidgets('choosing an academy persists it and opens the role home', (tester) async {
-    final h = Harness(me: FakeMeRepository(userWith([tenantNorth, tenantSouth])));
+  testWidgets('choosing an academy persists it and opens the role home', (
+    tester,
+  ) async {
+    final h = Harness(
+      me: FakeMeRepository(userWith([tenantNorth, tenantSouth])),
+    );
     await h.pump(tester);
 
     await tester.tap(find.byKey(Key('tenant-${tenantSouth.tenantId}')));
@@ -48,7 +58,9 @@ void main() {
     expect(navLabel('Mis jugadores'), findsOneWidget);
   });
 
-  testWidgets('a stored selection is restored on the next visit', (tester) async {
+  testWidgets('a stored selection is restored on the next visit', (
+    tester,
+  ) async {
     final h = Harness(
       me: FakeMeRepository(userWith([tenantNorth, tenantSouth])),
       prefs: {'hoops.selectedTenantId': tenantNorth.tenantId},
@@ -59,7 +71,9 @@ void main() {
     expect(h.container.read(activeTenantIdProvider), tenantNorth.tenantId);
   });
 
-  testWidgets('a stored selection that is no longer a membership asks again', (tester) async {
+  testWidgets('a stored selection that is no longer a membership asks again', (
+    tester,
+  ) async {
     final h = Harness(
       me: FakeMeRepository(userWith([tenantNorth, tenantSouth])),
       prefs: {'hoops.selectedTenantId': 'gone'},
@@ -69,7 +83,9 @@ void main() {
     expect(find.byKey(const Key('tenant-list')), findsOneWidget);
   });
 
-  testWidgets('the app bar chip switches academy when there are several', (tester) async {
+  testWidgets('the app bar chip switches academy when there are several', (
+    tester,
+  ) async {
     final h = Harness(
       me: FakeMeRepository(userWith([tenantNorth, tenantSouth])),
       prefs: {'hoops.selectedTenantId': tenantNorth.tenantId},
@@ -82,12 +98,24 @@ void main() {
     expect(find.byKey(const Key('tenant-list')), findsOneWidget);
   });
 
-  testWidgets('the app bar shows the academy name and initials without a logo', (tester) async {
-    final h = Harness(me: FakeMeRepository(userWith([tenantNorth])));
-    await h.pump(tester);
+  testWidgets(
+    'the app bar shows the academy name and initials without a logo',
+    (tester) async {
+      final h = Harness(me: FakeMeRepository(userWith([tenantNorth])));
+      await h.pump(tester);
 
-    expect(find.descendant(of: find.byType(AppBar), matching: find.text('Club Norte')), findsOneWidget);
-    expect(find.descendant(of: find.byType(AppBar), matching: find.text('CN')), findsOneWidget);
-    expect(find.byType(Image), findsNothing);
-  });
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Club Norte'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('CN')),
+        findsOneWidget,
+      );
+      expect(find.byType(Image), findsNothing);
+    },
+  );
 }

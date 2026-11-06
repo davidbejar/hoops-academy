@@ -40,7 +40,11 @@ class CompletionControl extends ConsumerWidget {
         if (!canMark)
           current == null
               ? Text(l.completionNone, style: theme.textTheme.bodySmall)
-              : InfoChip(current.label(l), tone: current.tone, icon: current.icon)
+              : InfoChip(
+                  current.label(l),
+                  tone: current.tone,
+                  icon: current.icon,
+                )
         else
           Wrap(
             spacing: AppTokens.spaceSm,
@@ -61,12 +65,14 @@ class CompletionControl extends ConsumerWidget {
                     if (comment == null || !context.mounted) return;
                     await runAction(
                       context,
-                      () => ref.read(assignmentsProvider(scope).notifier).record(
-                        assignmentId,
-                        playerId,
-                        s,
-                        comment: comment.isEmpty ? null : comment,
-                      ),
+                      () => ref
+                          .read(assignmentsProvider(scope).notifier)
+                          .record(
+                            assignmentId,
+                            playerId,
+                            s,
+                            comment: comment.isEmpty ? null : comment,
+                          ),
                       success: l.completionSaved,
                     );
                   },

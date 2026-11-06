@@ -65,7 +65,8 @@ class _UsageTrendState extends ConsumerState<UsageTrend> {
             child: AsyncBody<void>(
               value: AsyncError<void>(e, StackTrace.empty),
               builder: (_, _) => const SizedBox.shrink(),
-              onRetry: () => ref.invalidate(tenantUsageHistoryProvider(widget.tenantId)),
+              onRetry: () =>
+                  ref.invalidate(tenantUsageHistoryProvider(widget.tenantId)),
             ),
           ),
         ),
@@ -73,15 +74,22 @@ class _UsageTrendState extends ConsumerState<UsageTrend> {
     );
   }
 
-  Widget _body(BuildContext context, AppLocalizations l, List<api.TenantUsageSnapshot> snapshots) {
+  Widget _body(
+    BuildContext context,
+    AppLocalizations l,
+    List<api.TenantUsageSnapshot> snapshots,
+  ) {
     final keys = counterKeys(snapshots);
     if (keys.isEmpty) {
       return Text(l.usageTrendEmpty, key: const Key('usage-trend-empty'));
     }
-    final selected = keys.contains(_counter) ? _counter! : (keys.contains('players') ? 'players' : keys.first);
+    final selected = keys.contains(_counter)
+        ? _counter!
+        : (keys.contains('players') ? 'players' : keys.first);
     final points = [
       for (final s in snapshots)
-        if (counterIn(s, selected) case final v?) ChartPoint(s.collectedAt.toUtc(), v.toDouble()),
+        if (counterIn(s, selected) case final v?)
+          ChartPoint(s.collectedAt.toUtc(), v.toDouble()),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +98,10 @@ class _UsageTrendState extends ConsumerState<UsageTrend> {
           key: const Key('usage-trend-counter'),
           value: selected,
           isExpanded: true,
-          items: [for (final k in keys) DropdownMenuItem(value: k, child: Text(usageCounterLabel(l, k)))],
+          items: [
+            for (final k in keys)
+              DropdownMenuItem(value: k, child: Text(usageCounterLabel(l, k))),
+          ],
           onChanged: (v) => setState(() => _counter = v),
         ),
         GrowthChart(title: usageCounterLabel(l, selected), points: points),

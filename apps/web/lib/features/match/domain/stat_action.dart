@@ -31,13 +31,25 @@ enum StatAction {
     ftMade => Shot(meta, playerId: playerId, points: 1, made: true),
     ftMissed => Shot(meta, playerId: playerId, points: 1, made: false),
     assist => Assist(meta, playerId: playerId),
-    offensiveRebound => Rebound(meta, playerId: playerId, kind: ReboundKind.offensive),
-    defensiveRebound => Rebound(meta, playerId: playerId, kind: ReboundKind.defensive),
+    offensiveRebound => Rebound(
+      meta,
+      playerId: playerId,
+      kind: ReboundKind.offensive,
+    ),
+    defensiveRebound => Rebound(
+      meta,
+      playerId: playerId,
+      kind: ReboundKind.defensive,
+    ),
     steal => Steal(meta, playerId: playerId),
     block => Block(meta, playerId: playerId),
     turnover => Turnover(meta, playerId: playerId),
     foulPersonal => Foul(meta, playerId: playerId, kind: FoulKind.personal),
     foulTechnical => Foul(meta, playerId: playerId, kind: FoulKind.technical),
-    foulUnsportsmanlike => Foul(meta, playerId: playerId, kind: FoulKind.unsportsmanlike),
+    foulUnsportsmanlike => Foul(
+      meta,
+      playerId: playerId,
+      kind: FoulKind.unsportsmanlike,
+    ),
   };
 }

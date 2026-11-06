@@ -21,7 +21,10 @@ class AgeCategoriesScreen extends ConsumerWidget {
       parentPath: '/admin',
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('category-new'),
-        onPressed: () => showDialog<bool>(context: context, builder: (_) => const CategoryDialog()),
+        onPressed: () => showDialog<bool>(
+          context: context,
+          builder: (_) => const CategoryDialog(),
+        ),
         icon: const Icon(Icons.add),
         label: Text(l.categoryNew),
       ),
@@ -38,16 +41,31 @@ class AgeCategoriesScreen extends ConsumerWidget {
                 key: Key('category-${c.id}'),
                 leading: CircleAvatar(child: Text(c.rank.toString())),
                 title: Text('${c.code} · ${c.name}'),
-                subtitle: Text(c.maxAge == null ? l.categoryNoLimit : l.categoryUpTo(c.maxAge.toString())),
-                onTap: () => showDialog<bool>(context: context, builder: (_) => CategoryDialog(category: c)),
+                subtitle: Text(
+                  c.maxAge == null
+                      ? l.categoryNoLimit
+                      : l.categoryUpTo(c.maxAge.toString()),
+                ),
+                onTap: () => showDialog<bool>(
+                  context: context,
+                  builder: (_) => CategoryDialog(category: c),
+                ),
                 trailing: IconButton(
                   key: Key('category-delete-${c.id}'),
                   tooltip: l.delete,
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
-                    if (!await confirmDialog(context, message: l.categoryDeleteConfirm(c.name))) return;
+                    if (!await confirmDialog(
+                      context,
+                      message: l.categoryDeleteConfirm(c.name),
+                    ))
+                      return;
                     if (!context.mounted) return;
-                    await runAction(context, () => ref.read(ageCategoriesProvider.notifier).remove(c.id));
+                    await runAction(
+                      context,
+                      () =>
+                          ref.read(ageCategoriesProvider.notifier).remove(c.id),
+                    );
                   },
                 ),
               ),
@@ -70,8 +88,12 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
   final _form = GlobalKey<FormState>();
   late final _code = TextEditingController(text: widget.category?.code);
   late final _name = TextEditingController(text: widget.category?.name);
-  late final _maxAge = TextEditingController(text: widget.category?.maxAge?.toString() ?? '');
-  late final _rank = TextEditingController(text: widget.category?.rank.toString() ?? '');
+  late final _maxAge = TextEditingController(
+    text: widget.category?.maxAge?.toString() ?? '',
+  );
+  late final _rank = TextEditingController(
+    text: widget.category?.rank.toString() ?? '',
+  );
 
   @override
   void dispose() {
@@ -90,13 +112,17 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
       formKey: _form,
       onSubmit: () => runAction(
         context,
-        () => ref.read(ageCategoriesProvider.notifier).save(
-          id: widget.category?.id,
-          code: _code.text.trim(),
-          name: _name.text.trim(),
-          maxAge: _maxAge.text.trim().isEmpty ? null : int.parse(_maxAge.text.trim()),
-          rank: int.parse(_rank.text.trim()),
-        ),
+        () => ref
+            .read(ageCategoriesProvider.notifier)
+            .save(
+              id: widget.category?.id,
+              code: _code.text.trim(),
+              name: _name.text.trim(),
+              maxAge: _maxAge.text.trim().isEmpty
+                  ? null
+                  : int.parse(_maxAge.text.trim()),
+              rank: int.parse(_rank.text.trim()),
+            ),
         success: l.saved,
       ),
       children: [
@@ -132,7 +158,9 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
           controller: _rank,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(labelText: l.categoryRank),
-          validator: (v) => int.tryParse((v ?? '').trim()) == null ? l.fieldInvalidNumber : null,
+          validator: (v) => int.tryParse((v ?? '').trim()) == null
+              ? l.fieldInvalidNumber
+              : null,
         ),
       ],
     );

@@ -23,33 +23,41 @@ class FakeUpdateChannel implements UpdateChannel {
 }
 
 void main() {
-  testWidgets('no prompt until a new service worker is waiting; Reload sends SKIP_WAITING once', (tester) async {
-    final channel = FakeUpdateChannel();
-    final h = Harness(
-      me: FakeMeRepository(userWith([tenantNorth])),
-      extraOverrides: [updateChannelProvider.overrideWithValue(channel)],
-    );
-    await h.pump(tester);
-    expect(find.byKey(const Key('update-banner')), findsNothing);
+  testWidgets(
+    'no prompt until a new service worker is waiting; Reload sends SKIP_WAITING once',
+    (tester) async {
+      final channel = FakeUpdateChannel();
+      final h = Harness(
+        me: FakeMeRepository(userWith([tenantNorth])),
+        extraOverrides: [updateChannelProvider.overrideWithValue(channel)],
+      );
+      await h.pump(tester);
+      expect(find.byKey(const Key('update-banner')), findsNothing);
 
-    channel.publish();
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('update-banner')), findsOneWidget);
-    expect(find.text('Hay una nueva versión disponible'), findsOneWidget);
+      channel.publish();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('update-banner')), findsOneWidget);
+      expect(find.text('Hay una nueva versión disponible'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('update-reload')));
-    await tester.pump();
-    expect(channel.activations, 1);
-  });
+      await tester.tap(find.byKey(const Key('update-reload')));
+      await tester.pump();
+      expect(channel.activations, 1);
+    },
+  );
 
-  test('the controller is false until the channel reports, then stays true', () async {
-    final channel = FakeUpdateChannel();
-    final c = ProviderContainer(overrides: [updateChannelProvider.overrideWithValue(channel)]);
-    addTearDown(c.dispose);
-    c.listen(updateAvailableProvider, (_, _) {});
-    expect(c.read(updateAvailableProvider), isFalse);
-    channel.publish();
-    await Future<void>.delayed(Duration.zero);
-    expect(c.read(updateAvailableProvider), isTrue);
-  });
+  test(
+    'the controller is false until the channel reports, then stays true',
+    () async {
+      final channel = FakeUpdateChannel();
+      final c = ProviderContainer(
+        overrides: [updateChannelProvider.overrideWithValue(channel)],
+      );
+      addTearDown(c.dispose);
+      c.listen(updateAvailableProvider, (_, _) {});
+      expect(c.read(updateAvailableProvider), isFalse);
+      channel.publish();
+      await Future<void>.delayed(Duration.zero);
+      expect(c.read(updateAvailableProvider), isTrue);
+    },
+  );
 }

@@ -19,10 +19,15 @@ class ChartPoint {
   final bool pending;
 }
 
-double _days(DateTime d) => d.millisecondsSinceEpoch / Duration.millisecondsPerDay;
-DateTime _fromDays(double v) => DateTime.fromMillisecondsSinceEpoch((v * Duration.millisecondsPerDay).round(), isUtc: true);
+double _days(DateTime d) =>
+    d.millisecondsSinceEpoch / Duration.millisecondsPerDay;
+DateTime _fromDays(double v) => DateTime.fromMillisecondsSinceEpoch(
+  (v * Duration.millisecondsPerDay).round(),
+  isUtc: true,
+);
 
-String _fmt(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
+String _fmt(double v) =>
+    v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
 
 String _shortDate(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${(d.year % 100).toString().padLeft(2, '0')}';
@@ -30,7 +35,12 @@ String _shortDate(DateTime d) =>
 /// Shared line-chart body: thin 2 px line, >= 8 px markers with a 2 px
 /// surface ring, recessive grid, ink-coloured axis text.
 class _Line extends StatelessWidget {
-  const _Line({required this.points, required this.palette, required this.markerColor, required this.lineColor});
+  const _Line({
+    required this.points,
+    required this.palette,
+    required this.markerColor,
+    required this.lineColor,
+  });
 
   final List<ChartPoint> points;
   final ChartPalette palette;
@@ -59,7 +69,8 @@ class _Line extends StatelessWidget {
         maxY: maxY,
         gridData: FlGridData(
           drawVerticalLine: false,
-          getDrawingHorizontalLine: (_) => FlLine(color: palette.grid, strokeWidth: 1),
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: palette.grid, strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
@@ -69,8 +80,12 @@ class _Line extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 36,
-              getTitlesWidget: (v, meta) =>
-                  v == meta.min || v == meta.max ? const SizedBox.shrink() : SideTitleWidget(meta: meta, child: Text(_fmt(v), style: style)),
+              getTitlesWidget: (v, meta) => v == meta.min || v == meta.max
+                  ? const SizedBox.shrink()
+                  : SideTitleWidget(
+                      meta: meta,
+                      child: Text(_fmt(v), style: style),
+                    ),
             ),
           ),
           bottomTitles: AxisTitles(
@@ -80,7 +95,10 @@ class _Line extends StatelessWidget {
               interval: math.max((maxX - minX) / 3, 1),
               getTitlesWidget: (v, meta) => v == meta.min || v == meta.max
                   ? const SizedBox.shrink()
-                  : SideTitleWidget(meta: meta, child: Text(_shortDate(_fromDays(v)), style: style)),
+                  : SideTitleWidget(
+                      meta: meta,
+                      child: Text(_shortDate(_fromDays(v)), style: style),
+                    ),
             ),
           ),
         ),
@@ -118,7 +136,14 @@ class _Line extends StatelessWidget {
 }
 
 class _ChartCard extends StatelessWidget {
-  const _ChartCard({super.key, required this.title, required this.semantics, required this.chart, this.legend, this.table});
+  const _ChartCard({
+    super.key,
+    required this.title,
+    required this.semantics,
+    required this.chart,
+    this.legend,
+    this.table,
+  });
   final String title;
   final String semantics;
   final Widget chart;
@@ -135,10 +160,22 @@ class _ChartCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: p.ink)),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(color: p.ink),
+            ),
             const SizedBox(height: AppTokens.spaceSm),
-            Semantics(label: semantics, child: ExcludeSemantics(child: SizedBox(height: 180, child: chart))),
-            if (legend != null) ...[const SizedBox(height: AppTokens.spaceSm), legend!],
+            Semantics(
+              label: semantics,
+              child: ExcludeSemantics(
+                child: SizedBox(height: 180, child: chart),
+              ),
+            ),
+            if (legend != null) ...[
+              const SizedBox(height: AppTokens.spaceSm),
+              legend!,
+            ],
             ?table,
           ],
         ),
@@ -167,12 +204,21 @@ class _GrowthChartState extends State<GrowthChart> {
     final p = ChartPalette.of(context);
     final pts = widget.points;
     if (pts.isEmpty) {
-      return _ChartCard(title: widget.title, semantics: l.chartNoData, chart: Center(child: Text(l.chartNoData)));
+      return _ChartCard(
+        title: widget.title,
+        semantics: l.chartNoData,
+        chart: Center(child: Text(l.chartNoData)),
+      );
     }
     return _ChartCard(
       title: widget.title,
       semantics: l.chartSummary(pts.length, widget.title, _fmt(pts.last.value)),
-      chart: _Line(points: pts, palette: p, markerColor: (_) => p.series, lineColor: p.series),
+      chart: _Line(
+        points: pts,
+        palette: p,
+        markerColor: (_) => p.series,
+        lineColor: p.series,
+      ),
       table: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -183,10 +229,18 @@ class _GrowthChartState extends State<GrowthChart> {
           ),
           if (_table)
             DataTable(
-              columns: [DataColumn(label: Text(l.chartDate)), DataColumn(label: Text(l.chartValue), numeric: true)],
+              columns: [
+                DataColumn(label: Text(l.chartDate)),
+                DataColumn(label: Text(l.chartValue), numeric: true),
+              ],
               rows: [
                 for (final pt in pts.reversed)
-                  DataRow(cells: [DataCell(Text(_shortDate(pt.at))), DataCell(Text(_fmt(pt.value)))]),
+                  DataRow(
+                    cells: [
+                      DataCell(Text(_shortDate(pt.at))),
+                      DataCell(Text(_fmt(pt.value))),
+                    ],
+                  ),
               ],
             ),
         ],
@@ -199,7 +253,12 @@ class _GrowthChartState extends State<GrowthChart> {
 /// (ordinal ramp) and the legend names the bands, so colour is never the
 /// only carrier of meaning.
 class BandHistoryChart extends StatelessWidget {
-  const BandHistoryChart({super.key, required this.title, required this.unit, required this.points});
+  const BandHistoryChart({
+    super.key,
+    required this.title,
+    required this.unit,
+    required this.points,
+  });
   final String title;
   final String unit;
   final List<ChartPoint> points;
@@ -209,22 +268,45 @@ class BandHistoryChart extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final p = ChartPalette.of(context);
     if (points.isEmpty) {
-      return _ChartCard(title: title, semantics: l.chartNoData, chart: Center(child: Text(l.chartNoData)));
+      return _ChartCard(
+        title: title,
+        semantics: l.chartNoData,
+        chart: Center(child: Text(l.chartNoData)),
+      );
     }
-    Color marker(ChartPoint pt) => pt.band == null ? p.surface : p.bands[bandIndex(pt.band!)];
+    Color marker(ChartPoint pt) =>
+        pt.band == null ? p.surface : p.bands[bandIndex(pt.band!)];
     return _ChartCard(
       key: Key('band-chart-$title'),
       title: '$title ($unit)',
-      semantics: l.chartSummary(points.length, title, '${_fmt(points.last.value)} $unit'),
-      chart: _Line(points: points, palette: p, markerColor: marker, lineColor: p.inkSecondary),
+      semantics: l.chartSummary(
+        points.length,
+        title,
+        '${_fmt(points.last.value)} $unit',
+      ),
+      chart: _Line(
+        points: points,
+        palette: p,
+        markerColor: marker,
+        lineColor: p.inkSecondary,
+      ),
       legend: Wrap(
         key: const Key('band-legend'),
         spacing: AppTokens.spaceMd,
         runSpacing: AppTokens.spaceXs,
         children: [
           for (var i = 0; i < normBands.length; i++)
-            _Swatch(color: p.bands[i], label: normBands[i].label(l), ink: p.inkSecondary),
-          _Swatch(color: p.surface, label: l.testNoBand.split(' ').take(2).join(' '), ink: p.inkSecondary, outlined: true),
+            _Swatch(
+              color: p.bands[i],
+              label: normBands[i].label(l),
+              ink: p.inkSecondary,
+            ),
+          _Swatch(
+            color: p.surface,
+            label: l.testNoBand.split(' ').take(2).join(' '),
+            ink: p.inkSecondary,
+            outlined: true,
+          ),
         ],
       ),
     );
@@ -232,7 +314,12 @@ class BandHistoryChart extends StatelessWidget {
 }
 
 class _Swatch extends StatelessWidget {
-  const _Swatch({required this.color, required this.label, required this.ink, this.outlined = false});
+  const _Swatch({
+    required this.color,
+    required this.label,
+    required this.ink,
+    this.outlined = false,
+  });
   final Color color;
   final String label;
   final Color ink;
@@ -258,14 +345,26 @@ class _Swatch extends StatelessWidget {
 }
 
 /// Helper for screens: points of a measurement series.
-List<ChartPoint> measurementPoints(Iterable<ath.BodyMeasurement> list, {required bool height}) => [
+List<ChartPoint> measurementPoints(
+  Iterable<ath.BodyMeasurement> list, {
+  required bool height,
+}) => [
   for (final m in list)
     if ((height ? m.heightCm : m.weightKg) != null)
-      ChartPoint(m.measuredOn.toDateTime(utc: true), (height ? m.heightCm : m.weightKg)!),
+      ChartPoint(
+        m.measuredOn.toDateTime(utc: true),
+        (height ? m.heightCm : m.weightKg)!,
+      ),
 ];
 
 List<ChartPoint> resultPoints(Iterable<ath.PhysicalTestResult> list) => [
-  for (final r in list) ChartPoint(r.measuredOn.toDateTime(utc: true), r.value, band: r.expectedBand, pending: r.referencePending),
+  for (final r in list)
+    ChartPoint(
+      r.measuredOn.toDateTime(utc: true),
+      r.value,
+      band: r.expectedBand,
+      pending: r.referencePending,
+    ),
 ];
 
 String athDateText(ath.Date d) => formatAthDate(d);

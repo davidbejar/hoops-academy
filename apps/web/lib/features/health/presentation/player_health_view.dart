@@ -23,7 +23,11 @@ enum HealthTab { injuries, growth, tests }
 /// Injuries / growth / physical tests of one player. Not scrollable itself:
 /// embed it in a ListView (profile tabs, staff health page).
 class PlayerHealthView extends ConsumerStatefulWidget {
-  const PlayerHealthView({super.key, required this.playerId, this.initial = HealthTab.injuries});
+  const PlayerHealthView({
+    super.key,
+    required this.playerId,
+    this.initial = HealthTab.injuries,
+  });
   final String playerId;
   final HealthTab initial;
 
@@ -37,7 +41,11 @@ class _PlayerHealthViewState extends ConsumerState<PlayerHealthView> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final labels = {HealthTab.injuries: l.healthInjuries, HealthTab.growth: l.healthGrowth, HealthTab.tests: l.healthTests};
+    final labels = {
+      HealthTab.injuries: l.healthInjuries,
+      HealthTab.growth: l.healthGrowth,
+      HealthTab.tests: l.healthTests,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -68,7 +76,11 @@ class _PlayerHealthViewState extends ConsumerState<PlayerHealthView> {
 
 /// "Injured: knee" / "Available" chip fed by the open injuries.
 class AvailabilityBadge extends ConsumerWidget {
-  const AvailabilityBadge({super.key, required this.playerId, this.showAvailable = false});
+  const AvailabilityBadge({
+    super.key,
+    required this.playerId,
+    this.showAvailable = false,
+  });
   final String playerId;
   final bool showAvailable;
 
@@ -81,13 +93,23 @@ class AvailabilityBadge extends ConsumerWidget {
     if (injury != null) {
       return Align(
         alignment: Alignment.centerLeft,
-        child: InfoChip(l.availabilityInjured(injury.bodyPart), tone: ChipTone.bad, icon: Icons.healing, key: const Key('availability-injured')),
+        child: InfoChip(
+          l.availabilityInjured(injury.bodyPart),
+          tone: ChipTone.bad,
+          icon: Icons.healing,
+          key: const Key('availability-injured'),
+        ),
       );
     }
     return showAvailable
         ? Align(
             alignment: Alignment.centerLeft,
-            child: InfoChip(l.availabilityAvailable, tone: ChipTone.good, icon: Icons.check_circle_outline, key: const Key('availability-ok')),
+            child: InfoChip(
+              l.availabilityAvailable,
+              tone: ChipTone.good,
+              icon: Icons.check_circle_outline,
+              key: const Key('availability-ok'),
+            ),
           )
         : const SizedBox.shrink();
   }
@@ -107,7 +129,10 @@ class PlayerHealthScreen extends ConsumerWidget {
       parentPath: '/players/$playerId',
       child: Guarded(
         allowed: caps.canSeeModule,
-        child: ListView(padding: const EdgeInsets.all(AppTokens.spaceMd), children: [PlayerHealthView(playerId: playerId)]),
+        child: ListView(
+          padding: const EdgeInsets.all(AppTokens.spaceMd),
+          children: [PlayerHealthView(playerId: playerId)],
+        ),
       ),
     );
   }
@@ -132,7 +157,10 @@ class InjuriesSection extends ConsumerWidget {
             key: const Key('injury-new'),
             icon: const Icon(Icons.add),
             label: Text(l.injuryNew),
-            onPressed: () => showDialog<bool>(context: context, builder: (_) => InjuryDialog(playerId: playerId)),
+            onPressed: () => showDialog<bool>(
+              context: context,
+              builder: (_) => InjuryDialog(playerId: playerId),
+            ),
           ),
         AsyncBody<List<ath.Injury>>(
           value: ref.watch(injuriesProvider(playerId)),
@@ -140,7 +168,9 @@ class InjuriesSection extends ConsumerWidget {
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.injuryEmpty,
           builder: (context, data) => Column(
-            children: [for (final i in data) _InjuryCard(injury: i, canWrite: canWrite)],
+            children: [
+              for (final i in data) _InjuryCard(injury: i, canWrite: canWrite),
+            ],
           ),
         ),
       ],
@@ -154,7 +184,12 @@ class _InjuryCard extends ConsumerWidget {
   final bool canWrite;
 
   Future<DateTime?> _pick(BuildContext context, DateTime initial) =>
-      showDatePicker(context: context, initialDate: initial, firstDate: DateTime(2000), lastDate: DateTime(DateTime.now().year + 2));
+      showDatePicker(
+        context: context,
+        initialDate: initial,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(DateTime.now().year + 2),
+      );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -172,7 +207,9 @@ class _InjuryCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text(i.bodyPart, style: theme.textTheme.titleMedium)),
+                Expanded(
+                  child: Text(i.bodyPart, style: theme.textTheme.titleMedium),
+                ),
                 InfoChip(
                   open ? l.injuryStatusOpen : l.injuryStatusRecovered,
                   tone: open ? ChipTone.bad : ChipTone.good,
@@ -183,13 +220,20 @@ class _InjuryCard extends ConsumerWidget {
             Wrap(
               spacing: AppTokens.spaceSm,
               children: [
-                InfoChip(i.severity.label(l), tone: i.severity == ath.InjurySeverity.SEVERE ? ChipTone.bad : ChipTone.warn),
+                InfoChip(
+                  i.severity.label(l),
+                  tone: i.severity == ath.InjurySeverity.SEVERE
+                      ? ChipTone.bad
+                      : ChipTone.warn,
+                ),
                 Text(fullDate(i.occurredOn), style: theme.textTheme.bodySmall),
               ],
             ),
             if (i.description != null) Text(i.description!),
-            if (open && i.expectedReturnOn != null) Text(l.injuryReturnLine(fullDate(i.expectedReturnOn!))),
-            if (!open && i.actualReturnOn != null) Text(l.injuryRecoveredLine(fullDate(i.actualReturnOn!))),
+            if (open && i.expectedReturnOn != null)
+              Text(l.injuryReturnLine(fullDate(i.expectedReturnOn!))),
+            if (!open && i.actualReturnOn != null)
+              Text(l.injuryRecoveredLine(fullDate(i.actualReturnOn!))),
             if (canWrite)
               Wrap(
                 spacing: AppTokens.spaceSm,
@@ -198,27 +242,41 @@ class _InjuryCard extends ConsumerWidget {
                     key: Key('injury-edit-${i.id}'),
                     icon: const Icon(Icons.edit_outlined),
                     label: Text(l.injuryEdit),
-                    onPressed: () => showDialog<bool>(context: context, builder: (_) => InjuryEditDialog(injury: i)),
+                    onPressed: () => showDialog<bool>(
+                      context: context,
+                      builder: (_) => InjuryEditDialog(injury: i),
+                    ),
                   ),
                   if (open) ...[
-                  TextButton(
-                    key: Key('injury-return-${i.id}'),
-                    onPressed: () async {
-                      final d = await _pick(context, i.expectedReturnOn?.toDateTime() ?? DateTime.now());
-                      if (d == null || !context.mounted) return;
-                      await runAction(context, () => notifier.updateExpectedReturn(i.id, d), success: l.injurySaved);
-                    },
-                    child: Text(l.injuryUpdateReturn),
-                  ),
-                  FilledButton.tonal(
-                    key: Key('injury-recover-${i.id}'),
-                    onPressed: () async {
-                      final d = await _pick(context, DateTime.now());
-                      if (d == null || !context.mounted) return;
-                      await runAction(context, () => notifier.recover(i.id, d), success: l.injurySaved);
-                    },
-                    child: Text(l.injuryRecover),
-                  ),
+                    TextButton(
+                      key: Key('injury-return-${i.id}'),
+                      onPressed: () async {
+                        final d = await _pick(
+                          context,
+                          i.expectedReturnOn?.toDateTime() ?? DateTime.now(),
+                        );
+                        if (d == null || !context.mounted) return;
+                        await runAction(
+                          context,
+                          () => notifier.updateExpectedReturn(i.id, d),
+                          success: l.injurySaved,
+                        );
+                      },
+                      child: Text(l.injuryUpdateReturn),
+                    ),
+                    FilledButton.tonal(
+                      key: Key('injury-recover-${i.id}'),
+                      onPressed: () async {
+                        final d = await _pick(context, DateTime.now());
+                        if (d == null || !context.mounted) return;
+                        await runAction(
+                          context,
+                          () => notifier.recover(i.id, d),
+                          success: l.injurySaved,
+                        );
+                      },
+                      child: Text(l.injuryRecover),
+                    ),
                   ],
                 ],
               ),
@@ -260,13 +318,17 @@ class _InjuryDialogState extends ConsumerState<InjuryDialog> {
       formKey: _form,
       onSubmit: () => runAction(
         context,
-        () => ref.read(injuriesProvider(widget.playerId).notifier).create(
-          occurredOn: _on,
-          bodyPart: _part.text.trim(),
-          severity: _severity,
-          description: _description.text.trim().isEmpty ? null : _description.text.trim(),
-          expectedReturnOn: _return,
-        ),
+        () => ref
+            .read(injuriesProvider(widget.playerId).notifier)
+            .create(
+              occurredOn: _on,
+              bodyPart: _part.text.trim(),
+              severity: _severity,
+              description: _description.text.trim().isEmpty
+                  ? null
+                  : _description.text.trim(),
+              expectedReturnOn: _return,
+            ),
         success: l.injurySaved,
       ),
       children: [
@@ -283,13 +345,22 @@ class _InjuryDialogState extends ConsumerState<InjuryDialog> {
           isExpanded: true,
           decoration: InputDecoration(labelText: l.injurySeverity),
           items: [
-            for (final s in [ath.InjurySeverity.MINOR, ath.InjurySeverity.MODERATE, ath.InjurySeverity.SEVERE])
+            for (final s in [
+              ath.InjurySeverity.MINOR,
+              ath.InjurySeverity.MODERATE,
+              ath.InjurySeverity.SEVERE,
+            ])
               DropdownMenuItem(value: s, child: Text(s.label(l))),
           ],
           onChanged: (v) => setState(() => _severity = v ?? _severity),
         ),
         formGap,
-        DateField(key: const Key('injury-date'), label: l.injuryOccurredOn, value: _on, onChanged: (d) => setState(() => _on = d)),
+        DateField(
+          key: const Key('injury-date'),
+          label: l.injuryOccurredOn,
+          value: _on,
+          onChanged: (d) => setState(() => _on = d),
+        ),
         formGap,
         DateField(
           key: const Key('injury-expected'),
@@ -323,7 +394,9 @@ class InjuryEditDialog extends ConsumerStatefulWidget {
 class _InjuryEditDialogState extends ConsumerState<InjuryEditDialog> {
   final _form = GlobalKey<FormState>();
   late final _part = TextEditingController(text: widget.injury.bodyPart);
-  late final _description = TextEditingController(text: widget.injury.description ?? '');
+  late final _description = TextEditingController(
+    text: widget.injury.description ?? '',
+  );
   late ath.InjurySeverity _severity = widget.injury.severity;
   late DateTime _on = widget.injury.occurredOn.toDateTime();
   late DateTime? _expected = widget.injury.expectedReturnOn?.toDateTime();
@@ -341,7 +414,9 @@ class _InjuryEditDialogState extends ConsumerState<InjuryEditDialog> {
 
   bool _validateDates() {
     final day = DateTime(_on.year, _on.month, _on.day);
-    final before = (_expected != null && _expected!.isBefore(day)) || (_actual != null && _actual!.isBefore(day));
+    final before =
+        (_expected != null && _expected!.isBefore(day)) ||
+        (_actual != null && _actual!.isBefore(day));
     setState(() => _datesBeforeInjury = before);
     return !before;
   }
@@ -357,9 +432,12 @@ class _InjuryEditDialogState extends ConsumerState<InjuryEditDialog> {
         ..expectedReturnOn = _expected == null ? null : toAthDate(_expected!)
         ..actualReturnOn = _actual == null ? null : toAthDate(_actual!)
         ..clear = clearList({
-          ath.UpdateInjuryRequestClearEnum.description: text.isEmpty ? null : text,
+          ath.UpdateInjuryRequestClearEnum.description: text.isEmpty
+              ? null
+              : text,
           ath.UpdateInjuryRequestClearEnum.expectedReturnOn: _expected,
-          if (_recovered) ath.UpdateInjuryRequestClearEnum.actualReturnOn: _actual,
+          if (_recovered)
+            ath.UpdateInjuryRequestClearEnum.actualReturnOn: _actual,
         }),
     );
   }
@@ -374,7 +452,9 @@ class _InjuryEditDialogState extends ConsumerState<InjuryEditDialog> {
       validateExtra: _validateDates,
       onSubmit: () => runAction(
         context,
-        () => ref.read(injuriesProvider(widget.injury.playerId).notifier).edit(widget.injury.id, _request()),
+        () => ref
+            .read(injuriesProvider(widget.injury.playerId).notifier)
+            .edit(widget.injury.id, _request()),
         success: l.injurySaved,
       ),
       children: [
@@ -391,13 +471,23 @@ class _InjuryEditDialogState extends ConsumerState<InjuryEditDialog> {
           isExpanded: true,
           decoration: InputDecoration(labelText: l.injurySeverity),
           items: [
-            for (final s in [ath.InjurySeverity.MINOR, ath.InjurySeverity.MODERATE, ath.InjurySeverity.SEVERE])
+            for (final s in [
+              ath.InjurySeverity.MINOR,
+              ath.InjurySeverity.MODERATE,
+              ath.InjurySeverity.SEVERE,
+            ])
               DropdownMenuItem(value: s, child: Text(s.label(l))),
           ],
           onChanged: (v) => setState(() => _severity = v ?? _severity),
         ),
         formGap,
-        DateField(key: const Key('injury-date'), label: l.injuryOccurredOn, value: _on, lastDate: DateTime.now(), onChanged: (d) => setState(() => _on = d)),
+        DateField(
+          key: const Key('injury-date'),
+          label: l.injuryOccurredOn,
+          value: _on,
+          lastDate: DateTime.now(),
+          onChanged: (d) => setState(() => _on = d),
+        ),
         formGap,
         DateField(
           key: const Key('injury-expected'),
@@ -419,7 +509,12 @@ class _InjuryEditDialogState extends ConsumerState<InjuryEditDialog> {
           ),
         ],
         formGap,
-        TextFormField(key: const Key('injury-description'), controller: _description, maxLines: 2, decoration: InputDecoration(labelText: l.injuryDescription)),
+        TextFormField(
+          key: const Key('injury-description'),
+          controller: _description,
+          maxLines: 2,
+          decoration: InputDecoration(labelText: l.injuryDescription),
+        ),
       ],
     );
   }
@@ -443,7 +538,10 @@ class GrowthSection extends ConsumerWidget {
             key: const Key('growth-add'),
             icon: const Icon(Icons.add),
             label: Text(l.growthAdd),
-            onPressed: () => showDialog<bool>(context: context, builder: (_) => MeasurementDialog(playerId: playerId)),
+            onPressed: () => showDialog<bool>(
+              context: context,
+              builder: (_) => MeasurementDialog(playerId: playerId),
+            ),
           ),
         AsyncBody<List<ath.BodyMeasurement>>(
           value: ref.watch(measurementsProvider(playerId)),
@@ -452,9 +550,16 @@ class GrowthSection extends ConsumerWidget {
           emptyMessage: l.growthEmpty,
           builder: (context, data) => Column(
             children: [
-              GrowthChart(title: l.growthHeight, points: measurementPoints(data, height: true)),
-              GrowthChart(title: l.growthWeight, points: measurementPoints(data, height: false)),
-              for (final m in data.reversed) MeasurementTile(measurement: m, canWrite: canWrite),
+              GrowthChart(
+                title: l.growthHeight,
+                points: measurementPoints(data, height: true),
+              ),
+              GrowthChart(
+                title: l.growthWeight,
+                points: measurementPoints(data, height: false),
+              ),
+              for (final m in data.reversed)
+                MeasurementTile(measurement: m, canWrite: canWrite),
             ],
           ),
         ),
@@ -465,7 +570,11 @@ class GrowthSection extends ConsumerWidget {
 
 /// One measurement row; staff and linked parents can correct or delete it.
 class MeasurementTile extends ConsumerWidget {
-  const MeasurementTile({super.key, required this.measurement, required this.canWrite});
+  const MeasurementTile({
+    super.key,
+    required this.measurement,
+    required this.canWrite,
+  });
   final ath.BodyMeasurement measurement;
   final bool canWrite;
 
@@ -491,7 +600,8 @@ class MeasurementTile extends ConsumerWidget {
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => showDialog<bool>(
                     context: context,
-                    builder: (_) => MeasurementDialog(playerId: m.playerId, measurement: m),
+                    builder: (_) =>
+                        MeasurementDialog(playerId: m.playerId, measurement: m),
                   ),
                 ),
                 IconButton(
@@ -499,9 +609,19 @@ class MeasurementTile extends ConsumerWidget {
                   tooltip: l.delete,
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
-                    if (!await confirmDialog(context, message: l.measurementDeleteConfirm, confirmLabel: l.delete)) return;
+                    if (!await confirmDialog(
+                      context,
+                      message: l.measurementDeleteConfirm,
+                      confirmLabel: l.delete,
+                    ))
+                      return;
                     if (!context.mounted) return;
-                    await runAction(context, () => ref.read(measurementsProvider(m.playerId).notifier).delete(m.id));
+                    await runAction(
+                      context,
+                      () => ref
+                          .read(measurementsProvider(m.playerId).notifier)
+                          .delete(m.id),
+                    );
                   },
                 ),
               ],
@@ -513,7 +633,11 @@ class MeasurementTile extends ConsumerWidget {
 
 /// Adds a measurement, or corrects [measurement].
 class MeasurementDialog extends ConsumerStatefulWidget {
-  const MeasurementDialog({super.key, required this.playerId, this.measurement});
+  const MeasurementDialog({
+    super.key,
+    required this.playerId,
+    this.measurement,
+  });
   final String playerId;
   final ath.BodyMeasurement? measurement;
 
@@ -523,9 +647,14 @@ class MeasurementDialog extends ConsumerStatefulWidget {
 
 class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
   final _form = GlobalKey<FormState>();
-  late final _height = TextEditingController(text: _initial(widget.measurement?.heightCm));
-  late final _weight = TextEditingController(text: _initial(widget.measurement?.weightKg));
-  late DateTime _on = widget.measurement?.measuredOn.toDateTime() ?? DateTime.now();
+  late final _height = TextEditingController(
+    text: _initial(widget.measurement?.heightCm),
+  );
+  late final _weight = TextEditingController(
+    text: _initial(widget.measurement?.weightKg),
+  );
+  late DateTime _on =
+      widget.measurement?.measuredOn.toDateTime() ?? DateTime.now();
   bool _needOne = false;
 
   static String _initial(double? v) => v == null ? '' : _num(v);
@@ -537,7 +666,8 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
     super.dispose();
   }
 
-  double? _parse(TextEditingController c) => double.tryParse(c.text.trim().replaceAll(',', '.'));
+  double? _parse(TextEditingController c) =>
+      double.tryParse(c.text.trim().replaceAll(',', '.'));
 
   String? _optional(AppLocalizations l, String? v) {
     if ((v ?? '').trim().isEmpty) return null;
@@ -560,17 +690,21 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
       onSubmit: () => runAction(
         context,
         () => editing
-            ? ref.read(measurementsProvider(widget.playerId).notifier).correct(
-                widget.measurement!.id,
-                measuredOn: _on,
-                heightCm: _parse(_height),
-                weightKg: _parse(_weight),
-              )
-            : ref.read(measurementsProvider(widget.playerId).notifier).add(
-                measuredOn: _on,
-                heightCm: _parse(_height),
-                weightKg: _parse(_weight),
-              ),
+            ? ref
+                  .read(measurementsProvider(widget.playerId).notifier)
+                  .correct(
+                    widget.measurement!.id,
+                    measuredOn: _on,
+                    heightCm: _parse(_height),
+                    weightKg: _parse(_weight),
+                  )
+            : ref
+                  .read(measurementsProvider(widget.playerId).notifier)
+                  .add(
+                    measuredOn: _on,
+                    heightCm: _parse(_height),
+                    weightKg: _parse(_weight),
+                  ),
         success: l.saved,
       ),
       children: [
@@ -600,7 +734,11 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
         if (_needOne)
           Padding(
             padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-            child: Text(l.growthNeedOne, key: const Key('growth-need-one'), style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(
+              l.growthNeedOne,
+              key: const Key('growth-need-one'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ),
       ],
     );
@@ -617,7 +755,12 @@ class TestsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final caps = ref.watch(capabilitiesProvider);
-    final types = {for (final t in ref.watch(testTypesProvider).value ?? const <ath.PhysicalTestType>[]) t.id: t};
+    final types = {
+      for (final t
+          in ref.watch(testTypesProvider).value ??
+              const <ath.PhysicalTestType>[])
+        t.id: t,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -626,7 +769,10 @@ class TestsSection extends ConsumerWidget {
             key: const Key('test-add'),
             icon: const Icon(Icons.add),
             label: Text(l.testAdd),
-            onPressed: () => showDialog<void>(context: context, builder: (_) => ResultDialog(playerId: playerId)),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => ResultDialog(playerId: playerId),
+            ),
           ),
         AsyncBody<List<ath.PhysicalTestResult>>(
           value: ref.watch(testResultsProvider(playerId)),
@@ -646,7 +792,8 @@ class TestsSection extends ConsumerWidget {
                     unit: e.value.first.unit,
                     points: resultPoints(e.value),
                   ),
-                  for (final r in e.value.reversed) ResultTile(result: r, canWrite: caps.canEnterTestResults),
+                  for (final r in e.value.reversed)
+                    ResultTile(result: r, canWrite: caps.canEnterTestResults),
                 ],
               ],
             );
@@ -671,30 +818,54 @@ class ResultTile extends ConsumerWidget {
       key: Key('result-${r.id}'),
       dense: true,
       title: Text(l.testResultLine(r.unit, _num(r.value))),
-      subtitle: Text(r.ageAtMeasurement == null
-          ? fullDate(r.measuredOn)
-          : '${fullDate(r.measuredOn)} · ${l.testAtAge(r.ageAtMeasurement!)}'),
+      subtitle: Text(
+        r.ageAtMeasurement == null
+            ? fullDate(r.measuredOn)
+            : '${fullDate(r.measuredOn)} · ${l.testAtAge(r.ageAtMeasurement!)}',
+      ),
       trailing: Wrap(
         spacing: AppTokens.spaceXs,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          InfoChip(r.expectedBand == null ? l.testNoBand.split(' ').take(2).join(' ') : r.expectedBand!.label(l)),
-          if (r.referencePending) InfoChip(l.testReferencePending, tone: ChipTone.warn, icon: Icons.hourglass_empty),
+          InfoChip(
+            r.expectedBand == null
+                ? l.testNoBand.split(' ').take(2).join(' ')
+                : r.expectedBand!.label(l),
+          ),
+          if (r.referencePending)
+            InfoChip(
+              l.testReferencePending,
+              tone: ChipTone.warn,
+              icon: Icons.hourglass_empty,
+            ),
           if (canWrite) ...[
             IconButton(
               key: Key('result-edit-${r.id}'),
               tooltip: l.edit,
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => ResultEditDialog(result: r)),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => ResultEditDialog(result: r),
+              ),
             ),
             IconButton(
               key: Key('result-delete-${r.id}'),
               tooltip: l.delete,
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
-                if (!await confirmDialog(context, message: l.resultDeleteConfirm, confirmLabel: l.delete)) return;
+                if (!await confirmDialog(
+                  context,
+                  message: l.resultDeleteConfirm,
+                  confirmLabel: l.delete,
+                ))
+                  return;
                 if (!context.mounted) return;
-                await runAction(context, () => ref.read(testResultsProvider(r.playerId).notifier).delete(r.id));
+                await runAction(
+                  context,
+                  () => ref
+                      .read(testResultsProvider(r.playerId).notifier)
+                      .delete(r.id),
+                );
               },
             ),
           ],
@@ -735,12 +906,14 @@ class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
       formKey: _form,
       onSubmit: () => runAction(
         context,
-        () => ref.read(testResultsProvider(r.playerId).notifier).correct(
-          r.id,
-          measuredOn: _on,
-          value: double.parse(_value.text.trim().replaceAll(',', '.')),
-          notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-        ),
+        () => ref
+            .read(testResultsProvider(r.playerId).notifier)
+            .correct(
+              r.id,
+              measuredOn: _on,
+              value: double.parse(_value.text.trim().replaceAll(',', '.')),
+              notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+            ),
         success: l.saved,
       ),
       children: [
@@ -749,7 +922,10 @@ class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
           controller: _value,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(labelText: '${l.testValue} (${r.unit})'),
-          validator: (v) => double.tryParse((v ?? '').trim().replaceAll(',', '.')) == null ? l.fieldInvalidNumber : null,
+          validator: (v) =>
+              double.tryParse((v ?? '').trim().replaceAll(',', '.')) == null
+              ? l.fieldInvalidNumber
+              : null,
         ),
         formGap,
         DateField(
@@ -770,7 +946,8 @@ class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
   }
 }
 
-String _num(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+String _num(double v) =>
+    v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
 /// Results entry; after saving it shows the expected band right away.
 class ResultDialog extends ConsumerStatefulWidget {
@@ -802,12 +979,14 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
     setState(() => _busy = true);
     ath.PhysicalTestResult? r;
     final ok = await runAction(context, () async {
-      r = await ref.read(testResultsProvider(widget.playerId).notifier).add(
-        testTypeId: _typeId!,
-        measuredOn: _on,
-        value: double.parse(_value.text.trim().replaceAll(',', '.')),
-        notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-      );
+      r = await ref
+          .read(testResultsProvider(widget.playerId).notifier)
+          .add(
+            testTypeId: _typeId!,
+            measuredOn: _on,
+            value: double.parse(_value.text.trim().replaceAll(',', '.')),
+            notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+          );
     });
     if (!mounted) return;
     setState(() {
@@ -828,20 +1007,33 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              saved.expectedBand == null ? l.testSavedNoBand : l.testSavedBand(saved.expectedBand!.label(l)),
+              saved.expectedBand == null
+                  ? l.testSavedNoBand
+                  : l.testSavedBand(saved.expectedBand!.label(l)),
               key: const Key('result-band'),
             ),
             if (saved.referencePending)
               Padding(
                 padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-                child: InfoChip(l.testReferencePending, tone: ChipTone.warn, icon: Icons.hourglass_empty),
+                child: InfoChip(
+                  l.testReferencePending,
+                  tone: ChipTone.warn,
+                  icon: Icons.hourglass_empty,
+                ),
               ),
           ],
         ),
-        actions: [FilledButton(key: const Key('result-close'), onPressed: () => Navigator.pop(context), child: Text(l.close))],
+        actions: [
+          FilledButton(
+            key: const Key('result-close'),
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.close),
+          ),
+        ],
       );
     }
-    final types = ref.watch(testTypesProvider).value ?? const <ath.PhysicalTestType>[];
+    final types =
+        ref.watch(testTypesProvider).value ?? const <ath.PhysicalTestType>[];
     return AlertDialog(
       title: Text(l.testAdd),
       scrollable: true,
@@ -855,7 +1047,13 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
               initialValue: _typeId,
               isExpanded: true,
               decoration: InputDecoration(labelText: l.testType),
-              items: [for (final t in types) DropdownMenuItem(value: t.id, child: Text('${t.name} (${t.unit})'))],
+              items: [
+                for (final t in types)
+                  DropdownMenuItem(
+                    value: t.id,
+                    child: Text('${t.name} (${t.unit})'),
+                  ),
+              ],
               validator: (v) => v == null ? l.fieldRequired : null,
               onChanged: (v) => setState(() => _typeId = v),
             ),
@@ -863,9 +1061,14 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
             TextFormField(
               key: const Key('result-value'),
               controller: _value,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(labelText: l.testValue),
-              validator: (v) => double.tryParse((v ?? '').trim().replaceAll(',', '.')) == null ? l.fieldInvalidNumber : null,
+              validator: (v) =>
+                  double.tryParse((v ?? '').trim().replaceAll(',', '.')) == null
+                  ? l.fieldInvalidNumber
+                  : null,
             ),
             formGap,
             DateField(
@@ -876,13 +1079,25 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
               onChanged: (d) => setState(() => _on = d),
             ),
             formGap,
-            TextFormField(key: const Key('result-notes'), controller: _notes, decoration: InputDecoration(labelText: l.testNotes)),
+            TextFormField(
+              key: const Key('result-notes'),
+              controller: _notes,
+              decoration: InputDecoration(labelText: l.testNotes),
+            ),
           ],
         ),
       ),
       actions: [
-        TextButton(key: const Key('form-cancel'), onPressed: _busy ? null : () => Navigator.pop(context), child: Text(l.cancel)),
-        FilledButton(key: const Key('form-submit'), onPressed: _busy ? null : _submit, child: Text(l.save)),
+        TextButton(
+          key: const Key('form-cancel'),
+          onPressed: _busy ? null : () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          key: const Key('form-submit'),
+          onPressed: _busy ? null : _submit,
+          child: Text(l.save),
+        ),
       ],
     );
   }

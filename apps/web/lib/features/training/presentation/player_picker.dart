@@ -15,13 +15,24 @@ final playerNameProvider = Provider.family<String?, String>(
 final selectablePlayerIdsProvider = Provider<List<String>>((ref) {
   final caps = ref.watch(capabilitiesProvider);
   if (caps.canSeeModule) {
-    return [for (final p in ref.watch(playersProvider).value ?? const <api.Player>[]) p.id];
+    return [
+      for (final p in ref.watch(playersProvider).value ?? const <api.Player>[])
+        p.id,
+    ];
   }
-  return [...caps.linkedPlayerIds, if (caps.ownPlayerId != null) caps.ownPlayerId!];
+  return [
+    ...caps.linkedPlayerIds,
+    if (caps.ownPlayerId != null) caps.ownPlayerId!,
+  ];
 });
 
 class PlayerPicker extends ConsumerWidget {
-  const PlayerPicker({super.key, required this.label, required this.value, required this.onChanged});
+  const PlayerPicker({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
   final String label;
   final String? value;
   final ValueChanged<String?> onChanged;
@@ -35,8 +46,16 @@ class PlayerPicker extends ConsumerWidget {
       initialValue: value ?? (ids.length == 1 ? ids.first : null),
       isExpanded: true,
       decoration: InputDecoration(labelText: label),
-      items: [for (final id in ids) DropdownMenuItem(value: id, child: Text(ref.watch(playerNameProvider(id)) ?? id))],
-      validator: (v) => (v ?? (ids.length == 1 ? ids.first : null)) == null ? l.fieldRequired : null,
+      items: [
+        for (final id in ids)
+          DropdownMenuItem(
+            value: id,
+            child: Text(ref.watch(playerNameProvider(id)) ?? id),
+          ),
+      ],
+      validator: (v) => (v ?? (ids.length == 1 ? ids.first : null)) == null
+          ? l.fieldRequired
+          : null,
       onChanged: onChanged,
     );
   }

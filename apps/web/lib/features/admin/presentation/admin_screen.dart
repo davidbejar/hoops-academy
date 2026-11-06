@@ -13,12 +13,32 @@ class AdminScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final entries = [
-      (Icons.business_outlined, l.adminAcademyProfile, '/admin/profile', 'admin-profile'),
+      (
+        Icons.business_outlined,
+        l.adminAcademyProfile,
+        '/admin/profile',
+        'admin-profile',
+      ),
       (Icons.badge_outlined, l.adminMembers, '/admin/members', 'admin-members'),
       (Icons.event_outlined, l.adminSeasons, '/admin/seasons', 'admin-seasons'),
-      (Icons.category_outlined, l.adminAgeCategories, '/admin/age-categories', 'admin-categories'),
-      (Icons.how_to_reg_outlined, l.adminApprovals, '/players/requests', 'admin-approvals'),
-      (Icons.report_problem_outlined, l.adminCases, '/teams/cases', 'admin-cases'),
+      (
+        Icons.category_outlined,
+        l.adminAgeCategories,
+        '/admin/age-categories',
+        'admin-categories',
+      ),
+      (
+        Icons.how_to_reg_outlined,
+        l.adminApprovals,
+        '/players/requests',
+        'admin-approvals',
+      ),
+      (
+        Icons.report_problem_outlined,
+        l.adminCases,
+        '/teams/cases',
+        'admin-cases',
+      ),
       (Icons.history, l.adminActivity, '/admin/activity', 'admin-activity'),
     ];
     return ListView(

@@ -11,7 +11,10 @@ import 'package:hoops_app/features/match/domain/projector/projector.dart';
 /// per-event results, feed by serverSeq, box score = projection of the
 /// stored set.
 class FakeGameServer implements EventsRemote {
-  FakeGameServer({this.rules = const MatchRules(periodCount: 4, periodMinutes: 10), this.roster = const []});
+  FakeGameServer({
+    this.rules = const MatchRules(periodCount: 4, periodMinutes: 10),
+    this.roster = const [],
+  });
 
   final MatchRules rules;
   List<RosterPlayer> roster;
@@ -39,25 +42,36 @@ class FakeGameServer implements EventsRemote {
   int feedCalls = 0;
 
   /// Stores events recorded by other devices (they arrive via the feed).
-  void preload(String matchId, Iterable<RecordedEvent> events, {String personId = 'other-scorer'}) {
+  void preload(
+    String matchId,
+    Iterable<RecordedEvent> events, {
+    String personId = 'other-scorer',
+  }) {
     final match = _byMatch.putIfAbsent(matchId, () => {});
     for (final e in events) {
       final seq = e.serverSeq ?? ++_seq;
       if (seq > _seq) _seq = seq;
-      match[e.event.id] = StoredEvent(event: e.event, serverSeq: seq, recordedByPersonId: personId);
+      match[e.event.id] = StoredEvent(
+        event: e.event,
+        serverSeq: seq,
+        recordedByPersonId: personId,
+      );
     }
   }
 
   List<StoredEvent> stored(String matchId) =>
-      (_byMatch[matchId]?.values.toList() ?? [])..sort((a, b) => a.serverSeq.compareTo(b.serverSeq));
+      (_byMatch[matchId]?.values.toList() ?? [])
+        ..sort((a, b) => a.serverSeq.compareTo(b.serverSeq));
 
   Projection boxScore(String matchId) => project(rules, roster, [
-    for (final s in stored(matchId)) RecordedEvent(s.event, serverSeq: s.serverSeq),
+    for (final s in stored(matchId))
+      RecordedEvent(s.event, serverSeq: s.serverSeq),
   ]);
 
   void _gate() {
     if (offline) throw const AppError(kind: AppErrorKind.network);
-    if (unauthorized) throw const AppError(kind: AppErrorKind.unauthorized, status: 401);
+    if (unauthorized)
+      throw const AppError(kind: AppErrorKind.unauthorized, status: 401);
   }
 
   @override
@@ -82,14 +96,20 @@ class FakeGameServer implements EventsRemote {
         continue;
       }
       final conflict = match.values.any(
-        (s) => s.event.meta.deviceId == e.meta.deviceId && s.event.meta.clientSeq == e.meta.clientSeq,
+        (s) =>
+            s.event.meta.deviceId == e.meta.deviceId &&
+            s.event.meta.clientSeq == e.meta.clientSeq,
       );
       if (conflict) {
         results.add(EventResult.rejected(e.id, 'CLIENT_SEQ_CONFLICT'));
         continue;
       }
       final seq = ++_seq;
-      match[e.id] = StoredEvent(event: e, serverSeq: seq, recordedByPersonId: 'person-me');
+      match[e.id] = StoredEvent(
+        event: e,
+        serverSeq: seq,
+        recordedByPersonId: 'person-me',
+      );
       results.add(EventResult.accepted(e.id, seq));
     }
     if (dropResponses) throw const AppError(kind: AppErrorKind.network);
@@ -97,11 +117,19 @@ class FakeGameServer implements EventsRemote {
   }
 
   @override
-  Future<FeedPage> feed(String matchId, {required int after, int limit = 500}) async {
+  Future<FeedPage> feed(
+    String matchId, {
+    required int after,
+    int limit = 500,
+  }) async {
     _gate();
     feedCalls++;
     final all = stored(matchId);
-    final events = visibleFeed(all, (s) => s.event, visiblePlayers: visiblePlayers).where((s) => s.serverSeq > after).toList();
+    final events = visibleFeed(
+      all,
+      (s) => s.event,
+      visiblePlayers: visiblePlayers,
+    ).where((s) => s.serverSeq > after).toList();
     final page = events.take(limit).toList();
     return FeedPage(
       events: page,

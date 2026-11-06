@@ -130,8 +130,14 @@ class SyncWorker {
   Future<void> refreshStatus() async {
     final scope = _scope();
     if (scope == null || _disposed) return;
-    final pending = await _store.unsyncedCount(tenantId: scope.tenantId, personId: scope.personId);
-    final rejected = await _store.rejectedCount(tenantId: scope.tenantId, personId: scope.personId);
+    final pending = await _store.unsyncedCount(
+      tenantId: scope.tenantId,
+      personId: scope.personId,
+    );
+    final rejected = await _store.rejectedCount(
+      tenantId: scope.tenantId,
+      personId: scope.personId,
+    );
     _set(status.value.copyWith(pendingCount: pending, rejectedCount: rejected));
   }
 
@@ -166,7 +172,9 @@ class SyncWorker {
       }
       _pull.clear();
       _backoff.reset();
-      _set(status.value.copyWith(lastError: () => null, nextRetryAt: () => null));
+      _set(
+        status.value.copyWith(lastError: () => null, nextRetryAt: () => null),
+      );
     } on Object catch (e) {
       _fail(AppError.of(e));
     } finally {
@@ -178,18 +186,26 @@ class SyncWorker {
   }
 
   Future<void> _push(SyncScope scope) async {
-    final matches = await _store.matchesWithOutbox(tenantId: scope.tenantId, personId: scope.personId);
+    final matches = await _store.matchesWithOutbox(
+      tenantId: scope.tenantId,
+      personId: scope.personId,
+    );
     for (final matchId in matches) {
       while (true) {
         final batch = await _store.outbox(
-          tenantId: scope.tenantId, personId: scope.personId, matchId: matchId, limit: batchSize,
+          tenantId: scope.tenantId,
+          personId: scope.personId,
+          matchId: matchId,
+          limit: batchSize,
         );
         if (batch.isEmpty) break;
         final ids = [for (final e in batch) e.event.id];
         await _store.markSent(ids);
         final BatchOutcome outcome;
         try {
-          outcome = await _remote.submit(matchId, [for (final e in batch) e.event]);
+          outcome = await _remote.submit(matchId, [
+            for (final e in batch) e.event,
+          ]);
         } on Object {
           // SENT means "in flight". Whether or not the server stored them,
           // they go back to PENDING; a re-send of a stored one is DUPLICATE.
@@ -215,7 +231,13 @@ class SyncWorker {
 
   void _fail(AppError error) {
     if (error.kind == AppErrorKind.unauthorized) {
-      _set(status.value.copyWith(pausedForAuth: true, lastError: () => SyncErrorKind.unauthorized, nextRetryAt: () => null));
+      _set(
+        status.value.copyWith(
+          pausedForAuth: true,
+          lastError: () => SyncErrorKind.unauthorized,
+          nextRetryAt: () => null,
+        ),
+      );
       return;
     }
     final kind = switch (error.kind) {
@@ -224,7 +246,12 @@ class SyncWorker {
     };
     final delay = _backoff.next();
     _retry = _timers.once(delay, syncNow);
-    _set(status.value.copyWith(lastError: () => kind, nextRetryAt: () => _now().add(delay)));
+    _set(
+      status.value.copyWith(
+        lastError: () => kind,
+        nextRetryAt: () => _now().add(delay),
+      ),
+    );
   }
 
   void _set(SyncStatus s) {

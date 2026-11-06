@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 Map<String, String> _load(String locale) {
-  final raw =
-      jsonDecode(File('lib/l10n/app_$locale.arb').readAsStringSync())
-          as Map<String, dynamic>;
+  final raw = jsonDecode(
+    File('lib/l10n/app_$locale.arb').readAsStringSync(),
+  ) as Map<String, dynamic>;
   return {
     for (final e in raw.entries)
       if (!e.key.startsWith('@')) e.key: e.value as String,

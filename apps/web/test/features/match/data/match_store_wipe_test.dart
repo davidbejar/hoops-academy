@@ -9,10 +9,20 @@ void main() {
     addTearDown(store.close);
     for (final (t, p) in [(tenant, me), ('other-tenant', 'other-person')]) {
       await store.record(
-        tenantId: t, personId: p, matchId: 'm1', period: 1, clockSecondsRemaining: 600, build: PeriodStart.new,
+        tenantId: t,
+        personId: p,
+        matchId: 'm1',
+        period: 1,
+        clockSecondsRemaining: 600,
+        build: PeriodStart.new,
       );
     }
-    await store.saveMatchJson(tenantId: tenant, matchId: 'm1', teamId: 't', json: '{}');
+    await store.saveMatchJson(
+      tenantId: tenant,
+      matchId: 'm1',
+      teamId: 't',
+      json: '{}',
+    );
     expect(await store.unsyncedTotal(), 2);
     final device = await store.deviceId();
 
@@ -23,6 +33,10 @@ void main() {
     expect(await store.ownEvents('m1'), isEmpty);
     expect(await store.lastServerSeq('m1'), 0);
     expect(await store.roster('m1'), isNull);
-    expect(await store.deviceId(), isNot(device), reason: 'a new user on this browser gets a new device identity');
+    expect(
+      await store.deviceId(),
+      isNot(device),
+      reason: 'a new user on this browser gets a new device identity',
+    );
   });
 }

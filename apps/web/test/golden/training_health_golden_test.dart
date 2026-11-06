@@ -25,9 +25,21 @@ void main() {
       training: FakeTrainingRepository(
         sessions: [
           session('s1', day: _day(1), hour: 18, location: 'Pabellón Norte'),
-          session('s2', day: _day(3), hour: 19, minutes: 60, location: 'Pista 2'),
+          session(
+            's2',
+            day: _day(3),
+            hour: 19,
+            minutes: 60,
+            location: 'Pista 2',
+          ),
           session('s3', day: _day(3), hour: 17, teamId: 't2', location: null),
-          session('s4', day: _day(5), hour: 10, status: ath.TrainingSessionStatus.CANCELLED, cancelReason: 'Lluvia'),
+          session(
+            's4',
+            day: _day(5),
+            hour: 10,
+            status: ath.TrainingSessionStatus.CANCELLED,
+            cancelReason: 'Lluvia',
+          ),
         ],
       ),
     );
@@ -39,7 +51,10 @@ void main() {
       overrides: [nowProvider.overrideWithValue(_today)],
       location: '/training',
     );
-    await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/training_week_360x780.png'));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/training_week_360x780.png'),
+    );
   });
 
   testWidgets('growth chart (height and weight), 360x780', (tester) async {
@@ -48,17 +63,38 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final heights = [
-      for (final (m, h) in [(1, 138.0), (3, 140.5), (5, 142.0), (7, 144.5), (9, 146.0), (11, 148.5)]) ChartPoint(DateTime.utc(2026, m, 10), h),
+      for (final (m, h) in [
+        (1, 138.0),
+        (3, 140.5),
+        (5, 142.0),
+        (7, 144.5),
+        (9, 146.0),
+        (11, 148.5),
+      ])
+        ChartPoint(DateTime.utc(2026, m, 10), h),
     ];
     final weights = [
-      for (final (m, w) in [(1, 33.0), (3, 34.5), (5, 35.0), (7, 37.0), (9, 38.5), (11, 40.0)]) ChartPoint(DateTime.utc(2026, m, 10), w),
+      for (final (m, w) in [
+        (1, 33.0),
+        (3, 34.5),
+        (5, 35.0),
+        (7, 37.0),
+        (9, 38.5),
+        (11, 40.0),
+      ])
+        ChartPoint(DateTime.utc(2026, m, 10), w),
     ];
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: buildTheme(Brightness.light),
         locale: const Locale('es'),
-        localizationsDelegates: const [AppLocalizations.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           appBar: AppBar(title: const Text('Ana Ruiz')),
@@ -73,6 +109,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/growth_chart_360x780.png'));
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/growth_chart_360x780.png'),
+    );
   });
 }

@@ -6,14 +6,15 @@ const catU14Id = 'cat-u14';
 const seasonId = 'season-2026';
 const pastSeasonId = 'season-2025';
 
-api.AgeCategory category(String id, String code, int rank, {int? maxAge}) => api.AgeCategory(
-  (b) => b
-    ..id = id
-    ..code = code
-    ..name = code == 'U12' ? 'Mini' : 'Infantil'
-    ..rank = rank
-    ..maxAge = maxAge,
-);
+api.AgeCategory category(String id, String code, int rank, {int? maxAge}) =>
+    api.AgeCategory(
+      (b) => b
+        ..id = id
+        ..code = code
+        ..name = code == 'U12' ? 'Mini' : 'Infantil'
+        ..rank = rank
+        ..maxAge = maxAge,
+    );
 
 final u12 = category(catU12Id, 'U12', 1, maxAge: 12);
 final u14 = category(catU14Id, 'U14', 2, maxAge: 14);
@@ -47,15 +48,21 @@ api.Team team(
     ..playerCount = players,
 );
 
-api.PlayerRef playerRef(String id, String name) => api.PlayerRef((b) => b
-  ..id = id
-  ..displayName = name);
-api.TeamRef teamRef(String id, String name) => api.TeamRef((b) => b
-  ..id = id
-  ..name = name);
-api.PersonRef personRef(String id, String name) => api.PersonRef((b) => b
-  ..personId = id
-  ..displayName = name);
+api.PlayerRef playerRef(String id, String name) => api.PlayerRef(
+  (b) => b
+    ..id = id
+    ..displayName = name,
+);
+api.TeamRef teamRef(String id, String name) => api.TeamRef(
+  (b) => b
+    ..id = id
+    ..name = name,
+);
+api.PersonRef personRef(String id, String name) => api.PersonRef(
+  (b) => b
+    ..personId = id
+    ..displayName = name,
+);
 
 api.Player player(
   String id,
@@ -79,26 +86,37 @@ api.Player player(
     ..createdAt = DateTime.utc(2026, 1, 1),
 );
 
-api.PlayerTeamAssignment assignment(String teamId, String name, {String? jersey, int playUp = 0, bool valid = true}) =>
-    api.PlayerTeamAssignment(
-      (b) => b
-        ..team.replace(teamRef(teamId, name))
-        ..jerseyNumber = jersey
-        ..playUpLevels = playUp
-        ..valid = valid,
-    );
+api.PlayerTeamAssignment assignment(
+  String teamId,
+  String name, {
+  String? jersey,
+  int playUp = 0,
+  bool valid = true,
+}) => api.PlayerTeamAssignment(
+  (b) => b
+    ..team.replace(teamRef(teamId, name))
+    ..jerseyNumber = jersey
+    ..playUpLevels = playUp
+    ..valid = valid,
+);
 
-api.TeamPlayer teamPlayer(String teamId, String pid, String name, {String? jersey, int playUp = 0, bool invalid = false}) =>
-    api.TeamPlayer(
-      (b) => b
-        ..player.replace(playerRef(pid, name))
-        ..teamId = teamId
-        ..jerseyNumber = jersey
-        ..joinedOn = api.Date(2026, 9, 1)
-        ..playUpLevels = playUp
-        ..invalidatedAt = invalid ? DateTime.utc(2026, 9, 2) : null
-        ..playerStatus = api.PlayerStatus.ACTIVE,
-    );
+api.TeamPlayer teamPlayer(
+  String teamId,
+  String pid,
+  String name, {
+  String? jersey,
+  int playUp = 0,
+  bool invalid = false,
+}) => api.TeamPlayer(
+  (b) => b
+    ..player.replace(playerRef(pid, name))
+    ..teamId = teamId
+    ..jerseyNumber = jersey
+    ..joinedOn = api.Date(2026, 9, 1)
+    ..playUpLevels = playUp
+    ..invalidatedAt = invalid ? DateTime.utc(2026, 9, 2) : null
+    ..playerStatus = api.PlayerStatus.ACTIVE,
+);
 
 api.Member member(
   String id,
@@ -107,14 +125,16 @@ api.Member member(
   bool active = true,
   String? email,
   api.InvitationStatus invitation = api.InvitationStatus.ACCEPTED,
-  api.TemporaryPasswordStatus temporaryPassword = api.TemporaryPasswordStatus.NONE,
+  api.TemporaryPasswordStatus temporaryPassword =
+      api.TemporaryPasswordStatus.NONE,
 }) => api.Member(
   (b) => b
     ..personId = id
     ..givenName = name.split(' ').first
     ..familyName = name.split(' ').last
     ..displayName = name
-    ..email = email ?? '${name.split(' ').first.toLowerCase()}@hoops-academy.com'
+    ..email =
+        email ?? '${name.split(' ').first.toLowerCase()}@hoops-academy.com'
     ..roles = SetBuilder<api.TenantRole>(roles)
     ..active = active
     ..invitationStatus = invitation
@@ -157,16 +177,21 @@ api.ApprovalRequest approval(
     ..requestedAt = DateTime.utc(2026, 10, 1),
 );
 
-api.EligibilityCase eligibilityCase(String id, String pid, String pname, String tid, String tname) =>
-    api.EligibilityCase(
-      (b) => b
-        ..id = id
-        ..player.replace(playerRef(pid, pname))
-        ..team.replace(teamRef(tid, tname))
-        ..reason = api.EligibilityReason.CATEGORY_TOO_LOW
-        ..status = api.EligibilityCaseStatus.OPEN
-        ..openedAt = DateTime.utc(2026, 9, 1),
-    );
+api.EligibilityCase eligibilityCase(
+  String id,
+  String pid,
+  String pname,
+  String tid,
+  String tname,
+) => api.EligibilityCase(
+  (b) => b
+    ..id = id
+    ..player.replace(playerRef(pid, pname))
+    ..team.replace(teamRef(tid, tname))
+    ..reason = api.EligibilityReason.CATEGORY_TOO_LOW
+    ..status = api.EligibilityCaseStatus.OPEN
+    ..openedAt = DateTime.utc(2026, 9, 1),
+);
 
 api.TenantProfile profileFixture({bool hasLogo = false}) => api.TenantProfile(
   (b) => b

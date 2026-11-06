@@ -5,8 +5,11 @@ import 'mock_query.dart';
 /// Tenants and their lifecycle, administrators, usage with a few months of history and the audit list of every
 /// academy, with the platform actor shown unmasked like the server does for the super admin.
 class MockPlatformApi {
-  MockPlatformApi({required this.tenantAId, required this.tenantBId, DateTime Function()? now})
-    : _now = now ?? DateTime.now {
+  MockPlatformApi({
+    required this.tenantAId,
+    required this.tenantBId,
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now {
     _seed();
   }
 
@@ -44,21 +47,83 @@ class MockPlatformApi {
       'timezone': zone,
       'defaultLocale': locale,
       'createdAt': now.subtract(Duration(days: ageDays)).toIso8601String(),
-      'suspendedAt': status == 'SUSPENDED' ? now.subtract(const Duration(days: 9)).toIso8601String() : null,
+      'suspendedAt': status == 'SUSPENDED'
+          ? now.subtract(const Duration(days: 9)).toIso8601String()
+          : null,
       'withdrawnAt': null,
       'retainUntil': null,
     };
     _tenants.addAll([
-      tenant(tenantAId, 'demo', 'Academia Demo', 'ACTIVE', 'Europe/Madrid', 'es', 150),
-      tenant(tenantBId, 'norte', 'Club Norte', 'ACTIVE', 'Europe/Madrid', 'en', 100),
-      tenant(suspendedTenantId, 'sur', 'Academia Sur', 'SUSPENDED', 'Asia/Jakarta', 'id', 60),
+      tenant(
+        tenantAId,
+        'demo',
+        'Academia Demo',
+        'ACTIVE',
+        'Europe/Madrid',
+        'es',
+        150,
+      ),
+      tenant(
+        tenantBId,
+        'norte',
+        'Club Norte',
+        'ACTIVE',
+        'Europe/Madrid',
+        'en',
+        100,
+      ),
+      tenant(
+        suspendedTenantId,
+        'sur',
+        'Academia Sur',
+        'SUSPENDED',
+        'Asia/Jakarta',
+        'id',
+        60,
+      ),
     ]);
     _admins[tenantAId] = [
-      _admin('m-ana', 'Alicia', 'Admin', 'alicia@demo.example', 'ACCEPTED', 'NONE', ['COACH']),
-      _admin('m-new', 'Bruno', 'Nuevo', 'bruno@demo.example', 'PENDING', 'ACTIVE', []),
+      _admin(
+        'm-ana',
+        'Alicia',
+        'Admin',
+        'alicia@demo.example',
+        'ACCEPTED',
+        'NONE',
+        ['COACH'],
+      ),
+      _admin(
+        'm-new',
+        'Bruno',
+        'Nuevo',
+        'bruno@demo.example',
+        'PENDING',
+        'ACTIVE',
+        [],
+      ),
     ];
-    _admins[tenantBId] = [_admin('n-1', 'Nora', 'Norte', 'nora@norte.example', 'ACCEPTED', 'NONE', [])];
-    _admins[suspendedTenantId] = [_admin('s-1', 'Sari', 'Surya', 'sari@sur.example', 'PENDING', 'EXPIRED', [])];
+    _admins[tenantBId] = [
+      _admin(
+        'n-1',
+        'Nora',
+        'Norte',
+        'nora@norte.example',
+        'ACCEPTED',
+        'NONE',
+        [],
+      ),
+    ];
+    _admins[suspendedTenantId] = [
+      _admin(
+        's-1',
+        'Sari',
+        'Surya',
+        'sari@sur.example',
+        'PENDING',
+        'EXPIRED',
+        [],
+      ),
+    ];
 
     Map<String, Object?> event(
       int hoursAgo,
@@ -69,7 +134,8 @@ class MockPlatformApi {
     ) {
       final name = _tenants.firstWhere((t) => t['id'] == tenantId)['name'];
       return {
-        'id': '00000000-0000-4000-8000-${(700 + _audit.length).toString().padLeft(12, '0')}',
+        'id':
+            '00000000-0000-4000-8000-${(700 + _audit.length).toString().padLeft(12, '0')}',
         'at': now.subtract(Duration(hours: hoursAgo)).toIso8601String(),
         'action': action,
         'actor': actor,
@@ -80,8 +146,18 @@ class MockPlatformApi {
       };
     }
 
-    const platform = {'kind': 'PLATFORM', 'subject': superAdminSubject, 'personId': null, 'displayName': null};
-    const system = {'kind': 'SYSTEM', 'subject': 'system', 'personId': null, 'displayName': null};
+    const platform = {
+      'kind': 'PLATFORM',
+      'subject': superAdminSubject,
+      'personId': null,
+      'displayName': null,
+    };
+    const system = {
+      'kind': 'SYSTEM',
+      'subject': 'system',
+      'personId': null,
+      'displayName': null,
+    };
     Map<String, Object?> person(String id, String name) => {
       'kind': 'PERSON',
       'subject': 'sub-$id',
@@ -93,18 +169,76 @@ class MockPlatformApi {
       'id': id,
       'displayName': _tenants.firstWhere((t) => t['id'] == id)['name'],
     };
-    Map<String, Object?> personTarget(String id, String? name) => {'type': 'person', 'id': id, 'displayName': name};
+    Map<String, Object?> personTarget(String id, String? name) => {
+      'type': 'person',
+      'id': id,
+      'displayName': name,
+    };
 
     _audit.addAll([
-      event(2, tenantAId, 'member.invited', person('m-ana', 'Alicia Admin'), personTarget('m-pat', null)),
-      event(30, suspendedTenantId, 'tenant.suspended', platform, tenantTarget(suspendedTenantId)),
-      event(50, tenantAId, 'admin.added', platform, personTarget('m-new', 'Bruno Nuevo')),
-      event(70, tenantBId, 'tenant.profile_changed', person('n-1', 'Nora Norte'), tenantTarget(tenantBId)),
-      event(26 * 24, tenantAId, 'member.temporary_password_expired', system, personTarget('m-pat', null)),
-      event(40 * 24, suspendedTenantId, 'admin.temporary_password_issued', platform, personTarget('s-1', 'Sari Surya')),
-      event(60 * 24, suspendedTenantId, 'tenant.created', platform, tenantTarget(suspendedTenantId)),
-      event(100 * 24, tenantBId, 'tenant.created', platform, tenantTarget(tenantBId)),
-      event(150 * 24, tenantAId, 'tenant.created', platform, tenantTarget(tenantAId)),
+      event(
+        2,
+        tenantAId,
+        'member.invited',
+        person('m-ana', 'Alicia Admin'),
+        personTarget('m-pat', null),
+      ),
+      event(
+        30,
+        suspendedTenantId,
+        'tenant.suspended',
+        platform,
+        tenantTarget(suspendedTenantId),
+      ),
+      event(
+        50,
+        tenantAId,
+        'admin.added',
+        platform,
+        personTarget('m-new', 'Bruno Nuevo'),
+      ),
+      event(
+        70,
+        tenantBId,
+        'tenant.profile_changed',
+        person('n-1', 'Nora Norte'),
+        tenantTarget(tenantBId),
+      ),
+      event(
+        26 * 24,
+        tenantAId,
+        'member.temporary_password_expired',
+        system,
+        personTarget('m-pat', null),
+      ),
+      event(
+        40 * 24,
+        suspendedTenantId,
+        'admin.temporary_password_issued',
+        platform,
+        personTarget('s-1', 'Sari Surya'),
+      ),
+      event(
+        60 * 24,
+        suspendedTenantId,
+        'tenant.created',
+        platform,
+        tenantTarget(suspendedTenantId),
+      ),
+      event(
+        100 * 24,
+        tenantBId,
+        'tenant.created',
+        platform,
+        tenantTarget(tenantBId),
+      ),
+      event(
+        150 * 24,
+        tenantAId,
+        'tenant.created',
+        platform,
+        tenantTarget(tenantAId),
+      ),
     ]);
     _audit.sort((a, b) => (b['at']! as String).compareTo(a['at']! as String));
   }
@@ -127,14 +261,25 @@ class MockPlatformApi {
     'otherRoles': other,
   };
 
-  Map<String, Object?>? _find(String id) => _tenants.where((t) => t['id'] == id).firstOrNull;
+  Map<String, Object?>? _find(String id) =>
+      _tenants.where((t) => t['id'] == id).firstOrNull;
 
-  Map<String, Object?> _record(String action, Map<String, Object?> tenant, Map<String, Object?> target) {
+  Map<String, Object?> _record(
+    String action,
+    Map<String, Object?> tenant,
+    Map<String, Object?> target,
+  ) {
     final e = {
-      'id': '00000000-0000-4000-8000-${(700 + _seq++).toString().padLeft(12, '0')}',
+      'id':
+          '00000000-0000-4000-8000-${(700 + _seq++).toString().padLeft(12, '0')}',
       'at': _stamp,
       'action': action,
-      'actor': {'kind': 'PLATFORM', 'subject': superAdminSubject, 'personId': null, 'displayName': null},
+      'actor': {
+        'kind': 'PLATFORM',
+        'subject': superAdminSubject,
+        'personId': null,
+        'displayName': null,
+      },
       'target': target,
       'metadata': <String, Object?>{},
       'tenantId': tenant['id'],
@@ -157,7 +302,10 @@ class MockPlatformApi {
     required Map<String, dynamic> query,
     Object? body,
   }) {
-    final seg = path.split('/').where((s) => s.isNotEmpty).toList(); // platform, tenants, {id}, ...
+    final seg = path
+        .split('/')
+        .where((s) => s.isNotEmpty)
+        .toList(); // platform, tenants, {id}, ...
     if (seg.isEmpty || seg[0] != 'platform' || seg.length < 2) return null;
     final q = MockQuery(query);
     final b = body is Map ? body.cast<String, Object?>() : <String, Object?>{};
@@ -175,12 +323,33 @@ class MockPlatformApi {
     return switch ((method, rest)) {
       ('GET', []) => MockResult.json(200, tenant),
       ('PATCH', []) => _update(tenant, b),
-      ('POST', ['suspend']) => _lifecycle(tenant, 'SUSPENDED', 'tenant.suspended', b),
-      ('POST', ['withdraw']) => _lifecycle(tenant, 'WITHDRAWN', 'tenant.withdrawn', b),
-      ('POST', ['reactivate']) => _lifecycle(tenant, 'ACTIVE', 'tenant.reactivated', b),
+      ('POST', ['suspend']) => _lifecycle(
+        tenant,
+        'SUSPENDED',
+        'tenant.suspended',
+        b,
+      ),
+      ('POST', ['withdraw']) => _lifecycle(
+        tenant,
+        'WITHDRAWN',
+        'tenant.withdrawn',
+        b,
+      ),
+      ('POST', ['reactivate']) => _lifecycle(
+        tenant,
+        'ACTIVE',
+        'tenant.reactivated',
+        b,
+      ),
       ('GET', ['usage']) => MockResult.json(200, _usage(tenant)),
       ('GET', ['usage', 'history']) => MockResult.json(200, _history(tenant)),
-      (_, ['admins', ...]) => _adminRoute(tenant, method, rest.sublist(1), q, b),
+      (_, ['admins', ...]) => _adminRoute(
+        tenant,
+        method,
+        rest.sublist(1),
+        q,
+        b,
+      ),
       _ => null,
     };
   }
@@ -191,7 +360,9 @@ class MockPlatformApi {
     final items = [
       for (final t in _tenants)
         if ((status == null || t['status'] == status) &&
-            (text == null || '${t['name']}'.toLowerCase().contains(text) || '${t['slug']}'.contains(text)))
+            (text == null ||
+                '${t['name']}'.toLowerCase().contains(text) ||
+                '${t['slug']}'.contains(text)))
           t,
     ];
     return q.page(items, defaultSize: 100);
@@ -199,9 +370,11 @@ class MockPlatformApi {
 
   MockResult _create(Map<String, Object?> b) {
     final slug = '${b['slug']}';
-    if (_tenants.any((t) => t['slug'] == slug)) return mockProblem(409, 'Conflict', code: 'SLUG_TAKEN');
+    if (_tenants.any((t) => t['slug'] == slug))
+      return mockProblem(409, 'Conflict', code: 'SLUG_TAKEN');
     final first = (b['firstAdmin'] as Map).cast<String, Object?>();
-    final id = '00000000-0000-4000-8000-${(5000 + _seq++).toString().padLeft(12, '0')}';
+    final id =
+        '00000000-0000-4000-8000-${(5000 + _seq++).toString().padLeft(12, '0')}';
     final tenant = <String, Object?>{
       'id': id,
       'slug': slug,
@@ -237,12 +410,22 @@ class MockPlatformApi {
     return MockResult.json(200, tenant);
   }
 
-  MockResult _lifecycle(Map<String, Object?> tenant, String status, String action, Map<String, Object?> b) {
-    if (status != 'ACTIVE' && '${b['reason'] ?? ''}'.isEmpty) return mockProblem(400, 'Bad Request');
+  MockResult _lifecycle(
+    Map<String, Object?> tenant,
+    String status,
+    String action,
+    Map<String, Object?> b,
+  ) {
+    if (status != 'ACTIVE' && '${b['reason'] ?? ''}'.isEmpty)
+      return mockProblem(400, 'Bad Request');
     final now = _now().toUtc();
     tenant['status'] = status;
-    tenant['suspendedAt'] = status == 'SUSPENDED' ? now.toIso8601String() : null;
-    tenant['withdrawnAt'] = status == 'WITHDRAWN' ? now.toIso8601String() : null;
+    tenant['suspendedAt'] = status == 'SUSPENDED'
+        ? now.toIso8601String()
+        : null;
+    tenant['withdrawnAt'] = status == 'WITHDRAWN'
+        ? now.toIso8601String()
+        : null;
     tenant['retainUntil'] = status == 'WITHDRAWN'
         ? now.add(const Duration(days: 365)).toIso8601String().substring(0, 10)
         : null;
@@ -258,14 +441,24 @@ class MockPlatformApi {
     MockQuery q,
     Map<String, Object?> b,
   ) {
-    if (tenant['status'] == 'WITHDRAWN') return mockProblem(409, 'Conflict', code: 'TENANT_WITHDRAWN');
+    if (tenant['status'] == 'WITHDRAWN')
+      return mockProblem(409, 'Conflict', code: 'TENANT_WITHDRAWN');
     final admins = _admins.putIfAbsent('${tenant['id']}', () => []);
     if (rest.isEmpty) {
       if (method == 'GET') return q.page(admins, defaultSize: 100);
       if (method == 'POST') {
         final email = '${b['email']}';
-        if (admins.any((a) => a['email'] == email)) return mockProblem(409, 'Conflict', code: 'ALREADY_ADMIN');
-        final a = _admin(_id('adm'), '${b['givenName']}', '${b['familyName']}', email, 'PENDING', 'ACTIVE', []);
+        if (admins.any((a) => a['email'] == email))
+          return mockProblem(409, 'Conflict', code: 'ALREADY_ADMIN');
+        final a = _admin(
+          _id('adm'),
+          '${b['givenName']}',
+          '${b['familyName']}',
+          email,
+          'PENDING',
+          'ACTIVE',
+          [],
+        );
         admins.add(a);
         _record('admin.added', tenant, {
           'type': 'person',
@@ -297,8 +490,11 @@ class MockPlatformApi {
         return const MockResult.empty(204);
       }
     }
-    if (rest.length == 2 && method == 'POST' && (rest[1] == 'temporary-password' || rest[1] == 'resend-invitation')) {
-      if (admin['invitationStatus'] != 'PENDING') return mockProblem(409, 'Conflict', code: 'INVITATION_NOT_PENDING');
+    if (rest.length == 2 &&
+        method == 'POST' &&
+        (rest[1] == 'temporary-password' || rest[1] == 'resend-invitation')) {
+      if (admin['invitationStatus'] != 'PENDING')
+        return mockProblem(409, 'Conflict', code: 'INVITATION_NOT_PENDING');
       admin['temporaryPasswordStatus'] = 'ACTIVE';
       _record('admin.temporary_password_issued', tenant, target);
       return MockResult.json(200, {...admin, 'temporaryPassword': _password()});
@@ -307,7 +503,12 @@ class MockPlatformApi {
   }
 
   // ------------------------------------------------------------------ usage
-  Map<String, Object?> _report(String tenantId, String service, DateTime at, double scale) {
+  Map<String, Object?> _report(
+    String tenantId,
+    String service,
+    DateTime at,
+    double scale,
+  ) {
     int n(num base) => (base * scale).round();
     final counters = switch (service) {
       'core' => {
@@ -351,7 +552,8 @@ class MockPlatformApi {
       'tenantId': id,
       'collectedAt': now.toIso8601String(),
       'services': [
-        for (final s in ['core', 'game', 'athlete']) _report(id, s, now, id == tenantAId ? 1 : 0.4),
+        for (final s in ['core', 'game', 'athlete'])
+          _report(id, s, now, id == tenantAId ? 1 : 0.4),
       ],
       'unavailableServices': <String>[],
     };
@@ -373,22 +575,35 @@ class MockPlatformApi {
             'collectedAt': at.toIso8601String(),
             'services': [
               for (final s in ['core', 'game', 'athlete'])
-                if (!(partial && s == 'game')) _report(id, s, at, (0.3 + i * 0.14) * (id == tenantAId ? 1 : 0.4)),
+                if (!(partial && s == 'game'))
+                  _report(
+                    id,
+                    s,
+                    at,
+                    (0.3 + i * 0.14) * (id == tenantAId ? 1 : 0.4),
+                  ),
             ],
             'unavailableServices': partial ? ['game'] : <String>[],
           };
         }(),
     ];
-    return {'tenantId': id, 'from': snapshots.first['date'], 'to': snapshots.last['date'], 'snapshots': snapshots};
+    return {
+      'tenantId': id,
+      'from': snapshots.first['date'],
+      'to': snapshots.last['date'],
+      'snapshots': snapshots,
+    };
   }
 
   // ------------------------------------------------------------------ audit
   MockResult _auditList(MockQuery q) {
     final tenantId = q.text('tenantId');
-    if (tenantId != null && _find(tenantId) == null) return mockProblem(404, 'Not found');
+    if (tenantId != null && _find(tenantId) == null)
+      return mockProblem(404, 'Not found');
     final from = q.instant('from');
     final to = q.instant('to');
-    if (from != null && to != null && !from.isBefore(to)) return mockProblem(400, 'Bad Request');
+    if (from != null && to != null && !from.isBefore(to))
+      return mockProblem(400, 'Bad Request');
     final actions = q.set('action');
     final items = [
       for (final e in _audit)

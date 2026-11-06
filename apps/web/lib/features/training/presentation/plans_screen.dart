@@ -44,15 +44,37 @@ class PlanLibraryScreen extends ConsumerWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  AppTokens.spaceMd,
+                  AppTokens.spaceSm,
+                  AppTokens.spaceMd,
+                  0,
+                ),
                 child: TextField(
                   key: const Key('plan-search'),
-                  decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l.planSearchHint, isDense: true),
-                  onChanged: (v) => ref.read(planSearchProvider.notifier).set(v),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: l.planSearchHint,
+                    isDense: true,
+                  ),
+                  onChanged: (v) =>
+                      ref.read(planSearchProvider.notifier).set(v),
                 ),
               ),
-              TabBar(tabs: [Tab(key: const Key('tab-mine'), text: l.planMine), Tab(key: const Key('tab-templates'), text: l.planTemplates)]),
-              const Expanded(child: TabBarView(children: [_PlanList(templates: false), _PlanList(templates: true)])),
+              TabBar(
+                tabs: [
+                  Tab(key: const Key('tab-mine'), text: l.planMine),
+                  Tab(key: const Key('tab-templates'), text: l.planTemplates),
+                ],
+              ),
+              const Expanded(
+                child: TabBarView(
+                  children: [
+                    _PlanList(templates: false),
+                    _PlanList(templates: true),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -62,8 +84,12 @@ class PlanLibraryScreen extends ConsumerWidget {
 
   Future<void> _newPlan(BuildContext context, WidgetRef ref) async {
     ath.TrainingPlan? created;
-    final ok = await showDialog<bool>(context: context, builder: (_) => NewPlanDialog(onCreated: (p) => created = p));
-    if ((ok ?? false) && created != null && context.mounted) context.go('/training/plans/${created!.id}');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => NewPlanDialog(onCreated: (p) => created = p),
+    );
+    if ((ok ?? false) && created != null && context.mounted)
+      context.go('/training/plans/${created!.id}');
   }
 }
 
@@ -98,7 +124,12 @@ class _NewPlanDialogState extends ConsumerState<NewPlanDialog> {
         widget.onCreated(
           await ref
               .read(planLibraryProvider(false).notifier)
-              .create(_name.text.trim(), description: _description.text.trim().isEmpty ? null : _description.text.trim()),
+              .create(
+                _name.text.trim(),
+                description: _description.text.trim().isEmpty
+                    ? null
+                    : _description.text.trim(),
+              ),
         );
       }),
       children: [
@@ -134,7 +165,12 @@ class _PlanList extends ConsumerWidget {
       isEmpty: (d) => d.isEmpty,
       emptyMessage: templates ? l.planEmptyTemplates : l.planEmptyMine,
       builder: (context, data) => ListView(
-        padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
+        padding: const EdgeInsets.fromLTRB(
+          AppTokens.spaceMd,
+          AppTokens.spaceSm,
+          AppTokens.spaceMd,
+          88,
+        ),
         children: [
           for (final p in data)
             Card(
@@ -142,7 +178,10 @@ class _PlanList extends ConsumerWidget {
                 key: Key('plan-${p.id}'),
                 title: Text(p.name),
                 subtitle: Text(
-                  [l.planSummary(p.itemCount, p.totalDurationMinutes), if (p.description != null) p.description!].join('\n'),
+                  [
+                    l.planSummary(p.itemCount, p.totalDurationMinutes),
+                    if (p.description != null) p.description!,
+                  ].join('\n'),
                 ),
                 isThreeLine: p.description != null,
                 onTap: () => context.go('/training/plans/${p.id}'),
@@ -153,10 +192,13 @@ class _PlanList extends ConsumerWidget {
                           ath.TrainingPlan? copy;
                           final ok = await runAction(
                             context,
-                            () async => copy = await ref.read(planLibraryProvider(true).notifier).copy(p.id),
+                            () async => copy = await ref
+                                .read(planLibraryProvider(true).notifier)
+                                .copy(p.id),
                             success: l.planCopied,
                           );
-                          if (ok && copy != null && context.mounted) context.go('/training/plans/${copy!.id}');
+                          if (ok && copy != null && context.mounted)
+                            context.go('/training/plans/${copy!.id}');
                         },
                         child: Text(l.planUse),
                       )
@@ -190,9 +232,19 @@ class PlanEditorScreen extends ConsumerWidget {
             tooltip: l.delete,
             icon: const Icon(Icons.delete_outline),
             onPressed: () async {
-              if (!await confirmDialog(context, message: l.planDeleteConfirm, confirmLabel: l.delete)) return;
+              if (!await confirmDialog(
+                context,
+                message: l.planDeleteConfirm,
+                confirmLabel: l.delete,
+              ))
+                return;
               if (!context.mounted) return;
-              final ok = await runAction(context, () => ref.read(planLibraryProvider(false).notifier).delete(planId));
+              final ok = await runAction(
+                context,
+                () => ref
+                    .read(planLibraryProvider(false).notifier)
+                    .delete(planId),
+              );
               if (ok && context.mounted) context.go('/training/plans');
             },
           ),
@@ -200,7 +252,10 @@ class PlanEditorScreen extends ConsumerWidget {
       floatingActionButton: editable
           ? FloatingActionButton.extended(
               key: const Key('item-add'),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => PlanItemDialog(planId: planId)),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => PlanItemDialog(planId: planId),
+              ),
               icon: const Icon(Icons.add),
               label: Text(l.planItemAdd),
             )
@@ -226,12 +281,21 @@ class _PlanBody extends ConsumerWidget {
     final caps = ref.watch(capabilitiesProvider);
     final notifier = ref.read(planDetailProvider(plan.id).notifier);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
+      padding: const EdgeInsets.fromLTRB(
+        AppTokens.spaceMd,
+        AppTokens.spaceSm,
+        AppTokens.spaceMd,
+        88,
+      ),
       children: [
-        if (plan.description != null) Text(plan.description!, style: theme.textTheme.bodyMedium),
+        if (plan.description != null)
+          Text(plan.description!, style: theme.textTheme.bodyMedium),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceSm),
-          child: Text(l.planSummary(plan.itemCount, plan.totalDurationMinutes), style: theme.textTheme.labelLarge),
+          child: Text(
+            l.planSummary(plan.itemCount, plan.totalDurationMinutes),
+            style: theme.textTheme.labelLarge,
+          ),
         ),
         if (plan.template)
           Card(
@@ -251,10 +315,13 @@ class _PlanBody extends ConsumerWidget {
                           ath.TrainingPlan? copy;
                           final ok = await runAction(
                             context,
-                            () async => copy = await ref.read(planLibraryProvider(true).notifier).copy(plan.id),
+                            () async => copy = await ref
+                                .read(planLibraryProvider(true).notifier)
+                                .copy(plan.id),
                             success: l.planCopied,
                           );
-                          if (ok && copy != null && context.mounted) context.go('/training/plans/${copy!.id}');
+                          if (ok && copy != null && context.mounted)
+                            context.go('/training/plans/${copy!.id}');
                         },
                         child: Text(l.planUse),
                       ),
@@ -270,12 +337,18 @@ class _PlanBody extends ConsumerWidget {
               key: const Key('plan-assign'),
               icon: const Icon(Icons.assignment_ind_outlined),
               label: Text(l.planAssign),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => AssignDialog(planId: plan.id)),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => AssignDialog(planId: plan.id),
+              ),
             ),
           ),
         Text(l.planItems, style: theme.textTheme.titleMedium),
         if (plan.items.isEmpty)
-          Padding(padding: const EdgeInsets.all(AppTokens.spaceMd), child: Text(l.planNoItems)),
+          Padding(
+            padding: const EdgeInsets.all(AppTokens.spaceMd),
+            child: Text(l.planNoItems),
+          ),
         for (var i = 0; i < plan.items.length; i++)
           Card(
             key: Key('item-${plan.items[i].id}'),
@@ -296,21 +369,47 @@ class _PlanBody extends ConsumerWidget {
                       onSelected: (v) async {
                         final item = plan.items[i];
                         if (v == 'edit') {
-                          await showDialog<bool>(context: context, builder: (_) => PlanItemDialog(planId: plan.id, item: item));
+                          await showDialog<bool>(
+                            context: context,
+                            builder: (_) =>
+                                PlanItemDialog(planId: plan.id, item: item),
+                          );
                         } else if (v == 'up') {
-                          await runAction(context, () => notifier.move(i, i - 1));
+                          await runAction(
+                            context,
+                            () => notifier.move(i, i - 1),
+                          );
                         } else if (v == 'down') {
-                          await runAction(context, () => notifier.move(i, i + 1));
+                          await runAction(
+                            context,
+                            () => notifier.move(i, i + 1),
+                          );
                         } else if (v == 'delete') {
-                          if (!await confirmDialog(context, message: l.planItemDeleteConfirm, confirmLabel: l.delete)) return;
+                          if (!await confirmDialog(
+                            context,
+                            message: l.planItemDeleteConfirm,
+                            confirmLabel: l.delete,
+                          ))
+                            return;
                           if (!context.mounted) return;
-                          await runAction(context, () => notifier.deleteItem(item.id));
+                          await runAction(
+                            context,
+                            () => notifier.deleteItem(item.id),
+                          );
                         }
                       },
                       itemBuilder: (_) => [
                         PopupMenuItem(value: 'edit', child: Text(l.edit)),
-                        if (i > 0) PopupMenuItem(value: 'up', child: Text(l.planItemMoveUp)),
-                        if (i < plan.items.length - 1) PopupMenuItem(value: 'down', child: Text(l.planItemMoveDown)),
+                        if (i > 0)
+                          PopupMenuItem(
+                            value: 'up',
+                            child: Text(l.planItemMoveUp),
+                          ),
+                        if (i < plan.items.length - 1)
+                          PopupMenuItem(
+                            value: 'down',
+                            child: Text(l.planItemMoveDown),
+                          ),
                         PopupMenuItem(value: 'delete', child: Text(l.delete)),
                       ],
                     ),
@@ -332,21 +431,29 @@ class _ItemInfo extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final facts = [
-      if (item.durationMinutes != null) l.sessionDurationMinutes(item.durationMinutes!),
-      if (item.sets != null && item.repetitions != null) l.planItemSetsReps(item.repetitions!, item.sets!),
+      if (item.durationMinutes != null)
+        l.sessionDurationMinutes(item.durationMinutes!),
+      if (item.sets != null && item.repetitions != null)
+        l.planItemSetsReps(item.repetitions!, item.sets!),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(item.title, style: theme.textTheme.titleSmall),
-        if (facts.isNotEmpty) Text(facts.join(' · '), style: theme.textTheme.bodySmall),
+        if (facts.isNotEmpty)
+          Text(facts.join(' · '), style: theme.textTheme.bodySmall),
         if (item.description != null) Text(item.description!),
         if (item.videoUrl != null)
           Row(
             children: [
               const Icon(Icons.play_circle_outline, size: 16),
               const SizedBox(width: 4),
-              Expanded(child: SelectableText(item.videoUrl!, style: theme.textTheme.bodySmall)),
+              Expanded(
+                child: SelectableText(
+                  item.videoUrl!,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
             ],
           ),
       ],
@@ -367,10 +474,16 @@ class PlanItemDialog extends ConsumerStatefulWidget {
 class _PlanItemDialogState extends ConsumerState<PlanItemDialog> {
   final _form = GlobalKey<FormState>();
   late final _title = TextEditingController(text: widget.item?.title);
-  late final _description = TextEditingController(text: widget.item?.description);
-  late final _duration = TextEditingController(text: widget.item?.durationMinutes?.toString());
+  late final _description = TextEditingController(
+    text: widget.item?.description,
+  );
+  late final _duration = TextEditingController(
+    text: widget.item?.durationMinutes?.toString(),
+  );
   late final _sets = TextEditingController(text: widget.item?.sets?.toString());
-  late final _reps = TextEditingController(text: widget.item?.repetitions?.toString());
+  late final _reps = TextEditingController(
+    text: widget.item?.repetitions?.toString(),
+  );
   late final _video = TextEditingController(text: widget.item?.videoUrl);
 
   @override
@@ -382,7 +495,8 @@ class _PlanItemDialogState extends ConsumerState<PlanItemDialog> {
   }
 
   int? _int(TextEditingController c) => int.tryParse(c.text.trim());
-  String? _text(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
+  String? _text(TextEditingController c) =>
+      c.text.trim().isEmpty ? null : c.text.trim();
 
   String? _optionalInt(AppLocalizations l, String? v) {
     if ((v ?? '').trim().isEmpty) return null;
@@ -394,46 +508,52 @@ class _PlanItemDialogState extends ConsumerState<PlanItemDialog> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final notifier = ref.read(planDetailProvider(widget.planId).notifier);
-    Widget number(String key, TextEditingController c, String label) => Expanded(
-      child: TextFormField(
-        key: Key(key),
-        controller: c,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(labelText: label),
-        validator: (v) => _optionalInt(l, v),
-      ),
-    );
+    Widget number(String key, TextEditingController c, String label) =>
+        Expanded(
+          child: TextFormField(
+            key: Key(key),
+            controller: c,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: label),
+            validator: (v) => _optionalInt(l, v),
+          ),
+        );
     return FormDialog(
       title: widget.item == null ? l.planItemAdd : l.planItemEdit,
       formKey: _form,
       onSubmit: () => runAction(context, () async {
         if (widget.item == null) {
           await notifier.addItem(
-            ath.PlanItemInput((b) => b
-              ..title = _title.text.trim()
-              ..description = _text(_description)
-              ..durationMinutes = _int(_duration)
-              ..sets = _int(_sets)
-              ..repetitions = _int(_reps)
-              ..videoUrl = _text(_video)),
+            ath.PlanItemInput(
+              (b) => b
+                ..title = _title.text.trim()
+                ..description = _text(_description)
+                ..durationMinutes = _int(_duration)
+                ..sets = _int(_sets)
+                ..repetitions = _int(_reps)
+                ..videoUrl = _text(_video),
+            ),
           );
         } else {
           await notifier.updateItem(
             widget.item!.id,
-            ath.UpdatePlanItemRequest((b) => b
-              ..title = _title.text.trim()
-              ..description = _text(_description)
-              ..durationMinutes = _int(_duration)
-              ..sets = _int(_sets)
-              ..repetitions = _int(_reps)
-              ..videoUrl = _text(_video)
-              ..clear = clearList({
-                ath.UpdatePlanItemRequestClearEnum.description: b.description,
-                ath.UpdatePlanItemRequestClearEnum.durationMinutes: b.durationMinutes,
-                ath.UpdatePlanItemRequestClearEnum.sets: b.sets,
-                ath.UpdatePlanItemRequestClearEnum.repetitions: b.repetitions,
-                ath.UpdatePlanItemRequestClearEnum.videoUrl: b.videoUrl,
-              })),
+            ath.UpdatePlanItemRequest(
+              (b) => b
+                ..title = _title.text.trim()
+                ..description = _text(_description)
+                ..durationMinutes = _int(_duration)
+                ..sets = _int(_sets)
+                ..repetitions = _int(_reps)
+                ..videoUrl = _text(_video)
+                ..clear = clearList({
+                  ath.UpdatePlanItemRequestClearEnum.description: b.description,
+                  ath.UpdatePlanItemRequestClearEnum.durationMinutes:
+                      b.durationMinutes,
+                  ath.UpdatePlanItemRequestClearEnum.sets: b.sets,
+                  ath.UpdatePlanItemRequestClearEnum.repetitions: b.repetitions,
+                  ath.UpdatePlanItemRequestClearEnum.videoUrl: b.videoUrl,
+                }),
+            ),
           );
         }
       }),
@@ -467,7 +587,10 @@ class _PlanItemDialogState extends ConsumerState<PlanItemDialog> {
           controller: _video,
           keyboardType: TextInputType.url,
           decoration: InputDecoration(labelText: l.planItemVideo),
-          validator: (v) => (v ?? '').trim().isEmpty || v!.trim().startsWith('https://') ? null : l.planItemVideoInvalid,
+          validator: (v) =>
+              (v ?? '').trim().isEmpty || v!.trim().startsWith('https://')
+              ? null
+              : l.planItemVideoInvalid,
         ),
       ],
     );
@@ -510,13 +633,18 @@ class _AssignDialogState extends ConsumerState<AssignDialog> {
       formKey: _form,
       onSubmit: () => runAction(
         context,
-        () => ref.read(assignmentsProvider(null).notifier).assign(
-          planId: widget.planId,
-          teamId: _team ? _teamId : null,
-          playerId: _team ? null : (_playerId ?? ref.read(selectablePlayerIdsProvider).firstOrNull),
-          dueOn: _due,
-          notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-        ),
+        () => ref
+            .read(assignmentsProvider(null).notifier)
+            .assign(
+              planId: widget.planId,
+              teamId: _team ? _teamId : null,
+              playerId: _team
+                  ? null
+                  : (_playerId ??
+                        ref.read(selectablePlayerIdsProvider).firstOrNull),
+              dueOn: _due,
+              notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+            ),
         success: l.assignDone,
       ),
       children: [
@@ -536,12 +664,19 @@ class _AssignDialogState extends ConsumerState<AssignDialog> {
             initialValue: _teamId,
             isExpanded: true,
             decoration: InputDecoration(labelText: l.assignTarget),
-            items: [for (final t in teams) DropdownMenuItem(value: t.id, child: Text(t.displayLabel))],
+            items: [
+              for (final t in teams)
+                DropdownMenuItem(value: t.id, child: Text(t.displayLabel)),
+            ],
             validator: (v) => v == null ? l.fieldRequired : null,
             onChanged: (v) => setState(() => _teamId = v),
           )
         else
-          PlayerPicker(label: l.assignTarget, value: _playerId, onChanged: (v) => setState(() => _playerId = v)),
+          PlayerPicker(
+            label: l.assignTarget,
+            value: _playerId,
+            onChanged: (v) => setState(() => _playerId = v),
+          ),
         formGap,
         DateField(
           key: const Key('assign-due'),

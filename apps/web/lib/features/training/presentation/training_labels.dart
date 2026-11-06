@@ -1,4 +1,5 @@
 import '../../../core/time/tenant_zone.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/api/athlete_api.dart' as ath;
@@ -80,7 +81,11 @@ extension CompletionLabel on ath.CompletionStatus {
   };
 }
 
-const completionChoices = [ath.CompletionStatus.DONE, ath.CompletionStatus.PARTIAL, ath.CompletionStatus.NOT_DONE];
+const completionChoices = [
+  ath.CompletionStatus.DONE,
+  ath.CompletionStatus.PARTIAL,
+  ath.CompletionStatus.NOT_DONE,
+];
 
 String two(int n) => n.toString().padLeft(2, '0');
 

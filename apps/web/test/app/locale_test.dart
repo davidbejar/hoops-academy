@@ -27,7 +27,9 @@ void main() {
     expect(navLabel('Equipos'), findsOneWidget);
   });
 
-  testWidgets('the language picker switches es -> en -> id and persists', (tester) async {
+  testWidgets('the language picker switches es -> en -> id and persists', (
+    tester,
+  ) async {
     final me = FakeMeRepository(userWith([admin]));
     final h = Harness(me: me);
     await h.pump(tester);

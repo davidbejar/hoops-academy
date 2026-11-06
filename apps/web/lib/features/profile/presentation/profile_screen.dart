@@ -45,7 +45,9 @@ class ProfileScreen extends ConsumerWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
+            constraints: const BoxConstraints(
+              maxWidth: AppTokens.maxContentWidth,
+            ),
             child: ListView(
               padding: const EdgeInsets.all(AppTokens.spaceMd),
               children: [

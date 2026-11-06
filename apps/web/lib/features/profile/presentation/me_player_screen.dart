@@ -20,7 +20,9 @@ class MePlayerScreen extends ConsumerWidget {
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
-        child: id == null ? EmptyView(message: l.meNoPlayer) : PlayerHub(key: ValueKey(id), playerId: id),
+        child: id == null
+            ? EmptyView(message: l.meNoPlayer)
+            : PlayerHub(key: ValueKey(id), playerId: id),
       ),
     );
   }
@@ -40,7 +42,8 @@ class _MyPlayersViewState extends ConsumerState<MyPlayersView> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final ids = ref.watch(capabilitiesProvider).linkedPlayerIds.toList()..sort();
+    final ids = ref.watch(capabilitiesProvider).linkedPlayerIds.toList()
+      ..sort();
     if (ids.isEmpty) return EmptyView(message: l.myPlayersEmpty);
     final current = ids.contains(_selected) ? _selected! : ids.first;
     return Align(
@@ -52,12 +55,19 @@ class _MyPlayersViewState extends ConsumerState<MyPlayersView> {
             if (ids.length > 1)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  AppTokens.spaceMd,
+                  AppTokens.spaceSm,
+                  AppTokens.spaceMd,
+                  0,
+                ),
                 child: Row(
                   children: [
                     for (final id in ids)
                       Padding(
-                        padding: const EdgeInsets.only(right: AppTokens.spaceSm),
+                        padding: const EdgeInsets.only(
+                          right: AppTokens.spaceSm,
+                        ),
                         child: ChoiceChip(
                           key: Key('child-$id'),
                           label: Text(ref.watch(playerNameProvider(id)) ?? id),
@@ -68,7 +78,9 @@ class _MyPlayersViewState extends ConsumerState<MyPlayersView> {
                   ],
                 ),
               ),
-            Expanded(child: PlayerHub(key: ValueKey(current), playerId: current)),
+            Expanded(
+              child: PlayerHub(key: ValueKey(current), playerId: current),
+            ),
           ],
         ),
       ),

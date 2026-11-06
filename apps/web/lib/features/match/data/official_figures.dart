@@ -9,7 +9,10 @@ OfficialFigures officialFiguresOf(gen.BoxScore box) => OfficialFigures(
   figures: TeamFigures(
     teamScore: box.score.team,
     opponentScore: box.score.opponent,
-    periodScores: [for (final p in box.periodScores) PeriodScore(p.period, p.team, p.opponent)],
+    periodScores: [
+      for (final p in box.periodScores)
+        PeriodScore(p.period, p.team, p.opponent),
+    ],
     teamTotals: _statLine(box.teamTotals),
   ),
 );
@@ -17,7 +20,10 @@ OfficialFigures officialFiguresOf(gen.BoxScore box) => OfficialFigures(
 /// The score a match carries (offline fallback: period scores and totals unknown).
 OfficialFigures officialScoreOf(gen.Match match) => OfficialFigures(
   lastServerSeq: match.lastServerSeq,
-  figures: TeamFigures(teamScore: match.score.team, opponentScore: match.score.opponent),
+  figures: TeamFigures(
+    teamScore: match.score.team,
+    opponentScore: match.score.opponent,
+  ),
 );
 
 StatLine _statLine(gen.StatLine s) => StatLine(

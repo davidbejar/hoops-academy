@@ -44,7 +44,13 @@ class TenantZone {
     final location = _location;
     if (location == null) return wall.toUtc();
     return tz.TZDateTime(
-      location, wall.year, wall.month, wall.day, wall.hour, wall.minute, wall.second,
+      location,
+      wall.year,
+      wall.month,
+      wall.day,
+      wall.hour,
+      wall.minute,
+      wall.second,
     ).toUtc();
   }
 

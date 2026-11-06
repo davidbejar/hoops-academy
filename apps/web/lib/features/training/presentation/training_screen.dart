@@ -34,7 +34,10 @@ class TrainingScreen extends ConsumerWidget {
       floatingActionButton: caps.canManageAnyTraining
           ? FloatingActionButton.extended(
               key: const Key('session-new'),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => const SessionDialog()),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => const SessionDialog(),
+              ),
               icon: const Icon(Icons.add),
               label: Text(l.sessionNew),
             )
@@ -42,7 +45,9 @@ class TrainingScreen extends ConsumerWidget {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
+          constraints: const BoxConstraints(
+            maxWidth: AppTokens.maxContentWidth,
+          ),
           child: Column(
             children: [
               _WeekHeader(monday: monday),
@@ -55,7 +60,8 @@ class TrainingScreen extends ConsumerWidget {
                   onRetry: () => ref.invalidate(weekSessionsProvider),
                   isEmpty: (d) => d.isEmpty,
                   emptyMessage: l.trainingNoSessions,
-                  builder: (context, data) => WeekCalendar(monday: monday, sessions: data),
+                  builder: (context, data) =>
+                      WeekCalendar(monday: monday, sessions: data),
                 ),
               ),
             ],
@@ -115,17 +121,42 @@ class _TrainingMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final caps = ref.watch(capabilitiesProvider);
-    Widget chip(String key, String label, IconData icon, String path) => ActionChip(
-      key: Key(key),
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-      onPressed: () => context.go(path),
-    );
+    Widget chip(String key, String label, IconData icon, String path) =>
+        ActionChip(
+          key: Key(key),
+          avatar: Icon(icon, size: 18),
+          label: Text(label),
+          onPressed: () => context.go(path),
+        );
     final items = [
-      if (caps.canSeeModule) chip('menu-plans', l.trainingMenuPlans, Icons.list_alt, '/training/plans'),
-      if (caps.canSeeModule) chip('menu-assignments', l.trainingMenuAssignments, Icons.assignment_outlined, '/training/assignments'),
-      if (caps.canManageAnyTraining) chip('menu-schedules', l.trainingMenuSchedules, Icons.event_repeat, '/training/schedules'),
-      if (caps.canFileAbsences) chip('menu-absences', l.trainingMenuAbsences, Icons.event_busy_outlined, '/training/absences'),
+      if (caps.canSeeModule)
+        chip(
+          'menu-plans',
+          l.trainingMenuPlans,
+          Icons.list_alt,
+          '/training/plans',
+        ),
+      if (caps.canSeeModule)
+        chip(
+          'menu-assignments',
+          l.trainingMenuAssignments,
+          Icons.assignment_outlined,
+          '/training/assignments',
+        ),
+      if (caps.canManageAnyTraining)
+        chip(
+          'menu-schedules',
+          l.trainingMenuSchedules,
+          Icons.event_repeat,
+          '/training/schedules',
+        ),
+      if (caps.canFileAbsences)
+        chip(
+          'menu-absences',
+          l.trainingMenuAbsences,
+          Icons.event_busy_outlined,
+          '/training/absences',
+        ),
     ];
     if (items.isEmpty) return const SizedBox.shrink();
     return SingleChildScrollView(
@@ -134,7 +165,10 @@ class _TrainingMenu extends ConsumerWidget {
       child: Row(
         children: [
           for (final item in items)
-            Padding(padding: const EdgeInsets.only(right: AppTokens.spaceSm), child: item),
+            Padding(
+              padding: const EdgeInsets.only(right: AppTokens.spaceSm),
+              child: item,
+            ),
         ],
       ),
     );
@@ -154,7 +188,12 @@ class _TeamFilter extends ConsumerWidget {
     ];
     if (teams.length < 2) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppTokens.spaceMd,
+        AppTokens.spaceSm,
+        AppTokens.spaceMd,
+        0,
+      ),
       child: DropdownButtonFormField<String?>(
         key: const Key('team-filter'),
         initialValue: ref.watch(calendarTeamProvider),
@@ -162,7 +201,8 @@ class _TeamFilter extends ConsumerWidget {
         decoration: InputDecoration(labelText: l.sessionTeam, isDense: true),
         items: [
           DropdownMenuItem(value: null, child: Text(l.trainingAllTeams)),
-          for (final t in teams) DropdownMenuItem(value: t.id, child: Text(t.displayLabel)),
+          for (final t in teams)
+            DropdownMenuItem(value: t.id, child: Text(t.displayLabel)),
         ],
         onChanged: (v) => ref.read(calendarTeamProvider.notifier).select(v),
       ),
@@ -186,11 +226,19 @@ class WeekCalendar extends ConsumerWidget {
     final today = zone.today(ref.watch(nowProvider)());
     return ListView(
       key: const Key('week-calendar'),
-      padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
+      padding: const EdgeInsets.fromLTRB(
+        AppTokens.spaceMd,
+        AppTokens.spaceSm,
+        AppTokens.spaceMd,
+        88,
+      ),
       children: [
         for (final day in weekDays(monday)) ...[
           Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceSm, bottom: AppTokens.spaceXs),
+            padding: const EdgeInsets.only(
+              top: AppTokens.spaceSm,
+              bottom: AppTokens.spaceXs,
+            ),
             child: Text(
               '${dayOfWeekFor(day.weekday).label(l)} ${shortDate(day)}',
               style: theme.textTheme.titleSmall?.copyWith(
@@ -202,10 +250,14 @@ class WeekCalendar extends ConsumerWidget {
           if ((byDay[day] ?? const []).isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: AppTokens.spaceXs),
-              child: Text(l.trainingNoSessionsDay, style: theme.textTheme.bodySmall),
+              child: Text(
+                l.trainingNoSessionsDay,
+                style: theme.textTheme.bodySmall,
+              ),
             )
           else
-            for (final s in byDay[day]!) SessionTile(session: s, teamName: names[s.teamId]),
+            for (final s in byDay[day]!)
+              SessionTile(session: s, teamName: names[s.teamId]),
         ],
       ],
     );
@@ -222,7 +274,9 @@ class SessionTile extends ConsumerWidget {
     final zone = ref.watch(tenantZoneProvider);
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final end = session.startsAt.add(Duration(minutes: session.durationMinutes));
+    final end = session.startsAt.add(
+      Duration(minutes: session.durationMinutes),
+    );
     final cancelled = session.status == ath.TrainingSessionStatus.CANCELLED;
     return Card(
       margin: const EdgeInsets.only(bottom: AppTokens.spaceSm),
@@ -239,13 +293,20 @@ class SessionTile extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l.sessionTimeRange(formatTime(end, zone), formatTime(session.startsAt, zone)),
+                      l.sessionTimeRange(
+                        formatTime(end, zone),
+                        formatTime(session.startsAt, zone),
+                      ),
                       style: theme.textTheme.titleMedium?.copyWith(
-                        decoration: cancelled ? TextDecoration.lineThrough : null,
+                        decoration: cancelled
+                            ? TextDecoration.lineThrough
+                            : null,
                       ),
                     ),
-                    if (teamName != null) Text(teamName!, style: theme.textTheme.bodyMedium),
-                    if (session.location != null) Text(session.location!, style: theme.textTheme.bodySmall),
+                    if (teamName != null)
+                      Text(teamName!, style: theme.textTheme.bodyMedium),
+                    if (session.location != null)
+                      Text(session.location!, style: theme.textTheme.bodySmall),
                   ],
                 ),
               ),
@@ -392,17 +453,26 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
           label: l.sessionDate,
           value: _date,
           onChanged: (d) => setState(() => _date = d),
-          firstDate: ref.read(tenantZoneProvider).today(DateTime.now()).subtract(const Duration(days: 365)),
+          firstDate: ref
+              .read(tenantZoneProvider)
+              .today(DateTime.now())
+              .subtract(const Duration(days: 365)),
         ),
         formGap,
         InkWell(
           key: const Key('session-time'),
           onTap: () async {
-            final t = await showTimePicker(context: context, initialTime: _time);
+            final t = await showTimePicker(
+              context: context,
+              initialTime: _time,
+            );
             if (t != null) setState(() => _time = t);
           },
           child: InputDecorator(
-            decoration: InputDecoration(labelText: l.sessionStartTime, suffixIcon: const Icon(Icons.schedule)),
+            decoration: InputDecoration(
+              labelText: l.sessionStartTime,
+              suffixIcon: const Icon(Icons.schedule),
+            ),
             child: Text('${two(_time.hour)}:${two(_time.minute)}'),
           ),
         ),

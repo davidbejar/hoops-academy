@@ -17,7 +17,10 @@ EventMeta meta() {
 
 void main() {
   test('null visible players (staff): every event', () {
-    final events = [Shot(meta(), playerId: 'other', points: 2, made: true), SubOut(meta(), playerId: 'other')];
+    final events = [
+      Shot(meta(), playerId: 'other', points: 2, made: true),
+      SubOut(meta(), playerId: 'other'),
+    ];
     expect(visibleFeed(events, (e) => e, visiblePlayers: null), events);
   });
 
@@ -33,13 +36,40 @@ void main() {
     final voidOwn = VoidEvent(meta(), target: ownShot.id);
     final voidOther = VoidEvent(meta(), target: otherShot.id);
     final voidOfVoidOther = VoidEvent(meta(), target: voidOther.id);
-    final voidUnknown = VoidEvent(meta(), target: '0190b6a0-0000-7000-8000-999999999999');
+    final voidUnknown = VoidEvent(
+      meta(),
+      target: '0190b6a0-0000-7000-8000-999999999999',
+    );
     final all = <MatchEvent>[
-      start, ownShot, otherShot, opponent, timeout, note, noteAboutOther, subIn,
-      voidOwn, voidOther, voidOfVoidOther, voidUnknown,
+      start,
+      ownShot,
+      otherShot,
+      opponent,
+      timeout,
+      note,
+      noteAboutOther,
+      subIn,
+      voidOwn,
+      voidOther,
+      voidOfVoidOther,
+      voidUnknown,
     ];
 
-    expect(visibleFeed(all, (e) => e, visiblePlayers: {'own'}), [start, ownShot, opponent, timeout, note, voidOwn, voidUnknown]);
-    expect(visibleFeed(all, (e) => e, visiblePlayers: {}), [start, opponent, timeout, note, voidUnknown]);
+    expect(visibleFeed(all, (e) => e, visiblePlayers: {'own'}), [
+      start,
+      ownShot,
+      opponent,
+      timeout,
+      note,
+      voidOwn,
+      voidUnknown,
+    ]);
+    expect(visibleFeed(all, (e) => e, visiblePlayers: {}), [
+      start,
+      opponent,
+      timeout,
+      note,
+      voidUnknown,
+    ]);
   });
 }

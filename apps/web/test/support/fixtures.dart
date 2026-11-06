@@ -35,16 +35,15 @@ TenantMembership membershipWithRoles(
   String personId = 'person-me',
   String? ownPlayerId,
   String? timezone,
-}) =>
-    TenantMembership(
-      personId: personId,
-      staffTeamIds: staffTeamIds,
-      linkedPlayerIds: linkedPlayerIds,
-      ownPlayerId: ownPlayerId,
-      tenantId: '33333333-3333-4333-8333-333333333333',
-      tenantName: 'Role Test',
-      slug: 'role-test',
-      hasLogo: false,
-      roles: roles,
-      timezone: timezone,
-    );
+}) => TenantMembership(
+  personId: personId,
+  staffTeamIds: staffTeamIds,
+  linkedPlayerIds: linkedPlayerIds,
+  ownPlayerId: ownPlayerId,
+  tenantId: '33333333-3333-4333-8333-333333333333',
+  tenantName: 'Role Test',
+  slug: 'role-test',
+  hasLogo: false,
+  roles: roles,
+  timezone: timezone,
+);

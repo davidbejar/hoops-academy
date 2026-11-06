@@ -11,7 +11,11 @@ import 'projection.dart';
 
 /// Timing rules. Periods above [periodCount] are overtimes of [overtimeMinutes].
 class MatchRules {
-  const MatchRules({required this.periodCount, required this.periodMinutes, this.overtimeMinutes = defaultOvertimeMinutes});
+  const MatchRules({
+    required this.periodCount,
+    required this.periodMinutes,
+    this.overtimeMinutes = defaultOvertimeMinutes,
+  });
 
   static const defaultOvertimeMinutes = 5;
   static const playersOnCourt = 5;
@@ -20,26 +24,39 @@ class MatchRules {
   final int periodMinutes;
   final int overtimeMinutes;
 
-  int periodSeconds(int period) => 60 * (period <= periodCount ? periodMinutes : overtimeMinutes);
+  int periodSeconds(int period) =>
+      60 * (period <= periodCount ? periodMinutes : overtimeMinutes);
 }
 
 /// One match-roster player (line order = roster order).
 class RosterPlayer {
-  const RosterPlayer({required this.playerId, required this.displayName, this.jerseyNumber, required this.isStarter});
+  const RosterPlayer({
+    required this.playerId,
+    required this.displayName,
+    this.jerseyNumber,
+    required this.isStarter,
+  });
   final String playerId;
   final String displayName;
   final String? jerseyNumber;
   final bool isStarter;
 }
 
-Projection project(MatchRules rules, List<RosterPlayer> roster, Iterable<RecordedEvent> events) {
+Projection project(
+  MatchRules rules,
+  List<RosterPlayer> roster,
+  Iterable<RecordedEvent> events,
+) {
   final gameOrder = canonicalOrder(events);
   final voids = _VoidResolution.resolve(gameOrder);
   final run = _Run(rules, roster);
   for (final e in gameOrder) {
     if (!voids.excludes(e)) run.apply(e.event);
   }
-  final lastServerSeq = gameOrder.fold<int>(0, (m, e) => math.max(m, e.serverSeq ?? 0));
+  final lastServerSeq = gameOrder.fold<int>(
+    0,
+    (m, e) => math.max(m, e.serverSeq ?? 0),
+  );
   return run.finish(lastServerSeq, voids);
 }
 
@@ -57,9 +74,16 @@ class _VoidResolution {
       if (v is! VoidEvent) continue;
       final target = byId[v.target];
       if (target == null) {
-        warnings.add(ProjectionWarning(code: WarningCode.voidTargetNotFound, eventId: v.id));
+        warnings.add(
+          ProjectionWarning(
+            code: WarningCode.voidTargetNotFound,
+            eventId: v.id,
+          ),
+        );
       } else if (target is VoidEvent) {
-        warnings.add(ProjectionWarning(code: WarningCode.voidOfVoid, eventId: v.id));
+        warnings.add(
+          ProjectionWarning(code: WarningCode.voidOfVoid, eventId: v.id),
+        );
       } else {
         voidedBy.putIfAbsent(v.target, () => v.id);
       }
@@ -67,7 +91,8 @@ class _VoidResolution {
     return _VoidResolution(voidedBy, warnings);
   }
 
-  bool excludes(RecordedEvent r) => r.event is VoidEvent || voidedBy.containsKey(r.id);
+  bool excludes(RecordedEvent r) =>
+      r.event is VoidEvent || voidedBy.containsKey(r.id);
 }
 
 class _Tally {
@@ -156,7 +181,8 @@ class _Tally {
 /// One replay in game order. Starters are on court before the first period;
 /// the clock runs only between PERIOD_START and PERIOD_END.
 class _Run {
-  _Run(this.rules, List<RosterPlayer> roster) : _lastPeriodSeen = rules.periodCount {
+  _Run(this.rules, List<RosterPlayer> roster)
+    : _lastPeriodSeen = rules.periodCount {
     for (final r in roster) {
       _tallies[r.playerId] = _Tally(r.playerId, r.isStarter);
     }
@@ -186,7 +212,9 @@ class _Run {
       case PeriodStart():
         _start(event, clock);
       case PeriodEnd():
-        _running ? _closePeriod(clock) : _warn(WarningCode.periodNotRunning, event);
+        _running
+            ? _closePeriod(clock)
+            : _warn(WarningCode.periodNotRunning, event);
       case SubIn():
         _subIn(event, clock);
       case SubOut():
@@ -239,18 +267,31 @@ class _Run {
     final t = _rosterPlayer(e, e.player);
     if (t == null) return;
     if (t.onCourt) {
-      t.warnings.add(ProjectionWarning(code: WarningCode.subInPlayerOnCourt, eventId: e.id, playerId: e.player));
+      t.warnings.add(
+        ProjectionWarning(
+          code: WarningCode.subInPlayerOnCourt,
+          eventId: e.id,
+          playerId: e.player,
+        ),
+      );
       return;
     }
     t.enter(clock);
-    if (_onCourt.length > MatchRules.playersOnCourt) _warn(WarningCode.tooManyPlayersOnCourt, e);
+    if (_onCourt.length > MatchRules.playersOnCourt)
+      _warn(WarningCode.tooManyPlayersOnCourt, e);
   }
 
   void _subOut(SubOut e, int clock) {
     final t = _rosterPlayer(e, e.player);
     if (t == null) return;
     if (!t.onCourt) {
-      t.warnings.add(ProjectionWarning(code: WarningCode.subOutPlayerNotOnCourt, eventId: e.id, playerId: e.player));
+      t.warnings.add(
+        ProjectionWarning(
+          code: WarningCode.subOutPlayerNotOnCourt,
+          eventId: e.id,
+          playerId: e.player,
+        ),
+      );
       return;
     }
     if (_running) t.accrueUntil(clock);
@@ -262,14 +303,27 @@ class _Run {
     final t = _rosterPlayer(stat, stat.player);
     if (t == null) return;
     if (!_running) {
-      t.warnings.add(ProjectionWarning(code: WarningCode.eventOutsidePeriod, eventId: stat.id, playerId: stat.player));
+      t.warnings.add(
+        ProjectionWarning(
+          code: WarningCode.eventOutsidePeriod,
+          eventId: stat.id,
+          playerId: stat.player,
+        ),
+      );
     } else if (!t.onCourt && !_allowedFromBench(stat)) {
-      t.warnings.add(ProjectionWarning(code: WarningCode.playerNotOnCourt, eventId: stat.id, playerId: stat.player));
+      t.warnings.add(
+        ProjectionWarning(
+          code: WarningCode.playerNotOnCourt,
+          eventId: stat.id,
+          playerId: stat.player,
+        ),
+      );
     }
     t.record(stat);
   }
 
-  static bool _allowedFromBench(PlayerStat s) => s is Foul && s.kind != FoulKind.personal;
+  static bool _allowedFromBench(PlayerStat s) =>
+      s is Foul && s.kind != FoulKind.personal;
 
   void _score(int period, {int team = 0, int opponent = 0}) {
     final p = _byPeriod.putIfAbsent(period, () => [0, 0]);
@@ -283,8 +337,8 @@ class _Run {
     return t;
   }
 
-  void _warn(String code, MatchEvent event, {String? player}) =>
-      _matchWarnings.add(ProjectionWarning(code: code, eventId: event.id, playerId: player));
+  void _warn(String code, MatchEvent event, {String? player}) => _matchWarnings
+      .add(ProjectionWarning(code: code, eventId: event.id, playerId: player));
 
   Projection finish(int lastServerSeq, _VoidResolution voids) {
     if (_running) {
@@ -302,7 +356,12 @@ class _Run {
     }
     return Projection(
       playerStats: [for (final t in _tallies.values) t.toLine()],
-      summary: MatchSummary(teamScore: team, opponentScore: opponent, periodScores: periods, lastServerSeq: lastServerSeq),
+      summary: MatchSummary(
+        teamScore: team,
+        opponentScore: opponent,
+        periodScores: periods,
+        lastServerSeq: lastServerSeq,
+      ),
       warnings: [...voids.warnings, ..._matchWarnings],
       voidedBy: Map.unmodifiable(voids.voidedBy),
       live: LiveState(

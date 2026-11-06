@@ -10,7 +10,8 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../health/presentation/player_health_view.dart';
 import '../../training/application/training_providers.dart';
 import '../../training/presentation/assignment_widgets.dart';
-import '../../training/presentation/assignments_screen.dart' show AssignmentCard;
+import '../../training/presentation/assignments_screen.dart'
+    show AssignmentCard;
 import '../../training/presentation/player_picker.dart' show playerNameProvider;
 import '../../training/presentation/training_screen.dart' show SessionTile;
 
@@ -34,11 +35,18 @@ class _PlayerHubState extends ConsumerState<PlayerHub> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final id = widget.playerId;
-    final labels = {HubTab.training: l.meTabTraining, HubTab.plans: l.meTabPlans, HubTab.health: l.healthTitle};
+    final labels = {
+      HubTab.training: l.meTabTraining,
+      HubTab.plans: l.meTabPlans,
+      HubTab.health: l.healthTitle,
+    };
     return ListView(
       padding: const EdgeInsets.all(AppTokens.spaceMd),
       children: [
-        Text(ref.watch(playerNameProvider(id)) ?? '', style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          ref.watch(playerNameProvider(id)) ?? '',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: AppTokens.spaceSm),
         Align(
           alignment: Alignment.centerLeft,
@@ -92,7 +100,10 @@ class _Upcoming extends ConsumerWidget {
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.meNoUpcoming,
           builder: (context, data) => Column(
-            children: [for (final s in data) SessionTile(session: s, teamName: names[s.teamId])],
+            children: [
+              for (final s in data)
+                SessionTile(session: s, teamName: names[s.teamId]),
+            ],
           ),
         ),
         if (caps.canFileAbsenceFor(playerId))
@@ -128,7 +139,10 @@ class _Plans extends ConsumerWidget {
               children: [
                 AssignmentCard(assignment: a, view: view),
                 Padding(
-                  padding: const EdgeInsets.only(left: AppTokens.spaceSm, bottom: AppTokens.spaceSm),
+                  padding: const EdgeInsets.only(
+                    left: AppTokens.spaceSm,
+                    bottom: AppTokens.spaceSm,
+                  ),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: CompletionControl(

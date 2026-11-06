@@ -31,7 +31,13 @@ class ChartPalette {
     inkSecondary: Color(0xFF52514E),
     grid: Color(0x1F52514E),
     series: Color(0xFF2A78D6),
-    bands: [Color(0xFF86B6EF), Color(0xFF5598E7), Color(0xFF2A78D6), Color(0xFF1C5CAB), Color(0xFF104281)],
+    bands: [
+      Color(0xFF86B6EF),
+      Color(0xFF5598E7),
+      Color(0xFF2A78D6),
+      Color(0xFF1C5CAB),
+      Color(0xFF104281),
+    ],
   );
 
   static const dark = ChartPalette(
@@ -40,7 +46,13 @@ class ChartPalette {
     inkSecondary: Color(0xFFC3C2B7),
     grid: Color(0x29C3C2B7),
     series: Color(0xFF3987E5),
-    bands: [Color(0xFF9EC5F4), Color(0xFF6DA7EC), Color(0xFF3987E5), Color(0xFF256ABF), Color(0xFF184F95)],
+    bands: [
+      Color(0xFF9EC5F4),
+      Color(0xFF6DA7EC),
+      Color(0xFF3987E5),
+      Color(0xFF256ABF),
+      Color(0xFF184F95),
+    ],
   );
 
   static ChartPalette of(BuildContext context) =>

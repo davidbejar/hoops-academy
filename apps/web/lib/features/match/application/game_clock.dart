@@ -54,4 +54,5 @@ class GameClock extends ChangeNotifier {
   }
 }
 
-String formatClock(int seconds) => '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+String formatClock(int seconds) =>
+    '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';

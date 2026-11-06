@@ -4,7 +4,9 @@ import '../../../core/api/api.dart' as api;
 import '../data/audit_repository.dart';
 import '../domain/audit_entry.dart';
 
-final auditRepositoryProvider = Provider<AuditRepository>((ref) => ApiAuditRepository(ref.watch(api.coreApiProvider)));
+final auditRepositoryProvider = Provider<AuditRepository>(
+  (ref) => ApiAuditRepository(ref.watch(api.coreApiProvider)),
+);
 
 /// Whose trail a screen shows: the active academy's, or the platform's (every academy, or [tenantId] only).
 class AuditScope {
@@ -15,7 +17,10 @@ class AuditScope {
   final String? tenantId;
 
   @override
-  bool operator ==(Object other) => other is AuditScope && other.platform == platform && other.tenantId == tenantId;
+  bool operator ==(Object other) =>
+      other is AuditScope &&
+      other.platform == platform &&
+      other.tenantId == tenantId;
 
   @override
   int get hashCode => Object.hash(platform, tenantId);
@@ -29,17 +34,26 @@ class AuditQueryNotifier extends Notifier<AuditQuery> {
   @override
   AuditQuery build() => const AuditQuery();
 
-  void setRange(DateTime? fromDay, DateTime? toDay) => state = state.withRange(fromDay, toDay);
+  void setRange(DateTime? fromDay, DateTime? toDay) =>
+      state = state.withRange(fromDay, toDay);
   void clearRange() => setRange(null, null);
-  void setActions(Set<api.AuditAction> actions) => state = state.withActions(actions);
+  void setActions(Set<api.AuditAction> actions) =>
+      state = state.withActions(actions);
   void nextPage() => state = state.atPage(state.page + 1);
-  void previousPage() => state = state.atPage(state.page > 0 ? state.page - 1 : 0);
+  void previousPage() =>
+      state = state.atPage(state.page > 0 ? state.page - 1 : 0);
 }
 
-final auditQueryProvider = NotifierProvider.family<AuditQueryNotifier, AuditQuery, AuditScope>(AuditQueryNotifier.new);
+final auditQueryProvider =
+    NotifierProvider.family<AuditQueryNotifier, AuditQuery, AuditScope>(
+      AuditQueryNotifier.new,
+    );
 
 /// The page the current query selects, fetched from the server.
-final auditPageProvider = FutureProvider.family<AuditPage, AuditScope>((ref, scope) {
+final auditPageProvider = FutureProvider.family<AuditPage, AuditScope>((
+  ref,
+  scope,
+) {
   final query = ref.watch(auditQueryProvider(scope));
   final repo = ref.watch(auditRepositoryProvider);
   return scope.platform

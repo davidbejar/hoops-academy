@@ -174,24 +174,21 @@ class Harness {
         ...platform.overrides,
         ...extraOverrides,
         // Deferred libraries load in real time; make them instant in tests.
-        libraryLoaderProvider.overrideWithValue((_) => SynchronousFuture<void>(null)),
+        libraryLoaderProvider.overrideWithValue(
+          (_) => SynchronousFuture<void>(null),
+        ),
       ],
     );
     addTearDown(container.dispose);
 
     await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const HoopsApp(),
-      ),
+      UncontrolledProviderScope(container: container, child: const HoopsApp()),
     );
     await tester.pumpAndSettle();
   }
 }
 
 Finder navLabel(String text) => find.descendant(
-  of: find.byWidgetPredicate(
-    (w) => w is NavigationBar || w is NavigationRail,
-  ),
+  of: find.byWidgetPredicate((w) => w is NavigationBar || w is NavigationRail),
   matching: find.text(text),
 );

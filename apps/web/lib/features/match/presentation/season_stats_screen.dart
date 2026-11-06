@@ -16,9 +16,11 @@ import '../application/match_providers.dart';
 import 'match_labels.dart';
 
 /// `GET /players/{id}/season-stats?seasonId=` for (player, season).
-final seasonStatsProvider = FutureProvider.family<gen.PlayerSeasonStats, (String, String)>(
-  (ref, key) => ref.watch(matchesRepositoryProvider).seasonStats(key.$1, key.$2),
-);
+final seasonStatsProvider =
+    FutureProvider.family<gen.PlayerSeasonStats, (String, String)>(
+      (ref, key) =>
+          ref.watch(matchesRepositoryProvider).seasonStats(key.$1, key.$2),
+    );
 
 /// A player's season statistics (route `/matches/stats/:playerId`; linked
 /// from the player detail and, WP14, from Me / My players).
@@ -46,13 +48,21 @@ class _SeasonStatsScreenState extends ConsumerState<SeasonStatsScreen> {
         children: [
           if (seasons.length > 1)
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceMd, AppTokens.spaceMd, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppTokens.spaceMd,
+                AppTokens.spaceMd,
+                AppTokens.spaceMd,
+                0,
+              ),
               child: DropdownButtonFormField<String>(
                 key: const Key('stats-season'),
                 initialValue: seasonId,
                 isExpanded: true,
                 decoration: InputDecoration(labelText: l.seasonStatsSeason),
-                items: [for (final s in seasons) DropdownMenuItem(value: s.id, child: Text(s.name))],
+                items: [
+                  for (final s in seasons)
+                    DropdownMenuItem(value: s.id, child: Text(s.name)),
+                ],
                 onChanged: (v) => setState(() => _seasonId = v),
               ),
             ),
@@ -96,7 +106,11 @@ class _StatsBody extends ConsumerWidget {
           key: const Key('season-stats'),
           padding: const EdgeInsets.all(AppTokens.spaceMd),
           children: [
-            Text(l.seasonStatsGames(s.gamesPlayed, s.gamesStarted), key: const Key('stats-games'), style: theme.textTheme.titleMedium),
+            Text(
+              l.seasonStatsGames(s.gamesPlayed, s.gamesStarted),
+              key: const Key('stats-games'),
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: AppTokens.spaceMd),
             Text(l.seasonStatsAverages, style: theme.textTheme.titleSmall),
             const SizedBox(height: AppTokens.spaceXs),
@@ -104,10 +118,23 @@ class _StatsBody extends ConsumerWidget {
               spacing: AppTokens.spaceSm,
               runSpacing: AppTokens.spaceSm,
               children: [
-                _Metric(key: const Key('avg-points'), label: l.seasonStatsPoints, value: avg.format(s.averages.points)),
-                _Metric(label: l.seasonStatsRebounds, value: avg.format(s.averages.rebounds)),
-                _Metric(label: l.seasonStatsAssists, value: avg.format(s.averages.assists)),
-                _Metric(label: l.seasonStatsMinutes, value: avg.format(s.averages.minutesPlayed)),
+                _Metric(
+                  key: const Key('avg-points'),
+                  label: l.seasonStatsPoints,
+                  value: avg.format(s.averages.points),
+                ),
+                _Metric(
+                  label: l.seasonStatsRebounds,
+                  value: avg.format(s.averages.rebounds),
+                ),
+                _Metric(
+                  label: l.seasonStatsAssists,
+                  value: avg.format(s.averages.assists),
+                ),
+                _Metric(
+                  label: l.seasonStatsMinutes,
+                  value: avg.format(s.averages.minutesPlayed),
+                ),
               ],
             ),
             const SizedBox(height: AppTokens.spaceMd),
@@ -125,7 +152,11 @@ class _StatsBody extends ConsumerWidget {
                 key: Key('stats-match-${m.matchId}'),
                 contentPadding: EdgeInsets.zero,
                 title: Text(l.matchVs(m.opponentName)),
-                subtitle: Text(DateFormat.yMMMd(locale).format(ref.watch(tenantZoneProvider).wall(m.scheduledAt))),
+                subtitle: Text(
+                  DateFormat.yMMMd(
+                    locale,
+                  ).format(ref.watch(tenantZoneProvider).wall(m.scheduledAt)),
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -159,7 +190,11 @@ class _Metric extends StatelessWidget {
     child: Column(
       children: [
         Text(value, style: Theme.of(context).textTheme.headlineSmall),
-        Text(label, style: Theme.of(context).textTheme.labelSmall, textAlign: TextAlign.center),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall,
+          textAlign: TextAlign.center,
+        ),
       ],
     ),
   );

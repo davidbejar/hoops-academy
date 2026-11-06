@@ -5,7 +5,10 @@ import '../pending_event.dart';
 /// server plus this device's events the server has or may still accept.
 /// REJECTED events are excluded (the server never stored them); an id
 /// present in both sources counts once, with the server's sequence number.
-List<RecordedEvent> mergeEvents(List<StoredEvent> synced, List<PendingEvent> own) {
+List<RecordedEvent> mergeEvents(
+  List<StoredEvent> synced,
+  List<PendingEvent> own,
+) {
   final ids = <String>{};
   return [
     for (final s in synced)

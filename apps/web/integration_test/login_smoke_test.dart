@@ -29,23 +29,21 @@ void main() {
     expect(find.byKey(const Key('login-button')), findsOneWidget);
   });
 
-  testWidgets(
-    'mock mode: sign in, pick an academy, land on the role home',
-    (tester) async {
-      await app.main();
-      await tester.pumpAndSettle();
+  testWidgets('mock mode: sign in, pick an academy, land on the role home', (
+    tester,
+  ) async {
+    await app.main();
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('login-button')));
-      await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('login-button')));
+    await tester.pumpAndSettle();
 
-      // Two memberships in the fixture -> academy switcher first.
-      expect(find.byKey(const Key('tenant-list')), findsOneWidget);
-      await tester.tap(find.text('Academia Demo'));
-      await tester.pumpAndSettle();
+    // Two memberships in the fixture -> academy switcher first.
+    expect(find.byKey(const Key('tenant-list')), findsOneWidget);
+    await tester.tap(find.text('Academia Demo'));
+    await tester.pumpAndSettle();
 
-      expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.byKey(const Key('module-admin')), findsOneWidget);
-    },
-    skip: !_mock,
-  );
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byKey(const Key('module-admin')), findsOneWidget);
+  }, skip: !_mock);
 }

@@ -9,7 +9,9 @@ import '../domain/pending_event.dart';
 import '../domain/stat_action.dart';
 
 String periodLabel(AppLocalizations l, int period, int periodCount) =>
-    period > periodCount ? l.matchOvertimeShort(period - periodCount) : l.matchPeriodShort(period);
+    period > periodCount
+    ? l.matchOvertimeShort(period - periodCount)
+    : l.matchPeriodShort(period);
 
 String statusLabel(AppLocalizations l, gen.MatchStatus s) => switch (s) {
   gen.MatchStatus.LIVE => l.matchStatusLive,
@@ -68,21 +70,32 @@ StatAction? actionOf(MatchEvent e) => switch (e) {
 };
 
 /// One line describing an event in the log.
-String describeEvent(AppLocalizations l, LiveMatch m, MatchEvent e, {bool nested = false}) {
+String describeEvent(
+  AppLocalizations l,
+  LiveMatch m,
+  MatchEvent e, {
+  bool nested = false,
+}) {
   String name(String? id) => m.player(id)?.displayName ?? id ?? '?';
   String period() => periodLabel(l, e.meta.period, m.rules.periodCount);
   final action = actionOf(e);
-  if (action != null) return l.matchRecorded(actionLabel(l, action), name(e.playerId));
+  if (action != null)
+    return l.matchRecorded(actionLabel(l, action), name(e.playerId));
   return switch (e) {
     PeriodStart() => l.matchEvPeriodStart(period()),
     PeriodEnd() => l.matchEvPeriodEnd(period()),
     SubIn() => l.matchEvSubIn(name(e.playerId)),
     SubOut() => l.matchEvSubOut(name(e.playerId)),
     OpponentScore(:final points) => l.matchOpponentPoints(points),
-    Timeout(:final side) => side == TimeoutSide.own ? l.matchTimeoutOwn : l.matchTimeoutOpponent,
+    Timeout(:final side) =>
+      side == TimeoutSide.own ? l.matchTimeoutOwn : l.matchTimeoutOpponent,
     VoidEvent(:final target) => () {
-      final t = nested ? null : m.log.where((x) => x.event.id == target).firstOrNull;
-      return t == null ? l.matchEvVoidUnknown : l.matchEvVoid(describeEvent(l, m, t.event, nested: true));
+      final t = nested
+          ? null
+          : m.log.where((x) => x.event.id == target).firstOrNull;
+      return t == null
+          ? l.matchEvVoidUnknown
+          : l.matchEvVoid(describeEvent(l, m, t.event, nested: true));
     }(),
     Note(:final text) => l.matchEvNote(text),
     _ => e.type.wire,
@@ -101,5 +114,8 @@ String syncLabel(AppLocalizations l, LogEntry e) => switch (e.status) {
   EventStatus.pending => l.matchSyncPending,
   EventStatus.sent => l.matchSyncSent,
   EventStatus.rejected => l.matchSyncRejected(reasonLabel(l, e.rejectReason)),
-  _ => e.recordedBy != null && !e.mine ? l.matchRecordedBy(e.recordedBy!) : l.matchSyncDone,
+  _ =>
+    e.recordedBy != null && !e.mine
+        ? l.matchRecordedBy(e.recordedBy!)
+        : l.matchSyncDone,
 };

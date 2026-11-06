@@ -10,6 +10,7 @@ abstract class AgeCategoriesRepository {
     int? maxAge,
     required int rank,
   });
+
   /// A null [maxAge] makes the category senior (no limit): `maxAge` is named in `clear` (ADR-0032).
   Future<api.AgeCategory> update(
     String id, {
@@ -65,7 +66,9 @@ class ApiAgeCategoriesRepository implements AgeCategoriesRepository {
         ..name = name
         ..maxAge = maxAge
         ..rank = rank
-        ..clear = clearList({api.UpdateAgeCategoryRequestClearEnum.maxAge: maxAge}),
+        ..clear = clearList({
+          api.UpdateAgeCategoryRequestClearEnum.maxAge: maxAge,
+        }),
     ),
   )).data!;
 

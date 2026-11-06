@@ -13,11 +13,12 @@ import '../../tenant/application/tenant_providers.dart';
 import '../application/admin_providers.dart';
 import '../domain/logo_validation.dart';
 
-String logoProblemMessage(LogoProblem problem, AppLocalizations l) => switch (problem) {
-  LogoProblem.tooLarge => l.logoErrorTooLarge,
-  LogoProblem.wrongType => l.logoErrorWrongType,
-  LogoProblem.empty => l.logoErrorEmpty,
-};
+String logoProblemMessage(LogoProblem problem, AppLocalizations l) =>
+    switch (problem) {
+      LogoProblem.tooLarge => l.logoErrorTooLarge,
+      LogoProblem.wrongType => l.logoErrorWrongType,
+      LogoProblem.empty => l.logoErrorEmpty,
+    };
 
 class AcademyProfileScreen extends ConsumerWidget {
   const AcademyProfileScreen({super.key});
@@ -122,10 +123,19 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
                 borderRadius: BorderRadius.circular(AppTokens.radiusMd),
               ),
               child: shown == null
-                  ? Text(l.logoNone, style: theme.textTheme.bodySmall, textAlign: TextAlign.center)
+                  ? Text(
+                      l.logoNone,
+                      style: theme.textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    )
                   : ClipRRect(
                       borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-                      child: Image.memory(shown, width: 96, height: 96, fit: BoxFit.contain),
+                      child: Image.memory(
+                        shown,
+                        width: 96,
+                        height: 96,
+                        fit: BoxFit.contain,
+                      ),
                     ),
             ),
             const SizedBox(width: AppTokens.spaceMd),
@@ -133,7 +143,10 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_picked != null ? l.logoPreview : l.logoHint, style: theme.textTheme.bodySmall),
+                  Text(
+                    _picked != null ? l.logoPreview : l.logoHint,
+                    style: theme.textTheme.bodySmall,
+                  ),
                   const SizedBox(height: AppTokens.spaceSm),
                   Wrap(
                     spacing: AppTokens.spaceSm,
@@ -171,7 +184,9 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
           Text(
             logoProblemMessage(_problem!, l),
             key: const Key('logo-error'),
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error,
+            ),
           ),
         ],
       ],
@@ -190,7 +205,9 @@ class _ProfileForm extends ConsumerStatefulWidget {
 class _ProfileFormState extends ConsumerState<_ProfileForm> {
   final _form = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.data.profile.name);
-  late final _timezone = TextEditingController(text: widget.data.profile.timezone);
+  late final _timezone = TextEditingController(
+    text: widget.data.profile.timezone,
+  );
   late final _maxPlayUp = TextEditingController(
     text: (widget.data.settings.maxPlayUpLevels ?? 0).toString(),
   );
@@ -212,13 +229,15 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
     setState(() => _busy = true);
     await runAction(
       context,
-      () => ref.read(academyProvider.notifier).save(
-        name: _name.text.trim(),
-        timezone: _timezone.text.trim(),
-        defaultLocale: _locale,
-        ageRule: _ageRule,
-        maxPlayUpLevels: int.parse(_maxPlayUp.text.trim()),
-      ),
+      () => ref
+          .read(academyProvider.notifier)
+          .save(
+            name: _name.text.trim(),
+            timezone: _timezone.text.trim(),
+            defaultLocale: _locale,
+            ageRule: _ageRule,
+            maxPlayUpLevels: int.parse(_maxPlayUp.text.trim()),
+          ),
       success: l.saved,
     );
     if (mounted) setState(() => _busy = false);
@@ -275,9 +294,18 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
             initialValue: _locale,
             decoration: InputDecoration(labelText: l.academyDefaultLocale),
             items: [
-              DropdownMenuItem(value: api.ApiLocale.es, child: Text(l.languageName_es)),
-              DropdownMenuItem(value: api.ApiLocale.en, child: Text(l.languageName_en)),
-              DropdownMenuItem(value: api.ApiLocale.id, child: Text(l.languageName_id)),
+              DropdownMenuItem(
+                value: api.ApiLocale.es,
+                child: Text(l.languageName_es),
+              ),
+              DropdownMenuItem(
+                value: api.ApiLocale.en,
+                child: Text(l.languageName_en),
+              ),
+              DropdownMenuItem(
+                value: api.ApiLocale.id,
+                child: Text(l.languageName_id),
+              ),
             ],
             onChanged: (v) => setState(() => _locale = v ?? _locale),
           ),

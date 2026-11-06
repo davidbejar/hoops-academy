@@ -142,7 +142,9 @@ class ApiTeamsRepository implements TeamsRepository {
     updateTeamPlayerRequest: api.UpdateTeamPlayerRequest(
       (b) => b
         ..jerseyNumber = jerseyNumber
-        ..clear = clearList({api.UpdateTeamPlayerRequestClearEnum.jerseyNumber: jerseyNumber}),
+        ..clear = clearList({
+          api.UpdateTeamPlayerRequestClearEnum.jerseyNumber: jerseyNumber,
+        }),
     ),
   )).data!;
 }

@@ -13,7 +13,8 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/live_match_controller.dart';
 import '../application/match_providers.dart';
-import '../../health/presentation/player_health_view.dart' show AvailabilityBadge;
+import '../../health/presentation/player_health_view.dart'
+    show AvailabilityBadge;
 import '../data/matches_repository.dart';
 import '../domain/pending_event.dart';
 import '../domain/projector/projector.dart';
@@ -26,14 +27,21 @@ class SetupData {
 }
 
 /// Match + the team's current roster (core) + the stored match roster.
-final matchSetupProvider = FutureProvider.family<SetupData, String>((ref, matchId) async {
+final matchSetupProvider = FutureProvider.family<SetupData, String>((
+  ref,
+  matchId,
+) async {
   final repo = ref.watch(matchesRepositoryProvider);
   final match = await repo.get(matchId);
   final results = await Future.wait<Object>([
     ref.watch(teamsRepositoryProvider).roster(match.teamId),
     repo.roster(matchId),
   ]);
-  return SetupData(match, results[0] as List<api.TeamPlayer>, results[1] as List<RosterPlayer>);
+  return SetupData(
+    match,
+    results[0] as List<api.TeamPlayer>,
+    results[1] as List<RosterPlayer>,
+  );
 });
 
 /// Match roster: who plays, starters, jersey numbers (staff only, online).
@@ -64,8 +72,11 @@ class MatchSetupScreen extends ConsumerWidget {
 }
 
 class _Line {
-  _Line({required this.selected, required this.starter, required String? jersey})
-    : jersey = TextEditingController(text: jersey ?? '');
+  _Line({
+    required this.selected,
+    required this.starter,
+    required String? jersey,
+  }) : jersey = TextEditingController(text: jersey ?? '');
   bool selected;
   bool starter;
   final TextEditingController jersey;
@@ -121,17 +132,27 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
     });
     final matchId = widget.data.match.id;
     final ok = await runAction(context, () async {
-      final saved = await ref.read(matchesRepositoryProvider).replaceRoster(matchId, [
-        for (final e in chosen)
-          RosterInput(
-            playerId: e.key,
-            jerseyNumber: e.value.jersey.text.trim().isEmpty ? null : e.value.jersey.text.trim(),
-            isStarter: e.value.starter,
-          ),
-      ]);
+      final saved = await ref.read(matchesRepositoryProvider).replaceRoster(
+        matchId,
+        [
+          for (final e in chosen)
+            RosterInput(
+              playerId: e.key,
+              jerseyNumber: e.value.jersey.text.trim().isEmpty
+                  ? null
+                  : e.value.jersey.text.trim(),
+              isStarter: e.value.starter,
+            ),
+        ],
+      );
       await ref.read(matchStoreProvider).saveRoster(matchId, [
         for (final r in saved)
-          CachedRosterEntry(playerId: r.playerId, displayName: r.displayName, jerseyNumber: r.jerseyNumber, isStarter: r.isStarter),
+          CachedRosterEntry(
+            playerId: r.playerId,
+            displayName: r.displayName,
+            jerseyNumber: r.jerseyNumber,
+            isStarter: r.isStarter,
+          ),
       ]);
     }, success: l.matchSetupSaved);
     if (!mounted) return;
@@ -151,7 +172,13 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
       key: _form,
       child: Column(
         children: [
-          ListTile(title: Text(l.matchSetupHint), subtitle: Text(l.matchSetupSummary(selected, starters), key: const Key('setup-summary'))),
+          ListTile(
+            title: Text(l.matchSetupHint),
+            subtitle: Text(
+              l.matchSetupSummary(selected, starters),
+              key: const Key('setup-summary'),
+            ),
+          ),
           Expanded(
             child: ListView(
               children: [
@@ -161,7 +188,11 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
             ),
           ),
           if (_error != null)
-            Text(_error!, key: const Key('setup-error'), style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            Text(
+              _error!,
+              key: const Key('setup-error'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           Padding(
             padding: const EdgeInsets.all(AppTokens.spaceMd),
             child: SizedBox(
@@ -180,7 +211,12 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
     );
   }
 
-  Widget _row(BuildContext context, AppLocalizations l, api.TeamPlayer p, _Line line) => Padding(
+  Widget _row(
+    BuildContext context,
+    AppLocalizations l,
+    api.TeamPlayer p,
+    _Line line,
+  ) => Padding(
     key: Key('setup-${p.player.id}'),
     padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceSm),
     child: Row(
@@ -210,10 +246,15 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
             controller: line.jersey,
             enabled: line.selected,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: l.matchJersey, isDense: true),
+            decoration: InputDecoration(
+              labelText: l.matchJersey,
+              isDense: true,
+            ),
             validator: (v) {
               final t = (v ?? '').trim();
-              return t.isEmpty || RegExp(r'^[0-9]{1,2}$').hasMatch(t) ? null : l.fieldRequired;
+              return t.isEmpty || RegExp(r'^[0-9]{1,2}$').hasMatch(t)
+                  ? null
+                  : l.fieldRequired;
             },
           ),
         ),
@@ -222,7 +263,9 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
           key: Key('setup-starter-${p.player.id}'),
           label: Text(l.matchStarter),
           selected: line.starter,
-          onSelected: line.selected ? (v) => setState(() => line.starter = v) : null,
+          onSelected: line.selected
+              ? (v) => setState(() => line.starter = v)
+              : null,
         ),
       ],
     ),

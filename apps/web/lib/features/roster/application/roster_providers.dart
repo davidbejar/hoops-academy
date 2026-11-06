@@ -114,7 +114,9 @@ class TeamsNotifier extends AsyncNotifier<List<api.Team>> {
               ..alias = alias
               ..ageCategoryId = ageCategoryId
               ..genderPolicy = genderPolicy
-              ..clear = clearList({api.UpdateTeamRequestClearEnum.alias: alias}),
+              ..clear = clearList({
+                api.UpdateTeamRequestClearEnum.alias: alias,
+              }),
           ),
         );
     await _reload();

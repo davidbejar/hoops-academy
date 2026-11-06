@@ -41,7 +41,10 @@ Future<void> confirmAndSignOut(BuildContext context, WidgetRef ref) async {
         return AlertDialog(
           key: const Key('signout-warning'),
           title: Text(l.signOutUnsyncedTitle),
-          content: Text(l.signOutUnsyncedBody(unsynced), key: const Key('signout-warning-body')),
+          content: Text(
+            l.signOutUnsyncedBody(unsynced),
+            key: const Key('signout-warning-body'),
+          ),
           actions: [
             TextButton(
               key: const Key('signout-cancel'),

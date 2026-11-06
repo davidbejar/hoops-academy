@@ -24,7 +24,8 @@ abstract class SeasonsRepository {
 }
 
 class ApiSeasonsRepository implements SeasonsRepository {
-  ApiSeasonsRepository(api.HoopsCoreApi client, this._t) : _api = client.getSeasonsApi();
+  ApiSeasonsRepository(api.HoopsCoreApi client, this._t)
+    : _api = client.getSeasonsApi();
 
   final api.SeasonsApi _api;
   final String _t;

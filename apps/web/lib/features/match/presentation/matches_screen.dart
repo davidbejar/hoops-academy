@@ -33,7 +33,10 @@ class MatchesScreen extends ConsumerWidget {
       floatingActionButton: caps.canCreateMatches
           ? FloatingActionButton.extended(
               key: const Key('match-new'),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => const MatchCreateDialog()),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => const MatchCreateDialog(),
+              ),
               icon: const Icon(Icons.add),
               label: Text(l.matchNew),
             )
@@ -46,7 +49,11 @@ class MatchesScreen extends ConsumerWidget {
           if (list.value?.fromCache ?? false)
             Padding(
               padding: const EdgeInsets.all(AppTokens.spaceSm),
-              child: InfoChip(l.matchCachedData, key: const Key('match-list-cached'), icon: Icons.cloud_off),
+              child: InfoChip(
+                l.matchCachedData,
+                key: const Key('match-list-cached'),
+                icon: Icons.cloud_off,
+              ),
             ),
           Expanded(
             child: AsyncBody<MatchList>(
@@ -57,14 +64,17 @@ class MatchesScreen extends ConsumerWidget {
               builder: (context, data) => Align(
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
+                  constraints: const BoxConstraints(
+                    maxWidth: AppTokens.maxContentWidth,
+                  ),
                   child: RefreshIndicator(
                     onRefresh: () => ref.refresh(matchListProvider.future),
                     child: ListView.separated(
                       padding: const EdgeInsets.only(bottom: 88),
                       itemCount: data.matches.length,
                       separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, i) => MatchTile(match: data.matches[i]),
+                      itemBuilder: (context, i) =>
+                          MatchTile(match: data.matches[i]),
                     ),
                   ),
                 ),
@@ -86,7 +96,12 @@ class _TeamFilter extends ConsumerWidget {
     final teams = ref.watch(teamsProvider).value ?? const <api.Team>[];
     final selected = ref.watch(matchTeamFilterProvider);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceMd, AppTokens.spaceMd, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppTokens.spaceMd,
+        AppTokens.spaceMd,
+        AppTokens.spaceMd,
+        0,
+      ),
       child: DropdownButtonFormField<String?>(
         key: const Key('match-team-filter'),
         initialValue: teams.any((t) => t.id == selected) ? selected : null,
@@ -94,7 +109,8 @@ class _TeamFilter extends ConsumerWidget {
         decoration: InputDecoration(labelText: l.matchTeam),
         items: [
           DropdownMenuItem<String?>(child: Text(l.matchAllTeams)),
-          for (final t in teams) DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
+          for (final t in teams)
+            DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
         ],
         onChanged: (v) => ref.read(matchTeamFilterProvider.notifier).select(v),
       ),
@@ -110,21 +126,30 @@ class MatchTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final when = DateFormat.yMMMd(locale).add_Hm().format(ref.watch(tenantZoneProvider).wall(match.scheduledAt));
-    final played = match.status == gen.MatchStatus.LIVE || match.status == gen.MatchStatus.FINISHED;
+    final when = DateFormat.yMMMd(locale)
+        .add_Hm()
+        .format(ref.watch(tenantZoneProvider).wall(match.scheduledAt));
+    final played =
+        match.status == gen.MatchStatus.LIVE ||
+        match.status == gen.MatchStatus.FINISHED;
     return ListTile(
       key: Key('match-${match.id}'),
       minVerticalPadding: AppTokens.spaceSm,
       leading: const CircleAvatar(child: Icon(Icons.sports_basketball)),
       title: Text(l.matchVs(match.opponentName)),
-      subtitle: Text('$when · ${match.homeAway == gen.HomeAway.AWAY ? l.matchAway : l.matchHome}'),
+      subtitle: Text(
+        '$when · ${match.homeAway == gen.HomeAway.AWAY ? l.matchAway : l.matchHome}',
+      ),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           statusChip(l, match.status),
           if (played)
-            Text('${match.score.team} – ${match.score.opponent}', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              '${match.score.team} – ${match.score.opponent}',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
         ],
       ),
       onTap: () => context.go('/matches/${match.id}'),
@@ -145,7 +170,10 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
   final _opponent = TextEditingController();
   String? _teamId;
   gen.HomeAway _homeAway = gen.HomeAway.HOME;
-  late DateTime _date = ref.read(tenantZoneProvider).today(DateTime.now()).add(const Duration(days: 1));
+  late DateTime _date = ref
+      .read(tenantZoneProvider)
+      .today(DateTime.now())
+      .add(const Duration(days: 1));
 
   @override
   void dispose() {
@@ -167,12 +195,16 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
       formKey: _form,
       onSubmit: () => runAction(
         context,
-        () => ref.read(matchListProvider.notifier).create(
-          teamId: _teamId!,
-          opponentName: _opponent.text.trim(),
-          homeAway: _homeAway,
-          scheduledAt: ref.read(tenantZoneProvider).instant(DateTime(_date.year, _date.month, _date.day, 10)),
-        ),
+        () => ref
+            .read(matchListProvider.notifier)
+            .create(
+              teamId: _teamId!,
+              opponentName: _opponent.text.trim(),
+              homeAway: _homeAway,
+              scheduledAt: ref
+                  .read(tenantZoneProvider)
+                  .instant(DateTime(_date.year, _date.month, _date.day, 10)),
+            ),
         success: l.matchCreated,
       ),
       children: [
@@ -181,7 +213,10 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
           initialValue: _teamId,
           isExpanded: true,
           decoration: InputDecoration(labelText: l.matchTeam),
-          items: [for (final t in teams) DropdownMenuItem(value: t.id, child: Text(t.name))],
+          items: [
+            for (final t in teams)
+              DropdownMenuItem(value: t.id, child: Text(t.name)),
+          ],
           validator: (v) => v == null ? l.fieldRequired : null,
           onChanged: (v) => setState(() => _teamId = v),
         ),
@@ -203,7 +238,10 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
           key: const Key('match-new-date'),
           contentPadding: EdgeInsets.zero,
           title: Text(l.matchDate),
-          subtitle: Text(DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag()).format(_date)),
+          subtitle: Text(
+            DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag())
+                .format(_date),
+          ),
           trailing: const Icon(Icons.calendar_today),
           onTap: () async {
             final today = ref.read(tenantZoneProvider).today(DateTime.now());
@@ -213,7 +251,10 @@ class _MatchCreateDialogState extends ConsumerState<MatchCreateDialog> {
               firstDate: today.subtract(const Duration(days: 365)),
               lastDate: today.add(const Duration(days: 365)),
             );
-            if (picked != null) setState(() => _date = DateTime(picked.year, picked.month, picked.day));
+            if (picked != null)
+              setState(
+                () => _date = DateTime(picked.year, picked.month, picked.day),
+              );
           },
         ),
       ],

@@ -6,8 +6,16 @@ import '../support/fixtures.dart';
 import '../support/harness.dart';
 
 void main() {
-  testWidgets('shows a banner while offline and hides it when back online', (tester) async {
-    final h = Harness(me: FakeMeRepository(userWith([membershipWithRoles({TenantRole.coach})])));
+  testWidgets('shows a banner while offline and hides it when back online', (
+    tester,
+  ) async {
+    final h = Harness(
+      me: FakeMeRepository(
+        userWith([
+          membershipWithRoles({TenantRole.coach}),
+        ]),
+      ),
+    );
     await h.pump(tester);
     expect(find.byKey(const Key('offline-banner')), findsNothing);
 

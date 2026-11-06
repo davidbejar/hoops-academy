@@ -22,6 +22,9 @@ void main() {
   });
 
   test('the release build script still bundles CanvasKit and Roboto (premise of the self-hosted font override)', () {
-    expect(File('tool/build_web.sh').readAsStringSync(), contains('flutter build web --release --no-web-resources-cdn'));
+    expect(
+      File('tool/build_web.sh').readAsStringSync(),
+      contains('flutter build web --release --no-web-resources-cdn'),
+    );
   });
 }

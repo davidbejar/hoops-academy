@@ -25,8 +25,14 @@ class TenantAdminsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final admins = tenant.status == api.TenantStatus.WITHDRAWN ? null : ref.watch(tenantAdminsProvider(tenant.id));
-    final withdrawn = admins == null || (admins.value == null && admins.hasError && isTenantWithdrawn(admins.error!));
+    final admins = tenant.status == api.TenantStatus.WITHDRAWN
+        ? null
+        : ref.watch(tenantAdminsProvider(tenant.id));
+    final withdrawn =
+        admins == null ||
+        (admins.value == null &&
+            admins.hasError &&
+            isTenantWithdrawn(admins.error!));
     return Column(
       key: const Key('admins-section'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,13 +45,19 @@ class TenantAdminsSection extends ConsumerWidget {
             spacing: AppTokens.spaceSm,
             runSpacing: AppTokens.spaceXs,
             children: [
-              Text(l.adminsTitle, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                l.adminsTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               if (admins?.value != null)
                 OutlinedButton.icon(
                   key: const Key('admin-add'),
                   onPressed: () => showDialog<bool>(
                     context: context,
-                    builder: (_) => AdminFormDialog(tenantId: tenant.id, locale: tenant.defaultLocale),
+                    builder: (_) => AdminFormDialog(
+                      tenantId: tenant.id,
+                      locale: tenant.defaultLocale,
+                    ),
                   ),
                   icon: const Icon(Icons.person_add_alt_1_outlined),
                   label: Text(l.adminsAdd),
@@ -55,15 +67,24 @@ class TenantAdminsSection extends ConsumerWidget {
         ),
         const SizedBox(height: AppTokens.spaceSm),
         if (withdrawn)
-          _Note(key: const Key('admins-withdrawn'), icon: Icons.block, text: l.adminsWithdrawn)
+          _Note(
+            key: const Key('admins-withdrawn'),
+            icon: Icons.block,
+            text: l.adminsWithdrawn,
+          )
         else if (admins.value != null)
           _AdminList(tenantId: tenant.id, admins: admins.value!)
         else if (admins.hasError)
-          _LoadError(error: admins.error!, onRetry: () => ref.invalidate(tenantAdminsProvider(tenant.id)))
+          _LoadError(
+            error: admins.error!,
+            onRetry: () => ref.invalidate(tenantAdminsProvider(tenant.id)),
+          )
         else
           const Padding(
             padding: EdgeInsets.all(AppTokens.spaceMd),
-            child: Center(child: CircularProgressIndicator(key: Key('admins-loading'))),
+            child: Center(
+              child: CircularProgressIndicator(key: Key('admins-loading')),
+            ),
           ),
       ],
     );
@@ -78,16 +99,26 @@ class _AdminList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (admins.isEmpty) {
-      return Text(AppLocalizations.of(context).adminsEmpty, key: const Key('admins-empty'));
+      return Text(
+        AppLocalizations.of(context).adminsEmpty,
+        key: const Key('admins-empty'),
+      );
     }
     return Column(
-      children: [for (final a in admins) _AdminTile(tenantId: tenantId, admin: a, isLast: admins.length == 1)],
+      children: [
+        for (final a in admins)
+          _AdminTile(tenantId: tenantId, admin: a, isLast: admins.length == 1),
+      ],
     );
   }
 }
 
 class _AdminTile extends ConsumerWidget {
-  const _AdminTile({required this.tenantId, required this.admin, required this.isLast});
+  const _AdminTile({
+    required this.tenantId,
+    required this.admin,
+    required this.isLast,
+  });
   final String tenantId;
   final api.TenantAdmin admin;
   final bool isLast;
@@ -103,9 +134,19 @@ class _AdminTile extends ConsumerWidget {
     final nav = Navigator.of(context, rootNavigator: true).context;
 
     Future<void> remove() async {
-      if (!await confirmDialog(context, message: l.adminRemoveConfirm(name), confirmLabel: l.adminRemoveSubmit)) return;
+      if (!await confirmDialog(
+        context,
+        message: l.adminRemoveConfirm(name),
+        confirmLabel: l.adminRemoveSubmit,
+      ))
+        return;
       if (!context.mounted) return;
-      await runAction(context, () => notifier.remove(id), success: l.adminRemoved, errorText: adminErrorText);
+      await runAction(
+        context,
+        () => notifier.remove(id),
+        success: l.adminRemoved,
+        errorText: adminErrorText,
+      );
     }
 
     Future<void> issue() async {
@@ -127,7 +168,12 @@ class _AdminTile extends ConsumerWidget {
     return Card(
       key: Key('admin-$id'),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceSm),
+        padding: const EdgeInsets.fromLTRB(
+          AppTokens.spaceMd,
+          AppTokens.spaceMd,
+          AppTokens.spaceSm,
+          AppTokens.spaceSm,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -137,7 +183,8 @@ class _AdminTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name, style: theme.textTheme.titleSmall),
-                  if (admin.email != null) Text(admin.email!, style: theme.textTheme.bodyMedium),
+                  if (admin.email != null)
+                    Text(admin.email!, style: theme.textTheme.bodyMedium),
                   if (status != null || admin.otherRoles.isNotEmpty) ...[
                     const SizedBox(height: AppTokens.spaceXs),
                     Wrap(
@@ -148,19 +195,36 @@ class _AdminTile extends ConsumerWidget {
                         if (status != null)
                           InfoChip(
                             status,
-                            tone: admin.invitationStatus == api.InvitationStatus.PENDING ? ChipTone.warn : ChipTone.good,
+                            tone:
+                                admin.invitationStatus ==
+                                    api.InvitationStatus.PENDING
+                                ? ChipTone.warn
+                                : ChipTone.good,
                           ),
-                        if (admin.invitationStatus == api.InvitationStatus.PENDING &&
-                            admin.temporaryPasswordStatus == api.TemporaryPasswordStatus.EXPIRED)
-                          InfoChip(l.tempPasswordExpired, key: Key('admin-password-expired-$id'), tone: ChipTone.bad),
+                        if (admin.invitationStatus ==
+                                api.InvitationStatus.PENDING &&
+                            admin.temporaryPasswordStatus ==
+                                api.TemporaryPasswordStatus.EXPIRED)
+                          InfoChip(
+                            l.tempPasswordExpired,
+                            key: Key('admin-password-expired-$id'),
+                            tone: ChipTone.bad,
+                          ),
                         if (admin.otherRoles.isNotEmpty)
-                          Text(l.adminOtherRoles(rolesText(admin.otherRoles, l)), style: theme.textTheme.bodySmall),
+                          Text(
+                            l.adminOtherRoles(rolesText(admin.otherRoles, l)),
+                            style: theme.textTheme.bodySmall,
+                          ),
                       ],
                     ),
                   ],
                   if (isLast) ...[
                     const SizedBox(height: AppTokens.spaceSm),
-                    _Note(key: const Key('admin-last-note'), icon: Icons.info_outline, text: l.adminLastAdminNote),
+                    _Note(
+                      key: const Key('admin-last-note'),
+                      icon: Icons.info_outline,
+                      text: l.adminLastAdminNote,
+                    ),
                   ],
                 ],
               ),
@@ -181,7 +245,8 @@ class _AdminTile extends ConsumerWidget {
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => showDialog<bool>(
                     context: context,
-                    builder: (_) => AdminFormDialog(tenantId: tenantId, admin: admin),
+                    builder: (_) =>
+                        AdminFormDialog(tenantId: tenantId, admin: admin),
                   ),
                 ),
                 IconButton(
@@ -235,7 +300,11 @@ class _LoadError extends StatelessWidget {
           children: [
             Text('${l.adminsLoadFailed} · ${AppError.of(error).message(l)}'),
             const SizedBox(height: AppTokens.spaceSm),
-            OutlinedButton(key: const Key('admins-retry'), onPressed: onRetry, child: Text(l.retry)),
+            OutlinedButton(
+              key: const Key('admins-retry'),
+              onPressed: onRetry,
+              child: Text(l.retry),
+            ),
           ],
         ),
       ),
@@ -246,7 +315,12 @@ class _LoadError extends StatelessWidget {
 /// Add (no [admin]) or edit (with [admin]) an administrator. Add explains promotion vs invitation; edit warns that
 /// the e-mail is the login.
 class AdminFormDialog extends ConsumerStatefulWidget {
-  const AdminFormDialog({super.key, required this.tenantId, this.admin, this.locale});
+  const AdminFormDialog({
+    super.key,
+    required this.tenantId,
+    this.admin,
+    this.locale,
+  });
   final String tenantId;
   final api.TenantAdmin? admin;
 
@@ -260,8 +334,12 @@ class AdminFormDialog extends ConsumerStatefulWidget {
 class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
   final _form = GlobalKey<FormState>();
   late final _email = TextEditingController(text: widget.admin?.email ?? '');
-  late final _given = TextEditingController(text: widget.admin?.givenName ?? '');
-  late final _family = TextEditingController(text: widget.admin?.familyName ?? '');
+  late final _given = TextEditingController(
+    text: widget.admin?.givenName ?? '',
+  );
+  late final _family = TextEditingController(
+    text: widget.admin?.familyName ?? '',
+  );
 
   @override
   void dispose() {
@@ -272,16 +350,24 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
   }
 
   /// An administrator without an address may stay that way (the field is only validated once filled).
-  bool keepsMissingEmail(String? v) => widget.admin != null && (widget.admin!.email ?? '').isEmpty && (v ?? '').trim().isEmpty;
+  bool keepsMissingEmail(String? v) =>
+      widget.admin != null &&
+      (widget.admin!.email ?? '').isEmpty &&
+      (v ?? '').trim().isEmpty;
 
   /// Shown once the form has closed (see [FormDialog.afterClose]); never kept past that.
   Future<void> Function()? _announce;
 
-  String? _changed(String now, String? before) => now == (before ?? '') ? null : now;
+  String? _changed(String now, String? before) =>
+      now == (before ?? '') ? null : now;
 
   Future<bool> _submit(AppLocalizations l) async {
     final notifier = ref.read(tenantAdminsProvider(widget.tenantId).notifier);
-    final (email, given, family) = (_email.text.trim(), _given.text.trim(), _family.text.trim());
+    final (email, given, family) = (
+      _email.text.trim(),
+      _given.text.trim(),
+      _family.text.trim(),
+    );
     final admin = widget.admin;
     if (admin == null) {
       final nav = Navigator.of(context, rootNavigator: true).context;
@@ -307,11 +393,21 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
       }
       return ok;
     }
-    final (newGiven, newFamily, newEmail) = (_changed(given, admin.givenName), _changed(family, admin.familyName), _changed(email, admin.email));
-    if (newGiven == null && newFamily == null && newEmail == null) return true; // nothing to send
+    final (newGiven, newFamily, newEmail) = (
+      _changed(given, admin.givenName),
+      _changed(family, admin.familyName),
+      _changed(email, admin.email),
+    );
+    if (newGiven == null && newFamily == null && newEmail == null)
+      return true; // nothing to send
     return runAction(
       context,
-      () => notifier.edit(admin.personId, givenName: newGiven, familyName: newFamily, email: newEmail),
+      () => notifier.edit(
+        admin.personId,
+        givenName: newGiven,
+        familyName: newFamily,
+        email: newEmail,
+      ),
       success: l.adminUpdated,
       errorText: adminErrorText,
     );
@@ -321,7 +417,13 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final editing = widget.admin != null;
-    Widget field(String key, TextEditingController c, String label, {String? Function(String?)? validator, TextInputType? type}) => Padding(
+    Widget field(
+      String key,
+      TextEditingController c,
+      String label, {
+      String? Function(String?)? validator,
+      TextInputType? type,
+    }) => Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         key: Key(key),
@@ -340,7 +442,10 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Text(editing ? l.adminEditEmailNote : l.adminAddHint, key: const Key('admin-form-note')),
+          child: Text(
+            editing ? l.adminEditEmailNote : l.adminAddHint,
+            key: const Key('admin-form-note'),
+          ),
         ),
         field(
           'admin-email',

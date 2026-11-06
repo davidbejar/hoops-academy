@@ -325,7 +325,10 @@ class _PlayerDetailBody extends ConsumerWidget {
                 key: const Key('player-season-stats'),
                 onPressed: () => context.go('/matches/stats/${player.id}'),
                 icon: const Icon(Icons.bar_chart),
-                label: Text(l.seasonStatsTitle, overflow: TextOverflow.ellipsis),
+                label: Text(
+                  l.seasonStatsTitle,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
             const SizedBox(width: AppTokens.spaceSm),

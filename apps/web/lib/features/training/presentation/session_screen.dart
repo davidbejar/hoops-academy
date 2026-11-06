@@ -65,15 +65,28 @@ class _Body extends ConsumerWidget {
                         style: theme.textTheme.titleMedium,
                       ),
                     ),
-                    InfoChip(s.status.label(l), tone: s.status.tone, key: const Key('session-status')),
+                    InfoChip(
+                      s.status.label(l),
+                      tone: s.status.tone,
+                      key: const Key('session-status'),
+                    ),
                   ],
                 ),
                 if (names[s.teamId] != null) Text(names[s.teamId]!),
                 const SizedBox(height: AppTokens.spaceSm),
-                _Line(Icons.place_outlined, l.sessionLocation, s.location ?? l.sessionNoLocation),
-                _Line(Icons.timer_outlined, l.sessionDuration, l.sessionDurationMinutes(s.durationMinutes)),
+                _Line(
+                  Icons.place_outlined,
+                  l.sessionLocation,
+                  s.location ?? l.sessionNoLocation,
+                ),
+                _Line(
+                  Icons.timer_outlined,
+                  l.sessionDuration,
+                  l.sessionDurationMinutes(s.durationMinutes),
+                ),
                 _PlanLine(planId: s.planId),
-                if (s.notes != null && s.notes!.isNotEmpty) _Line(Icons.notes, l.sessionNotes, s.notes!),
+                if (s.notes != null && s.notes!.isNotEmpty)
+                  _Line(Icons.notes, l.sessionNotes, s.notes!),
                 if (s.cancelReason != null)
                   Padding(
                     padding: const EdgeInsets.only(top: AppTokens.spaceSm),
@@ -94,7 +107,10 @@ class _Body extends ConsumerWidget {
               key: const Key('session-edit'),
               icon: const Icon(Icons.edit_outlined),
               label: Text(l.sessionEdit),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => SessionDialog(session: s)),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => SessionDialog(session: s),
+              ),
             ),
           ),
         if (staff && planned)
@@ -115,13 +131,17 @@ class _Body extends ConsumerWidget {
                 if (reason == null || !context.mounted) return;
                 await runAction(
                   context,
-                  () => ref.read(sessionDetailProvider(s.id).notifier).cancel(reason),
+                  () => ref
+                      .read(sessionDetailProvider(s.id).notifier)
+                      .cancel(reason),
                   success: l.sessionCancelled,
                 );
               },
             ),
           ),
-        if (staff && detail.attendance != null && s.status != ath.TrainingSessionStatus.CANCELLED)
+        if (staff &&
+            detail.attendance != null &&
+            s.status != ath.TrainingSessionStatus.CANCELLED)
           AttendanceSheet(key: ValueKey('attendance-${s.id}'), detail: detail),
       ],
     );
@@ -155,7 +175,8 @@ class _PlanLine extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    if (planId == null) return _Line(Icons.list_alt, l.sessionPlan, l.sessionNoPlan);
+    if (planId == null)
+      return _Line(Icons.list_alt, l.sessionPlan, l.sessionNoPlan);
     final plan = ref.watch(planDetailProvider(planId!));
     return _Line(Icons.list_alt, l.sessionPlan, plan.value?.name ?? '…');
   }
@@ -187,9 +208,17 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
   bool _busy = false;
 
   List<_Row> _build() {
-    final entries = {for (final e in widget.detail.attendance!.entries) e.playerId: e};
-    final names = {for (final p in widget.detail.roster) p.player.id: p.player.displayName};
-    final ids = [...names.keys, for (final id in entries.keys) if (!names.containsKey(id)) id];
+    final entries = {
+      for (final e in widget.detail.attendance!.entries) e.playerId: e,
+    };
+    final names = {
+      for (final p in widget.detail.roster) p.player.id: p.player.displayName,
+    };
+    final ids = [
+      ...names.keys,
+      for (final id in entries.keys)
+        if (!names.containsKey(id)) id,
+    ];
     return [
       for (final id in ids)
         _Row(
@@ -197,7 +226,10 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
           names[id] ?? id,
           entries[id],
           // The planned-absence overlay pre-fills EXCUSED until the coach decides.
-          entries[id]?.status ?? ((entries[id]?.expectedAbsent ?? false) ? ath.AttendanceStatus.EXCUSED : null),
+          entries[id]?.status ??
+              ((entries[id]?.expectedAbsent ?? false)
+                  ? ath.AttendanceStatus.EXCUSED
+                  : null),
           entries[id]?.minutesLate,
         ),
     ];
@@ -217,14 +249,20 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
     setState(() => _busy = true);
     final ok = await runAction(
       context,
-      () => ref.read(sessionDetailProvider(widget.detail.session.id).notifier).saveAttendance([
-        for (final r in _rows)
-          if (r.status != null)
-            ath.AttendanceInput((b) => b
-              ..playerId = r.playerId
-              ..status = r.status
-              ..minutesLate = r.status == ath.AttendanceStatus.LATE ? int.parse(r.minutes.text) : null),
-      ]),
+      () => ref
+          .read(sessionDetailProvider(widget.detail.session.id).notifier)
+          .saveAttendance([
+            for (final r in _rows)
+              if (r.status != null)
+                ath.AttendanceInput(
+                  (b) => b
+                    ..playerId = r.playerId
+                    ..status = r.status
+                    ..minutesLate = r.status == ath.AttendanceStatus.LATE
+                        ? int.parse(r.minutes.text)
+                        : null,
+                ),
+          ]),
       success: l.attendanceSaved,
     );
     if (mounted && !ok) setState(() => _busy = false);
@@ -245,7 +283,9 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
               Text(l.attendanceTitle, style: theme.textTheme.titleMedium),
               if (_rows.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceMd),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppTokens.spaceMd,
+                  ),
                   child: Text(l.attendanceEmpty),
                 ),
               for (final r in _rows) _rowView(l, theme, r),
@@ -278,8 +318,18 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(r.name, style: theme.textTheme.titleSmall),
-              if (expected) InfoChip(l.attendanceExpectedAbsent, tone: ChipTone.warn, icon: Icons.event_busy_outlined),
-              if (injured) InfoChip(l.attendanceInjured, tone: ChipTone.bad, icon: Icons.healing),
+              if (expected)
+                InfoChip(
+                  l.attendanceExpectedAbsent,
+                  tone: ChipTone.warn,
+                  icon: Icons.event_busy_outlined,
+                ),
+              if (injured)
+                InfoChip(
+                  l.attendanceInjured,
+                  tone: ChipTone.bad,
+                  icon: Icons.healing,
+                ),
             ],
           ),
           const SizedBox(height: AppTokens.spaceXs),
@@ -291,7 +341,8 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
                   key: Key('att-${r.playerId}-${s.name}'),
                   label: Text(s.label(l)),
                   selected: r.status == s,
-                  onSelected: (_) => setState(() => r.status = r.status == s ? null : s),
+                  onSelected: (_) =>
+                      setState(() => r.status = r.status == s ? null : s),
                 ),
             ],
           ),
@@ -304,10 +355,15 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
                   key: Key('late-minutes-${r.playerId}'),
                   controller: r.minutes,
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: l.attendanceMinutesLate, isDense: true),
+                  decoration: InputDecoration(
+                    labelText: l.attendanceMinutesLate,
+                    isDense: true,
+                  ),
                   validator: (v) {
                     final n = int.tryParse((v ?? '').trim());
-                    return n == null || n < 1 || n > 180 ? l.attendanceMinutesInvalid : null;
+                    return n == null || n < 1 || n > 180
+                        ? l.attendanceMinutesInvalid
+                        : null;
                   },
                 ),
               ),
@@ -315,7 +371,10 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
           if (r.status == null)
             Padding(
               padding: const EdgeInsets.only(top: AppTokens.spaceXs),
-              child: Text(l.attendanceNotRecorded, style: theme.textTheme.bodySmall),
+              child: Text(
+                l.attendanceNotRecorded,
+                style: theme.textTheme.bodySmall,
+              ),
             ),
         ],
       ),

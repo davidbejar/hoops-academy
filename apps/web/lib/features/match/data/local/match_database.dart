@@ -104,7 +104,16 @@ class ClientSequences extends Table {
   Set<Column> get primaryKey => {matchId};
 }
 
-@DriftDatabase(tables: [MatchesCache, RosterCache, PendingEvents, SyncedEvents, Device, ClientSequences])
+@DriftDatabase(
+  tables: [
+    MatchesCache,
+    RosterCache,
+    PendingEvents,
+    SyncedEvents,
+    Device,
+    ClientSequences,
+  ],
+)
 class MatchDatabase extends _$MatchDatabase {
   MatchDatabase(super.connection);
 
@@ -115,9 +124,18 @@ class MatchDatabase extends _$MatchDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
-      await m.createIndex(Index('pending_events_outbox',
-          'CREATE INDEX pending_events_outbox ON pending_events (tenant_id, person_id, status, match_id, client_seq)'));
-      await m.createIndex(Index('synced_events_match', 'CREATE INDEX synced_events_match ON synced_events (match_id, server_seq)'));
+      await m.createIndex(
+        Index(
+          'pending_events_outbox',
+          'CREATE INDEX pending_events_outbox ON pending_events (tenant_id, person_id, status, match_id, client_seq)',
+        ),
+      );
+      await m.createIndex(
+        Index(
+          'synced_events_match',
+          'CREATE INDEX synced_events_match ON synced_events (match_id, server_seq)',
+        ),
+      );
     },
   );
 }

@@ -7,7 +7,11 @@ import 'match_event.dart';
 /// everyone; a VOID follows its target (an unknown target names no player).
 /// The app never filters what the server sends; the dev mock API and the test
 /// fakes use this to behave like the server.
-List<T> visibleFeed<T>(List<T> stored, MatchEvent Function(T) eventOf, {required Set<String>? visiblePlayers}) {
+List<T> visibleFeed<T>(
+  List<T> stored,
+  MatchEvent Function(T) eventOf, {
+  required Set<String>? visiblePlayers,
+}) {
   if (visiblePlayers == null) return stored;
   final byId = {for (final s in stored) eventOf(s).id: eventOf(s)};
   bool visible(MatchEvent event) {
@@ -22,5 +26,8 @@ List<T> visibleFeed<T>(List<T> stored, MatchEvent Function(T) eventOf, {required
     return player == null || visiblePlayers.contains(player);
   }
 
-  return [for (final s in stored) if (visible(eventOf(s))) s];
+  return [
+    for (final s in stored)
+      if (visible(eventOf(s))) s,
+  ];
 }

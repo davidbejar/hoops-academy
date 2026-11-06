@@ -31,7 +31,15 @@ Future<Harness> pumpAs(
 }) async {
   final h = Harness(
     me: FakeMeRepository(
-      userWith([membershipWithRoles(roles, staffTeamIds: staffTeamIds, linkedPlayerIds: linkedPlayerIds, ownPlayerId: ownPlayerId, timezone: timezone)], superAdmin: superAdmin),
+      userWith([
+        membershipWithRoles(
+          roles,
+          staffTeamIds: staffTeamIds,
+          linkedPlayerIds: linkedPlayerIds,
+          ownPlayerId: ownPlayerId,
+          timezone: timezone,
+        ),
+      ], superAdmin: superAdmin),
     ),
     core: core,
     game: game,

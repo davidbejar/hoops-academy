@@ -12,37 +12,54 @@ import '../support/fake_game.dart';
 /// Academy zone Asia/Jakarta (UTC+7, no DST) differs from any test device zone
 /// that is not UTC+7: times must follow the academy, not the device.
 void main() {
-  testWidgets('training calendar shows session times in the academy zone, zone named once', (tester) async {
-    final day = weekday(1);
-    final noonUtc = DateTime.utc(day.year, day.month, day.day, 12);
-    final athlete = FakeAthlete(
-      training: FakeTrainingRepository(sessions: [
-        ath.TrainingSession((b) => b
-          ..id = 'z1'
-          ..teamId = 't1'
-          ..startsAt = noonUtc
-          ..durationMinutes = 90
-          ..status = ath.TrainingSessionStatus.PLANNED),
-      ]),
-    );
+  testWidgets(
+    'training calendar shows session times in the academy zone, zone named once',
+    (tester) async {
+      final day = weekday(1);
+      final noonUtc = DateTime.utc(day.year, day.month, day.day, 12);
+      final athlete = FakeAthlete(
+        training: FakeTrainingRepository(
+          sessions: [
+            ath.TrainingSession(
+              (b) => b
+                ..id = 'z1'
+                ..teamId = 't1'
+                ..startsAt = noonUtc
+                ..durationMinutes = 90
+                ..status = ath.TrainingSessionStatus.PLANNED,
+            ),
+          ],
+        ),
+      );
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: athleteCore(),
+        athlete: athlete,
+        timezone: 'Asia/Jakarta',
+        location: '/training',
+      );
+      expect(find.text('19:00 – 20:30'), findsOneWidget);
+      expect(find.textContaining('Asia/Jakarta'), findsOneWidget);
+    },
+  );
+
+  testWidgets('without an academy zone the zone note is not shown', (
+    tester,
+  ) async {
     await pumpAs(
       tester,
       roles: {TenantRole.admin},
       core: athleteCore(),
-      athlete: athlete,
-      timezone: 'Asia/Jakarta',
+      athlete: weekAthlete(),
       location: '/training',
     );
-    expect(find.text('19:00 – 20:30'), findsOneWidget);
-    expect(find.textContaining('Asia/Jakarta'), findsOneWidget);
-  });
-
-  testWidgets('without an academy zone the zone note is not shown', (tester) async {
-    await pumpAs(tester, roles: {TenantRole.admin}, core: athleteCore(), athlete: weekAthlete(), location: '/training');
     expect(find.byKey(const Key('timezone-note')), findsNothing);
   });
 
-  testWidgets('match list shows the kick-off in the academy zone', (tester) async {
+  testWidgets('match list shows the kick-off in the academy zone', (
+    tester,
+  ) async {
     await pumpAs(
       tester,
       roles: {TenantRole.coach},

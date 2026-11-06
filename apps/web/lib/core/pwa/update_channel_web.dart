@@ -41,7 +41,8 @@ class ServiceWorkerUpdateChannel implements UpdateChannel {
           installing?.addEventListener(
             'statechange',
             ((web.Event _) {
-              if (installing.state == 'installed') waiting(reg.waiting ?? installing);
+              if (installing.state == 'installed')
+                waiting(reg.waiting ?? installing);
             }).toJS,
           );
         }).toJS,

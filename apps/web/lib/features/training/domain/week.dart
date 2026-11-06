@@ -4,18 +4,24 @@ library;
 /// Monday 00:00 (local, date only) of the week containing [d].
 DateTime startOfWeek(DateTime d) {
   final day = DateTime(d.year, d.month, d.day);
-  return DateTime(day.year, day.month, day.day - (day.weekday - DateTime.monday));
+  return DateTime(
+    day.year,
+    day.month,
+    day.day - (day.weekday - DateTime.monday),
+  );
 }
 
 /// The seven days Monday..Sunday starting at [monday].
 List<DateTime> weekDays(DateTime monday) => [
-  for (var i = 0; i < 7; i++) DateTime(monday.year, monday.month, monday.day + i),
+  for (var i = 0; i < 7; i++)
+    DateTime(monday.year, monday.month, monday.day + i),
 ];
 
 DateTime addWeeks(DateTime monday, int weeks) =>
     DateTime(monday.year, monday.month, monday.day + 7 * weeks);
 
-bool sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+bool sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
 
 /// Groups [items] by local calendar day of [at], each group sorted by time.
 ///

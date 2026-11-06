@@ -29,7 +29,10 @@ class AbsencesScreen extends ConsumerWidget {
       floatingActionButton: caps.canFileAbsences
           ? FloatingActionButton.extended(
               key: const Key('absence-new'),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => const AbsenceDialog()),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => const AbsenceDialog(),
+              ),
               icon: const Icon(Icons.add),
               label: Text(l.absenceNew),
             )
@@ -40,15 +43,25 @@ class AbsencesScreen extends ConsumerWidget {
         isEmpty: (d) => d.isEmpty,
         emptyMessage: l.absenceEmpty,
         builder: (context, data) => ListView(
-          padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
+          padding: const EdgeInsets.fromLTRB(
+            AppTokens.spaceMd,
+            AppTokens.spaceSm,
+            AppTokens.spaceMd,
+            88,
+          ),
           children: [
             for (final a in data)
               Card(
                 child: ListTile(
                   key: Key('absence-${a.id}'),
-                  title: Text(ref.watch(playerNameProvider(a.playerId)) ?? a.playerId),
+                  title: Text(
+                    ref.watch(playerNameProvider(a.playerId)) ?? a.playerId,
+                  ),
                   subtitle: Text(
-                    [l.absenceRange(fullDate(a.fromDate), fullDate(a.toDate)), if (a.reason != null) a.reason!].join(' · '),
+                    [
+                      l.absenceRange(fullDate(a.fromDate), fullDate(a.toDate)),
+                      if (a.reason != null) a.reason!,
+                    ].join(' · '),
                   ),
                   trailing: caps.canFileAbsenceFor(a.playerId)
                       ? Wrap(
@@ -57,16 +70,29 @@ class AbsencesScreen extends ConsumerWidget {
                               key: Key('absence-edit-${a.id}'),
                               tooltip: l.edit,
                               icon: const Icon(Icons.edit_outlined),
-                              onPressed: () => showDialog<bool>(context: context, builder: (_) => AbsenceDialog(absence: a)),
+                              onPressed: () => showDialog<bool>(
+                                context: context,
+                                builder: (_) => AbsenceDialog(absence: a),
+                              ),
                             ),
                             IconButton(
                               key: Key('absence-delete-${a.id}'),
                               tooltip: l.delete,
                               icon: const Icon(Icons.delete_outline),
                               onPressed: () async {
-                                if (!await confirmDialog(context, message: l.absenceDeleteConfirm, confirmLabel: l.delete)) return;
+                                if (!await confirmDialog(
+                                  context,
+                                  message: l.absenceDeleteConfirm,
+                                  confirmLabel: l.delete,
+                                ))
+                                  return;
                                 if (!context.mounted) return;
-                                await runAction(context, () => ref.read(absencesProvider.notifier).delete(a.id));
+                                await runAction(
+                                  context,
+                                  () => ref
+                                      .read(absencesProvider.notifier)
+                                      .delete(a.id),
+                                );
                               },
                             ),
                           ],
@@ -92,7 +118,9 @@ class AbsenceDialog extends ConsumerStatefulWidget {
 
 class _AbsenceDialogState extends ConsumerState<AbsenceDialog> {
   final _form = GlobalKey<FormState>();
-  late final _reason = TextEditingController(text: widget.absence?.reason ?? '');
+  late final _reason = TextEditingController(
+    text: widget.absence?.reason ?? '',
+  );
   String? _playerId;
   late DateTime _from = widget.absence?.fromDate.toDateTime() ?? DateTime.now();
   late DateTime _to = widget.absence?.toDate.toDateTime() ?? DateTime.now();
@@ -120,23 +148,35 @@ class _AbsenceDialogState extends ConsumerState<AbsenceDialog> {
       onSubmit: () => runAction(
         context,
         () => editing == null
-            ? ref.read(absencesProvider.notifier).create(
-                playerId: _playerId ?? ids.first,
-                from: _from,
-                to: _to,
-                reason: _reason.text.trim().isEmpty ? null : _reason.text.trim(),
-              )
-            : ref.read(absencesProvider.notifier).correct(
-                editing.id,
-                from: _from,
-                to: _to,
-                reason: _reason.text.trim().isEmpty ? null : _reason.text.trim(),
-              ),
+            ? ref
+                  .read(absencesProvider.notifier)
+                  .create(
+                    playerId: _playerId ?? ids.first,
+                    from: _from,
+                    to: _to,
+                    reason: _reason.text.trim().isEmpty
+                        ? null
+                        : _reason.text.trim(),
+                  )
+            : ref
+                  .read(absencesProvider.notifier)
+                  .correct(
+                    editing.id,
+                    from: _from,
+                    to: _to,
+                    reason: _reason.text.trim().isEmpty
+                        ? null
+                        : _reason.text.trim(),
+                  ),
         success: l.absenceSaved,
       ),
       children: [
         if (editing == null) ...[
-          PlayerPicker(label: l.absencePlayer, value: _playerId, onChanged: (v) => setState(() => _playerId = v)),
+          PlayerPicker(
+            label: l.absencePlayer,
+            value: _playerId,
+            onChanged: (v) => setState(() => _playerId = v),
+          ),
           formGap,
         ],
         DateField(

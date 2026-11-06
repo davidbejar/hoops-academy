@@ -9,7 +9,12 @@ import 'package:hoops_app/features/platform/data/platform_repository.dart';
 
 import 'fake_repos.dart' show Faulty;
 
-api.Tenant tenantOf(String id, String name, {String? slug, api.TenantStatus status = api.TenantStatus.ACTIVE}) => api.Tenant(
+api.Tenant tenantOf(
+  String id,
+  String name, {
+  String? slug,
+  api.TenantStatus status = api.TenantStatus.ACTIVE,
+}) => api.Tenant(
   (b) => b
     ..id = id
     ..slug = slug ?? name.toLowerCase().replaceAll(' ', '-')
@@ -20,14 +25,15 @@ api.Tenant tenantOf(String id, String name, {String? slug, api.TenantStatus stat
     ..createdAt = DateTime.utc(2026, 1, 5),
 );
 
-api.UsageReport usageReport(String service, Map<String, int> counters) => api.UsageReport(
-  (b) => b
-    ..tenantId = 'x'
-    ..service = api.UsageReportServiceEnum.valueOf(service)
-    ..collectedAt = DateTime.utc(2026, 11, 1)
-    ..lastActivityAt = DateTime.utc(2026, 10, 30)
-    ..counters = MapBuilder<String, int>(counters),
-);
+api.UsageReport usageReport(String service, Map<String, int> counters) =>
+    api.UsageReport(
+      (b) => b
+        ..tenantId = 'x'
+        ..service = api.UsageReportServiceEnum.valueOf(service)
+        ..collectedAt = DateTime.utc(2026, 11, 1)
+        ..lastActivityAt = DateTime.utc(2026, 10, 30)
+        ..counters = MapBuilder<String, int>(counters),
+    );
 
 api.TenantAdmin adminOf(
   String personId,
@@ -36,7 +42,8 @@ api.TenantAdmin adminOf(
   String? email,
   api.InvitationStatus status = api.InvitationStatus.ACCEPTED,
   Set<api.TenantRole> otherRoles = const {},
-  api.TemporaryPasswordStatus temporaryPassword = api.TemporaryPasswordStatus.NONE,
+  api.TemporaryPasswordStatus temporaryPassword =
+      api.TemporaryPasswordStatus.NONE,
 }) => api.TenantAdmin(
   (b) => b
     ..personId = personId
@@ -57,19 +64,28 @@ DioException problem(int status, String code) {
     response: Response<dynamic>(
       requestOptions: request,
       statusCode: status,
-      data: {'status': status, 'code': code, 'detail': 'English server detail that must never be shown'},
+      data: {
+        'status': status,
+        'code': code,
+        'detail': 'English server detail that must never be shown',
+      },
     ),
   );
 }
 
 class FakePlatformRepository with Faulty implements PlatformRepository {
-  FakePlatformRepository({List<api.Tenant>? tenants, this.usageResult, this.usageFails = false, Map<String, List<api.TenantAdmin>>? admins})
-    : list = tenants ?? [],
-      adminsOf = admins ?? {};
+  FakePlatformRepository({
+    List<api.Tenant>? tenants,
+    this.usageResult,
+    this.usageFails = false,
+    Map<String, List<api.TenantAdmin>>? admins,
+  }) : list = tenants ?? [],
+       adminsOf = admins ?? {};
 
   final List<api.Tenant> list;
   api.TenantUsage? usageResult;
   bool usageFails;
+
   /// Snapshots returned by `usageHistory` (empty by default).
   List<api.TenantUsageSnapshot> history = [];
   bool historyFails = false;
@@ -102,37 +118,46 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   int _i(String id) => list.indexWhere((t) => t.id == id);
 
   @override
-  Future<List<api.Tenant>> tenants({api.TenantStatus? status, String? query}) => run('tenants', () {
-    lastStatusFilter = status;
-    lastQuery = query;
-    return [
-      for (final t in list)
-        if ((status == null || t.status == status) &&
-            (query == null || t.name.toLowerCase().contains(query.toLowerCase()) || t.slug.contains(query.toLowerCase())))
-          t,
-    ];
-  });
+  Future<List<api.Tenant>> tenants({api.TenantStatus? status, String? query}) =>
+      run('tenants', () {
+        lastStatusFilter = status;
+        lastQuery = query;
+        return [
+          for (final t in list)
+            if ((status == null || t.status == status) &&
+                (query == null ||
+                    t.name.toLowerCase().contains(query.toLowerCase()) ||
+                    t.slug.contains(query.toLowerCase())))
+              t,
+        ];
+      });
 
   @override
-  Future<api.Tenant> tenant(String tenantId) => run('tenant', () => list[_i(tenantId)]);
+  Future<api.Tenant> tenant(String tenantId) =>
+      run('tenant', () => list[_i(tenantId)]);
 
   @override
-  Future<api.TenantWithPassword> create(api.CreateTenantRequest request) => run('create', () {
-    created = request;
-    final t = tenantOf('new-${list.length}', request.name, slug: request.slug);
-    list.add(t);
-    return api.TenantWithPassword(
-      (b) => b
-        ..id = t.id
-        ..slug = t.slug
-        ..name = t.name
-        ..status = t.status
-        ..timezone = t.timezone
-        ..defaultLocale = t.defaultLocale
-        ..createdAt = t.createdAt
-        ..temporaryPassword = newLoginPassword,
-    );
-  });
+  Future<api.TenantWithPassword> create(api.CreateTenantRequest request) =>
+      run('create', () {
+        created = request;
+        final t = tenantOf(
+          'new-${list.length}',
+          request.name,
+          slug: request.slug,
+        );
+        list.add(t);
+        return api.TenantWithPassword(
+          (b) => b
+            ..id = t.id
+            ..slug = t.slug
+            ..name = t.name
+            ..status = t.status
+            ..timezone = t.timezone
+            ..defaultLocale = t.defaultLocale
+            ..createdAt = t.createdAt
+            ..temporaryPassword = newLoginPassword,
+        );
+      });
 
   api.Tenant _set(String id, api.TenantStatus s) {
     list[_i(id)] = list[_i(id)].rebuild((b) => b.status = s);
@@ -140,19 +165,22 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   }
 
   @override
-  Future<api.Tenant> suspend(String tenantId, String reason) => run('suspend', () {
-    lastReason = reason;
-    return _set(tenantId, api.TenantStatus.SUSPENDED);
-  });
+  Future<api.Tenant> suspend(String tenantId, String reason) =>
+      run('suspend', () {
+        lastReason = reason;
+        return _set(tenantId, api.TenantStatus.SUSPENDED);
+      });
 
   @override
-  Future<api.Tenant> withdraw(String tenantId, String reason) => run('withdraw', () {
-    lastReason = reason;
-    return _set(tenantId, api.TenantStatus.WITHDRAWN);
-  });
+  Future<api.Tenant> withdraw(String tenantId, String reason) =>
+      run('withdraw', () {
+        lastReason = reason;
+        return _set(tenantId, api.TenantStatus.WITHDRAWN);
+      });
 
   @override
-  Future<api.Tenant> reactivate(String tenantId) => run('reactivate', () => _set(tenantId, api.TenantStatus.ACTIVE));
+  Future<api.Tenant> reactivate(String tenantId) =>
+      run('reactivate', () => _set(tenantId, api.TenantStatus.ACTIVE));
 
   @override
   Future<api.TenantUsage> usage(String tenantId) => run('usage', () {
@@ -165,22 +193,25 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
         );
   });
   @override
-  Future<api.TenantUsageHistory> usageHistory(String tenantId) => run('usageHistory', () {
-    if (historyFails) throw StateError('history down');
-    return api.TenantUsageHistory(
-      (b) => b
-        ..tenantId = tenantId
-        ..from = api.Date(2026, 10, 1)
-        ..to = api.Date(2026, 11, 1)
-        ..snapshots.replace(history),
-    );
-  });
+  Future<api.TenantUsageHistory> usageHistory(String tenantId) =>
+      run('usageHistory', () {
+        if (historyFails) throw StateError('history down');
+        return api.TenantUsageHistory(
+          (b) => b
+            ..tenantId = tenantId
+            ..from = api.Date(2026, 10, 1)
+            ..to = api.Date(2026, 11, 1)
+            ..snapshots.replace(history),
+        );
+      });
 
-  List<api.TenantAdmin> _admins(String tenantId) => adminsOf.putIfAbsent(tenantId, () => []);
+  List<api.TenantAdmin> _admins(String tenantId) =>
+      adminsOf.putIfAbsent(tenantId, () => []);
 
   api.Tenant _manageable(String tenantId) {
     final t = list[_i(tenantId)];
-    if (t.status == api.TenantStatus.WITHDRAWN) throw problem(409, 'TENANT_WITHDRAWN');
+    if (t.status == api.TenantStatus.WITHDRAWN)
+      throw problem(409, 'TENANT_WITHDRAWN');
     return t;
   }
 
@@ -195,7 +226,10 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   }
 
   @override
-  Future<api.TenantAdminWithPassword> addAdmin(String tenantId, api.AddTenantAdminRequest request) => run('addAdmin', () {
+  Future<api.TenantAdminWithPassword> addAdmin(
+    String tenantId,
+    api.AddTenantAdminRequest request,
+  ) => run('addAdmin', () {
     if (adminMutationFails != null) throw adminMutationFails!;
     _manageable(tenantId);
     addedAdmin = request;
@@ -204,13 +238,18 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
       request.givenName,
       request.familyName,
       email: request.email,
-      status: newLoginPassword == null ? api.InvitationStatus.ACCEPTED : api.InvitationStatus.PENDING,
+      status: newLoginPassword == null
+          ? api.InvitationStatus.ACCEPTED
+          : api.InvitationStatus.PENDING,
     );
     _admins(tenantId).add(admin);
     return _withPassword(admin, newLoginPassword);
   });
 
-  api.TenantAdminWithPassword _withPassword(api.TenantAdmin a, String? password) => api.TenantAdminWithPassword(
+  api.TenantAdminWithPassword _withPassword(
+    api.TenantAdmin a,
+    String? password,
+  ) => api.TenantAdminWithPassword(
     (b) => b
       ..personId = a.personId
       ..givenName = a.givenName
@@ -223,50 +262,62 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
   );
 
   @override
-  Future<api.TenantAdmin> updateAdmin(String tenantId, String personId, api.UpdateTenantAdminRequest request) =>
-      run('updateAdmin', () {
-        if (adminMutationFails != null) throw adminMutationFails!;
-        _manageable(tenantId);
-        updatedAdmin = request;
-        updatedAdminId = personId;
-        final admins = _admins(tenantId);
-        final i = admins.indexWhere((a) => a.personId == personId);
-        admins[i] = admins[i].rebuild(
-          (b) => b
-            ..givenName = request.givenName ?? admins[i].givenName
-            ..familyName = request.familyName ?? admins[i].familyName
-            ..email = request.email ?? admins[i].email,
-        );
-        return admins[i];
-      });
-
-  @override
-  Future<void> removeAdmin(String tenantId, String personId) => run('removeAdmin', () {
+  Future<api.TenantAdmin> updateAdmin(
+    String tenantId,
+    String personId,
+    api.UpdateTenantAdminRequest request,
+  ) => run('updateAdmin', () {
     if (adminMutationFails != null) throw adminMutationFails!;
     _manageable(tenantId);
+    updatedAdmin = request;
+    updatedAdminId = personId;
     final admins = _admins(tenantId);
-    if (admins.length == 1) throw problem(409, 'LAST_ADMIN');
-    removedAdmins.add(personId);
-    admins.removeWhere((a) => a.personId == personId);
+    final i = admins.indexWhere((a) => a.personId == personId);
+    admins[i] = admins[i].rebuild(
+      (b) => b
+        ..givenName = request.givenName ?? admins[i].givenName
+        ..familyName = request.familyName ?? admins[i].familyName
+        ..email = request.email ?? admins[i].email,
+    );
+    return admins[i];
   });
 
   @override
-  Future<api.TenantAdminWithPassword> issueAdminTemporaryPassword(String tenantId, String personId) =>
-      run('issueAdminTemporaryPassword', () {
+  Future<void> removeAdmin(String tenantId, String personId) =>
+      run('removeAdmin', () {
         if (adminMutationFails != null) throw adminMutationFails!;
         _manageable(tenantId);
-        final admin = _admins(tenantId).firstWhere((a) => a.personId == personId);
-        if (admin.invitationStatus != api.InvitationStatus.PENDING) throw problem(409, 'INVITATION_NOT_PENDING');
-        reissuedFor.add(personId);
-        final renewed = admin.rebuild((b) => b..temporaryPasswordStatus = api.TemporaryPasswordStatus.ACTIVE);
         final admins = _admins(tenantId);
-        admins[admins.indexOf(admin)] = renewed;
-        return _withPassword(renewed, '$reissuedPrefix${reissuedFor.length}');
+        if (admins.length == 1) throw problem(409, 'LAST_ADMIN');
+        removedAdmins.add(personId);
+        admins.removeWhere((a) => a.personId == personId);
       });
+
+  @override
+  Future<api.TenantAdminWithPassword> issueAdminTemporaryPassword(
+    String tenantId,
+    String personId,
+  ) => run('issueAdminTemporaryPassword', () {
+    if (adminMutationFails != null) throw adminMutationFails!;
+    _manageable(tenantId);
+    final admin = _admins(tenantId).firstWhere((a) => a.personId == personId);
+    if (admin.invitationStatus != api.InvitationStatus.PENDING)
+      throw problem(409, 'INVITATION_NOT_PENDING');
+    reissuedFor.add(personId);
+    final renewed = admin.rebuild(
+      (b) => b..temporaryPasswordStatus = api.TemporaryPasswordStatus.ACTIVE,
+    );
+    final admins = _admins(tenantId);
+    admins[admins.indexOf(admin)] = renewed;
+    return _withPassword(renewed, '$reissuedPrefix${reissuedFor.length}');
+  });
 }
 
 class FakePlatform {
-  FakePlatform({FakePlatformRepository? repo}) : repo = repo ?? FakePlatformRepository();
+  FakePlatform({FakePlatformRepository? repo})
+    : repo = repo ?? FakePlatformRepository();
   final FakePlatformRepository repo;
-  List<Override> get overrides => [platformRepositoryProvider.overrideWithValue(repo)];
+  List<Override> get overrides => [
+    platformRepositoryProvider.overrideWithValue(repo),
+  ];
 }

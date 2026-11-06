@@ -31,18 +31,25 @@ final matchStoreProvider = Provider<MatchStore>((ref) {
 });
 
 final gameApiProvider = Provider<gen.HoopsGameApi>(
-  (ref) => gen.HoopsGameApi(dio: ref.watch(dioProvider), interceptors: const []),
+  (ref) =>
+      gen.HoopsGameApi(dio: ref.watch(dioProvider), interceptors: const []),
 );
 
 final matchesRepositoryProvider = Provider<MatchesRepository>(
-  (ref) => ApiMatchesRepository(ref.watch(gameApiProvider), ref.watch(tenantIdProvider)),
+  (ref) => ApiMatchesRepository(
+    ref.watch(gameApiProvider),
+    ref.watch(tenantIdProvider),
+  ),
 );
 
 final eventsRemoteProvider = Provider<EventsRemote>(
-  (ref) => ApiEventsRemote(ref.watch(gameApiProvider), ref.watch(tenantIdProvider)),
+  (ref) =>
+      ApiEventsRemote(ref.watch(gameApiProvider), ref.watch(tenantIdProvider)),
 );
 
-final syncTimersProvider = Provider<SyncTimers>((ref) => const RealSyncTimers());
+final syncTimersProvider = Provider<SyncTimers>(
+  (ref) => const RealSyncTimers(),
+);
 
 /// Signed-in person in the active academy (null: nothing is synced).
 final syncScopeProvider = Provider<SyncScope?>((ref) {
@@ -70,12 +77,16 @@ final syncWorkerProvider = Provider<SyncWorker>((ref) {
 final syncTriggersProvider = Provider<void>((ref) {
   final worker = ref.watch(syncWorkerProvider);
   ref.listen<AsyncValue<bool>>(onlineProvider, (prev, next) {
-    if (next.value == true && prev?.value != true) unawaited(worker.onConnectivityChanged(online: true));
+    if (next.value == true && prev?.value != true)
+      unawaited(worker.onConnectivityChanged(online: true));
   });
   ref.listen<AuthStatus>(authStatusProvider, (prev, next) {
-    if (next == AuthStatus.authenticated && prev != AuthStatus.authenticated) unawaited(worker.onAuthenticated());
+    if (next == AuthStatus.authenticated && prev != AuthStatus.authenticated)
+      unawaited(worker.onAuthenticated());
   });
-  final lifecycle = AppLifecycleListener(onResume: () => unawaited(worker.onResumed()));
+  final lifecycle = AppLifecycleListener(
+    onResume: () => unawaited(worker.onResumed()),
+  );
   ref.onDispose(lifecycle.dispose);
   unawaited(worker.syncNow());
 });
@@ -83,13 +94,18 @@ final syncTriggersProvider = Provider<void>((ref) {
 /// Network-ish failures for which cached data is shown instead.
 bool isOfflineError(Object e) {
   final kind = AppError.of(e).kind;
-  return kind == AppErrorKind.network || kind == AppErrorKind.timeout || kind == AppErrorKind.server;
+  return kind == AppErrorKind.network ||
+      kind == AppErrorKind.timeout ||
+      kind == AppErrorKind.server;
 }
 
-String encodeMatch(gen.Match m) => jsonEncode(gen.standardSerializers.serializeWith(gen.Match.serializer, m));
+String encodeMatch(gen.Match m) =>
+    jsonEncode(gen.standardSerializers.serializeWith(gen.Match.serializer, m));
 
-gen.Match decodeMatch(String json) =>
-    gen.standardSerializers.deserializeWith(gen.Match.serializer, jsonDecode(json))!;
+gen.Match decodeMatch(String json) => gen.standardSerializers.deserializeWith(
+  gen.Match.serializer,
+  jsonDecode(json),
+)!;
 
 // --------------------------------------------------------------- match list
 
@@ -100,7 +116,9 @@ class MatchTeamFilter extends Notifier<String?> {
   void select(String? teamId) => state = teamId;
 }
 
-final matchTeamFilterProvider = NotifierProvider<MatchTeamFilter, String?>(MatchTeamFilter.new);
+final matchTeamFilterProvider = NotifierProvider<MatchTeamFilter, String?>(
+  MatchTeamFilter.new,
+);
 
 class MatchList {
   const MatchList(this.matches, {this.fromCache = false});
@@ -116,16 +134,27 @@ class MatchListNotifier extends AsyncNotifier<MatchList> {
     final store = ref.watch(matchStoreProvider);
     final tenant = ref.watch(tenantIdProvider);
     try {
-      final list = await ref.watch(matchesRepositoryProvider).list(teamId: team);
+      final list = await ref
+          .watch(matchesRepositoryProvider)
+          .list(teamId: team);
       for (final m in list) {
-        await store.saveMatchJson(tenantId: tenant, matchId: m.id, teamId: m.teamId, json: encodeMatch(m));
+        await store.saveMatchJson(
+          tenantId: tenant,
+          matchId: m.id,
+          teamId: m.teamId,
+          json: encodeMatch(m),
+        );
       }
       return MatchList(list);
     } on Object catch (e) {
       if (!isOfflineError(e)) rethrow;
-      final cached = await store.matchJsonsForTeam(tenantId: tenant, teamId: team);
+      final cached = await store.matchJsonsForTeam(
+        tenantId: tenant,
+        teamId: team,
+      );
       if (cached.isEmpty) rethrow;
-      final list = cached.map(decodeMatch).toList()..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+      final list = cached.map(decodeMatch).toList()
+        ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
       return MatchList(list, fromCache: true);
     }
   }
@@ -136,19 +165,28 @@ class MatchListNotifier extends AsyncNotifier<MatchList> {
     required gen.HomeAway homeAway,
     required DateTime scheduledAt,
   }) async {
-    final m = await ref.read(matchesRepositoryProvider).create(
-      teamId: teamId, opponentName: opponentName, homeAway: homeAway, scheduledAt: scheduledAt,
-    );
+    final m = await ref
+        .read(matchesRepositoryProvider)
+        .create(
+          teamId: teamId,
+          opponentName: opponentName,
+          homeAway: homeAway,
+          scheduledAt: scheduledAt,
+        );
     ref.invalidateSelf();
     return m;
   }
 }
 
-final matchListProvider = AsyncNotifierProvider<MatchListNotifier, MatchList>(MatchListNotifier.new);
+final matchListProvider = AsyncNotifierProvider<MatchListNotifier, MatchList>(
+  MatchListNotifier.new,
+);
 
 /// Unsynced events of the caller over all matches (banner on the list).
 final unsyncedCountProvider = StreamProvider<int>((ref) {
   final scope = ref.watch(syncScopeProvider);
   if (scope == null) return Stream.value(0);
-  return ref.watch(matchStoreProvider).watchUnsyncedCount(tenantId: scope.tenantId, personId: scope.personId);
+  return ref
+      .watch(matchStoreProvider)
+      .watchUnsyncedCount(tenantId: scope.tenantId, personId: scope.personId);
 });

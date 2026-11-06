@@ -20,39 +20,66 @@ DioException _dioError(int status, Object? data, {String? contentType}) {
 
 void main() {
   group('AppError.fromDioException', () {
-    test('maps a Problem+JSON body to code, detail, traceId and violations', () {
-      final error = AppError.fromDioException(
-        _dioError(422, {
-          'type': 'urn:hoops:problem:validation',
-          'title': 'Validation failed',
-          'status': 422,
-          'detail': 'name must not be blank',
-          'traceId': 'abc123',
-          'code': 'PLAYER_INELIGIBLE',
-          'violations': [
-            {'field': 'name', 'code': 'NotBlank', 'message': 'must not be blank'},
-          ],
-        }),
-      );
+    test(
+      'maps a Problem+JSON body to code, detail, traceId and violations',
+      () {
+        final error = AppError.fromDioException(
+          _dioError(422, {
+            'type': 'urn:hoops:problem:validation',
+            'title': 'Validation failed',
+            'status': 422,
+            'detail': 'name must not be blank',
+            'traceId': 'abc123',
+            'code': 'PLAYER_INELIGIBLE',
+            'violations': [
+              {
+                'field': 'name',
+                'code': 'NotBlank',
+                'message': 'must not be blank',
+              },
+            ],
+          }),
+        );
 
-      expect(error.kind, AppErrorKind.validation);
-      expect(error.status, 422);
-      expect(error.title, 'Validation failed');
-      expect(error.detail, 'name must not be blank');
-      expect(error.code, 'PLAYER_INELIGIBLE');
-      expect(error.traceId, 'abc123');
-      expect(error.violations, hasLength(1));
-      expect(error.violations.single.field, 'name');
-      expect(error.violations.single.message, 'must not be blank');
-    });
+        expect(error.kind, AppErrorKind.validation);
+        expect(error.status, 422);
+        expect(error.title, 'Validation failed');
+        expect(error.detail, 'name must not be blank');
+        expect(error.code, 'PLAYER_INELIGIBLE');
+        expect(error.traceId, 'abc123');
+        expect(error.violations, hasLength(1));
+        expect(error.violations.single.field, 'name');
+        expect(error.violations.single.message, 'must not be blank');
+      },
+    );
 
     test('maps status codes to kinds', () {
-      expect(AppError.fromDioException(_dioError(401, null)).kind, AppErrorKind.unauthorized);
-      expect(AppError.fromDioException(_dioError(403, null)).kind, AppErrorKind.forbidden);
-      expect(AppError.fromDioException(_dioError(404, null)).kind, AppErrorKind.notFound);
-      expect(AppError.fromDioException(_dioError(409, null)).kind, AppErrorKind.conflict);
-      expect(AppError.fromDioException(_dioError(400, null)).kind, AppErrorKind.validation);
-      expect(AppError.fromDioException(_dioError(502, '<html>bad gateway</html>', contentType: 'text/html')).kind, AppErrorKind.server);
+      expect(
+        AppError.fromDioException(_dioError(401, null)).kind,
+        AppErrorKind.unauthorized,
+      );
+      expect(
+        AppError.fromDioException(_dioError(403, null)).kind,
+        AppErrorKind.forbidden,
+      );
+      expect(
+        AppError.fromDioException(_dioError(404, null)).kind,
+        AppErrorKind.notFound,
+      );
+      expect(
+        AppError.fromDioException(_dioError(409, null)).kind,
+        AppErrorKind.conflict,
+      );
+      expect(
+        AppError.fromDioException(_dioError(400, null)).kind,
+        AppErrorKind.validation,
+      );
+      expect(
+        AppError.fromDioException(
+          _dioError(502, '<html>bad gateway</html>', contentType: 'text/html'),
+        ).kind,
+        AppErrorKind.server,
+      );
     });
 
     test('tolerates a non-Problem body (nginx html) without throwing', () {

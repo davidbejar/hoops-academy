@@ -32,29 +32,50 @@ FakeCore coreWithTeam() => FakeCore(
 
 FakeGame gameWith({List<gen.Match>? matches}) => FakeGame(
   matches: FakeMatchesRepository(
-    matches: matches ??
+    matches:
+        matches ??
         [
           gameMatch(live, opponent: 'Tigres', team: 0),
-          gameMatch(sched, status: gen.MatchStatus.SCHEDULED, opponent: 'Águilas', at: DateTime.utc(2026, 11, 14, 10)),
-          gameMatch(fin, status: gen.MatchStatus.FINISHED, opponent: 'Lobos', team: 0, at: DateTime.utc(2026, 10, 31, 10)),
+          gameMatch(
+            sched,
+            status: gen.MatchStatus.SCHEDULED,
+            opponent: 'Águilas',
+            at: DateTime.utc(2026, 11, 14, 10),
+          ),
+          gameMatch(
+            fin,
+            status: gen.MatchStatus.FINISHED,
+            opponent: 'Lobos',
+            team: 0,
+            at: DateTime.utc(2026, 10, 31, 10),
+          ),
         ],
     rosters: {live: demoRoster, fin: demoRoster},
   ),
 );
 
-Future<Harness> pumpCoach(WidgetTester tester, FakeGame game, String location, {bool settle = true, Size size = const Size(360, 780)}) =>
-    pumpAs(
-      tester,
-      roles: {TenantRole.coach},
-      staffTeamIds: {teamA},
-      core: coreWithTeam(),
-      game: game,
-      location: location,
-      settle: settle,
-      size: size,
-    );
+Future<Harness> pumpCoach(
+  WidgetTester tester,
+  FakeGame game,
+  String location, {
+  bool settle = true,
+  Size size = const Size(360, 780),
+}) => pumpAs(
+  tester,
+  roles: {TenantRole.coach},
+  staffTeamIds: {teamA},
+  core: coreWithTeam(),
+  game: game,
+  location: location,
+  settle: settle,
+  size: size,
+);
 
-Future<Harness> pumpParent(WidgetTester tester, FakeGame game, String location) => pumpAs(
+Future<Harness> pumpParent(
+  WidgetTester tester,
+  FakeGame game,
+  String location,
+) => pumpAs(
   tester,
   roles: {TenantRole.parent},
   linkedPlayerIds: {'p1'},
@@ -63,7 +84,11 @@ Future<Harness> pumpParent(WidgetTester tester, FakeGame game, String location) 
   location: location,
 );
 
-Future<Harness> pumpPlayer(WidgetTester tester, FakeGame game, String location) => pumpAs(
+Future<Harness> pumpPlayer(
+  WidgetTester tester,
+  FakeGame game,
+  String location,
+) => pumpAs(
   tester,
   roles: {TenantRole.player},
   ownPlayerId: 'p1',
@@ -72,9 +97,14 @@ Future<Harness> pumpPlayer(WidgetTester tester, FakeGame game, String location) 
   location: location,
 );
 
-String? textOf(WidgetTester tester, String key) => tester.widget<Text>(find.byKey(Key(key))).data;
+String? textOf(WidgetTester tester, String key) =>
+    tester.widget<Text>(find.byKey(Key(key))).data;
 
-Future<void> tapAction(WidgetTester tester, String player, String action) async {
+Future<void> tapAction(
+  WidgetTester tester,
+  String player,
+  String action,
+) async {
   await tapKey(tester, 'player-$player');
   await tapKey(tester, 'action-$action');
   await clearSnackBars(tester);
@@ -95,7 +125,11 @@ void main() {
     });
 
     testWidgets('error with retry', (tester) async {
-      final game = gameWith()..matches.failWith = const AppError(kind: AppErrorKind.forbidden, status: 403);
+      final game = gameWith()
+        ..matches.failWith = const AppError(
+          kind: AppErrorKind.forbidden,
+          status: 403,
+        );
       await pumpCoach(tester, game, '/matches');
       expect(find.text('Reintentar'), findsWidgets);
       game.matches.failWith = null;
@@ -109,7 +143,9 @@ void main() {
       expect(find.text('No hay partidos'), findsOneWidget);
     });
 
-    testWidgets('populated: status chips, score, create button for staff', (tester) async {
+    testWidgets('populated: status chips, score, create button for staff', (
+      tester,
+    ) async {
       await pumpCoach(tester, gameWith(), '/matches');
       expect(find.byKey(const Key('match-$live')), findsOneWidget);
       expect(find.byKey(const Key('match-$fin')), findsOneWidget);
@@ -148,24 +184,30 @@ void main() {
   });
 
   group('match setup', () {
-    testWidgets('pick players, starters and jersey; save stores and caches the roster', (tester) async {
-      final game = gameWith();
-      await pumpCoach(tester, game, '/matches/$sched/setup');
-      expect(find.byKey(const Key('setup-p1')), findsOneWidget);
-      await tapKey(tester, 'setup-save');
-      expect(find.text('Marca al menos un titular'), findsOneWidget);
-      expect(game.matches.replacedRosters, isEmpty);
+    testWidgets(
+      'pick players, starters and jersey; save stores and caches the roster',
+      (tester) async {
+        final game = gameWith();
+        await pumpCoach(tester, game, '/matches/$sched/setup');
+        expect(find.byKey(const Key('setup-p1')), findsOneWidget);
+        await tapKey(tester, 'setup-save');
+        expect(find.text('Marca al menos un titular'), findsOneWidget);
+        expect(game.matches.replacedRosters, isEmpty);
 
-      await tapKey(tester, 'setup-starter-p1');
-      await tapKey(tester, 'setup-include-p3');
-      await enter(tester, 'setup-jersey-p2', '12');
-      await tapKey(tester, 'setup-save');
-      final saved = game.matches.replacedRosters.single;
-      expect(saved.map((e) => e.playerId), ['p1', 'p2']);
-      expect(saved.first.isStarter, isTrue);
-      expect(saved[1].jerseyNumber, '12');
-      expect((await tester.runAsync(() => game.store.roster(sched)))!.length, 2);
-    });
+        await tapKey(tester, 'setup-starter-p1');
+        await tapKey(tester, 'setup-include-p3');
+        await enter(tester, 'setup-jersey-p2', '12');
+        await tapKey(tester, 'setup-save');
+        final saved = game.matches.replacedRosters.single;
+        expect(saved.map((e) => e.playerId), ['p1', 'p2']);
+        expect(saved.first.isStarter, isTrue);
+        expect(saved[1].jerseyNumber, '12');
+        expect(
+          (await tester.runAsync(() => game.store.roster(sched)))!.length,
+          2,
+        );
+      },
+    );
 
     testWidgets('empty team roster', (tester) async {
       final game = gameWith();
@@ -173,7 +215,9 @@ void main() {
         tester,
         roles: {TenantRole.coach},
         staffTeamIds: {teamA},
-        core: FakeCore(teams: FakeTeamsRepository(teams: [team(teamA, 'Mini A')])),
+        core: FakeCore(
+          teams: FakeTeamsRepository(teams: [team(teamA, 'Mini A')]),
+        ),
         game: game,
         location: '/matches/$sched/setup',
       );
@@ -194,52 +238,66 @@ void main() {
     });
 
     testWidgets('error without cache shows retry', (tester) async {
-      final game = gameWith()..matches.failWith = const AppError(kind: AppErrorKind.network);
+      final game = gameWith()
+        ..matches.failWith = const AppError(kind: AppErrorKind.network);
       await pumpCoach(tester, game, '/matches/$live');
       expect(find.text('Reintentar'), findsWidgets);
     });
 
     testWidgets('no roster: staff gets the setup button', (tester) async {
       await pumpCoach(tester, gameWith(), '/matches/$sched');
-      expect(find.text('Este partido aún no tiene convocatoria'), findsOneWidget);
+      expect(
+        find.text('Este partido aún no tiene convocatoria'),
+        findsOneWidget,
+      );
       await tapKey(tester, 'open-setup');
       expect(find.byKey(const Key('setup-save')), findsOneWidget);
     });
 
-    testWidgets('court, clock, period, shot, opponent points, substitution, undo, log', (tester) async {
-      final game = gameWith()..server.offline = true;
-      await pumpCoach(tester, game, '/matches/$live');
-      expect(find.byKey(const Key('game-clock')), findsOneWidget);
-      expect(find.text('10:00'), findsOneWidget);
-      expect(find.byKey(const Key('player-p6')), findsOneWidget);
+    testWidgets(
+      'court, clock, period, shot, opponent points, substitution, undo, log',
+      (tester) async {
+        final game = gameWith()..server.offline = true;
+        await pumpCoach(tester, game, '/matches/$live');
+        expect(find.byKey(const Key('game-clock')), findsOneWidget);
+        expect(find.text('10:00'), findsOneWidget);
+        expect(find.byKey(const Key('player-p6')), findsOneWidget);
 
-      await tapKey(tester, 'period-start');
-      expect(find.byKey(const Key('period-end')), findsOneWidget);
-      expect(find.byKey(const Key('period-label')), findsOneWidget);
+        await tapKey(tester, 'period-start');
+        expect(find.byKey(const Key('period-end')), findsOneWidget);
+        expect(find.byKey(const Key('period-label')), findsOneWidget);
 
-      await tapAction(tester, 'p1', '3pt-made');
-      expect(textOf(tester, 'score-team'), '3');
+        await tapAction(tester, 'p1', '3pt-made');
+        expect(textOf(tester, 'score-team'), '3');
 
-      await tapKey(tester, 'opponent-2');
-      expect(textOf(tester, 'score-opponent'), '2');
+        await tapKey(tester, 'opponent-2');
+        expect(textOf(tester, 'score-opponent'), '2');
 
-      // Substitution: tap a bench player, choose who leaves.
-      await tapKey(tester, 'player-p6');
-      await tapKey(tester, 'sub-out-p5');
-      final own = await tester.runAsync(() => game.store.ownEvents(live));
-      expect(own!.map((e) => e.event.type), [
-        MatchEventType.periodStart, MatchEventType.shot, MatchEventType.opponentScore,
-        MatchEventType.subOut, MatchEventType.subIn,
-      ]);
+        // Substitution: tap a bench player, choose who leaves.
+        await tapKey(tester, 'player-p6');
+        await tapKey(tester, 'sub-out-p5');
+        final own = await tester.runAsync(() => game.store.ownEvents(live));
+        expect(own!.map((e) => e.event.type), [
+          MatchEventType.periodStart,
+          MatchEventType.shot,
+          MatchEventType.opponentScore,
+          MatchEventType.subOut,
+          MatchEventType.subIn,
+        ]);
 
-      await tapKey(tester, 'undo'); // voids the SUB_IN
-      await tester.tap(find.byKey(const Key('tab-log')));
-      await tester.pumpAndSettle();
-      expect(find.text('Pendiente'), findsWidgets, reason: 'offline: events wait in the queue');
-      expect(find.textContaining('Anulada'), findsOneWidget);
-      expect(find.byKey(const Key('sync-banner')), findsOneWidget);
-      expect(find.text('6 sin sincronizar'), findsOneWidget);
-    });
+        await tapKey(tester, 'undo'); // voids the SUB_IN
+        await tester.tap(find.byKey(const Key('tab-log')));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Pendiente'),
+          findsWidgets,
+          reason: 'offline: events wait in the queue',
+        );
+        expect(find.textContaining('Anulada'), findsOneWidget);
+        expect(find.byKey(const Key('sync-banner')), findsOneWidget);
+        expect(find.text('6 sin sincronizar'), findsOneWidget);
+      },
+    );
 
     testWidgets('reconnect: the banner retry syncs the queue', (tester) async {
       final game = gameWith()..server.offline = true;
@@ -249,23 +307,33 @@ void main() {
       expect(find.text('2 sin sincronizar'), findsOneWidget);
       game.server.offline = false;
       await tapKey(tester, 'sync-retry');
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('sync-banner')), findsNothing);
       expect(game.server.stored(live).length, 2);
     });
 
-    testWidgets('REJECTED events show their reason and can be discarded', (tester) async {
-      final game = gameWith()..server.rejectWhen = (e) => e is Block ? 'NOT_AUTHORIZED' : null;
+    testWidgets('REJECTED events show their reason and can be discarded', (
+      tester,
+    ) async {
+      final game = gameWith()
+        ..server.rejectWhen = (e) => e is Block ? 'NOT_AUTHORIZED' : null;
       await pumpCoach(tester, game, '/matches/$live');
       await tapAction(tester, 'p1', 'blk');
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('tab-log')));
       await tester.pumpAndSettle();
       expect(find.text('Rechazada: sin permiso'), findsOneWidget);
       expect(find.text('1 rechazadas'), findsOneWidget);
-      final id = (await tester.runAsync(() => game.store.ownEvents(live)))!.single.event.id;
+      final id = (await tester.runAsync(() => game.store.ownEvents(live)))!
+          .single
+          .event
+          .id;
       await tapKey(tester, 'log-discard-$id');
       await tapKey(tester, 'dialog-confirm');
       expect(find.text('Rechazada: sin permiso'), findsNothing);
@@ -275,41 +343,66 @@ void main() {
       final game = gameWith();
       game.server.preload(fin, [
         RecordedEvent(PeriodStart(_meta('e1', 600))),
-        RecordedEvent(Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true)),
+        RecordedEvent(
+          Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true),
+        ),
         RecordedEvent(OpponentScore(_meta('e3', 400), points: 3)),
         RecordedEvent(PeriodEnd(_meta('e4', 0))),
       ], personId: 'coach');
       String? copied;
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
-        return null;
-      });
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData')
+            copied = (call.arguments as Map)['text'] as String;
+          return null;
+        },
+      );
       await pumpCoach(tester, game, '/matches/$fin');
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('box-score')), findsOneWidget, reason: 'FINISHED opens on the box score');
+      expect(
+        find.byKey(const Key('box-score')),
+        findsOneWidget,
+        reason: 'FINISHED opens on the box score',
+      );
       expect(find.text('#4 Ana Ruiz *'), findsOneWidget);
       expect(find.byKey(const Key('period-score-1')), findsOneWidget);
       await tester.scrollUntilVisible(
         find.byKey(const Key('box-copy')),
         100,
-        scrollable: find.descendant(of: find.byKey(const Key('box-score')), matching: find.byType(Scrollable)).first,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const Key('box-score')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       await tapKey(tester, 'box-copy');
       expect(copied, contains('Nosotros 2 – 3 Lobos'));
       expect(copied, contains('Ana Ruiz: 2 pts'));
     });
 
-    testWidgets('PLAYER sees their own box score line and no other player\'s', (tester) async {
+    testWidgets('PLAYER sees their own box score line and no other player\'s', (
+      tester,
+    ) async {
       final game = gameWith();
       game.server.preload(fin, [
         RecordedEvent(PeriodStart(_meta('e1', 600))),
-        RecordedEvent(Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true)),
-        RecordedEvent(Shot(_meta('e3', 450), playerId: 'p2', points: 3, made: true)),
+        RecordedEvent(
+          Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true),
+        ),
+        RecordedEvent(
+          Shot(_meta('e3', 450), playerId: 'p2', points: 3, made: true),
+        ),
         RecordedEvent(PeriodEnd(_meta('e4', 0))),
       ], personId: 'coach');
       await pumpPlayer(tester, game, '/matches/$fin');
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('box-score')), findsOneWidget);
       expect(find.text('#4 Ana Ruiz *'), findsOneWidget);
@@ -323,36 +416,53 @@ void main() {
       await tapKey(tester, 'match-menu');
       await tapKey(tester, 'menu-start');
       expect(game.matches.calls, contains('start'));
-      expect(find.byKey(const Key('status-LIVE')), findsNothing, reason: 'staff sees the clock, not the chip');
+      expect(
+        find.byKey(const Key('status-LIVE')),
+        findsNothing,
+        reason: 'staff sees the clock, not the chip',
+      );
     });
   });
 
   group('parent-restricted mode', () {
-    testWidgets('other players disabled, clock/period/opponent hidden, linked player scores', (tester) async {
-      final game = gameWith()..server.offline = true;
-      await pumpParent(tester, game, '/matches/$live');
-      expect(find.byKey(const Key('parent-mode')), findsOneWidget);
-      expect(find.byKey(const Key('game-clock')), findsNothing);
-      expect(find.byKey(const Key('period-start')), findsNothing);
-      expect(find.byKey(const Key('opponent-2')), findsNothing);
-      expect(find.byKey(const Key('timeout-menu')), findsNothing);
-      expect(find.byKey(const Key('match-menu')), findsNothing);
-      final other = tester.widget<InkWell>(find.byKey(const Key('player-p2')));
-      expect(other.onTap, isNull);
-      final bench = tester.widget<InkWell>(find.byKey(const Key('player-p6')));
-      expect(bench.onTap, isNull);
+    testWidgets(
+      'other players disabled, clock/period/opponent hidden, linked player scores',
+      (tester) async {
+        final game = gameWith()..server.offline = true;
+        await pumpParent(tester, game, '/matches/$live');
+        expect(find.byKey(const Key('parent-mode')), findsOneWidget);
+        expect(find.byKey(const Key('game-clock')), findsNothing);
+        expect(find.byKey(const Key('period-start')), findsNothing);
+        expect(find.byKey(const Key('opponent-2')), findsNothing);
+        expect(find.byKey(const Key('timeout-menu')), findsNothing);
+        expect(find.byKey(const Key('match-menu')), findsNothing);
+        final other = tester.widget<InkWell>(
+          find.byKey(const Key('player-p2')),
+        );
+        expect(other.onTap, isNull);
+        final bench = tester.widget<InkWell>(
+          find.byKey(const Key('player-p6')),
+        );
+        expect(bench.onTap, isNull);
 
-      await tapAction(tester, 'p1', 'stl');
-      final own = await tester.runAsync(() => game.store.ownEvents(live));
-      expect(own!.single.event, isA<Steal>());
-      expect(own.single.status.unsynced, isTrue);
-    });
+        await tapAction(tester, 'p1', 'stl');
+        final own = await tester.runAsync(() => game.store.ownEvents(live));
+        expect(own!.single.event, isA<Steal>());
+        expect(own.single.status.unsynced, isTrue);
+      },
+    );
 
     testWidgets('parent cannot void a coach event', (tester) async {
       final game = gameWith();
-      game.server.preload(live, [RecordedEvent(Shot(_meta('c1', 500), playerId: 'p1', points: 2, made: true))], personId: 'coach');
+      game.server.preload(live, [
+        RecordedEvent(
+          Shot(_meta('c1', 500), playerId: 'p1', points: 2, made: true),
+        ),
+      ], personId: 'coach');
       await pumpParent(tester, game, '/matches/$live');
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('tab-log')));
       await tester.pumpAndSettle();
@@ -366,57 +476,101 @@ void main() {
       final game = gameWith()..server.visiblePlayers = {'p1'};
       game.server.preload(live, [
         RecordedEvent(PeriodStart(_meta('f1', 600))),
-        RecordedEvent(Shot(_meta('f2', 550), playerId: 'p2', points: 3, made: true)),
-        RecordedEvent(Shot(_meta('f3', 540), playerId: 'p1', points: 2, made: true)),
+        RecordedEvent(
+          Shot(_meta('f2', 550), playerId: 'p2', points: 3, made: true),
+        ),
+        RecordedEvent(
+          Shot(_meta('f3', 540), playerId: 'p1', points: 2, made: true),
+        ),
         RecordedEvent(OpponentScore(_meta('f4', 530), points: 2)),
       ], personId: 'coach');
       return game;
     }
 
     Future<void> settleFeed(WidgetTester tester) async {
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
     }
 
-    Finder statsOf(String player) =>
-        find.descendant(of: find.byKey(Key('player-$player')), matching: find.textContaining('PTS'));
+    Finder statsOf(String player) => find.descendant(
+      of: find.byKey(Key('player-$player')),
+      matching: find.textContaining('PTS'),
+    );
 
-    testWidgets('PARENT: server score, one player list, only the linked player\'s numbers', (tester) async {
-      final game = coachScored();
-      await pumpParent(tester, game, '/matches/$live');
-      await settleFeed(tester);
+    testWidgets(
+      'PARENT: server score, one player list, only the linked player\'s numbers',
+      (tester) async {
+        final game = coachScored();
+        await pumpParent(tester, game, '/matches/$live');
+        await settleFeed(tester);
 
-      expect(textOf(tester, 'score-team'), '5', reason: 'the feed has 2 of the 5 points; the box score has all');
-      expect(textOf(tester, 'score-opponent'), '2');
-      expect(find.byKey(const Key('players-all')), findsOneWidget);
-      expect(find.text('En pista'), findsNothing, reason: 'substitutions of other players are not in the feed');
-      expect(find.text('Banquillo'), findsNothing);
-      expect(statsOf('p1'), findsOneWidget);
-      expect(find.descendant(of: find.byKey(const Key('player-p1')), matching: find.text('2 PTS · 0 PF')), findsOneWidget);
-      expect(statsOf('p2'), findsNothing);
-      expect(statsOf('p6'), findsNothing);
+        expect(
+          textOf(tester, 'score-team'),
+          '5',
+          reason: 'the feed has 2 of the 5 points; the box score has all',
+        );
+        expect(textOf(tester, 'score-opponent'), '2');
+        expect(find.byKey(const Key('players-all')), findsOneWidget);
+        expect(
+          find.text('En pista'),
+          findsNothing,
+          reason: 'substitutions of other players are not in the feed',
+        );
+        expect(find.text('Banquillo'), findsNothing);
+        expect(statsOf('p1'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('player-p1')),
+            matching: find.text('2 PTS · 0 PF'),
+          ),
+          findsOneWidget,
+        );
+        expect(statsOf('p2'), findsNothing);
+        expect(statsOf('p6'), findsNothing);
 
-      await tester.tap(find.byKey(const Key('tab-log')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(Key('log-${_id('f3')}')), findsOneWidget);
-      expect(find.byKey(Key('log-${_id('f2')}')), findsNothing);
+        await tester.tap(find.byKey(const Key('tab-log')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(Key('log-${_id('f3')}')), findsOneWidget);
+        expect(find.byKey(Key('log-${_id('f2')}')), findsNothing);
 
-      await tester.tap(find.byKey(const Key('tab-box')));
-      await tester.pumpAndSettle();
-      expect(textOf(tester, 'period-score-1'), '5–2');
-      final box = find.byKey(const Key('box-score'));
-      expect(find.descendant(of: box, matching: find.text('#4 Ana Ruiz *')), findsOneWidget);
-      expect(find.descendant(of: box, matching: find.textContaining('Bo Gil')), findsNothing);
-      final totals = tester.widget<DataTable>(find.byType(DataTable)).rows.last;
-      expect((totals.cells[2].child as Text).data, '5', reason: 'team totals from the server');
+        await tester.tap(find.byKey(const Key('tab-box')));
+        await tester.pumpAndSettle();
+        expect(textOf(tester, 'period-score-1'), '5–2');
+        final box = find.byKey(const Key('box-score'));
+        expect(
+          find.descendant(of: box, matching: find.text('#4 Ana Ruiz *')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: box, matching: find.textContaining('Bo Gil')),
+          findsNothing,
+        );
+        final totals = tester
+            .widget<DataTable>(find.byType(DataTable))
+            .rows
+            .last;
+        expect(
+          (totals.cells[2].child as Text).data,
+          '5',
+          reason: 'team totals from the server',
+        );
 
-      await tester.tap(find.byKey(const Key('tab-court')));
-      await tester.pumpAndSettle();
-      await tapAction(tester, 'p1', '3pt-made');
-      expect(textOf(tester, 'score-team'), '8', reason: 'own unsynced event counts at once');
-    });
+        await tester.tap(find.byKey(const Key('tab-court')));
+        await tester.pumpAndSettle();
+        await tapAction(tester, 'p1', '3pt-made');
+        expect(
+          textOf(tester, 'score-team'),
+          '8',
+          reason: 'own unsynced event counts at once',
+        );
+      },
+    );
 
-    testWidgets('PLAYER: the filtered feed renders with the server score', (tester) async {
+    testWidgets('PLAYER: the filtered feed renders with the server score', (
+      tester,
+    ) async {
       final game = coachScored();
       await pumpPlayer(tester, game, '/matches/$live');
       await settleFeed(tester);
@@ -447,7 +601,9 @@ void main() {
         tester,
         roles: {TenantRole.coach},
         staffTeamIds: {teamA},
-        core: FakeCore(players: FakePlayersRepository([player('p1', 'Ana Ruiz')])),
+        core: FakeCore(
+          players: FakePlayersRepository([player('p1', 'Ana Ruiz')]),
+        ),
         game: game,
         location: '/players/p1',
       );
@@ -466,61 +622,79 @@ void main() {
     });
 
     testWidgets('error with retry', (tester) async {
-      final game = gameWith()..matches.failWith = const AppError(kind: AppErrorKind.notFound, status: 404);
+      final game = gameWith()
+        ..matches.failWith = const AppError(
+          kind: AppErrorKind.notFound,
+          status: 404,
+        );
       await pumpParent(tester, game, '/matches/stats/p1');
       expect(find.text('Reintentar'), findsWidgets);
     });
   });
 }
 
-String _id(String suffix) => '0190b6a0-0000-7000-8000-0000000000${suffix.padLeft(2, '0')}';
+String _id(String suffix) =>
+    '0190b6a0-0000-7000-8000-0000000000${suffix.padLeft(2, '0')}';
 
 EventMeta _meta(String id, int clock) => EventMeta(
-  id: _id(id), deviceId: 'coach-tablet', clientSeq: clock, period: 1, clockSecondsRemaining: clock,
+  id: _id(id),
+  deviceId: 'coach-tablet',
+  clientSeq: clock,
+  period: 1,
+  clockSecondsRemaining: clock,
   recordedAtClient: DateTime.utc(2026, 10, 31, 10, 10 - clock ~/ 100),
 );
 
-gen.StatLine _line(int points) => gen.StatLine((b) => b
-  ..points = points
-  ..fg1Made = 0
-  ..fg1Attempted = 0
-  ..fg2Made = points ~/ 2
-  ..fg2Attempted = points ~/ 2
-  ..fg3Made = 0
-  ..fg3Attempted = 0
-  ..assists = 1
-  ..offensiveRebounds = 0
-  ..defensiveRebounds = 2
-  ..turnovers = 0
-  ..steals = 0
-  ..blocks = 0
-  ..personalFouls = 1
-  ..technicalFouls = 0
-  ..unsportsmanlikeFouls = 0
-  ..secondsPlayed = 600);
+gen.StatLine _line(int points) => gen.StatLine(
+  (b) => b
+    ..points = points
+    ..fg1Made = 0
+    ..fg1Attempted = 0
+    ..fg2Made = points ~/ 2
+    ..fg2Attempted = points ~/ 2
+    ..fg3Made = 0
+    ..fg3Attempted = 0
+    ..assists = 1
+    ..offensiveRebounds = 0
+    ..defensiveRebounds = 2
+    ..turnovers = 0
+    ..steals = 0
+    ..blocks = 0
+    ..personalFouls = 1
+    ..technicalFouls = 0
+    ..unsportsmanlikeFouls = 0
+    ..secondsPlayed = 600,
+);
 
-gen.PlayerSeasonStats _seasonStats({bool empty = false}) => gen.PlayerSeasonStats((b) => b
-  ..playerId = 'p1'
-  ..seasonId = seasonId
-  ..gamesPlayed = empty ? 0 : 2
-  ..gamesStarted = empty ? 0 : 1
-  ..totals.replace(_line(empty ? 0 : 12))
-  ..averages.points = empty ? 0 : 6
-  ..averages.assists = 1
-  ..averages.rebounds = 2
-  ..averages.steals = 0
-  ..averages.blocks = 0
-  ..averages.turnovers = 0
-  ..averages.personalFouls = 1
-  ..averages.minutesPlayed = 10
-  ..matches.addAll(empty
-      ? const []
-      : [
-          gen.PlayerMatchLine((m) => m
-            ..matchId = fin
-            ..scheduledAt = DateTime.utc(2026, 10, 31, 10)
-            ..opponentName = 'Lobos'
-            ..status = gen.MatchStatus.FINISHED
-            ..wasStarter = true
-            ..stats.replace(_line(8))),
-        ]));
+gen.PlayerSeasonStats _seasonStats({bool empty = false}) =>
+    gen.PlayerSeasonStats(
+      (b) => b
+        ..playerId = 'p1'
+        ..seasonId = seasonId
+        ..gamesPlayed = empty ? 0 : 2
+        ..gamesStarted = empty ? 0 : 1
+        ..totals.replace(_line(empty ? 0 : 12))
+        ..averages.points = empty ? 0 : 6
+        ..averages.assists = 1
+        ..averages.rebounds = 2
+        ..averages.steals = 0
+        ..averages.blocks = 0
+        ..averages.turnovers = 0
+        ..averages.personalFouls = 1
+        ..averages.minutesPlayed = 10
+        ..matches.addAll(
+          empty
+              ? const []
+              : [
+                  gen.PlayerMatchLine(
+                    (m) => m
+                      ..matchId = fin
+                      ..scheduledAt = DateTime.utc(2026, 10, 31, 10)
+                      ..opponentName = 'Lobos'
+                      ..status = gen.MatchStatus.FINISHED
+                      ..wasStarter = true
+                      ..stats.replace(_line(8)),
+                  ),
+                ],
+        ),
+    );

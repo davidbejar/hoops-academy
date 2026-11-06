@@ -11,7 +11,8 @@ enum EventStatus {
   const EventStatus(this.wire);
   final String wire;
 
-  static EventStatus fromWire(String w) => values.firstWhere((s) => s.wire == w);
+  static EventStatus fromWire(String w) =>
+      values.firstWhere((s) => s.wire == w);
 
   /// Not yet answered by the server.
   bool get unsynced => this == pending || this == sent;
@@ -49,9 +50,12 @@ class PendingEvent {
 class EventResult {
   const EventResult._(this.eventId, this.status, this.serverSeq, this.reason);
 
-  const EventResult.accepted(String eventId, int serverSeq) : this._(eventId, EventStatus.accepted, serverSeq, null);
-  const EventResult.duplicate(String eventId, int serverSeq) : this._(eventId, EventStatus.duplicate, serverSeq, null);
-  const EventResult.rejected(String eventId, String reason) : this._(eventId, EventStatus.rejected, null, reason);
+  const EventResult.accepted(String eventId, int serverSeq)
+    : this._(eventId, EventStatus.accepted, serverSeq, null);
+  const EventResult.duplicate(String eventId, int serverSeq)
+    : this._(eventId, EventStatus.duplicate, serverSeq, null);
+  const EventResult.rejected(String eventId, String reason)
+    : this._(eventId, EventStatus.rejected, null, reason);
 
   final String eventId;
   final EventStatus status;
@@ -86,7 +90,12 @@ class StoredEvent {
 
 /// One cached match-roster line (table `roster_cache`).
 class CachedRosterEntry {
-  const CachedRosterEntry({required this.playerId, required this.displayName, this.jerseyNumber, required this.isStarter});
+  const CachedRosterEntry({
+    required this.playerId,
+    required this.displayName,
+    this.jerseyNumber,
+    required this.isStarter,
+  });
   final String playerId;
   final String displayName;
   final String? jerseyNumber;

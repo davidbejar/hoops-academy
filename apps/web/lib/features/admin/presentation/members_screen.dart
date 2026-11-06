@@ -41,7 +41,10 @@ class MembersScreen extends ConsumerWidget {
       parentPath: '/admin',
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('member-invite'),
-        onPressed: () => showDialog<bool>(context: context, builder: (_) => const InviteMemberDialog()),
+        onPressed: () => showDialog<bool>(
+          context: context,
+          builder: (_) => const InviteMemberDialog(),
+        ),
         icon: const Icon(Icons.person_add_alt),
         label: Text(l.memberInvite),
       ),
@@ -86,8 +89,12 @@ class _MemberTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final details = [if (member.email != null) member.email!, rolesText(member.roles, l)].join(' · ');
-    final expired = member.active &&
+    final details = [
+      if (member.email != null) member.email!,
+      rolesText(member.roles, l),
+    ].join(' · ');
+    final expired =
+        member.active &&
         member.invitationStatus == api.InvitationStatus.PENDING &&
         member.temporaryPasswordStatus == api.TemporaryPasswordStatus.EXPIRED;
     return ListTile(
@@ -214,14 +221,13 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
           controller: _email,
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(labelText: l.memberEmail),
-          validator: (v) => _emailPattern.hasMatch((v ?? '').trim()) ? null : l.fieldInvalidEmail,
+          validator: (v) => _emailPattern.hasMatch((v ?? '').trim())
+              ? null
+              : l.fieldInvalidEmail,
         ),
         formGap,
         Text(l.memberRoles, style: Theme.of(context).textTheme.titleSmall),
-        RolePicker(
-          selected: _roles,
-          onChanged: () => setState(() {}),
-        ),
+        RolePicker(selected: _roles, onChanged: () => setState(() {})),
         if (_rolesTouched && _roles.isEmpty)
           Text(
             l.memberRolesRequired,
@@ -235,7 +241,11 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
 
 /// Multi-select of the five tenant roles; mutates [selected] in place.
 class RolePicker extends StatelessWidget {
-  const RolePicker({super.key, required this.selected, required this.onChanged});
+  const RolePicker({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+  });
 
   final Set<api.TenantRole> selected;
   final VoidCallback onChanged;
@@ -344,8 +354,13 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
             runSpacing: AppTokens.spaceXs,
             children: [
               InfoChip(l.memberInvitationPending, tone: ChipTone.warn),
-              if (m.temporaryPasswordStatus == api.TemporaryPasswordStatus.EXPIRED)
-                InfoChip(l.tempPasswordExpired, key: const Key('member-password-expired'), tone: ChipTone.bad),
+              if (m.temporaryPasswordStatus ==
+                  api.TemporaryPasswordStatus.EXPIRED)
+                InfoChip(
+                  l.tempPasswordExpired,
+                  key: const Key('member-password-expired'),
+                  tone: ChipTone.bad,
+                ),
             ],
           ),
           const SizedBox(height: AppTokens.spaceSm),
@@ -371,7 +386,10 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
                 ? null
                 : () => runAction(
                     context,
-                    () => ref.read(membersProvider.notifier).replaceRoles(m.personId, {..._roles}),
+                    () => ref.read(membersProvider.notifier).replaceRoles(
+                      m.personId,
+                      {..._roles},
+                    ),
                     success: l.saved,
                   ),
             child: Text(l.memberEditRoles),
@@ -384,7 +402,10 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
         else
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceSm),
-            child: Text(l.memberGuardianOnlyParents, style: theme.textTheme.bodySmall),
+            child: Text(
+              l.memberGuardianOnlyParents,
+              style: theme.textTheme.bodySmall,
+            ),
           ),
         if (m.active) ...[
           const SizedBox(height: AppTokens.spaceLg),
@@ -393,7 +414,11 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
             icon: const Icon(Icons.person_off_outlined),
             label: Text(l.memberDeactivate),
             onPressed: () async {
-              if (!await confirmDialog(context, message: l.memberDeactivateConfirm(m.displayName))) return;
+              if (!await confirmDialog(
+                context,
+                message: l.memberDeactivateConfirm(m.displayName),
+              ))
+                return;
               if (!context.mounted) return;
               await runAction(
                 context,
@@ -422,11 +447,17 @@ class GuardianLinksEditor extends ConsumerWidget {
       children: [
         AsyncBodyInline<List<api.GuardianLink>>(
           value: links,
-          onRetry: () => ref.invalidate(guardianLinksProvider(guardianPersonId)),
+          onRetry: () =>
+              ref.invalidate(guardianLinksProvider(guardianPersonId)),
           builder: (context, data) => data.isEmpty
               ? Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceSm),
-                  child: Text(l.memberGuardianNone, key: const Key('guardian-none')),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppTokens.spaceSm,
+                  ),
+                  child: Text(
+                    l.memberGuardianNone,
+                    key: const Key('guardian-none'),
+                  ),
                 )
               : Column(
                   children: [
@@ -441,14 +472,21 @@ class GuardianLinksEditor extends ConsumerWidget {
                           onPressed: () async {
                             if (!await confirmDialog(
                               context,
-                              message: l.memberGuardianRemoveConfirm(link.player.displayName),
+                              message: l.memberGuardianRemoveConfirm(
+                                link.player.displayName,
+                              ),
                             )) {
                               return;
                             }
                             if (!context.mounted) return;
                             await runAction(
                               context,
-                              () => ref.read(guardianLinksProvider(guardianPersonId).notifier).remove(link.id),
+                              () => ref
+                                  .read(
+                                    guardianLinksProvider(guardianPersonId)
+                                        .notifier,
+                                  )
+                                  .remove(link.id),
                             );
                           },
                         ),
@@ -462,7 +500,8 @@ class GuardianLinksEditor extends ConsumerWidget {
           label: Text(l.memberGuardianAdd),
           onPressed: () => showDialog<void>(
             context: context,
-            builder: (_) => _PickPlayerDialog(guardianPersonId: guardianPersonId),
+            builder: (_) =>
+                _PickPlayerDialog(guardianPersonId: guardianPersonId),
           ),
         ),
       ],
@@ -472,7 +511,12 @@ class GuardianLinksEditor extends ConsumerWidget {
 
 /// Like [AsyncBody] but sized for embedding in a scrolling column.
 class AsyncBodyInline<T> extends StatelessWidget {
-  const AsyncBodyInline({super.key, required this.value, required this.builder, required this.onRetry});
+  const AsyncBodyInline({
+    super.key,
+    required this.value,
+    required this.builder,
+    required this.onRetry,
+  });
 
   final AsyncValue<T> value;
   final Widget Function(BuildContext, T) builder;
@@ -483,7 +527,10 @@ class AsyncBodyInline<T> extends StatelessWidget {
     final data = value.value;
     if (data != null) return builder(context, data);
     if (value.hasError) {
-      return TextButton(onPressed: onRetry, child: Text(AppLocalizations.of(context).retry));
+      return TextButton(
+        onPressed: onRetry,
+        child: Text(AppLocalizations.of(context).retry),
+      );
     }
     return const Padding(
       padding: EdgeInsets.all(AppTokens.spaceMd),
@@ -502,7 +549,9 @@ class _PickPlayerDialog extends ConsumerStatefulWidget {
 
 class _PickPlayerDialogState extends ConsumerState<_PickPlayerDialog> {
   String _query = '';
-  late Future<List<api.Player>> _players = ref.read(playersRepositoryProvider).list();
+  late Future<List<api.Player>> _players = ref
+      .read(playersRepositoryProvider)
+      .list();
 
   @override
   Widget build(BuildContext context) {
@@ -516,7 +565,10 @@ class _PickPlayerDialogState extends ConsumerState<_PickPlayerDialog> {
           children: [
             TextField(
               key: const Key('pick-player-search'),
-              decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l.playersSearchHint),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: l.playersSearchHint,
+              ),
               onSubmitted: (v) => setState(() {
                 _query = v;
                 _players = ref.read(playersRepositoryProvider).list(query: v);
@@ -529,7 +581,8 @@ class _PickPlayerDialogState extends ConsumerState<_PickPlayerDialog> {
                 builder: (context, snap) {
                   if (snap.hasError) return Center(child: Text(l.errorUnknown));
                   final players = snap.data;
-                  if (players == null) return const Center(child: CircularProgressIndicator());
+                  if (players == null)
+                    return const Center(child: CircularProgressIndicator());
                   return ListView(
                     children: [
                       for (final p in players)
@@ -540,10 +593,15 @@ class _PickPlayerDialogState extends ConsumerState<_PickPlayerDialog> {
                             final ok = await runAction(
                               context,
                               () => ref
-                                  .read(guardianLinksProvider(widget.guardianPersonId).notifier)
+                                  .read(
+                                    guardianLinksProvider(
+                                      widget.guardianPersonId,
+                                    ).notifier,
+                                  )
                                   .add(p.id),
                             );
-                            if (ok && context.mounted) Navigator.of(context).pop();
+                            if (ok && context.mounted)
+                              Navigator.of(context).pop();
                           },
                         ),
                     ],
@@ -554,7 +612,12 @@ class _PickPlayerDialogState extends ConsumerState<_PickPlayerDialog> {
           ],
         ),
       ),
-      actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l.close))],
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l.close),
+        ),
+      ],
     );
   }
 }

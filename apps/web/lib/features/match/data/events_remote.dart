@@ -10,7 +10,11 @@ class BatchOutcome {
 
 /// Page of `GET /matches/{id}/events?after=`.
 class FeedPage {
-  const FeedPage({required this.events, required this.lastServerSeq, required this.hasMore});
+  const FeedPage({
+    required this.events,
+    required this.lastServerSeq,
+    required this.hasMore,
+  });
   final List<StoredEvent> events;
   final int lastServerSeq;
   final bool hasMore;

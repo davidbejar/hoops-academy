@@ -10,7 +10,11 @@ void main() {
       for (final raw in v.rawEvents) {
         final json = raw['event']! as Map<String, Object?>;
         final event = MatchEvent.fromJson(json);
-        expect(event.toJson(), _canonical(json), reason: '${v.name} ${json['id']}');
+        expect(
+          event.toJson(),
+          _canonical(json),
+          reason: '${v.name} ${json['id']}',
+        );
         count++;
       }
     }
@@ -30,7 +34,9 @@ void main() {
     expect(shot.type, MatchEventType.shot);
     expect(shot.playerId, 'p1');
     expect(shot.toJson()['payload'], {'points': 3, 'made': true});
-    expect(VoidEvent(meta, target: 'x').toJson()['payload'], {'targetEventId': 'x'});
+    expect(VoidEvent(meta, target: 'x').toJson()['payload'], {
+      'targetEventId': 'x',
+    });
   });
 }
 

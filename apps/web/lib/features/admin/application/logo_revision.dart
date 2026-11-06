@@ -8,4 +8,6 @@ class LogoRevision extends Notifier<int> {
   void bump() => state++;
 }
 
-final logoRevisionProvider = NotifierProvider<LogoRevision, int>(LogoRevision.new);
+final logoRevisionProvider = NotifierProvider<LogoRevision, int>(
+  LogoRevision.new,
+);

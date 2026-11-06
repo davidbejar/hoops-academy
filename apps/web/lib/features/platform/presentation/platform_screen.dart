@@ -38,36 +38,51 @@ class PlatformScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final filter = ref.watch(tenantFilterProvider);
-    void setFilter(TenantFilter f) => ref.read(tenantFilterProvider.notifier).set(f);
+    void setFilter(TenantFilter f) =>
+        ref.read(tenantFilterProvider.notifier).set(f);
     return Guarded(
       allowed: ref.watch(isSuperAdminProvider),
       child: Scaffold(
         floatingActionButton: FloatingActionButton.extended(
           key: const Key('tenant-new'),
-          onPressed: () => showDialog<bool>(context: context, builder: (_) => const CreateTenantDialog()),
+          onPressed: () => showDialog<bool>(
+            context: context,
+            builder: (_) => const CreateTenantDialog(),
+          ),
           icon: const Icon(Icons.add),
           label: Text(l.platformNew),
         ),
         body: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
+            constraints: const BoxConstraints(
+              maxWidth: AppTokens.maxContentWidth,
+            ),
             child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.all(AppTokens.spaceMd),
                   child: TextField(
                     key: const Key('tenant-search'),
-                    decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: l.platformSearchHint, isDense: true),
-                    onSubmitted: (v) => setFilter(TenantFilter(status: filter.status, query: v)),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: l.platformSearchHint,
+                      isDense: true,
+                    ),
+                    onSubmitted: (v) => setFilter(
+                      TenantFilter(status: filter.status, query: v),
+                    ),
                     onChanged: (v) {
-                      if (v.isEmpty && filter.query.isNotEmpty) setFilter(TenantFilter(status: filter.status));
+                      if (v.isEmpty && filter.query.isNotEmpty)
+                        setFilter(TenantFilter(status: filter.status));
                     },
                   ),
                 ),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTokens.spaceMd,
+                  ),
                   child: Row(
                     children: [
                       ActionChip(
@@ -81,16 +96,25 @@ class PlatformScreen extends ConsumerWidget {
                         key: const Key('status-all'),
                         label: Text(l.all),
                         selected: filter.status == null,
-                        onSelected: (_) => setFilter(TenantFilter(query: filter.query)),
+                        onSelected: (_) =>
+                            setFilter(TenantFilter(query: filter.query)),
                       ),
-                      for (final s in [api.TenantStatus.ACTIVE, api.TenantStatus.SUSPENDED, api.TenantStatus.WITHDRAWN])
+                      for (final s in [
+                        api.TenantStatus.ACTIVE,
+                        api.TenantStatus.SUSPENDED,
+                        api.TenantStatus.WITHDRAWN,
+                      ])
                         Padding(
-                          padding: const EdgeInsets.only(left: AppTokens.spaceSm),
+                          padding: const EdgeInsets.only(
+                            left: AppTokens.spaceSm,
+                          ),
                           child: ChoiceChip(
                             key: Key('status-${s.name}'),
                             label: Text(s.label(l)),
                             selected: filter.status == s,
-                            onSelected: (_) => setFilter(TenantFilter(status: s, query: filter.query)),
+                            onSelected: (_) => setFilter(
+                              TenantFilter(status: s, query: filter.query),
+                            ),
                           ),
                         ),
                     ],
@@ -103,7 +127,12 @@ class PlatformScreen extends ConsumerWidget {
                     isEmpty: (d) => d.isEmpty,
                     emptyMessage: l.platformEmpty,
                     builder: (context, data) => ListView(
-                      padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppTokens.spaceMd,
+                        AppTokens.spaceSm,
+                        AppTokens.spaceMd,
+                        88,
+                      ),
                       children: [
                         for (final t in data)
                           Card(
@@ -197,17 +226,22 @@ class _CreateTenantDialogState extends ConsumerState<CreateTenantDialog> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    Widget field(String key, TextEditingController c, String label, {String? Function(String?)? validator, TextInputType? type}) =>
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: TextFormField(
-            key: Key(key),
-            controller: c,
-            keyboardType: type,
-            decoration: InputDecoration(labelText: label),
-            validator: validator ?? (v) => requiredValidator(l, v),
-          ),
-        );
+    Widget field(
+      String key,
+      TextEditingController c,
+      String label, {
+      String? Function(String?)? validator,
+      TextInputType? type,
+    }) => Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        key: Key(key),
+        controller: c,
+        keyboardType: type,
+        decoration: InputDecoration(labelText: label),
+        validator: validator ?? (v) => requiredValidator(l, v),
+      ),
+    );
     return FormDialog(
       title: l.platformNew,
       formKey: _form,
@@ -215,7 +249,14 @@ class _CreateTenantDialogState extends ConsumerState<CreateTenantDialog> {
       afterClose: () async => _announce?.call(),
       children: [
         field('tenant-name', _name, l.tenantName),
-        field('tenant-slug', _slug, l.tenantSlug, validator: (v) => _slugPattern.hasMatch((v ?? '').trim()) ? null : l.tenantSlugInvalid),
+        field(
+          'tenant-slug',
+          _slug,
+          l.tenantSlug,
+          validator: (v) => _slugPattern.hasMatch((v ?? '').trim())
+              ? null
+              : l.tenantSlugInvalid,
+        ),
         field('tenant-timezone', _timezone, l.tenantTimezone),
         DropdownButtonFormField<api.ApiLocale>(
           key: const Key('tenant-locale'),
@@ -223,9 +264,18 @@ class _CreateTenantDialogState extends ConsumerState<CreateTenantDialog> {
           isExpanded: true,
           decoration: InputDecoration(labelText: l.tenantLocale),
           items: [
-            DropdownMenuItem(value: api.ApiLocale.es, child: Text(l.languageName_es)),
-            DropdownMenuItem(value: api.ApiLocale.en, child: Text(l.languageName_en)),
-            DropdownMenuItem(value: api.ApiLocale.id, child: Text(l.languageName_id)),
+            DropdownMenuItem(
+              value: api.ApiLocale.es,
+              child: Text(l.languageName_es),
+            ),
+            DropdownMenuItem(
+              value: api.ApiLocale.en,
+              child: Text(l.languageName_en),
+            ),
+            DropdownMenuItem(
+              value: api.ApiLocale.id,
+              child: Text(l.languageName_id),
+            ),
           ],
           onChanged: (v) => setState(() => _locale = v ?? _locale),
         ),

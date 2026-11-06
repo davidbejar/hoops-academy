@@ -52,12 +52,13 @@ class Vector {
 const vectorsDir = 'test/fixtures/vectors';
 
 List<Vector> loadVectors() {
-  final files = Directory(vectorsDir)
-      .listSync()
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.json'))
-      .toList()
-    ..sort((a, b) => a.path.compareTo(b.path));
+  final files =
+      Directory(vectorsDir)
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.json'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
   return [
     for (final f in files)
       Vector(

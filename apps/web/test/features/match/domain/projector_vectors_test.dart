@@ -43,10 +43,26 @@ void main() {
         final p = project(v.rules, v.roster, v.events);
         final actual = toVectorJson(p);
         final expected = v.expected;
-        expect(normalise(actual['playerStats']), normalise(expected['playerStats']), reason: 'playerStats');
-        expect(normalise(actual['summary']), normalise(expected['summary']), reason: 'summary');
-        expect(normalise(actual['teamTotals']), normalise(expected['teamTotals']), reason: 'teamTotals');
-        expect(normalise(actual['warnings']), normalise(expected['warnings']), reason: 'warnings');
+        expect(
+          normalise(actual['playerStats']),
+          normalise(expected['playerStats']),
+          reason: 'playerStats',
+        );
+        expect(
+          normalise(actual['summary']),
+          normalise(expected['summary']),
+          reason: 'summary',
+        );
+        expect(
+          normalise(actual['teamTotals']),
+          normalise(expected['teamTotals']),
+          reason: 'teamTotals',
+        );
+        expect(
+          normalise(actual['warnings']),
+          normalise(expected['warnings']),
+          reason: 'warnings',
+        );
         expect(actual['voidedBy'], expected['voidedBy'], reason: 'voidedBy');
       });
     }

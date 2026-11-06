@@ -12,7 +12,13 @@ FakeCore _core() => FakeCore(
   teams: FakeTeamsRepository(
     teams: [
       team('t1', 'Mini A', alias: 'Leones', players: 12),
-      team('t2', 'Infantil B', cat: u14, policy: api.GenderPolicy.FEMALE, players: 9),
+      team(
+        't2',
+        'Infantil B',
+        cat: u14,
+        policy: api.GenderPolicy.FEMALE,
+        players: 9,
+      ),
       team('t3', 'Mini B', policy: api.GenderPolicy.MALE, players: 0),
     ],
   ),
@@ -28,7 +34,9 @@ FakeCore _core() => FakeCore(
     ),
   ]),
   members: FakeMembersRepository(
-    [member('m2', 'Pat Parent', roles: {api.TenantRole.PARENT})],
+    [
+      member('m2', 'Pat Parent', roles: {api.TenantRole.PARENT}),
+    ],
     links: [
       api.GuardianLink(
         (b) => b
@@ -43,12 +51,28 @@ FakeCore _core() => FakeCore(
 
 void main() {
   testWidgets('teams list, ADMIN, 360x780', (tester) async {
-    await pumpAs(tester, roles: {TenantRole.admin}, core: _core(), location: '/teams');
-    await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/teams_list_360x780.png'));
+    await pumpAs(
+      tester,
+      roles: {TenantRole.admin},
+      core: _core(),
+      location: '/teams',
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/teams_list_360x780.png'),
+    );
   });
 
   testWidgets('player detail, ADMIN, 360x780', (tester) async {
-    await pumpAs(tester, roles: {TenantRole.admin}, core: _core(), location: '/players/p1');
-    await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/player_detail_360x780.png'));
+    await pumpAs(
+      tester,
+      roles: {TenantRole.admin},
+      core: _core(),
+      location: '/players/p1',
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/player_detail_360x780.png'),
+    );
   });
 }

@@ -14,10 +14,16 @@ import '../domain/week.dart';
 // ---------------------------------------------------------------- repositories
 
 final trainingRepositoryProvider = Provider<TrainingRepository>(
-  (ref) => ApiTrainingRepository(ref.watch(ath.athleteApiProvider), ref.watch(api.tenantIdProvider)),
+  (ref) => ApiTrainingRepository(
+    ref.watch(ath.athleteApiProvider),
+    ref.watch(api.tenantIdProvider),
+  ),
 );
 final plansRepositoryProvider = Provider<PlansRepository>(
-  (ref) => ApiPlansRepository(ref.watch(ath.athleteApiProvider), ref.watch(api.tenantIdProvider)),
+  (ref) => ApiPlansRepository(
+    ref.watch(ath.athleteApiProvider),
+    ref.watch(api.tenantIdProvider),
+  ),
 );
 
 ath.Date toAthDate(DateTime d) => ath.Date(d.year, d.month, d.day);
@@ -39,7 +45,8 @@ class WeekStart extends Notifier<DateTime> {
   DateTime build() => startOfWeek(_today());
   void shift(int weeks) => state = addWeeks(state, weeks);
   void today() => state = startOfWeek(_today());
-  DateTime _today() => ref.read(tenantZoneProvider).today(ref.read(nowProvider)());
+  DateTime _today() =>
+      ref.read(tenantZoneProvider).today(ref.read(nowProvider)());
   void set(DateTime monday) => state = startOfWeek(monday);
 }
 
@@ -52,7 +59,9 @@ class TeamFilter extends Notifier<String?> {
   void select(String? id) => state = id;
 }
 
-final calendarTeamProvider = NotifierProvider<TeamFilter, String?>(TeamFilter.new);
+final calendarTeamProvider = NotifierProvider<TeamFilter, String?>(
+  TeamFilter.new,
+);
 
 class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
   @override
@@ -68,7 +77,10 @@ class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
       all = await repo.sessions(teamId: team, from: from, to: to);
     } else if (!caps.isAdmin && caps.staffTeamIds.isNotEmpty) {
       // Staff of specific teams: their teams only.
-      final lists = await Future.wait([for (final t in caps.staffTeamIds) repo.sessions(teamId: t, from: from, to: to)]);
+      final lists = await Future.wait([
+        for (final t in caps.staffTeamIds)
+          repo.sessions(teamId: t, from: from, to: to),
+      ]);
       all = [for (final l in lists) ...l];
     } else {
       all = await repo.sessions(from: from, to: to);
@@ -90,27 +102,38 @@ class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
     String? planId,
     String? notes,
   }) async {
-    await ref.read(trainingRepositoryProvider).createSession(
-      ath.CreateTrainingSessionRequest((b) => b
-        ..teamId = teamId
-        ..startsAt = startsAt.toUtc()
-        ..durationMinutes = durationMinutes
-        ..location = location
-        ..planId = planId
-        ..notes = notes),
-    );
+    await ref
+        .read(trainingRepositoryProvider)
+        .createSession(
+          ath.CreateTrainingSessionRequest(
+            (b) => b
+              ..teamId = teamId
+              ..startsAt = startsAt.toUtc()
+              ..durationMinutes = durationMinutes
+              ..location = location
+              ..planId = planId
+              ..notes = notes,
+          ),
+        );
     await reload();
   }
 }
 
-final weekSessionsProvider = AsyncNotifierProvider<WeekSessionsNotifier, List<ath.TrainingSession>>(WeekSessionsNotifier.new);
+final weekSessionsProvider =
+    AsyncNotifierProvider<WeekSessionsNotifier, List<ath.TrainingSession>>(
+      WeekSessionsNotifier.new,
+    );
 
 // -------------------------------------------------------------------- session
 
 /// A session with its attendance sheet (staff) and the team roster that
 /// names the entries.
 class SessionDetail {
-  const SessionDetail({required this.session, this.attendance, this.roster = const []});
+  const SessionDetail({
+    required this.session,
+    this.attendance,
+    this.roster = const [],
+  });
   final ath.TrainingSession session;
   final ath.SessionAttendance? attendance;
   final List<api.TeamPlayer> roster;
@@ -125,7 +148,8 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
     final repo = ref.watch(trainingRepositoryProvider);
     final caps = ref.watch(capabilitiesProvider);
     final session = await repo.session(sessionId);
-    if (!caps.canManageTraining(session.teamId)) return SessionDetail(session: session);
+    if (!caps.canManageTraining(session.teamId))
+      return SessionDetail(session: session);
     final r = await Future.wait([
       repo.attendance(sessionId),
       ref.watch(teamsRepositoryProvider).roster(session.teamId),
@@ -149,39 +173,53 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
   }
 
   /// Saves the edit form: an empty location, plan or notes is cleared (detaching the plan).
-  Future<void> edit({DateTime? startsAt, int? durationMinutes, String? location, String? planId, String? notes}) async {
-    await ref.read(trainingRepositoryProvider).updateSession(
-      sessionId,
-      ath.UpdateTrainingSessionRequest((b) => b
-        ..startsAt = startsAt?.toUtc()
-        ..durationMinutes = durationMinutes
-        ..location = location
-        ..planId = planId
-        ..notes = notes
-        ..clear = clearList({
-          ath.UpdateTrainingSessionRequestClearEnum.location: location,
-          ath.UpdateTrainingSessionRequestClearEnum.planId: planId,
-          ath.UpdateTrainingSessionRequestClearEnum.notes: notes,
-        })),
-    );
+  Future<void> edit({
+    DateTime? startsAt,
+    int? durationMinutes,
+    String? location,
+    String? planId,
+    String? notes,
+  }) async {
+    await ref
+        .read(trainingRepositoryProvider)
+        .updateSession(
+          sessionId,
+          ath.UpdateTrainingSessionRequest(
+            (b) => b
+              ..startsAt = startsAt?.toUtc()
+              ..durationMinutes = durationMinutes
+              ..location = location
+              ..planId = planId
+              ..notes = notes
+              ..clear = clearList({
+                ath.UpdateTrainingSessionRequestClearEnum.location: location,
+                ath.UpdateTrainingSessionRequestClearEnum.planId: planId,
+                ath.UpdateTrainingSessionRequestClearEnum.notes: notes,
+              }),
+          ),
+        );
     await _reload();
   }
 
   Future<void> saveAttendance(List<ath.AttendanceInput> entries) async {
-    await ref.read(trainingRepositoryProvider).recordAttendance(sessionId, entries);
+    await ref
+        .read(trainingRepositoryProvider)
+        .recordAttendance(sessionId, entries);
     await _reload();
   }
 }
 
-final sessionDetailProvider = AsyncNotifierProvider.family<SessionDetailNotifier, SessionDetail, String>(
-  SessionDetailNotifier.new,
-);
+final sessionDetailProvider =
+    AsyncNotifierProvider.family<SessionDetailNotifier, SessionDetail, String>(
+      SessionDetailNotifier.new,
+    );
 
 // ------------------------------------------------------------------ schedules
 
 class SchedulesNotifier extends AsyncNotifier<List<ath.TrainingSchedule>> {
   @override
-  Future<List<ath.TrainingSchedule>> build() => ref.watch(trainingRepositoryProvider).schedules();
+  Future<List<ath.TrainingSchedule>> build() =>
+      ref.watch(trainingRepositoryProvider).schedules();
 
   Future<void> _reload() async {
     ref.invalidateSelf();
@@ -201,28 +239,34 @@ class SchedulesNotifier extends AsyncNotifier<List<ath.TrainingSchedule>> {
   }) async {
     final repo = ref.read(trainingRepositoryProvider);
     if (scheduleId == null) {
-      await repo.createSchedule(ath.TrainingScheduleInput((b) => b
-        ..teamId = teamId
-        ..dayOfWeek = day
-        ..startTime = startTime
-        ..durationMinutes = durationMinutes
-        ..location = location
-        ..validFrom = toAthDate(validFrom)
-        ..validUntil = validUntil == null ? null : toAthDate(validUntil)));
+      await repo.createSchedule(
+        ath.TrainingScheduleInput(
+          (b) => b
+            ..teamId = teamId
+            ..dayOfWeek = day
+            ..startTime = startTime
+            ..durationMinutes = durationMinutes
+            ..location = location
+            ..validFrom = toAthDate(validFrom)
+            ..validUntil = validUntil == null ? null : toAthDate(validUntil),
+        ),
+      );
     } else {
       await repo.updateSchedule(
         scheduleId,
-        ath.UpdateTrainingScheduleRequest((b) => b
-          ..dayOfWeek = day
-          ..startTime = startTime
-          ..durationMinutes = durationMinutes
-          ..location = location
-          ..validFrom = toAthDate(validFrom)
-          ..validUntil = validUntil == null ? null : toAthDate(validUntil)
-          ..clear = clearList({
-            ath.UpdateTrainingScheduleRequestClearEnum.location: location,
-            ath.UpdateTrainingScheduleRequestClearEnum.validUntil: validUntil,
-          })),
+        ath.UpdateTrainingScheduleRequest(
+          (b) => b
+            ..dayOfWeek = day
+            ..startTime = startTime
+            ..durationMinutes = durationMinutes
+            ..location = location
+            ..validFrom = toAthDate(validFrom)
+            ..validUntil = validUntil == null ? null : toAthDate(validUntil)
+            ..clear = clearList({
+              ath.UpdateTrainingScheduleRequestClearEnum.location: location,
+              ath.UpdateTrainingScheduleRequestClearEnum.validUntil: validUntil,
+            }),
+        ),
       );
     }
     await _reload();
@@ -234,7 +278,10 @@ class SchedulesNotifier extends AsyncNotifier<List<ath.TrainingSchedule>> {
   }
 }
 
-final schedulesProvider = AsyncNotifierProvider<SchedulesNotifier, List<ath.TrainingSchedule>>(SchedulesNotifier.new);
+final schedulesProvider =
+    AsyncNotifierProvider<SchedulesNotifier, List<ath.TrainingSchedule>>(
+      SchedulesNotifier.new,
+    );
 
 // ------------------------------------------------------------------- absences
 
@@ -246,29 +293,49 @@ class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>> {
     return list;
   }
 
-  Future<void> create({required String playerId, required DateTime from, required DateTime to, String? reason}) async {
-    await ref.read(trainingRepositoryProvider).createAbsence(
-      ath.PlannedAbsenceInput((b) => b
-        ..playerId = playerId
-        ..fromDate = toAthDate(from)
-        ..toDate = toAthDate(to)
-        ..reason = reason),
-    );
+  Future<void> create({
+    required String playerId,
+    required DateTime from,
+    required DateTime to,
+    String? reason,
+  }) async {
+    await ref
+        .read(trainingRepositoryProvider)
+        .createAbsence(
+          ath.PlannedAbsenceInput(
+            (b) => b
+              ..playerId = playerId
+              ..fromDate = toAthDate(from)
+              ..toDate = toAthDate(to)
+              ..reason = reason,
+          ),
+        );
     ref.invalidateSelf();
     await future;
     ref.invalidate(weekSessionsProvider);
   }
 
   /// Corrects dates / reason of a planned absence (the player cannot change); an empty reason is cleared.
-  Future<void> correct(String id, {required DateTime from, required DateTime to, String? reason}) async {
-    await ref.read(trainingRepositoryProvider).updateAbsence(
-      id,
-      ath.UpdatePlannedAbsenceRequest((b) => b
-        ..fromDate = toAthDate(from)
-        ..toDate = toAthDate(to)
-        ..reason = reason
-        ..clear = clearList({ath.UpdatePlannedAbsenceRequestClearEnum.reason: reason})),
-    );
+  Future<void> correct(
+    String id, {
+    required DateTime from,
+    required DateTime to,
+    String? reason,
+  }) async {
+    await ref
+        .read(trainingRepositoryProvider)
+        .updateAbsence(
+          id,
+          ath.UpdatePlannedAbsenceRequest(
+            (b) => b
+              ..fromDate = toAthDate(from)
+              ..toDate = toAthDate(to)
+              ..reason = reason
+              ..clear = clearList({
+                ath.UpdatePlannedAbsenceRequestClearEnum.reason: reason,
+              }),
+          ),
+        );
     ref.invalidateSelf();
     await future;
     ref.invalidate(weekSessionsProvider);
@@ -281,7 +348,10 @@ class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>> {
   }
 }
 
-final absencesProvider = AsyncNotifierProvider<AbsencesNotifier, List<ath.PlannedAbsence>>(AbsencesNotifier.new);
+final absencesProvider =
+    AsyncNotifierProvider<AbsencesNotifier, List<ath.PlannedAbsence>>(
+      AbsencesNotifier.new,
+    );
 
 // ---------------------------------------------------------------------- plans
 
@@ -302,22 +372,30 @@ class PlanLibraryNotifier extends AsyncNotifier<List<ath.TrainingPlanSummary>> {
   @override
   Future<List<ath.TrainingPlanSummary>> build() {
     final q = ref.watch(planSearchProvider).trim();
-    return ref.watch(plansRepositoryProvider).plans(templates: templates, query: q.isEmpty ? null : q);
+    return ref
+        .watch(plansRepositoryProvider)
+        .plans(templates: templates, query: q.isEmpty ? null : q);
   }
 
   /// Copy-on-use: returns the copy so the caller can open/assign it.
   Future<ath.TrainingPlan> copy(String planId, {String? name}) async {
-    final copy = await ref.read(plansRepositoryProvider).copyPlan(planId, name: name);
+    final copy = await ref
+        .read(plansRepositoryProvider)
+        .copyPlan(planId, name: name);
     ref.invalidate(planLibraryProvider);
     return copy;
   }
 
   Future<ath.TrainingPlan> create(String name, {String? description}) async {
-    final plan = await ref.read(plansRepositoryProvider).createPlan(
-      ath.CreateTrainingPlanRequest((b) => b
-        ..name = name
-        ..description = description),
-    );
+    final plan = await ref
+        .read(plansRepositoryProvider)
+        .createPlan(
+          ath.CreateTrainingPlanRequest(
+            (b) => b
+              ..name = name
+              ..description = description,
+          ),
+        );
     ref.invalidate(planLibraryProvider);
     return plan;
   }
@@ -328,9 +406,12 @@ class PlanLibraryNotifier extends AsyncNotifier<List<ath.TrainingPlanSummary>> {
   }
 }
 
-final planLibraryProvider = AsyncNotifierProvider.family<PlanLibraryNotifier, List<ath.TrainingPlanSummary>, bool>(
-  PlanLibraryNotifier.new,
-);
+final planLibraryProvider =
+    AsyncNotifierProvider.family<
+      PlanLibraryNotifier,
+      List<ath.TrainingPlanSummary>,
+      bool
+    >(PlanLibraryNotifier.new);
 
 class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
   PlanDetailNotifier(this.planId);
@@ -339,7 +420,8 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
   PlansRepository get _repo => ref.read(plansRepositoryProvider);
 
   @override
-  Future<ath.TrainingPlan> build() => ref.watch(plansRepositoryProvider).plan(planId);
+  Future<ath.TrainingPlan> build() =>
+      ref.watch(plansRepositoryProvider).plan(planId);
 
   Future<void> _reload() async {
     ref.invalidateSelf();
@@ -350,10 +432,14 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
   Future<void> rename(String name, String? description) async {
     await _repo.updatePlan(
       planId,
-      ath.UpdateTrainingPlanRequest((b) => b
-        ..name = name
-        ..description = description
-        ..clear = clearList({ath.UpdateTrainingPlanRequestClearEnum.description: description})),
+      ath.UpdateTrainingPlanRequest(
+        (b) => b
+          ..name = name
+          ..description = description
+          ..clear = clearList({
+            ath.UpdateTrainingPlanRequestClearEnum.description: description,
+          }),
+      ),
     );
     await _reload();
   }
@@ -363,7 +449,10 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
     await _reload();
   }
 
-  Future<void> updateItem(String itemId, ath.UpdatePlanItemRequest request) async {
+  Future<void> updateItem(
+    String itemId,
+    ath.UpdatePlanItemRequest request,
+  ) async {
     await _repo.updateItem(planId, itemId, request);
     await _reload();
   }
@@ -383,9 +472,10 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
   }
 }
 
-final planDetailProvider = AsyncNotifierProvider.family<PlanDetailNotifier, ath.TrainingPlan, String>(
-  PlanDetailNotifier.new,
-);
+final planDetailProvider =
+    AsyncNotifierProvider.family<PlanDetailNotifier, ath.TrainingPlan, String>(
+      PlanDetailNotifier.new,
+    );
 
 // ---------------------------------------------------------------- assignments
 
@@ -405,7 +495,8 @@ class AssignmentsView {
   Map<ath.CompletionStatus, int> countsFor(String assignmentId) {
     final out = <ath.CompletionStatus, int>{};
     for (final c in completions) {
-      if (c.assignmentId == assignmentId) out[c.status] = (out[c.status] ?? 0) + 1;
+      if (c.assignmentId == assignmentId)
+        out[c.status] = (out[c.status] ?? 0) + 1;
     }
     return out;
   }
@@ -420,9 +511,16 @@ class AssignmentsNotifier extends AsyncNotifier<AssignmentsView> {
   @override
   Future<AssignmentsView> build() async {
     final repo = ref.watch(plansRepositoryProvider);
-    final r = await Future.wait([repo.assignments(playerId: playerId), repo.completions(playerId: playerId)]);
-    final assignments = [...(r[0] as List<ath.PlanAssignment>)]..sort((a, b) => a.dueOn.compareTo(b.dueOn));
-    return AssignmentsView(assignments: assignments, completions: r[1] as List<ath.PlanCompletion>);
+    final r = await Future.wait([
+      repo.assignments(playerId: playerId),
+      repo.completions(playerId: playerId),
+    ]);
+    final assignments = [...(r[0] as List<ath.PlanAssignment>)]
+      ..sort((a, b) => a.dueOn.compareTo(b.dueOn));
+    return AssignmentsView(
+      assignments: assignments,
+      completions: r[1] as List<ath.PlanCompletion>,
+    );
   }
 
   Future<void> _reload() async {
@@ -437,14 +535,18 @@ class AssignmentsNotifier extends AsyncNotifier<AssignmentsView> {
     required DateTime dueOn,
     String? notes,
   }) async {
-    await ref.read(plansRepositoryProvider).assign(
-      ath.CreatePlanAssignmentRequest((b) => b
-        ..planId = planId
-        ..teamId = teamId
-        ..playerId = playerId
-        ..dueOn = toAthDate(dueOn)
-        ..notes = notes),
-    );
+    await ref
+        .read(plansRepositoryProvider)
+        .assign(
+          ath.CreatePlanAssignmentRequest(
+            (b) => b
+              ..planId = planId
+              ..teamId = teamId
+              ..playerId = playerId
+              ..dueOn = toAthDate(dueOn)
+              ..notes = notes,
+          ),
+        );
     ref.invalidate(assignmentsProvider);
   }
 
@@ -453,30 +555,45 @@ class AssignmentsNotifier extends AsyncNotifier<AssignmentsView> {
     await _reload();
   }
 
-  Future<void> record(String assignmentId, String playerId, ath.CompletionStatus status, {String? comment}) async {
-    await ref.read(plansRepositoryProvider).record(assignmentId, playerId, status, comment: comment);
+  Future<void> record(
+    String assignmentId,
+    String playerId,
+    ath.CompletionStatus status, {
+    String? comment,
+  }) async {
+    await ref
+        .read(plansRepositoryProvider)
+        .record(assignmentId, playerId, status, comment: comment);
     ref.invalidate(assignmentsProvider);
   }
 }
 
-final assignmentsProvider = AsyncNotifierProvider.family<AssignmentsNotifier, AssignmentsView, String?>(
-  AssignmentsNotifier.new,
-);
+final assignmentsProvider =
+    AsyncNotifierProvider.family<AssignmentsNotifier, AssignmentsView, String?>(
+      AssignmentsNotifier.new,
+    );
 
 // ------------------------------------------------------------------- upcoming
 
 /// Sessions in the next two weeks for the teams of [playerId].
-final upcomingSessionsProvider = FutureProvider.family<List<ath.TrainingSession>, String>((ref, playerId) async {
-  final player = await ref.watch(playerDetailProvider(playerId).future);
-  final repo = ref.watch(trainingRepositoryProvider);
-  final now = DateTime.now();
-  final from = toAthDate(now);
-  final to = toAthDate(now.add(const Duration(days: 14)));
-  final lists = await Future.wait([for (final t in player.teams) repo.sessions(teamId: t.team.id, from: from, to: to)]);
-  final all = [
-    for (final l in lists)
-      for (final s in l)
-        if (s.status != ath.TrainingSessionStatus.CANCELLED) s,
-  ]..sort((a, b) => a.startsAt.compareTo(b.startsAt));
-  return all;
-});
+final upcomingSessionsProvider =
+    FutureProvider.family<List<ath.TrainingSession>, String>((
+      ref,
+      playerId,
+    ) async {
+      final player = await ref.watch(playerDetailProvider(playerId).future);
+      final repo = ref.watch(trainingRepositoryProvider);
+      final now = DateTime.now();
+      final from = toAthDate(now);
+      final to = toAthDate(now.add(const Duration(days: 14)));
+      final lists = await Future.wait([
+        for (final t in player.teams)
+          repo.sessions(teamId: t.team.id, from: from, to: to),
+      ]);
+      final all = [
+        for (final l in lists)
+          for (final s in l)
+            if (s.status != ath.TrainingSessionStatus.CANCELLED) s,
+      ]..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+      return all;
+    });

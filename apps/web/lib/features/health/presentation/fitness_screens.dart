@@ -28,7 +28,10 @@ class TestTypesScreen extends ConsumerWidget {
       floatingActionButton: caps.canAdminFitness
           ? FloatingActionButton.extended(
               key: const Key('type-new'),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => const TestTypeDialog()),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => const TestTypeDialog(),
+              ),
               icon: const Icon(Icons.add),
               label: Text(l.testTypeNew),
             )
@@ -41,7 +44,12 @@ class TestTypesScreen extends ConsumerWidget {
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.testTypesEmpty,
           builder: (context, data) => ListView(
-            padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
+            padding: const EdgeInsets.fromLTRB(
+              AppTokens.spaceMd,
+              AppTokens.spaceSm,
+              AppTokens.spaceMd,
+              88,
+            ),
             children: [
               for (final t in data)
                 Card(
@@ -52,10 +60,18 @@ class TestTypesScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          [t.code, t.higherIsBetter ? l.testTypeHigherYes : l.testTypeHigherNo, if (t.description != null) t.description!].join(' · '),
+                          [
+                            t.code,
+                            t.higherIsBetter
+                                ? l.testTypeHigherYes
+                                : l.testTypeHigherNo,
+                            if (t.description != null) t.description!,
+                          ].join(' · '),
                         ),
                         const SizedBox(height: AppTokens.spaceXs),
-                        InfoChip(t.global ? l.testTypeGlobal : l.testTypeCustom),
+                        InfoChip(
+                          t.global ? l.testTypeGlobal : l.testTypeCustom,
+                        ),
                       ],
                     ),
                     // Global types are read-only (403) and cannot be deleted (404).
@@ -67,7 +83,10 @@ class TestTypesScreen extends ConsumerWidget {
                                 key: Key('type-edit-${t.id}'),
                                 tooltip: l.edit,
                                 icon: const Icon(Icons.edit_outlined),
-                                onPressed: () => showDialog<bool>(context: context, builder: (_) => TestTypeDialog(type: t)),
+                                onPressed: () => showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => TestTypeDialog(type: t),
+                                ),
                               ),
                               IconButton(
                                 key: Key('type-delete-${t.id}'),
@@ -89,9 +108,18 @@ class TestTypesScreen extends ConsumerWidget {
 }
 
 /// A type that results use cannot be deleted (409 `TEST_TYPE_HAS_RESULTS`).
-Future<void> _delete(BuildContext context, WidgetRef ref, ath.PhysicalTestType type) async {
+Future<void> _delete(
+  BuildContext context,
+  WidgetRef ref,
+  ath.PhysicalTestType type,
+) async {
   final l = AppLocalizations.of(context);
-  if (!await confirmDialog(context, message: l.testTypeDeleteConfirm(type.name), confirmLabel: l.delete)) return;
+  if (!await confirmDialog(
+    context,
+    message: l.testTypeDeleteConfirm(type.name),
+    confirmLabel: l.delete,
+  ))
+    return;
   if (!context.mounted) return;
   await runAction(
     context,
@@ -99,7 +127,9 @@ Future<void> _delete(BuildContext context, WidgetRef ref, ath.PhysicalTestType t
     success: l.testTypeDeleted,
     errorText: (e, l) {
       final error = AppError.of(e);
-      return error.code == 'TEST_TYPE_HAS_RESULTS' ? l.testTypeHasResults : error.message(l);
+      return error.code == 'TEST_TYPE_HAS_RESULTS'
+          ? l.testTypeHasResults
+          : error.message(l);
     },
   );
 }
@@ -118,7 +148,9 @@ class _TestTypeDialogState extends ConsumerState<TestTypeDialog> {
   late final _code = TextEditingController(text: widget.type?.code ?? '');
   late final _name = TextEditingController(text: widget.type?.name ?? '');
   late final _unit = TextEditingController(text: widget.type?.unit ?? '');
-  late final _description = TextEditingController(text: widget.type?.description ?? '');
+  late final _description = TextEditingController(
+    text: widget.type?.description ?? '',
+  );
   late bool _higher = widget.type?.higherIsBetter ?? true;
 
   @override
@@ -139,29 +171,52 @@ class _TestTypeDialogState extends ConsumerState<TestTypeDialog> {
       onSubmit: () => runAction(
         context,
         () => editing == null
-            ? ref.read(testTypesProvider.notifier).create(
-                code: _code.text.trim().toUpperCase(),
-                name: _name.text.trim(),
-                unit: _unit.text.trim(),
-                higherIsBetter: _higher,
-                description: _description.text.trim().isEmpty ? null : _description.text.trim(),
-              )
-            : ref.read(testTypesProvider.notifier).correct(
-                editing.id,
-                code: _code.text.trim().toUpperCase(),
-                name: _name.text.trim(),
-                unit: _unit.text.trim(),
-                higherIsBetter: _higher,
-                description: _description.text.trim().isEmpty ? null : _description.text.trim(),
-              ),
+            ? ref
+                  .read(testTypesProvider.notifier)
+                  .create(
+                    code: _code.text.trim().toUpperCase(),
+                    name: _name.text.trim(),
+                    unit: _unit.text.trim(),
+                    higherIsBetter: _higher,
+                    description: _description.text.trim().isEmpty
+                        ? null
+                        : _description.text.trim(),
+                  )
+            : ref
+                  .read(testTypesProvider.notifier)
+                  .correct(
+                    editing.id,
+                    code: _code.text.trim().toUpperCase(),
+                    name: _name.text.trim(),
+                    unit: _unit.text.trim(),
+                    higherIsBetter: _higher,
+                    description: _description.text.trim().isEmpty
+                        ? null
+                        : _description.text.trim(),
+                  ),
         success: l.saved,
       ),
       children: [
-        TextFormField(key: const Key('type-code'), controller: _code, decoration: InputDecoration(labelText: l.testTypeCode), validator: (v) => requiredValidator(l, v)),
+        TextFormField(
+          key: const Key('type-code'),
+          controller: _code,
+          decoration: InputDecoration(labelText: l.testTypeCode),
+          validator: (v) => requiredValidator(l, v),
+        ),
         formGap,
-        TextFormField(key: const Key('type-name'), controller: _name, decoration: InputDecoration(labelText: l.testTypeName), validator: (v) => requiredValidator(l, v)),
+        TextFormField(
+          key: const Key('type-name'),
+          controller: _name,
+          decoration: InputDecoration(labelText: l.testTypeName),
+          validator: (v) => requiredValidator(l, v),
+        ),
         formGap,
-        TextFormField(key: const Key('type-unit'), controller: _unit, decoration: InputDecoration(labelText: l.testTypeUnit), validator: (v) => requiredValidator(l, v)),
+        TextFormField(
+          key: const Key('type-unit'),
+          controller: _unit,
+          decoration: InputDecoration(labelText: l.testTypeUnit),
+          validator: (v) => requiredValidator(l, v),
+        ),
         formGap,
         SwitchListTile(
           key: const Key('type-higher'),
@@ -170,7 +225,11 @@ class _TestTypeDialogState extends ConsumerState<TestTypeDialog> {
           value: _higher,
           onChanged: (v) => setState(() => _higher = v),
         ),
-        TextFormField(key: const Key('type-description'), controller: _description, decoration: InputDecoration(labelText: l.injuryDescription)),
+        TextFormField(
+          key: const Key('type-description'),
+          controller: _description,
+          decoration: InputDecoration(labelText: l.injuryDescription),
+        ),
       ],
     );
   }
@@ -186,16 +245,21 @@ class NormsScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final caps = ref.watch(capabilitiesProvider);
     final filter = ref.watch(normFilterProvider);
-    final types = ref.watch(testTypesProvider).value ?? const <ath.PhysicalTestType>[];
+    final types =
+        ref.watch(testTypesProvider).value ?? const <ath.PhysicalTestType>[];
     final typeById = {for (final t in types) t.id: t};
-    void setFilter(NormFilter f) => ref.read(normFilterProvider.notifier).set(f);
+    void setFilter(NormFilter f) =>
+        ref.read(normFilterProvider.notifier).set(f);
     return SubPage(
       title: l.normsTitle,
       parentPath: '/players',
       floatingActionButton: caps.canAdminFitness
           ? FloatingActionButton.extended(
               key: const Key('norm-new'),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => const NormDialog()),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => const NormDialog(),
+              ),
               icon: const Icon(Icons.add),
               label: Text(l.normNew),
             )
@@ -212,24 +276,44 @@ class NormsScreen extends ConsumerWidget {
                     key: const Key('norm-scope'),
                     showSelectedIcon: false,
                     segments: [
-                      ButtonSegment(value: 'EFFECTIVE', label: Text(l.normsScopeEffective)),
-                      ButtonSegment(value: 'GLOBAL', label: Text(l.normsScopeGlobal)),
-                      ButtonSegment(value: 'TENANT', label: Text(l.normsScopeTenant)),
+                      ButtonSegment(
+                        value: 'EFFECTIVE',
+                        label: Text(l.normsScopeEffective),
+                      ),
+                      ButtonSegment(
+                        value: 'GLOBAL',
+                        label: Text(l.normsScopeGlobal),
+                      ),
+                      ButtonSegment(
+                        value: 'TENANT',
+                        label: Text(l.normsScopeTenant),
+                      ),
                     ],
                     selected: {filter.scope},
-                    onSelectionChanged: (s) => setFilter(NormFilter(scope: s.first, testTypeId: filter.testTypeId)),
+                    onSelectionChanged: (s) => setFilter(
+                      NormFilter(scope: s.first, testTypeId: filter.testTypeId),
+                    ),
                   ),
                   const SizedBox(height: AppTokens.spaceSm),
                   DropdownButtonFormField<String?>(
                     key: const Key('norm-type-filter'),
                     initialValue: filter.testTypeId,
                     isExpanded: true,
-                    decoration: InputDecoration(labelText: l.testType, isDense: true),
+                    decoration: InputDecoration(
+                      labelText: l.testType,
+                      isDense: true,
+                    ),
                     items: [
-                      DropdownMenuItem(value: null, child: Text(l.normAllTests)),
-                      for (final t in types) DropdownMenuItem(value: t.id, child: Text(t.name)),
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text(l.normAllTests),
+                      ),
+                      for (final t in types)
+                        DropdownMenuItem(value: t.id, child: Text(t.name)),
                     ],
-                    onChanged: (v) => setFilter(NormFilter(scope: filter.scope, testTypeId: v)),
+                    onChanged: (v) => setFilter(
+                      NormFilter(scope: filter.scope, testTypeId: v),
+                    ),
                   ),
                 ],
               ),
@@ -241,8 +325,20 @@ class NormsScreen extends ConsumerWidget {
                 isEmpty: (d) => d.isEmpty,
                 emptyMessage: l.normEmpty,
                 builder: (context, data) => ListView(
-                  padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, 0, AppTokens.spaceMd, 88),
-                  children: [for (final n in data) NormTile(norm: n, typeName: typeById[n.testTypeId]?.name ?? '—', canEdit: caps.canAdminFitness && !n.global)],
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTokens.spaceMd,
+                    0,
+                    AppTokens.spaceMd,
+                    88,
+                  ),
+                  children: [
+                    for (final n in data)
+                      NormTile(
+                        norm: n,
+                        typeName: typeById[n.testTypeId]?.name ?? '—',
+                        canEdit: caps.canAdminFitness && !n.global,
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -253,10 +349,16 @@ class NormsScreen extends ConsumerWidget {
   }
 }
 
-String _v(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString();
+String _v(double v) =>
+    v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString();
 
 class NormTile extends ConsumerWidget {
-  const NormTile({super.key, required this.norm, required this.typeName, required this.canEdit});
+  const NormTile({
+    super.key,
+    required this.norm,
+    required this.typeName,
+    required this.canEdit,
+  });
   final ath.PhysicalTestNorm norm;
   final String typeName;
   final bool canEdit;
@@ -280,29 +382,50 @@ class NormTile extends ConsumerWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${n.gender == ath.Gender.FEMALE ? l.genderFemale : l.genderMale} · ${l.normAges(n.maxAge, n.minAge)} · $values'),
+            Text(
+              '${n.gender == ath.Gender.FEMALE ? l.genderFemale : l.genderMale} · ${l.normAges(n.maxAge, n.minAge)} · $values',
+            ),
             const SizedBox(height: AppTokens.spaceXs),
             Wrap(
               spacing: AppTokens.spaceXs,
               runSpacing: AppTokens.spaceXs,
               children: [
                 InfoChip(n.global ? l.normGlobalReadOnly : l.normOverride),
-                if (n.referencePending) InfoChip(l.testReferencePending, tone: ChipTone.warn, icon: Icons.hourglass_empty),
-                if (n.source_ != null && !n.referencePending) InfoChip(n.source_!, icon: Icons.menu_book_outlined),
+                if (n.referencePending)
+                  InfoChip(
+                    l.testReferencePending,
+                    tone: ChipTone.warn,
+                    icon: Icons.hourglass_empty,
+                  ),
+                if (n.source_ != null && !n.referencePending)
+                  InfoChip(n.source_!, icon: Icons.menu_book_outlined),
               ],
             ),
           ],
         ),
-        onTap: canEdit ? () => showDialog<bool>(context: context, builder: (_) => NormDialog(norm: n)) : null,
+        onTap: canEdit
+            ? () => showDialog<bool>(
+                context: context,
+                builder: (_) => NormDialog(norm: n),
+              )
+            : null,
         trailing: canEdit
             ? IconButton(
                 key: Key('norm-delete-${n.id}'),
                 tooltip: l.delete,
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () async {
-                  if (!await confirmDialog(context, message: l.normDeleteConfirm, confirmLabel: l.delete)) return;
+                  if (!await confirmDialog(
+                    context,
+                    message: l.normDeleteConfirm,
+                    confirmLabel: l.delete,
+                  ))
+                    return;
                   if (!context.mounted) return;
-                  await runAction(context, () => ref.read(normsProvider.notifier).delete(n.id));
+                  await runAction(
+                    context,
+                    () => ref.read(normsProvider.notifier).delete(n.id),
+                  );
                 },
               )
             : null,
@@ -324,10 +447,18 @@ class _NormDialogState extends ConsumerState<NormDialog> {
   late String? _typeId = widget.norm?.testTypeId;
   late ath.Gender _gender = widget.norm?.gender ?? ath.Gender.MALE;
   late ath.NormBand _band = widget.norm?.band ?? ath.NormBand.AVERAGE;
-  late final _minAge = TextEditingController(text: widget.norm?.minAge.toString());
-  late final _maxAge = TextEditingController(text: widget.norm?.maxAge.toString());
-  late final _minValue = TextEditingController(text: widget.norm?.minValue?.toString());
-  late final _maxValue = TextEditingController(text: widget.norm?.maxValue?.toString());
+  late final _minAge = TextEditingController(
+    text: widget.norm?.minAge.toString(),
+  );
+  late final _maxAge = TextEditingController(
+    text: widget.norm?.maxAge.toString(),
+  );
+  late final _minValue = TextEditingController(
+    text: widget.norm?.minValue?.toString(),
+  );
+  late final _maxValue = TextEditingController(
+    text: widget.norm?.maxValue?.toString(),
+  );
   late final _source = TextEditingController(text: widget.norm?.source_);
   bool _agesBad = false;
 
@@ -339,39 +470,51 @@ class _NormDialogState extends ConsumerState<NormDialog> {
     super.dispose();
   }
 
-  double? _d(TextEditingController c) => double.tryParse(c.text.trim().replaceAll(',', '.'));
+  double? _d(TextEditingController c) =>
+      double.tryParse(c.text.trim().replaceAll(',', '.'));
 
   String? _optional(AppLocalizations l, String? v) =>
-      (v ?? '').trim().isEmpty || double.tryParse(v!.trim().replaceAll(',', '.')) != null ? null : l.fieldInvalidNumber;
+      (v ?? '').trim().isEmpty ||
+          double.tryParse(v!.trim().replaceAll(',', '.')) != null
+      ? null
+      : l.fieldInvalidNumber;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final types = ref.watch(testTypesProvider).value ?? const <ath.PhysicalTestType>[];
+    final types =
+        ref.watch(testTypesProvider).value ?? const <ath.PhysicalTestType>[];
     final editing = widget.norm != null;
     return FormDialog(
       title: editing ? l.normEdit : l.normNew,
       formKey: _form,
       validateExtra: () {
-        final lo = int.tryParse(_minAge.text.trim()), hi = int.tryParse(_maxAge.text.trim());
+        final lo = int.tryParse(_minAge.text.trim()),
+            hi = int.tryParse(_maxAge.text.trim());
         final bad = lo != null && hi != null && hi < lo;
         setState(() => _agesBad = bad);
         return !bad;
       },
       onSubmit: () => runAction(
         context,
-        () => ref.read(normsProvider.notifier).save(
-          ath.PhysicalTestNormInput((b) => b
-            ..testTypeId = _typeId
-            ..gender = _gender
-            ..minAge = int.parse(_minAge.text.trim())
-            ..maxAge = int.parse(_maxAge.text.trim())
-            ..band = _band
-            ..minValue = _d(_minValue)
-            ..maxValue = _d(_maxValue)
-            ..source_ = _source.text.trim().isEmpty ? null : _source.text.trim()),
-          normId: widget.norm?.id,
-        ),
+        () => ref
+            .read(normsProvider.notifier)
+            .save(
+              ath.PhysicalTestNormInput(
+                (b) => b
+                  ..testTypeId = _typeId
+                  ..gender = _gender
+                  ..minAge = int.parse(_minAge.text.trim())
+                  ..maxAge = int.parse(_maxAge.text.trim())
+                  ..band = _band
+                  ..minValue = _d(_minValue)
+                  ..maxValue = _d(_maxValue)
+                  ..source_ = _source.text.trim().isEmpty
+                      ? null
+                      : _source.text.trim(),
+              ),
+              normId: widget.norm?.id,
+            ),
         success: l.saved,
       ),
       children: [
@@ -380,7 +523,10 @@ class _NormDialogState extends ConsumerState<NormDialog> {
           initialValue: _typeId,
           isExpanded: true,
           decoration: InputDecoration(labelText: l.testType),
-          items: [for (final t in types) DropdownMenuItem(value: t.id, child: Text(t.name))],
+          items: [
+            for (final t in types)
+              DropdownMenuItem(value: t.id, child: Text(t.name)),
+          ],
           validator: (v) => v == null ? l.fieldRequired : null,
           onChanged: editing ? null : (v) => setState(() => _typeId = v),
         ),
@@ -392,7 +538,10 @@ class _NormDialogState extends ConsumerState<NormDialog> {
           decoration: InputDecoration(labelText: l.normGender),
           items: [
             DropdownMenuItem(value: ath.Gender.MALE, child: Text(l.genderMale)),
-            DropdownMenuItem(value: ath.Gender.FEMALE, child: Text(l.genderFemale)),
+            DropdownMenuItem(
+              value: ath.Gender.FEMALE,
+              child: Text(l.genderFemale),
+            ),
           ],
           onChanged: (v) => setState(() => _gender = v ?? _gender),
         ),
@@ -405,7 +554,9 @@ class _NormDialogState extends ConsumerState<NormDialog> {
                 controller: _minAge,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(labelText: l.normMinAge),
-                validator: (v) => int.tryParse((v ?? '').trim()) == null ? l.fieldInvalidNumber : null,
+                validator: (v) => int.tryParse((v ?? '').trim()) == null
+                    ? l.fieldInvalidNumber
+                    : null,
               ),
             ),
             const SizedBox(width: AppTokens.spaceSm),
@@ -414,8 +565,14 @@ class _NormDialogState extends ConsumerState<NormDialog> {
                 key: const Key('norm-max-age'),
                 controller: _maxAge,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: l.normMaxAge, errorText: _agesBad ? l.normAgesInvalid : null, errorMaxLines: 3),
-                validator: (v) => int.tryParse((v ?? '').trim()) == null ? l.fieldInvalidNumber : null,
+                decoration: InputDecoration(
+                  labelText: l.normMaxAge,
+                  errorText: _agesBad ? l.normAgesInvalid : null,
+                  errorMaxLines: 3,
+                ),
+                validator: (v) => int.tryParse((v ?? '').trim()) == null
+                    ? l.fieldInvalidNumber
+                    : null,
               ),
             ),
           ],
@@ -426,7 +583,10 @@ class _NormDialogState extends ConsumerState<NormDialog> {
           initialValue: _band,
           isExpanded: true,
           decoration: InputDecoration(labelText: l.normBand),
-          items: [for (final b in normBands) DropdownMenuItem(value: b, child: Text(b.label(l)))],
+          items: [
+            for (final b in normBands)
+              DropdownMenuItem(value: b, child: Text(b.label(l))),
+          ],
           onChanged: (v) => setState(() => _band = v ?? _band),
         ),
         formGap,
@@ -436,7 +596,9 @@ class _NormDialogState extends ConsumerState<NormDialog> {
               child: TextFormField(
                 key: const Key('norm-min-value'),
                 controller: _minValue,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(labelText: l.normMinValue),
                 validator: (v) => _optional(l, v),
               ),
@@ -446,7 +608,9 @@ class _NormDialogState extends ConsumerState<NormDialog> {
               child: TextFormField(
                 key: const Key('norm-max-value'),
                 controller: _maxValue,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(labelText: l.normMaxValue),
                 validator: (v) => _optional(l, v),
               ),
@@ -454,7 +618,11 @@ class _NormDialogState extends ConsumerState<NormDialog> {
           ],
         ),
         formGap,
-        TextFormField(key: const Key('norm-source'), controller: _source, decoration: InputDecoration(labelText: l.normSource)),
+        TextFormField(
+          key: const Key('norm-source'),
+          controller: _source,
+          decoration: InputDecoration(labelText: l.normSource),
+        ),
       ],
     );
   }

@@ -16,7 +16,8 @@ class MockQuery {
     return s.isEmpty ? null : s;
   }
 
-  int integer(String key, int fallback) => int.tryParse(text(key) ?? '') ?? fallback;
+  int integer(String key, int fallback) =>
+      int.tryParse(text(key) ?? '') ?? fallback;
 
   DateTime? instant(String key) {
     final v = _q[key];
@@ -51,13 +52,23 @@ class MockQuery {
     final to = (from + size).clamp(0, items.length);
     return MockResult.json(200, {
       'items': items.sublist(from, to),
-      'page': {'page': page, 'size': size, 'totalElements': items.length, 'totalPages': totalPages},
+      'page': {
+        'page': page,
+        'size': size,
+        'totalElements': items.length,
+        'totalPages': totalPages,
+      },
     });
   }
 }
 
 MockResult mockProblem(int status, String title, {String? code}) =>
-    MockResult.json(status, {'type': 'urn:hoops:problem:mock', 'title': title, 'status': status, 'code': ?code});
+    MockResult.json(status, {
+      'type': 'urn:hoops:problem:mock',
+      'title': title,
+      'status': status,
+      'code': ?code,
+    });
 
 /// `clear` of the update requests (ADR-0032): the names of the properties to set to null.
 Set<String> mockClear(Map<String, Object?> body) => {

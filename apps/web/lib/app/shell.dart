@@ -48,7 +48,8 @@ class AppShell extends ConsumerWidget {
       children: [
         if (!online) const _Banner(key: Key('offline-banner'), offline: true),
         if (ref.watch(updateAvailableProvider)) const _UpdateBanner(),
-        if (mock) _Banner(key: const Key('mock-banner'), text: l.mockModeBanner),
+        if (mock)
+          _Banner(key: const Key('mock-banner'), text: l.mockModeBanner),
         Expanded(child: child),
       ],
     );
@@ -61,7 +62,9 @@ class AppShell extends ConsumerWidget {
           borderRadius: BorderRadius.circular(AppTokens.radiusSm),
           onTap: canSwitch ? () => context.go('/tenants') : null,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: AppTokens.minTapTarget),
+            constraints: const BoxConstraints(
+              minHeight: AppTokens.minTapTarget,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -175,12 +178,20 @@ class _UpdateBanner extends ConsumerWidget {
       key: const Key('update-banner'),
       color: scheme.tertiaryContainer,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd, vertical: AppTokens.spaceXs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTokens.spaceMd,
+          vertical: AppTokens.spaceXs,
+        ),
         child: Row(
           children: [
             const Icon(Icons.system_update_alt, size: 18),
             const SizedBox(width: AppTokens.spaceSm),
-            Expanded(child: Text(l.updateAvailable, style: Theme.of(context).textTheme.bodySmall)),
+            Expanded(
+              child: Text(
+                l.updateAvailable,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
             TextButton(
               key: const Key('update-reload'),
               onPressed: ref.read(updateAvailableProvider.notifier).reload,

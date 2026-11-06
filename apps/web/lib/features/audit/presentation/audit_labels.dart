@@ -14,18 +14,26 @@ extension AuditActionLabel on api.AuditAction {
   String label(AppLocalizations l) => switch (this) {
     api.AuditAction.adminPeriodAdded => l.auditActionAdminAdded,
     api.AuditAction.adminPeriodRemoved => l.auditActionAdminRemoved,
-    api.AuditAction.adminPeriodTemporaryPasswordIssued => l.auditActionAdminTemporaryPasswordIssued,
+    api.AuditAction.adminPeriodTemporaryPasswordIssued =>
+      l.auditActionAdminTemporaryPasswordIssued,
     api.AuditAction.adminPeriodUpdated => l.auditActionAdminUpdated,
     api.AuditAction.approvalPeriodCancelled => l.auditActionApprovalCancelled,
-    api.AuditAction.guardianLinkPeriodCreated => l.auditActionGuardianLinkCreated,
-    api.AuditAction.guardianLinkPeriodRemoved => l.auditActionGuardianLinkRemoved,
+    api.AuditAction.guardianLinkPeriodCreated =>
+      l.auditActionGuardianLinkCreated,
+    api.AuditAction.guardianLinkPeriodRemoved =>
+      l.auditActionGuardianLinkRemoved,
     api.AuditAction.memberPeriodDeactivated => l.auditActionMemberDeactivated,
-    api.AuditAction.memberPeriodInvitationAccepted => l.auditActionMemberInvitationAccepted,
+    api.AuditAction.memberPeriodInvitationAccepted =>
+      l.auditActionMemberInvitationAccepted,
     api.AuditAction.memberPeriodInvited => l.auditActionMemberInvited,
-    api.AuditAction.memberPeriodLoginEmailChanged => l.auditActionMemberLoginEmailChanged,
-    api.AuditAction.memberPeriodRolesReplaced => l.auditActionMemberRolesReplaced,
-    api.AuditAction.memberPeriodTemporaryPasswordExpired => l.auditActionMemberTemporaryPasswordExpired,
-    api.AuditAction.memberPeriodTemporaryPasswordIssued => l.auditActionMemberTemporaryPasswordIssued,
+    api.AuditAction.memberPeriodLoginEmailChanged =>
+      l.auditActionMemberLoginEmailChanged,
+    api.AuditAction.memberPeriodRolesReplaced =>
+      l.auditActionMemberRolesReplaced,
+    api.AuditAction.memberPeriodTemporaryPasswordExpired =>
+      l.auditActionMemberTemporaryPasswordExpired,
+    api.AuditAction.memberPeriodTemporaryPasswordIssued =>
+      l.auditActionMemberTemporaryPasswordIssued,
     api.AuditAction.memberPeriodUpdated => l.auditActionMemberUpdated,
     api.AuditAction.playerPeriodApproved => l.auditActionPlayerApproved,
     api.AuditAction.playerPeriodRejected => l.auditActionPlayerRejected,
@@ -34,10 +42,13 @@ extension AuditActionLabel on api.AuditAction {
     api.AuditAction.tenantPeriodCreated => l.auditActionTenantCreated,
     api.AuditAction.tenantPeriodLogoRemoved => l.auditActionTenantLogoRemoved,
     api.AuditAction.tenantPeriodLogoReplaced => l.auditActionTenantLogoReplaced,
-    api.AuditAction.tenantPeriodMasterDataChanged => l.auditActionTenantMasterDataChanged,
-    api.AuditAction.tenantPeriodProfileChanged => l.auditActionTenantProfileChanged,
+    api.AuditAction.tenantPeriodMasterDataChanged =>
+      l.auditActionTenantMasterDataChanged,
+    api.AuditAction.tenantPeriodProfileChanged =>
+      l.auditActionTenantProfileChanged,
     api.AuditAction.tenantPeriodReactivated => l.auditActionTenantReactivated,
-    api.AuditAction.tenantPeriodSettingsChanged => l.auditActionTenantSettingsChanged,
+    api.AuditAction.tenantPeriodSettingsChanged =>
+      l.auditActionTenantSettingsChanged,
     api.AuditAction.tenantPeriodSuspended => l.auditActionTenantSuspended,
     api.AuditAction.tenantPeriodWithdrawn => l.auditActionTenantWithdrawn,
     _ => name,
@@ -67,4 +78,8 @@ extension AuditActorKindLabel on api.AuditActorKind {
 
 /// The action's name on the wire (`member.invited`), e.g. for stable widget keys.
 String auditWireName(api.AuditAction action) =>
-    api.serializers.serialize(action, specifiedType: const FullType(api.AuditAction))! as String;
+    api.serializers.serialize(
+          action,
+          specifiedType: const FullType(api.AuditAction),
+        )!
+        as String;

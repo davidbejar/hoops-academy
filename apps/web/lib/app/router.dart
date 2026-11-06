@@ -23,7 +23,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     path: destination.path,
     pageBuilder: (context, state) => NoTransitionPage(
       key: state.pageKey,
-      child: DeferredScreen(load: feature.load, builder: (_) => feature.build()),
+      child: DeferredScreen(
+        load: feature.load,
+        builder: (_) => feature.build(),
+      ),
     ),
     routes: [
       for (final sub in feature.subPages)
@@ -50,7 +53,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/no-access', builder: (_, _) => const NoAccessScreen()),
-      GoRoute(path: '/tenants', builder: (_, _) => const TenantSwitcherScreen()),
+      GoRoute(
+        path: '/tenants',
+        builder: (_, _) => const TenantSwitcherScreen(),
+      ),
       GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
       ShellRoute(
         builder: (context, state, child) =>

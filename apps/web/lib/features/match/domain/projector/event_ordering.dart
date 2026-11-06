@@ -23,7 +23,10 @@ int _seq(RecordedEvent e) => e.serverSeq ?? 9007199254740991;
 List<RecordedEvent> canonicalOrder(Iterable<RecordedEvent> events) {
   final sorted = events.toList()..sort(compareGameOrder);
   final seen = <String>{};
-  return [for (final e in sorted) if (seen.add(e.id)) e];
+  return [
+    for (final e in sorted)
+      if (seen.add(e.id)) e,
+  ];
 }
 
 /// `java.util.UUID.compareTo`: most then least significant 64 bits compared

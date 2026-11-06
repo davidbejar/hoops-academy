@@ -22,13 +22,21 @@ class TenantFilterNotifier extends Notifier<TenantFilter> {
   void set(TenantFilter f) => state = f;
 }
 
-final tenantFilterProvider = NotifierProvider<TenantFilterNotifier, TenantFilter>(TenantFilterNotifier.new);
+final tenantFilterProvider =
+    NotifierProvider<TenantFilterNotifier, TenantFilter>(
+      TenantFilterNotifier.new,
+    );
 
 class TenantsNotifier extends AsyncNotifier<List<api.Tenant>> {
   @override
   Future<List<api.Tenant>> build() {
     final f = ref.watch(tenantFilterProvider);
-    return ref.watch(platformRepositoryProvider).tenants(status: f.status, query: f.query.trim().isEmpty ? null : f.query.trim());
+    return ref
+        .watch(platformRepositoryProvider)
+        .tenants(
+          status: f.status,
+          query: f.query.trim().isEmpty ? null : f.query.trim(),
+        );
   }
 
   /// The result carries the first administrator's temporary password: the caller shows it once and drops it; it is
@@ -42,30 +50,43 @@ class TenantsNotifier extends AsyncNotifier<List<api.Tenant>> {
     required String adminGivenName,
     required String adminFamilyName,
   }) async {
-    final t = await ref.read(platformRepositoryProvider).create(
-      api.CreateTenantRequest((b) => b
-        ..name = name
-        ..slug = slug
-        ..timezone = timezone
-        ..defaultLocale = locale
-        ..firstAdmin.replace(api.FirstAdmin((a) => a
-          ..email = adminEmail
-          ..givenName = adminGivenName
-          ..familyName = adminFamilyName
-          ..locale = locale))),
-    );
+    final t = await ref
+        .read(platformRepositoryProvider)
+        .create(
+          api.CreateTenantRequest(
+            (b) => b
+              ..name = name
+              ..slug = slug
+              ..timezone = timezone
+              ..defaultLocale = locale
+              ..firstAdmin.replace(
+                api.FirstAdmin(
+                  (a) => a
+                    ..email = adminEmail
+                    ..givenName = adminGivenName
+                    ..familyName = adminFamilyName
+                    ..locale = locale,
+                ),
+              ),
+          ),
+        );
     ref.invalidateSelf();
     await future;
     return t;
   }
 }
 
-final tenantsProvider = AsyncNotifierProvider<TenantsNotifier, List<api.Tenant>>(TenantsNotifier.new);
+final tenantsProvider =
+    AsyncNotifierProvider<TenantsNotifier, List<api.Tenant>>(
+      TenantsNotifier.new,
+    );
 
 /// Daily usage snapshots of one academy, for the trend chart (loaded apart from the dashboard).
-final tenantUsageHistoryProvider = FutureProvider.family<api.TenantUsageHistory, String>(
-  (ref, tenantId) => ref.watch(platformRepositoryProvider).usageHistory(tenantId),
-);
+final tenantUsageHistoryProvider =
+    FutureProvider.family<api.TenantUsageHistory, String>(
+      (ref, tenantId) =>
+          ref.watch(platformRepositoryProvider).usageHistory(tenantId),
+    );
 
 class TenantDetail {
   const TenantDetail({required this.tenant, this.usage, this.usageError});
@@ -112,9 +133,10 @@ class TenantDetailNotifier extends AsyncNotifier<TenantDetail> {
   }
 }
 
-final tenantDetailProvider = AsyncNotifierProvider.family<TenantDetailNotifier, TenantDetail, String>(
-  TenantDetailNotifier.new,
-);
+final tenantDetailProvider =
+    AsyncNotifierProvider.family<TenantDetailNotifier, TenantDetail, String>(
+      TenantDetailNotifier.new,
+    );
 
 /// Administrators of one academy (ADR-0023). Every mutation reloads the list from the server.
 class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
@@ -124,7 +146,8 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
   PlatformRepository get _repo => ref.read(platformRepositoryProvider);
 
   @override
-  Future<List<api.TenantAdmin>> build() => ref.watch(platformRepositoryProvider).admins(tenantId);
+  Future<List<api.TenantAdmin>> build() =>
+      ref.watch(platformRepositoryProvider).admins(tenantId);
 
   Future<void> _reload() async {
     ref.invalidateSelf();
@@ -141,25 +164,34 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
   }) async {
     final admin = await _repo.addAdmin(
       tenantId,
-      api.AddTenantAdminRequest((b) => b
-        ..email = email
-        ..givenName = givenName
-        ..familyName = familyName
-        ..locale = locale),
+      api.AddTenantAdminRequest(
+        (b) => b
+          ..email = email
+          ..givenName = givenName
+          ..familyName = familyName
+          ..locale = locale,
+      ),
     );
     await _reload();
     return admin;
   }
 
   /// Merge patch: only the given fields are sent.
-  Future<void> edit(String personId, {String? givenName, String? familyName, String? email}) async {
+  Future<void> edit(
+    String personId, {
+    String? givenName,
+    String? familyName,
+    String? email,
+  }) async {
     await _repo.updateAdmin(
       tenantId,
       personId,
-      api.UpdateTenantAdminRequest((b) => b
-        ..givenName = givenName
-        ..familyName = familyName
-        ..email = email),
+      api.UpdateTenantAdminRequest(
+        (b) => b
+          ..givenName = givenName
+          ..familyName = familyName
+          ..email = email,
+      ),
     );
     await _reload();
   }
@@ -179,12 +211,16 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
   }
 }
 
-final tenantAdminsProvider = AsyncNotifierProvider.family<TenantAdminsNotifier, List<api.TenantAdmin>, String>(
-  TenantAdminsNotifier.new,
-);
+final tenantAdminsProvider =
+    AsyncNotifierProvider.family<
+      TenantAdminsNotifier,
+      List<api.TenantAdmin>,
+      String
+    >(TenantAdminsNotifier.new);
 
 /// The server answers 409 `TENANT_WITHDRAWN` for a withdrawn academy (also for the list).
-bool isTenantWithdrawn(Object error) => AppError.of(error).code == 'TENANT_WITHDRAWN';
+bool isTenantWithdrawn(Object error) =>
+    AppError.of(error).code == 'TENANT_WITHDRAWN';
 
 /// Platform console is for the realm role `super_admin` only.
 final isSuperAdminProvider = Provider<bool>((ref) {

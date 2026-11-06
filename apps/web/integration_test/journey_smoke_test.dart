@@ -151,7 +151,9 @@ void main() {
       expect(find.byKey(const Key('week-calendar')), findsOneWidget);
       expect(
         find.byWidgetPredicate(
-          (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('session-ses-'),
+          (w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('session-ses-'),
         ),
         findsWidgets,
         reason: 'a week of demo sessions',
@@ -162,7 +164,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('open-platform')));
       await tester.pumpAndSettle();
-      expect(find.text('Academia Sur'), findsWidgets, reason: 'the platform lists every demo academy');
+      expect(
+        find.text('Academia Sur'),
+        findsWidgets,
+        reason: 'the platform lists every demo academy',
+      );
       await tester.tap(find.byKey(const Key('tenant-$_demoTenant')));
       await tester.pumpAndSettle();
       expect(find.text('Administradores'), findsWidgets);

@@ -35,7 +35,14 @@ class AssignmentsScreen extends ConsumerWidget {
           emptyMessage: l.assignmentsEmpty,
           builder: (context, view) => ListView(
             padding: const EdgeInsets.all(AppTokens.spaceMd),
-            children: [for (final a in view.assignments) AssignmentCard(assignment: a, view: view, onTap: () => context.go('/training/assignments/${a.id}'))],
+            children: [
+              for (final a in view.assignments)
+                AssignmentCard(
+                  assignment: a,
+                  view: view,
+                  onTap: () => context.go('/training/assignments/${a.id}'),
+                ),
+            ],
           ),
         ),
       ),
@@ -43,11 +50,22 @@ class AssignmentsScreen extends ConsumerWidget {
   }
 }
 
-String _targetText(AppLocalizations l, ath.PlanAssignment a, Map<String, String> teamNames, String? playerName) =>
-    a.teamId != null ? l.assignmentTeamTarget(teamNames[a.teamId] ?? '—') : (playerName ?? l.assignmentPlayerTarget);
+String _targetText(
+  AppLocalizations l,
+  ath.PlanAssignment a,
+  Map<String, String> teamNames,
+  String? playerName,
+) => a.teamId != null
+    ? l.assignmentTeamTarget(teamNames[a.teamId] ?? '—')
+    : (playerName ?? l.assignmentPlayerTarget);
 
 class AssignmentCard extends ConsumerWidget {
-  const AssignmentCard({super.key, required this.assignment, required this.view, this.onTap});
+  const AssignmentCard({
+    super.key,
+    required this.assignment,
+    required this.view,
+    this.onTap,
+  });
   final ath.PlanAssignment assignment;
   final AssignmentsView view;
   final VoidCallback? onTap;
@@ -58,7 +76,9 @@ class AssignmentCard extends ConsumerWidget {
     final a = assignment;
     final counts = view.countsFor(a.id);
     final names = ref.watch(teamNamesProvider);
-    final playerName = a.playerId == null ? null : ref.watch(playerNameProvider(a.playerId!));
+    final playerName = a.playerId == null
+        ? null
+        : ref.watch(playerNameProvider(a.playerId!));
     return Card(
       child: ListTile(
         key: Key('assignment-${a.id}'),
@@ -101,7 +121,9 @@ class AssignmentProgressScreen extends ConsumerWidget {
           value: value,
           onRetry: () => ref.invalidate(assignmentsProvider(null)),
           builder: (context, view) {
-            final a = view.assignments.where((x) => x.id == assignmentId).firstOrNull;
+            final a = view.assignments
+                .where((x) => x.id == assignmentId)
+                .firstOrNull;
             if (a == null) return const EmptyNotFound();
             return _Progress(assignment: a, view: view);
           },
@@ -114,7 +136,8 @@ class AssignmentProgressScreen extends ConsumerWidget {
 class EmptyNotFound extends StatelessWidget {
   const EmptyNotFound({super.key});
   @override
-  Widget build(BuildContext context) => Center(child: Text(AppLocalizations.of(context).errorNotFound));
+  Widget build(BuildContext context) =>
+      Center(child: Text(AppLocalizations.of(context).errorNotFound));
 }
 
 class _Progress extends ConsumerWidget {
@@ -129,9 +152,13 @@ class _Progress extends ConsumerWidget {
     // Targets: the single player, or the team roster.
     final targets = <(String, String)>[];
     if (a.playerId != null) {
-      targets.add((a.playerId!, ref.watch(playerNameProvider(a.playerId!)) ?? a.playerId!));
+      targets.add((
+        a.playerId!,
+        ref.watch(playerNameProvider(a.playerId!)) ?? a.playerId!,
+      ));
     } else if (a.teamId != null) {
-      final roster = ref.watch(teamDetailProvider(a.teamId!)).value?.roster ?? const [];
+      final roster =
+          ref.watch(teamDetailProvider(a.teamId!)).value?.roster ?? const [];
       for (final p in roster) {
         targets.add((p.player.id, p.player.displayName));
       }
@@ -141,7 +168,11 @@ class _Progress extends ConsumerWidget {
       padding: const EdgeInsets.all(AppTokens.spaceMd),
       children: [
         AssignmentCard(assignment: a, view: view),
-        if (a.notes != null) Padding(padding: const EdgeInsets.all(AppTokens.spaceSm), child: Text(a.notes!)),
+        if (a.notes != null)
+          Padding(
+            padding: const EdgeInsets.all(AppTokens.spaceSm),
+            child: Text(a.notes!),
+          ),
         for (final (id, name) in targets)
           Card(
             key: Key('progress-$id'),
@@ -169,9 +200,17 @@ class _Progress extends ConsumerWidget {
           icon: const Icon(Icons.delete_outline),
           label: Text(l.delete),
           onPressed: () async {
-            if (!await confirmDialog(context, message: l.assignmentDeleteConfirm, confirmLabel: l.delete)) return;
+            if (!await confirmDialog(
+              context,
+              message: l.assignmentDeleteConfirm,
+              confirmLabel: l.delete,
+            ))
+              return;
             if (!context.mounted) return;
-            final ok = await runAction(context, () => ref.read(assignmentsProvider(null).notifier).unassign(a.id));
+            final ok = await runAction(
+              context,
+              () => ref.read(assignmentsProvider(null).notifier).unassign(a.id),
+            );
             if (ok && context.mounted) context.go('/training/assignments');
           },
         ),

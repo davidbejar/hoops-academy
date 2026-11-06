@@ -22,10 +22,26 @@ class BoxScoreView extends StatelessWidget {
     final p = live.projection;
     final periodScores = live.team.periodScores;
     final totals = live.team.teamTotals;
-    final lines = [for (final line in p.playerStats) if (live.rights.canSeeLine(line.playerId)) line];
-    final warnings = p.warnings.length + p.playerStats.fold<int>(0, (n, x) => n + x.warnings.length);
-    final cols = [l.matchColMin, l.matchColPts, l.matchColReb, l.matchColAst, l.matchColStl, l.matchColBlk,
-      l.matchColTov, l.matchColPf, l.matchColFg, l.matchCol3p, l.matchColFt];
+    final lines = [
+      for (final line in p.playerStats)
+        if (live.rights.canSeeLine(line.playerId)) line,
+    ];
+    final warnings =
+        p.warnings.length +
+        p.playerStats.fold<int>(0, (n, x) => n + x.warnings.length);
+    final cols = [
+      l.matchColMin,
+      l.matchColPts,
+      l.matchColReb,
+      l.matchColAst,
+      l.matchColStl,
+      l.matchColBlk,
+      l.matchColTov,
+      l.matchColPf,
+      l.matchColFg,
+      l.matchCol3p,
+      l.matchColFt,
+    ];
     return ListView(
       key: const Key('box-score'),
       padding: const EdgeInsets.all(AppTokens.spaceMd),
@@ -42,8 +58,14 @@ class BoxScoreView extends StatelessWidget {
                     padding: const EdgeInsets.only(right: AppTokens.spaceMd),
                     child: Column(
                       children: [
-                        Text(periodLabel(l, s.period, live.rules.periodCount), style: theme.textTheme.labelSmall),
-                        Text('${s.team}–${s.opponent}', key: Key('period-score-${s.period}')),
+                        Text(
+                          periodLabel(l, s.period, live.rules.periodCount),
+                          style: theme.textTheme.labelSmall,
+                        ),
+                        Text(
+                          '${s.team}–${s.opponent}',
+                          key: Key('period-score-${s.period}'),
+                        ),
                       ],
                     ),
                   ),
@@ -69,7 +91,9 @@ class BoxScoreView extends StatelessWidget {
                 DataRow(
                   key: ValueKey('box-${line.playerId}'),
                   cells: [
-                    DataCell(Text(_name(line), overflow: TextOverflow.ellipsis)),
+                    DataCell(
+                      Text(_name(line), overflow: TextOverflow.ellipsis),
+                    ),
                     for (final v in _values(line.stats)) DataCell(Text(v)),
                   ],
                 ),
@@ -77,8 +101,19 @@ class BoxScoreView extends StatelessWidget {
                 DataRow(
                   key: const ValueKey('box-totals'),
                   cells: [
-                    DataCell(Text(l.matchTotals, style: const TextStyle(fontWeight: FontWeight.bold))),
-                    for (final v in _values(totals)) DataCell(Text(v, style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataCell(
+                      Text(
+                        l.matchTotals,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    for (final v in _values(totals))
+                      DataCell(
+                        Text(
+                          v,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                   ],
                 ),
             ],
@@ -91,7 +126,12 @@ class BoxScoreView extends StatelessWidget {
               children: [
                 Icon(Icons.warning_amber, color: theme.colorScheme.tertiary),
                 const SizedBox(width: AppTokens.spaceSm),
-                Expanded(child: Text(l.matchWarnings(warnings), key: const Key('box-warnings'))),
+                Expanded(
+                  child: Text(
+                    l.matchWarnings(warnings),
+                    key: const Key('box-warnings'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -103,7 +143,8 @@ class BoxScoreView extends StatelessWidget {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: shareText(l, live)));
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.matchCopied)));
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(l.matchCopied)));
               }
             },
             icon: const Icon(Icons.copy),
@@ -140,20 +181,28 @@ String shareText(AppLocalizations l, LiveMatch live) {
   final p = live.projection;
   final team = live.team;
   final periods = team.periodScores;
-  final b = StringBuffer()..writeln('${l.matchUs} ${team.teamScore} – ${team.opponentScore} ${live.match.opponentName}');
+  final b = StringBuffer()
+    ..writeln(
+      '${l.matchUs} ${team.teamScore} – ${team.opponentScore} ${live.match.opponentName}',
+    );
   if (periods != null) {
-    b.writeln([
-      for (final s in periods) '${periodLabel(l, s.period, live.rules.periodCount)} ${s.team}-${s.opponent}',
-    ].join(' · '));
+    b.writeln(
+      [
+        for (final s in periods)
+          '${periodLabel(l, s.period, live.rules.periodCount)} ${s.team}-${s.opponent}',
+      ].join(' · '),
+    );
   }
   for (final line in p.playerStats) {
     if (!live.rights.canSeeLine(line.playerId)) continue;
-    b.writeln(l.matchShareLine(
-      live.player(line.playerId)?.displayName ?? line.playerId,
-      line.stats.points,
-      line.stats.rebounds,
-      line.stats.assists,
-    ));
+    b.writeln(
+      l.matchShareLine(
+        live.player(line.playerId)?.displayName ?? line.playerId,
+        line.stats.points,
+        line.stats.rebounds,
+        line.stats.assists,
+      ),
+    );
   }
   return b.toString().trimRight();
 }

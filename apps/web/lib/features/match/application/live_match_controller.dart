@@ -69,6 +69,7 @@ class LiveMatch {
   final gen.Match match;
   final List<RosterPlayer> roster;
   final MatchRules rules;
+
   /// Local replay of the events this device knows. For a caller with a
   /// filtered feed (not ADMIN / team staff, ADR-0030) it holds their own and
   /// linked players' lines only; use [team] for the score and totals.
@@ -97,7 +98,8 @@ class LiveMatch {
   }
 
   /// Period new events are recorded in (1 before the first start).
-  int get currentPeriod => projection.live.period == 0 ? 1 : projection.live.period;
+  int get currentPeriod =>
+      projection.live.period == 0 ? 1 : projection.live.period;
 
   /// The period the "start" button opens.
   int get nextPeriod => projection.live.period + 1;
@@ -135,7 +137,10 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     try {
       _match = await repo.get(matchId);
       await store.saveMatchJson(
-        tenantId: _tenantOr(_match.id), matchId: _match.id, teamId: _match.teamId, json: encodeMatch(_match),
+        tenantId: _tenantOr(_match.id),
+        matchId: _match.id,
+        teamId: _match.teamId,
+        json: encodeMatch(_match),
       );
     } on Object catch (e) {
       final cached = isOfflineError(e) ? await store.matchJson(matchId) : null;
@@ -147,14 +152,24 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
       _roster = await repo.roster(matchId);
       await store.saveRoster(matchId, [
         for (final r in _roster)
-          CachedRosterEntry(playerId: r.playerId, displayName: r.displayName, jerseyNumber: r.jerseyNumber, isStarter: r.isStarter),
+          CachedRosterEntry(
+            playerId: r.playerId,
+            displayName: r.displayName,
+            jerseyNumber: r.jerseyNumber,
+            isStarter: r.isStarter,
+          ),
       ]);
     } on Object catch (e) {
       final cached = isOfflineError(e) ? await store.roster(matchId) : null;
       if (cached == null) rethrow;
       _roster = [
         for (final c in cached)
-          RosterPlayer(playerId: c.playerId, displayName: c.displayName, jerseyNumber: c.jerseyNumber, isStarter: c.isStarter),
+          RosterPlayer(
+            playerId: c.playerId,
+            displayName: c.displayName,
+            jerseyNumber: c.jerseyNumber,
+            isStarter: c.isStarter,
+          ),
       ];
       _fromCache = true;
     }
@@ -179,7 +194,11 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     worker.watch(matchId);
     // Events the filtered feed hides still change the score: poll the box
     // score at the feed's cadence while the screen is open.
-    final poll = _rights.staff ? null : ref.read(syncTimersProvider).every(const Duration(seconds: 15), () => _refreshOfficial(repo));
+    final poll = _rights.staff
+        ? null
+        : ref
+              .read(syncTimersProvider)
+              .every(const Duration(seconds: 15), () => _refreshOfficial(repo));
     ref.onDispose(() {
       _disposed = true;
       for (final s in subs) {
@@ -192,7 +211,8 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
   }
 
   /// Cache rows are keyed by the active academy (same source as the sync scope).
-  String _tenantOr(String fallback) => ref.read(syncScopeProvider)?.tenantId ?? fallback;
+  String _tenantOr(String fallback) =>
+      ref.read(syncScopeProvider)?.tenantId ?? fallback;
 
   void _emit() {
     if (state.hasValue) state = AsyncData(_compose());
@@ -221,19 +241,28 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
   }
 
   LiveMatch _compose() {
-    final rules = MatchRules(periodCount: _match.periodCount, periodMinutes: _match.periodMinutes);
+    final rules = MatchRules(
+      periodCount: _match.periodCount,
+      periodMinutes: _match.periodMinutes,
+    );
     final events = mergeEvents(_synced, _own);
     final projection = project(rules, _roster, events);
     final official = _official;
     final team = official == null
         ? TeamFigures.of(projection)
-        : reconcileTeamFigures(official: official, rules: rules, roster: _roster, events: events);
+        : reconcileTeamFigures(
+            official: official,
+            rules: rules,
+            roster: _roster,
+            events: events,
+          );
     final ownById = {for (final p in _own) p.event.id: p};
     final syncedById = {for (final s in _synced) s.event.id: s};
     final all = <RecordedEvent>[
       for (final s in _synced) RecordedEvent(s.event, serverSeq: s.serverSeq),
       for (final p in _own)
-        if (!syncedById.containsKey(p.event.id)) RecordedEvent(p.event, serverSeq: p.serverSeq),
+        if (!syncedById.containsKey(p.event.id))
+          RecordedEvent(p.event, serverSeq: p.serverSeq),
     ]..sort(compareGameOrder);
     final log = <LogEntry>[
       for (final r in all.reversed)
@@ -250,7 +279,11 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
             rejectReason: own?.rejectReason,
             mine: mine,
             voided: voided,
-            canVoid: !voided && !rejected && r.event is! VoidEvent && _rights.canVoid(recordedByMe: mine),
+            canVoid:
+                !voided &&
+                !rejected &&
+                r.event is! VoidEvent &&
+                _rights.canVoid(recordedByMe: mine),
             recordedBy: stored?.recordedByName,
           );
         }(),
@@ -271,7 +304,11 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
 
   // --------------------------------------------------------------- commands
 
-  Future<void> _record(MatchEvent Function(EventMeta meta) build, {int? period, required int clock}) async {
+  Future<void> _record(
+    MatchEvent Function(EventMeta meta) build, {
+    int? period,
+    required int clock,
+  }) async {
     final s = state.requireValue;
     final scope = ref.read(syncScopeProvider);
     if (scope == null) throw const NotAllowed('signed out');
@@ -291,17 +328,29 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
   }
 
   /// [clock] defaults to the last known game clock (parents have no clock).
-  Future<void> recordStat(String playerId, StatAction action, {int? clock}) async {
+  Future<void> recordStat(
+    String playerId,
+    StatAction action, {
+    int? clock,
+  }) async {
     final s = state.requireValue;
-    if (!s.rights.canRecordFor(playerId)) throw NotAllowed('stat for $playerId');
-    await _record((m) => action.build(m, playerId), clock: clock ?? s.projection.live.clock);
+    if (!s.rights.canRecordFor(playerId))
+      throw NotAllowed('stat for $playerId');
+    await _record(
+      (m) => action.build(m, playerId),
+      clock: clock ?? s.projection.live.clock,
+    );
   }
 
   Future<void> startPeriod({int? clock}) async {
     _requireStaff('period');
     final s = state.requireValue;
     final period = s.nextPeriod;
-    await _record(PeriodStart.new, period: period, clock: clock ?? s.rules.periodSeconds(period));
+    await _record(
+      PeriodStart.new,
+      period: period,
+      clock: clock ?? s.rules.periodSeconds(period),
+    );
   }
 
   Future<void> endPeriod({int clock = 0}) async {
@@ -309,7 +358,11 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     await _record(PeriodEnd.new, clock: clock);
   }
 
-  Future<void> substitute({required String out, required String into, required int clock}) async {
+  Future<void> substitute({
+    required String out,
+    required String into,
+    required int clock,
+  }) async {
     _requireStaff('substitution');
     await _record((m) => SubOut(m, playerId: out), clock: clock);
     await _record((m) => SubIn(m, playerId: into), clock: clock);
@@ -329,7 +382,10 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
   Future<bool> undo() async {
     final s = state.requireValue;
     final candidates = s.own.reversed.where(
-      (p) => p.event is! VoidEvent && p.status != EventStatus.rejected && !s.projection.voidedBy.containsKey(p.event.id),
+      (p) =>
+          p.event is! VoidEvent &&
+          p.status != EventStatus.rejected &&
+          !s.projection.voidedBy.containsKey(p.event.id),
     );
     if (candidates.isEmpty) return false;
     await voidEvent(candidates.first.event.id);
@@ -355,15 +411,25 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     await ref.read(syncWorkerProvider).refreshStatus();
   }
 
-  Future<void> startMatch() => _transition(ref.read(matchesRepositoryProvider).start);
-  Future<void> finishMatch() => _transition(ref.read(matchesRepositoryProvider).finish);
+  Future<void> startMatch() =>
+      _transition(ref.read(matchesRepositoryProvider).start);
+  Future<void> finishMatch() =>
+      _transition(ref.read(matchesRepositoryProvider).finish);
 
   Future<void> _transition(Future<gen.Match> Function(String id) call) async {
     _requireStaff('match state');
     _match = await call(matchId);
-    await _store.saveMatchJson(tenantId: _tenantOr(matchId), matchId: matchId, teamId: _match.teamId, json: encodeMatch(_match));
+    await _store.saveMatchJson(
+      tenantId: _tenantOr(matchId),
+      matchId: matchId,
+      teamId: _match.teamId,
+      json: encodeMatch(_match),
+    );
     _emit();
   }
 }
 
-final liveMatchProvider = AsyncNotifierProvider.family<LiveMatchController, LiveMatch, String>(LiveMatchController.new);
+final liveMatchProvider =
+    AsyncNotifierProvider.family<LiveMatchController, LiveMatch, String>(
+      LiveMatchController.new,
+    );

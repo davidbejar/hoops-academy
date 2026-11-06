@@ -3,12 +3,17 @@ import 'package:hoops_app/core/session/session.dart';
 
 import '../support/fixtures.dart';
 
-
 void main() {
   group('redirectFor', () {
     test('initialising auth or profile parks on the splash', () {
-      expect(redirectFor(const SessionState.initializing(), '/matches'), '/splash');
-      expect(redirectFor(const SessionState.loadingProfile(), '/teams'), '/splash');
+      expect(
+        redirectFor(const SessionState.initializing(), '/matches'),
+        '/splash',
+      );
+      expect(
+        redirectFor(const SessionState.loadingProfile(), '/teams'),
+        '/splash',
+      );
       expect(redirectFor(const SessionState.initializing(), '/splash'), isNull);
     });
 
@@ -19,7 +24,10 @@ void main() {
     });
 
     test('a failed profile load stays on the splash (which offers retry)', () {
-      expect(redirectFor(const SessionState.profileError(), '/matches'), '/splash');
+      expect(
+        redirectFor(const SessionState.profileError(), '/matches'),
+        '/splash',
+      );
     });
 
     test('several memberships without a selection go to /tenants', () {
@@ -35,14 +43,20 @@ void main() {
     });
 
     test('ready users leave splash/login/root for their home', () {
-      final s = SessionState.ready(user: userWith([tenantNorth]), membership: tenantNorth);
+      final s = SessionState.ready(
+        user: userWith([tenantNorth]),
+        membership: tenantNorth,
+      );
       expect(redirectFor(s, '/splash'), '/admin');
       expect(redirectFor(s, '/login'), '/admin');
       expect(redirectFor(s, '/'), '/admin');
     });
 
     test('ready users cannot open destinations outside their role', () {
-      final s = SessionState.ready(user: userWith([tenantSouth]), membership: tenantSouth);
+      final s = SessionState.ready(
+        user: userWith([tenantSouth]),
+        membership: tenantSouth,
+      );
       expect(redirectFor(s, '/admin'), '/matches');
       expect(redirectFor(s, '/teams'), '/matches');
       expect(redirectFor(s, '/matches'), isNull);
@@ -50,7 +64,10 @@ void main() {
     });
 
     test('profile and tenants are reachable by every ready user', () {
-      final s = SessionState.ready(user: userWith([tenantSouth]), membership: tenantSouth);
+      final s = SessionState.ready(
+        user: userWith([tenantSouth]),
+        membership: tenantSouth,
+      );
       expect(redirectFor(s, '/profile'), isNull);
       expect(redirectFor(s, '/tenants'), isNull);
     });

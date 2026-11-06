@@ -73,8 +73,20 @@ class _Header extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final t = detail.tenant;
     final notifier = ref.read(tenantDetailProvider(t.id).notifier);
-    Future<void> lifecycle(String title, String? warning, Future<void> Function(String) action) async {
-      final reason = await noteDialog(context, title: title, confirmLabel: title, required: true, label: warning == null ? l.tenantReason : '${l.tenantReason} · $warning');
+    Future<void> lifecycle(
+      String title,
+      String? warning,
+      Future<void> Function(String) action,
+    ) async {
+      final reason = await noteDialog(
+        context,
+        title: title,
+        confirmLabel: title,
+        required: true,
+        label: warning == null
+            ? l.tenantReason
+            : '${l.tenantReason} · $warning',
+      );
       if (reason == null || !context.mounted) return;
       await runAction(context, () => action(reason), success: l.tenantUpdated);
     }
@@ -87,7 +99,12 @@ class _Header extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text(t.slug, style: Theme.of(context).textTheme.titleMedium)),
+                Expanded(
+                  child: Text(
+                    t.slug,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
                 TenantStatusChip(t.status),
               ],
             ),
@@ -95,7 +112,11 @@ class _Header extends ConsumerWidget {
             Text('${t.timezone} · ${t.defaultLocale.name}'),
             Text(l.tenantCreatedOn(_date(t.createdAt))),
             if (t.retainUntil != null)
-              Text(l.tenantRetainUntil('${t.retainUntil!.year}-${t.retainUntil!.month.toString().padLeft(2, '0')}-${t.retainUntil!.day.toString().padLeft(2, '0')}')),
+              Text(
+                l.tenantRetainUntil(
+                  '${t.retainUntil!.year}-${t.retainUntil!.month.toString().padLeft(2, '0')}-${t.retainUntil!.day.toString().padLeft(2, '0')}',
+                ),
+              ),
             const SizedBox(height: AppTokens.spaceSm),
             Wrap(
               spacing: AppTokens.spaceSm,
@@ -103,23 +124,37 @@ class _Header extends ConsumerWidget {
                 if (t.status == api.TenantStatus.ACTIVE)
                   OutlinedButton(
                     key: const Key('tenant-suspend'),
-                    onPressed: () => lifecycle(l.tenantSuspend, null, notifier.suspend),
+                    onPressed: () =>
+                        lifecycle(l.tenantSuspend, null, notifier.suspend),
                     child: Text(l.tenantSuspend),
                   ),
                 if (t.status == api.TenantStatus.SUSPENDED)
                   FilledButton(
                     key: const Key('tenant-reactivate'),
                     onPressed: () async {
-                      if (!await confirmDialog(context, message: l.tenantReactivate, confirmLabel: l.tenantReactivate)) return;
+                      if (!await confirmDialog(
+                        context,
+                        message: l.tenantReactivate,
+                        confirmLabel: l.tenantReactivate,
+                      ))
+                        return;
                       if (!context.mounted) return;
-                      await runAction(context, notifier.reactivate, success: l.tenantUpdated);
+                      await runAction(
+                        context,
+                        notifier.reactivate,
+                        success: l.tenantUpdated,
+                      );
                     },
                     child: Text(l.tenantReactivate),
                   ),
                 if (t.status != api.TenantStatus.WITHDRAWN)
                   OutlinedButton(
                     key: const Key('tenant-withdraw'),
-                    onPressed: () => lifecycle(l.tenantWithdraw, l.tenantWithdrawWarning, notifier.withdraw),
+                    onPressed: () => lifecycle(
+                      l.tenantWithdraw,
+                      l.tenantWithdrawWarning,
+                      notifier.withdraw,
+                    ),
                     child: Text(l.tenantWithdraw),
                   ),
               ],
@@ -177,7 +212,9 @@ class UsageDashboard extends StatelessWidget {
         const SizedBox(height: AppTokens.spaceSm),
         if (usage == null)
           Text(
-            detail.usageError == null ? l.usageFailed : '${l.usageFailed} · ${AppError.of(detail.usageError!).message(l)}',
+            detail.usageError == null
+                ? l.usageFailed
+                : '${l.usageFailed} · ${AppError.of(detail.usageError!).message(l)}',
             key: const Key('usage-failed'),
           )
         else ...[
@@ -189,12 +226,21 @@ class UsageDashboard extends StatelessWidget {
                 padding: const EdgeInsets.all(AppTokens.spaceMd),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: theme.colorScheme.onTertiaryContainer),
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: theme.colorScheme.onTertiaryContainer,
+                    ),
                     const SizedBox(width: AppTokens.spaceSm),
                     Expanded(
                       child: Text(
-                        l.usageUnavailable(usage.unavailableServices.map((s) => _serviceLabel(l, s.name)).join(', ')),
-                        style: TextStyle(color: theme.colorScheme.onTertiaryContainer),
+                        l.usageUnavailable(
+                          usage.unavailableServices
+                              .map((s) => _serviceLabel(l, s.name))
+                              .join(', '),
+                        ),
+                        style: TextStyle(
+                          color: theme.colorScheme.onTertiaryContainer,
+                        ),
                       ),
                     ),
                   ],
@@ -226,8 +272,15 @@ class _ServiceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_serviceLabel(l, report.service.name), style: theme.textTheme.titleSmall),
-            if (report.lastActivityAt != null) Text(l.usageLastActivity(_date(report.lastActivityAt!)), style: theme.textTheme.bodySmall),
+            Text(
+              _serviceLabel(l, report.service.name),
+              style: theme.textTheme.titleSmall,
+            ),
+            if (report.lastActivityAt != null)
+              Text(
+                l.usageLastActivity(_date(report.lastActivityAt!)),
+                style: theme.textTheme.bodySmall,
+              ),
             const SizedBox(height: AppTokens.spaceSm),
             for (final e in entries)
               Padding(
@@ -237,19 +290,38 @@ class _ServiceCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text(usageCounterLabel(l, e.key), style: theme.textTheme.bodyMedium)),
-                        Text('${e.value}', key: Key('counter-${e.key}'), style: theme.textTheme.titleSmall),
+                        Expanded(
+                          child: Text(
+                            usageCounterLabel(l, e.key),
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ),
+                        Text(
+                          '${e.value}',
+                          key: Key('counter-${e.key}'),
+                          style: theme.textTheme.titleSmall,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     LayoutBuilder(
                       builder: (context, c) => Stack(
                         children: [
-                          Container(height: 8, width: c.maxWidth, decoration: BoxDecoration(color: palette.grid, borderRadius: BorderRadius.circular(4))),
+                          Container(
+                            height: 8,
+                            width: c.maxWidth,
+                            decoration: BoxDecoration(
+                              color: palette.grid,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
                           Container(
                             height: 8,
                             width: c.maxWidth * (e.value / max),
-                            decoration: BoxDecoration(color: palette.series, borderRadius: BorderRadius.circular(4)),
+                            decoration: BoxDecoration(
+                              color: palette.series,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
                         ],
                       ),

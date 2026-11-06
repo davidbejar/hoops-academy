@@ -10,10 +10,13 @@ import 'mock_query.dart';
 /// through `core.authz`: a staff member their teams, a guardian the linked players, a player himself; a player or
 /// team the user may not see is a 404, a visible one they may not change a 403.
 class MockAthleteApi {
-  MockAthleteApi({required this.core, DateTime Function()? now, String zone = 'Europe/Madrid'})
-    : _now = now ?? DateTime.now,
-      _zone = TenantZone.of(zone),
-      _home = core.homeTeamId {
+  MockAthleteApi({
+    required this.core,
+    DateTime Function()? now,
+    String zone = 'Europe/Madrid',
+  }) : _now = now ?? DateTime.now,
+       _zone = TenantZone.of(zone),
+       _home = core.homeTeamId {
     _seed();
   }
 
@@ -27,7 +30,8 @@ class MockAthleteApi {
 
   MockAuthz get _az => core.authz;
 
-  Set<String> _roster(String? teamId) => teamId == null ? const {} : core.rosterOf(teamId);
+  Set<String> _roster(String? teamId) =>
+      teamId == null ? const {} : core.rosterOf(teamId);
 
   /// The seeded cast of the home team: three players for the health and fitness data (the third from another team in
   /// the demo academy, so it has no sessions of the first two).
@@ -65,7 +69,14 @@ class MockAthleteApi {
   }
 
   void _seedTraining() {
-    Map<String, Object?> schedule(String id, String team, String day, String time, int minutes, String place) => {
+    Map<String, Object?> schedule(
+      String id,
+      String team,
+      String day,
+      String time,
+      int minutes,
+      String place,
+    ) => {
       'id': id,
       'teamId': team,
       'dayOfWeek': day,
@@ -79,29 +90,97 @@ class MockAthleteApi {
     _schedules.addAll(
       demo
           ? [
-              schedule('sch-mon', _home, 'MONDAY', '17:30', 90, 'Pabellón Norte'),
-              schedule('sch-wed', _home, 'WEDNESDAY', '17:30', 90, 'Pabellón Norte'),
-              schedule('sch-fri', _home, 'FRIDAY', '17:00', 60, 'Pista exterior'),
-              schedule('sch-tue', 'team-inf-a', 'TUESDAY', '18:30', 90, 'Pabellón Sur'),
-              schedule('sch-thu', 'team-inf-a', 'THURSDAY', '18:30', 90, 'Pabellón Sur'),
+              schedule(
+                'sch-mon',
+                _home,
+                'MONDAY',
+                '17:30',
+                90,
+                'Pabellón Norte',
+              ),
+              schedule(
+                'sch-wed',
+                _home,
+                'WEDNESDAY',
+                '17:30',
+                90,
+                'Pabellón Norte',
+              ),
+              schedule(
+                'sch-fri',
+                _home,
+                'FRIDAY',
+                '17:00',
+                60,
+                'Pista exterior',
+              ),
+              schedule(
+                'sch-tue',
+                'team-inf-a',
+                'TUESDAY',
+                '18:30',
+                90,
+                'Pabellón Sur',
+              ),
+              schedule(
+                'sch-thu',
+                'team-inf-a',
+                'THURSDAY',
+                '18:30',
+                90,
+                'Pabellón Sur',
+              ),
             ]
           : [
-              schedule('sch-norte-tue', _home, 'TUESDAY', '18:00', 90, 'Polideportivo Norte'),
-              schedule('sch-norte-thu', _home, 'THURSDAY', '18:00', 90, 'Polideportivo Norte'),
-              schedule('sch-norte-sat', _home, 'SATURDAY', '10:00', 60, 'Pista exterior'),
+              schedule(
+                'sch-norte-tue',
+                _home,
+                'TUESDAY',
+                '18:00',
+                90,
+                'Polideportivo Norte',
+              ),
+              schedule(
+                'sch-norte-thu',
+                _home,
+                'THURSDAY',
+                '18:00',
+                90,
+                'Polideportivo Norte',
+              ),
+              schedule(
+                'sch-norte-sat',
+                _home,
+                'SATURDAY',
+                '10:00',
+                60,
+                'Pista exterior',
+              ),
             ],
     );
-    const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+    const days = [
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+      'SUNDAY',
+    ];
     final today = _today;
     for (var offset = -14; offset <= 21; offset++) {
       final day = today.add(Duration(days: offset));
-      for (final s in _schedules.where((s) => s['dayOfWeek'] == days[day.weekday - 1])) {
+      for (final s in _schedules.where(
+        (s) => s['dayOfWeek'] == days[day.weekday - 1],
+      )) {
         final time = '${s['startTime']}'.split(':').map(int.parse).toList();
         _sessions.add({
           'id': 'ses-${s['id']}-${_date(day)}',
           'teamId': s['teamId'],
           'scheduleId': s['id'],
-          'startsAt': _zone.instant(DateTime(day.year, day.month, day.day, time[0], time[1])).toIso8601String(),
+          'startsAt': _zone
+              .instant(DateTime(day.year, day.month, day.day, time[0], time[1]))
+              .toIso8601String(),
           'durationMinutes': s['durationMinutes'],
           'location': s['location'],
           'status': offset < 0 ? 'DONE' : 'PLANNED',
@@ -112,7 +191,9 @@ class MockAthleteApi {
       }
     }
     // The first upcoming session of Mini A is cancelled, the next one carries the warm-up plan.
-    final upcoming = _sessions.where((s) => s['teamId'] == _home && s['status'] == 'PLANNED').toList();
+    final upcoming = _sessions
+        .where((s) => s['teamId'] == _home && s['status'] == 'PLANNED')
+        .toList();
     if (upcoming.length > 1) {
       upcoming[0]
         ..['status'] = 'CANCELLED'
@@ -121,7 +202,9 @@ class MockAthleteApi {
     }
     // Attendance of the finished sessions of Mini A: mostly present, one late, one absent.
     var n = 0;
-    for (final s in _sessions.where((s) => s['teamId'] == _home && s['status'] == 'DONE')) {
+    for (final s in _sessions.where(
+      (s) => s['teamId'] == _home && s['status'] == 'DONE',
+    )) {
       final sheet = _attendance['${s['id']}'] = {};
       for (final p in _roster(_home)) {
         final late = n % 4 == 1 && p == _b;
@@ -142,7 +225,13 @@ class MockAthleteApi {
     ]);
   }
 
-  Map<String, Object?> _absence(String id, String player, String from, String to, String? reason) => {
+  Map<String, Object?> _absence(
+    String id,
+    String player,
+    String from,
+    String to,
+    String? reason,
+  ) => {
     'id': id,
     'playerId': player,
     'fromDate': from,
@@ -186,28 +275,40 @@ class MockAthleteApi {
       'items': items,
     };
     _plans.addAll([
-      plan('tpl-shooting', 'Fundamentos de tiro', 'Mecánica y volumen de tiro para categorías de base', true, [
-        item(
-          'tpl-s1',
-          0,
-          'Tiro en estático',
-          description: 'Codo bajo el balón, seguimiento largo',
-          minutes: 10,
-          sets: 3,
-          reps: 10,
-        ),
-        item('tpl-s2', 1, 'Tiros libres', minutes: 8, sets: 2, reps: 10),
-        item('tpl-s3', 2, 'Tiro tras bote', minutes: 12, sets: 3, reps: 8),
-      ]),
+      plan(
+        'tpl-shooting',
+        'Fundamentos de tiro',
+        'Mecánica y volumen de tiro para categorías de base',
+        true,
+        [
+          item(
+            'tpl-s1',
+            0,
+            'Tiro en estático',
+            description: 'Codo bajo el balón, seguimiento largo',
+            minutes: 10,
+            sets: 3,
+            reps: 10,
+          ),
+          item('tpl-s2', 1, 'Tiros libres', minutes: 8, sets: 2, reps: 10),
+          item('tpl-s3', 2, 'Tiro tras bote', minutes: 12, sets: 3, reps: 8),
+        ],
+      ),
       plan('tpl-handling', 'Manejo de balón', 'Control con ambas manos', true, [
         item('tpl-h1', 0, 'Bote con dos balones', minutes: 10),
         item('tpl-h2', 1, 'Cambios de mano en slalom', minutes: 12, sets: 4),
       ]),
-      plan('plan-warmup', 'Calentamiento Mini', 'Rutina de 15 minutos antes de entrenar', false, [
-        item('w1', 0, 'Trote y movilidad', minutes: 5),
-        item('w2', 1, 'Pases por parejas', minutes: 5, reps: 20),
-        item('w3', 2, 'Entradas a canasta', minutes: 5, sets: 2, reps: 6),
-      ]),
+      plan(
+        'plan-warmup',
+        'Calentamiento Mini',
+        'Rutina de 15 minutos antes de entrenar',
+        false,
+        [
+          item('w1', 0, 'Trote y movilidad', minutes: 5),
+          item('w2', 1, 'Pases por parejas', minutes: 5, reps: 20),
+          item('w3', 2, 'Entradas a canasta', minutes: 5, sets: 2, reps: 6),
+        ],
+      ),
     ]);
     _assignments.add({
       'id': 'asg-1',
@@ -260,7 +361,13 @@ class MockAthleteApi {
         'recordedAt': _stamp,
       },
     ]);
-    Map<String, Object?> body(String id, String player, int daysAgo, double height, double weight) => {
+    Map<String, Object?> body(
+      String id,
+      String player,
+      int daysAgo,
+      double height,
+      double weight,
+    ) => {
       'id': id,
       'playerId': player,
       'measuredOn': _dayIn(-daysAgo),
@@ -279,7 +386,13 @@ class MockAthleteApi {
   }
 
   void _seedFitness() {
-    Map<String, Object?> type(String id, String code, String name, String unit, bool higher) => {
+    Map<String, Object?> type(
+      String id,
+      String code,
+      String name,
+      String unit,
+      bool higher,
+    ) => {
       'id': id,
       'code': code,
       'name': name,
@@ -291,7 +404,13 @@ class MockAthleteApi {
     _types.addAll([
       type('tt-sprint', 'SPRINT_20M', 'Sprint 20 m', 's', false),
       type('tt-jump', 'VERTICAL_JUMP', 'Salto vertical', 'cm', true),
-      type('tt-reach', 'SIT_AND_REACH', 'Flexibilidad (sit and reach)', 'cm', true),
+      type(
+        'tt-reach',
+        'SIT_AND_REACH',
+        'Flexibilidad (sit and reach)',
+        'cm',
+        true,
+      ),
     ]);
     // Cut points between the five bands, worst to best, per gender (ages 10 to 12).
     const cuts = {
@@ -308,9 +427,16 @@ class MockAthleteApi {
         'FEMALE': [7.0, 11.0, 15.0, 19.0],
       },
     };
-    const bands = ['POOR', 'BELOW_AVERAGE', 'AVERAGE', 'ABOVE_AVERAGE', 'EXCELLENT'];
+    const bands = [
+      'POOR',
+      'BELOW_AVERAGE',
+      'AVERAGE',
+      'ABOVE_AVERAGE',
+      'EXCELLENT',
+    ];
     for (final t in cuts.entries) {
-      final higher = _types.firstWhere((x) => x['id'] == t.key)['higherIsBetter'] as bool;
+      final higher =
+          _types.firstWhere((x) => x['id'] == t.key)['higherIsBetter'] as bool;
       for (final g in t.value.entries) {
         final c = g.value;
         for (var i = 0; i < bands.length; i++) {
@@ -334,7 +460,14 @@ class MockAthleteApi {
         }
       }
     }
-    void result(String id, String player, String type, int daysAgo, double value, {String? notes}) => _results.add({
+    void result(
+      String id,
+      String player,
+      String type,
+      int daysAgo,
+      double value, {
+      String? notes,
+    }) => _results.add({
       'id': id,
       'playerId': player,
       'testTypeId': type,
@@ -363,7 +496,9 @@ class MockAthleteApi {
     final result = _route(method, path, query, body);
     final json = result?.json;
     // Optional properties are absent rather than null on the wire; the generated models read both the same way.
-    return json == null ? result : MockResult.json(result!.status, _withoutNulls(json));
+    return json == null
+        ? result
+        : MockResult.json(result!.status, _withoutNulls(json));
   }
 
   static Object? _withoutNulls(Object? v) => switch (v) {
@@ -375,8 +510,16 @@ class MockAthleteApi {
     _ => v,
   };
 
-  MockResult? _route(String method, String path, Map<String, dynamic> query, Object? body) {
-    final seg = path.split('/').where((s) => s.isNotEmpty).toList(); // api, athlete, <resource>, ...
+  MockResult? _route(
+    String method,
+    String path,
+    Map<String, dynamic> query,
+    Object? body,
+  ) {
+    final seg = path
+        .split('/')
+        .where((s) => s.isNotEmpty)
+        .toList(); // api, athlete, <resource>, ...
     if (seg.length < 3 || seg[0] != 'api' || seg[1] != 'athlete') return null;
     final q = MockQuery(query);
     final b = body is Map ? body.cast<String, Object?>() : <String, Object?>{};
@@ -388,9 +531,11 @@ class MockAthleteApi {
       'planned-absences' => _absencesRoute(method, id, q, b),
       'training-plans' => _plansRoute(method, id, rest, q, b),
       'plan-assignments' => _assignmentsRoute(method, id, rest, q, b),
-      'plan-completions' => method == 'GET' ? q.page(_filterCompletions(q)) : null,
+      'plan-completions' =>
+        method == 'GET' ? q.page(_filterCompletions(q)) : null,
       'injuries' => _injuriesRoute(method, id, q, b),
-      'players' when rest.firstOrNull == 'availability' && method == 'GET' => _availability(id!),
+      'players' when rest.firstOrNull == 'availability' && method == 'GET' =>
+        _availability(id!),
       'body-measurements' => _measurementsRoute(method, id, q, b),
       'physical-test-types' => _typesRoute(method, id, b),
       'physical-test-results' => _resultsRoute(method, id, q, b),
@@ -424,7 +569,12 @@ class MockAthleteApi {
 
   /// A player the user may read (404 otherwise) and, for a change, write for (403 otherwise). [self] lets the
   /// player himself record (planned absences, plan completions); [staffOnly] is for results (guardians read).
-  MockResult? _gatePlayer(String? player, String method, {bool self = false, bool staffOnly = false}) {
+  MockResult? _gatePlayer(
+    String? player,
+    String method, {
+    bool self = false,
+    bool staffOnly = false,
+  }) {
     if (player == null || !_az.canSeePlayer(player)) return _notFound;
     if (!_writes(method)) return null;
     final ok = staffOnly
@@ -433,7 +583,8 @@ class MockAthleteApi {
     return ok ? null : _forbidden;
   }
 
-  MockResult? _staffOnly(String method) => _writes(method) && !_az.staff ? _forbidden : null;
+  MockResult? _staffOnly(String method) =>
+      _writes(method) && !_az.staff ? _forbidden : null;
 
   /// Generic update of a stored row: given properties replace, `clear` ones become null.
   MockResult _patch(
@@ -447,19 +598,31 @@ class MockAthleteApi {
   }
 
   // ------------------------------------------------------------------ schedules
-  MockResult? _schedulesRoute(String method, String? id, MockQuery q, Map<String, Object?> b) {
+  MockResult? _schedulesRoute(
+    String method,
+    String? id,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     if (id == null) {
       if (method == 'GET') {
         final team = q.text('teamId');
         return MockResult.json(200, [
           for (final s in _schedules)
-            if ((team == null || s['teamId'] == team) && _az.canSeeTeam('${s['teamId']}')) s,
+            if ((team == null || s['teamId'] == team) &&
+                _az.canSeeTeam('${s['teamId']}'))
+              s,
         ]);
       }
       if (method == 'POST') {
         final denied = _gateTeam(b['teamId'] as String?, method);
         if (denied != null) return denied;
-        final s = {'id': _id('sch'), 'location': null, 'validUntil': null, ...b};
+        final s = {
+          'id': _id('sch'),
+          'location': null,
+          'validUntil': null,
+          ...b,
+        };
         _schedules.add(s);
         return MockResult.json(201, s);
       }
@@ -481,7 +644,13 @@ class MockAthleteApi {
   }
 
   // ------------------------------------------------------------------ sessions & attendance
-  MockResult? _sessionsRoute(String method, String? id, List<String> rest, MockQuery q, Map<String, Object?> b) {
+  MockResult? _sessionsRoute(
+    String method,
+    String? id,
+    List<String> rest,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     if (id == null) {
       if (method == 'GET') {
         final team = q.text('teamId');
@@ -491,7 +660,11 @@ class MockAthleteApi {
           for (final s in _sessions)
             if ((team == null || s['teamId'] == team) &&
                 _az.canSeeTeam('${s['teamId']}') &&
-                _inRange(_date(_zone.wall(DateTime.parse('${s['startsAt']}'))), from, to))
+                _inRange(
+                  _date(_zone.wall(DateTime.parse('${s['startsAt']}'))),
+                  from,
+                  to,
+                ))
               s,
         ]..sort((a, c) => '${a['startsAt']}'.compareTo('${c['startsAt']}'));
         return q.page(items, defaultSize: 200);
@@ -521,19 +694,22 @@ class MockAthleteApi {
     if (rest.isEmpty) {
       if (method == 'GET') return MockResult.json(200, s);
       if (method == 'PATCH') {
-        if (s['status'] == 'CANCELLED') return mockProblem(409, 'Conflict', code: 'SESSION_CANCELLED');
+        if (s['status'] == 'CANCELLED')
+          return mockProblem(409, 'Conflict', code: 'SESSION_CANCELLED');
         return _patch(s, b, {'location', 'planId', 'notes'});
       }
       return null;
     }
     if (rest[0] == 'cancel' && method == 'POST') {
-      if (s['status'] == 'CANCELLED') return mockProblem(409, 'Conflict', code: 'SESSION_CANCELLED');
+      if (s['status'] == 'CANCELLED')
+        return mockProblem(409, 'Conflict', code: 'SESSION_CANCELLED');
       s['status'] = 'CANCELLED';
       s['cancelReason'] = b['reason'];
       return MockResult.json(200, s);
     }
     if (rest[0] == 'attendance') {
-      if (!_az.canManageTeam('${s['teamId']}')) return _forbidden; // attendance is for staff only
+      if (!_az.canManageTeam('${s['teamId']}'))
+        return _forbidden; // attendance is for staff only
       if (method == 'GET') return MockResult.json(200, _sheet(s));
       if (method == 'PUT') return _record(s, b);
     }
@@ -541,7 +717,8 @@ class MockAthleteApi {
   }
 
   static bool _inRange(String day, String? from, String? to) =>
-      (from == null || day.compareTo(from) >= 0) && (to == null || day.compareTo(to) <= 0);
+      (from == null || day.compareTo(from) >= 0) &&
+      (to == null || day.compareTo(to) <= 0);
 
   Map<String, Object?> _sheet(Map<String, Object?> session) {
     final day = _date(_zone.wall(DateTime.parse('${session['startsAt']}')));
@@ -552,9 +729,15 @@ class MockAthleteApi {
         for (final p in _roster('${session['teamId']}'))
           () {
             final absence = _absences
-                .where((a) => a['playerId'] == p && _inRange(day, '${a['fromDate']}', '${a['toDate']}'))
+                .where(
+                  (a) =>
+                      a['playerId'] == p &&
+                      _inRange(day, '${a['fromDate']}', '${a['toDate']}'),
+                )
                 .firstOrNull;
-            final injury = _injuries.where((i) => i['playerId'] == p && i['status'] == 'OPEN').firstOrNull;
+            final injury = _injuries
+                .where((i) => i['playerId'] == p && i['status'] == 'OPEN')
+                .firstOrNull;
             final r = recorded[p];
             return {
               'playerId': p,
@@ -573,12 +756,15 @@ class MockAthleteApi {
   }
 
   MockResult _record(Map<String, Object?> session, Map<String, Object?> b) {
-    final entries = (b['entries'] as List<Object?>? ?? const []).cast<Map<String, Object?>>();
+    final entries = (b['entries'] as List<Object?>? ?? const [])
+        .cast<Map<String, Object?>>();
     final players = _roster('${session['teamId']}');
     for (final e in entries) {
-      if (!players.contains(e['playerId'])) return mockProblem(404, 'Not found');
+      if (!players.contains(e['playerId']))
+        return mockProblem(404, 'Not found');
       final late = e['status'] == 'LATE';
-      if (late != (e['minutesLate'] != null)) return mockProblem(400, 'Bad Request', code: 'MINUTES_LATE');
+      if (late != (e['minutesLate'] != null))
+        return mockProblem(400, 'Bad Request', code: 'MINUTES_LATE');
     }
     final sheet = _attendance.putIfAbsent('${session['id']}', () => {});
     for (final e in entries) {
@@ -594,7 +780,12 @@ class MockAthleteApi {
   }
 
   // ------------------------------------------------------------------ planned absences
-  MockResult? _absencesRoute(String method, String? id, MockQuery q, Map<String, Object?> b) {
+  MockResult? _absencesRoute(
+    String method,
+    String? id,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     if (id == null) {
       if (method == 'GET') {
         final player = q.text('playerId');
@@ -612,7 +803,11 @@ class MockAthleteApi {
         ], defaultSize: 100);
       }
       if (method == 'POST') {
-        final denied = _gatePlayer(b['playerId'] as String?, method, self: true);
+        final denied = _gatePlayer(
+          b['playerId'] as String?,
+          method,
+          self: true,
+        );
         if (denied != null) return denied;
         final a = _absence(
           _id('abs'),
@@ -645,13 +840,27 @@ class MockAthleteApi {
   Map<String, Object?> _summary(Map<String, Object?> p) {
     final items = (p['items'] as List<Object?>).cast<Map<String, Object?>>();
     return {
-      for (final k in ['id', 'name', 'description', 'template', 'sourceTemplateId', 'archived']) k: p[k],
+      for (final k in [
+        'id',
+        'name',
+        'description',
+        'template',
+        'sourceTemplateId',
+        'archived',
+      ])
+        k: p[k],
       'itemCount': items.length,
-      'totalDurationMinutes': items.fold<int>(0, (sum, i) => sum + ((i['durationMinutes'] as int?) ?? 0)),
+      'totalDurationMinutes': items.fold<int>(
+        0,
+        (sum, i) => sum + ((i['durationMinutes'] as int?) ?? 0),
+      ),
     };
   }
 
-  Map<String, Object?> _full(Map<String, Object?> p) => {..._summary(p), 'items': p['items']};
+  Map<String, Object?> _full(Map<String, Object?> p) => {
+    ..._summary(p),
+    'items': p['items'],
+  };
 
   List<Map<String, Object?>> _items(Map<String, Object?> plan) =>
       (plan['items']! as List<Object?>).cast<Map<String, Object?>>();
@@ -663,7 +872,13 @@ class MockAthleteApi {
     }
   }
 
-  MockResult? _plansRoute(String method, String? idAndAction, List<String> rest, MockQuery q, Map<String, Object?> b) {
+  MockResult? _plansRoute(
+    String method,
+    String? idAndAction,
+    List<String> rest,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     final readOnlyRole = _staffOnly(method);
     if (readOnlyRole != null) return readOnlyRole;
     if (idAndAction == null) {
@@ -688,7 +903,9 @@ class MockAthleteApi {
           'archived': false,
           'items': <Object?>[],
         };
-        for (final i in (b['items'] as List<Object?>? ?? const []).cast<Map<String, Object?>>()) {
+        for (final i
+            in (b['items'] as List<Object?>? ?? const [])
+                .cast<Map<String, Object?>>()) {
           _items(plan).add(_newItem(i));
         }
         _renumber(plan);
@@ -726,7 +943,8 @@ class MockAthleteApi {
       return null;
     }
     final readOnly = plan['template'] == true && method != 'GET';
-    if (readOnly) return mockProblem(403, 'Forbidden', code: 'TEMPLATE_READ_ONLY');
+    if (readOnly)
+      return mockProblem(403, 'Forbidden', code: 'TEMPLATE_READ_ONLY');
     if (rest.isEmpty) {
       return switch (method) {
         'GET' => MockResult.json(200, _full(plan)),
@@ -753,7 +971,8 @@ class MockAthleteApi {
       if (method == 'PUT') {
         final order = (b['itemIds'] as List<Object?>).map((e) => '$e').toList();
         final byId = {for (final i in _items(plan)) '${i['id']}': i};
-        if (order.length != byId.length || !order.every(byId.containsKey)) return mockProblem(400, 'Bad Request');
+        if (order.length != byId.length || !order.every(byId.containsKey))
+          return mockProblem(400, 'Bad Request');
         plan['items'] = [for (final i in order) byId[i]];
         _renumber(plan);
         return MockResult.json(200, plan['items']);
@@ -763,7 +982,13 @@ class MockAthleteApi {
     final item = _items(plan).where((i) => i['id'] == rest[1]).firstOrNull;
     if (item == null) return _notFound;
     if (method == 'PATCH') {
-      return _patch(item, b, {'description', 'durationMinutes', 'sets', 'repetitions', 'videoUrl'});
+      return _patch(item, b, {
+        'description',
+        'durationMinutes',
+        'sets',
+        'repetitions',
+        'videoUrl',
+      });
     }
     if (method == 'DELETE') {
       _items(plan).remove(item);
@@ -788,19 +1013,35 @@ class MockAthleteApi {
   Map<String, Object?> _assignmentView(Map<String, Object?> a) {
     final plan = _byId(_plans, '${a['planId']}');
     return {
-      for (final k in ['id', 'teamId', 'playerId', 'dueOn', 'notes', 'recordedBy', 'recordedAt']) k: a[k],
+      for (final k in [
+        'id',
+        'teamId',
+        'playerId',
+        'dueOn',
+        'notes',
+        'recordedBy',
+        'recordedAt',
+      ])
+        k: a[k],
       'plan': plan == null ? null : _summary(plan),
     };
   }
 
   /// A team assignment is visible with its team, a player's with the player.
-  bool _assignmentVisible(Map<String, Object?> a) =>
-      a['playerId'] != null ? _az.canSeePlayer('${a['playerId']}') : _az.canSeeTeam('${a['teamId']}');
+  bool _assignmentVisible(Map<String, Object?> a) => a['playerId'] != null
+      ? _az.canSeePlayer('${a['playerId']}')
+      : _az.canSeeTeam('${a['teamId']}');
 
   Iterable<String> _targets(Map<String, Object?> a) =>
       a['playerId'] != null ? ['${a['playerId']}'] : _roster('${a['teamId']}');
 
-  MockResult? _assignmentsRoute(String method, String? id, List<String> rest, MockQuery q, Map<String, Object?> b) {
+  MockResult? _assignmentsRoute(
+    String method,
+    String? id,
+    List<String> rest,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     if (id == null) {
       if (method == 'GET') {
         final team = q.text('teamId');
@@ -818,8 +1059,10 @@ class MockAthleteApi {
       if (method == 'POST') {
         final plan = _byId(_plans, '${b['planId']}');
         if (plan == null) return mockProblem(404, 'Not found');
-        if (plan['archived'] == true) return mockProblem(409, 'Conflict', code: 'PLAN_ARCHIVED');
-        if ((b['teamId'] == null) == (b['playerId'] == null)) return mockProblem(400, 'Bad Request');
+        if (plan['archived'] == true)
+          return mockProblem(409, 'Conflict', code: 'PLAN_ARCHIVED');
+        if ((b['teamId'] == null) == (b['playerId'] == null))
+          return mockProblem(400, 'Bad Request');
         final denied = b['teamId'] != null
             ? _gateTeam(b['teamId'] as String?, method)
             : _gatePlayer(b['playerId'] as String?, method);
@@ -851,14 +1094,19 @@ class MockAthleteApi {
       }
       return null;
     }
-    if (rest[0] == 'progress' && method == 'GET') return MockResult.json(200, _progress(a));
+    if (rest[0] == 'progress' && method == 'GET')
+      return MockResult.json(200, _progress(a));
     if (rest[0] == 'completions' && rest.length == 2 && method == 'PUT') {
       final player = rest[1];
       if (!_targets(a).contains(player)) return mockProblem(404, 'Not found');
       final denied = _gatePlayer(player, method, self: true);
       if (denied != null) return denied;
-      final existing = _completions.where((c) => c['assignmentId'] == id && c['playerId'] == player).firstOrNull;
-      final row = existing ?? {'id': _id('cmp'), 'assignmentId': id, 'playerId': player};
+      final existing = _completions
+          .where((c) => c['assignmentId'] == id && c['playerId'] == player)
+          .firstOrNull;
+      final row =
+          existing ??
+          {'id': _id('cmp'), 'assignmentId': id, 'playerId': player};
       row
         ..['status'] = b['status']
         ..['comment'] = b['comment']
@@ -872,16 +1120,29 @@ class MockAthleteApi {
 
   Map<String, Object?> _progress(Map<String, Object?> a) {
     final targets = _targets(a).where(_az.canSeePlayer).toList();
-    final byPlayer = {for (final c in _completions.where((c) => c['assignmentId'] == a['id'])) '${c['playerId']}': c};
-    int count(String status) =>
-        byPlayer.values.where((c) => c['status'] == status && targets.contains(c['playerId'])).length;
+    final byPlayer = {
+      for (final c in _completions.where((c) => c['assignmentId'] == a['id']))
+        '${c['playerId']}': c,
+    };
+    int count(String status) => byPlayer.values
+        .where((c) => c['status'] == status && targets.contains(c['playerId']))
+        .length;
     return {
       'assignmentId': a['id'],
       'total': targets.length,
       'notRecorded': targets.where((p) => !byPlayer.containsKey(p)).length,
-      'counts': {'DONE': count('DONE'), 'PARTIAL': count('PARTIAL'), 'NOT_DONE': count('NOT_DONE')},
+      'counts': {
+        'DONE': count('DONE'),
+        'PARTIAL': count('PARTIAL'),
+        'NOT_DONE': count('NOT_DONE'),
+      },
       'players': [
-        for (final p in targets) {'playerId': p, 'status': byPlayer[p]?['status'], 'completionId': byPlayer[p]?['id']},
+        for (final p in targets)
+          {
+            'playerId': p,
+            'status': byPlayer[p]?['status'],
+            'completionId': byPlayer[p]?['id'],
+          },
       ],
     };
   }
@@ -892,12 +1153,19 @@ class MockAthleteApi {
     return [
       for (final c in _completions)
         if (_az.canSeePlayer('${c['playerId']}') &&
-            (assignment == null || c['assignmentId'] == assignment) && (player == null || c['playerId'] == player)) c,
+            (assignment == null || c['assignmentId'] == assignment) &&
+            (player == null || c['playerId'] == player))
+          c,
     ];
   }
 
   // ------------------------------------------------------------------ injuries & measurements
-  MockResult? _injuriesRoute(String method, String? id, MockQuery q, Map<String, Object?> b) {
+  MockResult? _injuriesRoute(
+    String method,
+    String? id,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     if (id == null) {
       if (method == 'GET') {
         final player = q.text('playerId');
@@ -936,7 +1204,11 @@ class MockAthleteApi {
     if (denied != null) return denied;
     return switch (method) {
       'GET' => MockResult.json(200, i),
-      'PATCH' => _patch(i, b, {'description', 'expectedReturnOn', 'actualReturnOn'}),
+      'PATCH' => _patch(i, b, {
+        'description',
+        'expectedReturnOn',
+        'actualReturnOn',
+      }),
       'DELETE' => () {
         _injuries.remove(i);
         return const MockResult.empty(204);
@@ -948,7 +1220,9 @@ class MockAthleteApi {
   MockResult _availability(String player) {
     final denied = _gatePlayer(player, 'GET');
     if (denied != null) return denied;
-    final open = _injuries.where((i) => i['playerId'] == player && i['status'] == 'OPEN').toList();
+    final open = _injuries
+        .where((i) => i['playerId'] == player && i['status'] == 'OPEN')
+        .toList();
     final returns = [
       for (final i in open)
         if (i['expectedReturnOn'] != null) '${i['expectedReturnOn']}',
@@ -961,20 +1235,28 @@ class MockAthleteApi {
     });
   }
 
-  MockResult? _measurementsRoute(String method, String? id, MockQuery q, Map<String, Object?> b) {
+  MockResult? _measurementsRoute(
+    String method,
+    String? id,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     if (id == null) {
       if (method == 'GET') {
         final player = q.text('playerId');
         final items = [
           for (final m in _measurements)
-            if (_az.canSeePlayer('${m['playerId']}') && (player == null || m['playerId'] == player)) m,
+            if (_az.canSeePlayer('${m['playerId']}') &&
+                (player == null || m['playerId'] == player))
+              m,
         ]..sort((a, c) => '${c['measuredOn']}'.compareTo('${a['measuredOn']}'));
         return MockResult.json(200, items);
       }
       if (method == 'POST') {
         final denied = _gatePlayer(b['playerId'] as String?, method);
         if (denied != null) return denied;
-        if (b['heightCm'] == null && b['weightKg'] == null) return mockProblem(400, 'Bad Request');
+        if (b['heightCm'] == null && b['weightKg'] == null)
+          return mockProblem(400, 'Bad Request');
         final m = <String, Object?>{
           'id': _id('bm'),
           'heightCm': null,
@@ -1008,8 +1290,14 @@ class MockAthleteApi {
     if (id == null) {
       if (method == 'GET') return MockResult.json(200, _types);
       if (method == 'POST') {
-        if (_types.any((t) => t['code'] == b['code'])) return mockProblem(409, 'Conflict', code: 'TEST_CODE_TAKEN');
-        final t = <String, Object?>{'id': _id('tt'), 'description': null, ...b, 'global': false};
+        if (_types.any((t) => t['code'] == b['code']))
+          return mockProblem(409, 'Conflict', code: 'TEST_CODE_TAKEN');
+        final t = <String, Object?>{
+          'id': _id('tt'),
+          'description': null,
+          ...b,
+          'global': false,
+        };
         _types.add(t);
         return MockResult.json(201, t);
       }
@@ -1022,7 +1310,8 @@ class MockAthleteApi {
         return MockResult.json(200, t);
       case 'PATCH':
         final code = b['code'];
-        if (code != null && _types.any((x) => x['code'] == code && x['id'] != id)) {
+        if (code != null &&
+            _types.any((x) => x['code'] == code && x['id'] != id)) {
           return mockProblem(409, 'Conflict', code: 'TEST_CODE_TAKEN');
         }
         return _patch(t, b, {'description'});
@@ -1042,14 +1331,23 @@ class MockAthleteApi {
     if (facts == null) return null;
     final on = DateTime.parse(measuredOn);
     final birthday = DateTime(facts.birthYear, 4, 12);
-    return on.year - birthday.year - ((on.month * 100 + on.day) < (birthday.month * 100 + birthday.day) ? 1 : 0);
+    return on.year -
+        birthday.year -
+        ((on.month * 100 + on.day) < (birthday.month * 100 + birthday.day)
+            ? 1
+            : 0);
   }
 
   List<Map<String, Object?>> _effectiveNorms() {
-    final tenantKeys = {for (final n in _norms.where((n) => n['global'] != true)) '${n['testTypeId']}/${n['gender']}'};
+    final tenantKeys = {
+      for (final n in _norms.where((n) => n['global'] != true))
+        '${n['testTypeId']}/${n['gender']}',
+    };
     return [
       for (final n in _norms)
-        if (n['global'] != true || !tenantKeys.contains('${n['testTypeId']}/${n['gender']}')) n,
+        if (n['global'] != true ||
+            !tenantKeys.contains('${n['testTypeId']}/${n['gender']}'))
+          n,
     ];
   }
 
@@ -1072,19 +1370,35 @@ class MockAthleteApi {
       }).firstOrNull;
     }
     return {
-      for (final k in ['id', 'playerId', 'testTypeId', 'measuredOn', 'value', 'notes', 'recordedBy', 'recordedAt'])
+      for (final k in [
+        'id',
+        'playerId',
+        'testTypeId',
+        'measuredOn',
+        'value',
+        'notes',
+        'recordedBy',
+        'recordedAt',
+      ])
         k: r[k],
       'testCode': type?['code'],
       'unit': type?['unit'],
       'ageAtMeasurement': age,
-      'bandStatus': facts == null ? 'MISSING_PLAYER_DATA' : (norm == null ? 'NO_NORM' : 'MATCHED'),
+      'bandStatus': facts == null
+          ? 'MISSING_PLAYER_DATA'
+          : (norm == null ? 'NO_NORM' : 'MATCHED'),
       'expectedBand': norm?['band'],
       'normId': norm?['id'],
       'referencePending': norm != null && norm['source'] == null,
     };
   }
 
-  MockResult? _resultsRoute(String method, String? id, MockQuery q, Map<String, Object?> b) {
+  MockResult? _resultsRoute(
+    String method,
+    String? id,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     if (id == null) {
       if (method == 'GET') {
         final player = q.text('playerId');
@@ -1098,12 +1412,19 @@ class MockAthleteApi {
                 (type == null || r['testTypeId'] == type))
               r,
         ]..sort((a, c) => '${c['measuredOn']}'.compareTo('${a['measuredOn']}'));
-        return q.page([for (final r in items) _resultView(r)], defaultSize: 200);
+        return q.page([
+          for (final r in items) _resultView(r),
+        ], defaultSize: 200);
       }
       if (method == 'POST') {
-        final denied = _gatePlayer(b['playerId'] as String?, method, staffOnly: true);
+        final denied = _gatePlayer(
+          b['playerId'] as String?,
+          method,
+          staffOnly: true,
+        );
         if (denied != null) return denied;
-        if (_byId(_types, '${b['testTypeId']}') == null) return mockProblem(404, 'Not found');
+        if (_byId(_types, '${b['testTypeId']}') == null)
+          return mockProblem(404, 'Not found');
         final r = <String, Object?>{
           'id': _id('tr'),
           'notes': null,
@@ -1131,7 +1452,12 @@ class MockAthleteApi {
     };
   }
 
-  MockResult? _normsRoute(String method, String? id, MockQuery q, Map<String, Object?> b) {
+  MockResult? _normsRoute(
+    String method,
+    String? id,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
     if (_writes(method) && !_az.admin) return _forbidden;
     if (id == null) {
       if (method == 'GET') {
@@ -1145,7 +1471,9 @@ class MockAthleteApi {
         };
         return MockResult.json(200, [
           for (final n in base)
-            if ((type == null || n['testTypeId'] == type) && (gender == null || n['gender'] == gender)) n,
+            if ((type == null || n['testTypeId'] == type) &&
+                (gender == null || n['gender'] == gender))
+              n,
         ]);
       }
       if (method == 'POST') return _saveNorm(null, b);
@@ -1162,7 +1490,8 @@ class MockAthleteApi {
   }
 
   MockResult _saveNorm(Map<String, Object?>? existing, Map<String, Object?> b) {
-    if (_byId(_types, '${b['testTypeId']}') == null) return mockProblem(404, 'Not found');
+    if (_byId(_types, '${b['testTypeId']}') == null)
+      return mockProblem(404, 'Not found');
     final clash = _norms.any(
       (n) =>
           n['global'] != true &&

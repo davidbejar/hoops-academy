@@ -46,13 +46,17 @@ List<String> collectPrecache(Directory build) {
   final files = <String>[];
   for (final entity in build.listSync(recursive: true, followLinks: false)) {
     if (entity is! File) continue;
-    final rel = entity.absolute.path.substring(root.length + 1).replaceAll(r'\', '/');
+    final rel = entity.absolute.path
+        .substring(root.length + 1)
+        .replaceAll(r'\', '/');
     if (!_excluded(rel)) files.add(rel);
   }
   files.sort();
   for (final required in requiredShellFiles) {
     if (!files.contains(required)) {
-      throw StateError('Build output is missing $required; run `flutter build web` first.');
+      throw StateError(
+        'Build output is missing $required; run `flutter build web` first.',
+      );
     }
   }
   return files;
@@ -76,11 +80,20 @@ String buildIdFor(Directory build, List<String> files) {
 }
 
 /// Fills the placeholders of the worker template.
-String renderServiceWorker(String template, {required String buildId, required List<String> files}) {
-  if (!template.contains(_buildIdPlaceholder) || !template.contains(_manifestPlaceholder)) {
-    throw StateError('sw.js must contain $_buildIdPlaceholder and $_manifestPlaceholder');
+String renderServiceWorker(
+  String template, {
+  required String buildId,
+  required List<String> files,
+}) {
+  if (!template.contains(_buildIdPlaceholder) ||
+      !template.contains(_manifestPlaceholder)) {
+    throw StateError(
+      'sw.js must contain $_buildIdPlaceholder and $_manifestPlaceholder',
+    );
   }
-  return template.replaceAll(_buildIdPlaceholder, buildId).replaceAll(_manifestPlaceholder, jsonEncode(files));
+  return template
+      .replaceAll(_buildIdPlaceholder, buildId)
+      .replaceAll(_manifestPlaceholder, jsonEncode(files));
 }
 
 class RewriteSummary {
@@ -97,12 +110,16 @@ RewriteSummary rewriteBuild(Directory build) {
   }
   final files = collectPrecache(build);
   final id = buildIdFor(build, files);
-  sw.writeAsStringSync(renderServiceWorker(sw.readAsStringSync(), buildId: id, files: files));
+  sw.writeAsStringSync(
+    renderServiceWorker(sw.readAsStringSync(), buildId: id, files: files),
+  );
   return RewriteSummary(id, files);
 }
 
 void main(List<String> args) {
   final build = Directory(args.isEmpty ? 'build/web' : args.first);
   final summary = rewriteBuild(build);
-  stdout.writeln('sw.js: build ${summary.buildId}, ${summary.files.length} files precached');
+  stdout.writeln(
+    'sw.js: build ${summary.buildId}, ${summary.files.length} files precached',
+  );
 }

@@ -11,7 +11,9 @@ abstract class AuditRepository {
 }
 
 class ApiAuditRepository implements AuditRepository {
-  ApiAuditRepository(api.HoopsCoreApi client) : _audit = client.getAuditApi(), _platform = client.getPlatformApi();
+  ApiAuditRepository(api.HoopsCoreApi client)
+    : _audit = client.getAuditApi(),
+      _platform = client.getPlatformApi();
 
   final api.AuditApi _audit;
   final api.PlatformApi _platform;
@@ -26,7 +28,10 @@ class ApiAuditRepository implements AuditRepository {
       page: query.page,
       size: AuditQuery.pageSize,
     )).data!;
-    return _pageOf(page.page, [for (final e in page.items) _entry(e.id, e.at, e.action, e.actor, e.target)]);
+    return _pageOf(page.page, [
+      for (final e in page.items)
+        _entry(e.id, e.at, e.action, e.actor, e.target),
+    ]);
   }
 
   @override
@@ -41,7 +46,15 @@ class ApiAuditRepository implements AuditRepository {
     )).data!;
     return _pageOf(page.page, [
       for (final e in page.items)
-        _entry(e.id, e.at, e.action, e.actor, e.target, tenantId: e.tenantId, tenantName: e.tenantName),
+        _entry(
+          e.id,
+          e.at,
+          e.action,
+          e.actor,
+          e.target,
+          tenantId: e.tenantId,
+          tenantName: e.tenantName,
+        ),
     ]);
   }
 
@@ -49,7 +62,12 @@ class ApiAuditRepository implements AuditRepository {
       query.actions.isEmpty ? null : BuiltList<api.AuditAction>(query.actions);
 
   static AuditPage _pageOf(api.PageMeta meta, List<AuditEntry> items) =>
-      AuditPage(items: items, page: meta.page, totalPages: meta.totalPages, totalElements: meta.totalElements);
+      AuditPage(
+        items: items,
+        page: meta.page,
+        totalPages: meta.totalPages,
+        totalElements: meta.totalElements,
+      );
 
   static AuditEntry _entry(
     String id,

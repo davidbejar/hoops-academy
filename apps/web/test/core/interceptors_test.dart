@@ -79,7 +79,10 @@ void main() {
 
     await dio.get<Object>('/api/core/tenant');
 
-    expect(adapter.requests.single.headers.containsKey('Authorization'), isFalse);
+    expect(
+      adapter.requests.single.headers.containsKey('Authorization'),
+      isFalse,
+    );
   });
 
   test('on 401 refreshes once and retries with the new token', () async {
@@ -109,7 +112,11 @@ void main() {
         isA<DioException>().having(
           (e) => e.error,
           'error',
-          isA<AppError>().having((a) => a.kind, 'kind', AppErrorKind.unauthorized),
+          isA<AppError>().having(
+            (a) => a.kind,
+            'kind',
+            AppErrorKind.unauthorized,
+          ),
         ),
       ),
     );

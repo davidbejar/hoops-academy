@@ -103,7 +103,16 @@ void main() {
 
     test('fails when a required shell file is missing from the build', () {
       File('${build.path}/sqlite3.wasm').deleteSync();
-      expect(() => collectPrecache(build), throwsA(isA<StateError>().having((e) => e.message, 'message', contains('sqlite3.wasm'))));
+      expect(
+        () => collectPrecache(build),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('sqlite3.wasm'),
+          ),
+        ),
+      );
     });
   });
 
@@ -118,18 +127,41 @@ void main() {
   });
 
   group('renderServiceWorker', () {
-    test('injects the build id and the file list, leaving no placeholder behind', () {
-      final out = renderServiceWorker(_template, buildId: 'abc123', files: ['index.html', 'main.dart.js']);
-      expect(out, contains("const BUILD_ID = 'abc123';"));
-      expect(out, isNot(contains('__BUILD_ID__')));
-      expect(out, isNot(contains('__PRECACHE_MANIFEST__')));
-      final json = RegExp(r'const PRECACHE = (\[.*\]);').firstMatch(out)!.group(1)!;
-      expect(jsonDecode(json), ['index.html', 'main.dart.js']);
-    });
+    test(
+      'injects the build id and the file list, leaving no placeholder behind',
+      () {
+        final out = renderServiceWorker(
+          _template,
+          buildId: 'abc123',
+          files: ['index.html', 'main.dart.js'],
+        );
+        expect(out, contains("const BUILD_ID = 'abc123';"));
+        expect(out, isNot(contains('__BUILD_ID__')));
+        expect(out, isNot(contains('__PRECACHE_MANIFEST__')));
+        final json = RegExp(r'const PRECACHE = (\[.*\]);')
+            .firstMatch(out)!
+            .group(1)!;
+        expect(jsonDecode(json), ['index.html', 'main.dart.js']);
+      },
+    );
 
     test('refuses a template without both placeholders (a silent no-op would ship an unversioned worker)', () {
-      expect(() => renderServiceWorker("const BUILD_ID = 'x';", buildId: 'a', files: []), throwsA(isA<StateError>()));
-      expect(() => renderServiceWorker('const P = /*__PRECACHE_MANIFEST__*/[];', buildId: 'a', files: []), throwsA(isA<StateError>()));
+      expect(
+        () => renderServiceWorker(
+          "const BUILD_ID = 'x';",
+          buildId: 'a',
+          files: [],
+        ),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        () => renderServiceWorker(
+          'const P = /*__PRECACHE_MANIFEST__*/[];',
+          buildId: 'a',
+          files: [],
+        ),
+        throwsA(isA<StateError>()),
+      );
     });
   });
 

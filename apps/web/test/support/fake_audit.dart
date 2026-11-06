@@ -46,21 +46,31 @@ class FakeAuditRepository with Faulty implements AuditRepository {
     ];
     final start = q.page * AuditQuery.pageSize;
     final items = matching.skip(start).take(AuditQuery.pageSize).toList();
-    final pages = (matching.length + AuditQuery.pageSize - 1) ~/ AuditQuery.pageSize;
-    return AuditPage(items: items, page: q.page, totalPages: pages, totalElements: matching.length);
+    final pages =
+        (matching.length + AuditQuery.pageSize - 1) ~/ AuditQuery.pageSize;
+    return AuditPage(
+      items: items,
+      page: q.page,
+      totalPages: pages,
+      totalElements: matching.length,
+    );
   }
 
   @override
-  Future<AuditPage> academy(String tenantId, AuditQuery query) => run('academy', () {
-    academyQueries.add((tenantId, query));
-    return _page(query);
-  });
+  Future<AuditPage> academy(String tenantId, AuditQuery query) =>
+      run('academy', () {
+        academyQueries.add((tenantId, query));
+        return _page(query);
+      });
 
   @override
-  Future<AuditPage> platform(AuditQuery query, {String? tenantId}) => run('platform', () {
-    platformQueries.add((tenantId, query));
-    return _page(query);
-  });
+  Future<AuditPage> platform(AuditQuery query, {String? tenantId}) =>
+      run('platform', () {
+        platformQueries.add((tenantId, query));
+        return _page(query);
+      });
 
-  List<Override> get overrides => [auditRepositoryProvider.overrideWithValue(this)];
+  List<Override> get overrides => [
+    auditRepositoryProvider.overrideWithValue(this),
+  ];
 }

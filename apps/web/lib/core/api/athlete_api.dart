@@ -11,5 +11,6 @@ export 'package:hoops_athlete_api/hoops_athlete_api.dart';
 
 /// Generated client on the app's shared [Dio] (its own interceptors are off).
 final athleteApiProvider = Provider<ath.HoopsAthleteApi>(
-  (ref) => ath.HoopsAthleteApi(dio: ref.watch(dioProvider), interceptors: const []),
+  (ref) =>
+      ath.HoopsAthleteApi(dio: ref.watch(dioProvider), interceptors: const []),
 );

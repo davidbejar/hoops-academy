@@ -11,10 +11,11 @@ final Provider<MeRepository> meRepositoryProvider = Provider<MeRepository>(
 );
 
 /// `GET /api/core/me`, only while signed in (so a sign-out drops the data).
-final FutureProvider<CurrentUser> currentUserProvider = FutureProvider<CurrentUser>((ref) async {
-  final status = ref.watch(authStatusProvider);
-  if (status != AuthStatus.authenticated) {
-    throw StateError('not authenticated');
-  }
-  return ref.watch(meRepositoryProvider).fetch();
-});
+final FutureProvider<CurrentUser> currentUserProvider =
+    FutureProvider<CurrentUser>((ref) async {
+      final status = ref.watch(authStatusProvider);
+      if (status != AuthStatus.authenticated) {
+        throw StateError('not authenticated');
+      }
+      return ref.watch(meRepositoryProvider).fetch();
+    });

@@ -63,7 +63,10 @@ void main() {
   });
 
   test('home path is the first destination', () {
-    expect(homePathFor(roles: {TenantRole.parent}, superAdmin: false), '/matches');
+    expect(
+      homePathFor(roles: {TenantRole.parent}, superAdmin: false),
+      '/matches',
+    );
     expect(homePathFor(roles: {}, superAdmin: true), '/platform');
   });
 }

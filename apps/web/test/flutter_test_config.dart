@@ -42,6 +42,8 @@ class _TolerantGoldenComparator extends LocalFileComparator {
     }
     final error = await generateFailureOutput(result, golden, basedir);
     result.dispose();
-    throw FlutterError('$error (tolerance ${(tolerance * 100).toStringAsFixed(1)} %)');
+    throw FlutterError(
+      '$error (tolerance ${(tolerance * 100).toStringAsFixed(1)} %)',
+    );
   }
 }

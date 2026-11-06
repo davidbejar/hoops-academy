@@ -30,7 +30,12 @@ class StatLine {
 
   final int points;
   final int fg1Made, fg1Attempted, fg2Made, fg2Attempted, fg3Made, fg3Attempted;
-  final int assists, offensiveRebounds, defensiveRebounds, turnovers, steals, blocks;
+  final int assists,
+      offensiveRebounds,
+      defensiveRebounds,
+      turnovers,
+      steals,
+      blocks;
   final int personalFouls, technicalFouls, unsportsmanlikeFouls;
   final int secondsPlayed;
 
@@ -103,14 +108,23 @@ abstract final class WarningCode {
 
 /// A domain inconsistency; events are never dropped for these.
 class ProjectionWarning {
-  const ProjectionWarning({required this.code, required this.eventId, this.playerId});
+  const ProjectionWarning({
+    required this.code,
+    required this.eventId,
+    this.playerId,
+  });
   final String code;
   final String eventId;
   final String? playerId;
 }
 
 class PlayerLine {
-  const PlayerLine({required this.playerId, required this.wasStarter, required this.stats, this.warnings = const []});
+  const PlayerLine({
+    required this.playerId,
+    required this.wasStarter,
+    required this.stats,
+    this.warnings = const [],
+  });
   final String playerId;
   final bool wasStarter;
   final StatLine stats;
@@ -179,7 +193,8 @@ class Projection {
   final Map<String, String> voidedBy;
   final LiveState live;
 
-  StatLine get teamTotals => playerStats.fold(StatLine.zero, (a, l) => a + l.stats);
+  StatLine get teamTotals =>
+      playerStats.fold(StatLine.zero, (a, l) => a + l.stats);
 
   PlayerLine? lineOf(String playerId) {
     for (final l in playerStats) {

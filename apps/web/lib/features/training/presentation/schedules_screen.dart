@@ -32,7 +32,10 @@ class SchedulesScreen extends ConsumerWidget {
       floatingActionButton: caps.canManageAnyTraining
           ? FloatingActionButton.extended(
               key: const Key('schedule-new'),
-              onPressed: () => showDialog<bool>(context: context, builder: (_) => const ScheduleDialog()),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => const ScheduleDialog(),
+              ),
               icon: const Icon(Icons.add),
               label: Text(l.scheduleNew),
             )
@@ -45,14 +48,23 @@ class SchedulesScreen extends ConsumerWidget {
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.scheduleEmpty,
           builder: (context, data) => ListView(
-            padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceSm, AppTokens.spaceMd, 88),
+            padding: const EdgeInsets.fromLTRB(
+              AppTokens.spaceMd,
+              AppTokens.spaceSm,
+              AppTokens.spaceMd,
+              88,
+            ),
             children: [
               for (final s in data)
                 Card(
                   child: ListTile(
                     key: Key('schedule-${s.id}'),
                     title: Text(
-                      l.scheduleLine(s.dayOfWeek.label(l), s.durationMinutes, s.startTime.substring(0, 5)),
+                      l.scheduleLine(
+                        s.dayOfWeek.label(l),
+                        s.durationMinutes,
+                        s.startTime.substring(0, 5),
+                      ),
                     ),
                     subtitle: Text(
                       [
@@ -60,11 +72,17 @@ class SchedulesScreen extends ConsumerWidget {
                         if (s.location != null) s.location!,
                         s.validUntil == null
                             ? l.scheduleValidity(fullDate(s.validFrom))
-                            : l.scheduleValidityRange(fullDate(s.validFrom), fullDate(s.validUntil!)),
+                            : l.scheduleValidityRange(
+                                fullDate(s.validFrom),
+                                fullDate(s.validUntil!),
+                              ),
                       ].join(' · '),
                     ),
                     onTap: caps.canManageTraining(s.teamId)
-                        ? () => showDialog<bool>(context: context, builder: (_) => ScheduleDialog(schedule: s))
+                        ? () => showDialog<bool>(
+                            context: context,
+                            builder: (_) => ScheduleDialog(schedule: s),
+                          )
                         : null,
                     trailing: caps.canManageTraining(s.teamId)
                         ? IconButton(
@@ -72,9 +90,19 @@ class SchedulesScreen extends ConsumerWidget {
                             tooltip: l.delete,
                             icon: const Icon(Icons.delete_outline),
                             onPressed: () async {
-                              if (!await confirmDialog(context, message: l.scheduleDeleteConfirm, confirmLabel: l.delete)) return;
+                              if (!await confirmDialog(
+                                context,
+                                message: l.scheduleDeleteConfirm,
+                                confirmLabel: l.delete,
+                              ))
+                                return;
                               if (!context.mounted) return;
-                              await runAction(context, () => ref.read(schedulesProvider.notifier).delete(s.id));
+                              await runAction(
+                                context,
+                                () => ref
+                                    .read(schedulesProvider.notifier)
+                                    .delete(s.id),
+                              );
                             },
                           )
                         : null,
@@ -102,10 +130,15 @@ class _ScheduleDialogState extends ConsumerState<ScheduleDialog> {
   final _form = GlobalKey<FormState>();
   late String? _teamId = widget.schedule?.teamId;
   late ath.DayOfWeek _day = widget.schedule?.dayOfWeek ?? ath.DayOfWeek.MONDAY;
-  late final _time = TextEditingController(text: widget.schedule?.startTime.substring(0, 5) ?? '18:00');
-  late final _duration = TextEditingController(text: '${widget.schedule?.durationMinutes ?? 90}');
+  late final _time = TextEditingController(
+    text: widget.schedule?.startTime.substring(0, 5) ?? '18:00',
+  );
+  late final _duration = TextEditingController(
+    text: '${widget.schedule?.durationMinutes ?? 90}',
+  );
   late final _location = TextEditingController(text: widget.schedule?.location);
-  late DateTime _from = widget.schedule?.validFrom.toDateTime() ?? DateTime.now();
+  late DateTime _from =
+      widget.schedule?.validFrom.toDateTime() ?? DateTime.now();
   late DateTime? _until = widget.schedule?.validUntil?.toDateTime();
   bool _datesBad = false;
 
@@ -136,16 +169,20 @@ class _ScheduleDialogState extends ConsumerState<ScheduleDialog> {
       },
       onSubmit: () => runAction(
         context,
-        () => ref.read(schedulesProvider.notifier).save(
-          scheduleId: widget.schedule?.id,
-          teamId: _teamId!,
-          day: _day,
-          startTime: _time.text,
-          durationMinutes: int.parse(_duration.text),
-          location: _location.text.trim().isEmpty ? null : _location.text.trim(),
-          validFrom: _from,
-          validUntil: _until,
-        ),
+        () => ref
+            .read(schedulesProvider.notifier)
+            .save(
+              scheduleId: widget.schedule?.id,
+              teamId: _teamId!,
+              day: _day,
+              startTime: _time.text,
+              durationMinutes: int.parse(_duration.text),
+              location: _location.text.trim().isEmpty
+                  ? null
+                  : _location.text.trim(),
+              validFrom: _from,
+              validUntil: _until,
+            ),
         success: l.saved,
       ),
       children: [
@@ -155,7 +192,10 @@ class _ScheduleDialogState extends ConsumerState<ScheduleDialog> {
             initialValue: _teamId,
             isExpanded: true,
             decoration: InputDecoration(labelText: l.sessionTeam),
-            items: [for (final t in teams) DropdownMenuItem(value: t.id, child: Text(t.displayLabel))],
+            items: [
+              for (final t in teams)
+                DropdownMenuItem(value: t.id, child: Text(t.displayLabel)),
+            ],
             validator: (v) => v == null ? l.fieldRequired : null,
             onChanged: (v) => setState(() => _teamId = v),
           ),
@@ -166,7 +206,10 @@ class _ScheduleDialogState extends ConsumerState<ScheduleDialog> {
           initialValue: _day,
           isExpanded: true,
           decoration: InputDecoration(labelText: l.scheduleDay),
-          items: [for (final d in weekdays) DropdownMenuItem(value: d, child: Text(d.label(l)))],
+          items: [
+            for (final d in weekdays)
+              DropdownMenuItem(value: d, child: Text(d.label(l))),
+          ],
           onChanged: (v) => setState(() => _day = v ?? _day),
         ),
         formGap,
@@ -175,7 +218,9 @@ class _ScheduleDialogState extends ConsumerState<ScheduleDialog> {
           controller: _time,
           keyboardType: TextInputType.datetime,
           decoration: InputDecoration(labelText: l.scheduleTime),
-          validator: (v) => _timePattern.hasMatch((v ?? '').trim()) ? null : l.scheduleTimeInvalid,
+          validator: (v) => _timePattern.hasMatch((v ?? '').trim())
+              ? null
+              : l.scheduleTimeInvalid,
         ),
         formGap,
         TextFormField(

@@ -35,8 +35,12 @@ Future<void> recordFiftyEvents(MatchStore store) async {
   Future<void> add(MatchEvent Function(EventMeta m) build) async {
     n++;
     await store.record(
-      tenantId: tenant, personId: me, matchId: matchId,
-      period: period, clockSecondsRemaining: clock, build: build,
+      tenantId: tenant,
+      personId: me,
+      matchId: matchId,
+      period: period,
+      clockSecondsRemaining: clock,
+      build: build,
     );
   }
 
@@ -47,14 +51,22 @@ Future<void> recordFiftyEvents(MatchStore store) async {
     clock -= 10;
     final p = players[i % players.length];
     switch (i % 8) {
-      case 0: await add((m) => Shot(m, playerId: p, points: 2, made: true));
-      case 1: await add((m) => Shot(m, playerId: p, points: 3, made: false));
-      case 2: await add((m) => Rebound(m, playerId: p, kind: ReboundKind.defensive));
-      case 3: await add((m) => OpponentScore(m, points: 2));
-      case 4: await add((m) => Assist(m, playerId: p));
-      case 5: await add((m) => Foul(m, playerId: p, kind: FoulKind.personal));
-      case 6: await add((m) => SubOut(m, playerId: 'p5'));
-      default: await add((m) => SubIn(m, playerId: 'p6'));
+      case 0:
+        await add((m) => Shot(m, playerId: p, points: 2, made: true));
+      case 1:
+        await add((m) => Shot(m, playerId: p, points: 3, made: false));
+      case 2:
+        await add((m) => Rebound(m, playerId: p, kind: ReboundKind.defensive));
+      case 3:
+        await add((m) => OpponentScore(m, points: 2));
+      case 4:
+        await add((m) => Assist(m, playerId: p));
+      case 5:
+        await add((m) => Foul(m, playerId: p, kind: FoulKind.personal));
+      case 6:
+        await add((m) => SubOut(m, playerId: 'p5'));
+      default:
+        await add((m) => SubIn(m, playerId: 'p6'));
     }
     if (i % 8 == 7) players[4] = players[4] == 'p5' ? 'p6' : 'p5';
     i++;
@@ -90,8 +102,10 @@ void main() {
     await store.close();
   });
 
-  Future<List<RecordedEvent>> localEvents() async =>
-      mergeEvents(await store.syncedEvents(matchId), await store.ownEvents(matchId));
+  Future<List<RecordedEvent>> localEvents() async => mergeEvents(
+    await store.syncedEvents(matchId),
+    await store.ownEvents(matchId),
+  );
 
   test('50 events queued offline -> reconnect -> 50 ACCEPTED; replay -> 50 DUPLICATE; '
       'local projection equals the server box score', () async {
@@ -131,17 +145,30 @@ void main() {
     await recordFiftyEvents(store);
     server.dropResponses = true;
     await worker.syncNow();
-    expect((await store.ownEvents(matchId)).every((e) => e.status == EventStatus.pending), isTrue);
-    expect(server.stored(matchId).length, 50, reason: 'the server did store them');
+    expect(
+      (await store.ownEvents(matchId))
+          .every((e) => e.status == EventStatus.pending),
+      isTrue,
+    );
+    expect(
+      server.stored(matchId).length,
+      50,
+      reason: 'the server did store them',
+    );
     server.dropResponses = false;
     await worker.syncNow();
-    expect((await store.ownEvents(matchId)).every((e) => e.status == EventStatus.duplicate), isTrue);
+    expect(
+      (await store.ownEvents(matchId))
+          .every((e) => e.status == EventStatus.duplicate),
+      isTrue,
+    );
   });
 
   for (final v in loadVectors()) {
     test('vector ${v.name}: events of other scorers merged from the feed '
         'project to the server golden', () async {
-      final s = FakeGameServer(rules: v.rules, roster: v.roster)..preload(matchId, v.events);
+      final s = FakeGameServer(rules: v.rules, roster: v.roster)
+        ..preload(matchId, v.events);
       final w = SyncWorker(
         store: store,
         remote: s,
@@ -153,60 +180,84 @@ void main() {
       final local = project(v.rules, v.roster, await localEvents());
       final golden = v.expected;
       final actual = toVectorJson(local);
-      expect(normalise(actual['playerStats']), normalise(golden['playerStats']));
+      expect(
+        normalise(actual['playerStats']),
+        normalise(golden['playerStats']),
+      );
       expect(normalise(actual['summary']), normalise(golden['summary']));
       expect(normalise(actual['warnings']), normalise(golden['warnings']));
       expect(actual, toVectorJson(s.boxScore(matchId)));
     });
   }
 
-  test('401 pauses the worker and preserves the queue; re-login resumes', () async {
-    await recordFiftyEvents(store);
-    server.unauthorized = true;
-    await worker.syncNow();
-    expect(worker.status.value.pausedForAuth, isTrue);
-    expect(worker.status.value.lastError, SyncErrorKind.unauthorized);
-    expect(timers.pending, isEmpty, reason: 'no retry loop while signed out');
-    final queued = await store.ownEvents(matchId);
-    expect(queued.length, 50);
-    expect(queued.every((e) => e.status == EventStatus.pending), isTrue);
+  test(
+    '401 pauses the worker and preserves the queue; re-login resumes',
+    () async {
+      await recordFiftyEvents(store);
+      server.unauthorized = true;
+      await worker.syncNow();
+      expect(worker.status.value.pausedForAuth, isTrue);
+      expect(worker.status.value.lastError, SyncErrorKind.unauthorized);
+      expect(timers.pending, isEmpty, reason: 'no retry loop while signed out');
+      final queued = await store.ownEvents(matchId);
+      expect(queued.length, 50);
+      expect(queued.every((e) => e.status == EventStatus.pending), isTrue);
 
-    await worker.onConnectivityChanged(online: true);
-    expect(server.batchSizes, isEmpty, reason: 'stays paused until re-login');
+      await worker.onConnectivityChanged(online: true);
+      expect(server.batchSizes, isEmpty, reason: 'stays paused until re-login');
 
-    server.unauthorized = false;
-    await worker.onAuthenticated();
-    expect(worker.status.value.pausedForAuth, isFalse);
-    expect((await store.ownEvents(matchId)).every((e) => e.status == EventStatus.accepted), isTrue);
-  });
+      server.unauthorized = false;
+      await worker.onAuthenticated();
+      expect(worker.status.value.pausedForAuth, isFalse);
+      expect(
+        (await store.ownEvents(matchId))
+            .every((e) => e.status == EventStatus.accepted),
+        isTrue,
+      );
+    },
+  );
 
-  test('REJECTED events are kept with their reason, counted and not resent', () async {
-    server.rejectWhen = (e) => e.playerId == 'p3' ? 'NOT_AUTHORIZED' : null;
-    await recordFiftyEvents(store);
-    await worker.syncNow();
-    final own = await store.ownEvents(matchId);
-    final rejected = own.where((e) => e.status == EventStatus.rejected).toList();
-    expect(rejected, isNotEmpty);
-    expect(rejected.every((e) => e.rejectReason == 'NOT_AUTHORIZED'), isTrue);
-    expect(worker.status.value.rejectedCount, rejected.length);
-    expect(worker.status.value.pendingCount, 0);
-    final batches = server.batchSizes.length;
-    await worker.syncNow();
-    expect(server.batchSizes.length, batches, reason: 'nothing left to send');
-    // The projection follows the server: rejected events do not count.
-    expect(toVectorJson(project(server.rules, roster, await localEvents())),
-        toVectorJson(server.boxScore(matchId)));
-    await store.discard(rejected.first.event.id);
-    expect(worker.status.value.rejectedCount, rejected.length,
-        reason: 'status refreshes on the next sync only');
-    await worker.refreshStatus();
-    expect(worker.status.value.rejectedCount, rejected.length - 1);
-  });
+  test(
+    'REJECTED events are kept with their reason, counted and not resent',
+    () async {
+      server.rejectWhen = (e) => e.playerId == 'p3' ? 'NOT_AUTHORIZED' : null;
+      await recordFiftyEvents(store);
+      await worker.syncNow();
+      final own = await store.ownEvents(matchId);
+      final rejected = own
+          .where((e) => e.status == EventStatus.rejected)
+          .toList();
+      expect(rejected, isNotEmpty);
+      expect(rejected.every((e) => e.rejectReason == 'NOT_AUTHORIZED'), isTrue);
+      expect(worker.status.value.rejectedCount, rejected.length);
+      expect(worker.status.value.pendingCount, 0);
+      final batches = server.batchSizes.length;
+      await worker.syncNow();
+      expect(server.batchSizes.length, batches, reason: 'nothing left to send');
+      // The projection follows the server: rejected events do not count.
+      expect(
+        toVectorJson(project(server.rules, roster, await localEvents())),
+        toVectorJson(server.boxScore(matchId)),
+      );
+      await store.discard(rejected.first.event.id);
+      expect(
+        worker.status.value.rejectedCount,
+        rejected.length,
+        reason: 'status refreshes on the next sync only',
+      );
+      await worker.refreshStatus();
+      expect(worker.status.value.rejectedCount, rejected.length - 1);
+    },
+  );
 
   test('batches of at most 500 in clientSeq order', () async {
     for (var i = 0; i < 1200; i++) {
       await store.record(
-        tenantId: tenant, personId: me, matchId: matchId, period: 1, clockSecondsRemaining: 300,
+        tenantId: tenant,
+        personId: me,
+        matchId: matchId,
+        period: 1,
+        clockSecondsRemaining: 300,
         build: (m) => Assist(m, playerId: 'p1'),
       );
     }
@@ -227,7 +278,11 @@ void main() {
     }
     for (var i = 0; i < delays.length; i++) {
       final nominal = min(60, 1 << i);
-      expect(delays[i].inMilliseconds, inInclusiveRange(nominal * 500, nominal * 1000), reason: 'attempt $i');
+      expect(
+        delays[i].inMilliseconds,
+        inInclusiveRange(nominal * 500, nominal * 1000),
+        reason: 'attempt $i',
+      );
     }
     expect(delays.last, lessThanOrEqualTo(const Duration(seconds: 60)));
     server.offline = false;
@@ -237,27 +292,39 @@ void main() {
     expect(worker.backoffAttempt, 0);
   });
 
-  test('watching a match: periodic pull merges other scorers; stop on unwatch', () async {
-    worker.watch(matchId, every: const Duration(seconds: 15));
-    await pumpEventQueue();
-    final otherMeta = EventMeta(
-      id: '0190b6a0-0001-7000-8000-00000000aaaa', deviceId: 'assistant-phone', clientSeq: 1,
-      period: 1, clockSecondsRemaining: 600, recordedAtClient: DateTime.utc(2026, 11, 1, 10),
-    );
-    server.preload(matchId, [RecordedEvent(PeriodStart(otherMeta))]);
-    expect(timers.periodic.single.duration, const Duration(seconds: 15));
-    await timers.periodic.single.tick();
-    expect((await store.syncedEvents(matchId)).map((e) => e.event.id), [otherMeta.id]);
-    worker.unwatch();
-    expect(timers.periodic, isEmpty);
-  });
+  test(
+    'watching a match: periodic pull merges other scorers; stop on unwatch',
+    () async {
+      worker.watch(matchId, every: const Duration(seconds: 15));
+      await pumpEventQueue();
+      final otherMeta = EventMeta(
+        id: '0190b6a0-0001-7000-8000-00000000aaaa',
+        deviceId: 'assistant-phone',
+        clientSeq: 1,
+        period: 1,
+        clockSecondsRemaining: 600,
+        recordedAtClient: DateTime.utc(2026, 11, 1, 10),
+      );
+      server.preload(matchId, [RecordedEvent(PeriodStart(otherMeta))]);
+      expect(timers.periodic.single.duration, const Duration(seconds: 15));
+      await timers.periodic.single.tick();
+      expect((await store.syncedEvents(matchId)).map((e) => e.event.id), [
+        otherMeta.id,
+      ]);
+      worker.unwatch();
+      expect(timers.periodic, isEmpty);
+    },
+  );
 
-  test('own accepted events pulled back from the feed are not counted twice', () async {
-    await recordFiftyEvents(store);
-    await worker.syncNow(matchId: matchId);
-    expect((await store.syncedEvents(matchId)).length, 50);
-    expect((await localEvents()).length, 50);
-  });
+  test(
+    'own accepted events pulled back from the feed are not counted twice',
+    () async {
+      await recordFiftyEvents(store);
+      await worker.syncNow(matchId: matchId);
+      expect((await store.syncedEvents(matchId)).length, 50);
+      expect((await localEvents()).length, 50);
+    },
+  );
 
   test('app resume triggers a sync', () async {
     await recordFiftyEvents(store);
@@ -278,12 +345,19 @@ void main() {
     expect(server.batchSizes.fold<int>(0, (a, b) => a + b), 50);
   });
 
-  test('events of another signed-in person are never sent with my token', () async {
-    await store.record(
-      tenantId: tenant, personId: 'previous-user', matchId: matchId, period: 1, clockSecondsRemaining: 10,
-      build: (m) => Assist(m, playerId: 'p1'),
-    );
-    await worker.syncNow();
-    expect(server.batchSizes, isEmpty);
-  });
+  test(
+    'events of another signed-in person are never sent with my token',
+    () async {
+      await store.record(
+        tenantId: tenant,
+        personId: 'previous-user',
+        matchId: matchId,
+        period: 1,
+        clockSecondsRemaining: 10,
+        build: (m) => Assist(m, playerId: 'p1'),
+      );
+      await worker.syncNow();
+      expect(server.batchSizes, isEmpty);
+    },
+  );
 }

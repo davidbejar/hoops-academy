@@ -34,7 +34,9 @@ class TenantSwitcherScreen extends ConsumerWidget {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
+            constraints: const BoxConstraints(
+              maxWidth: AppTokens.maxContentWidth,
+            ),
             child: ListView(
               key: const Key('tenant-list'),
               padding: const EdgeInsets.all(AppTokens.spaceMd),
@@ -50,7 +52,9 @@ class TenantSwitcherScreen extends ConsumerWidget {
                   Card(
                     child: ListTile(
                       key: Key('tenant-${m.tenantId}'),
-                      leading: CircleAvatar(child: Text(_initial(m.tenantName))),
+                      leading: CircleAvatar(
+                        child: Text(_initial(m.tenantName)),
+                      ),
                       title: Text(m.tenantName),
                       subtitle: Text(
                         l.rolesInAcademy(

@@ -25,7 +25,9 @@ class TenantAvatar extends ConsumerWidget {
         .toList();
     if (words.isEmpty) return '?';
     if (words.length == 1) {
-      return words.single.substring(0, words.single.length.clamp(1, 2)).toUpperCase();
+      return words.single
+          .substring(0, words.single.length.clamp(1, 2))
+          .toUpperCase();
     }
     return (words.first[0] + words[1][0]).toUpperCase();
   }

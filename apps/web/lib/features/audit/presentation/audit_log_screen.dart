@@ -7,7 +7,8 @@ import '../../../core/api/api.dart' as api;
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
-import '../../platform/application/platform_providers.dart' show isSuperAdminProvider, tenantDetailProvider;
+import '../../platform/application/platform_providers.dart'
+    show isSuperAdminProvider, tenantDetailProvider;
 import '../application/audit_providers.dart';
 import '../domain/audit_entry.dart';
 import 'audit_labels.dart';
@@ -32,13 +33,20 @@ class PlatformActivityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final tenantName = tenantId == null ? null : ref.watch(tenantDetailProvider(tenantId!)).value?.tenant.name;
+    final tenantName = tenantId == null
+        ? null
+        : ref.watch(tenantDetailProvider(tenantId!)).value?.tenant.name;
     return SubPage(
-      title: tenantName == null ? l.auditTitle : '${l.auditTitle} · $tenantName',
+      title: tenantName == null
+          ? l.auditTitle
+          : '${l.auditTitle} · $tenantName',
       parentPath: tenantId == null ? '/platform' : '/platform/$tenantId',
       child: Guarded(
         allowed: ref.watch(isSuperAdminProvider),
-        child: AuditLogView(scope: AuditScope.platform(tenantId), showTenant: tenantId == null),
+        child: AuditLogView(
+          scope: AuditScope.platform(tenantId),
+          showTenant: tenantId == null,
+        ),
       ),
     );
   }
@@ -61,7 +69,12 @@ class AuditLogView extends ConsumerWidget {
       key: const Key('audit-log'),
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppTokens.spaceMd, AppTokens.spaceMd, AppTokens.spaceMd, 0),
+          padding: const EdgeInsets.fromLTRB(
+            AppTokens.spaceMd,
+            AppTokens.spaceMd,
+            AppTokens.spaceMd,
+            0,
+          ),
           child: Wrap(
             spacing: AppTokens.spaceSm,
             runSpacing: AppTokens.spaceSm,
@@ -70,7 +83,9 @@ class AuditLogView extends ConsumerWidget {
               OutlinedButton.icon(
                 key: const Key('audit-range'),
                 icon: const Icon(Icons.date_range),
-                label: Text(query.hasRange ? _range(query, locale) : l.auditAnyTime),
+                label: Text(
+                  query.hasRange ? _range(query, locale) : l.auditAnyTime,
+                ),
                 onPressed: () => _pickRange(context, query, notifier),
               ),
               if (query.hasRange)
@@ -83,11 +98,16 @@ class AuditLogView extends ConsumerWidget {
               OutlinedButton.icon(
                 key: const Key('audit-actions'),
                 icon: const Icon(Icons.filter_list),
-                label: Text(query.actions.isEmpty ? l.auditAllActions : l.auditSelectedActions(query.actions.length)),
+                label: Text(
+                  query.actions.isEmpty
+                      ? l.auditAllActions
+                      : l.auditSelectedActions(query.actions.length),
+                ),
                 onPressed: () async {
                   final picked = await showDialog<Set<api.AuditAction>>(
                     context: context,
-                    builder: (_) => AuditActionFilterDialog(selected: query.actions),
+                    builder: (_) =>
+                        AuditActionFilterDialog(selected: query.actions),
                   );
                   if (picked != null) notifier.setActions(picked);
                 },
@@ -106,10 +126,17 @@ class AuditLogView extends ConsumerWidget {
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.all(AppTokens.spaceMd),
-                    children: [for (final e in p.items) AuditEntryTile(entry: e, showTenant: showTenant)],
+                    children: [
+                      for (final e in p.items)
+                        AuditEntryTile(entry: e, showTenant: showTenant),
+                    ],
                   ),
                 ),
-                _Pager(page: p, onPrevious: notifier.previousPage, onNext: notifier.nextPage),
+                _Pager(
+                  page: p,
+                  onPrevious: notifier.previousPage,
+                  onNext: notifier.nextPage,
+                ),
               ],
             ),
           ),
@@ -123,13 +150,19 @@ class AuditLogView extends ConsumerWidget {
     return '${f.format(q.fromDay!)} – ${f.format(q.toDay!)}';
   }
 
-  static Future<void> _pickRange(BuildContext context, AuditQuery query, AuditQueryNotifier notifier) async {
+  static Future<void> _pickRange(
+    BuildContext context,
+    AuditQuery query,
+    AuditQueryNotifier notifier,
+  ) async {
     final now = DateTime.now();
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime(now.year, now.month, now.day),
-      initialDateRange: query.hasRange ? DateTimeRange(start: query.fromDay!, end: query.toDay!) : null,
+      initialDateRange: query.hasRange
+          ? DateTimeRange(start: query.fromDay!, end: query.toDay!)
+          : null,
     );
     if (picked != null) notifier.setRange(picked.start, picked.end);
   }
@@ -137,7 +170,11 @@ class AuditLogView extends ConsumerWidget {
 
 /// One entry: the localized action, what it was about, who did it and when (and the academy on the platform list).
 class AuditEntryTile extends StatelessWidget {
-  const AuditEntryTile({super.key, required this.entry, this.showTenant = false});
+  const AuditEntryTile({
+    super.key,
+    required this.entry,
+    this.showTenant = false,
+  });
   final AuditEntry entry;
   final bool showTenant;
 
@@ -175,7 +212,11 @@ class AuditEntryTile extends StatelessWidget {
 }
 
 class _Pager extends StatelessWidget {
-  const _Pager({required this.page, required this.onPrevious, required this.onNext});
+  const _Pager({
+    required this.page,
+    required this.onPrevious,
+    required this.onNext,
+  });
   final AuditPage page;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
@@ -184,7 +225,10 @@ class _Pager extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd, vertical: AppTokens.spaceXs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.spaceMd,
+        vertical: AppTokens.spaceXs,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -194,7 +238,12 @@ class _Pager extends StatelessWidget {
             icon: const Icon(Icons.chevron_left),
             onPressed: page.hasPrevious ? onPrevious : null,
           ),
-          Text(l.auditPageOf(page.page + 1, page.totalPages < 1 ? 1 : page.totalPages)),
+          Text(
+            l.auditPageOf(
+              page.page + 1,
+              page.totalPages < 1 ? 1 : page.totalPages,
+            ),
+          ),
           IconButton(
             key: const Key('audit-next'),
             tooltip: l.auditNextPage,
@@ -213,7 +262,8 @@ class AuditActionFilterDialog extends StatefulWidget {
   final Set<api.AuditAction> selected;
 
   @override
-  State<AuditActionFilterDialog> createState() => _AuditActionFilterDialogState();
+  State<AuditActionFilterDialog> createState() =>
+      _AuditActionFilterDialogState();
 }
 
 class _AuditActionFilterDialogState extends State<AuditActionFilterDialog> {
@@ -222,7 +272,8 @@ class _AuditActionFilterDialogState extends State<AuditActionFilterDialog> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final actions = [...auditActions]..sort((a, b) => a.label(l).compareTo(b.label(l)));
+    final actions = [...auditActions]
+      ..sort((a, b) => a.label(l).compareTo(b.label(l)));
     return AlertDialog(
       title: Text(l.auditFilterTitle),
       content: SizedBox(
@@ -237,7 +288,9 @@ class _AuditActionFilterDialogState extends State<AuditActionFilterDialog> {
                   dense: true,
                   title: Text(a.label(l)),
                   value: _selected.contains(a),
-                  onChanged: (on) => setState(() => on == true ? _selected.add(a) : _selected.remove(a)),
+                  onChanged: (on) => setState(
+                    () => on == true ? _selected.add(a) : _selected.remove(a),
+                  ),
                 ),
             ],
           ),

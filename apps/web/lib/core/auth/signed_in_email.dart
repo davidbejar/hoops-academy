@@ -10,7 +10,9 @@ String? emailFromAccessToken(String? token) {
   final parts = token.split('.');
   if (parts.length != 3) return null;
   try {
-    final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+    final payload = utf8.decode(
+      base64Url.decode(base64Url.normalize(parts[1])),
+    );
     final claims = jsonDecode(payload);
     final email = claims is Map ? claims['email'] : null;
     return email is String && email.isNotEmpty ? email : null;

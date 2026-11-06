@@ -15,8 +15,12 @@ class MockGameApi {
   MockGameApi({required this.core})
     : _teamId = core.homeTeamId,
       liveId = core.academy == MockAcademy.demo ? liveMatchId : _norteLiveId,
-      scheduledId = core.academy == MockAcademy.demo ? scheduledMatchId : _norteScheduledId,
-      finishedId = core.academy == MockAcademy.demo ? finishedMatchId : _norteFinishedId {
+      scheduledId = core.academy == MockAcademy.demo
+          ? scheduledMatchId
+          : _norteScheduledId,
+      finishedId = core.academy == MockAcademy.demo
+          ? finishedMatchId
+          : _norteFinishedId {
     _seed();
   }
 
@@ -44,49 +48,129 @@ class MockGameApi {
   MockAuthz get _authz => core.authz;
 
   /// Admin or staff of the match's team: sets up and runs the match, reads every event.
-  bool _manages(Map<String, Object?> m) => _authz.canManageTeam('${m['teamId']}');
+  bool _manages(Map<String, Object?> m) =>
+      _authz.canManageTeam('${m['teamId']}');
 
   /// Players a non-manager reads: guardian's linked players, the player himself.
   Set<String> get _own => {..._authz.linkedPlayerIds, ..._authz.selfPlayerIds};
 
   void _seed() {
-    Map<String, Object?> match(String id, String opponent, String status, DateTime at, {String home = 'HOME'}) => {
-      'id': id, 'teamId': _teamId, 'seasonId': 'season-2026', 'opponentName': opponent, 'homeAway': home,
-      'scheduledAt': at.toUtc().toIso8601String(), 'venue': 'Pabellón Norte', 'status': status,
-      'periodCount': 4, 'periodMinutes': 10, 'startedAt': null, 'finishedAt': null, 'cancelledAt': null,
-      'cancelReason': null, 'score': {'team': 0, 'opponent': 0}, 'lastServerSeq': 0,
+    Map<String, Object?> match(
+      String id,
+      String opponent,
+      String status,
+      DateTime at, {
+      String home = 'HOME',
+    }) => {
+      'id': id,
+      'teamId': _teamId,
+      'seasonId': 'season-2026',
+      'opponentName': opponent,
+      'homeAway': home,
+      'scheduledAt': at.toUtc().toIso8601String(),
+      'venue': 'Pabellón Norte',
+      'status': status,
+      'periodCount': 4,
+      'periodMinutes': 10,
+      'startedAt': null,
+      'finishedAt': null,
+      'cancelledAt': null,
+      'cancelReason': null,
+      'score': {'team': 0, 'opponent': 0},
+      'lastServerSeq': 0,
     };
     final now = DateTime.now().toUtc();
     _matches.addAll([
-      match(liveId, 'Tigres', 'LIVE', now.subtract(const Duration(minutes: 20))),
-      match(scheduledId, 'Águilas', 'SCHEDULED', now.add(const Duration(days: 3)), home: 'AWAY'),
-      match(finishedId, 'Lobos', 'FINISHED', now.subtract(const Duration(days: 7))),
+      match(
+        liveId,
+        'Tigres',
+        'LIVE',
+        now.subtract(const Duration(minutes: 20)),
+      ),
+      match(
+        scheduledId,
+        'Águilas',
+        'SCHEDULED',
+        now.add(const Duration(days: 3)),
+        home: 'AWAY',
+      ),
+      match(
+        finishedId,
+        'Lobos',
+        'FINISHED',
+        now.subtract(const Duration(days: 7)),
+      ),
     ]);
     final roster = [
       for (final (i, id) in core.rosterOf(_teamId).indexed)
-        _entry(id, core.playerFacts(id, teamId: _teamId)!.name, core.playerFacts(id, teamId: _teamId)!.jersey, i < 5),
+        _entry(
+          id,
+          core.playerFacts(id, teamId: _teamId)!.name,
+          core.playerFacts(id, teamId: _teamId)!.jersey,
+          i < 5,
+        ),
     ];
     _rosters[liveId] = roster;
     _rosters[finishedId] = roster;
-    _scriptGame(finishedId, periods: 4, started: now.subtract(const Duration(days: 7)));
-    _scriptGame(liveId, periods: 1, started: now.subtract(const Duration(minutes: 20)), finishLast: false);
+    _scriptGame(
+      finishedId,
+      periods: 4,
+      started: now.subtract(const Duration(days: 7)),
+    );
+    _scriptGame(
+      liveId,
+      periods: 1,
+      started: now.subtract(const Duration(minutes: 20)),
+      finishLast: false,
+    );
     _refreshScore(liveId);
     _refreshScore(finishedId);
   }
 
-  static Map<String, Object?> _entry(String id, String name, String? jersey, bool starter) =>
-      {'playerId': id, 'displayName': name, 'jerseyNumber': jersey, 'isStarter': starter};
+  static Map<String, Object?> _entry(
+    String id,
+    String name,
+    String? jersey,
+    bool starter,
+  ) => {
+    'playerId': id,
+    'displayName': name,
+    'jerseyNumber': jersey,
+    'isStarter': starter,
+  };
 
-  void _scriptGame(String matchId, {required int periods, required DateTime started, bool finishLast = true}) {
+  void _scriptGame(
+    String matchId, {
+    required int periods,
+    required DateTime started,
+    bool finishLast = true,
+  }) {
     var t = started;
     var seq = 0;
-    void add(String type, int period, int clock, {String? player, Map<String, Object?>? payload}) {
+    void add(
+      String type,
+      int period,
+      int clock, {
+      String? player,
+      Map<String, Object?>? payload,
+    }) {
       t = t.add(const Duration(seconds: 20));
-      _store(matchId, {
-        'id': _newId(), 'deviceId': 'mock-bench', 'clientSeq': ++seq, 'type': type, 'period': period,
-        'clockSecondsRemaining': clock, 'recordedAtClient': t.toIso8601String(),
-        'playerId': ?player, 'payload': ?payload,
-      }, 'm-tom', 'Tomás Entrenador');
+      _store(
+        matchId,
+        {
+          'id': _newId(),
+          'deviceId': 'mock-bench',
+          'clientSeq': ++seq,
+          'type': type,
+          'period': period,
+          'clockSecondsRemaining': clock,
+          'recordedAtClient': t.toIso8601String(),
+          'playerId': ?player,
+          'payload': ?payload,
+        },
+        'm-tom',
+        'Tomás Entrenador',
+      );
     }
 
     final shooters = core.rosterOf(_teamId).take(5).toList();
@@ -94,10 +178,33 @@ class MockGameApi {
       add('PERIOD_START', p, 600);
       for (var i = 0; i < 4; i++) {
         final clock = 540 - i * 120;
-        add('SHOT', p, clock, player: shooters[(i + p) % shooters.length], payload: {'points': 2, 'made': i.isEven});
-        if (i.isEven) add('ASSIST', p, clock, player: shooters[(i + p + 1) % shooters.length]);
-        add('OPPONENT_SCORE', p, clock - 30, payload: {'points': i == 3 ? 3 : 2});
-        add('REBOUND', p, clock - 50, player: shooters[(i + 2) % shooters.length], payload: {'kind': 'DEFENSIVE'});
+        add(
+          'SHOT',
+          p,
+          clock,
+          player: shooters[(i + p) % shooters.length],
+          payload: {'points': 2, 'made': i.isEven},
+        );
+        if (i.isEven)
+          add(
+            'ASSIST',
+            p,
+            clock,
+            player: shooters[(i + p + 1) % shooters.length],
+          );
+        add(
+          'OPPONENT_SCORE',
+          p,
+          clock - 30,
+          payload: {'points': i == 3 ? 3 : 2},
+        );
+        add(
+          'REBOUND',
+          p,
+          clock - 50,
+          player: shooters[(i + 2) % shooters.length],
+          payload: {'kind': 'DEFENSIVE'},
+        );
       }
       if (p < periods || finishLast) add('PERIOD_END', p, 0);
     }
@@ -108,8 +215,15 @@ class MockGameApi {
     return '0190b6a0-0000-7000-8000-$n';
   }
 
-  void _store(String matchId, Map<String, Object?> json, String person, String name) {
-    _events.putIfAbsent(matchId, () => []).add(_Stored(json, ++_serverSeq, person, name, DateTime.now().toUtc()));
+  void _store(
+    String matchId,
+    Map<String, Object?> json,
+    String person,
+    String name,
+  ) {
+    _events
+        .putIfAbsent(matchId, () => [])
+        .add(_Stored(json, ++_serverSeq, person, name, DateTime.now().toUtc()));
   }
 
   // ------------------------------------------------------------------ routes
@@ -133,14 +247,16 @@ class MockGameApi {
       if (method == 'POST') return _create(b);
     }
     final m = seg.length > 3 ? _find(seg[3]) : null;
-    if (m == null || !_authz.canSeeTeam('${m['teamId']}')) return _problem(404, 'Not found');
+    if (m == null || !_authz.canSeeTeam('${m['teamId']}'))
+      return _problem(404, 'Not found');
     final id = m['id']! as String;
     if (seg.length == 4 && method == 'GET') return MockResult.json(200, m);
     if (seg.length == 4 && method == 'PATCH') return _patch(m, b);
     switch (seg[4]) {
       case 'start':
         if (!_manages(m)) return _problem(403, 'Forbidden');
-        if ((_rosters[id] ?? []).every((e) => e['isStarter'] != true)) return _problem(422, 'Roster needs a starter');
+        if ((_rosters[id] ?? []).every((e) => e['isStarter'] != true))
+          return _problem(422, 'Roster needs a starter');
         m['status'] = 'LIVE';
         m['startedAt'] ??= DateTime.now().toUtc().toIso8601String();
         return MockResult.json(200, m);
@@ -154,15 +270,33 @@ class MockGameApi {
         if (method == 'PUT') {
           if (!_manages(m)) return _problem(403, 'Forbidden');
           _rosters[id] = [
-            for (final e in (b['entries'] as List? ?? const []).cast<Map<String, Object?>>())
-              _entry(e['playerId']! as String, core.playerFacts(e['playerId']! as String)?.name ?? e['playerId']! as String, e['jerseyNumber'] as String?, e['isStarter'] == true),
+            for (final e
+                in (b['entries'] as List? ?? const [])
+                    .cast<Map<String, Object?>>())
+              _entry(
+                e['playerId']! as String,
+                core.playerFacts(e['playerId']! as String)?.name ??
+                    e['playerId']! as String,
+                e['jerseyNumber'] as String?,
+                e['isStarter'] == true,
+              ),
           ];
         }
-        return MockResult.json(200, {'matchId': id, 'entries': _rosters[id] ?? const []});
+        return MockResult.json(200, {
+          'matchId': id,
+          'entries': _rosters[id] ?? const [],
+        });
       case 'events:batch':
-        return _batch(m, (b['events'] as List? ?? const []).cast<Map<String, Object?>>());
+        return _batch(
+          m,
+          (b['events'] as List? ?? const []).cast<Map<String, Object?>>(),
+        );
       case 'events':
-        return _feed(id, int.tryParse('${query['after'] ?? 0}') ?? 0, int.tryParse('${query['limit'] ?? 500}') ?? 500);
+        return _feed(
+          id,
+          int.tryParse('${query['after'] ?? 0}') ?? 0,
+          int.tryParse('${query['limit'] ?? 500}') ?? 500,
+        );
       case 'box-score':
         return MockResult.json(200, _boxScore(m));
     }
@@ -179,13 +313,26 @@ class MockGameApi {
   MockResult _list(Map<String, dynamic> q) {
     final team = q['teamId']?.toString();
     final season = q['seasonId']?.toString();
-    final items = [
-      for (final m in _matches)
-        if (_authz.canSeeTeam('${m['teamId']}') && (team == null || m['teamId'] == team) && (season == null || m['seasonId'] == season)) m,
-    ]..sort((a, b) => (b['scheduledAt']! as String).compareTo(a['scheduledAt']! as String));
+    final items =
+        [
+          for (final m in _matches)
+            if (_authz.canSeeTeam('${m['teamId']}') &&
+                (team == null || m['teamId'] == team) &&
+                (season == null || m['seasonId'] == season))
+              m,
+        ]..sort(
+          (a, b) => (b['scheduledAt']! as String).compareTo(
+            a['scheduledAt']! as String,
+          ),
+        );
     return MockResult.json(200, {
       'items': items,
-      'page': {'page': 0, 'size': 100, 'totalElements': items.length, 'totalPages': 1},
+      'page': {
+        'page': 0,
+        'size': 100,
+        'totalElements': items.length,
+        'totalPages': 1,
+      },
     });
   }
 
@@ -193,10 +340,18 @@ class MockGameApi {
   MockResult _patch(Map<String, Object?> m, Map<String, Object?> b) {
     if (!_manages(m)) return _problem(403, 'Forbidden');
     final clear = (b['clear'] as List? ?? const []).cast<String>();
-    if (clear.any((n) => n != 'venue') || (clear.contains('venue') && b['venue'] != null)) {
+    if (clear.any((n) => n != 'venue') ||
+        (clear.contains('venue') && b['venue'] != null)) {
       return _problem(400, 'Bad clear list');
     }
-    for (final key in const ['opponentName', 'homeAway', 'scheduledAt', 'venue', 'periodCount', 'periodMinutes']) {
+    for (final key in const [
+      'opponentName',
+      'homeAway',
+      'scheduledAt',
+      'venue',
+      'periodCount',
+      'periodMinutes',
+    ]) {
       if (b[key] != null) m[key] = b[key];
     }
     if (clear.contains('venue')) m['venue'] = null;
@@ -204,27 +359,53 @@ class MockGameApi {
   }
 
   MockResult _create(Map<String, Object?> b) {
-    if (!_authz.canManageTeam('${b['teamId']}')) return _problem(403, 'Forbidden');
+    if (!_authz.canManageTeam('${b['teamId']}'))
+      return _problem(403, 'Forbidden');
     final m = <String, Object?>{
-      'id': _newId(), 'teamId': b['teamId'], 'seasonId': 'season-2026', 'opponentName': b['opponentName'],
-      'homeAway': b['homeAway'] ?? 'HOME', 'scheduledAt': b['scheduledAt'], 'venue': b['venue'], 'status': 'SCHEDULED',
-      'periodCount': b['periodCount'] ?? 4, 'periodMinutes': b['periodMinutes'] ?? 10, 'startedAt': null,
-      'finishedAt': null, 'cancelledAt': null, 'cancelReason': null, 'score': {'team': 0, 'opponent': 0}, 'lastServerSeq': 0,
+      'id': _newId(),
+      'teamId': b['teamId'],
+      'seasonId': 'season-2026',
+      'opponentName': b['opponentName'],
+      'homeAway': b['homeAway'] ?? 'HOME',
+      'scheduledAt': b['scheduledAt'],
+      'venue': b['venue'],
+      'status': 'SCHEDULED',
+      'periodCount': b['periodCount'] ?? 4,
+      'periodMinutes': b['periodMinutes'] ?? 10,
+      'startedAt': null,
+      'finishedAt': null,
+      'cancelledAt': null,
+      'cancelReason': null,
+      'score': {'team': 0, 'opponent': 0},
+      'lastServerSeq': 0,
     };
     _matches.add(m);
     return MockResult.json(201, m);
   }
 
-  static const _parentTypes = {'SHOT', 'ASSIST', 'REBOUND', 'TURNOVER', 'STEAL', 'BLOCK', 'FOUL'};
+  static const _parentTypes = {
+    'SHOT',
+    'ASSIST',
+    'REBOUND',
+    'TURNOVER',
+    'STEAL',
+    'BLOCK',
+    'FOUL',
+  };
 
   MockResult _batch(Map<String, Object?> m, List<Map<String, Object?>> events) {
-    if (events.isEmpty || events.length > 500) return _problem(400, 'Bad batch');
+    if (events.isEmpty || events.length > 500)
+      return _problem(400, 'Bad batch');
     final id = m['id']! as String;
     final stored = _events.putIfAbsent(id, () => []);
-    final mine = <String>{for (final s in stored) if (s.person == personId) s.json['id']! as String};
+    final mine = <String>{
+      for (final s in stored)
+        if (s.person == personId) s.json['id']! as String,
+    };
     final results = <Map<String, Object?>>[];
     for (final e in events) {
-      final eventId = e['id'] as String? ?? '00000000-0000-0000-0000-000000000000';
+      final eventId =
+          e['id'] as String? ?? '00000000-0000-0000-0000-000000000000';
       final known = stored.where((s) => s.json['id'] == eventId).firstOrNull;
       String? reason;
       try {
@@ -233,38 +414,69 @@ class MockGameApi {
         reason = 'SCHEMA_INVALID';
       }
       if (reason == null && known != null) {
-        results.add({'eventId': eventId, 'status': 'DUPLICATE', 'serverSeq': known.seq});
+        results.add({
+          'eventId': eventId,
+          'status': 'DUPLICATE',
+          'serverSeq': known.seq,
+        });
         continue;
       }
-      if (reason == null && m['status'] == 'CANCELLED') reason = 'MATCH_CANCELLED';
+      if (reason == null && m['status'] == 'CANCELLED')
+        reason = 'MATCH_CANCELLED';
       if (reason == null && !_manages(m)) {
         final type = e['type'];
-        final ok = (_parentTypes.contains(type) && _authz.linkedPlayerIds.contains(e['playerId'])) ||
-            (type == 'VOID' && mine.contains((e['payload'] as Map?)?['targetEventId']));
+        final ok =
+            (_parentTypes.contains(type) &&
+                _authz.linkedPlayerIds.contains(e['playerId'])) ||
+            (type == 'VOID' &&
+                mine.contains((e['payload'] as Map?)?['targetEventId']));
         if (!ok) reason = 'NOT_AUTHORIZED';
       }
       if (reason == null &&
-          stored.any((s) => s.json['deviceId'] == e['deviceId'] && s.json['clientSeq'] == e['clientSeq'])) {
+          stored.any(
+            (s) =>
+                s.json['deviceId'] == e['deviceId'] &&
+                s.json['clientSeq'] == e['clientSeq'],
+          )) {
         reason = 'CLIENT_SEQ_CONFLICT';
       }
       if (reason != null) {
-        results.add({'eventId': eventId, 'status': 'REJECTED', 'reason': reason, 'message': reason});
+        results.add({
+          'eventId': eventId,
+          'status': 'REJECTED',
+          'reason': reason,
+          'message': reason,
+        });
         continue;
       }
       _store(id, e, personId, 'Casey Coach');
       mine.add(eventId);
-      results.add({'eventId': eventId, 'status': 'ACCEPTED', 'serverSeq': _serverSeq});
+      results.add({
+        'eventId': eventId,
+        'status': 'ACCEPTED',
+        'serverSeq': _serverSeq,
+      });
     }
     _refreshScore(id);
-    return MockResult.json(200, {'results': results, 'lastServerSeq': m['lastServerSeq']});
+    return MockResult.json(200, {
+      'results': results,
+      'lastServerSeq': m['lastServerSeq'],
+    });
   }
 
   /// Filtered like game-service (ADR-0030): staff read every event, anybody
   /// else team-level events plus those of linked players.
   MockResult _feed(String matchId, int after, int limit) {
     final stored = _events[matchId] ?? <_Stored>[];
-    final visible = visibleFeed(stored, (s) => MatchEvent.fromJson(s.json), visiblePlayers: _manages(_find(matchId)!) ? null : _own);
-    final all = [for (final s in visible) if (s.seq > after) s];
+    final visible = visibleFeed(
+      stored,
+      (s) => MatchEvent.fromJson(s.json),
+      visiblePlayers: _manages(_find(matchId)!) ? null : _own,
+    );
+    final all = [
+      for (final s in visible)
+        if (s.seq > after) s,
+    ];
     final page = all.take(limit).toList();
     final voided = _project(matchId).voidedBy;
     return MockResult.json(200, {
@@ -286,33 +498,55 @@ class MockGameApi {
   Projection _project(String matchId) {
     final m = _find(matchId)!;
     return project(
-      MatchRules(periodCount: m['periodCount']! as int, periodMinutes: m['periodMinutes']! as int),
+      MatchRules(
+        periodCount: m['periodCount']! as int,
+        periodMinutes: m['periodMinutes']! as int,
+      ),
       [
         for (final e in _rosters[matchId] ?? const <Map<String, Object?>>[])
-          RosterPlayer(playerId: e['playerId']! as String, displayName: e['displayName']! as String, isStarter: e['isStarter'] == true),
+          RosterPlayer(
+            playerId: e['playerId']! as String,
+            displayName: e['displayName']! as String,
+            isStarter: e['isStarter'] == true,
+          ),
       ],
-      [for (final s in _events[matchId] ?? <_Stored>[]) RecordedEvent(MatchEvent.fromJson(s.json), serverSeq: s.seq)],
+      [
+        for (final s in _events[matchId] ?? <_Stored>[])
+          RecordedEvent(MatchEvent.fromJson(s.json), serverSeq: s.seq),
+      ],
     );
   }
 
   void _refreshScore(String matchId) {
     final p = _project(matchId);
     final m = _find(matchId)!;
-    m['score'] = {'team': p.summary.teamScore, 'opponent': p.summary.opponentScore};
+    m['score'] = {
+      'team': p.summary.teamScore,
+      'opponent': p.summary.opponentScore,
+    };
     m['lastServerSeq'] = p.summary.lastServerSeq;
   }
 
   Map<String, Object?> _boxScore(Map<String, Object?> m) {
     final id = m['id']! as String;
     final p = _project(id);
-    final roster = {for (final e in _rosters[id] ?? const <Map<String, Object?>>[]) e['playerId']: e};
+    final roster = {
+      for (final e in _rosters[id] ?? const <Map<String, Object?>>[])
+        e['playerId']: e,
+    };
     final manages = _manages(m);
     bool visible(String player) => manages || _own.contains(player);
     return {
       'matchId': id,
       'status': m['status'],
-      'score': {'team': p.summary.teamScore, 'opponent': p.summary.opponentScore},
-      'periodScores': [for (final s in p.summary.periodScores) {'period': s.period, 'team': s.team, 'opponent': s.opponent}],
+      'score': {
+        'team': p.summary.teamScore,
+        'opponent': p.summary.opponentScore,
+      },
+      'periodScores': [
+        for (final s in p.summary.periodScores)
+          {'period': s.period, 'team': s.team, 'opponent': s.opponent},
+      ],
       'teamTotals': _line(p.teamTotals),
       'players': [
         for (final l in p.playerStats)
@@ -332,7 +566,8 @@ class MockGameApi {
   }
 
   MockResult _seasonStats(String playerId, String? seasonId) {
-    if (!_authz.canSeePlayer(playerId) && !_own.contains(playerId)) return _problem(404, 'Not found');
+    if (!_authz.canSeePlayer(playerId) && !_own.contains(playerId))
+      return _problem(404, 'Not found');
     var totals = StatLine.zero;
     var played = 0, started = 0;
     final lines = <Map<String, Object?>>[];
@@ -346,36 +581,70 @@ class MockGameApi {
       played++;
       if (line.wasStarter) started++;
       lines.add({
-        'matchId': m['id'], 'scheduledAt': m['scheduledAt'], 'opponentName': m['opponentName'], 'status': m['status'],
-        'wasStarter': line.wasStarter, 'stats': _line(line.stats),
+        'matchId': m['id'],
+        'scheduledAt': m['scheduledAt'],
+        'opponentName': m['opponentName'],
+        'status': m['status'],
+        'wasStarter': line.wasStarter,
+        'stats': _line(line.stats),
       });
     }
     double avg(int v) => played == 0 ? 0 : (v / played * 100).round() / 100;
     return MockResult.json(200, {
-      'playerId': playerId, 'seasonId': seasonId ?? 'season-2026', 'gamesPlayed': played, 'gamesStarted': started,
+      'playerId': playerId,
+      'seasonId': seasonId ?? 'season-2026',
+      'gamesPlayed': played,
+      'gamesStarted': started,
       'totals': _line(totals),
       'averages': {
-        'points': avg(totals.points), 'assists': avg(totals.assists), 'rebounds': avg(totals.rebounds),
-        'steals': avg(totals.steals), 'blocks': avg(totals.blocks), 'turnovers': avg(totals.turnovers),
-        'personalFouls': avg(totals.personalFouls), 'technicalFouls': 0, 'unsportsmanlikeFouls': 0,
-        'minutesPlayed': played == 0 ? 0 : (totals.secondsPlayed / 60 / played * 100).round() / 100,
+        'points': avg(totals.points),
+        'assists': avg(totals.assists),
+        'rebounds': avg(totals.rebounds),
+        'steals': avg(totals.steals),
+        'blocks': avg(totals.blocks),
+        'turnovers': avg(totals.turnovers),
+        'personalFouls': avg(totals.personalFouls),
+        'technicalFouls': 0,
+        'unsportsmanlikeFouls': 0,
+        'minutesPlayed': played == 0
+            ? 0
+            : (totals.secondsPlayed / 60 / played * 100).round() / 100,
       },
       'matches': lines,
     });
   }
 
   static Map<String, Object?> _line(StatLine s) => {
-    'points': s.points, 'fg1Made': s.fg1Made, 'fg1Attempted': s.fg1Attempted, 'fg2Made': s.fg2Made,
-    'fg2Attempted': s.fg2Attempted, 'fg3Made': s.fg3Made, 'fg3Attempted': s.fg3Attempted, 'assists': s.assists,
-    'offensiveRebounds': s.offensiveRebounds, 'defensiveRebounds': s.defensiveRebounds, 'turnovers': s.turnovers,
-    'steals': s.steals, 'blocks': s.blocks, 'personalFouls': s.personalFouls, 'technicalFouls': 0, 'unsportsmanlikeFouls': 0, 'secondsPlayed': s.secondsPlayed,
+    'points': s.points,
+    'fg1Made': s.fg1Made,
+    'fg1Attempted': s.fg1Attempted,
+    'fg2Made': s.fg2Made,
+    'fg2Attempted': s.fg2Attempted,
+    'fg3Made': s.fg3Made,
+    'fg3Attempted': s.fg3Attempted,
+    'assists': s.assists,
+    'offensiveRebounds': s.offensiveRebounds,
+    'defensiveRebounds': s.defensiveRebounds,
+    'turnovers': s.turnovers,
+    'steals': s.steals,
+    'blocks': s.blocks,
+    'personalFouls': s.personalFouls,
+    'technicalFouls': 0,
+    'unsportsmanlikeFouls': 0,
+    'secondsPlayed': s.secondsPlayed,
   };
 
-  static Map<String, Object?> _warning(ProjectionWarning w) =>
-      {'code': w.code, 'eventId': w.eventId, 'playerId': w.playerId, 'message': w.code};
+  static Map<String, Object?> _warning(ProjectionWarning w) => {
+    'code': w.code,
+    'eventId': w.eventId,
+    'playerId': w.playerId,
+    'message': w.code,
+  };
 
-  static MockResult _problem(int status, String title) =>
-      MockResult.json(status, {'type': 'urn:hoops:problem:mock', 'title': title, 'status': status});
+  static MockResult _problem(int status, String title) => MockResult.json(
+    status,
+    {'type': 'urn:hoops:problem:mock', 'title': title, 'status': status},
+  );
 }
 
 class _Stored {

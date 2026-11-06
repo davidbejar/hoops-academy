@@ -28,32 +28,43 @@ class MockAuthz {
   final Set<String> allTeamIds;
 
   bool get admin => roles.contains('ADMIN');
-  bool get coachRole => roles.contains('COACH') || roles.contains('ASSISTANT_COACH');
+  bool get coachRole =>
+      roles.contains('COACH') || roles.contains('ASSISTANT_COACH');
 
   /// Staff in the matrix sense: may write training, health and match data (for their teams unless admin).
   bool get staff => admin || coachRole;
 
   /// Teams of the players the user is linked to or is.
-  Set<String> get playerTeamIds => {for (final p in {...linkedPlayerIds, ...selfPlayerIds}) ...teamsOf(p)};
+  Set<String> get playerTeamIds => {
+    for (final p in {...linkedPlayerIds, ...selfPlayerIds}) ...teamsOf(p),
+  };
 
   /// Teams whose schedule, sessions and matches the user reads.
-  bool canSeeTeam(String teamId) => admin || staffTeamIds.contains(teamId) || playerTeamIds.contains(teamId);
+  bool canSeeTeam(String teamId) =>
+      admin || staffTeamIds.contains(teamId) || playerTeamIds.contains(teamId);
 
   /// Staff of the team (or an admin): may mark attendance and write for the team's players.
   bool canManageTeam(String teamId) => admin || staffTeamIds.contains(teamId);
 
-  bool _staffOf(String playerId) => teamsOf(playerId).any(staffTeamIds.contains);
+  bool _staffOf(String playerId) =>
+      teamsOf(playerId).any(staffTeamIds.contains);
 
   /// Whether the player's data is visible: staff of the player's team, a linked guardian, the player.
   bool canSeePlayer(String playerId) =>
-      admin || linkedPlayerIds.contains(playerId) || selfPlayerIds.contains(playerId) || _staffOf(playerId);
+      admin ||
+      linkedPlayerIds.contains(playerId) ||
+      selfPlayerIds.contains(playerId) ||
+      _staffOf(playerId);
 
   /// Write rights on a player's health data: staff of the team and guardians; a player only reads himself.
-  bool canWritePlayer(String playerId) => admin || linkedPlayerIds.contains(playerId) || _staffOf(playerId);
+  bool canWritePlayer(String playerId) =>
+      admin || linkedPlayerIds.contains(playerId) || _staffOf(playerId);
 
   /// Planned absences and plan completions: also the player himself.
-  bool canRecordFor(String playerId) => canWritePlayer(playerId) || selfPlayerIds.contains(playerId);
+  bool canRecordFor(String playerId) =>
+      canWritePlayer(playerId) || selfPlayerIds.contains(playerId);
 
   /// All players a guardian or a player is limited to, null for staff (limited by team instead).
-  Set<String>? get ownPlayerIds => staff ? null : {...linkedPlayerIds, ...selfPlayerIds};
+  Set<String>? get ownPlayerIds =>
+      staff ? null : {...linkedPlayerIds, ...selfPlayerIds};
 }

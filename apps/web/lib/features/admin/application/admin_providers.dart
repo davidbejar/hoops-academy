@@ -15,16 +15,28 @@ import '../data/seasons_repository.dart';
 // ---------------------------------------------------------------- repositories
 
 final academyRepositoryProvider = Provider<AcademyRepository>(
-  (ref) => ApiAcademyRepository(ref.watch(api.coreApiProvider), ref.watch(api.tenantIdProvider)),
+  (ref) => ApiAcademyRepository(
+    ref.watch(api.coreApiProvider),
+    ref.watch(api.tenantIdProvider),
+  ),
 );
 final membersRepositoryProvider = Provider<MembersRepository>(
-  (ref) => ApiMembersRepository(ref.watch(api.coreApiProvider), ref.watch(api.tenantIdProvider)),
+  (ref) => ApiMembersRepository(
+    ref.watch(api.coreApiProvider),
+    ref.watch(api.tenantIdProvider),
+  ),
 );
 final seasonsRepositoryProvider = Provider<SeasonsRepository>(
-  (ref) => ApiSeasonsRepository(ref.watch(api.coreApiProvider), ref.watch(api.tenantIdProvider)),
+  (ref) => ApiSeasonsRepository(
+    ref.watch(api.coreApiProvider),
+    ref.watch(api.tenantIdProvider),
+  ),
 );
 final ageCategoriesRepositoryProvider = Provider<AgeCategoriesRepository>(
-  (ref) => ApiAgeCategoriesRepository(ref.watch(api.coreApiProvider), ref.watch(api.tenantIdProvider)),
+  (ref) => ApiAgeCategoriesRepository(
+    ref.watch(api.coreApiProvider),
+    ref.watch(api.tenantIdProvider),
+  ),
 );
 
 // --------------------------------------------------------------------- academy
@@ -74,19 +86,21 @@ class AcademyNotifier extends AsyncNotifier<AcademyData> {
     required int maxPlayUpLevels,
   }) async {
     final current = state.requireValue;
-    final profile = await ref.read(academyRepositoryProvider).save(
-      profile: api.UpdateTenantProfileRequest(
-        (b) => b
-          ..name = name
-          ..timezone = timezone
-          ..defaultLocale = defaultLocale,
-      ),
-      settings: current.settings.rebuild(
-        (b) => b
-          ..ageRule = ageRule
-          ..maxPlayUpLevels = maxPlayUpLevels,
-      ),
-    );
+    final profile = await ref
+        .read(academyRepositoryProvider)
+        .save(
+          profile: api.UpdateTenantProfileRequest(
+            (b) => b
+              ..name = name
+              ..timezone = timezone
+              ..defaultLocale = defaultLocale,
+          ),
+          settings: current.settings.rebuild(
+            (b) => b
+              ..ageRule = ageRule
+              ..maxPlayUpLevels = maxPlayUpLevels,
+          ),
+        );
     state = AsyncData(
       AcademyData(
         profile: profile,
@@ -103,11 +117,9 @@ class AcademyNotifier extends AsyncNotifier<AcademyData> {
 
   /// Uploads [file] (already validated) and refreshes every logo consumer.
   Future<void> uploadLogo(PickedFile file, String mimeType) async {
-    await ref.read(academyRepositoryProvider).uploadLogo(
-      bytes: file.bytes,
-      mimeType: mimeType,
-      fileName: file.name,
-    );
+    await ref
+        .read(academyRepositoryProvider)
+        .uploadLogo(bytes: file.bytes, mimeType: mimeType, fileName: file.name);
     await _logoChanged();
   }
 
@@ -126,7 +138,9 @@ class AcademyNotifier extends AsyncNotifier<AcademyData> {
   }
 }
 
-final academyProvider = AsyncNotifierProvider<AcademyNotifier, AcademyData>(AcademyNotifier.new);
+final academyProvider = AsyncNotifierProvider<AcademyNotifier, AcademyData>(
+  AcademyNotifier.new,
+);
 
 // --------------------------------------------------------------------- members
 
@@ -136,7 +150,9 @@ class MemberQuery extends Notifier<String> {
   void set(String value) => state = value;
 }
 
-final memberQueryProvider = NotifierProvider<MemberQuery, String>(MemberQuery.new);
+final memberQueryProvider = NotifierProvider<MemberQuery, String>(
+  MemberQuery.new,
+);
 
 class MembersNotifier extends AsyncNotifier<List<api.Member>> {
   @override
@@ -192,7 +208,10 @@ class MembersNotifier extends AsyncNotifier<List<api.Member>> {
   }
 }
 
-final membersProvider = AsyncNotifierProvider<MembersNotifier, List<api.Member>>(MembersNotifier.new);
+final membersProvider =
+    AsyncNotifierProvider<MembersNotifier, List<api.Member>>(
+      MembersNotifier.new,
+    );
 
 /// Guardian links of one guardian (PARENT member), with add / remove.
 class GuardianLinksNotifier extends AsyncNotifier<List<api.GuardianLink>> {
@@ -205,10 +224,12 @@ class GuardianLinksNotifier extends AsyncNotifier<List<api.GuardianLink>> {
       .guardianLinks(guardianPersonId: guardianPersonId);
 
   Future<void> add(String playerId) async {
-    await ref.read(membersRepositoryProvider).addGuardianLink(
-      guardianPersonId: guardianPersonId,
-      playerId: playerId,
-    );
+    await ref
+        .read(membersRepositoryProvider)
+        .addGuardianLink(
+          guardianPersonId: guardianPersonId,
+          playerId: playerId,
+        );
     ref.invalidateSelf();
     await future;
   }
@@ -221,15 +242,18 @@ class GuardianLinksNotifier extends AsyncNotifier<List<api.GuardianLink>> {
 }
 
 final guardianLinksProvider =
-    AsyncNotifierProvider.family<GuardianLinksNotifier, List<api.GuardianLink>, String>(
-      GuardianLinksNotifier.new,
-    );
+    AsyncNotifierProvider.family<
+      GuardianLinksNotifier,
+      List<api.GuardianLink>,
+      String
+    >(GuardianLinksNotifier.new);
 
 // --------------------------------------------------------------------- seasons
 
 class SeasonsNotifier extends AsyncNotifier<List<api.Season>> {
   @override
-  Future<List<api.Season>> build() => ref.watch(seasonsRepositoryProvider).list();
+  Future<List<api.Season>> build() =>
+      ref.watch(seasonsRepositoryProvider).list();
 
   SeasonsRepository get _repo => ref.read(seasonsRepositoryProvider);
 
@@ -244,7 +268,12 @@ class SeasonsNotifier extends AsyncNotifier<List<api.Season>> {
     required api.Date endsOn,
     required int referenceYear,
   }) async {
-    await _repo.create(name: name, startsOn: startsOn, endsOn: endsOn, referenceYear: referenceYear);
+    await _repo.create(
+      name: name,
+      startsOn: startsOn,
+      endsOn: endsOn,
+      referenceYear: referenceYear,
+    );
     await _reload();
   }
 
@@ -255,7 +284,13 @@ class SeasonsNotifier extends AsyncNotifier<List<api.Season>> {
     required api.Date endsOn,
     required int referenceYear,
   }) async {
-    await _repo.update(id, name: name, startsOn: startsOn, endsOn: endsOn, referenceYear: referenceYear);
+    await _repo.update(
+      id,
+      name: name,
+      startsOn: startsOn,
+      endsOn: endsOn,
+      referenceYear: referenceYear,
+    );
     await _reload();
   }
 
@@ -275,7 +310,10 @@ class SeasonsNotifier extends AsyncNotifier<List<api.Season>> {
   }
 }
 
-final seasonsProvider = AsyncNotifierProvider<SeasonsNotifier, List<api.Season>>(SeasonsNotifier.new);
+final seasonsProvider =
+    AsyncNotifierProvider<SeasonsNotifier, List<api.Season>>(
+      SeasonsNotifier.new,
+    );
 
 // ------------------------------------------------------------- age categories
 
@@ -286,7 +324,8 @@ class AgeCategoriesNotifier extends AsyncNotifier<List<api.AgeCategory>> {
     return [...list]..sort((a, b) => a.rank.compareTo(b.rank));
   }
 
-  AgeCategoriesRepository get _repo => ref.read(ageCategoriesRepositoryProvider);
+  AgeCategoriesRepository get _repo =>
+      ref.read(ageCategoriesRepositoryProvider);
 
   Future<void> _reload() async {
     ref.invalidateSelf();
@@ -303,7 +342,13 @@ class AgeCategoriesNotifier extends AsyncNotifier<List<api.AgeCategory>> {
     if (id == null) {
       await _repo.create(code: code, name: name, maxAge: maxAge, rank: rank);
     } else {
-      await _repo.update(id, code: code, name: name, maxAge: maxAge, rank: rank);
+      await _repo.update(
+        id,
+        code: code,
+        name: name,
+        maxAge: maxAge,
+        rank: rank,
+      );
     }
     await _reload();
   }
@@ -315,4 +360,6 @@ class AgeCategoriesNotifier extends AsyncNotifier<List<api.AgeCategory>> {
 }
 
 final ageCategoriesProvider =
-    AsyncNotifierProvider<AgeCategoriesNotifier, List<api.AgeCategory>>(AgeCategoriesNotifier.new);
+    AsyncNotifierProvider<AgeCategoriesNotifier, List<api.AgeCategory>>(
+      AgeCategoriesNotifier.new,
+    );

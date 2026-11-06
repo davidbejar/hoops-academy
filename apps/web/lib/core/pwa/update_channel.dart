@@ -2,7 +2,8 @@
 /// knows "a new build is installed and waiting" and "activate it".
 library;
 
-export 'update_channel_stub.dart' if (dart.library.js_interop) 'update_channel_web.dart';
+export 'update_channel_stub.dart'
+    if (dart.library.js_interop) 'update_channel_web.dart';
 
 abstract class UpdateChannel {
   /// Emits when a new build finished installing next to the running one.

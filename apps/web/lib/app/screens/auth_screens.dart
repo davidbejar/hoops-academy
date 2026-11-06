@@ -74,9 +74,17 @@ class _NotAMember extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.group_off_outlined, size: 64, color: theme.colorScheme.primary),
+            Icon(
+              Icons.group_off_outlined,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: AppTokens.spaceMd),
-            Text(l.notMemberTitle, textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
+            Text(
+              l.notMemberTitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge,
+            ),
             const SizedBox(height: AppTokens.spaceSm),
             Text(
               email == null ? l.notMemberBodyNoEmail : l.notMemberBody(email!),
@@ -192,9 +200,17 @@ class NoAccessScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_outline, size: 64, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.lock_outline,
+                  size: 64,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(height: AppTokens.spaceMd),
-                Text(l.noAccessTitle, textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
+                Text(
+                  l.noAccessTitle,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge,
+                ),
                 const SizedBox(height: AppTokens.spaceSm),
                 Text(l.noAccessBody, textAlign: TextAlign.center),
                 const SizedBox(height: AppTokens.spaceLg),

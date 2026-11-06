@@ -18,7 +18,6 @@ extension TenantStatusLabel on api.TenantStatus {
   };
 }
 
-
 extension InvitationStatusLabel on api.InvitationStatus {
   /// NONE (no invitation involved) has no label.
   String? label(AppLocalizations l) => switch (this) {

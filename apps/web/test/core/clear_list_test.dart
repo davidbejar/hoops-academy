@@ -11,19 +11,38 @@ void main() {
       ath.UpdateTrainingSessionRequestClearEnum.notes: null,
     });
 
-    expect(clear!.build(), {ath.UpdateTrainingSessionRequestClearEnum.location, ath.UpdateTrainingSessionRequestClearEnum.notes});
+    expect(clear!.build(), {
+      ath.UpdateTrainingSessionRequestClearEnum.location,
+      ath.UpdateTrainingSessionRequestClearEnum.notes,
+    });
   });
 
   test('nothing is sent when every field has a value', () {
-    expect(clearList({ath.UpdatePlannedAbsenceRequestClearEnum.reason: 'Viaje'}), isNull);
+    expect(
+      clearList({ath.UpdatePlannedAbsenceRequestClearEnum.reason: 'Viaje'}),
+      isNull,
+    );
   });
 
-  test('a request built with the list sends clear and omits the cleared fields', () {
-    final request = ath.UpdateTrainingSessionRequest((b) => b
-      ..durationMinutes = 60
-      ..clear = clearList({ath.UpdateTrainingSessionRequestClearEnum.planId: null}));
+  test(
+    'a request built with the list sends clear and omits the cleared fields',
+    () {
+      final request = ath.UpdateTrainingSessionRequest(
+        (b) => b
+          ..durationMinutes = 60
+          ..clear = clearList({
+            ath.UpdateTrainingSessionRequestClearEnum.planId: null,
+          }),
+      );
 
-    final json = ath.standardSerializers.serializeWith(ath.UpdateTrainingSessionRequest.serializer, request) as Map;
-    expect(json, {'durationMinutes': 60, 'clear': ['planId']});
-  });
+      final json = ath.standardSerializers.serializeWith(
+        ath.UpdateTrainingSessionRequest.serializer,
+        request,
+      ) as Map;
+      expect(json, {
+        'durationMinutes': 60,
+        'clear': ['planId'],
+      });
+    },
+  );
 }

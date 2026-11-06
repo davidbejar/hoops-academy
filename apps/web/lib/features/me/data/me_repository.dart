@@ -18,8 +18,7 @@ class ApiMeRepository implements MeRepository {
   final api.MeApi _api;
 
   @override
-  Future<CurrentUser> fetch() async =>
-      _toDomain((await _api.getMe()).data!);
+  Future<CurrentUser> fetch() async => _toDomain((await _api.getMe()).data!);
 
   @override
   Future<void> updateLocale(String localeCode) async {
@@ -47,9 +46,7 @@ class ApiMeRepository implements MeRepository {
           linkedPlayerIds: m.authz.linkedPlayerIds.toSet(),
           ownPlayerId: m.authz.ownPlayerId,
           timezone: m.authz.timezone,
-          roles: {
-            for (final r in m.roles) ?_role(r),
-          },
+          roles: {for (final r in m.roles) ?_role(r)},
         ),
     ],
   );

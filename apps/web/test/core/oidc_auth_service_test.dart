@@ -20,7 +20,12 @@ void main() {
   test('login returns the browser to the app page it started from', () async {
     final manager = _RecordingManager();
     final current = Uri.parse('http://localhost:5173/#/login?from=%2Fmatches');
-    final service = OidcAuthService(_config, origin: _appBase, location: () => current, manager: manager);
+    final service = OidcAuthService(
+      _config,
+      origin: _appBase,
+      location: () => current,
+      manager: manager,
+    );
 
     await service.login();
 
@@ -29,7 +34,11 @@ void main() {
   });
 
   test('sign-out returns to the app itself, not to redirect.html (which has no state to resume)', () {
-    final service = OidcAuthService(_config, origin: _appBase, manager: _RecordingManager());
+    final service = OidcAuthService(
+      _config,
+      origin: _appBase,
+      manager: _RecordingManager(),
+    );
 
     expect(service.postLogoutRedirectUri, _appBase);
   });
@@ -38,10 +47,14 @@ void main() {
 class _RecordingManager extends OidcUserManager {
   _RecordingManager()
     : super.lazy(
-        discoveryDocumentUri: Uri.parse('http://localhost:8080/auth/realms/academy/.well-known/openid-configuration'),
+        discoveryDocumentUri: Uri.parse(
+          'http://localhost:8080/auth/realms/academy/.well-known/openid-configuration',
+        ),
         clientCredentials: const OidcClientAuthentication.none(clientId: 'web'),
         store: OidcMemoryStore(),
-        settings: OidcUserManagerSettings(redirectUri: Uri.parse('http://localhost:5173/redirect.html')),
+        settings: OidcUserManagerSettings(
+          redirectUri: Uri.parse('http://localhost:5173/redirect.html'),
+        ),
       );
 
   int loginCalls = 0;

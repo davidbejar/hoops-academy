@@ -29,10 +29,17 @@ class MockApiAdapter implements HttpClientAdapter {
   MockApiAdapter({List<String>? roles, bool? superAdmin})
     : _roles = roles ?? _rolesFromEnvironment(),
       _superAdmin = superAdmin ?? _superAdminFromEnvironment(),
-      _platform = MockPlatformApi(tenantAId: mockTenantAId, tenantBId: mockTenantBId) {
+      _platform = MockPlatformApi(
+        tenantAId: mockTenantAId,
+        tenantBId: mockTenantBId,
+      ) {
     _academies = {
-      mockTenantAId: _Academy(MockCoreApi(initialLogo: _logoPng, roles: _roles)),
-      mockTenantBId: _Academy(MockCoreApi(academy: MockAcademy.norte, roles: const ['PARENT'])),
+      mockTenantAId: _Academy(
+        MockCoreApi(initialLogo: _logoPng, roles: _roles),
+      ),
+      mockTenantBId: _Academy(
+        MockCoreApi(academy: MockAcademy.norte, roles: const ['PARENT']),
+      ),
     };
   }
 
@@ -45,7 +52,8 @@ class MockApiAdapter implements HttpClientAdapter {
 
   /// `--dart-define=HOOPS_MOCK_SUPER_ADMIN=false` turns the demo user into a plain member (default: a super admin,
   /// so the demo reaches the platform console from the profile menu).
-  static bool _superAdminFromEnvironment() => const bool.fromEnvironment('HOOPS_MOCK_SUPER_ADMIN', defaultValue: true);
+  static bool _superAdminFromEnvironment() =>
+      const bool.fromEnvironment('HOOPS_MOCK_SUPER_ADMIN', defaultValue: true);
 
   final List<String> _roles;
   final bool _superAdmin;
@@ -89,15 +97,24 @@ class MockApiAdapter implements HttpClientAdapter {
         query: options.queryParameters,
         body: data is String && data.isNotEmpty ? jsonDecode(data) : data,
       );
-      return _result(result ?? const MockResult.json(404, {'title': 'Not found', 'status': 404}));
+      return _result(
+        result ??
+            const MockResult.json(404, {'title': 'Not found', 'status': 404}),
+      );
     }
 
     final tenant = options.headers['X-Tenant-Id'] as String?;
-    final isTenantPath = path.startsWith('/api/athlete/') || path.startsWith('/api/game/') || path.startsWith('/api/core/');
+    final isTenantPath =
+        path.startsWith('/api/athlete/') ||
+        path.startsWith('/api/game/') ||
+        path.startsWith('/api/core/');
     if (!isTenantPath) return _problem(404, 'Not found');
     final academy = _academies[tenant];
     if (academy == null) {
-      return _problem(tenant == null ? 400 : 404, tenant == null ? 'X-Tenant-Id is required' : 'Not found');
+      return _problem(
+        tenant == null ? 400 : 404,
+        tenant == null ? 'X-Tenant-Id is required' : 'Not found',
+      );
     }
     Uint8List? bytes;
     if (requestStream != null) {
@@ -110,11 +127,24 @@ class MockApiAdapter implements HttpClientAdapter {
     final data = options.data;
     final body = data is String && data.isNotEmpty ? jsonDecode(data) : data;
     if (path.startsWith('/api/athlete/')) {
-      final result = academy.athlete.handle(method: method, path: path, query: options.queryParameters, body: body);
-      return _result(result ?? const MockResult.json(404, {'title': 'Not found', 'status': 404}));
+      final result = academy.athlete.handle(
+        method: method,
+        path: path,
+        query: options.queryParameters,
+        body: body,
+      );
+      return _result(
+        result ??
+            const MockResult.json(404, {'title': 'Not found', 'status': 404}),
+      );
     }
     if (path.startsWith('/api/game/')) {
-      final result = academy.game.handle(method: method, path: path, query: options.queryParameters, body: body);
+      final result = academy.game.handle(
+        method: method,
+        path: path,
+        query: options.queryParameters,
+        body: body,
+      );
       if (result != null) return _result(result);
     }
     if (path.startsWith('/api/core/')) {
@@ -134,7 +164,11 @@ class MockApiAdapter implements HttpClientAdapter {
           MockCoreApi.encode(result),
           result.status,
           headers: {
-            Headers.contentTypeHeader: [result.status >= 400 ? 'application/problem+json' : result.contentType],
+            Headers.contentTypeHeader: [
+              result.status >= 400
+                  ? 'application/problem+json'
+                  : result.contentType,
+            ],
             for (final e in result.headers.entries) e.key: [e.value],
           },
         );
@@ -147,7 +181,9 @@ class MockApiAdapter implements HttpClientAdapter {
     MockCoreApi.encode(result),
     result.status,
     headers: {
-      Headers.contentTypeHeader: [result.status >= 400 ? 'application/problem+json' : result.contentType],
+      Headers.contentTypeHeader: [
+        result.status >= 400 ? 'application/problem+json' : result.contentType,
+      ],
     },
   );
 
@@ -160,7 +196,9 @@ class MockApiAdapter implements HttpClientAdapter {
     'superAdmin': _superAdmin,
     'memberships': [
       _membership(mockTenantAId, 'demo', 'Academia Demo', true, _roles),
-      _membership(mockTenantBId, 'norte', 'Club Norte', false, const ['PARENT']),
+      _membership(mockTenantBId, 'norte', 'Club Norte', false, const [
+        'PARENT',
+      ]),
     ],
   };
 
@@ -214,7 +252,9 @@ class MockApiAdapter implements HttpClientAdapter {
 
 /// One demo academy: its core data and the athlete and game mocks reading the same roster.
 class _Academy {
-  _Academy(this.core) : athlete = MockAthleteApi(core: core), game = MockGameApi(core: core);
+  _Academy(this.core)
+    : athlete = MockAthleteApi(core: core),
+      game = MockGameApi(core: core);
 
   final MockCoreApi core;
   final MockAthleteApi athlete;

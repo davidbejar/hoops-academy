@@ -66,20 +66,24 @@ class Capabilities {
 
   /// Create / start / finish, roster, clock, periods, opponent score:
   /// ADMIN or staff (coach / assistant) of the match's team.
-  bool canRunMatch(String teamId) => _admin || ((_coach || _assistant) && isStaffOf(teamId));
+  bool canRunMatch(String teamId) =>
+      _admin || ((_coach || _assistant) && isStaffOf(teamId));
 
   /// PARENT may enter stat events of linked players only.
-  bool isLinkedTo(String playerId) => roles.contains(TenantRole.parent) && linkedPlayerIds.contains(playerId);
+  bool isLinkedTo(String playerId) =>
+      roles.contains(TenantRole.parent) && linkedPlayerIds.contains(playerId);
 
   // ------------------------------------------------- training & health (WP14)
 
   bool get _staff => _admin || _coach || _assistant;
 
   /// Schedules, sessions, attendance of [teamId]: ADMIN or team staff.
-  bool canManageTraining(String teamId) => _admin || (_staff && isStaffOf(teamId));
+  bool canManageTraining(String teamId) =>
+      _admin || (_staff && isStaffOf(teamId));
 
   /// Any team the caller can schedule for (create buttons on the calendar).
-  bool get canManageAnyTraining => _admin || (_staff && staffTeamIds.isNotEmpty);
+  bool get canManageAnyTraining =>
+      _admin || (_staff && staffTeamIds.isNotEmpty);
 
   /// Plan library write access (ADMIN, COACH, ASSISTANT_COACH).
   bool get canEditPlans => _staff;
@@ -88,14 +92,18 @@ class Capabilities {
   bool get canAssignPlans => _admin || (_staff && staffTeamIds.isNotEmpty);
 
   /// Planned absence: staff for anyone, PARENT for linked, PLAYER for self.
-  bool canFileAbsenceFor(String playerId) => _staff || isLinkedTo(playerId) || isSelf(playerId);
+  bool canFileAbsenceFor(String playerId) =>
+      _staff || isLinkedTo(playerId) || isSelf(playerId);
 
-  bool get canFileAbsences => _staff || linkedPlayerIds.isNotEmpty || ownPlayerId != null;
+  bool get canFileAbsences =>
+      _staff || linkedPlayerIds.isNotEmpty || ownPlayerId != null;
 
-  bool isSelf(String playerId) => roles.contains(TenantRole.player) && ownPlayerId == playerId;
+  bool isSelf(String playerId) =>
+      roles.contains(TenantRole.player) && ownPlayerId == playerId;
 
   /// Mark a plan completion: staff, linked parent, the player themself.
-  bool canMarkCompletion(String playerId) => _staff || isLinkedTo(playerId) || isSelf(playerId);
+  bool canMarkCompletion(String playerId) =>
+      _staff || isLinkedTo(playerId) || isSelf(playerId);
 
   /// Injuries and body measurements: staff and linked parents write; the
   /// player only reads.
@@ -108,7 +116,8 @@ class Capabilities {
   bool get canAdminFitness => _admin;
 
   /// Any team the caller runs matches for (create button on the list).
-  bool get canCreateMatches => _admin || ((_coach || _assistant) && staffTeamIds.isNotEmpty);
+  bool get canCreateMatches =>
+      _admin || ((_coach || _assistant) && staffTeamIds.isNotEmpty);
 }
 
 final capabilitiesProvider = Provider<Capabilities>((ref) {

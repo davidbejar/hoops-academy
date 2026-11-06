@@ -6,7 +6,9 @@ void main() {
   final sw = File('web/sw.js').readAsStringSync();
 
   test('every backend route is network-only (F-19): /platform and /internal included', () {
-    final list = RegExp(r'NETWORK_ONLY_PREFIXES = \[(.*?)\]').firstMatch(sw)!.group(1)!;
+    final list = RegExp(r'NETWORK_ONLY_PREFIXES = \[(.*?)\]')
+        .firstMatch(sw)!
+        .group(1)!;
     for (final p in ['/api/', '/auth/', '/platform/', '/internal/']) {
       expect(list, contains("'$p'"));
     }
@@ -18,6 +20,9 @@ void main() {
   });
 
   test('bootstrap does not register Flutter service worker', () {
-    expect(File('web/flutter_bootstrap.js').readAsStringSync(), isNot(contains('serviceWorkerSettings:')));
+    expect(
+      File('web/flutter_bootstrap.js').readAsStringSync(),
+      isNot(contains('serviceWorkerSettings:')),
+    );
   });
 }
