@@ -75,6 +75,9 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- WP66 (ADR-0036): quarkus-messaging-kafka (with kafka-clients 4.2.1) is managed by the Quarkus BOM above, so the
+           services (WP67-WP69) add it without a version and it moves with the platform; no override here. The Dev
+           Services broker image is pinned in libs/common-quarkus (microprofile-config.properties). -->
       <dependency>
         <groupId>com.tngtech.archunit</groupId>
         <artifactId>archunit-junit5</artifactId>
