@@ -492,7 +492,7 @@ class MockPlatformApi {
     }
     if (rest.length == 2 &&
         method == 'POST' &&
-        (rest[1] == 'temporary-password' || rest[1] == 'resend-invitation')) {
+        rest[1] == 'temporary-password') {
       if (admin['invitationStatus'] != 'PENDING')
         return mockProblem(409, 'Conflict', code: 'INVITATION_NOT_PENDING');
       admin['temporaryPasswordStatus'] = 'ACTIVE';
