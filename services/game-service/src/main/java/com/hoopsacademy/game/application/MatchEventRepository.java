@@ -1,6 +1,7 @@
 package com.hoopsacademy.game.application;
 
 import com.hoopsacademy.game.domain.MatchId;
+import com.hoopsacademy.game.domain.PlayerVisibility;
 import com.hoopsacademy.game.domain.events.EventId;
 import com.hoopsacademy.game.domain.events.MatchEvent;
 import java.time.Instant;
@@ -14,8 +15,12 @@ public interface MatchEventRepository {
     /** Every event of the match, in server order. */
     List<StoredEvent> findByMatch(MatchId matchId);
 
-    /** Events with {@code serverSeq > after}, ascending, at most {@code limit}. */
-    List<StoredEvent> after(MatchId matchId, long after, int limit);
+    /**
+     * The events {@code viewer} may read with {@code serverSeq > after}, ascending, at most {@code limit}: exactly those
+     * {@link com.hoopsacademy.game.domain.events.EventVisibility} admits among all events of the match (VOID targets
+     * may lie before {@code after}).
+     */
+    List<StoredEvent> after(MatchId matchId, PlayerVisibility viewer, long after, int limit);
 
     /** Highest server sequence number of the match, 0 without events. */
     long lastServerSeq(MatchId matchId);

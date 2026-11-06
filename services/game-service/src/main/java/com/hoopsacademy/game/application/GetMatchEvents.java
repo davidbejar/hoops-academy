@@ -39,7 +39,7 @@ public class GetMatchEvents {
         Match match = lookup.require(matchId);
         PlayerVisibility viewer = StatVisibility.forTeam(caller.authz(), match.teamId());
         List<StoredEvent> page = viewer.seesAll()
-                ? events.after(matchId, after, limit + 1)
+                ? events.after(matchId, viewer, after, limit + 1)
                 : visibleAfter(matchId, viewer, after, limit + 1);
         boolean hasMore = page.size() > limit;
         return new EventFeed(hasMore ? page.subList(0, limit) : page, events.lastServerSeq(matchId), hasMore);

@@ -8,6 +8,7 @@ import com.hoopsacademy.game.application.MatchEventRepository;
 import com.hoopsacademy.game.application.Recorder;
 import com.hoopsacademy.game.application.StoredEvent;
 import com.hoopsacademy.game.domain.MatchId;
+import com.hoopsacademy.game.domain.PlayerVisibility;
 import com.hoopsacademy.game.domain.events.EventId;
 import com.hoopsacademy.game.domain.events.MatchEvent;
 import com.hoopsacademy.game.domain.events.RecordedEvent;
@@ -50,7 +51,10 @@ class JpaMatchEventRepository extends JdbcRepository implements MatchEventReposi
     }
 
     @Override
-    public List<StoredEvent> after(MatchId matchId, long after, int limit) {
+    public List<StoredEvent> after(MatchId matchId, PlayerVisibility viewer, long after, int limit) {
+        if (!viewer.seesAll()) {
+            throw new UnsupportedOperationException("WP60: filtered feed query");
+        }
         return query("select " + COLUMNS + " from game.match_event where match_id = ? and server_seq > ? order by server_seq limit ?",
                 s -> {
                     s.setObject(1, matchId.value());
