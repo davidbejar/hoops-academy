@@ -24,7 +24,7 @@ just services-down
 
 Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin@hoops-academy.com` is the
 platform super admin), `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` and `CORE_SERVICE_CLIENT_SECRET` in `.env`.
-Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; used to check that no e-mail is sent, skipped when MailHog is unreachable),
+Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; the SMTP sink the journey asks whether an e-mail was sent. `MailSink` detects the API: MailHog `/api/v2/messages` on compose, Mailpit `/api/v1/messages` on kind. Required: the journey fails if the sink is unreachable),
 `E2E_REDIRECT_URI` (default `<base>/redirect.html`, must match client `web`), `E2E_KEYCLOAK_ADMIN_URL` (default `<base>/auth`).
 
 ## Run on kind
@@ -42,7 +42,7 @@ deploy/kind/ratelimit-check.sh           # optional, afterwards: burst -> 429 (l
 just kind-down
 ```
 On kind the services run in the cluster (`just kind-up` leaves them restarting until `hoops-db` is up); do not start
-`services-up.sh`. The chart ships a MailHog pod; the no-e-mail checks are skipped when `E2E_MAILHOG_URL` is unreachable.
+`services-up.sh`. The chart ships a Mailpit pod behind Service `mailhog`; `MailSink` detects its `/api/v1` API, so the no-e-mail checks run on kind too (and fail if `E2E_MAILHOG_URL` is unreachable).
 `http://localhost:8090` reaches the Envoy Gateway through kind's port mapping to the NodePort of Service
 `envoy-gateway-system/hoops-gateway` (ADR-0031). On a cluster without that mapping, port-forward the Gateway's Envoy
 Service instead: `kubectl -n envoy-gateway-system port-forward svc/hoops-gateway 8090:80` (keep `localhost:8090`, the
@@ -89,8 +89,12 @@ On compose the full journey is green: 20 tests, 0 failures, about 70 s, three co
 kind was blocked by the realm defect at that time and has not been re-run since the fix.
 
 WP36 (2026-11-06): the journey is green **on kind through the Envoy Gateway**: 21 tests, 0 failures, 0 skipped, 159 s
-(Keycloak Admin API through the port-forward as above). The MailHog checks were skipped: the chart's SMTP sink is
-Mailpit, whose API is `/api/v1`, so `E2E_MAILHOG_URL` answered 404 for MailHog's `/api/v2/messages`.
+(Keycloak Admin API through the port-forward as above). The mail checks were skipped there: the chart's SMTP sink is
+Mailpit (`/api/v1`), `E2E_MAILHOG_URL` answered 404 for MailHog's `/api/v2/messages`.
+
+WP42 (2026-11-06): `MailSink` (was `MailHog`) detects either API, the skip is gone: 21 tests, 0 skipped on compose (69 s of
+test time, `just e2e` 2:03 in total) and on kind through the Gateway after `tilt ci` (72 s). `MailSinkTest` runs in every `verify`
+(the module no longer skips its tests by default; the journeys still assume `e2e.baseUrl`).
 
 ## Known limits
 - The realm must be the current `infra/keycloak/realm-academy.json` (every client has the Keycloak 25+ `basic` scope, so

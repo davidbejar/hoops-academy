@@ -39,3 +39,27 @@ against the Gateway API chart.
   `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+Built (2026-11-06, Sonnet):
+- `e2e/.../support/MailHog.java` renamed `MailSink`: detects the sink API on first use (MailHog `/api/v2/messages`, else
+  Mailpit `/api/v1/messages` recognised by its `messages` array; MailHog's own v1 returns a bare array); `hasMessageTo(addr)`
+  replaces `latestTo`. `E2eEnv.mailhogUrl()` is now `mailUrl()` (same variable `E2E_MAILHOG_URL`). The journey no longer
+  skips the two no-e-mail checks; an unreachable sink fails the run.
+- `MailSinkTest` (4 tests, JDK `HttpServer` fakes for both API shapes plus unreachable cases), committed red first
+  (stub, 2 failures), then green. The e2e pom no longer defaults `skipTests` to true, so `MailSinkTest` runs in every
+  `verify`; `JourneyTest` still assumes `e2e.baseUrl` (21 skipped without it).
+- Docs: `docs/runbooks/{e2e,kind,troubleshooting}.md`.
+
+Verification (all run in this worktree, evidence in the shell logs):
+- `just e2e` on compose: 25 run (4 unit + 21 journey), 0 failures, 0 skipped; journey 69 s, command 2:03.
+- `just kind-up` 78 s; `just tilt ci -- --from-host` on the fresh cluster: "SUCCESS. All workloads are healthy.", 5 min 55 s
+  (cold caches, 2-CPU machine). Tiltfile and values-kind needed no change after WP30/WP36/WP40.
+- `deploy/kind/smoke.sh core game athlete`: SMOKE PASSED (4 s).
+- Journey on kind via Gateway :8090 (Keycloak Admin and Mailpit through port-forwards): 21/21, 0 skipped, 72 s. Mailpit
+  answered 404 on `/api/v2/messages`, 200 on `/api/v1/messages`.
+- `./mvnw -B -ntp -pl e2e -am verify -DskipTests`: BUILD SUCCESS. No shell scripts touched (shellcheck n/a).
+- Cluster deleted with `deploy/kind/down.sh`; compose stack stopped (`just down`). A git-ignored `.env` was copied into the worktree.
+
+Open points: `ratelimit-check.sh` not run (not in scope). Port 18080 is taken by Tilt's Keycloak forward while it runs, so the
+runbook's 18080 port-forward only applies after `tilt ci` has exited (I used 18081 while testing; both work).

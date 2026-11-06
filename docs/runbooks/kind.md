@@ -33,7 +33,9 @@ just tilt             # = tilt up: builds 4 images with Podman, kind-loads them,
 deploy/kind/seed-users.sh   # dev users <name>@hoops-academy.com (superadmin, admin1, coach1, assistant1, parent1, player1)
 ```
 Without Tilt: `just kind-up --deploy` (builds all images, loads them, `helm upgrade --install --wait`).
-CI-style: `just tilt ci` (exits 0 when every resource is Ready).
+CI-style: `just tilt ci` (exits 0 when every resource is Ready; `just tilt ci -- --from-host` on a fresh cluster: 5 min 55 s
+with cold caches, WP42, all nine workloads healthy, no Tiltfile change needed after WP36/WP40). Then `deploy/kind/seed-users.sh`,
+`deploy/kind/smoke.sh core game athlete` (4 s) and the journey (docs/runbooks/e2e.md, 21/21, mail checks included).
 
 Tilt flags (after `--`): `--services=game-service,athlete-service` (subset; useful while a service does not
 compile; combine with resource names to skip web: `tilt ci game-service athlete-service -- --services=game-service,athlete-service`), `--from-host` (package with `./mvnw` on the host and copy the fast-jar — much faster than compiling in

@@ -99,6 +99,7 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
 | game/athlete answer 503 `UPSTREAM_UNAVAILABLE` | core-service is down: their tenant filter calls core `/internal/authz` on every request |
 | New member / admin cannot sign in | no e-mail is sent any more (ADR-0024): they sign in with the temporary password shown once at creation; lost or never received (admins created before WP24) → `POST .../temporary-password` while PENDING (`docs/runbooks/onboard-tenant.md`); an existing Keycloak account is reused and keeps its own password |
 | MailHog misbehaves on Apple Silicon | it is amd64 (emulated); swap to `axllent/mailpit`, same ports (unverified on this change) |
+| e2e fails with "no MailHog/Mailpit API answers at ..." | `E2E_MAILHOG_URL` points at nothing: compose `http://localhost:8025`; on kind port-forward `svc/mailhog 18025:8025` (Mailpit, `/api/v1`; `MailSink` detects the API, WP42) |
 | Cached app stays old after a deploy | by design, the service worker keeps the old build until all tabs close; `index.html`/`sw.js` are served `no-cache` |
 | Chart test fails on "drift" | run `scripts/sync-chart-files.sh`, review, `deploy/helm/tests/run.sh --update` |
 | `flutter drive` / web smoke cannot start | chromedriver matching Chrome is not installed (open item) |
