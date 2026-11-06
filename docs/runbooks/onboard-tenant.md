@@ -68,8 +68,8 @@ data until `retainUntil` (`hoops.tenant.withdrawn-retention`, default `P365D`); 
 ## Managing the academy's administrators later (API)
 `/platform/tenants/{id}/admins` with a super admin token (no `X-Tenant-Id`); ACTIVE and SUSPENDED tenants only (WITHDRAWN →
 409 `TENANT_WITHDRAWN`, unknown → 404). Contract: `listTenantAdmins`, `addTenantAdmin`, `updateTenantAdmin`,
-`removeTenantAdmin`, `issueTenantAdminTemporaryPassword` (`resendTenantAdminInvitation` is its deprecated alias) in
-`libs/contracts/openapi/core.yaml`.
+`removeTenantAdmin`, `issueTenantAdminTemporaryPassword` in `libs/contracts/openapi/core.yaml` (its former alias
+`resendTenantAdminInvitation` was removed in core 3.0.0, ADR-0035).
 - `GET` → active admins (`personId, givenName, familyName, email, invitationStatus, otherRoles`), paged.
 - `POST {"email","givenName","familyName","locale"?}` → 200 when an active member with that e-mail is promoted, 201 when
   a new member is invited (same saga as onboarding); `temporaryPassword` when this call created the login (also for a
@@ -80,7 +80,7 @@ data until `retainUntil` (`hoops.tenant.withdrawn-retention`, default `P365D`); 
 - `DELETE /{personId}` → 204 (ADMIN role dropped; deactivated if it was the only role; Keycloak login kept); 409
   `LAST_ADMIN`.
 - `POST /{personId}/temporary-password` → 200 with a new `temporaryPassword` (PENDING and no password chosen yet, else
-  409 `INVITATION_NOT_PENDING`); `POST /{personId}/resend-invitation` is the deprecated alias (202, removed in core 3.0.0).
+  409 `INVITATION_NOT_PENDING`). The old `POST /{personId}/resend-invitation` alias is gone since core 3.0.0 (404).
 Every call is audited in the tenant's trail (`admin.*`, actor = the super admin's `sub`).
 
 Realm prerequisite: `registrationEmailAsUsername: true` (realm JSON; existing realms get it from `just seed-users`).

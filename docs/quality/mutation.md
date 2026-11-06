@@ -13,12 +13,16 @@ code of four modules; a baseline per module makes a later run fail when the scor
 | Module | Mutated classes (`pit.targetClasses`) | Tests PIT runs (`pit.targetTests`) | Mutants | Runtime¹ | Baseline |
 |---|---|---|---|---|---|
 | `common-quarkus` | `TenantId`, `TenantContext`, `AuthzContext`, `Problem`, `ProblemType`, `CoreRosterClient`, `RosterAuthzResolver`, `TenantHeaderPropagationFilter`, `ServiceTokenClientFilter` | their plain unit tests | 109 | 11 s | 95 |
-| `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction` | `core.domain.*` tests + the tests of those six classes | 494 | 68 s | 95 |
-| `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility` | `game.domain.*` tests + `EventAuthorizationTest`, `StatVisibilityTest` | 401 | 42 s | 95 |
-| `athlete-service` | `athlete.domain.*` | `athlete.domain.*` tests | 430 | 34 s | 100 |
+| `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction` + the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67) | `core.domain.*` tests + the tests of those classes (`EventTopicTest`, `RosterEventAppenderTest`, `EventEnvelopesTest` for the event ones) | 560 | 68 s² | 95 |
+| `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility` + the replica rules `ReplicaAuthzResolver`, `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant`, `ReplicaPerson` (WP68) | `game.domain.*` tests + `EventAuthorizationTest`, `StatVisibilityTest`, `ReplicaAuthzResolverTest`, `ReplicaRosterPortTest` | 440 | 42 s² | 95 |
+| `athlete-service` | `athlete.domain.*` (the WP69 replica code is in `application`/adapters, outside the scope) | `athlete.domain.*` tests | 471 | 34 s² | 100 |
 
 ¹ Wall clock of `just mutation <module>` including compilation, on the development Mac (Apple M1 Pro, 10 cores, shared
 with other work), `threads = 4`. All four modules in turn: about 2.5 minutes.
+² Runtime measured in WP37 with the mutant counts of then (core 494, game 401, athlete 430); not re-measured.
+
+Latest scores (2026-11-06, round 4): core-service 558/560 (99.6 %, WP67), game-service 438/440 (99.5 %, WP68),
+athlete-service 471/471 (100 %, WP61, WP62 and WP69), common-quarkus 108/109 (99.1 %, WP37; not re-run since).
 
 Settings (root `pom.xml` `pluginManagement`, PIT 1.30.1 + JUnit 5 plugin 1.2.3): `STRONGER` mutators (they stay far
 below the ~10 min per module budget), HTML + XML reports in `<module>/target/pit-reports` without timestamps, never

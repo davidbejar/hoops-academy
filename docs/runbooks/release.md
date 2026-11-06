@@ -8,7 +8,7 @@ Status: describes the process the repository's tooling supports. **No release ha
 ## 1. What is versioned
 | Artifact | Version source | Rule |
 |---|---|---|
-| OpenAPI contracts | `info.version` in `libs/contracts/openapi/{core,game,athlete,common}.yaml` (now core 2.7.0, game 2.2.0, athlete 2.1.0, common 1.1.0) | SemVer; policy in `libs/contracts/README.md` |
+| OpenAPI contracts | `info.version` in `libs/contracts/openapi/{core,game,athlete,common}.yaml` (now core 3.0.0, game 2.2.0, athlete 2.2.0, common 1.1.1); event JSON Schemas in `libs/contracts/events` (version per event envelope, breaking change = `<topic>.v2`, `libs/contracts/README.md`) | SemVer; policy in `libs/contracts/README.md` |
 | Maven modules and service jars | root `pom.xml` (`0.1.0-SNAPSHOT`) | one version for the repo |
 | Container images | tag `dev` locally; `${{ github.sha }}` in `images.yml` | immutable, per commit |
 | Helm chart | `deploy/helm/hoops/Chart.yaml` (`version`, `appVersion`) | bump with every chart change |
@@ -18,7 +18,9 @@ Status: describes the process the repository's tooling supports. **No release ha
 - Minor: additive only (new operation, optional field, optional query parameter, new value of a request-only enum).
 - Major: removal, rename, optional->required, type change, tightened constraint, status code change, **new value in a
   response enum**. Needs an ADR and a migration note (ADR-0016 is the template). No parallel `/v2` paths: services and web
-  ship together.
+  ship together. Latest major: core 3.0.0 removed the deprecated `resendTenantAdminInvitation` alias
+  (`POST /platform/tenants/{id}/admins/{personId}/resend-invitation` now answers 404; callers use
+  `issueTenantAdminTemporaryPassword`, `.../temporary-password`); migration note in ADR-0035 (WP59).
 - Patch: descriptions and examples.
 - Steps for a contract change:
   1. Edit the YAML and bump `info.version`.
