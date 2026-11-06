@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hoopsacademy.athlete.adapters.out.persistence.ReplicaRosterRepository;
 import com.hoopsacademy.athlete.application.TeamRoster;
 import com.hoopsacademy.athlete.domain.PersonId;
@@ -133,6 +134,26 @@ class CoreRosterConsumerTest {
 
         assertThat(roster()).isEmpty();
         assertThat(parkedReasons(victim + ":" + team)).singleElement().satisfies(reason -> assertThat(reason).contains("key"));
+    }
+
+    /** WP81: a removal athlete does not apply yet (soft removal: WP82) is counted ignored, never parked. */
+    @Test
+    void aRemovalAthleteDoesNotApplyYetIsCountedIgnoredAndNotParked() {
+        CoreEvents.Record lions = CoreEvents.team(tenant, team, "U12", SEASON_END);
+        ObjectNode removalValue = (ObjectNode) lions.at(lions.occurredAt().plusSeconds(1)).json();
+        removalValue.put("type", "team.removed");
+        removalValue.putObject("payload");
+        CoreEvents.Record removal = lions.withValue(removalValue.toString());
+        CoreEvents.Record marker = CoreEvents.team(tenant, UUID.randomUUID(), "Marker", SEASON_END);
+        double ignoredBefore = events("core.team", "ignored");
+        double parkedBefore = parked("core.team");
+
+        topics.publish(lions, removal).tombstone(removal.topic(), removal.key()).publish(marker);
+        awaitTeam(marker);
+
+        assertThat(roster()).as("kept until WP82").hasValueSatisfying(r -> assertThat(r.teamName()).isEqualTo("U12"));
+        assertThat(events("core.team", "ignored")).isEqualTo(ignoredBefore + 1);
+        assertThat(parked("core.team")).isEqualTo(parkedBefore);
     }
 
     @Test

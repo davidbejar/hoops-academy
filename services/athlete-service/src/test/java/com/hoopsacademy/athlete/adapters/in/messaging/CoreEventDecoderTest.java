@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Every record of the roster topics is validated against its libs/contracts/events schema before it becomes an event. */
 class CoreEventDecoderTest {
@@ -59,10 +60,47 @@ class CoreEventDecoderTest {
     void everyContractExampleDecodes(String topic, String key, String value) {
         DecodedEvent decoded = decoder.decode(topic, key, value);
 
-        assertThat(decoded).isInstanceOf(Valid.class);
-        RosterEvent event = ((Valid) decoded).event();
-        assertThat(event.topic().topicName()).isEqualTo(topic);
-        assertThat(event.tenant()).isEqualTo(TENANT);
+        assertThat(decoded).isNotInstanceOf(DecodedEvent.Invalid.class);
+        if (decoded instanceof Valid valid) {
+            assertThat(valid.event().topic().topicName()).isEqualTo(topic);
+            assertThat(valid.event().tenant()).isEqualTo(TENANT);
+        }
+    }
+
+    /** WP81: core removes any aggregate now; athlete keeps those rows until WP82 adds their soft removal. */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"core.person", "core.player", "core.team",
+            "core.team-player", "core.tenant"})
+    void theRemovalsAthleteDoesNotApplyYetAreValidButIgnored(String topic) throws IOException {
+        JsonNode removal = removalExample(topic);
+
+        DecodedEvent decoded = decoder.decode(topic,
+                removal.get("tenantId").asText() + ":" + removal.get("aggregateId").asText(), removal.toString());
+
+        assertThat(decoded).isInstanceOfSatisfying(DecodedEvent.Ignored.class, ignored -> {
+            assertThat(ignored.type()).isEqualTo(removal.get("type").asText());
+            assertThat(ignored.occurredAt()).isEqualTo(Instant.parse(removal.get("occurredAt").asText()));
+        });
+    }
+
+    @Test
+    void theRemovalsAthleteAppliesStayValid() throws IOException {
+        JsonNode removal = removalExample("core.team-staff");
+
+        assertThat(decoder.decode("core.team-staff",
+                removal.get("tenantId").asText() + ":" + removal.get("aggregateId").asText(), removal.toString()))
+                .isInstanceOf(Valid.class);
+    }
+
+    private static JsonNode removalExample(String topic) throws IOException {
+        try (InputStream in = CoreEventDecoderTest.class.getResourceAsStream("/events/examples/" + topic + ".valid.json")) {
+            for (JsonNode event : JSON.readTree(in)) {
+                if (event.get("type").asText().endsWith(".removed")) {
+                    return event;
+                }
+            }
+        }
+        throw new IllegalStateException("no removal example for " + topic);
     }
 
     @Test

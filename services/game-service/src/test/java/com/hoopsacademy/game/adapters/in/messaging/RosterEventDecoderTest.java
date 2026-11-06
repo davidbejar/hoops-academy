@@ -52,9 +52,30 @@ class RosterEventDecoderTest {
         for (String topic : List.of("core.person", "core.player", "core.team", "core.team-player", "core.team-staff",
                 "core.guardian-link", "core.tenant")) {
             for (JsonNode example : examples(topic)) {
-                assertThat(decode(topic, example)).as(topic + " " + example).isInstanceOf(Decoded.Valid.class);
+                assertThat(decode(topic, example)).as(topic + " " + example).isNotInstanceOf(Decoded.Invalid.class);
             }
         }
+    }
+
+    /** WP81: core removes any aggregate now; game keeps those rows until WP82 adds their soft removal. */
+    @Test
+    void theRemovalsGameDoesNotApplyYetAreValidButIgnored() {
+        for (String topic : List.of("core.person", "core.player", "core.team", "core.team-player", "core.tenant")) {
+            JsonNode removal = examples(topic).stream().filter(e -> e.get("type").asText().endsWith(".removed"))
+                    .findFirst().orElseThrow();
+
+            Decoded decoded = decode(topic, removal);
+
+            assertThat(decoded).as(topic).isInstanceOfSatisfying(Decoded.Ignored.class, ignored -> {
+                assertThat(ignored.type()).isEqualTo(removal.get("type").asText());
+                assertThat(ignored.envelope().eventId().toString()).isEqualTo(removal.get("eventId").asText());
+                assertThat(ignored.envelope().tenantId()).isEqualTo(TENANT);
+            });
+        }
+        JsonNode staffRemoval = examples("core.team-staff").stream()
+                .filter(e -> e.get("type").asText().endsWith(".removed")).findFirst().orElseThrow();
+        assertThat(decode("core.team-staff", staffRemoval)).as("removals game applies stay valid")
+                .isInstanceOf(Decoded.Valid.class);
     }
 
     @Test
