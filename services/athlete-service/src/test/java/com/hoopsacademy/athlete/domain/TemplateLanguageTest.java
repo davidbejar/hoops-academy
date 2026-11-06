@@ -68,6 +68,7 @@ class TemplateLanguageTest {
         assertThat(es.isEmpty()).isFalse();
         assertThat(Translations.NONE.isEmpty()).isTrue();
         assertThat(Translations.of(null)).isEqualTo(Translations.NONE);
+        assertThat(Translations.of(Map.of())).isEqualTo(Translations.NONE);
         assertThat(es.texts()).containsOnlyKeys(ContentLocale.ES);
     }
 
@@ -113,6 +114,32 @@ class TemplateLanguageTest {
     }
 
     @Test
+    void withNeitherTheRequestedLanguageNorEnglishTheOwnTextsAreShown() {
+        TrainingPlan spanishBase = TrainingPlan.template(PlanId.random(), "Rondo", "Pases", "es",
+                List.of(item("Toque", "Rápido", Translations.of(Map.of(ContentLocale.ID, new LocalizedText("Sentuh", null))))),
+                NOW).translatedAs("rondo", Translations.of(Map.of(ContentLocale.ID, new LocalizedText("Rondo id", null))));
+
+        TrainingPlan english = spanishBase.localized(ContentLocale.EN);
+
+        assertThat(english.name()).isEqualTo("Rondo");
+        assertThat(english.description()).isEqualTo("Pases");
+        assertThat(english.locale()).isEqualTo("es");
+        assertThat(english.items().get(0).title()).isEqualTo("Toque");
+        assertThat(english.items().get(0).description()).isEqualTo("Rápido");
+        assertThat(spanishBase.localized(ContentLocale.ID).items().get(0).title()).isEqualTo("Sentuh");
+        assertThat(spanishBase.localized(ContentLocale.ID).items().get(0).description()).isNull();
+    }
+
+    @Test
+    void aLocalizedTemplateIsFinal() {
+        TrainingPlan spanish = formShooting().localized(ContentLocale.ES);
+
+        assertThat(spanish.translations().isEmpty()).isTrue();
+        assertThat(spanish.items()).allSatisfy(i -> assertThat(i.translations().isEmpty()).isTrue());
+        assertThat(spanish.localized(ContentLocale.EN)).isEqualTo(spanish);
+    }
+
+    @Test
     void aTenantPlanKeepsItsStoredTextsInEveryLanguage() {
         TrainingPlan mine = TrainingPlan.create("Mi plan", "Martes", COACH, List.of(item("Bote", null, Translations.NONE)), NOW);
 
@@ -127,7 +154,11 @@ class TemplateLanguageTest {
     void onlyTemplatesCarryTranslations() {
         TrainingPlan mine = TrainingPlan.create("Mi plan", null, COACH, List.of(), NOW);
 
+        Translations spanish = Translations.of(Map.of(ContentLocale.ES, new LocalizedText("Mío", null)));
+
         assertThatThrownBy(() -> mine.translatedAs("key", Translations.NONE)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> mine.translatedAs(null, spanish)).isInstanceOf(IllegalStateException.class);
+        assertThat(formShooting().translatedAs(null, Translations.NONE).nameKey()).isEmpty();
     }
 
     @Test

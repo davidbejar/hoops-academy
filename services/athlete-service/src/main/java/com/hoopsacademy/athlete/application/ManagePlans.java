@@ -1,6 +1,7 @@
 package com.hoopsacademy.athlete.application;
 
 import com.hoopsacademy.athlete.domain.Actor;
+import com.hoopsacademy.athlete.domain.ContentLocale;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItem;
 import com.hoopsacademy.athlete.domain.PlanItemId;
@@ -16,6 +17,9 @@ import java.util.Optional;
 /**
  * Training plans and their items. Everybody in the tenant reads plans and the global templates; ADMIN and staff
  * roles write tenant plans. Templates are never edited, they are copied (copy-on-use).
+ *
+ * <p>Templates are read in the caller's language (decision 43): lists, details and copies resolve their texts for the
+ * given {@link ContentLocale}; a copy keeps the texts it was made with. Tenant plans are returned as stored.
  */
 @ApplicationScoped
 public class ManagePlans {
@@ -52,13 +56,15 @@ public class ManagePlans {
     }
 
     @Transactional
-    public PageResult<TrainingPlan> list(boolean templates, Optional<String> query, int page, int size) {
-        return plans.search(new PlanRepository.Search(templates, false, query, page, size));
+    public PageResult<TrainingPlan> list(boolean templates, Optional<String> query, ContentLocale language, int page,
+            int size) {
+        return plans.search(new PlanRepository.Search(templates, false, query, language, page, size))
+                .map(plan -> plan.localized(language));
     }
 
     @Transactional
-    public TrainingPlan get(PlanId id) {
-        return load(id);
+    public TrainingPlan get(PlanId id, ContentLocale language) {
+        return load(id).localized(language);
     }
 
     @Transactional
@@ -71,9 +77,10 @@ public class ManagePlans {
     }
 
     @Transactional
-    public TrainingPlan copy(AuthzContext caller, Actor actor, PlanId source, Optional<String> name) {
+    public TrainingPlan copy(AuthzContext caller, Actor actor, PlanId source, Optional<String> name,
+            ContentLocale language) {
         access.requireStaffRole(caller);
-        TrainingPlan copy = load(source).copiedBy(actor, name, clock.now());
+        TrainingPlan copy = load(source).localized(language).copiedBy(actor, name, clock.now());
         plans.save(copy);
         return copy;
     }

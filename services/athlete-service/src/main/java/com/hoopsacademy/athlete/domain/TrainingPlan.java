@@ -15,14 +15,20 @@ import java.util.stream.IntStream;
 /**
  * A training plan: an ordered list of exercises. A global template (read-only for every tenant) is copied into
  * a tenant-owned plan before use (copy-on-use); the copy is independent of its source.
+ *
+ * <p>A template's own texts are in {@code locale}; it may carry a stable {@code nameKey} and {@code translations}
+ * into the other languages, and is shown {@link #localized localized} to the caller's language (decision 43). Tenant
+ * plans have neither and are shown as stored.
  */
 public record TrainingPlan(
         PlanId id,
+        String nameKeyOrNull,
         String name,
         String description,
         Actor authorOrNull,
         boolean template,
         String locale,
+        Translations translations,
         boolean archived,
         PlanId sourcePlanIdOrNull,
         List<PlanItem> items,
@@ -38,17 +44,50 @@ public record TrainingPlan(
             throw new TrainingRuleViolation("A plan needs a name of 1 to 120 characters", "INVALID_PLAN");
         }
         items = List.copyOf(items);
+        Objects.requireNonNull(translations, "translations");
+        if (!template && (nameKeyOrNull != null || !translations.isEmpty())) {
+            throw new IllegalStateException("Only global templates carry a name key or translations");
+        }
     }
 
     public static TrainingPlan create(String name, String description, Actor author, List<PlanItem> items, Instant now) {
-        return new TrainingPlan(PlanId.random(), name, description, author, false, DEFAULT_LOCALE, false, null,
-                numbered(items), now, now);
+        return new TrainingPlan(PlanId.random(), null, name, description, author, false, DEFAULT_LOCALE, Translations.NONE,
+                false, null, numbered(items), now, now);
     }
 
     /** Rebuilds a global template (used by the seed tests and the persistence adapter). */
     public static TrainingPlan template(PlanId id, String name, String description, String locale, List<PlanItem> items,
             Instant now) {
-        return new TrainingPlan(id, name, description, null, true, locale, false, null, numbered(items), now, now);
+        return new TrainingPlan(id, null, name, description, null, true, locale, Translations.NONE, false, null,
+                numbered(items), now, now);
+    }
+
+    /**
+     * This template with its stable key and its texts in other languages.
+     *
+     * @throws IllegalStateException for a tenant plan
+     */
+    public TrainingPlan translatedAs(String nameKey, Translations newTranslations) {
+        return new TrainingPlan(id, nameKey, name, description, authorOrNull, template, locale, newTranslations, archived,
+                sourcePlanIdOrNull, items, createdAt, updatedAt);
+    }
+
+    /**
+     * This plan as shown to a caller who reads {@code requested}: a template's texts (its items' too) in that language,
+     * else in {@link ContentLocale#FALLBACK}, else its own; {@code locale} names the language shown. The result keeps
+     * the name key but no translations, so localizing it again changes nothing. A tenant plan has no translations and
+     * comes back equal.
+     */
+    public TrainingPlan localized(ContentLocale requested) {
+        Translations.Choice shown = translations.choose(requested, locale, new LocalizedText(name, description));
+        List<PlanItem> shownItems = items.stream().map(i -> i.localized(requested, locale)).toList();
+        return new TrainingPlan(id, nameKeyOrNull, shown.text().title(), shown.text().description(), authorOrNull,
+                template, shown.language(), Translations.NONE, archived, sourcePlanIdOrNull, shownItems, createdAt,
+                updatedAt);
+    }
+
+    public Optional<String> nameKey() {
+        return Optional.ofNullable(nameKeyOrNull);
     }
 
     public Optional<Actor> author() {
@@ -74,11 +113,15 @@ public record TrainingPlan(
         }
     }
 
-    /** A new tenant plan with its own identity and items; {@code name} defaults to this plan's name. */
+    /**
+     * A new tenant plan with its own identity and items; {@code name} defaults to this plan's name. The copy keeps the
+     * texts as they are here (copy a {@link #localized localized} template to copy it in the caller's language) and
+     * neither the name key nor translations.
+     */
     public TrainingPlan copiedBy(Actor author, Optional<String> name, Instant now) {
         List<PlanItem> duplicated = items.stream().map(PlanItem::duplicated).toList();
-        return new TrainingPlan(PlanId.random(), name.orElse(this.name), description, author, false, locale, false, id,
-                duplicated, now, now);
+        return new TrainingPlan(PlanId.random(), null, name.orElse(this.name), description, author, false, locale,
+                Translations.NONE, false, id, duplicated, now, now);
     }
 
     public TrainingPlan renamed(String newName, Instant now) {
@@ -131,8 +174,8 @@ public record TrainingPlan(
     private TrainingPlan changed(String newName, String newDescription, boolean newArchived, List<PlanItem> newItems,
             Instant now) {
         requireEditable();
-        return new TrainingPlan(id, newName, newDescription, authorOrNull, template, locale, newArchived,
-                sourcePlanIdOrNull, newItems, createdAt, now);
+        return new TrainingPlan(id, nameKeyOrNull, newName, newDescription, authorOrNull, template, locale, translations,
+                newArchived, sourcePlanIdOrNull, newItems, createdAt, now);
     }
 
     private static List<PlanItem> numbered(List<PlanItem> items) {

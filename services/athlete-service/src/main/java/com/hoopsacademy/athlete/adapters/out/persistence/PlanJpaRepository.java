@@ -3,6 +3,7 @@ package com.hoopsacademy.athlete.adapters.out.persistence;
 import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.application.PlanRepository;
 import com.hoopsacademy.athlete.domain.Actor;
+import com.hoopsacademy.athlete.domain.ContentLocale;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItem;
@@ -100,6 +101,15 @@ class PlanJpaRepository implements PlanRepository {
                 .setParameter("id", id.value()).getSingleResult() > 0;
     }
 
+    /**
+     * The name a caller reading {@code :language} is shown: the translation, else the English one, else the own name.
+     * Equivalent to {@code TrainingPlan.localized} because V4 keeps a template's own language out of its i18n.
+     */
+    private static final String SHOWN_NAME = "coalesce("
+            + "cast(function('jsonb_extract_path_text', p.i18n, :language, 'name') as String), "
+            + "cast(function('jsonb_extract_path_text', p.i18n, '" + ContentLocale.FALLBACK.code() + "', 'name') as String), "
+            + "p.name)";
+
     @Override
     public PageResult<TrainingPlan> search(Search search) {
         StringBuilder where = new StringBuilder(search.templates() ? " where p.ownerTenantId is null"
@@ -107,13 +117,14 @@ class PlanJpaRepository implements PlanRepository {
         if (!search.includeArchived()) {
             where.append(" and p.archived = false");
         }
-        search.query().ifPresent(q -> where.append(" and lower(p.name) like :q escape '\\'"));
-        var select = em.createQuery("select p from PlanEntity p" + where + " order by p.name, p.id", PlanEntity.class);
+        search.query().ifPresent(q -> where.append(" and lower(" + SHOWN_NAME + ") like :q escape '\\'"));
+        var select = em.createQuery("select p from PlanEntity p" + where + " order by " + SHOWN_NAME + ", p.id",
+                PlanEntity.class).setParameter("language", search.language().code());
         var count = em.createQuery("select count(p) from PlanEntity p" + where, Long.class);
         search.query().ifPresent(q -> {
             String pattern = "%" + q.toLowerCase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
             select.setParameter("q", pattern);
-            count.setParameter("q", pattern);
+            count.setParameter("q", pattern).setParameter("language", search.language().code());
         });
         List<PlanEntity> page = select.setFirstResult(search.page() * search.size()).setMaxResults(search.size())
                 .getResultList();
@@ -153,11 +164,13 @@ class PlanJpaRepository implements PlanRepository {
     private static TrainingPlan toDomain(PlanEntity e, List<PlanItemEntity> items) {
         Actor author = e.authorPersonId == null ? null
                 : new Actor(new PersonId(e.authorPersonId), e.authorName == null ? "Member" : e.authorName);
-        return new TrainingPlan(new PlanId(e.id), e.name, e.description, author, e.template, e.locale, e.archived,
+        return new TrainingPlan(new PlanId(e.id), e.nameKey, e.name, e.description, author, e.template, e.locale,
+                TemplateTextsJson.read(e.i18n, "name"), e.archived,
                 e.sourcePlanId == null ? null : new PlanId(e.sourcePlanId),
                 items.stream().sorted(java.util.Comparator.comparingInt(i -> i.position))
                         .map(i -> new PlanItem(new PlanItemId(i.id), i.position, i.title, i.description,
-                                i.durationMinutes, i.sets, i.repetitions, i.videoUrl)).toList(),
+                                i.durationMinutes, i.sets, i.repetitions, i.videoUrl,
+                                TemplateTextsJson.read(i.i18n, "title"))).toList(),
                 e.createdAt, e.updatedAt);
     }
 }

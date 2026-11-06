@@ -16,6 +16,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -43,6 +44,9 @@ public class TrainingPlanResource {
     private static final int MAX_NAME = 120;
     private static final int MAX_TEXT = 4000;
 
+    /** Template texts follow this header (athlete 2.2.0, decision 43); tenant plans ignore it. */
+    private static final String ACCEPT_LANGUAGE = "Accept-Language";
+
     private final ManagePlans plans;
     private final TenantContext tenant;
     private final CallerActor actors;
@@ -56,12 +60,14 @@ public class TrainingPlanResource {
     @GET
     public PageDto<PlanDtos.Summary> list(@QueryParam("template") String template, @QueryParam("q") String q,
             @QueryParam("page") @DefaultValue("0") @Min(0) int page,
-            @QueryParam("size") @DefaultValue("50") @Min(1) @Max(200) int size) {
+            @QueryParam("size") @DefaultValue("50") @Min(1) @Max(200) int size,
+            @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
         Optional<String> query = Optional.ofNullable(q).filter(text -> !text.isBlank());
         if (query.filter(text -> text.length() > 100).isPresent()) {
             throw new com.hoopsacademy.athlete.application.InvalidRequestException("q", "INVALID_VALUE", "q must be at most 100 characters");
         }
-        return PageDto.of(plans.list(Requests.bool("template", template, false), query, page, size), PlanDtos.Summary::from);
+        return PageDto.of(plans.list(Requests.bool("template", template, false), query,
+                AcceptLanguage.negotiate(acceptLanguage), page, size), PlanDtos.Summary::from);
     }
 
     @POST
@@ -75,8 +81,8 @@ public class TrainingPlanResource {
 
     @GET
     @Path("/{planId}")
-    public PlanDtos.Plan get(@PathParam("planId") UUID planId) {
-        return PlanDtos.Plan.from(plans.get(new PlanId(planId)));
+    public PlanDtos.Plan get(@PathParam("planId") UUID planId, @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
+        return PlanDtos.Plan.from(plans.get(new PlanId(planId), AcceptLanguage.negotiate(acceptLanguage)));
     }
 
     @PATCH
@@ -97,10 +103,11 @@ public class TrainingPlanResource {
 
     @POST
     @Path("/{planId}:copy")
-    public Response copy(@PathParam("planId") UUID planId, @Valid PlanDtos.CopyRequest request) {
+    public Response copy(@PathParam("planId") UUID planId, @Valid PlanDtos.CopyRequest request,
+            @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
         AuthzContext caller = caller();
         var copy = plans.copy(caller, actors.of(caller), new PlanId(planId),
-                Optional.ofNullable(request).map(PlanDtos.CopyRequest::name));
+                Optional.ofNullable(request).map(PlanDtos.CopyRequest::name), AcceptLanguage.negotiate(acceptLanguage));
         return Response.status(Response.Status.CREATED).entity(PlanDtos.Plan.from(copy)).build();
     }
 

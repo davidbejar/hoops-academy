@@ -40,4 +40,8 @@ class PlanItemEntity {
 
     @Column(name = "video_url")
     String videoUrl;
+
+    /** Template items only (see {@link PlanEntity}): jsonb {@code {"es": {"title": …, "description": …}, …}}, read as text. */
+    @Column(name = "i18n", insertable = false, updatable = false)
+    String i18n;
 }
