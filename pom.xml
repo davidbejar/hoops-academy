@@ -43,6 +43,9 @@
     <pitest-junit5.version>1.2.3</pitest-junit5.version>
     <dependency-check.version>13.0.0</dependency-check.version>
     <openapi-generator.version>7.27.0</openapi-generator.version>
+    <spotbugs-plugin.version>4.10.5.0</spotbugs-plugin.version>
+    <spotbugs.version>4.10.5</spotbugs.version>
+    <findsecbugs.version>1.14.0</findsecbugs.version>
 
     <!-- quality gates (overridable per module) -->
     <jacoco.line.minimum>0.80</jacoco.line.minimum>
@@ -57,6 +60,10 @@
     <pit.mutationThreshold>0</pit.mutationThreshold>
     <!-- methods whose only surviving mutants are equivalent; each module lists its own with the reason -->
     <pit.excludedMethods></pit.excludedMethods>
+
+    <!-- SAST in verify (WP83, ADR-0045): SpotBugs + find-sec-bugs fail the build on any finding of rank medium or
+         higher that spotbugs-exclude.xml does not accept (each exclusion carries its justification). -->
+    <spotbugs.skip>false</spotbugs.skip>
   </properties>
 
   <dependencyManagement>
@@ -268,8 +275,50 @@
           <artifactId>openapi-generator-maven-plugin</artifactId>
           <version>${openapi-generator.version}</version>
         </plugin>
+        <plugin>
+          <groupId>com.github.spotbugs</groupId>
+          <artifactId>spotbugs-maven-plugin</artifactId>
+          <version>${spotbugs-plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>com.github.spotbugs</groupId>
+              <artifactId>spotbugs</artifactId>
+              <version>${spotbugs.version}</version>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <skip>${spotbugs.skip}</skip>
+            <effort>Max</effort>
+            <threshold>Medium</threshold>
+            <failOnError>true</failOnError>
+            <xmlOutput>true</xmlOutput>
+            <sarifOutput>true</sarifOutput>
+            <excludeFilterFile>${maven.multiModuleProjectDirectory}/spotbugs-exclude.xml</excludeFilterFile>
+            <plugins>
+              <plugin>
+                <groupId>com.h3xstream.findsecbugs</groupId>
+                <artifactId>findsecbugs-plugin</artifactId>
+                <version>${findsecbugs.version}</version>
+              </plugin>
+            </plugins>
+          </configuration>
+          <executions>
+            <execution>
+              <id>spotbugs-check</id>
+              <phase>verify</phase>
+              <goals><goal>check</goal></goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <!-- bound in every module (main classes only); `-Dspotbugs.skip` for a quick local loop, never in CI -->
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
   </build>
 
   <profiles>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SpotBugs + find-sec-bugs exclusions (WP83, ADR-0045). The root pom runs SpotBugs (effort Max, threshold Medium) in
+     `verify` and fails on any finding not matched here. Every <Match> says why; prefer a match scoped to a class and
+     bug pattern over a global one, and never exclude a SECURITY pattern globally. Reviewed with the SAST baselines
+     (docs/security/sast-dast.md). -->
+<FindBugsFilter xmlns="https://github.com/spotbugs/filter/3.0.0"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/4.10.5/spotbugs/etc/findbugsfilter.xsd">
+
+  <!-- Global, by design (378 instances): constructor injection of CDI beans, ports, EntityManager and ObjectMapper
+       (the hexagonal wiring stores what it is given) and getters of records / JPA entities. Value objects copy their
+       collections (List.copyOf / Set.copyOf), which the detector cannot see; the services hold no secret or
+       security state in shared mutable objects. -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+
+  <!-- False positive: the JDBC helper prepares statements whose SQL every caller builds from compile-time constants
+       (text blocks, static column lists, the static Upsert records of JdbcRosterReplicaRepository); every value is a
+       bound `?` parameter. Semgrep rule hoops-sql-concat-from-parameter watches the callers. -->
+  <Match>
+    <Class name="com.hoopsacademy.game.adapters.out.persistence.JdbcRepository"/>
+    <Bug pattern="SQL_INJECTION_JDBC"/>
+  </Match>
+
+  <!-- False positive: Patch.absent() returns the shared ABSENT instance of an immutable class. -->
+  <Match>
+    <Class name="com.hoopsacademy.core.domain.shared.Patch"/>
+    <Bug pattern="MS_EXPOSE_REP"/>
+  </Match>
+
+  <!-- False positive: a JSON request DTO whose public fields Jackson writes. -->
+  <Match>
+    <Class name="com.hoopsacademy.game.adapters.in.rest.UpdateMatchRequest"/>
+    <Bug pattern="UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"/>
+  </Match>
+
+  <!-- Not applicable: CDI-managed decoders whose constructor loads their JSON schema from the classpath; no finalizer anywhere, the
+       instances never reach untrusted code (the finalizer attack CT_CONSTRUCTOR_THROW guards against). -->
+  <Match>
+    <Or>
+      <Class name="com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder"/>
+      <Class name="com.hoopsacademy.game.adapters.in.rest.MatchEventDecoder"/>
+    </Or>
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+  </Match>
+
+  <!-- Not applicable: the format string is an SQL text block; \n is the intended separator, not a platform newline. -->
+  <Match>
+    <Class name="com.hoopsacademy.game.adapters.out.persistence.JpaMatchEventRepository"/>
+    <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
+  </Match>
+</FindBugsFilter>
