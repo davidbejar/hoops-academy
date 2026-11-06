@@ -46,4 +46,55 @@ Redpanda; game and athlete consume them in WP68/WP69.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- **Built:**
+  - Contracts: `libs/contracts/events/core.{person,player,team,team-player,team-staff,guardian-link,tenant}.schema.json`
+    (Draft 2020-12, identical closed envelope `eventId/type/version/tenantId/aggregateId/occurredAt/payload`, types
+    `<aggregate>.changed` and `.removed` for team-staff and guardian-link, every payload field required, null =
+    absent), examples `events/examples/core.<aggregate>.valid.json`, `CoreEventSchemasTest` (meta-schema, one schema
+    per `redpanda-topics.sh` topic, naming, envelope identity, examples per type, negative cases), README "Events"
+    (state transfer, at least once, additive = same topic, breaking = `<topic>.v2`). Team-staff aggregate id = UUID v3
+    of `team-staff:<teamId>:<personId>`.
+  - `V14__outbox_publisher.sql`: `topic` (null = internal v1 notification, never published), `seq` identity,
+    `occurred_at` default `clock_timestamp()`, pending index `(tenant_id, seq)`, `core_platform` SELECT policy + column
+    grant on `tenant_id, topic, occurred_at, published_at` only (no payload, no update/delete).
+  - Writing: the repositories (only writers of the roster tables) report changes to `application.events.RosterChanges`;
+    a JTA synchronization before commit appends one row per aggregate via `RosterEventAppender` from `RosterStates`
+    (`JpaRosterStateRepository`: native SQL after flush, writer row locks). Person -> its player, season -> its teams.
+    Platform lifecycle/master data append `tenant.changed` (`TenantEvents`). v1 notification rows unchanged.
+  - Publisher: `PublishOutbox` + `OutboxPublisherJob` (`@Scheduled`), `JpaOutboxQueueRepository` (`FOR UPDATE SKIP
+    LOCKED` + head-of-line rule), backlog through the platform datasource, `KafkaEventBroker` (`MutinyEmitter<Record>`,
+    channel `core-events`, topic per record, tombstone after `.removed`), `OutboxPublisherHealthCheck` (readiness,
+    always UP, `state` OK/DEGRADED), gauges/counter on /q/metrics. Dev Services Redpanda pin active in common-quarkus
+    (`run.sh` reads it commented or not), topics pre-created by Dev Services.
+  - Docs: ADR-0008 amendment (why no cluster lock), index row, `docs/runbooks/events.md` "Core publisher".
+- **Verified:**
+  - `./mvnw -B -ntp -T 1C clean verify -Dquarkus.http.test-port=0`: BUILD SUCCESS, 4:05 min; contracts 223, common
+    186, core 871, game 324, athlete 679, e2e 27 (23 skipped offline), 0 failures; all coverage gates met.
+  - `./mvnw -pl libs/contracts verify`: 223 tests (67 in `CoreEventSchemasTest`); a mutated schema fails 3 of them.
+  - Per use case (red first): `TeamEventsTest`, `MemberEventsTest`, `PlayerEventsTest`, platform/admin/rollover/
+    eligibility assertions, every event schema-validated (`RosterEvents`); `OutboxRlsTest` (V14 grants/order).
+  - `OutboxPublisherJobTest` (Dev Services Redpanda v26.2.6): order per aggregate + key + eventId + tenant id + tombstone,
+    no resend after mark, crash between send and mark resends the same eventId, a row locked by another publisher
+    holds back its aggregate only (mutating the head-of-line clause fails it), broker paused: API 201, health UP/
+    DEGRADED, `hoops_outbox_pending` >= 1, `broker_available` 0, then drain.
+  - `just e2e` on compose with the publisher on: JourneyTest 23/23 (27 with MailSinkTest); afterwards 34 roster rows,
+    0 pending; `rpk topic describe` high watermarks equal the rows per topic (person 14, player 4, team 2,
+    team-player 7, team-staff 2, guardian-link 1, tenant 4); `rpk topic consume core.team` shows the envelope.
+  - `just mutation core-service`: 558/560 killed (99.6 %, baseline 95); scope now includes `EventTopic`,
+    `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (their 66 mutants all killed; unit tests
+    written after the code, as PIT scope).
+  - `deploy/helm/tests/run.sh`: ALL CHART TESTS PASSED (Redpanda pin check reads the active line).
+- **Decisions/ADRs:** ADR-0008 amendment (collector in the application layer fed by the repositories; state read
+  under the writers' lock; platform sees queue columns only; no `runExclusive`: row locks + head-of-line rule).
+- **Open points / follow-ups:**
+  - Config keys: `hoops.outbox.poll-interval` (`CORE_OUTBOX_POLL_INTERVAL`, `1s`, `off`), `hoops.outbox.batch-size`
+    (`CORE_OUTBOX_BATCH_SIZE`, 100), `hoops.outbox.send-timeout` (`CORE_OUTBOX_SEND_TIMEOUT`, `PT10S`),
+    `%prod.kafka.bootstrap.servers` (`KAFKA_BOOTSTRAP_SERVERS`, `localhost:19092`), `KAFKA_SECURITY_PROTOCOL`
+    (`PLAINTEXT`), `KAFKA_SASL_USERNAME` (`core-service`), `KAFKA_SASL_PASSWORD`; `mp.messaging.outgoing.core-events.*`.
+  - Chart not wired (outside this WP's files): core's Deployment needs `KAFKA_BOOTSTRAP_SERVERS=redpanda.<ns>.svc...:9092`,
+    `KAFKA_SECURITY_PROTOCOL=SASL_PLAINTEXT` and `KAFKA_SASL_PASSWORD` from `hoops-redpanda-core-service` behind
+    `events.enabled`; until then the publisher on kind is DEGRADED (pods stay ready). kind not run.
+  - game/athlete builds log "Unrecognized configuration key quarkus.kafka.devservices.*" until WP68/WP69 add the extension.
+  - `docs/quality/mutation.md` core row (classes, 560 mutants) is the docs pass's.
+  - Tenant deletion (`deleteUnprovisioned`) publishes nothing (no event was ever written for it). Persons, players,
+    teams, assignments and tenants have no `.removed` type (never deleted).
