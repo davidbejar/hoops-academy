@@ -46,4 +46,43 @@ ADR-0034 reserved for you.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - Realm: `oidc-audience-mapper` protocol mappers on the clients (not realm `clientScopes`, which would drop the
+    built-in scopes), least privilege: `web` -> core, game, athlete; `core-service` -> game, athlete; `game-service`
+    and `athlete-service` -> core. A service's own token is never for itself. `revokeRefreshToken: true`,
+    `refreshTokenMaxReuse: 0`; SSO idle/max and the 5-minute access token unchanged. Chart copy synced, Helm
+    snapshots re-recorded.
+  - Services: `quarkus.oidc.token.audience=<service>-service` (OIDC section only). `/internal` calls keep working:
+    game/athlete -> core with their client-credentials tokens (aud core), core -> game/athlete with its own.
+  - Finding: Keycloak 26 **ends the client session** when a spent refresh token comes back (the newest token is
+    refused too: "Session doesn't have required client"). Two browser tabs refresh before the same expiry, so the
+    second one would have signed the user out every few minutes. `apps/web/lib/core/auth/serial_refresh.dart`
+    (token hook of `OidcAuthService`): refreshes run under the Web Lock `hoops-oidc-refresh`, send the stored refresh
+    token when the tab's copy is stale, and hold the lock until `package:oidc` has stored the answer.
+  - `infra/keycloak/seed-users.sh` adds the mappers (read from the realm file) and the rotation settings to an older
+    realm, so `just e2e` works without a volume reset.
+  - Tests: common test-jar `TestRealm` (real realm file + a `web` copy with direct grants + a client for audience
+    `another-service` with role `service` + a user), `RealmKeycloakResource`, `RealmTokens`,
+    `RealBearerTokensProfile`; `TokenAudienceKeycloakTest` in core, game, athlete; `RealmRefreshTokenRotationKeycloakTest`
+    (core); `RealmTokenPolicyTest` (verify); e2e steps 52/53; `oidc_refresh_rotation_test.dart`. game/athlete got
+    the `keycloak-it` profile. Contract common 1.1.1 (bearer scheme names the audience).
+- Verified (2026-11-06):
+  - Red first (commit 790008d): core 4/4, game 4/4, athlete 4/4 failed (200 instead of 401), reuse 200 instead of 400,
+    policy 5/7.
+  - `-Pkeycloak-it`: core `TokenAudienceKeycloakTest` 4/4, rotation 3/3, `CrossTenantAccessTest` 6/6, game 4/4,
+    athlete 4/4.
+  - `./mvnw -B -ntp -T 1C clean verify -Dquarkus.http.test-port=0`: BUILD SUCCESS, 2073 tests, 0 failures (e2e journey
+    skipped there), coverage gates met, 4:37 min.
+  - `just e2e` on compose: 23/23 (21 + 2 new), 73 s; the realm predated WP56 and `just seed-users` updated it.
+  - `deploy/helm/tests/run.sh`: ALL CHART TESTS PASSED; `sync-chart-files.sh --check` clean.
+  - Web: `flutter analyze` clean, `flutter test` 673 + 6 new pass, format clean. `browser_login_check.py` (coach1):
+    5/5 OK. Two-tab soak in headless Chrome (scratch script, realm access token lowered to 75 s, then reset to 300):
+    both tabs signed in after 150 s, Keycloak session kept client `web`, last access 13 s before the end.
+- Decisions/ADRs: ADR-0034 (indexed).
+- Open points:
+  - `deploy/kind/smoke.sh` (WP63's file) calls each service with that service's own token and expects "not 401"; by
+    ADR-0034 that is now a 401. Fix: call game or athlete with core's token and core with game's or athlete's.
+  - The volume reset (`podman volume rm hoops_pgdata`) was refused by the permission system; the fresh import of the
+    realm file is proven by the Testcontainers tests instead.
+  - No control run of the soak without `SerialRefresh` in a real browser (the unit test and the Keycloak test show
+    the failure mode).
