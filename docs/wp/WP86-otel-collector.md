@@ -14,6 +14,11 @@ Decision 60 of 2026-11-06: an OpenTelemetry collector in the chart with the serv
 (ASVS 16.4.3), proven on kind.
 
 ## Scope
+0. **WP87's kind proofs first** (its handover lists the order; the machine was saturated during WP87): the
+   Reloader rotation proof (rotate `GAME_APP_PASSWORD` through ESO and a `hoops-redpanda-game-service` password: the
+   pods restart by themselves, `smoke.sh` green after), a deploy with `events.enabled=false`, the game replica flip,
+   `tilt ci`, `up.sh --eso` with the events, a complete `up.sh --eso --deploy`. Record each in `kind.md`
+   "Verification status" under WP87/WP86. Wait for a quiet host (load guard of WP87: below 2 per CPU) before each.
 1. **Collector**: `otel-collector` Deployment (pinned image by tag + digest, non-root, read-only FS, NetworkPolicy:
    OTLP in from the three services only) behind `observability.enabled` (on in kind values); receivers OTLP gRPC/HTTP;
    exporters: `debug`/logging and a file or an in-cluster backend you pick that is light enough for kind (e.g. a

@@ -180,10 +180,10 @@ def main():
         print("4/4 sign in (mock identity), pick the academy, open the live match")
         wait_for("sign-in tap", lambda: click(wd, SIGN_IN), 30, 0.5)  # landing -> login
         time.sleep(1)
-        wait_for("login screen -> sign-in", lambda: has(wd, ("Elige tu academia",)) or click(wd, SIGN_IN), 30, 0.5)
-        wait_for("academy picker", lambda: has(wd, ("Elige tu academia",)), 30, 0.5)
+        wait_for("login screen -> sign-in", lambda: has(wd, ("Cambiar de academia",)) or click(wd, SIGN_IN), 30, 0.5)
+        wait_for("academy picker", lambda: has(wd, ("Cambiar de academia",)), 30, 0.5)
         wait_for("pick the academy", lambda: click(wd, ("Academia Demo",)), 30, 0.5)
-        wait_for("signed in", lambda: not has(wd, ("Elige tu academia",)) and texts(wd), 30, 0.5)
+        wait_for("signed in", lambda: not has(wd, ("Cambiar de academia",)) and texts(wd), 30, 0.5)
         wd.js(f"location.hash = '#/matches/{LIVE_MATCH}';")
         wait_for("live match renders", lambda: has(wd, ("Tigres", "Cancha", "Court", "Lapangan")), 60)
         print("    ok: the live match screen renders offline")

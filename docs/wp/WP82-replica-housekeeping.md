@@ -22,6 +22,11 @@ replicas apply the `.removed` events WP81 added for persons, players, teams, tea
    deleted); config keys `hoops.roster.replica.retention.*`; tests with a clock.
 3. **Docs**: runbook sections (what is pruned, how to inspect parked rows before they go), ADR-0037 amendment.
 
+4. **Athlete test flake, last path** (WP78/WP87): `ReplicaAuthzRulesTest` still fails under load because Quarkus's
+   Kafka Dev Services starts the Redpanda container outside WP87's `ContainerStarts` ping. Give the athlete (and game)
+   tests a Redpanda `QuarkusTestResource` started through `ContainerStarts` (or turn Kafka Dev Services off for the
+   groups that need no broker); prove the athlete module 3/3 green under load.
+
 ## Acceptance
 - [ ] Red tests first; `./mvnw -B -ntp -pl services/game-service,services/athlete-service -am verify
       -Dquarkus.http.test-port=0` green (totals); `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` green
