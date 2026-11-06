@@ -129,10 +129,6 @@ handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 
   MailHog's; the journey skips those checks there (green on compose).
 - **`tilt ci` with core-service** has not been run (WP16 deployed game/athlete/web; WP18 used `up.sh --deploy`; not
   re-run after WP30's Tiltfile sync or WP36's Gateway API chart).
-- **`ci` red on 3b59360: trivy-fs KSV-0014** (found 2026-11-06, run 42112940234): WP36's new chart snapshot
-  `deploy/helm/tests/snapshots/umbrella-tls.yaml` renders the Keycloak Deployment without `readOnlyRootFilesystem`
-  (accepted until 2027-03-31), but `.trivyignore.yaml` lists only `umbrella-default.yaml` and `umbrella-kind.yaml` under
-  KSV-0014. Add the TLS snapshot path there (one line; every other `ci` job passed). Not done in the docs pass.
 - **Podman VM clock drift** (seen in WP36 and on 2026-11-06, 15–59 min): after the host sleeps, the Podman machine's
   clock falls behind or stalls, Keycloak tokens from Testcontainers look expired, and the Claude commit/push hooks fail
   with 401 or time out. Workaround: `podman machine ssh "sudo date -u -s @$(date +%s)"`; needs a host-level fix (time
@@ -157,6 +153,9 @@ handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- `ci` red on 3b59360, trivy-fs KSV-0014 on WP36's new snapshot `umbrella-tls.yaml` (run 42112940234): the TLS
+  snapshot added to the accepted KSV-0014 paths in `.trivyignore.yaml` on 2026-11-06 (same Keycloak finding, accepted
+  until 2027-03-31; `trivy fs --scanners misconfig` from the repo root clean on every snapshot).
 - WP37 (decision of 2026-11-05): mutation testing with PIT on demand (`just mutation [module]`, never in `verify`) and in
   `.github/workflows/mutation.yml` (manual + monthly; first manual run 42112955113 on 3b59360 green for all four modules). Scores after the killing tests: common-quarkus 99.1 %, core
   99.6 %, game 99.5 %, athlete 100 %; baselines 95 / 95 / 95 / 100; equivalent survivors listed in

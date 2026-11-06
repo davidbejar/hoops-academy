@@ -64,8 +64,8 @@ Deferred-v2: S-15, V-01, V-02.)
 8. **Billing is seams only** and the outbox is written but never published (WP19 not built) (S-15, S-16).
 9. **CI** is green on GitHub since 2026-11-02 (`ci` incl. OWASP dependency-check with a valid NVD key, `e2e` journey
    on the runner, `images` built, scanned and pushed to ghcr.io); on 3b59360 (after WP37 and WP36) `e2e`, `images` and the
-   manual `mutation` run are green, while `ci` failed in `trivy-fs` only (KSV-0014 on the new `umbrella-tls.yaml`
-   snapshot, missing from `.trivyignore.yaml`; FOLLOW-UPS). Mutation testing runs on demand (`just mutation`, WP37:
+   manual `mutation` run are green; `ci` failed in `trivy-fs` only (KSV-0014 on the new `umbrella-tls.yaml`
+   snapshot, missing from `.trivyignore.yaml`), fixed on 2026-11-06. Mutation testing runs on demand (`just mutation`, WP37:
    scores 99.1–100 %, baselines kept).
 10. **Withdrawn/suspended tenants**: members are blocked at once in core but up to 30 s later in game/athlete (membership
     cache); Keycloak logins themselves stay enabled; both accepted by design on 2026-11-05 (decision 6, ADR-0025: a
@@ -194,7 +194,7 @@ reason; none is a silent gap.
   186, contracts 146, core-service 770, game-service 255, athlete-service 613 = **1,970 tests**, 0 failures / errors /
   skipped; the same total as the fresh local `./mvnw -B -ntp -T 1C verify` in the WP37 handover, every coverage gate
   met. (CI on ebdd49f after WP35: 1,902; WP26 baseline on ec3360e: 1,760; WP20 review: 1,467.) The run's `trivy-fs`
-  job failed on KSV-0014 in the new snapshot `umbrella-tls.yaml` (see FOLLOW-UPS); every other job passed.
+  job failed on KSV-0014 in the new snapshot `umbrella-tls.yaml` (ignore path added on 2026-11-06); every other job passed.
 - **Flutter**: same run: **608 tests passed** (`GOLDEN_DIFF_TOLERANCE=0.06`; unchanged since WP35). The date-dependent
   week-calendar golden was fixed on main (commit 7e13cec: "today" comes from `nowProvider`).
 - **e2e**: CI `e2e` run 42112940232 on 3b59360 (compose stack on the runner): `JourneyTest` 21 tests, 0 failures /

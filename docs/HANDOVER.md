@@ -32,10 +32,11 @@ must not be written to.
 - e2e: `JourneyTest` 21 tests green on compose in CI (run 42112940232 on 3b59360, 71.7 s) and **green on kind for the
   first time** in WP36 (21 tests, 159 s, through the Envoy Gateway on :8090; the MailHog checks are skipped on kind).
 - CI on `origin/main` 3b59360 (2026-11-05 21:28 UTC): `e2e` and `images` green, manual `mutation` run 42112955113 green
-  for all four modules; **`ci` failed in `trivy-fs` only**: KSV-0014 (Keycloak without a read-only root FS, accepted
-  until 2027-03-31) fires on WP36's new snapshot `deploy/helm/tests/snapshots/umbrella-tls.yaml`, which
-  `.trivyignore.yaml` does not list. Every earlier run on `main` since 5ab1f71 (2026-11-02) was green. The docs
-  reconciliation commits after 3b59360 are local and not pushed.
+  for all four modules; `ci` failed in `trivy-fs` only: KSV-0014 (Keycloak without a read-only root FS, accepted
+  until 2027-03-31) fired on WP36's new snapshot `deploy/helm/tests/snapshots/umbrella-tls.yaml`, which
+  `.trivyignore.yaml` did not list. Fixed on 2026-11-06 (the TLS snapshot added to the accepted paths; `trivy fs
+  --scanners misconfig` from the repo root reports 0 findings on every snapshot); the docs reconciliation commits and
+  that fix were pushed together. Every earlier run on `main` since 5ab1f71 (2026-11-02) was green.
 - Browser checks: `apps/web/tool/web_smoke.sh` green in mock mode in WP35; `--real` mode and
   `browser_login_check.py --set-new-password` last green on 2026-11-02 / WP25. Lighthouse, airplane-mode cold start and
   chromedriver in CI are still open.
@@ -45,9 +46,7 @@ must not be written to.
   `global.imagePullSecrets`.
 
 ## Pending
-1. **Fix the red `ci` run**: add `**/helm/tests/snapshots/umbrella-tls.yaml` to the KSV-0014 paths in
-   `.trivyignore.yaml` (FOLLOW-UPS), then push and check `ci`.
-2. **Product owner decisions** (FOLLOW-UPS):
+1. **Product owner decisions** (FOLLOW-UPS):
    - WP34: `tenant.suspended` / `tenant.withdrawn` audit rows keep the super admin's free-text `reason`, which academy
      admins now read (keep, or move it out of the audit row); PLATFORM rows show the super admin's Keycloak `sub` to
      academy admins (keep, or show "platform administrator").
@@ -55,7 +54,7 @@ must not be written to.
      `clear` list); `/me` memberships carry no tenant `timezone` (add it to `TenantSummary`?).
    - WP36: Envoy local rate limits are per replica with burst = rpm (global rate limiting with Redis if the proxy
      scales out?); no gateway body-size limit (the services enforce 2 MB).
-3. **Mutation workflow**: `gh workflow run mutation.yml` was run once (run 42112955113, green); nothing left but the
+2. **Mutation workflow**: `gh workflow run mutation.yml` was run once (run 42112955113, green); nothing left but the
    monthly schedule.
 4. **dependency-check NVD cache**: the workflow still saves the cache `if: always()`; if the job takes > 40 min, find the
    `nvd-Linux-*` key "Restore NVD data" restored and `gh cache delete` it. Still to do once: review the
