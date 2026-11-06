@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../design/tokens.dart';
 
 /// A row of a list on its own card: leading avatar or icon, title,
-/// subtitle and a trailing widget. Tappable rows show a chevron unless they
-/// bring their own [trailing].
+/// subtitle, optional [details] under them (status chips, actions) and a
+/// trailing widget. Tappable rows show a chevron unless they bring their own
+/// [trailing].
 class ListRow extends StatelessWidget {
   const ListRow({
     super.key,
@@ -12,6 +13,7 @@ class ListRow extends StatelessWidget {
     this.subtitle,
     this.leading,
     this.trailing,
+    this.details,
     this.onTap,
   });
 
@@ -19,6 +21,10 @@ class ListRow extends StatelessWidget {
   final String? subtitle;
   final Widget? leading;
   final Widget? trailing;
+
+  /// Under the title and subtitle, in the text column: chips that would
+  /// squeeze the title on a phone if they sat in [trailing].
+  final Widget? details;
   final VoidCallback? onTap;
 
   @override
@@ -63,6 +69,10 @@ class ListRow extends StatelessWidget {
                           subtitle!,
                           style: text.bodyMedium!.copyWith(color: c.inkMuted),
                         ),
+                      ],
+                      if (details != null) ...[
+                        const SizedBox(height: HoopsSpace.sm),
+                        details!,
                       ],
                     ],
                   ),

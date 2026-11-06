@@ -47,6 +47,24 @@ void main() {
     );
   });
 
+  testWidgets('details sit under the subtitle, inside the row', (tester) async {
+    await pumpKit(
+      tester,
+      const ListRow(
+        key: Key('row'),
+        title: 'Ana Ruiz',
+        subtitle: 'Mini A',
+        details: Text('Lesionada', key: Key('details')),
+      ),
+    );
+    final subtitle = tester.getRect(find.text('Mini A'));
+    final details = tester.getRect(find.byKey(const Key('details')));
+    final row = tester.getRect(find.byKey(const Key('row')));
+    expect(details.top, greaterThanOrEqualTo(subtitle.bottom));
+    expect(details.left, subtitle.left);
+    expect(row.contains(details.bottomRight - const Offset(1, 1)), isTrue);
+  });
+
   testWidgets('avatar shows the image instead of the initials when given', (
     tester,
   ) async {
