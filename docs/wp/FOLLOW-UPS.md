@@ -103,6 +103,7 @@ the end because it touches every web file.
 | 2 | WP45 | Game adopts the `clear` list (ADR-0032) | Sonnet | After wave 1 |
 | 3 | WP47 | Web: demo mock parity (shared rosters, role filtering) | Sonnet | After WP44, WP45 |
 | 4 | WP49 | Web: `dart format` policy (80 columns) and CI check | Sonnet | Last, alone |
+| 3 | WP51 | `wp-round` skill: how a round is planned and run; CLAUDE.md pointer; HANDOVER conventions trimmed | Opus | After WP44 |
 
 ### Decisions of 2026-11-06, second interview (product owner)
 24. **Dependabot.** Green PRs are merged (done: #1 actions, #2 Maven minor/patch, #4 cupertino_icons 2.0; the
@@ -120,6 +121,9 @@ the end because it touches every web file.
     with Tilt stays as documented.
 32. **Audit storage**: the stored audit row keeps the super admin's subject (accountability); only the academy read
     path masks it (WP38). Accepted. S-08 (`tilt ci` with core) is Implemented, as the docs pass recorded.
+33. **Orchestration as a skill → WP51.** The round procedure (interview, briefs, waves, models, merge protocol, docs
+    pass) becomes `.claude/skills/wp-round`; CLAUDE.md keeps one pointer line per skill; HANDOVER keeps state and
+    environment facts only; memory keeps what the repo cannot derive.
 
 ## Open
 
