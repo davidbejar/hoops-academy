@@ -44,6 +44,11 @@ The jar ships these files as classpath resources: `classpath:openapi/core.yaml`,
   live under `components.x-mixins`: generators and validators ignore them, and a mixin no schema extends fails the
   test. Reason: swagger-request-validator, in its default strict configuration, adds `additionalProperties: false`
   to every object schema with `properties`, so each part of an `allOf` would reject the other parts' fields.
+- **Clearing a field: the `clear` list** (`UpdateRequestClearListContractTest`, ADR-0032; adopted by athlete 2.1.0,
+  core and game follow). In an `Update*Request` an absent or `null` property is unchanged; the properties to set to
+  null are named in `clear: [<name>, …]`, an `enum` of exactly the request's optional, nullable properties
+  (`uniqueItems`), so a typo or a required property fails the strict validator. A property both in `clear` and given a
+  value is a 400. Reason: the generated Dart clients omit null properties, so they cannot send an explicit null.
 
 ## Versioning policy
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — athlete-service API
-  version: 2.0.1
+  version: 2.1.0
   description: |
     Training & attendance, athlete health & fitness.
 
@@ -1153,7 +1153,9 @@ paths:
       operationId: updatePhysicalTestType
       tags: [PhysicalTests]
       summary: Update a tenant-specific test type
-      description: 'Global types are read-only (403). Authz: ADMIN.'
+      description: |
+        Global types are read-only (403). A new `code` must not be used by another global or tenant type (409
+        `TEST_TYPE_CODE_EXISTS`). Authz: ADMIN.
       requestBody:
         required: true
         content:
@@ -1169,6 +1171,24 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+    delete:
+      operationId: deletePhysicalTestType
+      tags: [PhysicalTests]
+      summary: Delete a tenant-specific test type
+      description: |
+        Deletes the type together with the tenant's norms for it. A type that results reference cannot be deleted (409
+        `TEST_TYPE_HAS_RESULTS`: delete or correct the results first, so no result is orphaned). Global types and other
+        tenants' types are not found (404). Authz: ADMIN.
+      responses:
+        '204':
+          description: Test type deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/physical-test-results:
     parameters:
@@ -1498,6 +1518,13 @@ components:
         location: {type: string, maxLength: 200, nullable: true}
         validFrom: {type: string, format: date}
         validUntil: {type: string, format: date, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [location, validUntil]
     TrainingSession:
       type: object
       required: [id, teamId, startsAt, durationMinutes, status]
@@ -1547,6 +1574,13 @@ components:
           type: string
           description: PLANNED ↔ DONE; use the cancel operation to cancel.
           enum: [PLANNED, DONE]
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [location, planId, notes]
     CancelTrainingSessionRequest:
       type: object
       required: [reason]
@@ -1651,6 +1685,13 @@ components:
         fromDate: {type: string, format: date}
         toDate: {type: string, format: date}
         reason: {type: string, maxLength: 500, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [reason]
 
     # ---------------- plans
     PlanItemInput:
@@ -1690,6 +1731,13 @@ components:
         sets: {type: integer, format: int32, minimum: 1, maximum: 100, nullable: true}
         repetitions: {type: integer, format: int32, minimum: 1, maximum: 1000, nullable: true}
         videoUrl: {type: string, format: uri, maxLength: 2000, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [description, durationMinutes, sets, repetitions, videoUrl]
     ReorderPlanItemsRequest:
       type: object
       required: [itemIds]
@@ -1766,6 +1814,13 @@ components:
       properties:
         name: {type: string, minLength: 1, maxLength: 120}
         description: {type: string, maxLength: 4000, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [description]
     CopyTrainingPlanRequest:
       type: object
       properties:
@@ -1883,6 +1938,13 @@ components:
         expectedReturnOn: {type: string, format: date, nullable: true}
         actualReturnOn: {type: string, format: date, nullable: true}
         status: {$ref: '#/components/schemas/InjuryStatus'}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [description, expectedReturnOn, actualReturnOn]
 
     # ---------------- body measurements
     BodyMeasurementInput:
@@ -1913,6 +1975,13 @@ components:
         measuredOn: {type: string, format: date}
         heightCm: {type: number, format: double, minimum: 50, maximum: 250, nullable: true}
         weightKg: {type: number, format: double, minimum: 10, maximum: 250, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [heightCm, weightKg]
 
     # ---------------- physical tests
     PhysicalTestTypeInput:
@@ -1956,10 +2025,22 @@ components:
       type: object
       minProperties: 1
       properties:
+        code:
+          type: string
+          pattern: '^[A-Z0-9_]{2,32}$'
+          example: SPRINT_20M
+          description: Unique across global and tenant types (409); results show the new code.
         name: {type: string, minLength: 1, maxLength: 120}
         unit: {type: string, minLength: 1, maxLength: 16}
         higherIsBetter: {type: boolean}
         description: {type: string, maxLength: 2000, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [description]
     PhysicalTestResultInput:
       type: object
       required: [playerId, testTypeId, measuredOn, value]
@@ -2074,6 +2155,13 @@ components:
         measuredOn: {type: string, format: date}
         value: {type: number, format: double}
         notes: {type: string, maxLength: 1000, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [notes]
     PhysicalTestNormInput:
       type: object
       description: Value range [minValue, maxValue) for a band; a missing bound is open.
