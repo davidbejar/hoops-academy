@@ -58,7 +58,8 @@ just scan                    # gitleaks + dependency-check
   Problem+JSON (`application/problem+json`) for all errors; no stack traces.
 - Commits: Conventional Commits (`feat(core): …`, `test(game): …`, `chore(infra): …`).
 - Work packages: brief in `docs/wp/WP<n>-<slug>.md`; when done append a `## Handover` section (what was
-  built, how verified, open points) to the same file.
+  built, how verified, open points) to the same file. Execute one with `.claude/skills/work-package`; plan and
+  run a round with `.claude/skills/wp-round`.
 
 ## Definition of Done (every work package)
 `just test` green (coverage ≥ 80 % lines, ≥ 90 % in `domain`), RLS suites green for new tables, OpenAPI

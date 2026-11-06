@@ -19,6 +19,10 @@ description: How an agent starts, executes and hands over a Hoops Academy work p
 - Small vertical slices: contract → failing test → minimal code → refactor → commit (Conventional Commits).
 - Keep the brief's scope; if something outside scope is required, note it in the handover instead of doing it.
 - Never weaken a quality gate, disable a test, or connect to the DB as superuser to get green.
+- Shared files named in the brief: `.arb` keys next to the feature's keys; indexes and lists (ADR README, authz
+  matrix, `ADOPTED` in a contract test) append at the end, one entry per line; commit `pubspec.lock` only with a
+  generated-package version bump.
+- Do not reformat files you did not change.
 
 ## Finish (verification-before-completion)
 1. Run the full command(s): `just test` (and `just web-test` for Flutter) — fresh, complete; read the output.
@@ -31,4 +35,5 @@ description: How an agent starts, executes and hands over a Hoops Academy work p
    - Decisions/ADRs: …
    - Open points / follow-ups: …
    ```
-4. Report: what was built, how verified (with numbers), what was left out and why.
+4. Final report to the orchestrator, at most 300 words: what was built, how verified (with numbers), what was left
+   out and why.

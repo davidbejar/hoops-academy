@@ -56,11 +56,9 @@ is archived and must not be written to.
    findings below the CVSS 7 gate were never reviewed.
 
 ## Working conventions learned the hard way
-- Two Claude sessions worked in this checkout at once on 2026-11-02 and one switched branches under the other. If more than one
-  session works on the repo, give each its own `git worktree` **under `$HOME`** (the Podman machine cannot see `/tmp`), and push
-  with `git push origin <branch>:main` instead of switching branches in a shared checkout.
-- Commit with `gitleaks protect --staged` first and `git commit --no-verify` (the pre-commit stash conflicts with concurrent
-  edits); never `git add -A` when another session may have files in flight.
+- **Parallel sessions and rounds of work packages:** follow `.claude/skills/wp-round` (one worktree per session or WP
+  under `$HOME`, never switch branches in a shared checkout; `gitleaks protect --staged` + `git commit --no-verify` with
+  explicit paths; waves, ownership, ADR numbers, merge protocol and traps).
 - Claude Code hook (`.claude/settings.json` → `.claude/hooks/tenancy-gate.sh`, PreToolUse on Bash): before Claude
   runs `git commit` it runs `just isolation-check` (academy A logs in through real Keycloak and cannot read academy B,
   ~40 s); before `git push`, `just db-role-check` (no service connects as a table owner, superuser or BYPASSRLS role,
@@ -75,14 +73,6 @@ is archived and must not be written to.
   falls behind or stalls (16–59 min behind on 2026-11-06), so Keycloak tokens look expired. Since e6a8847 the hook
   scripts (`scripts/hooks/_common.sh`) step the VM clock before each check; by hand outside the hooks:
   `podman machine ssh "sudo date -u -s @$(date +%s)"`.
-- **Worktree wave flow** (used for WP26–WP37): one worktree per WP under `~/code/hoops-wt` (under `$HOME`, so the
-  Podman machine sees it), one branch per WP; when a WP is done, rebase it onto `main`, rerun its checks, merge with
-  `git merge --ff-only`, then the next WP rebases. Shared docs (`HANDOVER.md`, `FOLLOW-UPS.md`, `README.md`, the ADR
-  index) are owned by one agent; the others note their follow-ups in their own handover.
-- **Parallel WPs, lessons of WP38–WP42.** Assign ADR numbers in the briefs up front (0032 and 0033 were fixed before the
-  wave, so nothing was renumbered on rebase). Give each WP of a wave disjoint file ownership (service, chart, web, e2e);
-  a WP that depends on another's contract goes in the next wave (WP41 after WP38/WP39). The only conflicts in the round
-  were shared doc indexes (ADR README, roadmap, runbook lists); keep those to the docs pass or append-only.
 
 ## Next candidates without a work package (see FOLLOW-UPS.md for the full list)
 - Adopt the ADR-0032 `clear` list in core (still merge patch: `null` clears) and game when they need it; an injury edit
