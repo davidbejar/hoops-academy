@@ -1,0 +1,52 @@
+# Dependabot version updates (decision of 2026-11-06). Weekly, grouped per ecosystem so the review load stays at a few
+# PRs a week; `ci` and `e2e` run on every PR. Not covered here (manual, see docs/runbooks/release.md): the container base
+# images (build args in deploy/containers/*.Containerfile), the chart's image tags (Keycloak, Redis, Mailpit, CNPG) and
+# the Envoy Gateway / kind pins in deploy/kind/up.sh. The generated Dart packages under apps/web/packages are not listed:
+# `just gen-api` owns them.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Quarkus platform (BOM + plugin) on its own: a major or minor bump usually needs code changes.
+      quarkus:
+        patterns: ["io.quarkus*", "io.quarkus.platform:*"]
+      maven-minor-patch:
+        exclude-patterns: ["io.quarkus*", "io.quarkus.platform:*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: pub
+    directory: /apps/web
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(web)"
+    groups:
+      pub-minor-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]

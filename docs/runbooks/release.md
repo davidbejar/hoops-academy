@@ -36,6 +36,9 @@ deploy/helm/tests/run.sh       # lint, snapshots, kubeconform, policy assertions
 just e2e                       # journey on compose (docs/runbooks/e2e.md)
 ```
 Also: ADR for any decision taken, handover notes in `docs/wp`, `docs/roadmap.md` updated.
+Dependency bumps arrive as weekly grouped Dependabot PRs (`.github/dependabot.yml`: Maven with Quarkus in its own
+group, pub for `apps/web`, GitHub Actions); `ci` and `e2e` run on each PR. Container base images, the chart's image
+tags and the Envoy Gateway / kind pins are bumped by hand.
 Realm or init-SQL changes: run `scripts/sync-chart-files.sh` (copies into the charts; the chart test fails on drift) and
 refresh snapshots with `deploy/helm/tests/run.sh --update` after reviewing the diff.
 
