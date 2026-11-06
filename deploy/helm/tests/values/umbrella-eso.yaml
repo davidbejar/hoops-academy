@@ -1,0 +1,4 @@
+# Umbrella chart with its Secrets from the External Secrets Operator (WP65), on top of values-kind.yaml: what
+# deploy/kind/up.sh --eso deploys (store `hoops` = the ClusterSecretStore deploy/kind/eso-store.sh creates).
+externalSecrets:
+  enabled: true

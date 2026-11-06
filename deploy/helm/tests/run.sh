@@ -36,6 +36,7 @@ render umbrella-kind      hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml"
 render service-defaults   svc "$CHART/charts/hoops-service" -n hoops
 render service-all        svc "$CHART/charts/hoops-service" -n hoops -f deploy/helm/tests/values/service-all-features.yaml
 render umbrella-tls       hoops "$CHART" -n hoops -f deploy/helm/tests/values/umbrella-tls.yaml
+render umbrella-eso       hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" -f deploy/helm/tests/values/umbrella-eso.yaml
 
 echo "== snapshots"
 for f in "$WORK"/*.yaml; do
@@ -47,10 +48,16 @@ for f in "$WORK"/*.yaml; do
 done
 
 echo "== schema validation"
+# WP65: the ExternalSecret schema comes from the CRD of the ESO version kind pins (tests/schemas, update-eso.sh).
+eso_pin=$(sed -n 's/^ESO_VERSION="\(v[0-9.]*\)"$/\1/p' deploy/kind/up.sh)
+[ -n "$eso_pin" ] && [ "$(cat deploy/helm/tests/schemas/external-secrets.io/VERSION)" = "$eso_pin" ] \
+  && ok "ExternalSecret schema generated from ESO $eso_pin (the version deploy/kind/up.sh installs)" \
+  || bad "ExternalSecret schema is not ESO ${eso_pin:-?}: run deploy/helm/tests/schemas/update-eso.sh"
 if command -v kubeconform >/dev/null; then
   # CRDs (CNPG Cluster, Gateway API, Envoy Gateway policies) from the datree catalog; -strict rejects unknown fields.
   # The authoritative check against the pinned CRD versions is `kubectl apply --dry-run=server` on kind (kind.md).
   if kubeconform -strict -summary -kubernetes-version "${K8S_VERSION:-1.34.0}" -schema-location default \
+      -schema-location 'deploy/helm/tests/schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
       -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
       "$WORK"/*.yaml; then ok kubeconform; else bad kubeconform; fi
 else echo "  skip kubeconform (not installed: brew install kubeconform)"; fi
@@ -199,6 +206,54 @@ echo "$init" | grep -A3 'name: ACL_PASSWORD$' | grep -q 'secretKeyRef: {name: ho
   && ! echo "$d" | grep -q 'requirepass' && ok "ACL password only from Secret hoops-ratelimit-redis (hashed into the file)" || bad "ACL password source"
 echo "$d" | grep -q 'name: acl, emptyDir: {medium: Memory, sizeLimit: 1Mi}' && echo "$d" | grep -q 'name: acl, mountPath: /acl, readOnly: true' \
   && ok "ACL file in memory, read-only for redis-server" || bad "ACL volume"
+
+echo "== external secrets (WP65, ADR-0012 amendment; umbrella-eso)"
+E="$WORK/umbrella-eso.yaml"
+for f in umbrella-default umbrella-kind umbrella-tls service-defaults service-all; do
+  grep -q '^kind: ExternalSecret' "$WORK/$f.yaml" && { bad "$f renders an ExternalSecret (externalSecrets.enabled is off)"; continue; }
+done; ok "externalSecrets off by default: no ExternalSecret in the other renders"
+without_es() { awk 'BEGIN{RS="\n---\n"; ORS="\n---\n"} !/\nkind: ExternalSecret\n/' "$1"; }
+diff -u <(without_es "$R") <(without_es "$E") >"$WORK/eso-workloads.diff" \
+  && ok "every other object identical to umbrella-kind (the workloads do not change)" \
+  || { bad "umbrella-eso changes more than ExternalSecrets"; head -40 "$WORK/eso-workloads.diff"; }
+! grep -q '^kind: Secret' "$E" && ! grep -q '^kind: \(Cluster\)\{0,1\}SecretStore' "$E" \
+  && ok "ESO render: no Secret, no SecretStore (the store belongs to the cluster)" || bad "ESO render creates a Secret or store"
+secret_refs() { # "<secret> <key>" for every Secret key the workloads of render $1 read (env, CNPG roles and initdb)
+  awk '
+    /secretKeyRef: \{name: / { n=$0; sub(/.*secretKeyRef: \{name: /, "", n); k=n; sub(/,.*/, "", n); sub(/.*key: /, "", k); sub(/\}.*/, "", k); print n, k; next }
+    /^ *secretKeyRef:$/ { ref=1; next }
+    ref && /^ *name: / { n=$2; next }
+    ref && /^ *key: / { print n, $2; ref=0; next }
+    /^ *(passwordSecret|secret):$/ { basic=1; next }
+    basic && /^ *name: / { print $2, "username"; print $2, "password"; basic=0 }' "$1" | sort -u; }
+es_keys() { # the keys ExternalSecret $1 (of render $E) writes: its data secretKeys and the template data keys
+  doc "$1" ExternalSecret "$E" | awk '/^    - secretKey: / {print $3} /^      data:$/ {t=1; next} t && /^        [A-Za-z0-9._-]+:/ {k=$1; sub(/:$/, "", k); print k; next} t {t=0}' | sort -u; }
+missing=""
+while read -r name key; do
+  es_keys "$name" | grep -qx -- "$key" || missing="$missing $name/$key"
+done < <(secret_refs "$R"; echo "envoy-ratelimit-redis-auth auth")
+[ -z "$missing" ] && ok "every Secret key the workloads read (plus envoy-ratelimit-redis-auth/auth) comes from an ExternalSecret" \
+  || bad "Secret keys without an ExternalSecret:$missing"
+roles_ok=1
+while read -r role secret; do
+  d=$(doc "$secret" ExternalSecret "$E")
+  echo "$d" | grep -q 'type: kubernetes.io/basic-auth' && echo "$d" | grep -qx "        username: $role" || { roles_ok=0; bad "ExternalSecret $secret: basic-auth, username $role"; }
+done < <(awk '/^      - name: / {r=$3} /^ *passwordSecret:$/ {p=1; next} p && /^ *name: / {print r, $2; p=0}
+              /^ +owner: / {o=$2} /^      secret:$/ {s=1; next} s && /^ *name: / {print o, $2; s=0}' "$R")
+[ "$roles_ok" = 1 ] && ok "CNPG role and initdb Secrets: kubernetes.io/basic-auth, username = role name (ADR-0012)"
+n_es=$(grep -c '^kind: ExternalSecret' "$E")
+[ "$(grep -c 'secretStoreRef: {kind: ClusterSecretStore, name: hoops}' "$E")" = "$n_es" ] \
+  && [ "$(grep -c '^  refreshInterval: "1m"$' "$E")" = "$n_es" ] && [ "$(grep -c 'creationPolicy: Owner' "$E")" = "$n_es" ] \
+  && [ "$(grep -c 'deletionPolicy: Retain' "$E")" = "$n_es" ] && [ "$(grep -c '^apiVersion: external-secrets.io/v1$' "$E")" = "$n_es" ] \
+  && ok "all $n_es ExternalSecrets: external-secrets.io/v1, store hoops, refresh 1m, owned Secret, kept when the source value goes" \
+  || bad "ExternalSecret store/refresh/policies"
+a=$(doc envoy-ratelimit-redis-auth ExternalSecret "$E")
+echo "$a" | grep -q '^  namespace: envoy-gateway-system$' && echo "$a" | grep -q 'mergePolicy: Replace' \
+  && echo "$a" | grep -qx '        auth: "ratelimit:{{ .password }}"' \
+  && echo "$a" | grep -q 'remoteRef: {key: hoops, property: RATELIMIT_REDIS_PASSWORD}' \
+  && doc hoops-ratelimit-redis ExternalSecret "$E" | grep -q 'remoteRef: {key: hoops, property: RATELIMIT_REDIS_PASSWORD}' \
+  && ok "Redis login: one source property, REDIS_AUTH = ratelimit:<password> in envoy-gateway-system" || bad "Redis login ExternalSecrets"
+! grep -q 'name: hoops-dev-users' "$E" && ok "no hoops-dev-users ExternalSecret (no workload reads it)" || bad "hoops-dev-users ExternalSecret"
 
 echo "== gitleaks (rendered manifests)"
 if command -v gitleaks >/dev/null; then
