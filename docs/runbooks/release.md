@@ -1,7 +1,7 @@
 # Runbook: release
 
 Status: describes the process the repository's tooling supports. **No release has been cut yet**: the Maven version is
-`0.1.0-SNAPSHOT` and the Helm chart `0.4.0` (2026-11-06); the workflows in `.github/workflows` run on GitHub since
+`0.1.0-SNAPSHOT` and the Helm chart `0.5.0` (2026-11-06); the workflows in `.github/workflows` run on GitHub since
 2026-11-02 and `images` pushes every commit's images to `ghcr.io/davidbejar/hoops-academy` (public). Steps marked
 (design) are not implemented.
 
@@ -123,6 +123,15 @@ Gateway side. Check: every policy
 reports `Accepted=True` in `kubectl -n hoops get backendtrafficpolicy -o jsonpath='{range .items[*]}{.metadata.name}
 {.status.ancestors[*].conditions[?(@.type=="Accepted")].status}{"\n"}{end}'` and
 `kubectl -n envoy-gateway-system rollout status deploy/envoy-ratelimit` succeeds.
+
+Secrets from a secret manager (chart 0.5.0, WP65, ADR-0012 amendment): with the External Secrets Operator in the
+cluster (`external-secrets.io/v1`; kind pins v2.14.0) and a store for the platform's secret manager, set
+`externalSecrets.enabled=true`, `externalSecrets.storeRef` (default `ClusterSecretStore/hoops`) and, if the remote
+secret is not called `hoops`, `externalSecrets.remoteKey`. The remote secret holds one property per value, named like the
+`.env` keys (inventory in `rotate-secrets.md`); the chart then renders one `ExternalSecret` per Secret (also
+`envoy-ratelimit-redis-auth` in `envoy-gateway-system`, so the release needs `create externalsecrets` there) and none of
+the Secrets above are created by hand. Limit the store to the namespaces `hoops` and `envoy-gateway-system`
+(`spec.conditions`). Check: `kubectl -n hoops get externalsecret` all `SecretSynced` before the pods start.
 
 Order that matters: Secrets -> CNPG clusters -> Keycloak -> services (Flyway runs on start as `*_migrator`) -> web.
 Services restart a few times on first install until `hoops-db-rw` is ready; they converge by themselves (WP18).

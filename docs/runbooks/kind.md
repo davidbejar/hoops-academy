@@ -33,6 +33,8 @@ just tilt             # = tilt up: builds 4 images with Podman, kind-loads them,
 deploy/kind/seed-users.sh   # dev users <name>@hoops-academy.com (superadmin, admin1, coach1, assistant1, parent1, player1)
 ```
 Without Tilt: `just kind-up --deploy` (builds all images, loads them, `helm upgrade --install --wait`).
+Secrets through the External Secrets Operator instead of `secrets.sh` (WP65): `deploy/kind/up.sh --eso [--deploy]`, then
+`tilt up -- --eso` if you did not pass `--deploy` (section "Secrets").
 CI-style: `just tilt ci` (exits 0 when every resource is Ready; `just tilt ci -- --from-host` on a fresh cluster: 5 min 55 s
 with cold caches, WP42, all nine workloads healthy, no Tiltfile change needed after WP36/WP40). Then `deploy/kind/seed-users.sh`,
 `deploy/kind/smoke.sh core game athlete` (4 s) and the journey (docs/runbooks/e2e.md, 21/21, mail checks included).
@@ -92,6 +94,8 @@ deploy/kind/ratelimit-check.sh redis-down   # stops ratelimit-redis: requests pa
 ```
 Server-side validation of the chart against the installed CRDs:
 `helm template hoops deploy/helm/hoops -n hoops -f deploy/helm/hoops/values-kind.yaml | kubectl --context kind-hoops -n hoops apply --dry-run=server -f -`.
+With `--set externalSecrets.enabled=true` the render also holds `envoy-gateway-system/envoy-ratelimit-redis-auth`, which
+`-n hoops` refuses: dry-run that document without `-n` (WP65 split the stream with awk on `namespace: envoy-gateway-system`).
 
 ## Images
 `scripts/build-images.sh [--from-host] [--kind-load] [--push] [core-service|game-service|athlete-service|web]`
@@ -125,6 +129,19 @@ edit `.env`, `deploy/kind/secrets.sh | kubectl apply -f -` (or let Tilt pick up 
 (`kubectl -n hoops rollout restart deploy`; after `RATELIMIT_REDIS_PASSWORD` also
 `kubectl -n envoy-gateway-system rollout restart deploy/envoy-ratelimit`). CNPG re-applies role passwords automatically. The Keycloak admin and
 client secrets only apply on the first realm import/bootstrap — for an existing DB change them in Keycloak too.
+
+### Secrets from the External Secrets Operator (`--eso`, WP65)
+`deploy/kind/up.sh --eso` replaces the `secrets.sh` step: it installs ESO (`ESO_VERSION`, v2.14.0, Helm release
+`external-secrets` in namespace `external-secrets`), then applies `deploy/kind/eso-store.sh`: the stand-in for a cloud
+secret manager, one Secret `hoops-secret-store/hoops` with a key per `.env` value (not `DEV_USER_PASSWORD`), a reader
+ServiceAccount allowed only `get secrets` there, and the `ClusterSecretStore` `hoops` (Kubernetes provider) that only the
+namespaces `hoops` and `envoy-gateway-system` may use. With `--deploy` (or `tilt up -- --eso`) the chart runs with
+`externalSecrets.enabled=true`: 14 `ExternalSecret`s (13 in `hoops`, `envoy-ratelimit-redis-auth` in
+`envoy-gateway-system`) and ESO writes the Secrets, with the same names and keys, refreshed every minute
+(`values-kind.yaml`). Until the chart is deployed the `envoy-ratelimit` pods wait for their Secret
+(`CreateContainerConfigError`), which resolves itself. Status: `kubectl get clustersecretstore hoops` (`READY True`),
+`kubectl -n hoops get externalsecret` (all `SecretSynced`). Rotation: `docs/runbooks/rotate-secrets.md` section E. A
+cluster stays in the mode it was created with (`just kind-down` to switch).
 
 Measured on the 2-CPU rootless machine (warm caches): `tilt ci` for game + athlete + web ≈ 4-5 min; first ever
 in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cache mount); Keycloak Ready ≈ 2 min.
@@ -216,6 +233,19 @@ filters `"timeout": "0.150s"` (admin `:19000/config_dump`); changed back, restar
 change does not restart. e2e journey on kind (Keycloak and Mailpit port-forwards 18080 / 18025): 21/21, mail checks
 included, 71 s (25 tests with `MailSinkTest`). The Podman VM (2 CPUs) was shared with other builds (load average 25-37):
 see the load note under Troubleshooting.
+WP65 (2026-11-06, chart 0.5.0, ESO v2.14.0, fresh cluster): `up.sh --eso` 2 min 34 s (ClusterSecretStore `hoops` Valid/Ready,
+no `secrets.sh`, no Secret in `hoops` but `hoops-gateway-tls`); the WP63 `:dev` images loaded by hand and the same `helm
+upgrade --install ... -f values-kind.yaml --set externalSecrets.enabled=true --wait` that `up.sh --eso --deploy` runs:
+deployed in 4 min 32 s incl. the loads; 14/14 ExternalSecrets `SecretSynced` within ~25 s; all 23 Secret keys equal the
+`.env` values (compared by SHA-256), types basic-auth/Opaque as with `secrets.sh`; `envoy-ratelimit` left
+`CreateContainerConfigError` by itself once its Secret existed; `smoke.sh core game athlete` passed (29 checks);
+`ratelimit-check.sh acl` passed. Rotation (rotate-secrets.md E): `GAME_APP_PASSWORD` changed in `hoops-secret-store/hoops`,
+force-sync -> Secret updated in < 1 s, CNPG reported the new Secret version as reconciled a few minutes later, a restarted
+game-service started with it, smoke passed again. An existing plain Secret was adopted by a new `ExternalSecret` (owner
+reference set, value replaced) and deleted with it. `apply --dry-run=server` of the ESO render clean (63 objects).
+`tilt up -- --eso` evaluated only (`tilt alpha tiltfile-result`: `secrets` holds the 14 ExternalSecrets). The Podman VM
+(load average up to 118 from other agents' builds) restarted the kind control plane once mid-proof; everything recovered
+without intervention.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.
