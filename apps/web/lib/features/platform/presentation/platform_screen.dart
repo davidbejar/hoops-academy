@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
@@ -19,7 +17,7 @@ class TenantStatusChip extends StatelessWidget {
   final api.TenantStatus status;
 
   @override
-  Widget build(BuildContext context) => InfoChip(
+  Widget build(BuildContext context) => StatusChip(
     status.label(AppLocalizations.of(context)),
     tone: status.tone,
     icon: switch (status) {
@@ -52,105 +50,103 @@ class PlatformScreen extends ConsumerWidget {
           icon: const Icon(Icons.add),
           label: Text(l.platformNew),
         ),
-        body: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AppTokens.maxContentWidth,
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(AppTokens.spaceMd),
-                  child: TextField(
-                    key: const Key('tenant-search'),
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.search),
-                      hintText: l.platformSearchHint,
-                      isDense: true,
-                    ),
-                    onSubmitted: (v) => setFilter(
-                      TenantFilter(status: filter.status, query: v),
-                    ),
-                    onChanged: (v) {
-                      if (v.isEmpty && filter.query.isNotEmpty)
-                        setFilter(TenantFilter(status: filter.status));
-                    },
-                  ),
-                ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTokens.spaceMd,
-                  ),
-                  child: Row(
-                    children: [
-                      ActionChip(
-                        key: const Key('platform-activity'),
-                        avatar: const Icon(Icons.history, size: 18),
-                        label: Text(l.platformActivity),
-                        onPressed: () => context.go('/platform/activity'),
-                      ),
-                      const SizedBox(width: AppTokens.spaceSm),
-                      ChoiceChip(
-                        key: const Key('status-all'),
-                        label: Text(l.all),
-                        selected: filter.status == null,
-                        onSelected: (_) =>
-                            setFilter(TenantFilter(query: filter.query)),
-                      ),
-                      for (final s in [
-                        api.TenantStatus.ACTIVE,
-                        api.TenantStatus.SUSPENDED,
-                        api.TenantStatus.WITHDRAWN,
-                      ])
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: AppTokens.spaceSm,
-                          ),
-                          child: ChoiceChip(
-                            key: Key('status-${s.name}'),
-                            label: Text(s.label(l)),
-                            selected: filter.status == s,
-                            onSelected: (_) => setFilter(
-                              TenantFilter(status: s, query: filter.query),
-                            ),
-                          ),
+        body: Column(
+          children: [
+            ContentFrame(
+              maxWidth: WidthClass.readingMax,
+              child: Padding(
+                padding: const EdgeInsets.only(top: HoopsSpace.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: HoopsSpace.gap,
+                  children: [
+                    PageHeader(
+                      title: l.platformTitle,
+                      actions: [
+                        OutlinedButton.icon(
+                          key: const Key('platform-activity'),
+                          icon: const Icon(Icons.history),
+                          label: Text(l.platformActivity),
+                          onPressed: () => context.go('/platform/activity'),
                         ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: AsyncBody<List<api.Tenant>>(
-                    value: ref.watch(tenantsProvider),
-                    onRetry: () => ref.invalidate(tenantsProvider),
-                    isEmpty: (d) => d.isEmpty,
-                    emptyMessage: l.platformEmpty,
-                    builder: (context, data) => ListView(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppTokens.spaceMd,
-                        AppTokens.spaceSm,
-                        AppTokens.spaceMd,
-                        88,
-                      ),
-                      children: [
-                        for (final t in data)
-                          Card(
-                            child: ListTile(
-                              key: Key('tenant-${t.id}'),
-                              title: Text(t.name),
-                              subtitle: Text(t.slug),
-                              trailing: TenantStatusChip(t.status),
-                              onTap: () => context.go('/platform/${t.id}'),
-                            ),
-                          ),
                       ],
                     ),
-                  ),
+                    TextField(
+                      key: const Key('tenant-search'),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: l.platformSearchHint,
+                        isDense: true,
+                      ),
+                      onSubmitted: (v) => setFilter(
+                        TenantFilter(status: filter.status, query: v),
+                      ),
+                      onChanged: (v) {
+                        if (v.isEmpty && filter.query.isNotEmpty) {
+                          setFilter(TenantFilter(status: filter.status));
+                        }
+                      },
+                    ),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        spacing: HoopsSpace.sm,
+                        children: [
+                          ChoiceChip(
+                            key: const Key('status-all'),
+                            label: Text(l.all),
+                            selected: filter.status == null,
+                            onSelected: (_) =>
+                                setFilter(TenantFilter(query: filter.query)),
+                          ),
+                          for (final s in [
+                            api.TenantStatus.ACTIVE,
+                            api.TenantStatus.SUSPENDED,
+                            api.TenantStatus.WITHDRAWN,
+                          ])
+                            ChoiceChip(
+                              key: Key('status-${s.name}'),
+                              label: Text(s.label(l)),
+                              selected: filter.status == s,
+                              onSelected: (_) => setFilter(
+                                TenantFilter(status: s, query: filter.query),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+            Expanded(
+              child: AsyncBody<List<api.Tenant>>(
+                value: ref.watch(tenantsProvider),
+                onRetry: () => ref.invalidate(tenantsProvider),
+                isEmpty: (d) => d.isEmpty,
+                emptyMessage: l.platformEmpty,
+                builder: (context, data) => PageBody(
+                  children: [
+                    Column(
+                      spacing: HoopsSpace.gap,
+                      children: [
+                        for (final t in data)
+                          ListRow(
+                            key: Key('tenant-${t.id}'),
+                            leading: InitialsAvatar(name: t.name),
+                            title: t.name,
+                            subtitle: t.slug,
+                            trailing: TenantStatusChip(t.status),
+                            onTap: () => context.go('/platform/${t.id}'),
+                          ),
+                        const SizedBox(height: HoopsSize.appBar),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -233,7 +229,7 @@ class _CreateTenantDialogState extends ConsumerState<CreateTenantDialog> {
       String? Function(String?)? validator,
       TextInputType? type,
     }) => Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: HoopsSpace.gap),
       child: TextFormField(
         key: Key(key),
         controller: c,

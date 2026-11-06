@@ -1,7 +1,7 @@
 import '../../../core/api/api.dart' as api;
 import '../../../core/errors/app_error.dart';
 import '../../../core/ui/app_error_view.dart';
-import '../../../core/ui/page_scaffold.dart' show ChipTone;
+import '../../../core/ui/kit.dart' show HoopsTone;
 import '../../../l10n/gen/app_localizations.dart';
 
 extension TenantStatusLabel on api.TenantStatus {
@@ -11,10 +11,10 @@ extension TenantStatusLabel on api.TenantStatus {
     _ => l.tenantStatusWithdrawn,
   };
 
-  ChipTone get tone => switch (this) {
-    api.TenantStatus.ACTIVE => ChipTone.good,
-    api.TenantStatus.SUSPENDED => ChipTone.warn,
-    _ => ChipTone.bad,
+  HoopsTone get tone => switch (this) {
+    api.TenantStatus.ACTIVE => HoopsTone.success,
+    api.TenantStatus.SUSPENDED => HoopsTone.warning,
+    _ => HoopsTone.danger,
   };
 }
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/async_body.dart';
+import '../../../core/ui/kit.dart' show HoopsSpace;
 import '../../../l10n/gen/app_localizations.dart';
 import '../../health/presentation/charts.dart' show ChartPoint, GrowthChart;
 import '../application/platform_providers.dart';
@@ -50,8 +50,8 @@ class _UsageTrendState extends ConsumerState<UsageTrend> {
       key: const Key('usage-trend'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l.usageTrendTitle, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: AppTokens.spaceSm),
+        Text(l.usageTrendTitle, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: HoopsSpace.sm),
         history.when(
           data: (h) => _body(context, l, h.snapshots.toList()),
           loading: () => const SizedBox(

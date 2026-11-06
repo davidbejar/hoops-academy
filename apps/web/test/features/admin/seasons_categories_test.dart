@@ -123,6 +123,7 @@ void main() {
           roles: {TenantRole.admin},
           core: core,
           location: '/admin/seasons/$seasonId/rollover',
+          size: const Size(360, 1100),
         );
         expect(find.byKey(const Key('rollover-intro')), findsOneWidget);
         expect(core.seasons.rolledFrom, isNull);

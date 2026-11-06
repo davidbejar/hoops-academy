@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/app_error_view.dart';
-import '../../../core/ui/form_dialog.dart';
+import '../../../core/ui/kit.dart';
 import '../../../core/ui/labels.dart';
-import '../../../core/ui/page_scaffold.dart' show InfoChip, ChipTone;
 import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
@@ -33,60 +31,53 @@ class TenantAdminsSection extends ConsumerWidget {
         (admins.value == null &&
             admins.hasError &&
             isTenantWithdrawn(admins.error!));
-    return Column(
+    return SectionCard(
       key: const Key('admins-section'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: AppTokens.spaceSm,
-            runSpacing: AppTokens.spaceXs,
-            children: [
-              Text(
-                l.adminsTitle,
-                style: Theme.of(context).textTheme.titleMedium,
+      title: l.adminsTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: HoopsSpace.gap,
+        children: [
+          if (admins?.value != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                key: const Key('admin-add'),
+                onPressed: () => showDialog<bool>(
+                  context: context,
+                  builder: (_) => AdminFormDialog(
+                    tenantId: tenant.id,
+                    locale: tenant.defaultLocale,
+                  ),
+                ),
+                icon: const Icon(Icons.person_add_alt_1_outlined),
+                label: Text(l.adminsAdd),
               ),
-              if (admins?.value != null)
-                OutlinedButton.icon(
-                  key: const Key('admin-add'),
-                  onPressed: () => showDialog<bool>(
-                    context: context,
-                    builder: (_) => AdminFormDialog(
-                      tenantId: tenant.id,
-                      locale: tenant.defaultLocale,
+            ),
+          withdrawn
+              ? _Note(
+                  key: const Key('admins-withdrawn'),
+                  icon: Icons.block,
+                  text: l.adminsWithdrawn,
+                )
+              : admins.value != null
+              ? _AdminList(tenantId: tenant.id, admins: admins.value!)
+              : admins.hasError
+              ? _LoadError(
+                  error: admins.error!,
+                  onRetry: () =>
+                      ref.invalidate(tenantAdminsProvider(tenant.id)),
+                )
+              : const Padding(
+                  padding: EdgeInsets.all(HoopsSpace.md),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      key: Key('admins-loading'),
                     ),
                   ),
-                  icon: const Icon(Icons.person_add_alt_1_outlined),
-                  label: Text(l.adminsAdd),
                 ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppTokens.spaceSm),
-        if (withdrawn)
-          _Note(
-            key: const Key('admins-withdrawn'),
-            icon: Icons.block,
-            text: l.adminsWithdrawn,
-          )
-        else if (admins.value != null)
-          _AdminList(tenantId: tenant.id, admins: admins.value!)
-        else if (admins.hasError)
-          _LoadError(
-            error: admins.error!,
-            onRetry: () => ref.invalidate(tenantAdminsProvider(tenant.id)),
-          )
-        else
-          const Padding(
-            padding: EdgeInsets.all(AppTokens.spaceMd),
-            child: Center(
-              child: CircularProgressIndicator(key: Key('admins-loading')),
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -105,6 +96,7 @@ class _AdminList extends StatelessWidget {
       );
     }
     return Column(
+      spacing: HoopsSpace.sm,
       children: [
         for (final a in admins)
           _AdminTile(tenantId: tenantId, admin: a, isLast: admins.length == 1),
@@ -138,8 +130,9 @@ class _AdminTile extends ConsumerWidget {
         context,
         message: l.adminRemoveConfirm(name),
         confirmLabel: l.adminRemoveSubmit,
-      ))
+      )) {
         return;
+      }
       if (!context.mounted) return;
       await runAction(
         context,
@@ -165,67 +158,88 @@ class _AdminTile extends ConsumerWidget {
       );
     }
 
-    return Card(
+    final c = HoopsTokens.colorsOf(context);
+    return DecoratedBox(
       key: Key('admin-$id'),
+      decoration: BoxDecoration(
+        color: c.surfaceMuted,
+        borderRadius: BorderRadius.circular(HoopsRadius.md),
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-          AppTokens.spaceMd,
-          AppTokens.spaceMd,
-          AppTokens.spaceSm,
-          AppTokens.spaceSm,
+          HoopsSpace.md,
+          HoopsSpace.gap,
+          HoopsSpace.sm,
+          HoopsSpace.sm,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(right: AppTokens.spaceSm),
-              child: Column(
+              padding: const EdgeInsets.only(right: HoopsSpace.sm),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: HoopsSpace.gap,
                 children: [
-                  Text(name, style: theme.textTheme.titleSmall),
-                  if (admin.email != null)
-                    Text(admin.email!, style: theme.textTheme.bodyMedium),
-                  if (status != null || admin.otherRoles.isNotEmpty) ...[
-                    const SizedBox(height: AppTokens.spaceXs),
-                    Wrap(
-                      spacing: AppTokens.spaceSm,
-                      runSpacing: AppTokens.spaceXs,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                  InitialsAvatar(name: name, size: 36),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (status != null)
-                          InfoChip(
-                            status,
-                            tone:
-                                admin.invitationStatus ==
-                                    api.InvitationStatus.PENDING
-                                ? ChipTone.warn
-                                : ChipTone.good,
-                          ),
-                        if (admin.invitationStatus ==
-                                api.InvitationStatus.PENDING &&
-                            admin.temporaryPasswordStatus ==
-                                api.TemporaryPasswordStatus.EXPIRED)
-                          InfoChip(
-                            l.tempPasswordExpired,
-                            key: Key('admin-password-expired-$id'),
-                            tone: ChipTone.bad,
-                          ),
-                        if (admin.otherRoles.isNotEmpty)
+                        Text(name, style: theme.textTheme.titleSmall),
+                        if (admin.email != null)
                           Text(
-                            l.adminOtherRoles(rolesText(admin.otherRoles, l)),
-                            style: theme.textTheme.bodySmall,
+                            admin.email!,
+                            style: theme.textTheme.bodyMedium!.copyWith(
+                              color: c.inkMuted,
+                            ),
                           ),
+                        if (status != null || admin.otherRoles.isNotEmpty) ...[
+                          const SizedBox(height: HoopsSpace.xs),
+                          Wrap(
+                            spacing: HoopsSpace.sm,
+                            runSpacing: HoopsSpace.xs,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (status != null)
+                                StatusChip(
+                                  status,
+                                  tone:
+                                      admin.invitationStatus ==
+                                          api.InvitationStatus.PENDING
+                                      ? HoopsTone.warning
+                                      : HoopsTone.success,
+                                ),
+                              if (admin.invitationStatus ==
+                                      api.InvitationStatus.PENDING &&
+                                  admin.temporaryPasswordStatus ==
+                                      api.TemporaryPasswordStatus.EXPIRED)
+                                StatusChip(
+                                  l.tempPasswordExpired,
+                                  key: Key('admin-password-expired-$id'),
+                                  tone: HoopsTone.danger,
+                                ),
+                              if (admin.otherRoles.isNotEmpty)
+                                Text(
+                                  l.adminOtherRoles(
+                                    rolesText(admin.otherRoles, l),
+                                  ),
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                            ],
+                          ),
+                        ],
+                        if (isLast) ...[
+                          const SizedBox(height: HoopsSpace.sm),
+                          _Note(
+                            key: const Key('admin-last-note'),
+                            icon: Icons.info_outline,
+                            text: l.adminLastAdminNote,
+                          ),
+                        ],
                       ],
                     ),
-                  ],
-                  if (isLast) ...[
-                    const SizedBox(height: AppTokens.spaceSm),
-                    _Note(
-                      key: const Key('admin-last-note'),
-                      icon: Icons.info_outline,
-                      text: l.adminLastAdminNote,
-                    ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -275,8 +289,8 @@ class _Note extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: AppTokens.spaceSm),
+        Icon(icon, size: 18, color: HoopsTokens.colorsOf(context).inkMuted),
+        const SizedBox(width: HoopsSpace.sm),
         Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
       ],
     );
@@ -291,23 +305,18 @@ class _LoadError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Card(
+    return Column(
       key: const Key('admins-error'),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${l.adminsLoadFailed} · ${AppError.of(error).message(l)}'),
-            const SizedBox(height: AppTokens.spaceSm),
-            OutlinedButton(
-              key: const Key('admins-retry'),
-              onPressed: onRetry,
-              child: Text(l.retry),
-            ),
-          ],
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.sm,
+      children: [
+        Text('${l.adminsLoadFailed} · ${AppError.of(error).message(l)}'),
+        OutlinedButton(
+          key: const Key('admins-retry'),
+          onPressed: onRetry,
+          child: Text(l.retry),
         ),
-      ),
+      ],
     );
   }
 }
@@ -424,7 +433,7 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
       String? Function(String?)? validator,
       TextInputType? type,
     }) => Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: HoopsSpace.gap),
       child: TextFormField(
         key: Key(key),
         controller: c,
@@ -441,7 +450,7 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
       afterClose: () async => _announce?.call(),
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: HoopsSpace.gap),
           child: Text(
             editing ? l.adminEditEmailNote : l.adminAddHint,
             key: const Key('admin-form-note'),

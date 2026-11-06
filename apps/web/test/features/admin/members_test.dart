@@ -311,7 +311,13 @@ void main() {
           'Reissued-1',
         );
         expect(find.textContaining('Nina Nueva'), findsWidgets);
-        expect(find.textContaining('nina@hoops-academy.com'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('temp-password-dialog')),
+            matching: find.textContaining('nina@hoops-academy.com'),
+          ),
+          findsOneWidget,
+        );
         await tapKey(tester, 'temp-password-done');
         expect(find.text('Reissued-1'), findsNothing);
       },
@@ -484,7 +490,7 @@ void main() {
         core: core,
         location: '$path/m1',
       );
-      await tapKey(tester, 'member-deactivate');
+      await tapKeyScrolling(tester, 'member-deactivate');
       expect(find.textContaining('¿Desactivar a Casey Coach?'), findsOneWidget);
       await tapKey(tester, 'dialog-confirm');
       expect(core.members.members.first.active, isFalse);
@@ -508,6 +514,7 @@ void main() {
         roles: {TenantRole.admin},
         core: core,
         location: '$path/m2',
+        size: const Size(360, 1100),
       );
       expect(find.text('Ana Ruiz'), findsOneWidget);
 
@@ -621,4 +628,14 @@ void main() {
       expect(find.byKey(const Key('member-edit')), findsNothing);
     });
   });
+}
+
+/// The detail page is a lazy list of cards: scroll the target into the tree first.
+Future<void> tapKeyScrolling(WidgetTester tester, String key) async {
+  await tester.scrollUntilVisible(
+    find.byKey(Key(key)),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tapKey(tester, key);
 }

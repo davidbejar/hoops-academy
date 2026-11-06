@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/chart_tokens.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
 import 'platform_screen.dart' show TenantStatusChip;
@@ -46,15 +45,11 @@ class TenantDetailScreen extends ConsumerWidget {
         child: AsyncBody<TenantDetail>(
           value: detail,
           onRetry: () => ref.invalidate(tenantDetailProvider(tenantId)),
-          builder: (context, d) => ListView(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
+          builder: (context, d) => PageBody(
             children: [
               _Header(detail: d),
-              const SizedBox(height: AppTokens.spaceMd),
               TenantAdminsSection(tenant: d.tenant),
-              const SizedBox(height: AppTokens.spaceMd),
               UsageDashboard(detail: d),
-              const SizedBox(height: AppTokens.spaceMd),
               UsageTrend(tenantId: d.tenant.id),
             ],
           ),
@@ -91,76 +86,65 @@ class _Header extends ConsumerWidget {
       await runAction(context, () => action(reason), success: l.tenantUpdated);
     }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    t.slug,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                TenantStatusChip(t.status),
-              ],
-            ),
-            const SizedBox(height: AppTokens.spaceXs),
-            Text('${t.timezone} · ${t.defaultLocale.name}'),
-            Text(l.tenantCreatedOn(_date(t.createdAt))),
-            if (t.retainUntil != null)
-              Text(
-                l.tenantRetainUntil(
-                  '${t.retainUntil!.year}-${t.retainUntil!.month.toString().padLeft(2, '0')}-${t.retainUntil!.day.toString().padLeft(2, '0')}',
-                ),
+    return SectionCard(
+      title: t.slug,
+      actions: [TenantStatusChip(t.status)],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: HoopsSpace.xs,
+        children: [
+          Text('${t.timezone} · ${t.defaultLocale.name}'),
+          Text(l.tenantCreatedOn(_date(t.createdAt))),
+          if (t.retainUntil != null)
+            Text(
+              l.tenantRetainUntil(
+                '${t.retainUntil!.year}-${t.retainUntil!.month.toString().padLeft(2, '0')}-${t.retainUntil!.day.toString().padLeft(2, '0')}',
               ),
-            const SizedBox(height: AppTokens.spaceSm),
-            Wrap(
-              spacing: AppTokens.spaceSm,
-              children: [
-                if (t.status == api.TenantStatus.ACTIVE)
-                  OutlinedButton(
-                    key: const Key('tenant-suspend'),
-                    onPressed: () =>
-                        lifecycle(l.tenantSuspend, null, notifier.suspend),
-                    child: Text(l.tenantSuspend),
-                  ),
-                if (t.status == api.TenantStatus.SUSPENDED)
-                  FilledButton(
-                    key: const Key('tenant-reactivate'),
-                    onPressed: () async {
-                      if (!await confirmDialog(
-                        context,
-                        message: l.tenantReactivate,
-                        confirmLabel: l.tenantReactivate,
-                      ))
-                        return;
-                      if (!context.mounted) return;
-                      await runAction(
-                        context,
-                        notifier.reactivate,
-                        success: l.tenantUpdated,
-                      );
-                    },
-                    child: Text(l.tenantReactivate),
-                  ),
-                if (t.status != api.TenantStatus.WITHDRAWN)
-                  OutlinedButton(
-                    key: const Key('tenant-withdraw'),
-                    onPressed: () => lifecycle(
-                      l.tenantWithdraw,
-                      l.tenantWithdrawWarning,
-                      notifier.withdraw,
-                    ),
-                    child: Text(l.tenantWithdraw),
-                  ),
-              ],
             ),
-          ],
-        ),
+          const SizedBox(height: HoopsSpace.sm),
+          Wrap(
+            spacing: HoopsSpace.sm,
+            children: [
+              if (t.status == api.TenantStatus.ACTIVE)
+                OutlinedButton(
+                  key: const Key('tenant-suspend'),
+                  onPressed: () =>
+                      lifecycle(l.tenantSuspend, null, notifier.suspend),
+                  child: Text(l.tenantSuspend),
+                ),
+              if (t.status == api.TenantStatus.SUSPENDED)
+                FilledButton(
+                  key: const Key('tenant-reactivate'),
+                  onPressed: () async {
+                    if (!await confirmDialog(
+                      context,
+                      message: l.tenantReactivate,
+                      confirmLabel: l.tenantReactivate,
+                    )) {
+                      return;
+                    }
+                    if (!context.mounted) return;
+                    await runAction(
+                      context,
+                      notifier.reactivate,
+                      success: l.tenantUpdated,
+                    );
+                  },
+                  child: Text(l.tenantReactivate),
+                ),
+              if (t.status != api.TenantStatus.WITHDRAWN)
+                OutlinedButton(
+                  key: const Key('tenant-withdraw'),
+                  onPressed: () => lifecycle(
+                    l.tenantWithdraw,
+                    l.tenantWithdrawWarning,
+                    notifier.withdraw,
+                  ),
+                  child: Text(l.tenantWithdraw),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -205,15 +189,15 @@ class UsageDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final text = Theme.of(context).textTheme;
     final p = ChartPalette.of(context);
     final usage = detail.usage;
     return Column(
       key: const Key('usage-dashboard'),
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.gap,
       children: [
-        Text(l.usageTitle, style: theme.textTheme.titleMedium),
-        const SizedBox(height: AppTokens.spaceSm),
+        Text(l.usageTitle, style: text.titleLarge),
         if (usage == null)
           Text(
             detail.usageError == null
@@ -223,31 +207,16 @@ class UsageDashboard extends StatelessWidget {
           )
         else ...[
           if (usage.unavailableServices.isNotEmpty)
-            Card(
+            ClipRRect(
               key: const Key('usage-unavailable'),
-              color: theme.colorScheme.tertiaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(AppTokens.spaceMd),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: theme.colorScheme.onTertiaryContainer,
-                    ),
-                    const SizedBox(width: AppTokens.spaceSm),
-                    Expanded(
-                      child: Text(
-                        l.usageUnavailable(
-                          usage.unavailableServices
-                              .map((s) => _serviceLabel(l, s.name))
-                              .join(', '),
-                        ),
-                        style: TextStyle(
-                          color: theme.colorScheme.onTertiaryContainer,
-                        ),
-                      ),
-                    ),
-                  ],
+              borderRadius: BorderRadius.circular(HoopsRadius.md),
+              child: NoticeBanner(
+                tone: HoopsTone.warning,
+                icon: Icons.warning_amber_rounded,
+                message: l.usageUnavailable(
+                  usage.unavailableServices
+                      .map((s) => _serviceLabel(l, s.name))
+                      .join(', '),
                 ),
               ),
             ),
@@ -266,75 +235,64 @@ class _ServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final text = Theme.of(context).textTheme;
+    final c = HoopsTokens.colorsOf(context);
     final entries = report.counters.entries.toList();
     final max = entries.fold<int>(1, (m, e) => e.value > m ? e.value : m);
-    return Card(
+    return SectionCard(
       key: Key('usage-${report.service.name}'),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _serviceLabel(l, report.service.name),
-              style: theme.textTheme.titleSmall,
-            ),
-            if (report.lastActivityAt != null)
-              Text(
-                l.usageLastActivity(_date(report.lastActivityAt!)),
-                style: theme.textTheme.bodySmall,
-              ),
-            const SizedBox(height: AppTokens.spaceSm),
-            for (final e in entries)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppTokens.spaceSm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      title: _serviceLabel(l, report.service.name),
+      subtitle: report.lastActivityAt == null
+          ? null
+          : l.usageLastActivity(_date(report.lastActivityAt!)),
+      child: Column(
+        spacing: HoopsSpace.gap,
+        children: [
+          for (final e in entries)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: HoopsSpace.xs,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            usageCounterLabel(l, e.key),
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                        Text(
-                          '${e.value}',
-                          key: Key('counter-${e.key}'),
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    LayoutBuilder(
-                      builder: (context, c) => Stack(
-                        children: [
-                          Container(
-                            height: 8,
-                            width: c.maxWidth,
-                            decoration: BoxDecoration(
-                              color: palette.grid,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          Container(
-                            height: 8,
-                            width: c.maxWidth * (e.value / max),
-                            decoration: BoxDecoration(
-                              color: palette.series,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
+                    Expanded(
+                      child: Text(
+                        usageCounterLabel(l, e.key),
+                        style: text.bodyLarge,
                       ),
+                    ),
+                    Text(
+                      '${e.value}',
+                      key: Key('counter-${e.key}'),
+                      style: text.titleMedium,
                     ),
                   ],
                 ),
-              ),
-          ],
-        ),
+                LayoutBuilder(
+                  builder: (context, box) => Stack(
+                    children: [
+                      Container(
+                        height: HoopsSpace.sm,
+                        width: box.maxWidth,
+                        decoration: BoxDecoration(
+                          color: c.surfaceMuted,
+                          borderRadius: BorderRadius.circular(HoopsSpace.xs),
+                        ),
+                      ),
+                      Container(
+                        height: HoopsSpace.sm,
+                        width: box.maxWidth * (e.value / max),
+                        decoration: BoxDecoration(
+                          color: palette.series,
+                          borderRadius: BorderRadius.circular(HoopsSpace.xs),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }

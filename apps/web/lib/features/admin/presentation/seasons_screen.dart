@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/form_dialog.dart';
+import '../../../core/ui/kit.dart';
 import '../../../core/ui/labels.dart';
-import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/admin_providers.dart';
 
@@ -36,36 +34,40 @@ class SeasonsScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(seasonsProvider),
         isEmpty: (d) => d.isEmpty,
         emptyMessage: l.seasonsEmpty,
-        builder: (context, data) => ListView(
-          padding: const EdgeInsets.only(bottom: 88),
+        builder: (context, data) => PageBody(
+          header: PageHeader(title: l.adminSeasons),
           children: [
-            for (final s in data.reversed)
-              ListTile(
-                key: Key('season-${s.id}'),
-                title: Row(
-                  children: [
-                    Flexible(child: Text(s.name)),
-                    if (s.current) ...[
-                      const SizedBox(width: AppTokens.spaceSm),
-                      InfoChip(l.seasonCurrent, tone: ChipTone.good),
-                    ],
-                  ],
-                ),
-                subtitle: Text(
-                  '${formatDate(s.startsOn)} - ${formatDate(s.endsOn)}',
-                ),
-                onTap: () => showDialog<bool>(
-                  context: context,
-                  builder: (_) => SeasonDialog(season: s),
-                ),
-                trailing: IconButton(
-                  key: Key('season-rollover-${s.id}'),
-                  tooltip: l.seasonRollover,
-                  icon: const Icon(Icons.skip_next_outlined),
-                  onPressed: () =>
-                      context.go('/admin/seasons/${s.id}/rollover'),
-                ),
-              ),
+            Column(
+              spacing: HoopsSpace.gap,
+              children: [
+                for (final s in data.reversed)
+                  ListRow(
+                    key: Key('season-${s.id}'),
+                    title: s.name,
+                    subtitle:
+                        '${formatDate(s.startsOn)} - ${formatDate(s.endsOn)}',
+                    onTap: () => showDialog<bool>(
+                      context: context,
+                      builder: (_) => SeasonDialog(season: s),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (s.current)
+                          StatusChip(l.seasonCurrent, tone: HoopsTone.success),
+                        IconButton(
+                          key: Key('season-rollover-${s.id}'),
+                          tooltip: l.seasonRollover,
+                          icon: const Icon(Icons.skip_next_outlined),
+                          onPressed: () =>
+                              context.go('/admin/seasons/${s.id}/rollover'),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: HoopsSize.appBar),
+              ],
+            ),
           ],
         ),
       ),
@@ -175,11 +177,15 @@ class _SeasonDialogState extends ConsumerState<SeasonDialog> {
         ),
         if (_datesTouched && !_datesOk)
           Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceSm),
+            padding: const EdgeInsets.only(top: HoopsSpace.sm),
             child: Text(
               l.seasonDatesInvalid,
               key: const Key('season-dates-error'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              style: TextStyle(
+                color: HoopsTokens.colorsOf(context)
+                    .tone(HoopsTone.danger)
+                    .foreground,
+              ),
             ),
           ),
         formGap,
@@ -233,7 +239,6 @@ class _RolloverScreenState extends ConsumerState<RolloverScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final seasons = ref.watch(seasonsProvider);
     String? name;
     for (final s in seasons.value ?? const <api.Season>[]) {
@@ -246,76 +251,100 @@ class _RolloverScreenState extends ConsumerState<RolloverScreen> {
       child: AsyncBody<List<api.Season>>(
         value: seasons,
         onRetry: () => ref.invalidate(seasonsProvider),
-        builder: (context, _) => ListView(
-          padding: const EdgeInsets.all(AppTokens.spaceMd),
+        builder: (context, _) => PageBody(
+          header: PageHeader(title: l.rolloverTitle),
           children: [
-            if (result == null) ...[
-              Text(
-                l.rolloverIntro(name ?? ''),
-                key: const Key('rollover-intro'),
-              ),
-              CheckboxListTile(
-                key: const Key('rollover-clone-staff'),
-                value: _cloneStaff,
-                title: Text(l.rolloverCloneStaff),
-                onChanged: (v) => setState(() => _cloneStaff = v ?? true),
-              ),
-              CheckboxListTile(
-                key: const Key('rollover-clone-players'),
-                value: _clonePlayers,
-                title: Text(l.rolloverClonePlayers),
-                onChanged: (v) => setState(() => _clonePlayers = v ?? true),
-              ),
-              const SizedBox(height: AppTokens.spaceMd),
-              FilledButton(
-                key: const Key('rollover-run'),
-                onPressed: _busy ? null : _run,
-                child: Text(l.rolloverConfirm),
-              ),
-            ] else ...[
-              Text(
-                l.rolloverDone,
-                style: theme.textTheme.titleLarge,
+            if (result == null)
+              SectionCard(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        l.rolloverIntro(name ?? ''),
+                        key: const Key('rollover-intro'),
+                      ),
+                      CheckboxListTile(
+                        key: const Key('rollover-clone-staff'),
+                        value: _cloneStaff,
+                        title: Text(l.rolloverCloneStaff),
+                        onChanged: (v) =>
+                            setState(() => _cloneStaff = v ?? true),
+                      ),
+                      CheckboxListTile(
+                        key: const Key('rollover-clone-players'),
+                        value: _clonePlayers,
+                        title: Text(l.rolloverClonePlayers),
+                        onChanged: (v) =>
+                            setState(() => _clonePlayers = v ?? true),
+                      ),
+                      const SizedBox(height: HoopsSpace.md),
+                      FilledButton(
+                        key: const Key('rollover-run'),
+                        onPressed: _busy ? null : _run,
+                        child: Text(l.rolloverConfirm),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else ...[
+              SectionCard(
                 key: const Key('rollover-done'),
-              ),
-              const SizedBox(height: AppTokens.spaceSm),
-              Text(l.rolloverClonedTeams(result.clonedTeams.length.toString())),
-              Text(
-                l.rolloverCasesOpened(result.openedCaseIds.length.toString()),
-              ),
-              const SizedBox(height: AppTokens.spaceMd),
-              Text(l.rolloverOrphansTitle, style: theme.textTheme.titleMedium),
-              if (result.orphans.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppTokens.spaceSm,
-                  ),
-                  child: Text(
-                    l.rolloverNoOrphans,
-                    key: const Key('rollover-no-orphans'),
-                  ),
-                )
-              else
-                for (final o in result.orphans)
-                  ListTile(
-                    key: Key('orphan-${o.player.id}'),
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      l.rolloverOrphanLine(
-                        o.player.displayName,
-                        o.previousTeam?.name ?? '-',
+                title: l.rolloverDone,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l.rolloverClonedTeams(
+                        result.clonedTeams.length.toString(),
                       ),
                     ),
-                    subtitle: Text(
-                      o.reasons.map((r) => r.label(l)).join(' · '),
+                    Text(
+                      l.rolloverCasesOpened(
+                        result.openedCaseIds.length.toString(),
+                      ),
                     ),
-                  ),
-              const SizedBox(height: AppTokens.spaceMd),
-              FilledButton.icon(
-                key: const Key('rollover-go-cases'),
-                icon: const Icon(Icons.report_problem_outlined),
-                label: Text(l.rolloverGoToCases),
-                onPressed: () => context.go('/teams/cases'),
+                  ],
+                ),
+              ),
+              SectionCard(
+                title: l.rolloverOrphansTitle,
+                child: result.orphans.isEmpty
+                    ? Text(
+                        l.rolloverNoOrphans,
+                        key: const Key('rollover-no-orphans'),
+                      )
+                    : Column(
+                        spacing: HoopsSpace.sm,
+                        children: [
+                          for (final o in result.orphans)
+                            ListRow(
+                              key: Key('orphan-${o.player.id}'),
+                              leading: InitialsAvatar(
+                                name: o.player.displayName,
+                                size: 36,
+                              ),
+                              title: l.rolloverOrphanLine(
+                                o.player.displayName,
+                                o.previousTeam?.name ?? '-',
+                              ),
+                              subtitle: o.reasons
+                                  .map((r) => r.label(l))
+                                  .join(' · '),
+                            ),
+                        ],
+                      ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.icon(
+                  key: const Key('rollover-go-cases'),
+                  icon: const Icon(Icons.report_problem_outlined),
+                  label: Text(l.rolloverGoToCases),
+                  onPressed: () => context.go('/teams/cases'),
+                ),
               ),
             ],
           ],

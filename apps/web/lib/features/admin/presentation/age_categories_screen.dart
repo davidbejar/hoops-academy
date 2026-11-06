@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/admin_providers.dart';
 
@@ -33,42 +32,51 @@ class AgeCategoriesScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(ageCategoriesProvider),
         isEmpty: (d) => d.isEmpty,
         emptyMessage: l.categoriesEmpty,
-        builder: (context, data) => ListView(
-          padding: const EdgeInsets.only(bottom: 88),
+        builder: (context, data) => PageBody(
+          header: PageHeader(title: l.adminAgeCategories),
           children: [
-            for (final c in data)
-              ListTile(
-                key: Key('category-${c.id}'),
-                leading: CircleAvatar(child: Text(c.rank.toString())),
-                title: Text('${c.code} · ${c.name}'),
-                subtitle: Text(
-                  c.maxAge == null
-                      ? l.categoryNoLimit
-                      : l.categoryUpTo(c.maxAge.toString()),
-                ),
-                onTap: () => showDialog<bool>(
-                  context: context,
-                  builder: (_) => CategoryDialog(category: c),
-                ),
-                trailing: IconButton(
-                  key: Key('category-delete-${c.id}'),
-                  tooltip: l.delete,
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () async {
-                    if (!await confirmDialog(
-                      context,
-                      message: l.categoryDeleteConfirm(c.name),
-                    ))
-                      return;
-                    if (!context.mounted) return;
-                    await runAction(
-                      context,
-                      () =>
-                          ref.read(ageCategoriesProvider.notifier).remove(c.id),
-                    );
-                  },
-                ),
-              ),
+            Column(
+              spacing: HoopsSpace.gap,
+              children: [
+                for (final c in data)
+                  ListRow(
+                    key: Key('category-${c.id}'),
+                    leading: InitialsAvatar(
+                      name: c.rank.toString(),
+                      tone: HoopsTone.neutral,
+                    ),
+                    title: '${c.code} · ${c.name}',
+                    subtitle: c.maxAge == null
+                        ? l.categoryNoLimit
+                        : l.categoryUpTo(c.maxAge.toString()),
+                    onTap: () => showDialog<bool>(
+                      context: context,
+                      builder: (_) => CategoryDialog(category: c),
+                    ),
+                    trailing: IconButton(
+                      key: Key('category-delete-${c.id}'),
+                      tooltip: l.delete,
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () async {
+                        if (!await confirmDialog(
+                          context,
+                          message: l.categoryDeleteConfirm(c.name),
+                        )) {
+                          return;
+                        }
+                        if (!context.mounted) return;
+                        await runAction(
+                          context,
+                          () => ref
+                              .read(ageCategoriesProvider.notifier)
+                              .remove(c.id),
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: HoopsSize.appBar),
+              ],
+            ),
           ],
         ),
       ),

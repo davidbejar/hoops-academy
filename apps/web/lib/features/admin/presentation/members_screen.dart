@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/form_dialog.dart';
+import '../../../core/ui/kit.dart';
 import '../../../core/ui/labels.dart';
-import '../../../core/ui/page_scaffold.dart';
 import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
@@ -53,18 +51,21 @@ class MembersScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
-            child: TextField(
-              key: const Key('member-search'),
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: l.membersSearchHint,
+          ContentFrame(
+            child: Padding(
+              padding: const EdgeInsets.only(top: HoopsSpace.md),
+              child: TextField(
+                key: const Key('member-search'),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: l.membersSearchHint,
+                ),
+                onSubmitted: (v) =>
+                    ref.read(memberQueryProvider.notifier).set(v),
+                onChanged: (v) {
+                  if (v.isEmpty) ref.read(memberQueryProvider.notifier).set('');
+                },
               ),
-              onSubmitted: (v) => ref.read(memberQueryProvider.notifier).set(v),
-              onChanged: (v) {
-                if (v.isEmpty) ref.read(memberQueryProvider.notifier).set('');
-              },
             ),
           ),
           Expanded(
@@ -73,9 +74,16 @@ class MembersScreen extends ConsumerWidget {
               onRetry: () => ref.invalidate(membersProvider),
               isEmpty: (d) => d.isEmpty,
               emptyMessage: l.membersEmpty,
-              builder: (context, data) => ListView(
-                padding: const EdgeInsets.only(bottom: 88),
-                children: [for (final m in data) _MemberTile(member: m)],
+              builder: (context, data) => PageBody(
+                children: [
+                  Column(
+                    spacing: HoopsSpace.gap,
+                    children: [
+                      for (final m in data) _MemberTile(member: m),
+                      const SizedBox(height: HoopsSize.appBar),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -100,31 +108,41 @@ class _MemberTile extends ConsumerWidget {
         member.active &&
         member.invitationStatus == api.InvitationStatus.PENDING &&
         member.temporaryPasswordStatus == api.TemporaryPasswordStatus.EXPIRED;
-    return ListTile(
+    return ListRow(
       key: Key('member-${member.personId}'),
-      title: Text(member.displayName),
-      subtitle: expired
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(details),
-                const SizedBox(height: AppTokens.spaceXs),
-                InfoChip(
-                  l.tempPasswordExpired,
-                  key: Key('member-password-expired-${member.personId}'),
-                  tone: ChipTone.bad,
-                ),
-              ],
-            )
-          : Text(details),
+      leading: InitialsAvatar(name: member.displayName),
+      title: member.displayName,
+      subtitle: details,
       trailing: !member.active
-          ? InfoChip(l.memberInactive, tone: ChipTone.bad)
+          ? _TrailingChip(StatusChip(l.memberInactive, tone: HoopsTone.danger))
+          : expired
+          ? _TrailingChip(
+              StatusChip(
+                l.tempPasswordExpired,
+                key: Key('member-password-expired-${member.personId}'),
+                tone: HoopsTone.danger,
+              ),
+            )
           : member.invitationStatus == api.InvitationStatus.PENDING
-          ? InfoChip(l.memberInvitationPending, tone: ChipTone.warn)
-          : const Icon(Icons.chevron_right),
+          ? _TrailingChip(
+              StatusChip(l.memberInvitationPending, tone: HoopsTone.warning),
+            )
+          : null,
       onTap: () => context.go('/admin/members/${member.personId}'),
     );
   }
+}
+
+/// Keeps a status chip from squeezing the name on a phone: long labels wrap.
+class _TrailingChip extends StatelessWidget {
+  const _TrailingChip(this.chip);
+  final Widget chip;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 120),
+    child: chip,
+  );
 }
 
 class InviteMemberDialog extends ConsumerStatefulWidget {
@@ -202,7 +220,7 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
       afterClose: () async => _announce?.call(),
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: HoopsSpace.gap),
           child: Text(l.memberInviteHint, key: const Key('invite-hint')),
         ),
         TextFormField(
@@ -235,7 +253,11 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
           Text(
             l.memberRolesRequired,
             key: const Key('roles-error'),
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+            style: TextStyle(
+              color: HoopsTokens.colorsOf(context)
+                  .tone(HoopsTone.danger)
+                  .foreground,
+            ),
           ),
       ],
     );
@@ -257,7 +279,7 @@ class RolePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Wrap(
-      spacing: AppTokens.spaceSm,
+      spacing: HoopsSpace.sm,
       children: [
         for (final role in grantableRoles)
           FilterChip(
@@ -339,48 +361,12 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
     final pending = m.invitationStatus == api.InvitationStatus.PENDING;
     final theme = Theme.of(context);
     final isParent = m.roles.contains(api.TenantRole.PARENT);
-    return ListView(
-      padding: const EdgeInsets.all(AppTokens.spaceMd),
-      children: [
-        Text(m.displayName, style: theme.textTheme.titleLarge),
-        if (m.email != null) Text(m.email!),
-        if (!m.active) ...[
-          const SizedBox(height: AppTokens.spaceSm),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: InfoChip(l.memberInactive, tone: ChipTone.bad),
-          ),
-        ] else if (pending) ...[
-          const SizedBox(height: AppTokens.spaceSm),
-          Wrap(
-            spacing: AppTokens.spaceSm,
-            runSpacing: AppTokens.spaceXs,
-            children: [
-              InfoChip(l.memberInvitationPending, tone: ChipTone.warn),
-              if (m.temporaryPasswordStatus ==
-                  api.TemporaryPasswordStatus.EXPIRED)
-                InfoChip(
-                  l.tempPasswordExpired,
-                  key: const Key('member-password-expired'),
-                  tone: ChipTone.bad,
-                ),
-            ],
-          ),
-          const SizedBox(height: AppTokens.spaceSm),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              key: const Key('member-issue-password'),
-              icon: const Icon(Icons.key_outlined),
-              label: Text(l.tempPasswordIssue),
-              onPressed: _issuePassword,
-            ),
-          ),
-        ],
-        const SizedBox(height: AppTokens.spaceSm),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton.icon(
+    return PageBody(
+      header: PageHeader(
+        title: m.displayName,
+        subtitle: m.email,
+        actions: [
+          OutlinedButton.icon(
             key: const Key('member-edit'),
             icon: const Icon(Icons.edit_outlined),
             label: Text(l.memberEdit),
@@ -389,61 +375,92 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
               builder: (_) => MemberEditDialog(member: m),
             ),
           ),
-        ),
-        const SizedBox(height: AppTokens.spaceLg),
-        Text(l.memberRoles, style: theme.textTheme.titleMedium),
-        RolePicker(selected: _roles, onChanged: () => setState(() {})),
-        const SizedBox(height: AppTokens.spaceSm),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FilledButton(
-            key: const Key('member-save-roles'),
-            onPressed: _roles.isEmpty
-                ? null
-                : () => runAction(
-                    context,
-                    () => ref.read(membersProvider.notifier).replaceRoles(
-                      m.personId,
-                      {..._roles},
-                    ),
-                    success: l.saved,
+          if (pending && m.active)
+            OutlinedButton.icon(
+              key: const Key('member-issue-password'),
+              icon: const Icon(Icons.key_outlined),
+              label: Text(l.tempPasswordIssue),
+              onPressed: _issuePassword,
+            ),
+        ],
+      ),
+      children: [
+        if (!m.active || pending)
+          Wrap(
+            spacing: HoopsSpace.sm,
+            runSpacing: HoopsSpace.xs,
+            children: [
+              if (!m.active)
+                StatusChip(l.memberInactive, tone: HoopsTone.danger)
+              else ...[
+                StatusChip(l.memberInvitationPending, tone: HoopsTone.warning),
+                if (m.temporaryPasswordStatus ==
+                    api.TemporaryPasswordStatus.EXPIRED)
+                  StatusChip(
+                    l.tempPasswordExpired,
+                    key: const Key('member-password-expired'),
+                    tone: HoopsTone.danger,
                   ),
-            child: Text(l.memberEditRoles),
+              ],
+            ],
+          ),
+        SectionCard(
+          title: l.memberRoles,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: HoopsSpace.gap,
+            children: [
+              RolePicker(selected: _roles, onChanged: () => setState(() {})),
+              FilledButton(
+                key: const Key('member-save-roles'),
+                onPressed: _roles.isEmpty
+                    ? null
+                    : () => runAction(
+                        context,
+                        () => ref.read(membersProvider.notifier).replaceRoles(
+                          m.personId,
+                          {..._roles},
+                        ),
+                        success: l.saved,
+                      ),
+                child: Text(l.memberEditRoles),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: AppTokens.spaceLg),
-        Text(l.memberGuardianLinks, style: theme.textTheme.titleMedium),
-        if (isParent)
-          GuardianLinksEditor(guardianPersonId: m.personId)
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceSm),
-            child: Text(
-              l.memberGuardianOnlyParents,
-              style: theme.textTheme.bodySmall,
+        SectionCard(
+          title: l.memberGuardianLinks,
+          child: isParent
+              ? GuardianLinksEditor(guardianPersonId: m.personId)
+              : Text(
+                  l.memberGuardianOnlyParents,
+                  style: theme.textTheme.bodySmall,
+                ),
+        ),
+        if (m.active)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const Key('member-deactivate'),
+              icon: const Icon(Icons.person_off_outlined),
+              label: Text(l.memberDeactivate),
+              onPressed: () async {
+                if (!await confirmDialog(
+                  context,
+                  message: l.memberDeactivateConfirm(m.displayName),
+                )) {
+                  return;
+                }
+                if (!context.mounted) return;
+                await runAction(
+                  context,
+                  () =>
+                      ref.read(membersProvider.notifier).deactivate(m.personId),
+                  success: l.memberDeactivated,
+                );
+              },
             ),
           ),
-        if (m.active) ...[
-          const SizedBox(height: AppTokens.spaceLg),
-          OutlinedButton.icon(
-            key: const Key('member-deactivate'),
-            icon: const Icon(Icons.person_off_outlined),
-            label: Text(l.memberDeactivate),
-            onPressed: () async {
-              if (!await confirmDialog(
-                context,
-                message: l.memberDeactivateConfirm(m.displayName),
-              ))
-                return;
-              if (!context.mounted) return;
-              await runAction(
-                context,
-                () => ref.read(membersProvider.notifier).deactivate(m.personId),
-                success: l.memberDeactivated,
-              );
-            },
-          ),
-        ],
       ],
     );
   }
@@ -467,21 +484,23 @@ class GuardianLinksEditor extends ConsumerWidget {
               ref.invalidate(guardianLinksProvider(guardianPersonId)),
           builder: (context, data) => data.isEmpty
               ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppTokens.spaceSm,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: HoopsSpace.sm),
                   child: Text(
                     l.memberGuardianNone,
                     key: const Key('guardian-none'),
                   ),
                 )
               : Column(
+                  spacing: HoopsSpace.sm,
                   children: [
                     for (final link in data)
-                      ListTile(
+                      ListRow(
                         key: Key('link-${link.id}'),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(link.player.displayName),
+                        leading: InitialsAvatar(
+                          name: link.player.displayName,
+                          size: 36,
+                        ),
+                        title: link.player.displayName,
                         trailing: IconButton(
                           tooltip: l.remove,
                           icon: const Icon(Icons.link_off),
@@ -549,7 +568,7 @@ class AsyncBodyInline<T> extends StatelessWidget {
       );
     }
     return const Padding(
-      padding: EdgeInsets.all(AppTokens.spaceMd),
+      padding: EdgeInsets.all(HoopsSpace.md),
       child: Center(child: CircularProgressIndicator()),
     );
   }
@@ -602,9 +621,13 @@ class _PickPlayerDialogState extends ConsumerState<_PickPlayerDialog> {
                   return ListView(
                     children: [
                       for (final p in players)
-                        ListTile(
+                        ListRow(
                           key: Key('pick-player-${p.id}'),
-                          title: Text(p.displayName),
+                          leading: InitialsAvatar(
+                            name: p.displayName,
+                            size: 36,
+                          ),
+                          title: p.displayName,
                           onTap: () async {
                             final ok = await runAction(
                               context,

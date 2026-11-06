@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/form_dialog.dart';
+import '../../../core/ui/kit.dart';
 import '../../../core/ui/labels.dart';
-import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/admin_providers.dart';
@@ -34,12 +32,11 @@ class AcademyProfileScreen extends ConsumerWidget {
       child: AsyncBody<AcademyData>(
         value: academy,
         onRetry: () => ref.invalidate(academyProvider),
-        builder: (context, data) => ListView(
-          padding: const EdgeInsets.all(AppTokens.spaceMd),
+        builder: (context, data) => PageBody(
+          header: PageHeader(title: l.adminAcademyProfile),
           children: [
-            const LogoSection(),
-            const Divider(height: AppTokens.spaceXl),
-            _ProfileForm(data: data),
+            SectionCard(title: l.logoTitle, child: const LogoSection()),
+            SectionCard(child: _ProfileForm(data: data)),
           ],
         ),
       ),
@@ -110,8 +107,6 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l.logoTitle, style: theme.textTheme.titleMedium),
-        const SizedBox(height: AppTokens.spaceSm),
         Row(
           children: [
             Container(
@@ -120,8 +115,8 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
               height: 96,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+                color: HoopsTokens.colorsOf(context).surfaceMuted,
+                borderRadius: BorderRadius.circular(HoopsRadius.md),
               ),
               child: shown == null
                   ? Text(
@@ -130,7 +125,7 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
                       textAlign: TextAlign.center,
                     )
                   : ClipRRect(
-                      borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+                      borderRadius: BorderRadius.circular(HoopsRadius.md),
                       child: Image.memory(
                         shown,
                         width: 96,
@@ -139,7 +134,7 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
                       ),
                     ),
             ),
-            const SizedBox(width: AppTokens.spaceMd),
+            const SizedBox(width: HoopsSpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,10 +143,10 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
                     _picked != null ? l.logoPreview : l.logoHint,
                     style: theme.textTheme.bodySmall,
                   ),
-                  const SizedBox(height: AppTokens.spaceSm),
+                  const SizedBox(height: HoopsSpace.sm),
                   Wrap(
-                    spacing: AppTokens.spaceSm,
-                    runSpacing: AppTokens.spaceSm,
+                    spacing: HoopsSpace.sm,
+                    runSpacing: HoopsSpace.sm,
                     children: [
                       OutlinedButton.icon(
                         key: const Key('logo-choose'),
@@ -181,12 +176,14 @@ class _LogoSectionState extends ConsumerState<LogoSection> {
           ],
         ),
         if (_problem != null) ...[
-          const SizedBox(height: AppTokens.spaceSm),
+          const SizedBox(height: HoopsSpace.sm),
           Text(
             logoProblemMessage(_problem!, l),
             key: const Key('logo-error'),
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
+              color: HoopsTokens.colorsOf(context)
+                  .tone(HoopsTone.danger)
+                  .foreground,
             ),
           ),
         ],
@@ -277,14 +274,14 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
             decoration: InputDecoration(labelText: l.academyName),
             validator: (v) => requiredValidator(l, v),
           ),
-          const SizedBox(height: AppTokens.spaceMd),
+          const SizedBox(height: HoopsSpace.md),
           TextFormField(
             key: const Key('academy-timezone'),
             controller: _timezone,
             decoration: InputDecoration(labelText: l.academyTimezone),
             validator: (v) => requiredValidator(l, v),
           ),
-          const SizedBox(height: AppTokens.spaceMd),
+          const SizedBox(height: HoopsSpace.md),
           DropdownButtonFormField<api.AgeRule>(
             isExpanded: true,
             key: const Key('academy-age-rule'),
@@ -296,7 +293,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
             ],
             onChanged: (v) => setState(() => _ageRule = v ?? _ageRule),
           ),
-          const SizedBox(height: AppTokens.spaceMd),
+          const SizedBox(height: HoopsSpace.md),
           TextFormField(
             key: const Key('academy-max-play-up'),
             controller: _maxPlayUp,
@@ -307,7 +304,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
               return n == null || n < 0 || n > 5 ? l.fieldInvalidNumber : null;
             },
           ),
-          const SizedBox(height: AppTokens.spaceMd),
+          const SizedBox(height: HoopsSpace.md),
           DropdownButtonFormField<api.ApiLocale>(
             isExpanded: true,
             key: const Key('academy-locale'),
@@ -329,7 +326,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
             ],
             onChanged: (v) => setState(() => _locale = v ?? _locale),
           ),
-          const SizedBox(height: AppTokens.spaceMd),
+          const SizedBox(height: HoopsSpace.md),
           TextFormField(
             key: const Key('academy-contact-email'),
             controller: _contactEmail,
@@ -341,7 +338,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
                 ? null
                 : l.fieldInvalidEmail,
           ),
-          const SizedBox(height: AppTokens.spaceMd),
+          const SizedBox(height: HoopsSpace.md),
           TextFormField(
             key: const Key('academy-website'),
             controller: _website,
@@ -352,7 +349,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
                 ? null
                 : l.fieldInvalidUrl,
           ),
-          const SizedBox(height: AppTokens.spaceLg),
+          const SizedBox(height: HoopsSpace.lg),
           FilledButton(
             key: const Key('academy-save'),
             onPressed: _busy ? null : _save,

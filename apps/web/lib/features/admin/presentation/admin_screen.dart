@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 
 /// Admin hub: entry points to every academy-level setting and queue.
@@ -41,23 +41,43 @@ class AdminScreen extends StatelessWidget {
       ),
       (Icons.history, l.adminActivity, '/admin/activity', 'admin-activity'),
     ];
-    return ListView(
+    return PageBody(
       key: const Key('admin-hub'),
-      padding: const EdgeInsets.all(AppTokens.spaceMd),
+      header: PageHeader(title: l.adminTitle),
       children: [
-        Text(l.adminTitle, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: AppTokens.spaceMd),
-        for (final (icon, label, path, key) in entries)
-          Card(
-            child: ListTile(
-              key: Key(key),
-              leading: Icon(icon),
-              title: Text(label),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.go(path),
-            ),
-          ),
+        Column(
+          spacing: HoopsSpace.gap,
+          children: [
+            for (final (icon, label, path, key) in entries)
+              ListRow(
+                key: Key(key),
+                leading: _EntryIcon(icon),
+                title: label,
+                onTap: () => context.go(path),
+              ),
+          ],
+        ),
       ],
+    );
+  }
+}
+
+class _EntryIcon extends StatelessWidget {
+  const _EntryIcon(this.icon);
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = HoopsTokens.colorsOf(context).tone(HoopsTone.accent);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.container,
+        borderRadius: BorderRadius.circular(HoopsRadius.sm),
+      ),
+      child: SizedBox.square(
+        dimension: HoopsSize.iconTile - 4,
+        child: Icon(icon, color: colors.onContainer),
+      ),
     );
   }
 }
