@@ -40,4 +40,26 @@ Decision 34 of 2026-11-06: the app exposes every edit the contracts already allo
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - Match edit (`features/match/presentation/match_edit_dialog.dart`, entry `menu-edit` in the staff menu of the live
+    match screen, `canRunMatch` only): opponent, home/away, date + time in the academy zone, venue (clearable via
+    the repository's `clear`), periods. `MatchesRepository.update` gained `homeAway`, `periodCount`, `periodMinutes`;
+    `LiveMatchController.updateMatch` stores the result and invalidates the list.
+  - Jersey removal: `JerseyDialog` (FormDialog) replaces `noteDialog(required: true)` in `teams_screen.dart`; empty
+    saves `null` (repository sends `clear: [jerseyNumber]`); digits only, max 2 (contract pattern); an error keeps it open.
+  - Member personal data: `MemberEditDialog` (button `member-edit` on the member detail): given/family name, e-mail,
+    phone, birth date, gender (all four optional ones clearable). New `MembersRepository.update` +
+    `MembersNotifier.savePersonalData`; `memberErrorText` maps `LOGIN_REQUIRES_EMAIL` and `EMAIL_TAKEN` to localized texts.
+  - Academy contact: contact e-mail and website added to the existing profile form (`academy-contact-email`,
+    `academy-website`), both clearable, client-side format checks. `AcademyNotifier.save` takes them.
+  - Demo mock: `PATCH /members/{id}` added (clear honoured; 422 `LOGIN_REQUIRES_EMAIL` if a member had `userId`).
+- Verified: red test commits precede each dialog; `flutter analyze` clean; `just web-format-check` clean;
+  `just web-test` fresh: 690 passed, 0 failed. Goldens: none changed (no golden screen shows these controls).
+- Decisions/ADRs: none. The edit is offered for every non-cancelled match; only the periods lock once the match is
+  not SCHEDULED (contract: 409), other fields stay editable.
+- Open points / follow-ups:
+  - The contract does not say whether a match with events may change `homeAway`; the dialog allows it (server decides).
+  - `UpdateMemberRequest.locale` and name edits for the self-service profile are not exposed (no scope here).
+  - The member dialog does not pre-block clearing the e-mail of a member with a login: `Member.userId` is only on
+    the detail DTO; the server rule (422) is shown instead, as the brief asked.
+  - Match edit is only reachable from the live match screen, not from the list tile.
