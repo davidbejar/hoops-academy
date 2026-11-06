@@ -532,4 +532,93 @@ void main() {
       expect(find.textContaining('rol Familia'), findsOneWidget);
     });
   });
+
+  group('member personal data', () {
+    Future<FakeCore> openEdit(WidgetTester tester) async {
+      final core = coreWithMembers();
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: core,
+        location: '$path/m1',
+      );
+      await tapKey(tester, 'member-edit');
+      return core;
+    }
+
+    String text(WidgetTester tester, String key) =>
+        tester.widget<TextFormField>(find.byKey(Key(key))).controller!.text;
+
+    testWidgets('opens with the current values', (tester) async {
+      await openEdit(tester);
+      expect(text(tester, 'member-edit-given'), 'Casey');
+      expect(text(tester, 'member-edit-family'), 'Coach');
+      expect(text(tester, 'member-edit-email'), 'casey@hoops-academy.com');
+      expect(text(tester, 'member-edit-phone'), '');
+    });
+
+    testWidgets('saves a phone and a gender; the rest is sent as it was', (
+      tester,
+    ) async {
+      final core = await openEdit(tester);
+      await tester.enterText(
+        find.byKey(const Key('member-edit-phone')),
+        '+34 600 111 222',
+      );
+      await tester.tap(find.byKey(const Key('member-edit-gender')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Femenino').last);
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'form-submit');
+
+      final u = core.members.updates.single;
+      expect(u.personId, 'm1');
+      expect(u.givenName, 'Casey');
+      expect(u.email, 'casey@hoops-academy.com');
+      expect(u.phone, '+34 600 111 222');
+      expect(u.gender, api.Gender.FEMALE);
+      expect(u.birthDate, isNull);
+      expect(find.byKey(const Key('member-edit-phone')), findsNothing);
+    });
+
+    testWidgets('emptied optional fields are sent as null (clear)', (
+      tester,
+    ) async {
+      final core = await openEdit(tester);
+      await tester.enterText(find.byKey(const Key('member-edit-email')), ' ');
+      await tapKey(tester, 'form-submit');
+      final u = core.members.updates.single;
+      expect(u.email, isNull);
+      expect(u.phone, isNull);
+    });
+
+    testWidgets('422 LOGIN_REQUIRES_EMAIL keeps the dialog open with a '
+        'localized message', (tester) async {
+      final core = await openEdit(tester);
+      core.members.failWith = _problem(422, 'LOGIN_REQUIRES_EMAIL');
+      await tester.enterText(find.byKey(const Key('member-edit-email')), '');
+      await tapKey(tester, 'form-submit');
+      expect(find.byKey(const Key('member-edit-email')), findsOneWidget);
+      expect(find.textContaining('correo'), findsWidgets);
+      expect(find.textContaining('English server detail'), findsNothing);
+    });
+
+    testWidgets('409 EMAIL_TAKEN keeps the dialog open', (tester) async {
+      final core = await openEdit(tester);
+      core.members.failWith = _problem(409, 'EMAIL_TAKEN');
+      await tapKey(tester, 'form-submit');
+      expect(find.byKey(const Key('member-edit-email')), findsOneWidget);
+      expect(find.textContaining('English server detail'), findsNothing);
+    });
+
+    testWidgets('a coach has no member screen to edit from', (tester) async {
+      await pumpAs(
+        tester,
+        roles: {TenantRole.coach},
+        core: coreWithMembers(),
+        location: '$path/m1',
+      );
+      expect(find.byKey(const Key('member-edit')), findsNothing);
+    });
+  });
 }

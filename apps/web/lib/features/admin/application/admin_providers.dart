@@ -206,6 +206,28 @@ class MembersNotifier extends AsyncNotifier<List<api.Member>> {
     await _repo.deactivate(personId);
     await _reload();
   }
+
+  /// Saves the personal data; a null optional value empties the field (see [MembersRepository.update]).
+  Future<void> savePersonalData(
+    String personId, {
+    required String givenName,
+    required String familyName,
+    String? email,
+    String? phone,
+    api.Date? birthDate,
+    api.Gender? gender,
+  }) async {
+    await _repo.update(
+      personId,
+      givenName: givenName,
+      familyName: familyName,
+      email: email,
+      phone: phone,
+      birthDate: birthDate,
+      gender: gender,
+    );
+    await _reload();
+  }
 }
 
 final membersProvider =

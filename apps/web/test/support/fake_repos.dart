@@ -92,6 +92,20 @@ class FakeMembersRepository with Faulty implements MembersRepository {
   String? lastQuery;
   api.InviteMemberRequest? invited;
 
+  /// Every `update` call as the dialog made it (a null optional value is sent in `clear`).
+  final List<
+    ({
+      String personId,
+      String givenName,
+      String familyName,
+      String? email,
+      String? phone,
+      api.Date? birthDate,
+      api.Gender? gender,
+    })
+  >
+  updates = [];
+
   /// What the server returns for a login it creates (null: the person already had a login).
   String? newLoginPassword = 'test-temp-password-1';
   final List<String> reissuedFor = [];
@@ -180,6 +194,38 @@ class FakeMembersRepository with Faulty implements MembersRepository {
         members[i] = members[i].rebuild((b) => b.roles.replace(roles));
         return members[i];
       });
+  @override
+  Future<api.Member> update(
+    String personId, {
+    required String givenName,
+    required String familyName,
+    String? email,
+    String? phone,
+    api.Date? birthDate,
+    api.Gender? gender,
+  }) => run('update', () {
+    updates.add((
+      personId: personId,
+      givenName: givenName,
+      familyName: familyName,
+      email: email,
+      phone: phone,
+      birthDate: birthDate,
+      gender: gender,
+    ));
+    final i = members.indexWhere((m) => m.personId == personId);
+    members[i] = members[i].rebuild(
+      (b) => b
+        ..givenName = givenName
+        ..familyName = familyName
+        ..displayName = '$givenName $familyName'
+        ..email = email
+        ..phone = phone
+        ..birthDate = birthDate
+        ..gender = gender,
+    );
+    return members[i];
+  });
   @override
   Future<api.Member> deactivate(String personId) => run('deactivate', () {
     final i = members.indexWhere((m) => m.personId == personId);
