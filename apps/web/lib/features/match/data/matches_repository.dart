@@ -2,6 +2,7 @@ import 'package:built_collection/built_collection.dart';
 import 'package:dio/dio.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
+import '../../../core/api/clear_list.dart';
 import '../../../core/errors/app_error.dart';
 import '../domain/projector/projector.dart';
 
@@ -28,6 +29,8 @@ abstract class MatchesRepository {
     int? periodCount,
     int? periodMinutes,
   });
+  /// Edits the descriptive fields; an empty [venue] is sent in `clear` (ADR-0032).
+  Future<gen.Match> update(String matchId, {required String opponentName, required DateTime scheduledAt, String? venue});
   Future<gen.Match> start(String matchId);
   Future<gen.Match> finish(String matchId);
   Future<List<RosterPlayer>> roster(String matchId);
@@ -75,6 +78,18 @@ class ApiMatchesRepository implements MatchesRepository {
       ..periodCount = periodCount
       ..periodMinutes = periodMinutes),
   )).data!);
+
+  @override
+  Future<gen.Match> update(String matchId, {required String opponentName, required DateTime scheduledAt, String? venue}) =>
+      _guard(() async => (await _matches.updateMatch(
+        xTenantId: _tenant,
+        matchId: matchId,
+        updateMatchRequest: gen.UpdateMatchRequest((b) => b
+          ..opponentName = opponentName
+          ..scheduledAt = scheduledAt.toUtc()
+          ..venue = venue
+          ..clear = clearList({gen.UpdateMatchRequestClearEnum.venue: venue})),
+      )).data!);
 
   @override
   Future<gen.Match> start(String matchId) =>

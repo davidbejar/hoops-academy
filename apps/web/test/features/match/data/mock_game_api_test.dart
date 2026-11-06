@@ -1,3 +1,4 @@
+import 'package:built_collection/built_collection.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
@@ -48,6 +49,49 @@ void main() {
     final stats = await repo.seasonStats('p-ana', 'season-2026');
     expect(stats.gamesPlayed, 2);
     expect(stats.matches.length, 2);
+  });
+
+  test('coach edits a match: a venue is set, an emptied venue is sent in clear, null is unchanged (ADR-0032)', () async {
+    final repo = ApiMatchesRepository(client(['COACH']), mockTenantAId);
+    final id = (await repo.list(teamId: MockGameApi.ownTeamId))
+        .firstWhere((m) => m.status == gen.MatchStatus.SCHEDULED)
+        .id;
+
+    final withVenue = await repo.update(id, opponentName: 'Bulls', scheduledAt: DateTime.utc(2026, 12, 5, 9), venue: 'Away gym');
+    expect(withVenue.venue, 'Away gym');
+    expect(withVenue.opponentName, 'Bulls');
+
+    final cleared = await repo.update(id, opponentName: 'Bulls', scheduledAt: DateTime.utc(2026, 12, 5, 9));
+    expect(cleared.venue, isNull);
+    expect((await repo.get(id)).venue, isNull);
+  });
+
+  test('the demo backend reads null as unchanged and rejects a value that is also in clear', () async {
+    final api = client(['COACH']);
+    final matches = api.getMatchesApi();
+    final id = (await ApiMatchesRepository(api, mockTenantAId).list(teamId: MockGameApi.ownTeamId))
+        .firstWhere((m) => m.status == gen.MatchStatus.SCHEDULED)
+        .id;
+    final venue = (await matches.getMatch(xTenantId: mockTenantAId, matchId: id)).data!.venue;
+    expect(venue, isNotNull);
+
+    final res = await matches.updateMatch(
+      xTenantId: mockTenantAId,
+      matchId: id,
+      updateMatchRequest: gen.UpdateMatchRequest((b) => b..opponentName = 'Hawks'),
+    );
+    expect(res.data!.venue, venue);
+
+    await expectLater(
+      matches.updateMatch(
+        xTenantId: mockTenantAId,
+        matchId: id,
+        updateMatchRequest: gen.UpdateMatchRequest((b) => b
+          ..venue = 'Gym'
+          ..clear = SetBuilder([gen.UpdateMatchRequestClearEnum.venue])),
+      ),
+      throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 400)),
+    );
   });
 
   test('parent: linked player accepted, other player and period REJECTED NOT_AUTHORIZED', () async {

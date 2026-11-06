@@ -81,6 +81,16 @@ class FakeMatchesRepository with Faulty implements MatchesRepository {
     return m;
   });
   @override
+  Future<gen.Match> update(String matchId, {required String opponentName, required DateTime scheduledAt, String? venue}) =>
+      run('update', () {
+        final m = _get(matchId).rebuild((b) => b
+          ..opponentName = opponentName
+          ..scheduledAt = scheduledAt.toUtc()
+          ..venue = venue);
+        _put(m);
+        return m;
+      });
+  @override
   Future<gen.Match> start(String matchId) => run('start', () {
     final m = _get(matchId).rebuild((b) => b.status = gen.MatchStatus.LIVE);
     _put(m);

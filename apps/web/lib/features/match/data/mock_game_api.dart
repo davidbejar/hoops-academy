@@ -123,6 +123,7 @@ class MockGameApi {
     if (m == null) return _problem(404, 'Not found');
     final id = m['id']! as String;
     if (seg.length == 4 && method == 'GET') return MockResult.json(200, m);
+    if (seg.length == 4 && method == 'PATCH') return _patch(m, b);
     switch (seg[4]) {
       case 'start':
         if (!_staff) return _problem(403, 'Forbidden');
@@ -175,6 +176,20 @@ class MockGameApi {
       'items': items,
       'page': {'page': 0, 'size': 100, 'totalElements': items.length, 'totalPages': 1},
     });
+  }
+
+  /// ADR-0032: null or absent is unchanged, `clear` empties the venue, a value that is also in `clear` is a 400.
+  MockResult _patch(Map<String, Object?> m, Map<String, Object?> b) {
+    if (!_staff) return _problem(403, 'Forbidden');
+    final clear = (b['clear'] as List? ?? const []).cast<String>();
+    if (clear.any((n) => n != 'venue') || (clear.contains('venue') && b['venue'] != null)) {
+      return _problem(400, 'Bad clear list');
+    }
+    for (final key in const ['opponentName', 'homeAway', 'scheduledAt', 'venue', 'periodCount', 'periodMinutes']) {
+      if (b[key] != null) m[key] = b[key];
+    }
+    if (clear.contains('venue')) m['venue'] = null;
+    return MockResult.json(200, m);
   }
 
   MockResult _create(Map<String, Object?> b) {

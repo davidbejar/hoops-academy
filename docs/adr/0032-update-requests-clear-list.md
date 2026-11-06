@@ -39,6 +39,9 @@ in generated code that is never edited, and every new client generator would bri
   (core) from "null clears" to "null is unchanged, `clear` clears", add the spec to `ADOPTED` in the contract test,
   regenerate the Dart package and send `clear` from the dialogs that can empty a field. Until then core keeps the
   merge-patch reading of `null`.
+- **game 2.2.0 (WP45):** `UpdateMatchRequest` (`venue` is its only clearable property). game-service reads a `null` as
+  unchanged, answers 400 `CLEAR_CONFLICT` for a value that is also in `clear`, and the web repository's `update` names
+  an emptied venue in `clear`.
 
 ## Alternatives rejected
 - **Explicit `null` as the clear signal** (keep merge patch): correct on the wire, unusable from the generated Dart
