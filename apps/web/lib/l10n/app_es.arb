@@ -295,6 +295,7 @@
   },
   "rosterJersey": "Dorsal",
   "rosterJerseyEdit": "Cambiar dorsal",
+  "rosterJerseyEmptyHint": "Déjalo vacío para quitar el dorsal",
   "rosterAssigned": "Jugador asignado",
   "rosterInvalid": "Ya no es elegible",
   "rosterEligibilityPending": "Comprobando elegibilidad…",

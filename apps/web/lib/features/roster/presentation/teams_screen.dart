@@ -508,20 +508,71 @@ class _RosterSection extends ConsumerWidget {
       if (!context.mounted) return;
       await runAction(context, () => notifier.unassign(tp.player.id));
     } else {
-      final jersey = await noteDialog(
-        context,
-        title: l.rosterJerseyEdit,
-        confirmLabel: l.save,
-        required: true,
-        label: l.rosterJersey,
-      );
-      if (jersey == null || !context.mounted) return;
-      await runAction(
-        context,
-        () => notifier.setJersey(tp.player.id, jersey),
-        success: l.saved,
+      await showDialog<bool>(
+        context: context,
+        builder: (_) => JerseyDialog(
+          current: tp.jerseyNumber,
+          save: (jersey) => notifier.setJersey(tp.player.id, jersey),
+        ),
       );
     }
+  }
+}
+
+/// Sets or removes a player's jersey number: an empty value is saved as null, which the repository sends in
+/// `clear` (ADR-0032). A failure keeps the dialog open.
+class JerseyDialog extends StatefulWidget {
+  const JerseyDialog({super.key, required this.current, required this.save});
+  final String? current;
+  final Future<void> Function(String? jersey) save;
+
+  @override
+  State<JerseyDialog> createState() => _JerseyDialogState();
+}
+
+class _JerseyDialogState extends State<JerseyDialog> {
+  final _form = GlobalKey<FormState>();
+  late final _jersey = TextEditingController(text: widget.current ?? '');
+
+  @override
+  void dispose() {
+    _jersey.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return FormDialog(
+      title: l.rosterJerseyEdit,
+      formKey: _form,
+      onSubmit: () {
+        final text = _jersey.text.trim();
+        return runAction(
+          context,
+          () => widget.save(text.isEmpty ? null : text),
+          success: l.saved,
+        );
+      },
+      children: [
+        TextFormField(
+          key: const Key('jersey-field'),
+          controller: _jersey,
+          maxLength: 2,
+          keyboardType: TextInputType.number,
+          validator: (v) {
+            final t = (v ?? '').trim();
+            return t.isEmpty || RegExp(r'^[0-9]{1,2}$').hasMatch(t)
+                ? null
+                : l.fieldInvalidNumber;
+          },
+          decoration: InputDecoration(
+            labelText: l.rosterJersey,
+            helperText: l.rosterJerseyEmptyHint,
+          ),
+        ),
+      ],
+    );
   }
 }
 

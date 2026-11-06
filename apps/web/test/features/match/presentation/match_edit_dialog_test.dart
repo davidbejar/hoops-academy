@@ -5,7 +5,6 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../support/fake_game.dart';
-import '../../../support/harness.dart';
 import '../../../support/pump_helpers.dart';
 import 'match_screens_test.dart';
 

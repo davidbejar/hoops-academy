@@ -587,6 +587,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get rosterJerseyEdit => 'Ubah nomor punggung';
 
   @override
+  String get rosterJerseyEmptyHint => 'Kosongkan untuk menghapus nomor';
+
+  @override
   String get rosterAssigned => 'Pemain ditetapkan';
 
   @override

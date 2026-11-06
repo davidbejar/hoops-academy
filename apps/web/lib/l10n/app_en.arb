@@ -184,6 +184,7 @@
   "rosterUnassignConfirm": "Remove {name} from the roster?",
   "rosterJersey": "Jersey number",
   "rosterJerseyEdit": "Change jersey number",
+  "rosterJerseyEmptyHint": "Leave empty to remove the number",
   "rosterAssigned": "Player assigned",
   "rosterInvalid": "No longer eligible",
   "rosterEligibilityPending": "Checking eligibility…",

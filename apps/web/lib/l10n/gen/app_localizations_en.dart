@@ -585,6 +585,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rosterJerseyEdit => 'Change jersey number';
 
   @override
+  String get rosterJerseyEmptyHint => 'Leave empty to remove the number';
+
+  @override
   String get rosterAssigned => 'Player assigned';
 
   @override

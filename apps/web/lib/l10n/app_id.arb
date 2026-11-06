@@ -184,6 +184,7 @@
   "rosterUnassignConfirm": "Keluarkan {name} dari daftar pemain?",
   "rosterJersey": "Nomor punggung",
   "rosterJerseyEdit": "Ubah nomor punggung",
+  "rosterJerseyEmptyHint": "Kosongkan untuk menghapus nomor",
   "rosterAssigned": "Pemain ditetapkan",
   "rosterInvalid": "Tidak lagi memenuhi syarat",
   "rosterEligibilityPending": "Memeriksa kelayakan…",

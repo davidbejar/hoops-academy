@@ -592,6 +592,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get rosterJerseyEdit => 'Cambiar dorsal';
 
   @override
+  String get rosterJerseyEmptyHint => 'Déjalo vacío para quitar el dorsal';
+
+  @override
   String get rosterAssigned => 'Jugador asignado';
 
   @override

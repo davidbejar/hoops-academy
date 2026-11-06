@@ -1168,6 +1168,12 @@ abstract class AppLocalizations {
   /// **'Cambiar dorsal'**
   String get rosterJerseyEdit;
 
+  /// No description provided for @rosterJerseyEmptyHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Déjalo vacío para quitar el dorsal'**
+  String get rosterJerseyEmptyHint;
+
   /// No description provided for @rosterAssigned.
   ///
   /// In es, this message translates to:
