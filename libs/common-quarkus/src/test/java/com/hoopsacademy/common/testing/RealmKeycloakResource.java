@@ -35,7 +35,7 @@ public class RealmKeycloakResource implements QuarkusTestResourceLifecycleManage
      */
     public static KeycloakContainer start(ObjectNode realm, String classpathImport) {
         KeycloakContainer container = container(realm, classpathImport);
-        container.start();
+        ContainerStarts.start(container);   // WP87: survives Docker API connections closed while idle
         return container;
     }
 

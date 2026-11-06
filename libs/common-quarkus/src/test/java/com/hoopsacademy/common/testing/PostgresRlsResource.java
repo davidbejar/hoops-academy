@@ -54,7 +54,7 @@ public class PostgresRlsResource implements QuarkusTestResourceLifecycleManager 
                         MountableFile.forHostPath(initDir.resolve("01_roles_schemas.sql")), INIT_TARGET + "01_roles_schemas.sql")
                 .withCopyFileToContainer(
                         MountableFile.forHostPath(initDir.resolve("02_passwords.sh"), 0755), INIT_TARGET + "02_passwords.sh");
-        container.start();
+        ContainerStarts.start(container);   // WP87: survives Docker API connections closed while idle
         return configFor(container.getJdbcUrl());
     }
 
