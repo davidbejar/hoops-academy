@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * The core roster event contracts ({@code events/core.<aggregate>.schema.json}, WP67, ADR-0036): one JSON Schema
@@ -186,9 +187,29 @@ class CoreEventSchemasTest {
             }
             assertThat(validate(topic, example(topic, ".removed"))).isEmpty();
         }
-        ObjectNode person = example("core.person", ".changed");
-        person.put("type", "person.removed");
-        assertThat(validate("core.person", person)).as("persons are never removed").isNotEmpty();
+    }
+
+    /** WP81 (decision 59): every aggregate can be removed; where the aggregate id is the identity the payload is empty. */
+    @ParameterizedTest
+    @MethodSource("topics")
+    void everyTopicHasARemovedEventFollowedByATombstone(String topic) {
+        String aggregate = topic.substring("core.".length());
+        JsonNode schema = schema(topic);
+
+        assertThat(strings(schema.at("/properties/type/enum"))).containsExactly(aggregate + ".changed",
+                aggregate + ".removed");
+        assertThat(schema.path("description").asText()).contains("`" + aggregate + ".removed`", "tombstone");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"core.person", "core.player", "core.team", "core.team-player", "core.tenant"})
+    void aRemovedEventWhoseAggregateIdIsTheIdentityHasAnEmptyPayload(String topic) {
+        ObjectNode withState = example(topic, ".removed");
+        withState.set("payload", example(topic, ".changed").get("payload"));
+
+        assertThat(example(topic, ".removed").get("payload").isEmpty()).isTrue();
+        assertThat(validate(topic, example(topic, ".removed"))).isEmpty();
+        assertThat(validate(topic, withState)).as("%s removed with the full state", topic).isNotEmpty();
     }
 
     @Test
