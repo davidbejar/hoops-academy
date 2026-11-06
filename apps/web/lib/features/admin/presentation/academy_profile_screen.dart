@@ -12,6 +12,7 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/admin_providers.dart';
 import '../domain/logo_validation.dart';
+import 'members_screen.dart' show memberEmailPattern;
 
 String logoProblemMessage(LogoProblem problem, AppLocalizations l) =>
     switch (problem) {
@@ -211,6 +212,12 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
   late final _maxPlayUp = TextEditingController(
     text: (widget.data.settings.maxPlayUpLevels ?? 0).toString(),
   );
+  late final _contactEmail = TextEditingController(
+    text: widget.data.profile.contactEmail ?? '',
+  );
+  late final _website = TextEditingController(
+    text: widget.data.profile.websiteUrl ?? '',
+  );
   late api.AgeRule _ageRule = widget.data.settings.ageRule;
   late api.ApiLocale _locale = widget.data.profile.defaultLocale;
   bool _busy = false;
@@ -220,7 +227,18 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
     _name.dispose();
     _timezone.dispose();
     _maxPlayUp.dispose();
+    _contactEmail.dispose();
+    _website.dispose();
     super.dispose();
+  }
+
+  static String? _blankToNull(String v) => v.trim().isEmpty ? null : v.trim();
+
+  static bool _isWebAddress(String v) {
+    final uri = Uri.tryParse(v);
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
   }
 
   Future<void> _save() async {
@@ -237,6 +255,8 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
             defaultLocale: _locale,
             ageRule: _ageRule,
             maxPlayUpLevels: int.parse(_maxPlayUp.text.trim()),
+            contactEmail: _blankToNull(_contactEmail.text),
+            websiteUrl: _blankToNull(_website.text),
           ),
       success: l.saved,
     );
@@ -308,6 +328,29 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
               ),
             ],
             onChanged: (v) => setState(() => _locale = v ?? _locale),
+          ),
+          const SizedBox(height: AppTokens.spaceMd),
+          TextFormField(
+            key: const Key('academy-contact-email'),
+            controller: _contactEmail,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(labelText: l.academyContactEmail),
+            validator: (v) =>
+                (v ?? '').trim().isEmpty ||
+                    memberEmailPattern.hasMatch(v!.trim())
+                ? null
+                : l.fieldInvalidEmail,
+          ),
+          const SizedBox(height: AppTokens.spaceMd),
+          TextFormField(
+            key: const Key('academy-website'),
+            controller: _website,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(labelText: l.academyWebsite),
+            validator: (v) =>
+                (v ?? '').trim().isEmpty || _isWebAddress(v!.trim())
+                ? null
+                : l.fieldInvalidUrl,
           ),
           const SizedBox(height: AppTokens.spaceLg),
           FilledButton(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
 
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/clear_list.dart';
 import '../../me/application/me_providers.dart';
 import '../../tenant/application/tenant_providers.dart';
 import 'logo_revision.dart';
@@ -84,6 +85,8 @@ class AcademyNotifier extends AsyncNotifier<AcademyData> {
     required api.ApiLocale defaultLocale,
     required api.AgeRule ageRule,
     required int maxPlayUpLevels,
+    String? contactEmail,
+    String? websiteUrl,
   }) async {
     final current = state.requireValue;
     final profile = await ref
@@ -93,7 +96,14 @@ class AcademyNotifier extends AsyncNotifier<AcademyData> {
             (b) => b
               ..name = name
               ..timezone = timezone
-              ..defaultLocale = defaultLocale,
+              ..defaultLocale = defaultLocale
+              ..contactEmail = contactEmail
+              ..websiteUrl = websiteUrl
+              ..clear = clearList({
+                api.UpdateTenantProfileRequestClearEnum.contactEmail:
+                    contactEmail,
+                api.UpdateTenantProfileRequestClearEnum.websiteUrl: websiteUrl,
+              }),
           ),
           settings: current.settings.rebuild(
             (b) => b

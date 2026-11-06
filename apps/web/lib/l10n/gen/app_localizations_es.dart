@@ -232,6 +232,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get fieldInvalidEmail => 'Introduce un correo válido';
 
   @override
+  String get fieldInvalidUrl => 'Introduce una dirección web válida';
+
+  @override
   String get noResults => 'Sin resultados';
 
   @override
@@ -288,6 +291,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get academyDefaultLocale => 'Idioma por defecto';
+
+  @override
+  String get academyContactEmail => 'Correo de contacto';
+
+  @override
+  String get academyWebsite => 'Sitio web';
 
   @override
   String get logoTitle => 'Logo';

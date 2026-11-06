@@ -229,6 +229,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldInvalidEmail => 'Enter a valid email';
 
   @override
+  String get fieldInvalidUrl => 'Enter a valid web address';
+
+  @override
   String get noResults => 'No results';
 
   @override
@@ -284,6 +287,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get academyDefaultLocale => 'Default language';
+
+  @override
+  String get academyContactEmail => 'Contact email';
+
+  @override
+  String get academyWebsite => 'Website';
 
   @override
   String get logoTitle => 'Logo';

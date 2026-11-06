@@ -229,6 +229,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get fieldInvalidEmail => 'Masukkan email yang valid';
 
   @override
+  String get fieldInvalidUrl => 'Masukkan alamat web yang valid';
+
+  @override
   String get noResults => 'Tidak ada hasil';
 
   @override
@@ -284,6 +287,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get academyDefaultLocale => 'Bahasa bawaan';
+
+  @override
+  String get academyContactEmail => 'Email kontak';
+
+  @override
+  String get academyWebsite => 'Situs web';
 
   @override
   String get logoTitle => 'Logo';

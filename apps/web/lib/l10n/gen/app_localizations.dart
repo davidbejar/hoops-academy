@@ -502,6 +502,12 @@ abstract class AppLocalizations {
   /// **'Introduce un correo válido'**
   String get fieldInvalidEmail;
 
+  /// No description provided for @fieldInvalidUrl.
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce una dirección web válida'**
+  String get fieldInvalidUrl;
+
   /// No description provided for @noResults.
   ///
   /// In es, this message translates to:
@@ -615,6 +621,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Idioma por defecto'**
   String get academyDefaultLocale;
+
+  /// No description provided for @academyContactEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo de contacto'**
+  String get academyContactEmail;
+
+  /// No description provided for @academyWebsite.
+  ///
+  /// In es, this message translates to:
+  /// **'Sitio web'**
+  String get academyWebsite;
 
   /// No description provided for @logoTitle.
   ///
