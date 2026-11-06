@@ -168,6 +168,7 @@ class CoreRosterConsumerTest {
         awaitTeam(marker);
 
         assertThat(metrics()).containsPattern(Pattern.compile("hoops_roster_replica_lag_seconds\\{[^}]*topic=\"core.team\""));
+        assertThat(metrics()).as("the Kafka client's offset lag (runbook)").contains("kafka_consumer_fetch_manager_records_lag");
     }
 
     private void awaitTeam(CoreEvents.Record teamEvent) {
