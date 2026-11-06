@@ -589,9 +589,17 @@ class FakeHealthRepository with Faulty implements HealthRepository {
     lastInjuryUpdate = request;
     final n = injuryList.indexWhere((i) => i.id == injuryId);
     injuryList[n] = injuryList[n].rebuild((b) {
+      if (request.occurredOn != null) b.occurredOn = request.occurredOn;
+      if (request.bodyPart != null) b.bodyPart = request.bodyPart;
+      if (request.severity != null) b.severity = request.severity;
+      if (request.description != null) b.description = request.description;
       if (request.status != null) b.status = request.status;
       if (request.actualReturnOn != null) b.actualReturnOn = request.actualReturnOn;
       if (request.expectedReturnOn != null) b.expectedReturnOn = request.expectedReturnOn;
+      final clear = request.clear?.toSet() ?? {};
+      if (clear.contains(ath.UpdateInjuryRequestClearEnum.description)) b.description = null;
+      if (clear.contains(ath.UpdateInjuryRequestClearEnum.expectedReturnOn)) b.expectedReturnOn = null;
+      if (clear.contains(ath.UpdateInjuryRequestClearEnum.actualReturnOn)) b.actualReturnOn = null;
     });
     return injuryList[n];
   });

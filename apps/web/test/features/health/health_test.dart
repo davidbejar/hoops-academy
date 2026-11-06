@@ -122,6 +122,68 @@ void main() {
       expect(a.health.lastInjuryUpdate!.status, isNull);
     });
 
+    testWidgets('edit opens with the current values and sends only values plus clear for emptied fields', (tester) async {
+      final a = _athlete();
+      a.health.injuryList[0] = a.health.injuryList[0].rebuild((b) => b.description = 'Golpe');
+      await _staff(tester, a);
+      await tapKey(tester, 'injury-edit-inj-1');
+      expect(find.widgetWithText(TextFormField, 'Rodilla'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Golpe'), findsOneWidget);
+      await enter(tester, 'injury-part', 'Menisco');
+      await enter(tester, 'injury-description', '');
+      await tester.tap(find.descendant(of: find.byKey(const Key('injury-expected')), matching: find.byIcon(Icons.clear)));
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'form-submit');
+      final u = a.health.lastInjuryUpdate!;
+      expect(u.bodyPart, 'Menisco');
+      expect(u.description, isNull);
+      expect(u.expectedReturnOn, isNull);
+      expect(u.clear!.toSet(), {ath.UpdateInjuryRequestClearEnum.description, ath.UpdateInjuryRequestClearEnum.expectedReturnOn});
+      expect(find.text('Menisco'), findsOneWidget);
+    });
+
+    testWidgets('edit does not clear untouched empty fields and validates the body part', (tester) async {
+      final a = _athlete();
+      await _staff(tester, a);
+      await tapKey(tester, 'injury-edit-inj-1');
+      await enter(tester, 'injury-part', '');
+      await tapKey(tester, 'form-submit');
+      expect(find.text('Campo obligatorio'), findsOneWidget);
+      expect(a.health.lastInjuryUpdate, isNull);
+      await enter(tester, 'injury-part', 'Rodilla izq.');
+      await tapKey(tester, 'form-submit');
+      expect(a.health.lastInjuryUpdate!.bodyPart, 'Rodilla izq.');
+      expect(a.health.lastInjuryUpdate!.clear, anyOf(isNull, isEmpty));
+    });
+
+    testWidgets('edit also works on a recovered injury and can clear the return date', (tester) async {
+      final a = _athlete();
+      await _staff(tester, a);
+      await tapKey(tester, 'injury-edit-inj-2');
+      await tester.tap(find.descendant(of: find.byKey(const Key('injury-actual')), matching: find.byIcon(Icons.clear)));
+      await tester.pumpAndSettle();
+      await tapKey(tester, 'form-submit');
+      expect(a.health.lastInjuryUpdate!.clear!.toSet(), {ath.UpdateInjuryRequestClearEnum.actualReturnOn});
+    });
+
+    testWidgets('a server error keeps the edit dialog open', (tester) async {
+      final a = _athlete();
+      await _staff(tester, a);
+      await tapKey(tester, 'injury-edit-inj-1');
+      a.health.failWith = StateError('x');
+      await tapKey(tester, 'form-submit');
+      expect(find.byKey(const Key('injury-part')), findsOneWidget);
+    });
+
+    testWidgets('edit action is hidden for the PLAYER and shown to the linked PARENT', (tester) async {
+      await pumpAs(tester, roles: {TenantRole.parent}, linkedPlayerIds: {'p1'}, core: athleteCore(), athlete: _athlete(), location: '/my-players', size: const Size(360, 2000));
+      await tapKey(tester, 'hub-tab-health');
+      expect(find.byKey(const Key('injury-edit-inj-1')), findsOneWidget);
+      await pumpAs(tester, roles: {TenantRole.player}, ownPlayerId: 'p1', core: athleteCore(), athlete: _athlete(), location: '/me', size: const Size(360, 2000));
+      await tapKey(tester, 'hub-tab-health');
+      expect(find.byKey(const Key('injury-edit-inj-1')), findsNothing);
+    });
+
     testWidgets('PARENT of the player records injuries; the PLAYER only reads', (tester) async {
       await pumpAs(tester, roles: {TenantRole.parent}, linkedPlayerIds: {'p1'}, core: athleteCore(), athlete: _athlete(), location: '/my-players', size: const Size(360, 2000));
       await tapKey(tester, 'hub-tab-health');
