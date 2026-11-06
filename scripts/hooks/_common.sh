@@ -14,6 +14,27 @@ require_podman() {
     echo "  ($HOOK_CI_NOTE)" >&2
     exit 1
   fi
+  sync_podman_clock
+}
+
+# The Podman VM clock falls behind or stalls after the host sleeps (chrony refuses to step); Keycloak tokens from
+# Testcontainers then look expired and the checks fail with 401 (docs/runbooks/kind.md). Step the VM clock to the
+# host's when they differ by more than 30 s. Only for a Podman machine (macOS); a native Podman has no VM.
+sync_podman_clock() {
+  command -v podman >/dev/null 2>&1 || return 0
+  podman machine inspect >/dev/null 2>&1 || return 0
+  local host vm
+  host=$(date +%s)
+  vm=$(podman machine ssh "date +%s" 2>/dev/null | tr -dc '0-9') || return 0
+  [ -n "$vm" ] || return 0
+  local drift=$((host - vm))
+  if [ "${drift#-}" -gt 30 ]; then
+    if podman machine ssh "sudo date -u -s @$(date +%s)" >/dev/null 2>&1; then
+      echo "· Podman VM clock was off by ${drift}s; resynced before $HOOK_LABEL"
+    else
+      echo "· Podman VM clock is off by ${drift}s and could not be resynced; tokens may look expired" >&2
+    fi
+  fi
 }
 
 # run_maven <maven args…>: quiet on success, the failing tests and assertion messages on failure.

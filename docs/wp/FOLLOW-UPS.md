@@ -58,10 +58,40 @@ handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 
 14. **Web UX gaps → WP35** (not-a-member-yet state, tenant timezone, usage chart, session edit/plan picker, availability
     badge, measurement/test/absence editing).
 
+## Plan (2026-11-06)
+Second round, decided in the interview of 2026-11-06 (decisions 15–23 below); same mechanics (worktrees, waves,
+rebase + fast-forward, one docs pass at the end).
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP38 | Core: audit actor masked for academy admins, `ApprovalPayload.empty()` removed | Opus | Running |
+| 1 | WP39 | Athlete: `clear` list on update requests (ADR-0032), test-type code edit and delete | Opus | Running |
+| 1 | WP40 | Gateway: global rate limiting with the Envoy rate-limit service and Redis (ADR-0033) | Opus | Running |
+| 2 | WP41 | Web: demo mock for platform and athlete, academy time zone from `/me` | Sonnet | After WP38, WP39 |
+| 2 | WP42 | kind: e2e mail checks through Mailpit, `tilt ci` on the Gateway API chart | Sonnet | After WP40 |
+
+### Decisions of 2026-11-06 (product owner)
+15. **Fitness norms (WP27) stay**: FitBack 2023 for the beep test and the "20 cm = toes" sit-and-reach scale are kept.
+16. **Audit actor masking → WP38.** Academy ADMINs keep reading the super admin's free-text `reason`; platform actors
+    are shown to them as "Platform administrator" (no subject, person or name). The super admin's view is unchanged.
+17. **Clearing fields → WP39.** Update requests get a `clear` list of property names (absent/null = unchanged, named in
+    `clear` = set to null). Repository convention (ADR-0032); athlete adopts it now, core and game when they need it.
+18. **Gateway rate limits → WP40.** Global rate limiting (Envoy rate-limit service + Redis) replaces the per-replica
+    local limits (ADR-0033). No gateway body-size limit: the services' 2 MB limit is the control (accepted).
+19. **Academy time zone → WP41.** `/me` already carries `authz.timezone` per membership (WP2c); the web reads it from
+    there and drops the tenant-profile call. No contract change.
+20. **Test types → WP39.** A custom type's `code` can be changed; a custom type can be deleted unless results reference
+    it (409).
+21. **Demo mock → WP41.** Mock mode serves `/platform/*` and `/api/athlete/*` so every screen is reachable in the demo.
+22. **kind gaps → WP42.** The e2e journey runs the mail checks on kind through Mailpit's API; `tilt ci` is re-run
+    against the Gateway API chart and fixed.
+23. **Podman VM clock drift**: the hook scripts resync the VM clock before each check (done 2026-11-06,
+    `scripts/hooks/_common.sh`); no manual step. `ApprovalPayload.empty()` is deleted in WP38.
+
 ## Open
 
 ### Product / contract decisions
-- **Audit rows with free text** (found in WP34): `tenant.suspended` / `tenant.withdrawn` store the super admin's `reason`
+- **Audit rows with free text → WP38** (decision 16; found in WP34): `tenant.suspended` / `tenant.withdrawn` store the super admin's `reason`
   in the audit metadata, against the no-personal-data rule, and academy admins now read those rows. Decide: keep (the
   reason is meant for them) or move it out of the audit row. Also: rows done from the platform show the super admin's
   Keycloak `sub` to academy admins; could be shown as "platform administrator".
@@ -82,12 +112,13 @@ handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 
 - **Browser-level tests**: `apps/web/tool/web_smoke.sh` ran green in mock mode on 2026-11-02 (chromedriver 156 installed
   by hand from Chrome for Testing; the Homebrew cask is disabled). Still open: the Lighthouse installability check and the
   airplane-mode cold-start check (README "Offline cold start"); add chromedriver to CI.
-- **Update requests cannot clear a field** (WP35): every `Update*Request` treats null as "unchanged", so a session's plan,
+- **Update requests cannot clear a field → WP39** (decision 17; WP35): every `Update*Request` treats null as "unchanged", so a session's plan,
   location or notes, an absence reason, a result's notes or a measurement value can be changed but not removed. Needs a
   contract convention (explicit null, or a `clear` list) in core and athlete.
-- **`/me` memberships carry no tenant `timezone`**: the app calls the tenant profile for it (WP35). Add it to `TenantSummary`.
-- **Test types**: no operation to change a type's code or delete a type (WP35 left them out).
-- **Demo mock** lacks `/api/athlete/*` and `/platform/*` (all WP35 screens are unreachable in mock mode).
+- **Academy time zone from `/me` → WP41** (decision 19): the app calls the tenant profile for it (WP35) although
+  `/me` carries `authz.timezone` per membership since WP2c; web-only fix.
+- **Test types → WP39** (decision 20): no operation to change a type's code or delete a type (WP35 left them out).
+- **Demo mock → WP41** (decision 21) lacks `/api/athlete/*` and `/platform/*` (all WP35 screens are unreachable in mock mode).
 - **Fonts**: glyphs outside Roboto (CJK, emoji) render as tofu; bundle a Noto subset if a language needs it.
 - **Same-device two-tab clientSeq race** (WP13): accepted for now (second event is `CLIENT_SEQ_CONFLICT`, visible).
 
@@ -112,7 +143,7 @@ handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 
   fetchable yet), edge ages that repeat the nearest cited age; the girls' T-test placeholders run ~1.2 s too fast; the
   Cooper figures are not traced to the 1968 paper; check the Catley PDF against the BMJ copy. The sit-and-reach scale is
   now "20 cm = toes" (Catley): the web UI should show the unit hint. Details: `docs/domain/norms.md`.
-- **`ApprovalPayload.empty()`** in core is never called (dead code found by WP37; its mutant stays uncovered): delete it
+- **`ApprovalPayload.empty()` → WP38** in core is never called (dead code found by WP37; its mutant stays uncovered): delete it
   or use it.
 - **Mutation scope** (WP37): rule code reached only by container tests (`TenantScope`, `ProblemExceptionMappers`, use
   cases) is outside PIT's scope; extracting pure rules from them would let PIT cover them.
@@ -120,19 +151,15 @@ handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
-- **Gateway rate limits** (WP36, product owner to decide): Envoy Gateway local rate limits hold **per Envoy replica**
+- **Gateway rate limits → WP40** (decision 18; WP36): Envoy Gateway local rate limits hold **per Envoy replica**
   and the burst equals the per-minute rate (ingress-nginx allowed 5 x); global rate limiting (Envoy ratelimit service +
   Redis) if the proxy runs more than one replica and the limit must hold across them (ADR-0031).
-- **No gateway body-size limit** (WP36, product owner to decide): Envoy streams bodies; the services reject bodies above
+- **No gateway body-size limit** (WP36; accepted, decision 18): Envoy streams bodies; the services reject bodies above
   2 MB with a 413 Problem. A gateway limit needs `BackendTrafficPolicy.requestBuffer`, which buffers every request.
-- **e2e MailHog checks skipped on kind** (WP36): kind runs Mailpit as Service `mailhog`, whose API is `/api/v1`, not
+- **e2e MailHog checks skipped on kind → WP42** (decision 22; WP36): kind runs Mailpit as Service `mailhog`, whose API is `/api/v1`, not
   MailHog's; the journey skips those checks there (green on compose).
-- **`tilt ci` with core-service** has not been run (WP16 deployed game/athlete/web; WP18 used `up.sh --deploy`; not
+- **`tilt ci` with core-service → WP42** (decision 22) has not been run (WP16 deployed game/athlete/web; WP18 used `up.sh --deploy`; not
   re-run after WP30's Tiltfile sync or WP36's Gateway API chart).
-- **Podman VM clock drift** (seen in WP36 and on 2026-11-06, 15–59 min): after the host sleeps, the Podman machine's
-  clock falls behind or stalls, Keycloak tokens from Testcontainers look expired, and the Claude commit/push hooks fail
-  with 401 or time out. Workaround: `podman machine ssh "sudo date -u -s @$(date +%s)"`; needs a host-level fix (time
-  sync in the VM after resume).
 - **Keycloak CSP hardening**: realm `browserSecurityHeaders`, so the accepted ZAP alerts under `/auth/realms/` can go
   (`.zap/baseline.conf`). (The CI workflows themselves are green on `origin/main` since 2026-11-02; see Resolved.)
 - **dependency-check NVD cache** (2026-11-05): the "Save NVD data" step runs `if: always()`, so a failed or cancelled
@@ -153,6 +180,9 @@ handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- Podman VM clock drift (decision 23, 2026-11-06): `scripts/hooks/_common.sh` steps the VM clock to the host's when
+  they differ by more than 30 s, before the isolation and role checks (`just isolation-check` / `just db-role-check`
+  and the Claude hook); verified with a forced 120 s drift. The manual command stays in `docs/runbooks/kind.md`.
 - `ci` red on 3b59360, trivy-fs KSV-0014 on WP36's new snapshot `umbrella-tls.yaml` (run 42112940234): the TLS
   snapshot added to the accepted KSV-0014 paths in `.trivyignore.yaml` on 2026-11-06 (same Keycloak finding, accepted
   until 2027-03-31; `trivy fs --scanners misconfig` from the repo root clean on every snapshot).

@@ -139,7 +139,8 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
   then `podman exec hoops-control-plane systemctl restart containerd` and delete the pod.
 - Tokens rejected as expired (401) by Testcontainers tests or Keycloak in Podman: the Podman VM clock drifted (seen 59 min
   after the Mac slept; chrony refused to step). Compare `date -u` with `podman machine ssh date -u`; fix with
-  `podman machine ssh "sudo date -u -s @$(date +%s)"`.
+  `podman machine ssh "sudo date -u -s @$(date +%s)"`. The hook scripts (`scripts/hooks/_common.sh`) do this by
+  themselves before `just isolation-check` / `just db-role-check` and Claude's commit/push gates.
 - `curl localhost:8090` refused or hangs: the Envoy proxy pod is not Ready yet
   (`kubectl -n envoy-gateway-system get pods`) or the Gateway is not programmed (`kubectl -n hoops describe gateway hoops`).
   A cluster created before WP36 maps 8090 to node port 80 (ingress-nginx): `just kind-down && just kind-up`.
