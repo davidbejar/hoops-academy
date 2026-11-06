@@ -64,14 +64,23 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TrainingSessionPage.serializer)
       ..add(TrainingSessionStatus.serializer)
       ..add(UpdateBodyMeasurementRequest.serializer)
+      ..add(UpdateBodyMeasurementRequestClearEnum.serializer)
       ..add(UpdateInjuryRequest.serializer)
+      ..add(UpdateInjuryRequestClearEnum.serializer)
       ..add(UpdatePhysicalTestResultRequest.serializer)
+      ..add(UpdatePhysicalTestResultRequestClearEnum.serializer)
       ..add(UpdatePhysicalTestTypeRequest.serializer)
+      ..add(UpdatePhysicalTestTypeRequestClearEnum.serializer)
       ..add(UpdatePlanItemRequest.serializer)
+      ..add(UpdatePlanItemRequestClearEnum.serializer)
       ..add(UpdatePlannedAbsenceRequest.serializer)
+      ..add(UpdatePlannedAbsenceRequestClearEnum.serializer)
       ..add(UpdateTrainingPlanRequest.serializer)
+      ..add(UpdateTrainingPlanRequestClearEnum.serializer)
       ..add(UpdateTrainingScheduleRequest.serializer)
+      ..add(UpdateTrainingScheduleRequestClearEnum.serializer)
       ..add(UpdateTrainingSessionRequest.serializer)
+      ..add(UpdateTrainingSessionRequestClearEnum.serializer)
       ..add(UpdateTrainingSessionRequestStatusEnum.serializer)
       ..add(UsageReport.serializer)
       ..add(UsageReportServiceEnum.serializer)
@@ -124,7 +133,43 @@ Serializers _$serializers = (Serializers().toBuilder()
           () => MapBuilder<String, int>())
       ..addBuilderFactory(
           const FullType(BuiltSet, const [const FullType(String)]),
-          () => SetBuilder<String>()))
+          () => SetBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdateBodyMeasurementRequestClearEnum)]),
+          () => SetBuilder<UpdateBodyMeasurementRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltSet, const [const FullType(UpdateInjuryRequestClearEnum)]),
+          () => SetBuilder<UpdateInjuryRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdatePhysicalTestResultRequestClearEnum)]),
+          () => SetBuilder<UpdatePhysicalTestResultRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdatePhysicalTestTypeRequestClearEnum)]),
+          () => SetBuilder<UpdatePhysicalTestTypeRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltSet, const [const FullType(UpdatePlanItemRequestClearEnum)]),
+          () => SetBuilder<UpdatePlanItemRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdatePlannedAbsenceRequestClearEnum)]),
+          () => SetBuilder<UpdatePlannedAbsenceRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdateTrainingPlanRequestClearEnum)]),
+          () => SetBuilder<UpdateTrainingPlanRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdateTrainingScheduleRequestClearEnum)]),
+          () => SetBuilder<UpdateTrainingScheduleRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet,
+              const [const FullType(UpdateTrainingSessionRequestClearEnum)]),
+          () => SetBuilder<UpdateTrainingSessionRequestClearEnum>()))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

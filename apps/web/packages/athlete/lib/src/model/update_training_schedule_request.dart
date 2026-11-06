@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:hoops_athlete_api/src/model/day_of_week.dart';
 import 'package:built_value/built_value.dart';
@@ -13,12 +14,13 @@ part 'update_training_schedule_request.g.dart';
 /// UpdateTrainingScheduleRequest
 ///
 /// Properties:
-/// * [dayOfWeek] 
+/// * [dayOfWeek]
 /// * [startTime] - Wall-clock time in the tenant's time zone, `HH:mm`.
-/// * [durationMinutes] 
-/// * [location] 
-/// * [validFrom] 
-/// * [validUntil] 
+/// * [durationMinutes]
+/// * [location]
+/// * [validFrom]
+/// * [validUntil]
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateTrainingScheduleRequest implements Built<UpdateTrainingScheduleRequest, UpdateTrainingScheduleRequestBuilder> {
   @BuiltValueField(wireName: r'dayOfWeek')
@@ -40,6 +42,11 @@ abstract class UpdateTrainingScheduleRequest implements Built<UpdateTrainingSche
 
   @BuiltValueField(wireName: r'validUntil')
   Date? get validUntil;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateTrainingScheduleRequestClearEnum>? get clear;
+  // enum clearEnum {  location,  validUntil,  };
 
   UpdateTrainingScheduleRequest._();
 
@@ -104,6 +111,13 @@ class _$UpdateTrainingScheduleRequestSerializer implements PrimitiveSerializer<U
       yield serializers.serialize(
         object.validUntil,
         specifiedType: const FullType.nullable(Date),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateTrainingScheduleRequestClearEnum)]),
       );
     }
   }
@@ -177,6 +191,14 @@ class _$UpdateTrainingScheduleRequestSerializer implements PrimitiveSerializer<U
           if (valueDes == null) continue;
           result.validUntil = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTrainingScheduleRequestClearEnum)]),
+          ) as BuiltSet<UpdateTrainingScheduleRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -207,3 +229,19 @@ class _$UpdateTrainingScheduleRequestSerializer implements PrimitiveSerializer<U
 }
 
 
+class UpdateTrainingScheduleRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'location')
+  static const UpdateTrainingScheduleRequestClearEnum location = _$updateTrainingScheduleRequestClearEnum_location;
+  @BuiltValueEnumConst(wireName: r'validUntil')
+  static const UpdateTrainingScheduleRequestClearEnum validUntil = _$updateTrainingScheduleRequestClearEnum_validUntil;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateTrainingScheduleRequestClearEnum unknownDefaultOpenApi = _$updateTrainingScheduleRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateTrainingScheduleRequestClearEnum> get serializer => _$updateTrainingScheduleRequestClearEnumSerializer;
+
+  const UpdateTrainingScheduleRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateTrainingScheduleRequestClearEnum> get values => _$updateTrainingScheduleRequestClearEnumValues;
+  static UpdateTrainingScheduleRequestClearEnum valueOf(String name) => _$updateTrainingScheduleRequestClearEnumValueOf(name);
+}

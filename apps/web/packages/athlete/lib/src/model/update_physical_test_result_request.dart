@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -12,9 +13,10 @@ part 'update_physical_test_result_request.g.dart';
 /// UpdatePhysicalTestResultRequest
 ///
 /// Properties:
-/// * [measuredOn] 
-/// * [value] 
-/// * [notes] 
+/// * [measuredOn]
+/// * [value]
+/// * [notes]
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdatePhysicalTestResultRequest implements Built<UpdatePhysicalTestResultRequest, UpdatePhysicalTestResultRequestBuilder> {
   @BuiltValueField(wireName: r'measuredOn')
@@ -25,6 +27,11 @@ abstract class UpdatePhysicalTestResultRequest implements Built<UpdatePhysicalTe
 
   @BuiltValueField(wireName: r'notes')
   String? get notes;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdatePhysicalTestResultRequestClearEnum>? get clear;
+  // enum clearEnum {  notes,  };
 
   UpdatePhysicalTestResultRequest._();
 
@@ -68,6 +75,13 @@ class _$UpdatePhysicalTestResultRequestSerializer implements PrimitiveSerializer
       yield serializers.serialize(
         object.notes,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdatePhysicalTestResultRequestClearEnum)]),
       );
     }
   }
@@ -117,6 +131,14 @@ class _$UpdatePhysicalTestResultRequestSerializer implements PrimitiveSerializer
           if (valueDes == null) continue;
           result.notes = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdatePhysicalTestResultRequestClearEnum)]),
+          ) as BuiltSet<UpdatePhysicalTestResultRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -147,3 +169,17 @@ class _$UpdatePhysicalTestResultRequestSerializer implements PrimitiveSerializer
 }
 
 
+class UpdatePhysicalTestResultRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'notes')
+  static const UpdatePhysicalTestResultRequestClearEnum notes = _$updatePhysicalTestResultRequestClearEnum_notes;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdatePhysicalTestResultRequestClearEnum unknownDefaultOpenApi = _$updatePhysicalTestResultRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdatePhysicalTestResultRequestClearEnum> get serializer => _$updatePhysicalTestResultRequestClearEnumSerializer;
+
+  const UpdatePhysicalTestResultRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdatePhysicalTestResultRequestClearEnum> get values => _$updatePhysicalTestResultRequestClearEnumValues;
+  static UpdatePhysicalTestResultRequestClearEnum valueOf(String name) => _$updatePhysicalTestResultRequestClearEnumValueOf(name);
+}

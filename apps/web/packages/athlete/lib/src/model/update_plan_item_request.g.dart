@@ -6,6 +6,96 @@ part of 'update_plan_item_request.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const UpdatePlanItemRequestClearEnum
+    _$updatePlanItemRequestClearEnum_description =
+    const UpdatePlanItemRequestClearEnum._('description');
+const UpdatePlanItemRequestClearEnum
+    _$updatePlanItemRequestClearEnum_durationMinutes =
+    const UpdatePlanItemRequestClearEnum._('durationMinutes');
+const UpdatePlanItemRequestClearEnum _$updatePlanItemRequestClearEnum_sets =
+    const UpdatePlanItemRequestClearEnum._('sets');
+const UpdatePlanItemRequestClearEnum
+    _$updatePlanItemRequestClearEnum_repetitions =
+    const UpdatePlanItemRequestClearEnum._('repetitions');
+const UpdatePlanItemRequestClearEnum _$updatePlanItemRequestClearEnum_videoUrl =
+    const UpdatePlanItemRequestClearEnum._('videoUrl');
+const UpdatePlanItemRequestClearEnum
+    _$updatePlanItemRequestClearEnum_unknownDefaultOpenApi =
+    const UpdatePlanItemRequestClearEnum._('unknownDefaultOpenApi');
+
+UpdatePlanItemRequestClearEnum _$updatePlanItemRequestClearEnumValueOf(
+    String name) {
+  switch (name) {
+    case 'description':
+      return _$updatePlanItemRequestClearEnum_description;
+    case 'durationMinutes':
+      return _$updatePlanItemRequestClearEnum_durationMinutes;
+    case 'sets':
+      return _$updatePlanItemRequestClearEnum_sets;
+    case 'repetitions':
+      return _$updatePlanItemRequestClearEnum_repetitions;
+    case 'videoUrl':
+      return _$updatePlanItemRequestClearEnum_videoUrl;
+    case 'unknownDefaultOpenApi':
+      return _$updatePlanItemRequestClearEnum_unknownDefaultOpenApi;
+    default:
+      return _$updatePlanItemRequestClearEnum_unknownDefaultOpenApi;
+  }
+}
+
+final BuiltSet<UpdatePlanItemRequestClearEnum>
+    _$updatePlanItemRequestClearEnumValues = BuiltSet<
+        UpdatePlanItemRequestClearEnum>(const <UpdatePlanItemRequestClearEnum>[
+  _$updatePlanItemRequestClearEnum_description,
+  _$updatePlanItemRequestClearEnum_durationMinutes,
+  _$updatePlanItemRequestClearEnum_sets,
+  _$updatePlanItemRequestClearEnum_repetitions,
+  _$updatePlanItemRequestClearEnum_videoUrl,
+  _$updatePlanItemRequestClearEnum_unknownDefaultOpenApi,
+]);
+
+Serializer<UpdatePlanItemRequestClearEnum>
+    _$updatePlanItemRequestClearEnumSerializer =
+    _$UpdatePlanItemRequestClearEnumSerializer();
+
+class _$UpdatePlanItemRequestClearEnumSerializer
+    implements PrimitiveSerializer<UpdatePlanItemRequestClearEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'description': 'description',
+    'durationMinutes': 'durationMinutes',
+    'sets': 'sets',
+    'repetitions': 'repetitions',
+    'videoUrl': 'videoUrl',
+    'unknownDefaultOpenApi': 'unknown_default_open_api',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'description': 'description',
+    'durationMinutes': 'durationMinutes',
+    'sets': 'sets',
+    'repetitions': 'repetitions',
+    'videoUrl': 'videoUrl',
+    'unknown_default_open_api': 'unknownDefaultOpenApi',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[UpdatePlanItemRequestClearEnum];
+  @override
+  final String wireName = 'UpdatePlanItemRequestClearEnum';
+
+  @override
+  Object serialize(
+          Serializers serializers, UpdatePlanItemRequestClearEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  UpdatePlanItemRequestClearEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      UpdatePlanItemRequestClearEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$UpdatePlanItemRequest extends UpdatePlanItemRequest {
   @override
   final String? title;
@@ -19,6 +109,8 @@ class _$UpdatePlanItemRequest extends UpdatePlanItemRequest {
   final int? repetitions;
   @override
   final String? videoUrl;
+  @override
+  final BuiltSet<UpdatePlanItemRequestClearEnum>? clear;
 
   factory _$UpdatePlanItemRequest(
           [void Function(UpdatePlanItemRequestBuilder)? updates]) =>
@@ -30,7 +122,8 @@ class _$UpdatePlanItemRequest extends UpdatePlanItemRequest {
       this.durationMinutes,
       this.sets,
       this.repetitions,
-      this.videoUrl})
+      this.videoUrl,
+      this.clear})
       : super._();
   @override
   UpdatePlanItemRequest rebuild(
@@ -50,7 +143,8 @@ class _$UpdatePlanItemRequest extends UpdatePlanItemRequest {
         durationMinutes == other.durationMinutes &&
         sets == other.sets &&
         repetitions == other.repetitions &&
-        videoUrl == other.videoUrl;
+        videoUrl == other.videoUrl &&
+        clear == other.clear;
   }
 
   @override
@@ -62,6 +156,7 @@ class _$UpdatePlanItemRequest extends UpdatePlanItemRequest {
     _$hash = $jc(_$hash, sets.hashCode);
     _$hash = $jc(_$hash, repetitions.hashCode);
     _$hash = $jc(_$hash, videoUrl.hashCode);
+    _$hash = $jc(_$hash, clear.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -74,7 +169,8 @@ class _$UpdatePlanItemRequest extends UpdatePlanItemRequest {
           ..add('durationMinutes', durationMinutes)
           ..add('sets', sets)
           ..add('repetitions', repetitions)
-          ..add('videoUrl', videoUrl))
+          ..add('videoUrl', videoUrl)
+          ..add('clear', clear))
         .toString();
   }
 }
@@ -108,6 +204,12 @@ class UpdatePlanItemRequestBuilder
   String? get videoUrl => _$this._videoUrl;
   set videoUrl(String? videoUrl) => _$this._videoUrl = videoUrl;
 
+  SetBuilder<UpdatePlanItemRequestClearEnum>? _clear;
+  SetBuilder<UpdatePlanItemRequestClearEnum> get clear =>
+      _$this._clear ??= SetBuilder<UpdatePlanItemRequestClearEnum>();
+  set clear(SetBuilder<UpdatePlanItemRequestClearEnum>? clear) =>
+      _$this._clear = clear;
+
   UpdatePlanItemRequestBuilder() {
     UpdatePlanItemRequest._defaults(this);
   }
@@ -121,6 +223,7 @@ class UpdatePlanItemRequestBuilder
       _sets = $v.sets;
       _repetitions = $v.repetitions;
       _videoUrl = $v.videoUrl;
+      _clear = $v.clear?.toBuilder();
       _$v = null;
     }
     return this;
@@ -140,15 +243,29 @@ class UpdatePlanItemRequestBuilder
   UpdatePlanItemRequest build() => _build();
 
   _$UpdatePlanItemRequest _build() {
-    final _$result = _$v ??
-        _$UpdatePlanItemRequest._(
-          title: title,
-          description: description,
-          durationMinutes: durationMinutes,
-          sets: sets,
-          repetitions: repetitions,
-          videoUrl: videoUrl,
-        );
+    _$UpdatePlanItemRequest _$result;
+    try {
+      _$result = _$v ??
+          _$UpdatePlanItemRequest._(
+            title: title,
+            description: description,
+            durationMinutes: durationMinutes,
+            sets: sets,
+            repetitions: repetitions,
+            videoUrl: videoUrl,
+            clear: _clear?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'clear';
+        _clear?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'UpdatePlanItemRequest', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -12,9 +13,10 @@ part 'update_planned_absence_request.g.dart';
 /// UpdatePlannedAbsenceRequest
 ///
 /// Properties:
-/// * [fromDate] 
-/// * [toDate] 
-/// * [reason] 
+/// * [fromDate]
+/// * [toDate]
+/// * [reason]
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdatePlannedAbsenceRequest implements Built<UpdatePlannedAbsenceRequest, UpdatePlannedAbsenceRequestBuilder> {
   @BuiltValueField(wireName: r'fromDate')
@@ -25,6 +27,11 @@ abstract class UpdatePlannedAbsenceRequest implements Built<UpdatePlannedAbsence
 
   @BuiltValueField(wireName: r'reason')
   String? get reason;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdatePlannedAbsenceRequestClearEnum>? get clear;
+  // enum clearEnum {  reason,  };
 
   UpdatePlannedAbsenceRequest._();
 
@@ -68,6 +75,13 @@ class _$UpdatePlannedAbsenceRequestSerializer implements PrimitiveSerializer<Upd
       yield serializers.serialize(
         object.reason,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdatePlannedAbsenceRequestClearEnum)]),
       );
     }
   }
@@ -117,6 +131,14 @@ class _$UpdatePlannedAbsenceRequestSerializer implements PrimitiveSerializer<Upd
           if (valueDes == null) continue;
           result.reason = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdatePlannedAbsenceRequestClearEnum)]),
+          ) as BuiltSet<UpdatePlannedAbsenceRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -147,3 +169,17 @@ class _$UpdatePlannedAbsenceRequestSerializer implements PrimitiveSerializer<Upd
 }
 
 
+class UpdatePlannedAbsenceRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'reason')
+  static const UpdatePlannedAbsenceRequestClearEnum reason = _$updatePlannedAbsenceRequestClearEnum_reason;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdatePlannedAbsenceRequestClearEnum unknownDefaultOpenApi = _$updatePlannedAbsenceRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdatePlannedAbsenceRequestClearEnum> get serializer => _$updatePlannedAbsenceRequestClearEnumSerializer;
+
+  const UpdatePlannedAbsenceRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdatePlannedAbsenceRequestClearEnum> get values => _$updatePlannedAbsenceRequestClearEnumValues;
+  static UpdatePlannedAbsenceRequestClearEnum valueOf(String name) => _$updatePlannedAbsenceRequestClearEnumValueOf(name);
+}

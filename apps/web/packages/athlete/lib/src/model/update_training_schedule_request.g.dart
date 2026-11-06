@@ -6,6 +6,76 @@ part of 'update_training_schedule_request.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const UpdateTrainingScheduleRequestClearEnum
+    _$updateTrainingScheduleRequestClearEnum_location =
+    const UpdateTrainingScheduleRequestClearEnum._('location');
+const UpdateTrainingScheduleRequestClearEnum
+    _$updateTrainingScheduleRequestClearEnum_validUntil =
+    const UpdateTrainingScheduleRequestClearEnum._('validUntil');
+const UpdateTrainingScheduleRequestClearEnum
+    _$updateTrainingScheduleRequestClearEnum_unknownDefaultOpenApi =
+    const UpdateTrainingScheduleRequestClearEnum._('unknownDefaultOpenApi');
+
+UpdateTrainingScheduleRequestClearEnum
+    _$updateTrainingScheduleRequestClearEnumValueOf(String name) {
+  switch (name) {
+    case 'location':
+      return _$updateTrainingScheduleRequestClearEnum_location;
+    case 'validUntil':
+      return _$updateTrainingScheduleRequestClearEnum_validUntil;
+    case 'unknownDefaultOpenApi':
+      return _$updateTrainingScheduleRequestClearEnum_unknownDefaultOpenApi;
+    default:
+      return _$updateTrainingScheduleRequestClearEnum_unknownDefaultOpenApi;
+  }
+}
+
+final BuiltSet<UpdateTrainingScheduleRequestClearEnum>
+    _$updateTrainingScheduleRequestClearEnumValues = BuiltSet<
+        UpdateTrainingScheduleRequestClearEnum>(const <UpdateTrainingScheduleRequestClearEnum>[
+  _$updateTrainingScheduleRequestClearEnum_location,
+  _$updateTrainingScheduleRequestClearEnum_validUntil,
+  _$updateTrainingScheduleRequestClearEnum_unknownDefaultOpenApi,
+]);
+
+Serializer<UpdateTrainingScheduleRequestClearEnum>
+    _$updateTrainingScheduleRequestClearEnumSerializer =
+    _$UpdateTrainingScheduleRequestClearEnumSerializer();
+
+class _$UpdateTrainingScheduleRequestClearEnumSerializer
+    implements PrimitiveSerializer<UpdateTrainingScheduleRequestClearEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'location': 'location',
+    'validUntil': 'validUntil',
+    'unknownDefaultOpenApi': 'unknown_default_open_api',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'location': 'location',
+    'validUntil': 'validUntil',
+    'unknown_default_open_api': 'unknownDefaultOpenApi',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[
+    UpdateTrainingScheduleRequestClearEnum
+  ];
+  @override
+  final String wireName = 'UpdateTrainingScheduleRequestClearEnum';
+
+  @override
+  Object serialize(Serializers serializers,
+          UpdateTrainingScheduleRequestClearEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  UpdateTrainingScheduleRequestClearEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      UpdateTrainingScheduleRequestClearEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$UpdateTrainingScheduleRequest extends UpdateTrainingScheduleRequest {
   @override
   final DayOfWeek? dayOfWeek;
@@ -19,6 +89,8 @@ class _$UpdateTrainingScheduleRequest extends UpdateTrainingScheduleRequest {
   final Date? validFrom;
   @override
   final Date? validUntil;
+  @override
+  final BuiltSet<UpdateTrainingScheduleRequestClearEnum>? clear;
 
   factory _$UpdateTrainingScheduleRequest(
           [void Function(UpdateTrainingScheduleRequestBuilder)? updates]) =>
@@ -30,7 +102,8 @@ class _$UpdateTrainingScheduleRequest extends UpdateTrainingScheduleRequest {
       this.durationMinutes,
       this.location,
       this.validFrom,
-      this.validUntil})
+      this.validUntil,
+      this.clear})
       : super._();
   @override
   UpdateTrainingScheduleRequest rebuild(
@@ -50,7 +123,8 @@ class _$UpdateTrainingScheduleRequest extends UpdateTrainingScheduleRequest {
         durationMinutes == other.durationMinutes &&
         location == other.location &&
         validFrom == other.validFrom &&
-        validUntil == other.validUntil;
+        validUntil == other.validUntil &&
+        clear == other.clear;
   }
 
   @override
@@ -62,6 +136,7 @@ class _$UpdateTrainingScheduleRequest extends UpdateTrainingScheduleRequest {
     _$hash = $jc(_$hash, location.hashCode);
     _$hash = $jc(_$hash, validFrom.hashCode);
     _$hash = $jc(_$hash, validUntil.hashCode);
+    _$hash = $jc(_$hash, clear.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -74,7 +149,8 @@ class _$UpdateTrainingScheduleRequest extends UpdateTrainingScheduleRequest {
           ..add('durationMinutes', durationMinutes)
           ..add('location', location)
           ..add('validFrom', validFrom)
-          ..add('validUntil', validUntil))
+          ..add('validUntil', validUntil)
+          ..add('clear', clear))
         .toString();
   }
 }
@@ -110,6 +186,12 @@ class UpdateTrainingScheduleRequestBuilder
   Date? get validUntil => _$this._validUntil;
   set validUntil(Date? validUntil) => _$this._validUntil = validUntil;
 
+  SetBuilder<UpdateTrainingScheduleRequestClearEnum>? _clear;
+  SetBuilder<UpdateTrainingScheduleRequestClearEnum> get clear =>
+      _$this._clear ??= SetBuilder<UpdateTrainingScheduleRequestClearEnum>();
+  set clear(SetBuilder<UpdateTrainingScheduleRequestClearEnum>? clear) =>
+      _$this._clear = clear;
+
   UpdateTrainingScheduleRequestBuilder() {
     UpdateTrainingScheduleRequest._defaults(this);
   }
@@ -123,6 +205,7 @@ class UpdateTrainingScheduleRequestBuilder
       _location = $v.location;
       _validFrom = $v.validFrom;
       _validUntil = $v.validUntil;
+      _clear = $v.clear?.toBuilder();
       _$v = null;
     }
     return this;
@@ -142,15 +225,29 @@ class UpdateTrainingScheduleRequestBuilder
   UpdateTrainingScheduleRequest build() => _build();
 
   _$UpdateTrainingScheduleRequest _build() {
-    final _$result = _$v ??
-        _$UpdateTrainingScheduleRequest._(
-          dayOfWeek: dayOfWeek,
-          startTime: startTime,
-          durationMinutes: durationMinutes,
-          location: location,
-          validFrom: validFrom,
-          validUntil: validUntil,
-        );
+    _$UpdateTrainingScheduleRequest _$result;
+    try {
+      _$result = _$v ??
+          _$UpdateTrainingScheduleRequest._(
+            dayOfWeek: dayOfWeek,
+            startTime: startTime,
+            durationMinutes: durationMinutes,
+            location: location,
+            validFrom: validFrom,
+            validUntil: validUntil,
+            clear: _clear?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'clear';
+        _clear?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'UpdateTrainingScheduleRequest', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

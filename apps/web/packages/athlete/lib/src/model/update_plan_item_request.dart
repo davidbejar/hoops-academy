@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -11,12 +12,13 @@ part 'update_plan_item_request.g.dart';
 /// UpdatePlanItemRequest
 ///
 /// Properties:
-/// * [title] 
-/// * [description] 
-/// * [durationMinutes] 
-/// * [sets] 
-/// * [repetitions] 
-/// * [videoUrl] 
+/// * [title]
+/// * [description]
+/// * [durationMinutes]
+/// * [sets]
+/// * [repetitions]
+/// * [videoUrl]
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdatePlanItemRequest implements Built<UpdatePlanItemRequest, UpdatePlanItemRequestBuilder> {
   @BuiltValueField(wireName: r'title')
@@ -36,6 +38,11 @@ abstract class UpdatePlanItemRequest implements Built<UpdatePlanItemRequest, Upd
 
   @BuiltValueField(wireName: r'videoUrl')
   String? get videoUrl;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdatePlanItemRequestClearEnum>? get clear;
+  // enum clearEnum {  description,  durationMinutes,  sets,  repetitions,  videoUrl,  };
 
   UpdatePlanItemRequest._();
 
@@ -100,6 +107,13 @@ class _$UpdatePlanItemRequestSerializer implements PrimitiveSerializer<UpdatePla
       yield serializers.serialize(
         object.videoUrl,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdatePlanItemRequestClearEnum)]),
       );
     }
   }
@@ -173,6 +187,14 @@ class _$UpdatePlanItemRequestSerializer implements PrimitiveSerializer<UpdatePla
           if (valueDes == null) continue;
           result.videoUrl = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdatePlanItemRequestClearEnum)]),
+          ) as BuiltSet<UpdatePlanItemRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -203,3 +225,25 @@ class _$UpdatePlanItemRequestSerializer implements PrimitiveSerializer<UpdatePla
 }
 
 
+class UpdatePlanItemRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'description')
+  static const UpdatePlanItemRequestClearEnum description = _$updatePlanItemRequestClearEnum_description;
+  @BuiltValueEnumConst(wireName: r'durationMinutes')
+  static const UpdatePlanItemRequestClearEnum durationMinutes = _$updatePlanItemRequestClearEnum_durationMinutes;
+  @BuiltValueEnumConst(wireName: r'sets')
+  static const UpdatePlanItemRequestClearEnum sets = _$updatePlanItemRequestClearEnum_sets;
+  @BuiltValueEnumConst(wireName: r'repetitions')
+  static const UpdatePlanItemRequestClearEnum repetitions = _$updatePlanItemRequestClearEnum_repetitions;
+  @BuiltValueEnumConst(wireName: r'videoUrl')
+  static const UpdatePlanItemRequestClearEnum videoUrl = _$updatePlanItemRequestClearEnum_videoUrl;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdatePlanItemRequestClearEnum unknownDefaultOpenApi = _$updatePlanItemRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdatePlanItemRequestClearEnum> get serializer => _$updatePlanItemRequestClearEnumSerializer;
+
+  const UpdatePlanItemRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdatePlanItemRequestClearEnum> get values => _$updatePlanItemRequestClearEnumValues;
+  static UpdatePlanItemRequestClearEnum valueOf(String name) => _$updatePlanItemRequestClearEnumValueOf(name);
+}

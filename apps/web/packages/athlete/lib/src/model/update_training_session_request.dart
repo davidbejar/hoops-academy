@@ -12,12 +12,13 @@ part 'update_training_session_request.g.dart';
 /// UpdateTrainingSessionRequest
 ///
 /// Properties:
-/// * [startsAt] 
-/// * [durationMinutes] 
-/// * [location] 
-/// * [planId] 
-/// * [notes] 
+/// * [startsAt]
+/// * [durationMinutes]
+/// * [location]
+/// * [planId]
+/// * [notes]
 /// * [status] - PLANNED ↔ DONE; use the cancel operation to cancel.
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateTrainingSessionRequest implements Built<UpdateTrainingSessionRequest, UpdateTrainingSessionRequestBuilder> {
   @BuiltValueField(wireName: r'startsAt')
@@ -39,6 +40,11 @@ abstract class UpdateTrainingSessionRequest implements Built<UpdateTrainingSessi
   @BuiltValueField(wireName: r'status')
   UpdateTrainingSessionRequestStatusEnum? get status;
   // enum statusEnum {  PLANNED,  DONE,  };
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateTrainingSessionRequestClearEnum>? get clear;
+  // enum clearEnum {  location,  planId,  notes,  };
 
   UpdateTrainingSessionRequest._();
 
@@ -103,6 +109,13 @@ class _$UpdateTrainingSessionRequestSerializer implements PrimitiveSerializer<Up
       yield serializers.serialize(
         object.status,
         specifiedType: const FullType(UpdateTrainingSessionRequestStatusEnum),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateTrainingSessionRequestClearEnum)]),
       );
     }
   }
@@ -176,6 +189,14 @@ class _$UpdateTrainingSessionRequestSerializer implements PrimitiveSerializer<Up
           if (valueDes == null) continue;
           result.status = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTrainingSessionRequestClearEnum)]),
+          ) as BuiltSet<UpdateTrainingSessionRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -224,3 +245,21 @@ class UpdateTrainingSessionRequestStatusEnum extends EnumClass {
   static UpdateTrainingSessionRequestStatusEnum valueOf(String name) => _$updateTrainingSessionRequestStatusEnumValueOf(name);
 }
 
+class UpdateTrainingSessionRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'location')
+  static const UpdateTrainingSessionRequestClearEnum location = _$updateTrainingSessionRequestClearEnum_location;
+  @BuiltValueEnumConst(wireName: r'planId')
+  static const UpdateTrainingSessionRequestClearEnum planId = _$updateTrainingSessionRequestClearEnum_planId;
+  @BuiltValueEnumConst(wireName: r'notes')
+  static const UpdateTrainingSessionRequestClearEnum notes = _$updateTrainingSessionRequestClearEnum_notes;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateTrainingSessionRequestClearEnum unknownDefaultOpenApi = _$updateTrainingSessionRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateTrainingSessionRequestClearEnum> get serializer => _$updateTrainingSessionRequestClearEnumSerializer;
+
+  const UpdateTrainingSessionRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateTrainingSessionRequestClearEnum> get values => _$updateTrainingSessionRequestClearEnumValues;
+  static UpdateTrainingSessionRequestClearEnum valueOf(String name) => _$updateTrainingSessionRequestClearEnumValueOf(name);
+}

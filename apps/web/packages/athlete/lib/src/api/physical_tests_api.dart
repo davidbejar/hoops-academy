@@ -36,7 +36,7 @@ class PhysicalTestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [physicalTestNormInput] 
+  /// * [physicalTestNormInput]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -46,7 +46,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestNorm] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestNorm>> createPhysicalTestNorm({ 
+  Future<Response<PhysicalTestNorm>> createPhysicalTestNorm({
     required String xTenantId,
     required PhysicalTestNormInput physicalTestNormInput,
     CancelToken? cancelToken,
@@ -136,11 +136,11 @@ class PhysicalTestsApi {
   }
 
   /// Record a test result
-  /// The server computes the player&#39;s age at &#x60;measuredOn&#x60; (birth date and gender from core) and the expected band (tenant norm overrides global). Authz: ADMIN; team staff. 
+  /// The server computes the player&#39;s age at &#x60;measuredOn&#x60; (birth date and gender from core) and the expected band (tenant norm overrides global). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [physicalTestResultInput] 
+  /// * [physicalTestResultInput]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -150,7 +150,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestResult] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestResult>> createPhysicalTestResult({ 
+  Future<Response<PhysicalTestResult>> createPhysicalTestResult({
     required String xTenantId,
     required PhysicalTestResultInput physicalTestResultInput,
     CancelToken? cancelToken,
@@ -244,7 +244,7 @@ class PhysicalTestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [physicalTestTypeInput] 
+  /// * [physicalTestTypeInput]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -254,7 +254,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestType] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestType>> createPhysicalTestType({ 
+  Future<Response<PhysicalTestType>> createPhysicalTestType({
     required String xTenantId,
     required PhysicalTestTypeInput physicalTestTypeInput,
     CancelToken? cancelToken,
@@ -348,7 +348,7 @@ class PhysicalTestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [normId] 
+  /// * [normId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -358,7 +358,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> deletePhysicalTestNorm({ 
+  Future<Response<void>> deletePhysicalTestNorm({
     required String xTenantId,
     required String normId,
     CancelToken? cancelToken,
@@ -404,7 +404,7 @@ class PhysicalTestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [resultId] 
+  /// * [resultId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -414,7 +414,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> deletePhysicalTestResult({ 
+  Future<Response<void>> deletePhysicalTestResult({
     required String xTenantId,
     required String resultId,
     CancelToken? cancelToken,
@@ -455,12 +455,68 @@ class PhysicalTestsApi {
     return _response;
   }
 
+  /// Delete a tenant-specific test type
+  /// Deletes the type together with the tenant&#39;s norms for it. A type that results reference cannot be deleted (409 &#x60;TEST_TYPE_HAS_RESULTS&#x60;: delete or correct the results first, so no result is orphaned). Global types and other tenants&#39; types are not found (404). Authz: ADMIN.
+  ///
+  /// Parameters:
+  /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
+  /// * [testTypeId]
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future]
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<void>> deletePhysicalTestType({
+    required String xTenantId,
+    required String testTypeId,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/athlete/physical-test-types/{testTypeId}'.replaceAll('{' r'testTypeId' '}', encodeQueryParameter(_serializers, testTypeId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'DELETE',
+      headers: <String, dynamic>{
+        r'X-Tenant-Id': xTenantId,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    return _response;
+  }
+
   /// Get a test result
   /// Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [resultId] 
+  /// * [resultId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -470,7 +526,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestResult] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestResult>> getPhysicalTestResult({ 
+  Future<Response<PhysicalTestResult>> getPhysicalTestResult({
     required String xTenantId,
     required String resultId,
     CancelToken? cancelToken,
@@ -544,7 +600,7 @@ class PhysicalTestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [testTypeId] 
+  /// * [testTypeId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -554,7 +610,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestType] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestType>> getPhysicalTestType({ 
+  Future<Response<PhysicalTestType>> getPhysicalTestType({
     required String xTenantId,
     required String testTypeId,
     CancelToken? cancelToken,
@@ -624,13 +680,13 @@ class PhysicalTestsApi {
   }
 
   /// List norm bands
-  /// &#x60;scope&#x3D;EFFECTIVE&#x60; (default) returns the norms in force for the tenant (tenant rows replace the global rows of the same test, gender and age range); &#x60;GLOBAL&#x60; / &#x60;TENANT&#x60; return one layer only. Authz: any member. 
+  /// &#x60;scope&#x3D;EFFECTIVE&#x60; (default) returns the norms in force for the tenant (tenant rows replace the global rows of the same test, gender and age range); &#x60;GLOBAL&#x60; / &#x60;TENANT&#x60; return one layer only. Authz: any member.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [testTypeId] 
-  /// * [gender] 
-  /// * [scope] 
+  /// * [testTypeId]
+  /// * [gender]
+  /// * [scope]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -640,7 +696,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<PhysicalTestNorm>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<PhysicalTestNorm>>> listPhysicalTestNorms({ 
+  Future<Response<BuiltList<PhysicalTestNorm>>> listPhysicalTestNorms({
     required String xTenantId,
     String? testTypeId,
     Gender? gender,
@@ -723,9 +779,9 @@ class PhysicalTestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [playerId] 
-  /// * [teamId] 
-  /// * [testTypeId] 
+  /// * [playerId]
+  /// * [teamId]
+  /// * [testTypeId]
   /// * [from] - Inclusive lower bound (calendar date in the tenant's time zone).
   /// * [to] - Inclusive upper bound (calendar date in the tenant's time zone).
   /// * [page] - 0-based page index.
@@ -739,7 +795,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestResultPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestResultPage>> listPhysicalTestResults({ 
+  Future<Response<PhysicalTestResultPage>> listPhysicalTestResults({
     required String xTenantId,
     String? playerId,
     String? teamId,
@@ -839,7 +895,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<PhysicalTestType>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<PhysicalTestType>>> listPhysicalTestTypes({ 
+  Future<Response<BuiltList<PhysicalTestType>>> listPhysicalTestTypes({
     required String xTenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -912,8 +968,8 @@ class PhysicalTestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [normId] 
-  /// * [physicalTestNormInput] 
+  /// * [normId]
+  /// * [physicalTestNormInput]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -923,7 +979,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestNorm] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestNorm>> replacePhysicalTestNorm({ 
+  Future<Response<PhysicalTestNorm>> replacePhysicalTestNorm({
     required String xTenantId,
     required String normId,
     required PhysicalTestNormInput physicalTestNormInput,
@@ -1018,8 +1074,8 @@ class PhysicalTestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [resultId] 
-  /// * [updatePhysicalTestResultRequest] 
+  /// * [resultId]
+  /// * [updatePhysicalTestResultRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1029,7 +1085,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestResult] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestResult>> updatePhysicalTestResult({ 
+  Future<Response<PhysicalTestResult>> updatePhysicalTestResult({
     required String xTenantId,
     required String resultId,
     required UpdatePhysicalTestResultRequest updatePhysicalTestResultRequest,
@@ -1120,12 +1176,12 @@ class PhysicalTestsApi {
   }
 
   /// Update a tenant-specific test type
-  /// Global types are read-only (403). Authz: ADMIN.
+  /// Global types are read-only (403). A new &#x60;code&#x60; must not be used by another global or tenant type (409 &#x60;TEST_TYPE_CODE_EXISTS&#x60;). Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [testTypeId] 
-  /// * [updatePhysicalTestTypeRequest] 
+  /// * [testTypeId]
+  /// * [updatePhysicalTestTypeRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1135,7 +1191,7 @@ class PhysicalTestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PhysicalTestType] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PhysicalTestType>> updatePhysicalTestType({ 
+  Future<Response<PhysicalTestType>> updatePhysicalTestType({
     required String xTenantId,
     required String testTypeId,
     required UpdatePhysicalTestTypeRequest updatePhysicalTestTypeRequest,

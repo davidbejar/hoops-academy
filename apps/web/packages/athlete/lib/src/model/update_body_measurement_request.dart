@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:hoops_athlete_api/src/model/date.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
@@ -12,9 +13,10 @@ part 'update_body_measurement_request.g.dart';
 /// UpdateBodyMeasurementRequest
 ///
 /// Properties:
-/// * [measuredOn] 
-/// * [heightCm] 
-/// * [weightKg] 
+/// * [measuredOn]
+/// * [heightCm]
+/// * [weightKg]
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateBodyMeasurementRequest implements Built<UpdateBodyMeasurementRequest, UpdateBodyMeasurementRequestBuilder> {
   @BuiltValueField(wireName: r'measuredOn')
@@ -25,6 +27,11 @@ abstract class UpdateBodyMeasurementRequest implements Built<UpdateBodyMeasureme
 
   @BuiltValueField(wireName: r'weightKg')
   double? get weightKg;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateBodyMeasurementRequestClearEnum>? get clear;
+  // enum clearEnum {  heightCm,  weightKg,  };
 
   UpdateBodyMeasurementRequest._();
 
@@ -68,6 +75,13 @@ class _$UpdateBodyMeasurementRequestSerializer implements PrimitiveSerializer<Up
       yield serializers.serialize(
         object.weightKg,
         specifiedType: const FullType.nullable(double),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateBodyMeasurementRequestClearEnum)]),
       );
     }
   }
@@ -117,6 +131,14 @@ class _$UpdateBodyMeasurementRequestSerializer implements PrimitiveSerializer<Up
           if (valueDes == null) continue;
           result.weightKg = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateBodyMeasurementRequestClearEnum)]),
+          ) as BuiltSet<UpdateBodyMeasurementRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -147,3 +169,19 @@ class _$UpdateBodyMeasurementRequestSerializer implements PrimitiveSerializer<Up
 }
 
 
+class UpdateBodyMeasurementRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'heightCm')
+  static const UpdateBodyMeasurementRequestClearEnum heightCm = _$updateBodyMeasurementRequestClearEnum_heightCm;
+  @BuiltValueEnumConst(wireName: r'weightKg')
+  static const UpdateBodyMeasurementRequestClearEnum weightKg = _$updateBodyMeasurementRequestClearEnum_weightKg;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateBodyMeasurementRequestClearEnum unknownDefaultOpenApi = _$updateBodyMeasurementRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateBodyMeasurementRequestClearEnum> get serializer => _$updateBodyMeasurementRequestClearEnumSerializer;
+
+  const UpdateBodyMeasurementRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateBodyMeasurementRequestClearEnum> get values => _$updateBodyMeasurementRequestClearEnumValues;
+  static UpdateBodyMeasurementRequestClearEnum valueOf(String name) => _$updateBodyMeasurementRequestClearEnumValueOf(name);
+}

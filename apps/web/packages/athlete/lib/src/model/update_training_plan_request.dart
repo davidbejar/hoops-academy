@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -11,8 +12,9 @@ part 'update_training_plan_request.g.dart';
 /// UpdateTrainingPlanRequest
 ///
 /// Properties:
-/// * [name] 
-/// * [description] 
+/// * [name]
+/// * [description]
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdateTrainingPlanRequest implements Built<UpdateTrainingPlanRequest, UpdateTrainingPlanRequestBuilder> {
   @BuiltValueField(wireName: r'name')
@@ -20,6 +22,11 @@ abstract class UpdateTrainingPlanRequest implements Built<UpdateTrainingPlanRequ
 
   @BuiltValueField(wireName: r'description')
   String? get description;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdateTrainingPlanRequestClearEnum>? get clear;
+  // enum clearEnum {  description,  };
 
   UpdateTrainingPlanRequest._();
 
@@ -56,6 +63,13 @@ class _$UpdateTrainingPlanRequestSerializer implements PrimitiveSerializer<Updat
       yield serializers.serialize(
         object.description,
         specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateTrainingPlanRequestClearEnum)]),
       );
     }
   }
@@ -97,6 +111,14 @@ class _$UpdateTrainingPlanRequestSerializer implements PrimitiveSerializer<Updat
           if (valueDes == null) continue;
           result.description = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTrainingPlanRequestClearEnum)]),
+          ) as BuiltSet<UpdateTrainingPlanRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -127,3 +149,17 @@ class _$UpdateTrainingPlanRequestSerializer implements PrimitiveSerializer<Updat
 }
 
 
+class UpdateTrainingPlanRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'description')
+  static const UpdateTrainingPlanRequestClearEnum description = _$updateTrainingPlanRequestClearEnum_description;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdateTrainingPlanRequestClearEnum unknownDefaultOpenApi = _$updateTrainingPlanRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdateTrainingPlanRequestClearEnum> get serializer => _$updateTrainingPlanRequestClearEnumSerializer;
+
+  const UpdateTrainingPlanRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdateTrainingPlanRequestClearEnum> get values => _$updateTrainingPlanRequestClearEnumValues;
+  static UpdateTrainingPlanRequestClearEnum valueOf(String name) => _$updateTrainingPlanRequestClearEnumValueOf(name);
+}

@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -11,12 +12,18 @@ part 'update_physical_test_type_request.g.dart';
 /// UpdatePhysicalTestTypeRequest
 ///
 /// Properties:
-/// * [name] 
-/// * [unit] 
-/// * [higherIsBetter] 
-/// * [description] 
+/// * [code] - Unique across global and tenant types (409); results show the new code.
+/// * [name]
+/// * [unit]
+/// * [higherIsBetter]
+/// * [description]
+/// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
 abstract class UpdatePhysicalTestTypeRequest implements Built<UpdatePhysicalTestTypeRequest, UpdatePhysicalTestTypeRequestBuilder> {
+  /// Unique across global and tenant types (409); results show the new code.
+  @BuiltValueField(wireName: r'code')
+  String? get code;
+
   @BuiltValueField(wireName: r'name')
   String? get name;
 
@@ -28,6 +35,11 @@ abstract class UpdatePhysicalTestTypeRequest implements Built<UpdatePhysicalTest
 
   @BuiltValueField(wireName: r'description')
   String? get description;
+
+  /// Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+  @BuiltValueField(wireName: r'clear')
+  BuiltSet<UpdatePhysicalTestTypeRequestClearEnum>? get clear;
+  // enum clearEnum {  description,  };
 
   UpdatePhysicalTestTypeRequest._();
 
@@ -52,6 +64,13 @@ class _$UpdatePhysicalTestTypeRequestSerializer implements PrimitiveSerializer<U
     UpdatePhysicalTestTypeRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    if (object.code != null) {
+      yield r'code';
+      yield serializers.serialize(
+        object.code,
+        specifiedType: const FullType(String),
+      );
+    }
     if (object.name != null) {
       yield r'name';
       yield serializers.serialize(
@@ -80,6 +99,13 @@ class _$UpdatePhysicalTestTypeRequestSerializer implements PrimitiveSerializer<U
         specifiedType: const FullType.nullable(String),
       );
     }
+    if (object.clear != null) {
+      yield r'clear';
+      yield serializers.serialize(
+        object.clear,
+        specifiedType: const FullType(BuiltSet, [FullType(UpdatePhysicalTestTypeRequestClearEnum)]),
+      );
+    }
   }
 
   @override
@@ -103,6 +129,14 @@ class _$UpdatePhysicalTestTypeRequestSerializer implements PrimitiveSerializer<U
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'code':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.code = valueDes;
+          break;
         case r'name':
           final valueDes = serializers.deserialize(
             value,
@@ -135,6 +169,14 @@ class _$UpdatePhysicalTestTypeRequestSerializer implements PrimitiveSerializer<U
           if (valueDes == null) continue;
           result.description = valueDes;
           break;
+        case r'clear':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdatePhysicalTestTypeRequestClearEnum)]),
+          ) as BuiltSet<UpdatePhysicalTestTypeRequestClearEnum>?;
+          if (valueDes == null) continue;
+          result.clear.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -165,3 +207,17 @@ class _$UpdatePhysicalTestTypeRequestSerializer implements PrimitiveSerializer<U
 }
 
 
+class UpdatePhysicalTestTypeRequestClearEnum extends EnumClass {
+
+  @BuiltValueEnumConst(wireName: r'description')
+  static const UpdatePhysicalTestTypeRequestClearEnum description = _$updatePhysicalTestTypeRequestClearEnum_description;
+  @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
+  static const UpdatePhysicalTestTypeRequestClearEnum unknownDefaultOpenApi = _$updatePhysicalTestTypeRequestClearEnum_unknownDefaultOpenApi;
+
+  static Serializer<UpdatePhysicalTestTypeRequestClearEnum> get serializer => _$updatePhysicalTestTypeRequestClearEnumSerializer;
+
+  const UpdatePhysicalTestTypeRequestClearEnum._(String name): super(name);
+
+  static BuiltSet<UpdatePhysicalTestTypeRequestClearEnum> get values => _$updatePhysicalTestTypeRequestClearEnumValues;
+  static UpdatePhysicalTestTypeRequestClearEnum valueOf(String name) => _$updatePhysicalTestTypeRequestClearEnumValueOf(name);
+}

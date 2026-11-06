@@ -6,6 +6,80 @@ part of 'update_injury_request.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const UpdateInjuryRequestClearEnum _$updateInjuryRequestClearEnum_description =
+    const UpdateInjuryRequestClearEnum._('description');
+const UpdateInjuryRequestClearEnum
+    _$updateInjuryRequestClearEnum_expectedReturnOn =
+    const UpdateInjuryRequestClearEnum._('expectedReturnOn');
+const UpdateInjuryRequestClearEnum
+    _$updateInjuryRequestClearEnum_actualReturnOn =
+    const UpdateInjuryRequestClearEnum._('actualReturnOn');
+const UpdateInjuryRequestClearEnum
+    _$updateInjuryRequestClearEnum_unknownDefaultOpenApi =
+    const UpdateInjuryRequestClearEnum._('unknownDefaultOpenApi');
+
+UpdateInjuryRequestClearEnum _$updateInjuryRequestClearEnumValueOf(
+    String name) {
+  switch (name) {
+    case 'description':
+      return _$updateInjuryRequestClearEnum_description;
+    case 'expectedReturnOn':
+      return _$updateInjuryRequestClearEnum_expectedReturnOn;
+    case 'actualReturnOn':
+      return _$updateInjuryRequestClearEnum_actualReturnOn;
+    case 'unknownDefaultOpenApi':
+      return _$updateInjuryRequestClearEnum_unknownDefaultOpenApi;
+    default:
+      return _$updateInjuryRequestClearEnum_unknownDefaultOpenApi;
+  }
+}
+
+final BuiltSet<UpdateInjuryRequestClearEnum>
+    _$updateInjuryRequestClearEnumValues =
+    BuiltSet<UpdateInjuryRequestClearEnum>(const <UpdateInjuryRequestClearEnum>[
+  _$updateInjuryRequestClearEnum_description,
+  _$updateInjuryRequestClearEnum_expectedReturnOn,
+  _$updateInjuryRequestClearEnum_actualReturnOn,
+  _$updateInjuryRequestClearEnum_unknownDefaultOpenApi,
+]);
+
+Serializer<UpdateInjuryRequestClearEnum>
+    _$updateInjuryRequestClearEnumSerializer =
+    _$UpdateInjuryRequestClearEnumSerializer();
+
+class _$UpdateInjuryRequestClearEnumSerializer
+    implements PrimitiveSerializer<UpdateInjuryRequestClearEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'description': 'description',
+    'expectedReturnOn': 'expectedReturnOn',
+    'actualReturnOn': 'actualReturnOn',
+    'unknownDefaultOpenApi': 'unknown_default_open_api',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'description': 'description',
+    'expectedReturnOn': 'expectedReturnOn',
+    'actualReturnOn': 'actualReturnOn',
+    'unknown_default_open_api': 'unknownDefaultOpenApi',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[UpdateInjuryRequestClearEnum];
+  @override
+  final String wireName = 'UpdateInjuryRequestClearEnum';
+
+  @override
+  Object serialize(Serializers serializers, UpdateInjuryRequestClearEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  UpdateInjuryRequestClearEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      UpdateInjuryRequestClearEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$UpdateInjuryRequest extends UpdateInjuryRequest {
   @override
   final Date? occurredOn;
@@ -21,6 +95,8 @@ class _$UpdateInjuryRequest extends UpdateInjuryRequest {
   final Date? actualReturnOn;
   @override
   final InjuryStatus? status;
+  @override
+  final BuiltSet<UpdateInjuryRequestClearEnum>? clear;
 
   factory _$UpdateInjuryRequest(
           [void Function(UpdateInjuryRequestBuilder)? updates]) =>
@@ -33,7 +109,8 @@ class _$UpdateInjuryRequest extends UpdateInjuryRequest {
       this.description,
       this.expectedReturnOn,
       this.actualReturnOn,
-      this.status})
+      this.status,
+      this.clear})
       : super._();
   @override
   UpdateInjuryRequest rebuild(
@@ -54,7 +131,8 @@ class _$UpdateInjuryRequest extends UpdateInjuryRequest {
         description == other.description &&
         expectedReturnOn == other.expectedReturnOn &&
         actualReturnOn == other.actualReturnOn &&
-        status == other.status;
+        status == other.status &&
+        clear == other.clear;
   }
 
   @override
@@ -67,6 +145,7 @@ class _$UpdateInjuryRequest extends UpdateInjuryRequest {
     _$hash = $jc(_$hash, expectedReturnOn.hashCode);
     _$hash = $jc(_$hash, actualReturnOn.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
+    _$hash = $jc(_$hash, clear.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -80,7 +159,8 @@ class _$UpdateInjuryRequest extends UpdateInjuryRequest {
           ..add('description', description)
           ..add('expectedReturnOn', expectedReturnOn)
           ..add('actualReturnOn', actualReturnOn)
-          ..add('status', status))
+          ..add('status', status)
+          ..add('clear', clear))
         .toString();
   }
 }
@@ -119,6 +199,12 @@ class UpdateInjuryRequestBuilder
   InjuryStatus? get status => _$this._status;
   set status(InjuryStatus? status) => _$this._status = status;
 
+  SetBuilder<UpdateInjuryRequestClearEnum>? _clear;
+  SetBuilder<UpdateInjuryRequestClearEnum> get clear =>
+      _$this._clear ??= SetBuilder<UpdateInjuryRequestClearEnum>();
+  set clear(SetBuilder<UpdateInjuryRequestClearEnum>? clear) =>
+      _$this._clear = clear;
+
   UpdateInjuryRequestBuilder() {
     UpdateInjuryRequest._defaults(this);
   }
@@ -133,6 +219,7 @@ class UpdateInjuryRequestBuilder
       _expectedReturnOn = $v.expectedReturnOn;
       _actualReturnOn = $v.actualReturnOn;
       _status = $v.status;
+      _clear = $v.clear?.toBuilder();
       _$v = null;
     }
     return this;
@@ -152,16 +239,30 @@ class UpdateInjuryRequestBuilder
   UpdateInjuryRequest build() => _build();
 
   _$UpdateInjuryRequest _build() {
-    final _$result = _$v ??
-        _$UpdateInjuryRequest._(
-          occurredOn: occurredOn,
-          bodyPart: bodyPart,
-          severity: severity,
-          description: description,
-          expectedReturnOn: expectedReturnOn,
-          actualReturnOn: actualReturnOn,
-          status: status,
-        );
+    _$UpdateInjuryRequest _$result;
+    try {
+      _$result = _$v ??
+          _$UpdateInjuryRequest._(
+            occurredOn: occurredOn,
+            bodyPart: bodyPart,
+            severity: severity,
+            description: description,
+            expectedReturnOn: expectedReturnOn,
+            actualReturnOn: actualReturnOn,
+            status: status,
+            clear: _clear?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'clear';
+        _clear?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'UpdateInjuryRequest', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

@@ -38,9 +38,50 @@ final BuiltSet<UpdateTrainingSessionRequestStatusEnum>
   _$updateTrainingSessionRequestStatusEnum_unknownDefaultOpenApi,
 ]);
 
+const UpdateTrainingSessionRequestClearEnum
+    _$updateTrainingSessionRequestClearEnum_location =
+    const UpdateTrainingSessionRequestClearEnum._('location');
+const UpdateTrainingSessionRequestClearEnum
+    _$updateTrainingSessionRequestClearEnum_planId =
+    const UpdateTrainingSessionRequestClearEnum._('planId');
+const UpdateTrainingSessionRequestClearEnum
+    _$updateTrainingSessionRequestClearEnum_notes =
+    const UpdateTrainingSessionRequestClearEnum._('notes');
+const UpdateTrainingSessionRequestClearEnum
+    _$updateTrainingSessionRequestClearEnum_unknownDefaultOpenApi =
+    const UpdateTrainingSessionRequestClearEnum._('unknownDefaultOpenApi');
+
+UpdateTrainingSessionRequestClearEnum
+    _$updateTrainingSessionRequestClearEnumValueOf(String name) {
+  switch (name) {
+    case 'location':
+      return _$updateTrainingSessionRequestClearEnum_location;
+    case 'planId':
+      return _$updateTrainingSessionRequestClearEnum_planId;
+    case 'notes':
+      return _$updateTrainingSessionRequestClearEnum_notes;
+    case 'unknownDefaultOpenApi':
+      return _$updateTrainingSessionRequestClearEnum_unknownDefaultOpenApi;
+    default:
+      return _$updateTrainingSessionRequestClearEnum_unknownDefaultOpenApi;
+  }
+}
+
+final BuiltSet<UpdateTrainingSessionRequestClearEnum>
+    _$updateTrainingSessionRequestClearEnumValues = BuiltSet<
+        UpdateTrainingSessionRequestClearEnum>(const <UpdateTrainingSessionRequestClearEnum>[
+  _$updateTrainingSessionRequestClearEnum_location,
+  _$updateTrainingSessionRequestClearEnum_planId,
+  _$updateTrainingSessionRequestClearEnum_notes,
+  _$updateTrainingSessionRequestClearEnum_unknownDefaultOpenApi,
+]);
+
 Serializer<UpdateTrainingSessionRequestStatusEnum>
     _$updateTrainingSessionRequestStatusEnumSerializer =
     _$UpdateTrainingSessionRequestStatusEnumSerializer();
+Serializer<UpdateTrainingSessionRequestClearEnum>
+    _$updateTrainingSessionRequestClearEnumSerializer =
+    _$UpdateTrainingSessionRequestClearEnumSerializer();
 
 class _$UpdateTrainingSessionRequestStatusEnumSerializer
     implements PrimitiveSerializer<UpdateTrainingSessionRequestStatusEnum> {
@@ -76,6 +117,42 @@ class _$UpdateTrainingSessionRequestStatusEnumSerializer
           _fromWire[serialized] ?? (serialized is String ? serialized : ''));
 }
 
+class _$UpdateTrainingSessionRequestClearEnumSerializer
+    implements PrimitiveSerializer<UpdateTrainingSessionRequestClearEnum> {
+  static const Map<String, Object> _toWire = const <String, Object>{
+    'location': 'location',
+    'planId': 'planId',
+    'notes': 'notes',
+    'unknownDefaultOpenApi': 'unknown_default_open_api',
+  };
+  static const Map<Object, String> _fromWire = const <Object, String>{
+    'location': 'location',
+    'planId': 'planId',
+    'notes': 'notes',
+    'unknown_default_open_api': 'unknownDefaultOpenApi',
+  };
+
+  @override
+  final Iterable<Type> types = const <Type>[
+    UpdateTrainingSessionRequestClearEnum
+  ];
+  @override
+  final String wireName = 'UpdateTrainingSessionRequestClearEnum';
+
+  @override
+  Object serialize(
+          Serializers serializers, UpdateTrainingSessionRequestClearEnum object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      _toWire[object.name] ?? object.name;
+
+  @override
+  UpdateTrainingSessionRequestClearEnum deserialize(
+          Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      UpdateTrainingSessionRequestClearEnum.valueOf(
+          _fromWire[serialized] ?? (serialized is String ? serialized : ''));
+}
+
 class _$UpdateTrainingSessionRequest extends UpdateTrainingSessionRequest {
   @override
   final DateTime? startsAt;
@@ -89,6 +166,8 @@ class _$UpdateTrainingSessionRequest extends UpdateTrainingSessionRequest {
   final String? notes;
   @override
   final UpdateTrainingSessionRequestStatusEnum? status;
+  @override
+  final BuiltSet<UpdateTrainingSessionRequestClearEnum>? clear;
 
   factory _$UpdateTrainingSessionRequest(
           [void Function(UpdateTrainingSessionRequestBuilder)? updates]) =>
@@ -100,7 +179,8 @@ class _$UpdateTrainingSessionRequest extends UpdateTrainingSessionRequest {
       this.location,
       this.planId,
       this.notes,
-      this.status})
+      this.status,
+      this.clear})
       : super._();
   @override
   UpdateTrainingSessionRequest rebuild(
@@ -120,7 +200,8 @@ class _$UpdateTrainingSessionRequest extends UpdateTrainingSessionRequest {
         location == other.location &&
         planId == other.planId &&
         notes == other.notes &&
-        status == other.status;
+        status == other.status &&
+        clear == other.clear;
   }
 
   @override
@@ -132,6 +213,7 @@ class _$UpdateTrainingSessionRequest extends UpdateTrainingSessionRequest {
     _$hash = $jc(_$hash, planId.hashCode);
     _$hash = $jc(_$hash, notes.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
+    _$hash = $jc(_$hash, clear.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -144,7 +226,8 @@ class _$UpdateTrainingSessionRequest extends UpdateTrainingSessionRequest {
           ..add('location', location)
           ..add('planId', planId)
           ..add('notes', notes)
-          ..add('status', status))
+          ..add('status', status)
+          ..add('clear', clear))
         .toString();
   }
 }
@@ -181,6 +264,12 @@ class UpdateTrainingSessionRequestBuilder
   set status(UpdateTrainingSessionRequestStatusEnum? status) =>
       _$this._status = status;
 
+  SetBuilder<UpdateTrainingSessionRequestClearEnum>? _clear;
+  SetBuilder<UpdateTrainingSessionRequestClearEnum> get clear =>
+      _$this._clear ??= SetBuilder<UpdateTrainingSessionRequestClearEnum>();
+  set clear(SetBuilder<UpdateTrainingSessionRequestClearEnum>? clear) =>
+      _$this._clear = clear;
+
   UpdateTrainingSessionRequestBuilder() {
     UpdateTrainingSessionRequest._defaults(this);
   }
@@ -194,6 +283,7 @@ class UpdateTrainingSessionRequestBuilder
       _planId = $v.planId;
       _notes = $v.notes;
       _status = $v.status;
+      _clear = $v.clear?.toBuilder();
       _$v = null;
     }
     return this;
@@ -213,15 +303,29 @@ class UpdateTrainingSessionRequestBuilder
   UpdateTrainingSessionRequest build() => _build();
 
   _$UpdateTrainingSessionRequest _build() {
-    final _$result = _$v ??
-        _$UpdateTrainingSessionRequest._(
-          startsAt: startsAt,
-          durationMinutes: durationMinutes,
-          location: location,
-          planId: planId,
-          notes: notes,
-          status: status,
-        );
+    _$UpdateTrainingSessionRequest _$result;
+    try {
+      _$result = _$v ??
+          _$UpdateTrainingSessionRequest._(
+            startsAt: startsAt,
+            durationMinutes: durationMinutes,
+            location: location,
+            planId: planId,
+            notes: notes,
+            status: status,
+            clear: _clear?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'clear';
+        _clear?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'UpdateTrainingSessionRequest', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }
