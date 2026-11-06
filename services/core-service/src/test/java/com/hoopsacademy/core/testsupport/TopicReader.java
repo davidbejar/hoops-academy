@@ -14,6 +14,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /** Reads a topic of the Dev Services broker from the start, as a consumer that replays it would. */
@@ -47,6 +48,11 @@ public final class TopicReader {
         Properties config = new Properties();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
                 ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class));
+        // the broker's login, if any (SaslRedpandaResource): the same client settings as core's own
+        Config app = ConfigProvider.getConfig();
+        for (String key : List.of("security.protocol", "sasl.mechanism", "sasl.jaas.config")) {
+            app.getOptionalValue("kafka." + key, String.class).ifPresent(value -> config.put(key, value));
+        }
         config.put(ConsumerConfig.GROUP_ID_CONFIG, "test-reader-" + UUID.randomUUID());
         config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(config, new StringDeserializer(),
