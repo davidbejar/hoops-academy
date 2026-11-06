@@ -1,64 +1,59 @@
-# Session handover (updated 2026-11-06 — WP26–WP37 merged, e2e green on kind)
+# Session handover (updated 2026-11-06 evening — WP38–WP42 merged, e2e green on kind with mail checks)
 
 Read `CLAUDE.md` first. This page is the short "where are we" for a fresh session; the detail is in the linked files.
 The original request is `docs/SPEC.md` (verbatim); the approved plan with its status box is `docs/PLAN.md`; what was built
-versus the spec is `docs/conformance.md`; the plan of 2026-11-05, the product owner's decisions and the backlog are in
-`docs/wp/FOLLOW-UPS.md`. The former OneDrive planning folder (`.../Code/Claude/projects/dummy-project2`) is archived and
-must not be written to.
+versus the spec is `docs/conformance.md`; the plans of 2026-11-05 and 2026-11-06, the product owner's decisions 1–23 and
+the backlog are in `docs/wp/FOLLOW-UPS.md`. The former OneDrive planning folder (`.../Code/Claude/projects/dummy-project2`)
+is archived and must not be written to.
 
 ## State
 - Built and committed: all v1 work packages (WP0–WP20; WP19 events/Redpanda not built, v2), WP21–WP25 (e-mail logins,
-  super admin manages academy admins, temporary password at first sign-in, ADR-0023/0024), the end-to-end isolation
-  test and database role check with their Claude Code hook (2026-11-05), and the twelve WPs of the 2026-11-05 plan,
-  merged into `main` on 2026-11-05/06 (WP37 before WP36 at the end):
-  - WP26 docs reconciliation and the 14 decisions of 2026-11-05 (ADR-0025).
-  - WP27 fitness norms: 370 of 630 rows cited.
-  - WP28 web: a PLAYER's own box-score line, REJECTED label.
-  - WP29 contracts without `allOf`, strict validation everywhere (ADR-0027; core 2.3.1, game 2.0.1, athlete 2.0.1).
-  - WP30 infra hygiene: e2e readiness on `status == UP`, Tiltfile chart sync, runtime image pinned by digest.
-  - WP31 a shared login's e-mail reaches every academy (ADR-0026).
-  - WP32 temporary passwords expire after 3 days, event-triggered sweep (ADR-0028; core 2.4.0).
-  - WP33 match event feed filtered for parents and players, F-01 fixed (ADR-0030; game 2.1.0).
-  - WP34 audit trail read API and Activity screens (ADR-0029; core 2.5.0).
-  - WP35 web UX gaps (not-a-member state, academy time zone, usage trend, session/measurement/result/absence editing,
-    availability badge).
-  - WP36 Gateway API with Envoy Gateway v1.9.3 replaces ingress-nginx, chart 0.2.0 (ADR-0031).
-  - WP37 mutation testing on demand (`just mutation`, `mutation.yml` manual + monthly): common 99.1 %, core 99.6 %,
-    game 99.5 %, athlete 100 %; baselines 95/95/95/100.
-  Contract versions now: **core 2.5.0, game 2.1.0, athlete 2.0.1**.
-- Tests on 3b59360 (CI `ci` run 42112940234): JVM common-quarkus 186, contracts 146, core 770, game 255, athlete 613 =
-  **1,970 tests**, 0 failures (equals the fresh local `verify` in the WP37 handover); `flutter test` **608 passed**
-  (unchanged since WP35; the date-dependent week golden was fixed in 7e13cec).
-- e2e: `JourneyTest` 21 tests green on compose in CI (run 42112940232 on 3b59360, 71.7 s) and **green on kind for the
-  first time** in WP36 (21 tests, 159 s, through the Envoy Gateway on :8090; the MailHog checks are skipped on kind).
-- CI on `origin/main` 3b59360 (2026-11-05 21:28 UTC): `e2e` and `images` green, manual `mutation` run 42112955113 green
-  for all four modules; `ci` failed in `trivy-fs` only: KSV-0014 (Keycloak without a read-only root FS, accepted
-  until 2027-03-31) fired on WP36's new snapshot `deploy/helm/tests/snapshots/umbrella-tls.yaml`, which
-  `.trivyignore.yaml` did not list. Fixed on 2026-11-06 (the TLS snapshot added to the accepted paths; `trivy fs
-  --scanners misconfig` from the repo root reports 0 findings on every snapshot); the docs reconciliation commits and
-  that fix were pushed together. Every earlier run on `main` since 5ab1f71 (2026-11-02) was green.
-- Browser checks: `apps/web/tool/web_smoke.sh` green in mock mode in WP35; `--real` mode and
-  `browser_login_check.py --set-new-password` last green on 2026-11-02 / WP25. Lighthouse, airplane-mode cold start and
-  chromedriver in CI are still open.
-- GitHub: `davidbejar/hoops-academy` (public), branch `main`. Repository variable `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`;
-  secret `NVD_API_KEY` (valid since 2026-11-02). The four ghcr.io packages (core-service, game-service,
-  athlete-service, web) are **public** (decision 9, verified 2026-11-05); a cluster pulls them without
+  super admin manages academy admins, temporary password at first sign-in), the twelve WPs of the 2026-11-05 plan
+  (WP26–WP37: decisions, cited norms, contract validation, temporary-password expiry, feed filter F-01, audit trail
+  read API, web UX gaps, Gateway API, mutation testing; details in FOLLOW-UPS "Resolved") and the five WPs of the
+  2026-11-06 plan, merged into `main` on 2026-11-06 in the order WP38, WP40, WP39, WP42, WP41:
+  - WP38 (2b0f33b) the super admin is masked as "Platform administrator" on the academy audit path, the `reason`
+    stays readable; `ApprovalPayload.empty()` deleted (ADR-0029 amendment; core 2.6.0).
+  - WP40 (5b020c2) global gateway rate limits: Envoy Gateway's rate limit service + Redis `ratelimit-redis`, shared by
+    every Envoy replica, fail open (ADR-0033; chart 0.3.0). `ratelimit-check.sh` passed on kind with 1 and 2 replicas
+    and with Redis down.
+  - WP39 (bb68194) athlete update requests carry a `clear` list (absent or null = unchanged), the web edit forms send
+    it; a test type's code can be changed and the type deleted unless results use it (ADR-0032; athlete 2.1.0).
+  - WP42 (ba4e948) e2e `MailSink` reads MailHog v2 or Mailpit v1, so the mail checks run on kind too; `tilt ci` on the
+    Gateway API chart green; the e2e module's unit tests now run in every `verify`.
+  - WP41 (33441be) demo mock serves `/platform/*` and `/api/athlete/*` (the demo user is a super admin by default),
+    the academy time zone comes from `/me` (`authz.timezone`); browser smoke walks training and the platform console.
+  Also today: AGPL-3.0 `LICENSE` and README License section (20f1921), trivy ignore for `umbrella-tls.yaml` (5ee9be5),
+  hooks resync the Podman VM clock (e6a8847), Dependabot (625a5f9).
+  Contract versions now: **core 2.6.0, game 2.1.0, athlete 2.1.0, common 1.1.0**; Helm chart **0.3.0**.
+- Tests (fresh local `./mvnw -B -ntp -T 1C clean verify` after WP39 rebased on WP38): JVM contracts 152, common-quarkus
+  186, core 773, game 255, athlete 653 = **2,019 tests**, 0 failures, every coverage gate met; since WP42 the `e2e`
+  module adds 4 `MailSinkTest` runs and reports the 21 journey tests as skipped (no `e2e.baseUrl` in `verify`).
+  `flutter test` after WP41: **646 passed**, analyze clean. Mutation: athlete 430/430 killed after WP39 (the other
+  modules were not re-run; baselines 95/95/95/100 from WP37).
+- e2e: `JourneyTest` 21/21 on compose (CI `e2e` on every push; WP42 locally 25/25 incl. `MailSinkTest`) and **21/21 on
+  kind with the mail checks** through the Envoy Gateway on :8090 (Mailpit's `/api/v1`, WP42). `just tilt ci -- --from-host`
+  on a fresh kind cluster: "All workloads are healthy" in 5 min 55 s (WP42).
+- CI on `main`: `ci`, `e2e`, `images` green on bb68194 (WP39); `ci` and `e2e` green on ba4e948 (WP42) and 625a5f9
+  (Dependabot; `images` did not run, path filter); `ci`, `e2e` and `images` green on 33441be (WP41, runs 42157371199,
+  42157371253, 42157371230): `main` is green end to end.
+- Dependabot: weekly grouped version updates (Maven with Quarkus in its own group, pub, GitHub Actions; Monday 06:00
+  Europe/Madrid) and automated security fixes. The first four PRs: #1 actions group and #2 Maven minor/patch group
+  green, #4 `cupertino_icons` 2.0.0 green, #3 `json-schema-validator` 3.0.8 red (API change, FOLLOW-UPS).
+- Browser checks: `apps/web/tool/web_smoke.sh` green in mock mode in WP41 (now through training and the platform
+  console); `--real` mode and `browser_login_check.py --set-new-password` last green on 2026-11-02 / WP25. Lighthouse,
+  airplane-mode cold start and chromedriver in CI are still open.
+- GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0, description and topics set), branch `main`. Repository variable
+  `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`; secret `NVD_API_KEY` (valid since 2026-11-02). The four ghcr.io
+  packages (core-service, game-service, athlete-service, web) are **public** (decision 9); a cluster pulls them without
   `global.imagePullSecrets`.
 
 ## Pending
-1. **Product owner decisions** (FOLLOW-UPS):
-   - WP34: `tenant.suspended` / `tenant.withdrawn` audit rows keep the super admin's free-text `reason`, which academy
-     admins now read (keep, or move it out of the audit row); PLATFORM rows show the super admin's Keycloak `sub` to
-     academy admins (keep, or show "platform administrator").
-   - WP35: update requests cannot clear a field (null = unchanged; needs a contract convention: explicit null or a
-     `clear` list); `/me` memberships carry no tenant `timezone` (add it to `TenantSummary`?).
-   - WP36: Envoy local rate limits are per replica with burst = rpm (global rate limiting with Redis if the proxy
-     scales out?); no gateway body-size limit (the services enforce 2 MB).
-2. **Mutation workflow**: `gh workflow run mutation.yml` was run once (run 42112955113, green); nothing left but the
-   monthly schedule.
-4. **dependency-check NVD cache**: the workflow still saves the cache `if: always()`; if the job takes > 40 min, find the
-   `nvd-Linux-*` key "Restore NVD data" restored and `gh cache delete` it. Still to do once: review the
-   `dependency-check-report` findings below the CVSS 7 gate. If NVD answers 503, rerun the job.
+1. **Review the Dependabot PRs as they arrive** (weekly, Monday). Today: merge #1, #2 and #4 if you agree (green);
+   #3 (`json-schema-validator` 3.x) needs a code change in `libs/contracts` tests or should be closed / ignored for 3.x.
+2. Nothing else is blocking. Non-blocking: the dependency-check NVD cache is still saved `if: always()` (if the job takes
+   more than 40 min, `gh cache delete` the `nvd-Linux-*` key it restored; rerun on NVD 503); the `dependency-check-report`
+   findings below the CVSS 7 gate were never reviewed.
 
 ## Working conventions learned the hard way
 - Two Claude sessions worked in this checkout at once on 2026-11-02 and one switched branches under the other. If more than one
@@ -77,19 +72,26 @@ must not be written to.
   `GOLDEN_DIFF_TOLERANCE=0.06`. ZAP acceptances live in `.zap/baseline.conf` with `[alert=..][url=..]` scoping (`scripts/zap-gate.py`).
 - Realm changes need a Keycloak re-import: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
 - **Podman VM clock drift.** After the host sleeps (also in maintenance sleep / dark wake), the Podman machine's clock
-  falls behind or stalls (16–59 min behind on 2026-11-06), so Keycloak tokens look expired: the commit/push hooks fail
-  with 401 or time out after 15 min. Fix: `podman machine ssh "sudo date -u -s @$(date +%s)"` right before the commit
-  (or in a background loop during a long session). A host-level fix is still open (FOLLOW-UPS).
+  falls behind or stalls (16–59 min behind on 2026-11-06), so Keycloak tokens look expired. Since e6a8847 the hook
+  scripts (`scripts/hooks/_common.sh`) step the VM clock before each check; by hand outside the hooks:
+  `podman machine ssh "sudo date -u -s @$(date +%s)"`.
 - **Worktree wave flow** (used for WP26–WP37): one worktree per WP under `~/code/hoops-wt` (under `$HOME`, so the
   Podman machine sees it), one branch per WP; when a WP is done, rebase it onto `main`, rerun its checks, merge with
   `git merge --ff-only`, then the next WP rebases. Shared docs (`HANDOVER.md`, `FOLLOW-UPS.md`, `README.md`, the ADR
-  index) are owned by one agent; the others note their follow-ups in their own handover. ADR numbers are assigned at
-  merge time (renumber on rebase).
+  index) are owned by one agent; the others note their follow-ups in their own handover.
+- **Parallel WPs, lessons of WP38–WP42.** Assign ADR numbers in the briefs up front (0032 and 0033 were fixed before the
+  wave, so nothing was renumbered on rebase). Give each WP of a wave disjoint file ownership (service, chart, web, e2e);
+  a WP that depends on another's contract goes in the next wave (WP41 after WP38/WP39). The only conflicts in the round
+  were shared doc indexes (ADR README, roadmap, runbook lists); keep those to the docs pass or append-only.
 
 ## Next candidates without a work package (see FOLLOW-UPS.md for the full list)
+- Adopt the ADR-0032 `clear` list in core (still merge patch: `null` clears) and game when they need it; an injury edit
+  dialog in the web app.
+- Redis ACL for `ratelimit-redis` (defense in depth beyond the NetworkPolicy); exercise the controller-restart branch of
+  `deploy/kind/up.sh`.
 - Keycloak CSP hardening via realm `browserSecurityHeaders` (removes the accepted ZAP alerts under `/auth/realms/`).
-- `tilt ci` with core-service; the e2e MailHog checks on kind (Mailpit's API is `/api/v1`); Lighthouse installability
-  and airplane-mode cold start for the PWA; chromedriver in CI.
-- Contract WP for the WP35 gaps once decided; delete or use core `ApprovalPayload.empty()` (dead code, WP37).
+- Lighthouse installability and airplane-mode cold start for the PWA; chromedriver in CI.
+- Demo mock: athlete data for the second academy, rosters shared with the core mock, role checks; a repo-wide
+  `dart format` policy.
 - Save the NVD cache on success only.
 - v2: outbox + Redpanda (WP19), billing module on the existing seams, purge job (also for old audit rows).

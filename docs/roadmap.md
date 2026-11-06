@@ -2,8 +2,8 @@
 
 Sources: `wp/FOLLOW-UPS.md`, the WP handovers, `security/review-2026-11.md`, `PLAN.md`. Items are grouped by theme, not
 ordered by date; there are no committed dates. IDs F-nn refer to the security review. "Seam" means the extension point
-already exists in v1. The plan of 2026-11-05 (`wp/FOLLOW-UPS.md`, WP26–WP37) is done (all twelve merged by
-2026-11-06); the items it closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
+already exists in v1. The plans of 2026-11-05 (`wp/FOLLOW-UPS.md`, WP26–WP37) and 2026-11-06 (WP38–WP42) are done (all
+merged by 2026-11-06); the items they closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
 items below are deliberately not planned.
 
 ## Product and billing
@@ -17,8 +17,8 @@ items below are deliberately not planned.
 - **Super admin who is also a member.** Done in the Profile menu (Platform console); only a product check remains.
 - **Parents without a login via the guardian flow.** WP17 covered players only; parents get a login through the member
   invitation. Decide whether a guardian entered with a player should be invited automatically.
-- **Audit trail content (WP34, product decision open).** `tenant.suspended` / `tenant.withdrawn` rows carry the super
-  admin's free-text reason, and rows done from the platform show the super admin's Keycloak `sub` to academy admins.
+- **`clear` list in core and game (ADR-0032).** Athlete adopted it in WP39; core still reads a PATCH as a merge patch
+  (an explicit `null` clears) and game has no clearable update yet. Each adopts the convention in its own WP.
 - **If it goes commercial (ADR-0025).** F-11 (invite links an existing login without consent and reveals it) and F-22
   (pre-account hijacking) are accepted by design today. Before real users: verify the e-mail before linking an existing
   login into another academy, ask for consent and notify on a link, give invites a uniform response.
@@ -62,13 +62,14 @@ service worker exists since WP14b.)
 - **Verify the offline cold start in a real browser**: install/activate/reload of `sw.js` in airplane mode, replacement of a
   previously registered Flutter worker, the wasm/IndexedDB path.
 - Two tabs on one device can allocate the same `clientSeq` (visible `CLIENT_SEQ_CONFLICT`); add a cross-tab lock if it matters.
-- **Contract gaps found in WP35 (decision open).** `Update*Request` bodies cannot clear a field (null = unchanged), so a
-  session's plan, a location or a note cannot be removed; `/me` memberships carry no tenant `timezone` (the app makes an
-  extra profile call); test types have no rename-code or delete operation.
+- **Injury edit dialog.** No web dialog edits an injury's description or dates yet (the contract's
+  `UpdateInjuryRequest.clear` is unused by the app).
 - **Mutation testing** runs on demand and monthly (WP37, `docs/quality/mutation.md`); rule code reached only by
   container tests (`TenantScope`, exception mappers, use cases) is outside PIT's scope until pure rules are extracted.
-- List pagination UI and a category filter on `GET /players` (contract); `nameKey`/`locale` for plan templates; mock mode
-  lacks athlete and platform screens.
+- List pagination UI and a category filter on `GET /players` (contract); `nameKey`/`locale` for plan templates.
+- **Demo mock depth (WP41).** Mock mode reaches every screen, but `/api/athlete` serves the demo academy only, the
+  athlete mock has no role checks and fixed team rosters (not shared with the core and game mocks). A repo-wide
+  `dart format` policy is not decided.
 
 ## Norms research completion (WP10b → WP27, done 2026-11-05; remainder open)
 WP27 sourced 370 of 630 rows (beep test 8-18, sit-and-reach 9-17, 20 m sprint 8-17, T-test and vertical jump 14-15; Cooper
@@ -79,15 +80,15 @@ age. The Cooper figures are still not traced to the 1968 paper. Sources, mapping
 ## Platform and operations
 - **Gateway (WP36, ADR-0031).** The chart runs on Gateway API with Envoy Gateway; the e2e journey is green on kind.
   Rate limits are global since WP40 (ADR-0033: Envoy Gateway's rate limit service + Redis, shared by every Envoy
-  replica, fail open). Still open: no body-size limit at the gateway (accepted: the services reject > 2 MB); a
-  production certificate and cluster.
+  replica, fail open). Still open: a Redis ACL as defense in depth beyond the NetworkPolicy, exercising the
+  controller-restart branch of `deploy/kind/up.sh`; accepted: fixed one-minute windows (up to 2 × the limit across a
+  boundary) and no body-size limit at the gateway (the services reject > 2 MB); a production certificate and cluster.
 - **External Secrets Operator manifests** and a rollout trigger for rotated secrets (ADR-0012); encryption at rest for Secrets.
 - **Backups.** Implement and rehearse CNPG backups (`runbooks/backup-restore.md` is a design).
 - **Observability.** OTel collector and dashboards (traces are off by default), alerting on audit and authz failures.
 - **Release.** `ci`, `e2e` and `images` are green on GitHub since 2026-11-02 (NVD key valid, images pushed to ghcr.io per
-  commit). No release has been cut yet (no git tag): follow `runbooks/release.md`.
-- **`tilt ci` with core-service** has not been run (WP16 covered game/athlete/web; WP30 made the Tiltfile sync the chart
-  files; not re-run after WP36).
+  commit); Dependabot opens weekly grouped update PRs (Maven, pub, GitHub Actions; base images and chart image tags
+  stay manual). No release has been cut yet (no git tag): follow `runbooks/release.md`.
 - Scale: the usage snapshot job and the eligibility sweep iterate tenants sequentially (fine for tens of tenants); snapshots
   are never pruned.
 

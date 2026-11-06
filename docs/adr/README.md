@@ -33,8 +33,8 @@ says so in its header ("Supersedes", "Records"), and the earlier one carries an 
 | [0026](0026-shared-login-email-reaches-every-academy.md) | A shared login's e-mail change reaches every academy that uses it (same transaction, per-statement tenant binding) |
 | [0027](0027-contracts-without-allof-composition.md) | Contracts without allOf composition, validated strictly everywhere |
 | [0028](0028-temporary-password-expiry-without-a-scheduler.md) | Temporary passwords expire after three days, swept on events instead of a scheduler |
-| [0029](0029-audit-trail-read-api.md) | Reading the audit trail: academy ADMINs under RLS, the super admin through a platform read policy |
+| [0029](0029-audit-trail-read-api.md) | Reading the audit trail: academy ADMINs under RLS, the super admin through a platform read policy (amended 2026-11-06: platform actors masked on the academy path) |
 | [0030](0030-match-event-feed-filtered-by-player-visibility.md) | Match event feed filtered by player visibility (F-01) |
-| [0031](0031-gateway-api.md) | Gateway API with Envoy Gateway replaces ingress-nginx (routes, local rate limits per client IP, kind NodePort) |
+| [0031](0031-gateway-api.md) | Gateway API with Envoy Gateway replaces ingress-nginx (routes, local rate limits per client IP, kind NodePort; its rate-limit decision replaced by ADR-0033) |
 | [0032](0032-update-requests-clear-list.md) | Update requests name the fields to clear in a `clear` list (absent or null = unchanged) |
 | [0033](0033-gateway-global-rate-limit.md) | Global rate limits at the gateway: Envoy rate limit service + Redis, shared by every Envoy replica, fail open |

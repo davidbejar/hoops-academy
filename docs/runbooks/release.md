@@ -1,13 +1,14 @@
 # Runbook: release
 
 Status: describes the process the repository's tooling supports. **No release has been cut yet**: the Maven version is
-`0.1.0-SNAPSHOT`, the Helm chart `0.1.0`, no registry is configured, and the workflows in `.github/workflows` have not been
-run from a CI runner (`docs/wp/WP16` and `WP17` handovers). Steps marked (design) are not implemented.
+`0.1.0-SNAPSHOT` and the Helm chart `0.3.0` (2026-11-06); the workflows in `.github/workflows` run on GitHub since
+2026-11-02 and `images` pushes every commit's images to `ghcr.io/davidbejar/hoops-academy` (public). Steps marked
+(design) are not implemented.
 
 ## 1. What is versioned
 | Artifact | Version source | Rule |
 |---|---|---|
-| OpenAPI contracts | `info.version` in `libs/contracts/openapi/{core,game,athlete,common}.yaml` (now core 2.1.0, game 2.0.0, athlete 2.0.0, common 1.1.0) | SemVer; policy in `libs/contracts/README.md` |
+| OpenAPI contracts | `info.version` in `libs/contracts/openapi/{core,game,athlete,common}.yaml` (now core 2.6.0, game 2.1.0, athlete 2.1.0, common 1.1.0) | SemVer; policy in `libs/contracts/README.md` |
 | Maven modules and service jars | root `pom.xml` (`0.1.0-SNAPSHOT`) | one version for the repo |
 | Container images | tag `dev` locally; `${{ github.sha }}` in `images.yml` | immutable, per commit |
 | Helm chart | `deploy/helm/hoops/Chart.yaml` (`version`, `appVersion`) | bump with every chart change |

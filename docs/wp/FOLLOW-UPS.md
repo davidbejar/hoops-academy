@@ -1,8 +1,8 @@
 # Cross-cutting follow-ups (owned by the orchestrator)
 
 Collected from the WP handovers and the WP20 review (2026-11-02); reconciled with the product interview of 2026-11-05
-(WP26) and with the WP26–WP37 handovers on 2026-11-06. Grouped by area; **[v2]** marks items that are out of v1 by
-decision (PLAN §8, roadmap); **→ WPnn** marked an item the plan below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
+(WP26), with the WP26–WP37 handovers on 2026-11-06 and with the WP38–WP42 handovers on the evening of 2026-11-06.
+Grouped by area; **[v2]** marks items that are out of v1 by decision (PLAN §8, roadmap); **→ WPnn** marked an item the plans below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
 closed them. The statement-by-statement status of the spec is in [`../conformance.md`](../conformance.md).
 
 ## Plan (2026-11-05)
@@ -60,15 +60,16 @@ handovers: `docs/wp/WP<n>-*.md`. **All twelve are done**: merged into `main` on 
 
 ## Plan (2026-11-06)
 Second round, decided in the interview of 2026-11-06 (decisions 15–23 below); same mechanics (worktrees, waves,
-rebase + fast-forward, one docs pass at the end).
+rebase + fast-forward, one docs pass at the end). **All five are done**: merged into `main` on 2026-11-06 in the order
+WP38, WP40, WP39, WP42, WP41 (WP39 rebased on WP38 and re-verified).
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP38 | Core: audit actor masked for academy admins, `ApprovalPayload.empty()` removed | Opus | Running |
-| 1 | WP39 | Athlete: `clear` list on update requests (ADR-0032), test-type code edit and delete | Opus | Running |
-| 1 | WP40 | Gateway: global rate limiting with the Envoy rate-limit service and Redis (ADR-0033) | Opus | Running |
-| 2 | WP41 | Web: demo mock for platform and athlete, academy time zone from `/me` | Sonnet | After WP38, WP39 |
-| 2 | WP42 | kind: e2e mail checks through Mailpit, `tilt ci` on the Gateway API chart | Sonnet | After WP40 |
+| 1 | WP38 | Core: audit actor masked for academy admins, `ApprovalPayload.empty()` removed | Opus | Done (ADR-0029 amended; core 2.6.0) |
+| 1 | WP39 | Athlete: `clear` list on update requests (ADR-0032), test-type code edit and delete | Opus | Done (ADR-0032; athlete 2.1.0) |
+| 1 | WP40 | Gateway: global rate limiting with the Envoy rate-limit service and Redis (ADR-0033) | Opus | Done (ADR-0033; chart 0.3.0) |
+| 2 | WP41 | Web: demo mock for platform and athlete, academy time zone from `/me` | Sonnet | Done (no contract change; web 646 tests) |
+| 2 | WP42 | kind: e2e mail checks through Mailpit, `tilt ci` on the Gateway API chart | Sonnet | Done (journey 21/21 on kind with mail checks; `tilt ci` green) |
 
 ### Decisions of 2026-11-06 (product owner)
 15. **Fitness norms (WP27) stay**: FitBack 2023 for the beep test and the "20 cm = toes" sit-and-reach scale are kept.
@@ -91,10 +92,12 @@ rebase + fast-forward, one docs pass at the end).
 ## Open
 
 ### Product / contract decisions
-- **Audit rows with free text → WP38** (decision 16; found in WP34): `tenant.suspended` / `tenant.withdrawn` store the super admin's `reason`
-  in the audit metadata, against the no-personal-data rule, and academy admins now read those rows. Decide: keep (the
-  reason is meant for them) or move it out of the audit row. Also: rows done from the platform show the super admin's
-  Keycloak `sub` to academy admins; could be shown as "platform administrator".
+- **`clear` list in core and game** (WP39, ADR-0032): only athlete has adopted it. Core still reads a PATCH as a merge
+  patch (an explicit `null` clears) and game has no clearable update yet; each adopts ADR-0032 in its own WP (add the
+  spec to `ADOPTED` in `UpdateRequestClearListContractTest`). In athlete an explicit `null` no longer clears (now
+  "unchanged", decision 17); a client that relied on it must name the field in `clear`.
+- **Stored audit row keeps the super admin's subject** (WP38, ADR-0029 amendment): only the academy read masks platform
+  actors; the row itself keeps the `sub` for accountability (by design). The v2 purge job is its only clean-up.
 - **Feed filter in SQL** (WP33): for non-staff callers the feed filter walks all of a match's events in memory.
 - **Template i18n** (WP9): `nameKey`/`locale` on `TrainingPlanSummary`; the 10 templates are English-only in the DB.
 
@@ -112,13 +115,14 @@ rebase + fast-forward, one docs pass at the end).
 - **Browser-level tests**: `apps/web/tool/web_smoke.sh` ran green in mock mode on 2026-11-02 (chromedriver 156 installed
   by hand from Chrome for Testing; the Homebrew cask is disabled). Still open: the Lighthouse installability check and the
   airplane-mode cold-start check (README "Offline cold start"); add chromedriver to CI.
-- **Update requests cannot clear a field → WP39** (decision 17; WP35): every `Update*Request` treats null as "unchanged", so a session's plan,
-  location or notes, an absence reason, a result's notes or a measurement value can be changed but not removed. Needs a
-  contract convention (explicit null, or a `clear` list) in core and athlete.
-- **Academy time zone from `/me` → WP41** (decision 19): the app calls the tenant profile for it (WP35) although
-  `/me` carries `authz.timezone` per membership since WP2c; web-only fix.
-- **Test types → WP39** (decision 20): no operation to change a type's code or delete a type (WP35 left them out).
-- **Demo mock → WP41** (decision 21) lacks `/api/athlete/*` and `/platform/*` (all WP35 screens are unreachable in mock mode).
+- **Injury edit dialog** (WP39): no dialog edits an injury's description or dates, so `UpdateInjuryRequest.clear` is
+  not used by the app yet.
+- **Demo mock limits** (WP41): `/api/athlete/*` serves the demo academy only (Club Norte is PARENT with no data); the
+  athlete mock applies no role-based authorization (the real service filters); its team rosters are fixed (Mini A, Mini
+  B, Infantil A), not read from the core mock, so players added in the demo do not appear on attendance sheets, and
+  the game mock's roster ids differ; no `/internal/usage`; `updateTenant` is mocked but no screen calls it.
+- **`dart format` policy** (WP41): the new mock files were formatted with `dart format -l 120` (long, unjoined lines);
+  no repo-wide line length or format check is decided.
 - **Fonts**: glyphs outside Roboto (CJK, emoji) render as tofu; bundle a Noto subset if a language needs it.
 - **Same-device two-tab clientSeq race** (WP13): accepted for now (second event is `CLIENT_SEQ_CONFLICT`, visible).
 
@@ -143,31 +147,36 @@ rebase + fast-forward, one docs pass at the end).
   fetchable yet), edge ages that repeat the nearest cited age; the girls' T-test placeholders run ~1.2 s too fast; the
   Cooper figures are not traced to the 1968 paper; check the Catley PDF against the BMJ copy. The sit-and-reach scale is
   now "20 cm = toes" (Catley): the web UI should show the unit hint. Details: `docs/domain/norms.md`.
-- **`ApprovalPayload.empty()` → WP38** in core is never called (dead code found by WP37; its mutant stays uncovered): delete it
-  or use it.
 - **Mutation scope** (WP37): rule code reached only by container tests (`TenantScope`, `ProblemExceptionMappers`, use
   cases) is outside PIT's scope; extracting pure rules from them would let PIT cover them.
 - **Dependency hygiene**: `dependency:analyze` lists Quarkus extensions as "unused" (false positives, runtime-only) and
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
-- **Gateway rate limits → WP40** (decision 18; WP36): Envoy Gateway local rate limits hold **per Envoy replica**
-  and the burst equals the per-minute rate (ingress-nginx allowed 5 x); global rate limiting (Envoy ratelimit service +
-  Redis) if the proxy runs more than one replica and the limit must hold across them (ADR-0031).
+- **Redis ACL for the rate limiter** (WP40, ADR-0033): `ratelimit-redis` has no password and relies on its
+  NetworkPolicy (which, like the chart's other policies, needs an enforcing CNI); an ACL (`-@scripting -@dangerous`)
+  would add defense in depth. Not done because it needs a kind re-test.
+- **Fixed-window rate limits** (WP40, ADR-0033, accepted): a client can send up to 2 × the per-minute limit across a
+  minute boundary; per-IP limits can still be dodged by rotating addresses (an IPv6 /64).
+- **`up.sh` controller restart** (WP40): the branch of `deploy/kind/up.sh` that restarts the Envoy Gateway controller
+  when its rate-limit config changes has not been exercised (only the unchanged path).
 - **No gateway body-size limit** (WP36; accepted, decision 18): Envoy streams bodies; the services reject bodies above
   2 MB with a 413 Problem. A gateway limit needs `BackendTrafficPolicy.requestBuffer`, which buffers every request.
-- **e2e MailHog checks skipped on kind → WP42** (decision 22; WP36): kind runs Mailpit as Service `mailhog`, whose API is `/api/v1`, not
-  MailHog's; the journey skips those checks there (green on compose).
-- **`tilt ci` with core-service → WP42** (decision 22) has not been run (WP16 deployed game/athlete/web; WP18 used `up.sh --deploy`; not
-  re-run after WP30's Tiltfile sync or WP36's Gateway API chart).
+- **Port 18080 while Tilt runs** (WP42): Tilt's Keycloak port-forward holds 18080, so the runbook's 18080 forward for
+  the journey on kind only works after `tilt ci` / `tilt up` has exited (use another local port, e.g. 18081). In the
+  Tilt UI `mailhog` and the services' NetworkPolicies are still "uncategorized" (pre-existing, cosmetic).
+- **Dependabot majors** (2026-11-06): PR #3 (`com.networknt:json-schema-validator` 2.0.8 → 3.0.8) is red: the 3.x API
+  no longer takes a Jackson `JsonNode` in `getSchema` / `validate` (`MatchEventJsonSchemaTest` does not compile), so it
+  needs a small code change or a pin to 2.x; PR #4 (`cupertino_icons` 2.0.0) is green. Majors are not grouped.
 - **Keycloak CSP hardening**: realm `browserSecurityHeaders`, so the accepted ZAP alerts under `/auth/realms/` can go
   (`.zap/baseline.conf`). (The CI workflows themselves are green on `origin/main` since 2026-11-02; see Resolved.)
 - **dependency-check NVD cache** (2026-11-05): the "Save NVD data" step runs `if: always()`, so a failed or cancelled
   run can save a broken cache that later runs restore (the 2026-11-05 run restored `nvd-Linux-41422780377`, saved by
   the failed run 41422780377, and took 77 min; that cache has been deleted). Save on success only, or delete the key by
   hand (`gh cache delete`) when the job runs > 40 min. No WP yet.
-- **Image pins** (WP30): the `ubi9/openjdk-21-runtime` digest is pinned but not auto-bumped (no Renovate/Dependabot for
-  Containerfile ARGs); drop the guava pin in the root pom once the Quarkus BOM ships ≥ 33.7.2.
+- **Image pins** (WP30): the `ubi9/openjdk-21-runtime` digest is pinned but not auto-bumped (Dependabot covers Maven, pub
+  and GitHub Actions only, not Containerfile ARGs, chart image tags or the kind pins); drop the guava pin in the root
+  pom once the Quarkus BOM ships ≥ 33.7.2.
 - **Optimised Keycloak image** (read-only root FS; KSV-0014 accepted until 2027-03-31).
 - **External Secrets Operator manifests** (ADR-0012).
 
@@ -180,6 +189,27 @@ rebase + fast-forward, one docs pass at the end).
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+- WP38 (decision 16): audit rows with free text: academy ADMINs keep reading the super admin's `reason`, and platform
+  actors are masked on the academy path ("Platform administrator", no subject / person / name); the super admin's view
+  is unchanged (ADR-0029 amendment, core 2.6.0). Core `ApprovalPayload.empty()` (dead code found by WP37) deleted.
+- WP39 (decision 17): update requests can clear a field: athlete's nine `Update*Request` bodies carry a `clear` list
+  (absent or null = unchanged, `CLEAR_CONFLICT` for value + clear) and the web edit forms send it (ADR-0032, athlete 2.1.0).
+- WP39 (decision 20): test types: a custom type's `code` can be changed (409 `TEST_TYPE_CODE_EXISTS`) and the type
+  deleted unless results reference it (409 `TEST_TYPE_HAS_RESULTS`); web edit and delete with confirmation.
+- WP40 (decision 18): gateway rate limits are global (Envoy Gateway's rate limit service + Redis `ratelimit-redis`,
+  shared by every Envoy replica, fail open); `ratelimit-check.sh` passed on kind with 1 and 2 replicas and with Redis
+  down (ADR-0033, chart 0.3.0; ADR-0031 decision 4 replaced).
+- WP41 (decision 19): the academy time zone comes from `/me` (`authz.timezone` of the current membership); no tenant
+  profile call, device zone as fallback.
+- WP41 (decision 21): demo mock serves `/platform/*` and `/api/athlete/*` (every screen reachable; the demo user is a
+  super admin unless `HOOPS_MOCK_SUPER_ADMIN=false`); the browser smoke walks training and the platform console.
+- WP42 (decision 22): e2e mail checks on kind: `MailSink` detects MailHog v2 or Mailpit v1 and the checks are no longer
+  skipped; the journey ran 21/21 on kind with the mail checks (and 25/25 incl. `MailSinkTest` on compose).
+- WP42 (decision 22): `tilt ci` on the Gateway API chart with core-service: "All workloads are healthy" on a fresh kind
+  cluster in 5 min 55 s; Tiltfile and `values-kind.yaml` needed no change.
+- Dependabot (2026-11-06, 625a5f9): weekly grouped version updates for Maven (Quarkus on its own), pub and GitHub
+  Actions; automated security fixes enabled in the repository settings. Repository description, topics and the
+  AGPL-3.0 license (20f1921) set the same day.
 - Podman VM clock drift (decision 23, 2026-11-06): `scripts/hooks/_common.sh` steps the VM clock to the host's when
   they differ by more than 30 s, before the isolation and role checks (`just isolation-check` / `just db-role-check`
   and the Claude hook); verified with a forced 120 s drift. The manual command stays in `docs/runbooks/kind.md`.
@@ -278,7 +308,8 @@ rebase + fast-forward, one docs pass at the end).
 - WP24/WP25: a server-generated temporary password replaces the setup and verification e-mails (ADR-0024); the console
   shows it once; re-issue for pending admins and members.
 - CI workflows (`ci`, `e2e`, `images`) first ran on GitHub on 2026-11-02 and are green on `origin/main` since 5ab1f71
-  (2026-11-02); last checked on 70d860b (2026-11-05, runs 42038926658, 42038926724, 42038926785). Runner-only fixes
+  (2026-11-02); last checked on 2026-11-06: `ci`, `e2e` and `images` green on bb68194 (WP39) and 33441be (WP41), `ci` and
+  `e2e` on ba4e948 (WP42) and 625a5f9 (Dependabot). Runner-only fixes
   landed on 2026-11-02 (`git log --grep ci`). Notes kept: the e2e workflow's throw-away `.env` must set
   `HOOPS_EXPOSE_KC_ADMIN=true`; dependency-check needs `secrets.NVD_API_KEY`.
 - NVD key activation: `NVD_API_KEY` is valid since 2026-11-02 (commit 929d1df); dependency-check green with the cached

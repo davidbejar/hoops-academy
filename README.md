@@ -94,23 +94,26 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | Domain rules | [`docs/domain/`](docs/domain): authz matrix, glossary, norms |
 | Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [e2e](docs/runbooks/e2e.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
 | Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md) |
-| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plan of 2026-11-05), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
+| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05 and 2026-11-06), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP37 are done**, with
+Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP42 are done**, with
 handovers in `docs/wp/` (WP19, the optional events/Redpanda package, and billing are not built). As of 2026-11-06:
-backend `./mvnw verify` runs **1,970 tests** green and `flutter test` **608 tests** (CI run on 3b59360, after WP37); the
-21-step e2e journey is green on a compose stack (CI `e2e` workflow) and, since WP36, on kind. The Helm chart (0.2.0)
-uses Gateway API with Envoy Gateway (ADR-0031). Mutation testing (PIT) runs on demand with `just mutation` and in the
-`mutation.yml` workflow (manual + monthly), never in every build (scores 99.1–100 %, `docs/quality/mutation.md`). 370 of
-630 fitness norm rows are cited from published tables; the rest are flagged "reference pending"
-(`docs/domain/norms.md`). The CI workflows `e2e` and `images` are green on `main` (the four images go to ghcr.io,
-public); `ci` was green from 2026-11-02 until 3b59360, where only its Trivy job fails on an unlisted chart snapshot
-(FOLLOW-UPS). The browser smoke (`apps/web/tool/web_smoke.sh`) runs locally, not in CI; the Lighthouse and airplane-mode
-checks have not been run. Open items and the product owner's pending decisions:
-[`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); current state: [`docs/HANDOVER.md`](docs/HANDOVER.md); what the system
-does for each spec statement, with evidence: [`docs/conformance.md`](docs/conformance.md).
+backend `./mvnw verify` runs **2,019 JVM tests** green (plus 4 e2e unit tests; the 21 journey tests are skipped without
+a running stack) and `flutter test` **646 tests**; the 21-step e2e journey is green on a compose stack (CI `e2e`
+workflow) and on kind, including its mail checks (Mailpit). Contract versions: core 2.6.0, game 2.1.0, athlete 2.1.0,
+common 1.1.0. The Helm chart (0.3.0) uses Gateway API with Envoy Gateway (ADR-0031) and global per-IP rate limits shared
+by every Envoy replica through Envoy's rate limit service and Redis (ADR-0033); `tilt ci` is green on kind. Mutation
+testing (PIT) runs on demand with `just mutation` and in the `mutation.yml` workflow (manual + monthly), never in every
+build (scores 99.1–100 %, athlete 430/430 after WP39; `docs/quality/mutation.md`). 370 of 630 fitness norm rows are
+cited from published tables; the rest are flagged "reference pending" (`docs/domain/norms.md`). The CI workflows `ci`,
+`e2e` and `images` are green on `main` (the four images go to ghcr.io, public); Dependabot opens weekly grouped update
+PRs for Maven, pub and GitHub Actions, with automated security fixes on. The demo mode (`HOOPS_MOCK_API=true`) reaches
+every screen, the platform console included. The browser smoke (`apps/web/tool/web_smoke.sh`) runs locally, not in CI;
+the Lighthouse and airplane-mode checks have not been run. Open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md);
+current state: [`docs/HANDOVER.md`](docs/HANDOVER.md); what the system does for each spec statement, with evidence:
+[`docs/conformance.md`](docs/conformance.md).
 
 ## License
 GNU Affero General Public License v3.0 ([LICENSE](LICENSE)): anyone who runs a modified version as a network service
