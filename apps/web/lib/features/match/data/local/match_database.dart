@@ -21,6 +21,7 @@ class MatchesCache extends Table {
 class RosterCache extends Table {
   @override
   String get tableName => 'roster_cache';
+  TextColumn get tenantId => text()();
   TextColumn get matchId => text()();
   TextColumn get playerId => text()();
   IntColumn get position => integer()();
@@ -28,7 +29,7 @@ class RosterCache extends Table {
   TextColumn get jerseyNumber => text().nullable()();
   BoolColumn get isStarter => boolean()();
   @override
-  Set<Column> get primaryKey => {matchId, playerId};
+  Set<Column> get primaryKey => {tenantId, matchId, playerId};
 }
 
 /// Events recorded on this device and their sync state (never deleted
@@ -89,6 +90,9 @@ class Device extends Table {
   String get tableName => 'device';
   IntColumn get slot => integer()();
   TextColumn get deviceId => text()();
+
+  /// `sub` of the user whose data this DB holds (F-07); null until bound.
+  TextColumn get ownerSub => text().nullable()();
   @override
   Set<Column> get primaryKey => {slot};
 }
@@ -118,10 +122,19 @@ class MatchDatabase extends _$MatchDatabase {
   MatchDatabase(super.connection);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    // v2 (F-07): the roster cache gains tenant_id in its key and the device
+    // row an owner. Caches are re-fetchable, so the roster cache is rebuilt.
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.deleteTable('roster_cache');
+        await m.createTable(rosterCache);
+        await m.addColumn(device, device.ownerSub);
+      }
+    },
     onCreate: (m) async {
       await m.createAll();
       await m.createIndex(

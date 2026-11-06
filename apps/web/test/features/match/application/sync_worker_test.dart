@@ -104,7 +104,7 @@ void main() {
 
   Future<List<RecordedEvent>> localEvents() async => mergeEvents(
     await store.syncedEvents(matchId),
-    await store.ownEvents(matchId),
+    await store.ownEvents(matchId, tenantId: tenant, personId: me),
   );
 
   test('50 events queued offline -> reconnect -> 50 ACCEPTED; replay -> 50 DUPLICATE; '
@@ -118,7 +118,7 @@ void main() {
 
     server.offline = false;
     await worker.onConnectivityChanged(online: true);
-    final own = await store.ownEvents(matchId);
+    final own = await store.ownEvents(matchId, tenantId: tenant, personId: me);
     expect(own.length, 50);
     expect(own.every((e) => e.status == EventStatus.accepted), isTrue);
     expect(worker.status.value.pendingCount, 0);
@@ -130,7 +130,11 @@ void main() {
     final seqs = {for (final e in own) e.event.id: e.serverSeq};
     await store.debugResetToPending(matchId);
     await worker.syncNow();
-    final replayed = await store.ownEvents(matchId);
+    final replayed = await store.ownEvents(
+      matchId,
+      tenantId: tenant,
+      personId: me,
+    );
     expect(replayed.every((e) => e.status == EventStatus.duplicate), isTrue);
     expect({for (final e in replayed) e.event.id: e.serverSeq}, seqs);
     expect(server.stored(matchId).length, 50);
@@ -146,8 +150,11 @@ void main() {
     server.dropResponses = true;
     await worker.syncNow();
     expect(
-      (await store.ownEvents(matchId))
-          .every((e) => e.status == EventStatus.pending),
+      (await store.ownEvents(
+        matchId,
+        tenantId: tenant,
+        personId: me,
+      )).every((e) => e.status == EventStatus.pending),
       isTrue,
     );
     expect(
@@ -158,8 +165,11 @@ void main() {
     server.dropResponses = false;
     await worker.syncNow();
     expect(
-      (await store.ownEvents(matchId))
-          .every((e) => e.status == EventStatus.duplicate),
+      (await store.ownEvents(
+        matchId,
+        tenantId: tenant,
+        personId: me,
+      )).every((e) => e.status == EventStatus.duplicate),
       isTrue,
     );
   });
@@ -199,7 +209,11 @@ void main() {
       expect(worker.status.value.pausedForAuth, isTrue);
       expect(worker.status.value.lastError, SyncErrorKind.unauthorized);
       expect(timers.pending, isEmpty, reason: 'no retry loop while signed out');
-      final queued = await store.ownEvents(matchId);
+      final queued = await store.ownEvents(
+        matchId,
+        tenantId: tenant,
+        personId: me,
+      );
       expect(queued.length, 50);
       expect(queued.every((e) => e.status == EventStatus.pending), isTrue);
 
@@ -210,8 +224,11 @@ void main() {
       await worker.onAuthenticated();
       expect(worker.status.value.pausedForAuth, isFalse);
       expect(
-        (await store.ownEvents(matchId))
-            .every((e) => e.status == EventStatus.accepted),
+        (await store.ownEvents(
+          matchId,
+          tenantId: tenant,
+          personId: me,
+        )).every((e) => e.status == EventStatus.accepted),
         isTrue,
       );
     },
@@ -223,7 +240,11 @@ void main() {
       server.rejectWhen = (e) => e.playerId == 'p3' ? 'NOT_AUTHORIZED' : null;
       await recordFiftyEvents(store);
       await worker.syncNow();
-      final own = await store.ownEvents(matchId);
+      final own = await store.ownEvents(
+        matchId,
+        tenantId: tenant,
+        personId: me,
+      );
       final rejected = own
           .where((e) => e.status == EventStatus.rejected)
           .toList();

@@ -61,8 +61,8 @@ void main() {
       expect(s.match.id, m1);
       expect(s.projection.live.onCourt, {'p1', 'p2', 'p3', 'p4', 'p5'});
       expect(s.fromCache, isFalse);
-      expect((await game.store.roster(m1))!.length, 7);
-      expect(await game.store.matchJson(m1), isNotNull);
+      expect((await game.store.roster(m1, tenantId: 't1'))!.length, 7);
+      expect(await game.store.matchJson(m1, tenantId: 't1'), isNotNull);
     },
   );
 
@@ -199,7 +199,11 @@ void main() {
     await pumpEventQueue();
     final ctl = c.read(liveMatchProvider(m1).notifier);
     await ctl.recordStat('p1', StatAction.steal);
-    final own = await game.store.ownEvents(m1);
+    final own = await game.store.ownEvents(
+      m1,
+      tenantId: 't1',
+      personId: 'person-me',
+    );
     expect(own.single.event.meta.period, 2);
     expect(own.single.event.meta.clockSecondsRemaining, 600);
   });

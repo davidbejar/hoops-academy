@@ -92,7 +92,12 @@ void main() {
       expect(h.container.read(selectedTenantIdProvider), isNull);
       expect(h.prefs.getString('hoops.selectedTenantId'), isNull);
       expect(h.container.read(requestContextProvider).tenantId, isNull);
-      expect(await tester.runAsync(() => h.game.store.matchJson('m1')), isNull);
+      expect(
+        await tester.runAsync(
+          () => h.game.store.matchJson('m1', tenantId: 't1'),
+        ),
+        isNull,
+      );
       final auth = h.auth as RecordingAuth;
       expect(auth.endSessionFlags, [true]);
       expect(auth.storeWasEmpty, [true]);
@@ -110,7 +115,12 @@ void main() {
 
       expect(find.byKey(const Key('login-button')), findsOneWidget);
       expect((h.auth as RecordingAuth).endSessionFlags, [false]);
-      expect(await tester.runAsync(() => h.game.store.matchJson('m1')), isNull);
+      expect(
+        await tester.runAsync(
+          () => h.game.store.matchJson('m1', tenantId: 't1'),
+        ),
+        isNull,
+      );
     },
   );
 

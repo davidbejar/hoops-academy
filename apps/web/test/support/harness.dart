@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:hoops_app/features/match/application/match_providers.dart'
+    show syncScopeProvider;
+import 'package:hoops_app/features/match/application/sync/sync_worker.dart'
+    show SyncScope;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -115,6 +119,9 @@ class Harness {
   final online = StreamController<bool>.broadcast();
   late SharedPreferences prefs;
   late ProviderContainer container;
+
+  /// Academy and person the match store is keyed by (the sync scope).
+  SyncScope get scope => container.read(syncScopeProvider)!;
 
   /// Navigates the real router (guard included) to [location] and settles.
   Future<void> go(WidgetTester tester, String location) async {

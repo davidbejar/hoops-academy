@@ -133,6 +133,8 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     final caps = ref.watch(capabilitiesProvider);
     _personId = ref.watch(syncScopeProvider)?.personId ?? caps.personId ?? '';
     _fromCache = false;
+    await ref.watch(matchOwnerProvider.future);
+    final tenant = _tenantOr(matchId);
 
     try {
       _match = await repo.get(matchId);
@@ -143,7 +145,9 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
         json: encodeMatch(_match),
       );
     } on Object catch (e) {
-      final cached = isOfflineError(e) ? await store.matchJson(matchId) : null;
+      final cached = isOfflineError(e)
+          ? await store.matchJson(matchId, tenantId: tenant)
+          : null;
       if (cached == null) rethrow;
       _match = decodeMatch(cached);
       _fromCache = true;
@@ -158,9 +162,11 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
             jerseyNumber: r.jerseyNumber,
             isStarter: r.isStarter,
           ),
-      ]);
+      ], tenantId: tenant);
     } on Object catch (e) {
-      final cached = isOfflineError(e) ? await store.roster(matchId) : null;
+      final cached = isOfflineError(e)
+          ? await store.roster(matchId, tenantId: tenant)
+          : null;
       if (cached == null) rethrow;
       _roster = [
         for (final c in cached)
@@ -175,7 +181,11 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
     }
     _rights = ScoringRights.of(caps, teamId: _match.teamId);
     _synced = await store.syncedEvents(matchId);
-    _own = await store.ownEvents(matchId);
+    _own = await store.ownEvents(
+      matchId,
+      tenantId: tenant,
+      personId: _personId,
+    );
     _disposed = false;
     _official = _rights.staff ? null : officialScoreOf(_match);
     if (!_rights.staff) await _refreshOfficial(repo);
@@ -186,10 +196,12 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
         _emit();
         if (!_rights.staff) unawaited(_refreshOfficial(repo));
       }),
-      store.watchOwnEvents(matchId).listen((e) {
-        _own = e;
-        _emit();
-      }),
+      store
+          .watchOwnEvents(matchId, tenantId: tenant, personId: _personId)
+          .listen((e) {
+            _own = e;
+            _emit();
+          }),
     ];
     worker.watch(matchId);
     // Events the filtered feed hides still change the score: poll the box

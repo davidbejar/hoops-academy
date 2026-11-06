@@ -8,6 +8,7 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import '../../../core/api/api.dart' show tenantIdProvider;
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/auth_service.dart';
+import '../../../core/auth/signed_in_email.dart' show subjectFromAccessToken;
 import '../../../core/connectivity/connectivity_providers.dart';
 import '../../../core/errors/app_error.dart';
 import '../../../core/http/dio_provider.dart';
@@ -28,6 +29,17 @@ final matchStoreProvider = Provider<MatchStore>((ref) {
   final store = MatchStore(MatchDatabase(openMatchConnection()));
   ref.onDispose(store.close);
   return store;
+});
+
+/// Binds the offline DB to the signed-in `sub` before any cached read (F-07):
+/// a different user after an expired session finds an empty DB. A token
+/// without a `sub` (mock mode) binds nothing.
+final matchOwnerProvider = FutureProvider<void>((ref) async {
+  final store = ref.watch(matchStoreProvider);
+  final auth = ref.watch(authServiceProvider);
+  ref.watch(authStatusProvider);
+  final sub = subjectFromAccessToken(await auth.accessToken());
+  if (sub != null) await store.bindOwner(sub);
 });
 
 final gameApiProvider = Provider<gen.HoopsGameApi>(
@@ -133,6 +145,7 @@ class MatchListNotifier extends AsyncNotifier<MatchList> {
     final team = ref.watch(matchTeamFilterProvider);
     final store = ref.watch(matchStoreProvider);
     final tenant = ref.watch(tenantIdProvider);
+    await ref.watch(matchOwnerProvider.future);
     try {
       final list = await ref
           .watch(matchesRepositoryProvider)

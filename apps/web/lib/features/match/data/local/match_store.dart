@@ -38,6 +38,26 @@ class MatchStore {
 
   // ------------------------------------------------------------- identity
 
+  /// Binds this device DB to the signed-in user [sub] (F-07). A DB owned by a
+  /// different `sub` (e.g. the session expired and someone else signed in) is
+  /// wiped first; returns true when that happened. A DB without an owner
+  /// (fresh or from before this check) adopts [sub].
+  Future<bool> bindOwner(String sub) async {
+    await deviceId();
+    final row = await (_db.select(
+      _db.device,
+    )..where((d) => d.slot.equals(0))).getSingle();
+    final owner = row.ownerSub;
+    if (owner == sub) return false;
+    final foreign = owner != null;
+    if (foreign) await wipe();
+    await deviceId();
+    await (_db.update(_db.device)..where((d) => d.slot.equals(0))).write(
+      DeviceCompanion(ownerSub: Value(sub)),
+    );
+    return foreign;
+  }
+
   /// Stable id of this installation, generated on first use.
   Future<String> deviceId() async {
     final cached = _deviceId;
@@ -236,11 +256,17 @@ class MatchStore {
       );
 
   /// Every event recorded on this device for [matchId], clientSeq order.
-  Future<List<PendingEvent>> ownEvents(String matchId) =>
-      _ownQuery(matchId).get().then(_toPendingList);
+  Future<List<PendingEvent>> ownEvents(
+    String matchId, {
+    required String tenantId,
+    required String personId,
+  }) => _ownQuery(matchId, tenantId, personId).get().then(_toPendingList);
 
-  Stream<List<PendingEvent>> watchOwnEvents(String matchId) =>
-      _ownQuery(matchId).watch().map(_toPendingList);
+  Stream<List<PendingEvent>> watchOwnEvents(
+    String matchId, {
+    required String tenantId,
+    required String personId,
+  }) => _ownQuery(matchId, tenantId, personId).watch().map(_toPendingList);
 
   Stream<int> watchUnsyncedCount({
     required String tenantId,
@@ -249,8 +275,15 @@ class MatchStore {
 
   SimpleSelectStatement<$PendingEventsTable, PendingEventRow> _ownQuery(
     String matchId,
+    String tenantId,
+    String personId,
   ) => _db.select(_db.pendingEvents)
-    ..where((e) => e.matchId.equals(matchId))
+    ..where(
+      (e) =>
+          e.matchId.equals(matchId) &
+          e.tenantId.equals(tenantId) &
+          e.personId.equals(personId),
+    )
     ..orderBy([(e) => OrderingTerm.asc(e.clientSeq)]);
 
   List<PendingEvent> _toPendingList(List<PendingEventRow> rows) =>
@@ -334,34 +367,44 @@ class MatchStore {
 
   // --------------------------------------------------------------- caches
 
-  Future<void> saveRoster(String matchId, List<CachedRosterEntry> entries) =>
-      _db.transaction(() async {
-        await (_db.delete(
+  Future<void> saveRoster(
+    String matchId,
+    List<CachedRosterEntry> entries, {
+    required String tenantId,
+  }) => _db.transaction(() async {
+    await (_db.delete(_db.rosterCache)..where(
+          (r) => r.matchId.equals(matchId) & r.tenantId.equals(tenantId),
+        ))
+        .go();
+    await _db.batch((b) {
+      for (var i = 0; i < entries.length; i++) {
+        final e = entries[i];
+        b.insert(
           _db.rosterCache,
-        )..where((r) => r.matchId.equals(matchId))).go();
-        await _db.batch((b) {
-          for (var i = 0; i < entries.length; i++) {
-            final e = entries[i];
-            b.insert(
-              _db.rosterCache,
-              RosterCacheCompanion.insert(
-                matchId: matchId,
-                playerId: e.playerId,
-                position: i,
-                displayName: e.displayName,
-                jerseyNumber: Value(e.jerseyNumber),
-                isStarter: e.isStarter,
-              ),
-            );
-          }
-        });
-      });
+          RosterCacheCompanion.insert(
+            tenantId: tenantId,
+            matchId: matchId,
+            playerId: e.playerId,
+            position: i,
+            displayName: e.displayName,
+            jerseyNumber: Value(e.jerseyNumber),
+            isStarter: e.isStarter,
+          ),
+        );
+      }
+    });
+  });
 
   /// Cached roster in its original order; null when never cached.
-  Future<List<CachedRosterEntry>?> roster(String matchId) async {
+  Future<List<CachedRosterEntry>?> roster(
+    String matchId, {
+    required String tenantId,
+  }) async {
     final rows =
         await (_db.select(_db.rosterCache)
-              ..where((r) => r.matchId.equals(matchId))
+              ..where(
+                (r) => r.matchId.equals(matchId) & r.tenantId.equals(tenantId),
+              )
               ..orderBy([(r) => OrderingTerm.asc(r.position)]))
             .get();
     if (rows.isEmpty) return null;
@@ -393,9 +436,12 @@ class MatchStore {
         ),
       );
 
-  Future<String?> matchJson(String matchId) async => (await (_db.select(
-    _db.matchesCache,
-  )..where((m) => m.id.equals(matchId))).getSingleOrNull())?.json;
+  Future<String?> matchJson(String matchId, {required String tenantId}) async =>
+      (await (_db.select(_db.matchesCache)..where(
+                (m) => m.id.equals(matchId) & m.tenantId.equals(tenantId),
+              ))
+              .getSingleOrNull())
+          ?.json;
 
   Future<List<String>> matchJsonsForTeam({
     required String tenantId,

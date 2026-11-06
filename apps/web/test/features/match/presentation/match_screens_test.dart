@@ -188,7 +188,7 @@ void main() {
       'pick players, starters and jersey; save stores and caches the roster',
       (tester) async {
         final game = gameWith();
-        await pumpCoach(tester, game, '/matches/$sched/setup');
+        final h = await pumpCoach(tester, game, '/matches/$sched/setup');
         expect(find.byKey(const Key('setup-p1')), findsOneWidget);
         await tapKey(tester, 'setup-save');
         expect(find.text('Marca al menos un titular'), findsOneWidget);
@@ -203,7 +203,9 @@ void main() {
         expect(saved.first.isStarter, isTrue);
         expect(saved[1].jerseyNumber, '12');
         expect(
-          (await tester.runAsync(() => game.store.roster(sched)))!.length,
+          (await tester.runAsync(
+            () => game.store.roster(sched, tenantId: h.scope.tenantId),
+          ))!.length,
           2,
         );
       },
@@ -258,7 +260,7 @@ void main() {
       'court, clock, period, shot, opponent points, substitution, undo, log',
       (tester) async {
         final game = gameWith()..server.offline = true;
-        await pumpCoach(tester, game, '/matches/$live');
+        final h = await pumpCoach(tester, game, '/matches/$live');
         expect(find.byKey(const Key('game-clock')), findsOneWidget);
         expect(find.text('10:00'), findsOneWidget);
         expect(find.byKey(const Key('player-p6')), findsOneWidget);
@@ -276,7 +278,13 @@ void main() {
         // Substitution: tap a bench player, choose who leaves.
         await tapKey(tester, 'player-p6');
         await tapKey(tester, 'sub-out-p5');
-        final own = await tester.runAsync(() => game.store.ownEvents(live));
+        final own = await tester.runAsync(
+          () => game.store.ownEvents(
+            live,
+            tenantId: h.scope.tenantId,
+            personId: h.scope.personId,
+          ),
+        );
         expect(own!.map((e) => e.event.type), [
           MatchEventType.periodStart,
           MatchEventType.shot,
@@ -320,7 +328,7 @@ void main() {
     ) async {
       final game = gameWith()
         ..server.rejectWhen = (e) => e is Block ? 'NOT_AUTHORIZED' : null;
-      await pumpCoach(tester, game, '/matches/$live');
+      final h = await pumpCoach(tester, game, '/matches/$live');
       await tapAction(tester, 'p1', 'blk');
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
@@ -330,10 +338,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Rechazada: sin permiso'), findsOneWidget);
       expect(find.text('1 rechazadas'), findsOneWidget);
-      final id = (await tester.runAsync(() => game.store.ownEvents(live)))!
-          .single
-          .event
-          .id;
+      final id = (await tester.runAsync(
+        () => game.store.ownEvents(
+          live,
+          tenantId: h.scope.tenantId,
+          personId: h.scope.personId,
+        ),
+      ))!.single.event.id;
       await tapKey(tester, 'log-discard-$id');
       await tapKey(tester, 'dialog-confirm');
       expect(find.text('Rechazada: sin permiso'), findsNothing);
@@ -429,7 +440,7 @@ void main() {
       'other players disabled, clock/period/opponent hidden, linked player scores',
       (tester) async {
         final game = gameWith()..server.offline = true;
-        await pumpParent(tester, game, '/matches/$live');
+        final h = await pumpParent(tester, game, '/matches/$live');
         expect(find.byKey(const Key('parent-mode')), findsOneWidget);
         expect(find.byKey(const Key('game-clock')), findsNothing);
         expect(find.byKey(const Key('period-start')), findsNothing);
@@ -446,7 +457,13 @@ void main() {
         expect(bench.onTap, isNull);
 
         await tapAction(tester, 'p1', 'stl');
-        final own = await tester.runAsync(() => game.store.ownEvents(live));
+        final own = await tester.runAsync(
+          () => game.store.ownEvents(
+            live,
+            tenantId: h.scope.tenantId,
+            personId: h.scope.personId,
+          ),
+        );
         expect(own!.single.event, isA<Steal>());
         expect(own.single.status.unsynced, isTrue);
       },

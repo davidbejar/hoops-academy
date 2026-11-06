@@ -5,7 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_providers.dart';
 
 /// The `email` claim of a JWT access token (null when absent or not a JWT).
-String? emailFromAccessToken(String? token) {
+String? emailFromAccessToken(String? token) => _stringClaim(token, 'email');
+
+/// The `sub` claim of a JWT access token (null when absent or not a JWT).
+String? subjectFromAccessToken(String? token) => _stringClaim(token, 'sub');
+
+String? _stringClaim(String? token, String name) {
   if (token == null) return null;
   final parts = token.split('.');
   if (parts.length != 3) return null;
@@ -14,8 +19,8 @@ String? emailFromAccessToken(String? token) {
       base64Url.decode(base64Url.normalize(parts[1])),
     );
     final claims = jsonDecode(payload);
-    final email = claims is Map ? claims['email'] : null;
-    return email is String && email.isNotEmpty ? email : null;
+    final value = claims is Map ? claims[name] : null;
+    return value is String && value.isNotEmpty ? value : null;
   } on FormatException {
     return null;
   }

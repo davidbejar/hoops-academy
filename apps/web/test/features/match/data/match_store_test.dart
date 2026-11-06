@@ -123,7 +123,7 @@ void main() {
       ]);
       box = await store.outbox(tenantId: tenant, personId: me, matchId: 'm1');
       expect(box.map((e) => e.event.meta.clientSeq), [4, 5, 6, 7]);
-      final own = await store.ownEvents('m1');
+      final own = await store.ownEvents('m1', tenantId: tenant, personId: me);
       expect(own.firstWhere((e) => e.event.meta.clientSeq == 1).serverSeq, 11);
       expect(
         own.firstWhere((e) => e.event.meta.clientSeq == 2).status,
@@ -184,19 +184,19 @@ void main() {
           isStarter: true,
         ),
         CachedRosterEntry(playerId: 'p2', displayName: 'Bo', isStarter: false),
-      ]);
-      expect((await store.roster('m1'))!.map((r) => r.displayName), [
-        'Ana',
-        'Bo',
-      ]);
-      expect(await store.roster('m2'), isNull);
+      ], tenantId: tenant);
+      expect(
+        (await store.roster('m1', tenantId: tenant))!.map((r) => r.displayName),
+        ['Ana', 'Bo'],
+      );
+      expect(await store.roster('m2', tenantId: tenant), isNull);
       await store.saveMatchJson(
         tenantId: tenant,
         matchId: 'm1',
         teamId: 'team',
         json: '{"id":"m1"}',
       );
-      expect(await store.matchJson('m1'), '{"id":"m1"}');
+      expect(await store.matchJson('m1', tenantId: tenant), '{"id":"m1"}');
       expect(await store.matchJsonsForTeam(tenantId: tenant, teamId: 'team'), [
         '{"id":"m1"}',
       ]);

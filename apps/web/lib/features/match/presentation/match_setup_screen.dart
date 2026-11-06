@@ -153,7 +153,7 @@ class _SetupFormState extends ConsumerState<_SetupForm> {
             jerseyNumber: r.jerseyNumber,
             isStarter: r.isStarter,
           ),
-      ]);
+      ], tenantId: ref.read(api.tenantIdProvider));
     }, success: l.matchSetupSaved);
     if (!mounted) return;
     setState(() => _busy = false);

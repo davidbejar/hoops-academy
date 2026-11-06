@@ -361,6 +361,17 @@ class $RosterCacheTable extends RosterCache
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $RosterCacheTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _tenantIdMeta = const VerificationMeta(
+    'tenantId',
+  );
+  @override
+  late final GeneratedColumn<String> tenantId = GeneratedColumn<String>(
+    'tenant_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _matchIdMeta = const VerificationMeta(
     'matchId',
   );
@@ -432,6 +443,7 @@ class $RosterCacheTable extends RosterCache
   );
   @override
   List<GeneratedColumn> get $columns => [
+    tenantId,
     matchId,
     playerId,
     position,
@@ -451,6 +463,14 @@ class $RosterCacheTable extends RosterCache
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('tenant_id')) {
+      context.handle(
+        _tenantIdMeta,
+        tenantId.isAcceptableOrUnknown(data['tenant_id']!, _tenantIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tenantIdMeta);
+    }
     if (data.containsKey('match_id')) {
       context.handle(
         _matchIdMeta,
@@ -507,11 +527,15 @@ class $RosterCacheTable extends RosterCache
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {matchId, playerId};
+  Set<GeneratedColumn> get $primaryKey => {tenantId, matchId, playerId};
   @override
   RosterCacheRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return RosterCacheRow(
+      tenantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tenant_id'],
+      )!,
       matchId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}match_id'],
@@ -546,6 +570,7 @@ class $RosterCacheTable extends RosterCache
 }
 
 class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
+  final String tenantId;
   final String matchId;
   final String playerId;
   final int position;
@@ -553,6 +578,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
   final String? jerseyNumber;
   final bool isStarter;
   const RosterCacheRow({
+    required this.tenantId,
     required this.matchId,
     required this.playerId,
     required this.position,
@@ -563,6 +589,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['tenant_id'] = Variable<String>(tenantId);
     map['match_id'] = Variable<String>(matchId);
     map['player_id'] = Variable<String>(playerId);
     map['position'] = Variable<int>(position);
@@ -576,6 +603,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
 
   RosterCacheCompanion toCompanion(bool nullToAbsent) {
     return RosterCacheCompanion(
+      tenantId: Value(tenantId),
       matchId: Value(matchId),
       playerId: Value(playerId),
       position: Value(position),
@@ -593,6 +621,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return RosterCacheRow(
+      tenantId: serializer.fromJson<String>(json['tenantId']),
       matchId: serializer.fromJson<String>(json['matchId']),
       playerId: serializer.fromJson<String>(json['playerId']),
       position: serializer.fromJson<int>(json['position']),
@@ -605,6 +634,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'tenantId': serializer.toJson<String>(tenantId),
       'matchId': serializer.toJson<String>(matchId),
       'playerId': serializer.toJson<String>(playerId),
       'position': serializer.toJson<int>(position),
@@ -615,6 +645,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
   }
 
   RosterCacheRow copyWith({
+    String? tenantId,
     String? matchId,
     String? playerId,
     int? position,
@@ -622,6 +653,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
     Value<String?> jerseyNumber = const Value.absent(),
     bool? isStarter,
   }) => RosterCacheRow(
+    tenantId: tenantId ?? this.tenantId,
     matchId: matchId ?? this.matchId,
     playerId: playerId ?? this.playerId,
     position: position ?? this.position,
@@ -631,6 +663,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
   );
   RosterCacheRow copyWithCompanion(RosterCacheCompanion data) {
     return RosterCacheRow(
+      tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
       matchId: data.matchId.present ? data.matchId.value : this.matchId,
       playerId: data.playerId.present ? data.playerId.value : this.playerId,
       position: data.position.present ? data.position.value : this.position,
@@ -647,6 +680,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
   @override
   String toString() {
     return (StringBuffer('RosterCacheRow(')
+          ..write('tenantId: $tenantId, ')
           ..write('matchId: $matchId, ')
           ..write('playerId: $playerId, ')
           ..write('position: $position, ')
@@ -659,6 +693,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
 
   @override
   int get hashCode => Object.hash(
+    tenantId,
     matchId,
     playerId,
     position,
@@ -670,6 +705,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is RosterCacheRow &&
+          other.tenantId == this.tenantId &&
           other.matchId == this.matchId &&
           other.playerId == this.playerId &&
           other.position == this.position &&
@@ -679,6 +715,7 @@ class RosterCacheRow extends DataClass implements Insertable<RosterCacheRow> {
 }
 
 class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
+  final Value<String> tenantId;
   final Value<String> matchId;
   final Value<String> playerId;
   final Value<int> position;
@@ -687,6 +724,7 @@ class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
   final Value<bool> isStarter;
   final Value<int> rowid;
   const RosterCacheCompanion({
+    this.tenantId = const Value.absent(),
     this.matchId = const Value.absent(),
     this.playerId = const Value.absent(),
     this.position = const Value.absent(),
@@ -696,6 +734,7 @@ class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
     this.rowid = const Value.absent(),
   });
   RosterCacheCompanion.insert({
+    required String tenantId,
     required String matchId,
     required String playerId,
     required int position,
@@ -703,12 +742,14 @@ class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
     this.jerseyNumber = const Value.absent(),
     required bool isStarter,
     this.rowid = const Value.absent(),
-  }) : matchId = Value(matchId),
+  }) : tenantId = Value(tenantId),
+       matchId = Value(matchId),
        playerId = Value(playerId),
        position = Value(position),
        displayName = Value(displayName),
        isStarter = Value(isStarter);
   static Insertable<RosterCacheRow> custom({
+    Expression<String>? tenantId,
     Expression<String>? matchId,
     Expression<String>? playerId,
     Expression<int>? position,
@@ -718,6 +759,7 @@ class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (tenantId != null) 'tenant_id': tenantId,
       if (matchId != null) 'match_id': matchId,
       if (playerId != null) 'player_id': playerId,
       if (position != null) 'position': position,
@@ -729,6 +771,7 @@ class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
   }
 
   RosterCacheCompanion copyWith({
+    Value<String>? tenantId,
     Value<String>? matchId,
     Value<String>? playerId,
     Value<int>? position,
@@ -738,6 +781,7 @@ class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
     Value<int>? rowid,
   }) {
     return RosterCacheCompanion(
+      tenantId: tenantId ?? this.tenantId,
       matchId: matchId ?? this.matchId,
       playerId: playerId ?? this.playerId,
       position: position ?? this.position,
@@ -751,6 +795,9 @@ class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (tenantId.present) {
+      map['tenant_id'] = Variable<String>(tenantId.value);
+    }
     if (matchId.present) {
       map['match_id'] = Variable<String>(matchId.value);
     }
@@ -778,6 +825,7 @@ class RosterCacheCompanion extends UpdateCompanion<RosterCacheRow> {
   @override
   String toString() {
     return (StringBuffer('RosterCacheCompanion(')
+          ..write('tenantId: $tenantId, ')
           ..write('matchId: $matchId, ')
           ..write('playerId: $playerId, ')
           ..write('position: $position, ')
@@ -2180,8 +2228,19 @@ class $DeviceTable extends Device with TableInfo<$DeviceTable, DeviceRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _ownerSubMeta = const VerificationMeta(
+    'ownerSub',
+  );
   @override
-  List<GeneratedColumn> get $columns => [slot, deviceId];
+  late final GeneratedColumn<String> ownerSub = GeneratedColumn<String>(
+    'owner_sub',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [slot, deviceId, ownerSub];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2208,6 +2267,12 @@ class $DeviceTable extends Device with TableInfo<$DeviceTable, DeviceRow> {
     } else if (isInserting) {
       context.missing(_deviceIdMeta);
     }
+    if (data.containsKey('owner_sub')) {
+      context.handle(
+        _ownerSubMeta,
+        ownerSub.isAcceptableOrUnknown(data['owner_sub']!, _ownerSubMeta),
+      );
+    }
     return context;
   }
 
@@ -2225,6 +2290,10 @@ class $DeviceTable extends Device with TableInfo<$DeviceTable, DeviceRow> {
         DriftSqlType.string,
         data['${effectivePrefix}device_id'],
       )!,
+      ownerSub: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_sub'],
+      ),
     );
   }
 
@@ -2237,17 +2306,29 @@ class $DeviceTable extends Device with TableInfo<$DeviceTable, DeviceRow> {
 class DeviceRow extends DataClass implements Insertable<DeviceRow> {
   final int slot;
   final String deviceId;
-  const DeviceRow({required this.slot, required this.deviceId});
+
+  /// `sub` of the user whose data this DB holds (F-07); null until bound.
+  final String? ownerSub;
+  const DeviceRow({required this.slot, required this.deviceId, this.ownerSub});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['slot'] = Variable<int>(slot);
     map['device_id'] = Variable<String>(deviceId);
+    if (!nullToAbsent || ownerSub != null) {
+      map['owner_sub'] = Variable<String>(ownerSub);
+    }
     return map;
   }
 
   DeviceCompanion toCompanion(bool nullToAbsent) {
-    return DeviceCompanion(slot: Value(slot), deviceId: Value(deviceId));
+    return DeviceCompanion(
+      slot: Value(slot),
+      deviceId: Value(deviceId),
+      ownerSub: ownerSub == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerSub),
+    );
   }
 
   factory DeviceRow.fromJson(
@@ -2258,6 +2339,7 @@ class DeviceRow extends DataClass implements Insertable<DeviceRow> {
     return DeviceRow(
       slot: serializer.fromJson<int>(json['slot']),
       deviceId: serializer.fromJson<String>(json['deviceId']),
+      ownerSub: serializer.fromJson<String?>(json['ownerSub']),
     );
   }
   @override
@@ -2266,15 +2348,24 @@ class DeviceRow extends DataClass implements Insertable<DeviceRow> {
     return <String, dynamic>{
       'slot': serializer.toJson<int>(slot),
       'deviceId': serializer.toJson<String>(deviceId),
+      'ownerSub': serializer.toJson<String?>(ownerSub),
     };
   }
 
-  DeviceRow copyWith({int? slot, String? deviceId}) =>
-      DeviceRow(slot: slot ?? this.slot, deviceId: deviceId ?? this.deviceId);
+  DeviceRow copyWith({
+    int? slot,
+    String? deviceId,
+    Value<String?> ownerSub = const Value.absent(),
+  }) => DeviceRow(
+    slot: slot ?? this.slot,
+    deviceId: deviceId ?? this.deviceId,
+    ownerSub: ownerSub.present ? ownerSub.value : this.ownerSub,
+  );
   DeviceRow copyWithCompanion(DeviceCompanion data) {
     return DeviceRow(
       slot: data.slot.present ? data.slot.value : this.slot,
       deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      ownerSub: data.ownerSub.present ? data.ownerSub.value : this.ownerSub,
     );
   }
 
@@ -2282,46 +2373,58 @@ class DeviceRow extends DataClass implements Insertable<DeviceRow> {
   String toString() {
     return (StringBuffer('DeviceRow(')
           ..write('slot: $slot, ')
-          ..write('deviceId: $deviceId')
+          ..write('deviceId: $deviceId, ')
+          ..write('ownerSub: $ownerSub')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(slot, deviceId);
+  int get hashCode => Object.hash(slot, deviceId, ownerSub);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DeviceRow &&
           other.slot == this.slot &&
-          other.deviceId == this.deviceId);
+          other.deviceId == this.deviceId &&
+          other.ownerSub == this.ownerSub);
 }
 
 class DeviceCompanion extends UpdateCompanion<DeviceRow> {
   final Value<int> slot;
   final Value<String> deviceId;
+  final Value<String?> ownerSub;
   const DeviceCompanion({
     this.slot = const Value.absent(),
     this.deviceId = const Value.absent(),
+    this.ownerSub = const Value.absent(),
   });
   DeviceCompanion.insert({
     this.slot = const Value.absent(),
     required String deviceId,
+    this.ownerSub = const Value.absent(),
   }) : deviceId = Value(deviceId);
   static Insertable<DeviceRow> custom({
     Expression<int>? slot,
     Expression<String>? deviceId,
+    Expression<String>? ownerSub,
   }) {
     return RawValuesInsertable({
       if (slot != null) 'slot': slot,
       if (deviceId != null) 'device_id': deviceId,
+      if (ownerSub != null) 'owner_sub': ownerSub,
     });
   }
 
-  DeviceCompanion copyWith({Value<int>? slot, Value<String>? deviceId}) {
+  DeviceCompanion copyWith({
+    Value<int>? slot,
+    Value<String>? deviceId,
+    Value<String?>? ownerSub,
+  }) {
     return DeviceCompanion(
       slot: slot ?? this.slot,
       deviceId: deviceId ?? this.deviceId,
+      ownerSub: ownerSub ?? this.ownerSub,
     );
   }
 
@@ -2334,6 +2437,9 @@ class DeviceCompanion extends UpdateCompanion<DeviceRow> {
     if (deviceId.present) {
       map['device_id'] = Variable<String>(deviceId.value);
     }
+    if (ownerSub.present) {
+      map['owner_sub'] = Variable<String>(ownerSub.value);
+    }
     return map;
   }
 
@@ -2341,7 +2447,8 @@ class DeviceCompanion extends UpdateCompanion<DeviceRow> {
   String toString() {
     return (StringBuffer('DeviceCompanion(')
           ..write('slot: $slot, ')
-          ..write('deviceId: $deviceId')
+          ..write('deviceId: $deviceId, ')
+          ..write('ownerSub: $ownerSub')
           ..write(')'))
         .toString();
   }
@@ -2807,6 +2914,7 @@ typedef $$MatchesCacheTableProcessedTableManager =
     >;
 typedef $$RosterCacheTableCreateCompanionBuilder =
     RosterCacheCompanion Function({
+      required String tenantId,
       required String matchId,
       required String playerId,
       required int position,
@@ -2817,6 +2925,7 @@ typedef $$RosterCacheTableCreateCompanionBuilder =
     });
 typedef $$RosterCacheTableUpdateCompanionBuilder =
     RosterCacheCompanion Function({
+      Value<String> tenantId,
       Value<String> matchId,
       Value<String> playerId,
       Value<int> position,
@@ -2835,6 +2944,11 @@ class $$RosterCacheTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get tenantId => $composableBuilder(
+    column: $table.tenantId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get matchId => $composableBuilder(
     column: $table.matchId,
     builder: (column) => ColumnFilters(column),
@@ -2875,6 +2989,11 @@ class $$RosterCacheTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get tenantId => $composableBuilder(
+    column: $table.tenantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get matchId => $composableBuilder(
     column: $table.matchId,
     builder: (column) => ColumnOrderings(column),
@@ -2915,6 +3034,9 @@ class $$RosterCacheTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get tenantId =>
+      $composableBuilder(column: $table.tenantId, builder: (column) => column);
+
   GeneratedColumn<String> get matchId =>
       $composableBuilder(column: $table.matchId, builder: (column) => column);
 
@@ -2969,6 +3091,7 @@ class $$RosterCacheTableTableManager
               $$RosterCacheTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String> tenantId = const Value.absent(),
                 Value<String> matchId = const Value.absent(),
                 Value<String> playerId = const Value.absent(),
                 Value<int> position = const Value.absent(),
@@ -2977,6 +3100,7 @@ class $$RosterCacheTableTableManager
                 Value<bool> isStarter = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RosterCacheCompanion(
+                tenantId: tenantId,
                 matchId: matchId,
                 playerId: playerId,
                 position: position,
@@ -2987,6 +3111,7 @@ class $$RosterCacheTableTableManager
               ),
           createCompanionCallback:
               ({
+                required String tenantId,
                 required String matchId,
                 required String playerId,
                 required int position,
@@ -2995,6 +3120,7 @@ class $$RosterCacheTableTableManager
                 required bool isStarter,
                 Value<int> rowid = const Value.absent(),
               }) => RosterCacheCompanion.insert(
+                tenantId: tenantId,
                 matchId: matchId,
                 playerId: playerId,
                 position: position,
@@ -3704,10 +3830,12 @@ typedef $$SyncedEventsTableProcessedTableManager =
 typedef $$DeviceTableCreateCompanionBuilder = DeviceCompanion Function({
   Value<int> slot,
   required String deviceId,
+  Value<String?> ownerSub,
 });
 typedef $$DeviceTableUpdateCompanionBuilder = DeviceCompanion Function({
   Value<int> slot,
   Value<String> deviceId,
+  Value<String?> ownerSub,
 });
 
 class $$DeviceTableFilterComposer
@@ -3726,6 +3854,11 @@ class $$DeviceTableFilterComposer
 
   ColumnFilters<String> get deviceId => $composableBuilder(
     column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerSub => $composableBuilder(
+    column: $table.ownerSub,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3748,6 +3881,11 @@ class $$DeviceTableOrderingComposer
     column: $table.deviceId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerSub => $composableBuilder(
+    column: $table.ownerSub,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DeviceTableAnnotationComposer
@@ -3764,6 +3902,9 @@ class $$DeviceTableAnnotationComposer
 
   GeneratedColumn<String> get deviceId =>
       $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerSub =>
+      $composableBuilder(column: $table.ownerSub, builder: (column) => column);
 }
 
 class $$DeviceTableTableManager
@@ -3792,14 +3933,26 @@ class $$DeviceTableTableManager
               $$DeviceTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$DeviceTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> slot = const Value.absent(),
-            Value<String> deviceId = const Value.absent(),
-          }) => DeviceCompanion(slot: slot, deviceId: deviceId),
-          createCompanionCallback: ({
-            Value<int> slot = const Value.absent(),
-            required String deviceId,
-          }) => DeviceCompanion.insert(slot: slot, deviceId: deviceId),
+          updateCompanionCallback:
+              ({
+                Value<int> slot = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String?> ownerSub = const Value.absent(),
+              }) => DeviceCompanion(
+                slot: slot,
+                deviceId: deviceId,
+                ownerSub: ownerSub,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> slot = const Value.absent(),
+                required String deviceId,
+                Value<String?> ownerSub = const Value.absent(),
+              }) => DeviceCompanion.insert(
+                slot: slot,
+                deviceId: deviceId,
+                ownerSub: ownerSub,
+              ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (

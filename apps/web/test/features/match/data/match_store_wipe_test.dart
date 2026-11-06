@@ -29,10 +29,13 @@ void main() {
     await store.wipe();
 
     expect(await store.unsyncedTotal(), 0);
-    expect(await store.matchJson('m1'), isNull);
-    expect(await store.ownEvents('m1'), isEmpty);
+    expect(await store.matchJson('m1', tenantId: tenant), isNull);
+    expect(
+      await store.ownEvents('m1', tenantId: tenant, personId: me),
+      isEmpty,
+    );
     expect(await store.lastServerSeq('m1'), 0);
-    expect(await store.roster('m1'), isNull);
+    expect(await store.roster('m1', tenantId: tenant), isNull);
     expect(
       await store.deviceId(),
       isNot(device),
