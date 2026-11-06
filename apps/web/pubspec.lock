@@ -557,7 +557,7 @@ packages:
       path: "packages/athlete"
       relative: true
     source: path
-    version: "2.0.1"
+    version: "2.1.0"
   hoops_core_api:
     dependency: "direct main"
     description:

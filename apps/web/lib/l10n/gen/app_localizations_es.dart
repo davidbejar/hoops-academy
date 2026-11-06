@@ -1927,6 +1927,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get testTypeHigherNo => 'Menos es mejor';
 
   @override
+  String testTypeDeleteConfirm(String name) {
+    return '¿Eliminar el tipo de prueba $name? Sus normas de la academia también se eliminan.';
+  }
+
+  @override
+  String get testTypeDeleted => 'Tipo de prueba eliminado';
+
+  @override
+  String get testTypeHasResults =>
+      'Este tipo de prueba tiene resultados y no se puede eliminar';
+
+  @override
   String get normsTitle => 'Normas de referencia';
 
   @override

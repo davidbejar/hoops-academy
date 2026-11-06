@@ -1114,6 +1114,16 @@
   "testTypesEmpty": "No hay tipos de prueba",
   "testTypeHigherYes": "Más es mejor",
   "testTypeHigherNo": "Menos es mejor",
+  "testTypeDeleteConfirm": "¿Eliminar el tipo de prueba {name}? Sus normas de la academia también se eliminan.",
+  "@testTypeDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "testTypeDeleted": "Tipo de prueba eliminado",
+  "testTypeHasResults": "Este tipo de prueba tiene resultados y no se puede eliminar",
   "normsTitle": "Normas de referencia",
   "normsScopeEffective": "Efectivas",
   "normsScopeGlobal": "Globales",

@@ -775,6 +775,16 @@
   "testTypesEmpty": "No test types",
   "testTypeHigherYes": "Higher is better",
   "testTypeHigherNo": "Lower is better",
+  "testTypeDeleteConfirm": "Delete the test type {name}? Its academy norms are deleted too.",
+  "@testTypeDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "testTypeDeleted": "Test type deleted",
+  "testTypeHasResults": "This test type has results and cannot be deleted",
   "normsTitle": "Reference norms",
   "normsScopeEffective": "Effective",
   "normsScopeGlobal": "Global",

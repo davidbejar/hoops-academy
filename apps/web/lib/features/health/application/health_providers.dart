@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/api/clear_list.dart';
 import '../../training/application/training_providers.dart' show toAthDate;
 import '../data/fitness_repository.dart';
 import '../data/health_repository.dart';
@@ -103,14 +104,18 @@ class MeasurementsNotifier extends AsyncNotifier<List<ath.BodyMeasurement>> {
     await future;
   }
 
-  /// Only the given values change (a missing one stays as it is).
+  /// Saves the edit form: an empty height or weight is cleared (the server keeps at least one).
   Future<void> correct(String id, {DateTime? measuredOn, double? heightCm, double? weightKg}) async {
     await ref.read(healthRepositoryProvider).updateMeasurement(
       id,
       ath.UpdateBodyMeasurementRequest((b) => b
         ..measuredOn = measuredOn == null ? null : toAthDate(measuredOn)
         ..heightCm = heightCm
-        ..weightKg = weightKg),
+        ..weightKg = weightKg
+        ..clear = clearList({
+          ath.UpdateBodyMeasurementRequestClearEnum.heightCm: heightCm,
+          ath.UpdateBodyMeasurementRequestClearEnum.weightKg: weightKg,
+        })),
     );
     ref.invalidateSelf();
     await future;
@@ -133,9 +138,11 @@ class TestTypesNotifier extends AsyncNotifier<List<ath.PhysicalTestType>> {
   @override
   Future<List<ath.PhysicalTestType>> build() => ref.watch(fitnessRepositoryProvider).types();
 
-  /// Custom (tenant) types only: global ones are read-only on the server. The code never changes.
+  /// Custom (tenant) types only: global ones are read-only on the server. A new code must be unused (409); an empty
+  /// description is cleared.
   Future<void> correct(
     String id, {
+    required String code,
     required String name,
     required String unit,
     required bool higherIsBetter,
@@ -144,11 +151,20 @@ class TestTypesNotifier extends AsyncNotifier<List<ath.PhysicalTestType>> {
     await ref.read(fitnessRepositoryProvider).updateType(
       id,
       ath.UpdatePhysicalTestTypeRequest((b) => b
+        ..code = code
         ..name = name
         ..unit = unit
         ..higherIsBetter = higherIsBetter
-        ..description = description),
+        ..description = description
+        ..clear = clearList({ath.UpdatePhysicalTestTypeRequestClearEnum.description: description})),
     );
+    ref.invalidateSelf();
+    await future;
+  }
+
+  /// Custom types without results only (409 `TEST_TYPE_HAS_RESULTS` otherwise); the academy's norms for it go too.
+  Future<void> delete(String id) async {
+    await ref.read(fitnessRepositoryProvider).deleteType(id);
     ref.invalidateSelf();
     await future;
   }
@@ -206,14 +222,15 @@ class TestResultsNotifier extends AsyncNotifier<List<ath.PhysicalTestResult>> {
     return r;
   }
 
-  /// Only the given values change; the server recomputes the expected band.
+  /// Saves the edit form (empty notes are cleared); the server recomputes the expected band.
   Future<void> correct(String id, {DateTime? measuredOn, double? value, String? notes}) async {
     await ref.read(fitnessRepositoryProvider).updateResult(
       id,
       ath.UpdatePhysicalTestResultRequest((b) => b
         ..measuredOn = measuredOn == null ? null : toAthDate(measuredOn)
         ..value = value
-        ..notes = notes),
+        ..notes = notes
+        ..clear = clearList({ath.UpdatePhysicalTestResultRequestClearEnum.notes: notes})),
     );
     ref.invalidateSelf();
     await future;

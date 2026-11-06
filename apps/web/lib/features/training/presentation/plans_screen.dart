@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/api/clear_list.dart';
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
@@ -425,7 +426,14 @@ class _PlanItemDialogState extends ConsumerState<PlanItemDialog> {
               ..durationMinutes = _int(_duration)
               ..sets = _int(_sets)
               ..repetitions = _int(_reps)
-              ..videoUrl = _text(_video)),
+              ..videoUrl = _text(_video)
+              ..clear = clearList({
+                ath.UpdatePlanItemRequestClearEnum.description: b.description,
+                ath.UpdatePlanItemRequestClearEnum.durationMinutes: b.durationMinutes,
+                ath.UpdatePlanItemRequestClearEnum.sets: b.sets,
+                ath.UpdatePlanItemRequestClearEnum.repetitions: b.repetitions,
+                ath.UpdatePlanItemRequestClearEnum.videoUrl: b.videoUrl,
+              })),
           );
         }
       }),

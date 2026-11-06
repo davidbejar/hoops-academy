@@ -775,6 +775,16 @@
   "testTypesEmpty": "Tidak ada jenis tes",
   "testTypeHigherYes": "Lebih tinggi lebih baik",
   "testTypeHigherNo": "Lebih rendah lebih baik",
+  "testTypeDeleteConfirm": "Hapus jenis tes {name}? Norma akademinya juga dihapus.",
+  "@testTypeDeleteConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "testTypeDeleted": "Jenis tes dihapus",
+  "testTypeHasResults": "Jenis tes ini memiliki hasil dan tidak dapat dihapus",
   "normsTitle": "Norma rujukan",
   "normsScopeEffective": "Berlaku",
   "normsScopeGlobal": "Global",

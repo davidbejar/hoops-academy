@@ -5,6 +5,7 @@ abstract class FitnessRepository {
   Future<List<ath.PhysicalTestType>> types();
   Future<ath.PhysicalTestType> createType(ath.PhysicalTestTypeInput input);
   Future<ath.PhysicalTestType> updateType(String id, ath.UpdatePhysicalTestTypeRequest request);
+  Future<void> deleteType(String id);
 
   Future<List<ath.PhysicalTestResult>> results({String? playerId, String? teamId, String? testTypeId});
   Future<ath.PhysicalTestResult> createResult(ath.PhysicalTestResultInput input);
@@ -34,6 +35,11 @@ class ApiFitnessRepository implements FitnessRepository {
   @override
   Future<ath.PhysicalTestType> updateType(String id, ath.UpdatePhysicalTestTypeRequest request) async =>
       (await _api.updatePhysicalTestType(xTenantId: _t, testTypeId: id, updatePhysicalTestTypeRequest: request)).data!;
+
+  @override
+  Future<void> deleteType(String id) async {
+    await _api.deletePhysicalTestType(xTenantId: _t, testTypeId: id);
+  }
 
   @override
   Future<List<ath.PhysicalTestResult>> results({String? playerId, String? teamId, String? testTypeId}) async =>

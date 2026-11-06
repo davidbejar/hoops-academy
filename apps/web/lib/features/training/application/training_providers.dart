@@ -4,6 +4,7 @@ import '../../tenant/application/tenant_providers.dart';
 
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/api/clear_list.dart';
 import '../../../core/session/capabilities.dart';
 import '../../roster/application/roster_providers.dart';
 import '../data/plans_repository.dart';
@@ -147,6 +148,7 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
     await _reload();
   }
 
+  /// Saves the edit form: an empty location, plan or notes is cleared (detaching the plan).
   Future<void> edit({DateTime? startsAt, int? durationMinutes, String? location, String? planId, String? notes}) async {
     await ref.read(trainingRepositoryProvider).updateSession(
       sessionId,
@@ -155,7 +157,12 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
         ..durationMinutes = durationMinutes
         ..location = location
         ..planId = planId
-        ..notes = notes),
+        ..notes = notes
+        ..clear = clearList({
+          ath.UpdateTrainingSessionRequestClearEnum.location: location,
+          ath.UpdateTrainingSessionRequestClearEnum.planId: planId,
+          ath.UpdateTrainingSessionRequestClearEnum.notes: notes,
+        })),
     );
     await _reload();
   }
@@ -211,7 +218,11 @@ class SchedulesNotifier extends AsyncNotifier<List<ath.TrainingSchedule>> {
           ..durationMinutes = durationMinutes
           ..location = location
           ..validFrom = toAthDate(validFrom)
-          ..validUntil = validUntil == null ? null : toAthDate(validUntil)),
+          ..validUntil = validUntil == null ? null : toAthDate(validUntil)
+          ..clear = clearList({
+            ath.UpdateTrainingScheduleRequestClearEnum.location: location,
+            ath.UpdateTrainingScheduleRequestClearEnum.validUntil: validUntil,
+          })),
       );
     }
     await _reload();
@@ -248,14 +259,15 @@ class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>> {
     ref.invalidate(weekSessionsProvider);
   }
 
-  /// Corrects dates / reason of a planned absence (the player cannot change).
+  /// Corrects dates / reason of a planned absence (the player cannot change); an empty reason is cleared.
   Future<void> correct(String id, {required DateTime from, required DateTime to, String? reason}) async {
     await ref.read(trainingRepositoryProvider).updateAbsence(
       id,
       ath.UpdatePlannedAbsenceRequest((b) => b
         ..fromDate = toAthDate(from)
         ..toDate = toAthDate(to)
-        ..reason = reason),
+        ..reason = reason
+        ..clear = clearList({ath.UpdatePlannedAbsenceRequestClearEnum.reason: reason})),
     );
     ref.invalidateSelf();
     await future;
@@ -340,7 +352,8 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
       planId,
       ath.UpdateTrainingPlanRequest((b) => b
         ..name = name
-        ..description = description),
+        ..description = description
+        ..clear = clearList({ath.UpdateTrainingPlanRequestClearEnum.description: description})),
     );
     await _reload();
   }

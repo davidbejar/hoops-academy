@@ -1920,6 +1920,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get testTypeHigherNo => 'Lebih rendah lebih baik';
 
   @override
+  String testTypeDeleteConfirm(String name) {
+    return 'Hapus jenis tes $name? Norma akademinya juga dihapus.';
+  }
+
+  @override
+  String get testTypeDeleted => 'Jenis tes dihapus';
+
+  @override
+  String get testTypeHasResults =>
+      'Jenis tes ini memiliki hasil dan tidak dapat dihapus';
+
+  @override
   String get normsTitle => 'Norma rujukan';
 
   @override

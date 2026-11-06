@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/errors/app_error.dart';
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
+import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/page_scaffold.dart';
@@ -46,23 +48,36 @@ class TestTypesScreen extends ConsumerWidget {
                   child: ListTile(
                     key: Key('type-${t.id}'),
                     title: Text('${t.name} (${t.unit})'),
-                    subtitle: Text(
-                      [t.code, t.higherIsBetter ? l.testTypeHigherYes : l.testTypeHigherNo, if (t.description != null) t.description!].join(' · '),
-                    ),
-                    trailing: Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(
+                          [t.code, t.higherIsBetter ? l.testTypeHigherYes : l.testTypeHigherNo, if (t.description != null) t.description!].join(' · '),
+                        ),
+                        const SizedBox(height: AppTokens.spaceXs),
                         InfoChip(t.global ? l.testTypeGlobal : l.testTypeCustom),
-                        // Global types are read-only (403).
-                        if (!t.global && caps.canAdminFitness)
-                          IconButton(
-                            key: Key('type-edit-${t.id}'),
-                            tooltip: l.edit,
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () => showDialog<bool>(context: context, builder: (_) => TestTypeDialog(type: t)),
-                          ),
                       ],
                     ),
+                    // Global types are read-only (403) and cannot be deleted (404).
+                    trailing: !t.global && caps.canAdminFitness
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                key: Key('type-edit-${t.id}'),
+                                tooltip: l.edit,
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () => showDialog<bool>(context: context, builder: (_) => TestTypeDialog(type: t)),
+                              ),
+                              IconButton(
+                                key: Key('type-delete-${t.id}'),
+                                tooltip: l.delete,
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => _delete(context, ref, t),
+                              ),
+                            ],
+                          )
+                        : null,
                   ),
                 ),
             ],
@@ -73,7 +88,23 @@ class TestTypesScreen extends ConsumerWidget {
   }
 }
 
-/// Creates a custom test type, or edits [type] (its code is fixed).
+/// A type that results use cannot be deleted (409 `TEST_TYPE_HAS_RESULTS`).
+Future<void> _delete(BuildContext context, WidgetRef ref, ath.PhysicalTestType type) async {
+  final l = AppLocalizations.of(context);
+  if (!await confirmDialog(context, message: l.testTypeDeleteConfirm(type.name), confirmLabel: l.delete)) return;
+  if (!context.mounted) return;
+  await runAction(
+    context,
+    () => ref.read(testTypesProvider.notifier).delete(type.id),
+    success: l.testTypeDeleted,
+    errorText: (e, l) {
+      final error = AppError.of(e);
+      return error.code == 'TEST_TYPE_HAS_RESULTS' ? l.testTypeHasResults : error.message(l);
+    },
+  );
+}
+
+/// Creates a custom test type, or edits [type] (code included: another type's code is a 409).
 class TestTypeDialog extends ConsumerStatefulWidget {
   const TestTypeDialog({super.key, this.type});
   final ath.PhysicalTestType? type;
@@ -117,6 +148,7 @@ class _TestTypeDialogState extends ConsumerState<TestTypeDialog> {
               )
             : ref.read(testTypesProvider.notifier).correct(
                 editing.id,
+                code: _code.text.trim().toUpperCase(),
                 name: _name.text.trim(),
                 unit: _unit.text.trim(),
                 higherIsBetter: _higher,
@@ -125,7 +157,7 @@ class _TestTypeDialogState extends ConsumerState<TestTypeDialog> {
         success: l.saved,
       ),
       children: [
-        TextFormField(key: const Key('type-code'), controller: _code, enabled: editing == null, decoration: InputDecoration(labelText: l.testTypeCode), validator: (v) => requiredValidator(l, v)),
+        TextFormField(key: const Key('type-code'), controller: _code, decoration: InputDecoration(labelText: l.testTypeCode), validator: (v) => requiredValidator(l, v)),
         formGap,
         TextFormField(key: const Key('type-name'), controller: _name, decoration: InputDecoration(labelText: l.testTypeName), validator: (v) => requiredValidator(l, v)),
         formGap,

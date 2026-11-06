@@ -1913,6 +1913,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get testTypeHigherNo => 'Lower is better';
 
   @override
+  String testTypeDeleteConfirm(String name) {
+    return 'Delete the test type $name? Its academy norms are deleted too.';
+  }
+
+  @override
+  String get testTypeDeleted => 'Test type deleted';
+
+  @override
+  String get testTypeHasResults =>
+      'This test type has results and cannot be deleted';
+
+  @override
   String get normsTitle => 'Reference norms';
 
   @override

@@ -65,7 +65,8 @@ void main() {
         ath.UpdateTrainingScheduleRequestClearEnum.validUntil,
       });
       expect(a.training.scheduleList.first.location, isNull);
-      expect(find.textContaining('Pabellón Norte'), findsNothing);
+      expect(find.descendant(of: find.byKey(const Key('schedule-sch1')), matching: find.textContaining('Pabellón Norte')), findsNothing);
+      expect(find.descendant(of: find.byKey(const Key('schedule-sch2')), matching: find.textContaining('Pabellón Norte')), findsOneWidget);
     });
 
     testWidgets('delete asks for confirmation', (tester) async {

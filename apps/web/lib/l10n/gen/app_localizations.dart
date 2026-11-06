@@ -3610,6 +3610,24 @@ abstract class AppLocalizations {
   /// **'Menos es mejor'**
   String get testTypeHigherNo;
 
+  /// No description provided for @testTypeDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar el tipo de prueba {name}? Sus normas de la academia también se eliminan.'**
+  String testTypeDeleteConfirm(String name);
+
+  /// No description provided for @testTypeDeleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de prueba eliminado'**
+  String get testTypeDeleted;
+
+  /// No description provided for @testTypeHasResults.
+  ///
+  /// In es, this message translates to:
+  /// **'Este tipo de prueba tiene resultados y no se puede eliminar'**
+  String get testTypeHasResults;
+
   /// No description provided for @normsTitle.
   ///
   /// In es, this message translates to:

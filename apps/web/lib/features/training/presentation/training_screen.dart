@@ -430,13 +430,11 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
           isExpanded: true,
           decoration: InputDecoration(labelText: l.sessionPlan),
           items: [
-            // The API cannot detach a plan (a missing planId means "unchanged"), so editing a session that has one
-            // offers no "no plan" choice.
-            if (widget.session?.planId == null)
-              DropdownMenuItem<String?>(
-                value: null,
-                child: Text(l.sessionNoPlan),
-              ),
+            // Choosing "no plan" while editing detaches the plan (`clear`, ADR-0032).
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Text(l.sessionNoPlan),
+            ),
             for (final p in plans)
               DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
             if (_planId != null && plans.every((p) => p.id != _planId))
