@@ -220,24 +220,33 @@ class HealthDomainTest {
     }
 
     @Test
-    void aCustomTestTypeCanBeChangedButKeepsItsCode() {
+    void aCustomTestTypeCanBeChangedIncludingItsCode() {
         PhysicalTestType custom = PhysicalTestType.custom("MY_SHUTTLE", "Shuttle", "s", false, null);
 
-        PhysicalTestType changed = custom.changedTo("Shuttle run", "sec", true, "5 x 10 m");
+        PhysicalTestType changed = custom.changedTo("MY_SHUTTLE_5X10", "Shuttle run", "sec", true, "5 x 10 m");
 
         assertThat(changed.id()).isEqualTo(custom.id());
-        assertThat(changed.code()).isEqualTo("MY_SHUTTLE");
+        assertThat(changed.code()).isEqualTo("MY_SHUTTLE_5X10");
         assertThat(changed.name()).isEqualTo("Shuttle run");
         assertThat(changed.unit()).isEqualTo("sec");
         assertThat(changed.higherIsBetter()).isTrue();
+        assertThat(changed.description()).isEqualTo("5 x 10 m");
         assertThat(changed.global()).isFalse();
+    }
+
+    @Test
+    void aNewCodeFollowsTheCodeRule() {
+        PhysicalTestType custom = PhysicalTestType.custom("MY_SHUTTLE", "Shuttle", "s", false, null);
+
+        assertThatThrownBy(() -> custom.changedTo("bad code", "Shuttle", "s", false, null))
+                .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("INVALID_TEST_TYPE");
     }
 
     @Test
     void aGlobalTestTypeRefusesChanges() {
         PhysicalTestType global = new PhysicalTestType(TestTypeId.random(), "COOPER_12MIN", "Cooper", "m", true, null, true);
 
-        assertThatThrownBy(() -> global.changedTo("x", "m", true, null))
+        assertThatThrownBy(() -> global.changedTo("COOPER_12MIN", "x", "m", true, null))
                 .isInstanceOf(com.hoopsacademy.common.problem.AccessDeniedException.class)
                 .extracting("code").isEqualTo("TEST_TYPE_IS_GLOBAL");
     }

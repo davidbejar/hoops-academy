@@ -62,9 +62,13 @@ class PlannedAbsenceApiTest {
         api(TENANT).get(ABSENCES + "/" + id).then().statusCode(200).body("toDate", equalTo("2027-05-03"));
         api(TENANT).body(Map.of("toDate", "2027-05-05")).patch(ABSENCES + "/" + id).then().statusCode(200)
                 .body("toDate", equalTo("2027-05-05")).body("fromDate", equalTo("2027-05-01"));
-        var clearReason = new java.util.HashMap<String, Object>();
-        clearReason.put("reason", null);
-        api(TENANT).body(clearReason).patch(ABSENCES + "/" + id).then().statusCode(200).body("reason", nullValue());
+        var nullReason = new java.util.HashMap<String, Object>();
+        nullReason.put("reason", null);
+        api(TENANT).body(nullReason).patch(ABSENCES + "/" + id).then().statusCode(200).body("reason", equalTo("family trip"));
+        api(TENANT).body(Map.of("clear", java.util.List.of("reason"))).patch(ABSENCES + "/" + id).then().statusCode(200)
+                .body("reason", nullValue());
+        lenient(TENANT).body(Map.of("reason", "x", "clear", java.util.List.of("reason"))).patch(ABSENCES + "/" + id)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
         api(TENANT).get(ABSENCES).then().statusCode(200).body("items", hasSize(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
         api(TENANT).delete(ABSENCES + "/" + id).then().statusCode(204);
         api(TENANT).get(ABSENCES + "/" + id).then().statusCode(404);

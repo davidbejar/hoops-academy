@@ -21,6 +21,7 @@ import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.OidcSecurity;
 import jakarta.inject.Inject;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -74,9 +75,14 @@ class BodyMeasurementApiTest {
 
         api(TENANT).body(Map.of("heightCm", 151.0)).patch(M + "/" + id).then().statusCode(200)
                 .body("heightCm", equalTo(151.0f)).body("weightKg", equalTo(41.25f));
-        Map<String, Object> clearWeight = new HashMap<>();
-        clearWeight.put("weightKg", null);
-        api(TENANT).body(clearWeight).patch(M + "/" + id).then().statusCode(200).body("weightKg", nullValue());
+        Map<String, Object> nullWeight = new HashMap<>();
+        nullWeight.put("weightKg", null);
+        api(TENANT).body(nullWeight).patch(M + "/" + id).then().statusCode(200).body("weightKg", equalTo(41.25f));
+        api(TENANT).body(Map.of("clear", List.of("weightKg"))).patch(M + "/" + id).then().statusCode(200)
+                .body("weightKg", nullValue()).body("heightCm", equalTo(151.0f));
+        lenient(TENANT).body(Map.of("clear", List.of("heightCm"))).patch(M + "/" + id).then().statusCode(422);
+        lenient(TENANT).body(Map.of("heightCm", 152.0, "clear", List.of("heightCm"))).patch(M + "/" + id)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
         api(TENANT).delete(M + "/" + id).then().statusCode(204);
         api(TENANT).delete(M + "/" + id).then().statusCode(404);
     }

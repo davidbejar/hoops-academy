@@ -203,9 +203,13 @@ class TrainingPlanApiTest {
         api(TENANT).get(PLANS + "/" + id).then().statusCode(200).body("items[0].title", equalTo("Chest pass"));
         api(TENANT).body(Map.of("name", "Passing 2")).patch(PLANS + "/" + id).then().statusCode(200)
                 .body("name", equalTo("Passing 2")).body("description", equalTo("chest passes"));
-        Map<String, Object> clear = new HashMap<>();
-        clear.put("description", null);
-        api(TENANT).body(clear).patch(PLANS + "/" + id).then().statusCode(200).body("description", nullValue());
+        Map<String, Object> nullDescription = new HashMap<>();
+        nullDescription.put("description", null);
+        api(TENANT).body(nullDescription).patch(PLANS + "/" + id).then().statusCode(200).body("description", equalTo("chest passes"));
+        api(TENANT).body(Map.of("clear", List.of("description"))).patch(PLANS + "/" + id).then().statusCode(200)
+                .body("description", nullValue());
+        lenient(TENANT).body(Map.of("description", "x", "clear", List.of("description"))).patch(PLANS + "/" + id)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
         api(TENANT).queryParam("q", "passing 2").get(PLANS).then().body("items", hasSize(1));
         api(TENANT).delete(PLANS + "/" + id).then().statusCode(204);
         api(TENANT).get(PLANS + "/" + id).then().statusCode(404);
@@ -236,11 +240,19 @@ class TrainingPlanApiTest {
         api(TENANT).body(Map.of("title", "B2", "durationMinutes", 9)).patch(PLANS + "/" + plan + "/items/" + b)
                 .then().statusCode(200).body("title", equalTo("B2")).body("durationMinutes", equalTo(9))
                 .body("sets", equalTo(3));
-        Map<String, Object> clear = new HashMap<>();
-        clear.put("sets", null);
-        clear.put("videoUrl", null);
-        api(TENANT).body(clear).patch(PLANS + "/" + plan + "/items/" + b).then().statusCode(200)
-                .body("sets", nullValue()).body("videoUrl", nullValue()).body("title", equalTo("B2"));
+        Map<String, Object> nulls = new HashMap<>();
+        nulls.put("sets", null);
+        nulls.put("videoUrl", null);
+        api(TENANT).body(nulls).patch(PLANS + "/" + plan + "/items/" + b).then().statusCode(200)
+                .body("sets", equalTo(3)).body("videoUrl", equalTo("https://example.com/v"));
+        api(TENANT).body(Map.of("clear", List.of("description", "durationMinutes", "sets", "repetitions", "videoUrl")))
+                .patch(PLANS + "/" + plan + "/items/" + b).then().statusCode(200)
+                .body("description", nullValue()).body("durationMinutes", nullValue()).body("sets", nullValue())
+                .body("repetitions", nullValue()).body("videoUrl", nullValue()).body("title", equalTo("B2"));
+        lenient(TENANT).body(Map.of("sets", 2, "clear", List.of("sets"))).patch(PLANS + "/" + plan + "/items/" + b)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
+        lenient(TENANT).body(Map.of("clear", List.of("title"))).patch(PLANS + "/" + plan + "/items/" + b)
+                .then().statusCode(400).body("violations[0].field", equalTo("clear"));
 
         String a = api(TENANT).get(PLANS + "/" + plan).then().extract().path("items[0].id");
         api(TENANT).body(Map.of("itemIds", List.of(c, a, b))).put(PLANS + "/" + plan + "/items").then().statusCode(200)

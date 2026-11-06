@@ -137,11 +137,20 @@ class SessionApiTest {
                 .body("location", equalTo("Court 2"))
                 .body("planId", equalTo(plan))
                 .body("notes", equalTo("bring bibs"));
-        var clear = new java.util.HashMap<String, Object>();
-        clear.put("planId", null);
-        clear.put("notes", null);
-        api(TENANT).body(clear).patch(SESSIONS + "/" + id).then().statusCode(200)
+        var nulls = new java.util.HashMap<String, Object>();
+        nulls.put("planId", null);
+        nulls.put("notes", null);
+        nulls.put("durationMinutes", 75);
+        api(TENANT).body(nulls).patch(SESSIONS + "/" + id).then().statusCode(200)
+                .body("planId", equalTo(plan)).body("notes", equalTo("bring bibs")).body("durationMinutes", equalTo(75));
+        api(TENANT).body(Map.of("clear", java.util.List.of("planId", "notes"))).patch(SESSIONS + "/" + id).then().statusCode(200)
                 .body("planId", nullValue()).body("notes", nullValue()).body("location", equalTo("Court 2"));
+        api(TENANT).body(Map.of("notes", "again", "clear", java.util.List.of("location"))).patch(SESSIONS + "/" + id)
+                .then().statusCode(200).body("location", nullValue()).body("notes", equalTo("again"));
+        lenient(TENANT).body(Map.of("location", "Court 3", "clear", java.util.List.of("location"))).patch(SESSIONS + "/" + id)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
+        lenient(TENANT).body(Map.of("clear", java.util.List.of("startsAt"))).patch(SESSIONS + "/" + id)
+                .then().statusCode(400).body("violations[0].field", equalTo("clear"));
         api(TENANT).body(Map.of("status", "DONE")).patch(SESSIONS + "/" + id).then().statusCode(200).body("status", equalTo("DONE"));
         api(TENANT).body(Map.of("status", "PLANNED")).patch(SESSIONS + "/" + id).then().statusCode(200).body("status", equalTo("PLANNED"));
     }

@@ -132,6 +132,77 @@ class PhysicalTestApiTest {
     }
 
     @Test
+    void anAdminClearsTheDescriptionOfACustomType() {
+        String id = api(TENANT).body(Map.of("code", "PLANK_HOLD", "name", "Plank", "unit", "s", "higherIsBetter", true,
+                "description", "forearms")).post(TYPES).then().statusCode(201).extract().path("id");
+
+        api(TENANT).body(Map.of("clear", List.of("description"))).patch(TYPES + "/" + id).then().statusCode(200)
+                .body("description", nullValue()).body("name", equalTo("Plank"));
+        lenient(TENANT).body(Map.of("description", "x", "clear", List.of("description"))).patch(TYPES + "/" + id)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
+        lenient(TENANT).body(Map.of("clear", List.of("code"))).patch(TYPES + "/" + id).then().statusCode(400)
+                .body("violations[0].field", equalTo("clear"));
+    }
+
+    @Test
+    void anAdminChangesTheCodeOfACustomTypeAndResultsShowTheNewCode() {
+        String id = api(TENANT).body(Map.of("code", "SHUTTLE_4X9", "name", "Shuttle", "unit", "s", "higherIsBetter", false))
+                .post(TYPES).then().statusCode(201).extract().path("id");
+        api(TENANT).body(Map.of("code", "SIDE_STEP", "name", "Side step", "unit", "n", "higherIsBetter", true)).post(TYPES)
+                .then().statusCode(201);
+        String result = api(TENANT).body(result(BOY, id, "2026-04-01", 9.5)).post(RESULTS).then().statusCode(201)
+                .body("testCode", equalTo("SHUTTLE_4X9")).extract().path("id");
+
+        api(TENANT).body(Map.of("code", "SHUTTLE_4X10")).patch(TYPES + "/" + id).then().statusCode(200)
+                .body("code", equalTo("SHUTTLE_4X10")).body("name", equalTo("Shuttle"));
+        api(TENANT).get(RESULTS + "/" + result).then().statusCode(200).body("testCode", equalTo("SHUTTLE_4X10"));
+        api(TENANT).body(Map.of("code", "SHUTTLE_4X10", "name", "Shuttle 4x10")).patch(TYPES + "/" + id).then().statusCode(200)
+                .body("code", equalTo("SHUTTLE_4X10"));
+        lenient(TENANT).body(Map.of("code", "SIDE_STEP")).patch(TYPES + "/" + id).then().statusCode(409)
+                .body("code", equalTo("TEST_TYPE_CODE_EXISTS"));
+        lenient(TENANT).body(Map.of("code", "COOPER_12MIN")).patch(TYPES + "/" + id).then().statusCode(409)
+                .body("code", equalTo("TEST_TYPE_CODE_EXISTS"));
+        lenient(TENANT).body(Map.of("code", "bad code")).patch(TYPES + "/" + id).then().statusCode(400);
+        lenient(TENANT).body(Map.of("code", "SPRINT_X")).patch(TYPES + "/" + typeId("SPRINT_20M")).then().statusCode(403)
+                .body("code", equalTo("TEST_TYPE_IS_GLOBAL"));
+    }
+
+    @Test
+    void anAdminDeletesACustomTypeWithItsNormsButNotOneWithResults() {
+        String unused = api(TENANT).body(Map.of("code", "WALL_SIT", "name", "Wall sit", "unit", "s", "higherIsBetter", true))
+                .post(TYPES).then().statusCode(201).extract().path("id");
+        api(TENANT).body(norm(unused, "MALE", 10, 12, "AVERAGE", 30.0, 60.0, "club")).post(NORMS).then().statusCode(201);
+        String used = api(TENANT).body(Map.of("code", "BURPEES_1MIN", "name", "Burpees", "unit", "n", "higherIsBetter", true))
+                .post(TYPES).then().statusCode(201).extract().path("id");
+        String result = api(TENANT).body(result(GIRL, used, "2026-04-02", 20.0)).post(RESULTS).then().statusCode(201)
+                .extract().path("id");
+
+        api(TENANT).delete(TYPES + "/" + unused).then().statusCode(204);
+        api(TENANT).get(TYPES + "/" + unused).then().statusCode(404);
+        api(TENANT).queryParam("testTypeId", unused).get(NORMS).then().statusCode(200).body("$", hasSize(0));
+        api(TENANT).delete(TYPES + "/" + unused).then().statusCode(404);
+        api(TENANT).delete(TYPES + "/" + used).then().statusCode(409).body("code", equalTo("TEST_TYPE_HAS_RESULTS"));
+        api(TENANT).get(TYPES + "/" + used).then().statusCode(200);
+        api(TENANT).delete(TYPES + "/" + typeId("BEEP_TEST")).then().statusCode(404);
+        api(TENANT).get(TYPES + "/" + typeId("BEEP_TEST")).then().statusCode(200);
+
+        api(TENANT).delete(RESULTS + "/" + result).then().statusCode(204);
+        api(TENANT).delete(TYPES + "/" + used).then().statusCode(204);
+    }
+
+    @Test
+    void anotherTenantCannotDeleteACustomTypeAndOnlyAdminsDelete() {
+        String id = api(TENANT).body(Map.of("code", "ROPE_SKIPS", "name", "Rope", "unit", "n", "higherIsBetter", true))
+                .post(TYPES).then().statusCode(201).extract().path("id");
+        member(OTHER_TENANT, TenantRole.ADMIN);
+        api(OTHER_TENANT).delete(TYPES + "/" + id).then().statusCode(404);
+        member(TENANT, Set.of(TenantRole.COACH), Set.of(TEAM), Set.of(), null);
+        api(TENANT).delete(TYPES + "/" + id).then().statusCode(403);
+        member(TENANT, TenantRole.ADMIN);
+        api(TENANT).get(TYPES + "/" + id).then().statusCode(200);
+    }
+
+    @Test
     void onlyAdminsWriteTypesAndTenantsDoNotSeeEachOthersCustomTypes() {
         member(TENANT, Set.of(TenantRole.COACH), Set.of(TEAM), Set.of(), null);
         lenient(TENANT).body(Map.of("code", "COACH_MADE", "name", "x", "unit", "s", "higherIsBetter", true)).post(TYPES).then().statusCode(403);
@@ -249,6 +320,15 @@ class PhysicalTestApiTest {
                 .body("value", equalTo(48.0f)).body("notes", equalTo("re-test")).body("expectedBand", notNullValue());
         api(TENANT).body(Map.of("measuredOn", "2026-02-02")).patch(RESULTS + "/" + jump).then().statusCode(200)
                 .body("ageAtMeasurement", equalTo(16));
+        Map<String, Object> nullNotes = new HashMap<>();
+        nullNotes.put("notes", null);
+        api(TENANT).body(nullNotes).patch(RESULTS + "/" + jump).then().statusCode(200).body("notes", equalTo("re-test"));
+        api(TENANT).body(Map.of("clear", List.of("notes"))).patch(RESULTS + "/" + jump).then().statusCode(200)
+                .body("notes", nullValue()).body("value", equalTo(48.0f));
+        lenient(TENANT).body(Map.of("notes", "x", "clear", List.of("notes"))).patch(RESULTS + "/" + jump)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
+        lenient(TENANT).body(Map.of("clear", List.of("value"))).patch(RESULTS + "/" + jump)
+                .then().statusCode(400).body("violations[0].field", equalTo("clear"));
         api(TENANT).delete(RESULTS + "/" + jump).then().statusCode(204);
         api(TENANT).get(RESULTS + "/" + jump).then().statusCode(404);
     }

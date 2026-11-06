@@ -284,6 +284,31 @@ class HealthRoleMatrixTest {
         assertThat(status).isEqualTo(allowed ? 201 : 403);
     }
 
+    private String customTestType() {
+        act(ADMIN);
+        return unvalidated(TENANT).body(Map.of("code", "MX_" + DAYS.incrementAndGet(), "name", "x", "unit", "s",
+                "higherIsBetter", true)).post("/api/athlete/physical-test-types").then().statusCode(201).extract().path("id");
+    }
+
+    @ParameterizedTest(name = "update tenant test type: {0} allowed={1}")
+    @MethodSource("adminOnly")
+    void updateTestType(Caller caller, boolean allowed) {
+        String id = customTestType();
+        act(caller);
+        int status = unvalidated(TENANT).body(Map.of("code", "MY_" + DAYS.incrementAndGet(), "name", "renamed"))
+                .patch("/api/athlete/physical-test-types/" + id).then().extract().statusCode();
+        assertThat(status).isEqualTo(allowed ? 200 : 403);
+    }
+
+    @ParameterizedTest(name = "delete tenant test type: {0} allowed={1}")
+    @MethodSource("adminOnly")
+    void deleteTestType(Caller caller, boolean allowed) {
+        String id = customTestType();
+        act(caller);
+        int status = unvalidated(TENANT).delete("/api/athlete/physical-test-types/" + id).then().extract().statusCode();
+        assertThat(status).isEqualTo(allowed ? 204 : 403);
+    }
+
     @ParameterizedTest(name = "create tenant norm: {0} allowed={1}")
     @MethodSource("adminOnly")
     void createNorm(Caller caller, boolean allowed) {

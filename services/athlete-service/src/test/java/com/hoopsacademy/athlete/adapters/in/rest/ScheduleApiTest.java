@@ -198,11 +198,17 @@ class ScheduleApiTest {
         api(TENANT).body(Map.of("validUntil", LocalDate.now(ZONE).plusMonths(6).toString()))
                 .patch("/api/athlete/training-schedules/" + schedule).then().statusCode(200)
                 .body("validUntil", notNullValue());
-        var cleared = new java.util.HashMap<String, Object>();
-        cleared.put("validUntil", null);
-        cleared.put("location", null);
-        api(TENANT).body(cleared).patch("/api/athlete/training-schedules/" + schedule).then().statusCode(200)
+        var nulls = new java.util.HashMap<String, Object>();
+        nulls.put("validUntil", null);
+        nulls.put("location", null);
+        api(TENANT).body(nulls).patch("/api/athlete/training-schedules/" + schedule).then().statusCode(200)
+                .body("validUntil", notNullValue()).body("location", notNullValue());
+        api(TENANT).body(Map.of("clear", java.util.List.of("validUntil", "location")))
+                .patch("/api/athlete/training-schedules/" + schedule).then().statusCode(200)
                 .body("validUntil", nullValue()).body("location", nullValue());
+        lenient(TENANT).body(Map.of("location", "Gym C", "clear", java.util.List.of("location")))
+                .patch("/api/athlete/training-schedules/" + schedule)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
 
         lenient(TENANT).body(Map.of("durationMinutes", 5)).patch("/api/athlete/training-schedules/" + schedule)
                 .then().statusCode(400);

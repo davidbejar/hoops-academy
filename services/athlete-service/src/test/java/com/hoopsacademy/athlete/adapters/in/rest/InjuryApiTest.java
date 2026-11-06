@@ -24,6 +24,7 @@ import io.quarkus.test.security.oidc.OidcSecurity;
 import jakarta.inject.Inject;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -102,9 +103,14 @@ class InjuryApiTest {
         recover.put("actualReturnOn", today.plusDays(9).toString());
         api(TENANT).body(recover).patch(INJURIES + "/" + id).then().statusCode(200)
                 .body("status", equalTo("RECOVERED")).body("actualReturnOn", equalTo(today.plusDays(9).toString()));
-        Map<String, Object> clear = new HashMap<>();
-        clear.put("description", null);
-        api(TENANT).body(clear).patch(INJURIES + "/" + id).then().statusCode(200).body("description", nullValue());
+        Map<String, Object> nullDescription = new HashMap<>();
+        nullDescription.put("description", null);
+        api(TENANT).body(nullDescription).patch(INJURIES + "/" + id).then().statusCode(200).body("description", notNullValue());
+        api(TENANT).body(Map.of("clear", List.of("description", "expectedReturnOn"))).patch(INJURIES + "/" + id)
+                .then().statusCode(200).body("description", nullValue()).body("expectedReturnOn", nullValue())
+                .body("actualReturnOn", equalTo(today.plusDays(9).toString()));
+        lenient(TENANT).body(Map.of("description", "x", "clear", List.of("description"))).patch(INJURIES + "/" + id)
+                .then().statusCode(400).body("violations[0].code", equalTo("CLEAR_CONFLICT"));
         api(TENANT).delete(INJURIES + "/" + id).then().statusCode(204);
         api(TENANT).get(INJURIES + "/" + id).then().statusCode(404);
     }
