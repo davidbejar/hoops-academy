@@ -22,6 +22,11 @@ updates:
       maven-minor-patch:
         exclude-patterns: ["io.quarkus*", "io.quarkus.platform:*"]
         update-types: ["minor", "patch"]
+    ignore:
+      # WP43: swagger-request-validator 3.0.0 (strict validator, ADR-0027) is compiled against networknt 2.x / Jackson 2;
+      # 3.x keeps the class names but takes Jackson 3 trees (NoSuchMethodError). Revisit when it moves to networknt 3.x.
+      - dependency-name: "com.networknt:json-schema-validator"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: pub
     directory: /apps/web
