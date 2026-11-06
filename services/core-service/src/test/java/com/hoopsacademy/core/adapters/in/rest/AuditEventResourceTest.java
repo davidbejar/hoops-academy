@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -94,14 +95,41 @@ class AuditEventResourceTest {
                 .body("items[2].actor.personId", nullValue())
                 .body("items[2].actor.displayName", nullValue())
                 .body("items[2].target.displayName", nullValue())
-                // the super admin from the platform console
+                // the super admin from the platform console, masked for the academy (decision 16, WP38)
                 .body("items[1].actor.kind", equalTo("PLATFORM"))
-                .body("items[1].actor.subject", equalTo("platform-admin"))
+                .body("items[1].actor.subject", nullValue())
+                .body("items[1].actor.personId", nullValue())
                 .body("items[1].actor.displayName", nullValue())
                 .body("items[1].target.displayName", equalTo("Ada Admin"))
                 // a target without a name
                 .body("items[0].target.type", equalTo("guardian_link"))
                 .body("items[0].target.displayName", nullValue());
+    }
+
+    @Test
+    void theSuperAdminIsMaskedWhileTheSuspensionReasonIsKept() {
+        UUID suspended = event(T0, "platform-admin", null, "tenant.suspended", "tenant", tenant,
+                "{\"status\":\"SUSPENDED\",\"reason\":\"Unpaid fees since March\"}");
+        UUID system = event(T0.plusSeconds(1), "system", null, "member.temporary_password_expired", "person", coach,
+                "{}");
+        UUID member = event(T0.plusSeconds(2), "admin-sub", admin, "member.updated", "person", coach,
+                "{\"fields\":[\"email\"]}");
+
+        list().statusCode(200)
+                .body("items.id", contains(member.toString(), system.toString(), suspended.toString()))
+                .body("items[2].actor.kind", equalTo("PLATFORM"))
+                .body("items[2].actor", hasKey("subject"))
+                .body("items[2].actor.subject", nullValue())
+                .body("items[2].actor.personId", nullValue())
+                .body("items[2].actor.displayName", nullValue())
+                .body("items[2].metadata.status", equalTo("SUSPENDED"))
+                .body("items[2].metadata.reason", equalTo("Unpaid fees since March"))
+                // only platform actors are masked
+                .body("items[1].actor.kind", equalTo("SYSTEM"))
+                .body("items[1].actor.subject", equalTo("system"))
+                .body("items[0].actor.subject", equalTo("admin-sub"))
+                .body("items[0].actor.personId", equalTo(admin.toString()))
+                .body("items[0].actor.displayName", equalTo("Ada Admin"));
     }
 
     @Test

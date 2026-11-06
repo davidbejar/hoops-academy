@@ -54,8 +54,8 @@ class PlatformAuditEventResourceTest {
     @Test
     void listsEveryAcademyNewestFirstWithTheAcademysName() {
         UUID a = CoreDb.auditEvent(academyA, t0, "x", null, "tenant.created", "tenant", academyA, "{\"slug\":\"a\"}");
-        UUID b = CoreDb.auditEvent(academyB, t0.plusSeconds(1), "x", null, "tenant.suspended", "tenant", academyB,
-                "{\"status\":\"SUSPENDED\"}");
+        UUID b = CoreDb.auditEvent(academyB, t0.plusSeconds(1), "platform-admin", null, "tenant.suspended", "tenant",
+                academyB, "{\"status\":\"SUSPENDED\",\"reason\":\"Unpaid fees\"}");
 
         window().statusCode(200)
                 .body("items.id", contains(b.toString(), a.toString()))
@@ -63,7 +63,10 @@ class PlatformAuditEventResourceTest {
                 .body("items[0].tenantName", equalTo(name(academyB)))
                 .body("items[0].target.displayName", equalTo(name(academyB)))
                 .body("items[0].actor.kind", equalTo("PLATFORM"))
+                // the super admin's own view is not masked (WP38)
+                .body("items[0].actor.subject", equalTo("platform-admin"))
                 .body("items[0].metadata.status", equalTo("SUSPENDED"))
+                .body("items[0].metadata.reason", equalTo("Unpaid fees"))
                 .body("items[1].tenantName", equalTo(name(academyA)))
                 .body("page.totalElements", equalTo(2));
     }
