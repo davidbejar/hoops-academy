@@ -77,6 +77,18 @@ class AgeCategoryResourceTest {
     }
 
     @Test
+    void aCategoryPatchThatChangesNothingReturnsTheCategoryAndWritesNoAuditRow() {
+        String open = create("{\"code\":\"OPEN\",\"name\":\"Open\",\"rank\":20}").statusCode(201).extract().path("id");
+        int before = CoreDb.auditActions(tenant).size();
+
+        patch(open, "{\"code\":\"OPEN\",\"name\":\"Open\",\"rank\":20}").statusCode(200)
+                .body("code", equalTo("OPEN")).body("name", equalTo("Open")).body("rank", equalTo(20));
+        patch(open, "{\"clear\":[\"maxAge\"]}").statusCode(200).body("maxAge", nullValue());
+
+        assertThat(CoreDb.auditActions(tenant)).hasSize(before);
+    }
+
+    @Test
     void codesAndRanksAreUniqueAndMaxAgeMustGrowWithRank() {
         Map<String, UUID> ladder = RosterDb.defaultCategories(tenant);
         create("{\"code\":\"U12\",\"name\":\"Dup\",\"maxAge\":30,\"rank\":40}").statusCode(409)

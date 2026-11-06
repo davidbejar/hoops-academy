@@ -243,6 +243,20 @@ class PlatformTenantResourceTest {
     }
 
     @Test
+    void aMasterDataPatchThatChangesNothingWritesNoAuditRow() {
+        String id = createTenant(Slugs.unique("noop"));
+        given().filter(Contract.CORE).contentType(ContentType.JSON).body("{\"name\":\"Same Academy\"}")
+                .patch(TENANTS + "/" + id).then().statusCode(200);
+        int before = CoreDb.auditActions(id).size();
+
+        given().filter(Contract.CORE).contentType(ContentType.JSON)
+                .body("{\"name\":\"Same Academy\",\"timezone\":\"Europe/Madrid\"}")
+                .patch(TENANTS + "/" + id).then().statusCode(200).body("name", equalTo("Same Academy"));
+
+        assertThat(CoreDb.auditActions(id)).hasSize(before);
+    }
+
+    @Test
     void suspendReactivateWithdraw() {
         String id = createTenant(Slugs.unique("life"));
         String reason = "{\"reason\":\"unpaid invoice\"}";

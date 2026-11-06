@@ -84,6 +84,23 @@ class TenantResourceTest {
     }
 
     @Test
+    void aProfilePatchThatChangesNothingWritesNoAuditRow() {
+        Members.signIn(tenant, TenantRole.ADMIN);
+        patchProfile("{\"name\":\"Hoops Bandung\",\"websiteUrl\":\"https://hoops.example.com\"}").statusCode(200);
+        int before = CoreDb.auditActions(tenant).size();
+
+        patchProfile("{\"name\":\"Hoops Bandung\",\"timezone\":\"Europe/Madrid\",\"websiteUrl\":\"https://hoops.example.com\"}")
+                .statusCode(200).body("name", equalTo("Hoops Bandung"));
+        patchProfile("{\"clear\":[\"contactEmail\"]}").statusCode(200).body("contactEmail", nullValue());
+        assertThat(CoreDb.auditActions(tenant)).as("nothing changed: no audit row").hasSize(before);
+
+        patchProfile("{\"name\":\"Hoops Bandung\",\"timezone\":\"Asia/Jakarta\"}").statusCode(200);
+        assertThat(CoreDb.auditActions(tenant)).hasSize(before + 1).last().isEqualTo("tenant.profile_changed");
+        assertThat(CoreDb.auditRow(tenant, "tenant.profile_changed").get("metadata")).contains("timezone")
+                .doesNotContain("name");
+    }
+
+    @Test
     void invalidProfilePatchesAreRejected() {
         Members.signIn(tenant, TenantRole.ADMIN);
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)

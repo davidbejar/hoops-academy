@@ -213,6 +213,17 @@ class PlatformAdminResourceTest {
                 .doesNotContain("adah@example.com", "Adah");
     }
 
+    @Test
+    void anEditThatChangesNothingWritesNoAuditRowAndLeavesTheLoginAlone() {
+        int before = CoreDb.auditActions(tenant).size();
+
+        patch(admin, "{\"givenName\":\"Ada\",\"familyName\":\"Zeta\",\"email\":\"" + oldEmail() + "\"}")
+                .statusCode(200).body("givenName", equalTo("Ada")).body("email", equalTo(oldEmail()));
+
+        keycloak.verify(0, anyLoginUpdate());
+        assertThat(CoreDb.auditActions(tenant)).hasSize(before);
+    }
+
     // ------------------------------------------------------------------ edit: a login shared by several academies (WP31)
 
     @Test

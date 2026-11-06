@@ -88,6 +88,19 @@ class TeamResourceTest {
     }
 
     @Test
+    void aTeamPatchThatChangesNothingReturnsTheTeamAndWritesNoAuditRow() {
+        String lions = create("Lions", "U12", "MIXED", "\"alias\":\"L\",").statusCode(201).extract().path("id");
+        int before = CoreDb.auditActions(tenant).size();
+
+        patch(lions, "{\"name\":\"Lions\",\"alias\":\"L\",\"ageCategoryId\":\"" + categories.get("U12")
+                + "\",\"genderPolicy\":\"MIXED\"}").statusCode(200)
+                .body("name", equalTo("Lions")).body("alias", equalTo("L")).body("ageCategory.code", equalTo("U12"));
+        patch(lions, "{\"alias\":null}").statusCode(200).body("alias", equalTo("L"));
+
+        assertThat(CoreDb.auditActions(tenant)).hasSize(before);
+    }
+
+    @Test
     void teamNamesAreUniquePerSeasonAndReferencesMustExist() {
         create("Lions", "U12", "MIXED", "").statusCode(201);
         create("Lions", "U14", "MALE", "").statusCode(409).body("code", equalTo("TEAM_NAME_TAKEN"));

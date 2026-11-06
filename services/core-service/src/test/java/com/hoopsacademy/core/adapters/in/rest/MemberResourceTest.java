@@ -206,6 +206,24 @@ class MemberResourceTest {
     // ------------------------------------------------------------------ update
 
     @Test
+    void aPatchThatChangesNothingWritesNoAuditRow() {
+        UUID kid = CoreDb.person(tenant, null, "Leo", "Kid", null, LocalDate.of(2014, 1, 1), "MALE", TenantRole.PLAYER);
+        patch(kid, "{\"phone\":\"1\"}").statusCode(200);
+        int before = CoreDb.auditActions(tenant).size();
+
+        patch(kid, "{\"givenName\":\"Leo\",\"phone\":\"1\",\"birthDate\":\"2014-01-01\",\"gender\":\"MALE\"}")
+                .statusCode(200).body("givenName", equalTo("Leo")).body("phone", equalTo("1"));
+        patch(kid, "{\"phone\":null}").statusCode(200).body("phone", equalTo("1"));
+        patch(kid, "{\"clear\":[\"email\"]}").statusCode(200).body("email", nullValue());
+        assertThat(CoreDb.auditActions(tenant)).as("nothing changed: no audit row").hasSize(before);
+
+        patch(kid, "{\"givenName\":\"Leo\",\"phone\":\"2\"}").statusCode(200).body("phone", equalTo("2"));
+        assertThat(CoreDb.auditActions(tenant)).hasSize(before + 1).last().isEqualTo("member.updated");
+        assertThat(CoreDb.auditRow(tenant, "member.updated").get("metadata")).contains("phone")
+                .doesNotContain("givenName");
+    }
+
+    @Test
     void patchClearsOnlyTheNamedFieldsAndKeepsInvariants() {
         UUID kid = CoreDb.person(tenant, null, "Leo", "Kid", null, LocalDate.of(2014, 1, 1), "MALE", TenantRole.PLAYER);
         patch(kid, "{\"givenName\":\"Leon\",\"phone\":\"+34 600 000 000\",\"locale\":\"en\"}").statusCode(200)

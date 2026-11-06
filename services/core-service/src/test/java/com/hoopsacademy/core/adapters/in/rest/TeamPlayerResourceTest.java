@@ -92,6 +92,17 @@ class TeamPlayerResourceTest {
     }
 
     @Test
+    void aJerseyPatchThatChangesNothingReturnsTheAssignmentAndWritesNoAuditRow() {
+        assign(lions, uma, "\"jerseyNumber\":\"7\",").statusCode(201);
+        int before = CoreDb.auditActions(tenant).size();
+
+        patchJersey(lions, uma, "\"7\"").statusCode(200).body("jerseyNumber", equalTo("7"));
+        patchJersey(lions, uma, "null").statusCode(200).body("jerseyNumber", equalTo("7"));
+
+        assertThat(CoreDb.auditActions(tenant)).hasSize(before);
+    }
+
+    @Test
     void duplicatesAndJerseysConflict() {
         UUID ben = RosterDb.playerAged(tenant, "Ben", 11, "MALE");
         assign(lions, uma, "\"jerseyNumber\":\"7\",").statusCode(201);
