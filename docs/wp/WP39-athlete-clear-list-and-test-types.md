@@ -54,3 +54,36 @@ Decision 20: a custom physical test type can have its `code` changed and can be 
   port clash, re-run that module alone with `-Dquarkus.http.test-port=0`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built:
+  - ADR-0032 (`docs/adr/0032-update-requests-clear-list.md`, indexed; convention paragraph in `libs/contracts/README.md`).
+  - Contract athlete **2.1.0**: `clear` (array, `uniqueItems`, `enum` of exactly the optional nullable properties) on the
+    nine update requests: `UpdateTrainingSessionRequest` (location, planId, notes), `UpdatePlannedAbsenceRequest`
+    (reason), `UpdateBodyMeasurementRequest` (heightCm, weightKg), `UpdatePhysicalTestResultRequest` (notes),
+    `UpdateInjuryRequest` (description, expectedReturnOn, actualReturnOn), `UpdateTrainingPlanRequest` (description),
+    `UpdatePlanItemRequest` (description, durationMinutes, sets, repetitions, videoUrl), `UpdateTrainingScheduleRequest`
+    (location, validUntil), `UpdatePhysicalTestTypeRequest` (description). `code` on `UpdatePhysicalTestTypeRequest`
+    (409 `TEST_TYPE_CODE_EXISTS`), new `deletePhysicalTestType` (204; 404 global / other tenant; 409
+    `TEST_TYPE_HAS_RESULTS`; the tenant's norms of the type go with it, FK cascade). Enforced by
+    `UpdateRequestClearListContractTest` (adopted specs: athlete only). Dart package `apps/web/packages/athlete`
+    regenerated (generator whitespace normalised like earlier commits; core/game regenerations were noise and not committed).
+  - athlete-service: `PatchBody` takes each request's clearable set; absent or `null` = unchanged, `clear` = null, value +
+    `clear` = 400 `CLEAR_CONFLICT`, unknown/duplicate/non-clearable name = 400 on `clear`. Test types: code change (domain
+    `changedTo(code, …)`, entity code updatable), `ManageTestTypes.delete`, `TestResultRepository.existsForType`.
+    Authz matrix row "Physical test types and norms" (ADMIN write, others read).
+  - Web: `core/api/clear_list.dart` (`clearList`); the session, schedule, absence, plan-item, measurement, result and
+    test-type edit forms (and `PlanDetailNotifier.rename`) name every optional field left empty; the session dialog now
+    always offers "no plan" (detaches). Test types: code editable, delete with confirmation, 409 shown as
+    `testTypeHasResults`; the type chip moved into the subtitle so edit + delete fit at 360 px. New l10n keys
+    `testTypeDeleteConfirm`, `testTypeDeleted`, `testTypeHasResults` (es/en/id). Demo mock untouched.
+- Verified (fresh, 2026-11-06): `./mvnw -B -ntp -T 1C clean verify` BUILD SUCCESS, 2,015 JVM tests (contracts 151,
+  common-quarkus 186, core 770, game 255, athlete 653), all coverage checks met; `./mvnw -pl libs/contracts verify` green
+  incl. openapi-generator validate; `just mutation athlete-service` 430/430 killed (100 %); `flutter analyze` no issues;
+  `just web-test` 623 passed. Goldens: none changed (the test-types screen has no golden).
+- Decisions/ADRs: ADR-0032. An explicit `null` in an athlete PATCH body used to clear (merge patch, never documented in
+  the contract, never sent by the Dart client); it is now "unchanged" per decision 17 — the service tests that relied on
+  it were rewritten to `clear`. Delete of a global type is 404 (brief), while PATCH of a global type stays 403.
+- Open points / follow-ups: core (still merge patch: `null` clears) and game adopt ADR-0032 in their own WPs (add the spec
+  to `ADOPTED` in the contract test); no web dialog edits an injury's description / dates, so `UpdateInjuryRequest.clear`
+  is unused by the app so far; WP41 adds athlete mock support (including `deleteType`).

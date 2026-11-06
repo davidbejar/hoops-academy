@@ -52,5 +52,6 @@ in generated code that is never edited, and every new client generator would bri
 - A minor contract bump: `clear` is a new optional request property. The service's reading of an explicit `null`
   changes from "clear" to "unchanged"; the contract never documented the former, the generated client never sent it,
   and only athlete's own tests relied on it (rewritten to use `clear`).
-- One generated enum per request in the Dart package (`Update<X>RequestClearEnum`); web dialogs compare the edited
-  value with the loaded one and name the emptied fields.
+- One generated enum per request in the Dart package (`Update<X>RequestClearEnum`). The web edit dialogs send the
+  whole form and name every optional field it leaves empty (`clearList`, `apps/web/lib/core/api/clear_list.dart`);
+  naming a field that is already null is harmless.
