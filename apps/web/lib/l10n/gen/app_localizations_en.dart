@@ -736,6 +736,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playerNoGuardians => 'No linked guardians';
 
   @override
+  String get playerGuardianAdd => 'Add guardian';
+
+  @override
+  String get playerGuardianAddTitle => 'New guardian';
+
+  @override
+  String get playerGuardianHint =>
+      'With an email the guardian gets a login with a temporary password.';
+
+  @override
+  String get playerGuardianEmailOptional => 'Email (optional)';
+
+  @override
+  String get playerGuardianAdded => 'Guardian added';
+
+  @override
+  String get playerGuardianLogin => 'Give a login';
+
+  @override
   String get playerTeams => 'Teams';
 
   @override

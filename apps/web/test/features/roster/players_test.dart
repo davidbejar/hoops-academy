@@ -327,6 +327,9 @@ void main() {
           core: core,
           location: '/players/p1',
         );
+        // Below the guardians section (with its add / login actions).
+        await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+        await tester.pumpAndSettle();
         await tapKey(tester, 'player-withdraw');
         await tester.enterText(
           find.byKey(const Key('note-field')),

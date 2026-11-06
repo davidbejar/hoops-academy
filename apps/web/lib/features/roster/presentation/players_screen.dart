@@ -15,6 +15,7 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
 import '../application/roster_providers.dart';
 import 'eligibility_widgets.dart';
+import 'guardian_dialog.dart';
 
 const _filterableStatuses = [
   api.PlayerStatus.ACTIVE,
@@ -391,7 +392,31 @@ class _PlayerDetailBody extends ConsumerWidget {
           ),
         if (caps.canManageAcademy) ...[
           const SizedBox(height: AppTokens.spaceLg),
-          Text(l.playerGuardians, style: theme.textTheme.titleMedium),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l.playerGuardians,
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              IconButton(
+                key: const Key('player-guardian-add'),
+                tooltip: l.playerGuardianAdd,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.person_add_alt),
+                onPressed: () async {
+                  final added = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AddGuardianDialog(playerId: player.id),
+                  );
+                  if (added == true) {
+                    ref.invalidate(_guardiansOfPlayerProvider(player.id));
+                  }
+                },
+              ),
+            ],
+          ),
           ref
               .watch(_guardiansOfPlayerProvider(player.id))
               .when(
@@ -415,6 +440,10 @@ class _PlayerDetailBody extends ConsumerWidget {
                                 Icons.family_restroom_outlined,
                               ),
                               title: Text(g.guardian.displayName),
+                              trailing: GuardianLoginButton(
+                                personId: g.guardian.personId,
+                                name: g.guardian.displayName,
+                              ),
                             ),
                         ],
                       ),

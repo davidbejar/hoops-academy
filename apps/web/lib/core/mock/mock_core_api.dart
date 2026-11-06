@@ -344,6 +344,7 @@ class MockCoreApi {
     'email': '${given.toLowerCase()}@demo.hoops-academy.com',
     'roles': r,
     'active': true,
+    'userId': 'u-$id',
     'invitationStatus': 'ACCEPTED',
     'temporaryPasswordStatus': 'NONE',
     'createdAt': _now(),
@@ -696,6 +697,8 @@ class MockCoreApi {
           _links.removeWhere((l) => l['id'] == id);
           return const MockResult.empty(204);
         }
+      case 'guardians':
+        if (id == null && is_('POST')) return _addGuardian(b);
       case 'teams':
         return _teams_(method, id, sub, seg, query, b);
       case 'players':
@@ -753,7 +756,7 @@ class MockCoreApi {
     final write = method != 'GET';
     final allowed = switch (res) {
       'tenant' || 'seasons' || 'age-categories' => !write,
-      'members' || 'guardian-links' || 'audit-events' => false,
+      'members' || 'guardian-links' || 'guardians' || 'audit-events' => false,
       'approval-requests' => a.staff && !write,
       'eligibility-cases' => a.coachRole,
       'teams' =>
@@ -888,6 +891,15 @@ class MockCoreApi {
       return MockResult.json(200, m);
     }
     if (sub == 'temporary-password' && method == 'POST') {
+      final firstGuardianLogin =
+          m['userId'] == null &&
+          m['email'] != null &&
+          (m['roles']! as List).contains('PARENT');
+      if (firstGuardianLogin) {
+        m
+          ..['userId'] = 'u-${m['personId']}'
+          ..['invitationStatus'] = 'PENDING';
+      }
       if (m['invitationStatus'] != 'PENDING') {
         return const MockResult.json(409, {
           'title': 'Conflict',
@@ -899,6 +911,38 @@ class MockCoreApi {
       return MockResult.json(200, {...m, 'temporaryPassword': _mockPassword()});
     }
     return null;
+  }
+
+  /// `POST /api/core/guardians`: a PARENT member linked to the player; a login (shown once) with an e-mail.
+  MockResult _addGuardian(Map<String, Object?> b) {
+    final email = b['email'] as String?;
+    final m =
+        _member(
+            _id('m'),
+            b['givenName']! as String,
+            b['familyName']! as String,
+            const ['PARENT'],
+          )
+          ..['email'] = email
+          ..['userId'] = email == null ? null : 'u-${_id('login')}'
+          ..['invitationStatus'] = email == null ? 'NONE' : 'PENDING'
+          ..['temporaryPasswordStatus'] = email == null ? 'NONE' : 'ACTIVE';
+    _members.add(m);
+    final p = _playerById(b['playerId']! as String);
+    final l = {
+      'id': _id('link'),
+      'guardian': _person(
+        m['personId']! as String,
+        m['displayName']! as String,
+      ),
+      'player': _ref(p['id']! as String, p['displayName']! as String),
+      'createdAt': _now(),
+    };
+    _links.add(l);
+    return MockResult.json(201, {
+      ...l,
+      if (email != null) 'temporaryPassword': _mockPassword(),
+    });
   }
 
   int _passwordCount = 0;

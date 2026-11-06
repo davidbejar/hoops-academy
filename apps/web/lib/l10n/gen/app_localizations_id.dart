@@ -738,6 +738,25 @@ class AppLocalizationsId extends AppLocalizations {
   String get playerNoGuardians => 'Belum ada wali terkait';
 
   @override
+  String get playerGuardianAdd => 'Tambah wali';
+
+  @override
+  String get playerGuardianAddTitle => 'Wali baru';
+
+  @override
+  String get playerGuardianHint =>
+      'Dengan email, wali mendapat akses dengan kata sandi sementara.';
+
+  @override
+  String get playerGuardianEmailOptional => 'Email (opsional)';
+
+  @override
+  String get playerGuardianAdded => 'Wali ditambahkan';
+
+  @override
+  String get playerGuardianLogin => 'Beri akses';
+
+  @override
   String get playerTeams => 'Tim';
 
   @override

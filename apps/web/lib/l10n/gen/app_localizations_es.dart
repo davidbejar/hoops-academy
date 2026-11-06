@@ -744,6 +744,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get playerNoGuardians => 'Sin tutores vinculados';
 
   @override
+  String get playerGuardianAdd => 'Añadir tutor';
+
+  @override
+  String get playerGuardianAddTitle => 'Nuevo tutor';
+
+  @override
+  String get playerGuardianHint =>
+      'Con un correo electrónico, el tutor recibe un acceso con una contraseña temporal.';
+
+  @override
+  String get playerGuardianEmailOptional => 'Correo electrónico (opcional)';
+
+  @override
+  String get playerGuardianAdded => 'Tutor añadido';
+
+  @override
+  String get playerGuardianLogin => 'Dar acceso';
+
+  @override
   String get playerTeams => 'Equipos';
 
   @override

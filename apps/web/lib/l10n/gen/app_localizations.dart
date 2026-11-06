@@ -1462,6 +1462,42 @@ abstract class AppLocalizations {
   /// **'Sin tutores vinculados'**
   String get playerNoGuardians;
 
+  /// No description provided for @playerGuardianAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir tutor'**
+  String get playerGuardianAdd;
+
+  /// No description provided for @playerGuardianAddTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo tutor'**
+  String get playerGuardianAddTitle;
+
+  /// No description provided for @playerGuardianHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Con un correo electrónico, el tutor recibe un acceso con una contraseña temporal.'**
+  String get playerGuardianHint;
+
+  /// No description provided for @playerGuardianEmailOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo electrónico (opcional)'**
+  String get playerGuardianEmailOptional;
+
+  /// No description provided for @playerGuardianAdded.
+  ///
+  /// In es, this message translates to:
+  /// **'Tutor añadido'**
+  String get playerGuardianAdded;
+
+  /// No description provided for @playerGuardianLogin.
+  ///
+  /// In es, this message translates to:
+  /// **'Dar acceso'**
+  String get playerGuardianLogin;
+
   /// No description provided for @playerTeams.
   ///
   /// In es, this message translates to:
