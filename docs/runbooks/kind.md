@@ -31,6 +31,7 @@ source scripts/env.sh
 just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.9.3 (Gateway API v1.6.1 CRDs) with its
                       # rate limit service (Redis backend ratelimit-redis.hoops:6379) + CNPG 1.30.1
                       # + ns hoops + Secrets from .env + self-signed TLS Secret hoops-gateway-tls
+                      # + Stakater Reloader 2.2.19 (v1.4.23, namespace hoops-reloader, WP87)
 just tilt             # = tilt up: builds 4 images with Podman, kind-loads them, deploys the chart, port-forwards
 deploy/kind/seed-users.sh   # dev users <name>@hoops-academy.com (superadmin, admin1, coach1, assistant1, parent1, player1)
 ```
@@ -140,10 +141,13 @@ With `--set externalSecrets.enabled=true` the render also holds `envoy-gateway-s
 See ADR-0012. `deploy/kind/secrets.sh` prints the 19 Secrets from `.env` (18 in `hoops`, among them the four event broker logins
 `hoops-redpanda-*` from `REDPANDA_*_PASSWORD`, WP66; the rate limit service's Redis login `envoy-ratelimit-redis-auth` in
 `envoy-gateway-system`); nothing is written to disk. Rotate locally:
-edit `.env`, `deploy/kind/secrets.sh | kubectl apply -f -` (or let Tilt pick up `.env`), then restart consumers
-(`kubectl -n hoops rollout restart deploy`; after `RATELIMIT_REDIS_PASSWORD` also
-`kubectl -n envoy-gateway-system rollout restart deploy/envoy-ratelimit`). CNPG re-applies role passwords automatically. The Keycloak admin and
-client secrets only apply on the first realm import/bootstrap — for an existing DB change them in Keycloak too.
+edit `.env`, `deploy/kind/secrets.sh | kubectl apply -f -` (or let Tilt pick up `.env`). The pods that read a changed
+Secret restart by themselves (WP87): `up.sh` installs Stakater Reloader (pinned chart and image digest, namespace
+`hoops-reloader`, namespaced Roles for `hoops` and `envoy-gateway-system` only, Secrets only) and the chart annotates every
+workload that reads a Secret (`global.reloader.enabled` in `values-kind.yaml`; `envoy-ratelimit` through Envoy Gateway's
+`rateLimitDeployment.patch`). `kubectl -n hoops-reloader logs deploy/reloader-reloader` shows what it rolled. CNPG
+re-applies role passwords automatically. The Keycloak admin and client secrets only apply on the first realm
+import/bootstrap — for an existing DB change them in Keycloak too (`rotate-secrets.md` section E).
 
 ### Secrets from the External Secrets Operator (`--eso`, WP65)
 `deploy/kind/up.sh --eso` replaces the `secrets.sh` step: it installs ESO (`ESO_VERSION`, v2.14.0, Helm release
@@ -294,6 +298,16 @@ event lag 0.84 / 0.87 s). `helm upgrade ... --set athlete.rosterSource=replica`:
 answered 200 for that player and 404 for an unknown one (core 503); a third smoke after core came back passed. `apply
 --dry-run=server` of the render clean. Not run: a deploy with `events.enabled=false` (render assertions only), the game
 flip, `tilt ci`, `--eso`. Cluster deleted.
+WP87 (2026-11-07, chart 0.8.0, Reloader 2.2.19 / v1.4.23): three `up.sh --eso --deploy --from-host` attempts while four
+other agents built (Podman VM load 30-68 on 2 CPUs). The first got through ESO, Reloader (namespaced Roles in `hoops`,
+`envoy-gateway-system`, `hoops-reloader`, no ClusterRole; image by digest; `Watching scoped namespaces`), Envoy Gateway
+(`envoy-ratelimit` carried `secret.reloader.stakater.com/auto: true` from the `rateLimitDeployment.patch`), CNPG and the
+image build and load, then the chart install failed: kube-controller-manager, kube-scheduler and the CNPG operator lost
+their leases and restarted, the CNPG webhook was unreachable. `kind-config.yaml` now turns leader election off on the
+single control plane (applied: `--leader-elect=false` in both manifests). The next two attempts lost the API server
+itself (TLS handshake timeout, `http2: client connection lost`). Not run yet, all waiting for a quiet machine: the
+rotation proof (`GAME_APP_PASSWORD`, `hoops-redpanda-game-service`), `events.enabled=false`, the game replica flip,
+`tilt ci`, `--eso` with the events, a complete `up.sh --eso --deploy`. Cluster deleted.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.

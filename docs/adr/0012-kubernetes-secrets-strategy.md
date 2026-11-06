@@ -26,7 +26,7 @@ secret value, and the rendered output must pass `gitleaks`.
   (AWS Secrets Manager / GCP Secret Manager / Azure Key Vault / Vault). One `ExternalSecret` per Secret above,
   producing exactly the same names/keys/types, so the charts do not change. Rotation: ESO `refreshInterval`; CNPG
   re-applies role passwords when the Secret changes; services pick up rotated values on rollout (Reloader or a
-  checksum annotation, decided with the first non-local environment).
+  checksum annotation, decided with the first non-local environment; Reloader since WP87, amendment below).
 
 ## Amendment 2026-11-06 (decision 47, WP65): the chart sources its Secrets from ESO behind a switch
 - **Switch:** `externalSecrets.enabled` (default `false`). Off, nothing changes: the Secrets exist before the install
@@ -56,6 +56,7 @@ secret value, and the rendered output must pass `gitleaks`.
 - **Rotation:** `refreshInterval` (default 1h, kind 1m) is how soon a changed source reaches the Secret. Nothing rolls
   the pods yet (still open from above; Reloader is the candidate once a real environment exists): CNPG re-applies role
   passwords by itself, the services, Keycloak and Redis need a restart (`docs/runbooks/rotate-secrets.md` section E).
+  Superseded by the WP87 amendment below: Reloader rolls them.
 - **Kind proof:** `deploy/kind/up.sh --eso` installs ESO (pinned `ESO_VERSION`, v2.14.0) and a `ClusterSecretStore`
   with the Kubernetes provider reading one bootstrap Secret in namespace `hoops-secret-store`, built from `.env` by
   `deploy/kind/eso-store.sh` (get-only reader ServiceAccount); the chart is installed with
@@ -66,7 +67,34 @@ secret value, and the rendered output must pass `gitleaks`.
   create an `ExternalSecret` in an admitted namespace can read every property of the store. Keep the store's
   `conditions` tight and `create externalsecrets` RBAC as narrow as `get secrets`.
 
-## Rejected alternatives
+## Amendment 2026-11-07 (decision 63, WP87): Stakater Reloader rolls the pods that read a rotated Secret
+- **Switch:** `global.reloader.enabled` (default `false`, on in `values-kind.yaml`). Global rather than the briefed
+  `reloader.enabled`: the service and Keycloak subcharts see only their own values and `global`, and a new key needs no
+  mirror (unlike `events.enabled`, WP71). On, every Deployment/StatefulSet that reads a Secret (env `secretKeyRef`,
+  `envFrom` `secretRef`, a secret volume) carries `secret.reloader.stakater.com/auto: "true"` on its own metadata: core,
+  game, athlete, keycloak, ratelimit-redis, redpanda. The chart tests derive that list from the render (a new workload or
+  Secret reference is covered without editing the test) and assert none when off. The `secret.` form reacts to Secrets
+  only: ConfigMap changes already roll the pods through the chart's checksum annotations. The `redpanda-bootstrap` Job is
+  not annotated: `helm upgrade` runs it again.
+- **Controller:** Stakater Reloader, installed by `deploy/kind/up.sh` like ESO: chart 2.2.19 (v1.4.23) pinned by chart
+  digest and image digest, namespace `hoops-reloader`, `watchGlobally=false` with `namespaces` = `hoops` and
+  `envoy-gateway-system` (namespaced Roles, no ClusterRole), `ignoreConfigMaps`, `ignoreJobs`, `ignoreCronJobs`, reload
+  strategy `annotations` (a pod-template annotation, no injected env var), read-only root FS, no capabilities. Envoy
+  Gateway's `envoy-ratelimit`, not a chart object, gets the annotation through its `rateLimitDeployment.patch`. Other
+  clusters install it the same way (`release.md`); without a controller the annotation is inert and the manual restarts
+  of `rotate-secrets.md` section E apply.
+- **Why not a checksum annotation:** the chart never sees a Secret value (first rule above); hashing would need `lookup`,
+  which makes `helm template` non-deterministic, gives the deployer `get secrets` and still misses an ESO refresh between
+  two upgrades.
+- **Still manual:** where the other side of a credential changes elsewhere, Reloader only removes the restart step. CNPG
+  applies a role password on its own reconcile, so the new pod may start before it and retries until then; the broker
+  takes a service user's new password when the bootstrap Job runs (`helm upgrade`); Keycloak client secrets, the Keycloak
+  admin, `KC_DB_PASSWORD` and the broker superuser must change at their server first (`rotate-secrets.md` section E).
+- **Trust:** Reloader's ServiceAccount can list and watch every Secret and patch Deployments/StatefulSets in the watched
+  namespaces (its chart's Role also allows Jobs from CronJobs; unused with `ignoreCronJobs`). `trivy config` of the
+  rendered controller reports no HIGH/CRITICAL; the MEDIUM ones (KSV-0048/0049/0113, KSV-0125 for ghcr.io) are this
+  function. It reads Secrets to hash them and logs only names.
+
 - **Sealed Secrets (Bitnami):** encrypted secrets in git. Ties ciphertext to one cluster's controller key (re-seal per
   cluster, key backup/rotation is on us), puts long-lived credential material in git history, and gives no central
   audit or rotation. ESO keeps the source of truth in the cloud secret manager.

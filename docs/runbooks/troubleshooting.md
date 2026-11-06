@@ -93,7 +93,11 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
   Testcontainers builds): the paced burst then spans more than one calendar-minute window, the burst is dispatched over
   several seconds, DNS lookups of `ratelimit-redis` time out and probes restart the controller and the rate limit pod.
 - **Fix D:** not a limiter bug. Wait until the load is below ~5 and re-run the mode that failed (`ratelimit-check.sh
-  events|token|redis-down`); the numbers are then exact.
+  events|token|redis-down`); the numbers are then exact. Since WP87 both scripts print the loads first
+  (`deploy/kind/load-guard.sh`): above **2 per CPU** (1-minute load average of the Podman VM, 4 on its 2 CPUs, or of the
+  host; `HOOPS_MAX_LOAD_PER_CPU`) `ratelimit-check.sh` skips the bursts and ends `RATE LIMIT CHECK INCOMPLETE` (exit 3; the
+  ACL check still runs), `HOOPS_LOAD_WAIT=<seconds>` waits for a quiet machine first and `HOOPS_LOAD_GUARD=off` runs them
+  anyway; `smoke.sh` warns and gives the events 270 s instead of 90 s.
 
 ## Flutter dev server (`flutter run`, port 5173): CORS, redirect URI
 - **Symptom:** login redirect error "Invalid parameter: redirect_uri", or browser CORS errors on `/api/*` and `/auth/*`.

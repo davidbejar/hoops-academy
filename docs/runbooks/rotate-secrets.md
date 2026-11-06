@@ -4,7 +4,9 @@ Policy (ADR-0012, CLAUDE.md rule 6): secrets never live in git; `.env` is git-ig
 name. Rotate on a schedule, when someone leaves, and after any suspected leak (`gitleaks` hit, shared log).
 
 Verification status: the kind-side mechanism is documented in `docs/runbooks/kind.md` ("Secrets") and exercised in
-`docs/wp/WP16-kind-helm-tilt.md`; the ESO path (section E) in `docs/wp/WP65-external-secrets-operator.md`. The compose and Keycloak steps below were assembled from the scripts and the realm
+`docs/wp/WP16-kind-helm-tilt.md`; the ESO path (section E) in `docs/wp/WP65-external-secrets-operator.md`, the automatic restarts (Reloader) in
+`docs/wp/WP87-chart-reloader-kind-proofs.md` (chart render and controller install verified; the rotation proof on kind
+is still open, see its handover). The compose and Keycloak steps below were assembled from the scripts and the realm
 file and have **not been executed end to end**. Items marked (design) do not exist yet.
 
 ## Inventory
@@ -55,24 +57,29 @@ So a changed env var alone changes nothing on an existing Keycloak.
 ```bash
 # edit .env first
 deploy/kind/secrets.sh | kubectl apply -f -          # 19 Secrets rendered from .env, values never on argv or disk
-kubectl -n hoops rollout restart deploy               # services read env at start (ratelimit-redis rewrites its ACL file)
-kubectl -n envoy-gateway-system rollout restart deploy/envoy-ratelimit   # after RATELIMIT_REDIS_PASSWORD changed
 ```
+Restarts are automatic (WP87, ADR-0012 amendment): Stakater Reloader (installed by `up.sh`) rolls every Deployment/
+StatefulSet annotated with `secret.reloader.stakater.com/auto` whose Secret changed: the three services, keycloak,
+ratelimit-redis (rewrites its ACL file at start), redpanda and, in `envoy-gateway-system`, envoy-ratelimit. Watch it:
+`kubectl -n hoops-reloader logs deploy/reloader-reloader`. A cluster without Reloader (or one created before WP87:
+re-run `up.sh`) needs `kubectl -n hoops rollout restart deploy` and, after `RATELIMIT_REDIS_PASSWORD`,
+`kubectl -n envoy-gateway-system rollout restart deploy/envoy-ratelimit`.
 `REDPANDA_<SVC>_SERVICE_PASSWORD` (WP66): the broker keeps its own SCRAM credentials; the `redpanda-bootstrap` Job copies
-the Secret's password to the broker on every `helm upgrade` (with Tilt: when the Job is re-applied). Then restart the
-service that logs in with it. `REDPANDA_ADMIN_PASSWORD` is used by the broker only at its first bootstrap: change the
+the Secret's password to the broker on every `helm upgrade` (with Tilt: when the Job is re-applied). Reloader restarts the
+service as soon as the Secret changes; its new pod logs in once the Job ran. `REDPANDA_ADMIN_PASSWORD` is used by the broker only at its first bootstrap: change the
 broker first, then the Secret (`docs/runbooks/events.md`, "Rotate the superuser"), otherwise the Job can no longer log in.
 `secrets.sh` fails fast if `.env` or a key is missing. Tilt applies the same output from memory.
 `RATELIMIT_REDIS_PASSWORD`: until both Redis and `envoy-ratelimit` restarted, the rate limit service gets `WRONGPASS`
-and the gateway fails open (no 429, ADR-0033), so restart both together and re-run `deploy/kind/ratelimit-check.sh token`.
+and the gateway fails open (no 429, ADR-0033); Reloader restarts both, then re-run `deploy/kind/ratelimit-check.sh acl`.
 Caveats from `kind.md`: Keycloak admin and client secrets apply only on the first import; for an existing DB change them
 in Keycloak too, or delete the `keycloak-db` Cluster (`kubectl -n hoops delete cluster keycloak-db`) to re-import.
 
 ## D. CloudNativePG managed roles
 The `databases` chart declares 7 `managed.roles`, each with `passwordSecret` (a `kubernetes.io/basic-auth` Secret whose
 `username` equals the role name). Update the Secret (section C) and CNPG re-applies the password: it reports the role as
-`reconciled` (`kubectl -n hoops get cluster hoops-db -o jsonpath='{.status.managedRolesStatus}'`). Restart the consumers
-afterwards. Changed passwords of an already-bootstrapped `keycloak-db` (`initdb.secret`) are only used at bootstrap: use
+`reconciled` (`kubectl -n hoops get cluster hoops-db -o jsonpath='{.status.managedRolesStatus}'`). Reloader restarts
+the consumers when the Secret changes, possibly before CNPG applied the password: the new pod then fails its start and
+retries until the role has it (the old pod keeps serving meanwhile). Changed passwords of an already-bootstrapped `keycloak-db` (`initdb.secret`) are only used at bootstrap: use
 `ALTER ROLE` there (design).
 
 ## E. External Secrets Operator (`externalSecrets.enabled=true`)
@@ -90,16 +97,18 @@ ESO's copies (ADR-0012 amendment). Never edit them with `kubectl`: ESO overwrite
 2. ESO refreshes within `refreshInterval` (1 h default, 1 m on kind). Force it now:
    `kubectl -n hoops annotate externalsecret <name> force-sync=$(date +%s) --overwrite`; check
    `kubectl -n hoops get externalsecret` (`SecretSynced`, `READY True`) and the Secret's `resourceVersion`.
-3. Restart what reads the value only at start (nothing rolls by itself yet; Reloader is the candidate, ADR-0012):
+3. The pods restart by themselves (WP87): Reloader rolls every annotated workload that reads the changed Secret
+   (`global.reloader.enabled`, `kubectl -n hoops-reloader logs deploy/reloader-reloader`). What is left is the server
+   side of some credentials:
 
-   | Changed property | Automatic | Restart |
+   | Changed property | Restarted by Reloader | Still manual |
    |---|---|---|
-   | `*_MIGRATOR_PASSWORD`, `*_APP_PASSWORD`, `CORE_PLATFORM_PASSWORD` | CNPG sets the role password on its next reconcile (minutes on kind; `managedRolesStatus.passwordStatus.<role>.resourceVersion` = the Secret's) | the service of that role: `kubectl -n hoops rollout restart deploy/<svc>-service` |
-   | `KC_DB_PASSWORD` | nothing: `initdb.secret` is read at bootstrap only | `ALTER ROLE keycloak PASSWORD ...` in `keycloak-db` first (section D), then `deploy/keycloak` |
-   | `KEYCLOAK_ADMIN*`, `*_SERVICE_CLIENT_SECRET` | nothing: Keycloak applies them on the first start/import only | change them in Keycloak first (section B), then the service (client secret) or nothing (admin) |
-   | `RATELIMIT_REDIS_PASSWORD` | both Secrets change together (one property) | `deploy/ratelimit-redis` in `hoops` and `deploy/envoy-ratelimit` in `envoy-gateway-system`; until both restarted the gateway fails open (section C) |
-   | `REDPANDA_<SVC>_SERVICE_PASSWORD` | nothing on the broker until the `redpanda-bootstrap` Job runs (`helm upgrade`) | the service of that user, after the Job |
-   | `REDPANDA_ADMIN_PASSWORD` | nothing: the broker reads it at bootstrap only | change the broker's `admin` password first (`events.md`), then the source |
+   | `*_MIGRATOR_PASSWORD`, `*_APP_PASSWORD`, `CORE_PLATFORM_PASSWORD` | the service of that role | nothing: CNPG sets the role password on its next reconcile (`managedRolesStatus.passwordStatus.<role>.resourceVersion` = the Secret's); a pod that starts before it retries until then |
+   | `KC_DB_PASSWORD` | `deploy/keycloak` | `ALTER ROLE keycloak PASSWORD ...` in `keycloak-db` **before** the source change (section D; `initdb.secret` is read at bootstrap only) |
+   | `KEYCLOAK_ADMIN*`, `*_SERVICE_CLIENT_SECRET` | keycloak, the service of the client | change them in Keycloak **first** (section B): Keycloak applies them on the first start/import only |
+   | `RATELIMIT_REDIS_PASSWORD` | `deploy/ratelimit-redis` and `envoy-gateway-system/deploy/envoy-ratelimit` (both Secrets change together) | nothing; until both restarted the gateway fails open (section C) |
+   | `REDPANDA_<SVC>_SERVICE_PASSWORD` | the service of that user | `helm upgrade` (or trigger `redpanda-bootstrap` in Tilt) so the Job sets the new password on the broker; the new pod logs in after it |
+   | `REDPANDA_ADMIN_PASSWORD` | `redpanda-0` | change the broker's `admin` password **first** (`events.md`), then the source |
 4. Check: `deploy/kind/smoke.sh core game athlete` (kind) or the deploy checks of `release.md`.
 
 Migrating an install from pre-created Secrets to ESO: create the store and the source values first, then

@@ -63,8 +63,9 @@ passwords of their Secrets, adds their prefixed ACLs and creates missing topics.
 rpk_k security acl delete --allow-principal User:game-service --operation read --topic core. \
   --resource-pattern-type prefixed --no-confirm                        # an ACL removed from the values
 ```
-Rotate a service user: change its Secret (`.env` + `deploy/kind/secrets.sh | kubectl apply -f -`, or the ESO source),
-run the Job again (`helm upgrade`, or with Tilt trigger `redpanda-bootstrap`), then restart the service.
+Rotate a service user: change its Secret (`.env` + `deploy/kind/secrets.sh | kubectl apply -f -`, or the ESO source) and
+run the Job again (`helm upgrade`, or with Tilt trigger `redpanda-bootstrap`). Reloader (chart 0.8.0, WP87) restarts the
+service when its Secret changes; without it, `kubectl -n hoops rollout restart deploy/<service>` after the Job.
 
 ### Rotate the superuser
 The broker reads `RP_BOOTSTRAP_USER` only when the cluster is created, so change the broker first, then the Secret:
@@ -76,8 +77,9 @@ printf '%s\n' "$new" | kubectl -n hoops exec -i redpanda-0 -c redpanda -- bash -
     curl -sf -o /dev/null -w "%{http_code}\n" -X PUT -H "Content-Type: application/json" --data-binary @- \
       --netrc-file <(printf "machine localhost login admin password %s\n" "$RP_ADMIN_PASSWORD") \
       http://localhost:9644/v1/security/users/admin'                  # 200
-# then: REDPANDA_ADMIN_PASSWORD=$new in .env (or the ESO source), deploy/kind/secrets.sh | kubectl apply -f -,
-kubectl -n hoops rollout restart statefulset/redpanda                 # the pod's RP_ADMIN_PASSWORD follows the Secret
+# then: REDPANDA_ADMIN_PASSWORD=$new in .env (or the ESO source), deploy/kind/secrets.sh | kubectl apply -f -;
+# Reloader restarts redpanda-0 (its RP_ADMIN_PASSWORD follows the Secret); without Reloader:
+kubectl -n hoops rollout restart statefulset/redpanda
 unset new
 ```
 
@@ -300,8 +302,10 @@ Back: the same with `rest`. With Tilt, put `athlete: {rosterSource: replica}` in
 
 Secret rotation of a service's broker login (`hoops-redpanda-<service>`): the password is an env var, so a changed Secret
 reaches no running pod by itself and Helm does not roll the Deployment for it (its checksum covers the ConfigMap only).
-Order: change the Secret (`secrets.sh` / ESO), run the Job (`helm upgrade`, or trigger `redpanda-bootstrap` in Tilt), then
-`kubectl -n hoops rollout restart deploy/<service>`. Between the Job and the restart the running pod keeps its open
-connections but a reconnect fails with `SASL_AUTHENTICATION_FAILED`; core's publisher turns `DEGRADED` and catches up
-after the restart, a consumer resumes from its committed offset. Only that service's pod restarts (the superuser
+Since chart 0.8.0 (WP87) Reloader rolls the service as soon as the Secret changes (`global.reloader.enabled`); the broker
+takes the new password only when the Job runs. Order: change the Secret (`secrets.sh` / ESO; Reloader restarts the
+service), then run the Job (`helm upgrade`, or trigger `redpanda-bootstrap` in Tilt). Without Reloader: the Job first, then
+`kubectl -n hoops rollout restart deploy/<service>`. Between the two steps a connection with the other password fails
+with `SASL_AUTHENTICATION_FAILED`; core's publisher turns `DEGRADED` and catches up once both agree, a consumer resumes
+from its committed offset. Only that service's pod restarts (the superuser
 `hoops-redpanda-admin` restarts `redpanda-0`, section "Rotate the superuser").

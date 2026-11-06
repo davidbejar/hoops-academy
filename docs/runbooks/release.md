@@ -1,7 +1,7 @@
 # Runbook: release
 
 Status: describes the process the repository's tooling supports. **No release has been cut yet**: the Maven version is
-`0.1.0-SNAPSHOT` and the Helm chart `0.7.0` (2026-11-06); the workflows in `.github/workflows` run on GitHub since
+`0.1.0-SNAPSHOT` and the Helm chart `0.8.0` (2026-11-07); the workflows in `.github/workflows` run on GitHub since
 2026-11-02 and `images` pushes every commit's images to `ghcr.io/davidbejar/hoops-academy` (public). Steps marked
 (design) are not implemented.
 
@@ -164,6 +164,17 @@ stay `rest` (ADR-0037 "When rest flips"); `replica` needs the events on. Upgradi
 (`kubectl -n hoops rollout restart deploy/core-service`): its producer does not recover from starting before its broker
 user existed (`events.md` "Kubernetes (chart, WP71)"). Check: `curl -s <public url>/api/core/q/health/ready` shows `outbox-publisher` `UP` with `state` `OK`
 (`DEGRADED` = no broker), and `docs/runbooks/events.md` "Kubernetes (chart, WP71)".
+
+Rotation without manual restarts (chart 0.8.0, WP87, ADR-0012 amendment): `global.reloader.enabled=true` annotates every
+Deployment/StatefulSet that reads a Secret (core, game, athlete, keycloak, ratelimit-redis, redpanda) with
+`secret.reloader.stakater.com/auto: "true"`; a Stakater Reloader controller in the cluster then rolls them when one of
+those Secrets changes (an ESO refresh or a re-applied Secret). The chart does not install Reloader: install it like
+`deploy/kind/up.sh` does (pinned chart and image digest, `reloader.watchGlobally=false` with `reloader.namespaces` = the
+release namespace and `envoy-gateway-system`, `ignoreConfigMaps`, `ignoreJobs`, `ignoreCronJobs`, `reloadStrategy=annotations`),
+and give Envoy Gateway's `rateLimitDeployment` the same annotation (`patch`, see `EG_VALUES` in `up.sh`). Without a
+controller the annotation does nothing and section E of `rotate-secrets.md` lists the manual restarts. Upgrading from 0.7.0
+rolls every pod once (chart labels in the ConfigMap checksums). Check: `kubectl -n hoops-reloader logs deploy/reloader-reloader`
+starts with `Watching scoped namespaces: ...` and logs each workload it rolls after a rotation.
 
 Order that matters: Secrets -> CNPG clusters -> Keycloak -> services (Flyway runs on start as `*_migrator`) -> web.
 Services restart a few times on first install until `hoops-db-rw` is ready; they converge by themselves (WP18).
