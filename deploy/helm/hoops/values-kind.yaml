@@ -35,3 +35,7 @@ databases:
 # Invitation / password-setup e-mails need an SMTP server (core rolls an invite back when the e-mail fails).
 mailpit:
   enabled: true
+# deploy/kind/up.sh --eso (WP65) enables externalSecrets against its ClusterSecretStore `hoops`; refresh quickly so a
+# rotation at the source shows within a minute (docs/runbooks/rotate-secrets.md).
+externalSecrets:
+  refreshInterval: 1m
