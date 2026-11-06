@@ -387,6 +387,47 @@ echo "$a" | grep -q '^  namespace: envoy-gateway-system$' && echo "$a" | grep -q
   && ok "Redis login: one source property, REDIS_AUTH = ratelimit:<password> in envoy-gateway-system" || bad "Redis login ExternalSecrets"
 ! grep -q 'name: hoops-dev-users' "$E" && ok "no hoops-dev-users ExternalSecret (no workload reads it)" || bad "hoops-dev-users ExternalSecret"
 
+echo "== secret rotation (WP87, ADR-0012 amendment: Stakater Reloader)"
+# global.reloader.enabled (on in values-kind.yaml): every Deployment/StatefulSet that reads a Secret (env secretKeyRef,
+# envFrom secretRef, a secret volume) carries secret.reloader.stakater.com/auto on its own metadata, so Reloader rolls it
+# when one of those Secrets changes (ESO refresh, secrets.sh); a workload that reads none carries nothing. Derived from
+# the render, so a new workload or a new Secret reference is covered without touching this test.
+workloads() { # "<kind>/<name> <reads a Secret 0|1> <annotated 0|1>" for every Deployment/StatefulSet of render $1
+  awk 'BEGIN{RS="\n---\n"} /\nkind: (Deployment|StatefulSet)\n/ {
+    n=split($0, L, "\n"); k=""; name=""; a=0; meta=0
+    for (i = 1; i <= n; i++) {
+      if (L[i] ~ /^kind: /) k=substr(L[i], 7)
+      if (L[i] == "metadata:") { meta=1; continue }
+      if (meta && L[i] ~ /^[^ ]/) meta=0
+      if (meta && name == "" && L[i] ~ /^  name: /) name=substr(L[i], 9)
+      if (meta && L[i] == "    secret.reloader.stakater.com/auto: \"true\"") a=1
+    }
+    print k "/" name, ($0 ~ /secretKeyRef:|secretRef:|secretName:/) ? 1 : 0, a }' "$1"; }
+for f in umbrella-kind umbrella-eso service-all; do
+  w=$(workloads "$WORK/$f.yaml")
+  readers=$(echo "$w" | awk '$2 == 1 {print $1}' | tr '\n' ' ')
+  wrong=$(echo "$w" | awk '$2 != $3 {print $1 "(reads " $2 ", annotated " $3 ")"}' | tr '\n' ' ')
+  [ -n "$readers" ] && [ -z "$wrong" ] \
+    && ok "$f: exactly the workloads that read a Secret roll on rotation: $readers" || bad "$f: Reloader annotation mismatch: $wrong"
+done
+[ "$(workloads "$R" | awk '$2 == 1 && $3 == 1' | wc -l | tr -d ' ')" -ge 6 ] \
+  && workloads "$R" | grep -q '^Deployment/web 0 0$' \
+  && ok "kind: core, game, athlete, keycloak, ratelimit-redis and redpanda annotated; web (no Secret) not" \
+  || bad "kind: expected at least the six Secret readers annotated and web not"
+! grep -h -A30 '^kind: Job$' "$R" | grep -q 'reloader.stakater.com' && ok "the redpanda-bootstrap Job is not annotated (helm upgrade re-runs it)" \
+  || bad "a Job carries a Reloader annotation"
+for f in umbrella-default umbrella-tls service-defaults; do
+  grep -q 'reloader.stakater.com' "$WORK/$f.yaml" && { bad "$f: Reloader annotation rendered while global.reloader.enabled is off"; continue; }
+  ok "$f: no Reloader annotation (global.reloader.enabled off)"
+done
+grep -qx '  reloader: {enabled: true}.*' "$CHART/values-kind.yaml" && ok "values-kind.yaml: global.reloader.enabled on" \
+  || bad "values-kind.yaml does not switch global.reloader.enabled on"
+# The controller is installed by deploy/kind/up.sh, pinned by chart version + digest and image digest (like ESO).
+sha='sha256:[0-9a-f]\{64\}'
+grep -q "^RELOADER_CHART_VERSION=\"[0-9][0-9.]*\"$" deploy/kind/up.sh && grep -q "^RELOADER_CHART_DIGEST=\"$sha\"$" deploy/kind/up.sh \
+  && grep -q "^RELOADER_IMAGE_DIGEST=\"$sha\"$" deploy/kind/up.sh \
+  && ok "Reloader pinned in deploy/kind/up.sh (chart version + digest, image digest)" || bad "Reloader not pinned in deploy/kind/up.sh"
+
 echo "== gitleaks (rendered manifests)"
 if command -v gitleaks >/dev/null; then
   if cat "$WORK"/*.yaml | gitleaks detect --pipe --no-banner --redact --config .gitleaks.toml >"$WORK/gl.txt" 2>&1; then ok "gitleaks clean"
