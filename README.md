@@ -29,7 +29,7 @@ Prerequisites are installed by the bootstrap script (macOS with Homebrew; Podman
 scripts/bootstrap.sh                 # toolchain (JDK 21, Maven wrapper, Podman, Flutter, just, ...)
 source scripts/env.sh && just doctor # JDK 21 + Podman socket for Testcontainers; toolchain check
 cp .env.example .env                 # replace every change-me-* value (git-ignored)
-just up                              # Postgres, Keycloak, MailHog, nginx on http://localhost:8080
+just up                              # Postgres, Keycloak, MailHog, Redpanda, nginx on http://localhost:8080
 just seed-users                      # e-mail logins <name>@hoops-academy.com: superadmin, admin1, coach1, assistant1, parent1, player1 (DEV_USER_PASSWORD)
 ```
 `DEV_USER_PASSWORD` in `.env` is the plain login password for all seeded users (Keycloak stores only its hash). To change
@@ -92,30 +92,35 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | Plan, original requirements, conformance | [`docs/PLAN.md`](docs/PLAN.md), [`docs/SPEC.md`](docs/SPEC.md), [`docs/conformance.md`](docs/conformance.md) |
 | Decisions | [`docs/adr/`](docs/adr/README.md) (index) |
 | Domain rules | [`docs/domain/`](docs/domain): authz matrix, glossary, norms |
-| Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [e2e](docs/runbooks/e2e.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
+| Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [e2e](docs/runbooks/e2e.md), [events](docs/runbooks/events.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
 | Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md) |
-| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05 and the two rounds of 2026-11-06), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
+| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05 and the three rounds of 2026-11-06), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP51 are done**, with
-handovers in `docs/wp/` (WP19, the optional events/Redpanda package, and billing are not built). As of 2026-11-06:
-backend `./mvnw verify` runs **2,039 JVM tests** green (plus 4 e2e unit tests; the 21 journey tests are skipped without
-a running stack) and `flutter test` **668 tests**; the 21-step e2e journey is green on a compose stack (CI `e2e`
-workflow) and on kind, including its mail checks (Mailpit). Contract versions: core 2.7.0, game 2.2.0, athlete 2.1.0,
-common 1.1.0; update requests in all three services name the fields to empty in a `clear` list (ADR-0032). The Helm
-chart (0.4.0) uses Gateway API with Envoy Gateway (ADR-0031) and global per-IP rate limits shared by every Envoy
-replica through Envoy's rate limit service and Redis, with per-minute limits plus per-second burst caps and a Redis
-ACL (ADR-0033). Mutation testing (PIT) runs on demand with `just mutation` and in the `mutation.yml` workflow (manual +
-monthly), never in every build (scores 99.1–100 %; `docs/quality/mutation.md`). 370 of 630 fitness norm rows are
-cited from published tables; the rest are flagged "reference pending" (`docs/domain/norms.md`). The CI workflows `ci`,
-`e2e` and `images` are green on `main` (the four images go to ghcr.io, public); every GitHub Action is pinned to a
-commit SHA, and Dependabot opens weekly grouped update PRs for Maven, pub and GitHub Actions, with automated security
-fixes on. The web app is formatted with `dart format` (80 columns; `just web-format`, checked in CI). The demo mode
-(`HOOPS_MOCK_API=true`) reaches every screen, the platform console included, with one roster shared by its mocks and
-role checks per the authz matrix. The browser smoke (`apps/web/tool/web_smoke.sh`) runs locally, not in CI; the
-Lighthouse and airplane-mode checks have not been run. Open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md);
-current state: [`docs/HANDOVER.md`](docs/HANDOVER.md); what the system does for each spec statement, with evidence:
+Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP71 are done**, with
+handovers in `docs/wp/` (the fourth round, WP52–WP71, merged on 2026-11-06). As of 2026-11-06: backend
+`./mvnw verify` runs **2,481 JVM tests** green (contracts 223, common 186, core 871, game 411, athlete 790; plus 4 e2e
+unit tests, the 23 journey tests are skipped without a running stack) and `flutter test` **778 tests**; the 23-step
+e2e journey is green on a compose stack (CI `e2e` workflow, with a browser login round trip) and the kind smoke (46
+checks) passes on chart 0.7.0. Contract versions: core 3.0.0 (the deprecated resend-invitation alias removed,
+ADR-0035), game 2.2.0, athlete 2.2.0 (template texts in es/en/id from `Accept-Language`, ADR-0039), common 1.1.1;
+seven roster event schemas in `libs/contracts/events`. Tokens carry an audience per service and refresh tokens rotate
+(ADR-0034); Keycloak's pages have a full CSP, a password blocklist and optional OTP (ADR-0038). **v2 events are
+built behind a switch**: core publishes its roster changes from the outbox to Redpanda (ADR-0036, ADR-0008
+amendment), and game and athlete keep local roster replicas that serve `RosterPort` when `hoops.roster.source=replica`
+(ADR-0037); the default stays `rest` until a core backfill and a shadow period are done. The Helm chart (0.7.0) uses
+Gateway API with Envoy Gateway (ADR-0031) and global rate limits through Redis with an ACL (ADR-0033), renders the
+broker behind `events.enabled` (with `global.events.enabled`) and can take its Secrets from the External Secrets
+Operator (ADR-0012 amendment). Mutation testing (PIT) runs on demand and monthly (core 99.6 %, game 99.5 %, athlete
+100 %; `docs/quality/mutation.md`). 475 of 630 fitness norm rows are cited from published tables; the rest are
+flagged "reference pending" (`docs/domain/norms.md`). The web app opens on a public landing page (es/en/id), is an
+installable PWA (Lighthouse PWA score 1, airplane-mode cold start checked by script), and its demo mode
+(`HOOPS_MOCK_API=true`) reaches every screen with role-filtered data that survives a reload. The CI workflows `ci`,
+`e2e` and `images` are green on `main` (the browser smoke runs in `ci`); every GitHub Action is pinned to a commit
+SHA and Dependabot opens weekly grouped update PRs. Billing, the purge job and the invitation-only sign-up are not
+built. Open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); current state:
+[`docs/HANDOVER.md`](docs/HANDOVER.md); what the system does for each spec statement, with evidence:
 [`docs/conformance.md`](docs/conformance.md).
 
 ## License
