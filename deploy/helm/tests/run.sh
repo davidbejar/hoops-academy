@@ -98,9 +98,13 @@ done
 for p in /auth/realms/academy/protocol/openid-connect/token /auth/realms/academy/login-actions/authenticate; do
   routes_to keycloak-ratelimited "$p" PathPrefix keycloak && ok "rate-limited route $p -> keycloak" || bad "rate-limited route $p"
 done
-ratelimited() { # BackendTrafficPolicy $1 targets HTTPRoute $1 with a global $2 requests/minute per client IP (IPv4 + IPv6)
-  local d; d=$(doc "$1" BackendTrafficPolicy)
+ratelimited() { # BackendTrafficPolicy $1 (of file $4, default umbrella-kind) targets HTTPRoute $1 with global rules per
+  # client IP (IPv4 + IPv6): $2 requests/minute and, WP46, $3 requests/second (burst cap; 0 = no per-second rule)
+  local d; d=$(doc "$1" BackendTrafficPolicy "${4:-$R}")
   echo "$d" | grep -q "kind: HTTPRoute, name: $1}" && [ "$(echo "$d" | grep -c "requests: $2, unit: Minute")" = 2 ] \
+    && [ "$(echo "$d" | grep -c "unit: Second")" = $((${3:-0} > 0 ? 2 : 0)) ] \
+    && { [ "${3:-0}" = 0 ] || [ "$(echo "$d" | grep -c "requests: $3, unit: Second")" = 2 ]; } \
+    && [ "$(echo "$d" | grep -c -- '- clientSelectors:')" = $((${3:-0} > 0 ? 4 : 2)) ] \
     && echo "$d" | grep -q '^    global:$' && ! echo "$d" | grep -q '^    local:$' \
     && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}' && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "::/0"}'; }
 for spec in keycloak:/auth keycloak-ratelimited:/auth/realms/academy/protocol/openid-connect/token; do
@@ -109,10 +113,12 @@ for spec in keycloak:/auth keycloak-ratelimited:/auth/realms/academy/protocol/op
     && ok "$route: X-Forwarded-Host = public host (Keycloak back-channel URLs keep :8090)" || bad "$route X-Forwarded-Host"
 done
 rule keycloak /auth "$WORK/umbrella-tls.yaml" | grep -q 'value: "hoops.example.test"}' && ok "TLS: X-Forwarded-Host = hoops.example.test" || bad "TLS X-Forwarded-Host"
-ratelimited keycloak-ratelimited 60 && ok "token endpoint + login form: global rate limit 60/min per client IP" || bad "keycloak rate limit"
+ratelimited keycloak-ratelimited 60 10 && ok "token endpoint + login form: global rate limit 60/min and 10/s per client IP" || bad "keycloak rate limit"
 routes_to game-service-events-batch '/api/game/matches/[^/]+/events(:|%3[Aa])batch' RegularExpression game-service \
   && ok "events:batch (and %3A) regex route, path not rewritten" || bad "events:batch route"
-ratelimited game-service-events-batch 120 && ok "events:batch: global rate limit 120/min per client IP" || bad "events:batch rate limit"
+ratelimited game-service-events-batch 120 20 && ok "events:batch: global rate limit 120/min and 20/s per client IP" || bad "events:batch rate limit"
+ratelimited demo-service-batch 120 20 "$WORK/service-all.yaml" && ratelimited demo-service-plain 10 0 "$WORK/service-all.yaml" \
+  && ok "service chart: per-second rule only where rateLimits[].rps is set" || bad "service chart rps"
 # WP40 (ADR-0033): every Envoy replica shares the counters; no per-replica local limit is left in any render.
 ! grep -hv '^ *#' "$WORK"/*.yaml | grep -q '^ *local:$' && ok "no local rate limit rendered (global only)" || bad "a local rate limit is still rendered"
 for s in core game athlete; do
@@ -177,6 +183,20 @@ echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' && echo "$n" | grep -q 'e
   && echo "$n" | grep -q 'app.kubernetes.io/name: envoy-ratelimit' \
   && ok "ratelimit-redis NetworkPolicy: only envoy-ratelimit pods of envoy-gateway-system, no egress" || bad "ratelimit-redis NetworkPolicy"
 ! grep -q 'name: ratelimit-redis' "$WORK/umbrella-default.yaml" && ok "default: no in-chart Redis (external, rateLimit.redis.url)" || bad "ratelimit-redis rendered by default"
+# WP46: Redis ACL. The default user is off; the one user gets only the commands envoyproxy/ratelimit issues (PING, INCRBY,
+# EXPIRE; no GET/EVAL/admin) on the keys of this release's rate limit domains; its password comes from a Secret only.
+echo "$d" | grep -A1 -- '- --aclfile' | grep -q -- '- /acl/users.acl' && ok "ratelimit-redis: users from an ACL file" || bad "ratelimit-redis --aclfile"
+init=$(echo "$d" | awk '/^      initContainers:$/,/^      containers:$/')
+echo "$init" | grep -q 'user default off resetpass resetkeys resetchannels -@all' \
+  && echo "$init" | grep -q 'resetkeys ~%s resetchannels -@all +ping +incrby +expire\\n' \
+  && [ "$(echo "$init" | grep -o '+[@a-z|]*' | sort -u | tr '\n' ' ')" = "+expire +incrby +ping " ] \
+  && ok "ACL: default user off, ratelimit user only +ping +incrby +expire" || bad "ACL rules"
+echo "$init" | grep -A1 'name: ACL_USER$' | grep -q 'value: "ratelimit"' && echo "$init" | grep -A1 'name: ACL_KEYS$' | grep -q 'value: "hoops/hoops/\*"' \
+  && ok "ACL: user ratelimit on keys hoops/hoops/* (rate limit domain = Envoy listener <namespace>/<gateway>/<listener>)" || bad "ACL user/keys"
+echo "$init" | grep -A3 'name: ACL_PASSWORD$' | grep -q 'secretKeyRef: {name: hoops-ratelimit-redis, key: password}' \
+  && ! echo "$d" | grep -q 'requirepass' && ok "ACL password only from Secret hoops-ratelimit-redis (hashed into the file)" || bad "ACL password source"
+echo "$d" | grep -q 'name: acl, emptyDir: {medium: Memory, sizeLimit: 1Mi}' && echo "$d" | grep -q 'name: acl, mountPath: /acl, readOnly: true' \
+  && ok "ACL file in memory, read-only for redis-server" || bad "ACL volume"
 
 echo "== gitleaks (rendered manifests)"
 if command -v gitleaks >/dev/null; then

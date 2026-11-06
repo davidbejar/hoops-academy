@@ -13,7 +13,7 @@ route:
   paths: [/api/demo, /platform]
   health: {enabled: true, prefix: /api/demo}
   rateLimits:
-    - {name: batch, path: "/api/demo/items/[^/]+/things(:|%3[Aa])batch", rpm: 120}
+    - {name: batch, path: "/api/demo/items/[^/]+/things(:|%3[Aa])batch", rpm: 120, rps: 20}
     - {name: plain, path: /api/demo/slow, rpm: 10}
 pdb: {enabled: true, minAvailable: 1}
 hpa: {enabled: true, minReplicas: 2, maxReplicas: 4}

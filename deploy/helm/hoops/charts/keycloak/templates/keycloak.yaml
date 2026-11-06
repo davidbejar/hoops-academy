@@ -136,6 +136,7 @@ spec:
 {{- end }}
 {{- if and .Values.route.enabled .Values.route.rateLimit.enabled }}
 {{- $rpm := .Values.route.rateLimit.rpm }}
+{{- $rps := .Values.route.rateLimit.rps | default 0 }}
 ---
 # Brute-force / credential-stuffing brake at the edge (Keycloak's brute-force detection is the second layer): the token
 # endpoint and the login form POST get their own route (prefix match, so a trailing slash or sub-path is limited too)
@@ -160,6 +161,10 @@ spec:
 ---
 # {{ $rpm }} requests per minute per client IP, counted by the rate limit service in Redis (one-minute window shared by
 # every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
+{{- if $rps }}
+# Plus a burst cap of {{ $rps }} requests per second per client IP, so the fixed minute windows cannot pass 2 x {{ $rpm }} in a
+# few seconds around a minute boundary (WP46, ADR-0033 amendment).
+{{- end }}
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
@@ -176,6 +181,11 @@ spec:
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: {{ . | quote }}}
           limit: {requests: {{ $rpm }}, unit: Minute}
+        {{- if $rps }}
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: {{ . | quote }}}
+          limit: {requests: {{ $rps }}, unit: Second}
+        {{- end }}
         {{- end }}
 {{- end }}
 {{- if and .Values.route.enabled (not .Values.exposeAdminConsole) }}

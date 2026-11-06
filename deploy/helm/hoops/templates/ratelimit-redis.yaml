@@ -3,10 +3,15 @@ Counter store of Envoy Gateway's global rate limit service (WP40, ADR-0033). Env
 (namespace rateLimit.redis.clientNamespace) are the only clients: the NetworkPolicy admits nothing else and the pod has
 no egress. Counters are fixed one-minute windows with a TTL, so there is no persistence and no
 replica: a restart resets the windows in progress, which only lets a client start a fresh minute early.
-No password: the store holds no data worth stealing and the policy is the access control (ADR-0033).
+Access control in two layers (ADR-0033 and its WP46 amendment): the NetworkPolicy, and a Redis ACL that disables the
+`default` user and gives the one user only PING, INCRBY and EXPIRE (what envoyproxy/ratelimit issues: an INCRBY + EXPIRE
+pipeline per descriptor, PING at connect; no GET, no scripting, no admin) on the keys of this release's rate limit
+domains. The init container writes the ACL file into memory from the password Secret, hashed (SHA-256).
 */ -}}
 {{- $r := .Values.rateLimit.redis -}}
 {{- if $r.enabled }}
+{{- $gwNs := .Values.global.gateway.namespace | default .Release.Namespace }}
+{{- $aclKeys := $r.acl.keyPattern | default (printf "%s/%s/*" $gwNs .Values.global.gateway.name) }}
 {{- $labels := dict "app.kubernetes.io/name" "ratelimit-redis" "app.kubernetes.io/part-of" "hoops-academy" "app.kubernetes.io/component" "rate-limit-store" }}
 apiVersion: apps/v1
 kind: Deployment
@@ -31,14 +36,48 @@ spec:
         runAsUser: {{ $r.runAsUser }}
         runAsGroup: {{ $r.runAsGroup }}
         seccompProfile: {type: RuntimeDefault}
+      {{- $image := printf "%s:%s%s" $r.image.repository $r.image.tag (ternary (printf "@%s" $r.image.digest) "" (ne $r.image.digest "")) }}
+      initContainers:
+        # Writes /acl/users.acl: `default` off with no password and no permissions; ACL_USER on with the hashed password,
+        # only its keys, only +ping +incrby +expire. Redis reads the file once at start: restart the Deployment after
+        # rotating the password (docs/runbooks/rotate-secrets.md).
+        - name: acl
+          image: {{ $image | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -ec
+            - |
+              : "${ACL_PASSWORD:?Secret {{ $r.acl.passwordSecret.name }} has an empty {{ $r.acl.passwordSecret.key }}}"
+              hash=$(printf '%s' "$ACL_PASSWORD" | sha256sum | cut -d' ' -f1)
+              printf 'user default off resetpass resetkeys resetchannels -@all\n' > /acl/users.acl
+              printf 'user %s on #%s resetkeys ~%s resetchannels -@all +ping +incrby +expire\n' "$ACL_USER" "$hash" "$ACL_KEYS" >> /acl/users.acl
+          env:
+            - name: ACL_USER
+              value: {{ $r.acl.user | quote }}
+            - name: ACL_KEYS
+              value: {{ $aclKeys | quote }}
+            - name: ACL_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ $r.acl.passwordSecret.name }}, key: {{ $r.acl.passwordSecret.key }}}
+          resources:
+            {{- toYaml $r.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: acl, mountPath: /acl}
       containers:
         - name: redis
-          image: {{ printf "%s:%s%s" $r.image.repository $r.image.tag (ternary (printf "@%s" $r.image.digest) "" (ne $r.image.digest "")) | quote }}
+          image: {{ $image | quote }}
           imagePullPolicy: IfNotPresent
           # In-memory only (no RDB/AOF), bounded memory with LRU eviction, CONFIG disabled so a client cannot
-          # reconfigure the server (e.g. turn persistence on or change the bind address).
+          # reconfigure the server (e.g. turn persistence on or change the bind address), users from the ACL file.
           args:
             - redis-server
+            - --aclfile
+            - /acl/users.acl
             - --save
             - ""
             - --appendonly
@@ -68,9 +107,11 @@ spec:
             capabilities: {drop: [ALL]}
           volumeMounts:
             - {name: data, mountPath: /data}
+            - {name: acl, mountPath: /acl, readOnly: true}
       volumes:
         - name: data
           emptyDir: {sizeLimit: 16Mi}
+        - {name: acl, emptyDir: {medium: Memory, sizeLimit: 1Mi}}
 ---
 apiVersion: v1
 kind: Service

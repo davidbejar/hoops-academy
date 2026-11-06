@@ -12,5 +12,12 @@ rate-limit BackendTrafficPolicies are not applied. Envoy Gateway Helm values (cl
 {{- end }}
   config.envoyGateway.rateLimit.failClosed=false   (fail open when Redis is unreachable; see ADR-0033)
   config.envoyGateway.rateLimit.timeout=100ms
+{{- if .Values.rateLimit.redis.enabled }}
+  config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.env=
+    [{name: REDIS_AUTH, valueFrom: {secretKeyRef: {name: envoy-ratelimit-redis-auth, key: auth}}}]
+Redis ACL (WP46): the Redis of this release accepts only user {{ .Values.rateLimit.redis.acl.user }} (password: key {{ .Values.rateLimit.redis.acl.passwordSecret.key }} of Secret
+{{ .Values.rateLimit.redis.acl.passwordSecret.name }} in {{ .Release.Namespace }}). Secret envoy-ratelimit-redis-auth in envoy-gateway-system holds auth=<user>:<password>
+for the rate limit pods. Both Secrets exist before the install (docs/runbooks/release.md section 4).
+{{- end }}
 Check: kubectl -n {{ .Release.Namespace }} describe backendtrafficpolicy   (every policy Accepted=True)
        kubectl -n envoy-gateway-system rollout status deploy/envoy-ratelimit

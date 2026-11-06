@@ -30,10 +30,13 @@ route:
   path: /auth
   # Brute-force / credential-stuffing brake at the edge (Keycloak's brute-force detection is the second layer):
   # the token endpoint and the login form POSTs get their own route with an Envoy Gateway global rate limit of rpm
-  # requests per calendar minute per client IP, shared by all Envoy replicas (ADR-0033). Rejections are 429.
+  # requests per calendar minute per client IP, shared by all Envoy replicas (ADR-0033), and a burst cap of rps requests
+  # per second (WP46: the fixed minute windows alone let 2 x rpm through around a minute boundary; 0 = none).
+  # Rejections are 429.
   rateLimit:
     enabled: true
     rpm: 60
+    rps: 10
     paths:
       - /auth/realms/academy/protocol/openid-connect/token
       - /auth/realms/academy/login-actions/authenticate

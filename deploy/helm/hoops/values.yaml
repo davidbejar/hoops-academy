@@ -61,6 +61,18 @@ rateLimit:
     # The only clients admitted by the NetworkPolicy: Envoy Gateway's rate limit pods.
     clientNamespace: envoy-gateway-system
     clientPodLabels: {app.kubernetes.io/name: envoy-ratelimit}
+    # Redis ACL (WP46, ADR-0033 amendment): the `default` user is off; the only user, `user`, may run just the commands
+    # envoyproxy/ratelimit issues (PING, INCRBY, EXPIRE) on the keys of this release's rate limit domains. Its
+    # password comes from the Secret `passwordSecret` (created before the install, ADR-0012; kind: deploy/kind/secrets.sh)
+    # and is stored in the ACL file only as a SHA-256 hash. Envoy Gateway's rate limit pods log in with REDIS_AUTH =
+    # `<user>:<password>` from a Secret in their namespace (docs/runbooks/release.md section 4).
+    acl:
+      user: ratelimit
+      passwordSecret: {name: hoops-ratelimit-redis, key: password}
+      # Key pattern of the user. Empty: `<release namespace>/<global.gateway.name>/*`, because the rate limit service's
+      # keys start with its domain, which Envoy Gateway sets to the listener name `<namespace>/<gateway>/<listener>`.
+      # Set it when the Envoy Gateway install adds a CACHE_KEY_PREFIX to the rate limit service.
+      keyPattern: ""
 
 databases:
   enabled: true
@@ -104,10 +116,11 @@ game:
     paths: [/api/game]
     health: {enabled: true, prefix: /api/game}
     # Offline devices flush their outbox in bursts; 120/min per IP (global: one counter per calendar minute for all
-    # Envoy replicas, ADR-0033) covers a reconnect storm of a bench, but not a flood. The colon path is matched on the
+    # Envoy replicas, ADR-0033) covers a reconnect storm of a bench, but not a flood; 20/s caps the burst around a minute
+    # boundary (WP46; a bench flushes its outbox sequentially, one batch of up to 500 events per request). The colon path is matched on the
     # raw path without rewrite; the percent-encoded form (%3A, which Envoy does not decode) is limited too.
     rateLimits:
-      - {name: events-batch, path: "/api/game/matches/[^/]+/events(:|%3[Aa])batch", rpm: 120}
+      - {name: events-batch, path: "/api/game/matches/[^/]+/events(:|%3[Aa])batch", rpm: 120, rps: 20}
   env:
     GAME_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
     # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
