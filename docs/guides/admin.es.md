@@ -109,8 +109,8 @@ normas publicadas: sustitúyelos antes de usar las bandas para tomar decisiones 
 invitados, editados, con roles cambiados o desactivados, contraseñas temporales generadas o caducadas, primeros inicios
 de sesión, vínculos familiares, solicitudes y decisiones sobre jugadores, cambios de perfil, ajustes y logo, y lo que hizo
 la administración de la plataforma (administradores añadidos, academia suspendida…). Cada entrada indica la acción, sobre
-qué fue y quién la hizo («Sistema» para los procesos automáticos, «Administración de la plataforma» para el
-superadministrador). Los nombres se muestran como son hoy; una entrada sobre algo que ya no existe muestra solo su tipo.
+qué fue y quién la hizo («Sistema» para los procesos automáticos, «Administrador de la plataforma» para el
+superadministrador, cuya identidad no se muestra; el motivo de una suspensión o baja sí). Los nombres se muestran como son hoy; una entrada sobre algo que ya no existe muestra solo su tipo.
 Filtra por intervalo de fechas y por una o varias acciones; cambia de página con las flechas de abajo. Solo la ven los
 administradores. Las entradas nunca se editan ni se borran y se conservan (todavía no hay limpieza automática).
 

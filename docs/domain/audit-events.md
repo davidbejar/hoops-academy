@@ -14,7 +14,9 @@ appearing in all three.
   the tenant registry).
 - **Actor.** `actor_sub` is the token subject of the caller, or `system` for background jobs; `actor_person_id` is the
   caller's person in that academy, or null when the caller has none there (the super admin, who acts from the platform).
-  The API derives `actor.kind`: PERSON (person set), SYSTEM (`system`), PLATFORM (otherwise).
+  The API derives `actor.kind`: PERSON (person set), SYSTEM (`system`), PLATFORM (otherwise). On the academy path a
+  PLATFORM actor is masked: `subject`, `personId` and `displayName` are null (decision 16, WP38, core 2.6.0); the
+  platform path shows the subject.
 - **Names on the platform path** are limited to academies and persons who are active administrators of their academy
   (the identity the platform already manages, ADR-0023). Other persons and players show their id.
 - **Append-only.** No role may update or delete a row (trigger, ADR-0017). **Retention: none in v1**; a purge job

@@ -59,3 +59,15 @@ never read tenant content tables (persons, players …) except through `TenantSc
 - Adding an action means: an `AuditAction` constant, a contract enum value (minor bump), a row in
   `docs/domain/audit-events.md`, and a label in the web's ARB files (es/en/id; a test requires one per action).
 - Counting a large unfiltered trail still scans it (about 0.1–0.2 s per million rows); acceptable in v1.
+
+## Amendment 2026-11-06 (WP38): the super admin is masked on the academy path
+Decision 16 of the 2026-11-06 interview: an academy's ADMINs keep reading the super admin's free-text `reason` on
+`tenant.suspended` / `tenant.withdrawn` (it is written for them), but must not learn who the super admin is.
+- On `GET /api/core/audit-events` every PLATFORM-kind actor is returned with `subject`, `personId` and `displayName`
+  null; the web shows it as "Platform administrator" (es "Administrador de la plataforma", id "Administrator platform").
+  Metadata is returned unchanged. PERSON and SYSTEM actors are shown as stored.
+- The masking is a rule of the read use case (`ReadAuditTrail`, through `AuditEntry.Actor.maskedForAcademy()`), not of
+  the resource or the repository; the stored row keeps the subject (accountability, ADR-0017).
+- `GET /platform/audit-events` (the super admin's own view) is unchanged and carries the subject.
+- Contract core **2.6.0**: `AuditActor.subject` stays required and becomes nullable (written as an explicit null; core
+  otherwise omits nulls). No new field: the kind already tells the client that the platform acted.

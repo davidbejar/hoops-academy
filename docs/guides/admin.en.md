@@ -106,7 +106,7 @@ using bands for decisions (see `docs/domain/norms.md`).
 or deactivated, temporary passwords issued or expired, first sign-ins, guardian links, player requests and decisions,
 profile, settings and logo changes, and what the platform administration did (administrators added, academy
 suspended…). Each entry names the action, what it was about and who did it ("System" for automatic jobs, "Platform
-administration" for the super admin). Names are shown as they are today; an entry about something that no longer exists
+administrator" for the super admin, whose identity is not shown; the reason of a suspension or withdrawal is). Names are shown as they are today; an entry about something that no longer exists
 shows its type only. Filter by a date range and by one or several actions; move between pages with the arrows at the
 bottom. Only administrators see it. Entries are never edited or deleted, and they are kept (no automatic clean-up yet).
 
