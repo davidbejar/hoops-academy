@@ -76,6 +76,11 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-narayana-jta</artifactId>
     </dependency>
+    <!-- roster replica (WP68, ADR-0037): Kafka consumer of core's roster topics on Redpanda; version from the Quarkus BOM -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-messaging-kafka</artifactId>
+    </dependency>
     <!-- events/match-event.schema.json is read from the contracts jar at runtime (per-event validation) -->
     <dependency>
       <groupId>com.hoopsacademy</groupId>
@@ -146,6 +151,11 @@
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <version>${assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

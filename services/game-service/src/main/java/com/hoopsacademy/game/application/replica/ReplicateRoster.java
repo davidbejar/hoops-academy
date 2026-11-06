@@ -2,6 +2,7 @@ package com.hoopsacademy.game.application.replica;
 
 import com.hoopsacademy.common.tenancy.TenantScope;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.transaction.Transactional;
 
 /**
@@ -38,7 +39,11 @@ public class ReplicateRoster {
         });
     }
 
-    /** Keeps a rejected record's position and reason; no tenant is bound (the record may name none). */
+    /**
+     * Keeps a rejected record's position and reason; no tenant is bound (the record may name none). Callable from a
+     * consumer thread (the persistence unit needs a request context).
+     */
+    @ActivateRequestContext
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void park(ParkedRecord record) {
         parked.park(record);

@@ -51,7 +51,8 @@ public class RosterEventDecoder {
     }
 
     private static final int MAX_REASON_LENGTH = 1000;
-    private static final List<String> TOPICS = List.of("core.person", "core.player", "core.team", "core.team-player",
+    /** The topics of the contracts this decoder knows (the channel subscribes to the same list). */
+    static final List<String> TOPICS = List.of("core.person", "core.player", "core.team", "core.team-player",
             "core.team-staff", "core.guardian-link", "core.tenant");
 
     private final ObjectMapper json = new ObjectMapper();

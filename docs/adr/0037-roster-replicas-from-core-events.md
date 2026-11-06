@@ -36,11 +36,13 @@ key, and both paths must give the same answers.
    table without `tenant_id` (a broken record may not name a tenant): the app role may only `insert` into it, so no
    tenant can read what another tenant's broken record said; operators read it as the schema owner. A parked event is
    repaired by the aggregate's next event (state transfer) or by a replay once the producer is fixed.
-5. **Other failures stop the consumer, not the service.** Offsets are committed after processing (at least once).
+5. **Other failures stop the consumer and lose nothing.** Offsets are committed after processing (at least once).
    A failure that is not a contract violation (database unreachable) is retried a few times in place, then fails the
-   channel: the Kafka connector's liveness check turns DOWN and the orchestrator restarts the pod, which resumes from
-   the last committed offset. Readiness never depends on the broker: a broker outage leaves a stale but working
-   replica, visible in the lag metric.
+   channel: the messaging health checks (liveness and readiness) turn DOWN, the orchestrator restarts the pod, and it
+   resumes from the last committed offset, which is still before the failed event. A valid event is never parked or
+   skipped. The broker being unreachable is not a failure: the Kafka connector's readiness check is off, the client
+   reconnects, and the replica stays readable but stale, visible in the lag metric. The consumer can be switched off
+   (escape hatch) without touching the REST path.
 6. **Reads reproduce core's `/internal` rules** (contract tests run the same cases against the REST adapter, with
    WireMock answering like core, and against the replica): a team roster and a player batch only in an ACTIVE tenant
    (else not found); roster = open (`leftOn` null) and valid (`invalidReason` null) assignments in `joinedOn` order,

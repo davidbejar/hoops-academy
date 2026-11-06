@@ -3,6 +3,7 @@ package com.hoopsacademy.game.adapters.in.messaging;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -82,7 +83,7 @@ class RosterReplayTest {
     @Test
     void theReplicaRebuiltFromTheTopicsIsTheSameAndAnswersWhatCoreAnswers() {
         CoreTopics.publish(history());
-        await().atMost(WAIT).untilAsserted(this::answersWhatCoreAnswers);
+        await().atMost(WAIT).ignoreExceptionsInstanceOf(NotFoundException.class).untilAsserted(this::answersWhatCoreAnswers);
         Map<String, List<Map<String, Object>>> live = snapshot();
 
         replayFromEmpty();
@@ -91,34 +92,38 @@ class RosterReplayTest {
         answersWhatCoreAnswers();
     }
 
+    /** In core's order: each record occurs one second after the one before it. */
     private Record[] history() {
         CoreEvents core = CoreEvents.of(academy);
         UUID anaAssignment = UUID.randomUUID();
         UUID beaLink = UUID.randomUUID();
+        List<Record> records = new ArrayList<>();
+        records.add(core.tenant("ACTIVE", "UTC"));
+        records.add(core.person(coach, "Cora Coach", "sub-cora-" + coach, true, TenantRole.COACH));
+        records.add(core.person(parent, "Paula Parent", "sub-paula-" + parent, true, TenantRole.PARENT));
         Record lionsCreated = core.team(lions, season, SEASON_END, "Lions");
+        records.addAll(List.of(lionsCreated, lionsCreated));
+        records.add(core.team(cubs, season, SEASON_END, "Cubs"));
+        records.add(core.player(ana, UUID.randomUUID(), "Ana Ruiz", "PENDING_APPROVAL", BORN, "FEMALE"));
+        records.add(core.player(bea, UUID.randomUUID(), "Bea Gil", "ACTIVE", BORN, "FEMALE"));
+        records.add(core.player(ana, UUID.randomUUID(), "Ana Ruiz-Gil", "ACTIVE", BORN, "FEMALE"));
+        records.add(core.assignment(anaAssignment, lions, ana, "7", JOINED, null, null));
+        records.add(core.assignment(UUID.randomUUID(), lions, bea, "4", JOINED, LocalDate.parse("2026-10-01"), null));
+        records.add(core.staff(lions, coach, "COACH"));
+        records.add(core.staff(cubs, coach, "COACH"));
+        records.add(core.link(UUID.randomUUID(), parent, ana));
+        records.add(core.link(beaLink, parent, bea));
+        records.add(core.team(lions, season, SEASON_END, "Big Lions"));
+        records.add(core.assignment(anaAssignment, lions, ana, "8", JOINED, null, null));
         Record cubsStaffRemoved = core.staffRemoved(cubs, coach);
+        records.addAll(List.of(cubsStaffRemoved, CoreEvents.tombstone(cubsStaffRemoved)));
         Record beaUnlinked = core.linkRemoved(beaLink, parent, bea);
+        records.addAll(List.of(beaUnlinked, beaUnlinked, CoreEvents.tombstone(beaUnlinked)));
+        records.add(core.tenant("ACTIVE", ZONE.getId()));
         CoreEvents other = CoreEvents.of(otherAcademy);
-        List<Record> records = new ArrayList<>(List.of(
-                core.tenant("ACTIVE", "UTC"),
-                core.person(coach, "Cora Coach", "sub-cora-" + coach, true, TenantRole.COACH),
-                core.person(parent, "Paula Parent", "sub-paula-" + parent, true, TenantRole.PARENT),
-                lionsCreated, lionsCreated,
-                core.team(cubs, season, SEASON_END, "Cubs"),
-                core.player(ana, UUID.randomUUID(), "Ana Ruiz", "PENDING_APPROVAL", BORN, "FEMALE"),
-                core.player(bea, UUID.randomUUID(), "Bea Gil", "ACTIVE", BORN, "FEMALE"),
-                core.player(ana, UUID.randomUUID(), "Ana Ruiz-Gil", "ACTIVE", BORN, "FEMALE"),
-                core.assignment(anaAssignment, lions, ana, "7", JOINED, null, null),
-                core.assignment(UUID.randomUUID(), lions, bea, "4", JOINED, LocalDate.parse("2026-10-01"), null),
-                core.staff(lions, coach, "COACH"), core.staff(cubs, coach, "COACH"),
-                core.link(UUID.randomUUID(), parent, ana), core.link(beaLink, parent, bea),
-                core.team(lions, season, SEASON_END, "Big Lions"),
-                core.assignment(anaAssignment, lions, ana, "8", JOINED, null, null),
-                cubsStaffRemoved, CoreEvents.tombstone(cubsStaffRemoved), beaUnlinked, beaUnlinked,
-                CoreEvents.tombstone(beaUnlinked),
-                core.tenant("ACTIVE", ZONE.getId()),
-                other.tenant("ACTIVE", "Asia/Jakarta"), other.team(lions, season, SEASON_END, "Jakarta Lions"),
-                other.player(ana, UUID.randomUUID(), "Ani Other", "ACTIVE", BORN, "FEMALE")));
+        records.add(other.tenant("ACTIVE", "Asia/Jakarta"));
+        records.add(other.team(lions, season, SEASON_END, "Jakarta Lions"));
+        records.add(other.player(ana, UUID.randomUUID(), "Ani Other", "ACTIVE", BORN, "FEMALE"));
         return records.toArray(Record[]::new);
     }
 

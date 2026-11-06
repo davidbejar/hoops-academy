@@ -109,12 +109,12 @@ class RosterEventConsumerTest {
     void aRemovalFollowedByItsTombstoneLeavesTheEntryRemoved() {
         UUID team = UUID.randomUUID();
         UUID coach = UUID.randomUUID();
+        Record attached = core.staff(team, coach, "COACH");
         Record removal = core.staffRemoved(team, coach);
         UUID marker = UUID.randomUUID();
         double tombstones = events("core.team-staff", "tombstone");
 
-        CoreTopics.publish(core.staff(team, coach, "COACH"), removal, CoreEvents.tombstone(removal),
-                core.staff(marker, coach, "COACH"));
+        CoreTopics.publish(attached, removal, CoreEvents.tombstone(removal), core.staff(marker, coach, "COACH"));
 
         await().atMost(WAIT).untilAsserted(() -> assertThat(count("game.team_staff_ref")).isEqualTo(2));
         assertThat(ReplicaDb.rows(tenant, "select removed from game.team_staff_ref where team_id = '" + team + "'"))
