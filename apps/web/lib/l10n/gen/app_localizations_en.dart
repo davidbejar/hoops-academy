@@ -1745,6 +1745,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get injurySaved => 'Injury saved';
 
   @override
+  String get injuryEdit => 'Edit injury';
+
+  @override
+  String get injuryReturnBeforeInjury =>
+      'Return cannot be before the injury date';
+
+  @override
   String get availabilityAvailable => 'Available';
 
   @override

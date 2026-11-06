@@ -1759,6 +1759,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get injurySaved => 'Lesión guardada';
 
   @override
+  String get injuryEdit => 'Editar lesión';
+
+  @override
+  String get injuryReturnBeforeInjury =>
+      'El regreso no puede ser anterior a la lesión';
+
+  @override
   String get availabilityAvailable => 'Disponible';
 
   @override

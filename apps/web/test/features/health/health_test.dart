@@ -142,7 +142,7 @@ void main() {
       expect(find.text('Menisco'), findsOneWidget);
     });
 
-    testWidgets('edit does not clear untouched empty fields and validates the body part', (tester) async {
+    testWidgets('edit validates the body part and names the empty optional fields in clear', (tester) async {
       final a = _athlete();
       await _staff(tester, a);
       await tapKey(tester, 'injury-edit-inj-1');
@@ -153,7 +153,7 @@ void main() {
       await enter(tester, 'injury-part', 'Rodilla izq.');
       await tapKey(tester, 'form-submit');
       expect(a.health.lastInjuryUpdate!.bodyPart, 'Rodilla izq.');
-      expect(a.health.lastInjuryUpdate!.clear, anyOf(isNull, isEmpty));
+      expect(a.health.lastInjuryUpdate!.clear!.toSet(), {ath.UpdateInjuryRequestClearEnum.description});
     });
 
     testWidgets('edit also works on a recovered injury and can clear the return date', (tester) async {
@@ -163,7 +163,11 @@ void main() {
       await tester.tap(find.descendant(of: find.byKey(const Key('injury-actual')), matching: find.byIcon(Icons.clear)));
       await tester.pumpAndSettle();
       await tapKey(tester, 'form-submit');
-      expect(a.health.lastInjuryUpdate!.clear!.toSet(), {ath.UpdateInjuryRequestClearEnum.actualReturnOn});
+      expect(a.health.lastInjuryUpdate!.clear!.toSet(), {
+        ath.UpdateInjuryRequestClearEnum.description,
+        ath.UpdateInjuryRequestClearEnum.expectedReturnOn,
+        ath.UpdateInjuryRequestClearEnum.actualReturnOn,
+      });
     });
 
     testWidgets('a server error keeps the edit dialog open', (tester) async {

@@ -672,6 +672,8 @@
     }
   },
   "injurySaved": "Injury saved",
+  "injuryEdit": "Edit injury",
+  "injuryReturnBeforeInjury": "Return cannot be before the injury date",
   "availabilityAvailable": "Available",
   "availabilityInjured": "Injured: {bodyPart}",
   "@availabilityInjured": {

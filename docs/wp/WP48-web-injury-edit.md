@@ -31,3 +31,10 @@ Decision 29 of 2026-11-06: injuries can be edited in the app (today: create and 
 - Do not run `dart format` on files you did not change (WP49 reformats the whole app later).
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built: `InjuryEditDialog` (player_health_view.dart) behind an "Edit injury" button (`injury-edit-<id>`) on every injury card (open and recovered), shown only when `canWriteHealth` (ADMIN, COACH, ASSISTANT_COACH, linked PARENT; PLAYER read-only, per authz-matrix); `InjuriesNotifier.edit`; l10n `injuryEdit`, `injuryReturnBeforeInjury` (es/en/id).
+- Fields editable: body part (required), severity, injury date, description, expected return, actual return (only on recovered injuries). `status` is not in the dialog (the existing "Mark recovered" action owns it). Description, expected return and (recovered) actual return are clearable; empty ones are named in `clear` via `clearList` (project convention, also when they were already empty). Return dates before the injury date are rejected client-side.
+- Verified: `flutter analyze` no issues; `flutter test` (full, fresh) 651 passed, 0 failed. Red tests committed first (5 new widget tests in test/features/health/health_test.dart; fake_athlete `updateInjury` now honours all fields and `clear`).
+- Goldens: none changed (no golden covers the injury card; none regenerated).
+- Open points: the contract does not let the edit reopen a recovered injury (status transitions stay with the recover action); `dart format` deliberately not run (WP49).

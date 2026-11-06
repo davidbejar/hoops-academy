@@ -60,6 +60,12 @@ class InjuriesNotifier extends AsyncNotifier<List<ath.Injury>> {
     await _reload();
   }
 
+  /// Edit dialog: [request] carries the new values and, per ADR-0032, `clear` for emptied optional fields.
+  Future<void> edit(String injuryId, ath.UpdateInjuryRequest request) async {
+    await ref.read(healthRepositoryProvider).updateInjury(injuryId, request);
+    await _reload();
+  }
+
   Future<void> recover(String injuryId, DateTime actualReturnOn) async {
     await ref.read(healthRepositoryProvider).updateInjury(
       injuryId,

@@ -1752,6 +1752,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get injurySaved => 'Cedera disimpan';
 
   @override
+  String get injuryEdit => 'Ubah cedera';
+
+  @override
+  String get injuryReturnBeforeInjury =>
+      'Tanggal kembali tidak boleh sebelum tanggal cedera';
+
+  @override
   String get availabilityAvailable => 'Tersedia';
 
   @override

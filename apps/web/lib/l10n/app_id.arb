@@ -672,6 +672,8 @@
     }
   },
   "injurySaved": "Cedera disimpan",
+  "injuryEdit": "Ubah cedera",
+  "injuryReturnBeforeInjury": "Tanggal kembali tidak boleh sebelum tanggal cedera",
   "availabilityAvailable": "Tersedia",
   "availabilityInjured": "Cedera: {bodyPart}",
   "@availabilityInjured": {

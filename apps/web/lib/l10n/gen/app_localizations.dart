@@ -3298,6 +3298,18 @@ abstract class AppLocalizations {
   /// **'Lesión guardada'**
   String get injurySaved;
 
+  /// No description provided for @injuryEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar lesión'**
+  String get injuryEdit;
+
+  /// No description provided for @injuryReturnBeforeInjury.
+  ///
+  /// In es, this message translates to:
+  /// **'El regreso no puede ser anterior a la lesión'**
+  String get injuryReturnBeforeInjury;
+
   /// No description provided for @availabilityAvailable.
   ///
   /// In es, this message translates to:

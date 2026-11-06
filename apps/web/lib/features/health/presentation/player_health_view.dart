@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/api/clear_list.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
@@ -12,6 +13,7 @@ import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../training/presentation/player_picker.dart' show playerNameProvider;
 import '../../training/presentation/training_labels.dart' show fullDate;
+import '../../training/application/training_providers.dart' show toAthDate;
 import '../application/health_providers.dart';
 import 'charts.dart';
 import 'health_labels.dart';
@@ -188,10 +190,17 @@ class _InjuryCard extends ConsumerWidget {
             if (i.description != null) Text(i.description!),
             if (open && i.expectedReturnOn != null) Text(l.injuryReturnLine(fullDate(i.expectedReturnOn!))),
             if (!open && i.actualReturnOn != null) Text(l.injuryRecoveredLine(fullDate(i.actualReturnOn!))),
-            if (open && canWrite)
+            if (canWrite)
               Wrap(
                 spacing: AppTokens.spaceSm,
                 children: [
+                  TextButton.icon(
+                    key: Key('injury-edit-${i.id}'),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: Text(l.injuryEdit),
+                    onPressed: () => showDialog<bool>(context: context, builder: (_) => InjuryEditDialog(injury: i)),
+                  ),
+                  if (open) ...[
                   TextButton(
                     key: Key('injury-return-${i.id}'),
                     onPressed: () async {
@@ -210,6 +219,7 @@ class _InjuryCard extends ConsumerWidget {
                     },
                     child: Text(l.injuryRecover),
                   ),
+                  ],
                 ],
               ),
           ],
@@ -296,6 +306,120 @@ class _InjuryDialogState extends ConsumerState<InjuryDialog> {
           maxLines: 2,
           decoration: InputDecoration(labelText: l.injuryDescription),
         ),
+      ],
+    );
+  }
+}
+
+/// Edits every field `UpdateInjuryRequest` offers; emptied optional fields are sent in `clear` (ADR-0032).
+class InjuryEditDialog extends ConsumerStatefulWidget {
+  const InjuryEditDialog({super.key, required this.injury});
+  final ath.Injury injury;
+
+  @override
+  ConsumerState<InjuryEditDialog> createState() => _InjuryEditDialogState();
+}
+
+class _InjuryEditDialogState extends ConsumerState<InjuryEditDialog> {
+  final _form = GlobalKey<FormState>();
+  late final _part = TextEditingController(text: widget.injury.bodyPart);
+  late final _description = TextEditingController(text: widget.injury.description ?? '');
+  late ath.InjurySeverity _severity = widget.injury.severity;
+  late DateTime _on = widget.injury.occurredOn.toDateTime();
+  late DateTime? _expected = widget.injury.expectedReturnOn?.toDateTime();
+  late DateTime? _actual = widget.injury.actualReturnOn?.toDateTime();
+  bool _datesBeforeInjury = false;
+
+  bool get _recovered => widget.injury.status == ath.InjuryStatus.RECOVERED;
+
+  @override
+  void dispose() {
+    _part.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  bool _validateDates() {
+    final day = DateTime(_on.year, _on.month, _on.day);
+    final before = (_expected != null && _expected!.isBefore(day)) || (_actual != null && _actual!.isBefore(day));
+    setState(() => _datesBeforeInjury = before);
+    return !before;
+  }
+
+  ath.UpdateInjuryRequest _request() {
+    final text = _description.text.trim();
+    return ath.UpdateInjuryRequest(
+      (b) => b
+        ..occurredOn = toAthDate(_on)
+        ..bodyPart = _part.text.trim()
+        ..severity = _severity
+        ..description = text.isEmpty ? null : text
+        ..expectedReturnOn = _expected == null ? null : toAthDate(_expected!)
+        ..actualReturnOn = _actual == null ? null : toAthDate(_actual!)
+        ..clear = clearList({
+          ath.UpdateInjuryRequestClearEnum.description: text.isEmpty ? null : text,
+          ath.UpdateInjuryRequestClearEnum.expectedReturnOn: _expected,
+          if (_recovered) ath.UpdateInjuryRequestClearEnum.actualReturnOn: _actual,
+        }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final dateError = _datesBeforeInjury ? l.injuryReturnBeforeInjury : null;
+    return FormDialog(
+      title: l.injuryEdit,
+      formKey: _form,
+      validateExtra: _validateDates,
+      onSubmit: () => runAction(
+        context,
+        () => ref.read(injuriesProvider(widget.injury.playerId).notifier).edit(widget.injury.id, _request()),
+        success: l.injurySaved,
+      ),
+      children: [
+        TextFormField(
+          key: const Key('injury-part'),
+          controller: _part,
+          decoration: InputDecoration(labelText: l.injuryBodyPart),
+          validator: (v) => requiredValidator(l, v),
+        ),
+        formGap,
+        DropdownButtonFormField<ath.InjurySeverity>(
+          key: const Key('injury-severity'),
+          initialValue: _severity,
+          isExpanded: true,
+          decoration: InputDecoration(labelText: l.injurySeverity),
+          items: [
+            for (final s in [ath.InjurySeverity.MINOR, ath.InjurySeverity.MODERATE, ath.InjurySeverity.SEVERE])
+              DropdownMenuItem(value: s, child: Text(s.label(l))),
+          ],
+          onChanged: (v) => setState(() => _severity = v ?? _severity),
+        ),
+        formGap,
+        DateField(key: const Key('injury-date'), label: l.injuryOccurredOn, value: _on, lastDate: DateTime.now(), onChanged: (d) => setState(() => _on = d)),
+        formGap,
+        DateField(
+          key: const Key('injury-expected'),
+          label: l.injuryExpectedReturn,
+          value: _expected,
+          errorText: dateError,
+          onChanged: (d) => setState(() => _expected = d),
+          onClear: () => setState(() => _expected = null),
+        ),
+        if (_recovered) ...[
+          formGap,
+          DateField(
+            key: const Key('injury-actual'),
+            label: l.injuryRecoveredOn,
+            value: _actual,
+            errorText: dateError,
+            onChanged: (d) => setState(() => _actual = d),
+            onClear: () => setState(() => _actual = null),
+          ),
+        ],
+        formGap,
+        TextFormField(key: const Key('injury-description'), controller: _description, maxLines: 2, decoration: InputDecoration(labelText: l.injuryDescription)),
       ],
     );
   }

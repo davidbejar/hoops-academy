@@ -1011,6 +1011,8 @@
     }
   },
   "injurySaved": "Lesión guardada",
+  "injuryEdit": "Editar lesión",
+  "injuryReturnBeforeInjury": "El regreso no puede ser anterior a la lesión",
   "availabilityAvailable": "Disponible",
   "availabilityInjured": "Lesionado: {bodyPart}",
   "@availabilityInjured": {
