@@ -20,6 +20,9 @@ source scripts/env.sh
 | `adapters.in.job` | `@Scheduled` nightly materialisation. |
 | `adapters.out.persistence` | Hibernate entities (`@TenantId String tenantId`, ADR-0011) and repositories; `TenantRegistryRepository` is plain JDBC. |
 | `adapters.out.client` | `CoreRosterAdapter` (RosterPort mapping over common-quarkus' shared `CoreRosterClient`; the membership resolver is common's `RosterAuthzResolver`). |
+| `application.replica`, `adapters.in.messaging` | roster replica (WP69, ADR-0037): `CoreRosterConsumer` (channel `core-roster`, seven `core.*` topics) -> `CoreEventDecoder` (contract validation, key check) -> `ApplyRosterEvent` (event's tenant, idempotent, `occurredAt`-ordered); `ReplicaAuthzResolver` (membership like core's `/internal/authz`). |
+| `adapters.out.persistence` (replica) | `RosterReplicaRepository` (upserts of `athlete.*_ref`, V6), `ReplicaRosterRepository` (RosterPort on the replica), `ReplicaMembershipRepository`, `ParkedEventRepository` (plain JDBC, insert only). |
+| `adapters.config` | `RosterSourceProducer`: `hoops.roster.source` picks the `RosterPort` and the tenant filter's `AuthzContextResolver`. |
 | `adapters.out.time` | `RegistryTenantClock`, `Clock` producer. |
 
 New WP9/WP10 code adds sibling packages/classes in the same layers (e.g. `domain.plan`, `application.ManagePlans`,
@@ -47,6 +50,10 @@ entities + `V2__...sql`) and reuses `TrainingAccess`, `RosterPort`, `CallerActor
 | `hoops.athlete.default-timezone` | `Europe/Madrid` | tenant zone only when the caller's `AuthzContext` carries none (older core) |
 | `hoops.athlete.horizon-weeks` | `8` | materialisation horizon |
 | `hoops.athlete.materialise.cron` | `0 15 2 * * ?` | nightly job (`off` disables) |
+| `hoops.roster.source` | `rest` (`ATHLETE_ROSTER_SOURCE`) | `rest` = core's `/internal` API; `replica` = local replica (needs the consumer) |
+| `hoops.roster.consumer.enabled` | `true` (`ATHLETE_ROSTER_CONSUMER_ENABLED`) | the replica consumer (group `athlete-service.roster`); off in the default test profile |
+| `hoops.roster.replica.max-attempts` | `5` | tries per record on a database failure before the channel fails |
+| `kafka.bootstrap.servers` | `KAFKA_BOOTSTRAP_SERVERS`, `localhost:19092` (prod) | broker; `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME` (`athlete-service`), `KAFKA_SASL_PASSWORD` for the chart |
 
 ## Materialisation
 `MaterialiseSessions` creates sessions for the next 8 weeks. A `(schedule_id, starts_at)` pair is unique in the
@@ -93,3 +100,7 @@ status plus one line per visible target.
   `/openapi/athlete.yaml` (swagger-request-validator); `lenient(...)` validates only the response, for deliberately
   invalid requests.
 * RLS: `AthleteRlsSchemaMetaTest`, `AthleteGenericRlsIsolationTest`.
+* Roster replica: `RosterPortContract` / `MembershipContract` (application test package) run on both sources
+  (`Rest*ContractTest` with WireMock, `Replica*ContractTest` fed with `CoreEvents`, records built and validated against
+  libs/contracts/events). The Kafka tests (`CoreRosterConsumerTest`, `RosterReplayTest`, `ReplicaSourceApiTest`) use
+  `ReplicaProfile` (consumer on, `source=replica`, no core) and publish with `CoreTopics` to Dev Services Redpanda.

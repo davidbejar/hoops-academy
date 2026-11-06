@@ -130,3 +130,59 @@ select tenant_id, count(*), min(occurred_at) from core.outbox
   original `eventId`, which the consumers ignore if they have applied it. Prefer replaying the compacted topic.
 - Rows with `topic` null are core's internal v1 notifications (`player.approved`, `tenant.suspended`, ...): never
   published, kept for billing and audits.
+
+## Athlete replica (WP69)
+athlete keeps a local copy of core's roster in `athlete.*_ref` (V6), fed by core's events (ADR-0037, athlete section).
+`hoops.roster.source` decides whether the use cases' `RosterPort` and the tenant filter's membership read it
+(`replica`) or core's `/internal` API (`rest`, the default). The consumer runs in both modes, so the replica fills in
+the shadow while REST answers.
+
+| Setting | Default | What |
+|---|---|---|
+| `hoops.roster.source` (`ATHLETE_ROSTER_SOURCE`) | `rest` | `replica` = RosterPort + membership from the replica; needs the consumer on (startup fails otherwise) |
+| `hoops.roster.consumer.enabled` (`ATHLETE_ROSTER_CONSUMER_ENABLED`) | `true` | consumer of channel `core-roster` (all seven `core.*` topics), group `athlete-service.roster` |
+| `hoops.roster.replica.max-attempts` (`ATHLETE_ROSTER_REPLICA_MAX_ATTEMPTS`) | `5` | tries per record when the database fails (backoff 0.5 s, doubling); then the channel fails |
+| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
+| `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `athlete-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-athlete-service` Secret (SCRAM-SHA-256) |
+
+Run it on compose with the replica: `ATHLETE_ROSTER_SOURCE=replica just e2e` (or export it before `e2e/bin/services-up.sh`).
+
+Watch it:
+```bash
+curl -s localhost:8083/q/metrics | grep '^hoops_roster_replica'   # events_total{topic,outcome}, parked_total{topic}, lag_seconds{topic}
+curl -s localhost:8083/q/metrics | grep '^kafka_consumer_fetch_manager_records_lag'   # offset lag per partition
+podman exec hoops-redpanda rpk group describe athlete-service.roster
+```
+- `outcome`: `applied` (the replica now holds the event's state), `duplicate` (eventId seen before: a redelivery or a
+  replay over a filled replica), `stale` (an older event of an aggregate the replica holds newer), `tombstone` (the null
+  record after a removal, skipped). `lag_seconds` is how old the topic's last event was when athlete applied it.
+- **Parked records** (`parked_total` > 0): a record broke the contract (schema, envelope, or a key that is not
+  `<tenantId>:<aggregateId>` of its envelope). It is skipped, never applied. The app role may only insert into the
+  table; read it as `athlete_migrator`:
+  ```sql
+  select topic, partition, kafka_offset, record_key, event_id, reason, parked_at from athlete.parked_event order by parked_at desc;
+  ```
+  then look at the record (`rpk topic consume <topic> -o <kafka_offset> -n 1`). The aggregate's next event repairs the
+  replica (state transfer); after a producer fix, replay.
+- **The consumer stopped** (liveness DOWN, pod restarted, a "Giving up on core.<topic>-0@<offset>" error in the log):
+  applying (or parking) a record failed `max-attempts` times (database). The pod resumes from the last committed offset; if it
+  keeps failing at the same offset, fix the database cause.
+- **Broker down**: athlete keeps serving from the replica (readiness does not depend on the broker); the replica only
+  gets older, `records_lag` grows once the broker is back and drains.
+
+### Replay the athlete replica
+Rebuilds the replica from the compacted topics, e.g. after the consumer was down longer than the 7 days tombstones are
+kept, or after a parked-record fix. With `source=replica` athlete answers 404 for the tenants not yet replayed, so
+switch to `rest` for the replay or do it in a maintenance window.
+```bash
+# 1. stop athlete (the group must have no members): just services-down / kubectl -n hoops scale deploy/athlete-service --replicas=0
+# 2. empty the replica as the schema owner (truncate is not subject to RLS; applied_event too, or every event is a duplicate)
+psql "postgresql://athlete_migrator@localhost:5432/hoops" -c 'truncate athlete.tenant_ref, athlete.person_ref,
+  athlete.player_ref, athlete.team_ref, athlete.team_player_ref, athlete.team_staff_ref, athlete.guardian_link_ref,
+  athlete.applied_event'
+# 3. move the group to the start of the seven topics
+podman exec hoops-redpanda rpk group seek athlete-service.roster --to start      # kind: rpk_k "group seek athlete-service.roster --to start"
+# 4. start athlete; the replica is complete when records_lag is 0 for every core.* partition
+```
+A replay without step 2 is safe too (every event is a duplicate or stale) but does not remove entries whose removal
+was compacted away. `RosterReplayTest` proves step 2 to 4 restore the same answers.
