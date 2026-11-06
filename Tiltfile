@@ -139,7 +139,8 @@ k8s_resource(
 k8s_resource('ratelimit-redis', objects=['ratelimit-redis:networkpolicy'], resource_deps=['secrets'], labels=['infra'])
 # Event broker (WP66, ADR-0036; events.enabled in values-kind.yaml). The bootstrap Job (a Helm post-install hook, a plain
 # Job for Tilt) waits for the broker itself, then sets users, ACLs and topics. The services connect to it (WP71: core's
-# publisher, the game/athlete replica consumers); they need not wait for it, their Kafka clients reconnect by themselves.
+# publisher, the game/athlete replica consumers). core waits for the Job: its idempotent producer does not recover when its
+# first producer-id request fails authentication (user not created yet); the consumers reconnect by themselves.
 k8s_resource('redpanda', objects=['redpanda-config:configmap', 'redpanda:networkpolicy'],
              resource_deps=['secrets'], labels=['infra'])
 k8s_resource('redpanda-bootstrap', objects=['redpanda-bootstrap:configmap'], resource_deps=['redpanda'], labels=['infra'])
@@ -158,7 +159,7 @@ ROUTES = {
 }
 for svc in services:
     k8s_resource(svc, objects=['%s-env:configmap' % svc, '%s-health:httproute' % svc] + ROUTES[svc],
-                 resource_deps=['keycloak'],
+                 resource_deps=['keycloak'] + (['redpanda-bootstrap'] if svc == 'core-service' else []),
                  port_forwards=['%d:%d' % (PORTS[svc] + 10000, PORTS[svc])], labels=['services'])
 
 k8s_resource('web', objects=['web:httproute'], resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])

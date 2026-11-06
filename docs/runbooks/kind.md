@@ -80,7 +80,9 @@ basic auth on the admin API, ACLs enforced; the NetworkPolicy admits Kafka only 
 `redpanda-bootstrap`, the admin API only from that Job. The Job (a Helm post-install/upgrade hook; a plain Job for Tilt,
 resource `redpanda-bootstrap`) sets the cluster properties, the users `core-service`, `game-service`, `athlete-service`
 with the passwords of `hoops-redpanda-<service>`, their ACLs and the seven topics. `rpk`, consumer groups, rotation:
-`docs/runbooks/events.md`. The services do not connect yet (WP67-WP69).
+`docs/runbooks/events.md`. Since WP71 the services connect as those users (`global.events.enabled`, the mirror of
+`events.enabled`): core publishes its outbox, game and athlete feed their roster replicas (roster source `rest`;
+flip one with `--set athlete.rosterSource=replica`, `events.md` "Kubernetes (chart, WP71)").
 
 In-cluster: services reach Keycloak at `http://keycloak:8080/auth` (back-channel; `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`
 keeps the token issuer on the public URL), Postgres at `hoops-db-rw:5432/hoops`, Keycloak's DB at `keycloak-db-rw`.
@@ -95,7 +97,8 @@ kubectl -n hoops get pods                                   # all Running/Ready
 curl -s http://localhost:8090/auth/realms/academy/.well-known/openid-configuration | jq -r .issuer
 curl -s http://localhost:8090/api/game/q/health/ready       # {"status":"UP",...}
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8090/internal/x   # 403
-deploy/kind/smoke.sh core game athlete      # all of the above and more (pods, gateway, event broker, tokens, seeded superadmin)
+deploy/kind/smoke.sh core game athlete      # all of the above and more (pods, gateway, event broker, tokens, seeded superadmin,
+                                            # events: a seeded academy through core's outbox into both replicas, WP71)
 deploy/kind/ratelimit-check.sh              # paced burst -> first 429 at rpm+1 per client IP, with any number of Envoy
                                             # replicas; tight burst (all at once) -> 429 from the per-second rule; Redis ACL
                                             # (waits for a fresh one-minute window per burst, ~5 min in all; limits this

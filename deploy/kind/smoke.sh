@@ -4,7 +4,8 @@
 # core is deployed since WP18: with `core` in the list the script also logs the seeded `superadmin` in (PKCE, no browser)
 # and checks GET /api/core/me (200, superAdmin=true) and GET /platform/tenants (200).
 # Checks: pods Ready, Gateway programmed, OIDC issuer, /internal -> 403, web /, each service's /q/health/ready via the gateway,
-# the event broker when deployed (health, bootstrap Job, SASL, ACLs on, topics, users; WP66),
+# the event broker when deployed (health, bootstrap Job, SASL, ACLs on, topics, users; WP66), and with core and the broker
+# the events (WP71: publisher health, a seeded academy drained from core's outbox into both replicas, nothing parked),
 # client-credentials tokens from Keycloak, and that each API rejects anonymous calls (401), accepts a token minted for
 # it (anything but 401: core's token at game and athlete, game's token at core) and rejects a token that is not for it
 # (the service's own token, 401: ADR-0034 audiences). Client secrets are read from .env and sent as form bodies over stdin.
@@ -145,6 +146,79 @@ if [[ " ${SERVICES[*]} " == *" core "* ]]; then
     [ "$c" = 200 ] && ok "/platform/tenants -> 200" || bad "/platform/tenants -> $c"
     c=$(code -H "Authorization: Bearer $utok" "$BASE/internal/usage/00000000-0000-0000-0000-000000000000")
     [ "$c" = 403 ] && ok "/internal with a user token -> 403" || bad "/internal with a user token -> $c"
+  fi
+fi
+
+# Events (WP71, ADR-0036/0037): core's outbox publisher and the game/athlete roster replicas on the broker. A fresh academy
+# whose first admin is the seeded admin1 (an existing login is linked, no temporary password) gets a season, a team and a
+# player; then core's outbox drains, both consumer groups catch up with nothing parked, and game and athlete answer for the
+# new academy (athlete from its replica when ATHLETE_ROSTER_SOURCE=replica). Metrics are read inside the pods (not routed).
+if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CTX[@]}" get statefulset redpanda >/dev/null 2>&1; then
+  echo "== events (WP71: outbox publisher, roster replicas)"
+  port_of() { case "$1" in core-service) echo 8081 ;; game-service) echo 8082 ;; athlete-service) echo 8083 ;; esac; }
+  metrics() { kubectl "${CTX[@]}" exec "deploy/$1" -c "$1" -- curl -s "localhost:$(port_of "$1")/q/metrics" 2>/dev/null || true; }
+  # sum of the samples of metric $1, 0 when absent (field 2: the value; an OpenMetrics exemplar may follow it)
+  total() { { grep "^$1" || true; } | awk '{s += $2} END {printf "%d", s}'; }
+  group_lag() { rp "$as_admin rpk group describe $1" | awk '$1 == "TOTAL-LAG" {print $2}'; }
+  eventually() { for _ in $(seq 90); do "$@" && return 0; sleep 1; done; return 1; }
+  pub=$(curl -s "$BASE/api/core/q/health/ready" | jq -r '.checks[] | select(.name == "outbox-publisher") | "\(.status) \(.data.state)"')
+  [ "$pub" = "UP OK" ] && ok "core readiness outbox-publisher: $pub" || bad "core readiness outbox-publisher: '$pub' (want UP OK)"
+  [ "$(metrics core-service | total hoops_outbox_broker_available)" = 1 ] && ok "core: hoops_outbox_broker_available 1" \
+    || bad "core: broker not available to the publisher"
+  for s in core:producer game:consumer athlete:consumer; do
+    n=$(metrics "${s%:*}-service" | total "kafka_${s#*:}_successful_authentication_total")
+    [ "$n" -ge 1 ] && ok "${s%:*}-service: Kafka ${s#*:} logged in as ${s%:*}-service (SCRAM, $n successful authentications)" \
+      || bad "${s%:*}-service: no successful Kafka authentication"
+  done
+  source_of() { kubectl "${CTX[@]}" get configmap "$1-service-env" -o jsonpath="{.data.$(echo "$1" | tr '[:lower:]' '[:upper:]')_ROSTER_SOURCE}"; }
+  echo "  roster source: game $(source_of game), athlete $(source_of athlete)"
+  before_p=$(metrics core-service | total hoops_outbox_published_total)
+  before_g=$(metrics game-service | total 'hoops_roster_replica_events_total{.*outcome="applied"')
+  before_a=$(metrics athlete-service | total 'hoops_roster_replica_events_total{.*outcome="applied"')
+  # seed: academy (tenant + first admin person) -> season -> team -> player on the team (person, player, team-player)
+  slug="smoke-$(date +%s)"; day() { date -u -v"$1"d +%F 2>/dev/null || date -u -d "$1 days" +%F; }
+  tenant=$(jq -n --arg s "$slug" '{slug: $s, name: ("Smoke " + $s), timezone: "Europe/Madrid", defaultLocale: "en",
+      firstAdmin: {email: "admin1@hoops-academy.com", givenName: "Alex", familyName: "Admin"}}' |
+    curl -s -X POST "$BASE/platform/tenants" -H "Authorization: Bearer $utok" -H 'Content-Type: application/json' --data-binary @- |
+    jq -r 'select(.temporaryPassword == null) | .id // empty')
+  atok=$([ -n "$tenant" ] && user_token admin1@hoops-academy.com || true)
+  api() { # METHOD path [json] -> body, as admin1 in the new academy
+    local data=(); [ $# -lt 3 ] || data=(--data-binary "$3")
+    curl -s -X "$1" "$BASE$2" -H "Authorization: Bearer $atok" -H "X-Tenant-Id: $tenant" -H 'Content-Type: application/json' \
+      ${data[@]+"${data[@]}"}; }
+  if [ -z "$tenant" ] || [ -z "$atok" ]; then bad "seed: academy $slug with admin1 as first admin (tenant '$tenant')"
+  else
+    cat=$(api GET /api/core/age-categories | jq -c '.[] | select(.code == "U14") | {id, maxAge}')
+    season=$(api POST /api/core/seasons "$(jq -n --arg a "$(day -100)" --arg b "$(day +250)" --argjson y "$(date -u +%Y)" \
+      '{name: "Smoke", startsOn: $a, endsOn: $b, referenceYear: $y}')" | jq -r '.id // empty')
+    team=$(api POST /api/core/teams "$(jq -n --arg s "$season" --arg c "$(echo "$cat" | jq -r .id)" \
+      '{seasonId: $s, name: "Smoke U14", ageCategoryId: $c, genderPolicy: "MIXED"}')" | jq -r '.id // empty')
+    player=$(api POST /api/core/players "$(jq -n --arg t "$team" --arg b "$(( $(date -u +%Y) - $(echo "$cat" | jq -r .maxAge) + 1 ))-03-15" \
+      '{givenName: "Sam", familyName: "Smoke", birthDate: $b, gender: "FEMALE", teamId: $t, jerseyNumber: "9"}')" | jq -r '.player.id // empty')
+    [ -n "$season" ] && [ -n "$team" ] && [ -n "$player" ] && ok "seed: academy $slug (admin1), season, team, player $player" \
+      || bad "seed: season '$season' team '$team' player '$player'"
+    # the seed writes at least 5 events (tenant, admin person, team, player person + player, assignment): all published
+    published() { local m; m=$(metrics core-service); [ "$(echo "$m" | total hoops_outbox_pending)" = 0 ] \
+      && [ "$(echo "$m" | total hoops_outbox_published_total)" -ge $((before_p + 5)) ]; }
+    caught_up() { [ "$(group_lag "$1-service.roster")" = 0 ]; }
+    eventually published && ok "core: hoops_outbox_pending 0, published $before_p -> $(metrics core-service | total hoops_outbox_published_total)" \
+      || bad "core: pending $(metrics core-service | total hoops_outbox_pending), published $before_p -> $(metrics core-service | total hoops_outbox_published_total) (never sent: events.md 'Kubernetes')"
+    for s in game athlete; do
+      eventually caught_up "$s" || bad "$s-service.roster: group lag $(group_lag "$s-service.roster")"
+      m=$(metrics "$s-service")
+      applied=$(echo "$m" | total 'hoops_roster_replica_events_total{.*outcome="applied"')
+      before=$([ "$s" = game ] && echo "$before_g" || echo "$before_a")
+      parked=$(echo "$m" | total hoops_roster_replica_parked_total)
+      lag=$(echo "$m" | { grep '^hoops_roster_replica_lag_seconds' || true; } | awk '$NF > max {max = $NF} END {printf "%.2f", max}')
+      [ "$(group_lag "$s-service.roster")" = 0 ] && [ "$applied" -ge $((before + 5)) ] && [ "$parked" = 0 ] \
+        && ok "$s replica: group lag 0, applied $before -> $applied (+$((applied - before))), parked 0, max event lag ${lag} s" \
+        || bad "$s replica: lag $(group_lag "$s-service.roster"), applied $before -> $applied, parked $parked"
+    done
+    c=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $atok" -H "X-Tenant-Id: $tenant" "$BASE/api/game/matches?teamId=$team")
+    [ "$c" = 200 ] && ok "game: admin1 lists the new team's matches (200, roster source $(source_of game))" || bad "game: matches of the new team -> $c"
+    av=$(api GET "/api/athlete/players/$player/availability" | jq -r '.available // empty')
+    [ "$av" = true ] && ok "athlete: the new player's availability (available=true, roster source $(source_of athlete))" \
+      || bad "athlete: availability of the new player: '$av'"
   fi
 fi
 

@@ -245,3 +245,63 @@ podman exec hoops-redpanda rpk group seek athlete-service.roster --to start     
 ```
 A replay without step 2 is safe too (every event is a duplicate or stale) but does not remove entries whose removal
 was compacted away. `RosterReplayTest` proves step 2 to 4 restore the same answers.
+## Kubernetes (chart, WP71)
+Chart 0.7.0 wires the three services to the in-chart broker. One switch, set twice because a service subchart sees only
+its own values and `global`: `events.enabled` (broker, Job, NetworkPolicy, ESO logins) and its mirror
+`global.events.enabled` (the services' Kafka client). The render fails when they differ, so an overlay cannot turn on one
+half; `values-kind.yaml` sets both.
+
+| | `events.enabled=true` | `events.enabled=false` (default) |
+|---|---|---|
+| `KAFKA_BOOTSTRAP_SERVERS` | `redpanda.<namespace>.svc.cluster.local:9092` | not set |
+| `KAFKA_SECURITY_PROTOCOL` | `SASL_PLAINTEXT` (SCRAM-SHA-256 is the services' own setting) | not set |
+| `KAFKA_SASL_USERNAME` | the service's name (`core-service`, `game-service`, `athlete-service`) | not set |
+| `KAFKA_SASL_PASSWORD` | Secret `hoops-redpanda-<service>`, key `password` (a `secretKeyRef`, never in the ConfigMap) | not set |
+| core publisher | on (`CORE_OUTBOX_POLL_INTERVAL` default `1s`) | `CORE_OUTBOX_POLL_INTERVAL=off` (the outbox still fills) |
+| game / athlete consumer | on | `GAME_ROSTER_CONSUMER_ENABLED=false`, `ATHLETE_ROSTER_CONSUMER_ENABLED=false` |
+| roster source | `game.rosterSource` / `athlete.rosterSource` -> `GAME_ROSTER_SOURCE` / `ATHLETE_ROSTER_SOURCE`, default `rest` | `rest` only (`replica` is refused) |
+
+The render also refuses: a service without its `events.users` entry (name = the service, `passwordSecret:
+hoops-redpanda-<service>`), a `rosterSource` other than `rest`/`replica`, and `KAFKA_*` in a service's `env`/`secretEnv`
+while events are on (the chart owns the client). The off switches live in `<service>.events.offEnv`; a service's `env`
+overrides them (a managed Kafka with `events.enabled=false`: set `KAFKA_*` and `CORE_OUTBOX_POLL_INTERVAL` in `env`, the
+password through `secretEnv`). Check a release: `kubectl -n hoops get configmap core-service-env -o yaml | grep -E 'KAFKA|OUTBOX'`.
+
+Watch it on kind (`/q/metrics` is not routed; read it inside the pod):
+```bash
+curl -s localhost:8090/api/core/q/health/ready | jq '.checks[] | select(.name == "outbox-publisher")'   # UP, state OK
+m() { kubectl -n hoops exec deploy/$1 -c $1 -- curl -s localhost:$2/q/metrics; }
+m core-service 8081 | grep -E '^hoops_outbox_(pending|lag|broker_available|published_total)'
+m game-service 8082 | grep '^hoops_roster_replica'                  # events_total{outcome,topic}, parked_total, lag_seconds
+m athlete-service 8083 | grep '^hoops_roster_replica'
+rpk_k "group describe game-service.roster"                          # TOTAL-LAG 0 = caught up (section "rpk")
+```
+`deploy/kind/smoke.sh core game athlete` does all of this: it seeds a fresh academy (first admin: the seeded `admin1`, a
+season, a team, a player), waits for `hoops_outbox_pending` 0 and both groups' lag 0, and checks parked 0 and that game
+and athlete answer for the new academy.
+
+**Fresh install: restart core once after the Job.** The Job `redpanda-bootstrap` is a post-install hook, so Helm runs it
+only after `--wait`, when the services are already up: they start before their broker users exist and log `SASL
+authentication failed`. game and athlete reconnect by themselves once the Job has run. core's idempotent producer does not
+when its very first producer-id request failed authentication: every record then expires ("Expiring 1 record(s) ...
+8000 ms has passed since batch creation", `hoops_outbox_pending` grows, state `DEGRADED`) until the pod restarts. Later
+authentication failures (a user deleted or a password changed while core runs) heal by themselves once the user is back
+(WP71: 2 pending, healed 10 s after the Job). `deploy/kind/up.sh` restarts core when its log shows the failure; Tilt
+deploys core after `redpanda-bootstrap`; anywhere else: `kubectl -n hoops rollout restart deploy/core-service` after the
+first install. The real fix (the producer recovering) is a core-service follow-up.
+
+Flip one service to its replica (ADR-0037; the default stays `rest` until "When rest flips"):
+```bash
+helm upgrade hoops deploy/helm/hoops -n hoops -f deploy/helm/hoops/values-kind.yaml \
+  --set athlete.rosterSource=replica --wait          # only athlete's ConfigMap changes; its pod rolls (checksum)
+kubectl -n hoops logs deploy/athlete-service | grep 'Roster source'     # REPLICA (replica consumer on)
+```
+Back: the same with `rest`. With Tilt, put `athlete: {rosterSource: replica}` into the git-ignored `values-local.yaml`.
+
+Secret rotation of a service's broker login (`hoops-redpanda-<service>`): the password is an env var, so a changed Secret
+reaches no running pod by itself and Helm does not roll the Deployment for it (its checksum covers the ConfigMap only).
+Order: change the Secret (`secrets.sh` / ESO), run the Job (`helm upgrade`, or trigger `redpanda-bootstrap` in Tilt), then
+`kubectl -n hoops rollout restart deploy/<service>`. Between the Job and the restart the running pod keeps its open
+connections but a reconnect fails with `SASL_AUTHENTICATION_FAILED`; core's publisher turns `DEGRADED` and catches up
+after the restart, a consumer resumes from its committed offset. Only that service's pod restarts (the superuser
+`hoops-redpanda-admin` restarts `redpanda-0`, section "Rotate the superuser").
