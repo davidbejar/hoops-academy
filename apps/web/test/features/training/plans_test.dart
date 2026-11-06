@@ -132,6 +132,47 @@ void main() {
       expect(find.text('Plantilla copiada a tus planes'), findsOneWidget);
     });
 
+    testWidgets(
+      'templates show the name the server resolved for the caller (athlete 2.2.0)',
+      (tester) async {
+        // As the service sends it for `Accept-Language: id`: the texts are
+        // already translated, the client shows them as they come.
+        final json = {
+          'id': 'tpl-fs',
+          'nameKey': 'form-shooting',
+          'name': 'Teknik menembak',
+          'description': 'Mekanika dulu',
+          'template': true,
+          'itemCount': 1,
+          'totalDurationMinutes': 5,
+          'items': [
+            {'id': 'fs-0', 'position': 0, 'title': 'Tembakan satu tangan'},
+          ],
+        };
+        final template = ath.standardSerializers.deserializeWith(
+          ath.TrainingPlan.serializer,
+          json,
+        )!;
+        expect(template.nameKey, 'form-shooting');
+        await pumpAs(
+          tester,
+          roles: {TenantRole.coach},
+          staffTeamIds: {'t1'},
+          core: athleteCore(),
+          athlete: FakeAthlete(plans: FakePlansRepository(plans: [template])),
+          location: '/training/plans',
+        );
+        await tester.tap(find.byKey(const Key('tab-templates')));
+        await tester.pumpAndSettle();
+        expect(find.text('Teknik menembak'), findsOneWidget);
+        expect(find.text('Form shooting'), findsNothing);
+        await tester.tap(find.text('Teknik menembak'));
+        await tester.pumpAndSettle();
+        expect(find.text('Tembakan satu tangan'), findsOneWidget);
+        expect(find.byKey(const Key('template-hint')), findsOneWidget);
+      },
+    );
+
     testWidgets('a template opened directly is read-only with a hint', (
       tester,
     ) async {
