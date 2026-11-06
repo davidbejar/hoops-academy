@@ -92,12 +92,16 @@ public class MatchResource {
     @Path("/{matchId}")
     @Consumes(MediaType.APPLICATION_JSON)
     public MatchDto update(@PathParam("matchId") UUID matchId, @Valid UpdateMatchRequest request) {
-        if (request == null || request.isEmpty()) {
+        if (request == null) {
+            throw new BadRequestException("At least one field must be given");
+        }
+        boolean clearVenue = request.clearedProperties().contains("venue");
+        if (request.isEmpty() && !clearVenue) {
             throw new BadRequestException("At least one field must be given");
         }
         return MatchDto.from(updateMatch.handle(MatchId.of(matchId), new UpdateMatch.Command(request.opponentName,
-                request.homeAway, request.scheduledAt, request.venueGiven, request.venue, request.periodCount,
-                request.periodMinutes)));
+                request.homeAway, request.scheduledAt, clearVenue || request.venue != null, request.venue,
+                request.periodCount, request.periodMinutes)));
     }
 
     @POST

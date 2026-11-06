@@ -22,7 +22,7 @@ public class UpdateMatch {
         this.reprojection = reprojection;
     }
 
-    /** @param venueGiven true when the request mentions the venue (so null clears it) */
+    /** @param venueGiven true when the venue is set or cleared (ADR-0032: then venue null clears it) */
     public record Command(
             String opponentName, HomeAway homeAway, Instant scheduledAt, boolean venueGiven, String venue,
             Integer periodCount, Integer periodMinutes) {}
