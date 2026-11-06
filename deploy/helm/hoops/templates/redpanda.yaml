@@ -260,11 +260,13 @@ spec:
           command: [bash, /bootstrap/bootstrap.sh]
           env:
             - {name: CONFIG_DIR, value: /bootstrap}
-            - {name: BROKERS, value: "{{ $host }}:9092"}
-            - {name: ADMIN_URL, value: "http://{{ $host }}:9644"}
             - {name: PARTITIONS, value: {{ $ev.topics.partitions | quote }}}
-            - {name: SUPERUSER, value: {{ $ev.superuser.name | quote }}}
-            - name: SUPERUSER_PASSWORD
+            # rpk's login and addresses (the superuser; curl reuses them for the admin API)
+            - {name: RPK_BROKERS, value: "{{ $host }}:9092"}
+            - {name: RPK_ADMIN_HOSTS, value: "{{ $host }}:9644"}
+            - {name: RPK_SASL_MECHANISM, value: SCRAM-SHA-256}
+            - {name: RPK_USER, value: {{ $ev.superuser.name | quote }}}
+            - name: RPK_PASS
               valueFrom:
                 secretKeyRef: {name: {{ $ev.superuser.passwordSecret }}, key: password}
             {{- range $i, $u := $ev.users }}
