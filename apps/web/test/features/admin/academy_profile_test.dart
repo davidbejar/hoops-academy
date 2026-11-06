@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/core/l10n/locale_controller.dart';
 import 'package:hoops_app/features/admin/application/admin_providers.dart';
@@ -173,6 +174,91 @@ void main() {
       expect(find.text('Campo obligatorio'), findsOneWidget);
       expect(find.text('Introduce un número válido'), findsOneWidget);
       expect(core.academy.calls, isNot(contains('save')));
+    });
+  });
+
+  group('academy contact', () {
+    FakeCore coreWithContact() => FakeCore(
+      academy: FakeAcademyRepository(
+        profile0: profileFixture().rebuild(
+          (b) => b
+            ..contactEmail = 'info@club.io'
+            ..websiteUrl = 'https://club.io',
+        ),
+      ),
+    );
+
+    testWidgets('opens with the current contact data', (tester) async {
+      await open(tester, coreWithContact());
+      expect(
+        find.widgetWithText(TextFormField, 'info@club.io'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(TextFormField, 'https://club.io'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('changed values are sent without clear', (tester) async {
+      final core = coreWithContact();
+      await open(tester, core);
+      await enter(tester, 'academy-contact-email', 'hola@club.io');
+      await enter(tester, 'academy-website', 'https://nuevo.club.io');
+      await tapKey(tester, 'academy-save');
+      final r = core.academy.lastProfileRequest!;
+      expect(r.contactEmail, 'hola@club.io');
+      expect(r.websiteUrl, 'https://nuevo.club.io');
+      expect(r.clear, isNull);
+    });
+
+    testWidgets('emptied contact fields are sent in clear', (tester) async {
+      final core = coreWithContact();
+      await open(tester, core);
+      await enter(tester, 'academy-contact-email', '');
+      await enter(tester, 'academy-website', '  ');
+      await tapKey(tester, 'academy-save');
+      final r = core.academy.lastProfileRequest!;
+      expect(r.contactEmail, isNull);
+      expect(r.websiteUrl, isNull);
+      expect(r.clear!.toSet(), {
+        api.UpdateTenantProfileRequestClearEnum.contactEmail,
+        api.UpdateTenantProfileRequestClearEnum.websiteUrl,
+      });
+      expect((await core.academy.profile()).contactEmail, isNull);
+    });
+
+    testWidgets('an invalid e-mail or address is not sent', (tester) async {
+      final core = coreWithContact();
+      await open(tester, core);
+      await enter(tester, 'academy-contact-email', 'nope');
+      await enter(tester, 'academy-website', 'club');
+      await tapKey(tester, 'academy-save');
+      expect(core.academy.calls, isNot(contains('save')));
+      expect(find.text('Introduce un correo válido'), findsOneWidget);
+      expect(find.text('Introduce una dirección web válida'), findsOneWidget);
+    });
+
+    testWidgets('a server error keeps the typed values', (tester) async {
+      final core = coreWithContact();
+      await open(tester, core);
+      core.academy.failWith = const AppError(kind: AppErrorKind.server);
+      await enter(tester, 'academy-contact-email', 'otro@club.io');
+      await tapKey(tester, 'academy-save');
+      expect(
+        find.widgetWithText(TextFormField, 'otro@club.io'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a coach cannot reach the academy profile', (tester) async {
+      await pumpAs(
+        tester,
+        roles: {TenantRole.coach},
+        core: coreWithContact(),
+        location: '/admin/profile',
+      );
+      expect(find.byKey(const Key('academy-contact-email')), findsNothing);
     });
   });
 

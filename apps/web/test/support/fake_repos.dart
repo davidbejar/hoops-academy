@@ -42,6 +42,9 @@ class FakeAcademyRepository with Faulty implements AcademyRepository {
   String? uploadedMime;
   bool logoDeleted = false;
 
+  /// The profile request of the last `save`, as the form built it (contact fields cleared by name in `clear`).
+  api.UpdateTenantProfileRequest? lastProfileRequest;
+
   @override
   Future<api.TenantProfile> profile() => run('profile', () => _profile);
   @override
@@ -51,9 +54,19 @@ class FakeAcademyRepository with Faulty implements AcademyRepository {
     required api.UpdateTenantProfileRequest profile,
     required api.TenantSettings settings,
   }) => run('save', () {
+    lastProfileRequest = profile;
     _settings = settings;
+    final clear = profile.clear?.toSet() ?? const {};
     _profile = _profile.rebuild(
       (b) => b
+        ..contactEmail =
+            clear.contains(api.UpdateTenantProfileRequestClearEnum.contactEmail)
+            ? null
+            : profile.contactEmail ?? _profile.contactEmail
+        ..websiteUrl =
+            clear.contains(api.UpdateTenantProfileRequestClearEnum.websiteUrl)
+            ? null
+            : profile.websiteUrl ?? _profile.websiteUrl
         ..name = profile.name ?? _profile.name
         ..timezone = profile.timezone ?? _profile.timezone
         ..defaultLocale = profile.defaultLocale ?? _profile.defaultLocale,
