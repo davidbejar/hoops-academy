@@ -15,6 +15,7 @@ import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
+import com.hoopsacademy.core.testsupport.RosterEvents;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -107,6 +108,15 @@ class RolloverResourceTest {
         assertThat(RosterDb.playerStatus(tenant, cat)).isEqualTo("ORPHAN");
         assertThat(RosterDb.playerStatus(tenant, bea)).isEqualTo("ACTIVE");
         assertThat(RosterDb.playerStatus(tenant, dan)).isEqualTo("WITHDRAWN");
+        assertThat(RosterEvents.state(tenant, "core.team", newLions).get("seasonId").asText()).isEqualTo(current.toString());
+        assertThat(RosterEvents.state(tenant, "core.team-staff", RosterEvents.teamStaffId(newLions, coach)).get("role")
+                .asText()).isEqualTo("COACH");
+        UUID annCopy = UUID.fromString(RosterDb.text(tenant,
+                "select id::text from core.team_player where team_id = ? and player_id = ?", newLions, ann));
+        assertThat(RosterEvents.state(tenant, "core.team-player", annCopy).get("invalidReason").asText())
+                .as("the eligibility engine's invalidation").isEqualTo("CATEGORY_TOO_LOW");
+        assertThat(RosterEvents.state(tenant, "core.player", ann).get("status").asText())
+                .as("the status sync's ORPHAN").isEqualTo("ORPHAN");
         assertThat(CoreDb.count(tenant, "select count(*) from core.team_player where team_id = ? and left_on is null", lions))
                 .as("last season's history is kept").isEqualTo(3);
 

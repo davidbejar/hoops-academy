@@ -15,6 +15,7 @@ import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
+import com.hoopsacademy.core.testsupport.RosterEvents;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -103,6 +104,8 @@ class EligibilityCaseResourceTest {
         assertThat(CoreDb.count(tenant, "select count(*) from core.team_player where id = ? and left_on is not null",
                 assignment)).isEqualTo(1);
         assertThat(RosterDb.playerStatus(tenant, tom)).isEqualTo("ORPHAN");
+        assertThat(RosterEvents.state(tenant, "core.team-player", assignment).get("leftOn").isNull()).isFalse();
+        assertThat(RosterEvents.state(tenant, "core.player", tom).get("status").asText()).isEqualTo("ORPHAN");
     }
 
     @Test

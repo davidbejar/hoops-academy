@@ -29,6 +29,7 @@ import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.PasswordLeaks;
 import com.hoopsacademy.core.testsupport.RosterDb;
+import com.hoopsacademy.core.testsupport.RosterEvents;
 import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -138,6 +139,8 @@ class PlatformAdminResourceTest {
         assertThat(CoreDb.auditRow(tenant, "admin.added")).containsEntry("targetId", coach.toString());
         add("cora@example.com", "Again", "Same").statusCode(200).body("otherRoles", contains("COACH"));
         assertThat(CoreDb.auditActions(tenant)).as("the repeat changes nothing").containsOnlyOnce("admin.added");
+        assertThat(RosterEvents.state(tenant, "core.person", coach).get("roles").toString())
+                .isEqualTo("[\"ADMIN\",\"COACH\"]");
     }
 
     @Test
@@ -157,6 +160,7 @@ class PlatformAdminResourceTest {
         assertThat(temporaryPasswordSentFor(keycloak, sub)).isEqualTo(password);
         assertThat(CoreDb.count(tenant, "select count(*) from core.user_membership_index where person_id = ?", parent))
                 .isEqualTo(1);
+        assertThat(RosterEvents.state(tenant, "core.person", parent).get("subject").asText()).isEqualTo(sub);
     }
 
     @Test

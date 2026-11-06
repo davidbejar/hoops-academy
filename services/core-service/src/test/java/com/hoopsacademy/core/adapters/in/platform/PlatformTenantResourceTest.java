@@ -24,6 +24,8 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.RosterDb;
+import com.hoopsacademy.core.testsupport.RosterEvents;
 import com.hoopsacademy.core.testsupport.FailingProvisioningHook;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
@@ -105,6 +107,11 @@ class PlatformTenantResourceTest {
                 "member.temporary_password_issued");
         assertThat(CoreDb.auditRow(id, "tenant.created")).containsEntry("targetId", id)
                 .containsEntry("actorSub", "platform-admin");
+        var tenantEvent = RosterEvents.state(id, "core.tenant", UUID.fromString(id));
+        assertThat(tenantEvent.get("slug").asText()).isEqualTo(slug);
+        assertThat(tenantEvent.get("status").asText()).isEqualTo("ACTIVE");
+        UUID firstAdmin = UUID.fromString(RosterDb.text(id, "select id::text from core.person"));
+        assertThat(RosterEvents.state(id, "core.person", firstAdmin).get("subject").asText()).isEqualTo(sub);
     }
 
     @Test
@@ -239,6 +246,9 @@ class PlatformTenantResourceTest {
                 .body("defaultLocale", equalTo("id"))
                 .body("timezone", equalTo("Europe/Madrid"));
         assertThat(CoreDb.auditRow(id, "tenant.master_data_changed").get("metadata")).contains("name", "defaultLocale");
+        var renamed = RosterEvents.state(id, "core.tenant", UUID.fromString(id));
+        assertThat(renamed.get("name").asText()).isEqualTo("Renamed Academy");
+        assertThat(renamed.get("defaultLocale").asText()).isEqualTo("id");
         given().filter(Contract.CORE).get(TENANTS + "/" + UUID.randomUUID()).then().statusCode(404);
     }
 
@@ -254,6 +264,7 @@ class PlatformTenantResourceTest {
                 .patch(TENANTS + "/" + id).then().statusCode(200).body("name", equalTo("Same Academy"));
 
         assertThat(CoreDb.auditActions(id)).hasSize(before);
+        assertThat(RosterEvents.of(id, "core.tenant")).as("created + the first rename").hasSize(2);
     }
 
     @Test
@@ -280,6 +291,8 @@ class PlatformTenantResourceTest {
         assertThat(CoreDb.auditActions(id)).as("failed transitions are not audited")
                 .endsWith("tenant.suspended", "tenant.reactivated", "tenant.withdrawn");
         assertThat(CoreDb.auditRow(id, "tenant.suspended").get("metadata")).contains("unpaid invoice");
+        assertThat(RosterEvents.of(id, "core.tenant").stream().map(e -> e.get("payload").get("status").asText()))
+                .containsExactly("ACTIVE", "SUSPENDED", "ACTIVE", "WITHDRAWN");
     }
 
     @Test
