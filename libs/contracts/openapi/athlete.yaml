@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — athlete-service API
-  version: 2.1.0
+  version: 2.2.0
   description: |
     Training & attendance, athlete health & fitness.
 
@@ -9,6 +9,13 @@ info:
     attendance, injuries, body measurements and test results; PARENT reads and may write injuries, body measurements,
     planned absences and plan completions for linked players; PLAYER reads own data and may write own planned absences
     and plan completions. Player names are not stored here: clients join ids with core-service rosters.
+
+    Languages (2.2.0, decision 43): the texts of the global training-plan templates (plan name and description, item
+    titles and descriptions) are returned in the language negotiated from `Accept-Language` (the first of `es`, `en`,
+    `id` in the header's preference order; absent or unsupported = `en`). The service does not consult the person's
+    stored locale (`common.yaml` Locale): the web client sends its UI language, which follows it, so the header wins.
+    Tenant plans are not translated: their stored texts are returned whatever the header says, and a copy of a template
+    keeps the texts it was copied with (in the copier's language).
 servers:
   - url: /
     description: Gateway root (tenant API under /api/athlete, internal API under /internal).
@@ -432,12 +439,14 @@ paths:
           schema: {type: boolean, default: false}
         - name: q
           in: query
+          description: Case-insensitive part of the name (of a template, in the negotiated language).
           schema: {type: string, maxLength: 100}
         - $ref: './common.yaml#/components/parameters/Page'
         - $ref: './common.yaml#/components/parameters/Size'
+        - $ref: '#/components/parameters/AcceptLanguage'
       responses:
         '200':
-          description: Page of plan summaries.
+          description: Page of plan summaries, ordered by (displayed) name.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/TrainingPlanSummaryPage'}
@@ -477,6 +486,8 @@ paths:
       tags: [TrainingPlans]
       summary: Get a plan or template with its items
       description: 'Authz: any member.'
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
       responses:
         '200':
           description: The plan.
@@ -532,7 +543,9 @@ paths:
       operationId: copyTrainingPlan
       tags: [TrainingPlans]
       summary: Copy a template (or tenant plan) into a new tenant plan (copy-on-use)
-      description: 'Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      description: 'A template is copied with its texts in the negotiated language (the copy keeps them; `nameKey` is not copied). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
       requestBody:
         required: false
         content:
@@ -1431,6 +1444,14 @@ components:
       $ref: './common.yaml#/components/securitySchemes/bearerAuth'
 
   parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: |
+        Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`,
+        `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans.
+      schema: {type: string, maxLength: 200}
     SessionId:
       name: sessionId
       in: path
@@ -1706,6 +1727,7 @@ components:
         videoUrl: {type: string, format: uri, maxLength: 2000}
     PlanItem:
       type: object
+      description: The `title` and `description` of a template's item follow the plan's language rule (`TrainingPlan.name`).
       x-extends: [PlanItemInput]
       required: [title, id, position]
       properties:
@@ -1751,8 +1773,17 @@ components:
       required: [id, name, template, itemCount, totalDurationMinutes]
       properties:
         id: {type: string, format: uuid}
-        name: {type: string}
-        description: {type: string, nullable: true}
+        name:
+          type: string
+          description: Templates in the negotiated language (`Accept-Language`, fallback `en`); tenant plans as stored.
+        nameKey:
+          type: string
+          nullable: true
+          description: Stable key of a global template's texts (e.g. `form-shooting`), the same in every language; null for tenant plans (copies included).
+        description:
+          type: string
+          nullable: true
+          description: Same language rule as `name`.
         template:
           type: boolean
           description: Global, read-only template (copy before use).
@@ -1772,8 +1803,17 @@ components:
       required: [id, name, template, itemCount, totalDurationMinutes, items]
       properties:
         id: {type: string, format: uuid}
-        name: {type: string}
-        description: {type: string, nullable: true}
+        name:
+          type: string
+          description: Templates in the negotiated language (`Accept-Language`, fallback `en`); tenant plans as stored.
+        nameKey:
+          type: string
+          nullable: true
+          description: Stable key of a global template's texts (e.g. `form-shooting`), the same in every language; null for tenant plans (copies included).
+        description:
+          type: string
+          nullable: true
+          description: Same language rule as `name`.
         template:
           type: boolean
           description: Global, read-only template (copy before use).

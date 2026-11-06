@@ -97,7 +97,7 @@ class UpdateRequestClearListContractTest {
                 "UpdateTrainingPlanRequest", "UpdatePlanItemRequest", "UpdateTrainingScheduleRequest",
                 "UpdatePhysicalTestTypeRequest"));
         updates.forEach((name, request) -> assertThat(request.getProperties()).as(name).containsKey("clear"));
-        assertThat(OpenApiSpecs.parse("athlete").getOpenAPI().getInfo().getVersion()).isEqualTo("2.1.0");
+        assertThat(OpenApiSpecs.parse("athlete").getOpenAPI().getInfo().getVersion()).isEqualTo("2.2.0");
     }
 
     @Test
