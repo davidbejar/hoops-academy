@@ -152,6 +152,7 @@ per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events wo
 | 4 | WP67 | Core: outbox publisher and the event contracts | Opus | After WP66, alone |
 | 5 | WP68 | Game: roster replica from core events behind `RosterPort` | Opus | After WP67 |
 | 5 | WP69 | Athlete: roster replica from core events behind `RosterPort` | Opus | After WP67 |
+| 2 | WP70 | Web: public landing page (teaser, features, roadmap, invitation request placeholder) | Opus (copy by Fable) | After WP52 |
 
 ### Decisions of 2026-11-06, third interview (product owner)
 34. **Web edits → WP52**: match edit dialog, jersey removal, member personal data, academy contact.
@@ -176,10 +177,26 @@ per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events wo
     in `libs/contracts/events`, game and athlete replicas behind `RosterPort` with `hoops.roster.source` (ADR-0037).
     Not started: billing, the purge job (stay in v2).
 49. **Envoy Gateway descriptor collision**: the orchestrator drafts the upstream issue text; the owner files it.
+50. **Landing page → WP70.** The anonymous root of the web app becomes a marketing landing page: teaser of what the
+    product does, basketball-only positioning, feature areas, roles, why it costs less, roadmap teaser, and two
+    calls to action (request an invitation, sign in). The copy (es/en/id) is written by the orchestrator in
+    `docs/marketing/landing-copy.md` and used verbatim; an Opus agent builds the page.
+51. **Invitation-only sign-up (follow-up, not scheduled).** The landing form is a placeholder for now. The real
+    flow: a visitor requests an invitation with name, e-mail, role (academy admin, coach or parent; players cannot
+    request a new academy) and academy name (validated against existing academies); the super admin gets a
+    workbench of pending requests and accepts or rejects; accepting runs the existing "create academy" logic
+    (temporary password, fields prefilled from the request). Open question: what happens when the request comes
+    from a parent or a coach rather than an admin (who becomes the academy's ADMIN?). See the Open item.
 
 ## Open
 
 ### Product / contract decisions
+- **Invitation-only sign-up** (decision 51, 2026-11-06; after WP70): request form (name, e-mail, role admin / coach
+  / parent, academy name unique), stored platform-side; super admin workbench (pending / accepted / rejected,
+  reason); accept = create the academy with the request's data and issue the temporary password (ADR-0024), reject
+  = e-mail or nothing (decide); rate-limited and spam-guarded at the gateway; audit rows. To decide before the WP:
+  a request by a parent or coach for a new academy (reject, or create the academy with that person as its first
+  ADMIN, or hold until an admin confirms); players never request a new academy.
 - **`clear` lists the app does not send yet** (WP44): no web dialog edits a member's personal data or the academy's
   contact e-mail / website, so `UpdateMemberRequest.clear` and `UpdateTenantProfileRequest.clear` are unused by the app.
   In all three services an explicit `null` is now "unchanged" (ADR-0032); a client must name the field in `clear`.
