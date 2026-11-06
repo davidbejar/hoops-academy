@@ -131,6 +131,65 @@ select tenant_id, count(*), min(occurred_at) from core.outbox
 - Rows with `topic` null are core's internal v1 notifications (`player.approved`, `tenant.suspended`, ...): never
   published, kept for billing and audits.
 
+## Game roster replica (WP68)
+game keeps a replica of the roster data it reads from core (`game.*_ref`, V4), fed by the `core.*` topics (ADR-0037).
+`hoops.roster.source` picks what `RosterPort` and the tenant filter read; the consumer feeds the replica in both modes.
+
+| Setting | Default | What |
+|---|---|---|
+| `hoops.roster.source` (`GAME_ROSTER_SOURCE`) | `rest` | `rest` = core `/internal` (cached 30 s); `replica` = the local replica, no call to core on the request path |
+| `mp.messaging.incoming.core-roster.enabled` (`GAME_ROSTER_CONSUMER_ENABLED`) | `true` | `false` stops feeding the replica (escape hatch; only with `rest`) |
+| `hoops.roster.replica.apply-attempts` | `3` | attempts per event (1 s, 2 s between) before the consumer stops |
+| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
+| `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `game-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-game-service` Secret (SCRAM-SHA-256) |
+
+Consumer group `game-service.roster` (one channel `core-roster` over the seven topics), `auto.offset.reset=earliest`:
+a new group replays everything.
+
+Watch it:
+```bash
+curl -s localhost:8082/q/metrics | grep '^hoops_roster_replica'   # events_total{topic,outcome}, parked_total{topic}, lag_seconds{topic}
+podman exec hoops-redpanda rpk group describe game-service.roster  # LAG per topic (0 = caught up)
+curl -s localhost:8082/q/health/live | jq '.checks[] | select(.name | test("Messaging"))'
+```
+`outcome` is `applied`, `duplicate` (a redelivered `eventId`, nothing changed), `stale` (older than the stored row,
+nothing changed) or `tombstone` (skipped; removals are soft, `removed = true`). `lag_seconds` is the age of the last
+event when it was processed: a few seconds normally (core's poll interval plus the fetch).
+
+- **Parked records** (`hoops_roster_replica_parked_total` > 0): records that broke their contract (JSON Schema, key
+  `<tenantId>:<aggregateId>`) are not applied and not retried. Read them as the schema owner (game_app may only insert):
+  ```sql
+  set role game_migrator;
+  select parked_at, topic, kafka_partition, kafka_offset, record_key, event_id, reason from game.parked_event order by id desc limit 20;
+  ```
+  then look at the record itself: `rpk topic consume <topic> -p <partition> -o <offset> -n 1`. The aggregate is
+  repaired by its next event or, once the producer is fixed, by a replay.
+- **Consumer stopped** (liveness and readiness DOWN, log `Applying event ... failed 3 times, stopping the consumer`):
+  usually the database. The orchestrator restarts the pod; it resumes from the committed offset, nothing is lost. On
+  compose restart game (`just services-down && just services-up`).
+- **Broker down**: nothing to do in game; the replica stays readable and goes stale (`lag_seconds` grows once events
+  flow again); the client reconnects.
+
+### Replay (rebuild the replica from the topics)
+Needed after a broker reset, a fix of parked records, or a game outage longer than the tombstone retention (7 days).
+The replica tables and `game.applied_event` must be emptied, otherwise every replayed event is a known duplicate.
+compose:
+```bash
+just services-down            # or stop the game jar only; the group must have no members
+just events-replay game       # empties game.*_ref + game.applied_event (as game_migrator), rpk group seek --to start
+just services-up              # game replays and catches up (rpk group describe: LAG 0)
+```
+kind: `kubectl -n hoops scale deploy/game-service --replicas=0`; empty the tables as `game_migrator`
+(`truncate game.tenant_ref, game.person_ref, game.player_ref, game.team_ref, game.team_player_ref, game.team_staff_ref,
+game.guardian_link_ref, game.applied_event`); `rpk_k group seek game-service.roster --to start`; scale back. With
+`hoops.roster.source=replica`, switch to `rest` for the duration (requests would otherwise see an empty replica).
+
+### Before switching to `replica`
+ADR-0037 "When rest flips to replica": core has published every aggregate (a replica only knows aggregates that changed
+after core's publisher went live; data older than WP67 needs a core backfill), `parked_total` is 0, `lag_seconds` stays
+in seconds, and the chart wires the Kafka client. Switch with `GAME_ROSTER_SOURCE=replica` and a restart; back with
+`rest`.
+
 ## Athlete replica (WP69)
 athlete keeps a local copy of core's roster in `athlete.*_ref` (V6), fed by core's events (ADR-0037, athlete section).
 `hoops.roster.source` decides whether the use cases' `RosterPort` and the tenant filter's membership read it

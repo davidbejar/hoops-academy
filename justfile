@@ -48,6 +48,10 @@ up:
 events-topics:
     infra/compose/redpanda-topics.sh
 
+# Rebuild a service's roster replica from the topics (ADR-0037; stop the service first): just events-replay game
+events-replay SERVICE:
+    infra/compose/events-replay.sh {{SERVICE}}
+
 down:
     podman compose --env-file .env -f infra/compose/compose.yaml down
 
