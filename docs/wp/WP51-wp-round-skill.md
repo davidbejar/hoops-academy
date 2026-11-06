@@ -71,3 +71,37 @@ hold state; memory holds what is not derivable from the repo.
   with the line `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/wp/FOLLOW-UPS.md, or any part of docs/HANDOVER.md outside the section named above.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built (commit 8805980):
+  - `.claude/skills/wp-round/SKILL.md` (86 lines, body 82): front matter `name` + quoted `description` (trigger:
+    planning or running a round, interviewing the owner); sections Interview, Briefs, Waves, Models, Mechanics, Traps,
+    Close-out in the brief's order. Traps also carry this round's lessons: keep-both for the `ADOPTED` constant and
+    ADR adoption bullets, `git worktree remove --force` because of the copied `.env`, re-verify (full verify plus
+    `flutter test`) only when a merged tree combines two WPs of the same area. Added beyond the brief: `just gen-api`
+    regenerates every package, commit only your own (WP39/WP44/WP45 handovers); briefs and decisions are committed on
+    `main` before the worktrees (practice of 6042547 / 513f9ba).
+  - `.claude/skills/wp-round/brief-template.md` (37 lines): header line, decision line, Scope, Acceptance, Working
+    rules, Handover placeholder. Working rules are byte-identical to WP44 (`diff` of the two blocks: no output).
+  - `work-package/SKILL.md` (34 → 39 lines): During gains the shared-file append rule and "do not reformat files you
+    did not change"; Finish step 4 is "Final report to the orchestrator, at most 300 words".
+  - `CLAUDE.md` (65 → 66 lines): only the "Work packages" bullet changed (pointer to both skills).
+  - `docs/HANDOVER.md` "Working conventions" 30 → 20 lines (bullets 27 → 17); no other section touched.
+- Moved from HANDOVER to the skill: bullet "Two Claude sessions…" (worktree under `$HOME`, `/tmp` invisible to
+  Podman, `git push origin <branch>:main`, no branch switching) → Mechanics 1; "Commit with gitleaks…" (`--no-verify`
+  because the pre-commit stash conflicts with concurrent edits, never `git add -A`) → Mechanics 3 and the template;
+  "Worktree wave flow" (one worktree and branch per WP, rebase, rerun checks, `--ff-only`, shared docs owned by one
+  agent) → Mechanics 4, Waves; "Parallel WPs, lessons of WP38–WP42" (ADR numbers up front, disjoint ownership,
+  dependent contract in the next wave, index conflicts) → Briefs, Waves, Traps. Dropped as history only: the
+  2026-11-02 incident date and "0032 and 0033 were fixed before the wave". Replaced by one pointer line. Kept: hook,
+  `flutter drive`, actionlint/goldens/ZAP, realm re-import, clock drift (the clock command is also in Traps).
+- Verified: every path in the skill exists (`ls -d` on FOLLOW-UPS, HANDOVER, the template, ADR README, authz matrix,
+  `UpdateRequestClearListContractTest.java` (3 `ADOPTED` hits), `pubspec.lock`, three `.arb`, conformance, roadmap,
+  architecture, `scripts/gen-api.sh`, `scripts/hooks/_common.sh`, `~/code/hoops-wt`); `just --summary` lists
+  `gen-api`, `mutation`, `test`, `web-test`; `git worktree add -b`, `git merge --ff-only`, `git worktree remove
+  --force`, `git branch -d`, `gh run list -b/-L`, `gh run watch --exit-status` confirmed from `-h`; front matter
+  parses (Ruby YAML: keys name, description). Commit passed the isolation hook and gitleaks.
+- Not run: `just test` / `flutter test` (no code, contract or web file changed). The Monitor tool is named as the
+  orchestrator's tool, not checkable from a shell.
+- Open points: the "Next candidates" and State sections of HANDOVER are left to the docs pass; FOLLOW-UPS plan row
+  for WP51 needs its Status set by the orchestrator.
