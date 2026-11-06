@@ -54,13 +54,13 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
 | 6.2.1 | Password length ≥ 8 (15 recommended) | Met (12) | `passwordPolicy: length(12) and notUsername and notEmail` |
-| 6.2.4 | Block top-3000 common passwords | Gap | Keycloak `passwordBlacklist` needs a deployed list file; not configured (follow-up) |
+| 6.2.4 | Block top-3000 common passwords | Met | Realm policy `passwordBlacklist(hoops-password-blocklist.txt)` (ADR-0038): the 10,000 most common passwords of 12–128 characters (Burnett 10M sample via SecLists, pinned + SHA-256, `scripts/password-blocklist.sh`), case-insensitive, mounted in compose, chart and tests; `RealmPasswordPolicyTest`, `RealmLoginHardeningKeycloakTest` (refused in any case, theme message es/en/id at the first sign-in) |
 | 6.2.5 / 6.2.7 / 6.2.8 | No composition rules; paste allowed; no truncation | Met | Policy has no character-class rules; Keycloak login form |
 | 6.2.10 | No forced rotation | Met | No `forceExpiredPasswordChange` in the policy |
 | 6.2.12 | Breached-password check | Gap | Not available in stock Keycloak 26 without an extension |
 | 6.3.1 | Brute-force / credential-stuffing controls | Met | `bruteForceProtected: true` (realm), token-endpoint rate limit (nginx `limit_req` / Envoy Gateway global rate limit, ADR-0033) |
 | 6.3.2 | No default accounts | Met | Realm export has no users; seed users are dev-only scripts; Keycloak admin from env, compose only |
-| 6.3.3 | MFA or documented factor combination | Gap | OTP not required (product decision: minors/parents; offer optional OTP for ADMIN/super_admin — follow-up) |
+| 6.3.3 | MFA or documented factor combination | Partial | TOTP offered to every login and set up from the account console, forced on nobody, super admin included (decision 39; minors/parents; ADR-0038): Keycloak's conditional-OTP browser flow asks for the code once set up (`RealmLoginHardeningKeycloakTest`, `RealmBrowserSecurityTest`). Not required for privileged roles by product decision |
 
 ## V7 Session Management (OIDC tokens)
 | ID | Requirement | Status | Evidence |
@@ -136,7 +136,7 @@ server-side templating/HTML sanitisation.
 ## Open gaps summary (→ FOLLOW-UPS.md)
 - F-01 game event feed authz (8.2.2) — fixed in WP33 (ADR-0030).
 - F-03 / F-07 / F-08 web logout and storage (7.4.1, 14.3.1); F-08 refresh-token rotation done in WP56.
-- 6.2.4 password blocklist, 6.2.12 breached passwords, 6.3.3 MFA for privileged roles.
+- 6.2.12 breached passwords (no extension, decision 39); 6.3.3 MFA optional only (decision 39). 6.2.4 password blocklist done in WP57 (ADR-0038).
 - Token audience (V9) — done in WP56 (ADR-0034).
 - 16.3.1 Keycloak events, 16.3.2 authorization-failure logging, 16.4.3 log shipping.
 - Production TLS certificates (the Gateway API chart supports them, ADR-0031; none issued); SBOM.
