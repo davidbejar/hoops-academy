@@ -4483,7 +4483,7 @@ abstract class AppLocalizations {
   /// No description provided for @auditActorPlatform.
   ///
   /// In es, this message translates to:
-  /// **'Administración de la plataforma'**
+  /// **'Administrador de la plataforma'**
   String get auditActorPlatform;
 
   /// No description provided for @auditActorMember.

@@ -1017,7 +1017,7 @@
   "auditNextPage": "Halaman berikutnya",
   "auditByActor": "Oleh {actor}",
   "auditActorSystem": "Sistem",
-  "auditActorPlatform": "Administrasi platform",
+  "auditActorPlatform": "Administrator platform",
   "auditActorMember": "Anggota akademi",
   "auditTargetPerson": "Orang",
   "auditTargetPlayer": "Pemain",

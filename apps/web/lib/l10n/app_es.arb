@@ -1383,7 +1383,7 @@
     }
   },
   "auditActorSystem": "Sistema",
-  "auditActorPlatform": "Administración de la plataforma",
+  "auditActorPlatform": "Administrador de la plataforma",
   "auditActorMember": "Miembro de la academia",
   "auditTargetPerson": "Persona",
   "auditTargetPlayer": "Jugador/a",

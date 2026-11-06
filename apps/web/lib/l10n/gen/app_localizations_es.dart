@@ -2418,7 +2418,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get auditActorSystem => 'Sistema';
 
   @override
-  String get auditActorPlatform => 'Administración de la plataforma';
+  String get auditActorPlatform => 'Administrador de la plataforma';
 
   @override
   String get auditActorMember => 'Miembro de la academia';

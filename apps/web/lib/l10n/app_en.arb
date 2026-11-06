@@ -1017,7 +1017,7 @@
   "auditNextPage": "Next page",
   "auditByActor": "By {actor}",
   "auditActorSystem": "System",
-  "auditActorPlatform": "Platform administration",
+  "auditActorPlatform": "Platform administrator",
   "auditActorMember": "Academy member",
   "auditTargetPerson": "Person",
   "auditTargetPlayer": "Player",

@@ -2403,7 +2403,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get auditActorSystem => 'Sistem';
 
   @override
-  String get auditActorPlatform => 'Administrasi platform';
+  String get auditActorPlatform => 'Administrator platform';
 
   @override
   String get auditActorMember => 'Anggota akademi';

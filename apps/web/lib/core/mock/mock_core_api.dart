@@ -79,7 +79,8 @@ class MockCoreApi {
       event(90, 'tenant.profile_changed', me, {'type': 'tenant', 'id': tenantId, 'displayName': _profile['name']}),
       event(60 * 26, 'member.temporary_password_expired', {'kind': 'SYSTEM', 'subject': 'system'},
           {'type': 'person', 'id': 'm-2', 'displayName': 'Pat Parent'}),
-      event(60 * 50, 'admin.added', {'kind': 'PLATFORM', 'subject': 'platform'},
+      // the super admin, masked for an academy like the server does (core 2.6.0)
+      event(60 * 50, 'admin.added', {'kind': 'PLATFORM', 'subject': null},
           {'type': 'person', 'id': meId, 'displayName': 'Demo Admin'}),
     ];
   }

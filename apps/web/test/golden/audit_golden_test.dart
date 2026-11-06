@@ -19,7 +19,7 @@ void main() {
     auditEntry('g4', api.AuditAction.playerPeriodApproved, at: DateTime.utc(2026, 11, 2, 17, 45),
         targetType: api.AuditTargetType.player, targetName: 'Leo Gil'),
     auditEntry('g5', api.AuditAction.adminPeriodAdded, at: DateTime.utc(2026, 11, 1, 12, 0),
-        actorKind: api.AuditActorKind.PLATFORM, actorName: null, targetName: 'Ana Ruiz'),
+        actorKind: api.AuditActorKind.PLATFORM, actorSubject: null, actorName: null, targetName: 'Ana Ruiz'),
     auditEntry('g6', api.AuditAction.tenantPeriodProfileChanged, at: DateTime.utc(2026, 10, 30, 10, 15),
         targetType: api.AuditTargetType.tenant, targetName: 'Club Norte'),
   ]);
