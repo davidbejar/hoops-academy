@@ -3,6 +3,8 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:built_collection/built_collection.dart';
+import 'package:hoops_athlete_api/src/model/plan_item_match.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -11,15 +13,17 @@ part 'training_plan_summary.g.dart';
 /// TrainingPlanSummary
 ///
 /// Properties:
-/// * [id]
+/// * [id] 
 /// * [name] - Templates in the negotiated language (`Accept-Language`, fallback `en`); tenant plans as stored.
 /// * [nameKey] - Stable key of a global template's texts (e.g. `form-shooting`), the same in every language; null for tenant plans (copies included).
 /// * [description] - Same language rule as `name`.
 /// * [template] - Global, read-only template (copy before use).
 /// * [sourceTemplateId] - Template (or plan) this plan was copied from.
-/// * [itemCount]
-/// * [totalDurationMinutes]
+/// * [itemCount] 
+/// * [totalDurationMinutes] 
 /// * [archived] - Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
+/// * [sessionId] - Set on the ad-hoc plan of a session (created by `copyItemsToSession`, 2.3.0): the plan belongs to that session, is not listed and cannot be assigned or attached to another session. 
+/// * [matchedItems] - Only in a search (`q`): the plan's items whose title contains `q` (a template's in the negotiated language), in plan order; absent when only the name matched (2.3.0). 
 @BuiltValue()
 abstract class TrainingPlanSummary implements Built<TrainingPlanSummary, TrainingPlanSummaryBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -54,6 +58,14 @@ abstract class TrainingPlanSummary implements Built<TrainingPlanSummary, Trainin
   /// Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
   @BuiltValueField(wireName: r'archived')
   bool? get archived;
+
+  /// Set on the ad-hoc plan of a session (created by `copyItemsToSession`, 2.3.0): the plan belongs to that session, is not listed and cannot be assigned or attached to another session. 
+  @BuiltValueField(wireName: r'sessionId')
+  String? get sessionId;
+
+  /// Only in a search (`q`): the plan's items whose title contains `q` (a template's in the negotiated language), in plan order; absent when only the name matched (2.3.0). 
+  @BuiltValueField(wireName: r'matchedItems')
+  BuiltList<PlanItemMatch>? get matchedItems;
 
   TrainingPlanSummary._();
 
@@ -129,6 +141,20 @@ class _$TrainingPlanSummarySerializer implements PrimitiveSerializer<TrainingPla
       yield serializers.serialize(
         object.archived,
         specifiedType: const FullType(bool),
+      );
+    }
+    if (object.sessionId != null) {
+      yield r'sessionId';
+      yield serializers.serialize(
+        object.sessionId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
+    if (object.matchedItems != null) {
+      yield r'matchedItems';
+      yield serializers.serialize(
+        object.matchedItems,
+        specifiedType: const FullType(BuiltList, [FullType(PlanItemMatch)]),
       );
     }
   }
@@ -221,6 +247,22 @@ class _$TrainingPlanSummarySerializer implements PrimitiveSerializer<TrainingPla
           if (valueDes == null) continue;
           result.archived = valueDes;
           break;
+        case r'sessionId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.sessionId = valueDes;
+          break;
+        case r'matchedItems':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(BuiltList, [FullType(PlanItemMatch)]),
+          ) as BuiltList<PlanItemMatch>?;
+          if (valueDes == null) continue;
+          result.matchedItems.replace(valueDes);
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -249,3 +291,5 @@ class _$TrainingPlanSummarySerializer implements PrimitiveSerializer<TrainingPla
     return result.build();
   }
 }
+
+

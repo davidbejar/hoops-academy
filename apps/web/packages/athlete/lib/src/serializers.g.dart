@@ -15,6 +15,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(BodyMeasurementInput.serializer)
       ..add(CancelTrainingSessionRequest.serializer)
       ..add(CompletionStatus.serializer)
+      ..add(CopyPlanItemsRequest.serializer)
       ..add(CopyTrainingPlanRequest.serializer)
       ..add(CreateInjuryRequest.serializer)
       ..add(CreatePlanAssignmentRequest.serializer)
@@ -42,6 +43,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PlanCompletionPage.serializer)
       ..add(PlanItem.serializer)
       ..add(PlanItemInput.serializer)
+      ..add(PlanItemMatch.serializer)
+      ..add(PlanItemRef.serializer)
       ..add(PlanProgress.serializer)
       ..add(PlanProgressCounts.serializer)
       ..add(PlannedAbsence.serializer)
@@ -108,6 +111,12 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(PlanItemInput)]),
           () => ListBuilder<PlanItemInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlanItemMatch)]),
+          () => ListBuilder<PlanItemMatch>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlanItemRef)]),
+          () => ListBuilder<PlanItemRef>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(PlannedAbsence)]),
           () => ListBuilder<PlannedAbsence>())

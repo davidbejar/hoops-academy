@@ -866,6 +866,39 @@
   "sessionCancelReason": "Motivo de la cancelación",
   "sessionCreated": "Sesión creada",
   "sessionCancelled": "Sesión cancelada",
+  "sessionPlanPick": "Elegir plan",
+  "sessionPlanSearchHint": "Buscar plan o ejercicio",
+  "sessionPlanAcademy": "Planes de la academia",
+  "sessionPlanFound": "Encontrado: {items}",
+  "@sessionPlanFound": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPlanNoResults": "Ningún plan ni ejercicio coincide",
+  "sessionOwnPlan": "Plan propio de la sesión",
+  "sessionOwnPlanDropped": "Los ejercicios añadidos a esta sesión se eliminarán",
+  "sessionAddExercises": "Añadir ejercicios",
+  "sessionExerciseSearchHint": "Buscar ejercicios (p. ej. cooper)",
+  "sessionExerciseSearchEmpty": "Escribe para buscar en tus planes y plantillas",
+  "sessionExercisesAddCount": "Añadir ({count})",
+  "@sessionExercisesAddCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionExercisesAdded": "Ejercicios añadidos: {count}",
+  "@sessionExercisesAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "attendanceTitle": "Asistencia",
   "attendancePresent": "Presente",
   "attendanceLate": "Tarde",

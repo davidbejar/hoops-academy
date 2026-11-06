@@ -1617,6 +1617,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionCancelled => 'Session cancelled';
 
   @override
+  String get sessionPlanPick => 'Choose a plan';
+
+  @override
+  String get sessionPlanSearchHint => 'Search a plan or exercise';
+
+  @override
+  String get sessionPlanAcademy => 'Academy plans';
+
+  @override
+  String sessionPlanFound(String items) {
+    return 'Found: $items';
+  }
+
+  @override
+  String get sessionPlanNoResults => 'No plan or exercise matches';
+
+  @override
+  String get sessionOwnPlan => 'This session\'s own plan';
+
+  @override
+  String get sessionOwnPlanDropped =>
+      'The exercises added to this session will be removed';
+
+  @override
+  String get sessionAddExercises => 'Add exercises';
+
+  @override
+  String get sessionExerciseSearchHint => 'Search exercises (e.g. cooper)';
+
+  @override
+  String get sessionExerciseSearchEmpty =>
+      'Type to search your plans and templates';
+
+  @override
+  String sessionExercisesAddCount(int count) {
+    return 'Add ($count)';
+  }
+
+  @override
+  String sessionExercisesAdded(int count) {
+    return 'Exercises added: $count';
+  }
+
+  @override
   String get attendanceTitle => 'Attendance';
 
   @override

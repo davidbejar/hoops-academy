@@ -12,11 +12,11 @@ part 'update_training_session_request.g.dart';
 /// UpdateTrainingSessionRequest
 ///
 /// Properties:
-/// * [startsAt]
-/// * [durationMinutes]
-/// * [location]
-/// * [planId]
-/// * [notes]
+/// * [startsAt] 
+/// * [durationMinutes] 
+/// * [location] 
+/// * [planId] - As in `CreateTrainingSessionRequest`. Moving the session off its ad-hoc plan (another plan, or `clear`) deletes that plan with its items (2.3.0). 
+/// * [notes] 
 /// * [status] - PLANNED ↔ DONE; use the cancel operation to cancel.
 /// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
@@ -30,6 +30,7 @@ abstract class UpdateTrainingSessionRequest implements Built<UpdateTrainingSessi
   @BuiltValueField(wireName: r'location')
   String? get location;
 
+  /// As in `CreateTrainingSessionRequest`. Moving the session off its ad-hoc plan (another plan, or `clear`) deletes that plan with its items (2.3.0). 
   @BuiltValueField(wireName: r'planId')
   String? get planId;
 
@@ -263,3 +264,4 @@ class UpdateTrainingSessionRequestClearEnum extends EnumClass {
   static BuiltSet<UpdateTrainingSessionRequestClearEnum> get values => _$updateTrainingSessionRequestClearEnumValues;
   static UpdateTrainingSessionRequestClearEnum valueOf(String name) => _$updateTrainingSessionRequestClearEnumValueOf(name);
 }
+

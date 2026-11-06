@@ -26,6 +26,8 @@ class _$TrainingPlan extends TrainingPlan {
   @override
   final bool? archived;
   @override
+  final String? sessionId;
+  @override
   final BuiltList<PlanItem> items;
 
   factory _$TrainingPlan([void Function(TrainingPlanBuilder)? updates]) =>
@@ -41,6 +43,7 @@ class _$TrainingPlan extends TrainingPlan {
       required this.itemCount,
       required this.totalDurationMinutes,
       this.archived,
+      this.sessionId,
       required this.items})
       : super._();
   @override
@@ -63,6 +66,7 @@ class _$TrainingPlan extends TrainingPlan {
         itemCount == other.itemCount &&
         totalDurationMinutes == other.totalDurationMinutes &&
         archived == other.archived &&
+        sessionId == other.sessionId &&
         items == other.items;
   }
 
@@ -78,6 +82,7 @@ class _$TrainingPlan extends TrainingPlan {
     _$hash = $jc(_$hash, itemCount.hashCode);
     _$hash = $jc(_$hash, totalDurationMinutes.hashCode);
     _$hash = $jc(_$hash, archived.hashCode);
+    _$hash = $jc(_$hash, sessionId.hashCode);
     _$hash = $jc(_$hash, items.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -95,6 +100,7 @@ class _$TrainingPlan extends TrainingPlan {
           ..add('itemCount', itemCount)
           ..add('totalDurationMinutes', totalDurationMinutes)
           ..add('archived', archived)
+          ..add('sessionId', sessionId)
           ..add('items', items))
         .toString();
   }
@@ -142,6 +148,10 @@ class TrainingPlanBuilder
   bool? get archived => _$this._archived;
   set archived(bool? archived) => _$this._archived = archived;
 
+  String? _sessionId;
+  String? get sessionId => _$this._sessionId;
+  set sessionId(String? sessionId) => _$this._sessionId = sessionId;
+
   ListBuilder<PlanItem>? _items;
   ListBuilder<PlanItem> get items => _$this._items ??= ListBuilder<PlanItem>();
   set items(ListBuilder<PlanItem>? items) => _$this._items = items;
@@ -162,6 +172,7 @@ class TrainingPlanBuilder
       _itemCount = $v.itemCount;
       _totalDurationMinutes = $v.totalDurationMinutes;
       _archived = $v.archived;
+      _sessionId = $v.sessionId;
       _items = $v.items.toBuilder();
       _$v = null;
     }
@@ -200,6 +211,7 @@ class TrainingPlanBuilder
             totalDurationMinutes: BuiltValueNullFieldError.checkNotNull(
                 totalDurationMinutes, r'TrainingPlan', 'totalDurationMinutes'),
             archived: archived,
+            sessionId: sessionId,
             items: items.build(),
           );
     } catch (_) {

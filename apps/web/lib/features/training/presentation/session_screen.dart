@@ -10,6 +10,7 @@ import '../../../core/ui/page_scaffold.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/training_providers.dart';
+import 'plan_search.dart';
 import 'training_labels.dart';
 import 'training_screen.dart' show SessionDialog;
 
@@ -84,7 +85,7 @@ class _Body extends ConsumerWidget {
                   l.sessionDuration,
                   l.sessionDurationMinutes(s.durationMinutes),
                 ),
-                _PlanLine(planId: s.planId),
+                _PlanLine(session: s),
                 if (s.notes != null && s.notes!.isNotEmpty)
                   _Line(Icons.notes, l.sessionNotes, s.notes!),
                 if (s.cancelReason != null)
@@ -110,6 +111,19 @@ class _Body extends ConsumerWidget {
               onPressed: () => showDialog<bool>(
                 context: context,
                 builder: (_) => SessionDialog(session: s),
+              ),
+            ),
+          ),
+        if (staff && s.status != ath.TrainingSessionStatus.CANCELLED)
+          Padding(
+            padding: const EdgeInsets.only(top: AppTokens.spaceSm),
+            child: OutlinedButton.icon(
+              key: const Key('session-add-exercises'),
+              icon: const Icon(Icons.playlist_add),
+              label: Text(l.sessionAddExercises),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => ExerciseSearchDialog(sessionId: s.id),
               ),
             ),
           ),
@@ -168,17 +182,43 @@ class _Line extends StatelessWidget {
   );
 }
 
+/// The session's plan and its exercises; marks the session's own plan
+/// (quick-added exercises, ADR-0041).
 class _PlanLine extends ConsumerWidget {
-  const _PlanLine({required this.planId});
-  final String? planId;
+  const _PlanLine({required this.session});
+  final ath.TrainingSession session;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final planId = session.planId;
     if (planId == null)
       return _Line(Icons.list_alt, l.sessionPlan, l.sessionNoPlan);
-    final plan = ref.watch(planDetailProvider(planId!));
-    return _Line(Icons.list_alt, l.sessionPlan, plan.value?.name ?? '…');
+    final plan = ref.watch(planDetailProvider(planId)).value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Line(Icons.list_alt, l.sessionPlan, plan?.name ?? '…'),
+        if (plan?.sessionId == session.id)
+          Padding(
+            padding: const EdgeInsets.only(top: AppTokens.spaceXs, left: 26),
+            child: InfoChip(
+              l.sessionOwnPlan,
+              key: const Key('session-own-plan'),
+            ),
+          ),
+        for (final item in plan?.items ?? const <ath.PlanItem>[])
+          Padding(
+            padding: const EdgeInsets.only(top: AppTokens.spaceXs, left: 26),
+            child: Row(
+              children: [
+                Text('${item.position + 1}. '),
+                Expanded(child: Text(item.title)),
+              ],
+            ),
+          ),
+      ],
+    );
   }
 }
 

@@ -15,7 +15,7 @@ part 'create_training_session_request.g.dart';
 /// * [startsAt] 
 /// * [durationMinutes] 
 /// * [location] 
-/// * [planId] 
+/// * [planId] - Any plan the academy can read, referenced directly (no assignment needed, 2.3.0): one of its tenant plans (plans are not tied to a team, so a COACH may pick any of them) or a global template; another tenant's or an unknown plan is 404, the ad-hoc plan of another session 422 (`PLAN_OF_ANOTHER_SESSION`). 
 /// * [notes] 
 @BuiltValue()
 abstract class CreateTrainingSessionRequest implements Built<CreateTrainingSessionRequest, CreateTrainingSessionRequestBuilder> {
@@ -31,6 +31,7 @@ abstract class CreateTrainingSessionRequest implements Built<CreateTrainingSessi
   @BuiltValueField(wireName: r'location')
   String? get location;
 
+  /// Any plan the academy can read, referenced directly (no assignment needed, 2.3.0): one of its tenant plans (plans are not tied to a team, so a COACH may pick any of them) or a global template; another tenant's or an unknown plan is 404, the ad-hoc plan of another session 422 (`PLAN_OF_ANOTHER_SESSION`). 
   @BuiltValueField(wireName: r'planId')
   String? get planId;
 

@@ -25,6 +25,10 @@ class _$TrainingPlanSummary extends TrainingPlanSummary {
   final int totalDurationMinutes;
   @override
   final bool? archived;
+  @override
+  final String? sessionId;
+  @override
+  final BuiltList<PlanItemMatch>? matchedItems;
 
   factory _$TrainingPlanSummary(
           [void Function(TrainingPlanSummaryBuilder)? updates]) =>
@@ -39,7 +43,9 @@ class _$TrainingPlanSummary extends TrainingPlanSummary {
       this.sourceTemplateId,
       required this.itemCount,
       required this.totalDurationMinutes,
-      this.archived})
+      this.archived,
+      this.sessionId,
+      this.matchedItems})
       : super._();
   @override
   TrainingPlanSummary rebuild(
@@ -62,7 +68,9 @@ class _$TrainingPlanSummary extends TrainingPlanSummary {
         sourceTemplateId == other.sourceTemplateId &&
         itemCount == other.itemCount &&
         totalDurationMinutes == other.totalDurationMinutes &&
-        archived == other.archived;
+        archived == other.archived &&
+        sessionId == other.sessionId &&
+        matchedItems == other.matchedItems;
   }
 
   @override
@@ -77,6 +85,8 @@ class _$TrainingPlanSummary extends TrainingPlanSummary {
     _$hash = $jc(_$hash, itemCount.hashCode);
     _$hash = $jc(_$hash, totalDurationMinutes.hashCode);
     _$hash = $jc(_$hash, archived.hashCode);
+    _$hash = $jc(_$hash, sessionId.hashCode);
+    _$hash = $jc(_$hash, matchedItems.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -92,7 +102,9 @@ class _$TrainingPlanSummary extends TrainingPlanSummary {
           ..add('sourceTemplateId', sourceTemplateId)
           ..add('itemCount', itemCount)
           ..add('totalDurationMinutes', totalDurationMinutes)
-          ..add('archived', archived))
+          ..add('archived', archived)
+          ..add('sessionId', sessionId)
+          ..add('matchedItems', matchedItems))
         .toString();
   }
 }
@@ -139,6 +151,16 @@ class TrainingPlanSummaryBuilder
   bool? get archived => _$this._archived;
   set archived(bool? archived) => _$this._archived = archived;
 
+  String? _sessionId;
+  String? get sessionId => _$this._sessionId;
+  set sessionId(String? sessionId) => _$this._sessionId = sessionId;
+
+  ListBuilder<PlanItemMatch>? _matchedItems;
+  ListBuilder<PlanItemMatch> get matchedItems =>
+      _$this._matchedItems ??= ListBuilder<PlanItemMatch>();
+  set matchedItems(ListBuilder<PlanItemMatch>? matchedItems) =>
+      _$this._matchedItems = matchedItems;
+
   TrainingPlanSummaryBuilder() {
     TrainingPlanSummary._defaults(this);
   }
@@ -155,6 +177,8 @@ class TrainingPlanSummaryBuilder
       _itemCount = $v.itemCount;
       _totalDurationMinutes = $v.totalDurationMinutes;
       _archived = $v.archived;
+      _sessionId = $v.sessionId;
+      _matchedItems = $v.matchedItems?.toBuilder();
       _$v = null;
     }
     return this;
@@ -174,25 +198,40 @@ class TrainingPlanSummaryBuilder
   TrainingPlanSummary build() => _build();
 
   _$TrainingPlanSummary _build() {
-    final _$result = _$v ??
-        _$TrainingPlanSummary._(
-          id: BuiltValueNullFieldError.checkNotNull(
-              id, r'TrainingPlanSummary', 'id'),
-          name: BuiltValueNullFieldError.checkNotNull(
-              name, r'TrainingPlanSummary', 'name'),
-          nameKey: nameKey,
-          description: description,
-          template: BuiltValueNullFieldError.checkNotNull(
-              template, r'TrainingPlanSummary', 'template'),
-          sourceTemplateId: sourceTemplateId,
-          itemCount: BuiltValueNullFieldError.checkNotNull(
-              itemCount, r'TrainingPlanSummary', 'itemCount'),
-          totalDurationMinutes: BuiltValueNullFieldError.checkNotNull(
-              totalDurationMinutes,
-              r'TrainingPlanSummary',
-              'totalDurationMinutes'),
-          archived: archived,
-        );
+    _$TrainingPlanSummary _$result;
+    try {
+      _$result = _$v ??
+          _$TrainingPlanSummary._(
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'TrainingPlanSummary', 'id'),
+            name: BuiltValueNullFieldError.checkNotNull(
+                name, r'TrainingPlanSummary', 'name'),
+            nameKey: nameKey,
+            description: description,
+            template: BuiltValueNullFieldError.checkNotNull(
+                template, r'TrainingPlanSummary', 'template'),
+            sourceTemplateId: sourceTemplateId,
+            itemCount: BuiltValueNullFieldError.checkNotNull(
+                itemCount, r'TrainingPlanSummary', 'itemCount'),
+            totalDurationMinutes: BuiltValueNullFieldError.checkNotNull(
+                totalDurationMinutes,
+                r'TrainingPlanSummary',
+                'totalDurationMinutes'),
+            archived: archived,
+            sessionId: sessionId,
+            matchedItems: _matchedItems?.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'matchedItems';
+        _matchedItems?.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'TrainingPlanSummary', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

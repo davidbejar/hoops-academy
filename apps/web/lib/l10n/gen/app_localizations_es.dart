@@ -1630,6 +1630,50 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sessionCancelled => 'Sesión cancelada';
 
   @override
+  String get sessionPlanPick => 'Elegir plan';
+
+  @override
+  String get sessionPlanSearchHint => 'Buscar plan o ejercicio';
+
+  @override
+  String get sessionPlanAcademy => 'Planes de la academia';
+
+  @override
+  String sessionPlanFound(String items) {
+    return 'Encontrado: $items';
+  }
+
+  @override
+  String get sessionPlanNoResults => 'Ningún plan ni ejercicio coincide';
+
+  @override
+  String get sessionOwnPlan => 'Plan propio de la sesión';
+
+  @override
+  String get sessionOwnPlanDropped =>
+      'Los ejercicios añadidos a esta sesión se eliminarán';
+
+  @override
+  String get sessionAddExercises => 'Añadir ejercicios';
+
+  @override
+  String get sessionExerciseSearchHint => 'Buscar ejercicios (p. ej. cooper)';
+
+  @override
+  String get sessionExerciseSearchEmpty =>
+      'Escribe para buscar en tus planes y plantillas';
+
+  @override
+  String sessionExercisesAddCount(int count) {
+    return 'Añadir ($count)';
+  }
+
+  @override
+  String sessionExercisesAdded(int count) {
+    return 'Ejercicios añadidos: $count';
+  }
+
+  @override
   String get attendanceTitle => 'Asistencia';
 
   @override

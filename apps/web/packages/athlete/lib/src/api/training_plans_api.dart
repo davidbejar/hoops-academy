@@ -10,6 +10,7 @@ import 'package:dio/dio.dart';
 
 import 'package:built_collection/built_collection.dart';
 import 'package:hoops_athlete_api/src/api_util.dart';
+import 'package:hoops_athlete_api/src/model/copy_plan_items_request.dart';
 import 'package:hoops_athlete_api/src/model/copy_training_plan_request.dart';
 import 'package:hoops_athlete_api/src/model/create_training_plan_request.dart';
 import 'package:hoops_athlete_api/src/model/plan_item.dart';
@@ -34,8 +35,8 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
-  /// * [planItemInput]
+  /// * [planId] 
+  /// * [planItemInput] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -45,7 +46,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PlanItem] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PlanItem>> addPlanItem({
+  Future<Response<PlanItem>> addPlanItem({ 
     required String xTenantId,
     required String planId,
     required PlanItemInput planItemInput,
@@ -140,7 +141,7 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
+  /// * [planId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -150,7 +151,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TrainingPlan] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TrainingPlan>> archiveTrainingPlan({
+  Future<Response<TrainingPlan>> archiveTrainingPlan({ 
     required String xTenantId,
     required String planId,
     CancelToken? cancelToken,
@@ -219,14 +220,14 @@ class TrainingPlansApi {
     );
   }
 
-  /// Copy a template (or tenant plan) into a new tenant plan (copy-on-use)
-  /// A template is copied with its texts in the negotiated language (the copy keeps them; &#x60;nameKey&#x60; is not copied). Authz: ADMIN; COACH; ASSISTANT_COACH.
+  /// Quick-add exercises of any readable plan or template to a tenant plan
+  /// Copies the given items (in the given order) to the end of the plan; template items with their texts in the negotiated language. Templates are read-only (403); unknown or foreign plans or items are 404. Authz: ADMIN; COACH; ASSISTANT_COACH.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
-  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans.
-  /// * [copyTrainingPlanRequest]
+  /// * [planId] 
+  /// * [copyPlanItemsRequest] 
+  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans. 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -236,7 +237,116 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TrainingPlan] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TrainingPlan>> copyTrainingPlan({
+  Future<Response<TrainingPlan>> copyItemsToPlan({ 
+    required String xTenantId,
+    required String planId,
+    required CopyPlanItemsRequest copyPlanItemsRequest,
+    String? acceptLanguage,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/athlete/training-plans/{planId}/items:copy'.replaceAll('{' r'planId' '}', encodeQueryParameter(_serializers, planId, const FullType(String)).toString());
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        r'X-Tenant-Id': xTenantId,
+        if (acceptLanguage != null) r'Accept-Language': acceptLanguage,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(CopyPlanItemsRequest);
+      _bodyData = _serializers.serialize(copyPlanItemsRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    TrainingPlan? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TrainingPlan),
+      ) as TrainingPlan;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<TrainingPlan>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Copy a template (or tenant plan) into a new tenant plan (copy-on-use)
+  /// A template is copied with its texts in the negotiated language (the copy keeps them; &#x60;nameKey&#x60; is not copied). Authz: ADMIN; COACH; ASSISTANT_COACH.
+  ///
+  /// Parameters:
+  /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
+  /// * [planId] 
+  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans. 
+  /// * [copyTrainingPlanRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [TrainingPlan] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<TrainingPlan>> copyTrainingPlan({ 
     required String xTenantId,
     required String planId,
     String? acceptLanguage,
@@ -333,7 +443,7 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [createTrainingPlanRequest]
+  /// * [createTrainingPlanRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -343,7 +453,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TrainingPlan] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TrainingPlan>> createTrainingPlan({
+  Future<Response<TrainingPlan>> createTrainingPlan({ 
     required String xTenantId,
     required CreateTrainingPlanRequest createTrainingPlanRequest,
     CancelToken? cancelToken,
@@ -437,8 +547,8 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
-  /// * [itemId]
+  /// * [planId] 
+  /// * [itemId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -448,7 +558,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> deletePlanItem({
+  Future<Response<void>> deletePlanItem({ 
     required String xTenantId,
     required String planId,
     required String itemId,
@@ -495,7 +605,7 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
+  /// * [planId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -505,7 +615,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> deleteTrainingPlan({
+  Future<Response<void>> deleteTrainingPlan({ 
     required String xTenantId,
     required String planId,
     CancelToken? cancelToken,
@@ -551,8 +661,8 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
-  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans.
+  /// * [planId] 
+  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans. 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -562,7 +672,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TrainingPlan] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TrainingPlan>> getTrainingPlan({
+  Future<Response<TrainingPlan>> getTrainingPlan({ 
     required String xTenantId,
     required String planId,
     String? acceptLanguage,
@@ -634,15 +744,15 @@ class TrainingPlansApi {
   }
 
   /// List tenant plans, or global templates with &#x60;template&#x3D;true&#x60;
-  /// Authz: any member.
+  /// Ad-hoc session plans (&#x60;sessionId&#x60; set) are not listed. Authz: any member.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
   /// * [template] - true = global templates (read-only); false = the tenant's own plans.
-  /// * [q] - Case-insensitive part of the name (of a template, in the negotiated language).
+  /// * [q] - Case-insensitive part of the plan name or of the title of one of its items (a template's in the negotiated language). The items whose title matches are listed in `matchedItems` (2.3.0). 
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
-  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans.
+  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans. 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -652,7 +762,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TrainingPlanSummaryPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TrainingPlanSummaryPage>> listTrainingPlans({
+  Future<Response<TrainingPlanSummaryPage>> listTrainingPlans({ 
     required String xTenantId,
     bool? template = false,
     String? q,
@@ -739,8 +849,8 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
-  /// * [reorderPlanItemsRequest]
+  /// * [planId] 
+  /// * [reorderPlanItemsRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -750,7 +860,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<PlanItem>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<PlanItem>>> reorderPlanItems({
+  Future<Response<BuiltList<PlanItem>>> reorderPlanItems({ 
     required String xTenantId,
     required String planId,
     required ReorderPlanItemsRequest reorderPlanItemsRequest,
@@ -845,7 +955,7 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
+  /// * [planId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -855,7 +965,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TrainingPlan] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TrainingPlan>> unarchiveTrainingPlan({
+  Future<Response<TrainingPlan>> unarchiveTrainingPlan({ 
     required String xTenantId,
     required String planId,
     CancelToken? cancelToken,
@@ -929,9 +1039,9 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
-  /// * [itemId]
-  /// * [updatePlanItemRequest]
+  /// * [planId] 
+  /// * [itemId] 
+  /// * [updatePlanItemRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -941,7 +1051,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [PlanItem] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<PlanItem>> updatePlanItem({
+  Future<Response<PlanItem>> updatePlanItem({ 
     required String xTenantId,
     required String planId,
     required String itemId,
@@ -1037,8 +1147,8 @@ class TrainingPlansApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [planId]
-  /// * [updateTrainingPlanRequest]
+  /// * [planId] 
+  /// * [updateTrainingPlanRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1048,7 +1158,7 @@ class TrainingPlansApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TrainingPlan] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TrainingPlan>> updateTrainingPlan({
+  Future<Response<TrainingPlan>> updateTrainingPlan({ 
     required String xTenantId,
     required String planId,
     required UpdateTrainingPlanRequest updateTrainingPlanRequest,

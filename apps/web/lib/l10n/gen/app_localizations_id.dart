@@ -1623,6 +1623,51 @@ class AppLocalizationsId extends AppLocalizations {
   String get sessionCancelled => 'Sesi dibatalkan';
 
   @override
+  String get sessionPlanPick => 'Pilih rencana';
+
+  @override
+  String get sessionPlanSearchHint => 'Cari rencana atau latihan';
+
+  @override
+  String get sessionPlanAcademy => 'Rencana akademi';
+
+  @override
+  String sessionPlanFound(String items) {
+    return 'Ditemukan: $items';
+  }
+
+  @override
+  String get sessionPlanNoResults =>
+      'Tidak ada rencana atau latihan yang cocok';
+
+  @override
+  String get sessionOwnPlan => 'Rencana khusus sesi ini';
+
+  @override
+  String get sessionOwnPlanDropped =>
+      'Latihan yang ditambahkan ke sesi ini akan dihapus';
+
+  @override
+  String get sessionAddExercises => 'Tambah latihan';
+
+  @override
+  String get sessionExerciseSearchHint => 'Cari latihan (mis. cooper)';
+
+  @override
+  String get sessionExerciseSearchEmpty =>
+      'Ketik untuk mencari di rencana dan templat';
+
+  @override
+  String sessionExercisesAddCount(int count) {
+    return 'Tambah ($count)';
+  }
+
+  @override
+  String sessionExercisesAdded(int count) {
+    return 'Latihan ditambahkan: $count';
+  }
+
+  @override
   String get attendanceTitle => 'Kehadiran';
 
   @override

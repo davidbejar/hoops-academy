@@ -201,6 +201,16 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
     await _reload();
   }
 
+  /// Quick-add: copies [items] to the session's own plan; returns how many.
+  Future<int> addExercises(List<ath.PlanItemRef> items) async {
+    final plan = await ref
+        .read(trainingRepositoryProvider)
+        .copyItemsToSession(sessionId, items);
+    ref.invalidate(planDetailProvider(plan.id));
+    await _reload();
+    return items.length;
+  }
+
   Future<void> saveAttendance(List<ath.AttendanceInput> entries) async {
     await ref
         .read(trainingRepositoryProvider)
@@ -405,6 +415,29 @@ class PlanLibraryNotifier extends AsyncNotifier<List<ath.TrainingPlanSummary>> {
     ref.invalidate(planLibraryProvider);
   }
 }
+
+/// What the session's plan picker and exercise search show for a query: the
+/// academy's plans and the templates, each with the items that matched.
+class PlanSearchResults {
+  const PlanSearchResults({required this.academy, required this.templates});
+  final List<ath.TrainingPlanSummary> academy;
+  final List<ath.TrainingPlanSummary> templates;
+
+  bool get isEmpty => academy.isEmpty && templates.isEmpty;
+}
+
+/// Plans and templates matching a query by name or item title (decision 54);
+/// independent of the plan library's own search box.
+final planSearchResultsProvider = FutureProvider.autoDispose
+    .family<PlanSearchResults, String>((ref, query) async {
+      final repo = ref.watch(plansRepositoryProvider);
+      final q = query.trim().isEmpty ? null : query.trim();
+      final both = await Future.wait([
+        repo.plans(templates: false, query: q),
+        repo.plans(templates: true, query: q),
+      ]);
+      return PlanSearchResults(academy: both[0], templates: both[1]);
+    });
 
 final planLibraryProvider =
     AsyncNotifierProvider.family<

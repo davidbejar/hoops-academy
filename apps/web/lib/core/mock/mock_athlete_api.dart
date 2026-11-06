@@ -299,6 +299,17 @@ class MockAthleteApi {
         item('tpl-h2', 1, 'Cambios de mano en slalom', minutes: 12, sets: 4),
       ]),
       plan(
+        'tpl-conditioning',
+        'Acondicionamiento',
+        'Resistencia y velocidad por intervalos',
+        true,
+        [
+          item('tpl-c1', 0, 'Test de Cooper 12 min', minutes: 12),
+          item('tpl-c2', 1, 'Suicidios', minutes: 8, sets: 4),
+          item('tpl-c3', 2, 'Sprints de 20 m', minutes: 6, sets: 6),
+        ],
+      ),
+      plan(
         'plan-warmup',
         'Calentamiento Mini',
         'Rutina de 15 minutos antes de entrenar',
@@ -672,6 +683,8 @@ class MockAthleteApi {
       if (method == 'POST') {
         final denied = _gateTeam(b['teamId'] as String?, method);
         if (denied != null) return denied;
+        final refused = _refuseOtherSessionsPlan(b['planId'], null);
+        if (refused != null) return refused;
         final s = <String, Object?>{
           'id': _id('ses'),
           'scheduleId': null,
@@ -696,10 +709,18 @@ class MockAthleteApi {
       if (method == 'PATCH') {
         if (s['status'] == 'CANCELLED')
           return mockProblem(409, 'Conflict', code: 'SESSION_CANCELLED');
-        return _patch(s, b, {'location', 'planId', 'notes'});
+        final refused = _refuseOtherSessionsPlan(b['planId'], id);
+        if (refused != null) return refused;
+        final before = s['planId'];
+        final result = _patch(s, b, {'location', 'planId', 'notes'});
+        if (before != s['planId']) {
+          _plans.removeWhere((p) => p['id'] == before && p['sessionId'] == id);
+        }
+        return result;
       }
       return null;
     }
+    if (rest[0] == 'items' && method == 'POST') return _quickAdd(s, b);
     if (rest[0] == 'cancel' && method == 'POST') {
       if (s['status'] == 'CANCELLED')
         return mockProblem(409, 'Conflict', code: 'SESSION_CANCELLED');
@@ -847,6 +868,7 @@ class MockAthleteApi {
         'template',
         'sourceTemplateId',
         'archived',
+        'sessionId',
       ])
         k: p[k],
       'itemCount': items.length,
@@ -855,6 +877,79 @@ class MockAthleteApi {
         (sum, i) => sum + ((i['durationMinutes'] as int?) ?? 0),
       ),
     };
+  }
+
+  List<Map<String, Object?>> _matchedItems(
+    Map<String, Object?> plan,
+    String text,
+  ) => [
+    for (final i in _items(plan))
+      if ('${i['title']}'.toLowerCase().contains(text))
+        {'id': i['id'], 'planId': plan['id'], 'title': i['title']},
+  ];
+
+  /// Copies of the items a quick-add names (fresh ids), or null when a plan
+  /// or item is unknown.
+  List<Map<String, Object?>>? _copiesOf(Map<String, Object?> b) {
+    final copies = <Map<String, Object?>>[];
+    for (final ref
+        in (b['items'] as List<Object?>? ?? const [])
+            .cast<Map<String, Object?>>()) {
+      final source = _byId(_plans, '${ref['planId']}');
+      final item = source == null
+          ? null
+          : _items(source).where((i) => i['id'] == ref['itemId']).firstOrNull;
+      if (item == null) return null;
+      copies.add({...item, 'id': _id('item')});
+    }
+    return copies;
+  }
+
+  /// A session references any plan except another session's own plan.
+  MockResult? _refuseOtherSessionsPlan(Object? planId, String? sessionId) {
+    if (planId == null) return null;
+    final plan = _byId(_plans, '$planId');
+    if (plan == null) return _notFound;
+    final owner = plan['sessionId'];
+    return owner != null && owner != sessionId
+        ? mockProblem(422, 'Unprocessable', code: 'PLAN_OF_ANOTHER_SESSION')
+        : null;
+  }
+
+  /// Quick-add (ADR-0041): copies go to the session's own plan, created on
+  /// first use with the items of the plan the session referenced.
+  MockResult _quickAdd(Map<String, Object?> s, Map<String, Object?> b) {
+    if (!_az.canManageTeam('${s['teamId']}')) return _forbidden;
+    if (s['status'] == 'CANCELLED')
+      return mockProblem(409, 'Conflict', code: 'SESSION_CANCELLED');
+    final copies = _copiesOf(b);
+    if (copies == null) return _notFound;
+    final current = _byId(_plans, s['planId'] as String?);
+    var own = current != null && current['sessionId'] == s['id']
+        ? current
+        : null;
+    if (own == null) {
+      own = {
+        'id': _id('plan'),
+        'name':
+            current?['name'] ??
+            'Sesión ${_date(_zone.wall(DateTime.parse('${s['startsAt']}')))}',
+        'description': current?['description'],
+        'template': false,
+        'sourceTemplateId': current?['id'],
+        'archived': false,
+        'sessionId': s['id'],
+        'items': [
+          if (current != null)
+            for (final i in _items(current)) {...i, 'id': _id('item')},
+        ],
+      };
+      _plans.add(own);
+      s['planId'] = own['id'];
+    }
+    _items(own).addAll(copies);
+    _renumber(own);
+    return MockResult.json(200, _full(own));
   }
 
   Map<String, Object?> _full(Map<String, Object?> p) => {
@@ -883,14 +978,21 @@ class MockAthleteApi {
     if (readOnlyRole != null) return readOnlyRole;
     if (idAndAction == null) {
       if (method == 'GET') {
+        // athlete 2.3.0: a session's own plan is never listed; `q` matches the
+        // name or item titles, the latter reported in `matchedItems`.
         final template = q.text('template');
         final text = q.text('q')?.toLowerCase();
         return q.page([
           for (final p in _plans)
             if (p['archived'] != true &&
-                (template == null || '${p['template']}' == template) &&
-                (text == null || '${p['name']}'.toLowerCase().contains(text)))
-              _summary(p),
+                p['sessionId'] == null &&
+                (template == null || '${p['template']}' == template))
+              if (text == null)
+                _summary(p)
+              else if (_matchedItems(p, text) case final found
+                  when found.isNotEmpty ||
+                      '${p['name']}'.toLowerCase().contains(text))
+                {..._summary(p), if (found.isNotEmpty) 'matchedItems': found},
         ], defaultSize: 100);
       }
       if (method == 'POST') {
@@ -959,6 +1061,13 @@ class MockAthleteApi {
         }(),
         _ => null,
       };
+    }
+    if (rest.length == 1 && rest[0] == 'items:copy' && method == 'POST') {
+      final copies = _copiesOf(b);
+      if (copies == null) return _notFound;
+      _items(plan).addAll(copies);
+      _renumber(plan);
+      return MockResult.json(200, _full(plan));
     }
     if (rest[0] != 'items') return null;
     if (rest.length == 1) {
@@ -1061,6 +1170,8 @@ class MockAthleteApi {
         if (plan == null) return mockProblem(404, 'Not found');
         if (plan['archived'] == true)
           return mockProblem(409, 'Conflict', code: 'PLAN_ARCHIVED');
+        if (plan['sessionId'] != null)
+          return mockProblem(422, 'Unprocessable', code: 'PLAN_OF_A_SESSION');
         if ((b['teamId'] == null) == (b['playerId'] == null))
           return mockProblem(400, 'Bad Request');
         final denied = b['teamId'] != null

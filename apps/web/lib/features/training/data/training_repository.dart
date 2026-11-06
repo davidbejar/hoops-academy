@@ -18,6 +18,13 @@ abstract class TrainingRepository {
   );
   Future<ath.TrainingSession> cancelSession(String sessionId, String reason);
 
+  /// Quick-add (athlete 2.3.0, ADR-0041): copies items of any readable plan
+  /// or template to the end of the session's own plan, created on first use.
+  Future<ath.TrainingPlan> copyItemsToSession(
+    String sessionId,
+    List<ath.PlanItemRef> items,
+  );
+
   Future<List<ath.TrainingSchedule>> schedules({String? teamId});
   Future<ath.TrainingSchedule> createSchedule(ath.TrainingScheduleInput input);
   Future<ath.TrainingSchedule> updateSchedule(
@@ -106,6 +113,18 @@ class ApiTrainingRepository implements TrainingRepository {
     sessionId: sessionId,
     cancelTrainingSessionRequest: ath.CancelTrainingSessionRequest(
       (b) => b.reason = reason,
+    ),
+  )).data!;
+
+  @override
+  Future<ath.TrainingPlan> copyItemsToSession(
+    String sessionId,
+    List<ath.PlanItemRef> items,
+  ) async => (await _sessions.copyItemsToSession(
+    xTenantId: _t,
+    sessionId: sessionId,
+    copyPlanItemsRequest: ath.CopyPlanItemsRequest(
+      (b) => b.items.replace(items),
     ),
   )).data!;
 

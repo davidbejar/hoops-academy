@@ -13,16 +13,17 @@ part 'training_plan.g.dart';
 /// TrainingPlan
 ///
 /// Properties:
-/// * [id]
+/// * [id] 
 /// * [name] - Templates in the negotiated language (`Accept-Language`, fallback `en`); tenant plans as stored.
 /// * [nameKey] - Stable key of a global template's texts (e.g. `form-shooting`), the same in every language; null for tenant plans (copies included).
 /// * [description] - Same language rule as `name`.
 /// * [template] - Global, read-only template (copy before use).
 /// * [sourceTemplateId] - Template (or plan) this plan was copied from.
-/// * [itemCount]
-/// * [totalDurationMinutes]
+/// * [itemCount] 
+/// * [totalDurationMinutes] 
 /// * [archived] - Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
-/// * [items]
+/// * [sessionId] - Set on the ad-hoc plan of a session (created by `copyItemsToSession`, 2.3.0): the plan belongs to that session, is not listed and cannot be assigned or attached to another session. 
+/// * [items] 
 @BuiltValue()
 abstract class TrainingPlan implements Built<TrainingPlan, TrainingPlanBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -57,6 +58,10 @@ abstract class TrainingPlan implements Built<TrainingPlan, TrainingPlanBuilder> 
   /// Archived plans are hidden from lists and cannot be assigned (see `archiveTrainingPlan`).
   @BuiltValueField(wireName: r'archived')
   bool? get archived;
+
+  /// Set on the ad-hoc plan of a session (created by `copyItemsToSession`, 2.3.0): the plan belongs to that session, is not listed and cannot be assigned or attached to another session. 
+  @BuiltValueField(wireName: r'sessionId')
+  String? get sessionId;
 
   @BuiltValueField(wireName: r'items')
   BuiltList<PlanItem> get items;
@@ -135,6 +140,13 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
       yield serializers.serialize(
         object.archived,
         specifiedType: const FullType(bool),
+      );
+    }
+    if (object.sessionId != null) {
+      yield r'sessionId';
+      yield serializers.serialize(
+        object.sessionId,
+        specifiedType: const FullType.nullable(String),
       );
     }
     yield r'items';
@@ -232,6 +244,14 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
           if (valueDes == null) continue;
           result.archived = valueDes;
           break;
+        case r'sessionId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.sessionId = valueDes;
+          break;
         case r'items':
           final valueDes = serializers.deserialize(
             value,
@@ -267,3 +287,5 @@ class _$TrainingPlanSerializer implements PrimitiveSerializer<TrainingPlan> {
     return result.build();
   }
 }
+
+

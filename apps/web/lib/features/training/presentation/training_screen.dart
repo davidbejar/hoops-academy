@@ -18,6 +18,7 @@ import '../../roster/application/roster_providers.dart';
 import '../../roster/presentation/eligibility_widgets.dart' show TeamLabel;
 import '../application/training_providers.dart';
 import '../domain/week.dart';
+import 'plan_search.dart';
 import 'training_labels.dart';
 
 /// Week calendar of the training module (deferred, behind the Training tab).
@@ -403,6 +404,13 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
               );
   }
 
+  /// Leaving the session's own plan deletes it with its quick-added exercises.
+  bool _dropsOwnPlan() {
+    final s = widget.session;
+    if (s?.planId == null || s!.planId == _planId) return false;
+    return ref.watch(planDetailProvider(s.planId!)).value?.sessionId == s.id;
+  }
+
   @override
   void dispose() {
     _duration.dispose();
@@ -420,9 +428,6 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
         if (caps.canManageTraining(t.id)) t,
     ];
     final editing = widget.session != null;
-    final plans =
-        ref.watch(planLibraryProvider(false)).value ??
-        const <ath.TrainingPlanSummary>[];
     return FormDialog(
       title: editing ? l.sessionEdit : l.sessionNew,
       formKey: _form,
@@ -494,28 +499,29 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
           decoration: InputDecoration(labelText: l.sessionLocation),
         ),
         formGap,
-        DropdownButtonFormField<String?>(
+        // Any academy plan or template, picked directly (decision 53); "no
+        // plan" while editing detaches the plan (`clear`, ADR-0032).
+        InkWell(
           key: const Key('session-plan'),
-          initialValue: _planId,
-          isExpanded: true,
-          decoration: InputDecoration(labelText: l.sessionPlan),
-          items: [
-            // Choosing "no plan" while editing detaches the plan (`clear`, ADR-0032).
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Text(l.sessionNoPlan),
+          onTap: () async {
+            final choice = await showDialog<PlanChoice>(
+              context: context,
+              builder: (_) => PlanPickerDialog(selected: _planId),
+            );
+            if (choice != null) setState(() => _planId = choice.planId);
+          },
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: l.sessionPlan,
+              suffixIcon: const Icon(Icons.search),
+              helperText: _dropsOwnPlan() ? l.sessionOwnPlanDropped : null,
             ),
-            for (final p in plans)
-              DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
-            if (_planId != null && plans.every((p) => p.id != _planId))
-              DropdownMenuItem<String?>(
-                value: _planId,
-                child: Text(
-                  ref.watch(planDetailProvider(_planId!)).value?.name ?? '…',
-                ),
-              ),
-          ],
-          onChanged: (v) => setState(() => _planId = v),
+            child: Text(
+              _planId == null
+                  ? l.sessionNoPlan
+                  : ref.watch(planDetailProvider(_planId!)).value?.name ?? '…',
+            ),
+          ),
         ),
         formGap,
         TextFormField(

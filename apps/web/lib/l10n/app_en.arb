@@ -527,6 +527,39 @@
   "sessionCancelReason": "Reason for cancelling",
   "sessionCreated": "Session created",
   "sessionCancelled": "Session cancelled",
+  "sessionPlanPick": "Choose a plan",
+  "sessionPlanSearchHint": "Search a plan or exercise",
+  "sessionPlanAcademy": "Academy plans",
+  "sessionPlanFound": "Found: {items}",
+  "@sessionPlanFound": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPlanNoResults": "No plan or exercise matches",
+  "sessionOwnPlan": "This session's own plan",
+  "sessionOwnPlanDropped": "The exercises added to this session will be removed",
+  "sessionAddExercises": "Add exercises",
+  "sessionExerciseSearchHint": "Search exercises (e.g. cooper)",
+  "sessionExerciseSearchEmpty": "Type to search your plans and templates",
+  "sessionExercisesAddCount": "Add ({count})",
+  "@sessionExercisesAddCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionExercisesAdded": "Exercises added: {count}",
+  "@sessionExercisesAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "attendanceTitle": "Attendance",
   "attendancePresent": "Present",
   "attendanceLate": "Late",

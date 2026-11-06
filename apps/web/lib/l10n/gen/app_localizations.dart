@@ -3034,6 +3034,78 @@ abstract class AppLocalizations {
   /// **'Sesión cancelada'**
   String get sessionCancelled;
 
+  /// No description provided for @sessionPlanPick.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir plan'**
+  String get sessionPlanPick;
+
+  /// No description provided for @sessionPlanSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar plan o ejercicio'**
+  String get sessionPlanSearchHint;
+
+  /// No description provided for @sessionPlanAcademy.
+  ///
+  /// In es, this message translates to:
+  /// **'Planes de la academia'**
+  String get sessionPlanAcademy;
+
+  /// No description provided for @sessionPlanFound.
+  ///
+  /// In es, this message translates to:
+  /// **'Encontrado: {items}'**
+  String sessionPlanFound(String items);
+
+  /// No description provided for @sessionPlanNoResults.
+  ///
+  /// In es, this message translates to:
+  /// **'Ningún plan ni ejercicio coincide'**
+  String get sessionPlanNoResults;
+
+  /// No description provided for @sessionOwnPlan.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan propio de la sesión'**
+  String get sessionOwnPlan;
+
+  /// No description provided for @sessionOwnPlanDropped.
+  ///
+  /// In es, this message translates to:
+  /// **'Los ejercicios añadidos a esta sesión se eliminarán'**
+  String get sessionOwnPlanDropped;
+
+  /// No description provided for @sessionAddExercises.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir ejercicios'**
+  String get sessionAddExercises;
+
+  /// No description provided for @sessionExerciseSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar ejercicios (p. ej. cooper)'**
+  String get sessionExerciseSearchHint;
+
+  /// No description provided for @sessionExerciseSearchEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe para buscar en tus planes y plantillas'**
+  String get sessionExerciseSearchEmpty;
+
+  /// No description provided for @sessionExercisesAddCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir ({count})'**
+  String sessionExercisesAddCount(int count);
+
+  /// No description provided for @sessionExercisesAdded.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejercicios añadidos: {count}'**
+  String sessionExercisesAdded(int count);
+
   /// No description provided for @attendanceTitle.
   ///
   /// In es, this message translates to:

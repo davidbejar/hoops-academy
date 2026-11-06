@@ -22,6 +22,7 @@ import 'package:hoops_athlete_api/src/model/body_measurement.dart';
 import 'package:hoops_athlete_api/src/model/body_measurement_input.dart';
 import 'package:hoops_athlete_api/src/model/cancel_training_session_request.dart';
 import 'package:hoops_athlete_api/src/model/completion_status.dart';
+import 'package:hoops_athlete_api/src/model/copy_plan_items_request.dart';
 import 'package:hoops_athlete_api/src/model/copy_training_plan_request.dart';
 import 'package:hoops_athlete_api/src/model/create_injury_request.dart';
 import 'package:hoops_athlete_api/src/model/create_plan_assignment_request.dart';
@@ -49,6 +50,8 @@ import 'package:hoops_athlete_api/src/model/plan_completion.dart';
 import 'package:hoops_athlete_api/src/model/plan_completion_page.dart';
 import 'package:hoops_athlete_api/src/model/plan_item.dart';
 import 'package:hoops_athlete_api/src/model/plan_item_input.dart';
+import 'package:hoops_athlete_api/src/model/plan_item_match.dart';
+import 'package:hoops_athlete_api/src/model/plan_item_ref.dart';
 import 'package:hoops_athlete_api/src/model/plan_progress.dart';
 import 'package:hoops_athlete_api/src/model/plan_progress_counts.dart';
 import 'package:hoops_athlete_api/src/model/planned_absence.dart';
@@ -92,6 +95,7 @@ part 'serializers.g.dart';
   BodyMeasurementInput,
   CancelTrainingSessionRequest,
   CompletionStatus,
+  CopyPlanItemsRequest,
   CopyTrainingPlanRequest,
   CreateInjuryRequest,
   CreatePlanAssignmentRequest,
@@ -119,6 +123,8 @@ part 'serializers.g.dart';
   PlanCompletionPage,
   PlanItem,
   PlanItemInput,
+  PlanItemMatch,
+  PlanItemRef,
   PlanProgress,
   PlanProgressCounts,
   PlannedAbsence,
@@ -153,6 +159,10 @@ part 'serializers.g.dart';
 ])
 Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlanItemMatch)]),
+        () => ListBuilder<PlanItemMatch>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltSet, [FullType(String)]),
         () => SetBuilder<String>(),
       )
@@ -171,6 +181,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(BodyMeasurement)]),
         () => ListBuilder<BodyMeasurement>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlanItemRef)]),
+        () => ListBuilder<PlanItemRef>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlanAssignment)]),

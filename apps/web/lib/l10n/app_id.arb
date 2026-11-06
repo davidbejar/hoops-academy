@@ -527,6 +527,39 @@
   "sessionCancelReason": "Alasan pembatalan",
   "sessionCreated": "Sesi dibuat",
   "sessionCancelled": "Sesi dibatalkan",
+  "sessionPlanPick": "Pilih rencana",
+  "sessionPlanSearchHint": "Cari rencana atau latihan",
+  "sessionPlanAcademy": "Rencana akademi",
+  "sessionPlanFound": "Ditemukan: {items}",
+  "@sessionPlanFound": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPlanNoResults": "Tidak ada rencana atau latihan yang cocok",
+  "sessionOwnPlan": "Rencana khusus sesi ini",
+  "sessionOwnPlanDropped": "Latihan yang ditambahkan ke sesi ini akan dihapus",
+  "sessionAddExercises": "Tambah latihan",
+  "sessionExerciseSearchHint": "Cari latihan (mis. cooper)",
+  "sessionExerciseSearchEmpty": "Ketik untuk mencari di rencana dan templat",
+  "sessionExercisesAddCount": "Tambah ({count})",
+  "@sessionExercisesAddCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sessionExercisesAdded": "Latihan ditambahkan: {count}",
+  "@sessionExercisesAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "attendanceTitle": "Kehadiran",
   "attendancePresent": "Hadir",
   "attendanceLate": "Terlambat",
