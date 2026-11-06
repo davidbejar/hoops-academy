@@ -97,6 +97,12 @@ parts always match the running `main.dart.js`); the app shows an "update availab
 emits is excluded from the precache and never registered; a stale page that registered it in the past replaces
 our worker once and our `register('sw.js')` takes the scope back on the next load.
 
+**Scripted check (WP54):** `tool/offline_cold_start.sh` builds a mock-mode release bundle into `build/offline-check`,
+loads it in headless Chrome until `sw.js` controls the page and has filled its cache, then goes offline for real (static
+server stopped and Chrome's offline emulation on), reloads and asserts that the landing renders from the cache, that
+mock sign-in works and that the live match opens with the offline banner. About 2 minutes (`--no-build` reuses the
+bundle, `--headed` shows the window); needs a chromedriver matching Chrome's major version on PATH or `CHROMEDRIVER`.
+
 **Manual check (airplane mode):** `tool/build_web.sh`, serve `build/web` over `http://localhost` (any static
 server), open it once online and wait for DevTools -> Application -> Service Workers to show `sw.js` *activated*
 and Cache Storage -> `hoops-shell-<build id>` to hold the files. Reload once (the first page load is not

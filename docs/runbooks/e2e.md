@@ -117,6 +117,15 @@ first two (see the script header). The Homebrew `chromedriver` cask is disabled 
 `xattr -d com.apple.quarantine` on it. The script drives the `web-server` device: with `-d chrome`, `flutter drive`
 never launches a browser and hangs forever after "Waiting for connection from debug service".
 
+### PWA checks (WP54)
+- **Installability**: `HOOPS_ALLOW_HTTP_ISSUER=1 apps/web/tool/build_web.sh && apps/web/tool/lighthouse.sh`. No Node on the
+  host: Lighthouse 11.7.1 (`femtopixel/google-lighthouse`, v11 because v12 removed the PWA category) runs in a Podman pod next
+  to an `nginx:1.27-alpine` serving `build/web`, so the page is `http://localhost` (secure context). The image is amd64 only;
+  on Apple silicon it runs emulated (Chromium needs `--no-zygote`; first run pulls the image, a run takes about 1 minute).
+  The script prints the PWA score and every check and exits 1 on a failure; reports land in `apps/web/build/lighthouse/`.
+  Result at WP54: score 1, `installable-manifest`, `splash-screen`, `themed-omnibox`, `viewport`, `maskable-icon` pass.
+- **Offline cold start**: `apps/web/tool/offline_cold_start.sh` (see the "Offline cold start" section of `apps/web/README.md`).
+
 ### Browser checks in CI (WP55)
 - `ci.yml` job `web-browser`: Chrome for Testing 157.0.8103.38 + matching chromedriver (`browser-actions/setup-chrome`,
   pinned SHA), then `apps/web/tool/web_smoke.sh` in mock mode; `flutter drive` runs the browser headless by default.
