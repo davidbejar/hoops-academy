@@ -1,6 +1,6 @@
 # ADR-0031: Gateway API with Envoy Gateway replaces ingress-nginx
 
-- Status: Accepted
+- Status: Accepted; decision 4 (local rate limits) replaced by ADR-0033 (global rate limits, WP40)
 - Date: 2026-11-06
 - Related: decision 10 of 2026-11-05, WP36, ADR-0012 (Secrets), ADR-0017 (HTTP hardening), WP16/WP17 (chart, kind)
 

@@ -57,8 +57,24 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
   regex HTTPRoute `game-service-events-batch` without rewrite (WP2c, WP17, WP36). The same applies to `:copy`,
   `:archive`, `:unarchive` on athlete paths. Quarkus REST itself answers 404 for the percent-encoded form.
 - **Fix:** do not add a `URLRewrite` filter to the game/athlete routes; keep the regex route. Write test requests with the
-  literal colon. Rate limits answer 429 (compose `events` zone: 120 r/min, burst 60; Envoy Gateway: 120/min per client IP),
-  not 404.
+  literal colon. Rate limits answer 429 (compose `events` zone: 120 r/min, burst 60; Envoy Gateway: global 120/min per
+  client IP), not 404.
+
+## Gateway rate limits (kind / Helm): 429 too early, or never
+- **Symptom A:** a client gets 429 on the token endpoint, the login form or `events:batch` although it sent fewer than 60 /
+  120 requests in the last 60 s.
+- **Cause A:** the limits are global fixed windows per calendar minute (ADR-0033), shared by every Envoy replica and
+  every client behind the same IP. Behind a load balancer without `gateway.clientIPDetection.numTrustedHops`, Envoy
+  counts the balancer's IP, so all clients share one counter.
+- **Fix A:** wait for the next minute; set `numTrustedHops` to the number of proxies that append `X-Forwarded-For`.
+- **Symptom B:** no 429 at all on those routes (`deploy/kind/ratelimit-check.sh` fails with `first 429 at #0`).
+- **Cause B:** the gateway fails open (`failClosed: false`, ADR-0033) because Envoy Gateway's rate limit service or its
+  Redis is down or unreachable, or Envoy Gateway was installed without `config.envoyGateway.rateLimit.backend`.
+- **Fix B:** `kubectl -n envoy-gateway-system get pods -l app.kubernetes.io/name=envoy-ratelimit` and its logs
+  (`creating redis connection error` = Redis unreachable: check `ratelimit-redis` in `hoops` or the external Redis and
+  its NetworkPolicy); `kubectl -n envoy-gateway-system get configmap envoy-gateway-config -o yaml` must show
+  `rateLimit.backend`, else install Envoy Gateway with the values in `docs/runbooks/release.md` section 4. The policies
+  must report `Accepted=True` (`kubectl -n hoops describe backendtrafficpolicy`).
 
 ## Flutter dev server (`flutter run`, port 5173): CORS, redirect URI
 - **Symptom:** login redirect error "Invalid parameter: redirect_uri", or browser CORS errors on `/api/*` and `/auth/*`.

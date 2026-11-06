@@ -25,7 +25,7 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | 2.2.1 | Allow-list validation against business expectations | Met | Bean Validation on DTOs + contract validation of every request/response (`Contract.*` filters); `ProblemExceptionMappersTest.invalidBodyIsValidationProblem`; logo magic bytes `TenantLogoResourceTest.svgGifAndUnknownTypesAreUnsupported`; event JSON Schema (`libs/contracts/events`) |
 | 2.2.2 | Validation at a trusted service layer | Met | Server-side validation as above; client-side logo checks are UX only (Flutter review) |
 | 2.3.1 | Business flows in sequence | Met | Approval state machine `ApprovalRequest` (NOT_PENDING 409, `aDecidedRequestCannotBeDecidedAgain`); optimistic locking → 409 `CONCURRENT_MODIFICATION` (`twoConcurrentDecisionsHaveExactlyOneWinner`); measurement same-day race → 409 `MEASUREMENT_EXISTS_FOR_DATE` (`athlete MeasurementSameDayRaceTest`) |
-| V2 (anti-automation) | Rate limits on expensive/abusable functions | Met | nginx `limit_req` zones for the token endpoint and `events:batch` (429); Envoy Gateway local rate limits per client IP in the chart (`BackendTrafficPolicy`, 60/min token endpoint and login form, 120/min `events:batch`, ADR-0031; `deploy/helm/tests/run.sh` assertions, `deploy/kind/ratelimit-check.sh` on kind, WP36; ingress-nginx `limit-rpm` until WP36); `events:batch` ≤ 500 events |
+| V2 (anti-automation) | Rate limits on expensive/abusable functions | Met | nginx `limit_req` zones for the token endpoint and `events:batch` (429); Envoy Gateway global rate limits per client IP in the chart (`BackendTrafficPolicy`, 60/min token endpoint and login form, 120/min `events:batch`, shared by every Envoy replica, ADR-0031/ADR-0033; `deploy/helm/tests/run.sh` assertions, `deploy/kind/ratelimit-check.sh` on kind, WP36; ingress-nginx `limit-rpm` until WP36); `events:batch` ≤ 500 events |
 
 ## V3 Web Frontend Security
 | ID | Requirement | Status | Evidence |
@@ -58,7 +58,7 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | 6.2.5 / 6.2.7 / 6.2.8 | No composition rules; paste allowed; no truncation | Met | Policy has no character-class rules; Keycloak login form |
 | 6.2.10 | No forced rotation | Met | No `forceExpiredPasswordChange` in the policy |
 | 6.2.12 | Breached-password check | Gap | Not available in stock Keycloak 26 without an extension |
-| 6.3.1 | Brute-force / credential-stuffing controls | Met | `bruteForceProtected: true` (realm), token-endpoint rate limit (nginx `limit_req` / Envoy Gateway local rate limit) |
+| 6.3.1 | Brute-force / credential-stuffing controls | Met | `bruteForceProtected: true` (realm), token-endpoint rate limit (nginx `limit_req` / Envoy Gateway global rate limit, ADR-0033) |
 | 6.3.2 | No default accounts | Met | Realm export has no users; seed users are dev-only scripts; Keycloak admin from env, compose only |
 | 6.3.3 | MFA or documented factor combination | Gap | OTP not required (product decision: minors/parents; offer optional OTP for ADMIN/super_admin — follow-up) |
 

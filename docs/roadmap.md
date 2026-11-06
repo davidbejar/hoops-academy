@@ -78,8 +78,8 @@ age. The Cooper figures are still not traced to the 1968 paper. Sources, mapping
 
 ## Platform and operations
 - **Gateway (WP36, ADR-0031).** The chart runs on Gateway API with Envoy Gateway; the e2e journey is green on kind.
-  Still open: local rate limits hold per Envoy replica with a burst equal to the rate (global rate limiting with Redis
-  when the proxy runs more than one replica); no body-size limit at the gateway (the services reject > 2 MB); a
+  Rate limits are global since WP40 (ADR-0033: Envoy Gateway's rate limit service + Redis, shared by every Envoy
+  replica, fail open). Still open: no body-size limit at the gateway (accepted: the services reject > 2 MB); a
   production certificate and cluster.
 - **External Secrets Operator manifests** and a rollout trigger for rotated secrets (ADR-0012); encryption at rest for Secrets.
 - **Backups.** Implement and rehearse CNPG backups (`runbooks/backup-restore.md` is a design).

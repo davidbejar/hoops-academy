@@ -198,8 +198,9 @@ Statement-by-statement evidence: [`conformance.md`](conformance.md).
 - Findings (status 2026-11-06): 18 fixed (F-01 in WP33, F-23 in WP32, F-03/F-09/F-10/F-19/F-20 in WP14b); partly fixed
   F-07 (offline DB scoping) and F-08 (refresh-token rotation); accepted F-11 and F-22 by design (ADR-0025) and F-14
   (token audience) for now.
-- Edge: nginx locally; Gateway API with Envoy Gateway in the chart (ADR-0031): per-IP local rate limits (per replica,
-  burst = rate), `/internal` and the Keycloak admin console routed to a 403, HSTS on the HTTPS listener; no body-size
-  limit at the gateway (the services reject bodies above 2 MB).
+- Edge: nginx locally; Gateway API with Envoy Gateway in the chart (ADR-0031): per-IP global rate limits shared by
+  every Envoy replica (Envoy Gateway's rate limit service with a Redis counter store, one-minute windows; fail open when
+  Redis is down, ADR-0033), `/internal` and the Keycloak admin console routed to a 403, HSTS on the HTTPS listener; no
+  body-size limit at the gateway (the services reject bodies above 2 MB, accepted in ADR-0033).
 Documents: [`security/review-2026-11.md`](security/review-2026-11.md) (23 findings: 0 critical, 0 high, 6 medium),
 [`security/threat-model.md`](security/threat-model.md), [`security/asvs-checklist.md`](security/asvs-checklist.md).

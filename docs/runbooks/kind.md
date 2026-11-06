@@ -10,8 +10,8 @@ CloudNativePG for PostgreSQL 17, Keycloak 26.8.1 in production mode, Envoy Gatew
 - `.env` at the repo root (`cp .env.example .env`, replace every `change-me-*`; `DEV_USER_PASSWORD` ≥ 12 chars).
   `up.sh`/Tilt fail if `.env` or a key is missing.
 - Capacity: the full stack requests ~1.5 CPU / ~2.5 GiB inside the kind node (Keycloak 512 Mi–1 Gi, three
-  services 192–448 Mi, two Postgres 192–512 Mi, Envoy Gateway controller 256 Mi + one Envoy proxy 64–256 Mi, CNPG
-  operator, control plane ~1 GiB).
+  services 192–448 Mi, two Postgres 192–512 Mi, Envoy Gateway controller 256 Mi + one Envoy proxy 64–256 Mi, its
+  rate limit service `envoy-ratelimit` 32–128 Mi + `ratelimit-redis` 16–64 Mi, CNPG operator, control plane ~1 GiB).
 
 ### Rootless vs rootful Podman
 kind's Podman provider works best on a **rootful** machine. Rootless needs cgroup v2 with the
@@ -26,7 +26,8 @@ podman machine start
 ## Start
 ```bash
 source scripts/env.sh
-just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.9.3 (Gateway API v1.6.1 CRDs) + CNPG 1.30.1
+just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.9.3 (Gateway API v1.6.1 CRDs) with its
+                      # rate limit service (Redis backend ratelimit-redis.hoops:6379) + CNPG 1.30.1
                       # + ns hoops + Secrets from .env + self-signed TLS Secret hoops-gateway-tls
 just tilt             # = tilt up: builds 4 images with Podman, kind-loads them, deploys the chart, port-forwards
 deploy/kind/seed-users.sh   # dev users <name>@hoops-academy.com (superadmin, admin1, coach1, assistant1, parent1, player1)
@@ -52,8 +53,11 @@ the container), `--skip-flutter` (reuse `apps/web/build/web`).
 
 How the gateway is wired: the chart renders GatewayClass `envoy-gateway` (kind only, `gateway.gatewayClass.create`),
 Gateway `hoops` (listeners `http` :80, `https` :443 with `hoops-gateway-tls`), one HTTPRoute per prefix, the exact
-health routes, the rate-limited routes with their `BackendTrafficPolicy` (60/min token + login form, 120/min
-`events:batch`, per client IP) and one `ClientTrafficPolicy` per listener. The `EnvoyProxy` `hoops` makes Envoy Gateway
+health routes, the rate-limited routes with their `BackendTrafficPolicy` (global limits, ADR-0033: 60/min token + login
+form, 120/min `events:batch`, per client IP, one counter shared by every Envoy replica) and one `ClientTrafficPolicy` per
+listener. The counters live in `ratelimit-redis` (namespace `hoops`, `rateLimit.redis.enabled` in `values-kind.yaml`),
+read and written only by Envoy Gateway's `envoy-gateway-system/envoy-ratelimit` pods, which `up.sh` enables with
+`config.envoyGateway.rateLimit` (Redis backend, `failClosed=false`, 100 ms timeout). The `EnvoyProxy` `hoops` makes Envoy Gateway
 create the proxy Service `envoy-gateway-system/hoops-gateway` as a NodePort (30080/30443), which `kind-config.yaml`
 maps to `127.0.0.1:8090/8453`. Status: `kubectl -n hoops get gateway,httproute` (`PROGRAMMED True`, routes `Accepted`);
 `kubectl -n hoops describe backendtrafficpolicy` shows whether a policy attached.
@@ -72,7 +76,10 @@ curl -s http://localhost:8090/auth/realms/academy/.well-known/openid-configurati
 curl -s http://localhost:8090/api/game/q/health/ready       # {"status":"UP",...}
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8090/internal/x   # 403
 deploy/kind/smoke.sh core game athlete      # all of the above and more (pods, gateway, tokens, seeded superadmin)
-deploy/kind/ratelimit-check.sh              # burst -> 429 per client IP (limits this client for up to a minute)
+deploy/kind/ratelimit-check.sh              # burst -> first 429 at rpm+1 per client IP, with any number of Envoy replicas
+                                            # (waits for a fresh one-minute window per burst, ~1-2 min; limits this client
+                                            # until that window ends)
+deploy/kind/ratelimit-check.sh redis-down   # stops ratelimit-redis: requests pass (fail open), then the limit is back
 ```
 Server-side validation of the chart against the installed CRDs:
 `helm template hoops deploy/helm/hoops -n hoops -f deploy/helm/hoops/values-kind.yaml | kubectl --context kind-hoops -n hoops apply --dry-run=server -f -`.
@@ -146,8 +153,16 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
   A cluster created before WP36 maps 8090 to node port 80 (ingress-nginx): `just kind-down && just kind-up`.
 - `up.sh: Gateway API CRDs are vX, Envoy Gateway ... needs vY`: CRDs of another version were installed before (e.g. by
   another tool). Apply the bundled CRDs as in ADR-0031 "Upgrade path", or recreate the cluster.
-- Every request answers 429: this client used its bucket (`deploy/kind/ratelimit-check.sh` does that on purpose); wait
-  one minute. The limit only covers the token endpoint, the login form and `events:batch`.
+- Every request answers 429: this client used its counter for this minute (`deploy/kind/ratelimit-check.sh` does that on
+  purpose); wait for the next full minute. The limit only covers the token endpoint, the login form and `events:batch`.
+- `envoy-ratelimit` restarts once right after `just kind-up` (`creating redis connection error`): Redis only exists after
+  the chart is deployed. It reconnects by itself; `kubectl -n envoy-gateway-system logs deploy/envoy-ratelimit` shows
+  `redis connection re-established`.
+- No 429 at all on the limited routes: the rate limit service or Redis is down and the gateway fails open (ADR-0033).
+  Check `kubectl -n envoy-gateway-system get pods -l app.kubernetes.io/name=envoy-ratelimit`,
+  `kubectl -n hoops get pods -l app.kubernetes.io/name=ratelimit-redis`, and that `envoy-gateway-config` has a
+  `rateLimit.backend` (a cluster created before WP40 has none: `just kind-up` again upgrades the Envoy Gateway release and restarts its
+  controller when the config changed).
 
 ## Verification status
 WP16: game + athlete + web deployed with `tilt ci`, `smoke.sh game athlete` passed. WP18: core, game and athlete
@@ -157,7 +172,13 @@ WP36 (2026-11-06, Envoy Gateway v1.9.3, Gateway API v1.6.1, kindest/node v1.36.4
 `Accepted`; `kubectl apply --dry-run=server` of the rendered chart clean; `smoke.sh core game athlete` passed (incl.
 encoded/dotted deny paths, `events:batch` and `%3A` forwarding, back-channel URLs on :8090); the e2e journey passed on
 kind (21 tests, 0 failures, 159 s); `ratelimit-check.sh` passed (429 after one bucket, `%3A` shares it, another client IP
-keeps its own); https on :8453 answers with the self-signed certificate, no HSTS. `tilt ci` was not re-run (the Tiltfile
+keeps its own); https on :8453 answers with the self-signed certificate, no HSTS.
+WP40 (2026-11-06, same versions, global limits): Gateway `Programmed`, both BackendTrafficPolicies `Accepted`;
+`smoke.sh core game athlete` passed; `ratelimit-check.sh` passed with 1 and with 2 Envoy replicas, identical numbers
+(events:batch 250 sent, 120 passed, first 429 at #121; token 130 sent, 60 passed, first 429 at #61; both replicas served
+the burst); `ratelimit-check.sh redis-down` passed (130 requests with Redis at 0 replicas: all passed, 15 s; first 429 at
+#121 again once Redis was back); the Redis NetworkPolicy refused a pod in `hoops` and an unlabelled pod in
+`envoy-gateway-system` and admitted a pod with the `envoy-ratelimit` label. `tilt ci` was not re-run (the Tiltfile
 evaluates; gateway objects are grouped under the `gateway`, `keycloak`, service and `web` resources).
 
 ## Stop

@@ -80,6 +80,30 @@ first (e.g. cert-manager) and set `gateway.tls.enabled=true`, `gateway.tls.certi
 `X-Forwarded-For` set `gateway.clientIPDetection.numTrustedHops`. The Gateway is ready when
 `kubectl -n hoops get gateway hoops` shows `PROGRAMMED True`; its address is the Envoy Service in `envoy-gateway-system`.
 Values renamed in chart 0.2.0: `ingress.*` -> `route.*`, `networkPolicy.ingressControllerNamespace` -> `gatewayNamespace`.
+
+Global rate limits (chart 0.3.0, ADR-0033): the rate-limit policies are global, so Envoy Gateway must run its rate
+limit service with a Redis backend. The cluster operator owns the Envoy Gateway install; these are the values kind pins
+in `deploy/kind/up.sh`:
+```bash
+helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v1.9.3 -n envoy-gateway-system --reuse-values \
+  --set config.envoyGateway.rateLimit.backend.type=Redis \
+  --set config.envoyGateway.rateLimit.backend.redis.url=<host:port> \
+  --set config.envoyGateway.rateLimit.failClosed=false \
+  --set config.envoyGateway.rateLimit.timeout=100ms
+# optional: resources of the envoy-ratelimit pods (kind: requests 10m / 32Mi, limit 128Mi)
+#   --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.cpu=...
+```
+Envoy Gateway then creates Deployment `envoy-gateway-system/envoy-ratelimit` (pods labelled
+`app.kubernetes.io/name: envoy-ratelimit`). Redis: either the chart's in-memory `ratelimit-redis`
+(`--set rateLimit.redis.enabled=true`, URL `ratelimit-redis.<namespace>.svc.cluster.local:6379`; its NetworkPolicy
+admits only those pods, so a different Envoy Gateway namespace or pod label needs `rateLimit.redis.clientNamespace` /
+`clientPodLabels`) or an external one (`rateLimit.redis.url=<host:port>`, informational: `helm install` prints the
+Envoy Gateway value to set). A password- or TLS-protected Redis is configured on the Envoy Gateway side
+(`redis.urlRef` to a Secret in `envoy-gateway-system`, `redis.tls.certificateRef`), not in this chart. Check: every policy
+reports `Accepted=True` in `kubectl -n hoops get backendtrafficpolicy -o jsonpath='{range .items[*]}{.metadata.name}
+{.status.ancestors[*].conditions[?(@.type=="Accepted")].status}{"\n"}{end}'` and
+`kubectl -n envoy-gateway-system rollout status deploy/envoy-ratelimit` succeeds.
+
 Order that matters: Secrets -> CNPG clusters -> Keycloak -> services (Flyway runs on start as `*_migrator`) -> web.
 Services restart a few times on first install until `hoops-db-rw` is ready; they converge by themselves (WP18).
 Database migrations are forward-only; roll back by deploying a compatible previous image or restoring (`backup-restore.md`).
