@@ -37,6 +37,12 @@ public final class TestRealm {
     public static final String USER_PASSWORD = "Pw-" + UUID.randomUUID();
     /** The realm's login theme (ADR-0022), copied into the container so the login pages are the real ones. */
     public static final String THEME = "infra/keycloak/themes/hoops";
+    /** The directory of the realm's password blocklist (ADR-0038), Keycloak's {@code data/password-blacklists}. */
+    public static final String PASSWORD_BLOCKLIST = "infra/keycloak/password-blocklist";
+    /** Keycloak's option for the blocklist's Bloom filter, set as in compose and the chart. */
+    public static final String BLOCKLIST_FALSE_POSITIVE_ENV =
+            "KC_SPI_PASSWORD_POLICY__PASSWORD_BLACKLIST__FALSE_POSITIVE_PROBABILITY";
+    public static final String BLOCKLIST_FALSE_POSITIVE_RATE = "1e-12";
 
     private static final ObjectMapper JSON = new ObjectMapper();
 

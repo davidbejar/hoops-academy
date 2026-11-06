@@ -3,10 +3,15 @@ package com.hoopsacademy.core.application.members;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.core.domain.identity.TemporaryPassword;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.RepeatedTest;
@@ -90,6 +95,26 @@ class TemporaryPasswordGeneratorTest {
         public int nextInt(int bound) {
             return indexes.removeFirst();
         }
+    }
+
+    @Test
+    void neverDrawsAPasswordOfTheRealmBlocklist() throws IOException {
+        // Keycloak lower-cases the candidate before the lookup (ADR-0038)
+        Set<String> blocked = new HashSet<>(Files.readAllLines(blocklist(), StandardCharsets.UTF_8));
+        assertThat(blocked).isNotEmpty();
+
+        assertThat(IntStream.range(0, 100_000).mapToObj(i -> generator.next().reveal().toLowerCase(Locale.ROOT))
+                .filter(blocked::contains)).isEmpty();
+    }
+
+    private static Path blocklist() {
+        String relative = "infra/keycloak/password-blocklist/hoops-password-blocklist.txt";
+        for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
+            if (Files.exists(dir.resolve(relative))) {
+                return dir.resolve(relative);
+            }
+        }
+        throw new AssertionError(relative + " not found");
     }
 
     @Test

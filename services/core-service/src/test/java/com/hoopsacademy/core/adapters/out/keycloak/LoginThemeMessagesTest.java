@@ -36,6 +36,17 @@ class LoginThemeMessagesTest {
         assertThat(locate(CHART.formatted(locale))).hasSameBinaryContentAs(theme);
     }
 
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "en | This password is too common and easy to guess. Choose another one.",
+            "es | Esta contraseña es demasiado común y fácil de adivinar. Elige otra.",
+            "id | Kata sandi ini terlalu umum dan mudah ditebak. Pilih kata sandi lain."})
+    void aPasswordOnTheBlocklistIsRefusedInTheAppLanguages(String locale, String message) throws IOException {
+        // the key of Keycloak's passwordBlacklist policy (ADR-0038); its default text calls the password "blacklisted"
+        assertThat(load(locate(THEME.formatted(locale))).getProperty("invalidPasswordBlacklistedMessage"))
+                .isEqualTo(message);
+    }
+
     private static Properties load(Path file) throws IOException {
         Properties properties = new Properties();
         try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {

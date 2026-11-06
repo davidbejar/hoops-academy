@@ -1,13 +1,11 @@
 package com.hoopsacademy.core.testsupport;
 
+import com.hoopsacademy.common.testing.RealmKeycloakResource;
 import com.hoopsacademy.common.testing.TestRealm;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.utility.MountableFile;
-import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,7 +14,8 @@ import java.util.Map;
  * {@code infra/keycloak/realm-academy.json} with a known client secret for every service client, plus the test-only
  * clients {@value #DIRECT_GRANT_CLIENT} (a copy of {@code web} with direct access grants, so tests can try a password
  * without a browser and get the web client's audiences) and {@link TestRealm#OTHER_AUDIENCE}. The login theme
- * {@code hoops} is copied into the container, so browser-flow tests see the branded pages.
+ * {@code hoops} and the password blocklist are copied into the container ({@link RealmKeycloakResource#container}), so
+ * browser-flow tests see the branded pages and the realm's whole password policy.
  * With the init arg {@code mail=true} a MailHog container joins Keycloak's network under the realm's SMTP host name
  * ({@code mailhog}) and its HTTP API is exposed as {@value #MAILHOG_URL}; without it, Keycloak cannot send e-mail.
  */
@@ -43,12 +42,7 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
 
     @Override
     public Map<String, String> start() {
-        TestRealm.write(TestRealm.patched(), Path.of("target/test-classes").resolve(IMPORT));
-        keycloak = new KeycloakContainer(TestRealm.KEYCLOAK_IMAGE).withRealmImportFile("/" + IMPORT)
-                .withCopyFileToContainer(MountableFile.forHostPath(TestRealm.locate(TestRealm.THEME)),
-                        "/opt/keycloak/themes/hoops")
-                // Podman under parallel builds can take longer than the 2-minute default to answer /health/ready
-                .withStartupTimeout(Duration.ofMinutes(5));
+        keycloak = RealmKeycloakResource.container(TestRealm.patched(), IMPORT);
         Map<String, String> config = new HashMap<>();
         if (withMail) {
             network = Network.newNetwork();
