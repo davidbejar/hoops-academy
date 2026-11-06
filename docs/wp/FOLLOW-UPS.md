@@ -153,7 +153,7 @@ per wave; the web is owned by one WP per wave; wave 4 and 5 are the v2 events wo
 | 5 | WP68 | Game: roster replica from core events behind `RosterPort` | Opus | Done (ADR-0037; game 411 tests, mutation 99.5 %; e2e 23/23 on replica) |
 | 5 | WP69 | Athlete: roster replica from core events behind `RosterPort` | Opus | Done (athlete 790 tests, mutation 100 %; e2e 23/23 on replica) |
 | 2 | WP70 | Web: public landing page (teaser, features, roadmap, invitation request placeholder) | Opus (copy by Fable) | After WP52 |
-| 6 | WP71 | Chart: services wired to the broker behind `events.enabled`, outbox and replicas proven on kind (orchestrator addition after the WP67/WP69 handovers: no WP owned the chart) | Opus | After WP68, WP69 |
+| 6 | WP71 | Chart: services wired to the broker behind `events.enabled`, outbox and replicas proven on kind (orchestrator addition after the WP67/WP69 handovers: no WP owned the chart) | Opus | Done (chart 0.7.0; kind smoke 46 checks, athlete replica flip proven) |
 
 ### Decisions of 2026-11-06, third interview (product owner)
 34. **Web edits → WP52**: match edit dialog, jersey removal, member personal data, academy contact.
