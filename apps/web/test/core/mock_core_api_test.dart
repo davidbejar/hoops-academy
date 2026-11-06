@@ -110,6 +110,33 @@ void main() {
     expect((await cats.list()).length, 4);
   });
 
+  test(
+    'member personal data: values replace, null optionals are cleared',
+    () async {
+      final members = ApiMembersRepository(client, t);
+      final pat = (await members.list(query: 'pat')).single;
+      final edited = await members.update(
+        pat.personId,
+        givenName: 'Pat',
+        familyName: 'Padre',
+        email: pat.email,
+        phone: '+34 600 000 000',
+        gender: api.Gender.FEMALE,
+      );
+      expect(edited.phone, '+34 600 000 000');
+      expect(edited.gender, api.Gender.FEMALE);
+      final cleared = await members.update(
+        pat.personId,
+        givenName: 'Pat',
+        familyName: 'Padre',
+        email: pat.email,
+      );
+      expect(cleared.phone, isNull);
+      expect(cleared.gender, isNull);
+      expect(cleared.email, pat.email);
+    },
+  );
+
   test('members, invitation and guardian links', () async {
     final members = ApiMembersRepository(client, t);
     expect(

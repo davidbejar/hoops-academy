@@ -350,6 +350,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memberEmail => 'Correo electrónico';
 
   @override
+  String get memberEdit => 'Editar datos personales';
+
+  @override
+  String get memberPhone => 'Teléfono';
+
+  @override
+  String get memberGenderNone => 'Sin indicar';
+
+  @override
   String get memberRoles => 'Roles';
 
   @override
@@ -2401,6 +2410,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get memberErrorLoginShared =>
       'Esta cuenta de acceso se usa también en otra academia: solo la administración de la plataforma puede generar su contraseña';
+
+  @override
+  String get memberErrorLoginRequiresEmail =>
+      'Un miembro con acceso debe conservar su correo electrónico';
+
+  @override
+  String get memberErrorEmailTaken =>
+      'Ese correo electrónico ya lo usa otra persona';
 
   @override
   String get playerEmailHint =>

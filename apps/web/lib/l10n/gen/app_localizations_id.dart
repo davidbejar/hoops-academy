@@ -347,6 +347,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get memberEmail => 'Email';
 
   @override
+  String get memberEdit => 'Ubah data pribadi';
+
+  @override
+  String get memberPhone => 'Telepon';
+
+  @override
+  String get memberGenderNone => 'Tidak diisi';
+
+  @override
   String get memberRoles => 'Peran';
 
   @override
@@ -2386,6 +2395,13 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get memberErrorLoginShared =>
       'Akun ini juga dipakai di akademi lain: hanya administrasi platform yang dapat membuat kata sandinya';
+
+  @override
+  String get memberErrorLoginRequiresEmail =>
+      'Anggota yang punya akun harus tetap memiliki email';
+
+  @override
+  String get memberErrorEmailTaken => 'Email itu sudah dipakai orang lain';
 
   @override
   String get playerEmailHint =>

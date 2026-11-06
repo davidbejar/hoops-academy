@@ -15,8 +15,9 @@ import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/admin_providers.dart';
+import 'member_edit_dialog.dart';
 
-final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+final memberEmailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
 /// Localised text for a failed member action, chosen by the server's error code (never its English detail).
 String memberErrorText(Object error, AppLocalizations l) {
@@ -24,6 +25,8 @@ String memberErrorText(Object error, AppLocalizations l) {
   return switch (e.code) {
     'INVITATION_NOT_PENDING' => l.memberErrorNotPending,
     'LOGIN_SHARED' => l.memberErrorLoginShared,
+    'LOGIN_REQUIRES_EMAIL' => l.memberErrorLoginRequiresEmail,
+    'EMAIL_TAKEN' => l.memberErrorEmailTaken,
     'IDENTITY_PROVIDER_UNAVAILABLE' => l.adminErrorIdentityProvider,
     _ => e.message(l),
   };
@@ -221,7 +224,7 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
           controller: _email,
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(labelText: l.memberEmail),
-          validator: (v) => _emailPattern.hasMatch((v ?? '').trim())
+          validator: (v) => memberEmailPattern.hasMatch((v ?? '').trim())
               ? null
               : l.fieldInvalidEmail,
         ),
@@ -374,6 +377,19 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
             ),
           ),
         ],
+        const SizedBox(height: AppTokens.spaceSm),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const Key('member-edit'),
+            icon: const Icon(Icons.edit_outlined),
+            label: Text(l.memberEdit),
+            onPressed: () => showDialog<bool>(
+              context: context,
+              builder: (_) => MemberEditDialog(member: m),
+            ),
+          ),
+        ),
         const SizedBox(height: AppTokens.spaceLg),
         Text(l.memberRoles, style: theme.textTheme.titleMedium),
         RolePicker(selected: _roles, onChanged: () => setState(() {})),

@@ -346,6 +346,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberEmail => 'Email';
 
   @override
+  String get memberEdit => 'Edit personal data';
+
+  @override
+  String get memberPhone => 'Phone';
+
+  @override
+  String get memberGenderNone => 'Not given';
+
+  @override
   String get memberRoles => 'Roles';
 
   @override
@@ -2387,6 +2396,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get memberErrorLoginShared =>
       'This login is also used in another academy: only the platform administration can generate its password';
+
+  @override
+  String get memberErrorLoginRequiresEmail =>
+      'A member with a login must keep an email address';
+
+  @override
+  String get memberErrorEmailTaken =>
+      'Another person already uses that email address';
 
   @override
   String get playerEmailHint =>

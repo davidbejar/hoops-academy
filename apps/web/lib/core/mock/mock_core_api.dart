@@ -865,6 +865,20 @@ class MockCoreApi {
     if (m == null)
       return const MockResult.json(404, {'title': 'Not found', 'status': 404});
     if (sub == null && method == 'GET') return MockResult.json(200, m);
+    if (sub == null && method == 'PATCH') {
+      // A member with a login (userId) cannot lose the e-mail (ADR-0023).
+      if (m['userId'] != null && mockClear(b).contains('email')) {
+        return mockProblem(422, 'Unprocessable', code: 'LOGIN_REQUIRES_EMAIL');
+      }
+      final error = mockApplyUpdate(
+        m,
+        b,
+        clearable: const {'email', 'phone', 'birthDate', 'gender'},
+      );
+      if (error != null) return error;
+      m['displayName'] = '${m['givenName']} ${m['familyName']}';
+      return MockResult.json(200, m);
+    }
     if (sub == 'roles' && method == 'PUT') {
       m['roles'] = b['roles'];
       return MockResult.json(200, m);

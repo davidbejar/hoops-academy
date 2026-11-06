@@ -736,6 +736,24 @@ abstract class AppLocalizations {
   /// **'Correo electrónico'**
   String get memberEmail;
 
+  /// No description provided for @memberEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar datos personales'**
+  String get memberEdit;
+
+  /// No description provided for @memberPhone.
+  ///
+  /// In es, this message translates to:
+  /// **'Teléfono'**
+  String get memberPhone;
+
+  /// No description provided for @memberGenderNone.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin indicar'**
+  String get memberGenderNone;
+
   /// No description provided for @memberRoles.
   ///
   /// In es, this message translates to:
@@ -4455,6 +4473,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Esta cuenta de acceso se usa también en otra academia: solo la administración de la plataforma puede generar su contraseña'**
   String get memberErrorLoginShared;
+
+  /// No description provided for @memberErrorLoginRequiresEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Un miembro con acceso debe conservar su correo electrónico'**
+  String get memberErrorLoginRequiresEmail;
+
+  /// No description provided for @memberErrorEmailTaken.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese correo electrónico ya lo usa otra persona'**
+  String get memberErrorEmailTaken;
 
   /// No description provided for @playerEmailHint.
   ///
