@@ -18,13 +18,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v4
       - name: Podman compose
         # `podman compose` delegates to the runner's docker-compose plugin, which talks to $DOCKER_HOST: start the
         # rootless Podman API socket and export it (the runner's Docker daemon is not used).
@@ -67,7 +67,7 @@ jobs:
         run: |
           e2e/bin/services-down.sh || true
           just down || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: e2e-reports
