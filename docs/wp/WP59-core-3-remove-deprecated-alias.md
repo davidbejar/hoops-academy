@@ -41,3 +41,28 @@ Decision 41 of 2026-11-06: the alias goes; a removal is a major bump (core 3.0.0
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built: `libs/contracts/openapi/core.yaml` 3.0.0 without the path `…/admins/{personId}/resend-invitation` /
+  operation `resendTenantAdminInvitation` (removal noted in `info.description`); every other operation unchanged.
+  `PlatformAdminResource` lost the alias method (the shared helper is inlined into `issueTemporaryPassword`).
+  Tests: `TemporaryPasswordContractTest.theDeprecatedResendAliasIsRemovedInCore300` (version ≥ 3.0.0, no path, no
+  operation; the alias row left the read-only/no-store table) and
+  `PlatformAdminResourceTest.theRemovedResendInvitationAliasIsNotFoundAndChangesNothing` (404, no Keycloak call, no
+  audit row) replace the alias tests; the `issueTenantAdminTemporaryPassword` tests are untouched. `just gen-api`:
+  only `apps/web/packages/core` (3.0.0) and `apps/web/pubspec.lock` committed (athlete/game output reverted). Web: no
+  caller of the alias; the platform admin screen (`features/platform/data/platform_repository.dart`) already calls
+  `issueTenantAdminTemporaryPassword`; nothing in `features/admin` used it. Commits: red test, `feat(contracts)!`,
+  docs.
+- Verified: `./mvnw -B -ntp -pl libs/contracts verify` 156/0/0. `./mvnw -B -ntp -T 1C verify
+  -Dquarkus.http.test-port=0`: common 186, contracts 156, core 823, game 324, e2e 27 (23 skipped), all 0 failures,
+  coverage met; athlete hit a Testcontainers "Could not create/start container" boot error under parallel load
+  (`AthleteDatabaseRoleTest`, no code of mine), re-run alone `-pl services/athlete-service verify` 653/0/0, coverage
+  met. `flutter analyze` no issues; `just web-format-check` 0 changed; `just web-test` 708 passed.
+- Decisions/ADRs: ADR-0035 (why now, migration note in the ADR-0016 form, alternatives), indexed at the end of
+  `docs/adr/README.md`; ADR-0024's status line says "amended by ADR-0035".
+- Open points / follow-ups:
+  - The web demo mock still serves the old path: `apps/web/lib/core/mock/mock_platform_api.dart:495`
+    (`rest[1] == 'resend-invitation'`), WP53's file; drop that alternative (unreachable from the generated client).
+  - Docs pass: `docs/runbooks/release.md` contract-version row (core 3.0.0); `docs/runbooks/onboard-tenant.md` lines
+    71 and 83 still describe the alias as deprecated; `docs/wp/FOLLOW-UPS.md` item "Remove
+    `resendTenantAdminInvitation`" can be closed.
+

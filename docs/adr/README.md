@@ -39,3 +39,4 @@ says so in its header ("Supersedes", "Records"), and the earlier one carries an 
 | [0032](0032-update-requests-clear-list.md) | Update requests name the fields to clear in a `clear` list (absent or null = unchanged; adopted by athlete 2.1.0, core 2.7.0, game 2.2.0) |
 | [0033](0033-gateway-global-rate-limit.md) | Global rate limits at the gateway: Envoy rate limit service + Redis, shared by every Envoy replica, fail open (amended 2026-11-06: Redis ACL, per-second burst caps; chart 0.4.0) |
 | [0034](0034-token-audience-per-service-and-refresh-token-rotation.md) | A token audience per service (least-privilege audience mappers, `quarkus.oidc.token.audience`) and refresh-token rotation with reuse detection; web tabs refresh one at a time (F-08, F-14) |
+| [0035](0035-core-3-removes-the-resend-invitation-alias.md) | Core 3.0.0 removes the deprecated `resendTenantAdminInvitation` alias (major bump, migration note) |

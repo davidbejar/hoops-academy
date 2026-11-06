@@ -1,6 +1,6 @@
 # ADR-0024: Temporary password at first sign-in replaces the setup and verification e-mails
 
-- Status: Accepted
+- Status: Accepted; amended by ADR-0035 — the §7 alias `resendTenantAdminInvitation` is removed in core 3.0.0
 - Date: 2026-11-02
 - Supersedes: the e-mail parts of ADR-0013 §(setup e-mail as the last saga step), ADR-0017 (player logins: setup e-mail
   last), ADR-0020 §5 (setup e-mail last) and ADR-0023 §1 (`resend-invitation`, set-password e-mail) / §2
