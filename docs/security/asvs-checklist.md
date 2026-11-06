@@ -96,6 +96,7 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
 | V13 (secrets) | No secrets in code/config; secret management | Met | ADR-0012, gitleaks pre-commit + CI (`ci.yml` `secrets-scan`), no defaults in game/athlete (`NoBuiltInCredentialsTest`), `helm template \| gitleaks` in `deploy/helm/tests/run.sh` |
+| V15 (CI supply chain) | Third-party build components pinned | Met | Every GitHub Action in `.github/workflows` is pinned to a full commit SHA with the release tag as a comment (decision 31, WP50); Dependabot updates SHA and comment together |
 | V13 (debug/admin surfaces) | No debug or admin endpoints exposed | Met | `/q/**` not routed (smoke check), `/auth/admin` 403 at nginx / the Gateway unless explicitly enabled, `/internal` 403, Keycloak `start` (not `start-dev`) in kind |
 | V13 (dependencies) | Components free of known vulnerabilities | Partial | CI: OWASP dependency-check `-Psecurity-scan` (CVSS ≥ 7 fails, suppression file), `trivy fs`, Trivy image scan (HIGH/CRITICAL, ignore-unfixed). The local NVD run was not completed (see WP17 handover) |
 

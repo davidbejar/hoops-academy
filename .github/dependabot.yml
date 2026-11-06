@@ -37,6 +37,7 @@ updates:
       pub-minor-patch:
         update-types: ["minor", "patch"]
 
+  # Actions are pinned to full commit SHAs with the version as a comment (WP50); Dependabot updates both together.
   - package-ecosystem: github-actions
     directory: /
     schedule:

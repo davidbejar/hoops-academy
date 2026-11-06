@@ -32,3 +32,22 @@ current (it updates the SHA and the comment together).
   line `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built: every `uses:` in `ci.yml`, `e2e.yml`, `images.yml`, `mutation.yml` (31 refs) is now `@<40-hex> # <tag>`; container image refs untouched. Docs: V15 row in `docs/security/asvs-checklist.md`, status line in `docs/security/review-2026-11.md`, one line in `docs/runbooks/release.md`, comment in `.github/dependabot.yml`.
+- Resolved with `gh api repos/<r>/git/ref/tags/<tag>` (all lightweight/commit objects; annotated tags would be dereferenced via `git/tags/<sha>`). Tag = latest non-prerelease within the major previously used.
+
+| Action | Tag | Commit SHA |
+|---|---|---|
+| actions/checkout | v7.0.1 | 3d3c42e5aac5ba805825da76410c181273ba90b1 |
+| actions/setup-java | v6.2.0 | 77dd5b2ce225ea11469928ac317850245a74ae78 |
+| actions/upload-artifact | v7.0.2 | cf430e030ddbb5b0abf93d22962f4752f3646cd9 |
+| actions/cache (restore, save) | v6.1.0 | 55cc8345863c7cc4c66a329aec7e433d2d1c52a9 |
+| azure/setup-helm | v5.0.1 | 9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 |
+| extractions/setup-just | v4.0.0 | 53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 |
+| gitleaks/gitleaks-action | v3.0.0 | e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e |
+| subosito/flutter-action | v2.23.0 | 1a449444c387b1966244ae4d4f8c696479add0b2 |
+
+- Verified: `actionlint .github/workflows/*.yml` clean; a grep finds no `uses:` without a 40-hex SHA and `# v` comment. `zizmor` is not installed (not run). Cache keys (`nvd-<os>-<run_id>`) do not depend on the action major.
+- Decisions/ADRs: decision 31, no new ADR.
+- Open points: the workflows only run after the orchestrator's push; setup-just has no GitHub releases, its tag v4.0.0 was used (the floating v4 pointed to the same commit).
