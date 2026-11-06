@@ -40,3 +40,25 @@ Decision 26 of 2026-11-06: every service follows ADR-0032 (null = unchanged, `cl
   that module alone with `-Dquarkus.http.test-port=0`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- Built:
+  - Contract game **2.2.0**: `clear` (enum `[venue]`) on `UpdateMatchRequest`. `venue` is the only optional nullable-in-storage
+    property of the only update request in game.yaml (opponentName, homeAway, scheduledAt, periodCount, periodMinutes are
+    not null in storage). `UpdateRequestClearListContractTest`: `game` appended last to `ADOPTED` (now one entry per
+    line, so WP44 adds `core` above it) plus one game test at the end of the file. Dart package `apps/web/packages/game`
+    regenerated; generator whitespace-only noise reverted, core/athlete regenerations not committed.
+  - game-service: `UpdateMatchRequest.clearedProperties()` validates `clear` (non-list, unknown/non-clearable, duplicate:
+    400 `INVALID_VALUE` on `clear`; value plus `clear`: 400 `CLEAR_CONFLICT`); `venue: null` is now unchanged. New
+    `InvalidRequestException` + `GameExceptionMappers` (problem+json with a violation code). `[]` alone is an empty patch (400).
+  - Web: there was no match edit dialog in the app (only create), so none was changed. `MatchesRepository.update` (full-form,
+    sends `clear` for an emptied venue via `clearList`) is the ready hook; the demo mock (`mock_game_api.dart`) now answers
+    `PATCH` with the ADR-0032 semantics. No screen changed, no goldens changed.
+  - ADR-0032 "Adoption" line for game.
+- Verified: `./mvnw -pl libs/contracts verify` green; `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` fresh,
+  BUILD SUCCESS (game-service 259 tests, 0 failures; module totals 154, 186, 259 (game-service), 653, 773, e2e 25
+  with 21 skipped by design); `flutter analyze` no issues; `flutter test` 653 passed; `just mutation game-service`
+  399/401 killed (99.5 %), equal to the baseline.
+- Decisions/ADRs: ADR-0032 adoption line only.
+- Open points: a UI to edit a match (opponent, date, venue) does not exist yet; wire it to `MatchesRepository.update`
+  (the request already clears the venue). Seeded `pubspec.lock` drift from flutter was reverted, not committed.
