@@ -192,6 +192,74 @@ handovers).
     (temporary password, fields prefilled from the request). Open question: what happens when the request comes
     from a parent or a coach rather than an admin (who becomes the academy's ADMIN?). See the Open item.
 
+## Plan (2026-11-06, fifth round)
+Decided in the fourth interview of 2026-11-06 (decisions 52–63 below). Same mechanics (`wp-round` skill). The web is
+redesigned this round: one design-system WP first, then one WP per feature area; one kind user per wave; whole-tree
+passes (mutation, security fixes) run last and alone. Caffeinate pid noted by the orchestrator.
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP72 | Web: design system (tokens, theme, shared widgets, shell) to the landing-page look | Opus | Running |
+| 1 | WP78 | Athlete: session references any plan directly; exercise search inside templates and quick-add | Opus | Running |
+| 1 | WP81 | Core: producer recovery, `.removed` events on deletion, backfill and shadow period | Opus | Running |
+| 1 | WP83 | CI: SAST (CodeQL, Semgrep, find-sec-bugs) and DAST (ZAP API scan, full scan on kind) gates, findings triaged | Opus | Running |
+| 1 | WP87 | Chart: Reloader on Secret rotation, remaining kind proofs, rate-limit load guard, Testcontainers flake | Opus | Running |
+| 2 | WP73 | Web redesign: training, plans, sessions, health and fitness screens | Opus | After wave 1 |
+| 2 | WP74 | Web redesign: live match, match list and match statistics screens | Opus | After wave 1 |
+| 2 | WP75 | Web redesign: admin, platform, auth, profile and shell screens | Sonnet | After wave 1 |
+| 2 | WP80 | Season history: read-only access to past seasons for former staff and admins (core, game, athlete, web) | Opus | After wave 1 |
+| 2 | WP86 | Chart: OpenTelemetry collector, services' logs and traces exported, proven on kind | Opus | After wave 1 |
+| 2 | WP89 | CI: scheduled bump of image digests, chart image tags and kind pins | Sonnet | After wave 1 |
+| 3 | WP76 | Web: gaps bundle (account console link, template refetch on language, match edit from the list, profile edits, guardian password, sit-and-reach hint) | Sonnet | After wave 2 |
+| 3 | WP82 | Game + athlete: replica housekeeping (applied/parked retention), `.removed` for every aggregate | Opus | After wave 2 |
+| 3 | WP85 | Security logging: Keycloak login events, authz-failure events in the services, SBOM in CI | Opus | After wave 2 |
+| 3 | WP90 | Invitation-only sign-up: request API, super admin workbench, landing form wired, rejection mail | Opus | After wave 2 |
+| 4 | WP77 | Landing: language switch in the header, screenshots per locale re-captured from the redesigned app | Sonnet | After wave 3 |
+| 4 | WP88 | Mutation round: wider PIT scope, baselines raised, Dart mutation tool for the web rule code | Opus | After wave 3 (alone on the backend) |
+| 5 | WP84 | Security fixes: every SAST/DAST finding of WP83 fixed or accepted, review file updated | Opus | Last alone |
+
+### Decisions of 2026-11-06, fourth interview (product owner)
+52. **UI redesign → WP72, WP73, WP74, WP75 (WP77 at the end)**: the whole app takes the landing page's look this
+    round: a design system first (tokens, theme, shared widgets, shell; ADR-0040), then every feature area; goldens
+    re-recorded per feature; the landing screenshots re-captured only at the end.
+53. **Session plans → WP78**: a session item references any plan directly (tenant plan or global template) by id; no
+    assignment needed; assignment stays as an optional shortcut (pre-fills suggestions); templates stay read-only
+    (copy to edit, as today). Athlete 2.3.0.
+54. **Exercises → WP78 now, catalogue next round**: this round the plan/session search finds an exercise inside a
+    template (typing "cooper" finds it) and one or several template items can be quick-added to a session or plan
+    without going through the template. Next round: an exercise catalogue as its own entity (global localised ones
+    plus tenant-defined), templates referencing it (athlete 3.0.0). Templates stay as curated collections.
+55. **SAST and DAST → WP83 (tools), WP84 (fixes)**: all of them: CodeQL (Java, security-extended), Semgrep (Java and
+    Dart rulesets, container), SpotBugs/find-sec-bugs in `verify`, a ZAP API scan per service driven by the OpenAPI
+    contracts with a logged-in token in CI, a ZAP full scan against nginx/Keycloak on kind by hand; findings fixed in
+    a second, last WP and recorded in the review file.
+56. **Mutation round → WP88**: extract pure rules so PIT covers use cases and container-only code; baselines raised
+    to the current scores (core 99.6, game 99.5, athlete 100); a Dart mutation tool (no Node) for the web rule code
+    with its own baseline; survivors killed.
+57. **Landing language and screenshots → WP77**: language switch moves to the header; screenshots stay PNGs,
+    captured per locale (es/en/id) from the redesigned app at the end of the round. The existing PNGs are the
+    reference for the design system and are not modified before WP72 is complete. (Live mock screens were judged
+    too slow for the landing page.)
+58. **Sign-up → WP90**: anyone with an admin, coach or parent role may request a new academy; on acceptance the
+    requester becomes the academy's first ADMIN; rejection sends an e-mail with the reason; players never request.
+    ADR-0044.
+59. **Events hardening → WP81, WP82**: the core producer recovers by itself after a failed first SASL login (no
+    rollout restart on a fresh install); deletions publish `.removed` events for every aggregate; a core backfill
+    appends one `.changed` per aggregate older than WP67 and a documented shadow period measures parked and lag; the
+    default stays `rest` (the flip is a later decision). Replica `applied_event` and `parked_event` get retention jobs.
+60. **ASVS gaps → WP85, WP86**: Keycloak realm login events with retention and structured authorization-failure
+    events in the services (16.3.1, 16.3.2; ADR-0043); CycloneDX SBOM for the images in CI; an OpenTelemetry collector
+    in the chart with logs and traces exported (16.4.3; ADR-0046). Breached-password check not now.
+61. **Web gaps → WP76**: one Sonnet WP after the redesign: account-console link, templates refetch on language
+    change, match edit from the list tile, self-service name and locale edits, guardian temporary password from the
+    member page, sit-and-reach unit hint.
+62. **Season history → WP80**: past seasons' teams, matches, attendance and health records are readable (never
+    editable) by the coaches who were staff then and by admins; a "past seasons" selector in the web lists. ADR-0042.
+63. **Infra → WP87, WP89**: Stakater Reloader (pinned) restarts the pods that read a rotated Secret (closes the
+    three rotation open points; ADR-0012 amendment); the kind proofs not yet run (events off, game flip, `tilt ci`,
+    `--eso` with events, `up.sh --eso --deploy`); a load guard in `ratelimit-check.sh`; the Testcontainers flake;
+    a scheduled bump of image digests, chart image tags and kind pins. Optimised Keycloak image not now.
+
 ## Open
 
 ### Product / contract decisions
