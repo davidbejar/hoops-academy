@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.in.shared;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.hoopsacademy.core.application.audit.AuditEntry;
 import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditFilter;
@@ -17,8 +18,9 @@ public final class AuditDtos {
 
     private AuditDtos() {}
 
-    /** Contract {@code AuditActor}. */
-    public record ActorDto(String kind, String subject, UUID personId, String displayName) {}
+    /** Contract {@code AuditActor}; {@code subject} is required and written as null when masked (core 2.6.0). */
+    public record ActorDto(String kind, @JsonInclude(JsonInclude.Include.ALWAYS) String subject, UUID personId,
+            String displayName) {}
 
     /** Contract {@code AuditTarget}. */
     public record TargetDto(String type, String id, String displayName) {}
@@ -29,9 +31,10 @@ public final class AuditDtos {
 
         public static EventFields of(AuditEntry entry) {
             AuditRecord record = entry.record();
+            AuditEntry.Actor actor = entry.actor();
             return new EventFields(record.id(), record.at(), record.action().wireName(),
-                    new ActorDto(entry.actorKind().name(), record.actorSubject(), record.actorPerson().orElse(null),
-                            entry.actorName().orElse(null)),
+                    new ActorDto(actor.kind().name(), actor.subject().orElse(null), actor.person().orElse(null),
+                            actor.name().orElse(null)),
                     new TargetDto(record.targetType().wireName(), record.targetId(), entry.targetName().orElse(null)),
                     record.metadata());
         }

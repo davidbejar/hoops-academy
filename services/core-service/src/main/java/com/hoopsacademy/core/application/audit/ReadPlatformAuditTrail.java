@@ -76,7 +76,7 @@ public class ReadPlatformAuditTrail {
                     .map(id -> row.tenantName());
             default -> Optional.empty();
         };
-        return new PlatformAuditEntry(new AuditEntry(record, AuditActorKind.of(record.actorSubject(),
-                record.actorPerson()), record.actorPerson().map(admins::get), target), row.tenantName());
+        return new PlatformAuditEntry(new AuditEntry(record,
+                AuditEntry.Actor.of(record, record.actorPerson().map(admins::get)), target), row.tenantName());
     }
 }

@@ -19,7 +19,9 @@ import java.util.stream.Stream;
 /**
  * GET /api/core/audit-events (ADMIN): one page of the bound academy's trail, newest first, with the names of the
  * persons, players and the academy it mentions resolved under the same RLS scope (WP34). Names are read now, never
- * stored: a renamed person shows the new name, a row that no longer exists shows none.
+ * stored: a renamed person shows the new name, a row that no longer exists shows none. The super admin is masked
+ * (decision 16 of 2026-11-06, WP38): a PLATFORM actor carries no subject, person or name here, while the metadata
+ * (such as the {@code reason} of {@code tenant.suspended}) is returned unchanged.
  */
 @ApplicationScoped
 public class ReadAuditTrail {
@@ -40,8 +42,8 @@ public class ReadAuditTrail {
         Map<UUID, String> tenants = resolve(names::tenants, rows, AuditTargetType.TENANT, false);
         Map<AuditTargetType, Map<UUID, String>> targets = Map.of(AuditTargetType.PERSON, persons,
                 AuditTargetType.PLAYER, players, AuditTargetType.TENANT, tenants);
-        return rows.map(row -> new AuditEntry(row, AuditActorKind.of(row.actorSubject(), row.actorPerson()),
-                row.actorPerson().map(persons::get),
+        return rows.map(row -> new AuditEntry(row,
+                AuditEntry.Actor.of(row, row.actorPerson().map(persons::get)).maskedForAcademy(),
                 row.targetUuid().map(id -> targets.getOrDefault(row.targetType(), Map.of()).get(id))));
     }
 
