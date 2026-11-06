@@ -207,6 +207,76 @@ echo "$init" | grep -A3 'name: ACL_PASSWORD$' | grep -q 'secretKeyRef: {name: ho
 echo "$d" | grep -q 'name: acl, emptyDir: {medium: Memory, sizeLimit: 1Mi}' && echo "$d" | grep -q 'name: acl, mountPath: /acl, readOnly: true' \
   && ok "ACL file in memory, read-only for redis-server" || bad "ACL volume"
 
+echo "== event broker (WP66, ADR-0036)"
+# One Redpanda pin for compose, the chart and the Quarkus Dev Services; one topic list and topic config for compose and chart.
+V=deploy/helm/hoops/values.yaml
+chart_img=$(awk '/^events:/ {e=1} e && /^      repository: / {r=$2} e && /^      tag: / {t=$2} e && /^      digest: / {print r ":" t "@" $2; exit}' "$V")
+compose_img=$(sed -n 's/^    image: \(docker.io\/redpandadata\/redpanda:.*\)$/\1/p' infra/compose/compose.yaml)
+devsvc_img=$(sed -n 's/^# *quarkus.kafka.devservices.image-name=\(.*\)$/\1/p' libs/common-quarkus/src/main/resources/META-INF/microprofile-config.properties)
+[ -n "$chart_img" ] && [ "$chart_img" = "$compose_img" ] && [ "${chart_img%@*}" = "$devsvc_img" ] \
+  && ok "Redpanda pin ${chart_img%@*} (digest pinned) in chart, compose and Dev Services" \
+  || bad "Redpanda pins differ: chart '$chart_img', compose '$compose_img', Dev Services '$devsvc_img'"
+compose_topics=$(sed -n 's/^TOPICS=(\(.*\))$/\1/p' infra/compose/redpanda-topics.sh | tr ' ' '\n')
+chart_topics=$(sed -n 's/^    names: \[\(.*\)\]$/\1/p' "$V" | tr -d ' ' | tr ',' '\n')
+compose_cfg=$(sed -n 's/^CONFIG=(\(.*\))$/\1/p' infra/compose/redpanda-topics.sh | tr ' ' '\n' | sort)
+chart_cfg=$(doc redpanda-bootstrap ConfigMap | awk '/^  topic-config: \|$/ {c=1; next} c && /^    / {print $1; next} c {exit}' | sort)
+[ "$(echo "$compose_topics" | wc -l | tr -d ' ')" = 7 ] && [ "$compose_topics" = "$chart_topics" ] \
+  && [ "$(doc redpanda-bootstrap ConfigMap | awk '/^  topics: \|$/ {c=1; next} c && /^    / {print $1; next} c {exit}')" = "$chart_topics" ] \
+  && ok "seven topics, same list in compose and chart: $(echo "$chart_topics" | tr '\n' ' ')" || bad "topic lists differ (compose vs chart)"
+[ -n "$compose_cfg" ] && [ "$compose_cfg" = "$chart_cfg" ] && echo "$chart_cfg" | grep -qx 'cleanup.policy=compact' \
+  && [ "$(sed -n 's/^PARTITIONS=//p' infra/compose/redpanda-topics.sh)" = 1 ] && doc redpanda-bootstrap Job | grep -q '{name: PARTITIONS, value: "1"}' \
+  && ok "topic config identical in compose and chart (compacted, 1 partition): $(echo "$chart_cfg" | tr '\n' ' ')" || bad "topic config differs"
+s=$(doc redpanda StatefulSet)
+echo "$s" | grep -q "image: \"$chart_img\"" && echo "$s" | grep -q 'runAsNonRoot: true' && echo "$s" | grep -q 'readOnlyRootFilesystem: true' \
+  && echo "$s" | grep -q 'allowPrivilegeEscalation: false' && echo "$s" | grep -A2 'capabilities:' | grep -q -- '- ALL' \
+  && echo "$s" | grep -q 'automountServiceAccountToken: false' && echo "$s" | grep -A1 'limits:' | grep -q 'memory:' \
+  && echo "$s" | grep -q 'volumeClaimTemplates:' && echo "$s" | grep -q 'name: config, mountPath: /etc/redpanda, readOnly: true' \
+  && ok "kind: redpanda StatefulSet pinned by digest, non-root, read-only root FS (config read-only), memory limit, volume" \
+  || bad "redpanda StatefulSet"
+c=$(doc redpanda-config ConfigMap)
+echo "$c" | grep -q '{name: internal, address: 0.0.0.0, port: 9092, authentication_method: sasl}' \
+  && [ "$(echo "$c" | grep -c 'port: 9092')" = 2 ] && ! echo "$c" | grep -q 'pandaproxy\|schema_registry' \
+  && ok "one Kafka listener, SASL; no HTTP proxy or schema registry" || bad "redpanda listeners"
+for kv in 'superusers: \[admin\]' 'kafka_enable_authorization: true' 'admin_api_require_auth: true' \
+    'auto_create_topics_enabled: false' 'enable_metrics_reporter: false'; do
+  echo "$c" | grep -q "^    $kv$" || { bad "bootstrap property $kv"; continue; }
+  ok "bootstrap property ${kv//\\/}"
+done
+echo "$s" | grep -A2 'name: RP_ADMIN_PASSWORD$' | grep -q 'secretKeyRef: {name: hoops-redpanda-admin, key: password}' \
+  && echo "$s" | grep -q 'value: "admin:$(RP_ADMIN_PASSWORD):SCRAM-SHA-256"' \
+  && ok "superuser admin created at bootstrap from Secret hoops-redpanda-admin (no value in the spec)" || bad "superuser bootstrap"
+n=$(doc redpanda NetworkPolicy)
+admitted=$(echo "$n" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
+[ "$admitted" = "athlete-service core-service game-service redpanda-bootstrap " ] \
+  && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' && [ "$(echo "$n" | grep -c -- '- from:')" = 2 ] \
+  && echo "$n" | awk '/- from:/ {f++} f==1 && /port: kafka/ {k=1} f==1 && /port: admin/ {a=1} END {exit !(k && !a)}' \
+  && echo "$n" | awk '/- from:/ {f++} f==2 && /redpanda-bootstrap/ {b=1} f==2 && /port: admin/ {a=1} f==2 && /port: kafka/ {k=1} END {exit !(b && a && !k)}' \
+  && ! echo "$n" | grep -q 'namespaceSelector: {}' && echo "$n" | grep -q 'k8s-app: kube-dns' && [ "$(echo "$n" | grep -c -- '- to:')" = 1 ] \
+  && ok "redpanda NetworkPolicy: Kafka from the three services + bootstrap Job, admin API from the Job only, egress DNS only" \
+  || bad "redpanda NetworkPolicy (admitted: $admitted)"
+for u in core-service game-service athlete-service; do
+  doc "$u" Deployment | grep -q "app.kubernetes.io/name: $u" || bad "events user $u has no Deployment with that name label"
+done
+j=$(doc redpanda-bootstrap Job)
+echo "$j" | grep -q 'helm.sh/hook: post-install,post-upgrade' && echo "$j" | grep -q 'helm.sh/hook-delete-policy: before-hook-creation' \
+  && echo "$j" | grep -q 'readOnlyRootFilesystem: true' && echo "$j" | grep -q 'automountServiceAccountToken: false' \
+  && all_of() { local x; for x in admin core-service game-service athlete-service; do "$@" "$x" || return 1; done; } \
+  && job_reads() { echo "$j" | grep -q "secretKeyRef: {name: hoops-redpanda-$1, key: password}"; } && all_of job_reads \
+  && ok "bootstrap Job: post-install/upgrade hook, passwords from the four Secrets, read-only root FS" || bad "bootstrap Job"
+script=deploy/helm/hoops/files/redpanda-bootstrap.sh
+! grep -v '^ *#' "$script" | grep -q -- '--password\|--new-password\|-X pass\|-u "\|--user ' && grep -q 'kafka_enable_authorization\|cluster-config' "$script" \
+  && ok "bootstrap script puts no password on a command line (RPK_PASS env, curl netrc fd + stdin)" || bad "bootstrap script command lines"
+users=$(doc redpanda-bootstrap ConfigMap | awk '/^  users: \|$/ {c=1; next} c && /^    / {sub(/^    /, ""); print; next} c {exit}')
+[ "$users" = "$(printf '0 core-service core. - -\n1 game-service - core. game-service.\n2 athlete-service - core. athlete-service.')" ] \
+  && ok "ACLs: core-service writes core.*, game/athlete-service read core.* with groups <service>.*" || bad "events users/ACLs: $users"
+! grep -q 'redpanda' "$WORK/umbrella-default.yaml" && ok "default: no event broker (events.enabled off)" || bad "redpanda rendered by default"
+e=$(awk 'BEGIN{RS="\n---\n"} /\nkind: ExternalSecret\n/ && /name: hoops-redpanda-/' "$WORK/umbrella-eso.yaml")
+[ "$(echo "$e" | grep -c '^kind: ExternalSecret')" = 4 ] && [ "$(echo "$e" | grep -c 'type: kubernetes.io/basic-auth')" = 4 ] \
+  && es_login() { local d; d=$(doc "hoops-redpanda-$1" ExternalSecret "$WORK/umbrella-eso.yaml")
+       echo "$d" | grep -qx "        username: $1" && echo "$d" | grep -q "property: REDPANDA_$(echo "${1%-service}" | tr '[:lower:]' '[:upper:]')$([ "$1" = admin ] || echo _SERVICE)_PASSWORD}"; } \
+  && all_of es_login \
+  && ok "ESO: four broker logins (basic-auth, username = user, REDPANDA_*_PASSWORD)" || bad "ESO broker logins"
+
 echo "== external secrets (WP65, ADR-0012 amendment; umbrella-eso)"
 E="$WORK/umbrella-eso.yaml"
 for f in umbrella-default umbrella-kind umbrella-tls service-defaults service-all; do
