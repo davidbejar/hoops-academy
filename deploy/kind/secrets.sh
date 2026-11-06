@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Prints the Kubernetes Secrets for namespace hoops (and the rate limit service's Redis login for envoy-gateway-system)
-# as YAML on stdout, built from the repo .env (ADR-0012).
+# Prints the Kubernetes Secrets for namespace hoops (incl. the event broker logins, WP66) and the rate limit service's
+# Redis login for envoy-gateway-system as YAML on stdout, built from the repo .env (ADR-0012).
 # Nothing is written to disk; values never appear on a command line (fed through process substitution).
 #   deploy/kind/secrets.sh | kubectl apply -f -          (used by up.sh; the Tiltfile reads the same output)
 set -euo pipefail
@@ -37,3 +37,9 @@ emit hoops-dev-users --from-file=password=<(printf '%s' "$DEV_USER_PASSWORD")
 # their own namespace. The user name is the chart's rateLimit.redis.acl.user.
 emit hoops-ratelimit-redis --from-file=password=<(printf '%s' "$RATELIMIT_REDIS_PASSWORD")
 SECRET_NS="$EG_NS" emit envoy-ratelimit-redis-auth --from-file=auth=<(printf 'ratelimit:%s' "$RATELIMIT_REDIS_PASSWORD")
+# Event broker logins (WP66, ADR-0036): the Redpanda superuser and one SCRAM user per service, usernames = the chart's
+# events.superuser.name / events.users[].name (the bootstrap Job sets the passwords on the broker).
+basic_auth hoops-redpanda-admin           admin           REDPANDA_ADMIN_PASSWORD
+basic_auth hoops-redpanda-core-service    core-service    REDPANDA_CORE_SERVICE_PASSWORD
+basic_auth hoops-redpanda-game-service    game-service    REDPANDA_GAME_SERVICE_PASSWORD
+basic_auth hoops-redpanda-athlete-service athlete-service REDPANDA_ATHLETE_SERVICE_PASSWORD

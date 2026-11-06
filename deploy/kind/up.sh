@@ -6,6 +6,8 @@
 # a ClusterSecretStore `hoops` backed by one bootstrap Secret built from .env (deploy/kind/eso-store.sh), and the chart is
 # deployed with externalSecrets.enabled=true, so ESO writes every Secret (`tilt up -- --eso` does the same with Tilt).
 # Pick the mode when the cluster is created; to switch, `just kind-down` first.
+# The chart's event broker (WP66, ADR-0036: Redpanda, events.enabled in values-kind.yaml) comes with the deploy; its logins
+# are Secrets from .env (REDPANDA_*_PASSWORD) like every other one, its node pulls the pinned image itself.
 #
 #   deploy/kind/up.sh [--deploy] [--from-host] [--eso]
 set -euo pipefail
@@ -137,4 +139,5 @@ cat <<MSG
 kind cluster '$CLUSTER' ready.  Gateway: http://localhost:8090  (https://localhost:8453 is optional, self-signed)
 Next: tilt up            (or: deploy/kind/up.sh --deploy; with --eso: tilt up -- --eso)
       deploy/kind/seed-users.sh   once Keycloak is Ready
+      deploy/kind/smoke.sh core game athlete   (with the event broker checks once redpanda-0 runs)
 MSG

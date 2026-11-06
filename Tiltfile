@@ -105,7 +105,10 @@ watch_file('infra/db/init/01_roles_schemas.sql')
 SECRET_NAMES = ['hoops-db-core-migrator', 'hoops-db-core-app', 'hoops-db-core-platform',
                 'hoops-db-game-migrator', 'hoops-db-game-app', 'hoops-db-athlete-migrator', 'hoops-db-athlete-app',
                 'keycloak-db-app', 'keycloak-admin', 'hoops-oidc-core-service', 'hoops-oidc-game-service',
-                'hoops-oidc-athlete-service', 'hoops-ratelimit-redis']
+                'hoops-oidc-athlete-service', 'hoops-ratelimit-redis',
+                # event broker logins (WP66, ADR-0036)
+                'hoops-redpanda-admin', 'hoops-redpanda-core-service', 'hoops-redpanda-game-service',
+                'hoops-redpanda-athlete-service']
 # --eso: the ExternalSecrets (same names; ESO creates the Secrets, which Tilt does not track); hoops-dev-users is only
 # rendered by secrets.sh. envoy-ratelimit-redis-auth is the REDIS_AUTH of the rate limit pods (WP46).
 SECRET_KIND = 'externalsecret' if eso else 'secret'
@@ -134,6 +137,11 @@ k8s_resource(
 # Counter store of the global rate limits (WP40, ADR-0033); Envoy Gateway's envoy-ratelimit pods (outside this
 # namespace, installed by `just kind-up`) are its only clients.
 k8s_resource('ratelimit-redis', objects=['ratelimit-redis:networkpolicy'], resource_deps=['secrets'], labels=['infra'])
+# Event broker (WP66, ADR-0036; events.enabled in values-kind.yaml). The bootstrap Job (a Helm post-install hook, a plain
+# Job for Tilt) waits for the broker itself, then sets users, ACLs and topics; the services do not use it yet (WP67-WP69).
+k8s_resource('redpanda', objects=['redpanda-config:configmap', 'redpanda:networkpolicy'],
+             resource_deps=['secrets'], labels=['infra'])
+k8s_resource('redpanda-bootstrap', objects=['redpanda-bootstrap:configmap'], resource_deps=['redpanda'], labels=['infra'])
 k8s_resource('keycloak', objects=['keycloak-realm:configmap', 'keycloak:httproute', 'keycloak-ratelimited:httproute',
                                   'keycloak-ratelimited:backendtrafficpolicy', 'keycloak-admin-deny:httproute'],
              resource_deps=['databases'],

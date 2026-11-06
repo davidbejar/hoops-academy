@@ -4,6 +4,7 @@
 # core is deployed since WP18: with `core` in the list the script also logs the seeded `superadmin` in (PKCE, no browser)
 # and checks GET /api/core/me (200, superAdmin=true) and GET /platform/tenants (200).
 # Checks: pods Ready, Gateway programmed, OIDC issuer, /internal -> 403, web /, each service's /q/health/ready via the gateway,
+# the event broker when deployed (health, bootstrap Job, SASL, ACLs on, topics, users; WP66),
 # client-credentials tokens from Keycloak, and that each API rejects anonymous calls (401), accepts a token minted for
 # it (anything but 401: core's token at game and athlete, game's token at core) and rejects a token that is not for it
 # (the service's own token, 401: ADR-0034 audiences). Client secrets are read from .env and sent as form bodies over stdin.
@@ -62,6 +63,26 @@ if [[ " ${SERVICES[*]} " == *" game "* ]]; then
     || bad "events:batch: $body"
   body=$(curl -s --path-as-is -X POST -H 'Content-Type: application/json' --data '[]' "$BASE/api/game/matches/$m/events%3Abatch")
   echo "$body" | grep -q 'events%3Abatch' && ok "events%3Abatch forwarded undecoded" || bad "events%3Abatch: $body"
+fi
+
+# Event broker (WP66, ADR-0036; events.enabled in values-kind.yaml): health, bootstrap Job, SASL required, ACLs enforced,
+# the seven topics and the three service users. rpk runs inside redpanda-0; the superuser password stays in that
+# container's environment (single quotes: expanded there, never on this host's command line).
+if kubectl "${CTX[@]}" get statefulset redpanda >/dev/null 2>&1; then
+  echo "== event broker"
+  rp() { kubectl "${CTX[@]}" exec redpanda-0 -c redpanda -- bash -c "$1" 2>&1; }
+  # shellcheck disable=SC2016 # expanded inside the container
+  as_admin='RPK_USER=admin RPK_PASS="$RP_ADMIN_PASSWORD" RPK_SASL_MECHANISM=SCRAM-SHA-256'
+  rp 'rpk cluster health' | grep -q 'Healthy: *true' && ok "rpk cluster health: healthy" || bad "rpk cluster health: $(rp 'rpk cluster health' | tr '\n' ' ')"
+  st=$(kubectl "${CTX[@]}" get job redpanda-bootstrap -o jsonpath='{.status.succeeded}' 2>/dev/null || true)
+  [ "$st" = 1 ] && ok "Job redpanda-bootstrap succeeded" || bad "Job redpanda-bootstrap succeeded='$st'"
+  rp 'rpk topic list' | grep -q 'SASL' && ok "Kafka without a login refused (SASL required)" || bad "Kafka answered without a login"
+  rp "$as_admin rpk cluster config get kafka_enable_authorization" | grep -qx true && ok "ACLs enforced (kafka_enable_authorization)" || bad "kafka_enable_authorization not true"
+  topics=$(rp "$as_admin rpk topic list" | awk 'NR > 1 && $2 == 1 {print $1}' | sort | tr '\n' ' ')
+  [ "$topics" = "core.guardian-link core.person core.player core.team core.team-player core.team-staff core.tenant " ] \
+    && ok "7 topics, 1 partition each: $topics" || bad "topics: '$topics'"
+  users=$(rp "$as_admin rpk security user list" | awk 'NR > 1 {print $1}' | sort | tr '\n' ' ')
+  [ "$users" = "admin athlete-service core-service game-service " ] && ok "SCRAM users: $users" || bad "users: '$users'"
 fi
 
 echo "== tokens (client credentials, realm role 'service'; audiences per ADR-0034)"
