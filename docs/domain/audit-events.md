@@ -12,6 +12,10 @@ appearing in all three.
   exist (a renamed person shows the new name; a row that no longer exists shows its id only). One exception, older than
   WP34: `tenant.suspended` / `tenant.withdrawn` carry the super admin's free-text `reason` (also in the outbox and on
   the tenant registry).
+- **Only real changes** (WP58). `fields` lists the fields whose stored value changed. An edit whose effective change
+  set is empty (every given value equals the stored one; a `clear` of a field that is already empty) writes no row
+  (`member.updated`, `admin.updated`, `tenant.profile_changed`, `tenant.master_data_changed`) and returns the resource
+  unchanged (200); team, age category, season and jersey PATCHes write no audit row at all and skip the write too.
 - **Actor.** `actor_sub` is the token subject of the caller, or `system` for background jobs; `actor_person_id` is the
   caller's person in that academy, or null when the caller has none there (the super admin, who acts from the platform).
   The API derives `actor.kind`: PERSON (person set), SYSTEM (`system`), PLATFORM (otherwise). On the academy path a

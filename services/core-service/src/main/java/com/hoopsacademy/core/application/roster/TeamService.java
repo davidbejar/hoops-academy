@@ -93,8 +93,11 @@ public class TeamService {
         Team after = before.apply(changes);
         requireCategory(after.category());
         requireUniqueName(after);
+        if (after.equals(before)) {
+            return views.of(before);
+        }
         teams.update(after);
-        if (changes.changesEligibility() && !after.equals(before)) {
+        if (changes.changesEligibility()) {
             engine.reevaluateTeam(after);
         }
         return views.of(after);

@@ -61,13 +61,19 @@ public class TenantLifecycle {
                 tenant -> tenant.withdraw(reason, clock.instant(), withdrawnRetention));
     }
 
+    /** An edit that changes no stored value writes nothing (no audit row) and returns the tenant as it is. */
     @Transactional
     public Tenant changeMasterData(TenantId id, Patch<String> name, Patch<ZoneId> timezone, Patch<AppLocale> locale) {
-        Tenant changed = load(id).changeMasterData(name, timezone, locale);
+        Tenant before = load(id);
+        Tenant changed = before.changeMasterData(name, timezone, locale);
+        ChangedFields fields = new ChangedFields().field("name", before.name(), changed.name())
+                .field("timezone", before.timezone(), changed.timezone())
+                .field("defaultLocale", before.defaultLocale(), changed.defaultLocale());
+        if (fields.isEmpty()) {
+            return before;
+        }
         tenants.update(changed);
-        audit.record(id, AuditEvent.of(AuditAction.TENANT_MASTER_DATA_CHANGED, id, Map.of("fields",
-                new ChangedFields().field("name", name).field("timezone", timezone).field("defaultLocale", locale)
-                        .names())));
+        audit.record(id, AuditEvent.of(AuditAction.TENANT_MASTER_DATA_CHANGED, id, Map.of("fields", fields.names())));
         return changed;
     }
 

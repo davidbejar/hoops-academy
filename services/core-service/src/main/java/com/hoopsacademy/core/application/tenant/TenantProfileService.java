@@ -36,15 +36,21 @@ public class TenantProfileService {
         return new TenantProfileView(current(), logos.findEtag());
     }
 
+    /** An edit that changes no stored value writes nothing (no audit row) and returns the profile as it is. */
     @Transactional
     public TenantProfileView update(TenantProfileChanges changes) {
-        TenantProfile changed = current().apply(changes);
-        profiles.save(changed);
-        audit.record(AuditEvent.of(AuditAction.TENANT_PROFILE_CHANGED, tenantContext.requireTenantId(),
-                Map.of("fields", new ChangedFields().field("name", changes.name())
-                        .field("timezone", changes.timezone()).field("defaultLocale", changes.defaultLocale())
-                        .field("contactEmail", changes.contactEmail()).field("websiteUrl", changes.websiteUrl())
-                        .names())));
+        TenantProfile before = current();
+        TenantProfile changed = before.apply(changes);
+        ChangedFields fields = new ChangedFields().field("name", before.name(), changed.name())
+                .field("timezone", before.timezone(), changed.timezone())
+                .field("defaultLocale", before.defaultLocale(), changed.defaultLocale())
+                .field("contactEmail", before.contactEmail(), changed.contactEmail())
+                .field("websiteUrl", before.websiteUrl(), changed.websiteUrl());
+        if (!fields.isEmpty()) {
+            profiles.save(changed);
+            audit.record(AuditEvent.of(AuditAction.TENANT_PROFILE_CHANGED, tenantContext.requireTenantId(),
+                    Map.of("fields", fields.names())));
+        }
         return new TenantProfileView(changed, logos.findEtag());
     }
 

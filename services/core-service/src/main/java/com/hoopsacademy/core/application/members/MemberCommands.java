@@ -64,23 +64,24 @@ public class MemberCommands {
 
     /**
      * Personal data; an e-mail change of a person with a login also moves the login (core.app_user, Keycloak — last,
-     * a failure rolls this transaction back), see {@link LoginEmailSync}.
+     * a failure rolls this transaction back), see {@link LoginEmailSync}. An edit that changes no stored value writes
+     * nothing (no audit row) and returns the member as it is.
      */
     @Transactional
     public MemberView updateData(PersonId id, PersonalDataChanges changes, SharedLogin sharedLogin) {
         Person current = queries.load(id);
         Person changed = current.withData(changes);
+        ChangedFields fields = ChangedFields.of(current.data(), changed.data());
+        if (fields.isEmpty()) {
+            return queries.view(current);
+        }
         String email = changed.data().email();
         if (email != null && persons.emailTaken(email, Optional.of(id))) {
             throw new ConflictException("A member with this e-mail already exists", "EMAIL_TAKEN");
         }
         Optional<LoginEmailSync.LoginMove> loginMove = loginSync.plan(current, changed, sharedLogin);
         persons.update(changed);
-        audit.record(AuditEvent.of(AuditAction.MEMBER_UPDATED, id.value(), Map.of("fields", new ChangedFields()
-                .field("givenName", changes.givenName()).field("familyName", changes.familyName())
-                .field("email", changes.email()).field("phone", changes.phone())
-                .field("birthDate", changes.birthDate()).field("gender", changes.gender())
-                .field("locale", changes.locale()).names())));
+        audit.record(AuditEvent.of(AuditAction.MEMBER_UPDATED, id.value(), Map.of("fields", fields.names())));
         loginMove.ifPresent(loginSync::apply);
         return queries.view(changed);
     }

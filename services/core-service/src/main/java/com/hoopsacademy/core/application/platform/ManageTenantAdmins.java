@@ -99,10 +99,11 @@ public class ManageTenantAdmins {
 
     public MemberView update(TenantId tenant, PersonId id, PersonalDataChanges changes) {
         return inTenant(tenant, () -> {
-            requireActiveAdmin(id);
-            audit.record(AuditEvent.of(AuditAction.ADMIN_UPDATED, id.value(), Map.of("fields", new ChangedFields()
-                    .field("givenName", changes.givenName()).field("familyName", changes.familyName())
-                    .field("email", changes.email()).names())));
+            Person admin = requireActiveAdmin(id);
+            ChangedFields fields = ChangedFields.of(admin.data(), admin.withData(changes).data());
+            if (!fields.isEmpty()) {
+                audit.record(AuditEvent.of(AuditAction.ADMIN_UPDATED, id.value(), Map.of("fields", fields.names())));
+            }
             return commands.updateData(id, changes, SharedLogin.SYNC);
         });
     }

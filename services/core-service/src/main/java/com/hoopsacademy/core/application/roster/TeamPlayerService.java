@@ -58,7 +58,9 @@ public class TeamPlayerService {
                     AssignPlayerToTeam.JERSEY_TAKEN);
         }
         TeamPlayer renumbered = open.withJersey(jersey);
-        assignments.update(renumbered);
+        if (!renumbered.equals(open)) {
+            assignments.update(renumbered);
+        }
         return view(renumbered, players.summary(player).orElseThrow());
     }
 

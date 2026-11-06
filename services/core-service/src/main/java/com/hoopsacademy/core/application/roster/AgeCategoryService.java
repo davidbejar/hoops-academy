@@ -59,8 +59,11 @@ public class AgeCategoryService {
         AgeCategory after = before.apply(changes);
         List<AgeCategory> others = categories.listByRank().stream().filter(c -> !c.id().equals(id)).toList();
         requireFitsLadder(after, others);
+        if (after.equals(before)) {
+            return before;
+        }
         categories.update(after);
-        if (changes.changesLadder() && !after.equals(before)) {
+        if (changes.changesLadder()) {
             engine.reevaluateTenant();
         }
         return after;

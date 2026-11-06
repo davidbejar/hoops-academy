@@ -63,9 +63,11 @@ public class SeasonService {
         Season before = find(id);
         Season after = before.apply(changes);
         requireNoOverlap(after);
+        if (after.equals(before)) {
+            return view(before);
+        }
         seasons.update(after);
-        if (!after.equals(before) && (changes.changesReferenceYear() || changes.startsOn().isPresent()
-                || changes.endsOn().isPresent())) {
+        if (changes.changesReferenceYear() || changes.startsOn().isPresent() || changes.endsOn().isPresent()) {
             engine.reevaluateSeason(id);
         }
         return view(after);
