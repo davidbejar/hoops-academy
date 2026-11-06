@@ -37,7 +37,8 @@ class GameRlsIsolationTest extends GenericRlsIsolationTest {
                 "game.sync_receipt", parentMatch,
                 "game.match_event", eventColumns,
                 "game.match_player_stats", parentMatch,
-                "game.match_summary", parentMatch);
+                "game.match_summary", parentMatch,
+                "game.person_ref", Map.of("roles", (c, t) -> "{COACH}"));
     }
 
     /** Parent match in the same tenant (the migrator connection has app.tenant_id set). */
