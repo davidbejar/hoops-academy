@@ -22,16 +22,19 @@ import org.junit.jupiter.params.provider.FieldSource;
  * ADR-0032: an {@code Update*Request} names the properties to set to null in a {@code clear} list (absent or null =
  * unchanged), because generated clients cannot send an explicit null. The list is an enum of exactly the optional,
  * nullable properties of the request, so the strict validator rejects a typo or a required field. Specs that have
- * adopted the convention are listed in {@link #ADOPTED}; core and game follow in later work packages.
+ * adopted the convention are listed in {@link #ADOPTED} (athlete WP39, core WP44); game follows in its own work package.
  */
 class UpdateRequestClearListContractTest {
 
     private static final List<String> ADOPTED = List.of(
             "athlete",
+            "core",
             "game");
     private static final String TEST_TYPE = "/api/athlete/physical-test-types/0190b6a0-0000-7000-8000-000000000001";
     private static final String SESSION = "/api/athlete/training-sessions/0190b6a0-0000-7000-8000-000000000002";
     private static final String TENANT = "0190b6a0-0000-7000-8000-0000000000aa";
+    private static final String TEAM = "/api/core/teams/0190b6a0-0000-7000-8000-000000000003";
+    private static final String TEAM_PLAYER = TEAM + "/players/0190b6a0-0000-7000-8000-000000000004";
 
     private static OpenApiInteractionValidator strictAthleteValidator;
 
@@ -110,6 +113,47 @@ class UpdateRequestClearListContractTest {
         Request request = SimpleRequest.Builder.patch(SESSION).withContentType("application/json")
                 .withHeader("X-Tenant-Id", TENANT).withAuthorization("Bearer test").withBody(body).build();
         return strictAthleteValidator.validateRequest(request);
+    }
+
+    @Test
+    void theCoreRequestsOfTheBriefClearExactlyTheirOptionalFields() {
+        Map<String, Schema> updates = updateRequests("core");
+
+        assertThat(clearEnum(updates, "UpdateTenantProfileRequest")).containsExactly("contactEmail", "websiteUrl");
+        assertThat(clearEnum(updates, "UpdateMemberRequest")).containsExactly("email", "phone", "birthDate", "gender");
+        assertThat(clearEnum(updates, "UpdateAgeCategoryRequest")).containsExactly("maxAge");
+        assertThat(clearEnum(updates, "UpdateTeamRequest")).containsExactly("alias");
+        assertThat(clearEnum(updates, "UpdateTeamPlayerRequest")).containsExactly("jerseyNumber");
+        for (String nothingToClear : List.of("UpdateTenantAdminRequest", "UpdateTenantRequest", "UpdateMeRequest",
+                "UpdateSeasonRequest")) {
+            assertThat(updates.get(nothingToClear).getProperties()).as(nothingToClear).doesNotContainKey("clear");
+        }
+        assertThat(updates.get("UpdateTeamPlayerRequest").getMinProperties()).as("clear alone is a body").isEqualTo(1);
+        assertThat(OpenApiSpecs.parse("core").getOpenAPI().getInfo().getVersion()).isEqualTo("2.7.0");
+    }
+
+    private static List<String> clearEnum(Map<String, Schema> updates, String name) {
+        Schema<?> clear = (Schema<?>) updates.get(name).getProperties().get("clear");
+        assertThat(clear).as(name + ".clear").isNotNull();
+        return clear.getItems().getEnum().stream().map(String::valueOf).toList();
+    }
+
+    @Test
+    void theStrictCoreValidatorAcceptsAJerseyClearAndRejectsARequiredName() {
+        OpenApiInteractionValidator core = OpenApiInteractionValidator
+                .createForSpecificationUrl(ContractFiles.openApi("core").toUri().toString()).build();
+
+        assertThat(patch(core, TEAM_PLAYER, "{\"clear\": [\"jerseyNumber\"]}").hasErrors()).isFalse();
+        assertThat(patch(core, TEAM_PLAYER, "{\"jerseyNumber\": \"7\"}").hasErrors()).isFalse();
+        assertThat(patch(core, TEAM, "{\"name\": \"Lions\", \"clear\": [\"alias\"]}").hasErrors()).isFalse();
+        assertThat(patch(core, TEAM, "{\"clear\": [\"name\"]}").hasErrors()).as("not clearable").isTrue();
+        assertThat(patch(core, TEAM, "{\"clear\": [\"alias\", \"alias\"]}").hasErrors()).as("duplicate").isTrue();
+    }
+
+    private static ValidationReport patch(OpenApiInteractionValidator validator, String path, String body) {
+        Request request = SimpleRequest.Builder.patch(path).withContentType("application/json")
+                .withHeader("X-Tenant-Id", TENANT).withAuthorization("Bearer test").withBody(body).build();
+        return validator.validateRequest(request);
     }
 
     @Test
