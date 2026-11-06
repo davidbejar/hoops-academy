@@ -15,8 +15,8 @@
   <description>Black-box journey suite against a running stack (compose or kind). Skipped unless e2e.baseUrl / E2E_BASE_URL is set.</description>
 
   <properties>
-    <!-- default: tests are skipped so `./mvnw verify` at the root needs no stack; the profiles below switch them on -->
-    <e2e.skip>true</e2e.skip>
+    <!-- the journeys assume E2eEnv.enabled() and report as skipped without e2e.baseUrl; the support-class unit tests always run -->
+    <e2e.skip>false</e2e.skip>
     <e2e.baseUrl></e2e.baseUrl>
     <assertj.version>3.27.7</assertj.version>
   </properties>

@@ -15,7 +15,7 @@ import com.hoopsacademy.e2e.support.Actor;
 import com.hoopsacademy.e2e.support.E2eEnv;
 import com.hoopsacademy.e2e.support.KeycloakAdmin;
 import com.hoopsacademy.e2e.support.KeycloakUserTokens;
-import com.hoopsacademy.e2e.support.MailHog;
+import com.hoopsacademy.e2e.support.MailSink;
 import io.restassured.response.Response;
 import java.time.Duration;
 import java.time.Instant;
@@ -71,7 +71,7 @@ class JourneyTest {
     private final LocalDate today = LocalDate.now(ZONE);
     private final KeycloakUserTokens tokens = new KeycloakUserTokens();
     private final KeycloakAdmin keycloakAdmin = new KeycloakAdmin();
-    private final MailHog mail = new MailHog();
+    private final MailSink mail = new MailSink();
     /** Random per run, >= 12 chars (realm password policy); only ever sent to Keycloak. */
     private final String password = "E2e-" + UUID.randomUUID() + "-" + run;
 
@@ -147,9 +147,7 @@ class JourneyTest {
         // ADR-0024: no setup e-mail; Keycloak shows "update password" at the first sign-in with the temporary password
         String token = tokens.firstLogin(adminEmail, adminTemporaryPassword, password);
         assertThat(KeycloakUserTokens.hasSub(token)).isTrue();
-        if (mail.reachable()) {
-            assertThat(mail.latestTo(adminEmail)).as("no e-mail to the new admin").isEmpty();
-        }
+        assertThat(mail.hasMessageTo(adminEmail)).as("e-mail to the new admin").isFalse();
     }
 
     @Test
@@ -459,9 +457,7 @@ class JourneyTest {
         assertEquals(fixed, edited.jsonPath().getString("email"));
         assertEquals("Seconda", edited.jsonPath().getString("familyName"));
         assertEquals(fixed, keycloakAdmin.usernameOf(fixed));
-        if (mail.reachable()) {
-            assertThat(mail.latestTo(fixed)).as("no e-mail to the corrected address").isEmpty();
-        }
+        assertThat(mail.hasMessageTo(fixed)).as("e-mail to the corrected address").isFalse();
 
         // the super admin issues a new temporary password while the invitation is pending; the admin signs in with it
         Response issued = status(superAdmin.post(admins + "/" + second + "/temporary-password"), 200);

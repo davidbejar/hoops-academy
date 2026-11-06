@@ -30,7 +30,8 @@ public final class E2eEnv {
         return !baseUrl().isEmpty();
     }
 
-    public static String mailhogUrl() {
+    /** SMTP sink API (MailHog on compose, Mailpit on kind; {@link MailSink} detects which). */
+    public static String mailUrl() {
         String v = System.getenv("E2E_MAILHOG_URL");
         return (v == null || v.isBlank()) ? "http://localhost:8025" : v.replaceAll("/+$", "");
     }
