@@ -12,11 +12,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 class JpaTeamRepository implements TeamRepository {
@@ -109,6 +112,18 @@ class JpaTeamRepository implements TeamRepository {
     public boolean usesCategory(AgeCategoryId category) {
         return em.createQuery("select count(t) from TeamEntity t where t.ageCategoryId = :category", Long.class)
                 .setParameter("category", category.value()).getSingleResult() > 0;
+    }
+
+    @Override
+    public Set<TeamId> seasonNotEnded(Collection<TeamId> ids, LocalDate today) {
+        if (ids.isEmpty()) {
+            return Set.of();
+        }
+        return em.createQuery("select t.id from TeamEntity t, SeasonEntity s where s.id = t.seasonId "
+                        + "and t.id in :ids and s.endDate >= :today", UUID.class)
+                .setParameter("ids", ids.stream().map(TeamId::value).toList())
+                .setParameter("today", today)
+                .getResultStream().map(TeamId::new).collect(Collectors.toSet());
     }
 
     @Override

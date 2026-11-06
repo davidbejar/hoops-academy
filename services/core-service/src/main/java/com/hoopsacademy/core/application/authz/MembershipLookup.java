@@ -8,13 +8,18 @@ import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.StaffTeamsQuery;
 import com.hoopsacademy.core.application.port.TeamPlayerRepository;
+import com.hoopsacademy.core.application.port.TeamRepository;
 import com.hoopsacademy.core.application.port.TenantProfileRepository;
 import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PlayerId;
+import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamPlayer;
+import com.hoopsacademy.core.domain.shared.TenantCalendar;
 import com.hoopsacademy.core.domain.tenant.TenantProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -23,7 +28,9 @@ import java.util.stream.Collectors;
 
 /**
  * Reads a subject's membership in the BOUND tenant from the database: roles, relations (staff teams, linked players,
- * own player, teams of those players), the tenant's time zone and lifecycle status.
+ * own player, teams of those players), the tenant's time zone and lifecycle status. Teams whose season has ended (in
+ * the academy's time zone) are left out of both team sets, even while a staff row or an assignment is still open
+ * (WP58): the summary grants today's access, past seasons are history.
  */
 @ApplicationScoped
 public class MembershipLookup {
@@ -35,10 +42,12 @@ public class MembershipLookup {
     private final GuardianLinkRepository guardianLinks;
     private final StaffTeamsQuery staffTeams;
     private final TeamPlayerRepository assignments;
+    private final TeamRepository teams;
+    private final Clock clock;
 
     public MembershipLookup(TenantContext tenantContext, TenantProfileRepository profiles, PersonRepository persons,
             PlayerRepository players, GuardianLinkRepository guardianLinks, StaffTeamsQuery staffTeams,
-            TeamPlayerRepository assignments) {
+            TeamPlayerRepository assignments, TeamRepository teams, Clock clock) {
         this.tenantContext = tenantContext;
         this.profiles = profiles;
         this.persons = persons;
@@ -46,6 +55,8 @@ public class MembershipLookup {
         this.guardianLinks = guardianLinks;
         this.staffTeams = staffTeams;
         this.assignments = assignments;
+        this.teams = teams;
+        this.clock = clock;
     }
 
     /** @return empty when the tenant does not exist or the subject has no active person in it */
@@ -66,9 +77,25 @@ public class MembershipLookup {
         Set<UUID> linkedPlayers = person.roles().contains(TenantRole.PARENT)
                 ? guardianLinks.playersOf(person.id()).stream().map(PlayerId::value).collect(Collectors.toSet())
                 : Set.of();
+        Set<UUID> staffTeamIds = staffTeams.staffTeamsOf(person.id());
+        Set<UUID> playerTeamIds = teamsOf(ownPlayer, linkedPlayers);
+        Set<UUID> notEnded = seasonNotEnded(staffTeamIds, playerTeamIds, TenantCalendar.today(clock.instant(),
+                tenant.timezone()));
         return new AuthzContext(subject, person.id().value(), tenantContext.requireTenantId(), person.roles(),
-                staffTeams.staffTeamsOf(person.id()), linkedPlayers, ownPlayer, teamsOf(ownPlayer, linkedPlayers),
+                retain(staffTeamIds, notEnded), linkedPlayers, ownPlayer, retain(playerTeamIds, notEnded),
                 Optional.of(tenant.timezone()));
+    }
+
+    /** One query for both team sets. */
+    private Set<UUID> seasonNotEnded(Set<UUID> staffTeamIds, Set<UUID> playerTeamIds, LocalDate today) {
+        Set<TeamId> candidates = new HashSet<>();
+        staffTeamIds.forEach(id -> candidates.add(new TeamId(id)));
+        playerTeamIds.forEach(id -> candidates.add(new TeamId(id)));
+        return teams.seasonNotEnded(candidates, today).stream().map(TeamId::value).collect(Collectors.toSet());
+    }
+
+    private static Set<UUID> retain(Set<UUID> teamIds, Set<UUID> notEnded) {
+        return teamIds.stream().filter(notEnded::contains).collect(Collectors.toSet());
     }
 
     /** Teams with an open, valid assignment of the own or a linked player (what the roster endpoint lists). */

@@ -6,6 +6,7 @@ import com.hoopsacademy.core.domain.roster.AgeCategoryId;
 import com.hoopsacademy.core.domain.roster.SeasonId;
 import com.hoopsacademy.core.domain.roster.Team;
 import com.hoopsacademy.core.domain.roster.TeamId;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,12 @@ public interface TeamRepository {
     List<Team> findAll(Collection<TeamId> ids);
 
     List<Team> inSeasons(Collection<SeasonId> seasons);
+
+    /**
+     * The ones of {@code ids} whose season has not ended on {@code today} (it ends today or later; the SQL form of
+     * {@code Season.hasEnded}). Unknown ids are dropped.
+     */
+    Set<TeamId> seasonNotEnded(Collection<TeamId> ids, LocalDate today);
 
     PageResult<Team> list(TeamFilter filter, PageRequest page);
 
