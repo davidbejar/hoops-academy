@@ -52,8 +52,13 @@ services:
       CORE_SERVICE_CLIENT_SECRET: ${CORE_SERVICE_CLIENT_SECRET:?set in .env}
       GAME_SERVICE_CLIENT_SECRET: ${GAME_SERVICE_CLIENT_SECRET:?set in .env}
       ATHLETE_SERVICE_CLIENT_SECRET: ${ATHLETE_SERVICE_CLIENT_SECRET:?set in .env}
+      # Password blocklist (ADR-0038): Keycloak keeps it in a Bloom filter; at its default false-positive rate of 1e-4
+      # one temporary password in 10,000 would be refused although it is on no list.
+      KC_SPI_PASSWORD_POLICY__PASSWORD_BLACKLIST__FALSE_POSITIVE_PROBABILITY: "1e-12"
     volumes:
       - ../keycloak/realm-academy.json:/opt/keycloak/data/import/realm-academy.json:ro
+      # realm passwordPolicy passwordBlacklist(hoops-password-blocklist.txt), ADR-0038
+      - ../keycloak/password-blocklist:/opt/keycloak/data/password-blacklists:ro
       # Branded login pages (ADR-0022); start-dev does not cache themes, so CSS edits show on reload.
       - ../keycloak/themes/hoops:/opt/keycloak/themes/hoops:ro
     depends_on:

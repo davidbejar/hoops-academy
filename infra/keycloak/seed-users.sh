@@ -74,4 +74,14 @@ while IFS=$'\t' read -r client mapper audience; do
     echo "added $mapper to client $client"
   fi
 done
-echo "seed-users: done (superadmin has super_admin; login theme hoops; e-mail as username; token audiences, rotation)"
+# Login hardening of ADR-0038 for a realm imported before it: security headers (CSP), the password policy with its
+# blocklist and the OTP policy, read from the realm file. Keycloak's built-in browser flow already asks for the OTP only
+# when a login set one up, so no flow changes.
+python3 -I - infra/keycloak/realm-academy.json <<'PY' |
+import json, sys
+realm = json.load(open(sys.argv[1]))
+keys = ["browserSecurityHeaders", "passwordPolicy"] + [k for k in realm if k.startswith("otpPolicy")]
+print(json.dumps({k: realm[k] for k in keys}))
+PY
+  podman exec -i "$C" bash -c 'f=$(mktemp) && cat > "$f" && /opt/keycloak/bin/kcadm.sh update "realms/$0" -f "$f"; rc=$?; rm -f "$f"; exit $rc' "$REALM"
+echo "seed-users: done (superadmin has super_admin; login theme hoops; e-mail as username; token audiences, rotation; CSP, password blocklist, OTP policy)"

@@ -18,6 +18,8 @@ PAIRS=(
   "infra/keycloak/themes/hoops/login/messages/messages_en.properties:deploy/helm/hoops/charts/keycloak/files/theme/messages_en.properties"
   "infra/keycloak/themes/hoops/login/messages/messages_es.properties:deploy/helm/hoops/charts/keycloak/files/theme/messages_es.properties"
   "infra/keycloak/themes/hoops/login/messages/messages_id.properties:deploy/helm/hoops/charts/keycloak/files/theme/messages_id.properties"
+  # Realm password blocklist (ADR-0038), mounted by the keycloak chart's blocklist ConfigMap
+  "infra/keycloak/password-blocklist/hoops-password-blocklist.txt:deploy/helm/hoops/charts/keycloak/files/hoops-password-blocklist.txt"
 )
 rc=0
 for pair in "${PAIRS[@]}"; do

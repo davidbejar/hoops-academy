@@ -21,7 +21,22 @@
   "waitIncrementSeconds": 60,
   "permanentLockout": false,
   "maxDeltaTimeSeconds": 43200,
-  "passwordPolicy": "length(12) and maxLength(128) and notUsername and notEmail",
+  "passwordPolicy": "length(12) and maxLength(128) and notUsername and notEmail and passwordBlacklist(hoops-password-blocklist.txt)",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyCodeReusable": false,
+  "browserSecurityHeaders": {
+    "contentSecurityPolicy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; form-action 'self' http://localhost:5173; base-uri 'self'; object-src 'none';",
+    "contentSecurityPolicyReportOnly": "",
+    "xFrameOptions": "SAMEORIGIN",
+    "xContentTypeOptions": "nosniff",
+    "referrerPolicy": "no-referrer",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains",
+    "xRobotsTag": "none"
+  },
   "internationalizationEnabled": true,
   "supportedLocales": [
     "en",

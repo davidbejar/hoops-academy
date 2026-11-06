@@ -19,6 +19,7 @@ spec:
       annotations:
         checksum/realm: {{ include (print $.Template.BasePath "/realm-configmap.yaml") . | sha256sum }}
         checksum/theme: {{ include (print $.Template.BasePath "/theme-configmap.yaml") . | sha256sum }}
+        checksum/blocklist: {{ include (print $.Template.BasePath "/password-blocklist-configmap.yaml") . | sha256sum }}
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -54,6 +55,9 @@ spec:
             - {name: KC_HEALTH_ENABLED, value: "true"}
             - {name: KC_METRICS_ENABLED, value: "false"}
             - {name: KC_CACHE, value: local}
+            # Password blocklist (ADR-0038): Keycloak keeps it in a Bloom filter; at its default false-positive rate
+            # of 1e-4 one temporary password in 10,000 would be refused although it is on no list.
+            - {name: KC_SPI_PASSWORD_POLICY__PASSWORD_BLACKLIST__FALSE_POSITIVE_PROBABILITY, value: "1e-12"}
             - name: JAVA_OPTS_APPEND
               value: {{ .Values.extraJavaOpts | quote }}
             {{- range .Values.clientSecrets }}
@@ -84,6 +88,8 @@ spec:
           volumeMounts:
             - {name: realm, mountPath: /opt/keycloak/data/import, readOnly: true}
             - {name: theme, mountPath: /opt/keycloak/themes/hoops/login, readOnly: true}
+            # realm passwordPolicy passwordBlacklist(hoops-password-blocklist.txt), ADR-0038
+            - {name: password-blocklist, mountPath: /opt/keycloak/data/password-blacklists, readOnly: true}
             - {name: tmp, mountPath: /tmp}
       volumes:
         - name: realm
@@ -100,6 +106,9 @@ spec:
               - {key: messages_en.properties, path: messages/messages_en.properties}
               - {key: messages_es.properties, path: messages/messages_es.properties}
               - {key: messages_id.properties, path: messages/messages_id.properties}
+        - name: password-blocklist
+          configMap:
+            name: {{ $fullname }}-password-blocklist
         - name: tmp
           emptyDir: {sizeLimit: 128Mi}
 ---
