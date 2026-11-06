@@ -48,3 +48,39 @@ twice the limit.
   when done.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+
+## Handover
+- **Built:** chart 0.4.0 (umbrella; `keycloak` and `hoops-service` subcharts 0.4.0, new values `route.rateLimit.rps`,
+  `route.rateLimits[].rps`, `rateLimit.redis.acl.*`). `ratelimit-redis` gets an init container that writes
+  `/acl/users.acl` into a memory `emptyDir` (read-only for `redis-server --aclfile`): `default` off without password or
+  permissions; `ratelimit` on, SHA-256 of the password from Secret `hoops-ratelimit-redis`, keys `~hoops/hoops/*`
+  (rate limit domain = Envoy Gateway listener `<ns>/<gateway>/<listener>`), `-@all +ping +incrby +expire`. Those are
+  the only commands envoyproxy/ratelimit `5ae0682e` sends (checked in its source: PING at connect, INCRBY + EXPIRE
+  pipeline, AUTH; GET and EVAL only for features Envoy Gateway does not use). Envoy Gateway v1.9.3 has no credential
+  field: the rate limit pods get `REDIS_AUTH=ratelimit:<pw>` through
+  `rateLimitDeployment.container.env` from Secret `envoy-gateway-system/envoy-ratelimit-redis-auth`. Not `redis.urlRef`
+  with a credential URL: the service logs the URL unmasked. Per-second rules: 10/s token + login form, 20/s
+  `events:batch`, per client IP v4 + v6, next to the per-minute rules. `secrets.sh` renders both Secrets from `.env`
+  `RATELIMIT_REDIS_PASSWORD` (new, in `.env.example`); `up.sh` applies Secrets before the Envoy Gateway install;
+  Tiltfile groups the new Secrets. `ratelimit-check.sh`: per-minute bursts paced below `rps`, a tight `curl --parallel`
+  burst, an `acl` mode, `LC_ALL=C`.
+- **Found on kind:** Envoy Gateway v1.9.3 builds the `sourceCIDR` descriptor without the rule index, so the minute and
+  second rules collapsed into one descriptor (`/rlconfig`: MINUTE only; every request counted twice, first 429 at
+  rpm/2; no per-second limit). Fix: an always-true `path: {type: PathPrefix, value: /}` selector on the per-second
+  rules (commit c1a485b, asserted by the chart tests, ADR amendment + troubleshooting symptom C).
+- **Verified:** `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED (85 checks, kubeconform 147/147, snapshots re-recorded
+  after reviewing the diff; gitleaks clean, no Secret rendered); `helm package` OK; `shellcheck -S warning` clean
+  (`deploy/kind/*.sh`, `run.sh`); `tilt alpha tiltfile-result` evaluates. kind (`up.sh --deploy --from-host`, 1 Envoy
+  replica): `apply --dry-run=server` clean, Gateway Programmed, both policies Accepted, `smoke.sh core game athlete`
+  SMOKE PASSED. `ratelimit-check.sh` PASSED: events:batch 250 paced in 31 s, 120 passed, first 429 #121; token 130 in
+  31 s, 60 passed, first 429 #61; tight bursts 60 at once -> 20 passed / 40 x 429, 40 at once -> 10 passed / 30 x 429;
+  ACL: anonymous `NOAUTH`, `default` `WRONGPASS`, `ratelimit` PONG / INCRBY / EXPIRE on its keys, `NOPERM` for other
+  keys and GET, EVAL, FLUSHALL, KEYS, SET, ACL, INFO, SCRIPT, MULTI, CONFIG unknown. `redis-down` PASSED (130
+  requests, 0 x 429, 15 s; #121 again after restart). The password appeared in no log, pod spec, EG config or render.
+  Re-running `up.sh` left the controller untouched. Cluster deleted. `just test` not run (no Java/pom/contract/web change).
+- **Decisions/ADRs:** ADR-0033 "Amendment 2026-11-06" (no new number).
+- **Open points:** pending user action: add `RATELIMIT_REDIS_PASSWORD` to the main `.env` (else `secrets.sh` stops).
+  Rotation needs Redis and `envoy-ratelimit` restarted together (no checksum trigger; documented). A wrong login fails
+  open silently except for `WRONGPASS`/`NOPERM` in the logs. The descriptor collision is an upstream Envoy Gateway
+  issue worth reporting; drop the path selector once fixed. Not re-run: 2 Envoy replicas, `tilt ci`, the
+  controller-restart branch of `up.sh`.
