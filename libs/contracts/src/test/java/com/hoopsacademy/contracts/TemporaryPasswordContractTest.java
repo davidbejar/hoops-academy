@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
+import java.lang.module.ModuleDescriptor;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,6 @@ class TemporaryPasswordContractTest {
             "addTenantAdmin, 200",
             "addTenantAdmin, 201",
             "issueTenantAdminTemporaryPassword, 200",
-            "resendTenantAdminInvitation, 202",
             "inviteMember, 201",
             "issueMemberTemporaryPassword, 200",
             "createPlayer, 201",
@@ -59,12 +59,15 @@ class TemporaryPasswordContractTest {
         assertThat(operation.getDescription()).contains("INVITATION_NOT_PENDING");
     }
 
+    /** ADR-0035: the deprecated {@code resendTenantAdminInvitation} alias (core 2.3.0) is removed in core 3.0.0. */
     @Test
-    void theOldResendOperationIsADeprecatedAliasOfTheReissue() {
-        Operation resend = operation("resendTenantAdminInvitation");
-
-        assertThat(resend.getDeprecated()).isTrue();
-        assertThat(resend.getDescription()).contains("issueTenantAdminTemporaryPassword");
+    void theDeprecatedResendAliasIsRemovedInCore300() {
+        assertThat(ModuleDescriptor.Version.parse(CORE.getInfo().getVersion()))
+                .isGreaterThanOrEqualTo(ModuleDescriptor.Version.parse("3.0.0"));
+        assertThat(CORE.getPaths())
+                .doesNotContainKey("/platform/tenants/{tenantId}/admins/{personId}/resend-invitation");
+        assertThat(CORE.getPaths().values().stream().flatMap(item -> item.readOperations().stream())
+                .map(Operation::getOperationId)).doesNotContain("resendTenantAdminInvitation");
     }
 
     @Test

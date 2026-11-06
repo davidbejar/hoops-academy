@@ -476,16 +476,15 @@ class PlatformAdminResourceTest {
                 "member.temporary_password_issued");
     }
 
+    /** ADR-0035: the deprecated alias is gone in core 3.0.0 (not in the contract, so no contract filter here). */
     @Test
-    void theDeprecatedResendInvitationIsAnAliasOfTheReissue() {
+    void theRemovedResendInvitationAliasIsNotFoundAndChangesNothing() {
         String sub = UUID.randomUUID().toString();
         UUID pending = withLogin(sub, "Old", "Client", "old.client@example.com", "PENDING", TenantRole.ADMIN);
-        given().filter(Contract.CORE).post(admins() + "/" + pending + "/resend-invitation").then().statusCode(202)
-                .header("Cache-Control", "no-store")
-                .body("personId", equalTo(pending.toString())).body("temporaryPassword", notNullValue());
-        keycloak.verify(1, temporaryPasswordSet(sub));
-        given().filter(Contract.CORE).post(admins() + "/" + admin + "/resend-invitation").then().statusCode(409)
-                .body("code", equalTo("INVITATION_NOT_PENDING"));
+        given().post(admins() + "/" + pending + "/resend-invitation").then().statusCode(404)
+                .body(not(containsString("temporaryPassword")));
+        keycloak.verify(0, temporaryPasswordSet(sub));
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("admin.temporary_password_issued");
     }
 
     // ------------------------------------------------------------------ tenant state and authorization
