@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/clear_list.dart';
 import '../../admin/application/admin_providers.dart';
 import '../data/approvals_repository.dart';
 import '../data/cases_repository.dart';
@@ -112,7 +113,8 @@ class TeamsNotifier extends AsyncNotifier<List<api.Team>> {
               ..name = name
               ..alias = alias
               ..ageCategoryId = ageCategoryId
-              ..genderPolicy = genderPolicy,
+              ..genderPolicy = genderPolicy
+              ..clear = clearList({api.UpdateTeamRequestClearEnum.alias: alias}),
           ),
         );
     await _reload();

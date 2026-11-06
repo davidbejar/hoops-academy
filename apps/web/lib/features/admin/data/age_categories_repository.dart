@@ -1,4 +1,5 @@
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/clear_list.dart';
 
 /// Age categories (`/api/core/age-categories`).
 abstract class AgeCategoriesRepository {
@@ -9,6 +10,7 @@ abstract class AgeCategoriesRepository {
     int? maxAge,
     required int rank,
   });
+  /// A null [maxAge] makes the category senior (no limit): `maxAge` is named in `clear` (ADR-0032).
   Future<api.AgeCategory> update(
     String id, {
     required String code,
@@ -62,7 +64,8 @@ class ApiAgeCategoriesRepository implements AgeCategoriesRepository {
         ..code = code
         ..name = name
         ..maxAge = maxAge
-        ..rank = rank,
+        ..rank = rank
+        ..clear = clearList({api.UpdateAgeCategoryRequestClearEnum.maxAge: maxAge}),
     ),
   )).data!;
 

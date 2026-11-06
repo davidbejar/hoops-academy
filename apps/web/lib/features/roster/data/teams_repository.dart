@@ -1,4 +1,5 @@
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/clear_list.dart';
 
 /// Teams, staff and rosters (`/api/core/teams*`).
 abstract class TeamsRepository {
@@ -23,6 +24,8 @@ abstract class TeamsRepository {
     String? jerseyNumber,
   });
   Future<void> unassign(String teamId, String playerId);
+
+  /// A null [jerseyNumber] removes the jersey (named in `clear`, ADR-0032).
   Future<api.TeamPlayer> setJersey(
     String teamId,
     String playerId,
@@ -137,7 +140,9 @@ class ApiTeamsRepository implements TeamsRepository {
     teamId: teamId,
     playerId: playerId,
     updateTeamPlayerRequest: api.UpdateTeamPlayerRequest(
-      (b) => b.jerseyNumber = jerseyNumber,
+      (b) => b
+        ..jerseyNumber = jerseyNumber
+        ..clear = clearList({api.UpdateTeamPlayerRequestClearEnum.jerseyNumber: jerseyNumber}),
     ),
   )).data!;
 }

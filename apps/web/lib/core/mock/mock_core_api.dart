@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'mock_query.dart';
+
 /// Result of a mocked core-service call.
 class MockResult {
   const MockResult.json(this.status, Object? body)
@@ -262,10 +264,8 @@ class MockCoreApi {
         if (id == null) {
           if (is_('GET')) return MockResult.json(200, _profileJson(tenantId));
           if (is_('PATCH')) {
-            for (final k in ['name', 'timezone', 'defaultLocale', 'contactEmail', 'websiteUrl']) {
-              if (b.containsKey(k) && b[k] != null) _profile[k] = b[k];
-            }
-            return MockResult.json(200, _profileJson(tenantId));
+            return mockApplyUpdate(_profile, b, clearable: const {'contactEmail', 'websiteUrl'}) ??
+                MockResult.json(200, _profileJson(tenantId));
           }
         }
         if (id == 'settings') {
@@ -314,8 +314,7 @@ class MockCoreApi {
         }
         if (id != null && is_('PATCH')) {
           final c = _categories.firstWhere((c) => c['id'] == id);
-          c.addAll(b);
-          return MockResult.json(200, c);
+          return mockApplyUpdate(c, b, clearable: const {'maxAge'}) ?? MockResult.json(200, c);
         }
         if (id != null && is_('DELETE')) {
           if (_teams.any((t) => (t['ageCategory']! as Map)['id'] == id)) {
@@ -487,10 +486,9 @@ class MockCoreApi {
     if (t == null) return const MockResult.json(404, {'title': 'Not found', 'status': 404});
     if (sub == null && method == 'GET') return MockResult.json(200, t);
     if (sub == null && method == 'PATCH') {
+      final error = mockApplyUpdate(t, {...b}..remove('ageCategoryId'), clearable: const {'alias'});
+      if (error != null) return error;
       if (b['ageCategoryId'] != null) t['ageCategory'] = _categories.firstWhere((c) => c['id'] == b['ageCategoryId']);
-      for (final k in ['name', 'alias', 'genderPolicy']) {
-        if (b.containsKey(k)) t[k] = b[k];
-      }
       return MockResult.json(200, t);
     }
     if (sub == 'staff') {
@@ -536,7 +534,9 @@ class MockCoreApi {
       if (playerId != null && method == 'PATCH') {
         final p = _playerById(playerId);
         for (final a in (p['teams']! as List).cast<Map<String, Object?>>()) {
-          if ((a['team'] as Map)['id'] == id) a['jerseyNumber'] = b['jerseyNumber'];
+          if ((a['team'] as Map)['id'] != id) continue;
+          final error = mockApplyUpdate(a, b, clearable: const {'jerseyNumber'});
+          if (error != null) return error;
         }
         return MockResult.json(200, _teamPlayer(id!, playerId));
       }
