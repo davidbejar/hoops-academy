@@ -52,4 +52,26 @@ kc add-roles -r "$REALM" --uusername superadmin@hoops-academy.com --rolename sup
 # (ADR-0022) and e-mail-as-username (ADR-0023: an e-mail change moves the username, which Keycloak refuses with
 # error-user-attribute-read-only otherwise), without resetting the database.
 kc update "realms/$REALM" -s loginTheme=hoops -s registrationEmailAsUsername=true >/dev/null
-echo "seed-users: done (superadmin has super_admin; login theme hoops; e-mail as username)"
+# Token settings of ADR-0034 for a realm imported before them: refresh-token rotation with reuse detection, and the
+# audience mappers of each client, read from the realm file (the source of truth; existing mappers are kept).
+kc update "realms/$REALM" -s revokeRefreshToken=true -s refreshTokenMaxReuse=0 >/dev/null
+python3 -I - infra/keycloak/realm-academy.json <<'PY' |
+import json, sys
+for client in json.load(open(sys.argv[1]))["clients"]:
+    for m in client.get("protocolMappers", []):
+        if m["protocolMapper"] == "oidc-audience-mapper":
+            print(client["clientId"], m["name"], m["config"]["included.client.audience"], sep="\t")
+PY
+while IFS=$'\t' read -r client mapper audience; do
+  cid=$(kc get clients -r "$REALM" -q "clientId=$client" --fields id --format csv --noquotes | head -n1 | tr -d '\r')
+  [ -n "$cid" ] || { echo "seed-users: realm has no client $client" >&2; exit 1; }
+  if ! kc get "clients/$cid/protocol-mappers/models" -r "$REALM" --fields name --format csv --noquotes | tr -d '\r' \
+      | grep -qxF "$mapper"; then
+    kc create "clients/$cid/protocol-mappers/models" -r "$REALM" -s "name=$mapper" -s protocol=openid-connect \
+      -s protocolMapper=oidc-audience-mapper -s "config.\"included.client.audience\"=$audience" \
+      -s 'config."access.token.claim"=true' -s 'config."id.token.claim"=false' \
+      -s 'config."introspection.token.claim"=true' >/dev/null
+    echo "added $mapper to client $client"
+  fi
+done
+echo "seed-users: done (superadmin has super_admin; login theme hoops; e-mail as username; token audiences, rotation)"

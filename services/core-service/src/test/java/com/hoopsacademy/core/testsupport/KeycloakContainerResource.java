@@ -7,6 +7,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.MountableFile;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,7 +46,9 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
         TestRealm.write(TestRealm.patched(), Path.of("target/test-classes").resolve(IMPORT));
         keycloak = new KeycloakContainer(TestRealm.KEYCLOAK_IMAGE).withRealmImportFile("/" + IMPORT)
                 .withCopyFileToContainer(MountableFile.forHostPath(TestRealm.locate(TestRealm.THEME)),
-                        "/opt/keycloak/themes/hoops");
+                        "/opt/keycloak/themes/hoops")
+                // Podman under parallel builds can take longer than the 2-minute default to answer /health/ready
+                .withStartupTimeout(Duration.ofMinutes(5));
         Map<String, String> config = new HashMap<>();
         if (withMail) {
             network = Network.newNetwork();

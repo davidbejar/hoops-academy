@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * F-08 / ADR-0034: the realm rotates refresh tokens with reuse detection. Every refresh answers a new refresh token,
- * and a refresh token that was already used once is rejected ({@code invalid_grant}), so a copied refresh token
- * stops working as soon as either party refreshes. Real Keycloak with the real realm file (test clients added).
+ * a refresh token that was already used once is rejected ({@code invalid_grant}), and that reuse ends the client's
+ * session, so the newest token dies with it. Real Keycloak with the real realm file (test clients added).
  */
 @Tag("keycloak")
 class RealmRefreshTokenRotationKeycloakTest {
@@ -56,6 +56,21 @@ class RealmRefreshTokenRotationKeycloakTest {
 
         assertThat(reused.statusCode()).as(reused.body()).isEqualTo(400);
         assertThat(RealmTokens.json(reused).path("error").asText()).isEqualTo("invalid_grant");
+    }
+
+    @Test
+    void aReuseEndsTheSessionSoTheLatestRefreshTokenStopsWorkingToo() {
+        // reuse detection: whoever presents a spent token (a thief, or a second browser tab, which is why the web
+        // client serialises refreshes across tabs: SerialRefresh) ends the chain for both parties
+        String first = signIn();
+        String latest = RealmTokens.json(tokens.refresh(TestRealm.WEB_DIRECT_GRANT, first))
+                .path("refresh_token").asText();
+        assertThat(tokens.refresh(TestRealm.WEB_DIRECT_GRANT, first).statusCode()).isEqualTo(400);
+
+        HttpResponse<String> afterReuse = tokens.refresh(TestRealm.WEB_DIRECT_GRANT, latest);
+
+        assertThat(afterReuse.statusCode()).as(afterReuse.body()).isEqualTo(400);
+        assertThat(RealmTokens.json(afterReuse).path("error").asText()).isEqualTo("invalid_grant");
     }
 
     private static String signIn() {

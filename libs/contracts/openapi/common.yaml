@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — shared components
-  version: 1.1.0
+  version: 1.1.1
   description: |
     Components shared by `core.yaml`, `game.yaml` and `athlete.yaml` (referenced as `./common.yaml#/...`).
     This file declares no operations.
@@ -21,7 +21,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Keycloak access token (realm `academy`). `/internal/**` requires a client-credentials token with the `service` role.
+      description: Keycloak access token (realm `academy`) minted for the called service, i.e. `aud` contains `core-service`, `game-service` or `athlete-service` (ADR-0034); a token for another audience is a 401. `/internal/**` requires a client-credentials token with the `service` role.
 
   parameters:
     TenantIdHeader:

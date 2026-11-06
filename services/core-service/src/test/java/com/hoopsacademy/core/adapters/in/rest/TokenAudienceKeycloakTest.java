@@ -22,7 +22,8 @@ import org.junit.jupiter.api.Test;
  * F-14 / ADR-0034: core accepts only access tokens minted for the audience {@code core-service}. Real tokens of the
  * test realm (the real realm file plus test clients): one minted for another audience is a 401 even with the realm role
  * {@code service}; core's own service token (for game and athlete) is a 401 at core; the callers of core's
- * {@code /internal} (game, athlete) and the web client get through.
+ * {@code /internal} (game, athlete) and the web client get through (the web user lacks the role {@code service},
+ * hence 403 on {@code /internal}).
  */
 @Tag("keycloak")
 @QuarkusTest
@@ -70,6 +71,7 @@ class TokenAudienceKeycloakTest {
                 .path("access_token").asText();
         assertThat(RealmTokens.audiences(token)).contains("core-service", "game-service", "athlete-service");
 
-        given().auth().oauth2(token).get("/api/core/me").then().statusCode(200);
+        // authenticated, so the missing role `service` decides (an unknown audience would be a 401 first)
+        given().auth().oauth2(token).get("/internal/usage/" + Members.newTenant()).then().statusCode(403);
     }
 }
