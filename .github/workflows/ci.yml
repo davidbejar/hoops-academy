@@ -68,10 +68,14 @@ jobs:
         with:
           chrome-version: 157.0.8103.38
           install-chromedriver: true
-      # chromedriver looks up `google-chrome` before anything on PATH, so the runner's own Chrome (another major) wins
-      # over the action's; point that name at the pinned build.
-      - name: Make the pinned Chrome the default google-chrome
-        run: sudo ln -sf "${{ steps.chrome.outputs.chrome-path }}" /usr/bin/google-chrome && google-chrome --version
+      # chromedriver finds the runner's own Chrome (/opt/google/chrome, another major) before the action's, so remove
+      # it and make `google-chrome` a wrapper around the pinned build with the flags a headless runner needs.
+      - name: Make the pinned Chrome the only google-chrome
+        run: |
+          sudo rm -rf /opt/google/chrome
+          printf '#!/bin/sh\nexec "%s" --no-sandbox --disable-dev-shm-usage "$@"\n' "${{ steps.chrome.outputs.chrome-path }}" | sudo tee /usr/bin/google-chrome >/dev/null
+          sudo chmod +x /usr/bin/google-chrome
+          google-chrome --version
       - run: flutter pub get
         working-directory: apps/web
       - name: Web smoke (mock mode, headless)
