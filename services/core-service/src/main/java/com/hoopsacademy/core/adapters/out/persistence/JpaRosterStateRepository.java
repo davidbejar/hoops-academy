@@ -145,9 +145,10 @@ class JpaRosterStateRepository implements RosterStates {
 
     private Set<TenantRole> roles(PersonId person) {
         Set<TenantRole> roles = EnumSet.noneOf(TenantRole.class);
-        em.createNativeQuery("select role from core.membership_role where person_id = :id", String.class)
-                .setParameter("id", person.value()).getResultStream()
-                .forEach(role -> roles.add(TenantRole.valueOf((String) role)));
+        for (Object role : em.createNativeQuery("select role from core.membership_role where person_id = :id",
+                String.class).setParameter("id", person.value()).getResultList()) {
+            roles.add(TenantRole.valueOf((String) role));
+        }
         return roles;
     }
 
@@ -165,7 +166,8 @@ class JpaRosterStateRepository implements RosterStates {
     }
 
     private static Optional<Object[]> first(Query query) {
-        return query.getResultList().stream().findFirst().map(row -> (Object[]) row);
+        List<?> rows = query.setMaxResults(1).getResultList();
+        return rows.isEmpty() ? Optional.empty() : Optional.of((Object[]) rows.getFirst());
     }
 
     private static Optional<LocalDate> date(Object value) {

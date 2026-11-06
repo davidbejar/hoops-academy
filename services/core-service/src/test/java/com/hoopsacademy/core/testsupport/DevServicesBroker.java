@@ -8,7 +8,10 @@ import java.util.Objects;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.testcontainers.DockerClientFactory;
 
-/** Pauses and resumes the Dev Services Redpanda container: a broker that stops answering, then comes back. */
+/**
+ * Pauses and resumes the Dev Services Redpanda container: a broker that stops answering, then comes back. Paused
+ * containers are listed only with {@code showAll}.
+ */
 public final class DevServicesBroker {
 
     private DevServicesBroker() {}
@@ -24,7 +27,7 @@ public final class DevServicesBroker {
     private static String containerId() {
         String bootstrap = ConfigProvider.getConfig().getValue("kafka.bootstrap.servers", String.class);
         int port = Integer.parseInt(bootstrap.substring(bootstrap.lastIndexOf(':') + 1));
-        return docker().listContainersCmd().exec().stream()
+        return docker().listContainersCmd().withShowAll(true).exec().stream()
                 .filter(container -> publishes(container, port))
                 .map(Container::getId)
                 .findFirst()
