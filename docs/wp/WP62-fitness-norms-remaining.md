@@ -40,3 +40,40 @@ placeholder with its source gap stated.
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+
+### Acceptance checklist
+- [x] `norms.md` lists every table with its citation (per-test table, one section per source with year, population, n, protocol
+      and exact table; "References" adds the sources read and not used); cited rows **370 -> 475** of 630, placeholders 260 -> 155.
+- [x] Fresh `./mvnw -B -ntp -pl services/athlete-service -am verify -Dquarkus.http.test-port=0`: BUILD SUCCESS; athlete-service
+      679 tests, 0 failures (common-quarkus 186 + 156), all coverage checks met; the repeatable seed applied on Testcontainers
+      Postgres 17.
+- [x] `just mutation athlete-service`: 471 mutations, 471 killed (100 %, baseline 100).
+- [x] Handover with the sources table (below).
+
+### Built
+| Rows | Before | After (WP62) | Source (year, population, n, exact table) |
+|---|---|---|---|
+| COOPER_12MIN 8-12 (50) | synthetic placeholder | cited | Balague et al., Apunts 1982;19(74):109-112, **Tabla I** (printed P20-P80, groups 7-8 / 9-10 / 11-12); 1,272 Barcelona schoolchildren 7-14, n 50-376 per group (Tabla II) |
+| AGILITY_T_TEST 12-13 (20) | synthetic placeholder | cited | Lesinski et al., PLoS One 2020;15(8):e0237423, **Table 3** (printed P20-P80, performance-oriented); 703 German elite young athletes, n 34-75 per cell |
+| VERTICAL_JUMP 12-13, 16, boys 17 (35) | synthetic placeholder | cited | Leone et al., J Funct Morphol Kinesiol 2025;10(1):46, **Table 5** (LMS, CMJ with arm swing, photocells); 1,862 Quebec adolescents 12-17, n 92-218 per cell |
+| AGILITY_T_TEST 16-18 (30) | synthetic, ~1.2 s too fast (girls) | placeholder repeating cited age 15 (Mascherini) | - |
+| VERTICAL_JUMP girls 17, 18 (15) | synthetic | placeholder repeating girls 16 / boys 17 (Leone) | Leone girls-17 row is a copy of the boys-12 row |
+| unchanged placeholders | | SIT_AND_REACH 8, 18 (20); SPRINT_20M 18 (10); T-test and jump 8-11 (80) | gaps and searches in norms.md |
+
+Ids reused (in-place upsert of `R__physical_test_norms.sql`, no V5 needed); the VERTICAL_JUMP type description now says "with
+arm swing". Every value came from a script over the downloaded source (Europe PMC XML for Leone and Lesinski) except Balague,
+a scanned table read from a 400 dpi rendering and cross-checked against its own mean + z * SD (boys within 1 m). Tests:
+`NormSeedTest` +3 (Balague edges, Lesinski/Leone edges and repeats, `placeholderRowsDoNotExceedTheRecordedCount`: <= 155
+placeholders, >= 475 cited), per-test pinned counts updated; `PhysicalTestApiTest`'s placeholder example moved to a boy of 18.
+
+### Decisions
+- Rejected although readable, reasons in norms.md: Martakis 2023 (DONALD, jump 6-18: higher and narrower than both school surveys,
+  10 cm band jumps), Dardouri 2023 (T-test 10-11: age means below the pooled mean), Ramos 2021 (boys basketball, ~1.5 s faster than
+  every source), Bos 2014 (sprint 17/18: Z-values, flying start), Zhang 2021 (sit-and-reach zero unknown), DAFIS (back-saver test).
+- A misprinted cell (Balague girls 9-10 P60) is replaced by the table's own normal model and the row's `source` says so.
+- Commit trailer as the brief asks (Fable line) plus the session line.
+
+### Open points
+- Moreno-Gonzalez 2026 (BMC Pediatr, jump 6-17) still behind a Springer bot challenge, not in PMC: best lead for jump 8-11.
+- Cooper teenage table still not traced to a primary source; Catley PDF vs BMJ copy still unchecked (BMJ 403, no PMC).
+- Docs pass: `docs/conformance.md` (S-43, S-44, item 4) and `docs/roadmap.md` line 81 still say 370 of 630.
