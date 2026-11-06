@@ -1,0 +1,108 @@
+{{- /*
+Counter store of Envoy Gateway's global rate limit service (WP40, ADR-0033). Envoy Gateway's `envoy-ratelimit` pods
+(namespace rateLimit.redis.clientNamespace) are the only clients: the NetworkPolicy admits nothing else and the pod has
+no egress. Counters are fixed one-minute windows with a TTL, so there is no persistence and no
+replica: a restart resets the windows in progress, which only lets a client start a fresh minute early.
+No password: the store holds no data worth stealing and the policy is the access control (ADR-0033).
+*/ -}}
+{{- $r := .Values.rateLimit.redis -}}
+{{- if $r.enabled }}
+{{- $labels := dict "app.kubernetes.io/name" "ratelimit-redis" "app.kubernetes.io/part-of" "hoops-academy" "app.kubernetes.io/component" "rate-limit-store" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ratelimit-redis
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {app.kubernetes.io/name: ratelimit-redis}
+  template:
+    metadata:
+      labels:
+        {{- toYaml $labels | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ $r.runAsUser }}
+        runAsGroup: {{ $r.runAsGroup }}
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: redis
+          image: {{ printf "%s:%s%s" $r.image.repository $r.image.tag (ternary (printf "@%s" $r.image.digest) "" (ne $r.image.digest "")) | quote }}
+          imagePullPolicy: IfNotPresent
+          # In-memory only (no RDB/AOF), bounded memory with LRU eviction, CONFIG disabled so a client cannot
+          # reconfigure the server (e.g. turn persistence on or change the bind address).
+          args:
+            - redis-server
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+            - --protected-mode
+            - "no"
+            - --maxmemory
+            - {{ $r.maxMemory | quote }}
+            - --maxmemory-policy
+            - allkeys-lru
+            - --rename-command
+            - CONFIG
+            - ""
+          ports:
+            - {name: redis, containerPort: 6379}
+          readinessProbe:
+            tcpSocket: {port: redis}
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: {port: redis}
+            periodSeconds: 20
+          resources:
+            {{- toYaml $r.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+      volumes:
+        - name: data
+          emptyDir: {sizeLimit: 16Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ratelimit-redis
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  selector: {app.kubernetes.io/name: ratelimit-redis}
+  ports:
+    - {name: redis, port: 6379, targetPort: redis}
+---
+# Only Envoy Gateway's rate limit pods may connect (namespace AND pod labels: one `from` entry); no egress at all.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ratelimit-redis
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: ratelimit-redis}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $r.clientNamespace }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $r.clientPodLabels | nindent 14 }}
+      ports:
+        - {port: redis, protocol: TCP}
+  egress: []
+{{- end }}

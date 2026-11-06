@@ -29,8 +29,8 @@ route:
   hostnames: []
   path: /auth
   # Brute-force / credential-stuffing brake at the edge (Keycloak's brute-force detection is the second layer):
-  # the token endpoint and the login form POSTs get their own route with an Envoy Gateway local rate limit of rpm
-  # requests per minute per client IP (bucket of rpm tokens, refilled every minute). Rejections are 429.
+  # the token endpoint and the login form POSTs get their own route with an Envoy Gateway global rate limit of rpm
+  # requests per calendar minute per client IP, shared by all Envoy replicas (ADR-0033). Rejections are 429.
   rateLimit:
     enabled: true
     rpm: 60

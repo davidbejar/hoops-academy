@@ -139,7 +139,7 @@ spec:
 ---
 # Brute-force / credential-stuffing brake at the edge (Keycloak's brute-force detection is the second layer): the token
 # endpoint and the login form POST get their own route (prefix match, so a trailing slash or sub-path is limited too)
-# and an Envoy Gateway local rate limit per client IP.
+# and an Envoy Gateway global rate limit per client IP (ADR-0033).
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -158,8 +158,8 @@ spec:
       {{- with include "keycloak.ruleTimeouts" $ }}{{ . | nindent 6 }}{{ end }}
     {{- end }}
 ---
-# {{ $rpm }} requests per minute per client IP (token bucket of {{ $rpm }}, refilled every minute; per Envoy replica).
-# Over the limit: 429.
+# {{ $rpm }} requests per minute per client IP, counted by the rate limit service in Redis (one-minute window shared by
+# every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
@@ -170,7 +170,7 @@ spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: {{ $fullname }}-ratelimited}
   rateLimit:
-    local:
+    global:
       rules:
         {{- range list "0.0.0.0/0" "::/0" }}
         - clientSelectors:

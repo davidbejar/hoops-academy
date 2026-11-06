@@ -15,6 +15,19 @@ ENVOY_GATEWAY_VERSION="v1.9.3"
 GATEWAY_API_VERSION="v1.6.1"
 CNPG_VERSION="1.30.1"
 CNPG_BRANCH="release-${CNPG_VERSION%.*}"
+# Global rate limiting (WP40, ADR-0033): Envoy Gateway deploys its rate limit service (Deployment envoy-ratelimit) with
+# a Redis backend; values-kind.yaml deploys that Redis in namespace $NS (rateLimit.redis.enabled). failClosed=false:
+# when the rate limit service or Redis does not answer within the timeout, requests pass (fail open). Other clusters
+# set the same keys in the operator's Envoy Gateway install (docs/runbooks/deploy.md).
+EG_VALUES=(
+  --set config.envoyGateway.rateLimit.backend.type=Redis
+  --set "config.envoyGateway.rateLimit.backend.redis.url=ratelimit-redis.${NS}.svc.cluster.local:6379"
+  --set config.envoyGateway.rateLimit.failClosed=false
+  --set config.envoyGateway.rateLimit.timeout=100ms
+  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.cpu=10m
+  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.memory=32Mi
+  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.limits.memory=128Mi
+)
 DEPLOY=0 BUILD_FLAGS=()
 for a in "$@"; do
   case "$a" in
@@ -43,8 +56,15 @@ K=(kubectl --context "kind-$CLUSTER")
 
 step "Envoy Gateway $ENVOY_GATEWAY_VERSION (Gateway API $GATEWAY_API_VERSION CRDs)"
 # `helm upgrade` never updates CRDs: on a version bump apply them first (docs/adr/0031-gateway-api.md, upgrade path).
+eg_config() { "${K[@]}" -n envoy-gateway-system get configmap envoy-gateway-config -o jsonpath='{.data}' 2>/dev/null || true; }
+eg_config_before=$(eg_config)
 helm --kube-context "kind-$CLUSTER" upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
-  --version "$ENVOY_GATEWAY_VERSION" -n envoy-gateway-system --create-namespace
+  --version "$ENVOY_GATEWAY_VERSION" -n envoy-gateway-system --create-namespace "${EG_VALUES[@]}"
+# The chart has no checksum annotation on the controller, so a changed config would not roll it: restart it when the
+# config changed on an existing install (e.g. a cluster created before WP40 gaining the rate limit backend).
+if [ -n "$eg_config_before" ] && [ "$eg_config_before" != "$(eg_config)" ]; then
+  "${K[@]}" -n envoy-gateway-system rollout restart deployment/envoy-gateway
+fi
 
 step "CloudNativePG operator $CNPG_VERSION"
 "${K[@]}" apply --server-side --force-conflicts \

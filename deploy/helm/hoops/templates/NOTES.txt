@@ -1,0 +1,16 @@
+Hoops Academy {{ .Chart.Version }} installed in namespace {{ .Release.Namespace }}. Public URL: {{ .Values.global.publicUrl }}
+
+Global rate limits (ADR-0033): Envoy Gateway must run its rate limit service with a Redis backend, otherwise the
+rate-limit BackendTrafficPolicies are not applied. Envoy Gateway Helm values (cluster operator):
+  config.envoyGateway.rateLimit.backend.type=Redis
+{{- if .Values.rateLimit.redis.enabled }}
+  config.envoyGateway.rateLimit.backend.redis.url=ratelimit-redis.{{ .Release.Namespace }}.svc.cluster.local:6379   (Redis of this release)
+{{- else if .Values.rateLimit.redis.url }}
+  config.envoyGateway.rateLimit.backend.redis.url={{ .Values.rateLimit.redis.url }}   (external Redis)
+{{- else }}
+  config.envoyGateway.rateLimit.backend.redis.url=<host:port>   (rateLimit.redis.url is not set: name your Redis there)
+{{- end }}
+  config.envoyGateway.rateLimit.failClosed=false   (fail open when Redis is unreachable; see ADR-0033)
+  config.envoyGateway.rateLimit.timeout=100ms
+Check: kubectl -n {{ .Release.Namespace }} describe backendtrafficpolicy   (every policy Accepted=True)
+       kubectl -n envoy-gateway-system rollout status deploy/envoy-ratelimit

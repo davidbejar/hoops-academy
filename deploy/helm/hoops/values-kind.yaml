@@ -15,6 +15,9 @@ gateway:
     serviceType: NodePort
     nodePorts: {http: 30080, https: 30443}
     resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 256Mi}}
+# Counter store of the global rate limits; deploy/kind/up.sh points Envoy Gateway at ratelimit-redis.hoops:6379.
+rateLimit:
+  redis: {enabled: true}
 keycloak:
   publicUrl: http://localhost:8090
   resources:

@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   podSelector:
     matchLabels:
@@ -42,7 +42,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   minAvailable: 1
   selector:
@@ -63,7 +63,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 data:
   QUARKUS_HTTP_PORT: "8099"
   DEMO_URL: "http://example.invalid"
@@ -81,7 +81,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   type: ClusterIP
   selector:
@@ -106,7 +106,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   revisionHistoryLimit: 3
   selector:
@@ -122,9 +122,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: hoops-service-0.2.0
+        helm.sh/chart: hoops-service-0.3.0
       annotations:
-        checksum/env: 732d247c24e01077d549e0469fd3ae20442e2ff5c8188cb026bffed36b2fdfc0
+        checksum/env: 8422f1d82d44a6693b8fadc58d71018869f7212109be72e113394446080a00fe
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8099"
@@ -205,7 +205,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -223,8 +223,8 @@ spec:
 
 ---
 # Source: hoops-service/templates/httproute.yaml
-# Envoy Gateway local rate limit: 120 requests per minute per client IP (token bucket of 120, refilled every
-# minute; per Envoy replica). Over the limit: 429.
+# Envoy Gateway global rate limit: 120 requests per minute per client IP, counted by the rate limit service in
+# Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
@@ -236,12 +236,12 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: demo-service-batch}
   rateLimit:
-    local:
+    global:
       rules:
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -252,8 +252,8 @@ spec:
 
 ---
 # Source: hoops-service/templates/httproute.yaml
-# Envoy Gateway local rate limit: 10 requests per minute per client IP (token bucket of 10, refilled every
-# minute; per Envoy replica). Over the limit: 429.
+# Envoy Gateway global rate limit: 10 requests per minute per client IP, counted by the rate limit service in
+# Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
@@ -265,12 +265,12 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: demo-service-plain}
   rateLimit:
-    local:
+    global:
       rules:
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -292,7 +292,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -318,7 +318,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -345,7 +345,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -404,7 +404,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -432,7 +432,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.2.0
+    helm.sh/chart: hoops-service-0.3.0
 spec:
   parentRefs:
     - name: hoops

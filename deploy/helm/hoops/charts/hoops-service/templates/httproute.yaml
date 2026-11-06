@@ -1,6 +1,6 @@
 {{- /*
 Gateway API routes (WP36, ADR-0031). One HTTPRoute per path prefix, a health route with exact rewrites, and one route
-per rate-limited path with its Envoy Gateway BackendTrafficPolicy (local rate limit, a token bucket per client IP).
+per rate-limited path with its Envoy Gateway BackendTrafficPolicy (global rate limit per client IP, ADR-0033).
 */ -}}
 {{- if .Values.route.enabled }}
 {{- $root := . }}
@@ -71,8 +71,8 @@ spec:
         - {name: {{ $fullname }}, port: {{ $root.Values.port }}}
       {{- with include "hoops-service.ruleTimeouts" $root }}{{ . | nindent 6 }}{{ end }}
 ---
-# Envoy Gateway local rate limit: {{ $rpm }} requests per minute per client IP (token bucket of {{ $rpm }}, refilled every
-# minute; per Envoy replica). Over the limit: 429.
+# Envoy Gateway global rate limit: {{ $rpm }} requests per minute per client IP, counted by the rate limit service in
+# Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
@@ -83,7 +83,7 @@ spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: {{ $name }}}
   rateLimit:
-    local:
+    global:
       rules:
         {{- range list "0.0.0.0/0" "::/0" }}
         - clientSelectors:

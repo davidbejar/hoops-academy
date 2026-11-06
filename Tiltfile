@@ -119,6 +119,9 @@ k8s_resource(
              'hoops-http:clienttrafficpolicy', 'hoops-https:clienttrafficpolicy'],
     labels=['infra'],
 )
+# Counter store of the global rate limits (WP40, ADR-0033); Envoy Gateway's envoy-ratelimit pods (outside this
+# namespace, installed by `just kind-up`) are its only clients.
+k8s_resource('ratelimit-redis', objects=['ratelimit-redis:networkpolicy'], labels=['infra'])
 k8s_resource('keycloak', objects=['keycloak-realm:configmap', 'keycloak:httproute', 'keycloak-ratelimited:httproute',
                                   'keycloak-ratelimited:backendtrafficpolicy', 'keycloak-admin-deny:httproute'],
              resource_deps=['databases'],

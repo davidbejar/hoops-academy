@@ -43,6 +43,25 @@ gateway:
     replicas: 1
     resources: {}
 
+# Global rate limits (WP40, ADR-0033): the BackendTrafficPolicies of the token endpoint, the login form and
+# events:batch are global, so every Envoy replica shares one counter per client IP. Envoy Gateway's rate limit service
+# keeps those counters in Redis; Envoy Gateway itself (installed by the cluster operator, not by this chart) must be
+# installed with config.envoyGateway.rateLimit.backend {type: Redis, redis.url: <host:port>} (docs/runbooks/deploy.md).
+rateLimit:
+  redis:
+    # true: this chart runs a small in-memory Redis `ratelimit-redis` (kind). false: an external Redis, whose address
+    # is `url` (host:port, what the Envoy Gateway install must point at; the chart only reports it in NOTES).
+    enabled: false
+    url: ""
+    image: {repository: docker.io/library/redis, tag: 8.10.3-alpine, digest: ""}
+    runAsUser: 999              # user `redis` of the alpine image
+    runAsGroup: 1000
+    maxMemory: 24mb             # counters are tiny (one key per client IP, route and minute); LRU beyond that
+    resources: {requests: {cpu: 10m, memory: 16Mi}, limits: {memory: 64Mi}}
+    # The only clients admitted by the NetworkPolicy: Envoy Gateway's rate limit pods.
+    clientNamespace: envoy-gateway-system
+    clientPodLabels: {app.kubernetes.io/name: envoy-ratelimit}
+
 databases:
   enabled: true
 
@@ -84,9 +103,9 @@ game:
   route:
     paths: [/api/game]
     health: {enabled: true, prefix: /api/game}
-    # Offline devices flush their outbox in bursts; 120/min per IP (Envoy: a bucket of 120 refilled every minute)
-    # covers a reconnect storm of a bench, but not a flood. The colon path is matched on the raw path without rewrite;
-    # the percent-encoded form (%3A, which Envoy does not decode) is limited too.
+    # Offline devices flush their outbox in bursts; 120/min per IP (global: one counter per calendar minute for all
+    # Envoy replicas, ADR-0033) covers a reconnect storm of a bench, but not a flood. The colon path is matched on the
+    # raw path without rewrite; the percent-encoded form (%3A, which Envoy does not decode) is limited too.
     rateLimits:
       - {name: events-batch, path: "/api/game/matches/[^/]+/events(:|%3[Aa])batch", rpm: 120}
   env:

@@ -26,8 +26,9 @@ route:
   health:
     enabled: false
     prefix: ""
-  # Rate-limited paths, each its own HTTPRoute + Envoy Gateway BackendTrafficPolicy (local limit per client IP):
-  # [{name, path (RE2 regex on the raw path), rpm}]. Envoy's bucket holds rpm tokens and refills every minute.
+  # Rate-limited paths, each its own HTTPRoute + Envoy Gateway BackendTrafficPolicy (global limit per client IP,
+  # ADR-0033): [{name, path (RE2 regex on the raw path), rpm}]. At most rpm requests per calendar minute, counted by
+  # Envoy Gateway's rate limit service in Redis for all Envoy replicas together.
   rateLimits: []
 
 # Prometheus scrape annotations on the pod (/q/metrics on the service port; never routed by the gateway).

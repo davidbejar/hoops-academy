@@ -98,9 +98,10 @@ done
 for p in /auth/realms/academy/protocol/openid-connect/token /auth/realms/academy/login-actions/authenticate; do
   routes_to keycloak-ratelimited "$p" PathPrefix keycloak && ok "rate-limited route $p -> keycloak" || bad "rate-limited route $p"
 done
-ratelimited() { # BackendTrafficPolicy $1 targets HTTPRoute $1 with $2 requests/minute per client IP (IPv4 + IPv6)
+ratelimited() { # BackendTrafficPolicy $1 targets HTTPRoute $1 with a global $2 requests/minute per client IP (IPv4 + IPv6)
   local d; d=$(doc "$1" BackendTrafficPolicy)
   echo "$d" | grep -q "kind: HTTPRoute, name: $1}" && [ "$(echo "$d" | grep -c "requests: $2, unit: Minute")" = 2 ] \
+    && echo "$d" | grep -q '^    global:$' && ! echo "$d" | grep -q '^    local:$' \
     && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}' && echo "$d" | grep -q 'sourceCIDR: {type: Distinct, value: "::/0"}'; }
 for spec in keycloak:/auth keycloak-ratelimited:/auth/realms/academy/protocol/openid-connect/token; do
   IFS=: read -r route path <<<"$spec"
@@ -108,10 +109,12 @@ for spec in keycloak:/auth keycloak-ratelimited:/auth/realms/academy/protocol/op
     && ok "$route: X-Forwarded-Host = public host (Keycloak back-channel URLs keep :8090)" || bad "$route X-Forwarded-Host"
 done
 rule keycloak /auth "$WORK/umbrella-tls.yaml" | grep -q 'value: "hoops.example.test"}' && ok "TLS: X-Forwarded-Host = hoops.example.test" || bad "TLS X-Forwarded-Host"
-ratelimited keycloak-ratelimited 60 && ok "token endpoint + login form: local rate limit 60/min per client IP" || bad "keycloak rate limit"
+ratelimited keycloak-ratelimited 60 && ok "token endpoint + login form: global rate limit 60/min per client IP" || bad "keycloak rate limit"
 routes_to game-service-events-batch '/api/game/matches/[^/]+/events(:|%3[Aa])batch' RegularExpression game-service \
   && ok "events:batch (and %3A) regex route, path not rewritten" || bad "events:batch route"
-ratelimited game-service-events-batch 120 && ok "events:batch: local rate limit 120/min per client IP" || bad "events:batch rate limit"
+ratelimited game-service-events-batch 120 && ok "events:batch: global rate limit 120/min per client IP" || bad "events:batch rate limit"
+# WP40 (ADR-0033): every Envoy replica shares the counters; no per-replica local limit is left in any render.
+! grep -hv '^ *#' "$WORK"/*.yaml | grep -q '^ *local:$' && ok "no local rate limit rendered (global only)" || bad "a local rate limit is still rendered"
 for s in core game athlete; do
   for h in "" /live /ready /started; do
     rule "$s-service-health" "/api/$s/q/health$h" | grep -q "type: Exact, value:" \
@@ -158,6 +161,22 @@ grep -q '"loginTheme": "hoops"' "$R" && doc keycloak Deployment | grep -q 'mount
   && ok "realm login theme hoops mounted from keycloak-theme ConfigMap" || bad "login theme not mounted"
 doc mailhog Service | grep -q 'port: 1025' && ok "kind: SMTP sink Service mailhog:1025 (realm smtpServer)" || bad "mailhog in kind"
 ! grep -q 'name: mailhog' "$WORK/umbrella-default.yaml" && ok "SMTP sink disabled outside kind" || bad "mailpit enabled by default"
+
+echo "== rate limit store (WP40, ADR-0033)"
+d=$(doc ratelimit-redis Deployment)
+echo "$d" | grep -q 'image: "docker.io/library/redis:[0-9][0-9.]*-alpine' && echo "$d" | grep -q 'runAsNonRoot: true' \
+  && echo "$d" | grep -q 'readOnlyRootFilesystem: true' && echo "$d" | grep -q 'automountServiceAccountToken: false' \
+  && echo "$d" | grep -A1 'limits:' | grep -q 'memory:' && ok "kind: ratelimit-redis pinned tag, non-root, read-only root FS, memory limit" || bad "ratelimit-redis Deployment"
+echo "$d" | grep -A1 -- '- --save' | grep -q -- '- ""' && echo "$d" | grep -A1 -- '- --appendonly' | grep -q -- '- "no"' \
+  && echo "$d" | grep -A1 -- '- --rename-command' | grep -q -- '- CONFIG' && ok "ratelimit-redis: in memory only, CONFIG disabled" || bad "ratelimit-redis args"
+n=$(doc ratelimit-redis NetworkPolicy)
+echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' && echo "$n" | grep -q 'egress: \[\]' \
+  && [ "$(echo "$n" | grep -c -- '- namespaceSelector:')" = 1 ] && ! echo "$n" | grep -q -- '- podSelector:' \
+  && echo "$n" | grep -A5 -- '- namespaceSelector:' | grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' \
+  && echo "$n" | grep -A5 -- '- namespaceSelector:' | grep -q '^          podSelector:' \
+  && echo "$n" | grep -q 'app.kubernetes.io/name: envoy-ratelimit' \
+  && ok "ratelimit-redis NetworkPolicy: only envoy-ratelimit pods of envoy-gateway-system, no egress" || bad "ratelimit-redis NetworkPolicy"
+! grep -q 'name: ratelimit-redis' "$WORK/umbrella-default.yaml" && ok "default: no in-chart Redis (external, rateLimit.redis.url)" || bad "ratelimit-redis rendered by default"
 
 echo "== gitleaks (rendered manifests)"
 if command -v gitleaks >/dev/null; then

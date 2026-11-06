@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.2.0
+    helm.sh/chart: athlete-0.3.0
 spec:
   podSelector:
     matchLabels:
@@ -43,7 +43,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.2.0
+    helm.sh/chart: core-0.3.0
 spec:
   podSelector:
     matchLabels:
@@ -105,7 +105,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.2.0
+    helm.sh/chart: game-0.3.0
 spec:
   podSelector:
     matchLabels:
@@ -136,7 +136,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 spec:
   podSelector:
     matchLabels:
@@ -193,7 +193,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.2.0
+    helm.sh/chart: athlete-0.3.0
 data:
   QUARKUS_HTTP_PORT: "8083"
   ATHLETE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -215,7 +215,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.2.0
+    helm.sh/chart: core-0.3.0
 data:
   QUARKUS_HTTP_PORT: "8081"
   ATHLETE_SERVICE_URL: "http://athlete-service:8083"
@@ -374,7 +374,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.2.0
+    helm.sh/chart: game-0.3.0
 data:
   QUARKUS_HTTP_PORT: "8082"
   GAME_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -396,7 +396,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 data:
   realm-academy.json: |
     {
@@ -607,7 +607,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 data:
   basketball.svg: |
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><!-- Material Icons "sports_basketball" (Apache-2.0), the app's logo icon --><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM5.23 7.75C6.1 8.62 6.7 9.74 6.91 11H4.07c.17-1.24.6-2.31 1.16-3.25zM4.07 13h2.84c-.21 1.26-.81 2.38-1.68 3.25-.56-.94-.99-2.01-1.16-3.25zM11 19.93c-1.73-.22-3.29-1-4.49-2.14 1.3-1.24 2.19-2.91 2.42-4.79H11v6.93zM11 11H8.93C8.69 9.12 7.81 7.44 6.5 6.2c1.2-1.13 2.76-1.92 4.5-2.13V11zm8.93 0h-2.84c.21-1.26.81-2.38 1.68-3.25.56.94.99 2.01 1.16 3.25zM13 4.07c1.73.22 3.29.99 4.5 2.13-1.31 1.24-2.19 2.92-2.43 4.8H13V4.07zm0 15.86V13h2.07c.24 1.88 1.12 3.55 2.42 4.79-1.2 1.15-2.76 1.92-4.49 2.14zm5.77-3.68c-.87-.86-1.46-1.99-1.68-3.25h2.84c-.17 1.24-.6 2.31-1.16 3.25z"/></svg>
@@ -775,7 +775,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.2.0
+    helm.sh/chart: athlete-0.3.0
 spec:
   type: ClusterIP
   selector:
@@ -800,7 +800,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.2.0
+    helm.sh/chart: core-0.3.0
 spec:
   type: ClusterIP
   selector:
@@ -825,7 +825,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.2.0
+    helm.sh/chart: game-0.3.0
 spec:
   type: ClusterIP
   selector:
@@ -850,7 +850,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 spec:
   selector:
     app.kubernetes.io/name: keycloak
@@ -891,7 +891,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.2.0
+    helm.sh/chart: athlete-0.3.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -908,9 +908,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: athlete-0.2.0
+        helm.sh/chart: athlete-0.3.0
       annotations:
-        checksum/env: 143c5e1727eb9a233c0a5e646394ccb5a1ddbe7b7a5b3a2467143d8557883501
+        checksum/env: 404c0e96e0397fdfd5edfeb0a6b457d6619e3c885888a838571fc2ab6a61cb88
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8083"
@@ -999,7 +999,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.2.0
+    helm.sh/chart: core-0.3.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -1016,9 +1016,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: core-0.2.0
+        helm.sh/chart: core-0.3.0
       annotations:
-        checksum/env: ec8d936717f6c191e23b557a5d473a5811f3c1dba8bfa7dd401713a0ba67e1de
+        checksum/env: a234df43ff2d8b22e5016621840b9a438a064fb411bb731fadf7f63fbab683be
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8081"
@@ -1112,7 +1112,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.2.0
+    helm.sh/chart: game-0.3.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -1129,9 +1129,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: game-0.2.0
+        helm.sh/chart: game-0.3.0
       annotations:
-        checksum/env: 2fa477975b0f7ad0e915bc51475f3b2823137b9541a96c69bec353bd814c1e93
+        checksum/env: 82c958191be0dd1628e6fa68e66e645a3efb0b0bd7aea01600604a40e395fc6b
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"
@@ -1220,7 +1220,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -1238,10 +1238,10 @@ spec:
         app.kubernetes.io/component: identity
         app.kubernetes.io/version: "26.8.1"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: keycloak-0.2.0
+        helm.sh/chart: keycloak-0.3.0
       annotations:
-        checksum/realm: e0560a5167a523bfce8a8e0bdd56f54336cc8a4aee8778c94f5f5f5197a817a2
-        checksum/theme: e7d4dbcdcc61a2e8c6e793aafcba16685e56f6686b76ed7dfc773d7edd47deeb
+        checksum/realm: 9323cfbe9e430389708bea509c565e2b9dfae8aee86696a54cf2b03dc734d52e
+        checksum/theme: 1d1a8c5da4c22f52d7897cfce10165d257a875bb146f88f36bf9ad288adad63c
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -1412,8 +1412,8 @@ spec:
 
 ---
 # Source: hoops/charts/game/templates/httproute.yaml
-# Envoy Gateway local rate limit: 120 requests per minute per client IP (token bucket of 120, refilled every
-# minute; per Envoy replica). Over the limit: 429.
+# Envoy Gateway global rate limit: 120 requests per minute per client IP, counted by the rate limit service in
+# Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
@@ -1425,12 +1425,12 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.2.0
+    helm.sh/chart: game-0.3.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: game-service-events-batch}
   rateLimit:
-    local:
+    global:
       rules:
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -1441,8 +1441,8 @@ spec:
 
 ---
 # Source: hoops/charts/keycloak/templates/keycloak.yaml
-# 60 requests per minute per client IP (token bucket of 60, refilled every minute; per Envoy replica).
-# Over the limit: 429.
+# 60 requests per minute per client IP, counted by the rate limit service in Redis (one-minute window shared by
+# every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
@@ -1454,12 +1454,12 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: keycloak-ratelimited}
   rateLimit:
-    local:
+    global:
       rules:
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -1659,7 +1659,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.2.0
+    helm.sh/chart: athlete-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1684,7 +1684,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.2.0
+    helm.sh/chart: athlete-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1739,7 +1739,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.2.0
+    helm.sh/chart: core-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1763,7 +1763,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.2.0
+    helm.sh/chart: core-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1788,7 +1788,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.2.0
+    helm.sh/chart: core-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1843,7 +1843,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.2.0
+    helm.sh/chart: game-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1868,7 +1868,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.2.0
+    helm.sh/chart: game-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1925,7 +1925,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.2.0
+    helm.sh/chart: game-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1951,7 +1951,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -1970,7 +1970,7 @@ spec:
 # Source: hoops/charts/keycloak/templates/keycloak.yaml
 # Brute-force / credential-stuffing brake at the edge (Keycloak's brute-force detection is the second layer): the token
 # endpoint and the login form POST get their own route (prefix match, so a trailing slash or sub-path is limited too)
-# and an Envoy Gateway local rate limit per client IP.
+# and an Envoy Gateway global rate limit per client IP (ADR-0033).
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -1982,7 +1982,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 spec:
   parentRefs:
     - name: hoops
@@ -2021,7 +2021,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.2.0
+    helm.sh/chart: keycloak-0.3.0
 spec:
   parentRefs:
     - name: hoops
