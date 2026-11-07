@@ -7,6 +7,7 @@ import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlannedAbsence;
 import com.hoopsacademy.athlete.domain.PlayerId;
+import com.hoopsacademy.common.paging.PageOffset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -75,7 +76,7 @@ class AbsenceJpaRepository implements AbsenceRepository {
                 q.setParameter("players", players.stream().map(PlayerId::value).toList());
             }
         }
-        List<PlannedAbsence> items = select.setFirstResult(page * size).setMaxResults(size).getResultList().stream()
+        List<PlannedAbsence> items = select.setFirstResult(PageOffset.of(page, size)).setMaxResults(size).getResultList().stream()
                 .map(AbsenceJpaRepository::toDomain).toList();
         return new PageResult<>(items, page, size, count.getSingleResult());
     }

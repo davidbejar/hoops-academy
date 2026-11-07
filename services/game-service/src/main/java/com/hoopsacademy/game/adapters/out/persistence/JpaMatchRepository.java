@@ -1,5 +1,6 @@
 package com.hoopsacademy.game.adapters.out.persistence;
 
+import com.hoopsacademy.common.paging.PageOffset;
 import com.hoopsacademy.game.application.MatchFilter;
 import com.hoopsacademy.game.application.MatchPage;
 import com.hoopsacademy.game.application.MatchRepository;
@@ -110,7 +111,7 @@ class JpaMatchRepository extends JdbcRepository implements MatchRepository {
             count.setParameter((String) param[0], param[1]);
             select.setParameter((String) param[0], param[1]);
         }
-        List<MatchEntity> entities = select.setFirstResult(page * size).setMaxResults(size).getResultList();
+        List<MatchEntity> entities = select.setFirstResult(PageOffset.of(page, size)).setMaxResults(size).getResultList();
         Map<UUID, MatchScore> scores = scores(entities.stream().map(e -> e.id).toList());
         List<Match> items = entities.stream().map(e -> toDomain(e, scores.getOrDefault(e.id, MatchScore.NONE))).toList();
         return new MatchPage(items, page, size, count.getSingleResult());

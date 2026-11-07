@@ -10,6 +10,7 @@ import com.hoopsacademy.athlete.domain.PlanItem;
 import com.hoopsacademy.athlete.domain.PlanItemId;
 import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.TrainingPlan;
+import com.hoopsacademy.common.paging.PageOffset;
 import com.hoopsacademy.common.tenancy.CurrentTenant;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
@@ -135,7 +136,7 @@ class PlanJpaRepository implements PlanRepository {
             select.setParameter("q", pattern);
             count.setParameter("q", pattern).setParameter("language", search.language().code());
         });
-        List<PlanEntity> page = select.setFirstResult(search.page() * search.size()).setMaxResults(search.size())
+        List<PlanEntity> page = select.setFirstResult(PageOffset.of(search.page(), search.size())).setMaxResults(search.size())
                 .getResultList();
         return new PageResult<>(withItems(page), search.page(), search.size(), count.getSingleResult());
     }

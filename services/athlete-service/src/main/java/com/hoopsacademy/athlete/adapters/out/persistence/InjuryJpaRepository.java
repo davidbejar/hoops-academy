@@ -9,6 +9,7 @@ import com.hoopsacademy.athlete.domain.InjurySeverity;
 import com.hoopsacademy.athlete.domain.InjuryStatus;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
+import com.hoopsacademy.common.paging.PageOffset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -83,7 +84,7 @@ class InjuryJpaRepository implements InjuryRepository {
             status.ifPresent(s -> q.setParameter("status", s.name()));
             occurredUntil.ifPresent(until -> q.setParameter("until", until));
         }
-        List<Injury> items = select.setFirstResult(page * size).setMaxResults(size).getResultList().stream()
+        List<Injury> items = select.setFirstResult(PageOffset.of(page, size)).setMaxResults(size).getResultList().stream()
                 .map(InjuryJpaRepository::toDomain).toList();
         return new PageResult<>(items, page, size, count.getSingleResult());
     }

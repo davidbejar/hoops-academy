@@ -11,6 +11,7 @@ import com.hoopsacademy.athlete.domain.PlanCompletion;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
+import com.hoopsacademy.common.paging.PageOffset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -100,7 +101,7 @@ class AssignmentJpaRepository implements AssignmentRepository {
             q.dueFrom().ifPresent(d -> query.setParameter("dueFrom", d));
             q.dueTo().ifPresent(d -> query.setParameter("dueTo", d));
         }
-        List<PlanAssignment> items = select.setFirstResult(q.page() * q.size()).setMaxResults(q.size()).getResultList()
+        List<PlanAssignment> items = select.setFirstResult(PageOffset.of(q.page(), q.size())).setMaxResults(q.size()).getResultList()
                 .stream().map(AssignmentJpaRepository::toDomain).toList();
         return new PageResult<>(items, q.page(), q.size(), count.getSingleResult());
     }
@@ -165,7 +166,7 @@ class AssignmentJpaRepository implements AssignmentRepository {
                 query.setParameter("players", q.players().stream().map(PlayerId::value).toList());
             }
         }
-        List<PlanCompletion> items = select.setFirstResult(q.page() * q.size()).setMaxResults(q.size()).getResultList()
+        List<PlanCompletion> items = select.setFirstResult(PageOffset.of(q.page(), q.size())).setMaxResults(q.size()).getResultList()
                 .stream().map(AssignmentJpaRepository::toDomain).toList();
         return new PageResult<>(items, q.page(), q.size(), count.getSingleResult());
     }

@@ -8,6 +8,7 @@ import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.SessionStatus;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.domain.TrainingSession;
+import com.hoopsacademy.common.paging.PageOffset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -91,7 +92,7 @@ class SessionJpaRepository implements SessionRepository {
             }
             query.status().ifPresent(st -> q.setParameter("status", st.name()));
         }
-        List<TrainingSession> items = select.setFirstResult(query.page() * query.size())
+        List<TrainingSession> items = select.setFirstResult(PageOffset.of(query.page(), query.size()))
                 .setMaxResults(query.size()).getResultList().stream().map(SessionJpaRepository::toDomain).toList();
         return new PageResult<>(items, query.page(), query.size(), count.getSingleResult());
     }

@@ -8,6 +8,7 @@ import com.hoopsacademy.athlete.domain.PhysicalTestResult;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TestResultId;
 import com.hoopsacademy.athlete.domain.TestTypeId;
+import com.hoopsacademy.common.paging.PageOffset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -85,7 +86,7 @@ class TestResultJpaRepository implements TestResultRepository {
             }
             type.ifPresent(t -> q.setParameter("type", t.value()));
         }
-        List<PhysicalTestResult> items = select.setFirstResult(page * size).setMaxResults(size).getResultList().stream()
+        List<PhysicalTestResult> items = select.setFirstResult(PageOffset.of(page, size)).setMaxResults(size).getResultList().stream()
                 .map(TestResultJpaRepository::toDomain).toList();
         return new PageResult<>(items, page, size, count.getSingleResult());
     }
