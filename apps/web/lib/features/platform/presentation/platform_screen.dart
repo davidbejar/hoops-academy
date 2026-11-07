@@ -64,6 +64,12 @@ class PlatformScreen extends ConsumerWidget {
                       title: l.platformTitle,
                       actions: [
                         OutlinedButton.icon(
+                          key: const Key('platform-requests'),
+                          icon: const Icon(Icons.mark_email_unread_outlined),
+                          label: Text(l.platformRequests),
+                          onPressed: () => context.go('/platform/requests'),
+                        ),
+                        OutlinedButton.icon(
                           key: const Key('platform-activity'),
                           icon: const Icon(Icons.history),
                           label: Text(l.platformActivity),

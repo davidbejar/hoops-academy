@@ -460,6 +460,18 @@ abstract class AppLocalizations {
   /// **'Introduce el nombre de tu academia'**
   String get landingJoinAcademyMissing;
 
+  /// No description provided for @landingJoinAcademyTaken.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya existe o se ha solicitado una academia con este nombre'**
+  String get landingJoinAcademyTaken;
+
+  /// No description provided for @landingJoinFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido enviar tu solicitud. Inténtalo de nuevo en un minuto.'**
+  String get landingJoinFailed;
+
   /// No description provided for @landingFooterLicense.
   ///
   /// In es, this message translates to:
@@ -5055,6 +5067,126 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Actividad de las academias'**
   String get platformActivity;
+
+  /// No description provided for @platformRequests.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitudes'**
+  String get platformRequests;
+
+  /// No description provided for @academyRequestsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitudes de academia'**
+  String get academyRequestsTitle;
+
+  /// No description provided for @academyRequestStatusPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendientes'**
+  String get academyRequestStatusPending;
+
+  /// No description provided for @academyRequestStatusAccepted.
+  ///
+  /// In es, this message translates to:
+  /// **'Aceptadas'**
+  String get academyRequestStatusAccepted;
+
+  /// No description provided for @academyRequestStatusRejected.
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazadas'**
+  String get academyRequestStatusRejected;
+
+  /// No description provided for @academyRequestsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay solicitudes aquí'**
+  String get academyRequestsEmpty;
+
+  /// No description provided for @academyRequestRequestedOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitada el {date}'**
+  String academyRequestRequestedOn(String date);
+
+  /// No description provided for @academyRequestAccept.
+  ///
+  /// In es, this message translates to:
+  /// **'Aceptar'**
+  String get academyRequestAccept;
+
+  /// No description provided for @academyRequestReject.
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazar'**
+  String get academyRequestReject;
+
+  /// No description provided for @academyRequestAcceptTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear la academia'**
+  String get academyRequestAcceptTitle;
+
+  /// No description provided for @academyRequestAcceptNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Quien la solicitó será el primer administrador de la academia.'**
+  String get academyRequestAcceptNote;
+
+  /// No description provided for @academyRequestRejectTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Rechazar la solicitud'**
+  String get academyRequestRejectTitle;
+
+  /// No description provided for @academyRequestReason.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo (se envía por correo a quien la solicitó)'**
+  String get academyRequestReason;
+
+  /// No description provided for @academyRequestReasonShown.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo'**
+  String get academyRequestReasonShown;
+
+  /// No description provided for @academyRequestRejected.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud rechazada'**
+  String get academyRequestRejected;
+
+  /// No description provided for @academyRequestMailNotSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo no enviado'**
+  String get academyRequestMailNotSent;
+
+  /// No description provided for @academyRequestOpenAcademy.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir la academia'**
+  String get academyRequestOpenAcademy;
+
+  /// No description provided for @academyRequestErrorNotPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta solicitud ya se ha decidido'**
+  String get academyRequestErrorNotPending;
+
+  /// No description provided for @academyRequestErrorNameTaken.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya existe una academia con este nombre'**
+  String get academyRequestErrorNameTaken;
+
+  /// No description provided for @academyRequestErrorSlugTaken.
+  ///
+  /// In es, this message translates to:
+  /// **'Este identificador ya está en uso'**
+  String get academyRequestErrorSlugTaken;
 
   /// No description provided for @auditTitle.
   ///

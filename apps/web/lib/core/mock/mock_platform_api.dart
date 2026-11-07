@@ -3,7 +3,8 @@ import 'mock_query.dart';
 
 /// In-memory stand-in for core-service's `/platform/**` (super admin console), dev mock mode only.
 /// Tenants and their lifecycle, administrators, usage with a few months of history and the audit list of every
-/// academy, with the platform actor shown unmasked like the server does for the super admin.
+/// academy, with the platform actor shown unmasked like the server does for the super admin. Academy requests (WP90,
+/// ADR-0044): the public submit and the workbench (list, accept = create the academy, reject).
 class MockPlatformApi {
   MockPlatformApi({
     required this.tenantAId,
@@ -23,6 +24,7 @@ class MockPlatformApi {
   final List<Map<String, Object?>> _tenants = [];
   final Map<String, List<Map<String, Object?>>> _admins = {};
   final List<Map<String, Object?>> _audit = [];
+  final List<Map<String, Object?>> _requests = [];
   var _seq = 100;
 
   String _id(String prefix) => '$prefix-${_seq++}';
@@ -241,6 +243,81 @@ class MockPlatformApi {
       ),
     ]);
     _audit.sort((a, b) => (b['at']! as String).compareTo(a['at']! as String));
+
+    Map<String, Object?> request(
+      int n,
+      int hoursAgo,
+      String status,
+      String? name,
+      String email,
+      String role,
+      String academy,
+      String locale, {
+      String? reason,
+      String? tenantId,
+    }) => {
+      'id': '00000000-0000-4000-8000-${(900 + n).toString().padLeft(12, '0')}',
+      'status': status,
+      'name': name,
+      'email': email,
+      'role': role,
+      'academyName': academy,
+      'locale': locale,
+      'requestedAt': now.subtract(Duration(hours: hoursAgo)).toIso8601String(),
+      'decidedAt': status == 'PENDING'
+          ? null
+          : now.subtract(Duration(hours: hoursAgo - 20)).toIso8601String(),
+      'decidedBy': status == 'PENDING' ? null : superAdminSubject,
+      'reason': reason,
+      'tenantId': tenantId,
+      'notifiedAt': status == 'PENDING' || n == 4
+          ? null
+          : now.subtract(Duration(hours: hoursAgo - 20)).toIso8601String(),
+    };
+    _requests.addAll([
+      request(
+        1,
+        3,
+        'PENDING',
+        'Lucía Pérez',
+        'lucia@valle.example',
+        'COACH',
+        'Escuela de Baloncesto Valle',
+        'es',
+      ),
+      request(
+        2,
+        27,
+        'PENDING',
+        null,
+        'admin@hoopsbali.example',
+        'ADMIN',
+        'Hoops Bali',
+        'id',
+      ),
+      request(
+        3,
+        100 * 24 + 30,
+        'ACCEPTED',
+        'Nora Norte',
+        'nora@norte.example',
+        'ADMIN',
+        'Club Norte',
+        'en',
+        tenantId: tenantBId,
+      ),
+      request(
+        4,
+        12 * 24,
+        'REJECTED',
+        'Sam',
+        'sam@futsal.example',
+        'PARENT',
+        'Futsal Friends',
+        'en',
+        reason: 'Hoops Academy is for basketball academies only.',
+      ),
+    ]);
   }
 
   Map<String, Object?> _admin(
@@ -311,6 +388,7 @@ class MockPlatformApi {
     final b = body is Map ? body.cast<String, Object?>() : <String, Object?>{};
 
     if (seg[1] == 'audit-events' && method == 'GET') return _auditList(q);
+    if (seg[1] == 'academy-requests') return _requestRoute(method, seg, q, b);
     if (seg[1] != 'tenants') return null;
     if (seg.length == 2) {
       if (method == 'GET') return _list(q);
@@ -352,6 +430,134 @@ class MockPlatformApi {
       ),
       _ => null,
     };
+  }
+
+  // ------------------------------------------------------------------ academy requests (ADR-0044)
+
+  /// `academy_name_key`: trimmed, inner whitespace collapsed, lower case.
+  static String _nameKey(Object? name) =>
+      '$name'.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
+  MockResult? _requestRoute(
+    String method,
+    List<String> seg,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
+    if (seg.length == 2) {
+      if (method == 'POST') return _submitRequest(b);
+      if (method == 'GET') {
+        final status = q.text('status');
+        final items = [
+          for (final r in _requests.reversed)
+            if (status == null || r['status'] == status) r,
+        ];
+        return q.page(items, defaultSize: 50);
+      }
+      return null;
+    }
+    final [id, action] = seg.length == 3 && seg[2].contains(':')
+        ? seg[2].split(':')
+        : ['', ''];
+    if (method != 'POST' || id.isEmpty) return null;
+    final request = _requests.where((r) => r['id'] == id).firstOrNull;
+    if (request == null) return mockProblem(404, 'Not found');
+    if (request['status'] != 'PENDING') {
+      return mockProblem(409, 'Conflict', code: 'REQUEST_NOT_PENDING');
+    }
+    return switch (action) {
+      'accept' => _acceptRequest(request, b),
+      'reject' => _rejectRequest(request, b),
+      _ => null,
+    };
+  }
+
+  /// The public request: 202 for every valid body; a filled honeypot is dropped, a taken name is 409.
+  MockResult _submitRequest(Map<String, Object?> b) {
+    final email = '${b['email'] ?? ''}'.trim();
+    final academy = '${b['academyName'] ?? ''}'.trim();
+    if (!email.contains('@') ||
+        academy.isEmpty ||
+        !const ['ADMIN', 'COACH', 'PARENT'].contains(b['role'])) {
+      return mockProblem(400, 'Bad Request');
+    }
+    if ('${b['website'] ?? ''}'.isEmpty) {
+      final key = _nameKey(academy);
+      if (_tenants.any((t) => _nameKey(t['name']) == key) ||
+          _requests.any(
+            (r) =>
+                r['status'] != 'REJECTED' && _nameKey(r['academyName']) == key,
+          )) {
+        return mockProblem(409, 'Conflict', code: 'ACADEMY_NAME_TAKEN');
+      }
+      _requests.add({
+        'id':
+            '00000000-0000-4000-8000-${(9000 + _seq++).toString().padLeft(12, '0')}',
+        'status': 'PENDING',
+        'name': '${b['name'] ?? ''}'.trim().isEmpty ? null : b['name'],
+        'email': email,
+        'role': b['role'],
+        'academyName': academy,
+        'locale': b['locale'] ?? 'en',
+        'requestedAt': _stamp,
+        'decidedAt': null,
+        'decidedBy': null,
+        'reason': null,
+        'tenantId': null,
+        'notifiedAt': null,
+      });
+    }
+    return const MockResult.json(202, {'status': 'RECEIVED'});
+  }
+
+  MockResult _acceptRequest(
+    Map<String, Object?> request,
+    Map<String, Object?> b,
+  ) {
+    final key = _nameKey(request['academyName']);
+    if (_tenants.any((t) => _nameKey(t['name']) == key)) {
+      return mockProblem(409, 'Conflict', code: 'ACADEMY_NAME_TAKEN');
+    }
+    final admin = (b['firstAdmin'] as Map? ?? {}).cast<String, Object?>();
+    final created = _create({
+      'slug': b['slug'],
+      'name': request['academyName'],
+      'timezone': b['timezone'],
+      'defaultLocale': b['defaultLocale'],
+      'firstAdmin': {...admin, 'email': request['email']},
+    });
+    if (created.status != 201) return created;
+    final body = (created.json! as Map).cast<String, Object?>();
+    final password = body.remove('temporaryPassword');
+    request
+      ..['status'] = 'ACCEPTED'
+      ..['decidedAt'] = _stamp
+      ..['decidedBy'] = superAdminSubject
+      ..['tenantId'] = body['id']
+      ..['notifiedAt'] = _stamp;
+    _record('tenant.request_accepted', body, _tenantTarget(body));
+    return MockResult.json(200, {
+      'request': request,
+      'tenant': body,
+      'temporaryPassword': password,
+    });
+  }
+
+  MockResult _rejectRequest(
+    Map<String, Object?> request,
+    Map<String, Object?> b,
+  ) {
+    final reason = '${b['reason'] ?? ''}'.trim();
+    if (reason.isEmpty || reason.length > 500) {
+      return mockProblem(400, 'Bad Request');
+    }
+    request
+      ..['status'] = 'REJECTED'
+      ..['decidedAt'] = _stamp
+      ..['decidedBy'] = superAdminSubject
+      ..['reason'] = reason
+      ..['notifiedAt'] = _stamp;
+    return MockResult.json(200, request);
   }
 
   MockResult _list(MockQuery q) {

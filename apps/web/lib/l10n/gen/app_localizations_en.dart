@@ -219,6 +219,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landingJoinAcademyMissing => 'Enter your academy\'s name';
 
   @override
+  String get landingJoinAcademyTaken =>
+      'An academy with this name already exists or has been requested';
+
+  @override
+  String get landingJoinFailed =>
+      'Your request could not be sent. Please try again in a minute.';
+
+  @override
   String get landingFooterLicense =>
       'Hoops Academy is free software under the GNU AGPL v3.';
 
@@ -2730,6 +2738,71 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get platformActivity => 'Academies\' activity';
+
+  @override
+  String get platformRequests => 'Requests';
+
+  @override
+  String get academyRequestsTitle => 'Academy requests';
+
+  @override
+  String get academyRequestStatusPending => 'Pending';
+
+  @override
+  String get academyRequestStatusAccepted => 'Accepted';
+
+  @override
+  String get academyRequestStatusRejected => 'Rejected';
+
+  @override
+  String get academyRequestsEmpty => 'No requests here';
+
+  @override
+  String academyRequestRequestedOn(String date) {
+    return 'Requested on $date';
+  }
+
+  @override
+  String get academyRequestAccept => 'Accept';
+
+  @override
+  String get academyRequestReject => 'Reject';
+
+  @override
+  String get academyRequestAcceptTitle => 'Create the academy';
+
+  @override
+  String get academyRequestAcceptNote =>
+      'The requester becomes the academy\'s first administrator.';
+
+  @override
+  String get academyRequestRejectTitle => 'Reject the request';
+
+  @override
+  String get academyRequestReason => 'Reason (e-mailed to the requester)';
+
+  @override
+  String get academyRequestReasonShown => 'Reason';
+
+  @override
+  String get academyRequestRejected => 'Request rejected';
+
+  @override
+  String get academyRequestMailNotSent => 'E-mail not sent';
+
+  @override
+  String get academyRequestOpenAcademy => 'Open the academy';
+
+  @override
+  String get academyRequestErrorNotPending =>
+      'This request has already been decided';
+
+  @override
+  String get academyRequestErrorNameTaken =>
+      'An academy with this name already exists';
+
+  @override
+  String get academyRequestErrorSlugTaken => 'This identifier is already taken';
 
   @override
   String get auditTitle => 'Activity';

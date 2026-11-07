@@ -220,6 +220,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get landingJoinAcademyMissing => 'Introduce el nombre de tu academia';
 
   @override
+  String get landingJoinAcademyTaken =>
+      'Ya existe o se ha solicitado una academia con este nombre';
+
+  @override
+  String get landingJoinFailed =>
+      'No se ha podido enviar tu solicitud. Inténtalo de nuevo en un minuto.';
+
+  @override
   String get landingFooterLicense =>
       'Hoops Academy es software libre bajo la GNU AGPL v3.';
 
@@ -2745,6 +2753,73 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get platformActivity => 'Actividad de las academias';
+
+  @override
+  String get platformRequests => 'Solicitudes';
+
+  @override
+  String get academyRequestsTitle => 'Solicitudes de academia';
+
+  @override
+  String get academyRequestStatusPending => 'Pendientes';
+
+  @override
+  String get academyRequestStatusAccepted => 'Aceptadas';
+
+  @override
+  String get academyRequestStatusRejected => 'Rechazadas';
+
+  @override
+  String get academyRequestsEmpty => 'No hay solicitudes aquí';
+
+  @override
+  String academyRequestRequestedOn(String date) {
+    return 'Solicitada el $date';
+  }
+
+  @override
+  String get academyRequestAccept => 'Aceptar';
+
+  @override
+  String get academyRequestReject => 'Rechazar';
+
+  @override
+  String get academyRequestAcceptTitle => 'Crear la academia';
+
+  @override
+  String get academyRequestAcceptNote =>
+      'Quien la solicitó será el primer administrador de la academia.';
+
+  @override
+  String get academyRequestRejectTitle => 'Rechazar la solicitud';
+
+  @override
+  String get academyRequestReason =>
+      'Motivo (se envía por correo a quien la solicitó)';
+
+  @override
+  String get academyRequestReasonShown => 'Motivo';
+
+  @override
+  String get academyRequestRejected => 'Solicitud rechazada';
+
+  @override
+  String get academyRequestMailNotSent => 'Correo no enviado';
+
+  @override
+  String get academyRequestOpenAcademy => 'Abrir la academia';
+
+  @override
+  String get academyRequestErrorNotPending =>
+      'Esta solicitud ya se ha decidido';
+
+  @override
+  String get academyRequestErrorNameTaken =>
+      'Ya existe una academia con este nombre';
+
+  @override
+  String get academyRequestErrorSlugTaken =>
+      'Este identificador ya está en uso';
 
   @override
   String get auditTitle => 'Actividad';

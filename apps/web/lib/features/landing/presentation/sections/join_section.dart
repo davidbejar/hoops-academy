@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/gen/app_localizations.dart';
+import '../../application/invitation_providers.dart';
 import '../../domain/invitation_request.dart';
 import '../landing_theme.dart';
 import '../widgets/reveal.dart';
 
-/// The invitation request form.
-///
-/// Placeholder (decision 51): the request is validated here and then dropped;
-/// nothing is sent and there is no backend call or contract yet. The real
-/// flow is the "Invitation-only sign-up" item in docs/wp/FOLLOW-UPS.md.
+/// The invitation request form: validated here, then sent to
+/// `POST /platform/academy-requests` (WP90, ADR-0044); the super admin decides.
 class JoinSection extends StatelessWidget {
   const JoinSection({super.key});
 
@@ -55,20 +54,29 @@ class JoinSection extends StatelessWidget {
   }
 }
 
-class InvitationForm extends StatefulWidget {
+class InvitationForm extends ConsumerStatefulWidget {
   const InvitationForm({super.key});
 
   @override
-  State<InvitationForm> createState() => _InvitationFormState();
+  ConsumerState<InvitationForm> createState() => _InvitationFormState();
 }
 
-class _InvitationFormState extends State<InvitationForm> {
+class _InvitationFormState extends ConsumerState<InvitationForm> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _academy = TextEditingController();
+
+  /// The honeypot (ADR-0044): never shown, never focusable, empty for people.
+  final _website = TextEditingController();
   InvitationRole? _role;
   bool _confirmed = false;
+  bool _sending = false;
+  bool _failed = false;
+
+  /// The academy name the server reported as taken (the message stays until
+  /// the name changes).
+  String? _takenAcademy;
 
   @override
   void initState() {
@@ -80,14 +88,19 @@ class _InvitationFormState extends State<InvitationForm> {
 
   @override
   void dispose() {
-    for (final c in [_name, _email, _academy]) {
+    for (final c in [_name, _email, _academy, _website]) {
       c.dispose();
     }
     super.dispose();
   }
 
   void _hideConfirmation() {
-    if (_confirmed && _anyInput) setState(() => _confirmed = false);
+    if ((_confirmed || _failed) && _anyInput) {
+      setState(() {
+        _confirmed = false;
+        _failed = false;
+      });
+    }
   }
 
   bool get _anyInput =>
@@ -100,19 +113,37 @@ class _InvitationFormState extends State<InvitationForm> {
     email: _email.text,
     role: _role,
     academy: _academy.text,
+    languageCode: Localizations.localeOf(context).languageCode,
+    website: _website.text,
   );
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_sending) return;
+    _takenAcademy = null;
     if (!_formKey.currentState!.validate()) return;
-    // Nothing is sent yet (decision 51): confirm and clear.
-    for (final c in [_name, _email, _academy]) {
-      c.clear();
-    }
     setState(() {
-      _role = null;
-      _confirmed = true;
+      _sending = true;
+      _failed = false;
     });
-    _formKey.currentState!.reset();
+    final outcome = await ref.read(invitationRepositoryProvider).send(_request);
+    if (!mounted) return;
+    setState(() => _sending = false);
+    switch (outcome) {
+      case InvitationOutcome.sent:
+        for (final c in [_name, _email, _academy, _website]) {
+          c.clear();
+        }
+        setState(() {
+          _role = null;
+          _confirmed = true;
+        });
+        _formKey.currentState!.reset();
+      case InvitationOutcome.academyTaken:
+        _takenAcademy = _academy.text.trim();
+        _formKey.currentState!.validate();
+      case InvitationOutcome.failed:
+        setState(() => _failed = true);
+    }
   }
 
   @override
@@ -209,22 +240,32 @@ class _InvitationFormState extends State<InvitationForm> {
               validator: (_) =>
                   _request.problems.contains(InvitationProblem.missingAcademy)
                   ? l.landingJoinAcademyMissing
+                  : _takenAcademy != null &&
+                        _takenAcademy == _academy.text.trim()
+                  ? l.landingJoinAcademyTaken
                   : null,
             ),
+            _Honeypot(controller: _website),
             const SizedBox(height: 24),
             FilledButton(
               key: const Key('join-submit'),
               style: landingPrimaryButton(context),
-              onPressed: _submit,
+              onPressed: _sending ? null : _submit,
               child: Text(l.landingJoinSubmit),
             ),
             AnimatedSize(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
-              child: _confirmed
+              child: _confirmed || _failed
                   ? Padding(
                       padding: const EdgeInsets.only(top: 20),
-                      child: _Confirmation(text: l.landingJoinConfirmation),
+                      child: _Confirmation(
+                        key: Key(_failed ? 'join-failed' : 'join-confirmation'),
+                        text: _failed
+                            ? l.landingJoinFailed
+                            : l.landingJoinConfirmation,
+                        failed: _failed,
+                      ),
                     )
                   : const SizedBox(width: double.infinity),
             ),
@@ -242,10 +283,12 @@ class _InvitationFormState extends State<InvitationForm> {
       };
 }
 
+/// The answer under the button: the confirmation, or why nothing was sent.
 class _Confirmation extends StatelessWidget {
-  const _Confirmation({required this.text});
+  const _Confirmation({super.key, required this.text, this.failed = false});
 
   final String text;
+  final bool failed;
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +296,6 @@ class _Confirmation extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       child: Container(
-        key: const Key('join-confirmation'),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: p.accentSoft,
@@ -262,8 +304,8 @@ class _Confirmation extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
-              Icons.check_circle_rounded,
+            Icon(
+              failed ? Icons.error_outline_rounded : Icons.check_circle_rounded,
               color: LandingPalette.accent,
             ),
             const SizedBox(width: 12),
@@ -273,4 +315,37 @@ class _Confirmation extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A field for bots only: zero size, outside the semantics tree and the focus
+/// order, so no person (or screen reader) ever reaches it.
+class _Honeypot extends StatelessWidget {
+  const _Honeypot({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: ExcludeFocus(
+      child: IgnorePointer(
+        child: SizedBox(
+          height: 0,
+          child: OverflowBox(
+            alignment: Alignment.topLeft,
+            minWidth: 0,
+            maxWidth: 200,
+            minHeight: 0,
+            maxHeight: 60,
+            child: Opacity(
+              opacity: 0,
+              child: TextField(
+                key: const Key('join-website'),
+                controller: controller,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }

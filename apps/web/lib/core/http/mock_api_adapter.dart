@@ -123,6 +123,11 @@ class MockApiAdapter implements HttpClientAdapter {
     final path = options.path;
     final method = options.method.toUpperCase();
 
+    // The platform's one public operation (the landing's invitation request, ADR-0044): no sign-in needed.
+    if (method == 'POST' && path == '/platform/academy-requests') {
+      return _platformCall(options, method, path);
+    }
+
     if (!(options.headers['Authorization'] as String? ?? '').startsWith(
       'Bearer ',
     )) {
@@ -142,19 +147,7 @@ class MockApiAdapter implements HttpClientAdapter {
 
     if (path.startsWith('/platform/')) {
       if (!_superAdmin) return _problem(403, 'Forbidden');
-      final data = options.data;
-      final body = data is String && data.isNotEmpty ? jsonDecode(data) : data;
-      final result = _platform.handle(
-        method: method,
-        path: path,
-        query: options.queryParameters,
-        body: body,
-      );
-      _platformLog.record(method, path, options.queryParameters, body, result);
-      return _result(
-        result ??
-            const MockResult.json(404, {'title': 'Not found', 'status': 404}),
-      );
+      return _platformCall(options, method, path);
     }
 
     final tenant = options.headers['X-Tenant-Id'] as String?;
@@ -201,6 +194,26 @@ class MockApiAdapter implements HttpClientAdapter {
       );
     }
     return _result(result);
+  }
+
+  ResponseBody _platformCall(
+    RequestOptions options,
+    String method,
+    String path,
+  ) {
+    final data = options.data;
+    final body = data is String && data.isNotEmpty ? jsonDecode(data) : data;
+    final result = _platform.handle(
+      method: method,
+      path: path,
+      query: options.queryParameters,
+      body: body,
+    );
+    _platformLog.record(method, path, options.queryParameters, body, result);
+    return _result(
+      result ??
+          const MockResult.json(404, {'title': 'Not found', 'status': 404}),
+    );
   }
 
   ResponseBody _result(MockResult result) => ResponseBody.fromBytes(

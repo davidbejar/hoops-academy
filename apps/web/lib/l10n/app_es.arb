@@ -70,6 +70,8 @@
   "landingJoinEmailInvalid": "Introduce un correo válido",
   "landingJoinRoleMissing": "Elige tu rol",
   "landingJoinAcademyMissing": "Introduce el nombre de tu academia",
+  "landingJoinAcademyTaken": "Ya existe o se ha solicitado una academia con este nombre",
+  "landingJoinFailed": "No se ha podido enviar tu solicitud. Inténtalo de nuevo en un minuto.",
   "landingFooterLicense": "Hoops Academy es software libre bajo la GNU AGPL v3.",
   "landingFooterSource": "Código fuente en GitHub.",
   "landingBack": "Volver",
@@ -1483,6 +1485,33 @@
   "playerEmailHint": "Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela.",
   "adminActivity": "Actividad",
   "platformActivity": "Actividad de las academias",
+  "platformRequests": "Solicitudes",
+  "academyRequestsTitle": "Solicitudes de academia",
+  "academyRequestStatusPending": "Pendientes",
+  "academyRequestStatusAccepted": "Aceptadas",
+  "academyRequestStatusRejected": "Rechazadas",
+  "academyRequestsEmpty": "No hay solicitudes aquí",
+  "academyRequestRequestedOn": "Solicitada el {date}",
+  "@academyRequestRequestedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "academyRequestAccept": "Aceptar",
+  "academyRequestReject": "Rechazar",
+  "academyRequestAcceptTitle": "Crear la academia",
+  "academyRequestAcceptNote": "Quien la solicitó será el primer administrador de la academia.",
+  "academyRequestRejectTitle": "Rechazar la solicitud",
+  "academyRequestReason": "Motivo (se envía por correo a quien la solicitó)",
+  "academyRequestReasonShown": "Motivo",
+  "academyRequestRejected": "Solicitud rechazada",
+  "academyRequestMailNotSent": "Correo no enviado",
+  "academyRequestOpenAcademy": "Abrir la academia",
+  "academyRequestErrorNotPending": "Esta solicitud ya se ha decidido",
+  "academyRequestErrorNameTaken": "Ya existe una academia con este nombre",
+  "academyRequestErrorSlugTaken": "Este identificador ya está en uso",
   "auditTitle": "Actividad",
   "auditAnyTime": "Cualquier fecha",
   "auditClearRange": "Quitar fechas",

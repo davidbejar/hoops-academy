@@ -8,6 +8,9 @@ import 'package:hoops_app/core/auth/auth_service.dart';
 import 'package:hoops_app/core/auth/mock_auth_service.dart';
 import 'package:hoops_app/core/storage/preferences.dart';
 import 'package:hoops_app/features/landing/application/external_link.dart';
+import 'package:hoops_app/features/landing/application/invitation_providers.dart';
+import 'package:hoops_app/features/landing/data/invitation_repository.dart';
+import 'package:hoops_app/features/landing/domain/invitation_request.dart';
 import 'package:hoops_app/features/landing/presentation/landing_screen.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,17 +29,36 @@ class _RecordingLinks implements ExternalLinkOpener {
   void open(Uri url) => opened.add(url);
 }
 
+/// Records what the form sends and answers [outcome] (the server's part is
+/// tested in invitation_repository_test and the core resource tests).
+class _FakeInvitations implements InvitationRepository {
+  final sent = <InvitationRequest>[];
+  InvitationOutcome outcome = InvitationOutcome.sent;
+
+  @override
+  Future<InvitationOutcome> send(InvitationRequest request) async {
+    sent.add(request);
+    return outcome;
+  }
+}
+
 Future<Harness> _anonymous(
   WidgetTester tester, {
   Size size = _desktop,
   String? locale,
   List<Override> overrides = const [],
+  _FakeInvitations? invitations,
 }) async {
   final h = Harness(
     me: FakeMeRepository(userWith([tenantNorth])),
     signedIn: false,
     prefs: {'hoops.locale': ?locale},
-    extraOverrides: overrides,
+    extraOverrides: [
+      invitationRepositoryProvider.overrideWithValue(
+        invitations ?? _FakeInvitations(),
+      ),
+      ...overrides,
+    ],
   );
   await h.pump(tester, size: size);
   return h;
@@ -209,7 +231,7 @@ void main() {
     });
   });
 
-  group('invitation request (placeholder, decision 51)', () {
+  group('invitation request (WP90, ADR-0044)', () {
     testWidgets('an empty request shows the copy\'s validation messages', (
       tester,
     ) async {
@@ -229,10 +251,16 @@ void main() {
       expect(find.text('Enter a valid e-mail'), findsOneWidget);
     });
 
-    testWidgets('a valid request shows the confirmation and clears the form', (
+    testWidgets('a valid request is sent, confirmed and the form cleared', (
       tester,
     ) async {
-      await _anonymous(tester, size: _phone, locale: 'en');
+      final invitations = _FakeInvitations();
+      await _anonymous(
+        tester,
+        size: _phone,
+        locale: 'en',
+        invitations: invitations,
+      );
       await tester.enterText(find.byKey(const Key('join-name')), 'Ana Ruiz');
       await tester.enterText(
         find.byKey(const Key('join-email')),
@@ -263,6 +291,134 @@ void main() {
       }
       expect(find.text('Enter a valid e-mail'), findsNothing);
       expect(find.text('Choose your role'), findsNothing);
+      final sent = invitations.sent.single;
+      expect(
+        (sent.name, sent.email, sent.role, sent.academy, sent.languageCode),
+        ('Ana Ruiz', 'ana@club.es', InvitationRole.coach, 'Club Norte', 'en'),
+      );
+      expect(sent.website, isEmpty, reason: 'no person fills the honeypot');
+    });
+
+    Future<void> fillValid(
+      WidgetTester tester, {
+      String academy = 'Norte',
+      String role = 'Academy administrator',
+    }) async {
+      await tester.enterText(find.byKey(const Key('join-email')), 'a@b.es');
+      await tester.enterText(find.byKey(const Key('join-academy')), academy);
+      await _tap(tester, 'join-role');
+      await tester.tap(find.text(role).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('an invalid form sends nothing', (tester) async {
+      final invitations = _FakeInvitations();
+      await _anonymous(tester, size: _phone, invitations: invitations);
+      await _tap(tester, 'join-submit');
+      expect(invitations.sent, isEmpty);
+    });
+
+    testWidgets('a taken academy name is shown under the academy field until '
+        'it changes', (tester) async {
+      final invitations = _FakeInvitations()
+        ..outcome = InvitationOutcome.academyTaken;
+      await _anonymous(
+        tester,
+        size: _phone,
+        locale: 'en',
+        invitations: invitations,
+      );
+      await fillValid(tester, academy: 'Club Norte');
+      await _tap(tester, 'join-submit');
+
+      const taken =
+          'An academy with this name already exists or has been requested';
+      expect(find.text(taken), findsOneWidget);
+      expect(find.byKey(const Key('join-confirmation')), findsNothing);
+      final email = tester.widget<TextFormField>(
+        find.byKey(const Key('join-email')),
+      );
+      expect(email.controller!.text, 'a@b.es', reason: 'the form is kept');
+
+      invitations.outcome = InvitationOutcome.sent;
+      await tester.enterText(find.byKey(const Key('join-academy')), 'Club Sur');
+      await _tap(tester, 'join-submit');
+      expect(find.text(taken), findsNothing);
+      expect(find.byKey(const Key('join-confirmation')), findsOneWidget);
+    });
+
+    testWidgets('a request that could not be sent says so and keeps the '
+        'values', (tester) async {
+      final invitations = _FakeInvitations()
+        ..outcome = InvitationOutcome.failed;
+      await _anonymous(
+        tester,
+        size: _phone,
+        locale: 'es',
+        invitations: invitations,
+      );
+      await fillValid(tester, role: 'Administrador de la academia');
+      await _tap(tester, 'join-submit');
+
+      expect(find.byKey(const Key('join-failed')), findsOneWidget);
+      expect(
+        find.text(
+          'No se ha podido enviar tu solicitud. Inténtalo de nuevo en un '
+          'minuto.',
+        ),
+        findsOneWidget,
+      );
+      final academy = tester.widget<TextFormField>(
+        find.byKey(const Key('join-academy')),
+      );
+      expect(academy.controller!.text, 'Norte');
+
+      invitations.outcome = InvitationOutcome.sent;
+      await _tap(tester, 'join-submit');
+      expect(find.byKey(const Key('join-failed')), findsNothing);
+      expect(find.byKey(const Key('join-confirmation')), findsOneWidget);
+    });
+
+    testWidgets('the honeypot is invisible, unfocusable and outside the '
+        'semantics tree', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _anonymous(tester, size: _phone, locale: 'en');
+      final honeypot = find.byKey(const Key('join-website'));
+      expect(honeypot, findsOneWidget);
+      final box = find.ancestor(of: honeypot, matching: find.byType(SizedBox));
+      expect(tester.getSize(box.first).height, 0, reason: 'takes no space');
+      expect(
+        find.ancestor(of: honeypot, matching: find.byType(IgnorePointer)),
+        findsWidgets,
+      );
+      expect(
+        find.ancestor(of: honeypot, matching: find.byType(ExcludeFocus)),
+        findsWidgets,
+      );
+      expect(
+        find.ancestor(of: honeypot, matching: find.byType(ExcludeSemantics)),
+        findsWidgets,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('a bot that fills the honeypot sends it along (the server '
+        'drops it)', (tester) async {
+      final invitations = _FakeInvitations();
+      await _anonymous(
+        tester,
+        size: _phone,
+        locale: 'en',
+        invitations: invitations,
+      );
+      await fillValid(tester);
+      tester
+              .widget<TextField>(find.byKey(const Key('join-website')))
+              .controller!
+              .text =
+          'http://spam.example';
+      await _tap(tester, 'join-submit');
+      expect(invitations.sent.single.website, 'http://spam.example');
     });
 
     testWidgets('editing after a confirmation hides it again', (tester) async {

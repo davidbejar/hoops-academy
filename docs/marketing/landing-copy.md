@@ -199,7 +199,7 @@ screenshots or illustrated mock-ups of the app (the demo mock can be captured), 
   familias.
 - id: Laporan musim · Kehadiran, menit bermain, dan perkembangan per pemain, siap dibagikan ke keluarga.
 
-## 7. Join (invitation request form; placeholder in WP70, real flow is a follow-up)
+## 7. Join (invitation request form; sent to the platform since WP90, ADR-0044)
 
 **Title**
 - en: Request an invitation
@@ -228,7 +228,7 @@ screenshots or illustrated mock-ups of the app (the demo mock can be captured), 
 - es: Enviar solicitud
 - id: Kirim permintaan
 
-**Confirmation** (placeholder behaviour: nothing is sent yet)
+**Confirmation** (after the server received the request)
 - en: Thank you. Invitations are being sent by hand during early access; we will write to you at the address
   above.
 - es: Gracias. Durante el acceso anticipado las invitaciones se envían a mano; te escribiremos a la dirección
@@ -239,6 +239,14 @@ screenshots or illustrated mock-ups of the app (the demo mock can be captured), 
 - en: Enter a valid e-mail · es: Introduce un correo válido · id: Masukkan email yang valid
 - en: Choose your role · es: Elige tu rol · id: Pilih peranmu
 - en: Enter your academy's name · es: Introduce el nombre de tu academia · id: Masukkan nama akademimu
+
+**Server answers** (added in WP90)
+- Academy name taken (shown under the academy field): en: An academy with this name already exists or has been
+  requested · es: Ya existe o se ha solicitado una academia con este nombre · id: Akademi dengan nama ini sudah ada
+  atau sudah diminta
+- Not sent (rate limit, no connection, server error; the form keeps its values): en: Your request could not be sent.
+  Please try again in a minute. · es: No se ha podido enviar tu solicitud. Inténtalo de nuevo en un minuto. · id:
+  Permintaanmu tidak bisa dikirim. Coba lagi sebentar lagi.
 
 ## 8. Footer
 

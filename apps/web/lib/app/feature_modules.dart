@@ -31,6 +31,9 @@ import '../features/my_players/presentation/my_players_screen.dart'
     deferred as my_players;
 import '../features/platform/presentation/platform_screen.dart'
     deferred as platform;
+import '../features/platform/presentation/academy_requests_screen.dart'
+    deferred as platform_requests
+    show AcademyRequestsScreen;
 import '../features/roster/presentation/approvals_screen.dart'
     deferred as approvals;
 import '../features/roster/presentation/cases_screen.dart' deferred as cases;
@@ -233,6 +236,11 @@ final Map<AppDestination, FeatureModule> featureModules = {
         'activity',
         audit.loadLibrary,
         (_) => audit.PlatformActivityScreen(),
+      ),
+      ModulePage(
+        'requests',
+        platform_requests.loadLibrary,
+        (_) => platform_requests.AcademyRequestsScreen(),
       ),
       ModulePage(
         ':tenantId',

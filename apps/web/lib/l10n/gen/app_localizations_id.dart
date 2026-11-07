@@ -220,6 +220,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get landingJoinAcademyMissing => 'Masukkan nama akademimu';
 
   @override
+  String get landingJoinAcademyTaken =>
+      'Akademi dengan nama ini sudah ada atau sudah diminta';
+
+  @override
+  String get landingJoinFailed =>
+      'Permintaanmu tidak bisa dikirim. Coba lagi sebentar lagi.';
+
+  @override
   String get landingFooterLicense =>
       'Hoops Academy adalah perangkat lunak bebas di bawah GNU AGPL v3.';
 
@@ -2730,6 +2738,70 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get platformActivity => 'Aktivitas akademi';
+
+  @override
+  String get platformRequests => 'Permintaan';
+
+  @override
+  String get academyRequestsTitle => 'Permintaan akademi';
+
+  @override
+  String get academyRequestStatusPending => 'Menunggu';
+
+  @override
+  String get academyRequestStatusAccepted => 'Diterima';
+
+  @override
+  String get academyRequestStatusRejected => 'Ditolak';
+
+  @override
+  String get academyRequestsEmpty => 'Tidak ada permintaan di sini';
+
+  @override
+  String academyRequestRequestedOn(String date) {
+    return 'Diminta pada $date';
+  }
+
+  @override
+  String get academyRequestAccept => 'Terima';
+
+  @override
+  String get academyRequestReject => 'Tolak';
+
+  @override
+  String get academyRequestAcceptTitle => 'Buat akademi';
+
+  @override
+  String get academyRequestAcceptNote =>
+      'Peminta menjadi admin pertama akademi.';
+
+  @override
+  String get academyRequestRejectTitle => 'Tolak permintaan';
+
+  @override
+  String get academyRequestReason => 'Alasan (dikirim ke peminta lewat email)';
+
+  @override
+  String get academyRequestReasonShown => 'Alasan';
+
+  @override
+  String get academyRequestRejected => 'Permintaan ditolak';
+
+  @override
+  String get academyRequestMailNotSent => 'Email tidak terkirim';
+
+  @override
+  String get academyRequestOpenAcademy => 'Buka akademi';
+
+  @override
+  String get academyRequestErrorNotPending => 'Permintaan ini sudah diputuskan';
+
+  @override
+  String get academyRequestErrorNameTaken =>
+      'Akademi dengan nama ini sudah ada';
+
+  @override
+  String get academyRequestErrorSlugTaken => 'Pengenal ini sudah dipakai';
 
   @override
   String get auditTitle => 'Aktivitas';
