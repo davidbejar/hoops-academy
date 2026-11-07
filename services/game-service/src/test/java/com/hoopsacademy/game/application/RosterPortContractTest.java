@@ -112,7 +112,7 @@ class RosterPortContractTest {
                         null));
         TeamRoster expected = new TeamRoster(TeamId.of(team), SeasonId.of(season), "Lions", List.of(
                 new TeamRoster.Player(PlayerId.of(bea), "Bea Gil", null),
-                new TeamRoster.Player(PlayerId.of(ana), "Ana Ruiz", "7")));
+                new TeamRoster.Player(PlayerId.of(ana), "Ana Ruiz", "7")), SEASON_END);
         coreAnswers(source, () -> CoreAnswers.teamRoster(core, tenant, expected));
 
         assertThat(inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team)))).isEqualTo(expected);
@@ -125,10 +125,11 @@ class RosterPortContractTest {
         UUID assignment = UUID.randomUUID();
         given(source, events.tenant("ACTIVE", "Europe/Madrid"), lions(), player(ana, "Ana Ruiz", BORN, "FEMALE"),
                 events.assignment(assignment, team, ana, "7", LocalDate.parse("2026-09-01"), null, null),
-                events.team(team, season, SEASON_END, "Big Lions"), player(ana, "Ana Ruiz-Gil", BORN, "FEMALE"),
+                events.team(team, season, SEASON_END.plusDays(1), "Big Lions"),
+                player(ana, "Ana Ruiz-Gil", BORN, "FEMALE"),
                 events.assignment(assignment, team, ana, "8", LocalDate.parse("2026-09-01"), null, null));
         TeamRoster expected = new TeamRoster(TeamId.of(team), SeasonId.of(season), "Big Lions",
-                List.of(new TeamRoster.Player(PlayerId.of(ana), "Ana Ruiz-Gil", "8")));
+                List.of(new TeamRoster.Player(PlayerId.of(ana), "Ana Ruiz-Gil", "8")), SEASON_END.plusDays(1));
         coreAnswers(source, () -> CoreAnswers.teamRoster(core, tenant, expected));
 
         assertThat(inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team)))).isEqualTo(expected);

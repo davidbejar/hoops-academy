@@ -130,7 +130,7 @@ class RosterReplayTest {
     private void answersWhatCoreAnswers() {
         assertThat(inTenant(academy, () -> roster.teamRoster(academy, TeamId.of(lions)))).isEqualTo(new TeamRoster(
                 TeamId.of(lions), SeasonId.of(season), "Big Lions",
-                List.of(new TeamRoster.Player(PlayerId.of(ana), "Ana Ruiz-Gil", "8"))));
+                List.of(new TeamRoster.Player(PlayerId.of(ana), "Ana Ruiz-Gil", "8")), SEASON_END));
         assertThat(inTenant(academy, () -> roster.teamRoster(academy, TeamId.of(cubs))).players()).isEmpty();
         assertThat(inTenant(academy, () -> roster.players(academy, List.of(PlayerId.of(ana), PlayerId.of(bea)))))
                 .containsExactlyInAnyOrder(new PlayerBrief(PlayerId.of(ana), "Ana Ruiz-Gil"),

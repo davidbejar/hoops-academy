@@ -44,7 +44,8 @@ class ReplicaRosterPortTest {
         TeamRoster roster = port.teamRoster(TENANT, lions);
 
         assertThat(roster).isEqualTo(new TeamRoster(lions, season, "Lions", List.of(
-                new TeamRoster.Player(bea.id(), "Bea Gil", null), new TeamRoster.Player(ana.id(), "Ana Ruiz", "7"))));
+                new TeamRoster.Player(bea.id(), "Bea Gil", null), new TeamRoster.Player(ana.id(), "Ana Ruiz", "7")),
+                LocalDate.parse("2027-06-30")));
     }
 
     @Test

@@ -93,6 +93,15 @@ class EventAuthorizationTest {
     }
 
     @Test
+    void theTeamsFormerStaffMayStillSyncWhatTheyRecordedSeasonDatesAreCheckedByTheIngest() {
+        AuthzContext former = caller(COACH_PERSON, Set.of(TenantRole.COACH), Set.of(OTHER_TEAM), Set.of(), null)
+                .withHistoricStaffTeamIds(Set.of(TEAM));
+
+        assertThat(allowed(former, match(), event(s -> s.shot(1, 500, OTHER, 2, true)))).isTrue();
+        assertThat(allowed(former, match(), event(s -> s.start(1, 600)))).isTrue();
+    }
+
+    @Test
     void staffOfAnotherTeamPlayersAndPlainMembersMayRecordNothing() {
         Match m = match();
         for (AuthzContext outsider : List.of(OTHER_COACH, PLAYER, PLAIN_MEMBER)) {

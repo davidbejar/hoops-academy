@@ -99,12 +99,27 @@ class AuthzContextContractTest {
 
     @ParameterizedTest
     @EnumSource(Source.class)
-    void aCoachIsStaffOfTheTeamsOfCurrentSeasonsOnly(Source source) {
+    void aCoachIsStaffOfTheTeamsOfCurrentSeasonsAndFormerStaffOfTheEndedOnes(Source source) {
         given(source, member(TenantRole.COACH), events.staff(current, person, "COACH"),
                 events.staff(ended, person, "COACH"), events.staff(UUID.randomUUID(), person, "COACH"));
-        AuthzContext expected = context(Set.of(TenantRole.COACH), Set.of(current), Set.of(), Optional.empty(), Set.of());
+        AuthzContext expected = context(Set.of(TenantRole.COACH), Set.of(current), Set.of(), Optional.empty(), Set.of())
+                .withHistoricStaffTeamIds(Set.of(ended));
 
         assertThat(resolve(source, expected)).contains(expected);
+    }
+
+    @ParameterizedTest
+    @EnumSource(Source.class)
+    void aStaffRowOfAnEndedSeasonIsHistoryWhateverTheRoleAndARemovedOneIsNot(Source source) {
+        UUID removed = UUID.randomUUID();
+        given(source, member(TenantRole.PARENT), events.team(removed, UUID.randomUUID(), TODAY.minusDays(30), "Gone"),
+                events.staff(ended, person, "ASSISTANT_COACH"), events.staff(removed, person, "COACH"),
+                events.staffRemoved(removed, person));
+        AuthzContext expected = context(Set.of(TenantRole.PARENT), Set.of(), Set.of(), Optional.empty(), Set.of())
+                .withHistoricStaffTeamIds(Set.of(ended));
+
+        assertThat(resolve(source, expected)).contains(expected);
+        assertThat(expected.wasStaffOf(ended)).as("history needs a staff role").isFalse();
     }
 
     @ParameterizedTest

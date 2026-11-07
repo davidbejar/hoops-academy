@@ -30,7 +30,8 @@ public final class CoreAnswers {
     public static void teamRoster(WireMockServer core, TenantId tenant, TeamRoster roster) {
         ObjectNode body = JSON.createObjectNode().put("tenantId", tenant.toString())
                 .put("teamId", roster.teamId().value().toString()).put("seasonId", roster.seasonId().value().toString())
-                .put("teamName", roster.teamName());
+                .put("teamName", roster.teamName())
+                .put("seasonEndDate", roster.seasonEndDate() == null ? null : roster.seasonEndDate().toString());
         ArrayNode players = body.putArray("players");
         roster.players().forEach(p -> players.addObject().put("playerId", p.playerId().value().toString())
                 .put("displayName", p.displayName()).put("jerseyNumber", p.jerseyNumber())
@@ -67,6 +68,8 @@ public final class CoreAnswers {
         context.roles().forEach(role -> roles.add(role.name()));
         ArrayNode staff = body.putArray("staffTeamIds");
         context.staffTeamIds().forEach(id -> staff.add(id.toString()));
+        ArrayNode historic = body.putArray("historicStaffTeamIds");
+        context.historicStaffTeamIds().forEach(id -> historic.add(id.toString()));
         ArrayNode linked = body.putArray("linkedPlayerIds");
         context.linkedPlayerIds().forEach(id -> linked.add(id.toString()));
         body.put("ownPlayerId", context.ownPlayerId().map(UUID::toString).orElse(null));

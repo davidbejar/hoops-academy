@@ -43,6 +43,17 @@ class StatVisibilityTest {
     }
 
     @Test
+    void theTeamsFormerStaffStillSeeEveryPlayerOfItsPastMatches() {
+        AuthzContext former = caller(Set.of(TenantRole.COACH), Set.of(OTHER_TEAM), Set.of(), null)
+                .withHistoricStaffTeamIds(Set.of(TEAM.value()));
+        AuthzContext formerElsewhere = caller(Set.of(TenantRole.COACH), Set.of(), Set.of(), null)
+                .withHistoricStaffTeamIds(Set.of(OTHER_TEAM));
+
+        assertThat(of(former).seesAll()).isTrue();
+        assertThat(of(formerElsewhere)).isEqualTo(PlayerVisibility.only(Set.of()));
+    }
+
+    @Test
     void aParentSeesLinkedPlayersOnly() {
         PlayerVisibility parent = of(caller(Set.of(TenantRole.PARENT), Set.of(), Set.of(CHILD.value()), null));
 
