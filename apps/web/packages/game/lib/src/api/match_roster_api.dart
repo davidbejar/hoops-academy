@@ -106,7 +106,7 @@ class MatchRosterApi {
   }
 
   /// Replace the match roster
-  /// Players must be on the team&#39;s current roster (core &#x60;/internal/teams/{teamId}/roster&#x60;, 422 otherwise); display name and jersey are denormalised so offline sync never depends on core. Not allowed for FINISHED or CANCELLED matches (409). Authz: ADMIN; team staff. 
+  /// Players must be on the team&#39;s current roster (core &#x60;/internal/teams/{teamId}/roster&#x60;, 422 otherwise); display name and jersey are denormalised so offline sync never depends on core. Not allowed for FINISHED or CANCELLED matches (409). 409 &#x60;SEASON_ENDED&#x60; once the season of the match&#39;s team has ended (ADR-0042). Authz: ADMIN; team staff. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

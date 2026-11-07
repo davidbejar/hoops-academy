@@ -9,7 +9,7 @@ import 'package:built_value/serializer.dart';
 
 part 'match_event_rejection_reason.g.dart';
 
-/// SCHEMA_INVALID — event does not match its type's schema; NOT_AUTHORIZED — caller may not enter this event (e.g. PARENT for a non-linked player, VOID of someone else's event); MATCH_CANCELLED — match is CANCELLED; CLIENT_SEQ_CONFLICT — (deviceId, clientSeq) already used by a different event id; EVENT_ID_REUSED — the event id is already stored for another match (ids are global); MATCH_NOT_STARTED — reserved for a future policy that refuses events of SCHEDULED matches (v1 accepts them so offline devices never lose events, ADR-0014; clients must already handle it). 
+/// SCHEMA_INVALID — event does not match its type's schema; NOT_AUTHORIZED — caller may not enter this event (e.g. PARENT for a non-linked player, VOID of someone else's event); MATCH_CANCELLED — match is CANCELLED; CLIENT_SEQ_CONFLICT — (deviceId, clientSeq) already used by a different event id; EVENT_ID_REUSED — the event id is already stored for another match (ids are global); MATCH_NOT_STARTED — reserved for a future policy that refuses events of SCHEDULED matches (v1 accepts them so offline devices never lose events, ADR-0014; clients must already handle it); SEASON_ENDED — the season of the match's team has ended and the event was recorded on the device after its last day (ADR-0042, game 2.3.0). 
 class MatchEventRejectionReason extends EnumClass {
 
   @BuiltValueEnumConst(wireName: r'SCHEMA_INVALID')
@@ -24,6 +24,8 @@ class MatchEventRejectionReason extends EnumClass {
   static const MatchEventRejectionReason EVENT_ID_REUSED = _$EVENT_ID_REUSED;
   @BuiltValueEnumConst(wireName: r'MATCH_NOT_STARTED')
   static const MatchEventRejectionReason MATCH_NOT_STARTED = _$MATCH_NOT_STARTED;
+  @BuiltValueEnumConst(wireName: r'SEASON_ENDED')
+  static const MatchEventRejectionReason SEASON_ENDED = _$SEASON_ENDED;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
   static const MatchEventRejectionReason unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 

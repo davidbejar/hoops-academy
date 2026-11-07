@@ -31,7 +31,7 @@ class TeamsApi {
   const TeamsApi(this._dio, this._serializers);
 
   /// Assign a player to the team (eligibility-checked)
-  /// Runs the eligibility check; INELIGIBLE → 422 with &#x60;code&#x3D;PLAYER_INELIGIBLE&#x60; and the reasons in &#x60;violations[].code&#x60;. PLAY_UP is allowed within the tenant&#39;s limit. 409 when the player already has an open assignment to this team. Authz: ADMIN; COACH of this team.
+  /// Runs the eligibility check; INELIGIBLE → 422 with &#x60;code&#x3D;PLAYER_INELIGIBLE&#x60; and the reasons in &#x60;violations[].code&#x60;. PLAY_UP is allowed within the tenant&#39;s limit. 409 when the player already has an open assignment to this team. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; COACH of this team (a former coach gets the 409).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -623,13 +623,14 @@ class TeamsApi {
   }
 
   /// List teams
-  /// Authz: any member. &#x60;staffedByMe&#x3D;true&#x60; restricts to teams where the caller is team staff.
+  /// Authz: any member. &#x60;staffedByMe&#x3D;true&#x60; restricts to teams where the caller is team staff of a season that has not ended; with &#x60;includeEnded&#x3D;true&#x60; also the teams of ended seasons the caller was staff of (&#x60;historicStaffTeamIds&#x60;, ADR-0042). Without &#x60;staffedByMe&#x60; every team of every season is listed, as before.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
   /// * [seasonId]
   /// * [ageCategoryId]
   /// * [staffedByMe]
+  /// * [includeEnded] - With `staffedByMe=true`: also list the teams of ended seasons the caller was staff of (read-only history, ADR-0042). No effect otherwise. Default false (today's teams only).
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -646,6 +647,7 @@ class TeamsApi {
     String? seasonId,
     String? ageCategoryId,
     bool? staffedByMe = false,
+    bool? includeEnded = false,
     int? page = 0,
     int? size = 50,
     CancelToken? cancelToken,
@@ -685,6 +687,9 @@ class TeamsApi {
       if (staffedByMe != null)
         r'staffedByMe': encodeQueryParameter(
             _serializers, staffedByMe, const FullType(bool)),
+      if (includeEnded != null)
+        r'includeEnded': encodeQueryParameter(
+            _serializers, includeEnded, const FullType(bool)),
       if (page != null)
         r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
       if (size != null)
@@ -733,7 +738,7 @@ class TeamsApi {
   }
 
   /// Attach a coach / assistant coach to the team (idempotent)
-  /// The person must hold the matching tenant role (422). Authz: ADMIN.
+  /// The person must hold the matching tenant role (422). 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -850,7 +855,7 @@ class TeamsApi {
   }
 
   /// Detach a staff member from the team
-  /// Authz: ADMIN.
+  /// 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). The former staff keep their read-only history until they lose the staff role. Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -916,7 +921,7 @@ class TeamsApi {
   }
 
   /// Close the player&#39;s open assignment to the team
-  /// Sets &#x60;leftOn&#x60; (history is kept). The player may become ORPHAN. Authz: ADMIN; COACH of this team.
+  /// Sets &#x60;leftOn&#x60; (history is kept). The player may become ORPHAN. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; COACH of this team.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -982,7 +987,7 @@ class TeamsApi {
   }
 
   /// Update a team
-  /// Changing category or gender policy re-evaluates eligibility of its players. Authz: ADMIN.
+  /// Changing category or gender policy re-evaluates eligibility of its players. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -1092,7 +1097,7 @@ class TeamsApi {
   }
 
   /// Update an open assignment (jersey number)
-  /// Jersey numbers are unique among open assignments of the team (409); &#x60;clear: [jerseyNumber]&#x60; removes it (ADR-0032). Authz: ADMIN; COACH of this team.
+  /// Jersey numbers are unique among open assignments of the team (409); &#x60;clear: [jerseyNumber]&#x60; removes it (ADR-0032). 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; COACH of this team.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

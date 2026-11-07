@@ -15,6 +15,7 @@ part 'team.g.dart';
 /// Properties:
 /// * [id]
 /// * [seasonId]
+/// * [seasonEnded] - The team's season has ended (academy time zone): the team is read-only history and every write on it answers 409 `SEASON_ENDED` (ADR-0042, core 3.2.0).
 /// * [name]
 /// * [alias]
 /// * [ageCategory]
@@ -27,6 +28,10 @@ abstract class Team implements Built<Team, TeamBuilder> {
 
   @BuiltValueField(wireName: r'seasonId')
   String get seasonId;
+
+  /// The team's season has ended (academy time zone): the team is read-only history and every write on it answers 409 `SEASON_ENDED` (ADR-0042, core 3.2.0).
+  @BuiltValueField(wireName: r'seasonEnded')
+  bool get seasonEnded;
 
   @BuiltValueField(wireName: r'name')
   String get name;
@@ -77,6 +82,11 @@ class _$TeamSerializer implements PrimitiveSerializer<Team> {
     yield serializers.serialize(
       object.seasonId,
       specifiedType: const FullType(String),
+    );
+    yield r'seasonEnded';
+    yield serializers.serialize(
+      object.seasonEnded,
+      specifiedType: const FullType(bool),
     );
     yield r'name';
     yield serializers.serialize(
@@ -143,6 +153,13 @@ class _$TeamSerializer implements PrimitiveSerializer<Team> {
             specifiedType: const FullType(String),
           ) as String;
           result.seasonId = valueDes;
+          break;
+        case r'seasonEnded':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.seasonEnded = valueDes;
           break;
         case r'name':
           final valueDes = serializers.deserialize(

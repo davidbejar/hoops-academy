@@ -26,7 +26,7 @@ class MatchesApi {
   const MatchesApi(this._dio, this._serializers);
 
   /// SCHEDULED | LIVE → CANCELLED
-  /// Further events are REJECTED with MATCH_CANCELLED. FINISHED matches cannot be cancelled (409). Authz: ADMIN; team staff.
+  /// Further events are REJECTED with MATCH_CANCELLED. FINISHED matches cannot be cancelled (409). 409 &#x60;SEASON_ENDED&#x60; once the season of the match&#39;s team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -132,7 +132,7 @@ class MatchesApi {
   }
 
   /// Schedule a match
-  /// The season is taken from the team. Authz: ADMIN; team staff.
+  /// The season is taken from the team. 409 &#x60;SEASON_ENDED&#x60; once the season of the match&#39;s team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -236,7 +236,7 @@ class MatchesApi {
   }
 
   /// LIVE → FINISHED
-  /// Events may still be synced afterwards (late offline devices, VOID corrections). Authz: ADMIN; team staff.
+  /// Events may still be synced afterwards (late offline devices, VOID corrections). 409 &#x60;SEASON_ENDED&#x60; once the season of the match&#39;s team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -511,7 +511,7 @@ class MatchesApi {
   }
 
   /// SCHEDULED → LIVE
-  /// Requires a roster with at least one starter (422). Idempotent for an already LIVE match. Authz: ADMIN; team staff.
+  /// Requires a roster with at least one starter (422). Idempotent for an already LIVE match. 409 &#x60;SEASON_ENDED&#x60; once the season of the match&#39;s team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -595,7 +595,7 @@ class MatchesApi {
   }
 
   /// Update a scheduled match
-  /// &#x60;periodCount&#x60;/&#x60;periodMinutes&#x60; can only change while SCHEDULED (409). Authz: ADMIN; team staff.
+  /// &#x60;periodCount&#x60;/&#x60;periodMinutes&#x60; can only change while SCHEDULED (409). 409 &#x60;SEASON_ENDED&#x60; once the season of the match&#39;s team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

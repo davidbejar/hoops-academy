@@ -206,7 +206,7 @@ class PlanCompletionsApi {
   }
 
   /// Record (or change) a player&#39;s completion of an assignment
-  /// The player must be a target of the assignment (422). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
+  /// The player must be a target of the assignment (422). 409 &#x60;SEASON_ENDED&#x60; for a team assignment once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

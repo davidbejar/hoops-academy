@@ -18,6 +18,8 @@ const MatchEventRejectionReason _$EVENT_ID_REUSED =
     const MatchEventRejectionReason._('EVENT_ID_REUSED');
 const MatchEventRejectionReason _$MATCH_NOT_STARTED =
     const MatchEventRejectionReason._('MATCH_NOT_STARTED');
+const MatchEventRejectionReason _$SEASON_ENDED =
+    const MatchEventRejectionReason._('SEASON_ENDED');
 const MatchEventRejectionReason _$unknownDefaultOpenApi =
     const MatchEventRejectionReason._('unknownDefaultOpenApi');
 
@@ -35,6 +37,8 @@ MatchEventRejectionReason _$valueOf(String name) {
       return _$EVENT_ID_REUSED;
     case 'MATCH_NOT_STARTED':
       return _$MATCH_NOT_STARTED;
+    case 'SEASON_ENDED':
+      return _$SEASON_ENDED;
     case 'unknownDefaultOpenApi':
       return _$unknownDefaultOpenApi;
     default:
@@ -50,6 +54,7 @@ final BuiltSet<MatchEventRejectionReason> _$values =
   _$CLIENT_SEQ_CONFLICT,
   _$EVENT_ID_REUSED,
   _$MATCH_NOT_STARTED,
+  _$SEASON_ENDED,
   _$unknownDefaultOpenApi,
 ]);
 
@@ -61,6 +66,7 @@ class _$MatchEventRejectionReasonMeta {
   MatchEventRejectionReason get CLIENT_SEQ_CONFLICT => _$CLIENT_SEQ_CONFLICT;
   MatchEventRejectionReason get EVENT_ID_REUSED => _$EVENT_ID_REUSED;
   MatchEventRejectionReason get MATCH_NOT_STARTED => _$MATCH_NOT_STARTED;
+  MatchEventRejectionReason get SEASON_ENDED => _$SEASON_ENDED;
   MatchEventRejectionReason get unknownDefaultOpenApi =>
       _$unknownDefaultOpenApi;
   MatchEventRejectionReason valueOf(String name) => _$valueOf(name);
@@ -85,6 +91,7 @@ class _$MatchEventRejectionReasonSerializer
     'CLIENT_SEQ_CONFLICT': 'CLIENT_SEQ_CONFLICT',
     'EVENT_ID_REUSED': 'EVENT_ID_REUSED',
     'MATCH_NOT_STARTED': 'MATCH_NOT_STARTED',
+    'SEASON_ENDED': 'SEASON_ENDED',
     'unknownDefaultOpenApi': 'unknown_default_open_api',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
@@ -94,6 +101,7 @@ class _$MatchEventRejectionReasonSerializer
     'CLIENT_SEQ_CONFLICT': 'CLIENT_SEQ_CONFLICT',
     'EVENT_ID_REUSED': 'EVENT_ID_REUSED',
     'MATCH_NOT_STARTED': 'MATCH_NOT_STARTED',
+    'SEASON_ENDED': 'SEASON_ENDED',
     'unknown_default_open_api': 'unknownDefaultOpenApi',
   };
 

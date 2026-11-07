@@ -12,6 +12,8 @@ class _$Team extends Team {
   @override
   final String seasonId;
   @override
+  final bool seasonEnded;
+  @override
   final String name;
   @override
   final String? alias;
@@ -28,6 +30,7 @@ class _$Team extends Team {
   _$Team._(
       {required this.id,
       required this.seasonId,
+      required this.seasonEnded,
       required this.name,
       this.alias,
       required this.ageCategory,
@@ -47,6 +50,7 @@ class _$Team extends Team {
     return other is Team &&
         id == other.id &&
         seasonId == other.seasonId &&
+        seasonEnded == other.seasonEnded &&
         name == other.name &&
         alias == other.alias &&
         ageCategory == other.ageCategory &&
@@ -59,6 +63,7 @@ class _$Team extends Team {
     var _$hash = 0;
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, seasonId.hashCode);
+    _$hash = $jc(_$hash, seasonEnded.hashCode);
     _$hash = $jc(_$hash, name.hashCode);
     _$hash = $jc(_$hash, alias.hashCode);
     _$hash = $jc(_$hash, ageCategory.hashCode);
@@ -73,6 +78,7 @@ class _$Team extends Team {
     return (newBuiltValueToStringHelper(r'Team')
           ..add('id', id)
           ..add('seasonId', seasonId)
+          ..add('seasonEnded', seasonEnded)
           ..add('name', name)
           ..add('alias', alias)
           ..add('ageCategory', ageCategory)
@@ -92,6 +98,10 @@ class TeamBuilder implements Builder<Team, TeamBuilder> {
   String? _seasonId;
   String? get seasonId => _$this._seasonId;
   set seasonId(String? seasonId) => _$this._seasonId = seasonId;
+
+  bool? _seasonEnded;
+  bool? get seasonEnded => _$this._seasonEnded;
+  set seasonEnded(bool? seasonEnded) => _$this._seasonEnded = seasonEnded;
 
   String? _name;
   String? get name => _$this._name;
@@ -125,6 +135,7 @@ class TeamBuilder implements Builder<Team, TeamBuilder> {
     if ($v != null) {
       _id = $v.id;
       _seasonId = $v.seasonId;
+      _seasonEnded = $v.seasonEnded;
       _name = $v.name;
       _alias = $v.alias;
       _ageCategory = $v.ageCategory.toBuilder();
@@ -156,6 +167,8 @@ class TeamBuilder implements Builder<Team, TeamBuilder> {
             id: BuiltValueNullFieldError.checkNotNull(id, r'Team', 'id'),
             seasonId: BuiltValueNullFieldError.checkNotNull(
                 seasonId, r'Team', 'seasonId'),
+            seasonEnded: BuiltValueNullFieldError.checkNotNull(
+                seasonEnded, r'Team', 'seasonEnded'),
             name: BuiltValueNullFieldError.checkNotNull(name, r'Team', 'name'),
             alias: alias,
             ageCategory: ageCategory.build(),

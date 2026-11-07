@@ -136,7 +136,7 @@ class PhysicalTestsApi {
   }
 
   /// Record a test result
-  /// The server computes the player&#39;s age at &#x60;measuredOn&#x60; (birth date and gender from core) and the expected band (tenant norm overrides global). Authz: ADMIN; team staff.
+  /// The server computes the player&#39;s age at &#x60;measuredOn&#x60; (birth date and gender from core) and the expected band (tenant norm overrides global). Authz: ADMIN; team staff. 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -400,7 +400,7 @@ class PhysicalTestsApi {
   }
 
   /// Delete a test result
-  /// Authz: ADMIN; team staff.
+  /// 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -512,7 +512,7 @@ class PhysicalTestsApi {
   }
 
   /// Get a test result
-  /// Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
+  /// Former staff of an ended season: records dated on or before its last day (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -775,7 +775,7 @@ class PhysicalTestsApi {
   }
 
   /// List test results (each with its expected norm band)
-  /// Authz: ADMIN; team staff; PARENT (linked, read); PLAYER (self, read).
+  /// A former staff member of a team whose season has ended reads the records of its roster&#39;s players dated on or before the season&#39;s last day; with &#x60;teamId&#x60; &#x3D; that team the list shows exactly those (ADR-0042). Authz: ADMIN; team staff; PARENT (linked, read); PLAYER (self, read).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -1070,7 +1070,7 @@ class PhysicalTestsApi {
   }
 
   /// Correct a test result (band is recomputed)
-  /// Authz: ADMIN; team staff.
+  /// 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

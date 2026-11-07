@@ -22,7 +22,7 @@ class AttendanceApi {
   const AttendanceApi(this._dio, this._serializers);
 
   /// Attendance sheet of a session
-  /// One entry per player of the team&#39;s current roster, overlaid with planned absences (&#x60;expectedAbsent&#x60;). Entries without a recorded status have &#x60;status &#x3D; null&#x60;. Authz: ADMIN; team staff; PARENT/PLAYER (linked / own entry). 
+  /// One entry per player of the team&#39;s current roster, overlaid with planned absences (&#x60;expectedAbsent&#x60;). Entries without a recorded status have &#x60;status &#x3D; null&#x60;. Authz: ADMIN; team staff; PARENT/PLAYER (linked / own entry). Former staff of the team (season ended) see the whole sheet, read-only (ADR-0042). 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -106,7 +106,7 @@ class AttendanceApi {
   }
 
   /// Record attendance for a session (upsert per player)
-  /// Entries for players not listed are left unchanged. &#x60;minutesLate&#x60; is required for LATE and forbidden otherwise (422). Not allowed for CANCELLED sessions (409). Authz: ADMIN; team staff. 
+  /// Entries for players not listed are left unchanged. &#x60;minutesLate&#x60; is required for LATE and forbidden otherwise (422). Not allowed for CANCELLED sessions (409). Authz: ADMIN; team staff. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

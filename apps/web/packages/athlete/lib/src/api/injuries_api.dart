@@ -26,7 +26,7 @@ class InjuriesApi {
   const InjuriesApi(this._dio, this._serializers);
 
   /// Report an injury
-  /// &#x60;expectedReturnOn&#x60; ≥ &#x60;occurredOn&#x60; (422). An OPEN injury shows the player as unavailable. Authz: ADMIN; team staff; PARENT (linked).
+  /// &#x60;expectedReturnOn&#x60; ≥ &#x60;occurredOn&#x60; (422). An OPEN injury shows the player as unavailable. 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -130,7 +130,7 @@ class InjuriesApi {
   }
 
   /// Delete an injury entered by mistake
-  /// Authz: ADMIN; team staff.
+  /// 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -186,7 +186,7 @@ class InjuriesApi {
   }
 
   /// Get an injury
-  /// Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
+  /// Former staff of an ended season: records dated on or before its last day (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -354,7 +354,7 @@ class InjuriesApi {
   }
 
   /// List injuries
-  /// Authz: ADMIN; team staff; PARENT (linked); PLAYER (self, read).
+  /// A former staff member of a team whose season has ended reads the records of its roster&#39;s players dated on or before the season&#39;s last day; with &#x60;teamId&#x60; &#x3D; that team the list shows exactly those (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self, read).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -455,7 +455,7 @@ class InjuriesApi {
   }
 
   /// Update an injury (e.g. mark RECOVERED with &#x60;actualReturnOn&#x60;)
-  /// RECOVERED requires &#x60;actualReturnOn&#x60; ≥ &#x60;occurredOn&#x60; (422). Authz: ADMIN; team staff; PARENT (linked).
+  /// RECOVERED requires &#x60;actualReturnOn&#x60; ≥ &#x60;occurredOn&#x60; (422). 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

@@ -34,7 +34,7 @@ abstract class MatchEventResult implements Built<MatchEventResult, MatchEventRes
   /// Set for REJECTED.
   @BuiltValueField(wireName: r'reason')
   MatchEventRejectionReason? get reason;
-  // enum reasonEnum {  SCHEMA_INVALID,  NOT_AUTHORIZED,  MATCH_CANCELLED,  CLIENT_SEQ_CONFLICT,  EVENT_ID_REUSED,  MATCH_NOT_STARTED,  };
+  // enum reasonEnum {  SCHEMA_INVALID,  NOT_AUTHORIZED,  MATCH_CANCELLED,  CLIENT_SEQ_CONFLICT,  EVENT_ID_REUSED,  MATCH_NOT_STARTED,  SEASON_ENDED,  };
 
   /// Human-readable detail for REJECTED (e.g. the failing schema path).
   @BuiltValueField(wireName: r'message')

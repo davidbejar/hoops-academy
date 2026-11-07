@@ -20,6 +20,8 @@ class _$AuthzContext extends AuthzContext {
   @override
   final BuiltList<String> staffTeamIds;
   @override
+  final BuiltList<String> historicStaffTeamIds;
+  @override
   final BuiltList<String> linkedPlayerIds;
   @override
   final String? ownPlayerId;
@@ -38,6 +40,7 @@ class _$AuthzContext extends AuthzContext {
       required this.tenantStatus,
       required this.roles,
       required this.staffTeamIds,
+      required this.historicStaffTeamIds,
       required this.linkedPlayerIds,
       this.ownPlayerId,
       required this.playerTeamIds,
@@ -60,6 +63,7 @@ class _$AuthzContext extends AuthzContext {
         tenantStatus == other.tenantStatus &&
         roles == other.roles &&
         staffTeamIds == other.staffTeamIds &&
+        historicStaffTeamIds == other.historicStaffTeamIds &&
         linkedPlayerIds == other.linkedPlayerIds &&
         ownPlayerId == other.ownPlayerId &&
         playerTeamIds == other.playerTeamIds &&
@@ -75,6 +79,7 @@ class _$AuthzContext extends AuthzContext {
     _$hash = $jc(_$hash, tenantStatus.hashCode);
     _$hash = $jc(_$hash, roles.hashCode);
     _$hash = $jc(_$hash, staffTeamIds.hashCode);
+    _$hash = $jc(_$hash, historicStaffTeamIds.hashCode);
     _$hash = $jc(_$hash, linkedPlayerIds.hashCode);
     _$hash = $jc(_$hash, ownPlayerId.hashCode);
     _$hash = $jc(_$hash, playerTeamIds.hashCode);
@@ -92,6 +97,7 @@ class _$AuthzContext extends AuthzContext {
           ..add('tenantStatus', tenantStatus)
           ..add('roles', roles)
           ..add('staffTeamIds', staffTeamIds)
+          ..add('historicStaffTeamIds', historicStaffTeamIds)
           ..add('linkedPlayerIds', linkedPlayerIds)
           ..add('ownPlayerId', ownPlayerId)
           ..add('playerTeamIds', playerTeamIds)
@@ -132,6 +138,12 @@ class AuthzContextBuilder
   set staffTeamIds(ListBuilder<String>? staffTeamIds) =>
       _$this._staffTeamIds = staffTeamIds;
 
+  ListBuilder<String>? _historicStaffTeamIds;
+  ListBuilder<String> get historicStaffTeamIds =>
+      _$this._historicStaffTeamIds ??= ListBuilder<String>();
+  set historicStaffTeamIds(ListBuilder<String>? historicStaffTeamIds) =>
+      _$this._historicStaffTeamIds = historicStaffTeamIds;
+
   ListBuilder<String>? _linkedPlayerIds;
   ListBuilder<String> get linkedPlayerIds =>
       _$this._linkedPlayerIds ??= ListBuilder<String>();
@@ -165,6 +177,7 @@ class AuthzContextBuilder
       _tenantStatus = $v.tenantStatus;
       _roles = $v.roles.toBuilder();
       _staffTeamIds = $v.staffTeamIds.toBuilder();
+      _historicStaffTeamIds = $v.historicStaffTeamIds.toBuilder();
       _linkedPlayerIds = $v.linkedPlayerIds.toBuilder();
       _ownPlayerId = $v.ownPlayerId;
       _playerTeamIds = $v.playerTeamIds.toBuilder();
@@ -202,6 +215,7 @@ class AuthzContextBuilder
                 tenantStatus, r'AuthzContext', 'tenantStatus'),
             roles: roles.build(),
             staffTeamIds: staffTeamIds.build(),
+            historicStaffTeamIds: historicStaffTeamIds.build(),
             linkedPlayerIds: linkedPlayerIds.build(),
             ownPlayerId: ownPlayerId,
             playerTeamIds: playerTeamIds.build(),
@@ -215,6 +229,8 @@ class AuthzContextBuilder
         roles.build();
         _$failedField = 'staffTeamIds';
         staffTeamIds.build();
+        _$failedField = 'historicStaffTeamIds';
+        historicStaffTeamIds.build();
         _$failedField = 'linkedPlayerIds';
         linkedPlayerIds.build();
 

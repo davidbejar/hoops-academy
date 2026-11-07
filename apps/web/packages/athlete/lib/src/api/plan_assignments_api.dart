@@ -24,7 +24,7 @@ class PlanAssignmentsApi {
   const PlanAssignmentsApi(this._dio, this._serializers);
 
   /// Assign a tenant plan to a team or a player
-  /// Exactly one of &#x60;teamId&#x60; / &#x60;playerId&#x60; (422). Templates must be copied first (422). Authz: ADMIN; team staff.
+  /// Exactly one of &#x60;teamId&#x60; / &#x60;playerId&#x60; (422). Templates must be copied first (422). 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -128,7 +128,7 @@ class PlanAssignmentsApi {
   }
 
   /// Withdraw a plan assignment
-  /// Completions recorded for it are deleted with it. Authz: ADMIN; team staff.
+  /// Completions recorded for it are deleted with it. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

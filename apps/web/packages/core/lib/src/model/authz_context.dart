@@ -20,6 +20,7 @@ part 'authz_context.g.dart';
 /// * [tenantStatus]
 /// * [roles]
 /// * [staffTeamIds] - Teams the caller is staff of; teams whose season has ended are left out (core 2.8.0).
+/// * [historicStaffTeamIds] - Teams of ended seasons the caller is still recorded as staff of: read access to their history for a COACH / ASSISTANT_COACH, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`.
 /// * [linkedPlayerIds]
 /// * [ownPlayerId] - The subject's own player id when they hold the PLAYER role.
 /// * [playerTeamIds] - Teams with an open, valid assignment of the own player or of a linked player; teams whose season has ended are left out (core 2.8.0).
@@ -46,6 +47,10 @@ abstract class AuthzContext
   /// Teams the caller is staff of; teams whose season has ended are left out (core 2.8.0).
   @BuiltValueField(wireName: r'staffTeamIds')
   BuiltList<String> get staffTeamIds;
+
+  /// Teams of ended seasons the caller is still recorded as staff of: read access to their history for a COACH / ASSISTANT_COACH, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`.
+  @BuiltValueField(wireName: r'historicStaffTeamIds')
+  BuiltList<String> get historicStaffTeamIds;
 
   @BuiltValueField(wireName: r'linkedPlayerIds')
   BuiltList<String> get linkedPlayerIds;
@@ -113,6 +118,11 @@ class _$AuthzContextSerializer implements PrimitiveSerializer<AuthzContext> {
     yield r'staffTeamIds';
     yield serializers.serialize(
       object.staffTeamIds,
+      specifiedType: const FullType(BuiltList, [FullType(String)]),
+    );
+    yield r'historicStaffTeamIds';
+    yield serializers.serialize(
+      object.historicStaffTeamIds,
       specifiedType: const FullType(BuiltList, [FullType(String)]),
     );
     yield r'linkedPlayerIds';
@@ -203,6 +213,13 @@ class _$AuthzContextSerializer implements PrimitiveSerializer<AuthzContext> {
             specifiedType: const FullType(BuiltList, [FullType(String)]),
           ) as BuiltList<String>;
           result.staffTeamIds.replace(valueDes);
+          break;
+        case r'historicStaffTeamIds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>;
+          result.historicStaffTeamIds.replace(valueDes);
           break;
         case r'linkedPlayerIds':
           final valueDes = serializers.deserialize(

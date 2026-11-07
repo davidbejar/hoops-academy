@@ -29,7 +29,7 @@ class TrainingSessionsApi {
   const TrainingSessionsApi(this._dio, this._serializers);
 
   /// Cancel a planned session
-  /// Only PLANNED sessions can be cancelled (409). Authz: ADMIN; team staff.
+  /// Only PLANNED sessions can be cancelled (409). 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -135,7 +135,7 @@ class TrainingSessionsApi {
   }
 
   /// Quick-add exercises of any readable plan or template to a session
-  /// Copies the given items (in the given order) to the end of the session&#39;s own plan and returns that plan. A session without a plan of its own (no plan, a template or a shared tenant plan) first gets an ad-hoc tenant plan (&#x60;sessionId&#x60; &#x3D; this session) that starts with the items of its current plan, if any; the session then references it, so the template or shared plan is never changed (copy on write, ADR-0041). Template items are copied with their texts in the negotiated language. Unknown or foreign plans or items are 404; CANCELLED sessions cannot be changed (409). Authz: ADMIN; team staff. 
+  /// Copies the given items (in the given order) to the end of the session&#39;s own plan and returns that plan. A session without a plan of its own (no plan, a template or a shared tenant plan) first gets an ad-hoc tenant plan (&#x60;sessionId&#x60; &#x3D; this session) that starts with the items of its current plan, if any; the session then references it, so the template or shared plan is never changed (copy on write, ADR-0041). Template items are copied with their texts in the negotiated language. Unknown or foreign plans or items are 404; CANCELLED sessions cannot be changed (409). Authz: ADMIN; team staff. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -244,7 +244,7 @@ class TrainingSessionsApi {
   }
 
   /// Create an ad-hoc training session
-  /// Authz: ADMIN; team staff.
+  /// 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -536,7 +536,7 @@ class TrainingSessionsApi {
   }
 
   /// Update a session (time, place, plan, notes, mark DONE)
-  /// CANCELLED sessions cannot be changed (409). Authz: ADMIN; team staff.
+  /// CANCELLED sessions cannot be changed (409). 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

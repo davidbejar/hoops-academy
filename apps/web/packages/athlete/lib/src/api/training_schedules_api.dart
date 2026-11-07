@@ -25,7 +25,7 @@ class TrainingSchedulesApi {
   const TrainingSchedulesApi(this._dio, this._serializers);
 
   /// Create a recurring training slot
-  /// Sessions are materialised 8 weeks ahead. Authz: ADMIN; team staff.
+  /// Sessions are materialised 8 weeks ahead. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -129,7 +129,7 @@ class TrainingSchedulesApi {
   }
 
   /// End a training schedule
-  /// Removes future PLANNED sessions of the schedule; past sessions and attendance are kept. Authz: ADMIN; team staff.
+  /// Removes future PLANNED sessions of the schedule; past sessions and attendance are kept. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -361,7 +361,7 @@ class TrainingSchedulesApi {
   }
 
   /// Update a training schedule
-  /// Future PLANNED sessions without manual changes are re-materialised. Authz: ADMIN; team staff.
+  /// Future PLANNED sessions without manual changes are re-materialised. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

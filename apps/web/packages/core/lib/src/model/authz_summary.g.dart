@@ -10,6 +10,8 @@ class _$AuthzSummary extends AuthzSummary {
   @override
   final BuiltList<String> staffTeamIds;
   @override
+  final BuiltList<String> historicStaffTeamIds;
+  @override
   final BuiltList<String> linkedPlayerIds;
   @override
   final String? ownPlayerId;
@@ -23,6 +25,7 @@ class _$AuthzSummary extends AuthzSummary {
 
   _$AuthzSummary._(
       {required this.staffTeamIds,
+      required this.historicStaffTeamIds,
       required this.linkedPlayerIds,
       this.ownPlayerId,
       required this.playerTeamIds,
@@ -40,6 +43,7 @@ class _$AuthzSummary extends AuthzSummary {
     if (identical(other, this)) return true;
     return other is AuthzSummary &&
         staffTeamIds == other.staffTeamIds &&
+        historicStaffTeamIds == other.historicStaffTeamIds &&
         linkedPlayerIds == other.linkedPlayerIds &&
         ownPlayerId == other.ownPlayerId &&
         playerTeamIds == other.playerTeamIds &&
@@ -50,6 +54,7 @@ class _$AuthzSummary extends AuthzSummary {
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, staffTeamIds.hashCode);
+    _$hash = $jc(_$hash, historicStaffTeamIds.hashCode);
     _$hash = $jc(_$hash, linkedPlayerIds.hashCode);
     _$hash = $jc(_$hash, ownPlayerId.hashCode);
     _$hash = $jc(_$hash, playerTeamIds.hashCode);
@@ -62,6 +67,7 @@ class _$AuthzSummary extends AuthzSummary {
   String toString() {
     return (newBuiltValueToStringHelper(r'AuthzSummary')
           ..add('staffTeamIds', staffTeamIds)
+          ..add('historicStaffTeamIds', historicStaffTeamIds)
           ..add('linkedPlayerIds', linkedPlayerIds)
           ..add('ownPlayerId', ownPlayerId)
           ..add('playerTeamIds', playerTeamIds)
@@ -79,6 +85,12 @@ class AuthzSummaryBuilder
       _$this._staffTeamIds ??= ListBuilder<String>();
   set staffTeamIds(ListBuilder<String>? staffTeamIds) =>
       _$this._staffTeamIds = staffTeamIds;
+
+  ListBuilder<String>? _historicStaffTeamIds;
+  ListBuilder<String> get historicStaffTeamIds =>
+      _$this._historicStaffTeamIds ??= ListBuilder<String>();
+  set historicStaffTeamIds(ListBuilder<String>? historicStaffTeamIds) =>
+      _$this._historicStaffTeamIds = historicStaffTeamIds;
 
   ListBuilder<String>? _linkedPlayerIds;
   ListBuilder<String> get linkedPlayerIds =>
@@ -108,6 +120,7 @@ class AuthzSummaryBuilder
     final $v = _$v;
     if ($v != null) {
       _staffTeamIds = $v.staffTeamIds.toBuilder();
+      _historicStaffTeamIds = $v.historicStaffTeamIds.toBuilder();
       _linkedPlayerIds = $v.linkedPlayerIds.toBuilder();
       _ownPlayerId = $v.ownPlayerId;
       _playerTeamIds = $v.playerTeamIds.toBuilder();
@@ -136,6 +149,7 @@ class AuthzSummaryBuilder
       _$result = _$v ??
           _$AuthzSummary._(
             staffTeamIds: staffTeamIds.build(),
+            historicStaffTeamIds: historicStaffTeamIds.build(),
             linkedPlayerIds: linkedPlayerIds.build(),
             ownPlayerId: ownPlayerId,
             playerTeamIds: playerTeamIds.build(),
@@ -147,6 +161,8 @@ class AuthzSummaryBuilder
       try {
         _$failedField = 'staffTeamIds';
         staffTeamIds.build();
+        _$failedField = 'historicStaffTeamIds';
+        historicStaffTeamIds.build();
         _$failedField = 'linkedPlayerIds';
         linkedPlayerIds.build();
 

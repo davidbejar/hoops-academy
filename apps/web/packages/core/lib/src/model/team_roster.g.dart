@@ -14,6 +14,8 @@ class _$TeamRoster extends TeamRoster {
   @override
   final String seasonId;
   @override
+  final Date seasonEndDate;
+  @override
   final String teamName;
   @override
   final BuiltList<RosterPlayer> players;
@@ -27,6 +29,7 @@ class _$TeamRoster extends TeamRoster {
       {required this.tenantId,
       required this.teamId,
       required this.seasonId,
+      required this.seasonEndDate,
       required this.teamName,
       required this.players,
       required this.staff})
@@ -45,6 +48,7 @@ class _$TeamRoster extends TeamRoster {
         tenantId == other.tenantId &&
         teamId == other.teamId &&
         seasonId == other.seasonId &&
+        seasonEndDate == other.seasonEndDate &&
         teamName == other.teamName &&
         players == other.players &&
         staff == other.staff;
@@ -56,6 +60,7 @@ class _$TeamRoster extends TeamRoster {
     _$hash = $jc(_$hash, tenantId.hashCode);
     _$hash = $jc(_$hash, teamId.hashCode);
     _$hash = $jc(_$hash, seasonId.hashCode);
+    _$hash = $jc(_$hash, seasonEndDate.hashCode);
     _$hash = $jc(_$hash, teamName.hashCode);
     _$hash = $jc(_$hash, players.hashCode);
     _$hash = $jc(_$hash, staff.hashCode);
@@ -69,6 +74,7 @@ class _$TeamRoster extends TeamRoster {
           ..add('tenantId', tenantId)
           ..add('teamId', teamId)
           ..add('seasonId', seasonId)
+          ..add('seasonEndDate', seasonEndDate)
           ..add('teamName', teamName)
           ..add('players', players)
           ..add('staff', staff))
@@ -90,6 +96,11 @@ class TeamRosterBuilder implements Builder<TeamRoster, TeamRosterBuilder> {
   String? _seasonId;
   String? get seasonId => _$this._seasonId;
   set seasonId(String? seasonId) => _$this._seasonId = seasonId;
+
+  Date? _seasonEndDate;
+  Date? get seasonEndDate => _$this._seasonEndDate;
+  set seasonEndDate(Date? seasonEndDate) =>
+      _$this._seasonEndDate = seasonEndDate;
 
   String? _teamName;
   String? get teamName => _$this._teamName;
@@ -115,6 +126,7 @@ class TeamRosterBuilder implements Builder<TeamRoster, TeamRosterBuilder> {
       _tenantId = $v.tenantId;
       _teamId = $v.teamId;
       _seasonId = $v.seasonId;
+      _seasonEndDate = $v.seasonEndDate;
       _teamName = $v.teamName;
       _players = $v.players.toBuilder();
       _staff = $v.staff.toBuilder();
@@ -147,6 +159,8 @@ class TeamRosterBuilder implements Builder<TeamRoster, TeamRosterBuilder> {
                 teamId, r'TeamRoster', 'teamId'),
             seasonId: BuiltValueNullFieldError.checkNotNull(
                 seasonId, r'TeamRoster', 'seasonId'),
+            seasonEndDate: BuiltValueNullFieldError.checkNotNull(
+                seasonEndDate, r'TeamRoster', 'seasonEndDate'),
             teamName: BuiltValueNullFieldError.checkNotNull(
                 teamName, r'TeamRoster', 'teamName'),
             players: players.build(),

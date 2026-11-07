@@ -25,7 +25,7 @@ class BodyMeasurementsApi {
   const BodyMeasurementsApi(this._dio, this._serializers);
 
   /// Record height and/or weight
-  /// At least one of &#x60;heightCm&#x60; / &#x60;weightKg&#x60; (422); one measurement per player and day (409). Authz: ADMIN; team staff; PARENT (linked).
+  /// At least one of &#x60;heightCm&#x60; / &#x60;weightKg&#x60; (422); one measurement per player and day (409). 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -129,7 +129,7 @@ class BodyMeasurementsApi {
   }
 
   /// Delete a measurement
-  /// Authz: ADMIN; team staff; PARENT (linked).
+  /// 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -185,7 +185,7 @@ class BodyMeasurementsApi {
   }
 
   /// Height / weight history of a player (measuredOn ascending)
-  /// Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
+  /// Former staff of an ended season: records dated on or before its last day (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -280,7 +280,7 @@ class BodyMeasurementsApi {
   }
 
   /// Correct a measurement
-  /// Authz: ADMIN; team staff; PARENT (linked).
+  /// 409 &#x60;SEASON_ENDED&#x60; for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.

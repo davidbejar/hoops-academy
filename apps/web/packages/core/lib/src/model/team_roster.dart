@@ -3,6 +3,7 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:hoops_core_api/src/model/date.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:hoops_core_api/src/model/roster_staff.dart';
 import 'package:hoops_core_api/src/model/roster_player.dart';
@@ -17,6 +18,7 @@ part 'team_roster.g.dart';
 /// * [tenantId]
 /// * [teamId]
 /// * [seasonId]
+/// * [seasonEndDate] - Last day of the team's season; after it (academy time zone) the team is history and game and athlete refuse writes on it with 409 `SEASON_ENDED` (ADR-0042, core 3.2.0).
 /// * [teamName]
 /// * [players]
 /// * [staff]
@@ -30,6 +32,10 @@ abstract class TeamRoster implements Built<TeamRoster, TeamRosterBuilder> {
 
   @BuiltValueField(wireName: r'seasonId')
   String get seasonId;
+
+  /// Last day of the team's season; after it (academy time zone) the team is history and game and athlete refuse writes on it with 409 `SEASON_ENDED` (ADR-0042, core 3.2.0).
+  @BuiltValueField(wireName: r'seasonEndDate')
+  Date get seasonEndDate;
 
   @BuiltValueField(wireName: r'teamName')
   String get teamName;
@@ -77,6 +83,11 @@ class _$TeamRosterSerializer implements PrimitiveSerializer<TeamRoster> {
     yield serializers.serialize(
       object.seasonId,
       specifiedType: const FullType(String),
+    );
+    yield r'seasonEndDate';
+    yield serializers.serialize(
+      object.seasonEndDate,
+      specifiedType: const FullType(Date),
     );
     yield r'teamName';
     yield serializers.serialize(
@@ -138,6 +149,13 @@ class _$TeamRosterSerializer implements PrimitiveSerializer<TeamRoster> {
             specifiedType: const FullType(String),
           ) as String;
           result.seasonId = valueDes;
+          break;
+        case r'seasonEndDate':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(Date),
+          ) as Date;
+          result.seasonEndDate = valueDes;
           break;
         case r'teamName':
           final valueDes = serializers.deserialize(

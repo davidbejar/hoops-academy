@@ -13,6 +13,7 @@ part 'authz_summary.g.dart';
 ///
 /// Properties:
 /// * [staffTeamIds] - Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the academy's time zone) even while the staff row is still open (core 2.8.0).
+/// * [historicStaffTeamIds] - Teams of seasons that have ended (academy time zone) where the caller is still recorded as staff: their read-only history for a COACH / ASSISTANT_COACH (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`.
 /// * [linkedPlayerIds] - Players linked to the caller as guardian (PARENT).
 /// * [ownPlayerId] - The caller's own player id when they hold the PLAYER role (null otherwise).
 /// * [playerTeamIds] - Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. Teams whose season has ended are left out even while the assignment is still open (core 2.8.0).
@@ -23,6 +24,10 @@ abstract class AuthzSummary
   /// Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the academy's time zone) even while the staff row is still open (core 2.8.0).
   @BuiltValueField(wireName: r'staffTeamIds')
   BuiltList<String> get staffTeamIds;
+
+  /// Teams of seasons that have ended (academy time zone) where the caller is still recorded as staff: their read-only history for a COACH / ASSISTANT_COACH (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`.
+  @BuiltValueField(wireName: r'historicStaffTeamIds')
+  BuiltList<String> get historicStaffTeamIds;
 
   /// Players linked to the caller as guardian (PARENT).
   @BuiltValueField(wireName: r'linkedPlayerIds')
@@ -66,6 +71,11 @@ class _$AuthzSummarySerializer implements PrimitiveSerializer<AuthzSummary> {
     yield r'staffTeamIds';
     yield serializers.serialize(
       object.staffTeamIds,
+      specifiedType: const FullType(BuiltList, [FullType(String)]),
+    );
+    yield r'historicStaffTeamIds';
+    yield serializers.serialize(
+      object.historicStaffTeamIds,
       specifiedType: const FullType(BuiltList, [FullType(String)]),
     );
     yield r'linkedPlayerIds';
@@ -121,6 +131,13 @@ class _$AuthzSummarySerializer implements PrimitiveSerializer<AuthzSummary> {
             specifiedType: const FullType(BuiltList, [FullType(String)]),
           ) as BuiltList<String>;
           result.staffTeamIds.replace(valueDes);
+          break;
+        case r'historicStaffTeamIds':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(BuiltList, [FullType(String)]),
+          ) as BuiltList<String>;
+          result.historicStaffTeamIds.replace(valueDes);
           break;
         case r'linkedPlayerIds':
           final valueDes = serializers.deserialize(
