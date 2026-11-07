@@ -132,6 +132,12 @@ class AcademyRequestTest {
         assertThatThrownBy(() -> new AcademyRequest(p.id(), AcademyRequestStatus.PENDING, p.requester(),
                 p.academyName(), REQUESTED, null, null, null, null, MAILED))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new AcademyRequest(p.id(), AcademyRequestStatus.ACCEPTED, p.requester(),
+                p.academyName(), REQUESTED, DECIDED, null, null, TENANT, null))
+                .as("a decision without its decider").isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new AcademyRequest(p.id(), AcademyRequestStatus.REJECTED, p.requester(),
+                p.academyName(), REQUESTED, null, "s", "no", null, null))
+                .as("a decision without its time").isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new AcademyRequest(null, AcademyRequestStatus.PENDING, p.requester(),
                 p.academyName(), REQUESTED, null, null, null, null, null))
                 .isInstanceOf(NullPointerException.class);
@@ -150,6 +156,8 @@ class AcademyRequestTest {
     @Test
     void requestIdsAreRandomAndNotNull() {
         assertThat(AcademyRequestId.random()).isNotEqualTo(AcademyRequestId.random());
+        java.util.UUID value = java.util.UUID.randomUUID();
+        assertThat(new AcademyRequestId(value)).hasToString(value.toString());
         assertThatThrownBy(() -> new AcademyRequestId(null)).isInstanceOf(NullPointerException.class);
     }
 }
