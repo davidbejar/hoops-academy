@@ -228,6 +228,33 @@ class MatchResourceTest {
         given().header("X-Tenant-Id", A).queryParam("size", 500).get("/api/game/matches").then().statusCode(400);
     }
 
+    /** SD-01 (CodeQL, 2026-11): {@code page * size} wrapped around int (500, or the first page again). */
+    @Test
+    @TenantUser(tenant = A, roles = TenantRole.PARENT)
+    void aPageBeyondTheLastMatchIsEmptyEvenWhereItsOffsetOverflowsAnInt() {
+        String team = UUID.randomUUID().toString();
+        seed.match(A, team, MatchStatus.SCHEDULED, java.time.Instant.parse("2027-02-01T10:00:00Z"));
+
+        asTenantA().queryParam("teamId", team).queryParam("page", Integer.MAX_VALUE).get("/api/game/matches")
+                .then().statusCode(200).body("items", hasSize(0));
+        asTenantA().queryParam("teamId", team).queryParam("page", 1 << 30).queryParam("size", 4).get("/api/game/matches")
+                .then().statusCode(200).body("items", hasSize(0));
+    }
+
+    /** SD-02 (ZAP API scan, 2026-11): a NUL in text reached PostgreSQL and was a 500. */
+    @Test
+    @TenantUser(tenant = A, roles = TenantRole.ADMIN)
+    void aNulCharacterInTheBodyIsABadRequestProblemNamingTheField() {
+        lenientTenantA().body(newMatchBody(TEAM).replace("Lakers U14", "Lakers\\u0000U14")).post("/api/game/matches")
+                .then().statusCode(400).contentType("application/problem+json")
+                .body("violations[0].field", equalTo("opponentName"))
+                .body("violations[0].code", equalTo("INVALID_CHARACTERS"));
+        lenientTenantA().body("{\"venue\":\"Gym\\u0000\"}").patch("/api/game/matches/" + UUID.randomUUID())
+                .then().statusCode(400).body("violations[0].field", equalTo("venue"));
+        given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", A).urlEncodingEnabled(false)
+                .get("/api/game/matches?teamId=%00").then().statusCode(400).body("code", equalTo("INVALID_CHARACTERS"));
+    }
+
     // ---------------------------------------------------------------- patch
 
     @Test

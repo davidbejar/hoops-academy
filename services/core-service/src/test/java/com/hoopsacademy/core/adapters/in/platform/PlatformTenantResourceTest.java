@@ -10,6 +10,7 @@ import static com.hoopsacademy.core.testsupport.KeycloakStubs.userDeleted;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
@@ -256,6 +257,31 @@ class PlatformTenantResourceTest {
         assertThat(renamed.get("name").asText()).isEqualTo("Renamed Academy");
         assertThat(renamed.get("defaultLocale").asText()).isEqualTo("id");
         given().filter(Contract.CORE).get(TENANTS + "/" + UUID.randomUUID()).then().statusCode(404);
+    }
+
+    /** SD-02 (ZAP API scan, 2026-11): {@code q=%00} reached PostgreSQL and was a 500. */
+    @Test
+    void aControlCharacterInTheSearchIsA400Problem() {
+        given().filter(Contract.RESPONSES_ONLY).urlEncodingEnabled(false).get(TENANTS + "?q=%00").then()
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("code", equalTo("INVALID_CHARACTERS"));
+        given().filter(Contract.RESPONSES_ONLY).contentType(ContentType.JSON).body("{\"name\":\"Nul\\u0000Academy\"}")
+                .patch(TENANTS + "/" + UUID.randomUUID()).then()
+                .statusCode(400)
+                .body("violations[0].field", equalTo("name"))
+                .body("violations[0].code", equalTo("INVALID_CHARACTERS"));
+    }
+
+    /** SD-01 (CodeQL, 2026-11): {@code page * size} wrapped around int (500, or another page). */
+    @Test
+    void aPageBeyondTheLastRowIsEmptyEvenWhereItsOffsetOverflowsAnInt() {
+        createTenant(Slugs.unique("paging"));
+
+        given().filter(Contract.CORE).queryParam("page", Integer.MAX_VALUE).get(TENANTS).then()
+                .statusCode(200).body("items", empty());
+        given().filter(Contract.CORE).queryParam("page", 1 << 30).queryParam("size", 4).get(TENANTS).then()
+                .statusCode(200).body("items", empty());
     }
 
     @Test
