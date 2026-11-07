@@ -24,7 +24,7 @@ import java.util.UUID;
 /**
  * The paged read of {@code core.audit_event e} shared by the tenant (core_app) and the platform (core_platform)
  * adapters: filter predicates, newest-first order ({@code at desc, seq desc}) and the mapping of the first nine select
- * columns ({@link #COLUMNS}) to an {@link AuditRecord}. Callers add their own joins, extra columns and predicates.
+ * columns ({@link #COLUMNS}) to an {@link AuditRecord}. The joins and extra columns come from an {@link AuditEventSource}.
  */
 public final class AuditEventQueryRepository {
 
@@ -51,8 +51,8 @@ public final class AuditEventQueryRepository {
     }
 
     /** {@code select <columns> <from> where … order by … limit/offset}. */
-    public List<Object[]> page(EntityManager em, String columns, String from, PageRequest page) {
-        Query query = em.createNativeQuery("select " + columns + " " + from + where()
+    public List<Object[]> page(EntityManager em, AuditEventSource source, PageRequest page) {
+        Query query = em.createNativeQuery("select " + source.columns() + " " + source.from() + where()
                 + " order by e.at desc, e.seq desc", Object[].class);
         bind(query);
         @SuppressWarnings("unchecked")
@@ -60,8 +60,8 @@ public final class AuditEventQueryRepository {
         return rows;
     }
 
-    public long count(EntityManager em, String from) {
-        Query query = em.createNativeQuery("select count(*) " + from + where(), Long.class);
+    public long count(EntityManager em, AuditEventSource source) {
+        Query query = em.createNativeQuery("select count(*) " + source.from() + where(), Long.class);
         bind(query);
         return ((Number) query.getSingleResult()).longValue();
     }

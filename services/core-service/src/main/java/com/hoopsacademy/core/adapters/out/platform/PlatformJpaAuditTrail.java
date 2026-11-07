@@ -3,6 +3,7 @@ package com.hoopsacademy.core.adapters.out.platform;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.out.audit.AuditEventQueryRepository;
+import com.hoopsacademy.core.adapters.out.audit.AuditEventSource;
 import com.hoopsacademy.core.application.port.AuditFilter;
 import com.hoopsacademy.core.application.port.PlatformAuditTrail;
 import com.hoopsacademy.core.application.shared.PageRequest;
@@ -20,8 +21,6 @@ import java.util.Optional;
 @ApplicationScoped
 class PlatformJpaAuditTrail implements PlatformAuditTrail {
 
-    private static final String FROM = "from core.audit_event e join core.tenant t on t.id = e.tenant_id";
-
     private final EntityManager em;
     private final ObjectMapper json;
 
@@ -34,8 +33,8 @@ class PlatformJpaAuditTrail implements PlatformAuditTrail {
     public PageResult<Row> list(Optional<TenantId> tenant, AuditFilter filter, PageRequest page) {
         AuditEventQueryRepository query = new AuditEventQueryRepository(filter);
         tenant.ifPresent(query::tenant);
-        List<Row> items = query.page(em, AuditEventQueryRepository.COLUMNS + ", t.name", FROM, page).stream()
+        List<Row> items = query.page(em, AuditEventSource.PLATFORM, page).stream()
                 .map(row -> new Row(AuditEventQueryRepository.record(row, json), (String) row[9])).toList();
-        return new PageResult<>(items, page, query.count(em, FROM));
+        return new PageResult<>(items, page, query.count(em, AuditEventSource.PLATFORM));
     }
 }

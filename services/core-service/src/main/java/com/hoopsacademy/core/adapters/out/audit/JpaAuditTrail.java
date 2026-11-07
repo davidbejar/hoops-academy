@@ -18,8 +18,6 @@ import java.util.List;
 @ApplicationScoped
 class JpaAuditTrail implements AuditTrail {
 
-    private static final String FROM = "from core.audit_event e";
-
     private final EntityManager em;
     private final ObjectMapper json;
     private final TenantContext tenantContext;
@@ -33,8 +31,8 @@ class JpaAuditTrail implements AuditTrail {
     @Override
     public PageResult<AuditRecord> list(AuditFilter filter, PageRequest page) {
         AuditEventQueryRepository query = new AuditEventQueryRepository(filter).tenant(tenantContext.requireTenantId());
-        List<AuditRecord> items = query.page(em, AuditEventQueryRepository.COLUMNS, FROM, page).stream()
+        List<AuditRecord> items = query.page(em, AuditEventSource.TENANT, page).stream()
                 .map(row -> AuditEventQueryRepository.record(row, json)).toList();
-        return new PageResult<>(items, page, query.count(em, FROM));
+        return new PageResult<>(items, page, query.count(em, AuditEventSource.TENANT));
     }
 }
