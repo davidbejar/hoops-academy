@@ -97,7 +97,7 @@ class UpdateRequestClearListContractTest {
                 "UpdateTrainingPlanRequest", "UpdatePlanItemRequest", "UpdateTrainingScheduleRequest",
                 "UpdatePhysicalTestTypeRequest"));
         updates.forEach((name, request) -> assertThat(request.getProperties()).as(name).containsKey("clear"));
-        assertThat(OpenApiSpecs.parse("athlete").getOpenAPI().getInfo().getVersion()).isEqualTo("2.3.0");
+        assertThat(OpenApiSpecs.parse("athlete").getOpenAPI().getInfo().getVersion()).isEqualTo("2.4.0");
     }
 
     @Test
@@ -201,7 +201,7 @@ class UpdateRequestClearListContractTest {
         var game = OpenApiSpecs.parse("game").getOpenAPI();
         Schema<?> clear = (Schema<?>) updateRequests("game").get("UpdateMatchRequest").getProperties().get("clear");
 
-        assertThat(game.getInfo().getVersion()).isEqualTo("2.2.0");
+        assertThat(game.getInfo().getVersion()).isEqualTo("2.3.0");
         assertThat(clear.getItems().getEnum()).map(String::valueOf).containsExactly("venue");
     }
 }
