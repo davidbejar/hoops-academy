@@ -163,3 +163,9 @@ for svc in services:
                  port_forwards=['%d:%d' % (PORTS[svc] + 10000, PORTS[svc])], labels=['services'])
 
 k8s_resource('web', objects=['web:httproute'], resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])
+# OpenTelemetry (WP86, ADR-0046; global.observability.enabled in values-kind.yaml): the collector receives the services'
+# traces and logs (and the Envoy edge spans) and prints them in its log; Jaeger keeps the traces in memory, UI on :16686.
+k8s_resource('otel-collector', objects=['otel-collector-config:configmap', 'otel-collector:networkpolicy'],
+             labels=['observability'])
+k8s_resource('jaeger', objects=['jaeger-config:configmap', 'jaeger:networkpolicy'], resource_deps=['otel-collector'],
+             port_forwards=['16686:16686'], labels=['observability'])

@@ -126,6 +126,14 @@ step "CloudNativePG operator $CNPG_VERSION"
 "${K[@]}" apply --server-side --force-conflicts \
   -f "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/${CNPG_BRANCH}/releases/cnpg-${CNPG_VERSION}.yaml"
 
+# Single replica on kind: no leader election (WP86). Under VM load the operator lost its lease ("leader election lost",
+# CrashLoopBackOff with a 5-minute backoff) and no database came up; kube-controller-manager and kube-scheduler run without
+# it too (kind-config.yaml, WP87). The apply above resets the flag on a re-run, so this patch rolls the operator once more.
+cnpg_args=$("${K[@]}" -n cnpg-system get deployment cnpg-controller-manager -o json \
+  | jq -c '.spec.template.spec.containers[0].args | map(if . == "--leader-elect" then "--leader-elect=false" else . end)')
+"${K[@]}" -n cnpg-system patch deployment cnpg-controller-manager --type json \
+  -p "[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/args\",\"value\":$cnpg_args}]"
+
 step "waiting for Envoy Gateway and CNPG (first run pulls images; slow links take minutes)"
 "${K[@]}" -n envoy-gateway-system rollout status deployment/envoy-gateway --timeout=900s
 "${K[@]}" -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=900s

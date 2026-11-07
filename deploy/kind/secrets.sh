@@ -13,20 +13,22 @@ load_env secrets.sh
 
 LABEL=app.kubernetes.io/part-of=hoops-academy
 emit() { kubectl create secret generic "$@" -n "${SECRET_NS:-$NS}" --dry-run=client -o yaml \
-  | kubectl label --local -f - "$LABEL" -o yaml; echo '---'; }
+  | kubectl label --local -f - "$LABEL" ${EXTRA_LABEL:+"$EXTRA_LABEL"} -o yaml; echo '---'; }
 # CNPG managed roles / initdb need kubernetes.io/basic-auth Secrets whose username equals the role name.
 basic_auth() { # secret-name username ENV_VAR
   emit "$1" --type=kubernetes.io/basic-auth --from-literal=username="$2" --from-file=password=<(printf '%s' "${!3}")
 }
+# CNPG re-reads only Secrets labelled cnpg.io/reload: without it a rotated role password never reaches the database (WP86).
+db_role() { EXTRA_LABEL=cnpg.io/reload=true basic_auth "$@"; }
 
-basic_auth hoops-db-core-migrator    core_migrator    CORE_MIGRATOR_PASSWORD
-basic_auth hoops-db-core-app         core_app         CORE_APP_PASSWORD
-basic_auth hoops-db-core-platform    core_platform    CORE_PLATFORM_PASSWORD
-basic_auth hoops-db-game-migrator    game_migrator    GAME_MIGRATOR_PASSWORD
-basic_auth hoops-db-game-app         game_app         GAME_APP_PASSWORD
-basic_auth hoops-db-athlete-migrator athlete_migrator ATHLETE_MIGRATOR_PASSWORD
-basic_auth hoops-db-athlete-app      athlete_app      ATHLETE_APP_PASSWORD
-basic_auth keycloak-db-app           keycloak         KC_DB_PASSWORD
+db_role hoops-db-core-migrator   core_migrator    CORE_MIGRATOR_PASSWORD
+db_role hoops-db-core-app        core_app         CORE_APP_PASSWORD
+db_role hoops-db-core-platform   core_platform    CORE_PLATFORM_PASSWORD
+db_role hoops-db-game-migrator   game_migrator    GAME_MIGRATOR_PASSWORD
+db_role hoops-db-game-app        game_app         GAME_APP_PASSWORD
+db_role hoops-db-athlete-migrator athlete_migrator ATHLETE_MIGRATOR_PASSWORD
+db_role hoops-db-athlete-app     athlete_app      ATHLETE_APP_PASSWORD
+db_role keycloak-db-app          keycloak         KC_DB_PASSWORD
 emit keycloak-admin --from-file=username=<(printf '%s' "$KEYCLOAK_ADMIN") --from-file=password=<(printf '%s' "$KEYCLOAK_ADMIN_PASSWORD")
 emit hoops-oidc-core-service    --from-file=client-secret=<(printf '%s' "$CORE_SERVICE_CLIENT_SECRET")
 emit hoops-oidc-game-service    --from-file=client-secret=<(printf '%s' "$GAME_SERVICE_CLIENT_SECRET")

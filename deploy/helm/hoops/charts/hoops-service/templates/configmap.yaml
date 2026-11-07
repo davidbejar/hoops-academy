@@ -23,6 +23,21 @@ or the consumer, so no pod looks for a broker). env may override offEnv, never t
 {{- $_ := set $env $k (toString $v) }}
 {{- end }}
 {{- end }}
+{{- /*
+OpenTelemetry (WP86, ADR-0046), switched by global.observability.enabled: the SDK exports traces and logs (logs are compiled
+in, quarkus.otel.logs.enabled) over OTLP gRPC to the umbrella's collector or global.observability.otlpEndpoint, root spans
+sampled at tracesSampleRatio (parentbased_traceidratio compiled in), resource attributes without a tenant. Off: SDK off.
+env may override these (e.g. a per-service ratio).
+*/}}
+{{- $obs := dig "observability" dict (.Values.global | default dict) }}
+{{- if $obs.enabled }}
+{{- $_ := set $env "QUARKUS_OTEL_SDK_DISABLED" "false" }}
+{{- $_ := set $env "QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT" ($obs.otlpEndpoint | default (printf "http://otel-collector.%s.svc.cluster.local:4317" .Release.Namespace)) }}
+{{- $_ := set $env "QUARKUS_OTEL_TRACES_SAMPLER_ARG" (toString ($obs.tracesSampleRatio | default "0.1")) }}
+{{- $_ := set $env "QUARKUS_OTEL_RESOURCE_ATTRIBUTES" (printf "service.namespace=hoops-academy,deployment.environment.name=%s,k8s.namespace.name=%s" ($obs.environment | default .Release.Namespace) .Release.Namespace) }}
+{{- else }}
+{{- $_ := set $env "QUARKUS_OTEL_SDK_DISABLED" "true" }}
+{{- end }}
 {{- range $k, $v := .Values.env }}
 {{- $_ := set $env $k (tpl (toString $v) $) }}
 {{- end }}

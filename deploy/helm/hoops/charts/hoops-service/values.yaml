@@ -9,7 +9,8 @@ imagePullSecrets: []
 replicaCount: 1
 port: 8080
 
-# Non-secret configuration -> ConfigMap -> envFrom.
+# Non-secret configuration -> ConfigMap -> envFrom. The chart adds the OpenTelemetry keys (QUARKUS_OTEL_*, from
+# global.observability, WP86) before env, so env may override them.
 env: {}
 # Secret values injected as env vars: [{name: ENV_VAR, secretName: <existing Secret>, key: <key>}].
 # Secrets are created outside the chart (deploy/kind/up.sh, Tilt, or External Secrets Operator, see ADR-0012).

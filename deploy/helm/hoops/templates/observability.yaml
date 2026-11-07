@@ -1,0 +1,340 @@
+{{- /*
+Observability (WP86, ADR-0046): an OpenTelemetry collector `otel-collector` that receives the services' traces and logs
+over OTLP (gRPC 4317, HTTP 4318) and, on kind, an in-memory Jaeger for the traces. The chart standardises the OTLP egress
+of the workloads; the backend (Grafana stack, a vendor) is the environment's: plug it in with observability.collector
+exporters/pipelineExporters/secretEnv/networkPolicy.extraEgress, or point the services at the platform's own collector
+with global.observability.otlpEndpoint and observability.collector.enabled=false.
+Switch: global.observability.enabled (the service subcharts see only global, so one switch for both sides).
+The collector receives from the three services and the Envoy proxies only (NetworkPolicy) and sends to DNS, Jaeger and
+the extra egress rules only. Jaeger receives OTLP gRPC from the collector only and has no egress; its UI is reached with
+kubectl port-forward (docs/runbooks/observability.md).
+*/ -}}
+{{- $g := dig "observability" dict (.Values.global | default dict) -}}
+{{- $o := .Values.observability -}}
+{{- $c := $o.collector -}}
+{{- $j := $o.jaeger -}}
+{{- if $g.enabled }}
+{{- if and (not $c.enabled) (not $g.otlpEndpoint) }}
+{{- fail "observability.collector.enabled=false needs global.observability.otlpEndpoint (the collector the services export to)" }}
+{{- end }}
+{{- if and $j.enabled (not $c.enabled) }}
+{{- fail "observability.jaeger.enabled needs observability.collector.enabled (the chart collector feeds Jaeger)" }}
+{{- end }}
+{{- end }}
+{{- if and $g.enabled $c.enabled }}
+{{- $labels := dict "app.kubernetes.io/name" "otel-collector" "app.kubernetes.io/part-of" "hoops-academy" "app.kubernetes.io/component" "telemetry-collector" }}
+{{- $traceExporters := list "debug" }}
+{{- if $j.enabled }}{{ $traceExporters = append $traceExporters "otlp_grpc/jaeger" }}{{ end }}
+{{- $traceExporters = concat $traceExporters ($c.pipelineExporters.traces | default list) }}
+{{- $logExporters := concat (list "debug") ($c.pipelineExporters.logs | default list) }}
+{{- $exporters := dict "debug" (dict "verbosity" $c.debugVerbosity) }}
+{{- if $j.enabled }}
+{{- $_ := set $exporters "otlp_grpc/jaeger" (dict "endpoint" (printf "jaeger.%s.svc.cluster.local:4317" .Release.Namespace) "tls" (dict "insecure" true)) }}
+{{- end }}
+{{- $exporters = merge $exporters ($c.exporters | default dict) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+data:
+  config.yaml: |
+    extensions:
+      health_check: {endpoint: "0.0.0.0:13133"}
+    receivers:
+      otlp:
+        protocols:
+          grpc: {endpoint: "0.0.0.0:4317"}
+          http: {endpoint: "0.0.0.0:4318"}
+    processors:
+      # Refuses data above the limit before it queues (the pod's memory limit is the ceiling), then batches.
+      memory_limiter: {check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 25}
+      # No tenant (or other) id leaves in a span (ADR-0046): concrete paths and Kafka message keys (<tenant>:<id>) go;
+      # http.route (the template) and the span names stay.
+      attributes/strip-ids:
+        actions:
+          - {key: url.full, action: delete}
+          - {key: url.path, action: delete}
+          - {key: url.query, action: delete}
+          - {key: http.url, action: delete}
+          - {key: http.target, action: delete}
+          - {key: messaging.kafka.message.key, action: delete}
+      batch: {}
+    exporters:
+      {{- range $name, $cfg := $exporters }}
+      {{ $name }}:
+        {{- toYaml $cfg | nindent 8 }}
+      {{- end }}
+    service:
+      extensions: [health_check]
+      telemetry:
+        logs: {level: info}
+        metrics: {level: none}
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, attributes/strip-ids, batch]
+          exporters: [{{ join ", " $traceExporters }}]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [{{ join ", " $logExporters }}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+  {{- if and $c.secretEnv (dig "reloader" "enabled" false (.Values.global | default dict)) }}
+  annotations:
+    # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
+    secret.reloader.stakater.com/auto: "true"
+  {{- end }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {app.kubernetes.io/name: otel-collector}
+  template:
+    metadata:
+      labels:
+        {{- toYaml $labels | nindent 8 }}
+      annotations:
+        checksum/config: {{ dict "collector" $c "jaeger" $j.enabled | toJson | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: otel-collector
+          image: {{ printf "%s:%s@%s" $c.image.repository $c.image.tag $c.image.digest | quote }}
+          imagePullPolicy: IfNotPresent
+          args: [--config=/etc/otelcol/config.yaml]
+          {{- with $c.secretEnv }}
+          env:
+            {{- range . }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef: {name: {{ .secretName }}, key: {{ .key }}}
+            {{- end }}
+          {{- end }}
+          ports:
+            - {name: otlp-grpc, containerPort: 4317}
+            - {name: otlp-http, containerPort: 4318}
+            - {name: health, containerPort: 13133}
+          readinessProbe:
+            httpGet: {path: /, port: health}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /, port: health}
+            periodSeconds: 20
+          resources:
+            {{- toYaml $c.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: config, mountPath: /etc/otelcol, readOnly: true}
+      volumes:
+        - {name: config, configMap: {name: otel-collector-config}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  selector: {app.kubernetes.io/name: otel-collector}
+  ports:
+    - {name: otlp-grpc, port: 4317, targetPort: otlp-grpc, appProtocol: grpc}
+    - {name: otlp-http, port: 4318, targetPort: otlp-http}
+---
+# OTLP in from the services (by name label) and, gRPC only, from the Envoy proxies of Envoy Gateway's namespace (edge spans);
+# out to DNS, Jaeger and the environment's backend rules (observability.collector.networkPolicy.extraEgress) only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: otel-collector
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: otel-collector}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  {{- range $c.clients }}
+                  - {{ . }}
+                  {{- end }}
+      ports:
+        - {port: otlp-grpc, protocol: TCP}
+        - {port: otlp-http, protocol: TCP}
+    {{- if and .Values.gateway.enabled .Values.gateway.envoyProxy.enabled }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $c.proxyNamespace }}
+          podSelector:
+            matchLabels:
+              # the proxies of this release's Gateway (Tilt rewrites the app.kubernetes.io manager label, even in selectors)
+              app.kubernetes.io/component: proxy
+              gateway.envoyproxy.io/owning-gateway-name: {{ .Values.global.gateway.name | default "hoops" }}
+              gateway.envoyproxy.io/owning-gateway-namespace: {{ .Values.global.gateway.namespace | default .Release.Namespace }}
+      ports:
+        - {port: otlp-grpc, protocol: TCP}
+    {{- end }}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+    {{- if $j.enabled }}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: jaeger}
+      ports:
+        - {port: 4317, protocol: TCP}
+    {{- end }}
+    {{- with $c.networkPolicy.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
+{{- if and $g.enabled $c.enabled $j.enabled }}
+{{- $labels := dict "app.kubernetes.io/name" "jaeger" "app.kubernetes.io/part-of" "hoops-academy" "app.kubernetes.io/component" "trace-store" }}
+---
+# Jaeger v2 all-in-one with its in-memory store (kind): traces only, lost on restart, capped at maxTraces.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+data:
+  config.yaml: |
+    extensions:
+      jaeger_storage:
+        backends:
+          memstore:
+            memory: {max_traces: {{ int $j.maxTraces }}}
+      jaeger_query:
+        storage: {traces: memstore}
+        http: {endpoint: "0.0.0.0:16686"}
+        grpc: {endpoint: "127.0.0.1:16685"}
+      healthcheckv2:
+        use_v2: true
+        http: {endpoint: "0.0.0.0:13133"}
+    receivers:
+      otlp:
+        protocols:
+          grpc: {endpoint: "0.0.0.0:4317"}
+    processors:
+      batch: {}
+    exporters:
+      jaeger_storage_exporter: {trace_storage: memstore}
+    service:
+      extensions: [jaeger_storage, jaeger_query, healthcheckv2]
+      telemetry:
+        logs: {level: info}
+        metrics: {level: none}
+      pipelines:
+        traces: {receivers: [otlp], processors: [batch], exporters: [jaeger_storage_exporter]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {app.kubernetes.io/name: jaeger}
+  template:
+    metadata:
+      labels:
+        {{- toYaml $labels | nindent 8 }}
+      annotations:
+        checksum/config: {{ $j | toJson | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: jaeger
+          image: {{ printf "%s:%s@%s" $j.image.repository $j.image.tag $j.image.digest | quote }}
+          imagePullPolicy: IfNotPresent
+          args: [--config=/etc/jaeger/config.yaml]
+          ports:
+            - {name: otlp-grpc, containerPort: 4317}
+            - {name: ui, containerPort: 16686}
+            - {name: health, containerPort: 13133}
+          readinessProbe:
+            httpGet: {path: /status, port: health}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /status, port: health}
+            periodSeconds: 20
+          resources:
+            {{- toYaml $j.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: config, mountPath: /etc/jaeger, readOnly: true}
+      volumes:
+        - {name: config, configMap: {name: jaeger-config}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  selector: {app.kubernetes.io/name: jaeger}
+  ports:
+    - {name: otlp-grpc, port: 4317, targetPort: otlp-grpc, appProtocol: grpc}
+    - {name: ui, port: 16686, targetPort: ui}
+---
+# OTLP from the collector only; the UI only through kubectl port-forward (not subject to the policy); no egress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jaeger
+  labels:
+    {{- toYaml $labels | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: jaeger}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: otel-collector}
+      ports:
+        - {port: otlp-grpc, protocol: TCP}
+  egress: []
+{{- end }}

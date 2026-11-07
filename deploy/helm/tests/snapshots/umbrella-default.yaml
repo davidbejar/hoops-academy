@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   podSelector:
     matchLabels:
@@ -43,7 +43,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   podSelector:
     matchLabels:
@@ -105,7 +105,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   podSelector:
     matchLabels:
@@ -193,7 +193,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 data:
   QUARKUS_HTTP_PORT: "8083"
   ATHLETE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -217,7 +217,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 data:
   QUARKUS_HTTP_PORT: "8081"
   ATHLETE_SERVICE_URL: "http://athlete-service:8083"
@@ -377,7 +377,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 data:
   QUARKUS_HTTP_PORT: "8082"
   GAME_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -10913,7 +10913,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   type: ClusterIP
   selector:
@@ -10938,7 +10938,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   type: ClusterIP
   selector:
@@ -10963,7 +10963,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   type: ClusterIP
   selector:
@@ -11029,7 +11029,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -11046,9 +11046,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: athlete-0.6.0
+        helm.sh/chart: athlete-0.7.0
       annotations:
-        checksum/env: 91190a7b3644aceef6dc2ffa68ccd9e7b83f38adee1d64ceea4b6ef7a5424a85
+        checksum/env: 59f257a223f66d2c6dd829ff2cfaecfa343148a7e198cfeadf2d0ed33cf1797d
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8083"
@@ -11137,7 +11137,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -11154,9 +11154,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: core-0.6.0
+        helm.sh/chart: core-0.7.0
       annotations:
-        checksum/env: ffd49cfb8dbec4eee97c7c1c986c37a8da4710d7e2f1016f4f68523f7522d37f
+        checksum/env: c27e4f509912dcfc4ec2e760ae5837458d879fd04e43e882f143c98b04e7bbff
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8081"
@@ -11250,7 +11250,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -11267,9 +11267,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: game-0.6.0
+        helm.sh/chart: game-0.7.0
       annotations:
-        checksum/env: f558897d284ea48b69efd9a6118494d83e235aa0591f745db9bd4d45924eca07
+        checksum/env: 9ff324f96ad4124adaa34bae819d558a5c316e576141dbc18596d602a9ace4fe
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"
@@ -11574,7 +11574,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: game-service-events-batch}
@@ -11838,7 +11838,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -11863,7 +11863,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -11918,7 +11918,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -11942,7 +11942,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -11967,7 +11967,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -12022,7 +12022,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -12047,7 +12047,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -12104,7 +12104,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   parentRefs:
     - name: hoops

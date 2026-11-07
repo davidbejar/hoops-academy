@@ -22,6 +22,16 @@ global:
   # (kind: deploy/kind/up.sh installs it); without one the annotation does nothing. Global: the subcharts read it too.
   reloader:
     enabled: false
+  # OpenTelemetry (WP86, ADR-0046): the services export traces and logs over OTLP gRPC (SDK on, logs on, parent-based
+  # ratio sampling) and the Envoy proxy traces the edge, all to the chart's collector (observability.collector) or, with
+  # otlpEndpoint set, to the platform's own. Off: the SDK stays off (QUARKUS_OTEL_SDK_DISABLED=true), nothing rendered.
+  # Global: the subcharts read it too. Resource attributes: service.name/version (Quarkus), service.namespace=hoops-academy,
+  # deployment.environment.name (environment, default the release namespace), k8s.namespace.name; never a tenant.
+  observability:
+    enabled: false
+    otlpEndpoint: ""            # empty: http://otel-collector.<release namespace>.svc.cluster.local:4317
+    tracesSampleRatio: "0.1"    # root spans kept (0..1); children follow their parent (parentbased_traceidratio)
+    environment: ""
 
 # ---------------------------------------------------------------------------------------------------------------
 # Edge (WP36, ADR-0031): Gateway API Gateway implemented by Envoy Gateway (pinned version: deploy/kind/up.sh).
@@ -154,17 +164,18 @@ externalSecrets:
   # a `data` value may also be a full remoteRef map ({key, property, version, ...}) for one-value-per-secret stores.
   remoteKey: hoops
   # name: Secret (and ExternalSecret) name; type: Secret type (default Opaque); data: Secret key -> remote property;
-  # literals: fixed, non-secret keys added to the fetched ones. CNPG needs kubernetes.io/basic-auth with
-  # username = role name (ADR-0012).
+  # literals: fixed, non-secret keys added to the fetched ones; labels: extra labels on the Secret. CNPG needs
+  # kubernetes.io/basic-auth with username = role name (ADR-0012) and watches only Secrets labelled cnpg.io/reload, so
+  # without the label a rotated role password never reaches the database (WP86).
   secrets:
-    - {name: hoops-db-core-migrator,    type: kubernetes.io/basic-auth, literals: {username: core_migrator},    data: {password: CORE_MIGRATOR_PASSWORD}}
-    - {name: hoops-db-core-app,         type: kubernetes.io/basic-auth, literals: {username: core_app},         data: {password: CORE_APP_PASSWORD}}
-    - {name: hoops-db-core-platform,    type: kubernetes.io/basic-auth, literals: {username: core_platform},    data: {password: CORE_PLATFORM_PASSWORD}}
-    - {name: hoops-db-game-migrator,    type: kubernetes.io/basic-auth, literals: {username: game_migrator},    data: {password: GAME_MIGRATOR_PASSWORD}}
-    - {name: hoops-db-game-app,         type: kubernetes.io/basic-auth, literals: {username: game_app},         data: {password: GAME_APP_PASSWORD}}
-    - {name: hoops-db-athlete-migrator, type: kubernetes.io/basic-auth, literals: {username: athlete_migrator}, data: {password: ATHLETE_MIGRATOR_PASSWORD}}
-    - {name: hoops-db-athlete-app,      type: kubernetes.io/basic-auth, literals: {username: athlete_app},      data: {password: ATHLETE_APP_PASSWORD}}
-    - {name: keycloak-db-app,           type: kubernetes.io/basic-auth, literals: {username: keycloak},         data: {password: KC_DB_PASSWORD}}
+    - {name: hoops-db-core-migrator,    type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: core_migrator},    data: {password: CORE_MIGRATOR_PASSWORD}}
+    - {name: hoops-db-core-app,         type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: core_app},         data: {password: CORE_APP_PASSWORD}}
+    - {name: hoops-db-core-platform,    type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: core_platform},    data: {password: CORE_PLATFORM_PASSWORD}}
+    - {name: hoops-db-game-migrator,    type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: game_migrator},    data: {password: GAME_MIGRATOR_PASSWORD}}
+    - {name: hoops-db-game-app,         type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: game_app},         data: {password: GAME_APP_PASSWORD}}
+    - {name: hoops-db-athlete-migrator, type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: athlete_migrator}, data: {password: ATHLETE_MIGRATOR_PASSWORD}}
+    - {name: hoops-db-athlete-app,      type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: athlete_app},      data: {password: ATHLETE_APP_PASSWORD}}
+    - {name: keycloak-db-app,           type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: keycloak},         data: {password: KC_DB_PASSWORD}}
     - {name: keycloak-admin,             data: {username: KEYCLOAK_ADMIN, password: KEYCLOAK_ADMIN_PASSWORD}}
     - {name: hoops-oidc-core-service,    data: {client-secret: CORE_SERVICE_CLIENT_SECRET}}
     - {name: hoops-oidc-game-service,    data: {client-secret: GAME_SERVICE_CLIENT_SECRET}}
@@ -186,6 +197,44 @@ externalSecrets:
       game-service: REDPANDA_GAME_SERVICE_PASSWORD
       athlete-service: REDPANDA_ATHLETE_SERVICE_PASSWORD
 
+# ---------------------------------------------------------------------------------------------------------------
+# Observability (WP86, ADR-0046), rendered with global.observability.enabled. The chart standardises the OTLP egress:
+# the workloads send to `otel-collector` (OTLP gRPC 4317 / HTTP 4318), which prints what it receives (debug exporter, its
+# own log) and sends it on to the environment's backend. kind adds an in-memory Jaeger for the traces.
+observability:
+  collector:
+    enabled: true               # false: the services export to global.observability.otlpEndpoint (platform collector)
+    image:
+      repository: docker.io/otel/opentelemetry-collector   # core distribution (OTLP, debug, otlp_grpc/otlp_http, file)
+      tag: 0.163.2
+      digest: sha256:63e5e8eccf4268be02388ba9f2dc36b80b5e47721291293411c0e83152d75bda
+    debugVerbosity: basic       # basic: counts only; normal: one line per span (trace id) and per log record
+    resources: {requests: {cpu: 20m, memory: 64Mi}, limits: {memory: 256Mi}}
+    # Workloads allowed to send OTLP (by app.kubernetes.io/name, this namespace). The Envoy proxies (namespace
+    # proxyNamespace, labels component=proxy, owning-gateway-name = the Gateway) may send gRPC when the chart renders the EnvoyProxy.
+    clients: [core-service, game-service, athlete-service]
+    proxyNamespace: envoy-gateway-system
+    # The backend of a real environment (ADR-0046): extra collector exporters (collector config syntax; credentials as
+    # ${env:VAR} from secretEnv), added to the pipelines named in pipelineExporters, and the egress rules that reach it, e.g.
+    #   exporters: {otlp_http/grafana: {endpoint: https://otlp-gateway.example.net/otlp, headers: {authorization: "Basic ${env:GRAFANA_OTLP_AUTH}"}}}
+    #   pipelineExporters: {traces: [otlp_http/grafana], logs: [otlp_http/grafana]}
+    #   secretEnv: [{name: GRAFANA_OTLP_AUTH, secretName: hoops-otel-backend, key: auth}]
+    #   networkPolicy: {extraEgress: [{ports: [{port: 443, protocol: TCP}]}]}
+    exporters: {}
+    pipelineExporters: {traces: [], logs: []}
+    secretEnv: []
+    networkPolicy:
+      extraEgress: []
+  # Jaeger v2 all-in-one, in-memory (kind): the traces of the collector, UI by `kubectl port-forward svc/jaeger 16686`.
+  jaeger:
+    enabled: false
+    image:
+      repository: docker.io/jaegertracing/jaeger
+      tag: 2.22.0
+      digest: sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17
+    maxTraces: 5000
+    resources: {requests: {cpu: 10m, memory: 64Mi}, limits: {memory: 256Mi}}
+
 databases:
   enabled: true
 
@@ -205,10 +254,8 @@ core:
   env:
     CORE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
     # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
-    # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
-    # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
+    # equal to the public URL). OpenTelemetry: global.observability (WP86).
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
-    QUARKUS_OTEL_SDK_DISABLED: "true"
     OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
     KEYCLOAK_URL: http://keycloak:8080/auth
     GAME_SERVICE_URL: http://game-service:8082
@@ -239,10 +286,8 @@ game:
   env:
     GAME_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
     # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
-    # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
-    # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
+    # equal to the public URL). OpenTelemetry: global.observability (WP86).
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
-    QUARKUS_OTEL_SDK_DISABLED: "true"
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
     GAME_ROSTER_SOURCE: '{{ .Values.rosterSource }}'
@@ -268,10 +313,8 @@ athlete:
   env:
     ATHLETE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
     # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
-    # equal to the public URL). OpenTelemetry stays off until an OTLP collector exists: set
-    # QUARKUS_OTEL_SDK_DISABLED: "false" + QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT in an overlay.
+    # equal to the public URL). OpenTelemetry: global.observability (WP86).
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
-    QUARKUS_OTEL_SDK_DISABLED: "true"
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
     ATHLETE_ROSTER_SOURCE: '{{ .Values.rosterSource }}'

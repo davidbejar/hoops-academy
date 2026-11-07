@@ -51,6 +51,21 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
         {{- end }}
+  {{- $obs := dig "observability" dict (.Values.global | default dict) }}
+  {{- if and $obs.enabled .Values.observability.collector.enabled }}
+  # Edge spans (WP86, ADR-0046): Envoy starts the trace (W3C traceparent to the services, whose parent-based sampler follows
+  # it) at the same ratio as the services and sends its spans to the chart's collector. By DNS name (host/port), not
+  # backendRefs: with backendRefs Envoy Gateway sets the Gateway Accepted=False ("no ready endpoints") while the collector
+  # is down (kind proof); by name the edge keeps its status and Envoy just drops the spans.
+  {{- $n := int (mulf (float64 ($obs.tracesSampleRatio | default "0.1")) 10000) }}
+  telemetry:
+    tracing:
+      samplingFraction: {numerator: {{ $n }}, denominator: 10000}
+      provider:
+        type: OpenTelemetry
+        host: otel-collector.{{ .Release.Namespace }}.svc.cluster.local
+        port: 4317
+  {{- end }}
 {{- end }}
 {{- if $gw.enabled }}
 ---

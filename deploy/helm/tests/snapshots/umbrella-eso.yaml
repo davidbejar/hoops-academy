@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   podSelector:
     matchLabels:
@@ -43,7 +43,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   podSelector:
     matchLabels:
@@ -105,7 +105,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   podSelector:
     matchLabels:
@@ -200,6 +200,85 @@ spec:
         - {port: ui, protocol: TCP}
 
 ---
+# Source: hoops/templates/observability.yaml
+# OTLP in from the services (by name label) and, gRPC only, from the Envoy proxies of Envoy Gateway's namespace (edge spans);
+# out to DNS, Jaeger and the environment's backend rules (observability.collector.networkPolicy.extraEgress) only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: otel-collector
+  labels:
+    app.kubernetes.io/component: telemetry-collector
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: otel-collector}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - core-service
+                  - game-service
+                  - athlete-service
+      ports:
+        - {port: otlp-grpc, protocol: TCP}
+        - {port: otlp-http, protocol: TCP}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+          podSelector:
+            matchLabels:
+              # the proxies of this release's Gateway (Tilt rewrites the app.kubernetes.io manager label, even in selectors)
+              app.kubernetes.io/component: proxy
+              gateway.envoyproxy.io/owning-gateway-name: hoops
+              gateway.envoyproxy.io/owning-gateway-namespace: hoops
+      ports:
+        - {port: otlp-grpc, protocol: TCP}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: jaeger}
+      ports:
+        - {port: 4317, protocol: TCP}
+
+---
+# Source: hoops/templates/observability.yaml
+# OTLP from the collector only; the UI only through kubectl port-forward (not subject to the policy); no egress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jaeger
+  labels:
+    app.kubernetes.io/component: trace-store
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: jaeger}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: otel-collector}
+      ports:
+        - {port: otlp-grpc, protocol: TCP}
+  egress: []
+
+---
 # Source: hoops/templates/ratelimit-redis.yaml
 # Only Envoy Gateway's rate limit pods may connect (namespace AND pod labels: one `from` entry); no egress at all.
 apiVersion: networking.k8s.io/v1
@@ -284,7 +363,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 data:
   QUARKUS_HTTP_PORT: "8083"
   ATHLETE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -295,7 +374,10 @@ data:
   KAFKA_SASL_USERNAME: "athlete-service"
   KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
   KEYCLOAK_URL: "http://keycloak:8080/auth"
-  QUARKUS_OTEL_SDK_DISABLED: "true"
+  QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"
+  QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"
+  QUARKUS_OTEL_SDK_DISABLED: "false"
+  QUARKUS_OTEL_TRACES_SAMPLER_ARG: "1.0"
 
 ---
 # Source: hoops/charts/core/templates/configmap.yaml
@@ -310,7 +392,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 data:
   QUARKUS_HTTP_PORT: "8081"
   ATHLETE_SERVICE_URL: "http://athlete-service:8083"
@@ -322,7 +404,10 @@ data:
   KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
   KEYCLOAK_URL: "http://keycloak:8080/auth"
   OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
-  QUARKUS_OTEL_SDK_DISABLED: "true"
+  QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"
+  QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"
+  QUARKUS_OTEL_SDK_DISABLED: "false"
+  QUARKUS_OTEL_TRACES_SAMPLER_ARG: "1.0"
 
 ---
 # Source: hoops/charts/databases/templates/hoops-db.yaml
@@ -472,7 +557,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 data:
   QUARKUS_HTTP_PORT: "8082"
   GAME_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -483,7 +568,10 @@ data:
   KAFKA_SASL_USERNAME: "game-service"
   KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
   KEYCLOAK_URL: "http://keycloak:8080/auth"
-  QUARKUS_OTEL_SDK_DISABLED: "true"
+  QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"
+  QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"
+  QUARKUS_OTEL_SDK_DISABLED: "false"
+  QUARKUS_OTEL_TRACES_SAMPLER_ARG: "1.0"
 
 ---
 # Source: hoops/charts/keycloak/templates/password-blocklist-configmap.yaml
@@ -10998,6 +11086,102 @@ data:
     
 
 ---
+# Source: hoops/templates/observability.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  labels:
+    app.kubernetes.io/component: telemetry-collector
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: hoops-academy
+data:
+  config.yaml: |
+    extensions:
+      health_check: {endpoint: "0.0.0.0:13133"}
+    receivers:
+      otlp:
+        protocols:
+          grpc: {endpoint: "0.0.0.0:4317"}
+          http: {endpoint: "0.0.0.0:4318"}
+    processors:
+      # Refuses data above the limit before it queues (the pod's memory limit is the ceiling), then batches.
+      memory_limiter: {check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 25}
+      # No tenant (or other) id leaves in a span (ADR-0046): concrete paths and Kafka message keys (<tenant>:<id>) go;
+      # http.route (the template) and the span names stay.
+      attributes/strip-ids:
+        actions:
+          - {key: url.full, action: delete}
+          - {key: url.path, action: delete}
+          - {key: url.query, action: delete}
+          - {key: http.url, action: delete}
+          - {key: http.target, action: delete}
+          - {key: messaging.kafka.message.key, action: delete}
+      batch: {}
+    exporters:
+      debug:
+        verbosity: normal
+      otlp_grpc/jaeger:
+        endpoint: jaeger.hoops.svc.cluster.local:4317
+        tls:
+          insecure: true
+    service:
+      extensions: [health_check]
+      telemetry:
+        logs: {level: info}
+        metrics: {level: none}
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, attributes/strip-ids, batch]
+          exporters: [debug, otlp_grpc/jaeger]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug]
+
+---
+# Source: hoops/templates/observability.yaml
+# Jaeger v2 all-in-one with its in-memory store (kind): traces only, lost on restart, capped at maxTraces.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  labels:
+    app.kubernetes.io/component: trace-store
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/part-of: hoops-academy
+data:
+  config.yaml: |
+    extensions:
+      jaeger_storage:
+        backends:
+          memstore:
+            memory: {max_traces: 5000}
+      jaeger_query:
+        storage: {traces: memstore}
+        http: {endpoint: "0.0.0.0:16686"}
+        grpc: {endpoint: "127.0.0.1:16685"}
+      healthcheckv2:
+        use_v2: true
+        http: {endpoint: "0.0.0.0:13133"}
+    receivers:
+      otlp:
+        protocols:
+          grpc: {endpoint: "0.0.0.0:4317"}
+    processors:
+      batch: {}
+    exporters:
+      jaeger_storage_exporter: {trace_storage: memstore}
+    service:
+      extensions: [jaeger_storage, jaeger_query, healthcheckv2]
+      telemetry:
+        logs: {level: info}
+        metrics: {level: none}
+      pipelines:
+        traces: {receivers: [otlp], processors: [batch], exporters: [jaeger_storage_exporter]}
+
+---
 # Source: hoops/templates/redpanda.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -11167,7 +11351,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   type: ClusterIP
   selector:
@@ -11192,7 +11376,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   type: ClusterIP
   selector:
@@ -11217,7 +11401,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   type: ClusterIP
   selector:
@@ -11284,6 +11468,38 @@ spec:
     - {name: ui, port: 8025, targetPort: ui}
 
 ---
+# Source: hoops/templates/observability.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app.kubernetes.io/component: telemetry-collector
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  selector: {app.kubernetes.io/name: otel-collector}
+  ports:
+    - {name: otlp-grpc, port: 4317, targetPort: otlp-grpc, appProtocol: grpc}
+    - {name: otlp-http, port: 4318, targetPort: otlp-http}
+
+---
+# Source: hoops/templates/observability.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  labels:
+    app.kubernetes.io/component: trace-store
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  selector: {app.kubernetes.io/name: jaeger}
+  ports:
+    - {name: otlp-grpc, port: 4317, targetPort: otlp-grpc, appProtocol: grpc}
+    - {name: ui, port: 16686, targetPort: ui}
+
+---
 # Source: hoops/templates/ratelimit-redis.yaml
 apiVersion: v1
 kind: Service
@@ -11331,7 +11547,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11351,9 +11567,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: athlete-0.6.0
+        helm.sh/chart: athlete-0.7.0
       annotations:
-        checksum/env: e07ae1d5eb2e5c03ba153dfed509c16e1987e6f8b0e9621528eb57b9aded7126
+        checksum/env: b16b2bad98696f4adfd8a65791d7289a209fbee92a4f92723a273630a4411c71
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8083"
@@ -11447,7 +11663,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11467,9 +11683,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: core-0.6.0
+        helm.sh/chart: core-0.7.0
       annotations:
-        checksum/env: 8d03d13e5cc84041560143c48542d91f966519ca940e65aac385f1dc980d68a9
+        checksum/env: a90fb8614d228e090433655006cfd35696f9cccd495af42cc3f07e60a4b3db0e
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8081"
@@ -11568,7 +11784,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11588,9 +11804,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: game-0.6.0
+        helm.sh/chart: game-0.7.0
       annotations:
-        checksum/env: e6f2c63098ddc28e6cd3ec03ea097ffe5d87d9496fdc329688eb583488d2cf8b
+        checksum/env: d95d5590557d8151b8922be24c08310aeb00e6171eb858636c54a2bb6e1a5051
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"
@@ -11941,6 +12157,128 @@ spec:
           emptyDir: {sizeLimit: 64Mi}
 
 ---
+# Source: hoops/templates/observability.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels:
+    app.kubernetes.io/component: telemetry-collector
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {app.kubernetes.io/name: otel-collector}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: telemetry-collector
+        app.kubernetes.io/name: otel-collector
+        app.kubernetes.io/part-of: hoops-academy
+      annotations:
+        checksum/config: 7bd2a29575750f8ed6286bf2c194653fb4e9a3ad6b4781e90fda60917a1500e4
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: otel-collector
+          image: "docker.io/otel/opentelemetry-collector:0.163.2@sha256:63e5e8eccf4268be02388ba9f2dc36b80b5e47721291293411c0e83152d75bda"
+          imagePullPolicy: IfNotPresent
+          args: [--config=/etc/otelcol/config.yaml]
+          ports:
+            - {name: otlp-grpc, containerPort: 4317}
+            - {name: otlp-http, containerPort: 4318}
+            - {name: health, containerPort: 13133}
+          readinessProbe:
+            httpGet: {path: /, port: health}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /, port: health}
+            periodSeconds: 20
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: config, mountPath: /etc/otelcol, readOnly: true}
+      volumes:
+        - {name: config, configMap: {name: otel-collector-config}}
+
+---
+# Source: hoops/templates/observability.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  labels:
+    app.kubernetes.io/component: trace-store
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/part-of: hoops-academy
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: {app.kubernetes.io/name: jaeger}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: trace-store
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/part-of: hoops-academy
+      annotations:
+        checksum/config: 97a7a656bb7e54c4963885511183ff01e5b2bd096dab8bc374f0c96692c131ea
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: jaeger
+          image: "docker.io/jaegertracing/jaeger:2.22.0@sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17"
+          imagePullPolicy: IfNotPresent
+          args: [--config=/etc/jaeger/config.yaml]
+          ports:
+            - {name: otlp-grpc, containerPort: 4317}
+            - {name: ui, containerPort: 16686}
+            - {name: health, containerPort: 13133}
+          readinessProbe:
+            httpGet: {path: /status, port: health}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /status, port: health}
+            periodSeconds: 20
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: config, mountPath: /etc/jaeger, readOnly: true}
+      volumes:
+        - {name: config, configMap: {name: jaeger-config}}
+
+---
 # Source: hoops/templates/ratelimit-redis.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -12187,7 +12525,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: game-service-events-batch}
@@ -12475,6 +12813,17 @@ spec:
             requests:
               cpu: 50m
               memory: 64Mi
+  # Edge spans (WP86, ADR-0046): Envoy starts the trace (W3C traceparent to the services, whose parent-based sampler follows
+  # it) at the same ratio as the services and sends its spans to the chart's collector. By DNS name (host/port), not
+  # backendRefs: with backendRefs Envoy Gateway sets the Gateway Accepted=False ("no ready endpoints") while the collector
+  # is down (kind proof); by name the edge keeps its status and Envoy just drops the spans.
+  telemetry:
+    tracing:
+      samplingFraction: {numerator: 10000, denominator: 10000}
+      provider:
+        type: OpenTelemetry
+        host: otel-collector.hoops.svc.cluster.local
+        port: 4317
 
 ---
 # Source: hoops/templates/externalsecrets.yaml
@@ -12499,6 +12848,7 @@ spec:
         labels:
           app.kubernetes.io/component: secrets
           app.kubernetes.io/part-of: hoops-academy
+          cnpg.io/reload: "true"
       mergePolicy: Merge
       data:
         username: core_migrator
@@ -12529,6 +12879,7 @@ spec:
         labels:
           app.kubernetes.io/component: secrets
           app.kubernetes.io/part-of: hoops-academy
+          cnpg.io/reload: "true"
       mergePolicy: Merge
       data:
         username: core_app
@@ -12559,6 +12910,7 @@ spec:
         labels:
           app.kubernetes.io/component: secrets
           app.kubernetes.io/part-of: hoops-academy
+          cnpg.io/reload: "true"
       mergePolicy: Merge
       data:
         username: core_platform
@@ -12589,6 +12941,7 @@ spec:
         labels:
           app.kubernetes.io/component: secrets
           app.kubernetes.io/part-of: hoops-academy
+          cnpg.io/reload: "true"
       mergePolicy: Merge
       data:
         username: game_migrator
@@ -12619,6 +12972,7 @@ spec:
         labels:
           app.kubernetes.io/component: secrets
           app.kubernetes.io/part-of: hoops-academy
+          cnpg.io/reload: "true"
       mergePolicy: Merge
       data:
         username: game_app
@@ -12649,6 +13003,7 @@ spec:
         labels:
           app.kubernetes.io/component: secrets
           app.kubernetes.io/part-of: hoops-academy
+          cnpg.io/reload: "true"
       mergePolicy: Merge
       data:
         username: athlete_migrator
@@ -12679,6 +13034,7 @@ spec:
         labels:
           app.kubernetes.io/component: secrets
           app.kubernetes.io/part-of: hoops-academy
+          cnpg.io/reload: "true"
       mergePolicy: Merge
       data:
         username: athlete_app
@@ -12709,6 +13065,7 @@ spec:
         labels:
           app.kubernetes.io/component: secrets
           app.kubernetes.io/part-of: hoops-academy
+          cnpg.io/reload: "true"
       mergePolicy: Merge
       data:
         username: keycloak
@@ -13047,7 +13404,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -13072,7 +13429,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.6.0
+    helm.sh/chart: athlete-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -13127,7 +13484,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -13151,7 +13508,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -13176,7 +13533,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.6.0
+    helm.sh/chart: core-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -13231,7 +13588,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -13256,7 +13613,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   parentRefs:
     - name: hoops
@@ -13313,7 +13670,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.6.0
+    helm.sh/chart: game-0.7.0
 spec:
   parentRefs:
     - name: hoops
