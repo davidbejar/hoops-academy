@@ -323,7 +323,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(plans.lastOrder, ['i2', 'i1']);
         final order = tester
-            .widgetList<Card>(find.byType(Card))
+            .widgetList(find.byWidgetPredicate((w) => w.key is ValueKey))
             .map((c) => c.key)
             .whereType<ValueKey<String>>()
             .map((k) => k.value)

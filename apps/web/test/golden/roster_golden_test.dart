@@ -7,7 +7,9 @@ import '../support/core_fixtures.dart';
 import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
 
-/// Regenerate with `flutter test --update-goldens test/golden`.
+/// Teams list (light and dark), team detail and player detail of the roster
+/// screens. Regenerate with
+/// `flutter test --update-goldens test/golden/roster_golden_test.dart`.
 FakeCore _core() => FakeCore(
   teams: FakeTeamsRepository(
     teams: [
@@ -21,6 +23,23 @@ FakeCore _core() => FakeCore(
       ),
       team('t3', 'Mini B', policy: api.GenderPolicy.MALE, players: 0),
     ],
+    rosters: {
+      't1': [
+        teamPlayer('t1', 'p1', 'Ana Ruiz', jersey: '7'),
+        teamPlayer('t1', 'p2', 'Leo Gil', jersey: '10', playUp: 1),
+        teamPlayer('t1', 'p3', 'Mia Soto'),
+      ],
+    },
+    staff: {
+      't1': [
+        api.TeamStaffMember(
+          (b) => b
+            ..person.replace(personRef('m1', 'Casey Coach'))
+            ..role = api.StaffRole.COACH
+            ..since = api.Date(2026, 9, 1),
+        ),
+      ],
+    },
   ),
   players: FakePlayersRepository([
     player(
@@ -50,16 +69,36 @@ FakeCore _core() => FakeCore(
 );
 
 void main() {
-  testWidgets('teams list, ADMIN, 360x780', (tester) async {
+  for (final (name, brightness) in [
+    ('teams_list_360x780', Brightness.light),
+    ('teams_list_360x780_dark', Brightness.dark),
+  ]) {
+    testWidgets('teams list, ADMIN, $name', (tester) async {
+      tester.platformDispatcher.platformBrightnessTestValue = brightness;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: _core(),
+        location: '/teams',
+      );
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/$name.png'),
+      );
+    });
+  }
+
+  testWidgets('team detail, ADMIN, 360x780', (tester) async {
     await pumpAs(
       tester,
       roles: {TenantRole.admin},
       core: _core(),
-      location: '/teams',
+      location: '/teams/t1',
     );
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/teams_list_360x780.png'),
+      matchesGoldenFile('goldens/team_detail_360x780.png'),
     );
   });
 

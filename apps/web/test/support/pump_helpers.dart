@@ -55,10 +55,12 @@ Future<Harness> pumpAs(
   return h;
 }
 
-/// Scrolls [finder] into view inside the first Scrollable and taps it.
+/// Scrolls the widget with [key] to the middle of its Scrollable and taps it.
 Future<void> tapKey(WidgetTester tester, String key) async {
   final f = find.byKey(Key(key));
-  await tester.ensureVisible(f);
+  // Centred, so a floating action button or a snack bar never covers it.
+  await Scrollable.ensureVisible(tester.element(f), alignment: 0.5);
+  await tester.pump(); // lay the scrolled page out before hitting it
   await tester.tap(f);
   await tester.pumpAndSettle();
 }

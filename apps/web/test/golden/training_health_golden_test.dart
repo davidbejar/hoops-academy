@@ -8,53 +8,161 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/training/application/training_providers.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 
-import '../support/athlete_scenarios.dart' show athleteCore;
+import '../support/athlete_scenarios.dart';
+import '../support/core_fixtures.dart';
+import '../support/fake_repos.dart';
 import '../support/fake_athlete.dart';
 import '../support/pump_helpers.dart';
 
-/// Regenerate with `flutter test --update-goldens test/golden`.
-/// "Today" is pinned to Monday 2026-11-02 (the week shown and the highlighted day), so the picture is the same on
-/// any day the test runs.
-DateTime _today() => DateTime(2026, 11, 2);
+/// The training week and the player health screens are two of the four
+/// screens showcased on the landing page (`assets/landing/training_week.png`,
+/// `player_health.png`); the data mirrors the demo mock (`lib/core/mock`):
+/// Mini A at Pabellón Norte, Infantil A at Pabellón Sur, Leo Gil's left knee.
+/// Regenerate with
+/// `flutter test --update-goldens test/golden/training_health_golden_test.dart`.
+/// "Today" is pinned to Thursday 2026-11-05 (the week shown and the highlighted
+/// day), so the picture is the same on any day the test runs.
+DateTime _today() => DateTime.utc(2026, 11, 5, 10);
 
-DateTime _day(int offset) => DateTime(2026, 11, 2 + offset);
+/// [hour]:[minute] in Madrid (UTC+1 in November) on 2026-11-(2 + [offset]).
+DateTime _madrid(int offset, int hour, int minute) =>
+    DateTime.utc(2026, 11, 2 + offset, hour - 1, minute);
+
+ath.TrainingSession _demo(
+  String id,
+  int offset,
+  int hour,
+  int minute, {
+  required String teamId,
+  required String place,
+  int minutes = 90,
+  ath.TrainingSessionStatus status = ath.TrainingSessionStatus.DONE,
+}) => session(
+  id,
+  day: DateTime(2026, 11, 2),
+  teamId: teamId,
+  location: place,
+  minutes: minutes,
+  status: status,
+).rebuild((b) => b..startsAt = _madrid(offset, hour, minute));
+
+FakeCore _demoCore() => FakeCore(
+  teams: FakeTeamsRepository(
+    teams: [
+      team('t1', 'Mini A', players: 3),
+      team('t2', 'Infantil A', cat: u14, players: 1),
+    ],
+  ),
+  players: FakePlayersRepository([
+    player('p2', 'Leo Gil', cat: u12, teams: [assignment('t1', 'Mini A')]),
+  ]),
+);
+
+FakeAthlete _demoWeek() => FakeAthlete(
+  training: FakeTrainingRepository(
+    sessions: [
+      _demo('s1', 0, 17, 30, teamId: 't1', place: 'Pabellón Norte'),
+      _demo('s2', 1, 18, 30, teamId: 't2', place: 'Pabellón Sur'),
+      _demo('s3', 2, 17, 30, teamId: 't1', place: 'Pabellón Norte'),
+      _demo(
+        's4',
+        3,
+        18,
+        30,
+        teamId: 't2',
+        place: 'Pabellón Sur',
+        status: ath.TrainingSessionStatus.PLANNED,
+      ),
+      _demo(
+        's5',
+        4,
+        17,
+        0,
+        teamId: 't1',
+        place: 'Pista exterior',
+        minutes: 60,
+        status: ath.TrainingSessionStatus.CANCELLED,
+      ),
+    ],
+  ),
+);
+
+FakeAthlete _leoHealth() => FakeAthlete(
+  health: FakeHealthRepository(
+    injuries: [
+      injury(
+        'inj-1',
+        'p2',
+        part: 'rodilla izquierda',
+        expected: ath.Date(2026, 11, 18),
+      ).rebuild(
+        (b) => b
+          ..occurredOn = ath.Date(2026, 10, 31)
+          ..description = 'Golpe en un entrenamiento',
+      ),
+    ],
+  ),
+);
 
 void main() {
-  testWidgets('week calendar, ADMIN, 360x780', (tester) async {
-    final athlete = FakeAthlete(
-      training: FakeTrainingRepository(
-        sessions: [
-          session('s1', day: _day(1), hour: 18, location: 'Pabellón Norte'),
-          session(
-            's2',
-            day: _day(3),
-            hour: 19,
-            minutes: 60,
-            location: 'Pista 2',
-          ),
-          session('s3', day: _day(3), hour: 17, teamId: 't2', location: null),
-          session(
-            's4',
-            day: _day(5),
-            hour: 10,
-            status: ath.TrainingSessionStatus.CANCELLED,
-            cancelReason: 'Lluvia',
-          ),
-        ],
-      ),
-    );
+  Future<void> expectGolden(String name) => expectLater(
+    find.byType(MaterialApp),
+    matchesGoldenFile('goldens/$name.png'),
+  );
+
+  void useBrightness(WidgetTester tester, Brightness brightness) {
+    tester.platformDispatcher.platformBrightnessTestValue = brightness;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+  }
+
+  for (final (name, size, brightness) in [
+    ('training_week_360x780', const Size(360, 780), Brightness.light),
+    ('training_week_360x780_dark', const Size(360, 780), Brightness.dark),
+    ('training_week_1024x768', const Size(1024, 768), Brightness.light),
+  ]) {
+    testWidgets('week calendar, ADMIN, $name', (tester) async {
+      useBrightness(tester, brightness);
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: _demoCore(),
+        athlete: _demoWeek(),
+        timezone: 'Europe/Madrid',
+        size: size,
+        overrides: [nowProvider.overrideWithValue(_today)],
+        location: '/training',
+      );
+      await expectGolden(name);
+    });
+  }
+
+  for (final (name, brightness) in [
+    ('player_health_360x780', Brightness.light),
+    ('player_health_360x780_dark', Brightness.dark),
+  ]) {
+    testWidgets('player health, injuries, ADMIN, $name', (tester) async {
+      useBrightness(tester, brightness);
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: _demoCore(),
+        athlete: _leoHealth(),
+        location: '/players/p2/health',
+      );
+      await expectGolden(name);
+    });
+  }
+
+  testWidgets('session detail with attendance, ADMIN, 360x780', (tester) async {
     await pumpAs(
       tester,
       roles: {TenantRole.admin},
       core: athleteCore(),
-      athlete: athlete,
+      athlete: weekAthlete(),
       overrides: [nowProvider.overrideWithValue(_today)],
-      location: '/training',
+      location: '/training/session/s1',
     );
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/training_week_360x780.png'),
-    );
+    await expectGolden('session_detail_360x780');
   });
 
   testWidgets('growth chart (height and weight), 360x780', (tester) async {

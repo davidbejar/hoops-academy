@@ -200,7 +200,7 @@ void main() {
       await go('/training/absences');
       expect(find.textContaining('Torneo de ajedrez'), findsWidgets);
       await go('/training/assignments');
-      expect(find.byType(Card), findsWidgets);
+      expect(keyed('assignment-'), findsWidgets);
 
       await go('/players/p-leo/health');
       expect(find.textContaining('rodilla izquierda'), findsWidgets);

@@ -335,6 +335,9 @@ void main() {
       await tester.enterText(find.byKey(const Key('jersey-field')), '12');
       await tapKey(tester, 'form-submit');
       expect(core.teams.rosters['t1']!.first.jerseyNumber, '12');
+      // The "saved" snack bar would cover the bottom of the actions sheet.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
 
       await tapKey(tester, 'roster-menu-p1');
       await tester.tap(find.text('Quitar de la plantilla'));
