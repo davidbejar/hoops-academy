@@ -33,6 +33,11 @@ public class Authz {
         return caller().isStaffOf(teamId);
     }
 
+    /** Former staff of a team whose season has ended (read-only history, ADR-0042). */
+    public boolean wasStaffOf(UUID teamId) {
+        return caller().wasStaffOf(teamId);
+    }
+
     public boolean isGuardianOf(UUID playerId) {
         return caller().isGuardianOf(playerId);
     }

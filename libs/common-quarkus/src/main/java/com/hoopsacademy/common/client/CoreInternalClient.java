@@ -40,14 +40,20 @@ public interface CoreInternalClient {
     @Consumes(MediaType.APPLICATION_JSON)
     PlayerBatchResponseDto players(@QueryParam("tenantId") String tenantId, PlayerBatchRequestDto request);
 
-    /** Contract {@code AuthzContext}; {@code playerTeamIds}/{@code timezone} may be absent from an older core. */
+    /**
+     * Contract {@code AuthzContext}; {@code playerTeamIds}/{@code timezone} (core 2.x) and {@code historicStaffTeamIds}
+     * (core 3.2.0) may be absent from an older core.
+     */
     record AuthzContextDto(String sub, UUID personId, UUID tenantId, String tenantStatus, List<String> roles,
             List<UUID> staffTeamIds, List<UUID> linkedPlayerIds, UUID ownPlayerId, List<UUID> playerTeamIds,
-            String timezone) {}
+            String timezone, List<UUID> historicStaffTeamIds) {}
 
-    /** Contract {@code TeamRoster}: open, valid assignments only. */
+    /**
+     * Contract {@code TeamRoster}: open, valid assignments only; {@code seasonEndDate} (core 3.2.0, ADR-0042) is null
+     * from an older core.
+     */
     record TeamRosterDto(UUID tenantId, UUID teamId, UUID seasonId, String teamName, List<RosterPlayerDto> players,
-            List<RosterStaffDto> staff) {
+            List<RosterStaffDto> staff, LocalDate seasonEndDate) {
 
         public TeamRosterDto {
             players = players == null ? List.of() : List.copyOf(players);

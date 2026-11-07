@@ -139,7 +139,7 @@ public class CoreRosterClient {
         Objects.requireNonNullElse(dto.roles(), List.<String>of()).forEach(role -> roles.add(TenantRole.valueOf(role)));
         AuthzContext context = new AuthzContext(dto.sub(), dto.personId(), tenant, roles, set(dto.staffTeamIds()),
                 set(dto.linkedPlayerIds()), Optional.ofNullable(dto.ownPlayerId()), set(dto.playerTeamIds()),
-                zoneOf(dto.timezone()));
+                zoneOf(dto.timezone()), set(dto.historicStaffTeamIds()));
         return new CoreMembership(context, CoreMembership.TenantStatus.valueOf(dto.tenantStatus()));
     }
 
