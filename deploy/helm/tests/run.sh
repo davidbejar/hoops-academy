@@ -481,10 +481,10 @@ admitted=$(echo "$n" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next}
 [ "$admitted" = "athlete-service core-service game-service " ] && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' \
   && [ "$(echo "$n" | grep -c -- '- from:')" = 2 ] && ! echo "$n" | grep -q 'namespaceSelector: {}' \
   && echo "$n" | awk '/- from:/ {f++} f==1 && /port: otlp-grpc/ {g=1} f==1 && /port: otlp-http/ {h=1} END {exit !(g && h)}' \
-  && echo "$n" | awk '/- from:/ {f++} f==2 && /kubernetes.io\/metadata.name: envoy-gateway-system/ {e=1} f==2 && /app.kubernetes.io\/component: proxy/ {p=1} f==2 && /port: otlp-grpc/ {g=1} f==2 && /port: otlp-http/ {h=1} END {exit !(e && p && g && !h)}' \
+  && echo "$n" | awk '/- from:/ {f++} f==2 && /kubernetes.io\/metadata.name: envoy-gateway-system/ {e=1} f==2 && /app.kubernetes.io\/component: proxy/ {p=1} f==2 && /owning-gateway-name: hoops$/ {o=1} f==2 && /managed-by/ {m=1} f==2 && /port: otlp-grpc/ {g=1} f==2 && /port: otlp-http/ {h=1} END {exit !(e && p && o && !m && g && !h)}' \
   && echo "$n" | grep -q 'k8s-app: kube-dns' && [ "$(echo "$n" | grep -c -- '- to:')" = 2 ] \
   && echo "$n" | awk '/- to:/ {t++} t==2 && /app.kubernetes.io\/name: jaeger/ {j=1} t==2 && /port: 4317/ {p=1} END {exit !(j && p)}' \
-  && ok "otel-collector NetworkPolicy: OTLP from the three services + Envoy proxies (gRPC), egress DNS + Jaeger only" \
+  && ok "otel-collector NetworkPolicy: OTLP from the three services + the Gateway's Envoy proxies (gRPC; no managed-by selector, Tilt rewrites it), egress DNS + Jaeger only" \
   || bad "otel-collector NetworkPolicy (admitted: $admitted)"
 for u in core-service game-service athlete-service; do
   doc "$u" Deployment | grep -q "app.kubernetes.io/name: $u" || bad "collector client $u has no Deployment with that name label"
@@ -514,11 +514,12 @@ for s in core game athlete; do
     && ok "default: $s-service OTel SDK off, no endpoint" || bad "default: $s-service OTel env"
 done
 ! grep -qi 'tenant' <(grep -h 'QUARKUS_OTEL_RESOURCE_ATTRIBUTES' "$WORK"/*.yaml) && ok "no tenant in any resource attribute" || bad "tenant in resource attributes"
-e=$(doc hoops EnvoyProxy)
-echo "$e" | grep -A8 '^    tracing:$' | grep -q 'type: OpenTelemetry' \
-  && echo "$e" | grep -A8 '^    tracing:$' | grep -q 'backendRefs: \[{name: otel-collector, port: 4317}\]' \
-  && echo "$e" | grep -A8 '^    tracing:$' | grep -q 'samplingFraction: {numerator: 10000, denominator: 10000}' \
-  && ok "kind: Envoy proxy traces the edge to otel-collector:4317 (W3C traceparent, same ratio)" || bad "EnvoyProxy tracing"
+e=$(doc hoops EnvoyProxy | grep -v '^ *#')
+t=$(echo "$e" | grep -A8 '^    tracing:$' || true)   # (a captured block: grep -q in a pipe under pipefail can SIGPIPE its source)
+echo "$t" | grep -q 'type: OpenTelemetry' && echo "$t" | grep -q 'host: otel-collector.hoops.svc.cluster.local' \
+  && echo "$t" | grep -q 'port: 4317' && ! echo "$e" | grep -q 'backendRefs' \
+  && echo "$t" | grep -q 'samplingFraction: {numerator: 10000, denominator: 10000}' \
+  && ok "kind: Envoy proxy traces the edge to otel-collector:4317 by DNS name (W3C traceparent, same ratio; no backendRefs: with those a collector outage un-accepts the Gateway)" || bad "EnvoyProxy tracing"
 for f in umbrella-default umbrella-tls service-defaults; do
   grep -q 'otel-collector\|jaeger\|tracing:' "$WORK/$f.yaml" && { bad "$f: observability rendered while global.observability.enabled is off"; continue; }
   ok "$f: no collector, no Jaeger, no edge tracing (global.observability.enabled off)"
