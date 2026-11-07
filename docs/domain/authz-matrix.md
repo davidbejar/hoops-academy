@@ -3,7 +3,9 @@
 Roles are per tenant and additive (a user may hold several). "team staff" = COACH or ASSISTANT_COACH with a
 `team_staff` row for the team in question. "linked" = PARENT with a `guardian_link` to the player. Teams whose season
 has ended (academy time zone) count neither as staffed nor as a player's team, even while the staff row or the
-assignment is still open (`staffTeamIds` / `playerTeamIds`, core 2.8.0, WP58).
+assignment is still open (`staffTeamIds` / `playerTeamIds`, core 2.8.0, WP58). Such a team is **history** (ADR-0042,
+WP80): "former staff" = COACH or ASSISTANT_COACH whose `team_staff` row for it remains (`historicStaffTeamIds`, core
+3.2.0); they and ADMIN read it, nobody writes it (409 `SEASON_ENDED`); see the history rows at the end.
 Non-members of a tenant receive **404** for every tenant resource.
 
 | Capability | ADMIN | COACH (team staff) | ASSISTANT_COACH (team staff) | PARENT (linked) | PLAYER (self) |
@@ -35,6 +37,12 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Guardian logins: add a new guardian to a player (`POST /api/core/guardians`; with an e-mail a login, its temporary password shown once, or an existing login linked, ADR-0025) and give a guardian without a login a first one (`POST /api/core/members/{id}/temporary-password`, PARENT with an e-mail; WP58) | yes | – | – | – | – |
 | Attach any academy plan or template to a session (no assignment needed, decision 53) and quick-add exercises to it (`POST /api/athlete/training-sessions/{id}/items`, ADR-0041: copies items of any readable plan or template into the session's own plan, created on first use) | yes | team | team | – | – |
 | Quick-add exercises to a tenant plan (`POST /api/athlete/training-plans/{id}/items:copy`, ADR-0041; templates read-only) | yes | yes | yes | – | – |
+| History: a team of an ended season, its roster and staff (`GET /api/core/teams?staffedByMe=true&includeEnded=true`, `Team.seasonEnded`; ADR-0042) | read | read (former staff; any member reads teams) | read (former staff) | read | read |
+| History: write a team of an ended season or its matches, schedules, sessions, attendance, team plan assignments and their completions (team PATCH, staff, assignments; match create / update / start / finish / cancel / roster; athlete writes) | 409 `SEASON_ENDED` | 409 `SEASON_ENDED` (former staff; 403 if never staff) | 409 `SEASON_ENDED` (former staff) | 409 on completions of a team assignment | 409 on completions of a team assignment |
+| History: match events of an ended season (`events:batch`): recorded on the device up to the season's last day still sync; later ones REJECTED `SEASON_ENDED` | as staff | as staff (former staff too) | as staff (former staff too) | linked players, same cut-off | – |
+| History: statistics of a past match (box score, event feed) | all players | all players (former staff) | all players (former staff) | linked | self |
+| History: attendance sheet of a past session | whole sheet | whole sheet (former staff; other coaches 403) | whole sheet (former staff) | linked | self |
+| History: health records (injuries, height / weight, test results) of the players on a past team's roster, dated on or before the season's last day (also `teamId` = that team on the lists) | write (today's rule) | read (former staff; never staffed: 404); writes 409 `SEASON_ENDED` when the past team is the only relation | read (former staff), same | today's rule | today's rule |
 
 Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of
