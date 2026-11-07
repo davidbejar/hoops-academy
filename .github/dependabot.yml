@@ -3,6 +3,8 @@
 # chart's image tags and the Envoy Gateway / kind pins in deploy/kind/up.sh; the weekly workflow
 # .github/workflows/bump-pins.yml (scripts/bump-pins.sh, docs/runbooks/release.md section 6) bumps those.
 # The generated Dart packages under apps/web/packages are not listed: `just gen-api` owns them.
+# Cooldown (SD-07 of the 2026-11 review): a release is proposed only once it is 7 days old, so a hijacked fresh release
+# has time to be noticed and pulled first. Security updates ignore the cooldown.
 version: 2
 updates:
   - package-ecosystem: maven
@@ -13,6 +15,8 @@ updates:
       time: "06:00"
       timezone: Europe/Madrid
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore(deps)"
     groups:
@@ -36,6 +40,8 @@ updates:
       time: "06:00"
       timezone: Europe/Madrid
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore(web)"
     groups:
@@ -51,6 +57,8 @@ updates:
       time: "06:00"
       timezone: Europe/Madrid
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore(ci)"
     groups:
