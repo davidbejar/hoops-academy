@@ -17,7 +17,7 @@ Decision 58 of 2026-11-06: anyone with an admin, coach or parent role may reques
 requester becomes the academy's first ADMIN; rejection sends an e-mail with the reason; players never request.
 
 ## Scope
-1. **Contract core 3.1.0 → 3.2.0** (WP80 took 3.1.0; if WP80 made no core change, you take 3.1.0): public
+1. **Contract core → next minor** (WP81 took 3.1.0, WP80 3.2.0 if it changed core; take the next free minor): public
    `POST /platform/academy-requests` (no auth; name optional, e-mail, role ∈ ADMIN|COACH|PARENT, academy name unique
    against existing tenants and pending requests: 409; honeypot field + rate limit; 202 with no body that reveals
    existence); super admin `GET /platform/academy-requests?status=`, `POST .../{id}:accept` (creates the tenant as

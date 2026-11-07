@@ -19,7 +19,7 @@ by the coaches who were staff of the team then and by admins; players and parent
    staff of that team (the staff row stays, WP58 only excluded it from "current" teams); every write on a historic team
    (and its matches, sessions, attendance, plans assignments, health records bound to it) is refused with 409
    `SEASON_ENDED` (or 403? pick one Problem type and document it); today's "current" views are unchanged by default.
-2. **Contracts** (core 3.1.0, game 2.3.0, athlete 2.4.0 if a parameter or field is added): list endpoints gain
+2. **Contracts** (core 3.1.0 → 3.2.0, game 2.2.0 → 2.3.0, athlete 2.3.0 → 2.4.0, each only if a parameter or field is added; WP81 took core 3.1.0): list endpoints gain
    `seasonId` / `includeEnded` (pick one; the same name in the three APIs), `/me`'s team lists expose historic teams
    separately (e.g. `historicTeams`), responses carry `seasonEnded: true` where useful. Document the rule in each
    description. `UpdateRequestClearListContractTest` pins updated.
