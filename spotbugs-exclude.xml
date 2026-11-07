@@ -43,6 +43,9 @@
       <Class name="com.hoopsacademy.game.adapters.in.rest.MatchEventDecoder"/>
       <!-- WP81: CDI-managed Kafka producer wrapper; its constructor validates hoops.outbox.producer-reset-after. -->
       <Class name="com.hoopsacademy.core.adapters.out.events.KafkaEventBroker"/>
+      <!-- WP82: CDI-managed retention use cases; their constructors refuse a retention below the tombstone retention. -->
+      <Class name="com.hoopsacademy.game.application.replica.ReplicaRetention"/>
+      <Class name="com.hoopsacademy.athlete.application.replica.ReplicaRetention"/>
     </Or>
     <Bug pattern="CT_CONSTRUCTOR_THROW"/>
   </Match>
