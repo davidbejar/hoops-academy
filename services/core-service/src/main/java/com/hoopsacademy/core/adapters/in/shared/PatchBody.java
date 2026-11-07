@@ -90,7 +90,8 @@ public final class PatchBody {
     public Patch<String> text(String field, int maxLength) {
         return read(field, node -> {
             if (!node.isTextual() || node.asText().length() > maxLength) {
-                return reject(field, "must be a string of at most " + maxLength + " characters");
+                reject(field, "must be a string of at most " + maxLength + " characters");
+                return Optional.empty();
             }
             return Optional.of(node.asText());
         });
@@ -100,7 +101,8 @@ public final class PatchBody {
     public Patch<String> nonBlankText(String field, int maxLength) {
         return read(field, node -> {
             if (!node.isTextual() || node.asText().isBlank() || node.asText().length() > maxLength) {
-                return reject(field, "must be a non-blank string of at most " + maxLength + " characters");
+                reject(field, "must be a non-blank string of at most " + maxLength + " characters");
+                return Optional.empty();
             }
             return Optional.of(node.asText());
         });
@@ -110,7 +112,8 @@ public final class PatchBody {
     public Patch<String> matching(String field, Pattern regex) {
         return read(field, node -> {
             if (!node.isTextual() || !regex.matcher(node.asText()).matches()) {
-                return reject(field, "must match " + regex.pattern());
+                reject(field, "must match " + regex.pattern());
+                return Optional.empty();
             }
             return Optional.of(node.asText());
         });
@@ -120,7 +123,8 @@ public final class PatchBody {
     public Patch<Integer> integer(String field, int min, int max) {
         return read(field, node -> {
             if (!node.isInt() || node.asInt() < min || node.asInt() > max) {
-                return reject(field, "must be an integer " + min + ".." + max);
+                reject(field, "must be an integer " + min + ".." + max);
+                return Optional.empty();
             }
             return Optional.of(node.asInt());
         });
@@ -128,8 +132,10 @@ public final class PatchBody {
 
     public Patch<String> email(String field) {
         return read(field, node -> {
-            if (!node.isTextual() || node.asText().length() > 254 || !EMAIL.matcher(node.asText()).matches()) {
-                return reject(field, "must be an e-mail address");
+            // a number, boolean or structure never matches the pattern (its asText has no '@')
+            if (node.asText().length() > 254 || !EMAIL.matcher(node.asText()).matches()) {
+                reject(field, "must be an e-mail address");
+                return Optional.empty();
             }
             return Optional.of(node.asText());
         });
@@ -142,14 +148,16 @@ public final class PatchBody {
     public <T> Patch<T> parsed(String field, Function<String, T> parser) {
         return read(field, node -> {
             if (!node.isTextual()) {
-                return reject(field, "must be a string");
+                reject(field, "must be a string");
+                return Optional.empty();
             }
             try {
                 return Optional.of(parser.apply(node.asText()));
             } catch (CodedProblemException e) {
                 throw e;
             } catch (RuntimeException e) {
-                return reject(field, "has an invalid value");
+                reject(field, "has an invalid value");
+                return Optional.empty();
             }
         });
     }
@@ -200,8 +208,7 @@ public final class PatchBody {
         return parse.apply(node).map(Patch::of).orElseGet(Patch::absent);
     }
 
-    private <T> Optional<T> reject(String field, String message) {
+    private void reject(String field, String message) {
         violations.add(new Problem.Violation(field, message));
-        return Optional.empty();
     }
 }

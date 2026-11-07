@@ -17,11 +17,14 @@ import com.hoopsacademy.core.application.platform.CreateTenant;
 import com.hoopsacademy.core.application.platform.CreateTenantCommand;
 import com.hoopsacademy.core.application.port.AcademyRequestNotifier;
 import com.hoopsacademy.core.application.port.AcademyRequestRepository;
+import com.hoopsacademy.core.application.shared.PageRequest;
+import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.domain.signup.AcademyName;
 import com.hoopsacademy.core.domain.signup.AcademyRequest;
 import com.hoopsacademy.core.domain.signup.AcademyRequestId;
+import com.hoopsacademy.core.domain.signup.AcademyRequestStatus;
 import com.hoopsacademy.core.domain.signup.Requester;
 import com.hoopsacademy.core.domain.signup.RequesterRole;
 import com.hoopsacademy.core.domain.tenant.Tenant;
@@ -46,6 +49,15 @@ class DecideAcademyRequestTest {
     private final CreateTenant createTenant = mock(CreateTenant.class);
     private final AcademyRequestNotifier notifier = mock(AcademyRequestNotifier.class);
     private final DecideAcademyRequest decide = new DecideAcademyRequest(requests, steps, createTenant, notifier);
+
+    @Test
+    void theInboxListsWhatTheRepositoryHolds() {
+        PageRequest page = new PageRequest(0, 20);
+        PageResult<AcademyRequest> held = new PageResult<>(java.util.List.of(PENDING), page, 1);
+        when(requests.list(java.util.Optional.of(AcademyRequestStatus.PENDING), page)).thenReturn(held);
+
+        assertThat(decide.list(java.util.Optional.of(AcademyRequestStatus.PENDING), page)).isSameAs(held);
+    }
 
     @Test
     void aRejectionStandsWhenItsEmailCannotBeSent() {

@@ -68,6 +68,21 @@ class RosterEventAppenderTest {
     }
 
     @Test
+    void aPersonReportedAloneBringsTheEventOfItsPlayer() {
+        PersonId leo = new PersonId(UUID.randomUUID());
+        PlayerId player = new PlayerId(UUID.randomUUID());
+        states.persons.put(leo, new RosterStates.PersonState("Leo Kid", Optional.empty(), EnumSet.of(TenantRole.PLAYER),
+                true, Optional.of(player)));
+        states.players.put(player, new RosterStates.PlayerState(leo, "Leo Kid", PlayerStatus.ACTIVE, Optional.empty(),
+                Optional.empty()));
+
+        appender.append(TENANT, List.of(new RosterChange.Person(leo)));
+
+        assertThat(written).extracting(OutboxEvent::type).containsExactly("person.changed", "player.changed");
+        assertThat(written.get(1).aggregateId()).isEqualTo(player.value().toString());
+    }
+
+    @Test
     void aSeasonRepublishesEachOfItsTeamsWithTheSeasonDates() {
         SeasonId season = new SeasonId(UUID.randomUUID());
         TeamId lions = new TeamId(UUID.randomUUID());

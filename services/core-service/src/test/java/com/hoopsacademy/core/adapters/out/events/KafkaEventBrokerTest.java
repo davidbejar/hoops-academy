@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 class KafkaEventBrokerTest {
 
     private static final Duration TIMEOUT = Duration.ofMillis(200);
+    private static final org.apache.kafka.common.MetricName SEND_TOTAL = new org.apache.kafka.common.MetricName(
+            "record-send-total", "producer-metrics", "", Map.of("client-id", KafkaEventBroker.CLIENT_ID));
 
     private final List<MockProducer<String, String>> created = new ArrayList<>();
     private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
@@ -48,6 +50,9 @@ class KafkaEventBrokerTest {
                 return future;
             }
         };
+        producer.setMockMetrics(SEND_TOTAL, new org.apache.kafka.common.metrics.KafkaMetric(new Object(), SEND_TOTAL,
+                (org.apache.kafka.common.metrics.Measurable) (config, now) -> 1.0,
+                new org.apache.kafka.common.metrics.MetricConfig(), org.apache.kafka.common.utils.Time.SYSTEM));
         created.add(producer);
         return producer;
     }
@@ -159,6 +164,59 @@ class KafkaEventBrokerTest {
         assertThatThrownBy(() -> broker(0)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("producer-reset-after");
         broker(1);
+    }
+
+    @Test
+    void theInjectedBrokerCreatesARealKafkaProducerFromTheSettings() {
+        KafkaEventBroker broker = new KafkaEventBroker(Map.of("bootstrap.servers", "localhost:1", "max.block.ms", "100"),
+                registry, TIMEOUT, 3);
+        try {
+            assertThatThrownBy(() -> broker.send("core.team", "t:a", "{}"))
+                    .isInstanceOf(EventBroker.UnavailableException.class)
+                    .as("no broker answers: the Kafka client's own timeout, not a failure to create it")
+                    .hasCauseInstanceOf(org.apache.kafka.common.errors.TimeoutException.class);
+        } finally {
+            broker.close();
+        }
+    }
+
+    @Test
+    void closingABrokerThatNeverSentIsANoOp() {
+        KafkaEventBroker broker = broker(3);
+
+        broker.close();
+
+        assertThat(created).isEmpty();
+    }
+
+    @Test
+    void theProducersClientMetricsArePublishedWhileItLives() {
+        brokerAnswers.set(true);
+        KafkaEventBroker broker = broker(3);
+
+        broker.send("core.team", "t:a", "{}");
+        assertThat(registry.find("kafka.producer.record.send.total").meter())
+                .as("bound at creation").isNotNull();
+
+        broker.close();
+        assertThat(registry.find("kafka.producer.record.send.total").meter())
+                .as("removed with the producer").isNull();
+    }
+
+    @Test
+    void anInterruptedSendKeepsTheThreadInterrupted() {
+        KafkaEventBroker broker = new KafkaEventBroker(
+                () -> new MockProducer<>(false, null, new StringSerializer(), new StringSerializer()), TIMEOUT, 3,
+                registry);
+        Thread.currentThread().interrupt();
+        try {
+            assertThatThrownBy(() -> broker.send("core.team", "t:a", "{}"))
+                    .isInstanceOf(EventBroker.UnavailableException.class)
+                    .hasCauseInstanceOf(InterruptedException.class);
+            assertThat(Thread.currentThread().isInterrupted()).isTrue();
+        } finally {
+            Thread.interrupted();
+        }
     }
 
     private void failTimes(KafkaEventBroker broker, int times) {
