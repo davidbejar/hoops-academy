@@ -207,7 +207,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 | 2 | WP73 | Web redesign: training, plans, sessions, health and fitness screens | Opus | Done (web 918 tests on the combined tree; kit ListRow details; 10 goldens) |
 | 2 | WP74 | Web redesign: live match, match list and match statistics screens | Opus | Done (web 910 tests on the combined tree; 14 match goldens; kit SheetAction key) |
 | 2 | WP75 | Web redesign: admin, platform, auth, profile and shell screens | Sonnet | Done (web 877 tests; kit IconTile; platform usage goldens) |
-| 2 | WP80 | Season history: read-only access to past seasons for former staff and admins (core, game, athlete, web) | Opus | After wave 1 |
+| 2 | WP80 | Season history: read-only access to past seasons for former staff and admins (core, game, athlete, web) | Opus | Done (ADR-0042; core 3.2.0, game 2.3.0, athlete 2.4.0; combined verify green; mutation core 98.8 / game 99.6 / athlete 100) |
 | 2 | WP86 | Chart: OpenTelemetry collector, services' logs and traces exported, proven on kind | Opus | Done (ADR-0046; chart 0.9.0; WP87 six kind proofs run; trace Envoy→core→game/athlete) |
 | 2 | WP89 | CI: scheduled bump of image digests, chart image tags and kind pins | Sonnet | Done (bump-pins.yml weekly; 12 pins; 5 outdated found) |
 | 3 | WP76 | Web: gaps bundle (account console link, template refetch on language, match edit from the list, profile edits, guardian password, sit-and-reach hint) | Sonnet | After wave 2 |
