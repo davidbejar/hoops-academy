@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/date_field.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
-import '../../../core/ui/timezone_note.dart';
+import '../../../core/ui/kit.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
@@ -21,7 +18,10 @@ import '../domain/week.dart';
 import 'plan_search.dart';
 import 'training_labels.dart';
 
-/// Week calendar of the training module (deferred, behind the Training tab).
+/// Week calendar of the training module (deferred, behind the Training tab):
+/// the week switcher, the academy's time zone, shortcuts to the other
+/// training screens, the team filter and one section per day
+/// (`assets/landing/training_week.png`).
 class TrainingScreen extends ConsumerWidget {
   const TrainingScreen({super.key});
 
@@ -31,6 +31,9 @@ class TrainingScreen extends ConsumerWidget {
     final caps = ref.watch(capabilitiesProvider);
     final monday = ref.watch(weekStartProvider);
     final sessions = ref.watch(weekSessionsProvider);
+    final zone = ref.watch(tenantZoneProvider).label;
+    final text = Theme.of(context).textTheme;
+    final c = HoopsTokens.colorsOf(context);
     return Scaffold(
       floatingActionButton: caps.canManageAnyTraining
           ? FloatingActionButton.extended(
@@ -43,31 +46,38 @@ class TrainingScreen extends ConsumerWidget {
               label: Text(l.sessionNew),
             )
           : null,
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: AppTokens.maxContentWidth,
-          ),
-          child: Column(
-            children: [
-              _WeekHeader(monday: monday),
-              const TimezoneNote(),
-              const _TrainingMenu(),
-              if (caps.canManageAnyTraining) const _TeamFilter(),
-              Expanded(
-                child: AsyncBody<List<ath.TrainingSession>>(
-                  value: sessions,
-                  onRetry: () => ref.invalidate(weekSessionsProvider),
-                  isEmpty: (d) => d.isEmpty,
-                  emptyMessage: l.trainingNoSessions,
-                  builder: (context, data) =>
-                      WeekCalendar(monday: monday, sessions: data),
-                ),
+      body: Column(
+        children: [
+          ContentFrame(
+            child: Padding(
+              padding: const EdgeInsets.only(top: HoopsSpace.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _WeekHeader(monday: monday),
+                  if (zone != null)
+                    Text(
+                      l.timesShownIn(zone),
+                      key: const Key('timezone-note'),
+                      style: text.bodySmall!.copyWith(color: c.inkMuted),
+                    ),
+                  const _TrainingMenu(),
+                  if (caps.canManageAnyTraining) const _TeamFilter(),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          Expanded(
+            child: AsyncBody<List<ath.TrainingSession>>(
+              value: sessions,
+              onRetry: () => ref.invalidate(weekSessionsProvider),
+              isEmpty: (d) => d.isEmpty,
+              emptyMessage: l.trainingNoSessions,
+              builder: (context, data) =>
+                  WeekCalendar(monday: monday, sessions: data),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -80,36 +90,38 @@ class _WeekHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final c = HoopsTokens.colorsOf(context);
     final sunday = monday.add(const Duration(days: 6));
     final notifier = ref.read(weekStartProvider.notifier);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceSm),
-      child: Row(
-        children: [
-          IconButton(
-            key: const Key('week-prev'),
-            tooltip: l.trainingPrevWeek,
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () => notifier.shift(-1),
-          ),
-          Expanded(
-            child: TextButton(
-              key: const Key('week-today'),
-              onPressed: notifier.today,
-              child: Text(
-                l.trainingWeekOf('${shortDate(monday)} – ${shortDate(sunday)}'),
-                textAlign: TextAlign.center,
-              ),
+    return Row(
+      children: [
+        IconButton(
+          key: const Key('week-prev'),
+          tooltip: l.trainingPrevWeek,
+          icon: const Icon(Icons.chevron_left),
+          onPressed: () => notifier.shift(-1),
+        ),
+        Expanded(
+          child: TextButton(
+            key: const Key('week-today'),
+            onPressed: notifier.today,
+            style: TextButton.styleFrom(
+              foregroundColor: c.accentText,
+              textStyle: Theme.of(context).textTheme.titleMedium,
+            ),
+            child: Text(
+              l.trainingWeekOf('${shortDate(monday)} – ${shortDate(sunday)}'),
+              textAlign: TextAlign.center,
             ),
           ),
-          IconButton(
-            key: const Key('week-next'),
-            tooltip: l.trainingNextWeek,
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () => notifier.shift(1),
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          key: const Key('week-next'),
+          tooltip: l.trainingNextWeek,
+          icon: const Icon(Icons.chevron_right),
+          onPressed: () => notifier.shift(1),
+        ),
+      ],
     );
   }
 }
@@ -122,10 +134,11 @@ class _TrainingMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final caps = ref.watch(capabilitiesProvider);
+    final c = HoopsTokens.colorsOf(context);
     Widget chip(String key, String label, IconData icon, String path) =>
         ActionChip(
           key: Key(key),
-          avatar: Icon(icon, size: 18),
+          avatar: Icon(icon, color: c.brand),
           label: Text(label),
           onPressed: () => context.go(path),
         );
@@ -160,17 +173,11 @@ class _TrainingMenu extends ConsumerWidget {
         ),
     ];
     if (items.isEmpty) return const SizedBox.shrink();
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd),
-      child: Row(
-        children: [
-          for (final item in items)
-            Padding(
-              padding: const EdgeInsets.only(right: AppTokens.spaceSm),
-              child: item,
-            ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(top: HoopsSpace.gap),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(spacing: HoopsSpace.sm, children: items),
       ),
     );
   }
@@ -189,12 +196,7 @@ class _TeamFilter extends ConsumerWidget {
     ];
     if (teams.length < 2) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppTokens.spaceMd,
-        AppTokens.spaceSm,
-        AppTokens.spaceMd,
-        0,
-      ),
+      padding: const EdgeInsets.only(top: HoopsSpace.md),
       child: DropdownButtonFormField<String?>(
         key: const Key('team-filter'),
         initialValue: ref.watch(calendarTeamProvider),
@@ -211,7 +213,8 @@ class _TeamFilter extends ConsumerWidget {
   }
 }
 
-/// Seven day sections, Monday first, with the week's sessions.
+/// Seven day sections, Monday first, with the week's sessions; today's
+/// heading is orange and marked "today".
 class WeekCalendar extends ConsumerWidget {
   const WeekCalendar({super.key, required this.monday, required this.sessions});
   final DateTime monday;
@@ -220,51 +223,66 @@ class WeekCalendar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final text = Theme.of(context).textTheme;
+    final c = HoopsTokens.colorsOf(context);
     final zone = ref.watch(tenantZoneProvider);
     final byDay = groupByDay(sessions, (s) => s.startsAt, wall: zone.wall);
     final names = ref.watch(teamNamesProvider);
     final today = zone.today(ref.watch(nowProvider)());
+    Widget framed(Widget child) => ContentFrame(child: child);
     return ListView(
       key: const Key('week-calendar'),
-      padding: const EdgeInsets.fromLTRB(
-        AppTokens.spaceMd,
-        AppTokens.spaceSm,
-        AppTokens.spaceMd,
-        88,
-      ),
+      padding: const EdgeInsets.only(top: HoopsSpace.sm, bottom: fabClearance),
       children: [
         for (final day in weekDays(monday)) ...[
-          Padding(
-            padding: const EdgeInsets.only(
-              top: AppTokens.spaceSm,
-              bottom: AppTokens.spaceXs,
-            ),
-            child: Text(
-              '${dayOfWeekFor(day.weekday).label(l)} ${shortDate(day)}',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: sameDay(day, today) ? theme.colorScheme.primary : null,
-                fontWeight: sameDay(day, today) ? FontWeight.bold : null,
+          framed(
+            Padding(
+              padding: const EdgeInsets.only(
+                top: HoopsSpace.md,
+                bottom: HoopsSpace.sm,
+              ),
+              child: Row(
+                spacing: HoopsSpace.sm,
+                children: [
+                  Text(
+                    '${dayOfWeekFor(day.weekday).label(l)} ${shortDate(day)}',
+                    style: text.titleSmall!.copyWith(
+                      color: sameDay(day, today) ? c.accentText : c.ink,
+                      fontWeight: sameDay(day, today) ? FontWeight.w800 : null,
+                    ),
+                  ),
+                  if (sameDay(day, today))
+                    StatusChip(
+                      l.trainingToday,
+                      key: const Key('week-today-marker'),
+                      tone: HoopsTone.accent,
+                    ),
+                ],
               ),
             ),
           ),
           if ((byDay[day] ?? const []).isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppTokens.spaceXs),
-              child: Text(
+            framed(
+              Text(
                 l.trainingNoSessionsDay,
-                style: theme.textTheme.bodySmall,
+                style: text.bodySmall!.copyWith(color: c.inkMuted),
               ),
             )
           else
             for (final s in byDay[day]!)
-              SessionTile(session: s, teamName: names[s.teamId]),
+              framed(
+                Padding(
+                  padding: const EdgeInsets.only(bottom: HoopsSpace.sm),
+                  child: SessionTile(session: s, teamName: names[s.teamId]),
+                ),
+              ),
         ],
       ],
     );
   }
 }
 
+/// One session of the week: time range, team, place and its state.
 class SessionTile extends ConsumerWidget {
   const SessionTile({super.key, required this.session, this.teamName});
   final ath.TrainingSession session;
@@ -274,50 +292,47 @@ class SessionTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final zone = ref.watch(tenantZoneProvider);
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final text = Theme.of(context).textTheme;
+    final c = HoopsTokens.colorsOf(context);
     final end = session.startsAt.add(
       Duration(minutes: session.durationMinutes),
     );
-    final cancelled = session.status == ath.TrainingSessionStatus.CANCELLED;
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppTokens.spaceSm),
-      child: InkWell(
-        key: Key('session-${session.id}'),
-        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-        onTap: () => context.go('/training/session/${session.id}'),
-        child: Padding(
-          padding: const EdgeInsets.all(AppTokens.spaceMd),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l.sessionTimeRange(
-                        formatTime(end, zone),
-                        formatTime(session.startsAt, zone),
-                      ),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        decoration: cancelled
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
-                    ),
-                    if (teamName != null)
-                      Text(teamName!, style: theme.textTheme.bodyMedium),
-                    if (session.location != null)
-                      Text(session.location!, style: theme.textTheme.bodySmall),
-                  ],
-                ),
-              ),
-              if (session.status != ath.TrainingSessionStatus.PLANNED)
-                InfoChip(session.status.label(l), tone: session.status.tone),
-              const Icon(Icons.chevron_right),
-            ],
-          ),
-        ),
+    final place = session.location;
+    return ListRow(
+      key: Key('session-${session.id}'),
+      title: l.sessionTimeRange(
+        formatTime(end, zone),
+        formatTime(session.startsAt, zone),
       ),
+      subtitle: teamName,
+      details: place == null
+          ? null
+          : Row(
+              spacing: HoopsSpace.xs,
+              children: [
+                Icon(
+                  Icons.place_outlined,
+                  size: HoopsSpace.md,
+                  color: c.inkMuted,
+                ),
+                Flexible(
+                  child: Text(
+                    place,
+                    style: text.bodySmall!.copyWith(color: c.inkMuted),
+                  ),
+                ),
+              ],
+            ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: HoopsSpace.xs,
+        children: [
+          if (session.status != ath.TrainingSessionStatus.PLANNED)
+            StatusChip(session.status.label(l), tone: session.status.tone),
+          Icon(Icons.chevron_right, color: c.inkMuted),
+        ],
+      ),
+      onTap: () => context.go('/training/session/${session.id}'),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/actions.dart';
-import '../../../core/ui/form_dialog.dart';
+import '../../../core/ui/kit.dart';
 import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
@@ -97,7 +97,7 @@ class _AddGuardianDialogState extends ConsumerState<AddGuardianDialog> {
       afterClose: () async => _announce?.call(),
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: HoopsSpace.gap),
           child: Text(l.playerGuardianHint, key: const Key('guardian-hint')),
         ),
         TextFormField(

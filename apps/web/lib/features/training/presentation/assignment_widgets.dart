@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/ui/actions.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/training_providers.dart';
 import 'training_labels.dart';
@@ -32,27 +31,32 @@ class CompletionControl extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final text = Theme.of(context).textTheme;
+    final c = HoopsTokens.colorsOf(context);
     final current = completion?.status;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!canMark)
           current == null
-              ? Text(l.completionNone, style: theme.textTheme.bodySmall)
-              : InfoChip(
+              ? Text(
+                  l.completionNone,
+                  style: text.bodySmall!.copyWith(color: c.inkMuted),
+                )
+              : StatusChip(
                   current.label(l),
                   tone: current.tone,
                   icon: current.icon,
                 )
         else
           Wrap(
-            spacing: AppTokens.spaceSm,
+            spacing: HoopsSpace.sm,
+            runSpacing: HoopsSpace.sm,
             children: [
               for (final s in completionChoices)
                 ChoiceChip(
                   key: Key('comp-$assignmentId-$playerId-${s.name}'),
-                  avatar: Icon(s.icon, size: 18),
+                  avatar: Icon(s.icon),
                   label: Text(s.label(l)),
                   selected: current == s,
                   onSelected: (_) async {
@@ -81,8 +85,11 @@ class CompletionControl extends ConsumerWidget {
           ),
         if (completion?.comment != null && completion!.comment!.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceXs),
-            child: Text(completion!.comment!, style: theme.textTheme.bodySmall),
+            padding: const EdgeInsets.only(top: HoopsSpace.xs),
+            child: Text(
+              completion!.comment!,
+              style: text.bodySmall!.copyWith(color: c.inkMuted),
+            ),
           ),
       ],
     );

@@ -3,8 +3,11 @@ import '../../../core/time/tenant_zone.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/api/athlete_api.dart' as ath;
-import '../../../core/ui/page_scaffold.dart' show ChipTone;
+import '../../../core/design/tokens.dart';
 import '../../../l10n/gen/app_localizations.dart';
+
+/// Room under the last row of a list so the extended FAB never covers it.
+const fabClearance = HoopsSize.minTapTarget + HoopsSpace.xl + HoopsSpace.sm;
 
 const weekdays = [
   ath.DayOfWeek.MONDAY,
@@ -38,10 +41,10 @@ extension SessionStatusLabel on ath.TrainingSessionStatus {
     _ => l.sessionStatusCancelled,
   };
 
-  ChipTone get tone => switch (this) {
-    ath.TrainingSessionStatus.PLANNED => ChipTone.neutral,
-    ath.TrainingSessionStatus.DONE => ChipTone.good,
-    _ => ChipTone.bad,
+  HoopsTone get tone => switch (this) {
+    ath.TrainingSessionStatus.PLANNED => HoopsTone.neutral,
+    ath.TrainingSessionStatus.DONE => HoopsTone.success,
+    _ => HoopsTone.danger,
   };
 }
 
@@ -68,10 +71,10 @@ extension CompletionLabel on ath.CompletionStatus {
     _ => l.completionNotDone,
   };
 
-  ChipTone get tone => switch (this) {
-    ath.CompletionStatus.DONE => ChipTone.good,
-    ath.CompletionStatus.PARTIAL => ChipTone.warn,
-    _ => ChipTone.bad,
+  HoopsTone get tone => switch (this) {
+    ath.CompletionStatus.DONE => HoopsTone.success,
+    ath.CompletionStatus.PARTIAL => HoopsTone.warning,
+    _ => HoopsTone.danger,
   };
 
   IconData get icon => switch (this) {

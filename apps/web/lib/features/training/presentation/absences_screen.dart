@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/date_field.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/training_providers.dart';
 import 'player_picker.dart';
@@ -42,65 +40,65 @@ class AbsencesScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(absencesProvider),
         isEmpty: (d) => d.isEmpty,
         emptyMessage: l.absenceEmpty,
-        builder: (context, data) => ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppTokens.spaceMd,
-            AppTokens.spaceSm,
-            AppTokens.spaceMd,
-            88,
+        builder: (context, data) => ListView.separated(
+          padding: const EdgeInsets.only(
+            top: HoopsSpace.md,
+            bottom: fabClearance,
           ),
-          children: [
-            for (final a in data)
-              Card(
-                child: ListTile(
-                  key: Key('absence-${a.id}'),
-                  title: Text(
-                    ref.watch(playerNameProvider(a.playerId)) ?? a.playerId,
-                  ),
-                  subtitle: Text(
-                    [
-                      l.absenceRange(fullDate(a.fromDate), fullDate(a.toDate)),
-                      if (a.reason != null) a.reason!,
-                    ].join(' · '),
-                  ),
-                  trailing: caps.canFileAbsenceFor(a.playerId)
-                      ? Wrap(
-                          children: [
-                            IconButton(
-                              key: Key('absence-edit-${a.id}'),
-                              tooltip: l.edit,
-                              icon: const Icon(Icons.edit_outlined),
-                              onPressed: () => showDialog<bool>(
-                                context: context,
-                                builder: (_) => AbsenceDialog(absence: a),
-                              ),
+          itemCount: data.length,
+          separatorBuilder: (_, _) => const SizedBox(height: HoopsSpace.gap),
+          itemBuilder: (context, i) {
+            final a = data[i];
+            final name =
+                ref.watch(playerNameProvider(a.playerId)) ?? a.playerId;
+            return ContentFrame(
+              child: ListRow(
+                key: Key('absence-${a.id}'),
+                leading: InitialsAvatar(name: name, tone: HoopsTone.warning),
+                title: name,
+                subtitle: [
+                  l.absenceRange(fullDate(a.fromDate), fullDate(a.toDate)),
+                  if (a.reason != null) a.reason!,
+                ].join(' · '),
+                trailing: caps.canFileAbsenceFor(a.playerId)
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            key: Key('absence-edit-${a.id}'),
+                            tooltip: l.edit,
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () => showDialog<bool>(
+                              context: context,
+                              builder: (_) => AbsenceDialog(absence: a),
                             ),
-                            IconButton(
-                              key: Key('absence-delete-${a.id}'),
-                              tooltip: l.delete,
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () async {
-                                if (!await confirmDialog(
-                                  context,
-                                  message: l.absenceDeleteConfirm,
-                                  confirmLabel: l.delete,
-                                ))
-                                  return;
-                                if (!context.mounted) return;
-                                await runAction(
-                                  context,
-                                  () => ref
-                                      .read(absencesProvider.notifier)
-                                      .delete(a.id),
-                                );
-                              },
-                            ),
-                          ],
-                        )
-                      : null,
-                ),
+                          ),
+                          IconButton(
+                            key: Key('absence-delete-${a.id}'),
+                            tooltip: l.delete,
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () async {
+                              if (!await confirmDialog(
+                                context,
+                                message: l.absenceDeleteConfirm,
+                                confirmLabel: l.delete,
+                              ))
+                                return;
+                              if (!context.mounted) return;
+                              await runAction(
+                                context,
+                                () => ref
+                                    .read(absencesProvider.notifier)
+                                    .delete(a.id),
+                              );
+                            },
+                          ),
+                        ],
+                      )
+                    : null,
               ),
-          ],
+            );
+          },
         ),
       ),
     );

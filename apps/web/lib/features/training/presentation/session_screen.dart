@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/training_providers.dart';
@@ -41,7 +40,8 @@ class _Body extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
     final s = detail.session;
     final caps = ref.watch(capabilitiesProvider);
     final staff = caps.canManageTraining(s.teamId);
@@ -49,119 +49,107 @@ class _Body extends ConsumerWidget {
     final end = s.startsAt.add(Duration(minutes: s.durationMinutes));
     final names = ref.watch(teamNamesProvider);
     final planned = s.status == ath.TrainingSessionStatus.PLANNED;
-    return ListView(
-      padding: const EdgeInsets.all(AppTokens.spaceMd),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${shortDate(zone.wall(s.startsAt))}  ${l.sessionTimeRange(formatTime(end, zone), formatTime(s.startsAt, zone))}',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                    ),
-                    InfoChip(
-                      s.status.label(l),
-                      tone: s.status.tone,
-                      key: const Key('session-status'),
-                    ),
-                  ],
-                ),
-                if (names[s.teamId] != null) Text(names[s.teamId]!),
-                const SizedBox(height: AppTokens.spaceSm),
-                _Line(
-                  Icons.place_outlined,
-                  l.sessionLocation,
-                  s.location ?? l.sessionNoLocation,
-                ),
-                _Line(
-                  Icons.timer_outlined,
-                  l.sessionDuration,
-                  l.sessionDurationMinutes(s.durationMinutes),
-                ),
-                _PlanLine(session: s),
-                if (s.notes != null && s.notes!.isNotEmpty)
-                  _Line(Icons.notes, l.sessionNotes, s.notes!),
-                if (s.cancelReason != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-                    child: Text(
-                      l.sessionCancelReasonLine(s.cancelReason!),
-                      key: const Key('cancel-reason'),
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  ),
-              ],
-            ),
+    final cancelled = s.status == ath.TrainingSessionStatus.CANCELLED;
+    final actions = [
+      if (staff && planned)
+        OutlinedButton.icon(
+          key: const Key('session-edit'),
+          icon: const Icon(Icons.edit_outlined),
+          label: Text(l.sessionEdit),
+          onPressed: () => showDialog<bool>(
+            context: context,
+            builder: (_) => SessionDialog(session: s),
           ),
         ),
-        if (staff && planned)
-          Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-            child: OutlinedButton.icon(
-              key: const Key('session-edit'),
-              icon: const Icon(Icons.edit_outlined),
-              label: Text(l.sessionEdit),
-              onPressed: () => showDialog<bool>(
-                context: context,
-                builder: (_) => SessionDialog(session: s),
+      if (staff && !cancelled)
+        OutlinedButton.icon(
+          key: const Key('session-add-exercises'),
+          icon: const Icon(Icons.playlist_add),
+          label: Text(l.sessionAddExercises),
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => ExerciseSearchDialog(sessionId: s.id),
+          ),
+        ),
+      if (staff && planned)
+        OutlinedButton.icon(
+          key: const Key('session-cancel'),
+          icon: const Icon(Icons.event_busy),
+          label: Text(l.sessionCancel),
+          onPressed: () async {
+            final reason = await noteDialog(
+              context,
+              title: l.sessionCancel,
+              confirmLabel: l.sessionCancel,
+              required: true,
+              label: l.sessionCancelReason,
+            );
+            if (reason == null || !context.mounted) return;
+            await runAction(
+              context,
+              () =>
+                  ref.read(sessionDetailProvider(s.id).notifier).cancel(reason),
+              success: l.sessionCancelled,
+            );
+          },
+        ),
+    ];
+    return PageBody(
+      children: [
+        SectionCard(
+          title:
+              '${shortDate(zone.wall(s.startsAt))}  ${l.sessionTimeRange(formatTime(end, zone), formatTime(s.startsAt, zone))}',
+          subtitle: names[s.teamId],
+          actions: [
+            StatusChip(
+              s.status.label(l),
+              tone: s.status.tone,
+              key: const Key('session-status'),
+            ),
+          ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: HoopsSpace.sm,
+            children: [
+              _Line(
+                Icons.place_outlined,
+                l.sessionLocation,
+                s.location ?? l.sessionNoLocation,
               ),
-            ),
-          ),
-        if (staff && s.status != ath.TrainingSessionStatus.CANCELLED)
-          Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-            child: OutlinedButton.icon(
-              key: const Key('session-add-exercises'),
-              icon: const Icon(Icons.playlist_add),
-              label: Text(l.sessionAddExercises),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) => ExerciseSearchDialog(sessionId: s.id),
+              _Line(
+                Icons.timer_outlined,
+                l.sessionDuration,
+                l.sessionDurationMinutes(s.durationMinutes),
               ),
+              _PlanLine(session: s),
+              if (s.notes != null && s.notes!.isNotEmpty)
+                _Line(Icons.notes, l.sessionNotes, s.notes!),
+              if (s.cancelReason != null)
+                Text(
+                  l.sessionCancelReasonLine(s.cancelReason!),
+                  key: const Key('cancel-reason'),
+                  style: text.bodyMedium!.copyWith(color: c.danger.foreground),
+                ),
+            ],
+          ),
+        ),
+        if (actions.isNotEmpty)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: HoopsSpace.sm,
+              runSpacing: HoopsSpace.sm,
+              children: actions,
             ),
           ),
-        if (staff && planned)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceSm),
-            child: OutlinedButton.icon(
-              key: const Key('session-cancel'),
-              icon: const Icon(Icons.event_busy),
-              label: Text(l.sessionCancel),
-              onPressed: () async {
-                final reason = await noteDialog(
-                  context,
-                  title: l.sessionCancel,
-                  confirmLabel: l.sessionCancel,
-                  required: true,
-                  label: l.sessionCancelReason,
-                );
-                if (reason == null || !context.mounted) return;
-                await runAction(
-                  context,
-                  () => ref
-                      .read(sessionDetailProvider(s.id).notifier)
-                      .cancel(reason),
-                  success: l.sessionCancelled,
-                );
-              },
-            ),
-          ),
-        if (staff &&
-            detail.attendance != null &&
-            s.status != ath.TrainingSessionStatus.CANCELLED)
+        if (staff && detail.attendance != null && !cancelled)
           AttendanceSheet(key: ValueKey('attendance-${s.id}'), detail: detail),
       ],
     );
   }
 }
 
+/// An icon, a label and its value: one fact of the session.
 class _Line extends StatelessWidget {
   const _Line(this.icon, this.label, this.value);
   final IconData icon;
@@ -169,17 +157,17 @@ class _Line extends StatelessWidget {
   final String value;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: AppTokens.spaceXs),
-    child: Row(
+  Widget build(BuildContext context) {
+    final c = HoopsTokens.colorsOf(context);
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.sm,
       children: [
-        Icon(icon, size: 18),
-        const SizedBox(width: AppTokens.spaceSm),
+        Icon(icon, color: c.brand),
         Expanded(child: Text('$label: $value')),
       ],
-    ),
-  );
+    );
+  }
 }
 
 /// The session's plan and its exercises; marks the session's own plan
@@ -191,28 +179,38 @@ class _PlanLine extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
     final planId = session.planId;
-    if (planId == null)
+    if (planId == null) {
       return _Line(Icons.list_alt, l.sessionPlan, l.sessionNoPlan);
+    }
     final plan = ref.watch(planDetailProvider(planId)).value;
+    final indent = IconTheme.of(context).size! + HoopsSpace.sm;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.xs,
       children: [
         _Line(Icons.list_alt, l.sessionPlan, plan?.name ?? '…'),
         if (plan?.sessionId == session.id)
           Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceXs, left: 26),
-            child: InfoChip(
+            padding: EdgeInsets.only(left: indent),
+            child: StatusChip(
               l.sessionOwnPlan,
               key: const Key('session-own-plan'),
+              tone: HoopsTone.accent,
             ),
           ),
         for (final item in plan?.items ?? const <ath.PlanItem>[])
           Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceXs, left: 26),
+            padding: EdgeInsets.only(left: indent),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${item.position + 1}. '),
+                Text(
+                  '${item.position + 1}. ',
+                  style: text.bodyMedium!.copyWith(color: c.inkMuted),
+                ),
                 Expanded(child: Text(item.title)),
               ],
             ),
@@ -311,113 +309,103 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceMd),
-        child: Form(
-          key: _form,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l.attendanceTitle, style: theme.textTheme.titleMedium),
-              if (_rows.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppTokens.spaceMd,
-                  ),
-                  child: Text(l.attendanceEmpty),
-                ),
-              for (final r in _rows) _rowView(l, theme, r),
-              const SizedBox(height: AppTokens.spaceSm),
-              if (_rows.isNotEmpty)
-                FilledButton(
-                  key: const Key('attendance-save'),
-                  onPressed: _busy ? null : _save,
-                  child: Text(l.attendanceSave),
-                ),
+    return SectionCard(
+      title: l.attendanceTitle,
+      child: Form(
+        key: _form,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_rows.isEmpty) Text(l.attendanceEmpty),
+            for (final (i, r) in _rows.indexed) ...[
+              if (i > 0) const Divider(height: HoopsSpace.lg),
+              _rowView(l, r),
             ],
-          ),
+            if (_rows.isNotEmpty) ...[
+              const SizedBox(height: HoopsSpace.md),
+              FilledButton(
+                key: const Key('attendance-save'),
+                onPressed: _busy ? null : _save,
+                child: Text(l.attendanceSave),
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 
-  Widget _rowView(AppLocalizations l, ThemeData theme, _Row r) {
+  Widget _rowView(AppLocalizations l, _Row r) {
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
     final expected = r.entry?.expectedAbsent ?? false;
     final injured = r.entry?.unavailableInjuryId != null;
-    return Padding(
+    return Column(
       key: Key('att-row-${r.playerId}'),
-      padding: const EdgeInsets.only(top: AppTokens.spaceMd),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: AppTokens.spaceSm,
-            runSpacing: AppTokens.spaceXs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(r.name, style: theme.textTheme.titleSmall),
-              if (expected)
-                InfoChip(
-                  l.attendanceExpectedAbsent,
-                  tone: ChipTone.warn,
-                  icon: Icons.event_busy_outlined,
-                ),
-              if (injured)
-                InfoChip(
-                  l.attendanceInjured,
-                  tone: ChipTone.bad,
-                  icon: Icons.healing,
-                ),
-            ],
-          ),
-          const SizedBox(height: AppTokens.spaceXs),
-          Wrap(
-            spacing: AppTokens.spaceSm,
-            children: [
-              for (final s in attendanceChoices)
-                ChoiceChip(
-                  key: Key('att-${r.playerId}-${s.name}'),
-                  label: Text(s.label(l)),
-                  selected: r.status == s,
-                  onSelected: (_) =>
-                      setState(() => r.status = r.status == s ? null : s),
-                ),
-            ],
-          ),
-          if (r.status == ath.AttendanceStatus.LATE)
-            Padding(
-              padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-              child: SizedBox(
-                width: 180,
-                child: TextFormField(
-                  key: Key('late-minutes-${r.playerId}'),
-                  controller: r.minutes,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: l.attendanceMinutesLate,
-                    isDense: true,
-                  ),
-                  validator: (v) {
-                    final n = int.tryParse((v ?? '').trim());
-                    return n == null || n < 1 || n > 180
-                        ? l.attendanceMinutesInvalid
-                        : null;
-                  },
-                ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.sm,
+      children: [
+        Wrap(
+          spacing: HoopsSpace.sm,
+          runSpacing: HoopsSpace.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(r.name, style: text.titleSmall),
+            if (expected)
+              StatusChip(
+                l.attendanceExpectedAbsent,
+                tone: HoopsTone.warning,
+                icon: Icons.event_busy_outlined,
               ),
-            ),
-          if (r.status == null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppTokens.spaceXs),
-              child: Text(
-                l.attendanceNotRecorded,
-                style: theme.textTheme.bodySmall,
+            if (injured)
+              StatusChip(
+                l.attendanceInjured,
+                tone: HoopsTone.danger,
+                icon: Icons.healing,
               ),
+          ],
+        ),
+        Wrap(
+          spacing: HoopsSpace.sm,
+          runSpacing: HoopsSpace.sm,
+          children: [
+            for (final s in attendanceChoices)
+              ChoiceChip(
+                key: Key('att-${r.playerId}-${s.name}'),
+                label: Text(s.label(l)),
+                selected: r.status == s,
+                onSelected: (_) =>
+                    setState(() => r.status = r.status == s ? null : s),
+              ),
+          ],
+        ),
+        if (r.status == ath.AttendanceStatus.LATE)
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: HoopsSize.minTapTarget * 4,
             ),
-        ],
-      ),
+            child: TextFormField(
+              key: Key('late-minutes-${r.playerId}'),
+              controller: r.minutes,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: l.attendanceMinutesLate,
+                isDense: true,
+              ),
+              validator: (v) {
+                final n = int.tryParse((v ?? '').trim());
+                return n == null || n < 1 || n > 180
+                    ? l.attendanceMinutesInvalid
+                    : null;
+              },
+            ),
+          ),
+        if (r.status == null)
+          Text(
+            l.attendanceNotRecorded,
+            style: text.bodySmall!.copyWith(color: c.inkMuted),
+          ),
+      ],
     );
   }
 }

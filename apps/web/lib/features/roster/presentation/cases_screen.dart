@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/labels.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/roster_providers.dart';
 import 'eligibility_widgets.dart';
@@ -29,13 +28,19 @@ class CasesScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(casesProvider),
         isEmpty: (d) => d.isEmpty,
         emptyMessage: l.casesEmpty,
-        builder: (context, data) => ListView(
+        builder: (context, data) => PageBody(
           children: [
-            for (final c in data)
-              _CaseCard(
-                eligibilityCase: c,
-                canResolve: caps.canResolveCase(c.team.id),
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: HoopsSpace.gap,
+              children: [
+                for (final c in data)
+                  _CaseCard(
+                    eligibilityCase: c,
+                    canResolve: caps.canResolveCase(c.team.id),
+                  ),
+              ],
+            ),
           ],
         ),
       ),
@@ -51,65 +56,57 @@ class _CaseCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final c = eligibilityCase;
     final notifier = ref.read(casesProvider.notifier);
-    return Card(
+    return SectionCard(
       key: Key('case-${c.id}'),
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppTokens.spaceMd,
-        vertical: AppTokens.spaceXs,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(c.player.displayName, style: theme.textTheme.titleMedium),
-            Text(l.caseTeam(c.team.name)),
-            const SizedBox(height: AppTokens.spaceXs),
-            InfoChip(
-              c.reason.label(l),
-              tone: ChipTone.bad,
-              icon: Icons.warning_amber,
-            ),
-            if (canResolve)
-              Padding(
-                padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-                child: Wrap(
-                  spacing: AppTokens.spaceSm,
-                  children: [
-                    FilledButton(
-                      key: Key('reassign-${c.id}'),
-                      onPressed: () => showDialog<void>(
-                        context: context,
-                        builder: (_) => _ReassignDialog(eligibilityCase: c),
-                      ),
-                      child: Text(l.caseReassign),
+      title: c.player.displayName,
+      subtitle: l.caseTeam(c.team.name),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          StatusChip(
+            c.reason.label(l),
+            tone: HoopsTone.danger,
+            icon: Icons.warning_amber,
+          ),
+          if (canResolve)
+            Padding(
+              padding: const EdgeInsets.only(top: HoopsSpace.md),
+              child: Wrap(
+                spacing: HoopsSpace.sm,
+                runSpacing: HoopsSpace.sm,
+                children: [
+                  FilledButton(
+                    key: Key('reassign-${c.id}'),
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => _ReassignDialog(eligibilityCase: c),
                     ),
-                    OutlinedButton(
-                      key: Key('remove-${c.id}'),
-                      onPressed: () => runAction(
-                        context,
-                        () => notifier.removeFromTeam(c),
-                        success: l.caseResolved,
-                      ),
-                      child: Text(l.caseRemoveFromTeam),
+                    child: Text(l.caseReassign),
+                  ),
+                  OutlinedButton(
+                    key: Key('remove-${c.id}'),
+                    onPressed: () => runAction(
+                      context,
+                      () => notifier.removeFromTeam(c),
+                      success: l.caseResolved,
                     ),
-                    TextButton(
-                      key: Key('dismiss-${c.id}'),
-                      onPressed: () => runAction(
-                        context,
-                        () => notifier.dismiss(c),
-                        success: l.caseResolved,
-                      ),
-                      child: Text(l.caseDismiss),
+                    child: Text(l.caseRemoveFromTeam),
+                  ),
+                  TextButton(
+                    key: Key('dismiss-${c.id}'),
+                    onPressed: () => runAction(
+                      context,
+                      () => notifier.dismiss(c),
+                      success: l.caseResolved,
                     ),
-                  ],
-                ),
+                    child: Text(l.caseDismiss),
+                  ),
+                ],
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -135,7 +132,7 @@ class _ReassignDialogState extends ConsumerState<_ReassignDialog> {
     return AlertDialog(
       title: Text(l.caseReassignTitle(c.player.displayName)),
       content: SizedBox(
-        width: 360,
+        width: pickerDialogWidth,
         child: FutureBuilder<List<api.EligibleTeam>>(
           future: _teams,
           builder: (context, snap) {
@@ -143,7 +140,7 @@ class _ReassignDialogState extends ConsumerState<_ReassignDialog> {
             final teams = snap.data;
             if (teams == null) {
               return const SizedBox(
-                height: 80,
+                height: HoopsSpace.xxxl,
                 child: Center(child: CircularProgressIndicator()),
               );
             }

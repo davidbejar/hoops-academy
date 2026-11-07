@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/clear_list.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/date_field.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../training/presentation/player_picker.dart' show playerNameProvider;
 import '../../training/presentation/training_labels.dart' show fullDate;
@@ -48,11 +46,12 @@ class _PlayerHealthViewState extends ConsumerState<PlayerHealthView> {
     };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.md,
       children: [
         AvailabilityBadge(playerId: widget.playerId, showAvailable: true),
-        const SizedBox(height: AppTokens.spaceSm),
         Wrap(
-          spacing: AppTokens.spaceSm,
+          spacing: HoopsSpace.sm,
+          runSpacing: HoopsSpace.sm,
           children: [
             for (final t in HealthTab.values)
               ChoiceChip(
@@ -63,7 +62,6 @@ class _PlayerHealthViewState extends ConsumerState<PlayerHealthView> {
               ),
           ],
         ),
-        const SizedBox(height: AppTokens.spaceSm),
         switch (_tab) {
           HealthTab.injuries => InjuriesSection(playerId: widget.playerId),
           HealthTab.growth => GrowthSection(playerId: widget.playerId),
@@ -93,9 +91,9 @@ class AvailabilityBadge extends ConsumerWidget {
     if (injury != null) {
       return Align(
         alignment: Alignment.centerLeft,
-        child: InfoChip(
+        child: StatusChip(
           l.availabilityInjured(injury.bodyPart),
-          tone: ChipTone.bad,
+          tone: HoopsTone.danger,
           icon: Icons.healing,
           key: const Key('availability-injured'),
         ),
@@ -104,9 +102,9 @@ class AvailabilityBadge extends ConsumerWidget {
     return showAvailable
         ? Align(
             alignment: Alignment.centerLeft,
-            child: InfoChip(
+            child: StatusChip(
               l.availabilityAvailable,
-              tone: ChipTone.good,
+              tone: HoopsTone.success,
               icon: Icons.check_circle_outline,
               key: const Key('availability-ok'),
             ),
@@ -129,9 +127,14 @@ class PlayerHealthScreen extends ConsumerWidget {
       parentPath: '/players/$playerId',
       child: Guarded(
         allowed: caps.canSeeModule,
-        child: ListView(
-          padding: const EdgeInsets.all(AppTokens.spaceMd),
-          children: [PlayerHealthView(playerId: playerId)],
+        child: PageBody(
+          children: [
+            // Full width: a bare section would be centred by the frame.
+            SizedBox(
+              width: double.infinity,
+              child: PlayerHealthView(playerId: playerId),
+            ),
+          ],
         ),
       ),
     );
@@ -151,6 +154,7 @@ class InjuriesSection extends ConsumerWidget {
     final canWrite = caps.canWriteHealth(playerId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.gap,
       children: [
         if (canWrite)
           FilledButton.icon(
@@ -168,6 +172,8 @@ class InjuriesSection extends ConsumerWidget {
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.injuryEmpty,
           builder: (context, data) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: HoopsSpace.gap,
             children: [
               for (final i in data) _InjuryCard(injury: i, canWrite: canWrite),
             ],
@@ -194,49 +200,52 @@ class _InjuryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
     final i = injury;
     final open = i.status == ath.InjuryStatus.OPEN;
     final notifier = ref.read(injuriesProvider(i.playerId).notifier);
-    return Card(
+    return SectionCard(
       key: Key('injury-${i.id}'),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(i.bodyPart, style: theme.textTheme.titleMedium),
-                ),
-                InfoChip(
-                  open ? l.injuryStatusOpen : l.injuryStatusRecovered,
-                  tone: open ? ChipTone.bad : ChipTone.good,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTokens.spaceXs),
-            Wrap(
-              spacing: AppTokens.spaceSm,
-              children: [
-                InfoChip(
-                  i.severity.label(l),
-                  tone: i.severity == ath.InjurySeverity.SEVERE
-                      ? ChipTone.bad
-                      : ChipTone.warn,
-                ),
-                Text(fullDate(i.occurredOn), style: theme.textTheme.bodySmall),
-              ],
-            ),
-            if (i.description != null) Text(i.description!),
-            if (open && i.expectedReturnOn != null)
-              Text(l.injuryReturnLine(fullDate(i.expectedReturnOn!))),
-            if (!open && i.actualReturnOn != null)
-              Text(l.injuryRecoveredLine(fullDate(i.actualReturnOn!))),
-            if (canWrite)
-              Wrap(
-                spacing: AppTokens.spaceSm,
+      title: i.bodyPart,
+      actions: [
+        StatusChip(
+          open ? l.injuryStatusOpen : l.injuryStatusRecovered,
+          tone: open ? HoopsTone.danger : HoopsTone.success,
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: HoopsSpace.xs,
+        children: [
+          Wrap(
+            spacing: HoopsSpace.sm,
+            runSpacing: HoopsSpace.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              StatusChip(
+                i.severity.label(l),
+                tone: i.severity == ath.InjurySeverity.SEVERE
+                    ? HoopsTone.danger
+                    : HoopsTone.warning,
+              ),
+              Text(
+                fullDate(i.occurredOn),
+                style: text.bodySmall!.copyWith(color: c.inkMuted),
+              ),
+            ],
+          ),
+          if (i.description != null) Text(i.description!),
+          if (open && i.expectedReturnOn != null)
+            Text(l.injuryReturnLine(fullDate(i.expectedReturnOn!))),
+          if (!open && i.actualReturnOn != null)
+            Text(l.injuryRecoveredLine(fullDate(i.actualReturnOn!))),
+          if (canWrite)
+            Padding(
+              padding: const EdgeInsets.only(top: HoopsSpace.sm),
+              child: Wrap(
+                spacing: HoopsSpace.sm,
+                runSpacing: HoopsSpace.sm,
                 children: [
                   TextButton.icon(
                     key: Key('injury-edit-${i.id}'),
@@ -248,8 +257,10 @@ class _InjuryCard extends ConsumerWidget {
                     ),
                   ),
                   if (open) ...[
-                    TextButton(
+                    TextButton.icon(
                       key: Key('injury-return-${i.id}'),
+                      icon: const Icon(Icons.event_outlined),
+                      label: Text(l.injuryUpdateReturn),
                       onPressed: () async {
                         final d = await _pick(
                           context,
@@ -262,10 +273,11 @@ class _InjuryCard extends ConsumerWidget {
                           success: l.injurySaved,
                         );
                       },
-                      child: Text(l.injuryUpdateReturn),
                     ),
-                    FilledButton.tonal(
+                    FilledButton.tonalIcon(
                       key: Key('injury-recover-${i.id}'),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: Text(l.injuryRecover),
                       onPressed: () async {
                         final d = await _pick(context, DateTime.now());
                         if (d == null || !context.mounted) return;
@@ -275,13 +287,12 @@ class _InjuryCard extends ConsumerWidget {
                           success: l.injurySaved,
                         );
                       },
-                      child: Text(l.injuryRecover),
                     ),
                   ],
                 ],
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -532,6 +543,7 @@ class GrowthSection extends ConsumerWidget {
     final canWrite = ref.watch(capabilitiesProvider).canWriteHealth(playerId);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.gap,
       children: [
         if (canWrite)
           FilledButton.icon(
@@ -549,6 +561,8 @@ class GrowthSection extends ConsumerWidget {
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.growthEmpty,
           builder: (context, data) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: HoopsSpace.gap,
             children: [
               GrowthChart(
                 title: l.growthHeight,
@@ -586,13 +600,14 @@ class MeasurementTile extends ConsumerWidget {
       if (m.heightCm != null) '${_num(m.heightCm!)} cm',
       if (m.weightKg != null) '${_num(m.weightKg!)} kg',
     ].join(' · ');
-    return ListTile(
+    return ListRow(
       key: Key('measurement-${m.id}'),
-      dense: true,
-      title: Text(values),
-      subtitle: Text(fullDate(m.measuredOn)),
+      leading: const IconTile(Icons.straighten, tone: HoopsTone.info),
+      title: values,
+      subtitle: fullDate(m.measuredOn),
       trailing: canWrite
-          ? Wrap(
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   key: Key('measurement-edit-${m.id}'),
@@ -733,11 +748,13 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
         ),
         if (_needOne)
           Padding(
-            padding: const EdgeInsets.only(top: AppTokens.spaceSm),
+            padding: const EdgeInsets.only(top: HoopsSpace.sm),
             child: Text(
               l.growthNeedOne,
               key: const Key('growth-need-one'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              style: TextStyle(
+                color: HoopsTokens.colorsOf(context).danger.foreground,
+              ),
             ),
           ),
       ],
@@ -763,6 +780,7 @@ class TestsSection extends ConsumerWidget {
     };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.gap,
       children: [
         if (caps.canEnterTestResults)
           FilledButton.icon(
@@ -785,6 +803,8 @@ class TestsSection extends ConsumerWidget {
               byType.putIfAbsent(r.testTypeId, () => []).add(r);
             }
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: HoopsSpace.gap,
               children: [
                 for (final e in byType.entries) ...[
                   BandHistoryChart(
@@ -814,63 +834,67 @@ class ResultTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final r = result;
-    return ListTile(
+    return ListRow(
       key: Key('result-${r.id}'),
-      dense: true,
-      title: Text(l.testResultLine(r.unit, _num(r.value))),
-      subtitle: Text(
-        r.ageAtMeasurement == null
-            ? fullDate(r.measuredOn)
-            : '${fullDate(r.measuredOn)} · ${l.testAtAge(r.ageAtMeasurement!)}',
-      ),
-      trailing: Wrap(
-        spacing: AppTokens.spaceXs,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      leading: const IconTile(Icons.speed, tone: HoopsTone.info),
+      title: l.testResultLine(r.unit, _num(r.value)),
+      subtitle: r.ageAtMeasurement == null
+          ? fullDate(r.measuredOn)
+          : '${fullDate(r.measuredOn)} · ${l.testAtAge(r.ageAtMeasurement!)}',
+      details: Wrap(
+        spacing: HoopsSpace.xs,
+        runSpacing: HoopsSpace.xs,
         children: [
-          InfoChip(
+          StatusChip(
             r.expectedBand == null
                 ? l.testNoBand.split(' ').take(2).join(' ')
                 : r.expectedBand!.label(l),
+            tone: r.expectedBand == null ? HoopsTone.neutral : HoopsTone.info,
           ),
           if (r.referencePending)
-            InfoChip(
+            StatusChip(
               l.testReferencePending,
-              tone: ChipTone.warn,
+              tone: HoopsTone.warning,
               icon: Icons.hourglass_empty,
             ),
-          if (canWrite) ...[
-            IconButton(
-              key: Key('result-edit-${r.id}'),
-              tooltip: l.edit,
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => showDialog<bool>(
-                context: context,
-                builder: (_) => ResultEditDialog(result: r),
-              ),
-            ),
-            IconButton(
-              key: Key('result-delete-${r.id}'),
-              tooltip: l.delete,
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
-                if (!await confirmDialog(
-                  context,
-                  message: l.resultDeleteConfirm,
-                  confirmLabel: l.delete,
-                ))
-                  return;
-                if (!context.mounted) return;
-                await runAction(
-                  context,
-                  () => ref
-                      .read(testResultsProvider(r.playerId).notifier)
-                      .delete(r.id),
-                );
-              },
-            ),
-          ],
         ],
       ),
+      trailing: canWrite
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: Key('result-edit-${r.id}'),
+                  tooltip: l.edit,
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => showDialog<bool>(
+                    context: context,
+                    builder: (_) => ResultEditDialog(result: r),
+                  ),
+                ),
+                IconButton(
+                  key: Key('result-delete-${r.id}'),
+                  tooltip: l.delete,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () async {
+                    if (!await confirmDialog(
+                      context,
+                      message: l.resultDeleteConfirm,
+                      confirmLabel: l.delete,
+                    ))
+                      return;
+                    if (!context.mounted) return;
+                    await runAction(
+                      context,
+                      () => ref
+                          .read(testResultsProvider(r.playerId).notifier)
+                          .delete(r.id),
+                    );
+                  },
+                ),
+              ],
+            )
+          : null,
     );
   }
 }
@@ -1014,10 +1038,10 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
             ),
             if (saved.referencePending)
               Padding(
-                padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-                child: InfoChip(
+                padding: const EdgeInsets.only(top: HoopsSpace.sm),
+                child: StatusChip(
                   l.testReferencePending,
-                  tone: ChipTone.warn,
+                  tone: HoopsTone.warning,
                   icon: Icons.hourglass_empty,
                 ),
               ),

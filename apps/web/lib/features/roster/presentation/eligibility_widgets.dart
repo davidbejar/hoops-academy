@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/labels.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 
 /// Result of an eligibility check: ELIGIBLE / play-up badge / ineligible
@@ -16,9 +15,11 @@ class EligibilityPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final c = HoopsTokens.colorsOf(context);
     return Column(
       key: const Key('eligibility-panel'),
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.xs,
       children: [
         EligibilityBadge(
           result: check.result,
@@ -26,18 +27,17 @@ class EligibilityPanel extends StatelessWidget {
         ),
         if (check.result == api.EligibilityResult.INELIGIBLE)
           for (final r in check.reasons)
-            Padding(
-              padding: const EdgeInsets.only(top: AppTokens.spaceXs),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.block, size: 16),
-                  const SizedBox(width: AppTokens.spaceXs),
-                  Expanded(
-                    child: Text(r.label(l), key: Key('reason-${r.name}')),
-                  ),
-                ],
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: HoopsSpace.xs,
+              children: [
+                Icon(
+                  Icons.block,
+                  size: HoopsSpace.md,
+                  color: c.danger.foreground,
+                ),
+                Expanded(child: Text(r.label(l), key: Key('reason-${r.name}'))),
+              ],
             ),
       ],
     );
@@ -58,22 +58,22 @@ class EligibilityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     if (result == api.EligibilityResult.PLAY_UP) {
-      return InfoChip(
+      return StatusChip(
         l.eligibilityPlayUp(playUpLevels.toString()),
-        tone: ChipTone.warn,
+        tone: HoopsTone.warning,
         icon: Icons.trending_up,
       );
     }
     if (result == api.EligibilityResult.INELIGIBLE) {
-      return InfoChip(
+      return StatusChip(
         l.eligibilityIneligible,
-        tone: ChipTone.bad,
+        tone: HoopsTone.danger,
         icon: Icons.block,
       );
     }
-    return InfoChip(
+    return StatusChip(
       l.eligibilityEligible,
-      tone: ChipTone.good,
+      tone: HoopsTone.success,
       icon: Icons.check_circle_outline,
     );
   }
@@ -85,12 +85,16 @@ class PlayUpBadge extends StatelessWidget {
   final int levels;
 
   @override
-  Widget build(BuildContext context) => InfoChip(
+  Widget build(BuildContext context) => StatusChip(
     AppLocalizations.of(context).playUpBadge(levels.toString()),
-    tone: ChipTone.warn,
+    tone: HoopsTone.warning,
     icon: Icons.trending_up,
   );
 }
+
+/// Width of the roster's picker dialogs (they shrink to the screen on
+/// phones).
+const pickerDialogWidth = WidthClass.readingMax / 2;
 
 extension TeamLabel on api.Team {
   String get displayLabel =>

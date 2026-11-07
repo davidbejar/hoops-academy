@@ -2,20 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/labels.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
 import '../application/roster_providers.dart';
 import 'eligibility_widgets.dart';
 import 'guardian_dialog.dart';
+
+/// Room under the last row so the extended FAB never covers it.
+const _fabClearance = HoopsSize.minTapTarget + HoopsSpace.xl + HoopsSpace.sm;
 
 const _filterableStatuses = [
   api.PlayerStatus.ACTIVE,
@@ -52,131 +53,119 @@ class PlayersScreen extends ConsumerWidget {
               ),
             )
           : null,
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: AppTokens.maxContentWidth,
-          ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppTokens.spaceMd,
-                  AppTokens.spaceMd,
-                  AppTokens.spaceSm,
-                  0,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        key: const Key('player-search'),
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.search),
-                          hintText: l.playersSearchHint,
-                        ),
-                        onSubmitted: (v) =>
-                            setFilter(filter.copyWith(query: v.trim())),
-                        onChanged: (v) {
-                          if (v.isEmpty && filter.query.isNotEmpty) {
-                            setFilter(filter.copyWith(query: ''));
-                          }
-                        },
+      body: Column(
+        children: [
+          ContentFrame(
+            child: Padding(
+              padding: const EdgeInsets.only(top: HoopsSpace.md),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('player-search'),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: l.playersSearchHint,
                       ),
-                    ),
-                    if (caps.canSeeModule)
-                      IconButton(
-                        key: const Key('open-tests'),
-                        tooltip: l.healthMenuTests,
-                        icon: const Icon(Icons.science_outlined),
-                        onPressed: () => context.go('/players/tests'),
-                      ),
-                    if (caps.canSeeModule)
-                      IconButton(
-                        key: const Key('open-norms'),
-                        tooltip: l.healthMenuNorms,
-                        icon: const Icon(Icons.tune),
-                        onPressed: () => context.go('/players/norms'),
-                      ),
-                    if (caps.canSeeApprovals)
-                      IconButton(
-                        key: const Key('open-requests'),
-                        tooltip: caps.canDecideApprovals
-                            ? l.approvalsTitle
-                            : l.approvalsMine,
-                        icon: const Icon(Icons.how_to_reg_outlined),
-                        onPressed: () => context.go('/players/requests'),
-                      ),
-                  ],
-                ),
-              ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTokens.spaceMd,
-                  vertical: AppTokens.spaceSm,
-                ),
-                child: Row(
-                  children: [
-                    _FilterMenu<api.PlayerStatus>(
-                      keyName: 'filter-status',
-                      label: l.filterStatus,
-                      value: filter.status,
-                      options: {
-                        for (final s in _filterableStatuses) s: s.label(l),
+                      onSubmitted: (v) =>
+                          setFilter(filter.copyWith(query: v.trim())),
+                      onChanged: (v) {
+                        if (v.isEmpty && filter.query.isNotEmpty) {
+                          setFilter(filter.copyWith(query: ''));
+                        }
                       },
-                      onChanged: (v) => setFilter(
-                        filter.copyWith(status: v, clearStatus: v == null),
-                      ),
                     ),
-                    const SizedBox(width: AppTokens.spaceSm),
-                    _FilterMenu<String>(
-                      keyName: 'filter-team',
-                      label: l.filterTeam,
-                      value: filter.teamId,
-                      options: {for (final t in teams) t.id: t.displayLabel},
-                      onChanged: (v) => setFilter(
-                        filter.copyWith(teamId: v, clearTeam: v == null),
-                      ),
-                    ),
-                    const SizedBox(width: AppTokens.spaceSm),
-                    _FilterMenu<String>(
-                      keyName: 'filter-category',
-                      label: l.filterCategory,
-                      value: filter.categoryId,
-                      options: {for (final c in categories) c.id: c.name},
-                      onChanged: (v) => setFilter(
-                        filter.copyWith(
-                          categoryId: v,
-                          clearCategory: v == null,
-                        ),
-                      ),
-                    ),
-                    if (filter.isActive)
-                      TextButton(
-                        key: const Key('filter-clear'),
-                        onPressed: () => setFilter(const PlayerFilter()),
-                        child: Text(l.filterClear),
-                      ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: AsyncBody<List<api.Player>>(
-                  value: players,
-                  onRetry: () => ref.invalidate(playersProvider),
-                  isEmpty: (d) => d.isEmpty,
-                  emptyMessage: l.playersEmpty,
-                  builder: (context, data) => ListView(
-                    padding: const EdgeInsets.only(bottom: 88),
-                    children: [for (final p in data) PlayerTile(player: p)],
                   ),
-                ),
+                  if (caps.canSeeModule)
+                    IconButton(
+                      key: const Key('open-tests'),
+                      tooltip: l.healthMenuTests,
+                      icon: const Icon(Icons.science_outlined),
+                      onPressed: () => context.go('/players/tests'),
+                    ),
+                  if (caps.canSeeModule)
+                    IconButton(
+                      key: const Key('open-norms'),
+                      tooltip: l.healthMenuNorms,
+                      icon: const Icon(Icons.tune),
+                      onPressed: () => context.go('/players/norms'),
+                    ),
+                  if (caps.canSeeApprovals)
+                    IconButton(
+                      key: const Key('open-requests'),
+                      tooltip: caps.canDecideApprovals
+                          ? l.approvalsTitle
+                          : l.approvalsMine,
+                      icon: const Icon(Icons.how_to_reg_outlined),
+                      onPressed: () => context.go('/players/requests'),
+                    ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          ContentFrame(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(vertical: HoopsSpace.gap),
+              child: Row(
+                spacing: HoopsSpace.sm,
+                children: [
+                  _FilterMenu<api.PlayerStatus>(
+                    keyName: 'filter-status',
+                    label: l.filterStatus,
+                    value: filter.status,
+                    options: {
+                      for (final s in _filterableStatuses) s: s.label(l),
+                    },
+                    onChanged: (v) => setFilter(
+                      filter.copyWith(status: v, clearStatus: v == null),
+                    ),
+                  ),
+                  _FilterMenu<String>(
+                    keyName: 'filter-team',
+                    label: l.filterTeam,
+                    value: filter.teamId,
+                    options: {for (final t in teams) t.id: t.displayLabel},
+                    onChanged: (v) => setFilter(
+                      filter.copyWith(teamId: v, clearTeam: v == null),
+                    ),
+                  ),
+                  _FilterMenu<String>(
+                    keyName: 'filter-category',
+                    label: l.filterCategory,
+                    value: filter.categoryId,
+                    options: {for (final c in categories) c.id: c.name},
+                    onChanged: (v) => setFilter(
+                      filter.copyWith(categoryId: v, clearCategory: v == null),
+                    ),
+                  ),
+                  if (filter.isActive)
+                    TextButton(
+                      key: const Key('filter-clear'),
+                      onPressed: () => setFilter(const PlayerFilter()),
+                      child: Text(l.filterClear),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: AsyncBody<List<api.Player>>(
+              value: players,
+              onRetry: () => ref.invalidate(playersProvider),
+              isEmpty: (d) => d.isEmpty,
+              emptyMessage: l.playersEmpty,
+              builder: (context, data) => ListView.separated(
+                padding: const EdgeInsets.only(bottom: _fabClearance),
+                itemCount: data.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: HoopsSpace.gap),
+                itemBuilder: (context, i) =>
+                    ContentFrame(child: PlayerTile(player: data[i])),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -210,20 +199,36 @@ class _FilterMenu<T extends Object> extends StatelessWidget {
       ],
       child: Chip(
         label: Text(value == null ? label : '$label: ${options[value]}'),
-        avatar: const Icon(Icons.filter_list, size: 16),
+        avatar: const Icon(Icons.filter_list),
+        backgroundColor: value == null
+            ? null
+            : HoopsTokens.colorsOf(context).accentSoft,
       ),
     );
   }
 }
 
-InfoChip statusChip(api.PlayerStatus status, AppLocalizations l) => InfoChip(
-  status.label(l),
-  tone: status == api.PlayerStatus.ACTIVE
-      ? ChipTone.good
-      : status == api.PlayerStatus.WITHDRAWN
-      ? ChipTone.neutral
-      : ChipTone.warn,
-);
+StatusChip statusChip(api.PlayerStatus status, AppLocalizations l) =>
+    StatusChip(
+      status.label(l),
+      tone: status == api.PlayerStatus.ACTIVE
+          ? HoopsTone.success
+          : status == api.PlayerStatus.WITHDRAWN
+          ? HoopsTone.neutral
+          : HoopsTone.warning,
+    );
+
+/// Keeps a status chip from squeezing the name on a phone: long labels wrap.
+class _TrailingChip extends StatelessWidget {
+  const _TrailingChip(this.chip);
+  final Widget chip;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: WidthClass.readingMax / 6),
+    child: chip,
+  );
+}
 
 class PlayerTile extends StatelessWidget {
   const PlayerTile({super.key, required this.player});
@@ -232,19 +237,16 @@ class PlayerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return ListTile(
+    final subtitle = [
+      if (player.naturalCategory != null) player.naturalCategory!.name,
+      player.teams.map((t) => t.team.name).join(', '),
+    ].where((s) => s.isNotEmpty).join(' · ');
+    return ListRow(
       key: Key('player-${player.id}'),
-      leading: CircleAvatar(
-        child: Text(player.displayName.isEmpty ? '?' : player.displayName[0]),
-      ),
-      title: Text(player.displayName),
-      subtitle: Text(
-        [
-          if (player.naturalCategory != null) player.naturalCategory!.name,
-          player.teams.map((t) => t.team.name).join(', '),
-        ].where((s) => s.isNotEmpty).join(' · '),
-      ),
-      trailing: statusChip(player.status, l),
+      leading: InitialsAvatar(name: player.displayName),
+      title: player.displayName,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      trailing: _TrailingChip(statusChip(player.status, l)),
       onTap: () => context.go('/players/${player.id}'),
     );
   }
@@ -297,172 +299,195 @@ class _PlayerDetailBody extends ConsumerWidget {
         caps.canWithdrawPlayer &&
         player.status != api.PlayerStatus.WITHDRAWN &&
         player.status != api.PlayerStatus.PENDING_APPROVAL;
-    return ListView(
-      padding: const EdgeInsets.all(AppTokens.spaceMd),
+    final text = theme.textTheme;
+    final muted = text.bodyMedium!.copyWith(
+      color: HoopsTokens.colorsOf(context).inkMuted,
+    );
+    // One section: the page is short and its parts are built together.
+    return PageBody(
       children: [
-        Row(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: WidthClass.of(context).sectionGap,
           children: [
-            CircleAvatar(
-              radius: 28,
-              child: Text(
-                player.displayName.isEmpty ? '?' : player.displayName[0],
-              ),
-            ),
-            const SizedBox(width: AppTokens.spaceMd),
-            Expanded(
-              child: Text(
-                player.displayName,
-                style: theme.textTheme.titleLarge,
-              ),
-            ),
-            statusChip(player.status, l),
-          ],
-        ),
-        const SizedBox(height: AppTokens.spaceSm),
-        Row(
-          children: [
-            Flexible(
-              child: OutlinedButton.icon(
-                key: const Key('player-season-stats'),
-                onPressed: () => context.go('/matches/stats/${player.id}'),
-                icon: const Icon(Icons.bar_chart),
-                label: Text(
-                  l.seasonStatsTitle,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            const SizedBox(width: AppTokens.spaceSm),
-            IconButton.outlined(
-              key: const Key('player-health'),
-              tooltip: l.healthTitle,
-              onPressed: () => context.go('/players/${player.id}/health'),
-              icon: const Icon(Icons.monitor_heart_outlined),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTokens.spaceLg),
-        Text(l.playerBasics, style: theme.textTheme.titleMedium),
-        const SizedBox(height: AppTokens.spaceSm),
-        _Fact(label: l.playerBirthDate, value: formatDate(player.birthDate)),
-        _Fact(label: l.playerGender, value: player.gender.label(l)),
-        _Fact(
-          label: l.playerNaturalCategory,
-          value: player.naturalCategory?.name ?? '-',
-        ),
-        const SizedBox(height: AppTokens.spaceLg),
-        Text(l.playerTeams, style: theme.textTheme.titleMedium),
-        if (player.teams.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceSm),
-            child: Text(l.playerNoTeams, key: const Key('player-no-teams')),
-          ),
-        for (final a in player.teams)
-          ListTile(
-            key: Key('player-team-${a.team.id}'),
-            contentPadding: EdgeInsets.zero,
-            leading: CircleAvatar(child: Text(a.jerseyNumber ?? '-')),
-            title: Text(a.team.name),
-            subtitle: Wrap(
-              spacing: AppTokens.spaceSm,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: HoopsSpace.md,
               children: [
-                if (a.playUpLevels > 0) PlayUpBadge(levels: a.playUpLevels),
-                if (!a.valid)
-                  InfoChip(
-                    l.rosterInvalid,
-                    tone: ChipTone.bad,
-                    icon: Icons.warning_amber,
-                  ),
+                Row(
+                  spacing: HoopsSpace.md,
+                  children: [
+                    InitialsAvatar(
+                      name: player.displayName,
+                      size: HoopsSize.appBar,
+                    ),
+                    Expanded(
+                      child: Text(
+                        player.displayName,
+                        style: text.headlineSmall,
+                      ),
+                    ),
+                    statusChip(player.status, l),
+                  ],
+                ),
+                Row(
+                  spacing: HoopsSpace.sm,
+                  children: [
+                    Flexible(
+                      child: OutlinedButton.icon(
+                        key: const Key('player-season-stats'),
+                        onPressed: () =>
+                            context.go('/matches/stats/${player.id}'),
+                        icon: const Icon(Icons.bar_chart),
+                        label: Text(
+                          l.seasonStatsTitle,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    IconButton.outlined(
+                      key: const Key('player-health'),
+                      tooltip: l.healthTitle,
+                      onPressed: () =>
+                          context.go('/players/${player.id}/health'),
+                      icon: const Icon(Icons.monitor_heart_outlined),
+                    ),
+                  ],
+                ),
               ],
             ),
-            onTap: () => context.go('/teams/${a.team.id}'),
-          ),
-        if (canAssign)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              key: const Key('player-assign'),
-              icon: const Icon(Icons.group_add_outlined),
-              label: Text(l.playerAssignToTeam),
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (_) => EligibleTeamsDialog(playerId: player.id),
+            SectionCard(
+              title: l.playerBasics,
+              child: Column(
+                children: [
+                  _Fact(
+                    label: l.playerBirthDate,
+                    value: formatDate(player.birthDate),
+                  ),
+                  _Fact(label: l.playerGender, value: player.gender.label(l)),
+                  _Fact(
+                    label: l.playerNaturalCategory,
+                    value: player.naturalCategory?.name ?? '-',
+                  ),
+                ],
               ),
             ),
-          ),
-        if (caps.canManageAcademy) ...[
-          const SizedBox(height: AppTokens.spaceLg),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l.playerGuardians,
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-              IconButton(
-                key: const Key('player-guardian-add'),
-                tooltip: l.playerGuardianAdd,
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.person_add_alt),
-                onPressed: () async {
-                  final added = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AddGuardianDialog(playerId: player.id),
-                  );
-                  if (added == true) {
-                    ref.invalidate(_guardiansOfPlayerProvider(player.id));
-                  }
-                },
-              ),
-            ],
-          ),
-          ref
-              .watch(_guardiansOfPlayerProvider(player.id))
-              .when(
-                data: (links) => links.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppTokens.spaceSm,
+            SectionCard(
+              title: l.playerTeams,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: HoopsSpace.sm,
+                children: [
+                  if (player.teams.isEmpty)
+                    Text(
+                      l.playerNoTeams,
+                      key: const Key('player-no-teams'),
+                      style: muted,
+                    ),
+                  for (final a in player.teams)
+                    ListRow(
+                      key: Key('player-team-${a.team.id}'),
+                      leading: InitialsAvatar(name: a.jerseyNumber ?? '-'),
+                      title: a.team.name,
+                      details: a.playUpLevels > 0 || !a.valid
+                          ? Wrap(
+                              spacing: HoopsSpace.sm,
+                              runSpacing: HoopsSpace.xs,
+                              children: [
+                                if (a.playUpLevels > 0)
+                                  PlayUpBadge(levels: a.playUpLevels),
+                                if (!a.valid)
+                                  StatusChip(
+                                    l.rosterInvalid,
+                                    tone: HoopsTone.danger,
+                                    icon: Icons.warning_amber,
+                                  ),
+                              ],
+                            )
+                          : null,
+                      onTap: () => context.go('/teams/${a.team.id}'),
+                    ),
+                  if (canAssign)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        key: const Key('player-assign'),
+                        icon: const Icon(Icons.group_add_outlined),
+                        label: Text(l.playerAssignToTeam),
+                        onPressed: () => showDialog<void>(
+                          context: context,
+                          builder: (_) =>
+                              EligibleTeamsDialog(playerId: player.id),
                         ),
-                        child: Text(
-                          l.playerNoGuardians,
-                          key: const Key('player-no-guardians'),
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          for (final g in links)
-                            ListTile(
-                              key: Key('guardian-${g.id}'),
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(
-                                Icons.family_restroom_outlined,
-                              ),
-                              title: Text(g.guardian.displayName),
-                              trailing: GuardianLoginButton(
-                                personId: g.guardian.personId,
-                                name: g.guardian.displayName,
-                              ),
-                            ),
-                        ],
                       ),
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(AppTokens.spaceMd),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (e, _) => Text(AppErrorText.of(e, l)),
+                    ),
+                ],
               ),
-        ],
-        if (canWithdraw) ...[
-          const SizedBox(height: AppTokens.spaceLg),
-          OutlinedButton.icon(
-            key: const Key('player-withdraw'),
-            icon: const Icon(Icons.logout),
-            label: Text(l.playerWithdraw),
-            onPressed: () => _withdraw(context, ref),
-          ),
-        ],
+            ),
+            if (caps.canManageAcademy)
+              SectionCard(
+                title: l.playerGuardians,
+                actions: [
+                  IconButton(
+                    key: const Key('player-guardian-add'),
+                    tooltip: l.playerGuardianAdd,
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.person_add_alt),
+                    onPressed: () async {
+                      final added = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AddGuardianDialog(playerId: player.id),
+                      );
+                      if (added == true) {
+                        ref.invalidate(_guardiansOfPlayerProvider(player.id));
+                      }
+                    },
+                  ),
+                ],
+                child: ref
+                    .watch(_guardiansOfPlayerProvider(player.id))
+                    .when(
+                      data: (links) => links.isEmpty
+                          ? Text(
+                              l.playerNoGuardians,
+                              key: const Key('player-no-guardians'),
+                              style: muted,
+                            )
+                          : Column(
+                              spacing: HoopsSpace.sm,
+                              children: [
+                                for (final g in links)
+                                  ListRow(
+                                    key: Key('guardian-${g.id}'),
+                                    leading: const IconTile(
+                                      Icons.family_restroom_outlined,
+                                      tone: HoopsTone.info,
+                                    ),
+                                    title: g.guardian.displayName,
+                                    trailing: GuardianLoginButton(
+                                      personId: g.guardian.personId,
+                                      name: g.guardian.displayName,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Text(AppErrorText.of(e, l)),
+                    ),
+              ),
+            if (canWithdraw)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  key: const Key('player-withdraw'),
+                  icon: const Icon(Icons.logout),
+                  label: Text(l.playerWithdraw),
+                  onPressed: () => _withdraw(context, ref),
+                ),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -501,13 +526,17 @@ class _Fact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceXs),
+    padding: const EdgeInsets.symmetric(vertical: HoopsSpace.xs),
     child: Row(
       children: [
         Expanded(
-          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium!
+                .copyWith(color: HoopsTokens.colorsOf(context).inkMuted),
+          ),
         ),
-        Text(value, style: Theme.of(context).textTheme.bodyLarge),
+        Text(value, style: Theme.of(context).textTheme.titleSmall),
       ],
     ),
   );
@@ -540,7 +569,7 @@ class _EligibleTeamsDialogState extends ConsumerState<EligibleTeamsDialog> {
     return AlertDialog(
       title: Text(l.playerAssignToTeam),
       content: SizedBox(
-        width: 360,
+        width: pickerDialogWidth,
         child: FutureBuilder<List<api.EligibleTeam>>(
           future: _teams,
           builder: (context, snap) {
@@ -548,7 +577,7 @@ class _EligibleTeamsDialogState extends ConsumerState<EligibleTeamsDialog> {
             final teams = snap.data;
             if (teams == null) {
               return const SizedBox(
-                height: 80,
+                height: HoopsSpace.xxxl,
                 child: Center(child: CircularProgressIndicator()),
               );
             }
@@ -706,99 +735,118 @@ class _PlayerFormScreenState extends ConsumerState<PlayerFormScreen> {
         child: Form(
           key: _form,
           child: ListView(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
+            padding: EdgeInsets.symmetric(
+              vertical: WidthClass.of(context).sectionGap,
+            ),
             children: [
-              TextFormField(
-                key: const Key('player-given'),
-                controller: _given,
-                decoration: InputDecoration(labelText: l.playerGivenName),
-                validator: (v) => requiredValidator(l, v),
-              ),
-              const SizedBox(height: AppTokens.spaceMd),
-              TextFormField(
-                key: const Key('player-family'),
-                controller: _family,
-                decoration: InputDecoration(labelText: l.playerFamilyName),
-                validator: (v) => requiredValidator(l, v),
-              ),
-              const SizedBox(height: AppTokens.spaceMd),
-              OutlinedButton(
-                key: const Key('player-birth'),
-                onPressed: _pickBirth,
-                child: Text(
-                  '${l.playerBirthDate}: ${_birth == null ? '-' : formatDate(_birth!)}',
-                ),
-              ),
-              if (_birthTouched && _birth == null)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppTokens.spaceXs),
-                  child: Text(
-                    l.playerBirthDateInvalid,
-                    key: const Key('player-birth-error'),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+              ContentFrame(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      key: const Key('player-given'),
+                      controller: _given,
+                      decoration: InputDecoration(labelText: l.playerGivenName),
+                      validator: (v) => requiredValidator(l, v),
                     ),
-                  ),
-                ),
-              const SizedBox(height: AppTokens.spaceMd),
-              DropdownButtonFormField<api.Gender>(
-                isExpanded: true,
-                key: const Key('player-gender'),
-                initialValue: _gender,
-                decoration: InputDecoration(labelText: l.playerGender),
-                items: [
-                  for (final g in [api.Gender.MALE, api.Gender.FEMALE])
-                    DropdownMenuItem(value: g, child: Text(g.label(l))),
-                ],
-                onChanged: (v) => _gender = v ?? _gender,
-              ),
-              const SizedBox(height: AppTokens.spaceMd),
-              TextFormField(
-                key: const Key('player-email'),
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: l.playerEmail,
-                  helperText: l.playerEmailHint,
-                  helperMaxLines: 3,
-                ),
-                validator: (v) {
-                  final t = (v ?? '').trim();
-                  return t.isEmpty ||
-                          RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(t)
-                      ? null
-                      : l.fieldInvalidEmail;
-                },
-              ),
-              const SizedBox(height: AppTokens.spaceMd),
-              DropdownButtonFormField<String?>(
-                key: const Key('player-team'),
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l.playerInitialTeam),
-                items: [
-                  DropdownMenuItem<String?>(value: null, child: Text(l.none)),
-                  for (final t in teams)
-                    DropdownMenuItem<String?>(
-                      value: t.id,
-                      child: Text(t.displayLabel),
+                    const SizedBox(height: HoopsSpace.md),
+                    TextFormField(
+                      key: const Key('player-family'),
+                      controller: _family,
+                      decoration: InputDecoration(
+                        labelText: l.playerFamilyName,
+                      ),
+                      validator: (v) => requiredValidator(l, v),
                     ),
-                ],
-                onChanged: (v) => _teamId = v,
-              ),
-              if (isRequest) ...[
-                const SizedBox(height: AppTokens.spaceMd),
-                TextFormField(
-                  key: const Key('player-note'),
-                  controller: _note,
-                  maxLines: 2,
-                  decoration: InputDecoration(labelText: l.playerNote),
+                    const SizedBox(height: HoopsSpace.md),
+                    OutlinedButton(
+                      key: const Key('player-birth'),
+                      onPressed: _pickBirth,
+                      child: Text(
+                        '${l.playerBirthDate}: ${_birth == null ? '-' : formatDate(_birth!)}',
+                      ),
+                    ),
+                    if (_birthTouched && _birth == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: HoopsSpace.xs),
+                        child: Text(
+                          l.playerBirthDateInvalid,
+                          key: const Key('player-birth-error'),
+                          style: TextStyle(
+                            color: HoopsTokens.colorsOf(context)
+                                .danger
+                                .foreground,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: HoopsSpace.md),
+                    DropdownButtonFormField<api.Gender>(
+                      isExpanded: true,
+                      key: const Key('player-gender'),
+                      initialValue: _gender,
+                      decoration: InputDecoration(labelText: l.playerGender),
+                      items: [
+                        for (final g in [api.Gender.MALE, api.Gender.FEMALE])
+                          DropdownMenuItem(value: g, child: Text(g.label(l))),
+                      ],
+                      onChanged: (v) => _gender = v ?? _gender,
+                    ),
+                    const SizedBox(height: HoopsSpace.md),
+                    TextFormField(
+                      key: const Key('player-email'),
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: l.playerEmail,
+                        helperText: l.playerEmailHint,
+                        helperMaxLines: 3,
+                      ),
+                      validator: (v) {
+                        final t = (v ?? '').trim();
+                        return t.isEmpty ||
+                                RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                                    .hasMatch(t)
+                            ? null
+                            : l.fieldInvalidEmail;
+                      },
+                    ),
+                    const SizedBox(height: HoopsSpace.md),
+                    DropdownButtonFormField<String?>(
+                      key: const Key('player-team'),
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l.playerInitialTeam,
+                      ),
+                      items: [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(l.none),
+                        ),
+                        for (final t in teams)
+                          DropdownMenuItem<String?>(
+                            value: t.id,
+                            child: Text(t.displayLabel),
+                          ),
+                      ],
+                      onChanged: (v) => _teamId = v,
+                    ),
+                    if (isRequest) ...[
+                      const SizedBox(height: HoopsSpace.md),
+                      TextFormField(
+                        key: const Key('player-note'),
+                        controller: _note,
+                        maxLines: 2,
+                        decoration: InputDecoration(labelText: l.playerNote),
+                      ),
+                    ],
+                    const SizedBox(height: HoopsSpace.lg),
+                    FilledButton(
+                      key: const Key('player-submit'),
+                      onPressed: _busy ? null : _submit,
+                      child: Text(isRequest ? l.playerNewRequest : l.create),
+                    ),
+                  ],
                 ),
-              ],
-              const SizedBox(height: AppTokens.spaceLg),
-              FilledButton(
-                key: const Key('player-submit'),
-                onPressed: _busy ? null : _submit,
-                child: Text(isRequest ? l.playerNewRequest : l.create),
               ),
             ],
           ),

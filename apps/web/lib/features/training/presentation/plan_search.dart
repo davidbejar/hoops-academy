@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/ui/actions.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/training_providers.dart';
+
+/// Width of the picker dialogs (they shrink to the screen on phones).
+const _pickerWidth = WidthClass.readingMax * 2 / 3;
 
 /// The plan chosen in [PlanPickerDialog]; [planId] null = no plan.
 class PlanChoice {
@@ -50,7 +53,7 @@ class _PlanPickerDialogState extends ConsumerState<PlanPickerDialog> {
     return AlertDialog(
       title: Text(l.sessionPlanPick),
       content: SizedBox(
-        width: 480,
+        width: _pickerWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -145,7 +148,7 @@ class _ExerciseSearchDialogState extends ConsumerState<ExerciseSearchDialog> {
     return AlertDialog(
       title: Text(l.sessionAddExercises),
       content: SizedBox(
-        width: 480,
+        width: _pickerWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -231,7 +234,7 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: AppTokens.spaceSm),
+    padding: const EdgeInsets.only(bottom: HoopsSpace.sm),
     child: TextField(
       key: fieldKey,
       autofocus: true,
@@ -251,13 +254,30 @@ class _GroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-      child: ListTile(
-        dense: true,
-        title: Text(title, style: theme.textTheme.titleSmall),
-        subtitle: subtitle == null ? null : Text(subtitle!),
+      padding: const EdgeInsets.fromLTRB(
+        HoopsSpace.md,
+        HoopsSpace.md,
+        HoopsSpace.md,
+        HoopsSpace.xs,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: subtitle == null
+                  ? HoopsType.eyebrow(text, c)
+                  : text.titleSmall,
+            ),
+          ),
+          if (subtitle != null)
+            Text(subtitle!, style: HoopsType.eyebrow(text, c)),
+        ],
       ),
     );
   }
@@ -269,7 +289,12 @@ class _Hint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(AppTokens.spaceMd),
-    child: Text(text, textAlign: TextAlign.center),
+    padding: const EdgeInsets.all(HoopsSpace.md),
+    child: Text(
+      text,
+      textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.bodyMedium!
+          .copyWith(color: HoopsTokens.colorsOf(context).inkMuted),
+    ),
   );
 }

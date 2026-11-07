@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/api/clear_list.dart';
@@ -10,13 +9,13 @@ import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/date_field.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../../roster/presentation/eligibility_widgets.dart' show TeamLabel;
 import '../application/training_providers.dart';
 import 'player_picker.dart';
+import 'training_labels.dart' show fabClearance;
 
 /// Plan library: templates (read-only, copy on use) and the academy's plans.
 class PlanLibraryScreen extends ConsumerWidget {
@@ -43,22 +42,19 @@ class PlanLibraryScreen extends ConsumerWidget {
           length: 2,
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppTokens.spaceMd,
-                  AppTokens.spaceSm,
-                  AppTokens.spaceMd,
-                  0,
-                ),
-                child: TextField(
-                  key: const Key('plan-search'),
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search),
-                    hintText: l.planSearchHint,
-                    isDense: true,
+              ContentFrame(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: HoopsSpace.md),
+                  child: TextField(
+                    key: const Key('plan-search'),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: l.planSearchHint,
+                      isDense: true,
+                    ),
+                    onChanged: (v) =>
+                        ref.read(planSearchProvider.notifier).set(v),
                   ),
-                  onChanged: (v) =>
-                      ref.read(planSearchProvider.notifier).set(v),
                 ),
               ),
               TabBar(
@@ -155,57 +151,72 @@ class _PlanList extends ConsumerWidget {
   const _PlanList({required this.templates});
   final bool templates;
 
+  /// The description and, on a template, "use" (copy, then open the copy).
+  Widget? _details(
+    BuildContext context,
+    WidgetRef ref,
+    ath.TrainingPlanSummary p,
+  ) {
+    final l = AppLocalizations.of(context);
+    final canUse = templates && ref.watch(capabilitiesProvider).canEditPlans;
+    if (p.description == null && !canUse) return null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.sm,
+      children: [
+        if (p.description != null) Text(p.description!),
+        if (canUse)
+          FilledButton.tonal(
+            key: Key('plan-use-${p.id}'),
+            onPressed: () async {
+              ath.TrainingPlan? copy;
+              final ok = await runAction(
+                context,
+                () async => copy = await ref
+                    .read(planLibraryProvider(true).notifier)
+                    .copy(p.id),
+                success: l.planCopied,
+              );
+              if (ok && copy != null && context.mounted)
+                context.go('/training/plans/${copy!.id}');
+            },
+            child: Text(l.planUse),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final caps = ref.watch(capabilitiesProvider);
     return AsyncBody<List<ath.TrainingPlanSummary>>(
       value: ref.watch(planLibraryProvider(templates)),
       onRetry: () => ref.invalidate(planLibraryProvider(templates)),
       isEmpty: (d) => d.isEmpty,
       emptyMessage: templates ? l.planEmptyTemplates : l.planEmptyMine,
-      builder: (context, data) => ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppTokens.spaceMd,
-          AppTokens.spaceSm,
-          AppTokens.spaceMd,
-          88,
+      builder: (context, data) => ListView.separated(
+        padding: const EdgeInsets.only(
+          top: HoopsSpace.md,
+          bottom: fabClearance,
         ),
-        children: [
-          for (final p in data)
-            Card(
-              child: ListTile(
-                key: Key('plan-${p.id}'),
-                title: Text(p.name),
-                subtitle: Text(
-                  [
-                    l.planSummary(p.itemCount, p.totalDurationMinutes),
-                    if (p.description != null) p.description!,
-                  ].join('\n'),
-                ),
-                isThreeLine: p.description != null,
-                onTap: () => context.go('/training/plans/${p.id}'),
-                trailing: templates && caps.canEditPlans
-                    ? FilledButton.tonal(
-                        key: Key('plan-use-${p.id}'),
-                        onPressed: () async {
-                          ath.TrainingPlan? copy;
-                          final ok = await runAction(
-                            context,
-                            () async => copy = await ref
-                                .read(planLibraryProvider(true).notifier)
-                                .copy(p.id),
-                            success: l.planCopied,
-                          );
-                          if (ok && copy != null && context.mounted)
-                            context.go('/training/plans/${copy!.id}');
-                        },
-                        child: Text(l.planUse),
-                      )
-                    : const Icon(Icons.chevron_right),
+        itemCount: data.length,
+        separatorBuilder: (_, _) => const SizedBox(height: HoopsSpace.gap),
+        itemBuilder: (context, i) {
+          final p = data[i];
+          return ContentFrame(
+            child: ListRow(
+              key: Key('plan-${p.id}'),
+              leading: IconTile(
+                templates ? Icons.auto_stories_outlined : Icons.list_alt,
+                tone: templates ? HoopsTone.info : HoopsTone.accent,
               ),
+              title: p.name,
+              subtitle: l.planSummary(p.itemCount, p.totalDurationMinutes),
+              details: _details(context, ref, p),
+              onTap: () => context.go('/training/plans/${p.id}'),
             ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -274,184 +285,230 @@ class _PlanBody extends ConsumerWidget {
   final ath.TrainingPlan plan;
   final bool editable;
 
+  Future<void> _useTemplate(BuildContext context, WidgetRef ref) async {
+    final l = AppLocalizations.of(context);
+    ath.TrainingPlan? copy;
+    final ok = await runAction(
+      context,
+      () async => copy = await ref
+          .read(planLibraryProvider(true).notifier)
+          .copy(plan.id),
+      success: l.planCopied,
+    );
+    if (ok && copy != null && context.mounted)
+      context.go('/training/plans/${copy!.id}');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
     final caps = ref.watch(capabilitiesProvider);
-    final notifier = ref.read(planDetailProvider(plan.id).notifier);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppTokens.spaceMd,
-        AppTokens.spaceSm,
-        AppTokens.spaceMd,
-        88,
+      padding: EdgeInsets.only(
+        top: WidthClass.of(context).sectionGap,
+        bottom: fabClearance,
       ),
       children: [
-        if (plan.description != null)
-          Text(plan.description!, style: theme.textTheme.bodyMedium),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppTokens.spaceSm),
-          child: Text(
-            l.planSummary(plan.itemCount, plan.totalDurationMinutes),
-            style: theme.textTheme.labelLarge,
+        ContentFrame(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: HoopsSpace.gap,
+            children: [
+              if (plan.description != null)
+                Text(plan.description!, style: text.bodyLarge),
+              StatusChip(
+                l.planSummary(plan.itemCount, plan.totalDurationMinutes),
+                icon: Icons.timer_outlined,
+              ),
+              if (plan.template)
+                SectionCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: HoopsSpace.gap,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: HoopsSpace.gap,
+                        children: [
+                          const IconTile(
+                            Icons.lock_outline,
+                            tone: HoopsTone.info,
+                          ),
+                          Expanded(
+                            child: Text(
+                              l.planTemplateReadOnly,
+                              key: const Key('template-hint'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (caps.canEditPlans)
+                        FilledButton(
+                          key: const Key('plan-use'),
+                          onPressed: () => _useTemplate(context, ref),
+                          child: Text(l.planUse),
+                        ),
+                    ],
+                  ),
+                ),
+              if (!plan.template && caps.canAssignPlans)
+                FilledButton.icon(
+                  key: const Key('plan-assign'),
+                  icon: const Icon(Icons.assignment_ind_outlined),
+                  label: Text(l.planAssign),
+                  onPressed: () => showDialog<bool>(
+                    context: context,
+                    builder: (_) => AssignDialog(planId: plan.id),
+                  ),
+                ),
+              const SizedBox(height: HoopsSpace.sm),
+              Semantics(
+                header: true,
+                child: Text(l.planItems, style: text.titleLarge),
+              ),
+              if (plan.items.isEmpty)
+                Text(
+                  l.planNoItems,
+                  style: text.bodyMedium!.copyWith(color: c.inkMuted),
+                ),
+              for (var i = 0; i < plan.items.length; i++)
+                _ItemRow(
+                  key: Key('item-${plan.items[i].id}'),
+                  plan: plan,
+                  index: i,
+                  editable: editable,
+                ),
+            ],
           ),
         ),
-        if (plan.template)
-          Card(
-            color: theme.colorScheme.secondaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l.planTemplateReadOnly, key: const Key('template-hint')),
-                  if (caps.canEditPlans)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppTokens.spaceSm),
-                      child: FilledButton(
-                        key: const Key('plan-use'),
-                        onPressed: () async {
-                          ath.TrainingPlan? copy;
-                          final ok = await runAction(
-                            context,
-                            () async => copy = await ref
-                                .read(planLibraryProvider(true).notifier)
-                                .copy(plan.id),
-                            success: l.planCopied,
-                          );
-                          if (ok && copy != null && context.mounted)
-                            context.go('/training/plans/${copy!.id}');
-                        },
-                        child: Text(l.planUse),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        if (!plan.template && caps.canAssignPlans)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppTokens.spaceSm),
-            child: FilledButton.icon(
-              key: const Key('plan-assign'),
-              icon: const Icon(Icons.assignment_ind_outlined),
-              label: Text(l.planAssign),
-              onPressed: () => showDialog<bool>(
-                context: context,
-                builder: (_) => AssignDialog(planId: plan.id),
-              ),
-            ),
-          ),
-        Text(l.planItems, style: theme.textTheme.titleMedium),
-        if (plan.items.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
-            child: Text(l.planNoItems),
-          ),
-        for (var i = 0; i < plan.items.length; i++)
-          Card(
-            key: Key('item-${plan.items[i].id}'),
-            child: Padding(
-              padding: const EdgeInsets.all(AppTokens.spaceSm),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(AppTokens.spaceSm),
-                    child: CircleAvatar(radius: 14, child: Text('${i + 1}')),
-                  ),
-                  Expanded(child: _ItemInfo(item: plan.items[i])),
-                  if (editable)
-                    PopupMenuButton<String>(
-                      key: Key('item-menu-${plan.items[i].id}'),
-                      tooltip: l.moreActions,
-                      onSelected: (v) async {
-                        final item = plan.items[i];
-                        if (v == 'edit') {
-                          await showDialog<bool>(
-                            context: context,
-                            builder: (_) =>
-                                PlanItemDialog(planId: plan.id, item: item),
-                          );
-                        } else if (v == 'up') {
-                          await runAction(
-                            context,
-                            () => notifier.move(i, i - 1),
-                          );
-                        } else if (v == 'down') {
-                          await runAction(
-                            context,
-                            () => notifier.move(i, i + 1),
-                          );
-                        } else if (v == 'delete') {
-                          if (!await confirmDialog(
-                            context,
-                            message: l.planItemDeleteConfirm,
-                            confirmLabel: l.delete,
-                          ))
-                            return;
-                          if (!context.mounted) return;
-                          await runAction(
-                            context,
-                            () => notifier.deleteItem(item.id),
-                          );
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(value: 'edit', child: Text(l.edit)),
-                        if (i > 0)
-                          PopupMenuItem(
-                            value: 'up',
-                            child: Text(l.planItemMoveUp),
-                          ),
-                        if (i < plan.items.length - 1)
-                          PopupMenuItem(
-                            value: 'down',
-                            child: Text(l.planItemMoveDown),
-                          ),
-                        PopupMenuItem(value: 'delete', child: Text(l.delete)),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
       ],
     );
   }
 }
 
+/// One exercise of a plan: its position, facts and (when editable) the
+/// actions sheet: edit, move up / down, delete.
+class _ItemRow extends ConsumerWidget {
+  const _ItemRow({
+    super.key,
+    required this.plan,
+    required this.index,
+    required this.editable,
+  });
+  final ath.TrainingPlan plan;
+  final int index;
+  final bool editable;
+
+  Future<void> _act(BuildContext context, WidgetRef ref) async {
+    final l = AppLocalizations.of(context);
+    final i = index;
+    final item = plan.items[i];
+    final notifier = ref.read(planDetailProvider(plan.id).notifier);
+    final v = await showActionSheet<String>(
+      context,
+      title: item.title,
+      actions: [
+        SheetAction(icon: Icons.edit_outlined, label: l.edit, value: 'edit'),
+        if (i > 0)
+          SheetAction(
+            icon: Icons.arrow_upward,
+            label: l.planItemMoveUp,
+            value: 'up',
+          ),
+        if (i < plan.items.length - 1)
+          SheetAction(
+            icon: Icons.arrow_downward,
+            label: l.planItemMoveDown,
+            value: 'down',
+          ),
+        SheetAction(
+          icon: Icons.delete_outline,
+          label: l.delete,
+          value: 'delete',
+          destructive: true,
+        ),
+      ],
+    );
+    if (v == null || !context.mounted) return;
+    if (v == 'edit') {
+      await showDialog<bool>(
+        context: context,
+        builder: (_) => PlanItemDialog(planId: plan.id, item: item),
+      );
+    } else if (v == 'up') {
+      await runAction(context, () => notifier.move(i, i - 1));
+    } else if (v == 'down') {
+      await runAction(context, () => notifier.move(i, i + 1));
+    } else if (v == 'delete') {
+      if (!await confirmDialog(
+        context,
+        message: l.planItemDeleteConfirm,
+        confirmLabel: l.delete,
+      ))
+        return;
+      if (!context.mounted) return;
+      await runAction(context, () => notifier.deleteItem(item.id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final item = plan.items[index];
+    return ListRow(
+      leading: InitialsAvatar(name: '${index + 1}'),
+      title: item.title,
+      subtitle: _facts(l, item),
+      details: item.description == null && item.videoUrl == null
+          ? null
+          : _ItemInfo(item: item),
+      trailing: editable
+          ? IconButton(
+              key: Key('item-menu-${item.id}'),
+              tooltip: l.moreActions,
+              icon: const Icon(Icons.more_vert),
+              onPressed: () => _act(context, ref),
+            )
+          : null,
+    );
+  }
+}
+
+String? _facts(AppLocalizations l, ath.PlanItem item) {
+  final facts = [
+    if (item.durationMinutes != null)
+      l.sessionDurationMinutes(item.durationMinutes!),
+    if (item.sets != null && item.repetitions != null)
+      l.planItemSetsReps(item.repetitions!, item.sets!),
+  ];
+  return facts.isEmpty ? null : facts.join(' · ');
+}
+
+/// The description and the video link of an exercise.
 class _ItemInfo extends StatelessWidget {
   const _ItemInfo({required this.item});
   final ath.PlanItem item;
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final facts = [
-      if (item.durationMinutes != null)
-        l.sessionDurationMinutes(item.durationMinutes!),
-      if (item.sets != null && item.repetitions != null)
-        l.planItemSetsReps(item.repetitions!, item.sets!),
-    ];
+    final c = HoopsTokens.colorsOf(context);
+    final text = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: HoopsSpace.xs,
       children: [
-        Text(item.title, style: theme.textTheme.titleSmall),
-        if (facts.isNotEmpty)
-          Text(facts.join(' · '), style: theme.textTheme.bodySmall),
         if (item.description != null) Text(item.description!),
         if (item.videoUrl != null)
           Row(
+            spacing: HoopsSpace.xs,
             children: [
-              const Icon(Icons.play_circle_outline, size: 16),
-              const SizedBox(width: 4),
+              Icon(Icons.play_circle_outline, color: c.brand),
               Expanded(
                 child: SelectableText(
                   item.videoUrl!,
-                  style: theme.textTheme.bodySmall,
+                  style: text.bodySmall!.copyWith(color: c.accentText),
                 ),
               ),
             ],
@@ -575,9 +632,9 @@ class _PlanItemDialogState extends ConsumerState<PlanItemDialog> {
         Row(
           children: [
             number('item-duration', _duration, l.planItemDuration),
-            const SizedBox(width: AppTokens.spaceSm),
+            const SizedBox(width: HoopsSpace.sm),
             number('item-sets', _sets, l.planItemSets),
-            const SizedBox(width: AppTokens.spaceSm),
+            const SizedBox(width: HoopsSpace.sm),
             number('item-reps', _reps, l.planItemReps),
           ],
         ),

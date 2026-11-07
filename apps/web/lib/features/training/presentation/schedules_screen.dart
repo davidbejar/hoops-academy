@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/date_field.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../../roster/presentation/eligibility_widgets.dart' show TeamLabel;
@@ -47,68 +45,66 @@ class SchedulesScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(schedulesProvider),
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.scheduleEmpty,
-          builder: (context, data) => ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppTokens.spaceMd,
-              AppTokens.spaceSm,
-              AppTokens.spaceMd,
-              88,
+          builder: (context, data) => ListView.separated(
+            padding: const EdgeInsets.only(
+              top: HoopsSpace.md,
+              bottom: fabClearance,
             ),
-            children: [
-              for (final s in data)
-                Card(
-                  child: ListTile(
-                    key: Key('schedule-${s.id}'),
-                    title: Text(
-                      l.scheduleLine(
-                        s.dayOfWeek.label(l),
-                        s.durationMinutes,
-                        s.startTime.substring(0, 5),
-                      ),
-                    ),
-                    subtitle: Text(
-                      [
-                        if (names[s.teamId] != null) names[s.teamId]!,
-                        if (s.location != null) s.location!,
-                        s.validUntil == null
-                            ? l.scheduleValidity(fullDate(s.validFrom))
-                            : l.scheduleValidityRange(
-                                fullDate(s.validFrom),
-                                fullDate(s.validUntil!),
-                              ),
-                      ].join(' · '),
-                    ),
-                    onTap: caps.canManageTraining(s.teamId)
-                        ? () => showDialog<bool>(
-                            context: context,
-                            builder: (_) => ScheduleDialog(schedule: s),
-                          )
-                        : null,
-                    trailing: caps.canManageTraining(s.teamId)
-                        ? IconButton(
-                            key: Key('schedule-delete-${s.id}'),
-                            tooltip: l.delete,
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () async {
-                              if (!await confirmDialog(
-                                context,
-                                message: l.scheduleDeleteConfirm,
-                                confirmLabel: l.delete,
-                              ))
-                                return;
-                              if (!context.mounted) return;
-                              await runAction(
-                                context,
-                                () => ref
-                                    .read(schedulesProvider.notifier)
-                                    .delete(s.id),
-                              );
-                            },
-                          )
-                        : null,
+            itemCount: data.length,
+            separatorBuilder: (_, _) => const SizedBox(height: HoopsSpace.gap),
+            itemBuilder: (context, i) {
+              final s = data[i];
+              final canManage = caps.canManageTraining(s.teamId);
+              return ContentFrame(
+                child: ListRow(
+                  key: Key('schedule-${s.id}'),
+                  leading: const IconTile(Icons.event_repeat),
+                  title: l.scheduleLine(
+                    s.dayOfWeek.label(l),
+                    s.durationMinutes,
+                    s.startTime.substring(0, 5),
                   ),
+                  subtitle: [
+                    if (names[s.teamId] != null) names[s.teamId]!,
+                    if (s.location != null) s.location!,
+                    s.validUntil == null
+                        ? l.scheduleValidity(fullDate(s.validFrom))
+                        : l.scheduleValidityRange(
+                            fullDate(s.validFrom),
+                            fullDate(s.validUntil!),
+                          ),
+                  ].join(' · '),
+                  onTap: canManage
+                      ? () => showDialog<bool>(
+                          context: context,
+                          builder: (_) => ScheduleDialog(schedule: s),
+                        )
+                      : null,
+                  trailing: canManage
+                      ? IconButton(
+                          key: Key('schedule-delete-${s.id}'),
+                          tooltip: l.delete,
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () async {
+                            if (!await confirmDialog(
+                              context,
+                              message: l.scheduleDeleteConfirm,
+                              confirmLabel: l.delete,
+                            ))
+                              return;
+                            if (!context.mounted) return;
+                            await runAction(
+                              context,
+                              () => ref
+                                  .read(schedulesProvider.notifier)
+                                  .delete(s.id),
+                            );
+                          },
+                        )
+                      : null,
                 ),
-            ],
+              );
+            },
           ),
         ),
       ),

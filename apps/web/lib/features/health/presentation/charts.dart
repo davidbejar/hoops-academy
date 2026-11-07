@@ -3,12 +3,26 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../../../app/theme.dart';
+import '../../../core/design/tokens.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/ui/chart_tokens.dart';
 import '../../../core/ui/labels.dart' show formatAthDate;
 import '../../../l10n/gen/app_localizations.dart';
 import 'health_labels.dart';
+
+/// The dataviz spec of the health charts (WP14): axis text, tooltip and
+/// legend text, plot height, legend swatch, markers and line, in logical
+/// pixels.
+abstract final class _ChartSize {
+  static const axisText = 11.0;
+  static const labelText = 12.0;
+  static const plot = 180.0;
+  static const swatch = 12.0;
+  static const swatchOutline = 1.5;
+  static const marker = 5.0;
+  static const markerRing = 2.0;
+  static const line = 2.0;
+}
 
 /// One plotted value.
 class ChartPoint {
@@ -60,7 +74,10 @@ class _Line extends StatelessWidget {
     final pad = math.max((maxY - minY) * 0.15, 1.0);
     minY -= pad;
     maxY += pad;
-    final style = TextStyle(color: palette.inkSecondary, fontSize: 11);
+    final style = TextStyle(
+      color: palette.inkSecondary,
+      fontSize: _ChartSize.axisText,
+    );
     return LineChart(
       LineChartData(
         minX: minX,
@@ -109,7 +126,7 @@ class _Line extends StatelessWidget {
               for (final s in spots)
                 LineTooltipItem(
                   '${_shortDate(points[s.spotIndex].at)}\n${_fmt(s.y)}',
-                  TextStyle(color: palette.ink, fontSize: 12),
+                  TextStyle(color: palette.ink, fontSize: _ChartSize.labelText),
                 ),
             ],
           ),
@@ -119,12 +136,12 @@ class _Line extends StatelessWidget {
             spots: [for (final p in points) FlSpot(_days(p.at), p.value)],
             isCurved: false,
             color: lineColor,
-            barWidth: 2,
+            barWidth: _ChartSize.line,
             dotData: FlDotData(
               getDotPainter: (spot, _, _, i) => FlDotCirclePainter(
-                radius: 5,
+                radius: _ChartSize.marker,
                 color: markerColor(points[i]),
-                strokeWidth: 2,
+                strokeWidth: _ChartSize.markerRing,
                 strokeColor: palette.surface,
               ),
             ),
@@ -156,7 +173,7 @@ class _ChartCard extends StatelessWidget {
     return Card(
       color: p.surface,
       child: Padding(
-        padding: const EdgeInsets.all(AppTokens.spaceMd),
+        padding: const EdgeInsets.all(HoopsSpace.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -165,15 +182,15 @@ class _ChartCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleSmall
                   ?.copyWith(color: p.ink),
             ),
-            const SizedBox(height: AppTokens.spaceSm),
+            const SizedBox(height: HoopsSpace.sm),
             Semantics(
               label: semantics,
               child: ExcludeSemantics(
-                child: SizedBox(height: 180, child: chart),
+                child: SizedBox(height: _ChartSize.plot, child: chart),
               ),
             ),
             if (legend != null) ...[
-              const SizedBox(height: AppTokens.spaceSm),
+              const SizedBox(height: HoopsSpace.sm),
               legend!,
             ],
             ?table,
@@ -292,8 +309,8 @@ class BandHistoryChart extends StatelessWidget {
       ),
       legend: Wrap(
         key: const Key('band-legend'),
-        spacing: AppTokens.spaceMd,
-        runSpacing: AppTokens.spaceXs,
+        spacing: HoopsSpace.md,
+        runSpacing: HoopsSpace.xs,
         children: [
           for (var i = 0; i < normBands.length; i++)
             _Swatch(
@@ -330,16 +347,21 @@ class _Swatch extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
-        width: 12,
-        height: 12,
+        width: _ChartSize.swatch,
+        height: _ChartSize.swatch,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
-          border: outlined ? Border.all(color: ink, width: 1.5) : null,
+          border: outlined
+              ? Border.all(color: ink, width: _ChartSize.swatchOutline)
+              : null,
         ),
       ),
-      const SizedBox(width: 4),
-      Text(label, style: TextStyle(color: ink, fontSize: 12)),
+      const SizedBox(width: HoopsSpace.xs),
+      Text(
+        label,
+        style: TextStyle(color: ink, fontSize: _ChartSize.labelText),
+      ),
     ],
   );
 }

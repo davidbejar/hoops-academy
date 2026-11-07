@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/training_providers.dart';
@@ -33,15 +32,20 @@ class AssignmentsScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(assignmentsProvider(null)),
           isEmpty: (d) => d.assignments.isEmpty,
           emptyMessage: l.assignmentsEmpty,
-          builder: (context, view) => ListView(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
+          builder: (context, view) => PageBody(
             children: [
-              for (final a in view.assignments)
-                AssignmentCard(
-                  assignment: a,
-                  view: view,
-                  onTap: () => context.go('/training/assignments/${a.id}'),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: HoopsSpace.gap,
+                children: [
+                  for (final a in view.assignments)
+                    AssignmentCard(
+                      assignment: a,
+                      view: view,
+                      onTap: () => context.go('/training/assignments/${a.id}'),
+                    ),
+                ],
+              ),
             ],
           ),
         ),
@@ -79,24 +83,22 @@ class AssignmentCard extends ConsumerWidget {
     final playerName = a.playerId == null
         ? null
         : ref.watch(playerNameProvider(a.playerId!));
-    return Card(
-      child: ListTile(
-        key: Key('assignment-${a.id}'),
-        onTap: onTap,
-        title: Text(a.plan.name),
-        subtitle: Text(
-          [
-            _targetText(l, a, names, playerName),
-            l.assignmentDue(fullDate(a.dueOn)),
-            l.assignmentProgress(
-              counts[ath.CompletionStatus.DONE] ?? 0,
-              counts[ath.CompletionStatus.NOT_DONE] ?? 0,
-              counts[ath.CompletionStatus.PARTIAL] ?? 0,
-            ),
-          ].join('\n'),
+    return ListRow(
+      key: Key('assignment-${a.id}'),
+      onTap: onTap,
+      leading: const IconTile(Icons.assignment_outlined),
+      title: a.plan.name,
+      subtitle: [
+        _targetText(l, a, names, playerName),
+        l.assignmentDue(fullDate(a.dueOn)),
+      ].join(' · '),
+      details: Text(
+        l.assignmentProgress(
+          counts[ath.CompletionStatus.DONE] ?? 0,
+          counts[ath.CompletionStatus.NOT_DONE] ?? 0,
+          counts[ath.CompletionStatus.PARTIAL] ?? 0,
         ),
-        isThreeLine: true,
-        trailing: onTap == null ? null : const Icon(Icons.chevron_right),
+        style: Theme.of(context).textTheme.labelMedium,
       ),
     );
   }
@@ -136,8 +138,10 @@ class AssignmentProgressScreen extends ConsumerWidget {
 class EmptyNotFound extends StatelessWidget {
   const EmptyNotFound({super.key});
   @override
-  Widget build(BuildContext context) =>
-      Center(child: Text(AppLocalizations.of(context).errorNotFound));
+  Widget build(BuildContext context) => EmptyState(
+    icon: Icons.search_off,
+    title: AppLocalizations.of(context).errorNotFound,
+  );
 }
 
 class _Progress extends ConsumerWidget {
@@ -164,55 +168,57 @@ class _Progress extends ConsumerWidget {
       }
     }
     final caps = ref.watch(capabilitiesProvider);
-    return ListView(
-      padding: const EdgeInsets.all(AppTokens.spaceMd),
+    return PageBody(
       children: [
-        AssignmentCard(assignment: a, view: view),
-        if (a.notes != null)
-          Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceSm),
-            child: Text(a.notes!),
-          ),
-        for (final (id, name) in targets)
-          Card(
-            key: Key('progress-$id'),
-            child: Padding(
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: AppTokens.spaceXs),
-                  CompletionControl(
-                    assignmentId: a.id,
-                    playerId: id,
-                    completion: view.completionOf(a.id, id),
-                    canMark: caps.canMarkCompletion(id),
-                    scope: null,
-                  ),
-                ],
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: HoopsSpace.gap,
+          children: [
+            AssignmentCard(assignment: a, view: view),
+            if (a.notes != null) Text(a.notes!),
+          ],
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: HoopsSpace.gap,
+          children: [
+            for (final (id, name) in targets)
+              ListRow(
+                key: Key('progress-$id'),
+                leading: InitialsAvatar(name: name),
+                title: name,
+                details: CompletionControl(
+                  assignmentId: a.id,
+                  playerId: id,
+                  completion: view.completionOf(a.id, id),
+                  canMark: caps.canMarkCompletion(id),
+                  scope: null,
+                ),
               ),
-            ),
+          ],
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const Key('assignment-delete'),
+            icon: const Icon(Icons.delete_outline),
+            label: Text(l.delete),
+            onPressed: () async {
+              if (!await confirmDialog(
+                context,
+                message: l.assignmentDeleteConfirm,
+                confirmLabel: l.delete,
+              ))
+                return;
+              if (!context.mounted) return;
+              final ok = await runAction(
+                context,
+                () =>
+                    ref.read(assignmentsProvider(null).notifier).unassign(a.id),
+              );
+              if (ok && context.mounted) context.go('/training/assignments');
+            },
           ),
-        const SizedBox(height: AppTokens.spaceMd),
-        OutlinedButton.icon(
-          key: const Key('assignment-delete'),
-          icon: const Icon(Icons.delete_outline),
-          label: Text(l.delete),
-          onPressed: () async {
-            if (!await confirmDialog(
-              context,
-              message: l.assignmentDeleteConfirm,
-              confirmLabel: l.delete,
-            ))
-              return;
-            if (!context.mounted) return;
-            final ok = await runAction(
-              context,
-              () => ref.read(assignmentsProvider(null).notifier).unassign(a.id),
-            );
-            if (ok && context.mounted) context.go('/training/assignments');
-          },
         ),
       ],
     );

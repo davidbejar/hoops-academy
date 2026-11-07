@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/errors/app_error.dart';
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/async_body.dart';
-import '../../../core/ui/form_dialog.dart';
-import '../../../core/ui/page_scaffold.dart';
+import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/health_providers.dart';
+import '../../training/presentation/training_labels.dart' show fabClearance;
 import 'health_labels.dart';
 
 /// Test types: global ones plus the academy's custom tests (ADMIN creates).
@@ -43,63 +42,61 @@ class TestTypesScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(testTypesProvider),
           isEmpty: (d) => d.isEmpty,
           emptyMessage: l.testTypesEmpty,
-          builder: (context, data) => ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppTokens.spaceMd,
-              AppTokens.spaceSm,
-              AppTokens.spaceMd,
-              88,
+          builder: (context, data) => ListView.separated(
+            padding: const EdgeInsets.only(
+              top: HoopsSpace.md,
+              bottom: fabClearance,
             ),
-            children: [
-              for (final t in data)
-                Card(
-                  child: ListTile(
-                    key: Key('type-${t.id}'),
-                    title: Text('${t.name} (${t.unit})'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          [
-                            t.code,
-                            t.higherIsBetter
-                                ? l.testTypeHigherYes
-                                : l.testTypeHigherNo,
-                            if (t.description != null) t.description!,
-                          ].join(' · '),
-                        ),
-                        const SizedBox(height: AppTokens.spaceXs),
-                        InfoChip(
-                          t.global ? l.testTypeGlobal : l.testTypeCustom,
-                        ),
-                      ],
-                    ),
-                    // Global types are read-only (403) and cannot be deleted (404).
-                    trailing: !t.global && caps.canAdminFitness
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                key: Key('type-edit-${t.id}'),
-                                tooltip: l.edit,
-                                icon: const Icon(Icons.edit_outlined),
-                                onPressed: () => showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => TestTypeDialog(type: t),
-                                ),
-                              ),
-                              IconButton(
-                                key: Key('type-delete-${t.id}'),
-                                tooltip: l.delete,
-                                icon: const Icon(Icons.delete_outline),
-                                onPressed: () => _delete(context, ref, t),
-                              ),
-                            ],
-                          )
-                        : null,
+            itemCount: data.length,
+            separatorBuilder: (_, _) => const SizedBox(height: HoopsSpace.gap),
+            itemBuilder: (context, i) {
+              final t = data[i];
+              return ContentFrame(
+                child: ListRow(
+                  key: Key('type-${t.id}'),
+                  leading: IconTile(
+                    Icons.science_outlined,
+                    tone: t.global ? HoopsTone.info : HoopsTone.accent,
                   ),
+                  title: '${t.name} (${t.unit})',
+                  subtitle: [
+                    t.code,
+                    t.higherIsBetter ? l.testTypeHigherYes : l.testTypeHigherNo,
+                    if (t.description != null) t.description!,
+                  ].join(' · '),
+                  details: Align(
+                    alignment: Alignment.centerLeft,
+                    child: StatusChip(
+                      t.global ? l.testTypeGlobal : l.testTypeCustom,
+                      tone: t.global ? HoopsTone.info : HoopsTone.accent,
+                    ),
+                  ),
+                  // Global types are read-only (403) and cannot be deleted (404).
+                  trailing: !t.global && caps.canAdminFitness
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              key: Key('type-edit-${t.id}'),
+                              tooltip: l.edit,
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () => showDialog<bool>(
+                                context: context,
+                                builder: (_) => TestTypeDialog(type: t),
+                              ),
+                            ),
+                            IconButton(
+                              key: Key('type-delete-${t.id}'),
+                              tooltip: l.delete,
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () => _delete(context, ref, t),
+                            ),
+                          ],
+                        )
+                      : null,
                 ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -268,54 +265,60 @@ class NormsScreen extends ConsumerWidget {
         allowed: caps.canSeeModule,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
-              child: Column(
-                children: [
-                  SegmentedButton<String>(
-                    key: const Key('norm-scope'),
-                    showSelectedIcon: false,
-                    segments: [
-                      ButtonSegment(
-                        value: 'EFFECTIVE',
-                        label: Text(l.normsScopeEffective),
+            ContentFrame(
+              child: Padding(
+                padding: const EdgeInsets.only(top: HoopsSpace.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: HoopsSpace.gap,
+                  children: [
+                    SegmentedButton<String>(
+                      key: const Key('norm-scope'),
+                      showSelectedIcon: false,
+                      segments: [
+                        ButtonSegment(
+                          value: 'EFFECTIVE',
+                          label: Text(l.normsScopeEffective),
+                        ),
+                        ButtonSegment(
+                          value: 'GLOBAL',
+                          label: Text(l.normsScopeGlobal),
+                        ),
+                        ButtonSegment(
+                          value: 'TENANT',
+                          label: Text(l.normsScopeTenant),
+                        ),
+                      ],
+                      selected: {filter.scope},
+                      onSelectionChanged: (s) => setFilter(
+                        NormFilter(
+                          scope: s.first,
+                          testTypeId: filter.testTypeId,
+                        ),
                       ),
-                      ButtonSegment(
-                        value: 'GLOBAL',
-                        label: Text(l.normsScopeGlobal),
-                      ),
-                      ButtonSegment(
-                        value: 'TENANT',
-                        label: Text(l.normsScopeTenant),
-                      ),
-                    ],
-                    selected: {filter.scope},
-                    onSelectionChanged: (s) => setFilter(
-                      NormFilter(scope: s.first, testTypeId: filter.testTypeId),
                     ),
-                  ),
-                  const SizedBox(height: AppTokens.spaceSm),
-                  DropdownButtonFormField<String?>(
-                    key: const Key('norm-type-filter'),
-                    initialValue: filter.testTypeId,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: l.testType,
-                      isDense: true,
-                    ),
-                    items: [
-                      DropdownMenuItem(
-                        value: null,
-                        child: Text(l.normAllTests),
+                    DropdownButtonFormField<String?>(
+                      key: const Key('norm-type-filter'),
+                      initialValue: filter.testTypeId,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l.testType,
+                        isDense: true,
                       ),
-                      for (final t in types)
-                        DropdownMenuItem(value: t.id, child: Text(t.name)),
-                    ],
-                    onChanged: (v) => setFilter(
-                      NormFilter(scope: filter.scope, testTypeId: v),
+                      items: [
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text(l.normAllTests),
+                        ),
+                        for (final t in types)
+                          DropdownMenuItem(value: t.id, child: Text(t.name)),
+                      ],
+                      onChanged: (v) => setFilter(
+                        NormFilter(scope: filter.scope, testTypeId: v),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             Expanded(
@@ -324,21 +327,21 @@ class NormsScreen extends ConsumerWidget {
                 onRetry: () => ref.invalidate(normsProvider),
                 isEmpty: (d) => d.isEmpty,
                 emptyMessage: l.normEmpty,
-                builder: (context, data) => ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppTokens.spaceMd,
-                    0,
-                    AppTokens.spaceMd,
-                    88,
+                builder: (context, data) => ListView.separated(
+                  padding: const EdgeInsets.only(
+                    top: HoopsSpace.md,
+                    bottom: fabClearance,
                   ),
-                  children: [
-                    for (final n in data)
-                      NormTile(
-                        norm: n,
-                        typeName: typeById[n.testTypeId]?.name ?? '—',
-                        canEdit: caps.canAdminFitness && !n.global,
-                      ),
-                  ],
+                  itemCount: data.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: HoopsSpace.gap),
+                  itemBuilder: (context, i) => ContentFrame(
+                    child: NormTile(
+                      norm: data[i],
+                      typeName: typeById[data[i].testTypeId]?.name ?? '—',
+                      canEdit: caps.canAdminFitness && !data[i].global,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -374,62 +377,55 @@ class NormTile extends ConsumerWidget {
         : n.maxValue != null
         ? l.normValuesUpTo(_v(n.maxValue!))
         : '';
-    return Card(
-      child: ListTile(
-        key: Key('norm-${n.id}'),
-        isThreeLine: true,
-        title: Text('$typeName · ${n.band.label(l)}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${n.gender == ath.Gender.FEMALE ? l.genderFemale : l.genderMale} · ${l.normAges(n.maxAge, n.minAge)} · $values',
+    return ListRow(
+      key: Key('norm-${n.id}'),
+      title: '$typeName · ${n.band.label(l)}',
+      subtitle:
+          '${n.gender == ath.Gender.FEMALE ? l.genderFemale : l.genderMale} · ${l.normAges(n.maxAge, n.minAge)} · $values',
+      details: Wrap(
+        spacing: HoopsSpace.xs,
+        runSpacing: HoopsSpace.xs,
+        children: [
+          StatusChip(
+            n.global ? l.normGlobalReadOnly : l.normOverride,
+            tone: n.global ? HoopsTone.info : HoopsTone.accent,
+          ),
+          if (n.referencePending)
+            StatusChip(
+              l.testReferencePending,
+              tone: HoopsTone.warning,
+              icon: Icons.hourglass_empty,
             ),
-            const SizedBox(height: AppTokens.spaceXs),
-            Wrap(
-              spacing: AppTokens.spaceXs,
-              runSpacing: AppTokens.spaceXs,
-              children: [
-                InfoChip(n.global ? l.normGlobalReadOnly : l.normOverride),
-                if (n.referencePending)
-                  InfoChip(
-                    l.testReferencePending,
-                    tone: ChipTone.warn,
-                    icon: Icons.hourglass_empty,
-                  ),
-                if (n.source_ != null && !n.referencePending)
-                  InfoChip(n.source_!, icon: Icons.menu_book_outlined),
-              ],
-            ),
-          ],
-        ),
-        onTap: canEdit
-            ? () => showDialog<bool>(
-                context: context,
-                builder: (_) => NormDialog(norm: n),
-              )
-            : null,
-        trailing: canEdit
-            ? IconButton(
-                key: Key('norm-delete-${n.id}'),
-                tooltip: l.delete,
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () async {
-                  if (!await confirmDialog(
-                    context,
-                    message: l.normDeleteConfirm,
-                    confirmLabel: l.delete,
-                  ))
-                    return;
-                  if (!context.mounted) return;
-                  await runAction(
-                    context,
-                    () => ref.read(normsProvider.notifier).delete(n.id),
-                  );
-                },
-              )
-            : null,
+          if (n.source_ != null && !n.referencePending)
+            StatusChip(n.source_!, icon: Icons.menu_book_outlined),
+        ],
       ),
+      onTap: canEdit
+          ? () => showDialog<bool>(
+              context: context,
+              builder: (_) => NormDialog(norm: n),
+            )
+          : null,
+      trailing: canEdit
+          ? IconButton(
+              key: Key('norm-delete-${n.id}'),
+              tooltip: l.delete,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () async {
+                if (!await confirmDialog(
+                  context,
+                  message: l.normDeleteConfirm,
+                  confirmLabel: l.delete,
+                ))
+                  return;
+                if (!context.mounted) return;
+                await runAction(
+                  context,
+                  () => ref.read(normsProvider.notifier).delete(n.id),
+                );
+              },
+            )
+          : null,
     );
   }
 }
@@ -559,7 +555,7 @@ class _NormDialogState extends ConsumerState<NormDialog> {
                     : null,
               ),
             ),
-            const SizedBox(width: AppTokens.spaceSm),
+            const SizedBox(width: HoopsSpace.sm),
             Expanded(
               child: TextFormField(
                 key: const Key('norm-max-age'),
@@ -603,7 +599,7 @@ class _NormDialogState extends ConsumerState<NormDialog> {
                 validator: (v) => _optional(l, v),
               ),
             ),
-            const SizedBox(width: AppTokens.spaceSm),
+            const SizedBox(width: HoopsSpace.sm),
             Expanded(
               child: TextFormField(
                 key: const Key('norm-max-value'),
