@@ -104,14 +104,18 @@ void main() {
 
     test('precaches the landing page screenshots (WP70)', () {
       // Flutter serves a pubspec asset `assets/x` at `assets/assets/x`.
-      for (final shot in LandingShot.values) {
-        File('${build.path}/assets/${shot.asset}')
+      final assets = [
+        for (final shot in LandingShot.values)
+          for (final code in ['es', 'en', 'id']) shot.assetFor(code),
+      ];
+      for (final asset in assets) {
+        File('${build.path}/assets/$asset')
           ..createSync(recursive: true)
           ..writeAsStringSync('png');
       }
       final files = collectPrecache(build);
-      for (final shot in LandingShot.values) {
-        expect(files, contains('assets/${shot.asset}'));
+      for (final asset in assets) {
+        expect(files, contains('assets/$asset'));
       }
     });
 

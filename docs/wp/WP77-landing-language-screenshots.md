@@ -44,4 +44,33 @@ Decision 57 of 2026-11-06: the language switch moves to the header; screenshots 
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - Header language switch (`landing-header-lang`, a popup menu showing the current code ES/EN/ID with the three
+    language names, items `landing-header-lang-<code>`), left of Sign in, on every width; it sets
+    `localePreferenceProvider` (stored as before). The footer switch stays (`landing-lang-<code>`), untouched.
+    Tooltip reuses the existing `language` key: no new ARB key, no copy change.
+  - `LandingShot.assetFor(languageCode)` picks `assets/landing/<screen>_<es|en|id>.png`, fallback en; `DeviceFrame`
+    reads the locale from the context (no call site changed).
+  - Twelve screenshots (training week, live match, player health, platform usage x es/en/id), captured from the
+    redesigned app (WP72-76) on the demo mock, 720x1560 (360x780 @2x), light theme (the app has no dark capture; the
+    landing's own dark mode only changes the page, not the screens). The four old unsuffixed PNGs are deleted.
+  - `landing_screens_capture.dart` loops the three languages (seeds `hoops.locale`) and writes
+    `assets/landing/manifest.json` (SHA-256 per PNG, size). `landing_assets_test.dart` (parity): twelve files exist,
+    each matches the manifest hash and is 720x1560, no stray PNG. Freshness is "hash of the capture", re-run the
+    capture after a screen changes and commit the PNGs + manifest together.
+  - Goldens: the four existing landing goldens re-recorded (header + new shots); new `landing_360x780_en/_id`.
+  - `sw_manifest_test` updated for the twelve assets. `pubspec.yaml` unchanged (`assets/landing/` is a directory entry).
+- Verified:
+  - Red first: header and locale-asset tests failed before the code (no key / no `assetFor`).
+  - `flutter analyze`: no issues. `just web-format-check`: 361 files, 0 changed.
+  - `just web-test` (fresh): **1005 passed**, 0 failed.
+  - `tool/web_smoke.sh` (mock journey in Chrome): All tests passed. `tool/lighthouse.sh`: PWA score 1 (unchanged).
+  - Asset bytes: before 499,102 (4 PNGs); after 1,403,241 (12 PNGs: es 483,239, en 461,477, id 458,525). A visitor
+    downloads one set (~460-480 KB, equal to before). No PNG quantiser on the host (pngquant/oxipng absent), none used.
+- Decisions/ADRs: none. Popup menu rather than three inline links so it fits 360 px next to the brand and Sign in.
+- Open points:
+  - The service worker precaches every file of the build, so the install now fetches all twelve PNGs (+~900 KB over
+    before). If that matters, exclude the other languages from `collectPrecache` or quantise the PNGs (tool needed).
+  - First capture run on a clean tree fails once (the landing at `/` asks for assets not yet written); run it twice.
+  - Indonesian bottom nav wraps "Pertandingan" over two lines at 360 px (visible in `live_match_id.png`): an app
+    layout issue outside this WP.

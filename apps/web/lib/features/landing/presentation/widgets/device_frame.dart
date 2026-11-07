@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 
-/// Real screenshots of the demo mock (WP41/WP47 data), captured at phone size
-/// (360x780 logical, 2x) by `test/golden/landing_screens_capture.dart`.
+/// Real screenshots of the redesigned app on the demo mock, one set per
+/// language, captured at phone size (360x780 logical, 2x) by `test/golden/landing_screens_capture.dart`.
 enum LandingShot {
-  liveMatch('assets/landing/live_match.png'),
-  trainingWeek('assets/landing/training_week.png'),
-  playerHealth('assets/landing/player_health.png'),
-  platformUsage('assets/landing/platform_usage.png');
+  liveMatch('live_match'),
+  trainingWeek('training_week'),
+  playerHealth('player_health'),
+  platformUsage('platform_usage');
 
-  const LandingShot(this.asset);
+  const LandingShot(this.fileStem);
 
-  final String asset;
+  final String fileStem;
+
+  static const _languages = ['es', 'en', 'id'];
+
+  /// The picture in [languageCode] (es, en, id); any other language gets en.
+  String assetFor(String languageCode) {
+    final code = _languages.contains(languageCode) ? languageCode : 'en';
+    return 'assets/landing/${fileStem}_$code.png';
+  }
 
   /// Logical size the screenshots were taken at.
   static const aspectRatio = 360 / 780;
@@ -44,6 +52,7 @@ class DeviceFrame extends StatelessWidget {
     final bezel = _bezel(width);
     final outerRadius = width * 0.13;
     final screenWidth = width - 2 * bezel;
+    final language = Localizations.localeOf(context).languageCode;
     return Container(
       width: width,
       padding: EdgeInsets.all(bezel),
@@ -66,7 +75,7 @@ class DeviceFrame extends StatelessWidget {
           width: screenWidth,
           height: screenWidth / LandingShot.aspectRatio,
           child: Image.asset(
-            shot.asset,
+            shot.assetFor(language),
             fit: BoxFit.cover,
             semanticLabel: semanticLabel,
             filterQuality: FilterQuality.medium,

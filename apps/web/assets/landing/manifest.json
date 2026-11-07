@@ -1,0 +1,17 @@
+{
+  "size": "720x1560",
+  "sha256": {
+    "live_match_en.png": "02d9f26641d86a8b8a1df29522b4de8df7e7f10efae9470cf9396a53afe02cd6",
+    "live_match_es.png": "4cfc3a521fd742273a85c87676519efe02274f544a2b8003dcca3b429f10bfc7",
+    "live_match_id.png": "b3beb6daaae36e1540c5c6596a45adf7b255aa96233c356aba54d22c496a8eb1",
+    "platform_usage_en.png": "527d3f1767f9067fa821e21aae9dab51d365fbebbd4fb849db6073c163b2325e",
+    "platform_usage_es.png": "043d36dfecc2af38fed5b5e8cd1608d10081bc679308b06dc975248265ec9067",
+    "platform_usage_id.png": "26c5f038404a3dd5e0f9efe7ba352a5747f5c55ddd576e7cc0741cea0032efb6",
+    "player_health_en.png": "8f4716426225dd08effb849401c5f09a2375390f99804e2203f1c7dff245a69a",
+    "player_health_es.png": "c1cefbc0f7c2c0b7457c362798c7f200c56320937209253f1bd9b9c6161fdcc8",
+    "player_health_id.png": "17bd47a828410ce24a1e5bec8e425d2adfd173f6efd4a1376747c5656b2a1cc2",
+    "training_week_en.png": "26513b08d58eea16962b29cc7588cdc76160397fb7b1b91bb765c47c75ac36f3",
+    "training_week_es.png": "96fdb1c503a813b1c465bd62dc31197232500bd4e6d0e5c6529b5ad2244653f0",
+    "training_week_id.png": "a28461b7292b3dda22fef41ae5511b177daae5df0c69b1c335d7fa7c1fb5e214"
+  }
+}

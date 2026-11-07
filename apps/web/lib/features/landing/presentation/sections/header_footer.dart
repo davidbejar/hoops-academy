@@ -45,7 +45,7 @@ class _Brand extends StatelessWidget {
 }
 
 /// Top bar: brand, sign in and (from tablets up) the invitation request.
-class LandingHeader extends StatelessWidget {
+class LandingHeader extends ConsumerWidget {
   const LandingHeader({
     super.key,
     required this.scrolled,
@@ -59,7 +59,7 @@ class LandingHeader extends StatelessWidget {
   final VoidCallback onSignIn;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final p = LandingPalette.of(context);
     final w = LandingWidth.of(context);
@@ -86,6 +86,7 @@ class LandingHeader extends StatelessWidget {
                     child: _Brand(),
                   ),
                 ),
+                const _HeaderLanguageMenu(),
                 TextButton(
                   key: const Key('landing-header-sign-in'),
                   style: landingLinkButton(context, p.text),
@@ -104,6 +105,59 @@ class LandingHeader extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Language switch for the header: the current code, a menu of the three.
+class _HeaderLanguageMenu extends ConsumerWidget {
+  const _HeaderLanguageMenu();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final p = LandingPalette.of(context);
+    final current = Localizations.localeOf(context).languageCode;
+    final names = {
+      'es': l.languageName_es,
+      'en': l.languageName_en,
+      'id': l.languageName_id,
+    };
+    return PopupMenuButton<String>(
+      key: const Key('landing-header-lang'),
+      tooltip: l.language,
+      position: PopupMenuPosition.under,
+      onSelected: (code) =>
+          ref.read(localePreferenceProvider.notifier).set(code),
+      itemBuilder: (_) => [
+        for (final code in supportedLanguageCodes)
+          PopupMenuItem(
+            key: Key('landing-header-lang-$code'),
+            value: code,
+            enabled: code != current,
+            child: Text(names[code]!),
+          ),
+      ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.language, size: 18, color: p.muted),
+            const SizedBox(width: 4),
+            Text(
+              current.toUpperCase(),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: p.text,
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
         ),
       ),
     );

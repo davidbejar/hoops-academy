@@ -12,6 +12,7 @@ import 'package:hoops_app/features/landing/application/invitation_providers.dart
 import 'package:hoops_app/features/landing/data/invitation_repository.dart';
 import 'package:hoops_app/features/landing/domain/invitation_request.dart';
 import 'package:hoops_app/features/landing/presentation/landing_screen.dart';
+import 'package:hoops_app/features/landing/presentation/widgets/device_frame.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -434,6 +435,64 @@ void main() {
       await tester.enterText(find.byKey(const Key('join-email')), 'b');
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('join-confirmation')), findsNothing);
+    });
+  });
+
+  group('header language switch', () {
+    testWidgets('picks a language, re-renders the page and remembers it', (
+      tester,
+    ) async {
+      final h = await _anonymous(tester, size: _phone);
+      expect(find.byKey(const Key('landing-header-lang')), findsOneWidget);
+
+      await _tap(tester, 'landing-header-lang');
+      await tester.tap(find.byKey(const Key('landing-header-lang-en')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Run your academy like a program, not a spreadsheet.'),
+        findsOneWidget,
+      );
+      expect(h.prefs.getString('hoops.locale'), 'en');
+
+      await _tap(tester, 'landing-header-lang');
+      await tester.tap(find.byKey(const Key('landing-header-lang-id')));
+      await tester.pumpAndSettle();
+      expect(find.text('Dibuat khusus untuk akademi basket'), findsOneWidget);
+      expect(h.prefs.getString('hoops.locale'), 'id');
+    });
+
+    testWidgets('shows the current language code and sits beside sign in', (
+      tester,
+    ) async {
+      await _anonymous(tester, size: _phone, locale: 'id');
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('landing-header-lang')),
+          matching: find.text('ID'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('landing-header-sign-in')), findsOneWidget);
+    });
+
+    testWidgets('the screenshots follow the language (fallback en)', (
+      tester,
+    ) async {
+      await _anonymous(tester, size: _phone, locale: 'id');
+      final assets = tester
+          .widgetList<Image>(find.byType(Image))
+          .map((i) => (i.image as AssetImage).assetName)
+          .toSet();
+      expect(assets, isNotEmpty);
+      expect(assets.every((a) => a.endsWith('_id.png')), isTrue);
+      expect(
+        LandingShot.liveMatch.assetFor('fr'),
+        endsWith('live_match_en.png'),
+      );
+      expect(
+        LandingShot.liveMatch.assetFor('es'),
+        endsWith('live_match_es.png'),
+      );
     });
   });
 

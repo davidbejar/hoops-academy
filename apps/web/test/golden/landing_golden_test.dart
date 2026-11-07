@@ -13,20 +13,23 @@ import '../support/harness.dart';
 Future<void> _pumpLanding(
   WidgetTester tester,
   Size size,
-  Brightness brightness,
-) async {
+  Brightness brightness, {
+  String? language,
+}) async {
   tester.platformDispatcher.platformBrightnessTestValue = brightness;
   addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
   final h = Harness(
     me: FakeMeRepository(userWith([tenantNorth])),
     signedIn: false,
+    prefs: {'hoops.locale': ?language},
   );
   await h.pump(tester, size: size);
   final context = tester.element(find.byType(LandingScreen));
   await tester.runAsync(
     () => Future.wait([
       for (final shot in LandingShot.values)
-        precacheImage(AssetImage(shot.asset), context),
+        for (final code in const ['es', 'en', 'id'])
+          precacheImage(AssetImage(shot.assetFor(code)), context),
     ]),
   );
   await tester.pumpAndSettle();
@@ -47,5 +50,21 @@ void main() {
         );
       });
     }
+  }
+
+  // The language shows in the header code, the copy and the screenshots.
+  for (final language in const ['en', 'id']) {
+    testWidgets('landing, light, 360x780, $language', (tester) async {
+      await _pumpLanding(
+        tester,
+        const Size(360, 780),
+        Brightness.light,
+        language: language,
+      );
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/landing_360x780_$language.png'),
+      );
+    });
   }
 }
