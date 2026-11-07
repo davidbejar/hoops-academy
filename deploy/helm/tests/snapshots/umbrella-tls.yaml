@@ -11604,6 +11604,51 @@ spec:
           emptyDir: {sizeLimit: 64Mi}
 
 ---
+# Source: hoops/charts/core/templates/httproute.yaml
+# Envoy Gateway global rate limit: 10 requests per minute per client IP, counted by the rate limit service in
+# Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
+# Plus a burst cap of 2 requests per second per client IP, so the fixed minute windows cannot pass 2 x 10 in a
+# few seconds around a minute boundary (WP46, ADR-0033 amendment).
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: core-service-academy-requests
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.7.0
+spec:
+  targetRefs:
+    - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-academy-requests}
+  rateLimit:
+    global:
+      rules:
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+          limit: {requests: 10, unit: Minute}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+            - path: {type: PathPrefix, value: /}
+          limit: {requests: 2, unit: Second}
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+          limit: {requests: 10, unit: Minute}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+            - path: {type: PathPrefix, value: /}
+          limit: {requests: 2, unit: Second}
+
+---
 # Source: hoops/charts/game/templates/httproute.yaml
 # Envoy Gateway global rate limit: 120 requests per minute per client IP, counted by the rate limit service in
 # Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
@@ -12078,6 +12123,32 @@ spec:
         - type: URLRewrite
           urlRewrite:
             path: {type: ReplaceFullPath, replaceFullPath: "/q/health/started"}
+      backendRefs:
+        - {name: core-service, port: 8081}
+      timeouts: {request: 60s}
+
+---
+# Source: hoops/charts/core/templates/httproute.yaml
+# Rate-limited path: RE2 regex matched against the request path as sent (no rewrite, no decoding of %3A), so the
+# colon of ":batch" reaches the service unchanged. Its own route, because a BackendTrafficPolicy applies per route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: core-service-academy-requests
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.7.0
+spec:
+  parentRefs:
+    - name: hoops
+  rules:
+    - matches:
+        - path: {type: RegularExpression, value: "/platform/academy-requests"}
       backendRefs:
         - {name: core-service, port: 8081}
       timeouts: {request: 60s}

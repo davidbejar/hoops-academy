@@ -251,6 +251,10 @@ core:
   route:
     paths: [/api/core, /platform]
     health: {enabled: true, prefix: /api/core}
+    # The public invitation request (WP90, ADR-0044): 10/min and 2/s per client IP. The route matches the exact path for
+    # every method, so the super admin's list (GET, same path) shares the counter; accept / reject are not limited.
+    rateLimits:
+      - {name: academy-requests, path: "/platform/academy-requests", rpm: 10, rps: 2}
   env:
     CORE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
     # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it

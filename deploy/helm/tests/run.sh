@@ -126,6 +126,9 @@ ratelimited keycloak-ratelimited 60 10 && ok "token endpoint + login form: globa
 routes_to game-service-events-batch '/api/game/matches/[^/]+/events(:|%3[Aa])batch' RegularExpression game-service \
   && ok "events:batch (and %3A) regex route, path not rewritten" || bad "events:batch route"
 ratelimited game-service-events-batch 120 20 && ok "events:batch: global rate limit 120/min and 20/s per client IP" || bad "events:batch rate limit"
+routes_to core-service-academy-requests '/platform/academy-requests' RegularExpression core-service \
+  && ratelimited core-service-academy-requests 10 2 \
+  && ok "academy requests (public, WP90): exact-path route, global rate limit 10/min and 2/s per client IP" || bad "academy-requests rate limit"
 ratelimited demo-service-batch 120 20 "$WORK/service-all.yaml" && ratelimited demo-service-plain 10 0 "$WORK/service-all.yaml" \
   && ok "service chart: per-second rule only where rateLimits[].rps is set" || bad "service chart rps"
 # WP40 (ADR-0033): every Envoy replica shares the counters; no per-replica local limit is left in any render.
