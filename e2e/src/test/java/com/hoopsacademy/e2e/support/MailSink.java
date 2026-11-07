@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 
 /**
  * Reads the SMTP sink behind {@code E2E_MAILHOG_URL}: MailHog (compose, {@code /api/v2/messages}) or Mailpit (kind,
@@ -39,7 +40,56 @@ public final class MailSink {
         };
     }
 
-    private static boolean anyTo(JsonNode messages, String recipient, boolean mailhogShape) {
+    /**
+     * The plain-text body of the newest message to {@code recipient} (case-insensitive), or null. MailHog keeps the raw
+     * body (quoted-printable soft line breaks and {@code =XX} escapes are decoded here); Mailpit serves the decoded text
+     * per message.
+     */
+    public String textTo(String recipient) {
+        return switch (api()) {
+            case MAILHOG_V2 -> {
+                JsonNode message = newestTo(list("/api/v2/messages?limit=250").get("items"), recipient, true);
+                yield message == null ? null : decodeQuotedPrintable(message.path("Content").path("Body").asText());
+            }
+            case MAILPIT_V1 -> {
+                JsonNode message = newestTo(list("/api/v1/messages?limit=250").get("messages"), recipient, false);
+                yield message == null ? null : list("/api/v1/message/" + message.get("ID").asText()).path("Text").asText();
+            }
+            case NONE -> throw new IllegalStateException("no MailHog/Mailpit API answers at " + base);
+        };
+    }
+
+    /** Both APIs list the newest message first. */
+    private static JsonNode newestTo(JsonNode messages, String recipient, boolean mailhogShape) {
+        for (JsonNode m : messages) {
+            if (anyTo(List.of(m), recipient, mailhogShape)) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    static String decodeQuotedPrintable(String body) {
+        String joined = body.replace("=\r\n", "").replace("=\n", "");
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        for (int i = 0; i < joined.length(); i++) {
+            char c = joined.charAt(i);
+            if (c == '=' && i + 2 < joined.length() && isHex(joined.charAt(i + 1)) && isHex(joined.charAt(i + 2))) {
+                out.write(Integer.parseInt(joined.substring(i + 1, i + 3), 16));
+                i += 2;
+            } else {
+                byte[] bytes = String.valueOf(c).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                out.write(bytes, 0, bytes.length);
+            }
+        }
+        return out.toString(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private static boolean isHex(char c) {
+        return Character.digit(c, 16) >= 0;
+    }
+
+    private static boolean anyTo(Iterable<JsonNode> messages, String recipient, boolean mailhogShape) {
         for (JsonNode m : messages) {
             for (JsonNode to : m.get("To")) {
                 String address = mailhogShape

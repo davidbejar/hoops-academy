@@ -62,6 +62,28 @@ class MailSinkTest {
     }
 
     @Test
+    void readsTheNewestTextToARecipientFromMailHogDecodingQuotedPrintable() throws IOException {
+        String list = """
+                {"total":2,"count":2,"start":0,"items":[
+                 {"ID":"b","To":[{"Mailbox":"ana","Domain":"example.org"}],
+                  "Content":{"Body":"Your academy =C3=A9 is ready.=\\r\\nSign in at http://x/login\\r\\n"}},
+                 {"ID":"a","To":[{"Mailbox":"ana","Domain":"example.org"}],"Content":{"Body":"older"}}]}
+                """;
+        MailSink sink = new MailSink(serve(Map.of("/api/v2/messages", list)));
+
+        assertThat(sink.textTo("ANA@example.org")).isEqualTo("Your academy \u00e9 is ready.Sign in at http://x/login\r\n");
+        assertThat(sink.textTo("bob@example.org")).isNull();
+    }
+
+    @Test
+    void readsTheTextOfAMailpitMessage() throws IOException {
+        MailSink sink = new MailSink(serve(Map.of("/api/v1/messages", MAILPIT_LIST,
+                "/api/v1/message/a", "{\"ID\":\"a\",\"Text\":\"Hola =\"}")));
+
+        assertThat(sink.textTo("coach.one@example.org")).isEqualTo("Hola =");
+    }
+
+    @Test
     void isNotReachableWhenNothingListens() throws IOException {
         String url = serve(Map.of());
         server.stop(0);

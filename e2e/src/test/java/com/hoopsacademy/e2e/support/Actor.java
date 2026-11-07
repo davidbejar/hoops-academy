@@ -7,7 +7,10 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import java.util.UUID;
 
-/** A signed-in user acting in one tenant. Every call is validated (request and response) against the service's OpenAPI. */
+/**
+ * A signed-in user acting in one tenant (a null token: an anonymous visitor). Every call is validated (request and
+ * response) against the service's OpenAPI.
+ */
 public final class Actor {
     public final String name;
     private final String token;
@@ -25,7 +28,10 @@ public final class Actor {
     }
 
     private RequestSpecification spec(String path) {
-        RequestSpecification s = given().urlEncodingEnabled(false).baseUri(E2eEnv.baseUrl()).auth().oauth2(token).accept("*/*");
+        RequestSpecification s = given().urlEncodingEnabled(false).baseUri(E2eEnv.baseUrl()).accept("*/*");
+        if (token != null) {
+            s.auth().oauth2(token);
+        }
         if (tenantId != null) {
             s.header("X-Tenant-Id", tenantId.toString());
         }

@@ -640,6 +640,77 @@ class JourneyTest {
         });
     }
 
+    // ------------------------------------------------------------------------------------------ sign-up (WP90)
+
+    @Test
+    @Order(70)
+    void aVisitorRequestsAnAcademyTheSuperAdminAcceptsAndTheRequesterSignsInAsItsAdmin() {
+        Actor visitor = new Actor("visitor", null, null);
+        String requesterEmail = email("requester");
+        String academy = "E2E Requested " + run;
+        Response received = status(visitor.post("/platform/academy-requests", of(
+                "name", "Rita Requester", "email", requesterEmail, "role", "COACH", "academyName", academy,
+                "locale", "en")), 202);
+        assertEquals("RECEIVED", received.jsonPath().getString("status"));
+        // the same name again: taken while the request is open
+        status(visitor.post("/platform/academy-requests", of(
+                "email", email("other"), "role", "ADMIN", "academyName", academy.toUpperCase())), 409);
+        assertThat(mail.hasMessageTo(requesterEmail)).as("nothing is mailed on submission").isFalse();
+
+        UUID requestId = pendingRequest(academy);
+        Response accepted = status(superAdmin.post("/platform/academy-requests/" + requestId + ":accept", of(
+                "slug", "e2e-req-" + run, "timezone", "Europe/Madrid", "defaultLocale", "en",
+                "firstAdmin", of("givenName", "Rita", "familyName", "Requester"))), 200);
+        assertEquals("no-store", accepted.header("Cache-Control"));
+        assertEquals("ACCEPTED", accepted.jsonPath().getString("request.status"));
+        UUID tenant = id(accepted, "tenant.id");
+        assertEquals(tenant.toString(), accepted.jsonPath().getString("request.tenantId"));
+        String temporaryPassword = accepted.jsonPath().getString("temporaryPassword");
+        assertThat(temporaryPassword).hasSize(16);
+
+        await().atMost(Duration.ofSeconds(20)).pollInterval(Duration.ofSeconds(1))
+                .until(() -> mail.hasMessageTo(requesterEmail));
+        assertThat(mail.textTo(requesterEmail)).contains(academy, requesterEmail, "/login")
+                .doesNotContain(temporaryPassword);
+
+        String token = tokens.firstLogin(requesterEmail, temporaryPassword, password);
+        Actor requester = new Actor("requester", token, tenant);
+        Response me = status(requester.inTenant(null).get("/api/core/me"), 200);
+        assertThat(me.jsonPath().getList("memberships.find { it.tenant.id == '" + tenant + "' }.roles"))
+                .containsExactly("ADMIN");
+        status(requester.get("/api/core/tenant"), 200);
+    }
+
+    @Test
+    @Order(71)
+    void aRejectedRequestIsEmailedItsReason() {
+        Actor visitor = new Actor("visitor", null, null);
+        String requesterEmail = email("rejected");
+        String academy = "E2E Futsal " + run;
+        status(visitor.post("/platform/academy-requests", of(
+                "email", requesterEmail, "role", "PARENT", "academyName", academy, "locale", "en")), 202);
+
+        String reason = "Basketball academies only (" + run + ").";
+        Response rejected = status(superAdmin.post("/platform/academy-requests/" + pendingRequest(academy)
+                + ":reject", of("reason", reason)), 200);
+        assertEquals("REJECTED", rejected.jsonPath().getString("status"));
+
+        await().atMost(Duration.ofSeconds(20)).pollInterval(Duration.ofSeconds(1))
+                .until(() -> mail.hasMessageTo(requesterEmail));
+        assertThat(mail.textTo(requesterEmail)).contains(academy, reason);
+        assertThat(rejectedNotified(academy)).as("notifiedAt once the mail server took it").isTrue();
+    }
+
+    private UUID pendingRequest(String academy) {
+        Response pending = status(superAdmin.get("/platform/academy-requests?status=PENDING&size=200"), 200);
+        return UUID.fromString(pending.jsonPath().getString("items.find { it.academyName == '" + academy + "' }.id"));
+    }
+
+    private boolean rejectedNotified(String academy) {
+        Response rejected = status(superAdmin.get("/platform/academy-requests?status=REJECTED&size=200"), 200);
+        return rejected.jsonPath().getString("items.find { it.academyName == '" + academy + "' }.notifiedAt") != null;
+    }
+
     // ------------------------------------------------------------------------------------------ helpers
 
     /** A match event as the API expects it; {@code payload} and {@code player} are optional. */
