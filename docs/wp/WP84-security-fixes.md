@@ -62,7 +62,8 @@ Decision 55 of 2026-11-06 (continued): the second round of testing: fix every Hi
     ASVS 2.2.1, V3 headers/CORS, V15, new V13 (edge proxy) rows; `sast-dast.md` re-run notes (CodeQL command needed
     `mkdir -p /src/target`); `mutation.md` scope and scores.
 - Verified (2026-11-07, rebased on main b520476):
-  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`: BUILD SUCCESS in 5:53; common 392, contracts 279, core 914,
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`: BUILD SUCCESS in 5:53, again (fresh, same totals, 6:00) at
+    b2ce7b0 after the last code change; common 392, contracts 279, core 914,
     game 468, athlete 994, e2e module 32 (26 journeys skipped without a stack); SpotBugs `BugInstance size is 0` × 4
     (the first run caught two SpotBugs findings in my `SafeTreeDeserializer`, fixed in 099524e); coverage gates met.
   - `just e2e` on compose: JourneyTest **26/26** (25 + the new step 54). Chart: `deploy/helm/tests/run.sh` ALL CHART
