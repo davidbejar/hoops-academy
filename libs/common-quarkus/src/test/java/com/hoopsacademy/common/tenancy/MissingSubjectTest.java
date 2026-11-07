@@ -1,9 +1,11 @@
 package com.hoopsacademy.common.tenancy;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.SecurityEventCapture;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -50,6 +52,22 @@ class MissingSubjectTest {
         given().get("/api/probe/me/subject").then()
                 .statusCode(401)
                 .contentType("application/problem+json");
+    }
+
+    @Test
+    @TestSecurity(user = "alice")
+    @OidcSecurity(claims = @Claim(key = "preferred_username", value = "alice"))
+    void aTokenWithoutSubIsOneInvalidTokenEventWithoutTheUsername() {
+        for (String path : new String[] {"/api/probe/whoami", "/api/probe/me/subject"}) {
+            try (SecurityEventCapture events = SecurityEventCapture.open()) {
+                given().header("X-Tenant-Id", TenantHeaderFilterTest.TENANT_A).get(path).then().statusCode(401);
+
+                assertThat(events.single())
+                        .containsEntry("security.kind", "invalid_token")
+                        .containsEntry("security.reason", "no_sub")
+                        .containsEntry("security.subject", "-");
+            }
+        }
     }
 
     @Test
