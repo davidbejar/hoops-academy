@@ -107,7 +107,7 @@ class ReplicaRetentionTest {
     void aRetentionBelowTheTombstoneRetentionIsRefused() {
         assertThatThrownBy(() -> retention(WEEK.minusSeconds(1), MONTH, 100))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("hoops.roster.replica.retention.applied-events").hasMessageContaining("P7D");
+                .hasMessageContaining("hoops.roster.replica.retention.applied-events").hasMessageContaining("7 days");
         assertThatThrownBy(() -> retention(WEEK, MONTH, 0)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("hoops.roster.replica.retention.batch-size");
         assertThatThrownBy(() -> retention(WEEK, Duration.ofDays(-1), 100))

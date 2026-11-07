@@ -76,6 +76,11 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-narayana-jta</artifactId>
     </dependency>
+    <!-- replica housekeeping (WP82): the daily retention job; version from the Quarkus BOM -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-scheduler</artifactId>
+    </dependency>
     <!-- roster replica (WP68, ADR-0037): Kafka consumer of core's roster topics on Redpanda; version from the Quarkus BOM -->
     <dependency>
       <groupId>io.quarkus</groupId>
