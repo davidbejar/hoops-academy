@@ -39,6 +39,12 @@ mutation MODULE="all":
       echo "mutation $module: $((SECONDS - start)) s"
     done
 
+# Mutation testing of the web rule code (docs/quality/mutation.md): a Dart script (tool/mutation/run.dart) mutates the
+# files of tool/mutation/manifest.json and runs their flutter tests per mutant; fails below the manifest's baseline.
+# Report in apps/web/build/mutation/report.json. ARGS: e.g. --workers 2, --target lib/<file>.dart, --list
+web-mutation *ARGS:
+    cd apps/web && flutter pub get >/dev/null && dart run tool/mutation/run.dart {{ARGS}}
+
 # Start the local stack (Postgres, Keycloak, proxy, mail, Redpanda + its topics)
 up:
     podman compose --env-file .env -f infra/compose/compose.yaml up -d --wait

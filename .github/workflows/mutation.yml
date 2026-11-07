@@ -2,7 +2,8 @@ name: mutation
 
 # WP37 (docs/quality/mutation.md): mutation testing with PIT on demand and once a month, never on push or pull
 # request. Each module fails below its baseline (mutationThreshold in its `mutation` profile); the HTML + XML reports
-# are kept as artifacts either way.
+# are kept as artifacts either way. WP88: the web rule code gets the same with the Dart mutation tool
+# (apps/web/tool/mutation, baseline in its manifest.json), report artifact `web-mutation-report`.
 on:
   workflow_dispatch:
   schedule:
@@ -35,4 +36,24 @@ jobs:
         with:
           name: pit-reports-${{ matrix.module }}
           path: '*/${{ matrix.module }}/target/pit-reports'
+          if-no-files-found: warn
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      - name: Mutation testing (web rule code)
+        run: just web-mutation --workers 2
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: web-mutation-report
+          path: apps/web/build/mutation/report.json
           if-no-files-found: warn
