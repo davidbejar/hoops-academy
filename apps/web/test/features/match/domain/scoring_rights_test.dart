@@ -71,4 +71,20 @@ void main() {
       expect(r.canRecordFor('p1'), isFalse);
     },
   );
+
+  test('none may do nothing', () {
+    const none = ScoringRights.none;
+    expect(none.staff, isFalse);
+    expect(none.canRunMatch, isFalse);
+    expect(none.canScore, isFalse);
+    expect(none.parentMode, isFalse);
+    expect(none.canSeeLine('p1'), isFalse);
+  });
+
+  test('staff who are also guardians are not in parent mode', () {
+    const both = ScoringRights(staff: true, linkedPlayerIds: {'p1'});
+    expect(both.parentMode, isFalse);
+    const staffOnly = ScoringRights(staff: true, linkedPlayerIds: {});
+    expect(staffOnly.parentMode, isFalse);
+  });
 }

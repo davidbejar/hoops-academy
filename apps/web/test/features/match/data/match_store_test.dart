@@ -202,4 +202,35 @@ void main() {
       ]);
     },
   );
+
+  test('the outbox sends at most 500 events by default', () async {
+    final store = memoryStore();
+    addTearDown(store.close);
+    for (var i = 0; i < 501; i++) {
+      await shot(store, 'm1');
+    }
+    final box = await store.outbox(
+      tenantId: tenant,
+      personId: me,
+      matchId: 'm1',
+    );
+    expect(box, hasLength(500));
+    expect(box.last.event.meta.clientSeq, 500);
+  });
+
+  test('saving a match roster again replaces it', () async {
+    final store = memoryStore();
+    addTearDown(store.close);
+    await store.saveRoster('m1', const [
+      CachedRosterEntry(playerId: 'p1', displayName: 'Ana', isStarter: true),
+      CachedRosterEntry(playerId: 'p2', displayName: 'Bo', isStarter: false),
+    ], tenantId: tenant);
+    await store.saveRoster('m1', const [
+      CachedRosterEntry(playerId: 'p3', displayName: 'Cy', isStarter: true),
+    ], tenantId: tenant);
+    expect(
+      (await store.roster('m1', tenantId: tenant))!.map((r) => r.displayName),
+      ['Cy'],
+    );
+  });
 }

@@ -145,4 +145,69 @@ void main() {
       expect(f.teamTotals, isNull);
     },
   );
+
+  test('an event stored exactly at the snapshot is already counted', () {
+    final f = reconcileTeamFigures(
+      official: official,
+      rules: rules,
+      roster: roster,
+      events: [
+        RecordedEvent(PeriodStart(meta(clock: 600)), serverSeq: 1),
+        RecordedEvent(
+          Shot(meta(), playerId: 'own', points: 2, made: true),
+          serverSeq: 5,
+        ),
+      ],
+    );
+    expect(f.teamScore, 10);
+  });
+
+  test('a snapshot that does not hold what a later VOID takes back never '
+      'goes below zero', () {
+    const empty = OfficialFigures(
+      lastServerSeq: 5,
+      figures: TeamFigures(
+        teamScore: 0,
+        opponentScore: 0,
+        periodScores: [PeriodScore(1, 0, 0)],
+      ),
+    );
+    final shot = Shot(meta(), playerId: 'own', points: 2, made: true);
+    final theirs = OpponentScore(meta(clock: 480), points: 3);
+    final f = reconcileTeamFigures(
+      official: empty,
+      rules: rules,
+      roster: roster,
+      events: [
+        RecordedEvent(PeriodStart(meta(clock: 600)), serverSeq: 1),
+        RecordedEvent(shot, serverSeq: 3),
+        RecordedEvent(theirs, serverSeq: 4),
+        RecordedEvent(VoidEvent(meta(clock: 450), target: shot.id)),
+        RecordedEvent(VoidEvent(meta(clock: 440), target: theirs.id)),
+      ],
+    );
+    expect([f.teamScore, f.opponentScore], [0, 0]);
+    expect(f.periodScores!.first.team, 0);
+    expect(f.periodScores!.first.opponent, 0);
+  });
+
+  test('nothing new on a 0-0 snapshot stays 0-0', () {
+    const empty = OfficialFigures(
+      lastServerSeq: 1,
+      figures: TeamFigures(
+        teamScore: 0,
+        opponentScore: 0,
+        periodScores: [PeriodScore(1, 0, 0)],
+      ),
+    );
+    final f = reconcileTeamFigures(
+      official: empty,
+      rules: rules,
+      roster: roster,
+      events: [RecordedEvent(PeriodStart(meta(clock: 600)), serverSeq: 1)],
+    );
+    expect([f.teamScore, f.opponentScore], [0, 0]);
+    expect(f.periodScores!.first.team, 0);
+    expect(f.periodScores!.first.opponent, 0);
+  });
 }
