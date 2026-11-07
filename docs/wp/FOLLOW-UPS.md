@@ -209,7 +209,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 | 2 | WP75 | Web redesign: admin, platform, auth, profile and shell screens | Sonnet | Done (web 877 tests; kit IconTile; platform usage goldens) |
 | 2 | WP80 | Season history: read-only access to past seasons for former staff and admins (core, game, athlete, web) | Opus | After wave 1 |
 | 2 | WP86 | Chart: OpenTelemetry collector, services' logs and traces exported, proven on kind | Opus | After wave 1 |
-| 2 | WP89 | CI: scheduled bump of image digests, chart image tags and kind pins | Sonnet | After wave 1 |
+| 2 | WP89 | CI: scheduled bump of image digests, chart image tags and kind pins | Sonnet | Done (bump-pins.yml weekly; 12 pins; 5 outdated found) |
 | 3 | WP76 | Web: gaps bundle (account console link, template refetch on language, match edit from the list, profile edits, guardian password, sit-and-reach hint) | Sonnet | After wave 2 |
 | 3 | WP82 | Game + athlete: replica housekeeping (applied/parked retention), `.removed` for every aggregate | Opus | After wave 2 |
 | 3 | WP85 | Security logging: Keycloak login events, authz-failure events in the services, SBOM in CI | Opus | After wave 2 |

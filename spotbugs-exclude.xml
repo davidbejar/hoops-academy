@@ -41,6 +41,8 @@
     <Or>
       <Class name="com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder"/>
       <Class name="com.hoopsacademy.game.adapters.in.rest.MatchEventDecoder"/>
+      <!-- WP81: CDI-managed Kafka producer wrapper; its constructor validates hoops.outbox.producer-reset-after. -->
+      <Class name="com.hoopsacademy.core.adapters.out.events.KafkaEventBroker"/>
     </Or>
     <Bug pattern="CT_CONSTRUCTOR_THROW"/>
   </Match>
