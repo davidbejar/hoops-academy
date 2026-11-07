@@ -42,7 +42,9 @@ public class ReplicaRosterRepository implements RosterPort {
             throw new NotFoundException("Team not found");
         }
         List<?> rows = em.createNativeQuery(
-                        "select name, season_end_date from athlete.team_ref where tenant_id = :tenant and id = :team")
+                        """
+                        select name, season_end_date from athlete.team_ref
+                         where tenant_id = :tenant and id = :team and not removed""")
                 .setParameter("tenant", tenant.value()).setParameter("team", team.value()).getResultList();
         Object[] row = rows.stream().map(Object[].class::cast).findFirst()
                 .orElseThrow(() -> new NotFoundException("Team not found"));
@@ -58,7 +60,8 @@ public class ReplicaRosterRepository implements RosterPort {
         }
         List<?> rows = em.createNativeQuery("""
                         select id, display_name, status, birth_date, gender from athlete.player_ref
-                         where tenant_id = :tenant and id in (:ids) and birth_date is not null and gender is not null""")
+                         where tenant_id = :tenant and id in (:ids) and birth_date is not null and gender is not null
+                           and not removed""")
                 .setParameter("tenant", tenant.value())
                 .setParameter("ids", ids.stream().map(PlayerId::value).distinct().toList())
                 .getResultList();
@@ -74,7 +77,7 @@ public class ReplicaRosterRepository implements RosterPort {
 
     private boolean tenantActive(TenantId tenant) {
         return !em.createNativeQuery(
-                        "select 1 from athlete.tenant_ref where tenant_id = :tenant and status = 'ACTIVE'")
+                        "select 1 from athlete.tenant_ref where tenant_id = :tenant and status = 'ACTIVE' and not removed")
                 .setParameter("tenant", tenant.value()).getResultList().isEmpty();
     }
 
@@ -84,8 +87,8 @@ public class ReplicaRosterRepository implements RosterPort {
                           from athlete.team_player_ref a
                           join athlete.player_ref p on p.tenant_id = a.tenant_id and p.id = a.player_id
                          where a.tenant_id = :tenant and a.team_id = :team
-                           and a.left_on is null and a.invalid_reason is null
-                           and p.birth_date is not null and p.gender is not null
+                           and a.left_on is null and a.invalid_reason is null and not a.removed
+                           and p.birth_date is not null and p.gender is not null and not p.removed
                          order by a.joined_on, a.id""")
                 .setParameter("tenant", tenant.value()).setParameter("team", team.value())
                 .getResultList();
@@ -96,9 +99,11 @@ public class ReplicaRosterRepository implements RosterPort {
 
     private List<PersonId> staff(TenantId tenant, TeamId team) {
         List<?> rows = em.createNativeQuery("""
-                        select person_id from athlete.team_staff_ref
-                         where tenant_id = :tenant and team_id = :team and not removed
-                         order by role, since, person_id""")
+                        select s.person_id from athlete.team_staff_ref s
+                         where s.tenant_id = :tenant and s.team_id = :team and not s.removed
+                           and not exists (select 1 from athlete.person_ref p
+                                            where p.tenant_id = s.tenant_id and p.id = s.person_id and p.removed)
+                         order by s.role, s.since, s.person_id""")
                 .setParameter("tenant", tenant.value()).setParameter("team", team.value())
                 .getResultList();
         return rows.stream().map(ReplicaRows::uuid).map(PersonId::new).toList();

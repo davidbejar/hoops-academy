@@ -16,7 +16,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 /**
  * Applies one core roster event to the replica, in a transaction bound to the EVENT's tenant (RLS): idempotent (a
  * known eventId changes nothing) and ordered per aggregate (an event older than the stored state changes nothing). A
- * tenant event also refreshes the tenant registry's zone, so the nightly job knows tenants before anyone calls.
+ * tenant event also refreshes the tenant registry's zone, so the nightly job knows tenants before anyone calls; a
+ * tenant removal leaves the registry alone (the tenant has nothing to materialise, its replica rows are unreadable).
  */
 @ApplicationScoped
 public class ApplyRosterEvent {
@@ -61,6 +62,7 @@ public class ApplyRosterEvent {
             case TeamStaffRemoved c -> store.teamStaffRemoved(event, c);
             case GuardianLinkChanged c -> store.guardianLink(event, c);
             case GuardianLinkRemoved c -> store.guardianLinkRemoved(event, c);
+            case RosterChange.Removed c -> store.removed(event, c);
         };
     }
 

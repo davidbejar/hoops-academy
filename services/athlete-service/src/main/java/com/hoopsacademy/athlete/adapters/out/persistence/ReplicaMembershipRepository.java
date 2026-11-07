@@ -36,7 +36,7 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
 
     @Override
     public Optional<TenantState> tenant(TenantId tenant) {
-        return first(em.createNativeQuery("select status, timezone from athlete.tenant_ref where tenant_id = :tenant")
+        return first(em.createNativeQuery("select status, timezone from athlete.tenant_ref where tenant_id = :tenant and not removed")
                 .setParameter("tenant", tenant.value()))
                 .map(columns -> new TenantState((String) columns[0], ZoneId.of((String) columns[1])));
     }
@@ -45,21 +45,25 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
     public Optional<Member> activeMemberWithLogin(String subject) {
         return first(em.createNativeQuery("""
                         select id, array_to_string(roles, ',') from athlete.person_ref
-                         where subject = :subject and active order by id limit 1""")
+                         where subject = :subject and active and not removed order by id limit 1""")
                 .setParameter("subject", subject))
                 .map(columns -> new Member(new PersonId(ReplicaRows.uuid(columns[0])), roles((String) columns[1])));
     }
 
     @Override
     public Optional<PlayerId> playerOf(PersonId person) {
-        return ids("select id from athlete.player_ref where person_id = :person order by id limit 1", person.value(),
+        return ids("select id from athlete.player_ref where person_id = :person and not removed order by id limit 1", person.value(),
                 PlayerId::new).stream().findFirst();
     }
 
     @Override
     public Set<PlayerId> guardedPlayers(PersonId guardian) {
-        return Set.copyOf(ids("select player_id from athlete.guardian_link_ref where guardian_person_id = :person "
-                + "and not removed", guardian.value(), PlayerId::new));
+        return Set.copyOf(ids("""
+                select l.player_id from athlete.guardian_link_ref l
+                 where l.guardian_person_id = :person and not l.removed
+                   and not exists (select 1 from athlete.player_ref p
+                                    where p.tenant_id = l.tenant_id and p.id = l.player_id and p.removed)""",
+                guardian.value(), PlayerId::new));
     }
 
     @Override
@@ -75,7 +79,8 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
         }
         List<?> rows = em.createNativeQuery("""
                         select distinct team_id from athlete.team_player_ref
-                         where player_id in (:players) and left_on is null and invalid_reason is null""")
+                         where player_id in (:players) and left_on is null and invalid_reason is null
+                           and not removed""")
                 .setParameter("players", players.stream().map(PlayerId::value).toList()).getResultList();
         return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());
     }
@@ -86,7 +91,8 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
             return Set.of();
         }
         List<?> rows = em.createNativeQuery(
-                        "select id from athlete.team_ref where id in (:teams) and season_end_date >= cast(:today as date)")
+                        "select id from athlete.team_ref where id in (:teams) and not removed "
+                                + "and season_end_date >= cast(:today as date)")
                 .setParameter("teams", teams.stream().map(TeamId::value).toList())
                 .setParameter("today", today.toString()).getResultList();
         return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());
@@ -98,7 +104,8 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
             return Set.of();
         }
         List<?> rows = em.createNativeQuery(
-                        "select id from athlete.team_ref where id in (:teams) and season_end_date < cast(:today as date)")
+                        "select id from athlete.team_ref where id in (:teams) and not removed "
+                                + "and season_end_date < cast(:today as date)")
                 .setParameter("teams", teams.stream().map(TeamId::value).toList())
                 .setParameter("today", today.toString()).getResultList();
         return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());

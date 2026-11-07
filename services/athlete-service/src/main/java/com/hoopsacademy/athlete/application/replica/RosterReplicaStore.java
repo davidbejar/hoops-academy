@@ -37,4 +37,7 @@ public interface RosterReplicaStore {
     boolean guardianLink(RosterEvent event, GuardianLinkChanged change);
 
     boolean guardianLinkRemoved(RosterEvent event, GuardianLinkRemoved change);
+
+    /** Keeps the event's aggregate as removed, with nothing but its identity (WP82). */
+    boolean removed(RosterEvent event, RosterChange.Removed change);
 }

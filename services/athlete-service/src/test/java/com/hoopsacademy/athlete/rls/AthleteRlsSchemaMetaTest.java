@@ -24,7 +24,9 @@ class AthleteRlsSchemaMetaTest extends RlsSchemaMetaTest {
         return Map.of("athlete.tenant_registry",
                 "tenants known to this service with their time zone; lets the nightly job iterate tenants, holds no tenant content",
                 "athlete.parked_event",
-                "roster records the consumer rejected before any tenant is bound: topic, offset, key and validation messages only");
+                "roster records the consumer rejected before any tenant is bound: topic, offset, key and validation messages only",
+                "athlete.replica_tenant",
+                "ids of the tenants the replica holds rows of, so the retention job can enter each one (WP82); no content");
     }
 
     @Override

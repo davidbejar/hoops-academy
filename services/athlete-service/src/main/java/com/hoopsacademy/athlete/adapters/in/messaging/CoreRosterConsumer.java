@@ -32,7 +32,7 @@ import org.jboss.logging.Logger;
  * to apply. A failure to apply (the database) is retried with backoff; after the last attempt the channel fails,
  * which turns the liveness check DOWN so the pod restarts from the last committed offset (at least once, idempotent).
  * Metrics (same names as game's): {@code hoops_roster_replica_events_total{topic,outcome}} (applied, duplicate, stale,
- * tombstone, ignored: a removal athlete does not apply yet, WP81), {@code hoops_roster_replica_parked_total{topic}},
+ * tombstone), {@code hoops_roster_replica_parked_total{topic}},
  * {@code hoops_roster_replica_lag_seconds{topic}}.
  */
 @ApplicationScoped
@@ -71,10 +71,6 @@ public class CoreRosterConsumer {
         }
         switch (decoder.decode(record.topic(), record.key(), record.value())) {
             case Valid valid -> applyWithRetries(record, valid.event());
-            case DecodedEvent.Ignored ignored -> {
-                count(record.topic(), "ignored");
-                recordLag(record.topic(), ignored.occurredAt());
-            }
             case Invalid invalid -> park(record, invalid);
         }
     }

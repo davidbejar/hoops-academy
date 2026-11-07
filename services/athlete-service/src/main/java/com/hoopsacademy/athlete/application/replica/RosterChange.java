@@ -97,4 +97,10 @@ public sealed interface RosterChange {
             return RosterTopic.TENANT;
         }
     }
+
+    /**
+     * A person, player, team, team assignment or tenant core deleted (WP81, empty payload): the replica keeps the row of
+     * the event's aggregate id as removed, with nothing but its identity (WP82, ADR-0037 point 3).
+     */
+    record Removed(RosterTopic topic) implements RosterChange {}
 }

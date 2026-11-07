@@ -9,14 +9,18 @@ import com.hoopsacademy.athlete.application.replica.RosterChange.TeamPlayerChang
 import com.hoopsacademy.athlete.application.replica.RosterChange.TeamStaffChanged;
 import com.hoopsacademy.athlete.application.replica.RosterChange.TeamStaffRemoved;
 import com.hoopsacademy.athlete.application.replica.RosterChange.TenantChanged;
+import com.hoopsacademy.athlete.application.replica.RosterChange;
 import com.hoopsacademy.athlete.application.replica.RosterEvent;
 import com.hoopsacademy.athlete.application.replica.RosterReplicaStore;
+import com.hoopsacademy.athlete.application.replica.RosterTopic;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
@@ -34,6 +38,19 @@ class RosterReplicaRepository implements RosterReplicaStore {
     /** Appended to every upsert (target aliased {@code r}): write only when the stored state is not newer. */
     private static final String NOT_NEWER = " where r.occurred_at <= excluded.occurred_at";
 
+    /**
+     * The soft removals of {@link RosterChange.Removed} (WP82): the row keeps its identity, {@code removed = true}, the
+     * removal's {@code occurred_at} and {@code event_id}; every state column becomes null.
+     */
+    private static final Map<RosterTopic, String> REMOVALS = Map.of(
+            RosterTopic.TENANT, removal("athlete.tenant_ref", false, "status", "timezone"),
+            RosterTopic.PERSON, removal("athlete.person_ref", true, "display_name", "subject", "roles", "active"),
+            RosterTopic.PLAYER, removal("athlete.player_ref", true, "person_id", "display_name", "status", "birth_date",
+                    "gender"),
+            RosterTopic.TEAM, removal("athlete.team_ref", true, "season_id", "season_end_date", "name"),
+            RosterTopic.TEAM_PLAYER, removal("athlete.team_player_ref", true, "team_id", "player_id", "jersey_number",
+                    "joined_on", "left_on", "invalid_reason"));
+
     private final EntityManager em;
 
     RosterReplicaRepository(EntityManager em) {
@@ -42,6 +59,8 @@ class RosterReplicaRepository implements RosterReplicaStore {
 
     @Override
     public boolean markApplied(RosterEvent event) {
+        em.createNativeQuery("insert into athlete.replica_tenant (id) values (:tenant) on conflict do nothing")
+                .setParameter("tenant", event.tenant().value()).executeUpdate();
         return envelope(em.createNativeQuery("""
                 insert into athlete.applied_event (tenant_id, event_id, topic, aggregate_id, occurred_at)
                 values (:tenant, :event, :topic, :id, :at)
@@ -53,10 +72,10 @@ class RosterReplicaRepository implements RosterReplicaStore {
     @Override
     public boolean tenant(RosterEvent event, TenantChanged change) {
         return upsert("""
-                insert into athlete.tenant_ref as r (tenant_id, status, timezone, occurred_at, event_id)
-                values (:tenant, :status, :zone, :at, :event)
+                insert into athlete.tenant_ref as r (tenant_id, status, timezone, removed, occurred_at, event_id)
+                values (:tenant, :status, :zone, false, :at, :event)
                 on conflict (tenant_id) do update set status = excluded.status, timezone = excluded.timezone,
-                  occurred_at = excluded.occurred_at, event_id = excluded.event_id, updated_at = now()""", event, q -> q
+                  removed = false, occurred_at = excluded.occurred_at, event_id = excluded.event_id, updated_at = now()""", event, q -> q
                 .setParameter("status", change.status())
                 .setParameter("zone", change.timezone().getId()));
     }
@@ -64,10 +83,11 @@ class RosterReplicaRepository implements RosterReplicaStore {
     @Override
     public boolean person(RosterEvent event, PersonChanged change) {
         return upsert("""
-                insert into athlete.person_ref as r (tenant_id, id, display_name, subject, roles, active, occurred_at, event_id)
-                values (:tenant, :id, :name, cast(:subject as text), cast(:roles as text[]), :active, :at, :event)
+                insert into athlete.person_ref as r (tenant_id, id, display_name, subject, roles, active, removed, occurred_at,
+                  event_id)
+                values (:tenant, :id, :name, cast(:subject as text), cast(:roles as text[]), :active, false, :at, :event)
                 on conflict (tenant_id, id) do update set display_name = excluded.display_name, subject = excluded.subject,
-                  roles = excluded.roles, active = excluded.active, occurred_at = excluded.occurred_at,
+                  roles = excluded.roles, active = excluded.active, removed = false, occurred_at = excluded.occurred_at,
                   event_id = excluded.event_id, updated_at = now()""", event, q -> q
                 .setParameter("name", change.displayName())
                 .setParameter("subject", change.subject().orElse(null))
@@ -80,11 +100,12 @@ class RosterReplicaRepository implements RosterReplicaStore {
     public boolean player(RosterEvent event, PlayerChanged change) {
         return upsert("""
                 insert into athlete.player_ref as r (tenant_id, id, person_id, display_name, status, birth_date, gender,
-                  occurred_at, event_id)
-                values (:tenant, :id, :person, :name, :status, cast(:birth as date), cast(:gender as text), :at, :event)
+                  removed, occurred_at, event_id)
+                values (:tenant, :id, :person, :name, :status, cast(:birth as date), cast(:gender as text), false, :at,
+                  :event)
                 on conflict (tenant_id, id) do update set person_id = excluded.person_id,
                   display_name = excluded.display_name, status = excluded.status, birth_date = excluded.birth_date,
-                  gender = excluded.gender, occurred_at = excluded.occurred_at, event_id = excluded.event_id,
+                  gender = excluded.gender, removed = false, occurred_at = excluded.occurred_at, event_id = excluded.event_id,
                   updated_at = now()""", event, q -> q
                 .setParameter("person", change.personId().value())
                 .setParameter("name", change.displayName())
@@ -96,10 +117,11 @@ class RosterReplicaRepository implements RosterReplicaStore {
     @Override
     public boolean team(RosterEvent event, TeamChanged change) {
         return upsert("""
-                insert into athlete.team_ref as r (tenant_id, id, season_id, season_end_date, name, occurred_at, event_id)
-                values (:tenant, :id, :season, cast(:seasonEnd as date), :name, :at, :event)
+                insert into athlete.team_ref as r (tenant_id, id, season_id, season_end_date, name, removed, occurred_at,
+                  event_id)
+                values (:tenant, :id, :season, cast(:seasonEnd as date), :name, false, :at, :event)
                 on conflict (tenant_id, id) do update set season_id = excluded.season_id,
-                  season_end_date = excluded.season_end_date, name = excluded.name, occurred_at = excluded.occurred_at,
+                  season_end_date = excluded.season_end_date, name = excluded.name, removed = false, occurred_at = excluded.occurred_at,
                   event_id = excluded.event_id, updated_at = now()""", event, q -> q
                 .setParameter("season", change.seasonId())
                 .setParameter("seasonEnd", change.seasonEndDate().toString())
@@ -110,12 +132,12 @@ class RosterReplicaRepository implements RosterReplicaStore {
     public boolean teamPlayer(RosterEvent event, TeamPlayerChanged change) {
         return upsert("""
                 insert into athlete.team_player_ref as r (tenant_id, id, team_id, player_id, jersey_number, joined_on, left_on,
-                  invalid_reason, occurred_at, event_id)
+                  invalid_reason, removed, occurred_at, event_id)
                 values (:tenant, :id, :team, :player, cast(:jersey as text), cast(:joined as date), cast(:left as date),
-                  cast(:invalid as text), :at, :event)
+                  cast(:invalid as text), false, :at, :event)
                 on conflict (tenant_id, id) do update set team_id = excluded.team_id, player_id = excluded.player_id,
                   jersey_number = excluded.jersey_number, joined_on = excluded.joined_on, left_on = excluded.left_on,
-                  invalid_reason = excluded.invalid_reason, occurred_at = excluded.occurred_at,
+                  invalid_reason = excluded.invalid_reason, removed = false, occurred_at = excluded.occurred_at,
                   event_id = excluded.event_id, updated_at = now()""", event, q -> q
                 .setParameter("team", change.teamId().value())
                 .setParameter("player", change.playerId().value())
@@ -174,6 +196,15 @@ class RosterReplicaRepository implements RosterReplicaStore {
                 .setParameter("removed", removed));
     }
 
+    @Override
+    public boolean removed(RosterEvent event, RosterChange.Removed change) {
+        String sql = REMOVALS.get(change.topic());
+        if (sql == null) {
+            throw new IllegalArgumentException(change.topic() + " has no identity-only removal");
+        }
+        return upsert(sql, event, UnaryOperator.identity());
+    }
+
     private boolean upsert(String sql, RosterEvent event, UnaryOperator<Query> parameters) {
         return parameters.apply(envelope(em.createNativeQuery(sql + NOT_NEWER), event)).executeUpdate() == 1;
     }
@@ -187,6 +218,15 @@ class RosterReplicaRepository implements RosterReplicaStore {
 
     private static boolean hasParameter(Query query, String name) {
         return query.getParameters().stream().anyMatch(p -> name.equals(p.getName()));
+    }
+
+    private static String removal(String table, boolean hasId, String... columns) {
+        String key = hasId ? "tenant_id, id" : "tenant_id";
+        String values = hasId ? ":tenant, :id" : ":tenant";
+        return "insert into " + table + " as r (" + key + ", removed, occurred_at, event_id) values (" + values
+                + ", true, :at, :event) on conflict (" + key + ") do update set removed = true, "
+                + Arrays.stream(columns).map(column -> column + " = null").collect(Collectors.joining(", "))
+                + ", occurred_at = excluded.occurred_at, event_id = excluded.event_id, updated_at = now()";
     }
 
     private static String date(Optional<LocalDate> date) {
