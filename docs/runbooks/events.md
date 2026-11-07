@@ -202,14 +202,16 @@ podman exec hoops-redpanda rpk group describe game-service.roster  # LAG per top
 curl -s localhost:8082/q/health/live | jq '.checks[] | select(.name | test("Messaging"))'
 ```
 `outcome` is `applied`, `duplicate` (a redelivered `eventId`, nothing changed), `stale` (older than the stored row,
-nothing changed) or `tombstone` (skipped; removals are soft, `removed = true`). `lag_seconds` is the age of the last
+nothing changed) or `tombstone` (skipped; removals are soft, `removed = true`; since WP82 for every aggregate: a removed
+person, player, team, assignment or tenant keeps only its id and reads leave it out). `lag_seconds` is the age of the last
 event when it was processed: a few seconds normally (core's poll interval plus the fetch).
 
 - **Parked records** (`hoops_roster_replica_parked_total` > 0): records that broke their contract (JSON Schema, key
   `<tenantId>:<aggregateId>`) are not applied and not retried. Read them as the schema owner (game_app may only insert):
   ```sql
   set role game_migrator;
-  select parked_at, topic, kafka_partition, kafka_offset, record_key, event_id, reason from game.parked_event order by id desc limit 20;
+  select id, parked_at, inspected_at, topic, kafka_partition, kafka_offset, record_key, event_id, reason
+    from game.parked_event order by id desc limit 20;
   ```
   then look at the record itself: `rpk topic consume <topic> -p <partition> -o <offset> -n 1`. The aggregate is
   repaired by its next event or, once the producer is fixed, by a replay.
@@ -218,6 +220,33 @@ event when it was processed: a few seconds normally (core's poll interval plus t
   compose restart game (`just services-down && just services-up`).
 - **Broker down**: nothing to do in game; the replica stays readable and goes stale (`lag_seconds` grows once events
   flow again); the client reconnects.
+
+### Housekeeping: what the retention job deletes (WP82)
+A daily job (`ReplicaRetentionJob`, one pod at a time: advisory lock `game.replica-retention`) deletes two kinds of
+bookkeeping rows, logs what it deleted (`Replica retention: deleted N applied event ids recorded before ... ; M parked
+records inspected before ...: [core.person-0@17, ...]`) and counts them in
+`hoops_roster_replica_pruned_total{table="applied_event"|"parked_event"}`.
+
+| Setting | Default | What |
+|---|---|---|
+| `hoops.roster.replica.retention.cron` | `0 40 3 * * ?` | when it runs (`off` disables it; tests run with `off`) |
+| `hoops.roster.replica.retention.applied-events` | `P7D` | `applied_event` rows older than this go; never below the topics' 7-day tombstone retention (game refuses to start) |
+| `hoops.roster.replica.retention.parked-events` | `P30D` | `parked_event` rows go this long after an operator marked them inspected |
+| `hoops.roster.replica.retention.batch-size` | `1000` | applied ids deleted per transaction and tenant (`for update skip locked`) |
+
+- **applied_event**: the event ids the consumer already applied (idempotency). A redelivery comes at most as long as
+  the topics keep a record, so after 7 days an id is no longer needed; an older redelivery would still be harmless
+  (the row's `occurred_at` guard makes it `stale`). The tenants are listed in `game.replica_tenant` (global, ids only).
+- **parked_event**: never deleted before an operator looked at it. Inspect, then mark (as `game_migrator`):
+  ```sql
+  set role game_migrator;
+  select id, parked_at, topic, kafka_partition, kafka_offset, record_key, event_id, reason
+    from game.parked_event where inspected_at is null order by id;
+  -- after reading the record (rpk topic consume <topic> -p <partition> -o <offset> -n 1) and fixing the cause:
+  update game.parked_event set inspected_at = now() where id in (...);
+  ```
+  The row goes `parked-events` (30 days) after that. Uninspected rows stay; `hoops_roster_replica_parked_total` still
+  counts them since the start of the pod.
 
 ### Replay (rebuild the replica from the topics)
 Needed after a broker reset, a fix of parked records, or a game outage longer than the tombstone retention (7 days).
@@ -263,12 +292,15 @@ podman exec hoops-redpanda rpk group describe athlete-service.roster
 ```
 - `outcome`: `applied` (the replica now holds the event's state), `duplicate` (eventId seen before: a redelivery or a
   replay over a filled replica), `stale` (an older event of an aggregate the replica holds newer), `tombstone` (the null
-  record after a removal, skipped). `lag_seconds` is how old the topic's last event was when athlete applied it.
+  record after a removal, skipped). Removals are soft for every aggregate since WP82: a removed person, player, team,
+  assignment or tenant keeps only its id (`removed = true`) and reads leave it out; a tenant removal leaves
+  `athlete.tenant_registry` alone. `lag_seconds` is how old the topic's last event was when athlete applied it.
 - **Parked records** (`parked_total` > 0): a record broke the contract (schema, envelope, or a key that is not
   `<tenantId>:<aggregateId>` of its envelope). It is skipped, never applied. The app role may only insert into the
   table; read it as `athlete_migrator`:
   ```sql
-  select topic, partition, kafka_offset, record_key, event_id, reason, parked_at from athlete.parked_event order by parked_at desc;
+  select topic, partition, kafka_offset, record_key, event_id, reason, parked_at, inspected_at
+    from athlete.parked_event order by parked_at desc;
   ```
   then look at the record (`rpk topic consume <topic> -o <kafka_offset> -n 1`). The aggregate's next event repairs the
   replica (state transfer); after a producer fix, replay.
@@ -277,6 +309,19 @@ podman exec hoops-redpanda rpk group describe athlete-service.roster
   keeps failing at the same offset, fix the database cause.
 - **Broker down**: athlete keeps serving from the replica (readiness does not depend on the broker); the replica only
   gets older, `records_lag` grows once the broker is back and drains.
+
+### Athlete housekeeping (WP82)
+The same job as game's (`ReplicaRetentionJob`, advisory lock `athlete.replica-retention`, same log line and
+`hoops_roster_replica_pruned_total{table}`), with the same keys: `hoops.roster.replica.retention.cron` (default
+`0 45 3 * * ?`, `off` disables it), `.applied-events` (`P7D`, never below the 7-day tombstone retention: athlete refuses
+to start), `.parked-events` (`P30D` after the inspection) and `.batch-size` (`1000`). Tenants come from
+`athlete.replica_tenant`. Inspect and mark parked rows as `athlete_migrator`:
+```sql
+select topic, partition, kafka_offset, record_key, event_id, reason, parked_at
+  from athlete.parked_event where inspected_at is null order by parked_at;
+update athlete.parked_event set inspected_at = now() where topic = '<topic>' and partition = <p> and kafka_offset = <o>;
+```
+Uninspected rows are never deleted.
 
 ### Replay the athlete replica
 Rebuilds the replica from the compacted topics, e.g. after the consumer was down longer than the 7 days tombstones are

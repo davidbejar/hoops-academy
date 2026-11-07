@@ -81,7 +81,8 @@ live keys equal core's rows, both replicas hold exactly core's counts), parked 0
 `just e2e` with `replica` for both services: JourneyTest 23/23. Still missing: the shadow period over days in a shared environment (kind or a staging cluster) and the game flip
 on kind; then the owner decides the flip. Since WP81 core also publishes `person.removed`, `player.removed`,
 `team.removed`, `team-player.removed` and `tenant.removed`; game and athlete accept them as valid but do not apply them
-yet (`outcome="ignored"`, never parked; the row stays): their soft removal is WP82 (wave 3).
+yet (`outcome="ignored"`, never parked; the row stays): their soft removal is WP82 (wave 3) — done, see the amendment
+WP82 at the end.
 
 ## Consequences
 - Roster and authorisation answers become eventually consistent: a change in core reaches game/athlete after the
@@ -90,7 +91,7 @@ yet (`outcome="ignored"`, never parked; the row stays): their soft removal is WP
 - game/athlete need no call to core on the request path in `replica` mode; core's `/internal` roster endpoints stay
   for `rest` mode and other consumers.
 - `applied_event` grows by one row per event; it can be pruned of rows older than the topics' tombstone retention
-  (7 days) without losing idempotency for live delivery (follow-up, not automated).
+  (7 days) without losing idempotency for live delivery (automated in WP82, see the amendment).
 - Each service gets the Kafka client and Dev Services Redpanda (the pinned image from common-quarkus) in its tests.
 
 ## Alternatives considered
@@ -137,3 +138,47 @@ yet (`outcome="ignored"`, never parked; the row stays): their soft removal is WP
   per event), `CoreRosterConsumerTest` and `RosterReplayTest` on Dev Services Redpanda, `ReplicaSourceApiTest`
   (`source=replica` through the API without any core-service). On kind (WP71) `athlete.rosterSource=replica` replaced
   only the athlete pod and kept answering with core scaled to 0.
+
+## Amendment 2026-11-07 (decision 59, WP82): every removal applied, replica housekeeping
+Applies to game and athlete alike (game `V6__replica_housekeeping.sql`, athlete `V9__replica_housekeeping.sql`).
+- **Point 3 for every aggregate.** The five removals WP81 added (`person.removed`, `player.removed`, `team.removed`,
+  `team-player.removed`, `tenant.removed`, empty payload) are applied, not ignored: the `*_ref` row of the event's
+  aggregate id is kept (or created, for a removal of an aggregate never seen) with `removed = true`, the removal's
+  `occurred_at` / `event_id`, and every state column null (a removed person keeps no name, login or roles, a removed
+  player no birth date). The `occurred_at` guard applies as before: a late older `.changed` is `stale`, a newer one
+  brings the aggregate back (`removed = false`, the whole state). Tombstones stay skipped. The `ignored` outcome is
+  gone; a tenant removal must name its own tenant like a tenant change (else parked).
+- **Reads treat removed rows as absent**, as core's `/internal` answers once the row is deleted: a removed tenant is not
+  found (like a suspended one), a removed person is no member, a removed player is neither own nor linked player nor on
+  a roster or in a player batch (a guardian link to a removed player does not count), a removed assignment is off the
+  roster and grants no team, a removed team is not found and counts neither as current nor as historic staff team;
+  athlete's roster staff leaves out staff whose person was removed. Proof on both sources: game
+  `AuthzContextContractTest` / `RosterPortContractTest` (REST and replica), athlete `ReplicaAuthzRulesTest` /
+  `ReplicaRosterRulesTest`, and `ReplicateRosterTest` / `ApplyRosterEventTest`.
+- **Tenant removal: marked, not cascaded.** `tenant.removed` sets `tenant_ref.removed`; the tenant's other rows stay
+  (every read needs an ACTIVE, not removed tenant, so they are unreachable) and their own removals, if core sends them,
+  apply as usual. Cascading would write every row of the tenant under one event and break the per-aggregate order
+  guard; today the only tenant removal is a failed onboarding (no members, nothing to cascade). athlete keeps the
+  tenant in `tenant_registry` (the nightly job finds nothing to materialise).
+- **Retention.** A daily job per service (`ReplicaRetentionJob`, Quarkus scheduler, `hoops.roster.replica.retention.cron`,
+  `TenantScope.runExclusive` under the advisory locks `game.replica-retention` / `athlete.replica-retention`) deletes
+  `applied_event` rows older than `hoops.roster.replica.retention.applied-events` (default and minimum 7 days, the
+  topics' tombstone retention: the service refuses to start with less) per tenant in batches
+  (`retention.batch-size`, `for update skip locked`), and `parked_event` rows an operator marked inspected
+  (`inspected_at`, set as the schema owner) longer than `retention.parked-events` (30 days) ago; uninspected rows are
+  never deleted. An applied id older than the tombstone retention is not needed: a redelivery cannot come later than the
+  topic keeps the record, and an older redelivery is `stale` anyway (`ReplicaRetentionTest`). What went is logged
+  (topic-partition@offset for parked rows, never key or reason) and counted in
+  `hoops_roster_replica_pruned_total{table}`.
+- **Two new grants, one new global table.** `applied_event` is a tenant table, so the job needs the list of tenants:
+  `<service>.replica_tenant` (global, tenant ids only, filled with every applied event; the app role may read and
+  insert). The app role may now delete from `parked_event` and read only the columns the job filters on and logs
+  (`topic`, partition, offset, `parked_at`, `inspected_at`; never `record_key`, `event_id`, `reason`).
+  Alternatives rejected: a permissive policy letting the app role see every tenant's `applied_event` rows (a
+  cross-tenant read on the request path), a `BYPASSRLS` or `SECURITY DEFINER` maintenance role (ADR-0006: no service
+  bypasses RLS).
+- **Tests without Kafka Dev Services.** Dev Services started a Redpanda container at every Quarkus boot outside
+  `ContainerStarts` (WP87), the last source of the "localhost:2375 failed to respond" flake (athlete
+  `ReplicaAuthzRulesTest`). The test profiles turn Dev Services off; the classes that run the consumer get
+  `RosterBrokerResource` (the pinned image through `ContainerStarts`, the seven topics, consumer on). Dev mode keeps
+  Dev Services.
