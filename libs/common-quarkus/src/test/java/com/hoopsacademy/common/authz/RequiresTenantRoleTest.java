@@ -67,6 +67,28 @@ class RequiresTenantRoleTest {
     }
 
     @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.COACH, historicStaffTeams = TEAM)
+    void formerStaffReadTheTeamsHistoryButAreNotItsStaff() {
+        inTenant().get(BASE + "teams/" + TEAM + "/history").then().statusCode(200);
+        inTenant().get(BASE + "teams/" + TEAM).then().statusCode(403);
+    }
+
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.COACH, historicStaffTeams = TEAM)
+    void aWriteOnAnEndedSeasonIsASeasonEndedConflict() {
+        inTenant().post(BASE + "teams/" + TEAM + "/history").then()
+                .statusCode(409)
+                .contentType("application/problem+json")
+                .body("code", equalTo("SEASON_ENDED"));
+    }
+
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.COACH, staffTeams = CHILD)
+    void aCoachNeverStaffOfTheTeamReadsNoHistory() {
+        inTenant().get(BASE + "teams/" + TEAM + "/history").then().statusCode(403);
+    }
+
+    @Test
     @TenantUser(tenant = TENANT, roles = TenantRole.PARENT, linkedPlayers = CHILD)
     void guardianPassesForLinkedPlayer() {
         inTenant().get(BASE + "players/" + CHILD).then().statusCode(200);

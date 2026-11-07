@@ -1,8 +1,10 @@
 package com.hoopsacademy.common.authz;
 
+import com.hoopsacademy.common.problem.SeasonEndedException;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import java.util.UUID;
@@ -33,6 +35,23 @@ public class AuthzProbeResource {
     public String team(@PathParam("teamId") UUID teamId) {
         authz.require(authz.isStaffOf(teamId), "Not staff of this team");
         return "team";
+    }
+
+    @GET
+    @Path("teams/{teamId}/history")
+    public String teamHistory(@PathParam("teamId") UUID teamId) {
+        authz.require(authz.isStaffOf(teamId) || authz.wasStaffOf(teamId), "Never staff of this team");
+        return "history";
+    }
+
+    @POST
+    @Path("teams/{teamId}/history")
+    public String writeTeamHistory(@PathParam("teamId") UUID teamId) {
+        if (authz.wasStaffOf(teamId)) {
+            throw new SeasonEndedException("The season of this team has ended");
+        }
+        authz.require(authz.isStaffOf(teamId), "Not staff of this team");
+        return "written";
     }
 
     @GET

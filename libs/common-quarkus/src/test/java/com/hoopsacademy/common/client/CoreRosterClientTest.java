@@ -24,6 +24,7 @@ class CoreRosterClientTest {
 
     private static final TenantId TENANT = TenantId.random();
     private static final UUID TEAM = UUID.randomUUID();
+    private static final UUID PAST_TEAM = UUID.randomUUID();
     private static final UUID PERSON = UUID.randomUUID();
     private static final UUID PLAYER = UUID.randomUUID();
 
@@ -34,7 +35,7 @@ class CoreRosterClientTest {
         AuthzContextDto authz = authzDto("ACTIVE", "Europe/Madrid");
         TeamRosterDto roster = new TeamRosterDto(TENANT.value(), TEAM, UUID.randomUUID(), "U12 A",
                 List.of(new RosterPlayerDto(PLAYER, "Ann", "7", LocalDate.of(2014, 2, 3), "FEMALE", "ACTIVE")),
-                List.of(new RosterStaffDto(PERSON, "COACH")));
+                List.of(new RosterStaffDto(PERSON, "COACH")), LocalDate.of(2027, 6, 30));
         List<PlayerBriefDto> players = List.of(new PlayerBriefDto(PLAYER, "Ann", LocalDate.of(2014, 2, 3), "FEMALE", "ACTIVE"));
 
         @Override
@@ -64,7 +65,7 @@ class CoreRosterClientTest {
 
     static CoreInternalClient.AuthzContextDto authzDto(String status, String zone) {
         return new CoreInternalClient.AuthzContextDto("sub-1", PERSON, TENANT.value(), status, List.of("PARENT", "COACH"),
-                List.of(TEAM), List.of(PLAYER), null, List.of(TEAM), zone);
+                List.of(TEAM), List.of(PLAYER), null, List.of(TEAM), zone, List.of(PAST_TEAM));
     }
 
     private final FakeCore core = new FakeCore();
@@ -77,6 +78,7 @@ class CoreRosterClientTest {
         assertThat(member.tenantActive()).isTrue();
         assertThat(member.context().roles()).containsExactlyInAnyOrder(TenantRole.PARENT, TenantRole.COACH);
         assertThat(member.context().staffTeamIds()).containsExactly(TEAM);
+        assertThat(member.context().historicStaffTeamIds()).containsExactly(PAST_TEAM);
         assertThat(member.context().linkedPlayerIds()).containsExactly(PLAYER);
         assertThat(member.context().playerTeamIds()).containsExactly(TEAM);
         assertThat(member.context().timezone()).contains(ZoneId.of("Europe/Madrid"));
@@ -87,12 +89,13 @@ class CoreRosterClientTest {
     @Test
     void toleratesAnOlderCoreWithoutZoneOrPlayerTeamsAndIgnoresUnknownZones() {
         core.authz = new CoreInternalClient.AuthzContextDto("sub-1", PERSON, TENANT.value(), "ACTIVE", List.of(), List.of(),
-                List.of(), PLAYER, null, "Mars/Olympus");
+                List.of(), PLAYER, null, "Mars/Olympus", null);
 
         CoreMembership member = client.membership(TENANT, "sub-1").orElseThrow();
 
         assertThat(member.context().timezone()).isEmpty();
         assertThat(member.context().playerTeamIds()).isEmpty();
+        assertThat(member.context().historicStaffTeamIds()).isEmpty();
         assertThat(member.context().ownPlayerId()).contains(PLAYER);
     }
 

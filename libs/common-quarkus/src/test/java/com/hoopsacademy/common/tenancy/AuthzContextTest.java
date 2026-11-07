@@ -112,4 +112,33 @@ class AuthzContextTest {
         assertThat(new AuthzContext("s", UUID.randomUUID(), TENANT, Set.of(), Set.of(), Set.of(), Optional.empty(), null, null)
                 .playerTeamIds()).isEmpty();
     }
+
+    @Test
+    void formerStaffNeedAStaffRoleAndAHistoricStaffRowAndAreNotCurrentStaff() {
+        UUID pastTeam = UUID.randomUUID();
+        var coach = context(EnumSet.of(COACH)).withHistoricStaffTeamIds(Set.of(pastTeam));
+        var assistant = context(EnumSet.of(ASSISTANT_COACH)).withHistoricStaffTeamIds(Set.of(pastTeam));
+        var parent = context(EnumSet.of(PARENT)).withHistoricStaffTeamIds(Set.of(pastTeam));
+
+        assertThat(coach.wasStaffOf(pastTeam)).isTrue();
+        assertThat(assistant.wasStaffOf(pastTeam)).isTrue();
+        assertThat(coach.isStaffOf(pastTeam)).as("history never grants today's access").isFalse();
+        assertThat(coach.wasStaffOf(TEAM)).as("a current team is not history").isFalse();
+        assertThat(parent.wasStaffOf(pastTeam)).as("staff role required").isFalse();
+        assertThat(coach.historicStaffTeamIds()).containsExactly(pastTeam);
+        assertThat(coach.staffTeamIds()).containsExactly(TEAM);
+    }
+
+    @Test
+    void historicStaffTeamsDefaultToNoneAndAreCopied() {
+        var teams = new HashSet<UUID>(Set.of(TEAM));
+        var ctx = context(EnumSet.of(COACH)).withHistoricStaffTeamIds(teams);
+        teams.clear();
+
+        assertThat(context(EnumSet.of(COACH)).historicStaffTeamIds()).isEmpty();
+        assertThat(new AuthzContext("s", UUID.randomUUID(), TENANT, Set.of(), Set.of(), Set.of(), Optional.empty(), null,
+                null, null).historicStaffTeamIds()).isEmpty();
+        assertThat(ctx.historicStaffTeamIds()).containsExactly(TEAM);
+        assertThatThrownBy(() -> ctx.historicStaffTeamIds().add(TEAM)).isInstanceOf(UnsupportedOperationException.class);
+    }
 }

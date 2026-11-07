@@ -49,7 +49,8 @@ public class TenantUserCallback implements QuarkusTestBeforeEachCallback, Quarku
                 uuids(user.linkedPlayers()),
                 user.ownPlayer().isBlank() ? Optional.empty() : Optional.of(UUID.fromString(user.ownPlayer())),
                 uuids(user.playerTeams()),
-                user.timezone().isBlank() ? Optional.empty() : Optional.of(java.time.ZoneId.of(user.timezone())));
+                user.timezone().isBlank() ? Optional.empty() : Optional.of(java.time.ZoneId.of(user.timezone())),
+                uuids(user.historicStaffTeams()));
     }
 
     /** Stable person id per tenant so tests can predict it: {@code personIdFor(tenant)}. */

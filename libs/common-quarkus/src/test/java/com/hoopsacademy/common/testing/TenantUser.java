@@ -41,6 +41,9 @@ public @interface TenantUser {
     /** Team ids (UUID) the caller is staff of. */
     String[] staffTeams() default {};
 
+    /** Team ids (UUID) of ended seasons the caller was staff of ({@code AuthzContext.historicStaffTeamIds}, ADR-0042). */
+    String[] historicStaffTeams() default {};
+
     /** Player ids (UUID) the caller is guardian of. */
     String[] linkedPlayers() default {};
 
