@@ -5,7 +5,10 @@ import static com.hoopsacademy.athlete.support.ApiSupport.formerStaff;
 import static com.hoopsacademy.athlete.support.ApiSupport.member;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 
 import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
@@ -151,7 +154,7 @@ class SeasonHistoryApiTest {
         api(TENANT).get(INJURIES + "/" + onLastDay).then().statusCode(200);
         api(TENANT).get(INJURIES + "/" + after).then().statusCode(404);
         api(TENANT).queryParam("teamId", PAST_TEAM).get(INJURIES).then().statusCode(200)
-                .body("items.id", org.hamcrest.Matchers.containsInAnyOrder(during, onLastDay));
+                .body("items.id", hasItems(during, onLastDay)).body("items.id", not(hasItem(after)));
         api(TENANT).get(INJURIES).then().statusCode(200).body("items", hasSize(0));
         api(TENANT).queryParam("playerId", P1).queryParam("from", LAST_DAY.minusDays(60).toString())
                 .get("/api/athlete/body-measurements").then().statusCode(200);

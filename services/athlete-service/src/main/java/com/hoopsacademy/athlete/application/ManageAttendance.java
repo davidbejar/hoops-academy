@@ -44,14 +44,15 @@ public class ManageAttendance {
     }
 
     /**
-     * ADMIN / staff of the team see the whole sheet; a parent or player sees only the entries of their own players
-     * and gets 404 when none of them is on the team. Other staff roles get 403.
+     * ADMIN / staff of the team (also its former staff once the season has ended) see the whole sheet; a parent or
+     * player sees only the entries of their own players and gets 404 when none of them is on the team. Other staff
+     * roles get 403.
      */
     @Transactional
     public List<AttendanceEntry> sheet(AuthzContext caller, SessionId id) {
         TrainingSession session = sessions.find(id).orElseThrow(() -> new NotFoundException("Session not found"));
         List<AttendanceEntry> all = buildSheet(caller, session);
-        if (access.canManage(caller, session.teamId())) {
+        if (access.seesAsStaff(caller, session.teamId())) {
             return all;
         }
         Set<PlayerId> related = access.relatedPlayers(caller);

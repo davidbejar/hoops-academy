@@ -40,4 +40,7 @@ public interface ReplicaMembershipReads {
 
     /** The teams (of those known) whose season ends today or later. */
     Set<TeamId> seasonNotEnded(Collection<TeamId> teams, LocalDate today);
+
+    /** The teams (of those known) whose season ended before {@code today} (ADR-0042). */
+    Set<TeamId> seasonEnded(Collection<TeamId> teams, LocalDate today);
 }

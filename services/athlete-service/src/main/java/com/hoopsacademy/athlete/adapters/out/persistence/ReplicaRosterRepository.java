@@ -41,11 +41,13 @@ public class ReplicaRosterRepository implements RosterPort {
         if (!tenantActive(tenant)) {
             throw new NotFoundException("Team not found");
         }
-        List<?> names = em.createNativeQuery("select name from athlete.team_ref where tenant_id = :tenant and id = :team")
+        List<?> rows = em.createNativeQuery(
+                        "select name, season_end_date from athlete.team_ref where tenant_id = :tenant and id = :team")
                 .setParameter("tenant", tenant.value()).setParameter("team", team.value()).getResultList();
-        String name = names.stream().map(String.class::cast).findFirst()
+        Object[] row = rows.stream().map(Object[].class::cast).findFirst()
                 .orElseThrow(() -> new NotFoundException("Team not found"));
-        return new TeamRoster(team, name, rosterPlayers(tenant, team), staff(tenant, team));
+        return new TeamRoster(team, (String) row[0], rosterPlayers(tenant, team), staff(tenant, team),
+                ReplicaRows.date(row[1]));
     }
 
     @Override

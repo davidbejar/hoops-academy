@@ -56,7 +56,7 @@ public class ManageInjuries {
     @Transactional
     public Injury get(AuthzContext caller, InjuryId id) {
         Injury injury = injuries.find(id).orElseThrow(() -> new NotFoundException("Injury not found"));
-        access.requireRead(caller, injury.playerId(), "Injury");
+        access.requireRead(caller, injury.playerId(), injury.occurredOn(), "Injury");
         return injury;
     }
 
@@ -87,8 +87,8 @@ public class ManageInjuries {
 
     @Transactional
     public PageResult<Injury> search(AuthzContext caller, Search search) {
-        var scope = access.listScope(caller, search.player(), search.team());
-        return injuries.search(scope, search.status(), search.page(), search.size());
+        HealthAccess.Scope scope = access.listScope(caller, search.player(), search.team());
+        return injuries.search(scope.players(), search.status(), scope.until(), search.page(), search.size());
     }
 
     /** Is the player available today? Visible to everyone who may read the player's data. */

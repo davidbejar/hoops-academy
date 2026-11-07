@@ -81,9 +81,7 @@ public class ManageAssignments {
     public void delete(AuthzContext caller, AssignmentId id) {
         access.requireStaffRole(caller);
         PlanAssignment assignment = load(id);
-        if (!access.mayManage(caller, assignment)) {
-            throw new AccessDeniedException("Only an administrator or staff of the assignment's team may withdraw it");
-        }
+        access.requireMayWithdraw(caller, assignment);
         assignments.delete(id);
     }
 

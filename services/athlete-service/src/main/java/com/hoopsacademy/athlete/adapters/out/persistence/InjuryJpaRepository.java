@@ -12,6 +12,7 @@ import com.hoopsacademy.athlete.domain.PlayerId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -64,12 +65,14 @@ class InjuryJpaRepository implements InjuryRepository {
     }
 
     @Override
-    public PageResult<Injury> search(Collection<PlayerId> players, Optional<InjuryStatus> status, int page, int size) {
+    public PageResult<Injury> search(Collection<PlayerId> players, Optional<InjuryStatus> status,
+            Optional<LocalDate> occurredUntil, int page, int size) {
         if (players != null && players.isEmpty()) {
             return new PageResult<>(List.of(), page, size, 0);
         }
         String where = " where 1 = 1" + (players != null ? " and i.playerId in :players" : "")
-                + (status.isPresent() ? " and i.status = :status" : "");
+                + (status.isPresent() ? " and i.status = :status" : "")
+                + (occurredUntil.isPresent() ? " and i.occurredOn <= :until" : "");
         TypedQuery<InjuryEntity> select = em.createQuery(
                 "select i from InjuryEntity i" + where + " order by i.occurredOn desc, i.id", InjuryEntity.class);
         TypedQuery<Long> count = em.createQuery("select count(i) from InjuryEntity i" + where, Long.class);
@@ -78,6 +81,7 @@ class InjuryJpaRepository implements InjuryRepository {
                 q.setParameter("players", players.stream().map(PlayerId::value).toList());
             }
             status.ifPresent(s -> q.setParameter("status", s.name()));
+            occurredUntil.ifPresent(until -> q.setParameter("until", until));
         }
         List<Injury> items = select.setFirstResult(page * size).setMaxResults(size).getResultList().stream()
                 .map(InjuryJpaRepository::toDomain).toList();

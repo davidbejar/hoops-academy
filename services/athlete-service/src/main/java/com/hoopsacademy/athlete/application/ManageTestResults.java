@@ -99,16 +99,17 @@ public class ManageTestResults {
 
     @Transactional
     public PageResult<ResultView> search(AuthzContext caller, Search search) {
-        var scope = access.listScope(caller, search.player(), search.team());
-        PageResult<PhysicalTestResult> page = results.search(scope, search.testType(), search.from().orElse(MIN_DATE),
-                search.to().orElse(MAX_DATE), search.page(), search.size());
+        HealthAccess.Scope scope = access.listScope(caller, search.player(), search.team());
+        PageResult<PhysicalTestResult> page = results.search(scope.players(), search.testType(),
+                search.from().orElse(MIN_DATE), scope.cap(search.to().orElse(MAX_DATE)),
+                search.page(), search.size());
         List<ResultView> views = view(caller, page.items());
         return new PageResult<>(views, page.page(), page.size(), page.totalElements());
     }
 
     private PhysicalTestResult load(AuthzContext caller, TestResultId id) {
         PhysicalTestResult result = results.find(id).orElseThrow(() -> new NotFoundException("Test result not found"));
-        access.requireRead(caller, result.playerId(), "Test result");
+        access.requireRead(caller, result.playerId(), result.measuredOn(), "Test result");
         return result;
     }
 

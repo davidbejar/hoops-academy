@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
  * The tenant filter's membership from the replica (hoops.roster.source=replica), computed like core's
  * {@code MembershipLookup} behind /internal/authz: only an ACTIVE tenant's active person with the login is a member;
  * the own player counts with the PLAYER role, guardian links with PARENT; staff and player teams leave out teams whose
- * season has ended in the tenant's zone. Called with the requested tenant bound, so every read is RLS-scoped.
+ * season has ended in the tenant's zone; the known staff teams whose season has ended are the historic staff teams
+ * (read-only history, ADR-0042). Called with the requested tenant bound, so every read is RLS-scoped.
  */
 @ApplicationScoped
 @Typed(ReplicaAuthzResolver.class)
@@ -60,11 +61,13 @@ public class ReplicaAuthzResolver implements AuthzContextResolver {
         Set<TeamId> playerTeams = players.isEmpty() ? Set.of() : reads.openValidTeamsOf(players);
         Set<TeamId> candidates = new HashSet<>(staffTeams);
         candidates.addAll(playerTeams);
-        Set<TeamId> running = candidates.isEmpty() ? Set.of()
-                : reads.seasonNotEnded(candidates, LocalDate.now(clock.withZone(tenant.timezone())));
+        LocalDate today = LocalDate.now(clock.withZone(tenant.timezone()));
+        Set<TeamId> running = candidates.isEmpty() ? Set.of() : reads.seasonNotEnded(candidates, today);
+        Set<TeamId> ended = staffTeams.isEmpty() ? Set.of() : reads.seasonEnded(staffTeams, today);
         return new AuthzContext(subject, member.personId().value(), tenantId, member.roles(),
                 teamIds(staffTeams, running), linked.stream().map(PlayerId::value).collect(Collectors.toSet()),
-                ownPlayer.map(PlayerId::value), teamIds(playerTeams, running), Optional.of(tenant.timezone()));
+                ownPlayer.map(PlayerId::value), teamIds(playerTeams, running), Optional.of(tenant.timezone()),
+                teamIds(staffTeams, ended));
     }
 
     private static Set<UUID> teamIds(Set<TeamId> teams, Set<TeamId> running) {

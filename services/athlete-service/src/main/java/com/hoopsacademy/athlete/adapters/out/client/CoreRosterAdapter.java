@@ -40,7 +40,7 @@ public class CoreRosterAdapter implements RosterPort {
         CoreInternalClient.TeamRosterDto dto = core.teamRoster(tenant, team.value());
         return new TeamRoster(new TeamId(dto.teamId()), dto.teamName(),
                 dto.players().stream().map(p -> new TeamRoster.RosterPlayer(new PlayerId(p.playerId()), p.displayName())).toList(),
-                dto.staff().stream().map(s -> new PersonId(s.personId())).toList());
+                dto.staff().stream().map(s -> new PersonId(s.personId())).toList(), dto.seasonEndDate());
     }
 
     @Override

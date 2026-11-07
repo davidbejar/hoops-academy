@@ -54,7 +54,7 @@ public class ManageMeasurements {
     @Transactional
     public BodyMeasurement get(AuthzContext caller, BodyMeasurementId id) {
         BodyMeasurement measurement = measurements.find(id).orElseThrow(() -> new NotFoundException("Measurement not found"));
-        access.requireRead(caller, measurement.playerId(), "Measurement");
+        access.requireRead(caller, measurement.playerId(), measurement.measuredOn(), "Measurement");
         return measurement;
     }
 
@@ -82,8 +82,8 @@ public class ManageMeasurements {
     /** Naming a player the caller may not read is 403. */
     @Transactional
     public List<BodyMeasurement> history(AuthzContext caller, PlayerId player, Optional<LocalDate> from, Optional<LocalDate> to) {
-        access.listScope(caller, Optional.of(player), Optional.empty());
-        return measurements.history(player, from.orElse(MIN_DATE), to.orElse(MAX_DATE));
+        HealthAccess.Scope scope = access.listScope(caller, Optional.of(player), Optional.empty());
+        return measurements.history(player, from.orElse(MIN_DATE), scope.cap(to.orElse(MAX_DATE)));
     }
 
     private void requireFreeDay(BodyMeasurement measurement, Optional<BodyMeasurementId> except) {

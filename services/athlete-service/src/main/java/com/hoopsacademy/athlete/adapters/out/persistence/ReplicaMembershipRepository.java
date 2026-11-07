@@ -92,6 +92,18 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
         return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());
     }
 
+    @Override
+    public Set<TeamId> seasonEnded(Collection<TeamId> teams, LocalDate today) {
+        if (teams.isEmpty()) {
+            return Set.of();
+        }
+        List<?> rows = em.createNativeQuery(
+                        "select id from athlete.team_ref where id in (:teams) and season_end_date < cast(:today as date)")
+                .setParameter("teams", teams.stream().map(TeamId::value).toList())
+                .setParameter("today", today.toString()).getResultList();
+        return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());
+    }
+
     private static Optional<Object[]> first(Query query) {
         List<?> rows = query.getResultList();
         return rows.stream().findFirst().map(Object[].class::cast);

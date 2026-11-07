@@ -17,17 +17,20 @@ import java.util.Set;
 /**
  * The plan part of the authorization matrix ({@code docs/domain/authz-matrix.md}): who writes plans, assigns them,
  * sees assignments and marks completions. Staff roles read every assignment of the tenant (as WP8 reads every team);
- * writes need ADMIN or a staff relation to the team (for a player assignment: to a team the player is in).
+ * writes need ADMIN or a staff relation to the team (for a player assignment: to a team the player is in). A team
+ * assignment of a team whose season has ended is read-only: 409 {@code SEASON_ENDED} (ADR-0042).
  */
 @ApplicationScoped
 public class PlanAccess {
 
     private final TrainingAccess training;
     private final RosterPort roster;
+    private final PastSeasons pastSeasons;
 
-    public PlanAccess(TrainingAccess training, RosterPort roster) {
+    public PlanAccess(TrainingAccess training, RosterPort roster, PastSeasons pastSeasons) {
         this.training = training;
         this.roster = roster;
+        this.pastSeasons = pastSeasons;
     }
 
     /** ADMIN, COACH or ASSISTANT_COACH write plans (the matrix does not tie plan writing to a team). */
@@ -68,6 +71,27 @@ public class PlanAccess {
         }
         return assignment.teamId().map(team -> caller.isStaffOf(team.value()))
                 .orElseGet(() -> isStaffOfPlayer(caller, assignment.playerId().orElseThrow()));
+    }
+
+    /** Withdrawing: as {@link #mayManage}; a team assignment follows the team's write rule (403 / 409 season ended). */
+    public void requireMayWithdraw(AuthzContext caller, PlanAssignment assignment) {
+        if (assignment.teamId().isPresent()) {
+            training.requireManage(caller, assignment.teamId().get());
+        } else if (!mayManage(caller, assignment)) {
+            throw new AccessDeniedException("Only an administrator or staff of the assignment's team may withdraw it");
+        }
+    }
+
+    /**
+     * Marking a completion: {@link #mayMark} (403 otherwise; the team's former staff get the 409 instead); a team
+     * assignment of a team whose season has ended is refused with 409 {@code SEASON_ENDED}.
+     */
+    public void requireMayMark(AuthzContext caller, PlanAssignment assignment, PlayerId player) {
+        boolean formerStaff = assignment.teamId().filter(team -> caller.wasStaffOf(team.value())).isPresent();
+        if (!formerStaff && !mayMark(caller, assignment, player)) {
+            throw new AccessDeniedException("Not allowed to mark this player's completion");
+        }
+        assignment.teamId().ifPresent(team -> pastSeasons.requireOpen(caller, team));
     }
 
     /** Staff roles see every assignment; a parent or player only those that target one of their players (else 404). */

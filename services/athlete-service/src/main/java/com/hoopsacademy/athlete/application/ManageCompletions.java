@@ -37,9 +37,7 @@ public class ManageCompletions {
             CompletionStatus status, String note) {
         PlanAssignment assignment = load(assignmentId);
         access.requireView(caller, assignment);
-        if (!access.mayMark(caller, assignment, player)) {
-            throw new AccessDeniedException("Not allowed to mark this player's completion");
-        }
+        access.requireMayMark(caller, assignment, player);
         if (!targetsOf(caller, assignment).contains(player)) {
             throw assignment.teamId().isPresent()
                     ? new DomainRuleViolation("The player is not in the assigned team", "PLAYER_NOT_IN_TEAM")
