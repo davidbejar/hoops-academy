@@ -202,7 +202,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 | 1 | WP72 | Web: design system (tokens, theme, shared widgets, shell) to the landing-page look | Opus | Done (ADR-0040; web 865 tests; 21 new + 16 re-recorded goldens) |
 | 1 | WP78 | Athlete: session references any plan directly; exercise search inside templates and quick-add | Opus | Done (ADR-0041; athlete 2.3.0; mutation 100 %; web 890 tests; e2e 23/23) |
 | 1 | WP81 | Core: producer recovery, `.removed` events on deletion, backfill and shadow period | Opus | Running |
-| 1 | WP83 | CI: SAST (CodeQL, Semgrep, find-sec-bugs) and DAST (ZAP API scan, full scan on kind) gates, findings triaged | Opus | Running |
+| 1 | WP83 | CI: SAST (CodeQL, Semgrep, find-sec-bugs) and DAST (ZAP API scan, full scan on kind) gates, findings triaged | Opus | Done (ADR-0045; SpotBugs in verify; CodeQL + Semgrep + ZAP API gates; findings SD-01..SD-08 for WP84) |
 | 1 | WP87 | Chart: Reloader on Secret rotation, remaining kind proofs, rate-limit load guard, Testcontainers flake | Opus | Done (chart 0.8.0 Reloader; ADR-0012 amendment; flake root cause; kind proofs moved to WP86 step 0) |
 | 2 | WP73 | Web redesign: training, plans, sessions, health and fitness screens | Opus | After wave 1 |
 | 2 | WP74 | Web redesign: live match, match list and match statistics screens | Opus | Done (web 910 tests on the combined tree; 14 match goldens; kit SheetAction key) |
