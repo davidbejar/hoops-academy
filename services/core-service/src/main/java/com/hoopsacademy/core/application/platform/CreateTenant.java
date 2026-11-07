@@ -48,7 +48,12 @@ public class CreateTenant {
     }
 
     public WithTemporaryPassword<Tenant> handle(CreateTenantCommand command) {
-        Tenant tenant = Tenant.onboard(TenantId.random(), command.slug(), command.name(), command.timezone(),
+        return handle(TenantId.random(), command);
+    }
+
+    /** With the academy's id chosen by the caller (an accepted academy request claims it first, ADR-0044). */
+    public WithTemporaryPassword<Tenant> handle(TenantId id, CreateTenantCommand command) {
+        Tenant tenant = Tenant.onboard(id, command.slug(), command.name(), command.timezone(),
                 command.defaultLocale(), clock.instant());
         Person firstAdmin = firstAdmin(command);
         registration.requireSlugAvailable(tenant.slug());

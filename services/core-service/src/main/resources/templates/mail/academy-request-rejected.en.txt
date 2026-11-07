@@ -1,0 +1,10 @@
+Hello{#if name} {name}{/if},
+
+thank you for your interest in Hoops Academy. We cannot open the academy "{academyName}" for now.
+
+The reason:
+{reason}
+
+You are welcome to send a new request from {landingUrl} when things change.
+
+The Hoops Academy team

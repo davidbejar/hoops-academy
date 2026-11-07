@@ -1,0 +1,10 @@
+Halo{#if name} {name}{/if},
+
+terima kasih atas minatmu pada Hoops Academy. Untuk saat ini kami belum bisa membuka akademi "{academyName}".
+
+Alasannya:
+{reason}
+
+Kamu boleh mengirim permintaan baru dari {landingUrl} jika keadaannya berubah.
+
+Tim Hoops Academy

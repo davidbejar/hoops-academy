@@ -99,6 +99,12 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-kafka-client</artifactId>
     </dependency>
+    <!-- decision e-mails of academy requests (WP90, ADR-0044): SMTP from the environment, plain-text Qute templates;
+         versions from the Quarkus BOM -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-mailer</artifactId>
+    </dependency>
 
     <!-- ===== test ===== -->
     <dependency>

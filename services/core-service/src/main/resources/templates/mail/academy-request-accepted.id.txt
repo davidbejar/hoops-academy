@@ -1,0 +1,14 @@
+Halo{#if name} {name}{/if},
+
+akademimu "{academyName}" sudah siap di Hoops Academy, dan kamu adalah adminnya.
+
+Masuk di {loginUrl}
+Login-mu adalah alamat email ini: {email}
+{#if newLogin}
+Kami akan mengirimkan kata sandi sementara dalam pesan terpisah yang privat (tidak pernah lewat email). Saat pertama kali masuk, kamu memilih kata sandimu sendiri.
+{#else}
+Kamu sudah punya login Hoops Academy: masuk dengan kata sandimu sendiri lalu pindah ke akademi baru.
+{/if}
+
+Selamat bergabung,
+Tim Hoops Academy

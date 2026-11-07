@@ -1,0 +1,14 @@
+Hola{#if name} {name}{/if}:
+
+tu academia "{academyName}" ya está lista en Hoops Academy y tú eres su administrador.
+
+Inicia sesión en {loginUrl}
+Tu usuario es esta dirección de correo: {email}
+{#if newLogin}
+Te enviaremos una contraseña temporal en un mensaje aparte y privado (nunca por correo). En tu primer inicio de sesión eliges tu propia contraseña.
+{#else}
+Ya tienes un acceso a Hoops Academy: inicia sesión con tu contraseña y cambia a la nueva academia.
+{/if}
+
+Bienvenido,
+El equipo de Hoops Academy

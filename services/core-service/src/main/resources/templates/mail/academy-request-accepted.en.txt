@@ -1,0 +1,14 @@
+Hello{#if name} {name}{/if},
+
+your academy "{academyName}" is ready on Hoops Academy, and you are its administrator.
+
+Sign in at {loginUrl}
+Your login is this e-mail address: {email}
+{#if newLogin}
+We will send you a temporary password in a separate, private message (never by e-mail). At your first sign-in you choose your own password.
+{#else}
+You already have a Hoops Academy login: sign in with your own password and switch to the new academy.
+{/if}
+
+Welcome aboard,
+The Hoops Academy team

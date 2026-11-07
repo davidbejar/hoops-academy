@@ -54,6 +54,7 @@ appearing in all three.
 | `tenant.master_data_changed` | tenant | `fields` (`name`, `timezone`, `defaultLocale`) | super admin |
 | `tenant.profile_changed` | tenant | `fields` (changed profile field names) | ADMIN |
 | `tenant.reactivated` | tenant | `status` | super admin (also an outbox event) |
+| `tenant.request_accepted` | tenant | `academyRequestId`, `requesterRole` (`ADMIN` / `COACH` / `PARENT`) | super admin accepting an academy request: the academy was created from it, its requester is the first ADMIN (WP90, ADR-0044; a rejection has no academy and is recorded on the request itself) |
 | `tenant.settings_changed` | tenant | `eligibilityRulesChanged` | ADMIN |
 | `tenant.suspended` | tenant | `status`, `reason` (free text, see Rules) | super admin (also an outbox event) |
 | `tenant.withdrawn` | tenant | `status`, `reason` (free text, see Rules) | super admin (also an outbox event) |

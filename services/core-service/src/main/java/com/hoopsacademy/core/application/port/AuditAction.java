@@ -42,6 +42,7 @@ public enum AuditAction {
     TENANT_MASTER_DATA_CHANGED("tenant.master_data_changed", TENANT),
     TENANT_PROFILE_CHANGED("tenant.profile_changed", TENANT),
     TENANT_REACTIVATED("tenant.reactivated", TENANT),
+    TENANT_REQUEST_ACCEPTED("tenant.request_accepted", TENANT),
     TENANT_SETTINGS_CHANGED("tenant.settings_changed", TENANT),
     TENANT_SUSPENDED("tenant.suspended", TENANT),
     TENANT_WITHDRAWN("tenant.withdrawn", TENANT);
