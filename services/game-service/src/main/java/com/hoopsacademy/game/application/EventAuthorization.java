@@ -13,7 +13,9 @@ import java.util.function.Function;
 /**
  * Who may record one event (docs/domain/authz-matrix.md): ADMIN and staff of the match's team may record anything;
  * a PARENT may record player statistics of linked players and VOID events they recorded themselves, and once the
- * match is FINISHED only events their device recorded before the final whistle. Everybody else: nothing.
+ * match is FINISHED only events their device recorded before the final whistle. Everybody else: nothing. The team's
+ * former staff (season ended) keep the staff rule here; {@link IngestEventBatch} then refuses what was recorded after
+ * the season (ADR-0042).
  */
 final class EventAuthorization {
 
@@ -21,7 +23,8 @@ final class EventAuthorization {
 
     /** @param recorderOf person who recorded a stored (or earlier accepted) event, empty when unknown */
     static boolean mayRecord(AuthzContext caller, Match match, MatchEvent event, Function<EventId, Optional<UUID>> recorderOf) {
-        if (caller.hasRole(TenantRole.ADMIN) || caller.isStaffOf(match.teamId().value())) {
+        UUID team = match.teamId().value();
+        if (caller.hasRole(TenantRole.ADMIN) || caller.isStaffOf(team) || caller.wasStaffOf(team)) {
             return true;
         }
         if (!caller.hasRole(TenantRole.PARENT) || recordedAfterTheFinalWhistle(match, event)) {

@@ -9,7 +9,8 @@ import java.util.stream.Stream;
 
 /**
  * The one place that decides whose statistics a caller sees in a match of {@code team} (docs/domain/authz-matrix.md
- * "View match stats", ADR-0021 §3, ADR-0030): ADMIN and staff of the team see every player; anybody else sees the
+ * "View match stats", ADR-0021 §3, ADR-0030): ADMIN and staff of the team (also its former staff once the season
+ * has ended, ADR-0042) see every player; anybody else sees the
  * players they are guardian of (PARENT) and their own player (PLAYER). Box-score lines and the event feed use it.
  */
 final class StatVisibility {
@@ -17,7 +18,7 @@ final class StatVisibility {
     private StatVisibility() {}
 
     static PlayerVisibility forTeam(AuthzContext caller, TeamId team) {
-        if (caller.hasRole(TenantRole.ADMIN) || caller.isStaffOf(team.value())) {
+        if (caller.hasRole(TenantRole.ADMIN) || caller.isStaffOf(team.value()) || caller.wasStaffOf(team.value())) {
             return PlayerVisibility.everyone();
         }
         Stream<PlayerId> linked = caller.linkedPlayerIds().stream().filter(caller::isGuardianOf).map(PlayerId::of);

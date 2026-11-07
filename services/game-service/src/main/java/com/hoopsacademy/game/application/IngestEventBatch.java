@@ -8,8 +8,10 @@ import com.hoopsacademy.game.domain.MatchStatus;
 import com.hoopsacademy.game.domain.events.MatchEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
 
@@ -32,7 +34,8 @@ public class IngestEventBatch {
      * offline devices never lose events (ADR-0014); it exists so a future policy needs no contract change.
      */
     public enum RejectionReason {
-        SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT, EVENT_ID_REUSED, MATCH_NOT_STARTED
+        SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT, EVENT_ID_REUSED, MATCH_NOT_STARTED,
+        SEASON_ENDED
     }
 
     /** One result per submitted event, in request order; serverSeq for ACCEPTED/DUPLICATE, reason for REJECTED. */
@@ -58,13 +61,15 @@ public class IngestEventBatch {
     private final MatchEventRepository events;
     private final MatchReprojection reprojection;
     private final CurrentCaller caller;
+    private final PastSeasons pastSeasons;
 
     IngestEventBatch(MatchRepository matches, MatchEventRepository events, MatchReprojection reprojection,
-            CurrentCaller caller) {
+            CurrentCaller caller, PastSeasons pastSeasons) {
         this.matches = matches;
         this.events = events;
         this.reprojection = reprojection;
         this.caller = caller;
+        this.pastSeasons = pastSeasons;
     }
 
     /** @param recorderName display name stored with accepted events (from the caller's token) */
@@ -77,9 +82,10 @@ public class IngestEventBatch {
         EventLedger ledger = new EventLedger(events.findByMatch(matchId));
         AuthzContext authz = caller.authz();
         Recorder recorder = new Recorder(authz.personId(), recorderName);
+        Optional<Instant> seasonClosed = pastSeasons.closedSince(match.teamId());
         List<Result> results = new ArrayList<>(batch.size());
         for (SubmittedEvent submitted : batch) {
-            results.add(admit(match, submitted, ledger, authz, recorder));
+            results.add(admit(match, submitted, ledger, new Admission(authz, recorder, seasonClosed)));
         }
         if (ledger.changed()) {
             reprojection.reproject(match);
@@ -87,7 +93,15 @@ public class IngestEventBatch {
         return new BatchResult(results, ledger.lastServerSeq());
     }
 
-    private Result admit(Match match, SubmittedEvent submitted, EventLedger ledger, AuthzContext authz, Recorder recorder) {
+    /** Who submits the batch and when the season of the match's team closed, if it has. */
+    private record Admission(AuthzContext authz, Recorder recorder, Optional<Instant> seasonClosed) {
+
+        boolean recordedAfterTheSeason(MatchEvent event) {
+            return seasonClosed.filter(closed -> !event.meta().recordedAtClient().isBefore(closed)).isPresent();
+        }
+    }
+
+    private Result admit(Match match, SubmittedEvent submitted, EventLedger ledger, Admission admission) {
         if (submitted instanceof SubmittedEvent.Invalid invalid) {
             return Result.rejected(invalid.eventId(), RejectionReason.SCHEMA_INVALID, invalid.message());
         }
@@ -100,19 +114,22 @@ public class IngestEventBatch {
         if (match.status() == MatchStatus.CANCELLED) {
             return Result.rejected(id, RejectionReason.MATCH_CANCELLED, "The match is cancelled");
         }
-        if (!EventAuthorization.mayRecord(authz, match, event, ledger::recorderOf)) {
+        if (!EventAuthorization.mayRecord(admission.authz(), match, event, ledger::recorderOf)) {
             return Result.rejected(id, RejectionReason.NOT_AUTHORIZED, "Not allowed to record this " + event.type() + " event");
+        }
+        if (admission.recordedAfterTheSeason(event)) {
+            return Result.rejected(id, RejectionReason.SEASON_ENDED, "Recorded after the season of the team ended");
         }
         var taken = ledger.deviceSeqTakenBy(event);
         if (taken.isPresent()) {
             return Result.rejected(id, RejectionReason.CLIENT_SEQ_CONFLICT,
                     "(deviceId, clientSeq) is already used by event " + taken.get());
         }
-        OptionalLong serverSeq = events.append(match.id(), event, recorder);
+        OptionalLong serverSeq = events.append(match.id(), event, admission.recorder());
         if (serverSeq.isEmpty()) {
             return Result.rejected(id, RejectionReason.EVENT_ID_REUSED, "The event id is already used by another match");
         }
-        ledger.accept(event, serverSeq.getAsLong(), recorder.personId());
+        ledger.accept(event, serverSeq.getAsLong(), admission.recorder().personId());
         events.recordReceipt(match.id(), event.meta().deviceId(), event.meta().clientSeq());
         return Result.stored(id, Status.ACCEPTED, serverSeq.getAsLong());
     }

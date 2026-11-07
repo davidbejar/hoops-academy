@@ -17,13 +17,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
  * The caller's authorisation context from the local replica (ADR-0037, {@code hoops.roster.source=replica}), with
  * the rules of core's {@code /internal/authz}: an active person with that login in an ACTIVE tenant; their own player
  * with the PLAYER role, their linked players with the PARENT role; staff teams and the teams of the own and linked
- * players' open valid assignments, both without teams whose season ended before today in the academy's time zone.
+ * players' open valid assignments, both without teams whose season ended before today in the academy's time zone;
+ * the known staff teams whose season ended are the historic staff teams (read-only history, ADR-0042).
  * Called by the tenant filter with the requested tenant bound.
  */
 @ApplicationScoped
@@ -51,10 +53,13 @@ public class ReplicaAuthzResolver implements AuthzContextResolver {
         Set<PlayerId> linkedPlayers = person.has(TenantRole.PARENT) ? replica.linkedPlayers(person.id()) : Set.of();
         Set<TeamId> staffTeams = replica.staffTeams(person.id());
         Set<TeamId> playerTeams = teamsOf(ownPlayer, linkedPlayers);
-        Set<TeamId> current = seasonNotEnded(staffTeams, playerTeams, LocalDate.ofInstant(clock.instant(), zone));
+        Map<TeamId, LocalDate> seasonEnds = seasonEnds(staffTeams, playerTeams);
+        LocalDate today = LocalDate.ofInstant(clock.instant(), zone);
+        Set<TeamId> current = teamsWhere(seasonEnds, end -> !end.isBefore(today));
+        Set<TeamId> ended = teamsWhere(seasonEnds, end -> end.isBefore(today));
         return new AuthzContext(subject, person.id(), tenantId, person.roles(), values(staffTeams, current),
                 linkedPlayers.stream().map(PlayerId::value).collect(Collectors.toSet()), ownPlayer.map(PlayerId::value),
-                values(playerTeams, current), Optional.of(zone));
+                values(playerTeams, current), Optional.of(zone), values(staffTeams, ended));
     }
 
     private Set<TeamId> teamsOf(Optional<PlayerId> ownPlayer, Set<PlayerId> linkedPlayers) {
@@ -63,12 +68,15 @@ public class ReplicaAuthzResolver implements AuthzContextResolver {
         return players.isEmpty() ? Set.of() : replica.openValidTeamsOf(players);
     }
 
-    private Set<TeamId> seasonNotEnded(Set<TeamId> staffTeams, Set<TeamId> playerTeams, LocalDate today) {
+    /** The season end of each known team among both sets (unknown teams count neither as current nor as ended). */
+    private Map<TeamId, LocalDate> seasonEnds(Set<TeamId> staffTeams, Set<TeamId> playerTeams) {
         Set<TeamId> candidates = new HashSet<>(staffTeams);
         candidates.addAll(playerTeams);
-        return replica.seasonEnds(candidates).entrySet().stream()
-                .filter(team -> !team.getValue().isBefore(today))
-                .map(Map.Entry::getKey)
+        return replica.seasonEnds(candidates);
+    }
+
+    private static Set<TeamId> teamsWhere(Map<TeamId, LocalDate> seasonEnds, Predicate<LocalDate> seasonEnd) {
+        return seasonEnds.entrySet().stream().filter(team -> seasonEnd.test(team.getValue())).map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
     }
 

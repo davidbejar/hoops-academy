@@ -36,7 +36,8 @@ public class RestRosterPort implements RosterPort {
         return new TeamRoster(TeamId.of(dto.teamId()), SeasonId.of(dto.seasonId()), dto.teamName(),
                 dto.players().stream()
                         .map(p -> new TeamRoster.Player(PlayerId.of(p.playerId()), p.displayName(), p.jerseyNumber()))
-                        .toList());
+                        .toList(),
+                dto.seasonEndDate());
     }
 
     @Override

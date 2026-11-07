@@ -39,7 +39,7 @@ public class ReplicaRosterPort implements RosterPort {
                 .map(line -> new TeamRoster.Player(line.player().id(), line.player().displayName(),
                         line.jerseyNumber().orElse(null)))
                 .toList();
-        return new TeamRoster(team.id(), team.seasonId(), team.name(), players);
+        return new TeamRoster(team.id(), team.seasonId(), team.name(), players, team.seasonEndDate());
     }
 
     @Override
