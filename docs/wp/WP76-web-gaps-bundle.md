@@ -46,4 +46,39 @@ season-history rule.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- **Built** (all in `apps/web`, kit widgets and tokens only, ARB keys next to the feature's, generated l10n committed):
+  1. Account console: a profile entry `open-account-console` (`Cuenta y seguridad`) opens `<issuer>/account` in a new tab
+     (`core/navigation/external_link*.dart`, `noopener,noreferrer`; the opener is a provider so tests record the address).
+     There is no profile menu in the shell (the avatar goes to `/profile`), so the entry lives on the profile page; hidden in
+     demo mode (no identity provider). `shell.dart` untouched.
+  2. Template refetch: `_LocaleInterceptor` keeps an explicit `Accept-Language`; `ApiPlansRepository` passes the UI language
+     on `plans`, `plan` and `copyPlan`; the plan notifiers (library, detail, search) watch the effective locale and refetch.
+  3. Match edit from the list tile: `match-edit-<id>` (staff of the team, not cancelled) opens the existing dialog;
+     `MatchListNotifier.updateMatch` refreshes the list.
+  4. Profile edits: the language already reached `PATCH /me`; the contract has no self-service name edit (`UpdateMeRequest`
+     is locale only, `PATCH /members` is ADMIN), so an ADMIN gets `profile-own-data` to the own member record; the member
+     dialog now validates "keep the e-mail" for a member with a login (`userId`) before the request.
+  5. Guardian password on the member page: a PARENT without login and with e-mail (active) gets `member-issue-password`.
+  6. Sit-and-reach hint (`ScaleHint`, Catley, 20 cm = toes) in the result list, entry dialog and correction dialog.
+  7. Past seasons: `SeasonBar` (selector + banner, `season-bar`, `past-season-banner`) on matches, training and the staff
+     health page for an ADMIN or staff with `historicStaffTeamIds` (new on `TenantMembership`); `Capabilities` gained
+     `endedTeamIds` (admin: all teams with `seasonEnded`), `viewingPastSeason`, `canReadTraining`, `canManageTeam`,
+     `canBrowseSeasons`, value equality; no write on an ended team for anybody, every write off while a past season is on
+     screen; matches list narrows with `seasonId`; calendar jumps to the season's last week and reads former-staff teams;
+     attendance sheet read-only; teams page "Past seasons" group (`staffedByMe` + `includeEnded`); 409 `SEASON_ENDED` worded
+     in `AppError.message` (all snackbars); event reason `SEASON_ENDED` labelled (stays rejected like the other reasons).
+     Demo mock: ended team `team-mini-a-2025` (coach history, `/me`, `staffedByMe`/`includeEnded`), minimal.
+- **Verified**: `flutter analyze` no issues; `just web-format-check` clean; `flutter test` fresh **959 passed, 0 failed**
+  (918 at the WP80 base); `tool/web_smoke.sh` green. New: `season_history_test` (18), `mock_season_history_test` (4),
+  account console (3), own data (2), match edit from list (3), scale hint (3), language refetch (3), member dialog and
+  guardian action (4). Red first: items 4/5 and 7 as separate test commits (7: `1bcfe5a`); the other items' tests were
+  written and run red before the code but committed with it. Goldens regenerated: match list (edit action), demo live match
+  (clock text only; the extra mock team shifts the pump count).
+- **Decisions**: past = selected season whose end is before the academy's today; read-only is a capability, not a screen
+  check; the admin's ended-team list is one extra `GET /teams` (admins only); health writes are hidden while a past season
+  is on screen (the server's 409 is the backstop, no team context there); `canResolveCase` stays allowed (ADR-0042).
+- **Open points**: (a) `browser_login_check.py` not run (needs the compose stack; no auth code touched). (b) Self-service
+  name/e-mail for non-admins needs a core contract change. (c) Demo mock: templates are not localized by `Accept-Language`
+  and writes on the ended team do not answer 409 (the UI hides them). (d) Mock files touched (`mock_core_api`,
+  `mock_authz`, `mock_api_adapter`: about 30 lines): WP90 should rebase over them. (e) Matches list without a selected
+  past season still returns every season (today's behaviour). (f) `PageBody` centring issue not touched.
