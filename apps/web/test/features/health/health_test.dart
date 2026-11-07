@@ -80,6 +80,24 @@ FakeAthlete _athlete() => FakeAthlete(
   ),
 );
 
+final _reach = testType(
+  'ty-reach',
+  'SIT_AND_REACH',
+  'Flexibilidad (sit and reach)',
+  'cm',
+);
+
+/// A player with one sit-and-reach and one jump result (the hint belongs to the first only).
+FakeAthlete _athleteWithReach() => FakeAthlete(
+  fitness: FakeFitnessRepository(
+    types: [_jump, _reach],
+    results: [
+      testResult('r-reach', 'p1', _reach, 22, ath.Date(2026, 10, 1)),
+      testResult('r-jump', 'p1', _jump, 30, ath.Date(2026, 10, 1)),
+    ],
+  ),
+);
+
 Future<void> _staff(
   WidgetTester tester,
   FakeAthlete a, {
@@ -506,6 +524,51 @@ void main() {
       await tapKey(tester, 'result-delete-r1');
       await tapKey(tester, 'dialog-confirm');
       expect(a.fitness.resultList.map((r) => r.id), ['r2', 'r3']);
+    });
+  });
+
+  group('sit-and-reach scale hint (Catley, 20 cm = toes)', () {
+    testWidgets('shown with the sit-and-reach results, not with other tests', (
+      tester,
+    ) async {
+      await _staff(tester, _athleteWithReach());
+      await tapKey(tester, 'health-tab-tests');
+      expect(find.byKey(const Key('scale-hint-SIT_AND_REACH')), findsOneWidget);
+      expect(find.textContaining('20 cm'), findsOneWidget);
+    });
+
+    testWidgets('shown in the entry dialog once the test is chosen', (
+      tester,
+    ) async {
+      await _staff(tester, _athleteWithReach());
+      await tapKey(tester, 'health-tab-tests');
+      final inDialog = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byKey(const Key('scale-hint-SIT_AND_REACH')),
+      );
+      await tapKey(tester, 'test-add');
+      expect(inDialog, findsNothing);
+      await tapKey(tester, 'result-type');
+      await tester.tap(find.text('Salto vertical (cm)').last);
+      await tester.pumpAndSettle();
+      expect(inDialog, findsNothing);
+      await tapKey(tester, 'result-type');
+      await tester.tap(find.text('Flexibilidad (sit and reach) (cm)').last);
+      await tester.pumpAndSettle();
+      expect(inDialog, findsOneWidget);
+    });
+
+    testWidgets('shown in the correction dialog', (tester) async {
+      await _staff(tester, _athleteWithReach());
+      await tapKey(tester, 'health-tab-tests');
+      await tapKey(tester, 'result-edit-r-reach');
+      expect(
+        find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byKey(const Key('scale-hint-SIT_AND_REACH')),
+        ),
+        findsOneWidget,
+      );
     });
   });
 

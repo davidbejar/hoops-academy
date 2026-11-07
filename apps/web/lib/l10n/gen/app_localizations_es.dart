@@ -2144,6 +2144,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get testNotes => 'Notas (opcional)';
 
   @override
+  String get testHintSitAndReach =>
+      'Escala de Catley: 20 cm es la punta de los pies; menos queda antes de ellos y más los sobrepasa.';
+
+  @override
   String get testMeasuredOn => 'Fecha de la prueba';
 
   @override

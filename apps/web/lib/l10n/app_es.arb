@@ -1166,6 +1166,7 @@
   "testType": "Prueba",
   "testValue": "Valor",
   "testNotes": "Notas (opcional)",
+  "testHintSitAndReach": "Escala de Catley: 20 cm es la punta de los pies; menos queda antes de ellos y más los sobrepasa.",
   "testMeasuredOn": "Fecha de la prueba",
   "bandPoor": "Muy bajo",
   "bandBelowAverage": "Bajo la media",

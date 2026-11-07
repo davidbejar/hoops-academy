@@ -2138,6 +2138,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get testNotes => 'Catatan (opsional)';
 
   @override
+  String get testHintSitAndReach =>
+      'Skala Catley: 20 cm adalah posisi ujung kaki; kurang dari itu belum mencapainya, lebih dari itu melewatinya.';
+
+  @override
   String get testMeasuredOn => 'Tanggal tes';
 
   @override

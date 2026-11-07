@@ -827,6 +827,7 @@
   "testType": "Tes",
   "testValue": "Nilai",
   "testNotes": "Catatan (opsional)",
+  "testHintSitAndReach": "Skala Catley: 20 cm adalah posisi ujung kaki; kurang dari itu belum mencapainya, lebih dari itu melewatinya.",
   "testMeasuredOn": "Tanggal tes",
   "bandPoor": "Buruk",
   "bandBelowAverage": "Di bawah rata-rata",

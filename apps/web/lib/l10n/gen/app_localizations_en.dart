@@ -2129,6 +2129,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get testNotes => 'Notes (optional)';
 
   @override
+  String get testHintSitAndReach =>
+      'Catley scale: 20 cm is where the toes are; less falls short of them, more reaches past them.';
+
+  @override
   String get testMeasuredOn => 'Test date';
 
   @override

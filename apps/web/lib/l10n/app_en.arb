@@ -827,6 +827,7 @@
   "testType": "Test",
   "testValue": "Value",
   "testNotes": "Notes (optional)",
+  "testHintSitAndReach": "Catley scale: 20 cm is where the toes are; less falls short of them, more reaches past them.",
   "testMeasuredOn": "Test date",
   "bandPoor": "Poor",
   "bandBelowAverage": "Below average",

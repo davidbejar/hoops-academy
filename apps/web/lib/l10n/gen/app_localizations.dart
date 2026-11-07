@@ -3982,6 +3982,12 @@ abstract class AppLocalizations {
   /// **'Notas (opcional)'**
   String get testNotes;
 
+  /// No description provided for @testHintSitAndReach.
+  ///
+  /// In es, this message translates to:
+  /// **'Escala de Catley: 20 cm es la punta de los pies; menos queda antes de ellos y más los sobrepasa.'**
+  String get testHintSitAndReach;
+
   /// No description provided for @testMeasuredOn.
   ///
   /// In es, this message translates to:

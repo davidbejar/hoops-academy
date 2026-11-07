@@ -15,6 +15,7 @@ import '../../training/application/training_providers.dart' show toAthDate;
 import '../application/health_providers.dart';
 import 'charts.dart';
 import 'health_labels.dart';
+import 'scale_hint.dart';
 
 enum HealthTab { injuries, growth, tests }
 
@@ -812,6 +813,7 @@ class TestsSection extends ConsumerWidget {
                     unit: e.value.first.unit,
                     points: resultPoints(e.value),
                   ),
+                  ScaleHint(code: e.value.first.testCode),
                   for (final r in e.value.reversed)
                     ResultTile(result: r, canWrite: caps.canEnterTestResults),
                 ],
@@ -951,6 +953,7 @@ class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
               ? l.fieldInvalidNumber
               : null,
         ),
+        ScaleHint(code: r.testCode),
         formGap,
         DateField(
           key: const Key('result-date'),
@@ -1093,6 +1096,9 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
                   double.tryParse((v ?? '').trim().replaceAll(',', '.')) == null
                   ? l.fieldInvalidNumber
                   : null,
+            ),
+            ScaleHint(
+              code: types.where((t) => t.id == _typeId).firstOrNull?.code,
             ),
             formGap,
             DateField(
