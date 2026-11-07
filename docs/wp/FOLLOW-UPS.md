@@ -210,7 +210,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 | 2 | WP80 | Season history: read-only access to past seasons for former staff and admins (core, game, athlete, web) | Opus | Done (ADR-0042; core 3.2.0, game 2.3.0, athlete 2.4.0; combined verify green; mutation core 98.8 / game 99.6 / athlete 100) |
 | 2 | WP86 | Chart: OpenTelemetry collector, services' logs and traces exported, proven on kind | Opus | Done (ADR-0046; chart 0.9.0; WP87 six kind proofs run; trace Envoy→core→game/athlete) |
 | 2 | WP89 | CI: scheduled bump of image digests, chart image tags and kind pins | Sonnet | Done (bump-pins.yml weekly; 12 pins; 5 outdated found) |
-| 3 | WP76 | Web: gaps bundle (account console link, template refetch on language, match edit from the list, profile edits, guardian password, sit-and-reach hint) | Sonnet | After wave 2 |
+| 3 | WP76 | Web: gaps bundle (account console link, template refetch on language, match edit from the list, profile edits, guardian password, sit-and-reach hint) | Sonnet | Done (web 959 tests; 7 items; past-seasons selector) |
 | 3 | WP82 | Game + athlete: replica housekeeping (applied/parked retention), `.removed` for every aggregate | Opus | After wave 2 |
 | 3 | WP85 | Security logging: Keycloak login events, authz-failure events in the services, SBOM in CI | Opus | After wave 2 |
 | 3 | WP90 | Invitation-only sign-up: request API, super admin workbench, landing form wired, rejection mail | Opus | After wave 2 |
