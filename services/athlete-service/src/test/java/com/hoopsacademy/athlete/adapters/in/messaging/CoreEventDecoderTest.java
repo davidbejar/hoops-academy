@@ -273,10 +273,22 @@ class CoreEventDecoderTest {
     @Test
     void aReasonIsBoundedInLength() {
         CoreEvents.Record record = CoreEvents.tenant(TenantId.random(), "ACTIVE", "Europe/Madrid");
-        String everythingWrong = "{\"a\":1,\"b\":2,\"c\":3,\"d\":4,\"e\":5,\"f\":6,\"g\":7,\"h\":8}";
+        String everythingWrong = "{\"" + "a".repeat(300) + "\":1,\"" + "b".repeat(300) + "\":2,\"" + "c".repeat(300) + "\":3}";
 
         assertThat(((Invalid) decoder.decode(record.topic(), record.key(), everythingWrong)).reason())
-                .hasSizeLessThanOrEqualTo(CoreEventDecoder.MAX_REASON_LENGTH);
+                .hasSize(CoreEventDecoder.MAX_REASON_LENGTH);
+        assertThat(((Invalid) decoder.decode("core.unknown", record.key(), record.value())).reason())
+                .isEqualTo("not a roster topic");
+    }
+
+    @Test
+    void anEventIdOutsideTheUuidFormatIsNoEventId() {
+        CoreEvents.Record record = CoreEvents.tenant(TenantId.random(), "ACTIVE", "Europe/Madrid");
+        String value = record.value().replace(record.eventId().toString(), "not-a-uuid");
+
+        DecodedEvent decoded = decoder.decode(record.topic(), record.key(), value);
+
+        assertThat(decoded).isInstanceOfSatisfying(Invalid.class, invalid -> assertThat(invalid.eventId()).isEmpty());
     }
 
     private RosterEvent valid(String topic, JsonNode event) {

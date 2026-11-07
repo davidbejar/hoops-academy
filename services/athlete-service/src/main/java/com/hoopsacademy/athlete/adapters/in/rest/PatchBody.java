@@ -25,7 +25,8 @@ final class PatchBody {
 
     /** @param clearable the request's optional, nullable members: the {@code clear} enum of its contract schema */
     PatchBody(JsonNode body, Set<String> clearable) {
-        if (body == null || !body.isObject()) {
+        // a body that is not an object has no members either: it is an empty patch below
+        if (body == null) {
             throw emptyPatch();
         }
         this.body = body;

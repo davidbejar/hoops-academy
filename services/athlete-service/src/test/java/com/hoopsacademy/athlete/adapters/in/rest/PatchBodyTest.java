@@ -110,6 +110,88 @@ class PatchBodyTest {
     void aRequiredFieldIsNeverClearedAndRejectsNull() {
         assertThat(patch("{\"notes\": \"x\"}").required("name", PatchBody.text(9))).isEmpty();
         assertThatExceptionOfType(InvalidRequestException.class)
-                .isThrownBy(() -> patch("{\"name\": null}").required("name", PatchBody.text(9)));
+                .isThrownBy(() -> patch("{\"name\": null}").required("name", PatchBody.text(9)))
+                .withMessage("name must not be null");
+    }
+
+    @Test
+    void aRequiredValueIsTakenAndAnInvalidOneNamesTheField() {
+        assertThat(patch("{\"name\": \"Ana\"}").required("name", PatchBody.text(9))).contains("Ana");
+        assertThatExceptionOfType(InvalidRequestException.class)
+                .isThrownBy(() -> patch("{\"name\": 3}").required("name", PatchBody.text(9)))
+                .satisfies(e -> {
+                    assertThat(e.field()).isEqualTo("name");
+                    assertThat(e.code()).isEqualTo("INVALID_VALUE");
+                    assertThat(e.getMessage()).isEqualTo("name must be a string of at most 9 characters");
+                });
+    }
+
+    @Test
+    void aClearNameOutsideTheClearableOnesNamesTheAllowedOnes() {
+        assertThatExceptionOfType(InvalidRequestException.class).isThrownBy(() -> patch("{\"clear\": [\"plan\"]}"))
+                .withMessage("clear may only name location, notes");
+        assertThatExceptionOfType(InvalidRequestException.class)
+                .isThrownBy(() -> new PatchBody(read("{\"clear\": [1]}"), Set.of("1")))
+                .as("names are strings").satisfies(e -> assertThat(e.field()).isEqualTo("clear"));
+    }
+
+    @Test
+    void textIsTakenUpToItsMaximumLength() {
+        assertThat((String) value("\"abc\"", PatchBody.text(3))).isEqualTo("abc");
+        assertThat((String) value("\" \"", PatchBody.text(3))).as("may be blank").isEqualTo(" ");
+        assertThat((String) value("\"abc\"", PatchBody.nonBlankText(3))).isEqualTo("abc");
+        assertThat((Integer) value("2", PatchBody.integer(2, 4))).isEqualTo(2);
+        assertThat((Integer) value("4", PatchBody.integer(2, 4))).isEqualTo(4);
+        assertThat((java.math.BigDecimal) value("1.5", PatchBody.decimal(1.5, 2.5))).isEqualByComparingTo("1.5");
+        assertThat((java.math.BigDecimal) value("2.5", PatchBody.decimal(1.5, 2.5))).isEqualByComparingTo("2.5");
+        assertThat((java.math.BigDecimal) value("2", PatchBody.decimal(1.5, 2.5))).isEqualByComparingTo("2");
+        assertThat((java.time.LocalDate) value("\"2026-11-07\"", PatchBody.fromText(java.time.LocalDate::parse, "a date")))
+                .isEqualTo(java.time.LocalDate.of(2026, 11, 7));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"abcd\"", "3", "true"})
+    void textTooLongOrNotAStringIsInvalid(String json) {
+        assertInvalid(json, PatchBody.text(3), "a string of at most 3 characters");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"abcd\"", "\"  \"", "3"})
+    void nonBlankTextTooLongBlankOrNotAStringIsInvalid(String json) {
+        assertInvalid(json, PatchBody.nonBlankText(3), "a non-blank string of at most 3 characters");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "5", "\"3\"", "3.5"})
+    void anIntegerOutsideItsRangeOrNotAnIntegerIsInvalid(String json) {
+        assertInvalid(json, PatchBody.integer(2, 4), "an integer between 2 and 4");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1.49", "2.51", "\"2\""})
+    void aNumberOutsideItsRangeOrNotANumberIsInvalid(String json) {
+        assertInvalid(json, PatchBody.decimal(1.5, 2.5), "a number between 1.5 and 2.5");
+    }
+
+    @Test
+    void aTextMemberMustBeAStringEvenWhenItsParserWouldTakeANumber() {
+        assertInvalid("7", PatchBody.fromText(Integer::valueOf, "a number as text"), "a number as text");
+        assertThat((Integer) value("\"7\"", PatchBody.fromText(Integer::valueOf, "a number as text"))).isEqualTo(7);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"20261107", "\"7 Nov\""})
+    void aTextThatDoesNotParseIsInvalid(String json) {
+        assertInvalid(json, PatchBody.fromText(java.time.LocalDate::parse, "a date"), "a date");
+    }
+
+    private static <T> T value(String json, java.util.function.Function<JsonNode, T> parser) {
+        return patch("{\"v\": " + json + "}").required("v", parser).orElseThrow();
+    }
+
+    private static void assertInvalid(String json, java.util.function.Function<JsonNode, ?> parser, String expected) {
+        assertThatExceptionOfType(InvalidRequestException.class)
+                .isThrownBy(() -> patch("{\"v\": " + json + "}").required("v", parser))
+                .withMessage("v must be " + expected);
     }
 }

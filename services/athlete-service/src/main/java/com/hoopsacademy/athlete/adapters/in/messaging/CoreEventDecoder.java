@@ -30,6 +30,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -139,25 +140,24 @@ public class CoreEventDecoder {
 
     /** A required-but-nullable field: JSON null is absent. */
     private static Optional<String> text(JsonNode payload, String field) {
-        JsonNode node = payload.get(field);
-        return node == null || node.isNull() ? Optional.empty() : Optional.of(node.asText());
+        return Optional.ofNullable(payload.get(field)).filter(node -> !node.isNull()).map(JsonNode::asText);
     }
 
     private static Optional<UUID> uuid(JsonNode node) {
-        return node.isTextual() && UUID_FORMAT.matcher(node.asText()).matches()
+        // a number, boolean or structure never matches the format
+        return UUID_FORMAT.matcher(node.asText()).matches()
                 ? Optional.of(UUID.fromString(node.asText()))
                 : Optional.empty();
     }
 
     private static Invalid invalid(Optional<UUID> eventId, String reason) {
-        return new Invalid(eventId, reason.length() <= MAX_REASON_LENGTH ? reason : reason.substring(0, MAX_REASON_LENGTH));
+        return new Invalid(eventId, reason.substring(0, Math.min(reason.length(), MAX_REASON_LENGTH)));
     }
 
     private JsonNode read(String resource) {
         try (InputStream in = CoreEventDecoder.class.getResourceAsStream(resource)) {
-            if (in == null) {
-                throw new IllegalStateException(resource + " is not on the classpath (contracts jar)");
-            }
+            // a build without the contracts jar fails at startup, naming the resource
+            Objects.requireNonNull(in, resource + " is not on the classpath (contracts jar)");
             return mapper.readTree(in);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
