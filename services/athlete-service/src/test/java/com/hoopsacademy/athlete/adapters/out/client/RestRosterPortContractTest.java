@@ -48,7 +48,7 @@ class RestRosterPortContractTest extends RosterPortContract {
             @Override
             public void team(TenantId tenant, TeamId team, String name, List<KnownPlayer> players, List<PersonId> staff) {
                 stubs.rosterOf(tenant.toString(), team.value().toString(), name, rows(players),
-                        staff.stream().map(id -> id.value().toString()).toList());
+                        staff.stream().map(id -> id.value().toString()).toList(), SEASON_END);
             }
 
             @Override

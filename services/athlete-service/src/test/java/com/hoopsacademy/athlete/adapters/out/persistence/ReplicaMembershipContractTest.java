@@ -63,6 +63,10 @@ class ReplicaMembershipContractTest extends MembershipContract {
                         CoreEvents.guardianLink(tenant, UUID.randomUUID(), m.personId(), player)));
                 m.staffTeams().forEach(team -> feed.apply(CoreEvents.team(tenant, team, "Staff team", seasonEnd),
                         CoreEvents.teamStaff(tenant, team, m.personId(), "COACH")));
+                LocalDate endedYesterday = LocalDate.now(m.zone()).minusDays(1);
+                m.historicStaffTeams().forEach(team -> feed.apply(
+                        CoreEvents.team(tenant, team, "Past team", endedYesterday),
+                        CoreEvents.teamStaff(tenant, team, m.personId(), "COACH")));
                 UUID playerOfTeams = m.ownPlayer().orElseGet(() -> m.linkedPlayers().isEmpty() ? null : m.linkedPlayers().get(0));
                 m.playerTeams().forEach(team -> feed.apply(CoreEvents.team(tenant, team, "Player team", seasonEnd),
                         CoreEvents.teamPlayer(tenant, UUID.randomUUID(), team, playerOfTeams, null,

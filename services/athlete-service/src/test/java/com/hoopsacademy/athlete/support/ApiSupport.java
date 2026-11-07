@@ -71,6 +71,15 @@ public final class ApiSupport {
         return context;
     }
 
+    /** A coach of {@code staffTeams} today who was staff of {@code historicTeams} in seasons that have ended. */
+    public static AuthzContext formerStaff(String tenant, TenantRole role, Set<String> staffTeams,
+            Set<String> historicTeams) {
+        AuthzContext context = member(tenant, Set.of(role), staffTeams, Set.of(), null)
+                .withHistoricStaffTeamIds(uuids(historicTeams));
+        TenantUserRegistry.register(context);
+        return context;
+    }
+
     public static AuthzContext member(String tenant, TenantRole... roles) {
         return member(tenant, Set.of(roles), Set.of(), Set.of(), null);
     }

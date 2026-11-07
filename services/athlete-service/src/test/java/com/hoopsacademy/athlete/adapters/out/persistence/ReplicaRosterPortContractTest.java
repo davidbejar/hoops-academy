@@ -54,7 +54,7 @@ class ReplicaRosterPortContractTest extends RosterPortContract {
             @Override
             public void team(TenantId tenant, TeamId team, String name, List<KnownPlayer> players, List<PersonId> staff) {
                 activeTenant(tenant);
-                feed.apply(CoreEvents.team(tenant, team.value(), name, LocalDate.now().plusMonths(6)));
+                feed.apply(CoreEvents.team(tenant, team.value(), name, SEASON_END));
                 players(tenant, players);
                 players.forEach(p -> feed.apply(CoreEvents.teamPlayer(tenant, UUID.randomUUID(), team.value(),
                         p.id().value(), null, LocalDate.now().minusMonths(1), null, null)));

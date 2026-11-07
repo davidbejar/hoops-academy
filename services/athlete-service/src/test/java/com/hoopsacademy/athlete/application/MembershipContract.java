@@ -23,7 +23,15 @@ public abstract class MembershipContract {
 
     /** A member as core knows it. Player teams belong to the own player, or to the first linked player. */
     public record Member(String subject, UUID personId, Set<TenantRole> roles, List<UUID> staffTeams,
-            List<UUID> linkedPlayers, Optional<UUID> ownPlayer, List<UUID> playerTeams, ZoneId zone) {}
+            List<UUID> linkedPlayers, Optional<UUID> ownPlayer, List<UUID> playerTeams, ZoneId zone,
+            List<UUID> historicStaffTeams) {
+
+        /** A member without staff rows of ended seasons. */
+        public Member(String subject, UUID personId, Set<TenantRole> roles, List<UUID> staffTeams,
+                List<UUID> linkedPlayers, Optional<UUID> ownPlayer, List<UUID> playerTeams, ZoneId zone) {
+            this(subject, personId, roles, staffTeams, linkedPlayers, ownPlayer, playerTeams, zone, List.of());
+        }
+    }
 
     public interface CoreFixture {
 
@@ -63,7 +71,24 @@ public abstract class MembershipContract {
         assertThat(context.linkedPlayerIds()).isEmpty();
         assertThat(context.ownPlayerId()).isEmpty();
         assertThat(context.playerTeamIds()).isEmpty();
+        assertThat(context.historicStaffTeamIds()).isEmpty();
         assertThat(context.timezone()).contains(ZoneId.of("Asia/Jakarta"));
+    }
+
+    @Test
+    void aFormerCoachResolvesTheTeamsOfEndedSeasonsAsHistoryApartFromTodaysTeams() {
+        UUID team = UUID.randomUUID();
+        UUID pastTeam = UUID.randomUUID();
+        Member coach = new Member("kc-" + UUID.randomUUID(), UUID.randomUUID(), Set.of(TenantRole.COACH), List.of(team),
+                List.of(), Optional.empty(), List.of(), ZoneId.of("Asia/Jakarta"), List.of(pastTeam));
+        core().member(tenant, coach, "ACTIVE");
+
+        AuthzContext context = resolveInTenant(tenant, coach.subject()).orElseThrow();
+
+        assertThat(context.staffTeamIds()).containsExactly(team);
+        assertThat(context.historicStaffTeamIds()).containsExactly(pastTeam);
+        assertThat(context.wasStaffOf(pastTeam)).isTrue();
+        assertThat(context.isStaffOf(pastTeam)).isFalse();
     }
 
     @Test

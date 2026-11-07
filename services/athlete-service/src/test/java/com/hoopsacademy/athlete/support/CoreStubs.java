@@ -57,6 +57,12 @@ public final class CoreStubs {
 
     /** A team roster with full player rows ({@code [id, displayName, birthDate, gender, status]}) and staff person ids. */
     public CoreStubs rosterOf(String tenant, String team, String teamName, List<String[]> players, List<String> staff) {
+        return rosterOf(tenant, team, teamName, players, staff, null);
+    }
+
+    /** As above, with the last day of the team's season ({@code null} = not sent, as an older core). */
+    public CoreStubs rosterOf(String tenant, String team, String teamName, List<String[]> players, List<String> staff,
+            java.time.LocalDate seasonEndDate) {
         String rows = players.stream()
                 .map(p -> "{\"playerId\":\"%s\",\"displayName\":\"%s\",\"birthDate\":\"%s\",\"gender\":\"%s\",\"status\":\"%s\"}"
                         .formatted(p[0], p[1], p[2], p[3], p[4]))
@@ -66,8 +72,9 @@ public final class CoreStubs {
         wireMock.register(get(urlPathEqualTo("/internal/teams/" + team + "/roster"))
                 .withQueryParam("tenantId", equalTo(tenant))
                 .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody(
-                        "{\"tenantId\":\"%s\",\"teamId\":\"%s\",\"seasonId\":\"%s\",\"teamName\":\"%s\",\"players\":[%s],\"staff\":[%s]}"
-                                .formatted(tenant, team, UUID.randomUUID(), teamName, rows, staffRows))));
+                        "{\"tenantId\":\"%s\",\"teamId\":\"%s\",\"seasonId\":\"%s\",\"teamName\":\"%s\",\"players\":[%s],\"staff\":[%s]%s}"
+                                .formatted(tenant, team, UUID.randomUUID(), teamName, rows, staffRows,
+                                        seasonEndDate == null ? "" : ",\"seasonEndDate\":\"" + seasonEndDate + "\""))));
         return this;
     }
 
@@ -90,11 +97,21 @@ public final class CoreStubs {
      */
     public CoreStubs memberContext(String tenant, String sub, UUID personId, String status, String timezone,
             List<String> roles, List<UUID> staffTeams, List<UUID> linked, UUID ownPlayer, List<UUID> playerTeams) {
+        return memberContext(tenant, sub, personId, status, timezone, roles, staffTeams, linked, ownPlayer, playerTeams,
+                List.of());
+    }
+
+    /** As above, with the teams of ended seasons the member was staff of ({@code historicStaffTeamIds}, ADR-0042). */
+    public CoreStubs memberContext(String tenant, String sub, UUID personId, String status, String timezone,
+            List<String> roles, List<UUID> staffTeams, List<UUID> linked, UUID ownPlayer, List<UUID> playerTeams,
+            List<UUID> historicStaffTeams) {
         wireMock.register(get(urlPathEqualTo("/internal/authz/" + tenant + "/" + sub))
                 .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody(
                         ("{\"sub\":\"%s\",\"personId\":\"%s\",\"tenantId\":\"%s\",\"tenantStatus\":\"%s\",\"roles\":%s,"
-                                + "\"staffTeamIds\":%s,\"linkedPlayerIds\":%s,\"ownPlayerId\":%s,\"playerTeamIds\":%s%s}")
+                                + "\"staffTeamIds\":%s,\"historicStaffTeamIds\":%s,\"linkedPlayerIds\":%s,"
+                                + "\"ownPlayerId\":%s,\"playerTeamIds\":%s%s}")
                                 .formatted(sub, personId, tenant, status, json(roles), json(strings(staffTeams)),
+                                        json(strings(historicStaffTeams)),
                                         json(strings(linked)), ownPlayer == null ? "null" : "\"" + ownPlayer + "\"",
                                         json(strings(playerTeams)),
                                         timezone == null ? "" : ",\"timezone\":\"" + timezone + "\""))));

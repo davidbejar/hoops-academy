@@ -53,6 +53,9 @@ public abstract class RosterPortContract {
     /** Runs a port call as the adapter is called in production (in the tenant's request or job scope). */
     protected abstract <T> T inTenant(TenantId tenant, java.util.function.Supplier<T> call);
 
+    /** The last day of the season of every team a fixture creates (ADR-0042). */
+    protected static final LocalDate SEASON_END = LocalDate.now().plusMonths(6);
+
     protected TenantId tenant;
     protected TeamId team;
 
@@ -77,6 +80,7 @@ public abstract class RosterPortContract {
                 new TeamRoster.RosterPlayer(bea.id(), "Bea Baez"));
         assertThat(roster.staff()).containsExactly(coach);
         assertThat(roster.hasPlayer(ana.id())).isTrue();
+        assertThat(roster.seasonEndDate()).isEqualTo(SEASON_END);
     }
 
     @Test

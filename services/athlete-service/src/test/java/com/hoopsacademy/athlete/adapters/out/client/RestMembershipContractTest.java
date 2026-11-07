@@ -49,7 +49,7 @@ class RestMembershipContractTest extends MembershipContract {
             public void member(TenantId tenant, Member m, String tenantStatus) {
                 stubs.memberContext(tenant.toString(), m.subject(), m.personId(), tenantStatus, m.zone().getId(),
                         m.roles().stream().map(Enum::name).toList(), m.staffTeams(), m.linkedPlayers(),
-                        m.ownPlayer().orElse(null), m.playerTeams());
+                        m.ownPlayer().orElse(null), m.playerTeams(), m.historicStaffTeams());
             }
 
             @Override
