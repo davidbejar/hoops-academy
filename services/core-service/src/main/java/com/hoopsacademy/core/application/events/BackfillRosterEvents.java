@@ -12,13 +12,10 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -36,9 +33,6 @@ import org.jboss.logging.Logger;
 public class BackfillRosterEvents {
 
     private static final Logger LOG = Logger.getLogger(BackfillRosterEvents.class);
-    /** Tenant first (consumers read its time zone and status), then the members, then what refers to them. */
-    private static final List<EventTopic> ORDER = List.of(EventTopic.TENANT, EventTopic.PERSON, EventTopic.PLAYER,
-            EventTopic.TEAM, EventTopic.TEAM_PLAYER, EventTopic.TEAM_STAFF, EventTopic.GUARDIAN_LINK);
 
     /** What a run appended: per topic, the aggregates that got an event (topics without any are left out). */
     public record Result(boolean force, int tenants, int failed, Map<String, Integer> appendedByTopic) {
@@ -100,19 +94,18 @@ public class BackfillRosterEvents {
     private Map<String, Integer> backfill(TenantId tenant, boolean force) {
         long after = force ? tenantScope.runAs(tenant, inventory::lastSeq) : 0;
         Map<String, Integer> appended = new TreeMap<>();
-        tenantScope.runAs(tenant, () -> ORDER.forEach(topic -> {
+        tenantScope.runAs(tenant, () -> BackfillPlan.ORDER.forEach(topic -> {
             int count = candidates(tenant, topic, after).size();
             if (count > 0) {
                 appended.put(topic.topic(), count);
             }
         }));
-        for (EventTopic topic : ORDER) {
+        for (EventTopic topic : BackfillPlan.ORDER) {
             if (!appended.containsKey(topic.topic())) {
                 continue;
             }
             List<RosterChange> candidates = tenantScope.runAs(tenant, () -> candidates(tenant, topic, after));
-            for (int from = 0; from < candidates.size(); from += chunkSize) {
-                List<RosterChange> chunk = candidates.subList(from, Math.min(from + chunkSize, candidates.size()));
+            for (List<RosterChange> chunk : BackfillPlan.chunks(candidates, chunkSize)) {
                 tenantScope.runAs(tenant, () -> chunk.forEach(changes::report));
             }
             counter(topic).increment(appended.get(topic.topic()));
@@ -129,28 +122,7 @@ public class BackfillRosterEvents {
 
     /** The live aggregates of {@code topic} without an event after {@code afterSeq} (0: without any event). */
     private List<RosterChange> candidates(TenantId tenant, EventTopic topic, long afterSeq) {
-        Set<String> published = inventory.withEvents(topic, afterSeq);
-        List<RosterChange> missing = new ArrayList<>();
-        for (RosterChange change : inventory.live(topic)) {
-            if (!published.contains(aggregateId(tenant, change).toString())) {
-                missing.add(change);
-            }
-        }
-        return missing;
-    }
-
-    /** The aggregate id each change's event carries (the appender's rule). */
-    static UUID aggregateId(TenantId tenant, RosterChange change) {
-        return switch (change) {
-            case RosterChange.Person person -> person.id().value();
-            case RosterChange.Player player -> player.id().value();
-            case RosterChange.Team team -> team.id().value();
-            case RosterChange.TeamPlayer assignment -> assignment.id().value();
-            case RosterChange.TeamStaff entry -> EventTopic.teamStaffId(entry.team().value(), entry.person().value());
-            case RosterChange.GuardianLink link -> link.id().value();
-            case RosterChange.Tenant ignored -> tenant.value();
-            case RosterChange.Season season -> throw new IllegalArgumentException("A season has no event: " + season);
-        };
+        return BackfillPlan.missing(tenant, inventory.live(topic), inventory.withEvents(topic, afterSeq));
     }
 
     private Counter counter(EventTopic topic) {
