@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -32,9 +33,8 @@ public class MatchEventDecoder {
 
     public MatchEventDecoder(ObjectMapper mapper) {
         try (InputStream in = MatchEventDecoder.class.getResourceAsStream(SCHEMA_RESOURCE)) {
-            if (in == null) {
-                throw new IllegalStateException(SCHEMA_RESOURCE + " is not on the classpath (contracts jar)");
-            }
+            // a build without the contracts jar fails at startup, naming the resource
+            Objects.requireNonNull(in, SCHEMA_RESOURCE + " is not on the classpath (contracts jar)");
             this.schema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(mapper.readTree(in));
         } catch (IOException e) {
             throw new UncheckedIOException(e);

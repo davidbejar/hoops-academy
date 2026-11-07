@@ -27,6 +27,7 @@ import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -183,9 +184,8 @@ public class RosterEventDecoder {
 
     private JsonNode load(String resource) {
         try (InputStream in = RosterEventDecoder.class.getResourceAsStream(resource)) {
-            if (in == null) {
-                throw new IllegalStateException(resource + " is missing from the contracts jar");
-            }
+            // a build without the contracts jar fails at startup, naming the resource
+            Objects.requireNonNull(in, resource + " is missing from the contracts jar");
             return json.readTree(in);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

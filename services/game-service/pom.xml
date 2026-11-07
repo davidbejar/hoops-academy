@@ -239,8 +239,9 @@
       </activation>
       <properties>
         <pit.skip>false</pit.skip>
-        <!-- baseline (docs/quality/mutation.md): 99.5 % on 2026-11-06, rounded down to a multiple of 5 -->
-        <pit.mutationThreshold>95</pit.mutationThreshold>
+        <!-- baseline (docs/quality/mutation.md): 99.6 % (548/550) on 2026-11-07 (WP88), the score rounded down to a whole
+             percent -->
+        <pit.mutationThreshold>99</pit.mutationThreshold>
       </properties>
     </profile>
     <!-- ./mvnw -pl services/game-service verify -Pkeycloak-it : runs ONLY the @Tag("keycloak") tests -->
