@@ -373,6 +373,19 @@ while read -r role secret; do
 done < <(awk '/^      - name: / {r=$3} /^ *passwordSecret:$/ {p=1; next} p && /^ *name: / {print r, $2; p=0}
               /^ +owner: / {o=$2} /^      secret:$/ {s=1; next} s && /^ *name: / {print o, $2; s=0}' "$R")
 [ "$roles_ok" = 1 ] && ok "CNPG role and initdb Secrets: kubernetes.io/basic-auth, username = role name (ADR-0012)"
+# WP86 (WP87's rotation proof on kind): CNPG watches only Secrets labelled cnpg.io/reload; without the label a rotated role
+# password reached the Secret (and Reloader restarted the service) but not the database role, so the new pod never got Ready.
+unlabelled=""
+while read -r _ secret; do
+  doc "$secret" ExternalSecret "$E" | awk '/^      metadata:$/ {m=1; next} m && /^      [a-z]/ {exit} m' | grep -q 'cnpg.io/reload: "true"' \
+    || unlabelled="$unlabelled $secret(ESO)"
+  grep -Eq "^db_role $secret " deploy/kind/secrets.sh || unlabelled="$unlabelled $secret(secrets.sh)"
+done < <(awk '/^      - name: / {r=$3} /^ *passwordSecret:$/ {p=1; next} p && /^ *name: / {print r, $2; p=0}
+              /^ +owner: / {o=$2} /^      secret:$/ {s=1; next} s && /^ *name: / {print o, $2; s=0}' "$R")
+[ -z "$unlabelled" ] && ok "every CNPG role/initdb Secret carries cnpg.io/reload (ESO template and secrets.sh): CNPG applies a rotated password" \
+  || bad "CNPG Secrets without cnpg.io/reload:$unlabelled"
+! grep -q 'cnpg.io/reload' <(awk 'BEGIN{RS="\n---\n"} /\nkind: ExternalSecret\n/ && !/name: (hoops-db-|keycloak-db-app)/' "$E") \
+  && ok "no other Secret carries cnpg.io/reload" || bad "cnpg.io/reload on a non-CNPG Secret"
 n_es=$(grep -c '^kind: ExternalSecret' "$E")
 [ "$(grep -c 'secretStoreRef: {kind: ClusterSecretStore, name: hoops}' "$E")" = "$n_es" ] \
   && [ "$(grep -c '^  refreshInterval: "1m"$' "$E")" = "$n_es" ] && [ "$(grep -c 'creationPolicy: Owner' "$E")" = "$n_es" ] \
