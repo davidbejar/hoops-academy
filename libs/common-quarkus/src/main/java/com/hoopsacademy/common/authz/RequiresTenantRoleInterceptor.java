@@ -1,6 +1,6 @@
 package com.hoopsacademy.common.authz;
 
-import com.hoopsacademy.common.problem.AccessDeniedException;
+import com.hoopsacademy.common.problem.TenantRoleDeniedException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -11,7 +11,10 @@ import jakarta.interceptor.InvocationContext;
 import java.util.Arrays;
 import java.util.List;
 
-/** Enforces {@link RequiresTenantRole}; runs before transactions start (Narayana is PLATFORM_BEFORE + 200). */
+/**
+ * Enforces {@link RequiresTenantRole}; runs before transactions start (Narayana is PLATFORM_BEFORE + 200). A refusal is a
+ * {@link TenantRoleDeniedException}, which the Problem mapper answers 403 and logs as a {@code role} security event.
+ */
 @RequiresTenantRole({})
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 100)
@@ -28,9 +31,9 @@ public class RequiresTenantRoleInterceptor {
         List<TenantRole> anyOf =
                 Arrays.asList(invocation.getInterceptorBinding(RequiresTenantRole.class).value());
         AuthzContext caller = tenantContext.authz()
-                .orElseThrow(() -> new AccessDeniedException("No tenant membership in the current context"));
+                .orElseThrow(() -> new TenantRoleDeniedException("No tenant membership in the current context"));
         if (!caller.hasAnyRole(anyOf)) {
-            throw new AccessDeniedException("Requires one of " + anyOf);
+            throw new TenantRoleDeniedException("Requires one of " + anyOf);
         }
         return invocation.proceed();
     }

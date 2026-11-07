@@ -1,6 +1,6 @@
 package com.hoopsacademy.common.tenancy;
 
-import io.quarkus.security.AuthenticationFailedException;
+import com.hoopsacademy.common.security.MissingSubjectException;
 import io.quarkus.security.identity.SecurityIdentity;
 import java.security.Principal;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -24,7 +24,7 @@ public final class CallerSubject {
                 return principal.getName();
             }
             if (subject == null || subject.isBlank()) {
-                throw new AuthenticationFailedException("The access token carries no 'sub' claim");
+                throw MissingSubjectException.failure();
             }
             return subject;
         }

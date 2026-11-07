@@ -1,5 +1,10 @@
 package com.hoopsacademy.common.problem;
 
+import com.hoopsacademy.common.security.DenialKind;
+import com.hoopsacademy.common.security.MissingSubjectException;
+import com.hoopsacademy.common.security.SecurityCaller;
+import com.hoopsacademy.common.security.SecurityEventLog;
+import com.hoopsacademy.common.security.TokenFailureReason;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.UnauthorizedException;
 import jakarta.persistence.OptimisticLockException;
@@ -22,6 +27,12 @@ public class ProblemExceptionMappers {
 
     private static final Logger LOG = Logger.getLogger(ProblemExceptionMappers.class);
 
+    private final SecurityEventLog securityEvents;
+
+    public ProblemExceptionMappers(SecurityEventLog securityEvents) {
+        this.securityEvents = securityEvents;
+    }
+
     @ServerExceptionMapper
     public Response notFound(NotFoundException e, UriInfo uri) {
         return coded(ProblemType.NOT_FOUND, e, uri);
@@ -38,8 +49,11 @@ public class ProblemExceptionMappers {
                 .toResponse();
     }
 
+    /** Every 403 of the tenancy layer and the use cases: a {@code role} or {@code fine_grained} security event. */
     @ServerExceptionMapper
     public Response accessDenied(AccessDeniedException e, UriInfo uri) {
+        securityEvents.denied(e instanceof TenantRoleDeniedException ? DenialKind.ROLE : DenialKind.FINE_GRAINED,
+                e.getMessage());
         return coded(ProblemType.FORBIDDEN, e, uri);
     }
 
@@ -48,12 +62,27 @@ public class ProblemExceptionMappers {
         return problem(ProblemType.FORBIDDEN, null, uri);
     }
 
-    /** Missing or invalid credentials on a role-protected resource (Quarkus' default answer is not a Problem). */
-    @ServerExceptionMapper({UnauthorizedException.class, AuthenticationFailedException.class})
+    /**
+     * Missing credentials on a role-protected resource (Quarkus' default answer is not a Problem). Quarkus Security
+     * reports the failed check itself ({@code QuarkusSecurityEvents}).
+     */
+    @ServerExceptionMapper(UnauthorizedException.class)
     public Response unauthorized(UriInfo uri) {
         return Response.fromResponse(problem(ProblemType.UNAUTHORIZED, null, uri))
                 .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
                 .build();
+    }
+
+    /**
+     * Refused credentials. Quarkus reports the tokens it refuses itself ({@code QuarkusSecurityEvents}); a token it
+     * accepted but the library refuses (no {@code sub}, {@code CallerSubject}) is logged here as {@code invalid_token}.
+     */
+    @ServerExceptionMapper
+    public Response authenticationFailed(AuthenticationFailedException e, UriInfo uri) {
+        if (MissingSubjectException.isCauseOf(e)) {
+            securityEvents.denied(DenialKind.INVALID_TOKEN, SecurityCaller.UNKNOWN, TokenFailureReason.of(e));
+        }
+        return unauthorized(uri);
     }
 
     @ServerExceptionMapper
