@@ -85,7 +85,7 @@ the services (ASVS 16.3.1, 16.3.2); a CycloneDX SBOM per image in CI.
   - `-Pkeycloak-it` (core, game, athlete): 43/43, incl. `RealmSecurityEventsKeycloakTest` 4/4 (failed login = WARN
     `LOGIN_ERROR` line + stored event, success = INFO line, 30-day config, admin event without representation, never
     the password).
-  - New tests: `AuthzDenialTest` 15, `TokenFailureReasonTest` 14, `AuthzDenialEventsTest` 9, `InvalidTokenEventsTest` 7
+  - New tests: `AuthzDenialTest` 15, `TokenFailureReasonTest` 13, `AuthzDenialEventsTest` 9, `InvalidTokenEventsTest` 7
     (real OIDC validation with a per-run key: expired, audience, signature, garbage, no token quoted anywhere),
     `MissingSubjectTest` +1, `SecurityEventsTest` 2 each in core / game / athlete, `RealmSecurityEventsPolicyTest` 3.
   - `just e2e` on compose: 23/23 (after `just seed-users`; Keycloak recreated with the new env). In the services' JSON
