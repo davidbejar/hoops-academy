@@ -41,7 +41,7 @@ just e2e                       # journey on compose (docs/runbooks/e2e.md)
 Also: ADR for any decision taken, handover notes in `docs/wp`, `docs/roadmap.md` updated.
 Dependency bumps arrive as weekly grouped Dependabot PRs (`.github/dependabot.yml`: Maven with Quarkus in its own
 group, pub for `apps/web`, GitHub Actions); `ci` and `e2e` run on each PR. Container base images, the chart's image
-tags and the Envoy Gateway / kind pins are bumped by hand. Ignored on purpose: semver-major updates of
+tags and the Envoy Gateway / kind pins are bumped by the weekly `bump-pins` PR (section 6). Ignored on purpose: semver-major updates of
 `com.networknt:json-schema-validator` (WP43; 3.x cannot share a classpath with the strict validator's networknt 2.x).
 GitHub Actions are pinned to commit SHAs (`uses: owner/action@<40-hex> # vX.Y.Z`); Dependabot updates SHA and comment together, and a new action must be added pinned the same way.
 Realm or init-SQL changes: run `scripts/sync-chart-files.sh` (copies into the charts; the chart test fails on drift) and
@@ -185,3 +185,38 @@ Run `deploy/kind/smoke.sh core game athlete` (or the equivalent checks) after ev
 ## 5. Tag and record
 (design) Tag the commit `vX.Y.Z` after the images for that SHA exist and the smoke test passes; record the contract
 versions and the image SHAs in the release notes. Move resolved items in `docs/wp/FOLLOW-UPS.md` to "Resolved".
+
+## 6. Pins and bumps
+Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned is bumped by `scripts/bump-pins.sh`
+(helper `scripts/bump_pins.py`, stdlib only; its header holds the inventory), run weekly by `.github/workflows/bump-pins.yml`
+(Mondays, or manual dispatch), which opens one PR `chore/bump-pins` labelled `dependencies`. It never pushes to main.
+
+| Pin | File | Resolved from |
+|---|---|---|
+| UBI openjdk-21-runtime tag + digest | `deploy/containers/service.Containerfile` | registry (skopeo) |
+| nginx-unprivileged tag (even minors) | `deploy/containers/web.Containerfile` | registry |
+| redis, redpanda (tag + digest), mailpit | `deploy/helm/hoops/values.yaml` | registry |
+| Trivy tag | `ci.yml`, `images.yml` | Docker Hub |
+| Semgrep tag + digest | `semgrep.yml` | Docker Hub |
+| ZAP `stable` digest | `ci.yml`, `scripts/zap-api-scan.sh` | ghcr.io |
+| Envoy Gateway, CloudNativePG, External Secrets | `deploy/kind/up.sh` | GitHub releases |
+| Reloader chart version + digest + image digest | `deploy/kind/up.sh` | ghcr.io (chart appVersion names the image) |
+
+Not bumped: floating tags without a digest (Maven, Flutter), the Gateway API version (it must match the Envoy Gateway
+compatibility matrix, ADR-0031: change it by hand together with Envoy Gateway), Lighthouse (not pinned in this repository).
+Same major only; `--major` allows a major and the check output says when one exists.
+
+Locally (needs Podman; skopeo runs in a pinned container, no install):
+```
+scripts/bump-pins.sh --check            # lists outdated pins, exit 1 if any
+scripts/bump-pins.sh --apply            # rewrites the files in place; review with git diff
+```
+Try `--apply` on a copy with `--root <dir>`. The scripts fail (exit 2) when a pin's format no longer matches its pattern:
+keep the `NAME="value"` / `tag: x` shapes, or update the pattern in `scripts/bump_pins.py`.
+
+Before merging a bump PR: `ci` and `e2e` green (a PR opened with GITHUB_TOKEN does not start them: close and reopen it).
+A bump of Envoy Gateway, CloudNativePG or External Secrets also needs the chart and kind proofs: `deploy/helm/tests/run.sh`
+(for ESO regenerate the CRD schemas with `deploy/helm/tests/update-eso.sh`), then `just kind-up` and the isolation check on
+the new cluster. A Reloader bump needs `deploy/helm/tests/run.sh` (it asserts the digest pins in `up.sh`) and a kind run.
+One-time repository setup: Settings > Actions > "Allow GitHub Actions to create and approve pull requests", and a
+`dependencies` label.

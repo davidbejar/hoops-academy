@@ -1,8 +1,8 @@
 # Dependabot version updates (decision of 2026-11-06). Weekly, grouped per ecosystem so the review load stays at a few
-# PRs a week; `ci` and `e2e` run on every PR. Not covered here (manual, see docs/runbooks/release.md): the container base
-# images (build args in deploy/containers/*.Containerfile), the chart's image tags (Keycloak, Redis, Mailpit, CNPG) and
-# the Envoy Gateway / kind pins in deploy/kind/up.sh. The generated Dart packages under apps/web/packages are not listed:
-# `just gen-api` owns them.
+# PRs a week; `ci` and `e2e` run on every PR. Not covered here: the container base images (deploy/containers), the
+# chart's image tags and the Envoy Gateway / kind pins in deploy/kind/up.sh; the weekly workflow
+# .github/workflows/bump-pins.yml (scripts/bump-pins.sh, docs/runbooks/release.md section 6) bumps those.
+# The generated Dart packages under apps/web/packages are not listed: `just gen-api` owns them.
 version: 2
 updates:
   - package-ecosystem: maven

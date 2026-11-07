@@ -1,0 +1,76 @@
+name: bump-pins
+
+# WP89, decision 63: weekly bump of what Dependabot does not cover: Containerfile image digests, the chart's image tags,
+# the kind pins (Envoy Gateway, CNPG, ESO, Reloader) and the Trivy / Semgrep / ZAP container tags. scripts/bump-pins.sh
+# --check lists the outdated pins, --apply rewrites them (same major only), and one PR per run carries the diff. The job
+# never pushes to main. Inventory and the proofs a bump needs before merging: docs/runbooks/release.md "Pins and bumps".
+# Repository settings needed once: Actions > "Allow GitHub Actions to create and approve pull requests", and a
+# `dependencies` label. A PR opened with GITHUB_TOKEN does not start `ci`; close and reopen it (or push an empty commit)
+# to run the checks before merging.
+on:
+  schedule:
+    - cron: '17 5 * * 1' # Mondays 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: bump-pins
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write # the bump branch (never main)
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          scripts/bump-pins.sh --check | tee "$RUNNER_TEMP/check.txt"
+          rc=${PIPESTATUS[0]}
+          set -e
+          # 0 = current, 1 = outdated pins, anything else = a lookup failed: fail the job
+          if [ "$rc" -gt 1 ]; then echo "::error::bump-pins --check failed ($rc)"; exit "$rc"; fi
+          echo "outdated=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Apply and write the PR body
+        if: steps.check.outputs.outdated == '1'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          scripts/bump-pins.sh --apply --markdown > "$RUNNER_TEMP/table.md"
+          {
+            echo "Scheduled bump of the pins Dependabot does not cover (WP89). Same major only; a major is a manual change."
+            echo
+            cat "$RUNNER_TEMP/table.md"
+            echo
+            echo "Before merging (docs/runbooks/release.md, Pins and bumps): \`ci\` and \`e2e\` green; for Envoy Gateway, CNPG or"
+            echo "External Secrets also the chart and kind proofs (\`deploy/helm/tests/run.sh\`, \`just kind-proof\`), and for Envoy Gateway"
+            echo "the Gateway API version of its compatibility matrix (ADR-0031)."
+          } > "$RUNNER_TEMP/body.md"
+
+      - name: Open the pull request
+        if: steps.check.outputs.outdated == '1'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          branch: chore/bump-pins
+          delete-branch: true
+          title: "chore(deps): bump container and kind pins"
+          commit-message: "chore(deps): bump container and kind pins (WP89)"
+          body-path: ${{ runner.temp }}/body.md
+          labels: dependencies
