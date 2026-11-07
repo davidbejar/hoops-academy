@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — game-service API
-  version: 2.2.0
+  version: 2.3.0
   description: |
     Match operations and statistics (offline-first, event-sourced).
 
@@ -21,6 +21,14 @@ info:
     anybody else sees linked players (PARENT) and the own player (PLAYER). Box-score lines and the event feed
     (`listMatchEvents`) follow the same rule; team-level figures (score, period scores, team totals) are visible to
     every member through the box score.
+
+    Season history (ADR-0042, game 2.3.0, decision 62): once the season of a match's team has ended (academy time
+    zone) the match is history. ADMIN and the team's former staff (`historicStaffTeamIds` in core's authorization
+    context) still see every player's statistics (box score, event feed); everybody else keeps the rule above. Nobody
+    writes it any more: creating a match for that team and every match write answer 409 Problem with `code` =
+    `SEASON_ENDED` to the callers who could write it otherwise (a former staff member gets 409, not 403); events
+    recorded on the device after the season's last day are REJECTED with `SEASON_ENDED`, events recorded during the
+    season still sync.
 servers:
   - url: /
     description: Gateway root (tenant API under /api/game, internal API under /internal).
@@ -74,7 +82,7 @@ paths:
       operationId: createMatch
       tags: [Matches]
       summary: Schedule a match
-      description: 'The season is taken from the team. Authz: ADMIN; team staff.'
+      description: 'The season is taken from the team. 409 `SEASON_ENDED` once the season of the match''s team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -90,6 +98,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/matches/{matchId}:
@@ -116,7 +125,7 @@ paths:
       operationId: updateMatch
       tags: [Matches]
       summary: Update a scheduled match
-      description: '`periodCount`/`periodMinutes` can only change while SCHEDULED (409). Authz: ADMIN; team staff.'
+      description: '`periodCount`/`periodMinutes` can only change while SCHEDULED (409). 409 `SEASON_ENDED` once the season of the match''s team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -143,7 +152,7 @@ paths:
       operationId: startMatch
       tags: [Matches]
       summary: SCHEDULED → LIVE
-      description: 'Requires a roster with at least one starter (422). Idempotent for an already LIVE match. Authz: ADMIN; team staff.'
+      description: 'Requires a roster with at least one starter (422). Idempotent for an already LIVE match. 409 `SEASON_ENDED` once the season of the match''s team has ended (ADR-0042). Authz: ADMIN; team staff.'
       responses:
         '200':
           description: Live match.
@@ -165,7 +174,7 @@ paths:
       operationId: finishMatch
       tags: [Matches]
       summary: LIVE → FINISHED
-      description: 'Events may still be synced afterwards (late offline devices, VOID corrections). Authz: ADMIN; team staff.'
+      description: 'Events may still be synced afterwards (late offline devices, VOID corrections). 409 `SEASON_ENDED` once the season of the match''s team has ended (ADR-0042). Authz: ADMIN; team staff.'
       responses:
         '200':
           description: Finished match.
@@ -186,7 +195,7 @@ paths:
       operationId: cancelMatch
       tags: [Matches]
       summary: SCHEDULED | LIVE → CANCELLED
-      description: 'Further events are REJECTED with MATCH_CANCELLED. FINISHED matches cannot be cancelled (409). Authz: ADMIN; team staff.'
+      description: 'Further events are REJECTED with MATCH_CANCELLED. FINISHED matches cannot be cancelled (409). 409 `SEASON_ENDED` once the season of the match''s team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -231,7 +240,7 @@ paths:
       description: |
         Players must be on the team's current roster (core `/internal/teams/{teamId}/roster`, 422 otherwise); display
         name and jersey are denormalised so offline sync never depends on core. Not allowed for FINISHED or CANCELLED
-        matches (409). Authz: ADMIN; team staff.
+        matches (409). 409 `SEASON_ENDED` once the season of the match's team has ended (ADR-0042). Authz: ADMIN; team staff.
       requestBody:
         required: true
         content:
@@ -264,7 +273,9 @@ paths:
         (its original `serverSeq` is returned) — safe to drop from the device queue; REJECTED: not stored, see
         `reason` (schema or authorization) — retrying unchanged will fail again. A REJECTED event never fails the
         batch: the server validates each event individually against `events/match-event.schema.json`.
-        Whole-request errors: 400 (not a batch, or more than 500 events), 404 (unknown match).
+        Whole-request errors: 400 (not a batch, or more than 500 events), 404 (unknown match). Once the season of the
+        match's team has ended, an event whose `recordedAtClient` is after the season's last day (academy time zone)
+        is REJECTED with `SEASON_ENDED` (ADR-0042); earlier events still sync.
       requestBody:
         required: true
         content:
@@ -1263,8 +1274,10 @@ components:
         CLIENT_SEQ_CONFLICT — (deviceId, clientSeq) already used by a different event id; EVENT_ID_REUSED — the event id
         is already stored for another match (ids are global); MATCH_NOT_STARTED — reserved for a future policy that
         refuses events of SCHEDULED matches (v1 accepts them so offline devices never lose events, ADR-0014; clients
-        must already handle it).
-      enum: [SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT, EVENT_ID_REUSED, MATCH_NOT_STARTED]
+        must already handle it); SEASON_ENDED — the season of the match's team has ended and the event was recorded on
+        the device after its last day (ADR-0042, game 2.3.0).
+      enum: [SCHEMA_INVALID, NOT_AUTHORIZED, MATCH_CANCELLED, CLIENT_SEQ_CONFLICT, EVENT_ID_REUSED, MATCH_NOT_STARTED,
+        SEASON_ENDED]
     MatchEventResult:
       type: object
       required: [eventId, status]

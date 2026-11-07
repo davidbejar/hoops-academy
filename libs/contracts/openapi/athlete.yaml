@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — athlete-service API
-  version: 2.3.0
+  version: 2.4.0
   description: |
     Training & attendance, athlete health & fitness.
 
@@ -23,6 +23,16 @@ info:
     lists those items in `matchedItems`. Items of any readable plan are quick-added (copied) into a tenant plan
     (`copyItemsToPlan`) or into a session (`copyItemsToSession`): a session that has no plan of its own yet gets an
     ad-hoc plan (`sessionId` set, hidden from the plan lists) on the first quick-add; templates stay read-only.
+
+    Season history (2.4.0, decision 62, ADR-0042): once the season of a team has ended (academy time zone) its
+    training data is history. Schedules, sessions and plan assignments of past seasons stay readable as before (every
+    staff role reads every team). The team's former staff (`historicStaffTeamIds` in core's authorization context)
+    see the whole attendance sheet of its sessions and read the health records (injuries, height / weight, test
+    results) of the players on its roster dated on or before the season's last day, also through the health lists'
+    `teamId`; other coaches keep today's answers. Nobody writes it any more: schedule, session, attendance, quick-add,
+    team plan assignment and completion writes for that team, and a health write by a coach whose only relation to
+    the player is such a team, answer 409 Problem with `code` = `SEASON_ENDED` to the callers who could write it
+    otherwise (a former staff member gets 409, not 403).
 servers:
   - url: /
     description: Gateway root (tenant API under /api/athlete, internal API under /internal).
@@ -77,7 +87,7 @@ paths:
       operationId: createTrainingSchedule
       tags: [TrainingSchedules]
       summary: Create a recurring training slot
-      description: 'Sessions are materialised 8 weeks ahead. Authz: ADMIN; team staff.'
+      description: 'Sessions are materialised 8 weeks ahead. 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -93,6 +103,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-schedules/{scheduleId}:
@@ -122,7 +133,7 @@ paths:
       operationId: updateTrainingSchedule
       tags: [TrainingSchedules]
       summary: Update a training schedule
-      description: 'Future PLANNED sessions without manual changes are re-materialised. Authz: ADMIN; team staff.'
+      description: 'Future PLANNED sessions without manual changes are re-materialised. 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -138,13 +149,14 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deleteTrainingSchedule
       tags: [TrainingSchedules]
       summary: End a training schedule
-      description: 'Removes future PLANNED sessions of the schedule; past sessions and attendance are kept. Authz: ADMIN; team staff.'
+      description: 'Removes future PLANNED sessions of the schedule; past sessions and attendance are kept. 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.'
       responses:
         '204':
           description: Schedule ended.
@@ -152,6 +164,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ sessions
@@ -187,7 +200,7 @@ paths:
       operationId: createTrainingSession
       tags: [TrainingSessions]
       summary: Create an ad-hoc training session
-      description: 'Authz: ADMIN; team staff.'
+      description: '409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -203,6 +216,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-sessions/{sessionId}:
@@ -229,7 +243,7 @@ paths:
       operationId: updateTrainingSession
       tags: [TrainingSessions]
       summary: Update a session (time, place, plan, notes, mark DONE)
-      description: 'CANCELLED sessions cannot be changed (409). Authz: ADMIN; team staff.'
+      description: 'CANCELLED sessions cannot be changed (409). 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -256,7 +270,7 @@ paths:
       operationId: cancelTrainingSession
       tags: [TrainingSessions]
       summary: Cancel a planned session
-      description: 'Only PLANNED sessions can be cancelled (409). Authz: ADMIN; team staff.'
+      description: 'Only PLANNED sessions can be cancelled (409). 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -289,6 +303,7 @@ paths:
         references it, so the template or shared plan is never changed (copy on write, ADR-0041). Template items are
         copied with their texts in the negotiated language. Unknown or foreign plans or items are 404; CANCELLED
         sessions cannot be changed (409). Authz: ADMIN; team staff.
+        409 `SEASON_ENDED` once the season of the team has ended (ADR-0042).
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
       requestBody:
@@ -319,6 +334,7 @@ paths:
       description: |
         One entry per player of the team's current roster, overlaid with planned absences (`expectedAbsent`). Entries
         without a recorded status have `status = null`. Authz: ADMIN; team staff; PARENT/PLAYER (linked / own entry).
+        Former staff of the team (season ended) see the whole sheet, read-only (ADR-0042).
       responses:
         '200':
           description: Attendance sheet.
@@ -337,6 +353,7 @@ paths:
       description: |
         Entries for players not listed are left unchanged. `minutesLate` is required for LATE and forbidden otherwise
         (422). Not allowed for CANCELLED sessions (409). Authz: ADMIN; team staff.
+        409 `SEASON_ENDED` once the season of the team has ended (ADR-0042).
       requestBody:
         required: true
         content:
@@ -803,7 +820,7 @@ paths:
       operationId: createPlanAssignment
       tags: [PlanAssignments]
       summary: Assign a tenant plan to a team or a player
-      description: 'Exactly one of `teamId` / `playerId` (422). Templates must be copied first (422). Authz: ADMIN; team staff.'
+      description: 'Exactly one of `teamId` / `playerId` (422). Templates must be copied first (422). 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -819,6 +836,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/plan-assignments/{assignmentId}:
@@ -845,7 +863,7 @@ paths:
       operationId: deletePlanAssignment
       tags: [PlanAssignments]
       summary: Withdraw a plan assignment
-      description: 'Completions recorded for it are deleted with it. Authz: ADMIN; team staff.'
+      description: 'Completions recorded for it are deleted with it. 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff.'
       responses:
         '204':
           description: Assignment removed.
@@ -853,6 +871,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/plan-assignments/{assignmentId}/progress:
     parameters:
@@ -888,7 +907,7 @@ paths:
       operationId: recordPlanCompletion
       tags: [PlanCompletions]
       summary: Record (or change) a player's completion of an assignment
-      description: 'The player must be a target of the assignment (422). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      description: 'The player must be a target of the assignment (422). 409 `SEASON_ENDED` for a team assignment once the season of the team has ended (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
       requestBody:
         required: true
         content:
@@ -904,6 +923,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/plan-completions:
@@ -941,7 +961,7 @@ paths:
       operationId: listInjuries
       tags: [Injuries]
       summary: List injuries
-      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self, read).'
+      description: 'A former staff member of a team whose season has ended reads the records of its roster''s players dated on or before the season''s last day; with `teamId` = that team the list shows exactly those (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self, read).'
       parameters:
         - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
         - $ref: './common.yaml#/components/parameters/TeamIdQuery'
@@ -965,7 +985,7 @@ paths:
       operationId: createInjury
       tags: [Injuries]
       summary: Report an injury
-      description: '`expectedReturnOn` ≥ `occurredOn` (422). An OPEN injury shows the player as unavailable. Authz: ADMIN; team staff; PARENT (linked).'
+      description: '`expectedReturnOn` ≥ `occurredOn` (422). An OPEN injury shows the player as unavailable. 409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).'
       requestBody:
         required: true
         content:
@@ -981,6 +1001,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/injuries/{injuryId}:
@@ -994,7 +1015,7 @@ paths:
       operationId: getInjury
       tags: [Injuries]
       summary: Get an injury
-      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      description: 'Former staff of an ended season: records dated on or before its last day (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
       responses:
         '200':
           description: The injury.
@@ -1010,7 +1031,7 @@ paths:
       operationId: updateInjury
       tags: [Injuries]
       summary: Update an injury (e.g. mark RECOVERED with `actualReturnOn`)
-      description: 'RECOVERED requires `actualReturnOn` ≥ `occurredOn` (422). Authz: ADMIN; team staff; PARENT (linked).'
+      description: 'RECOVERED requires `actualReturnOn` ≥ `occurredOn` (422). 409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).'
       requestBody:
         required: true
         content:
@@ -1026,13 +1047,14 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deleteInjury
       tags: [Injuries]
       summary: Delete an injury entered by mistake
-      description: 'Authz: ADMIN; team staff.'
+      description: '409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff.'
       responses:
         '204':
           description: Injury deleted.
@@ -1040,6 +1062,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ body measurements
@@ -1077,7 +1100,7 @@ paths:
       operationId: listBodyMeasurements
       tags: [BodyMeasurements]
       summary: Height / weight history of a player (measuredOn ascending)
-      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      description: 'Former staff of an ended season: records dated on or before its last day (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
       parameters:
         - name: playerId
           in: query
@@ -1102,7 +1125,7 @@ paths:
       operationId: createBodyMeasurement
       tags: [BodyMeasurements]
       summary: Record height and/or weight
-      description: 'At least one of `heightCm` / `weightKg` (422); one measurement per player and day (409). Authz: ADMIN; team staff; PARENT (linked).'
+      description: 'At least one of `heightCm` / `weightKg` (422); one measurement per player and day (409). 409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).'
       requestBody:
         required: true
         content:
@@ -1132,7 +1155,7 @@ paths:
       operationId: updateBodyMeasurement
       tags: [BodyMeasurements]
       summary: Correct a measurement
-      description: 'Authz: ADMIN; team staff; PARENT (linked).'
+      description: '409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).'
       requestBody:
         required: true
         content:
@@ -1155,7 +1178,7 @@ paths:
       operationId: deleteBodyMeasurement
       tags: [BodyMeasurements]
       summary: Delete a measurement
-      description: 'Authz: ADMIN; team staff; PARENT (linked).'
+      description: '409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff; PARENT (linked).'
       responses:
         '204':
           description: Measurement deleted.
@@ -1163,6 +1186,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
 
   # ------------------------------------------------------------------ physical tests
@@ -1280,7 +1304,7 @@ paths:
       operationId: listPhysicalTestResults
       tags: [PhysicalTests]
       summary: List test results (each with its expected norm band)
-      description: 'Authz: ADMIN; team staff; PARENT (linked, read); PLAYER (self, read).'
+      description: 'A former staff member of a team whose season has ended reads the records of its roster''s players dated on or before the season''s last day; with `teamId` = that team the list shows exactly those (ADR-0042). Authz: ADMIN; team staff; PARENT (linked, read); PLAYER (self, read).'
       parameters:
         - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
         - $ref: './common.yaml#/components/parameters/TeamIdQuery'
@@ -1309,6 +1333,7 @@ paths:
       description: |
         The server computes the player's age at `measuredOn` (birth date and gender from core) and the expected band
         (tenant norm overrides global). Authz: ADMIN; team staff.
+        409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042).
       requestBody:
         required: true
         content:
@@ -1324,6 +1349,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/physical-test-results/{resultId}:
@@ -1337,7 +1363,7 @@ paths:
       operationId: getPhysicalTestResult
       tags: [PhysicalTests]
       summary: Get a test result
-      description: 'Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
+      description: 'Former staff of an ended season: records dated on or before its last day (ADR-0042). Authz: ADMIN; team staff; PARENT (linked); PLAYER (self).'
       responses:
         '200':
           description: The result.
@@ -1353,7 +1379,7 @@ paths:
       operationId: updatePhysicalTestResult
       tags: [PhysicalTests]
       summary: Correct a test result (band is recomputed)
-      description: 'Authz: ADMIN; team staff.'
+      description: '409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff.'
       requestBody:
         required: true
         content:
@@ -1369,13 +1395,14 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
     delete:
       operationId: deletePhysicalTestResult
       tags: [PhysicalTests]
       summary: Delete a test result
-      description: 'Authz: ADMIN; team staff.'
+      description: '409 `SEASON_ENDED` for a coach whose only relation to the player is a team of an ended season (ADR-0042). Authz: ADMIN; team staff.'
       responses:
         '204':
           description: Result deleted.
@@ -1383,6 +1410,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/physical-test-norms:
     parameters:

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 3.1.0
+  version: 3.2.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -27,6 +27,12 @@ info:
     `GET /platform/audit-events` (super_admin, every academy) read the administrative actions recorded by core. No
     retention in v1: rows are kept until a purge job exists (v2). Since core 2.6.0 (decision 16 of 2026-11-06) the
     academy list masks the super admin: a PLATFORM actor has a null `subject`, `personId` and `displayName` there.
+
+    Season history (ADR-0042, core 3.2.0, decision 62): a team whose season has ended (academy time zone) is history.
+    Its former staff (a `team_staff` row of that team plus a COACH / ASSISTANT_COACH role) find it in
+    `AuthzSummary.historicStaffTeamIds` and with `listTeams?staffedByMe=true&includeEnded=true`; `Team.seasonEnded`
+    marks it. Nobody writes it any more: the team's PATCH, staff and assignment writes answer 409 Problem with
+    `code` = `SEASON_ENDED` to everybody who could write it otherwise (ADMIN included). Seasons stay editable.
 
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
@@ -1198,7 +1204,10 @@ paths:
       operationId: listTeams
       tags: [Teams]
       summary: List teams
-      description: 'Authz: any member. `staffedByMe=true` restricts to teams where the caller is team staff.'
+      description: |
+        Authz: any member. `staffedByMe=true` restricts to teams where the caller is team staff of a season that has
+        not ended; with `includeEnded=true` also the teams of ended seasons the caller was staff of
+        (`historicStaffTeamIds`, ADR-0042). Without `staffedByMe` every team of every season is listed, as before.
       parameters:
         - $ref: './common.yaml#/components/parameters/SeasonIdQuery'
         - name: ageCategoryId
@@ -1206,6 +1215,12 @@ paths:
           schema: {type: string, format: uuid}
         - name: staffedByMe
           in: query
+          schema: {type: boolean, default: false}
+        - name: includeEnded
+          in: query
+          description: |
+            With `staffedByMe=true`: also list the teams of ended seasons the caller was staff of (read-only history,
+            ADR-0042). No effect otherwise. Default false (today's teams only).
           schema: {type: boolean, default: false}
         - $ref: './common.yaml#/components/parameters/Page'
         - $ref: './common.yaml#/components/parameters/Size'
@@ -1266,7 +1281,7 @@ paths:
       operationId: updateTeam
       tags: [Teams]
       summary: Update a team
-      description: 'Changing category or gender policy re-evaluates eligibility of its players. Authz: ADMIN.'
+      description: 'Changing category or gender policy re-evaluates eligibility of its players. 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN.'
       requestBody:
         required: true
         content:
@@ -1314,7 +1329,7 @@ paths:
       operationId: putTeamStaffMember
       tags: [Teams]
       summary: Attach a coach / assistant coach to the team (idempotent)
-      description: 'The person must hold the matching tenant role (422). Authz: ADMIN.'
+      description: 'The person must hold the matching tenant role (422). 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN.'
       requestBody:
         required: true
         content:
@@ -1330,12 +1345,13 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
     delete:
       operationId: removeTeamStaffMember
       tags: [Teams]
       summary: Detach a staff member from the team
-      description: 'Authz: ADMIN.'
+      description: '409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). The former staff keep their read-only history until they lose the staff role. Authz: ADMIN.'
       responses:
         '204':
           description: Detached.
@@ -1343,6 +1359,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
   /api/core/teams/{teamId}/players:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -1376,7 +1393,7 @@ paths:
       description: |
         Runs the eligibility check; INELIGIBLE → 422 with `code=PLAYER_INELIGIBLE` and the reasons in `violations[].code`.
         PLAY_UP is allowed within the tenant's limit. 409 when the player already has an open assignment to this team.
-        Authz: ADMIN; COACH of this team.
+        409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; COACH of this team (a former coach gets the 409).
       requestBody:
         required: true
         content:
@@ -1403,7 +1420,7 @@ paths:
       operationId: updateTeamPlayer
       tags: [Teams]
       summary: Update an open assignment (jersey number)
-      description: 'Jersey numbers are unique among open assignments of the team (409); `clear: [jerseyNumber]` removes it (ADR-0032). Authz: ADMIN; COACH of this team.'
+      description: 'Jersey numbers are unique among open assignments of the team (409); `clear: [jerseyNumber]` removes it (ADR-0032). 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; COACH of this team.'
       requestBody:
         required: true
         content:
@@ -1424,7 +1441,7 @@ paths:
       operationId: unassignPlayerFromTeam
       tags: [Teams]
       summary: Close the player's open assignment to the team
-      description: 'Sets `leftOn` (history is kept). The player may become ORPHAN. Authz: ADMIN; COACH of this team.'
+      description: 'Sets `leftOn` (history is kept). The player may become ORPHAN. 409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; COACH of this team.'
       responses:
         '204':
           description: Assignment closed.
@@ -1432,6 +1449,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
   /api/core/teams/{teamId}/players/{playerId}/eligibility:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -2471,13 +2489,20 @@ components:
     AuthzSummary:
       type: object
       description: The caller's scope within the tenant (what the UI may offer; the server re-checks every call).
-      required: [staffTeamIds, linkedPlayerIds, playerTeamIds, timezone]
+      required: [staffTeamIds, historicStaffTeamIds, linkedPlayerIds, playerTeamIds, timezone]
       properties:
         staffTeamIds:
           type: array
           description: |
             Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the
             academy's time zone) even while the staff row is still open (core 2.8.0).
+          items: {type: string, format: uuid}
+        historicStaffTeamIds:
+          type: array
+          description: |
+            Teams of seasons that have ended (academy time zone) where the caller is still recorded as staff: their
+            read-only history (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`; empty for a caller without a
+            COACH / ASSISTANT_COACH role.
           items: {type: string, format: uuid}
         linkedPlayerIds:
           type: array
@@ -2903,10 +2928,15 @@ components:
         name: {type: string}
     Team:
       type: object
-      required: [id, seasonId, name, ageCategory, genderPolicy, playerCount]
+      required: [id, seasonId, seasonEnded, name, ageCategory, genderPolicy, playerCount]
       properties:
         id: {type: string, format: uuid}
         seasonId: {type: string, format: uuid}
+        seasonEnded:
+          type: boolean
+          description: |
+            The team's season has ended (academy time zone): the team is read-only history and every write on it
+            answers 409 `SEASON_ENDED` (ADR-0042, core 3.2.0).
         name: {type: string}
         alias: {type: string, nullable: true}
         ageCategory: {$ref: '#/components/schemas/AgeCategory'}
@@ -3235,7 +3265,8 @@ components:
     # ---------------- internal
     AuthzContext:
       type: object
-      required: [sub, personId, tenantId, tenantStatus, roles, staffTeamIds, linkedPlayerIds, playerTeamIds, timezone]
+      required: [sub, personId, tenantId, tenantStatus, roles, staffTeamIds, historicStaffTeamIds, linkedPlayerIds,
+        playerTeamIds, timezone]
       properties:
         sub: {type: string}
         personId: {type: string, format: uuid}
@@ -3248,6 +3279,12 @@ components:
         staffTeamIds:
           type: array
           description: Teams the caller is staff of; teams whose season has ended are left out (core 2.8.0).
+          items: {type: string, format: uuid}
+        historicStaffTeamIds:
+          type: array
+          description: |
+            Teams of ended seasons the caller is still recorded as staff of (with a COACH / ASSISTANT_COACH role): read
+            access to their history, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`.
           items: {type: string, format: uuid}
         linkedPlayerIds:
           type: array
@@ -3269,11 +3306,17 @@ components:
           example: Europe/Madrid
     TeamRoster:
       type: object
-      required: [tenantId, teamId, seasonId, teamName, players, staff]
+      required: [tenantId, teamId, seasonId, seasonEndDate, teamName, players, staff]
       properties:
         tenantId: {type: string, format: uuid}
         teamId: {type: string, format: uuid}
         seasonId: {type: string, format: uuid}
+        seasonEndDate:
+          type: string
+          format: date
+          description: |
+            Last day of the team's season; after it (academy time zone) the team is history and game and athlete
+            refuse writes on it with 409 `SEASON_ENDED` (ADR-0042, core 3.2.0).
         teamName: {type: string}
         players:
           type: array
