@@ -46,6 +46,33 @@ public final class ReplicaDb {
         return rows.isEmpty() ? null : rows.getFirst().values().iterator().next();
     }
 
+    /** Runs {@code sql} as game_app with {@code tenant} bound (RLS applies) and commits. */
+    public static void execute(TenantId tenant, String sql) {
+        try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
+            app.setAutoCommit(false);
+            try (PreparedStatement bind = app.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
+                bind.setString(1, tenant.toString());
+                bind.execute();
+            }
+            try (PreparedStatement statement = app.prepareStatement(sql)) {
+                statement.execute();
+            }
+            app.commit();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Runs {@code sql} as the owner, as an operator does on the parking table. */
+    public static void executeAsOwner(String sql) {
+        try (Connection migrator = RlsTestDatabase.fromConfig().openAsMigrator();
+                PreparedStatement statement = migrator.prepareStatement(sql)) {
+            statement.execute();
+        } catch (SQLException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     /** Rows of the parking table (readable only by the owner). */
     public static List<Map<String, Object>> parked() {
         try (Connection migrator = RlsTestDatabase.fromConfig().openAsMigrator();
