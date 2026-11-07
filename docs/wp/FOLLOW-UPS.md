@@ -289,6 +289,43 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
   157.0.8103.38; update it when the local Chrome moves.
 
 ### Product / contract decisions
+- **Jersey number across teams: preferred number and carry-over** (owner, 2026-11-07). The number exists today on
+  the *assignment*, not the player: `core.team_player.jersey_number` (optional, `^[0-9]{1,2}$`, "0" ≠ "00"), unique
+  among the open assignments of a team (partial unique index; 409 on a clash), set with `AssignPlayerRequest` or
+  changed later with `UpdateTeamPlayerRequest` (`clear: [jerseyNumber]` removes it, ADR-0032), edited in the web
+  team screen (`JerseyDialog`) and denormalised into the match roster of game. So a player can carry different
+  numbers in different teams and a move never breaks uniqueness. Missing: nothing carries over. A new assignment
+  starts without a number unless the admin types one, and nobody is told that the player's previous number is free
+  or taken on the new team. Wanted: (1) a **preferred number** on the player (`core.player.preferred_jersey_number`,
+  same pattern, nullable; `Player` / `UpdatePlayerRequest` with `clear`; editable by ADMIN and COACH, visible to
+  PARENT / PLAYER, maybe editable by them as a wish: decision); (2) on **assignment** (`POST /teams/{teamId}/players`)
+  without an explicit number: take the preferred number when free on the new team, else the number of the player's
+  most recent assignment when free, else none; the response says which rule applied (`jerseySource`:
+  `REQUESTED` / `PREFERRED` / `PREVIOUS` / `NONE`) so the web can tell the admin "7 is taken by X; free: 4, 9, 12"
+  and offer the dialog at once; (3) a **free numbers** read per team (`GET /teams/{teamId}/jersey-numbers` or a
+  field on the roster: taken numbers with the player, so the dialog shows what is free); (4) the roster event
+  `core.team_player.changed` already carries the number (game replica) — no change there. Rules: never silently take
+  a number from another open assignment; season rollover (`/seasons/{id}/rollover`) keeps the numbers of the copied
+  assignments (check that it does today). Core minor (contract + V18), web team/assign dialogs, es/en/id, role-matrix
+  tests (who edits the preference). Possibly one WP with the players-screen part of the export WP.
+- **Export** (owner, 2026-11-07): nothing can be exported today (no CSV / PDF / ICS endpoint, no library in the
+  poms). Wanted, downloadable from the web app (a button on each screen) and as contract endpoints with `Accept` /
+  `format=` (CSV first, UTF-8 with BOM for Excel, `;`-safe quoting; PDF later where a printable sheet makes sense):
+  (1) **audit log** (core `GET /api/core/audit-events` with the current filters: date range, action; the platform
+  variant for the super admin; the same actor masking as the screen, ADR-0029), (2) **player stats** (game
+  `/api/game/players/{playerId}/season-stats`: per match rows plus the season totals), (3) **game stats** (game
+  box score of one match: both teams, every player line, the event log optional), (4) **team calendar** (the team's
+  matches of game and training sessions of athlete over a season: CSV and **ICS** for phone calendars, with the
+  venue and the cancel state; needs a cross-service read or a web-side merge of the two lists), (5) **team players
+  with coach and parents** (core: the team's roster with each player's person data, age category, eligibility
+  state, the team's staff with role, and each player's guardians with contact data; PARENT / PLAYER never get this
+  one; it is personal data → audit row `team.roster_exported`, rate-limited, ADMIN and the team's COACH only, see
+  `docs/domain/authz-matrix.md`). Decisions needed: formats (CSV + ICS now, PDF later?), the locale of headers and
+  dates (the user's, es / en / id), file naming, size limits (paging vs one file), and whether exports stream from the
+  services or the web builds them from the JSON it already has (simpler, offline-capable, but no audit row and no
+  server-side limits: the roster export at least must be server-side). Each export is a contract change (`text/csv`,
+  `text/calendar` responses) in the owning service, generated Dart clients, OpenAPI validation of the new media
+  types in the contract tests, a role-matrix test, and goldens for the buttons.
 - **Exercise catalogue** (decision 54, next round): exercises as their own entity (global localised ones plus
   tenant-defined), templates referencing them, listed and searchable on their own (athlete 3.0.0). WP78 only finds
   items inside templates and quick-adds copies; the seeded templates have no Cooper item yet (the catalogue should
@@ -394,6 +431,16 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
 
 ### Backend
+- **Entity and class diagrams per service** (owner, 2026-11-07). `docs/architecture.md` has Mermaid flowcharts and
+  sequence diagrams of the system, nothing at the model level. Wanted, one page per service under `docs/domain/`
+  (`core-model.md`, `game-model.md`, `athlete-model.md`): (1) an `erDiagram` of the schema (core 22 tables, game 16,
+  athlete 24 by the Flyway files, incl. the `*_ref` replicas, outbox and billing seams) with keys, `tenant_id` and the
+  main relations, and (2) a `classDiagram` of the domain layer (aggregates, value objects such as `TenantId` /
+  `PlayerId`, ports) per hexagon. Keep them honest: generate the ER part from the live schema (a script in
+  `scripts/`, e.g. `scripts/er-diagram.sh` reading `information_schema` of the compose database, or from the Flyway
+  files) and the class part from the `domain` packages (a small tool over the sources, or by hand with a drift check
+  in `just test` that fails when a `domain` class is missing from the diagram), so they do not rot; link them from
+  `architecture.md` and the README. Mermaid renders on GitHub; no new build dependency.
 - **Events-off producer warnings in core** (WP86): on kind with `events.enabled=false` core's producer kept connecting
   to `localhost:19092` (2 WARN lines every 6–10 s; game and athlete were quiet). Core needs a switch that keeps the
   producer from being created (set by the chart's `core.events.offEnv`); an env var alone could not address the old
@@ -428,6 +475,15 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
+- **Claude commit/push hook: false positive on quoted text** (owner, 2026-11-07): `.claude/hooks/tenancy-gate.sh`
+  (PreToolUse on Bash) greps the whole command text for `git commit` / `git push` with `runs_git`, so a command that
+  only *mentions* them, e.g. `echo "=== git commit times"; git log ...`, runs the full isolation check (~3.5 min,
+  seen 2026-11-07 20:38) before a read-only command. Match the words only at a command position: strip single- and
+  double-quoted strings and comments (`#...`) from the command before matching, or tokenise on `;`, `&&`, `||`, `|`
+  and test each simple command's first word(s). Keep `git -C dir commit`, `git -c k=v push`, `git --no-pager commit`
+  matching; add a shell test file (`scripts/hooks/tenancy-gate.test.sh`) with the positive and negative cases, run by
+  `just doctor` or `just test-hooks`. Also surface the hook's result line to the owner: Claude quotes it when it
+  reports a commit or push (the hook output reaches only Claude's context).
 - **Podman machine drop-in: playbook + doctor check** (owner decision 2026-11-07, both A and B): the `--time=0`
   drop-in for `podman.service` (WP87) lives on the VM disk and is lost on `podman machine rm` / `reset` / re-init; the
   stock `quay.io/podman/machine-os` image cannot carry it. (A) An Ansible playbook in the repo (`infra/podman/

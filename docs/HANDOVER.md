@@ -130,6 +130,9 @@ owner's decisions 1–63 and the backlog are in `docs/wp/FOLLOW-UPS.md`. The for
   `GET /platform/users`), Pending approvals, Audit trail, Billing "coming soon"; landing on the hub; nav entry for a
   super admin with memberships. Confirm first why the owner lands on the audit trail (code sends a pure super admin
   to the academies list).
+- **Export** (owner, 2026-11-07; FOLLOW-UPS "Product / contract decisions"): audit log, player stats, game box
+  score, team calendar (CSV + ICS), team roster with coach and parents (server-side, audited); formats and locale to
+  decide. **Entity and class diagrams per service** (FOLLOW-UPS "Backend"): generated Mermaid, drift-checked.
 - **Exercise catalogue** (decision 54): exercises as an entity (global localised plus tenant-defined), templates
   referencing them, searchable and quick-addable on their own; athlete 3.0.0.
 - **Events default flip**: a shadow period over days on kind or staging (parked 0, lag in seconds), then `replica` by
