@@ -42,6 +42,8 @@ class ReplicaAuthzResolverTest {
         AuthzContext context = resolver.resolve(SUBJECT, TENANT).orElseThrow();
 
         assertThat(context.staffTeamIds()).containsExactly(endsTodayInJakarta.value());
+        assertThat(context.historicStaffTeamIds()).as("ended in Jakarta, unknown team left out")
+                .containsExactly(endedInJakarta.value());
         assertThat(context.timezone()).contains(JAKARTA);
         assertThat(context.subject()).isEqualTo(SUBJECT);
         assertThat(context.personId()).isEqualTo(PERSON);
@@ -60,6 +62,7 @@ class ReplicaAuthzResolverTest {
         AuthzContext player = resolver.resolve(SUBJECT, TENANT).orElseThrow();
         assertThat(player.ownPlayerId()).contains(own.value());
         assertThat(player.playerTeamIds()).containsExactly(endsTodayInJakarta.value());
+        assertThat(player.historicStaffTeamIds()).as("a player's ended team is no staff history").isEmpty();
 
         member(TenantRole.COACH);
         AuthzContext coach = resolver.resolve(SUBJECT, TENANT).orElseThrow();
