@@ -275,6 +275,46 @@ void main() {
       });
     });
 
+    testWidgets(
+      'a guardian without a login gets a first temporary password from the '
+      'member page',
+      (tester) async {
+        final core = coreWithMembers();
+        await pumpAs(
+          tester,
+          roles: {TenantRole.admin},
+          core: core,
+          location: '$path/m2',
+        );
+        expect(find.byKey(const Key('member-issue-password')), findsOneWidget);
+        await tapKey(tester, 'member-issue-password');
+        expect(core.members.reissuedFor, ['m2']);
+        expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+      },
+    );
+
+    testWidgets('a guardian who already signs in gets no password action', (
+      tester,
+    ) async {
+      final core = FakeCore(
+        members: FakeMembersRepository([
+          member(
+            'm9',
+            'Gus Guardian',
+            roles: {api.TenantRole.PARENT},
+            userId: 'u-9',
+          ),
+        ]),
+      );
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: core,
+        location: '$path/m9',
+      );
+      expect(find.byKey(const Key('member-issue-password')), findsNothing);
+    });
+
     testWidgets('re-issue is offered for a pending active member only', (
       tester,
     ) async {
@@ -616,6 +656,36 @@ void main() {
       await tapKey(tester, 'form-submit');
       expect(find.byKey(const Key('member-edit-email')), findsOneWidget);
       expect(find.textContaining('English server detail'), findsNothing);
+    });
+
+    testWidgets('clearing the e-mail of a member with a login is blocked '
+        'before the request', (tester) async {
+      final core = FakeCore(
+        members: FakeMembersRepository([
+          member('m8', 'Lia Login', userId: 'u-8'),
+        ]),
+      );
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: core,
+        location: '$path/m8',
+      );
+      await tapKey(tester, 'member-edit');
+      await tester.enterText(find.byKey(const Key('member-edit-email')), '');
+      await tapKey(tester, 'form-submit');
+      expect(core.members.updates, isEmpty);
+      expect(find.byKey(const Key('member-edit-email')), findsOneWidget);
+      expect(find.textContaining('correo'), findsWidgets);
+    });
+
+    testWidgets('a member without a login may still lose the e-mail', (
+      tester,
+    ) async {
+      final core = await openEdit(tester);
+      await tester.enterText(find.byKey(const Key('member-edit-email')), '');
+      await tapKey(tester, 'form-submit');
+      expect(core.members.updates.single.email, isNull);
     });
 
     testWidgets('a coach has no member screen to edit from', (tester) async {

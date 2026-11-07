@@ -333,7 +333,8 @@ class _MemberDetail extends ConsumerStatefulWidget {
 class _MemberDetailState extends ConsumerState<_MemberDetail> {
   late final Set<api.TenantRole> _roles = {...widget.member.roles};
 
-  /// New temporary password for a pending member: shown once, then dropped.
+  /// New temporary password for a pending member, or the first login of a guardian without one (WP58): shown once,
+  /// then dropped.
   Future<void> _issuePassword() async {
     final m = widget.member;
     final nav = Navigator.of(context, rootNavigator: true).context;
@@ -359,6 +360,10 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
     final l = AppLocalizations.of(context);
     final m = widget.member;
     final pending = m.invitationStatus == api.InvitationStatus.PENDING;
+    final firstGuardianLogin =
+        m.userId == null &&
+        m.email != null &&
+        m.roles.contains(api.TenantRole.PARENT);
     final theme = Theme.of(context);
     final isParent = m.roles.contains(api.TenantRole.PARENT);
     return PageBody(
@@ -375,7 +380,7 @@ class _MemberDetailState extends ConsumerState<_MemberDetail> {
               builder: (_) => MemberEditDialog(member: m),
             ),
           ),
-          if (pending && m.active)
+          if ((pending || firstGuardianLogin) && m.active)
             OutlinedButton.icon(
               key: const Key('member-issue-password'),
               icon: const Icon(Icons.key_outlined),

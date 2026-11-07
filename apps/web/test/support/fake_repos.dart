@@ -177,7 +177,18 @@ class FakeMembersRepository with Faulty implements MembersRepository {
   Future<api.MemberWithPassword> issueTemporaryPassword(String personId) =>
       run('issueTemporaryPassword', () {
         if (issueFails != null) throw issueFails!;
-        final m = members.firstWhere((m) => m.personId == personId);
+        var m = members.firstWhere((m) => m.personId == personId);
+        if (m.userId == null &&
+            m.email != null &&
+            m.roles.contains(api.TenantRole.PARENT)) {
+          // First login of a guardian (WP58): becomes a pending member.
+          m = m.rebuild(
+            (b) => b
+              ..userId = 'u-$personId'
+              ..invitationStatus = api.InvitationStatus.PENDING,
+          );
+          members[members.indexWhere((x) => x.personId == personId)] = m;
+        }
         if (m.invitationStatus != api.InvitationStatus.PENDING) {
           throw DioException(
             requestOptions: RequestOptions(path: '/members'),

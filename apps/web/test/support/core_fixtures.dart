@@ -126,6 +126,7 @@ api.Member member(
   Set<api.TenantRole> roles = const {api.TenantRole.COACH},
   bool active = true,
   String? email,
+  String? userId,
   api.InvitationStatus invitation = api.InvitationStatus.ACCEPTED,
   api.TemporaryPasswordStatus temporaryPassword =
       api.TemporaryPasswordStatus.NONE,
@@ -137,6 +138,7 @@ api.Member member(
     ..displayName = name
     ..email =
         email ?? '${name.split(' ').first.toLowerCase()}@hoops-academy.com'
+    ..userId = userId
     ..roles = SetBuilder<api.TenantRole>(roles)
     ..active = active
     ..invitationStatus = invitation

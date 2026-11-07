@@ -11,8 +11,8 @@ import '../application/admin_providers.dart';
 import 'members_screen.dart' show memberEmailPattern, memberErrorText;
 
 /// Edits the personal data of a member (`UpdateMemberRequest`). E-mail, phone, birth date and gender can be emptied
-/// (sent in `clear`). The server refuses to empty the e-mail of a member with a login (422 `LOGIN_REQUIRES_EMAIL`):
-/// the dialog stays open and shows that message.
+/// (sent in `clear`). A member with a login (`userId`) cannot lose the e-mail (ADR-0023): the field is validated before
+/// the request; a 422 `LOGIN_REQUIRES_EMAIL` from the server still keeps the dialog open with the same message.
 class MemberEditDialog extends ConsumerStatefulWidget {
   const MemberEditDialog({super.key, required this.member});
   final api.Member member;
@@ -83,10 +83,17 @@ class _MemberEditDialogState extends ConsumerState<MemberEditDialog> {
           controller: _email,
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(labelText: l.memberEmail),
-          validator: (v) =>
-              (v ?? '').trim().isEmpty || memberEmailPattern.hasMatch(v!.trim())
-              ? null
-              : l.fieldInvalidEmail,
+          validator: (v) {
+            final value = (v ?? '').trim();
+            if (value.isEmpty) {
+              return widget.member.userId == null
+                  ? null
+                  : l.memberErrorLoginRequiresEmail;
+            }
+            return memberEmailPattern.hasMatch(value)
+                ? null
+                : l.fieldInvalidEmail;
+          },
         ),
         formGap,
         TextFormField(
