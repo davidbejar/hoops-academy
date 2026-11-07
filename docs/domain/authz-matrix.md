@@ -43,6 +43,8 @@ Non-members of a tenant receive **404** for every tenant resource.
 | History: statistics of a past match (box score, event feed) | all players | all players (former staff) | all players (former staff) | linked | self |
 | History: attendance sheet of a past session | whole sheet | whole sheet (former staff; other coaches 403) | whole sheet (former staff) | linked | self |
 | History: health records (injuries, height / weight, test results) of the players on a past team's roster, dated on or before the season's last day (also `teamId` = that team on the lists) | write (today's rule) | read (former staff; never staffed: 404); writes 409 `SEASON_ENDED` when the past team is the only relation | read (former staff), same | today's rule | today's rule |
+| Request a new academy (`POST /platform/academy-requests`, the landing form; WP90, ADR-0044) | anonymous — anyone, no sign-in (players are not offered the role); 202 whatever happened, rate-limited per IP at the gateway | | | | |
+| Academy requests: list, accept (creates the academy, the requester its first ADMIN, temporary password once), reject with a reason (e-mailed) (`/platform/academy-requests`, `…/{id}:accept`, `…/{id}:reject`) | `super_admin` (platform) only; anyone else 401 / 403 | | | | |
 
 Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of

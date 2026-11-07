@@ -85,3 +85,26 @@ Every call is audited in the tenant's trail (`admin.*`, actor = the super admin'
 
 Realm prerequisite: `registrationEmailAsUsername: true` (realm JSON; existing realms get it from `just seed-users`).
 Without it Keycloak refuses the username change with 400 `error-user-attribute-read-only` and the edit fails with 502.
+
+## Requests
+Since WP90 (ADR-0044) a visitor asks for an academy on the landing page ("Request an invitation"): name (optional),
+e-mail, role (academy administrator, coach or parent) and academy name. The request waits for the super admin; on
+acceptance the requester becomes the academy's first ADMIN whatever role they gave.
+- **Workbench (UI):** Platform > **Requests**, tabs Pending / Accepted / Rejected. **Accept** opens the create-academy
+  form pre-filled from the request (academy name and e-mail fixed; identifier, time zone, language and the
+  administrator's names editable): the academy is created as in "Steps (UI)" above and the temporary password is shown
+  once. **Reject** asks for a reason, which is e-mailed to the requester in the language of their request. A request
+  whose e-mail could not be sent shows "E-mail not sent": write to the requester by hand.
+- **API:** `GET /platform/academy-requests?status=PENDING`, `POST /platform/academy-requests/{id}:accept` (body
+  `AcceptAcademyRequest`: `slug`, `timezone`, `defaultLocale`, `firstAdmin.givenName` / `familyName` / `locale`) →
+  200 `AcademyRequestAccepted` (`request`, `tenant`, `temporaryPassword` once), `POST …/{id}:reject` (`{"reason":"…"}`).
+  409 `REQUEST_NOT_PENDING` (already decided), `SLUG_TAKEN`, `ACADEMY_NAME_TAKEN` (an academy got the name meanwhile);
+  502 when Keycloak fails (the request stays pending, retry).
+- **Mail:** core sends the decision e-mails over SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_START_TLS`, `SMTP_USERNAME`,
+  `SMTP_PASSWORD`, `MAIL_FROM`, `HOOPS_PUBLIC_URL`; `.env.example`). Locally they land in MailHog
+  (http://localhost:8025). The acceptance mail never contains the password: pass it on privately as above.
+- **Spam:** the public endpoint is limited per IP at the gateway (10/min), drops honeypot submissions and more than
+  three pending requests per e-mail, and always answers 202. Reject junk with a short reason (the name is then free
+  again).
+- **Recovery:** an ACCEPTED request whose academy does not exist (the service died between the claim and the
+  onboarding; `tenantId` points nowhere) is fixed by creating the academy with "Steps (API)" above.
