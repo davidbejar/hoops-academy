@@ -212,7 +212,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 | 2 | WP89 | CI: scheduled bump of image digests, chart image tags and kind pins | Sonnet | Done (bump-pins.yml weekly; 12 pins; 5 outdated found) |
 | 3 | WP76 | Web: gaps bundle (account console link, template refetch on language, match edit from the list, profile edits, guardian password, sit-and-reach hint) | Sonnet | Done (web 959 tests; 7 items; past-seasons selector) |
 | 3 | WP82 | Game + athlete: replica housekeeping (applied/parked retention), `.removed` for every aggregate | Opus | Done (ADR-0037 amendment; game V6 / athlete V9; retention jobs; Kafka Dev Services off in tests; game 450 / athlete 870 tests) |
-| 3 | WP85 | Security logging: Keycloak login events, authz-failure events in the services, SBOM in CI | Opus | After wave 2 |
+| 3 | WP85 | Security logging: Keycloak login events, authz-failure events in the services, SBOM in CI | Opus | Done (ADR-0043; security events + metric; realm events 30 d; SBOM per image; combined verify 0 failures) |
 | 3 | WP90 | Invitation-only sign-up: request API, super admin workbench, landing form wired, rejection mail | Opus | After wave 2 |
 | 4 | WP77 | Landing: language switch in the header, screenshots per locale re-captured from the redesigned app | Sonnet | After wave 3 |
 | 4 | WP88 | Mutation round: wider PIT scope, baselines raised, Dart mutation tool for the web rule code | Opus | After wave 3 (alone on the backend) |
