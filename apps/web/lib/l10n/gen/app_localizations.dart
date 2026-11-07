@@ -4390,6 +4390,12 @@ abstract class AppLocalizations {
   /// **'Contraseña, verificación en dos pasos y sesiones. Se abre en una pestaña nueva.'**
   String get profileAccountHint;
 
+  /// No description provided for @profileOwnData.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis datos personales'**
+  String get profileOwnData;
+
   /// No description provided for @profileResetDemo.
   ///
   /// In es, this message translates to:

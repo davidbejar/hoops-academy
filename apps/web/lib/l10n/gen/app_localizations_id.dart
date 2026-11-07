@@ -2363,6 +2363,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Kata sandi, verifikasi dua langkah, dan sesi. Dibuka di tab baru.';
 
   @override
+  String get profileOwnData => 'Data pribadi saya';
+
+  @override
   String get profileResetDemo => 'Atur ulang data demo';
 
   @override

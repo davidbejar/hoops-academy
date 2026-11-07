@@ -13,6 +13,7 @@ import '../../../core/session/session_providers.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../me/application/me_providers.dart';
+import '../../me/domain/current_user.dart' show TenantRole;
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -53,6 +54,13 @@ class ProfileScreen extends ConsumerWidget {
       _ => null,
     };
     final current = ref.watch(effectiveLocaleProvider).languageCode;
+    // The member record (name, e-mail, phone) is editable by an ADMIN only.
+    final ownMemberId = switch (session) {
+      Ready(:final roles, :final membership)
+          when roles.contains(TenantRole.admin) =>
+        membership?.personId,
+      _ => null,
+    };
     final c = HoopsTokens.colorsOf(context);
 
     return Scaffold(
@@ -71,6 +79,13 @@ class ProfileScreen extends ConsumerWidget {
               Column(
                 spacing: HoopsSpace.gap,
                 children: [
+                  if (ownMemberId != null)
+                    ListRow(
+                      key: const Key('profile-own-data'),
+                      leading: const IconTile(Icons.badge_outlined),
+                      title: l.profileOwnData,
+                      onTap: () => context.go('/admin/members/$ownMemberId'),
+                    ),
                   if (!ref.watch(appConfigProvider).mockApi)
                     ListRow(
                       key: const Key('open-account-console'),

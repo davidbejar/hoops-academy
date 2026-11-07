@@ -2354,6 +2354,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Password, two-step verification and sessions. Opens in a new tab.';
 
   @override
+  String get profileOwnData => 'My personal data';
+
+  @override
   String get profileResetDemo => 'Reset demo data';
 
   @override

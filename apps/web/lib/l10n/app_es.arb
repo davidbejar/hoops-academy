@@ -1306,6 +1306,7 @@
   "profilePlatform": "Consola de plataforma",
   "profileAccount": "Cuenta y seguridad",
   "profileAccountHint": "Contraseña, verificación en dos pasos y sesiones. Se abre en una pestaña nueva.",
+  "profileOwnData": "Mis datos personales",
   "profileResetDemo": "Restablecer datos de demostración",
   "mePlansEmpty": "Sin planes asignados",
   "platformTitle": "Plataforma",

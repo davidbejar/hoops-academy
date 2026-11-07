@@ -967,6 +967,7 @@
   "profilePlatform": "Platform console",
   "profileAccount": "Account and security",
   "profileAccountHint": "Password, two-step verification and sessions. Opens in a new tab.",
+  "profileOwnData": "My personal data",
   "profileResetDemo": "Reset demo data",
   "mePlansEmpty": "No assigned plans",
   "platformTitle": "Platform",

@@ -2370,6 +2370,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Contraseña, verificación en dos pasos y sesiones. Se abre en una pestaña nueva.';
 
   @override
+  String get profileOwnData => 'Mis datos personales';
+
+  @override
   String get profileResetDemo => 'Restablecer datos de demostración';
 
   @override
