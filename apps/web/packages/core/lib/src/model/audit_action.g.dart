@@ -57,6 +57,8 @@ const AuditAction _$tenantPeriodProfileChanged =
     const AuditAction._('tenantPeriodProfileChanged');
 const AuditAction _$tenantPeriodReactivated =
     const AuditAction._('tenantPeriodReactivated');
+const AuditAction _$tenantPeriodRequestAccepted =
+    const AuditAction._('tenantPeriodRequestAccepted');
 const AuditAction _$tenantPeriodSettingsChanged =
     const AuditAction._('tenantPeriodSettingsChanged');
 const AuditAction _$tenantPeriodSuspended =
@@ -120,6 +122,8 @@ AuditAction _$valueOf(String name) {
       return _$tenantPeriodProfileChanged;
     case 'tenantPeriodReactivated':
       return _$tenantPeriodReactivated;
+    case 'tenantPeriodRequestAccepted':
+      return _$tenantPeriodRequestAccepted;
     case 'tenantPeriodSettingsChanged':
       return _$tenantPeriodSettingsChanged;
     case 'tenantPeriodSuspended':
@@ -161,6 +165,7 @@ final BuiltSet<AuditAction> _$values =
   _$tenantPeriodMasterDataChanged,
   _$tenantPeriodProfileChanged,
   _$tenantPeriodReactivated,
+  _$tenantPeriodRequestAccepted,
   _$tenantPeriodSettingsChanged,
   _$tenantPeriodSuspended,
   _$tenantPeriodWithdrawn,
@@ -202,6 +207,7 @@ class _$AuditActionMeta {
       _$tenantPeriodMasterDataChanged;
   AuditAction get tenantPeriodProfileChanged => _$tenantPeriodProfileChanged;
   AuditAction get tenantPeriodReactivated => _$tenantPeriodReactivated;
+  AuditAction get tenantPeriodRequestAccepted => _$tenantPeriodRequestAccepted;
   AuditAction get tenantPeriodSettingsChanged => _$tenantPeriodSettingsChanged;
   AuditAction get tenantPeriodSuspended => _$tenantPeriodSuspended;
   AuditAction get tenantPeriodWithdrawn => _$tenantPeriodWithdrawn;
@@ -245,6 +251,7 @@ class _$AuditActionSerializer implements PrimitiveSerializer<AuditAction> {
     'tenantPeriodMasterDataChanged': 'tenant.master_data_changed',
     'tenantPeriodProfileChanged': 'tenant.profile_changed',
     'tenantPeriodReactivated': 'tenant.reactivated',
+    'tenantPeriodRequestAccepted': 'tenant.request_accepted',
     'tenantPeriodSettingsChanged': 'tenant.settings_changed',
     'tenantPeriodSuspended': 'tenant.suspended',
     'tenantPeriodWithdrawn': 'tenant.withdrawn',
@@ -277,6 +284,7 @@ class _$AuditActionSerializer implements PrimitiveSerializer<AuditAction> {
     'tenant.master_data_changed': 'tenantPeriodMasterDataChanged',
     'tenant.profile_changed': 'tenantPeriodProfileChanged',
     'tenant.reactivated': 'tenantPeriodReactivated',
+    'tenant.request_accepted': 'tenantPeriodRequestAccepted',
     'tenant.settings_changed': 'tenantPeriodSettingsChanged',
     'tenant.suspended': 'tenantPeriodSuspended',
     'tenant.withdrawn': 'tenantPeriodWithdrawn',

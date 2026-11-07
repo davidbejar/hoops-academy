@@ -14,6 +14,14 @@ import 'package:built_value/iso_8601_date_time_serializer.dart';
 import 'package:hoops_core_api/src/date_serializer.dart';
 import 'package:hoops_core_api/src/model/date.dart';
 
+import 'package:hoops_core_api/src/model/academy_request.dart';
+import 'package:hoops_core_api/src/model/academy_request_accepted.dart';
+import 'package:hoops_core_api/src/model/academy_request_page.dart';
+import 'package:hoops_core_api/src/model/academy_request_received.dart';
+import 'package:hoops_core_api/src/model/academy_request_role.dart';
+import 'package:hoops_core_api/src/model/academy_request_status.dart';
+import 'package:hoops_core_api/src/model/accept_academy_request.dart';
+import 'package:hoops_core_api/src/model/accepted_admin.dart';
 import 'package:hoops_core_api/src/model/add_tenant_admin_request.dart';
 import 'package:hoops_core_api/src/model/age_category.dart';
 import 'package:hoops_core_api/src/model/age_category_input.dart';
@@ -80,6 +88,7 @@ import 'package:hoops_core_api/src/model/player_status.dart';
 import 'package:hoops_core_api/src/model/player_team_assignment.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/problem_violation.dart';
+import 'package:hoops_core_api/src/model/reject_academy_request.dart';
 import 'package:hoops_core_api/src/model/reject_approval_request.dart';
 import 'package:hoops_core_api/src/model/replace_member_roles_request.dart';
 import 'package:hoops_core_api/src/model/resolve_eligibility_case_request.dart';
@@ -90,6 +99,7 @@ import 'package:hoops_core_api/src/model/season_input.dart';
 import 'package:hoops_core_api/src/model/season_rollover_request.dart';
 import 'package:hoops_core_api/src/model/season_rollover_result.dart';
 import 'package:hoops_core_api/src/model/staff_role.dart';
+import 'package:hoops_core_api/src/model/submit_academy_request.dart';
 import 'package:hoops_core_api/src/model/team.dart';
 import 'package:hoops_core_api/src/model/team_page.dart';
 import 'package:hoops_core_api/src/model/team_player.dart';
@@ -129,6 +139,14 @@ import 'package:hoops_core_api/src/model/withdraw_player_request.dart';
 part 'serializers.g.dart';
 
 @SerializersFor([
+  AcademyRequest,
+  AcademyRequestAccepted,
+  AcademyRequestPage,
+  AcademyRequestReceived,
+  AcademyRequestRole,
+  AcademyRequestStatus,
+  AcceptAcademyRequest,
+  AcceptedAdmin,
   AddTenantAdminRequest,
   AgeCategory,
   AgeCategoryInput,
@@ -195,6 +213,7 @@ part 'serializers.g.dart';
   PlayerTeamAssignment,
   Problem,
   ProblemViolation,
+  RejectAcademyRequest,
   RejectApprovalRequest,
   ReplaceMemberRolesRequest,
   ResolveEligibilityCaseRequest,
@@ -205,6 +224,7 @@ part 'serializers.g.dart';
   SeasonRolloverRequest,
   SeasonRolloverResult,
   StaffRole,
+  SubmitAcademyRequest,
   Team,
   TeamPage,
   TeamPlayer,
@@ -265,6 +285,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(RosterPlayer)]),
         () => ListBuilder<RosterPlayer>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(AcademyRequest)]),
+        () => ListBuilder<AcademyRequest>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(RosterStaff)]),

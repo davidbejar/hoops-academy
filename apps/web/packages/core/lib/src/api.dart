@@ -9,6 +9,7 @@ import 'package:hoops_core_api/src/auth/api_key_auth.dart';
 import 'package:hoops_core_api/src/auth/basic_auth.dart';
 import 'package:hoops_core_api/src/auth/bearer_auth.dart';
 import 'package:hoops_core_api/src/auth/oauth.dart';
+import 'package:hoops_core_api/src/api/academy_requests_api.dart';
 import 'package:hoops_core_api/src/api/age_categories_api.dart';
 import 'package:hoops_core_api/src/api/approval_requests_api.dart';
 import 'package:hoops_core_api/src/api/audit_api.dart';
@@ -140,6 +141,12 @@ class HoopsCoreApi {
           .apiKeys
           .remove(name);
     }
+  }
+
+  /// Get AcademyRequestsApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  AcademyRequestsApi getAcademyRequestsApi() {
+    return AcademyRequestsApi(dio, serializers);
   }
 
   /// Get AgeCategoriesApi instance, base route and serializer can be overridden by a given but be careful,

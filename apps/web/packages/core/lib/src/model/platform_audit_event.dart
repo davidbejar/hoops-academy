@@ -35,7 +35,7 @@ abstract class PlatformAuditEvent
 
   @BuiltValueField(wireName: r'action')
   AuditAction get action;
-  // enum actionEnum {  admin.added,  admin.removed,  admin.temporary_password_issued,  admin.updated,  approval.cancelled,  guardian_link.created,  guardian_link.removed,  member.deactivated,  member.invitation_accepted,  member.invited,  member.login_email_changed,  member.roles_replaced,  member.temporary_password_expired,  member.temporary_password_issued,  member.updated,  player.approved,  player.rejected,  player.requested,  player.withdrawn,  tenant.created,  tenant.events_backfilled,  tenant.logo_removed,  tenant.logo_replaced,  tenant.master_data_changed,  tenant.profile_changed,  tenant.reactivated,  tenant.settings_changed,  tenant.suspended,  tenant.withdrawn,  };
+  // enum actionEnum {  admin.added,  admin.removed,  admin.temporary_password_issued,  admin.updated,  approval.cancelled,  guardian_link.created,  guardian_link.removed,  member.deactivated,  member.invitation_accepted,  member.invited,  member.login_email_changed,  member.roles_replaced,  member.temporary_password_expired,  member.temporary_password_issued,  member.updated,  player.approved,  player.rejected,  player.requested,  player.withdrawn,  tenant.created,  tenant.events_backfilled,  tenant.logo_removed,  tenant.logo_replaced,  tenant.master_data_changed,  tenant.profile_changed,  tenant.reactivated,  tenant.request_accepted,  tenant.settings_changed,  tenant.suspended,  tenant.withdrawn,  };
 
   @BuiltValueField(wireName: r'actor')
   AuditActor get actor;

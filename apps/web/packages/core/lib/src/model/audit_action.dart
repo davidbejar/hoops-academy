@@ -75,6 +75,9 @@ class AuditAction extends EnumClass {
       _$tenantPeriodProfileChanged;
   @BuiltValueEnumConst(wireName: r'tenant.reactivated')
   static const AuditAction tenantPeriodReactivated = _$tenantPeriodReactivated;
+  @BuiltValueEnumConst(wireName: r'tenant.request_accepted')
+  static const AuditAction tenantPeriodRequestAccepted =
+      _$tenantPeriodRequestAccepted;
   @BuiltValueEnumConst(wireName: r'tenant.settings_changed')
   static const AuditAction tenantPeriodSettingsChanged =
       _$tenantPeriodSettingsChanged;
