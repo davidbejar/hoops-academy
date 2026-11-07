@@ -6,46 +6,6 @@
   "accepted": [
     {
       "rule": "java/tainted-arithmetic",
-      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/AbsenceJpaRepository.java",
-      "line": 78,
-      "fingerprint": "5c974a850bba91dc",
-      "reason": "True positive, Low (review Round 5 SD-01): `page` is only bounded below (@Min(0), contract minimum 0), so page * size overflows int for a huge page: a negative offset makes Hibernate throw (500) or a wrapped one returns another page of the caller's own data. No cross-tenant read (RLS). WP84: compute the offset as a long with Math.multiplyExact or give `page` a maximum in libs/contracts common.yaml and the resources.",
-      "expires": "2026-12-15"
-    },
-    {
-      "rule": "java/tainted-arithmetic",
-      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/InjuryJpaRepository.java",
-      "line": 82,
-      "fingerprint": "e072f85ef86fe4dc",
-      "reason": "True positive, Low (review Round 5 SD-01): `page` is only bounded below (@Min(0), contract minimum 0), so page * size overflows int for a huge page: a negative offset makes Hibernate throw (500) or a wrapped one returns another page of the caller's own data. No cross-tenant read (RLS). WP84: compute the offset as a long with Math.multiplyExact or give `page` a maximum in libs/contracts common.yaml and the resources.",
-      "expires": "2026-12-15"
-    },
-    {
-      "rule": "java/tainted-arithmetic",
-      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/TestResultJpaRepository.java",
-      "line": 88,
-      "fingerprint": "dac38cc2fb158bc8",
-      "reason": "True positive, Low (review Round 5 SD-01): `page` is only bounded below (@Min(0), contract minimum 0), so page * size overflows int for a huge page: a negative offset makes Hibernate throw (500) or a wrapped one returns another page of the caller's own data. No cross-tenant read (RLS). WP84: compute the offset as a long with Math.multiplyExact or give `page` a maximum in libs/contracts common.yaml and the resources.",
-      "expires": "2026-12-15"
-    },
-    {
-      "rule": "java/tainted-arithmetic",
-      "path": "services/core-service/src/main/java/com/hoopsacademy/core/application/shared/PageRequest.java",
-      "line": 13,
-      "fingerprint": "83d992f4a16d2634",
-      "reason": "True positive, Low (review Round 5 SD-01): `page` is only bounded below (@Min(0), contract minimum 0), so page * size overflows int for a huge page: a negative offset makes Hibernate throw (500) or a wrapped one returns another page of the caller's own data. No cross-tenant read (RLS). WP84: compute the offset as a long with Math.multiplyExact or give `page` a maximum in libs/contracts common.yaml and the resources.",
-      "expires": "2026-12-15"
-    },
-    {
-      "rule": "java/tainted-arithmetic",
-      "path": "services/game-service/src/main/java/com/hoopsacademy/game/adapters/out/persistence/JpaMatchRepository.java",
-      "line": 113,
-      "fingerprint": "135d6be6bbae1c9a",
-      "reason": "True positive, Low (review Round 5 SD-01): `page` is only bounded below (@Min(0), contract minimum 0), so page * size overflows int for a huge page: a negative offset makes Hibernate throw (500) or a wrapped one returns another page of the caller's own data. No cross-tenant read (RLS). WP84: compute the offset as a long with Math.multiplyExact or give `page` a maximum in libs/contracts common.yaml and the resources.",
-      "expires": "2026-12-15"
-    },
-    {
-      "rule": "java/tainted-arithmetic",
       "path": "services/game-service/src/main/java/com/hoopsacademy/game/application/GetMatchEvents.java",
       "line": 41,
       "fingerprint": "5e6deb5f2b3448dd",
