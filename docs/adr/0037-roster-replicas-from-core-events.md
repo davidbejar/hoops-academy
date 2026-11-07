@@ -62,18 +62,26 @@ key, and both paths must give the same answers.
 
 ## When `rest` flips to `replica` (default)
 Not in WP68/WP69. All of:
-- core publishes a snapshot of the aggregates that existed before WP67 (a backfill that appends one `.changed` per
-  aggregate to the outbox). Until then a replica only knows what changed after core's publisher went live, which is
-  enough for fresh environments (compose after a reset, kind, e2e) but not for data that predates WP67.
+- ~~core publishes a snapshot of the aggregates that existed before WP67 (a backfill that appends one `.changed` per
+  aggregate to the outbox)~~ — done in WP81: `POST /platform/events/backfill` / `just events-backfill` (ADR-0008
+  amendment WP81, runbook "Backfill and shadow period"). Until it has run in an environment, a replica there only knows
+  what changed after core's publisher went live.
 - ~~the chart wires the services' Kafka client (bootstrap, SASL user and Secret, `events.enabled`)~~ — done in WP71
   (chart 0.7.0): behind `events.enabled` together with `global.events.enabled`, which must match (a subchart sees only
   `global`; the render refuses a release where the two differ); `game.rosterSource` / `athlete.rosterSource` set the
   switch, and `replica` without events is refused. The athlete flip is proven on kind; the game flip is not run yet.
-- core's producer recovers when the broker users appear after it started (WP71 found that a fresh Helm install needs
-  a core restart after the bootstrap Job; `FOLLOW-UPS.md`).
+- ~~core's producer recovers when the broker users appear after it started~~ — done in WP81: the publisher replaces
+  a producer after consecutive failed sends (`ProducerRecoveryTest`); the restart in `deploy/kind/up.sh` can go.
 - the replica has run in the shadow in an environment for a while with `hoops_roster_replica_parked_total` at 0 and
   the lag metric in seconds, and `just e2e` is green with `replica` for both services.
 Then the default flips; the REST adapter stays as the fallback switch until a later decision removes it.
+
+Evidence so far (WP81, compose, 2026-11-07): the backfill completed the topics of 46 academies (416 events; every topic's
+live keys equal core's rows, both replicas hold exactly core's counts), parked 0, lag under 1 s, both groups' lag 0, and
+`just e2e` with `replica` for both services: JourneyTest 23/23. Still missing: the shadow period over days in a shared environment (kind or a staging cluster) and the game flip
+on kind; then the owner decides the flip. Since WP81 core also publishes `person.removed`, `player.removed`,
+`team.removed`, `team-player.removed` and `tenant.removed`; game and athlete accept them as valid but do not apply them
+yet (`outcome="ignored"`, never parked; the row stays): their soft removal is WP82 (wave 3).
 
 ## Consequences
 - Roster and authorisation answers become eventually consistent: a change in core reaches game/athlete after the

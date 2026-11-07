@@ -108,13 +108,17 @@ contracts are `libs/contracts/events/core.<aggregate>.schema.json`.
 | `hoops.outbox.poll-interval` (`CORE_OUTBOX_POLL_INTERVAL`) | `1s` | publisher period; `off` stops publishing (the outbox still fills) |
 | `hoops.outbox.batch-size` (`CORE_OUTBOX_BATCH_SIZE`) | `100` | rows per transaction and tenant |
 | `hoops.outbox.send-timeout` (`CORE_OUTBOX_SEND_TIMEOUT`) | `PT10S` | wait for the broker's acknowledgement before the run gives up |
+| `hoops.outbox.producer-reset-after` (`CORE_OUTBOX_PRODUCER_RESET_AFTER`) | `3` | failed sends in a row after which the Kafka producer is replaced (WP81) |
+| `hoops.outbox.backfill.chunk-size` | `200` | aggregates per transaction of the events backfill (WP81) |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
 | `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `core-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-core-service` Secret (SCRAM-SHA-256) |
+| `kafka.request.timeout.ms`, `kafka.delivery.timeout.ms`, `kafka.max.block.ms`, `kafka.linger.ms` | `5000`, `8000`, `5000`, `0` | the producer's timeouts (any `kafka.*` key reaches it; acks=all, idempotence and the serializers are fixed in code) |
 
 Watch it:
 ```bash
 curl -s localhost:8081/q/health/ready | jq '.checks[] | select(.name == "outbox-publisher")'   # state OK | DEGRADED
-curl -s localhost:8081/q/metrics | grep '^hoops_outbox'        # published_total{topic}, pending, lag_seconds, broker_available
+curl -s localhost:8081/q/metrics | grep '^hoops_outbox'        # published_total{topic}, pending, lag_seconds, broker_available,
+                                                               # producer_resets_total, backfill_appended_total{topic}
 podman exec -it hoops-redpanda rpk topic consume core.team -o start -f '%k %v\n'
 ```
 Backlog per tenant (as the schema owner or `core_platform`; payloads stay unreadable to the platform role):
@@ -125,6 +129,11 @@ select tenant_id, count(*), min(occurred_at) from core.outbox
 - **Broker down**: the API keeps working, `state` turns `DEGRADED`, `hoops_outbox_broker_available` 0 and the lag grows.
   Nothing to do in core: when the broker is back the next runs drain the backlog in order. A run stops at the first
   failed send and retries next period.
+- **Core started before its broker user existed** (fresh Helm install, WP71): the first login fails and the idempotent
+  producer would never recover by itself. Since WP81 core replaces its producer after
+  `hoops.outbox.producer-reset-after` failed sends in a row (log `... sends in a row failed (last: ...); replacing the
+  Kafka producer`, `hoops_outbox_producer_resets_total` +1) and drains the backlog once the user exists: no restart.
+  The counter also grows slowly during a plain outage (one replacement per three failed runs); that is expected.
 - **A row that never goes out** while others do: another transaction holds its lock (or an older row of the same
   aggregate). Find it in `pg_locks` / `pg_stat_activity`; the publisher never skips ahead of it for that aggregate.
 - **Republish** (a consumer lost a topic and replaying it is not enough): `update core.outbox set published_at = null
@@ -132,6 +141,44 @@ select tenant_id, count(*), min(occurred_at) from core.outbox
   original `eventId`, which the consumers ignore if they have applied it. Prefer replaying the compacted topic.
 - Rows with `topic` null are core's internal v1 notifications (`player.approved`, `tenant.suspended`, ...): never
   published, kept for billing and audits.
+
+## Backfill and shadow period (WP81)
+Roster data written before core's publisher went live (WP67) has no event, so a replica built from the topics does not
+know it (ADR-0037 "When rest flips"). The backfill appends one `<aggregate>.changed` per live aggregate without a roster
+event to the outbox, from the current state and under the writers' locks; the publisher sends it like any change.
+
+```bash
+just events-backfill                       # compose: every academy; signs in as the seeded superadmin (DEV_USER_PASSWORD)
+just events-backfill <tenant-id>           # one academy
+just events-backfill force                 # every live aggregate again (a fresh snapshot; consumers see newer state)
+# elsewhere: POST /platform/events/backfill as a super admin, body {"tenantId": "...", "force": false} (both optional)
+```
+The answer counts the academies, the failed ones (logged, the others go on; run again) and the events per topic.
+Idempotent: without `force` a second run appends nothing. Each academy that got events has an audit row
+`tenant.events_backfilled` (`force`, `events`, `topics`); `/q/metrics` shows `hoops_outbox_backfill_appended_total{topic}`
+and the log one line per academy. A person's player follows its person and is counted under `core.player`.
+
+Check that the topics hold every row (compose; the latest record per key is a `.changed`, removed keys excluded):
+```bash
+podman exec hoops-redpanda rpk topic describe core.person -p      # high watermark per partition
+podman exec -i hoops-postgres psql -U postgres -d hoops -c 'select count(*) from core.person'
+```
+
+### Shadow period, then the flip
+1. Run the backfill with both services on `rest` (the default); the consumers fill the replicas in the shadow.
+2. Watch, over days in a shared environment: `hoops_roster_replica_parked_total` stays 0 in game and athlete, the
+   `hoops_roster_replica_lag_seconds` gauges stay in seconds, both groups' `TOTAL-LAG` is 0 (`rpk group describe`),
+   and the replica row counts equal core's (`game.*_ref`, `athlete.*_ref` without `removed` rows vs `core.*`).
+3. Run the journeys with both replicas: `GAME_ROSTER_SOURCE=replica ATHLETE_ROSTER_SOURCE=replica just e2e`.
+4. The flip (ADR-0037) then needs a decision of the owner: change the default of `hoops.roster.source` (or the chart's
+   `game.rosterSource` / `athlete.rosterSource`) to `replica`; `rest` stays the fallback switch.
+
+Evidence of WP81 on compose (2026-11-07, data from rounds 1 to 4, 46 academies): before the backfill the topics held
+31 of 169 persons, 12 of 64 players, 8 of 43 teams, 21 of 121 assignments, 7 of 41 staff entries, 4 of 22 guardian
+links and 7 of 46 academies; the backfill appended 416 events (138, 52, 35, 100, 34, 18, 39) in 13 s, the second run 0;
+afterwards every topic's live keys equal the table rows (0 missing, 0 extra), both replicas hold exactly core's counts,
+parked 0, lag 0.87 to 0.99 s, group lag 0. Then `GAME_ROSTER_SOURCE=replica ATHLETE_ROSTER_SOURCE=replica just e2e`:
+JourneyTest 23/23 (27 with MailSinkTest), both services logged their replica source, parked still 0, group lag 0.
 
 ## Game roster replica (WP68)
 game keeps a replica of the roster data it reads from core (`game.*_ref`, V4), fed by the `core.*` topics (ADR-0037).
