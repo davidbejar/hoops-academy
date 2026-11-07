@@ -212,6 +212,7 @@ class MockCoreApi {
     ) => {
       'id': id,
       'seasonId': 'season-2026',
+      'seasonEnded': false,
       'name': name,
       'alias': alias,
       'ageCategory': _categories.firstWhere((c) => c['id'] == cat),
@@ -828,6 +829,7 @@ class MockCoreApi {
         ...t,
         'id': _id('team'),
         'seasonId': next['id'],
+        'seasonEnded': false,
         'playerCount': 0,
       };
       _teams.add(copy);
@@ -1019,6 +1021,7 @@ class MockCoreApi {
       final t = {
         'id': _id('team'),
         'seasonId': b['seasonId'],
+        'seasonEnded': false,
         'name': b['name'],
         'alias': b['alias'],
         'ageCategory': cat,

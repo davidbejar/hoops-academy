@@ -37,10 +37,12 @@ api.Team team(
   api.GenderPolicy policy = api.GenderPolicy.MIXED,
   int players = 0,
   String sid = seasonId,
+  bool seasonEnded = false,
 }) => api.Team(
   (b) => b
     ..id = id
     ..seasonId = sid
+    ..seasonEnded = seasonEnded
     ..name = name
     ..alias = alias
     ..ageCategory.replace(cat ?? u12)

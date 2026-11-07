@@ -244,6 +244,7 @@ class MockApiAdapter implements HttpClientAdapter {
     'roles': roles,
     'authz': {
       'staffTeamIds': _academies[id]!.core.authz.staffTeamIds.toList(),
+      'historicStaffTeamIds': <String>[],
       'linkedPlayerIds': _academies[id]!.core.authz.linkedPlayerIds.toList(),
       'playerTeamIds': _academies[id]!.core.authz.playerTeamIds.toList(),
       'timezone': 'Europe/Madrid',
