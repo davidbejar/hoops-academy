@@ -163,6 +163,22 @@
       "fingerprint": "50b25623c84362ba",
       "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
       "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaRosterInventoryRepository.java",
+      "line": 66,
+      "fingerprint": "fd17cb9bab7b9aea",
+      "reason": "False positive (reviewed after WP81): private helpers `ids(String sql)` / `rows(String sql)` of the backfill inventory; every caller (the EventTopic switch above) passes a constant SQL literal and no value is interpolated. A new caller passing a value would not show here: the helpers stay on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaRosterInventoryRepository.java",
+      "line": 71,
+      "fingerprint": "bb445e6841f637f8",
+      "reason": "False positive (reviewed after WP81): private helpers `ids(String sql)` / `rows(String sql)` of the backfill inventory; every caller (the EventTopic switch above) passes a constant SQL literal and no value is interpolated. A new caller passing a value would not show here: the helpers stay on the review list.",
+      "expires": "2027-05-06"
     }
   ]
 }
