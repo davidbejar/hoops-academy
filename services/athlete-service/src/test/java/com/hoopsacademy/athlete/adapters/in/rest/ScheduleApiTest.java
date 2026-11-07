@@ -173,8 +173,9 @@ class ScheduleApiTest {
     void changingOnlyTheLocationKeepsSessionIdsAndUpdatesThem() {
         String team = "51000000-0000-4000-8000-0000000000c4";
         core.roster(TENANT, team);
-        String schedule = createSchedule(TENANT, team, "SATURDAY", "10:00");
         LocalDate today = LocalDate.now(ZONE);
+        // tomorrow's weekday: a fixed day made today's 10:00 session cross "now" between the two reads on that day
+        String schedule = createSchedule(TENANT, team, today.plusDays(1).getDayOfWeek().name(), "10:00");
         List<String> before = api(TENANT).queryParam("teamId", team).queryParam("from", today.toString())
                 .queryParam("to", today.plusDays(60).toString()).get("/api/athlete/training-sessions")
                 .then().extract().path("items.id");
