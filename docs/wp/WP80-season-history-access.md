@@ -49,29 +49,41 @@ by the coaches who were staff of the team then and by admins; players and parent
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
-- **Built:**
-  - Chart 0.9.0 (`hoops-service` 0.7.0), switch `global.observability.enabled` (default off, on in `values-kind.yaml`):
-    `templates/observability.yaml` renders `otel-collector` (core distribution `otel/opentelemetry-collector:0.163.2` by digest,
-    uid 10001, read-only root FS, drop ALL, no token, 64-256 Mi; OTLP gRPC 4317 / HTTP 4318; `memory_limiter` -> span attribute
-    stripping (`url.full`, `url.path`, `url.query`, `http.url`, `http.target`, `messaging.kafka.message.key`) -> `batch`;
-    pipelines `traces` and `logs`, no metrics; `debug` exporter, `basic` by default, `normal` on kind) and, on kind,
-    `jaeger` (`jaegertracing/jaeger:2.22.0` by digest, in memory, 5000 traces, OTLP gRPC only). NetworkPolicies: collector
-    admits the three services (by name) and, gRPC only, this Gateway's Envoy proxies (`component=proxy` +
-    `owning-gateway-name/-namespace`), egress DNS + Jaeger + `networkPolicy.extraEgress`; Jaeger admits the collector only,
-    no egress. Backend wiring for other environments: `observability.collector.exporters` / `pipelineExporters` /
-    `secretEnv` (Reloader annotation when set) / `extraEgress`, or `collector.enabled=false` + `global.observability.otlpEndpoint`
-    (render guards for both).
-  - Services: the subchart sets `QUARKUS_OTEL_SDK_DISABLED=false`, `QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT`,
-    `QUARKUS_OTEL_TRACES_SAMPLER_ARG` (`tracesSampleRatio`, 0.1 default, 1.0 kind) and `QUARKUS_OTEL_RESOURCE_ATTRIBUTES`
-    (`service.namespace`, `deployment.environment.name`, `k8s.namespace.name`; no tenant) when on, `SDK_DISABLED=true` when off
-    (removed from the per-service `env` values). Build-time keys in the three `application.properties`:
-    `quarkus.otel.logs.enabled=true`, `quarkus.otel.traces.sampler=parentbased_traceidratio`. `libs/common-quarkus` untouched.
-  - Edge: the kind `EnvoyProxy` gets `telemetry.tracing` (OpenTelemetry, `host`/`port` of the collector, same ratio).
-  - Step 0 fixes found by the WP87 proofs: CNPG role Secrets carry `cnpg.io/reload: "true"` (ExternalSecret `labels`,
-    `secrets.sh` `db_role`); `up.sh` runs the CNPG operator with `--leader-elect=false`.
-  - Tilt resources `otel-collector`, `jaeger` (UI :16686). Docs: ADR-0046 (indexed), `docs/runbooks/observability.md` (new),
-    `kind.md` (Verification status WP86, capacity, URL table), `rotate-secrets.md` (D: the label; status), ASVS 16.4.3 Met (chart).
+## Handover
+- **Built** (decision 62, ADR-0042):
+  - Contracts: core **3.2.0** (`AuthzContext` / `AuthzSummary.historicStaffTeamIds`, internal `TeamRoster.seasonEndDate`,
+    `Team.seasonEnded`, `listTeams?includeEnded`, 409 `SEASON_ENDED` on the team PATCH, staff PUT/DELETE and the three
+    assignment writes), game **2.3.0** (409 on create/update/start/finish/cancel/roster, `MatchEventRejectionReason`
+    `SEASON_ENDED`), athlete **2.4.0** (409 on schedule, session, quick-add, attendance, team plan assignment and
+    completion writes and on health writes of a coach whose only relation is a past team; history read rules in the
+    descriptions). `SeasonHistoryContractTest` (32), version pins in `UpdateRequestClearListContractTest`.
+  - common-quarkus: `AuthzContext.historicStaffTeamIds` + `wasStaffOf` (staff role required, never part of
+    `staffTeamIds`), `Authz.wasStaffOf`, `SeasonEndedException` (409, code `SEASON_ENDED`), the REST client maps the new
+    fields (absent from an older core = empty / not ended); test-jar `@TenantUser(historicStaffTeams=…)`.
+  - core: `MembershipLookup` splits the staff rows into current and historic (one query as before); `PastSeasons`
+    (`requireOpenForAdmin`, `requireOpenForCoach`: ADMIN and the coach then get 409, others 403); `TeamViews` sets
+    `seasonEnded`; `includeEnded` adds the historic staff teams to `staffedByMe`; the internal roster carries the season
+    end. Eligibility-case resolution stays allowed (REASSIGNED into a past team is refused by the assignment).
+  - game: `TeamRoster.seasonEndDate` (REST + replica), replica resolver computes `historicStaffTeamIds`; `PastSeasons`
+    (current staff: no lookup; former staff: 409 at once; ADMIN / parents: one roster lookup, unknown team or no date =
+    open); `MatchPermissions` (admin / staff / former staff, then 409), `StatVisibility` and `EventAuthorization` treat
+    former staff like staff; the ingest rejects events whose `recordedAtClient` is on or after the day after the season's
+    last day (academy zone) with `SEASON_ENDED`, earlier ones still sync.
+  - athlete: `TeamRoster.seasonEndDate` (REST + replica), replica resolver `historicStaffTeamIds`
+    (`ReplicaMembershipReads.seasonEnded`), `PastSeasons`; `TrainingAccess.requireManage` (403, then 409), `seesAsStaff`
+    (whole attendance sheet for former staff), `PlanAccess.requireMayWithdraw` / `requireMayMark`;
+    `HealthAccess.historyUntil` (latest season end of a past team whose roster has the player), dated `requireRead`,
+    `listScope` returns `Scope(players, until)` (`teamId` of a past team = its roster up to the season end), injury
+    search gained `occurredUntil`, measurements / test results cap `to`; health writes by history-only coaches 409.
+  - web (to keep `just web-test` green with the regenerated clients; not the WP76 feature): demo mock teams carry
+    `seasonEnded: false`, mock `/me` `historicStaffTeamIds: []`, test fixture `team(seasonEnded:)`.
+  - `spotbugs-exclude.xml`: my `KafkaEventBroker` entry was dropped in the rebase in favour of main's identical one.
 - **Verified** (2026-11-07):
+  - After `git rebase main` (6adcae2: WP73, WP81 Dart client, WP86, the orchestrator's single `KafkaEventBroker`
+    exclusion kept; ADR index keep-both): fresh `-T 1C clean verify` contracts 272, common 201, core 892, game 423, e2e
+    27 (23 skipped) green; athlete hit the same Dev Services boot flake (`ReplicaAuthzRulesTest`, 2375), module alone
+    855/855 BUILD SUCCESS, coverage met. `flutter analyze` no issues, `flutter test` 918 passed. Generated packages
+    re-checked against the contracts (no diff).
   - Red first: `8e4dbff` (contracts), `8cee2ff` (common), `fa95d37` (core), `65ba4ce` (game), `a45c7ab` (athlete), each
     before its implementation commit.
   - `./mvnw -B -ntp -T 1C clean verify -Dquarkus.http.test-port=0` (fresh): contracts 272, common-quarkus 201, core 892,
@@ -121,8 +133,7 @@ by the coaches who were staff of the team then and by admins; players and parent
       nothing new.
   - The athlete `ReplicaAuthzRulesTest` boot failure is deterministic on this Mac until WP87's pending user action (Podman
     API `--time=0`) is applied; CI not affected by WP80 code.
-  - `spotbugs-exclude.xml` and the three web files (`mock_core_api.dart`, `mock_api_adapter.dart`,
-    `test/support/core_fixtures.dart`) were outside the brief's files: one-line additions, may need a trivial merge
-    with WP73 (web) or WP89.
+  - The three web files (`mock_core_api.dart`, `mock_api_adapter.dart`, `test/support/core_fixtures.dart`) were outside
+    the brief's files: one-line additions; rebased onto main with WP73 without conflict.
   - Not done: a `seasonEnded` flag on game's `Match` and athlete's session responses (the web derives it from core's
     team/season); PIT scope unchanged (the new `PastSeasons` classes are covered by API tests, not unit tests).
