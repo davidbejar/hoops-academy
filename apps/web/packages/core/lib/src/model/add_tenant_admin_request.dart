@@ -12,12 +12,13 @@ part 'add_tenant_admin_request.g.dart';
 /// AddTenantAdminRequest
 ///
 /// Properties:
-/// * [email] 
-/// * [givenName] 
-/// * [familyName] 
-/// * [locale] 
+/// * [email]
+/// * [givenName]
+/// * [familyName]
+/// * [locale]
 @BuiltValue()
-abstract class AddTenantAdminRequest implements Built<AddTenantAdminRequest, AddTenantAdminRequestBuilder> {
+abstract class AddTenantAdminRequest
+    implements Built<AddTenantAdminRequest, AddTenantAdminRequestBuilder> {
   @BuiltValueField(wireName: r'email')
   String get email;
 
@@ -33,18 +34,24 @@ abstract class AddTenantAdminRequest implements Built<AddTenantAdminRequest, Add
 
   AddTenantAdminRequest._();
 
-  factory AddTenantAdminRequest([void updates(AddTenantAdminRequestBuilder b)]) = _$AddTenantAdminRequest;
+  factory AddTenantAdminRequest(
+      [void updates(AddTenantAdminRequestBuilder b)]) = _$AddTenantAdminRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(AddTenantAdminRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AddTenantAdminRequest> get serializer => _$AddTenantAdminRequestSerializer();
+  static Serializer<AddTenantAdminRequest> get serializer =>
+      _$AddTenantAdminRequestSerializer();
 }
 
-class _$AddTenantAdminRequestSerializer implements PrimitiveSerializer<AddTenantAdminRequest> {
+class _$AddTenantAdminRequestSerializer
+    implements PrimitiveSerializer<AddTenantAdminRequest> {
   @override
-  final Iterable<Type> types = const [AddTenantAdminRequest, _$AddTenantAdminRequest];
+  final Iterable<Type> types = const [
+    AddTenantAdminRequest,
+    _$AddTenantAdminRequest
+  ];
 
   @override
   final String wireName = r'AddTenantAdminRequest';
@@ -84,7 +91,9 @@ class _$AddTenantAdminRequestSerializer implements PrimitiveSerializer<AddTenant
     AddTenantAdminRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -156,5 +165,3 @@ class _$AddTenantAdminRequestSerializer implements PrimitiveSerializer<AddTenant
     return result.build();
   }
 }
-
-

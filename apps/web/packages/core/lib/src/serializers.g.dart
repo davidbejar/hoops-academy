@@ -41,6 +41,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(EligibilityReason.serializer)
       ..add(EligibilityResult.serializer)
       ..add(EligibleTeam.serializer)
+      ..add(EventBackfill.serializer)
+      ..add(EventBackfillRequest.serializer)
       ..add(FirstAdmin.serializer)
       ..add(Gender.serializer)
       ..add(GenderPolicy.serializer)
@@ -217,6 +219,10 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList,
               const [const FullType(TenantUsageUnavailableServicesEnum)]),
           () => ListBuilder<TenantUsageUnavailableServicesEnum>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltMap, const [const FullType(String), const FullType(int)]),
+          () => MapBuilder<String, int>())
       ..addBuilderFactory(
           const FullType(
               BuiltMap, const [const FullType(String), const FullType(int)]),

@@ -13,25 +13,32 @@ part 'reject_approval_request.g.dart';
 /// Properties:
 /// * [note] - Reason of the rejection (must contain non-whitespace text).
 @BuiltValue()
-abstract class RejectApprovalRequest implements Built<RejectApprovalRequest, RejectApprovalRequestBuilder> {
+abstract class RejectApprovalRequest
+    implements Built<RejectApprovalRequest, RejectApprovalRequestBuilder> {
   /// Reason of the rejection (must contain non-whitespace text).
   @BuiltValueField(wireName: r'note')
   String get note;
 
   RejectApprovalRequest._();
 
-  factory RejectApprovalRequest([void updates(RejectApprovalRequestBuilder b)]) = _$RejectApprovalRequest;
+  factory RejectApprovalRequest(
+      [void updates(RejectApprovalRequestBuilder b)]) = _$RejectApprovalRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(RejectApprovalRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<RejectApprovalRequest> get serializer => _$RejectApprovalRequestSerializer();
+  static Serializer<RejectApprovalRequest> get serializer =>
+      _$RejectApprovalRequestSerializer();
 }
 
-class _$RejectApprovalRequestSerializer implements PrimitiveSerializer<RejectApprovalRequest> {
+class _$RejectApprovalRequestSerializer
+    implements PrimitiveSerializer<RejectApprovalRequest> {
   @override
-  final Iterable<Type> types = const [RejectApprovalRequest, _$RejectApprovalRequest];
+  final Iterable<Type> types = const [
+    RejectApprovalRequest,
+    _$RejectApprovalRequest
+  ];
 
   @override
   final String wireName = r'RejectApprovalRequest';
@@ -54,7 +61,9 @@ class _$RejectApprovalRequestSerializer implements PrimitiveSerializer<RejectApp
     RejectApprovalRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -104,5 +113,3 @@ class _$RejectApprovalRequestSerializer implements PrimitiveSerializer<RejectApp
     return result.build();
   }
 }
-
-

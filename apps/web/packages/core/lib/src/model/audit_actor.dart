@@ -12,9 +12,9 @@ part 'audit_actor.g.dart';
 /// AuditActor
 ///
 /// Properties:
-/// * [kind] 
-/// * [subject] - The login (token subject) that acted, or `system`; null when the actor is masked for the caller (platform actors seen from an academy). 
-/// * [personId] 
+/// * [kind]
+/// * [subject] - The login (token subject) that acted, or `system`; null when the actor is masked for the caller (platform actors seen from an academy).
+/// * [personId]
 /// * [displayName] - Given and family name of the person while the person exists; null when not resolved.
 @BuiltValue()
 abstract class AuditActor implements Built<AuditActor, AuditActorBuilder> {
@@ -22,7 +22,7 @@ abstract class AuditActor implements Built<AuditActor, AuditActorBuilder> {
   AuditActorKind get kind;
   // enum kindEnum {  PERSON,  PLATFORM,  SYSTEM,  };
 
-  /// The login (token subject) that acted, or `system`; null when the actor is masked for the caller (platform actors seen from an academy). 
+  /// The login (token subject) that acted, or `system`; null when the actor is masked for the caller (platform actors seen from an academy).
   @BuiltValueField(wireName: r'subject')
   String? get subject;
 
@@ -62,10 +62,12 @@ class _$AuditActorSerializer implements PrimitiveSerializer<AuditActor> {
       specifiedType: const FullType(AuditActorKind),
     );
     yield r'subject';
-    yield object.subject == null ? null : serializers.serialize(
-      object.subject,
-      specifiedType: const FullType.nullable(String),
-    );
+    yield object.subject == null
+        ? null
+        : serializers.serialize(
+            object.subject,
+            specifiedType: const FullType.nullable(String),
+          );
     if (object.personId != null) {
       yield r'personId';
       yield serializers.serialize(
@@ -88,7 +90,9 @@ class _$AuditActorSerializer implements PrimitiveSerializer<AuditActor> {
     AuditActor object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -162,5 +166,3 @@ class _$AuditActorSerializer implements PrimitiveSerializer<AuditActor> {
     return result.build();
   }
 }
-
-

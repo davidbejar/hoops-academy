@@ -11,7 +11,6 @@ part 'gender.g.dart';
 
 /// Player gender used by team gender policies and fitness norms.
 class Gender extends EnumClass {
-
   @BuiltValueEnumConst(wireName: r'MALE')
   static const Gender MALE = _$MALE;
   @BuiltValueEnumConst(wireName: r'FEMALE')
@@ -21,7 +20,7 @@ class Gender extends EnumClass {
 
   static Serializer<Gender> get serializer => _$genderSerializer;
 
-  const Gender._(String name): super(name);
+  const Gender._(String name) : super(name);
 
   static BuiltSet<Gender> get values => _$values;
   static Gender valueOf(String name) => _$valueOf(name);
@@ -34,4 +33,3 @@ class Gender extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class GenderMixin = Object with _$GenderMixin;
-

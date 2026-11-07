@@ -12,8 +12,8 @@ part 'roster_staff.g.dart';
 /// RosterStaff
 ///
 /// Properties:
-/// * [personId] 
-/// * [role] 
+/// * [personId]
+/// * [role]
 @BuiltValue()
 abstract class RosterStaff implements Built<RosterStaff, RosterStaffBuilder> {
   @BuiltValueField(wireName: r'personId')
@@ -64,7 +64,9 @@ class _$RosterStaffSerializer implements PrimitiveSerializer<RosterStaff> {
     RosterStaff object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -121,5 +123,3 @@ class _$RosterStaffSerializer implements PrimitiveSerializer<RosterStaff> {
     return result.build();
   }
 }
-
-

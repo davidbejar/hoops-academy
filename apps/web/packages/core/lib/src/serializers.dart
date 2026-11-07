@@ -48,6 +48,8 @@ import 'package:hoops_core_api/src/model/eligibility_check.dart';
 import 'package:hoops_core_api/src/model/eligibility_reason.dart';
 import 'package:hoops_core_api/src/model/eligibility_result.dart';
 import 'package:hoops_core_api/src/model/eligible_team.dart';
+import 'package:hoops_core_api/src/model/event_backfill.dart';
+import 'package:hoops_core_api/src/model/event_backfill_request.dart';
 import 'package:hoops_core_api/src/model/first_admin.dart';
 import 'package:hoops_core_api/src/model/gender.dart';
 import 'package:hoops_core_api/src/model/gender_policy.dart';
@@ -161,6 +163,8 @@ part 'serializers.g.dart';
   EligibilityReason,
   EligibilityResult,
   EligibleTeam,
+  EventBackfill,
+  EventBackfillRequest,
   FirstAdmin,
   Gender,
   GenderPolicy,
@@ -351,7 +355,8 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<AuditAction>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
+        const FullType(
+            BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
         () => MapBuilder<String, JsonObject?>(),
       )
       ..addBuilderFactory(
@@ -369,8 +374,8 @@ Serializers serializers = (_$serializers.toBuilder()
       ..add(const OneOfSerializer())
       ..add(const AnyOfSerializer())
       ..add(const DateSerializer())
-      ..add(Iso8601DateTimeSerializer())
-    ).build();
+      ..add(Iso8601DateTimeSerializer()))
+    .build();
 
 Serializers standardSerializers =
     (serializers.toBuilder()..addPlugin(StandardJsonPlugin())).build();

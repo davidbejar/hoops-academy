@@ -14,10 +14,11 @@ part 'eligibility_case_page.g.dart';
 /// EligibilityCasePage
 ///
 /// Properties:
-/// * [items] 
-/// * [page] 
+/// * [items]
+/// * [page]
 @BuiltValue()
-abstract class EligibilityCasePage implements Built<EligibilityCasePage, EligibilityCasePageBuilder> {
+abstract class EligibilityCasePage
+    implements Built<EligibilityCasePage, EligibilityCasePageBuilder> {
   @BuiltValueField(wireName: r'items')
   BuiltList<EligibilityCase> get items;
 
@@ -26,18 +27,24 @@ abstract class EligibilityCasePage implements Built<EligibilityCasePage, Eligibi
 
   EligibilityCasePage._();
 
-  factory EligibilityCasePage([void updates(EligibilityCasePageBuilder b)]) = _$EligibilityCasePage;
+  factory EligibilityCasePage([void updates(EligibilityCasePageBuilder b)]) =
+      _$EligibilityCasePage;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(EligibilityCasePageBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<EligibilityCasePage> get serializer => _$EligibilityCasePageSerializer();
+  static Serializer<EligibilityCasePage> get serializer =>
+      _$EligibilityCasePageSerializer();
 }
 
-class _$EligibilityCasePageSerializer implements PrimitiveSerializer<EligibilityCasePage> {
+class _$EligibilityCasePageSerializer
+    implements PrimitiveSerializer<EligibilityCasePage> {
   @override
-  final Iterable<Type> types = const [EligibilityCasePage, _$EligibilityCasePage];
+  final Iterable<Type> types = const [
+    EligibilityCasePage,
+    _$EligibilityCasePage
+  ];
 
   @override
   final String wireName = r'EligibilityCasePage';
@@ -65,7 +72,9 @@ class _$EligibilityCasePageSerializer implements PrimitiveSerializer<Eligibility
     EligibilityCasePage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -83,7 +92,8 @@ class _$EligibilityCasePageSerializer implements PrimitiveSerializer<Eligibility
         case r'items':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(EligibilityCase)]),
+            specifiedType:
+                const FullType(BuiltList, [FullType(EligibilityCase)]),
           ) as BuiltList<EligibilityCase>;
           result.items.replace(valueDes);
           break;
@@ -122,5 +132,3 @@ class _$EligibilityCasePageSerializer implements PrimitiveSerializer<Eligibility
     return result.build();
   }
 }
-
-

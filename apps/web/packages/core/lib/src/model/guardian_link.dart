@@ -13,12 +13,13 @@ part 'guardian_link.g.dart';
 /// GuardianLink
 ///
 /// Properties:
-/// * [id] 
-/// * [guardian] 
-/// * [player] 
-/// * [createdAt] 
+/// * [id]
+/// * [guardian]
+/// * [player]
+/// * [createdAt]
 @BuiltValue()
-abstract class GuardianLink implements Built<GuardianLink, GuardianLinkBuilder> {
+abstract class GuardianLink
+    implements Built<GuardianLink, GuardianLinkBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -82,7 +83,9 @@ class _$GuardianLinkSerializer implements PrimitiveSerializer<GuardianLink> {
     GuardianLink object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -153,5 +156,3 @@ class _$GuardianLinkSerializer implements PrimitiveSerializer<GuardianLink> {
     return result.build();
   }
 }
-
-

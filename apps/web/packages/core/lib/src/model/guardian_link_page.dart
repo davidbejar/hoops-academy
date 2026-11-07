@@ -14,10 +14,11 @@ part 'guardian_link_page.g.dart';
 /// GuardianLinkPage
 ///
 /// Properties:
-/// * [items] 
-/// * [page] 
+/// * [items]
+/// * [page]
 @BuiltValue()
-abstract class GuardianLinkPage implements Built<GuardianLinkPage, GuardianLinkPageBuilder> {
+abstract class GuardianLinkPage
+    implements Built<GuardianLinkPage, GuardianLinkPageBuilder> {
   @BuiltValueField(wireName: r'items')
   BuiltList<GuardianLink> get items;
 
@@ -26,16 +27,19 @@ abstract class GuardianLinkPage implements Built<GuardianLinkPage, GuardianLinkP
 
   GuardianLinkPage._();
 
-  factory GuardianLinkPage([void updates(GuardianLinkPageBuilder b)]) = _$GuardianLinkPage;
+  factory GuardianLinkPage([void updates(GuardianLinkPageBuilder b)]) =
+      _$GuardianLinkPage;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(GuardianLinkPageBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<GuardianLinkPage> get serializer => _$GuardianLinkPageSerializer();
+  static Serializer<GuardianLinkPage> get serializer =>
+      _$GuardianLinkPageSerializer();
 }
 
-class _$GuardianLinkPageSerializer implements PrimitiveSerializer<GuardianLinkPage> {
+class _$GuardianLinkPageSerializer
+    implements PrimitiveSerializer<GuardianLinkPage> {
   @override
   final Iterable<Type> types = const [GuardianLinkPage, _$GuardianLinkPage];
 
@@ -65,7 +69,9 @@ class _$GuardianLinkPageSerializer implements PrimitiveSerializer<GuardianLinkPa
     GuardianLinkPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -122,5 +128,3 @@ class _$GuardianLinkPageSerializer implements PrimitiveSerializer<GuardianLinkPa
     return result.build();
   }
 }
-
-

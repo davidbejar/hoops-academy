@@ -24,7 +24,6 @@ import 'package:hoops_core_api/src/model/update_team_player_request.dart';
 import 'package:hoops_core_api/src/model/update_team_request.dart';
 
 class TeamsApi {
-
   final Dio _dio;
 
   final Serializers _serializers;
@@ -32,12 +31,12 @@ class TeamsApi {
   const TeamsApi(this._dio, this._serializers);
 
   /// Assign a player to the team (eligibility-checked)
-  /// Runs the eligibility check; INELIGIBLE → 422 with &#x60;code&#x3D;PLAYER_INELIGIBLE&#x60; and the reasons in &#x60;violations[].code&#x60;. PLAY_UP is allowed within the tenant&#39;s limit. 409 when the player already has an open assignment to this team. Authz: ADMIN; COACH of this team. 
+  /// Runs the eligibility check; INELIGIBLE → 422 with &#x60;code&#x3D;PLAYER_INELIGIBLE&#x60; and the reasons in &#x60;violations[].code&#x60;. PLAY_UP is allowed within the tenant&#39;s limit. 409 when the player already has an open assignment to this team. Authz: ADMIN; COACH of this team.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [assignPlayerRequest] 
+  /// * [teamId]
+  /// * [assignPlayerRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -47,7 +46,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TeamPlayer] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TeamPlayer>> assignPlayerToTeam({ 
+  Future<Response<TeamPlayer>> assignPlayerToTeam({
     required String xTenantId,
     required String teamId,
     required AssignPlayerRequest assignPlayerRequest,
@@ -58,7 +57,10 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}/players'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}/players'.replaceAll(
+        '{' r'teamId' '}',
+        encodeQueryParameter(_serializers, teamId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'POST',
       headers: <String, dynamic>{
@@ -83,11 +85,11 @@ class TeamsApi {
 
     try {
       const _type = FullType(AssignPlayerRequest);
-      _bodyData = _serializers.serialize(assignPlayerRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData =
+          _serializers.serialize(assignPlayerRequest, specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -110,11 +112,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(TeamPlayer),
-      ) as TeamPlayer;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(TeamPlayer),
+            ) as TeamPlayer;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -142,8 +145,8 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [playerId] 
+  /// * [teamId]
+  /// * [playerId]
   /// * [asOf] - Evaluation date; defaults to today in the tenant's time zone.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -154,7 +157,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [EligibilityCheck] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<EligibilityCheck>> checkPlayerEligibility({ 
+  Future<Response<EligibilityCheck>> checkPlayerEligibility({
     required String xTenantId,
     required String teamId,
     required String playerId,
@@ -166,7 +169,15 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}/players/{playerId}/eligibility'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString()).replaceAll('{' r'playerId' '}', encodeQueryParameter(_serializers, playerId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}/players/{playerId}/eligibility'
+        .replaceAll(
+            '{' r'teamId' '}',
+            encodeQueryParameter(_serializers, teamId, const FullType(String))
+                .toString())
+        .replaceAll(
+            '{' r'playerId' '}',
+            encodeQueryParameter(_serializers, playerId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -187,7 +198,8 @@ class TeamsApi {
     );
 
     final _queryParameters = <String, dynamic>{
-      if (asOf != null) r'asOf': encodeQueryParameter(_serializers, asOf, const FullType(Date)),
+      if (asOf != null)
+        r'asOf': encodeQueryParameter(_serializers, asOf, const FullType(Date)),
     };
 
     final _response = await _dio.request<Object>(
@@ -203,11 +215,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(EligibilityCheck),
-      ) as EligibilityCheck;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(EligibilityCheck),
+            ) as EligibilityCheck;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -235,7 +248,7 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [createTeamRequest] 
+  /// * [createTeamRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -245,7 +258,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Team] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Team>> createTeam({ 
+  Future<Response<Team>> createTeam({
     required String xTenantId,
     required CreateTeamRequest createTeamRequest,
     CancelToken? cancelToken,
@@ -280,11 +293,11 @@ class TeamsApi {
 
     try {
       const _type = FullType(CreateTeamRequest);
-      _bodyData = _serializers.serialize(createTeamRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData =
+          _serializers.serialize(createTeamRequest, specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -307,11 +320,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(Team),
-      ) as Team;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(Team),
+            ) as Team;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -339,7 +353,7 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
+  /// * [teamId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -349,7 +363,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Team] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Team>> getTeam({ 
+  Future<Response<Team>> getTeam({
     required String xTenantId,
     required String teamId,
     CancelToken? cancelToken,
@@ -359,7 +373,10 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}'.replaceAll(
+        '{' r'teamId' '}',
+        encodeQueryParameter(_serializers, teamId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -391,11 +408,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(Team),
-      ) as Team;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(Team),
+            ) as Team;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -423,7 +441,7 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
+  /// * [teamId]
   /// * [includeLeft] - Include assignments that were closed (`leftOn` set).
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -434,7 +452,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<TeamPlayer>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<TeamPlayer>>> listTeamPlayers({ 
+  Future<Response<BuiltList<TeamPlayer>>> listTeamPlayers({
     required String xTenantId,
     required String teamId,
     bool? includeLeft = false,
@@ -445,7 +463,10 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}/players'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}/players'.replaceAll(
+        '{' r'teamId' '}',
+        encodeQueryParameter(_serializers, teamId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -466,7 +487,9 @@ class TeamsApi {
     );
 
     final _queryParameters = <String, dynamic>{
-      if (includeLeft != null) r'includeLeft': encodeQueryParameter(_serializers, includeLeft, const FullType(bool)),
+      if (includeLeft != null)
+        r'includeLeft': encodeQueryParameter(
+            _serializers, includeLeft, const FullType(bool)),
     };
 
     final _response = await _dio.request<Object>(
@@ -482,11 +505,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(BuiltList, [FullType(TeamPlayer)]),
-      ) as BuiltList<TeamPlayer>;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(BuiltList, [FullType(TeamPlayer)]),
+            ) as BuiltList<TeamPlayer>;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -514,7 +538,7 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
+  /// * [teamId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -524,7 +548,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<TeamStaffMember>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<TeamStaffMember>>> listTeamStaff({ 
+  Future<Response<BuiltList<TeamStaffMember>>> listTeamStaff({
     required String xTenantId,
     required String teamId,
     CancelToken? cancelToken,
@@ -534,7 +558,10 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}/staff'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}/staff'.replaceAll(
+        '{' r'teamId' '}',
+        encodeQueryParameter(_serializers, teamId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -566,11 +593,13 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(BuiltList, [FullType(TeamStaffMember)]),
-      ) as BuiltList<TeamStaffMember>;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType:
+                  const FullType(BuiltList, [FullType(TeamStaffMember)]),
+            ) as BuiltList<TeamStaffMember>;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -598,9 +627,9 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [seasonId] 
-  /// * [ageCategoryId] 
-  /// * [staffedByMe] 
+  /// * [seasonId]
+  /// * [ageCategoryId]
+  /// * [staffedByMe]
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -612,7 +641,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TeamPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TeamPage>> listTeams({ 
+  Future<Response<TeamPage>> listTeams({
     required String xTenantId,
     String? seasonId,
     String? ageCategoryId,
@@ -647,11 +676,19 @@ class TeamsApi {
     );
 
     final _queryParameters = <String, dynamic>{
-      if (seasonId != null) r'seasonId': encodeQueryParameter(_serializers, seasonId, const FullType(String)),
-      if (ageCategoryId != null) r'ageCategoryId': encodeQueryParameter(_serializers, ageCategoryId, const FullType(String)),
-      if (staffedByMe != null) r'staffedByMe': encodeQueryParameter(_serializers, staffedByMe, const FullType(bool)),
-      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
-      if (size != null) r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
+      if (seasonId != null)
+        r'seasonId': encodeQueryParameter(
+            _serializers, seasonId, const FullType(String)),
+      if (ageCategoryId != null)
+        r'ageCategoryId': encodeQueryParameter(
+            _serializers, ageCategoryId, const FullType(String)),
+      if (staffedByMe != null)
+        r'staffedByMe': encodeQueryParameter(
+            _serializers, staffedByMe, const FullType(bool)),
+      if (page != null)
+        r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
+      if (size != null)
+        r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(
@@ -667,11 +704,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(TeamPage),
-      ) as TeamPage;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(TeamPage),
+            ) as TeamPage;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -699,9 +737,9 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [personId] 
-  /// * [teamStaffAssignment] 
+  /// * [teamId]
+  /// * [personId]
+  /// * [teamStaffAssignment]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -711,7 +749,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TeamStaffMember] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TeamStaffMember>> putTeamStaffMember({ 
+  Future<Response<TeamStaffMember>> putTeamStaffMember({
     required String xTenantId,
     required String teamId,
     required String personId,
@@ -723,7 +761,15 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}/staff/{personId}'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString()).replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}/staff/{personId}'
+        .replaceAll(
+            '{' r'teamId' '}',
+            encodeQueryParameter(_serializers, teamId, const FullType(String))
+                .toString())
+        .replaceAll(
+            '{' r'personId' '}',
+            encodeQueryParameter(_serializers, personId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'PUT',
       headers: <String, dynamic>{
@@ -748,11 +794,11 @@ class TeamsApi {
 
     try {
       const _type = FullType(TeamStaffAssignment);
-      _bodyData = _serializers.serialize(teamStaffAssignment, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData =
+          _serializers.serialize(teamStaffAssignment, specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -775,11 +821,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(TeamStaffMember),
-      ) as TeamStaffMember;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(TeamStaffMember),
+            ) as TeamStaffMember;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -807,8 +854,8 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [personId] 
+  /// * [teamId]
+  /// * [personId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -818,7 +865,7 @@ class TeamsApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> removeTeamStaffMember({ 
+  Future<Response<void>> removeTeamStaffMember({
     required String xTenantId,
     required String teamId,
     required String personId,
@@ -829,7 +876,15 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}/staff/{personId}'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString()).replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}/staff/{personId}'
+        .replaceAll(
+            '{' r'teamId' '}',
+            encodeQueryParameter(_serializers, teamId, const FullType(String))
+                .toString())
+        .replaceAll(
+            '{' r'personId' '}',
+            encodeQueryParameter(_serializers, personId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'DELETE',
       headers: <String, dynamic>{
@@ -865,8 +920,8 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [playerId] 
+  /// * [teamId]
+  /// * [playerId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -876,7 +931,7 @@ class TeamsApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> unassignPlayerFromTeam({ 
+  Future<Response<void>> unassignPlayerFromTeam({
     required String xTenantId,
     required String teamId,
     required String playerId,
@@ -887,7 +942,15 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}/players/{playerId}'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString()).replaceAll('{' r'playerId' '}', encodeQueryParameter(_serializers, playerId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}/players/{playerId}'
+        .replaceAll(
+            '{' r'teamId' '}',
+            encodeQueryParameter(_serializers, teamId, const FullType(String))
+                .toString())
+        .replaceAll(
+            '{' r'playerId' '}',
+            encodeQueryParameter(_serializers, playerId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'DELETE',
       headers: <String, dynamic>{
@@ -923,8 +986,8 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [updateTeamRequest] 
+  /// * [teamId]
+  /// * [updateTeamRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -934,7 +997,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Team] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Team>> updateTeam({ 
+  Future<Response<Team>> updateTeam({
     required String xTenantId,
     required String teamId,
     required UpdateTeamRequest updateTeamRequest,
@@ -945,7 +1008,10 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}'.replaceAll(
+        '{' r'teamId' '}',
+        encodeQueryParameter(_serializers, teamId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'PATCH',
       headers: <String, dynamic>{
@@ -970,11 +1036,11 @@ class TeamsApi {
 
     try {
       const _type = FullType(UpdateTeamRequest);
-      _bodyData = _serializers.serialize(updateTeamRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData =
+          _serializers.serialize(updateTeamRequest, specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -997,11 +1063,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(Team),
-      ) as Team;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(Team),
+            ) as Team;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -1029,9 +1096,9 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [playerId] 
-  /// * [updateTeamPlayerRequest] 
+  /// * [teamId]
+  /// * [playerId]
+  /// * [updateTeamPlayerRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1041,7 +1108,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TeamPlayer] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TeamPlayer>> updateTeamPlayer({ 
+  Future<Response<TeamPlayer>> updateTeamPlayer({
     required String xTenantId,
     required String teamId,
     required String playerId,
@@ -1053,7 +1120,15 @@ class TeamsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/teams/{teamId}/players/{playerId}'.replaceAll('{' r'teamId' '}', encodeQueryParameter(_serializers, teamId, const FullType(String)).toString()).replaceAll('{' r'playerId' '}', encodeQueryParameter(_serializers, playerId, const FullType(String)).toString());
+    final _path = r'/api/core/teams/{teamId}/players/{playerId}'
+        .replaceAll(
+            '{' r'teamId' '}',
+            encodeQueryParameter(_serializers, teamId, const FullType(String))
+                .toString())
+        .replaceAll(
+            '{' r'playerId' '}',
+            encodeQueryParameter(_serializers, playerId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'PATCH',
       headers: <String, dynamic>{
@@ -1078,11 +1153,11 @@ class TeamsApi {
 
     try {
       const _type = FullType(UpdateTeamPlayerRequest);
-      _bodyData = _serializers.serialize(updateTeamPlayerRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData =
+          _serializers.serialize(updateTeamPlayerRequest, specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -1105,11 +1180,12 @@ class TeamsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(TeamPlayer),
-      ) as TeamPlayer;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(TeamPlayer),
+            ) as TeamPlayer;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -1131,5 +1207,4 @@ class TeamsApi {
       extra: _response.extra,
     );
   }
-
 }

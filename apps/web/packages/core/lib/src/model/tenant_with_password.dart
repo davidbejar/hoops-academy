@@ -14,19 +14,20 @@ part 'tenant_with_password.g.dart';
 /// The onboarded tenant and the temporary password of the first administrator's new login.
 ///
 /// Properties:
-/// * [id] 
-/// * [slug] 
-/// * [name] 
-/// * [status] 
+/// * [id]
+/// * [slug]
+/// * [name]
+/// * [status]
 /// * [timezone] - IANA time zone id.
-/// * [defaultLocale] 
-/// * [createdAt] 
-/// * [suspendedAt] 
-/// * [withdrawnAt] 
+/// * [defaultLocale]
+/// * [createdAt]
+/// * [suspendedAt]
+/// * [withdrawnAt]
 /// * [retainUntil] - For WITHDRAWN tenants, the date until which data is retained.
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
 @BuiltValue()
-abstract class TenantWithPassword implements Built<TenantWithPassword, TenantWithPasswordBuilder> {
+abstract class TenantWithPassword
+    implements Built<TenantWithPassword, TenantWithPasswordBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -61,22 +62,25 @@ abstract class TenantWithPassword implements Built<TenantWithPassword, TenantWit
   @BuiltValueField(wireName: r'retainUntil')
   Date? get retainUntil;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
   TenantWithPassword._();
 
-  factory TenantWithPassword([void updates(TenantWithPasswordBuilder b)]) = _$TenantWithPassword;
+  factory TenantWithPassword([void updates(TenantWithPasswordBuilder b)]) =
+      _$TenantWithPassword;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TenantWithPasswordBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantWithPassword> get serializer => _$TenantWithPasswordSerializer();
+  static Serializer<TenantWithPassword> get serializer =>
+      _$TenantWithPasswordSerializer();
 }
 
-class _$TenantWithPasswordSerializer implements PrimitiveSerializer<TenantWithPassword> {
+class _$TenantWithPasswordSerializer
+    implements PrimitiveSerializer<TenantWithPassword> {
   @override
   final Iterable<Type> types = const [TenantWithPassword, _$TenantWithPassword];
 
@@ -159,7 +163,9 @@ class _$TenantWithPasswordSerializer implements PrimitiveSerializer<TenantWithPa
     TenantWithPassword object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -283,5 +289,3 @@ class _$TenantWithPasswordSerializer implements PrimitiveSerializer<TenantWithPa
     return result.build();
   }
 }
-
-

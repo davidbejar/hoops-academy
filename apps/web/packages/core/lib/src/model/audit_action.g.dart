@@ -45,6 +45,8 @@ const AuditAction _$playerPeriodWithdrawn =
     const AuditAction._('playerPeriodWithdrawn');
 const AuditAction _$tenantPeriodCreated =
     const AuditAction._('tenantPeriodCreated');
+const AuditAction _$tenantPeriodEventsBackfilled =
+    const AuditAction._('tenantPeriodEventsBackfilled');
 const AuditAction _$tenantPeriodLogoRemoved =
     const AuditAction._('tenantPeriodLogoRemoved');
 const AuditAction _$tenantPeriodLogoReplaced =
@@ -106,6 +108,8 @@ AuditAction _$valueOf(String name) {
       return _$playerPeriodWithdrawn;
     case 'tenantPeriodCreated':
       return _$tenantPeriodCreated;
+    case 'tenantPeriodEventsBackfilled':
+      return _$tenantPeriodEventsBackfilled;
     case 'tenantPeriodLogoRemoved':
       return _$tenantPeriodLogoRemoved;
     case 'tenantPeriodLogoReplaced':
@@ -151,6 +155,7 @@ final BuiltSet<AuditAction> _$values =
   _$playerPeriodRequested,
   _$playerPeriodWithdrawn,
   _$tenantPeriodCreated,
+  _$tenantPeriodEventsBackfilled,
   _$tenantPeriodLogoRemoved,
   _$tenantPeriodLogoReplaced,
   _$tenantPeriodMasterDataChanged,
@@ -189,6 +194,8 @@ class _$AuditActionMeta {
   AuditAction get playerPeriodRequested => _$playerPeriodRequested;
   AuditAction get playerPeriodWithdrawn => _$playerPeriodWithdrawn;
   AuditAction get tenantPeriodCreated => _$tenantPeriodCreated;
+  AuditAction get tenantPeriodEventsBackfilled =>
+      _$tenantPeriodEventsBackfilled;
   AuditAction get tenantPeriodLogoRemoved => _$tenantPeriodLogoRemoved;
   AuditAction get tenantPeriodLogoReplaced => _$tenantPeriodLogoReplaced;
   AuditAction get tenantPeriodMasterDataChanged =>
@@ -232,6 +239,7 @@ class _$AuditActionSerializer implements PrimitiveSerializer<AuditAction> {
     'playerPeriodRequested': 'player.requested',
     'playerPeriodWithdrawn': 'player.withdrawn',
     'tenantPeriodCreated': 'tenant.created',
+    'tenantPeriodEventsBackfilled': 'tenant.events_backfilled',
     'tenantPeriodLogoRemoved': 'tenant.logo_removed',
     'tenantPeriodLogoReplaced': 'tenant.logo_replaced',
     'tenantPeriodMasterDataChanged': 'tenant.master_data_changed',
@@ -263,6 +271,7 @@ class _$AuditActionSerializer implements PrimitiveSerializer<AuditAction> {
     'player.requested': 'playerPeriodRequested',
     'player.withdrawn': 'playerPeriodWithdrawn',
     'tenant.created': 'tenantPeriodCreated',
+    'tenant.events_backfilled': 'tenantPeriodEventsBackfilled',
     'tenant.logo_removed': 'tenantPeriodLogoRemoved',
     'tenant.logo_replaced': 'tenantPeriodLogoReplaced',
     'tenant.master_data_changed': 'tenantPeriodMasterDataChanged',

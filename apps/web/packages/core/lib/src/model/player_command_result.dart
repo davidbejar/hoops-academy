@@ -13,35 +13,42 @@ part 'player_command_result.g.dart';
 /// Outcome of an add/withdraw command; `approvalRequest.status` tells whether it took effect (APPROVED) or awaits a decision (PENDING).
 ///
 /// Properties:
-/// * [player] 
-/// * [approvalRequest] 
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
+/// * [player]
+/// * [approvalRequest]
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
 @BuiltValue()
-abstract class PlayerCommandResult implements Built<PlayerCommandResult, PlayerCommandResultBuilder> {
+abstract class PlayerCommandResult
+    implements Built<PlayerCommandResult, PlayerCommandResultBuilder> {
   @BuiltValueField(wireName: r'player')
   Player get player;
 
   @BuiltValueField(wireName: r'approvalRequest')
   ApprovalRequest get approvalRequest;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
   PlayerCommandResult._();
 
-  factory PlayerCommandResult([void updates(PlayerCommandResultBuilder b)]) = _$PlayerCommandResult;
+  factory PlayerCommandResult([void updates(PlayerCommandResultBuilder b)]) =
+      _$PlayerCommandResult;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(PlayerCommandResultBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PlayerCommandResult> get serializer => _$PlayerCommandResultSerializer();
+  static Serializer<PlayerCommandResult> get serializer =>
+      _$PlayerCommandResultSerializer();
 }
 
-class _$PlayerCommandResultSerializer implements PrimitiveSerializer<PlayerCommandResult> {
+class _$PlayerCommandResultSerializer
+    implements PrimitiveSerializer<PlayerCommandResult> {
   @override
-  final Iterable<Type> types = const [PlayerCommandResult, _$PlayerCommandResult];
+  final Iterable<Type> types = const [
+    PlayerCommandResult,
+    _$PlayerCommandResult
+  ];
 
   @override
   final String wireName = r'PlayerCommandResult';
@@ -76,7 +83,9 @@ class _$PlayerCommandResultSerializer implements PrimitiveSerializer<PlayerComma
     PlayerCommandResult object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -141,5 +150,3 @@ class _$PlayerCommandResultSerializer implements PrimitiveSerializer<PlayerComma
     return result.build();
   }
 }
-
-

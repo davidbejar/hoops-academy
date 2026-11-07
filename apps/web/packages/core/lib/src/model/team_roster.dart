@@ -14,12 +14,12 @@ part 'team_roster.g.dart';
 /// TeamRoster
 ///
 /// Properties:
-/// * [tenantId] 
-/// * [teamId] 
-/// * [seasonId] 
-/// * [teamName] 
-/// * [players] 
-/// * [staff] 
+/// * [tenantId]
+/// * [teamId]
+/// * [seasonId]
+/// * [teamName]
+/// * [players]
+/// * [staff]
 @BuiltValue()
 abstract class TeamRoster implements Built<TeamRoster, TeamRosterBuilder> {
   @BuiltValueField(wireName: r'tenantId')
@@ -101,7 +101,9 @@ class _$TeamRosterSerializer implements PrimitiveSerializer<TeamRoster> {
     TeamRoster object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -186,5 +188,3 @@ class _$TeamRosterSerializer implements PrimitiveSerializer<TeamRoster> {
     return result.build();
   }
 }
-
-

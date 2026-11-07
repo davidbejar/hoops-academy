@@ -14,11 +14,11 @@ part 'me.g.dart';
 /// Me
 ///
 /// Properties:
-/// * [userId] 
+/// * [userId]
 /// * [sub] - Keycloak subject.
-/// * [email] 
-/// * [displayName] 
-/// * [locale] 
+/// * [email]
+/// * [displayName]
+/// * [locale]
 /// * [superAdmin] - Holds the platform realm role `super_admin`.
 /// * [memberships] - Active memberships in ACTIVE tenants.
 @BuiltValue()
@@ -116,7 +116,9 @@ class _$MeSerializer implements PrimitiveSerializer<Me> {
     Me object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -209,5 +211,3 @@ class _$MeSerializer implements PrimitiveSerializer<Me> {
     return result.build();
   }
 }
-
-

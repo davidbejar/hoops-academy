@@ -10,7 +10,6 @@ import 'package:built_value/serializer.dart';
 part 'approval_status.g.dart';
 
 class ApprovalStatus extends EnumClass {
-
   @BuiltValueEnumConst(wireName: r'PENDING')
   static const ApprovalStatus PENDING = _$PENDING;
   @BuiltValueEnumConst(wireName: r'APPROVED')
@@ -22,9 +21,10 @@ class ApprovalStatus extends EnumClass {
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
   static const ApprovalStatus unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 
-  static Serializer<ApprovalStatus> get serializer => _$approvalStatusSerializer;
+  static Serializer<ApprovalStatus> get serializer =>
+      _$approvalStatusSerializer;
 
-  const ApprovalStatus._(String name): super(name);
+  const ApprovalStatus._(String name) : super(name);
 
   static BuiltSet<ApprovalStatus> get values => _$values;
   static ApprovalStatus valueOf(String name) => _$valueOf(name);
@@ -37,4 +37,3 @@ class ApprovalStatus extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class ApprovalStatusMixin = Object with _$ApprovalStatusMixin;
-

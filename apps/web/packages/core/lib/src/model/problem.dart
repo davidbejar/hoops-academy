@@ -10,12 +10,12 @@ import 'package:built_value/serializer.dart';
 
 part 'problem.g.dart';
 
-/// RFC 9457 problem details (serialised by `com.hoopsacademy.common.problem.Problem`; absent members are omitted). Extension members: `traceId` (correlation with logs/traces), `code` (stable machine-readable reason clients may branch on) and `violations` (field-level violations for 400, rule reasons for 422). 
+/// RFC 9457 problem details (serialised by `com.hoopsacademy.common.problem.Problem`; absent members are omitted). Extension members: `traceId` (correlation with logs/traces), `code` (stable machine-readable reason clients may branch on) and `violations` (field-level violations for 400, rule reasons for 422).
 ///
 /// Properties:
 /// * [type] - Problem type URI, `urn:hoops:problem:<slug>` (e.g. `urn:hoops:problem:domain-rule-violation`).
 /// * [title] - Short, human-readable summary of the problem type.
-/// * [status] 
+/// * [status]
 /// * [detail] - Human-readable explanation specific to this occurrence.
 /// * [instance] - URI reference identifying this occurrence (usually the request path).
 /// * [traceId] - Trace id of the request (from the logging MDC / OpenTelemetry), for support.
@@ -59,8 +59,7 @@ abstract class Problem implements Built<Problem, ProblemBuilder> {
   factory Problem([void updates(ProblemBuilder b)]) = _$Problem;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(ProblemBuilder b) => b
-      ..type = 'about:blank';
+  static void _defaults(ProblemBuilder b) => b..type = 'about:blank';
 
   @BuiltValueSerializer(custom: true)
   static Serializer<Problem> get serializer => _$ProblemSerializer();
@@ -136,7 +135,9 @@ class _$ProblemSerializer implements PrimitiveSerializer<Problem> {
     Problem object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -207,7 +208,8 @@ class _$ProblemSerializer implements PrimitiveSerializer<Problem> {
         case r'violations':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(BuiltList, [FullType(ProblemViolation)]),
+            specifiedType: const FullType.nullable(
+                BuiltList, [FullType(ProblemViolation)]),
           ) as BuiltList<ProblemViolation>?;
           if (valueDes == null) continue;
           result.violations.replace(valueDes);
@@ -240,5 +242,3 @@ class _$ProblemSerializer implements PrimitiveSerializer<Problem> {
     return result.build();
   }
 }
-
-

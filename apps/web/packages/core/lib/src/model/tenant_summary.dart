@@ -12,13 +12,14 @@ part 'tenant_summary.g.dart';
 /// TenantSummary
 ///
 /// Properties:
-/// * [id] 
-/// * [slug] 
-/// * [name] 
-/// * [status] 
-/// * [hasLogo] 
+/// * [id]
+/// * [slug]
+/// * [name]
+/// * [status]
+/// * [hasLogo]
 @BuiltValue()
-abstract class TenantSummary implements Built<TenantSummary, TenantSummaryBuilder> {
+abstract class TenantSummary
+    implements Built<TenantSummary, TenantSummaryBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -37,13 +38,15 @@ abstract class TenantSummary implements Built<TenantSummary, TenantSummaryBuilde
 
   TenantSummary._();
 
-  factory TenantSummary([void updates(TenantSummaryBuilder b)]) = _$TenantSummary;
+  factory TenantSummary([void updates(TenantSummaryBuilder b)]) =
+      _$TenantSummary;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TenantSummaryBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantSummary> get serializer => _$TenantSummarySerializer();
+  static Serializer<TenantSummary> get serializer =>
+      _$TenantSummarySerializer();
 }
 
 class _$TenantSummarySerializer implements PrimitiveSerializer<TenantSummary> {
@@ -91,7 +94,9 @@ class _$TenantSummarySerializer implements PrimitiveSerializer<TenantSummary> {
     TenantSummary object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -169,5 +174,3 @@ class _$TenantSummarySerializer implements PrimitiveSerializer<TenantSummary> {
     return result.build();
   }
 }
-
-

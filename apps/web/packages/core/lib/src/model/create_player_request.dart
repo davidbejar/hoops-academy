@@ -13,16 +13,17 @@ part 'create_player_request.g.dart';
 /// CreatePlayerRequest
 ///
 /// Properties:
-/// * [givenName] 
-/// * [familyName] 
-/// * [birthDate] 
-/// * [gender] 
+/// * [givenName]
+/// * [familyName]
+/// * [birthDate]
+/// * [gender]
 /// * [email] - When present the player gets a login (a new login's temporary password is returned once).
 /// * [teamId] - Optional team to assign (eligibility-checked; applied on approval for the coach path).
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
 /// * [note] - Message to the approving admin (coach path).
 @BuiltValue()
-abstract class CreatePlayerRequest implements Built<CreatePlayerRequest, CreatePlayerRequestBuilder> {
+abstract class CreatePlayerRequest
+    implements Built<CreatePlayerRequest, CreatePlayerRequestBuilder> {
   @BuiltValueField(wireName: r'givenName')
   String get givenName;
 
@@ -54,18 +55,24 @@ abstract class CreatePlayerRequest implements Built<CreatePlayerRequest, CreateP
 
   CreatePlayerRequest._();
 
-  factory CreatePlayerRequest([void updates(CreatePlayerRequestBuilder b)]) = _$CreatePlayerRequest;
+  factory CreatePlayerRequest([void updates(CreatePlayerRequestBuilder b)]) =
+      _$CreatePlayerRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(CreatePlayerRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<CreatePlayerRequest> get serializer => _$CreatePlayerRequestSerializer();
+  static Serializer<CreatePlayerRequest> get serializer =>
+      _$CreatePlayerRequestSerializer();
 }
 
-class _$CreatePlayerRequestSerializer implements PrimitiveSerializer<CreatePlayerRequest> {
+class _$CreatePlayerRequestSerializer
+    implements PrimitiveSerializer<CreatePlayerRequest> {
   @override
-  final Iterable<Type> types = const [CreatePlayerRequest, _$CreatePlayerRequest];
+  final Iterable<Type> types = const [
+    CreatePlayerRequest,
+    _$CreatePlayerRequest
+  ];
 
   @override
   final String wireName = r'CreatePlayerRequest';
@@ -131,7 +138,9 @@ class _$CreatePlayerRequestSerializer implements PrimitiveSerializer<CreatePlaye
     CreatePlayerRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -234,5 +243,3 @@ class _$CreatePlayerRequestSerializer implements PrimitiveSerializer<CreatePlaye
     return result.build();
   }
 }
-
-

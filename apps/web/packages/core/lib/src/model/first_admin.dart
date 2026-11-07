@@ -12,10 +12,10 @@ part 'first_admin.g.dart';
 /// FirstAdmin
 ///
 /// Properties:
-/// * [email] 
-/// * [givenName] 
-/// * [familyName] 
-/// * [locale] 
+/// * [email]
+/// * [givenName]
+/// * [familyName]
+/// * [locale]
 @BuiltValue()
 abstract class FirstAdmin implements Built<FirstAdmin, FirstAdminBuilder> {
   @BuiltValueField(wireName: r'email')
@@ -84,7 +84,9 @@ class _$FirstAdminSerializer implements PrimitiveSerializer<FirstAdmin> {
     FirstAdmin object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -156,5 +158,3 @@ class _$FirstAdminSerializer implements PrimitiveSerializer<FirstAdmin> {
     return result.build();
   }
 }
-
-

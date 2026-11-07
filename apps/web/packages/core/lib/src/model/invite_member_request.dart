@@ -16,17 +16,18 @@ part 'invite_member_request.g.dart';
 /// InviteMemberRequest
 ///
 /// Properties:
-/// * [givenName] 
-/// * [familyName] 
-/// * [email] 
-/// * [phone] 
-/// * [birthDate] 
-/// * [gender] 
-/// * [locale] 
-/// * [roles] 
+/// * [givenName]
+/// * [familyName]
+/// * [email]
+/// * [phone]
+/// * [birthDate]
+/// * [gender]
+/// * [locale]
+/// * [roles]
 /// * [sendInvitation] - Give the member a login (requires `email`); a new login's temporary password is returned once.
 @BuiltValue()
-abstract class InviteMemberRequest implements Built<InviteMemberRequest, InviteMemberRequestBuilder> {
+abstract class InviteMemberRequest
+    implements Built<InviteMemberRequest, InviteMemberRequestBuilder> {
   @BuiltValueField(wireName: r'givenName')
   String get givenName;
 
@@ -59,19 +60,25 @@ abstract class InviteMemberRequest implements Built<InviteMemberRequest, InviteM
 
   InviteMemberRequest._();
 
-  factory InviteMemberRequest([void updates(InviteMemberRequestBuilder b)]) = _$InviteMemberRequest;
+  factory InviteMemberRequest([void updates(InviteMemberRequestBuilder b)]) =
+      _$InviteMemberRequest;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(InviteMemberRequestBuilder b) => b
-      ..sendInvitation = true;
+  static void _defaults(InviteMemberRequestBuilder b) =>
+      b..sendInvitation = true;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<InviteMemberRequest> get serializer => _$InviteMemberRequestSerializer();
+  static Serializer<InviteMemberRequest> get serializer =>
+      _$InviteMemberRequestSerializer();
 }
 
-class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMemberRequest> {
+class _$InviteMemberRequestSerializer
+    implements PrimitiveSerializer<InviteMemberRequest> {
   @override
-  final Iterable<Type> types = const [InviteMemberRequest, _$InviteMemberRequest];
+  final Iterable<Type> types = const [
+    InviteMemberRequest,
+    _$InviteMemberRequest
+  ];
 
   @override
   final String wireName = r'InviteMemberRequest';
@@ -146,7 +153,9 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
     InviteMemberRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -258,5 +267,3 @@ class _$InviteMemberRequestSerializer implements PrimitiveSerializer<InviteMembe
     return result.build();
   }
 }
-
-

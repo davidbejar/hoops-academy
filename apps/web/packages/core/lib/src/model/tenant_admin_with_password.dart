@@ -15,16 +15,17 @@ part 'tenant_admin_with_password.g.dart';
 /// An administrator and, when this call created or re-issued their login's password, that password.
 ///
 /// Properties:
-/// * [personId] 
-/// * [givenName] 
-/// * [familyName] 
-/// * [email] 
-/// * [invitationStatus] 
-/// * [temporaryPasswordStatus] 
+/// * [personId]
+/// * [givenName]
+/// * [familyName]
+/// * [email]
+/// * [invitationStatus]
+/// * [temporaryPasswordStatus]
 /// * [otherRoles] - The person's tenant roles besides ADMIN (removing the administrator keeps these).
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
 @BuiltValue()
-abstract class TenantAdminWithPassword implements Built<TenantAdminWithPassword, TenantAdminWithPasswordBuilder> {
+abstract class TenantAdminWithPassword
+    implements Built<TenantAdminWithPassword, TenantAdminWithPasswordBuilder> {
   @BuiltValueField(wireName: r'personId')
   String get personId;
 
@@ -49,24 +50,31 @@ abstract class TenantAdminWithPassword implements Built<TenantAdminWithPassword,
   @BuiltValueField(wireName: r'otherRoles')
   BuiltSet<TenantRole> get otherRoles;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
   TenantAdminWithPassword._();
 
-  factory TenantAdminWithPassword([void updates(TenantAdminWithPasswordBuilder b)]) = _$TenantAdminWithPassword;
+  factory TenantAdminWithPassword(
+          [void updates(TenantAdminWithPasswordBuilder b)]) =
+      _$TenantAdminWithPassword;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TenantAdminWithPasswordBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantAdminWithPassword> get serializer => _$TenantAdminWithPasswordSerializer();
+  static Serializer<TenantAdminWithPassword> get serializer =>
+      _$TenantAdminWithPasswordSerializer();
 }
 
-class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantAdminWithPassword> {
+class _$TenantAdminWithPasswordSerializer
+    implements PrimitiveSerializer<TenantAdminWithPassword> {
   @override
-  final Iterable<Type> types = const [TenantAdminWithPassword, _$TenantAdminWithPassword];
+  final Iterable<Type> types = const [
+    TenantAdminWithPassword,
+    _$TenantAdminWithPassword
+  ];
 
   @override
   final String wireName = r'TenantAdminWithPassword';
@@ -128,7 +136,9 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
     TenantAdminWithPassword object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -229,5 +239,3 @@ class _$TenantAdminWithPasswordSerializer implements PrimitiveSerializer<TenantA
     return result.build();
   }
 }
-
-

@@ -14,11 +14,12 @@ part 'team_staff_member.g.dart';
 /// TeamStaffMember
 ///
 /// Properties:
-/// * [person] 
-/// * [role] 
-/// * [since] 
+/// * [person]
+/// * [role]
+/// * [since]
 @BuiltValue()
-abstract class TeamStaffMember implements Built<TeamStaffMember, TeamStaffMemberBuilder> {
+abstract class TeamStaffMember
+    implements Built<TeamStaffMember, TeamStaffMemberBuilder> {
   @BuiltValueField(wireName: r'person')
   PersonRef get person;
 
@@ -31,16 +32,19 @@ abstract class TeamStaffMember implements Built<TeamStaffMember, TeamStaffMember
 
   TeamStaffMember._();
 
-  factory TeamStaffMember([void updates(TeamStaffMemberBuilder b)]) = _$TeamStaffMember;
+  factory TeamStaffMember([void updates(TeamStaffMemberBuilder b)]) =
+      _$TeamStaffMember;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TeamStaffMemberBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TeamStaffMember> get serializer => _$TeamStaffMemberSerializer();
+  static Serializer<TeamStaffMember> get serializer =>
+      _$TeamStaffMemberSerializer();
 }
 
-class _$TeamStaffMemberSerializer implements PrimitiveSerializer<TeamStaffMember> {
+class _$TeamStaffMemberSerializer
+    implements PrimitiveSerializer<TeamStaffMember> {
   @override
   final Iterable<Type> types = const [TeamStaffMember, _$TeamStaffMember];
 
@@ -75,7 +79,9 @@ class _$TeamStaffMemberSerializer implements PrimitiveSerializer<TeamStaffMember
     TeamStaffMember object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -139,5 +145,3 @@ class _$TeamStaffMemberSerializer implements PrimitiveSerializer<TeamStaffMember
     return result.build();
   }
 }
-
-

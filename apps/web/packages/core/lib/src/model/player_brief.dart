@@ -14,11 +14,11 @@ part 'player_brief.g.dart';
 /// Minimal player information for other services (age/gender for norms, names for denormalisation).
 ///
 /// Properties:
-/// * [id] 
-/// * [displayName] 
-/// * [birthDate] 
-/// * [gender] 
-/// * [status] 
+/// * [id]
+/// * [displayName]
+/// * [birthDate]
+/// * [gender]
+/// * [status]
 @BuiltValue()
 abstract class PlayerBrief implements Built<PlayerBrief, PlayerBriefBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -94,7 +94,9 @@ class _$PlayerBriefSerializer implements PrimitiveSerializer<PlayerBrief> {
     PlayerBrief object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -172,5 +174,3 @@ class _$PlayerBriefSerializer implements PrimitiveSerializer<PlayerBrief> {
     return result.build();
   }
 }
-
-

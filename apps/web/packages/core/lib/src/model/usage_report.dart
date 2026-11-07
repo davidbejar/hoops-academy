@@ -9,14 +9,14 @@ import 'package:built_value/serializer.dart';
 
 part 'usage_report.g.dart';
 
-/// Usage counters of one service for one tenant (platform statistics and future billing). Counters by service: core — `members`, `membersAdmin`, `membersCoach`, `membersAssistantCoach`, `membersParent`, `membersPlayer`, `players`, `activePlayers`, `playersPendingApproval`, `playersOrphan`, `playersWithdrawn`, `playersRejected`, `pendingApprovals`, `teams`, `seasons`; game — `matches`, `scheduledMatches`, `liveMatches`, `finishedMatches`, `cancelledMatches`, `matchEvents`, `matchEventsLast30Days`; athlete — `trainingSchedules`, `trainingSessions`, `attendanceRecords`, `plannedAbsences`, `trainingPlans`, `planAssignments`, `physicalTestResults`, `injuries`, `bodyMeasurements`. Counters are additive: new keys may appear at any time. A tenant a service has no data for (including a tenant id it has never seen) is answered with 200 and zero counters: services cannot tell \"unknown\" from \"empty\", so `/internal/usage/{tenantId}` never answers 404 for an unknown tenant. 
+/// Usage counters of one service for one tenant (platform statistics and future billing). Counters by service: core — `members`, `membersAdmin`, `membersCoach`, `membersAssistantCoach`, `membersParent`, `membersPlayer`, `players`, `activePlayers`, `playersPendingApproval`, `playersOrphan`, `playersWithdrawn`, `playersRejected`, `pendingApprovals`, `teams`, `seasons`; game — `matches`, `scheduledMatches`, `liveMatches`, `finishedMatches`, `cancelledMatches`, `matchEvents`, `matchEventsLast30Days`; athlete — `trainingSchedules`, `trainingSessions`, `attendanceRecords`, `plannedAbsences`, `trainingPlans`, `planAssignments`, `physicalTestResults`, `injuries`, `bodyMeasurements`. Counters are additive: new keys may appear at any time. A tenant a service has no data for (including a tenant id it has never seen) is answered with 200 and zero counters: services cannot tell \"unknown\" from \"empty\", so `/internal/usage/{tenantId}` never answers 404 for an unknown tenant.
 ///
 /// Properties:
-/// * [tenantId] 
-/// * [service] 
-/// * [collectedAt] 
-/// * [lastActivityAt] 
-/// * [counters] 
+/// * [tenantId]
+/// * [service]
+/// * [collectedAt]
+/// * [lastActivityAt]
+/// * [counters]
 @BuiltValue()
 abstract class UsageReport implements Built<UsageReport, UsageReportBuilder> {
   @BuiltValueField(wireName: r'tenantId')
@@ -83,7 +83,8 @@ class _$UsageReportSerializer implements PrimitiveSerializer<UsageReport> {
     yield r'counters';
     yield serializers.serialize(
       object.counters,
-      specifiedType: const FullType(BuiltMap, [FullType(String), FullType(int)]),
+      specifiedType:
+          const FullType(BuiltMap, [FullType(String), FullType(int)]),
     );
   }
 
@@ -93,7 +94,9 @@ class _$UsageReportSerializer implements PrimitiveSerializer<UsageReport> {
     UsageReport object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -140,7 +143,8 @@ class _$UsageReportSerializer implements PrimitiveSerializer<UsageReport> {
         case r'counters':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltMap, [FullType(String), FullType(int)]),
+            specifiedType:
+                const FullType(BuiltMap, [FullType(String), FullType(int)]),
           ) as BuiltMap<String, int>;
           result.counters.replace(valueDes);
           break;
@@ -173,23 +177,25 @@ class _$UsageReportSerializer implements PrimitiveSerializer<UsageReport> {
   }
 }
 
-
 class UsageReportServiceEnum extends EnumClass {
-
   @BuiltValueEnumConst(wireName: r'core')
   static const UsageReportServiceEnum core = _$usageReportServiceEnum_core;
   @BuiltValueEnumConst(wireName: r'game')
   static const UsageReportServiceEnum game = _$usageReportServiceEnum_game;
   @BuiltValueEnumConst(wireName: r'athlete')
-  static const UsageReportServiceEnum athlete = _$usageReportServiceEnum_athlete;
+  static const UsageReportServiceEnum athlete =
+      _$usageReportServiceEnum_athlete;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const UsageReportServiceEnum unknownDefaultOpenApi = _$usageReportServiceEnum_unknownDefaultOpenApi;
+  static const UsageReportServiceEnum unknownDefaultOpenApi =
+      _$usageReportServiceEnum_unknownDefaultOpenApi;
 
-  static Serializer<UsageReportServiceEnum> get serializer => _$usageReportServiceEnumSerializer;
+  static Serializer<UsageReportServiceEnum> get serializer =>
+      _$usageReportServiceEnumSerializer;
 
-  const UsageReportServiceEnum._(String name): super(name);
+  const UsageReportServiceEnum._(String name) : super(name);
 
-  static BuiltSet<UsageReportServiceEnum> get values => _$usageReportServiceEnumValues;
-  static UsageReportServiceEnum valueOf(String name) => _$usageReportServiceEnumValueOf(name);
+  static BuiltSet<UsageReportServiceEnum> get values =>
+      _$usageReportServiceEnumValues;
+  static UsageReportServiceEnum valueOf(String name) =>
+      _$usageReportServiceEnumValueOf(name);
 }
-

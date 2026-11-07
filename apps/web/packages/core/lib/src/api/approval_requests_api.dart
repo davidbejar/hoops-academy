@@ -19,7 +19,6 @@ import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/reject_approval_request.dart';
 
 class ApprovalRequestsApi {
-
   final Dio _dio;
 
   final Serializers _serializers;
@@ -27,12 +26,12 @@ class ApprovalRequestsApi {
   const ApprovalRequestsApi(this._dio, this._serializers);
 
   /// Approve a pending request
-  /// Executes the action. ADD_PLAYER activates the player and applies the optional team assignment through the eligibility-checked command — if that is INELIGIBLE the answer is 422 and the request stays PENDING. A requested player with an e-mail and no login gets one: a new login&#39;s temporary password is returned once in &#x60;temporaryPassword&#x60; (502 when Keycloak fails — the request stays PENDING). Only PENDING requests can be decided (409 &#x60;NOT_PENDING&#x60;). Authz: ADMIN. 
+  /// Executes the action. ADD_PLAYER activates the player and applies the optional team assignment through the eligibility-checked command — if that is INELIGIBLE the answer is 422 and the request stays PENDING. A requested player with an e-mail and no login gets one: a new login&#39;s temporary password is returned once in &#x60;temporaryPassword&#x60; (502 when Keycloak fails — the request stays PENDING). Only PENDING requests can be decided (409 &#x60;NOT_PENDING&#x60;). Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [approvalRequestId] 
-  /// * [approvalDecisionRequest] 
+  /// * [approvalRequestId]
+  /// * [approvalDecisionRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -42,7 +41,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequestWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequestWithPassword>> approveApprovalRequest({ 
+  Future<Response<ApprovalRequestWithPassword>> approveApprovalRequest({
     required String xTenantId,
     required String approvalRequestId,
     ApprovalDecisionRequest? approvalDecisionRequest,
@@ -53,7 +52,12 @@ class ApprovalRequestsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/approval-requests/{approvalRequestId}/approve'.replaceAll('{' r'approvalRequestId' '}', encodeQueryParameter(_serializers, approvalRequestId, const FullType(String)).toString());
+    final _path = r'/api/core/approval-requests/{approvalRequestId}/approve'
+        .replaceAll(
+            '{' r'approvalRequestId' '}',
+            encodeQueryParameter(
+                    _serializers, approvalRequestId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'POST',
       headers: <String, dynamic>{
@@ -78,11 +82,13 @@ class ApprovalRequestsApi {
 
     try {
       const _type = FullType(ApprovalDecisionRequest);
-      _bodyData = approvalDecisionRequest == null ? null : _serializers.serialize(approvalDecisionRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData = approvalDecisionRequest == null
+          ? null
+          : _serializers.serialize(approvalDecisionRequest,
+              specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -105,11 +111,12 @@ class ApprovalRequestsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(ApprovalRequestWithPassword),
-      ) as ApprovalRequestWithPassword;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(ApprovalRequestWithPassword),
+            ) as ApprovalRequestWithPassword;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -137,7 +144,7 @@ class ApprovalRequestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [approvalRequestId] 
+  /// * [approvalRequestId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -147,7 +154,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequest] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequest>> cancelApprovalRequest({ 
+  Future<Response<ApprovalRequest>> cancelApprovalRequest({
     required String xTenantId,
     required String approvalRequestId,
     CancelToken? cancelToken,
@@ -157,7 +164,12 @@ class ApprovalRequestsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/approval-requests/{approvalRequestId}/cancel'.replaceAll('{' r'approvalRequestId' '}', encodeQueryParameter(_serializers, approvalRequestId, const FullType(String)).toString());
+    final _path = r'/api/core/approval-requests/{approvalRequestId}/cancel'
+        .replaceAll(
+            '{' r'approvalRequestId' '}',
+            encodeQueryParameter(
+                    _serializers, approvalRequestId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'POST',
       headers: <String, dynamic>{
@@ -189,11 +201,12 @@ class ApprovalRequestsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(ApprovalRequest),
-      ) as ApprovalRequest;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(ApprovalRequest),
+            ) as ApprovalRequest;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -221,7 +234,7 @@ class ApprovalRequestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [approvalRequestId] 
+  /// * [approvalRequestId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -231,7 +244,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequest] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequest>> getApprovalRequest({ 
+  Future<Response<ApprovalRequest>> getApprovalRequest({
     required String xTenantId,
     required String approvalRequestId,
     CancelToken? cancelToken,
@@ -241,7 +254,11 @@ class ApprovalRequestsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/approval-requests/{approvalRequestId}'.replaceAll('{' r'approvalRequestId' '}', encodeQueryParameter(_serializers, approvalRequestId, const FullType(String)).toString());
+    final _path = r'/api/core/approval-requests/{approvalRequestId}'.replaceAll(
+        '{' r'approvalRequestId' '}',
+        encodeQueryParameter(
+                _serializers, approvalRequestId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -273,11 +290,12 @@ class ApprovalRequestsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(ApprovalRequest),
-      ) as ApprovalRequest;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(ApprovalRequest),
+            ) as ApprovalRequest;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -305,9 +323,9 @@ class ApprovalRequestsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [status] 
-  /// * [action] 
-  /// * [playerId] 
+  /// * [status]
+  /// * [action]
+  /// * [playerId]
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -319,7 +337,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequestPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequestPage>> listApprovalRequests({ 
+  Future<Response<ApprovalRequestPage>> listApprovalRequests({
     required String xTenantId,
     ApprovalStatus? status,
     ApprovalAction? action,
@@ -354,11 +372,19 @@ class ApprovalRequestsApi {
     );
 
     final _queryParameters = <String, dynamic>{
-      if (status != null) r'status': encodeQueryParameter(_serializers, status, const FullType(ApprovalStatus)),
-      if (action != null) r'action': encodeQueryParameter(_serializers, action, const FullType(ApprovalAction)),
-      if (playerId != null) r'playerId': encodeQueryParameter(_serializers, playerId, const FullType(String)),
-      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
-      if (size != null) r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
+      if (status != null)
+        r'status': encodeQueryParameter(
+            _serializers, status, const FullType(ApprovalStatus)),
+      if (action != null)
+        r'action': encodeQueryParameter(
+            _serializers, action, const FullType(ApprovalAction)),
+      if (playerId != null)
+        r'playerId': encodeQueryParameter(
+            _serializers, playerId, const FullType(String)),
+      if (page != null)
+        r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
+      if (size != null)
+        r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(
@@ -374,11 +400,12 @@ class ApprovalRequestsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(ApprovalRequestPage),
-      ) as ApprovalRequestPage;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(ApprovalRequestPage),
+            ) as ApprovalRequestPage;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -402,12 +429,12 @@ class ApprovalRequestsApi {
   }
 
   /// Reject a pending request
-  /// A rejected ADD_PLAYER leaves the pending player REJECTED; a rejected WITHDRAW_PLAYER leaves the player as it was. The reason (&#x60;note&#x60;) is required and shown to the requesting coach. Only PENDING requests can be decided (409). Authz: ADMIN. 
+  /// A rejected ADD_PLAYER leaves the pending player REJECTED; a rejected WITHDRAW_PLAYER leaves the player as it was. The reason (&#x60;note&#x60;) is required and shown to the requesting coach. Only PENDING requests can be decided (409). Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [approvalRequestId] 
-  /// * [rejectApprovalRequest] 
+  /// * [approvalRequestId]
+  /// * [rejectApprovalRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -417,7 +444,7 @@ class ApprovalRequestsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ApprovalRequest] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ApprovalRequest>> rejectApprovalRequest({ 
+  Future<Response<ApprovalRequest>> rejectApprovalRequest({
     required String xTenantId,
     required String approvalRequestId,
     required RejectApprovalRequest rejectApprovalRequest,
@@ -428,7 +455,12 @@ class ApprovalRequestsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/approval-requests/{approvalRequestId}/reject'.replaceAll('{' r'approvalRequestId' '}', encodeQueryParameter(_serializers, approvalRequestId, const FullType(String)).toString());
+    final _path = r'/api/core/approval-requests/{approvalRequestId}/reject'
+        .replaceAll(
+            '{' r'approvalRequestId' '}',
+            encodeQueryParameter(
+                    _serializers, approvalRequestId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'POST',
       headers: <String, dynamic>{
@@ -453,11 +485,11 @@ class ApprovalRequestsApi {
 
     try {
       const _type = FullType(RejectApprovalRequest);
-      _bodyData = _serializers.serialize(rejectApprovalRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData =
+          _serializers.serialize(rejectApprovalRequest, specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -480,11 +512,12 @@ class ApprovalRequestsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(ApprovalRequest),
-      ) as ApprovalRequest;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(ApprovalRequest),
+            ) as ApprovalRequest;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -506,5 +539,4 @@ class ApprovalRequestsApi {
       extra: _response.extra,
     );
   }
-
 }

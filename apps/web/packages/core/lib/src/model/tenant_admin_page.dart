@@ -14,10 +14,11 @@ part 'tenant_admin_page.g.dart';
 /// TenantAdminPage
 ///
 /// Properties:
-/// * [items] 
-/// * [page] 
+/// * [items]
+/// * [page]
 @BuiltValue()
-abstract class TenantAdminPage implements Built<TenantAdminPage, TenantAdminPageBuilder> {
+abstract class TenantAdminPage
+    implements Built<TenantAdminPage, TenantAdminPageBuilder> {
   @BuiltValueField(wireName: r'items')
   BuiltList<TenantAdmin> get items;
 
@@ -26,16 +27,19 @@ abstract class TenantAdminPage implements Built<TenantAdminPage, TenantAdminPage
 
   TenantAdminPage._();
 
-  factory TenantAdminPage([void updates(TenantAdminPageBuilder b)]) = _$TenantAdminPage;
+  factory TenantAdminPage([void updates(TenantAdminPageBuilder b)]) =
+      _$TenantAdminPage;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TenantAdminPageBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantAdminPage> get serializer => _$TenantAdminPageSerializer();
+  static Serializer<TenantAdminPage> get serializer =>
+      _$TenantAdminPageSerializer();
 }
 
-class _$TenantAdminPageSerializer implements PrimitiveSerializer<TenantAdminPage> {
+class _$TenantAdminPageSerializer
+    implements PrimitiveSerializer<TenantAdminPage> {
   @override
   final Iterable<Type> types = const [TenantAdminPage, _$TenantAdminPage];
 
@@ -65,7 +69,9 @@ class _$TenantAdminPageSerializer implements PrimitiveSerializer<TenantAdminPage
     TenantAdminPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -122,5 +128,3 @@ class _$TenantAdminPageSerializer implements PrimitiveSerializer<TenantAdminPage
     return result.build();
   }
 }
-
-

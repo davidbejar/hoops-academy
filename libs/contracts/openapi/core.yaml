@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 3.0.0
+  version: 3.1.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 

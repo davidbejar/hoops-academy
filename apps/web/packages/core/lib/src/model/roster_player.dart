@@ -14,14 +14,15 @@ part 'roster_player.g.dart';
 /// RosterPlayer
 ///
 /// Properties:
-/// * [playerId] 
-/// * [displayName] 
+/// * [playerId]
+/// * [displayName]
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
-/// * [birthDate] 
-/// * [gender] 
-/// * [status] 
+/// * [birthDate]
+/// * [gender]
+/// * [status]
 @BuiltValue()
-abstract class RosterPlayer implements Built<RosterPlayer, RosterPlayerBuilder> {
+abstract class RosterPlayer
+    implements Built<RosterPlayer, RosterPlayerBuilder> {
   @BuiltValueField(wireName: r'playerId')
   String get playerId;
 
@@ -106,7 +107,9 @@ class _$RosterPlayerSerializer implements PrimitiveSerializer<RosterPlayer> {
     RosterPlayer object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -192,5 +195,3 @@ class _$RosterPlayerSerializer implements PrimitiveSerializer<RosterPlayer> {
     return result.build();
   }
 }
-
-

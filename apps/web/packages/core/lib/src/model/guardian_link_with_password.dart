@@ -13,13 +13,15 @@ part 'guardian_link_with_password.g.dart';
 /// A guardian link and, when this call created the guardian's login, its temporary password.
 ///
 /// Properties:
-/// * [id] 
-/// * [guardian] 
-/// * [player] 
-/// * [createdAt] 
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
+/// * [id]
+/// * [guardian]
+/// * [player]
+/// * [createdAt]
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
 @BuiltValue()
-abstract class GuardianLinkWithPassword implements Built<GuardianLinkWithPassword, GuardianLinkWithPasswordBuilder> {
+abstract class GuardianLinkWithPassword
+    implements
+        Built<GuardianLinkWithPassword, GuardianLinkWithPasswordBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -32,24 +34,31 @@ abstract class GuardianLinkWithPassword implements Built<GuardianLinkWithPasswor
   @BuiltValueField(wireName: r'createdAt')
   DateTime get createdAt;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
   GuardianLinkWithPassword._();
 
-  factory GuardianLinkWithPassword([void updates(GuardianLinkWithPasswordBuilder b)]) = _$GuardianLinkWithPassword;
+  factory GuardianLinkWithPassword(
+          [void updates(GuardianLinkWithPasswordBuilder b)]) =
+      _$GuardianLinkWithPassword;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(GuardianLinkWithPasswordBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<GuardianLinkWithPassword> get serializer => _$GuardianLinkWithPasswordSerializer();
+  static Serializer<GuardianLinkWithPassword> get serializer =>
+      _$GuardianLinkWithPasswordSerializer();
 }
 
-class _$GuardianLinkWithPasswordSerializer implements PrimitiveSerializer<GuardianLinkWithPassword> {
+class _$GuardianLinkWithPasswordSerializer
+    implements PrimitiveSerializer<GuardianLinkWithPassword> {
   @override
-  final Iterable<Type> types = const [GuardianLinkWithPassword, _$GuardianLinkWithPassword];
+  final Iterable<Type> types = const [
+    GuardianLinkWithPassword,
+    _$GuardianLinkWithPassword
+  ];
 
   @override
   final String wireName = r'GuardianLinkWithPassword';
@@ -94,7 +103,9 @@ class _$GuardianLinkWithPasswordSerializer implements PrimitiveSerializer<Guardi
     GuardianLinkWithPassword object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -173,5 +184,3 @@ class _$GuardianLinkWithPasswordSerializer implements PrimitiveSerializer<Guardi
     return result.build();
   }
 }
-
-

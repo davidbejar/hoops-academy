@@ -57,6 +57,8 @@ export 'package:hoops_core_api/src/model/eligibility_check.dart';
 export 'package:hoops_core_api/src/model/eligibility_reason.dart';
 export 'package:hoops_core_api/src/model/eligibility_result.dart';
 export 'package:hoops_core_api/src/model/eligible_team.dart';
+export 'package:hoops_core_api/src/model/event_backfill.dart';
+export 'package:hoops_core_api/src/model/event_backfill_request.dart';
 export 'package:hoops_core_api/src/model/first_admin.dart';
 export 'package:hoops_core_api/src/model/gender.dart';
 export 'package:hoops_core_api/src/model/gender_policy.dart';
@@ -132,4 +134,3 @@ export 'package:hoops_core_api/src/model/update_tenant_profile_request.dart';
 export 'package:hoops_core_api/src/model/update_tenant_request.dart';
 export 'package:hoops_core_api/src/model/usage_report.dart';
 export 'package:hoops_core_api/src/model/withdraw_player_request.dart';
-

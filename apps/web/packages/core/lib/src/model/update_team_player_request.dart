@@ -15,7 +15,8 @@ part 'update_team_player_request.g.dart';
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
 /// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
-abstract class UpdateTeamPlayerRequest implements Built<UpdateTeamPlayerRequest, UpdateTeamPlayerRequestBuilder> {
+abstract class UpdateTeamPlayerRequest
+    implements Built<UpdateTeamPlayerRequest, UpdateTeamPlayerRequestBuilder> {
   /// Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
   @BuiltValueField(wireName: r'jerseyNumber')
   String? get jerseyNumber;
@@ -27,18 +28,25 @@ abstract class UpdateTeamPlayerRequest implements Built<UpdateTeamPlayerRequest,
 
   UpdateTeamPlayerRequest._();
 
-  factory UpdateTeamPlayerRequest([void updates(UpdateTeamPlayerRequestBuilder b)]) = _$UpdateTeamPlayerRequest;
+  factory UpdateTeamPlayerRequest(
+          [void updates(UpdateTeamPlayerRequestBuilder b)]) =
+      _$UpdateTeamPlayerRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateTeamPlayerRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateTeamPlayerRequest> get serializer => _$UpdateTeamPlayerRequestSerializer();
+  static Serializer<UpdateTeamPlayerRequest> get serializer =>
+      _$UpdateTeamPlayerRequestSerializer();
 }
 
-class _$UpdateTeamPlayerRequestSerializer implements PrimitiveSerializer<UpdateTeamPlayerRequest> {
+class _$UpdateTeamPlayerRequestSerializer
+    implements PrimitiveSerializer<UpdateTeamPlayerRequest> {
   @override
-  final Iterable<Type> types = const [UpdateTeamPlayerRequest, _$UpdateTeamPlayerRequest];
+  final Iterable<Type> types = const [
+    UpdateTeamPlayerRequest,
+    _$UpdateTeamPlayerRequest
+  ];
 
   @override
   final String wireName = r'UpdateTeamPlayerRequest';
@@ -59,7 +67,8 @@ class _$UpdateTeamPlayerRequestSerializer implements PrimitiveSerializer<UpdateT
       yield r'clear';
       yield serializers.serialize(
         object.clear,
-        specifiedType: const FullType(BuiltSet, [FullType(UpdateTeamPlayerRequestClearEnum)]),
+        specifiedType: const FullType(
+            BuiltSet, [FullType(UpdateTeamPlayerRequestClearEnum)]),
       );
     }
   }
@@ -70,7 +79,9 @@ class _$UpdateTeamPlayerRequestSerializer implements PrimitiveSerializer<UpdateT
     UpdateTeamPlayerRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -96,7 +107,8 @@ class _$UpdateTeamPlayerRequestSerializer implements PrimitiveSerializer<UpdateT
         case r'clear':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTeamPlayerRequestClearEnum)]),
+            specifiedType: const FullType.nullable(
+                BuiltSet, [FullType(UpdateTeamPlayerRequestClearEnum)]),
           ) as BuiltSet<UpdateTeamPlayerRequestClearEnum>?;
           if (valueDes == null) continue;
           result.clear.replace(valueDes);
@@ -130,19 +142,21 @@ class _$UpdateTeamPlayerRequestSerializer implements PrimitiveSerializer<UpdateT
   }
 }
 
-
 class UpdateTeamPlayerRequestClearEnum extends EnumClass {
-
   @BuiltValueEnumConst(wireName: r'jerseyNumber')
-  static const UpdateTeamPlayerRequestClearEnum jerseyNumber = _$updateTeamPlayerRequestClearEnum_jerseyNumber;
+  static const UpdateTeamPlayerRequestClearEnum jerseyNumber =
+      _$updateTeamPlayerRequestClearEnum_jerseyNumber;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const UpdateTeamPlayerRequestClearEnum unknownDefaultOpenApi = _$updateTeamPlayerRequestClearEnum_unknownDefaultOpenApi;
+  static const UpdateTeamPlayerRequestClearEnum unknownDefaultOpenApi =
+      _$updateTeamPlayerRequestClearEnum_unknownDefaultOpenApi;
 
-  static Serializer<UpdateTeamPlayerRequestClearEnum> get serializer => _$updateTeamPlayerRequestClearEnumSerializer;
+  static Serializer<UpdateTeamPlayerRequestClearEnum> get serializer =>
+      _$updateTeamPlayerRequestClearEnumSerializer;
 
-  const UpdateTeamPlayerRequestClearEnum._(String name): super(name);
+  const UpdateTeamPlayerRequestClearEnum._(String name) : super(name);
 
-  static BuiltSet<UpdateTeamPlayerRequestClearEnum> get values => _$updateTeamPlayerRequestClearEnumValues;
-  static UpdateTeamPlayerRequestClearEnum valueOf(String name) => _$updateTeamPlayerRequestClearEnumValueOf(name);
+  static BuiltSet<UpdateTeamPlayerRequestClearEnum> get values =>
+      _$updateTeamPlayerRequestClearEnumValues;
+  static UpdateTeamPlayerRequestClearEnum valueOf(String name) =>
+      _$updateTeamPlayerRequestClearEnumValueOf(name);
 }
-

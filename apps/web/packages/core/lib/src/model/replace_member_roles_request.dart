@@ -13,26 +13,35 @@ part 'replace_member_roles_request.g.dart';
 /// ReplaceMemberRolesRequest
 ///
 /// Properties:
-/// * [roles] 
+/// * [roles]
 @BuiltValue()
-abstract class ReplaceMemberRolesRequest implements Built<ReplaceMemberRolesRequest, ReplaceMemberRolesRequestBuilder> {
+abstract class ReplaceMemberRolesRequest
+    implements
+        Built<ReplaceMemberRolesRequest, ReplaceMemberRolesRequestBuilder> {
   @BuiltValueField(wireName: r'roles')
   BuiltSet<TenantRole> get roles;
 
   ReplaceMemberRolesRequest._();
 
-  factory ReplaceMemberRolesRequest([void updates(ReplaceMemberRolesRequestBuilder b)]) = _$ReplaceMemberRolesRequest;
+  factory ReplaceMemberRolesRequest(
+          [void updates(ReplaceMemberRolesRequestBuilder b)]) =
+      _$ReplaceMemberRolesRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(ReplaceMemberRolesRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<ReplaceMemberRolesRequest> get serializer => _$ReplaceMemberRolesRequestSerializer();
+  static Serializer<ReplaceMemberRolesRequest> get serializer =>
+      _$ReplaceMemberRolesRequestSerializer();
 }
 
-class _$ReplaceMemberRolesRequestSerializer implements PrimitiveSerializer<ReplaceMemberRolesRequest> {
+class _$ReplaceMemberRolesRequestSerializer
+    implements PrimitiveSerializer<ReplaceMemberRolesRequest> {
   @override
-  final Iterable<Type> types = const [ReplaceMemberRolesRequest, _$ReplaceMemberRolesRequest];
+  final Iterable<Type> types = const [
+    ReplaceMemberRolesRequest,
+    _$ReplaceMemberRolesRequest
+  ];
 
   @override
   final String wireName = r'ReplaceMemberRolesRequest';
@@ -55,7 +64,9 @@ class _$ReplaceMemberRolesRequestSerializer implements PrimitiveSerializer<Repla
     ReplaceMemberRolesRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -105,5 +116,3 @@ class _$ReplaceMemberRolesRequestSerializer implements PrimitiveSerializer<Repla
     return result.build();
   }
 }
-
-

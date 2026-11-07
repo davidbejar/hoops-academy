@@ -9,9 +9,8 @@ import 'package:built_value/serializer.dart';
 
 part 'age_rule.g.dart';
 
-/// BIRTH_YEAR (default): age = season reference year − birth year. BIRTHDAY: actual age on the evaluation date. 
+/// BIRTH_YEAR (default): age = season reference year − birth year. BIRTHDAY: actual age on the evaluation date.
 class AgeRule extends EnumClass {
-
   @BuiltValueEnumConst(wireName: r'BIRTH_YEAR')
   static const AgeRule BIRTH_YEAR = _$BIRTH_YEAR;
   @BuiltValueEnumConst(wireName: r'BIRTHDAY')
@@ -21,7 +20,7 @@ class AgeRule extends EnumClass {
 
   static Serializer<AgeRule> get serializer => _$ageRuleSerializer;
 
-  const AgeRule._(String name): super(name);
+  const AgeRule._(String name) : super(name);
 
   static BuiltSet<AgeRule> get values => _$values;
   static AgeRule valueOf(String name) => _$valueOf(name);
@@ -34,4 +33,3 @@ class AgeRule extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class AgeRuleMixin = Object with _$AgeRuleMixin;
-

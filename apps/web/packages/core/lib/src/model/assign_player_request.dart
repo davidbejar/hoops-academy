@@ -12,11 +12,12 @@ part 'assign_player_request.g.dart';
 /// AssignPlayerRequest
 ///
 /// Properties:
-/// * [playerId] 
+/// * [playerId]
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
 /// * [joinedOn] - Defaults to today (tenant time zone).
 @BuiltValue()
-abstract class AssignPlayerRequest implements Built<AssignPlayerRequest, AssignPlayerRequestBuilder> {
+abstract class AssignPlayerRequest
+    implements Built<AssignPlayerRequest, AssignPlayerRequestBuilder> {
   @BuiltValueField(wireName: r'playerId')
   String get playerId;
 
@@ -30,18 +31,24 @@ abstract class AssignPlayerRequest implements Built<AssignPlayerRequest, AssignP
 
   AssignPlayerRequest._();
 
-  factory AssignPlayerRequest([void updates(AssignPlayerRequestBuilder b)]) = _$AssignPlayerRequest;
+  factory AssignPlayerRequest([void updates(AssignPlayerRequestBuilder b)]) =
+      _$AssignPlayerRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(AssignPlayerRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AssignPlayerRequest> get serializer => _$AssignPlayerRequestSerializer();
+  static Serializer<AssignPlayerRequest> get serializer =>
+      _$AssignPlayerRequestSerializer();
 }
 
-class _$AssignPlayerRequestSerializer implements PrimitiveSerializer<AssignPlayerRequest> {
+class _$AssignPlayerRequestSerializer
+    implements PrimitiveSerializer<AssignPlayerRequest> {
   @override
-  final Iterable<Type> types = const [AssignPlayerRequest, _$AssignPlayerRequest];
+  final Iterable<Type> types = const [
+    AssignPlayerRequest,
+    _$AssignPlayerRequest
+  ];
 
   @override
   final String wireName = r'AssignPlayerRequest';
@@ -78,7 +85,9 @@ class _$AssignPlayerRequestSerializer implements PrimitiveSerializer<AssignPlaye
     AssignPlayerRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -144,5 +153,3 @@ class _$AssignPlayerRequestSerializer implements PrimitiveSerializer<AssignPlaye
     return result.build();
   }
 }
-
-

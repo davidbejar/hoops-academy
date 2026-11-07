@@ -15,11 +15,12 @@ part 'tenant_usage_snapshot.g.dart';
 ///
 /// Properties:
 /// * [date] - UTC day of `collectedAt`.
-/// * [collectedAt] 
-/// * [services] 
+/// * [collectedAt]
+/// * [services]
 /// * [unavailableServices] - Non-empty for a partial snapshot.
 @BuiltValue()
-abstract class TenantUsageSnapshot implements Built<TenantUsageSnapshot, TenantUsageSnapshotBuilder> {
+abstract class TenantUsageSnapshot
+    implements Built<TenantUsageSnapshot, TenantUsageSnapshotBuilder> {
   /// UTC day of `collectedAt`.
   @BuiltValueField(wireName: r'date')
   Date get date;
@@ -37,18 +38,24 @@ abstract class TenantUsageSnapshot implements Built<TenantUsageSnapshot, TenantU
 
   TenantUsageSnapshot._();
 
-  factory TenantUsageSnapshot([void updates(TenantUsageSnapshotBuilder b)]) = _$TenantUsageSnapshot;
+  factory TenantUsageSnapshot([void updates(TenantUsageSnapshotBuilder b)]) =
+      _$TenantUsageSnapshot;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TenantUsageSnapshotBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantUsageSnapshot> get serializer => _$TenantUsageSnapshotSerializer();
+  static Serializer<TenantUsageSnapshot> get serializer =>
+      _$TenantUsageSnapshotSerializer();
 }
 
-class _$TenantUsageSnapshotSerializer implements PrimitiveSerializer<TenantUsageSnapshot> {
+class _$TenantUsageSnapshotSerializer
+    implements PrimitiveSerializer<TenantUsageSnapshot> {
   @override
-  final Iterable<Type> types = const [TenantUsageSnapshot, _$TenantUsageSnapshot];
+  final Iterable<Type> types = const [
+    TenantUsageSnapshot,
+    _$TenantUsageSnapshot
+  ];
 
   @override
   final String wireName = r'TenantUsageSnapshot';
@@ -76,7 +83,8 @@ class _$TenantUsageSnapshotSerializer implements PrimitiveSerializer<TenantUsage
     yield r'unavailableServices';
     yield serializers.serialize(
       object.unavailableServices,
-      specifiedType: const FullType(BuiltList, [FullType(TenantUsageSnapshotUnavailableServicesEnum)]),
+      specifiedType: const FullType(
+          BuiltList, [FullType(TenantUsageSnapshotUnavailableServicesEnum)]),
     );
   }
 
@@ -86,7 +94,9 @@ class _$TenantUsageSnapshotSerializer implements PrimitiveSerializer<TenantUsage
     TenantUsageSnapshot object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -125,7 +135,8 @@ class _$TenantUsageSnapshotSerializer implements PrimitiveSerializer<TenantUsage
         case r'unavailableServices':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(TenantUsageSnapshotUnavailableServicesEnum)]),
+            specifiedType: const FullType(BuiltList,
+                [FullType(TenantUsageSnapshotUnavailableServicesEnum)]),
           ) as BuiltList<TenantUsageSnapshotUnavailableServicesEnum>;
           result.unavailableServices.replace(valueDes);
           break;
@@ -158,23 +169,28 @@ class _$TenantUsageSnapshotSerializer implements PrimitiveSerializer<TenantUsage
   }
 }
 
-
 class TenantUsageSnapshotUnavailableServicesEnum extends EnumClass {
-
   @BuiltValueEnumConst(wireName: r'core')
-  static const TenantUsageSnapshotUnavailableServicesEnum core = _$tenantUsageSnapshotUnavailableServicesEnum_core;
+  static const TenantUsageSnapshotUnavailableServicesEnum core =
+      _$tenantUsageSnapshotUnavailableServicesEnum_core;
   @BuiltValueEnumConst(wireName: r'game')
-  static const TenantUsageSnapshotUnavailableServicesEnum game = _$tenantUsageSnapshotUnavailableServicesEnum_game;
+  static const TenantUsageSnapshotUnavailableServicesEnum game =
+      _$tenantUsageSnapshotUnavailableServicesEnum_game;
   @BuiltValueEnumConst(wireName: r'athlete')
-  static const TenantUsageSnapshotUnavailableServicesEnum athlete = _$tenantUsageSnapshotUnavailableServicesEnum_athlete;
+  static const TenantUsageSnapshotUnavailableServicesEnum athlete =
+      _$tenantUsageSnapshotUnavailableServicesEnum_athlete;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const TenantUsageSnapshotUnavailableServicesEnum unknownDefaultOpenApi = _$tenantUsageSnapshotUnavailableServicesEnum_unknownDefaultOpenApi;
+  static const TenantUsageSnapshotUnavailableServicesEnum
+      unknownDefaultOpenApi =
+      _$tenantUsageSnapshotUnavailableServicesEnum_unknownDefaultOpenApi;
 
-  static Serializer<TenantUsageSnapshotUnavailableServicesEnum> get serializer => _$tenantUsageSnapshotUnavailableServicesEnumSerializer;
+  static Serializer<TenantUsageSnapshotUnavailableServicesEnum>
+      get serializer => _$tenantUsageSnapshotUnavailableServicesEnumSerializer;
 
-  const TenantUsageSnapshotUnavailableServicesEnum._(String name): super(name);
+  const TenantUsageSnapshotUnavailableServicesEnum._(String name) : super(name);
 
-  static BuiltSet<TenantUsageSnapshotUnavailableServicesEnum> get values => _$tenantUsageSnapshotUnavailableServicesEnumValues;
-  static TenantUsageSnapshotUnavailableServicesEnum valueOf(String name) => _$tenantUsageSnapshotUnavailableServicesEnumValueOf(name);
+  static BuiltSet<TenantUsageSnapshotUnavailableServicesEnum> get values =>
+      _$tenantUsageSnapshotUnavailableServicesEnumValues;
+  static TenantUsageSnapshotUnavailableServicesEnum valueOf(String name) =>
+      _$tenantUsageSnapshotUnavailableServicesEnumValueOf(name);
 }
-

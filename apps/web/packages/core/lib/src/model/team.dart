@@ -13,12 +13,12 @@ part 'team.g.dart';
 /// Team
 ///
 /// Properties:
-/// * [id] 
-/// * [seasonId] 
-/// * [name] 
-/// * [alias] 
-/// * [ageCategory] 
-/// * [genderPolicy] 
+/// * [id]
+/// * [seasonId]
+/// * [name]
+/// * [alias]
+/// * [ageCategory]
+/// * [genderPolicy]
 /// * [playerCount] - Open, valid assignments.
 @BuiltValue()
 abstract class Team implements Built<Team, TeamBuilder> {
@@ -113,7 +113,9 @@ class _$TeamSerializer implements PrimitiveSerializer<Team> {
     Team object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -206,5 +208,3 @@ class _$TeamSerializer implements PrimitiveSerializer<Team> {
     return result.build();
   }
 }
-
-

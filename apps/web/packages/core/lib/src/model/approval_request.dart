@@ -16,18 +16,19 @@ part 'approval_request.g.dart';
 /// ApprovalRequest
 ///
 /// Properties:
-/// * [id] 
-/// * [action] 
-/// * [status] 
-/// * [player] 
-/// * [payload] 
-/// * [requestedBy] 
-/// * [requestedAt] 
-/// * [decidedBy] 
-/// * [decidedAt] 
-/// * [decisionNote] 
+/// * [id]
+/// * [action]
+/// * [status]
+/// * [player]
+/// * [payload]
+/// * [requestedBy]
+/// * [requestedAt]
+/// * [decidedBy]
+/// * [decidedAt]
+/// * [decisionNote]
 @BuiltValue()
-abstract class ApprovalRequest implements Built<ApprovalRequest, ApprovalRequestBuilder> {
+abstract class ApprovalRequest
+    implements Built<ApprovalRequest, ApprovalRequestBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -62,16 +63,19 @@ abstract class ApprovalRequest implements Built<ApprovalRequest, ApprovalRequest
 
   ApprovalRequest._();
 
-  factory ApprovalRequest([void updates(ApprovalRequestBuilder b)]) = _$ApprovalRequest;
+  factory ApprovalRequest([void updates(ApprovalRequestBuilder b)]) =
+      _$ApprovalRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(ApprovalRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<ApprovalRequest> get serializer => _$ApprovalRequestSerializer();
+  static Serializer<ApprovalRequest> get serializer =>
+      _$ApprovalRequestSerializer();
 }
 
-class _$ApprovalRequestSerializer implements PrimitiveSerializer<ApprovalRequest> {
+class _$ApprovalRequestSerializer
+    implements PrimitiveSerializer<ApprovalRequest> {
   @override
   final Iterable<Type> types = const [ApprovalRequest, _$ApprovalRequest];
 
@@ -147,7 +151,9 @@ class _$ApprovalRequestSerializer implements PrimitiveSerializer<ApprovalRequest
     ApprovalRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -263,5 +269,3 @@ class _$ApprovalRequestSerializer implements PrimitiveSerializer<ApprovalRequest
     return result.build();
   }
 }
-
-

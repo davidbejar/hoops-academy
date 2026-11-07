@@ -17,17 +17,17 @@ part 'player.g.dart';
 /// Player
 ///
 /// Properties:
-/// * [id] 
-/// * [personId] 
-/// * [givenName] 
-/// * [familyName] 
-/// * [displayName] 
-/// * [birthDate] 
-/// * [gender] 
-/// * [status] 
+/// * [id]
+/// * [personId]
+/// * [givenName]
+/// * [familyName]
+/// * [displayName]
+/// * [birthDate]
+/// * [gender]
+/// * [status]
 /// * [naturalCategory] - Lowest-ranked category the player qualifies for in the current season.
 /// * [teams] - Open assignments.
-/// * [createdAt] 
+/// * [createdAt]
 @BuiltValue()
 abstract class Player implements Built<Player, PlayerBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -140,7 +140,8 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
     yield r'teams';
     yield serializers.serialize(
       object.teams,
-      specifiedType: const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),
+      specifiedType:
+          const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),
     );
     yield r'createdAt';
     yield serializers.serialize(
@@ -155,7 +156,9 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
     Player object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -237,7 +240,8 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
         case r'teams':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),
+            specifiedType:
+                const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),
           ) as BuiltList<PlayerTeamAssignment>;
           result.teams.replace(valueDes);
           break;
@@ -276,5 +280,3 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
     return result.build();
   }
 }
-
-

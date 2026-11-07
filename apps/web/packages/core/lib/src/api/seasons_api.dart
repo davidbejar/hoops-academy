@@ -18,7 +18,6 @@ import 'package:hoops_core_api/src/model/season_rollover_result.dart';
 import 'package:hoops_core_api/src/model/update_season_request.dart';
 
 class SeasonsApi {
-
   final Dio _dio;
 
   final Serializers _serializers;
@@ -30,7 +29,7 @@ class SeasonsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [seasonInput] 
+  /// * [seasonInput]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -40,7 +39,7 @@ class SeasonsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Season] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Season>> createSeason({ 
+  Future<Response<Season>> createSeason({
     required String xTenantId,
     required SeasonInput seasonInput,
     CancelToken? cancelToken,
@@ -76,10 +75,9 @@ class SeasonsApi {
     try {
       const _type = FullType(SeasonInput);
       _bodyData = _serializers.serialize(seasonInput, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -102,11 +100,12 @@ class SeasonsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(Season),
-      ) as Season;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(Season),
+            ) as Season;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -134,7 +133,7 @@ class SeasonsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [seasonId] 
+  /// * [seasonId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -144,7 +143,7 @@ class SeasonsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Season] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Season>> getSeason({ 
+  Future<Response<Season>> getSeason({
     required String xTenantId,
     required String seasonId,
     CancelToken? cancelToken,
@@ -154,7 +153,10 @@ class SeasonsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/seasons/{seasonId}'.replaceAll('{' r'seasonId' '}', encodeQueryParameter(_serializers, seasonId, const FullType(String)).toString());
+    final _path = r'/api/core/seasons/{seasonId}'.replaceAll(
+        '{' r'seasonId' '}',
+        encodeQueryParameter(_serializers, seasonId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -186,11 +188,12 @@ class SeasonsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(Season),
-      ) as Season;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(Season),
+            ) as Season;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -227,7 +230,7 @@ class SeasonsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<Season>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<Season>>> listSeasons({ 
+  Future<Response<BuiltList<Season>>> listSeasons({
     required String xTenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -268,11 +271,12 @@ class SeasonsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(BuiltList, [FullType(Season)]),
-      ) as BuiltList<Season>;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(BuiltList, [FullType(Season)]),
+            ) as BuiltList<Season>;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -296,12 +300,12 @@ class SeasonsApi {
   }
 
   /// Roll teams over into this (new) season
-  /// &#x60;{seasonId}&#x60; is the target season. Clones the teams of &#x60;fromSeasonId&#x60; (name, alias, category, gender policy, staff) and their open player assignments, evaluates eligibility with the target season&#39;s &#x60;referenceYear&#x60;, invalidates assignments that no longer hold (never deletes) and opens eligibility cases. Returns the orphan list — under BIRTH_YEAR this is the real orphan generator. 409 when the target season already has teams. Authz: ADMIN. 
+  /// &#x60;{seasonId}&#x60; is the target season. Clones the teams of &#x60;fromSeasonId&#x60; (name, alias, category, gender policy, staff) and their open player assignments, evaluates eligibility with the target season&#39;s &#x60;referenceYear&#x60;, invalidates assignments that no longer hold (never deletes) and opens eligibility cases. Returns the orphan list — under BIRTH_YEAR this is the real orphan generator. 409 when the target season already has teams. Authz: ADMIN.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [seasonId] 
-  /// * [seasonRolloverRequest] 
+  /// * [seasonId]
+  /// * [seasonRolloverRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -311,7 +315,7 @@ class SeasonsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [SeasonRolloverResult] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<SeasonRolloverResult>> rolloverSeason({ 
+  Future<Response<SeasonRolloverResult>> rolloverSeason({
     required String xTenantId,
     required String seasonId,
     required SeasonRolloverRequest seasonRolloverRequest,
@@ -322,7 +326,10 @@ class SeasonsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/seasons/{seasonId}/rollover'.replaceAll('{' r'seasonId' '}', encodeQueryParameter(_serializers, seasonId, const FullType(String)).toString());
+    final _path = r'/api/core/seasons/{seasonId}/rollover'.replaceAll(
+        '{' r'seasonId' '}',
+        encodeQueryParameter(_serializers, seasonId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'POST',
       headers: <String, dynamic>{
@@ -347,11 +354,11 @@ class SeasonsApi {
 
     try {
       const _type = FullType(SeasonRolloverRequest);
-      _bodyData = _serializers.serialize(seasonRolloverRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData =
+          _serializers.serialize(seasonRolloverRequest, specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -374,11 +381,12 @@ class SeasonsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(SeasonRolloverResult),
-      ) as SeasonRolloverResult;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(SeasonRolloverResult),
+            ) as SeasonRolloverResult;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -406,8 +414,8 @@ class SeasonsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [seasonId] 
-  /// * [updateSeasonRequest] 
+  /// * [seasonId]
+  /// * [updateSeasonRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -417,7 +425,7 @@ class SeasonsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Season] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Season>> updateSeason({ 
+  Future<Response<Season>> updateSeason({
     required String xTenantId,
     required String seasonId,
     required UpdateSeasonRequest updateSeasonRequest,
@@ -428,7 +436,10 @@ class SeasonsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/seasons/{seasonId}'.replaceAll('{' r'seasonId' '}', encodeQueryParameter(_serializers, seasonId, const FullType(String)).toString());
+    final _path = r'/api/core/seasons/{seasonId}'.replaceAll(
+        '{' r'seasonId' '}',
+        encodeQueryParameter(_serializers, seasonId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'PATCH',
       headers: <String, dynamic>{
@@ -453,11 +464,11 @@ class SeasonsApi {
 
     try {
       const _type = FullType(UpdateSeasonRequest);
-      _bodyData = _serializers.serialize(updateSeasonRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData =
+          _serializers.serialize(updateSeasonRequest, specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -480,11 +491,12 @@ class SeasonsApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(Season),
-      ) as Season;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(Season),
+            ) as Season;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -506,5 +518,4 @@ class SeasonsApi {
       extra: _response.extra,
     );
   }
-
 }

@@ -12,10 +12,11 @@ part 'season_rollover_request.g.dart';
 ///
 /// Properties:
 /// * [fromSeasonId] - Season whose teams are cloned into the target season.
-/// * [cloneStaff] 
+/// * [cloneStaff]
 /// * [clonePlayers] - Carry open player assignments over (then eligibility-checked).
 @BuiltValue()
-abstract class SeasonRolloverRequest implements Built<SeasonRolloverRequest, SeasonRolloverRequestBuilder> {
+abstract class SeasonRolloverRequest
+    implements Built<SeasonRolloverRequest, SeasonRolloverRequestBuilder> {
   /// Season whose teams are cloned into the target season.
   @BuiltValueField(wireName: r'fromSeasonId')
   String get fromSeasonId;
@@ -29,20 +30,26 @@ abstract class SeasonRolloverRequest implements Built<SeasonRolloverRequest, Sea
 
   SeasonRolloverRequest._();
 
-  factory SeasonRolloverRequest([void updates(SeasonRolloverRequestBuilder b)]) = _$SeasonRolloverRequest;
+  factory SeasonRolloverRequest(
+      [void updates(SeasonRolloverRequestBuilder b)]) = _$SeasonRolloverRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(SeasonRolloverRequestBuilder b) => b
-      ..cloneStaff = true
-      ..clonePlayers = true;
+    ..cloneStaff = true
+    ..clonePlayers = true;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<SeasonRolloverRequest> get serializer => _$SeasonRolloverRequestSerializer();
+  static Serializer<SeasonRolloverRequest> get serializer =>
+      _$SeasonRolloverRequestSerializer();
 }
 
-class _$SeasonRolloverRequestSerializer implements PrimitiveSerializer<SeasonRolloverRequest> {
+class _$SeasonRolloverRequestSerializer
+    implements PrimitiveSerializer<SeasonRolloverRequest> {
   @override
-  final Iterable<Type> types = const [SeasonRolloverRequest, _$SeasonRolloverRequest];
+  final Iterable<Type> types = const [
+    SeasonRolloverRequest,
+    _$SeasonRolloverRequest
+  ];
 
   @override
   final String wireName = r'SeasonRolloverRequest';
@@ -79,7 +86,9 @@ class _$SeasonRolloverRequestSerializer implements PrimitiveSerializer<SeasonRol
     SeasonRolloverRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -145,5 +154,3 @@ class _$SeasonRolloverRequestSerializer implements PrimitiveSerializer<SeasonRol
     return result.build();
   }
 }
-
-

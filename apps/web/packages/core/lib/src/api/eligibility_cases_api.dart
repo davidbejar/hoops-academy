@@ -16,7 +16,6 @@ import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/resolve_eligibility_case_request.dart';
 
 class EligibilityCasesApi {
-
   final Dio _dio;
 
   final Serializers _serializers;
@@ -28,7 +27,7 @@ class EligibilityCasesApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [eligibilityCaseId] 
+  /// * [eligibilityCaseId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -38,7 +37,7 @@ class EligibilityCasesApi {
   ///
   /// Returns a [Future] containing a [Response] with a [EligibilityCase] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<EligibilityCase>> getEligibilityCase({ 
+  Future<Response<EligibilityCase>> getEligibilityCase({
     required String xTenantId,
     required String eligibilityCaseId,
     CancelToken? cancelToken,
@@ -48,7 +47,11 @@ class EligibilityCasesApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/eligibility-cases/{eligibilityCaseId}'.replaceAll('{' r'eligibilityCaseId' '}', encodeQueryParameter(_serializers, eligibilityCaseId, const FullType(String)).toString());
+    final _path = r'/api/core/eligibility-cases/{eligibilityCaseId}'.replaceAll(
+        '{' r'eligibilityCaseId' '}',
+        encodeQueryParameter(
+                _serializers, eligibilityCaseId, const FullType(String))
+            .toString());
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -80,11 +83,12 @@ class EligibilityCasesApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(EligibilityCase),
-      ) as EligibilityCase;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(EligibilityCase),
+            ) as EligibilityCase;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -112,9 +116,9 @@ class EligibilityCasesApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [status] 
-  /// * [teamId] 
-  /// * [playerId] 
+  /// * [status]
+  /// * [teamId]
+  /// * [playerId]
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -126,7 +130,7 @@ class EligibilityCasesApi {
   ///
   /// Returns a [Future] containing a [Response] with a [EligibilityCasePage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<EligibilityCasePage>> listEligibilityCases({ 
+  Future<Response<EligibilityCasePage>> listEligibilityCases({
     required String xTenantId,
     EligibilityCaseStatus? status,
     String? teamId,
@@ -161,11 +165,19 @@ class EligibilityCasesApi {
     );
 
     final _queryParameters = <String, dynamic>{
-      if (status != null) r'status': encodeQueryParameter(_serializers, status, const FullType(EligibilityCaseStatus)),
-      if (teamId != null) r'teamId': encodeQueryParameter(_serializers, teamId, const FullType(String)),
-      if (playerId != null) r'playerId': encodeQueryParameter(_serializers, playerId, const FullType(String)),
-      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
-      if (size != null) r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
+      if (status != null)
+        r'status': encodeQueryParameter(
+            _serializers, status, const FullType(EligibilityCaseStatus)),
+      if (teamId != null)
+        r'teamId':
+            encodeQueryParameter(_serializers, teamId, const FullType(String)),
+      if (playerId != null)
+        r'playerId': encodeQueryParameter(
+            _serializers, playerId, const FullType(String)),
+      if (page != null)
+        r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
+      if (size != null)
+        r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(
@@ -181,11 +193,12 @@ class EligibilityCasesApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(EligibilityCasePage),
-      ) as EligibilityCasePage;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(EligibilityCasePage),
+            ) as EligibilityCasePage;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -209,12 +222,12 @@ class EligibilityCasesApi {
   }
 
   /// Resolve an open eligibility case
-  /// REASSIGNED requires &#x60;targetTeamId&#x60; and performs the eligibility-checked assignment (422 when ineligible); REMOVED_FROM_TEAM closes the invalid assignment; DISMISSED records the decision only. Only OPEN cases can be resolved (409). Authz: ADMIN; COACH of the case&#39;s team. 
+  /// REASSIGNED requires &#x60;targetTeamId&#x60; and performs the eligibility-checked assignment (422 when ineligible); REMOVED_FROM_TEAM closes the invalid assignment; DISMISSED records the decision only. Only OPEN cases can be resolved (409). Authz: ADMIN; COACH of the case&#39;s team.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [eligibilityCaseId] 
-  /// * [resolveEligibilityCaseRequest] 
+  /// * [eligibilityCaseId]
+  /// * [resolveEligibilityCaseRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -224,7 +237,7 @@ class EligibilityCasesApi {
   ///
   /// Returns a [Future] containing a [Response] with a [EligibilityCase] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<EligibilityCase>> resolveEligibilityCase({ 
+  Future<Response<EligibilityCase>> resolveEligibilityCase({
     required String xTenantId,
     required String eligibilityCaseId,
     required ResolveEligibilityCaseRequest resolveEligibilityCaseRequest,
@@ -235,7 +248,12 @@ class EligibilityCasesApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/eligibility-cases/{eligibilityCaseId}/resolve'.replaceAll('{' r'eligibilityCaseId' '}', encodeQueryParameter(_serializers, eligibilityCaseId, const FullType(String)).toString());
+    final _path = r'/api/core/eligibility-cases/{eligibilityCaseId}/resolve'
+        .replaceAll(
+            '{' r'eligibilityCaseId' '}',
+            encodeQueryParameter(
+                    _serializers, eligibilityCaseId, const FullType(String))
+                .toString());
     final _options = Options(
       method: r'POST',
       headers: <String, dynamic>{
@@ -260,11 +278,11 @@ class EligibilityCasesApi {
 
     try {
       const _type = FullType(ResolveEligibilityCaseRequest);
-      _bodyData = _serializers.serialize(resolveEligibilityCaseRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+      _bodyData = _serializers.serialize(resolveEligibilityCaseRequest,
+          specifiedType: _type);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -287,11 +305,12 @@ class EligibilityCasesApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(EligibilityCase),
-      ) as EligibilityCase;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(EligibilityCase),
+            ) as EligibilityCase;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -313,5 +332,4 @@ class EligibilityCasesApi {
       extra: _response.extra,
     );
   }
-
 }

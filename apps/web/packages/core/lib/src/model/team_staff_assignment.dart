@@ -12,27 +12,34 @@ part 'team_staff_assignment.g.dart';
 /// TeamStaffAssignment
 ///
 /// Properties:
-/// * [role] 
+/// * [role]
 @BuiltValue()
-abstract class TeamStaffAssignment implements Built<TeamStaffAssignment, TeamStaffAssignmentBuilder> {
+abstract class TeamStaffAssignment
+    implements Built<TeamStaffAssignment, TeamStaffAssignmentBuilder> {
   @BuiltValueField(wireName: r'role')
   StaffRole get role;
   // enum roleEnum {  COACH,  ASSISTANT_COACH,  };
 
   TeamStaffAssignment._();
 
-  factory TeamStaffAssignment([void updates(TeamStaffAssignmentBuilder b)]) = _$TeamStaffAssignment;
+  factory TeamStaffAssignment([void updates(TeamStaffAssignmentBuilder b)]) =
+      _$TeamStaffAssignment;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TeamStaffAssignmentBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TeamStaffAssignment> get serializer => _$TeamStaffAssignmentSerializer();
+  static Serializer<TeamStaffAssignment> get serializer =>
+      _$TeamStaffAssignmentSerializer();
 }
 
-class _$TeamStaffAssignmentSerializer implements PrimitiveSerializer<TeamStaffAssignment> {
+class _$TeamStaffAssignmentSerializer
+    implements PrimitiveSerializer<TeamStaffAssignment> {
   @override
-  final Iterable<Type> types = const [TeamStaffAssignment, _$TeamStaffAssignment];
+  final Iterable<Type> types = const [
+    TeamStaffAssignment,
+    _$TeamStaffAssignment
+  ];
 
   @override
   final String wireName = r'TeamStaffAssignment';
@@ -55,7 +62,9 @@ class _$TeamStaffAssignmentSerializer implements PrimitiveSerializer<TeamStaffAs
     TeamStaffAssignment object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -105,5 +114,3 @@ class _$TeamStaffAssignmentSerializer implements PrimitiveSerializer<TeamStaffAs
     return result.build();
   }
 }
-
-

@@ -12,13 +12,15 @@ part 'update_age_category_request.g.dart';
 /// UpdateAgeCategoryRequest
 ///
 /// Properties:
-/// * [code] 
-/// * [name] 
-/// * [maxAge] 
-/// * [rank] 
+/// * [code]
+/// * [name]
+/// * [maxAge]
+/// * [rank]
 /// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
-abstract class UpdateAgeCategoryRequest implements Built<UpdateAgeCategoryRequest, UpdateAgeCategoryRequestBuilder> {
+abstract class UpdateAgeCategoryRequest
+    implements
+        Built<UpdateAgeCategoryRequest, UpdateAgeCategoryRequestBuilder> {
   @BuiltValueField(wireName: r'code')
   String? get code;
 
@@ -38,18 +40,25 @@ abstract class UpdateAgeCategoryRequest implements Built<UpdateAgeCategoryReques
 
   UpdateAgeCategoryRequest._();
 
-  factory UpdateAgeCategoryRequest([void updates(UpdateAgeCategoryRequestBuilder b)]) = _$UpdateAgeCategoryRequest;
+  factory UpdateAgeCategoryRequest(
+          [void updates(UpdateAgeCategoryRequestBuilder b)]) =
+      _$UpdateAgeCategoryRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateAgeCategoryRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateAgeCategoryRequest> get serializer => _$UpdateAgeCategoryRequestSerializer();
+  static Serializer<UpdateAgeCategoryRequest> get serializer =>
+      _$UpdateAgeCategoryRequestSerializer();
 }
 
-class _$UpdateAgeCategoryRequestSerializer implements PrimitiveSerializer<UpdateAgeCategoryRequest> {
+class _$UpdateAgeCategoryRequestSerializer
+    implements PrimitiveSerializer<UpdateAgeCategoryRequest> {
   @override
-  final Iterable<Type> types = const [UpdateAgeCategoryRequest, _$UpdateAgeCategoryRequest];
+  final Iterable<Type> types = const [
+    UpdateAgeCategoryRequest,
+    _$UpdateAgeCategoryRequest
+  ];
 
   @override
   final String wireName = r'UpdateAgeCategoryRequest';
@@ -91,7 +100,8 @@ class _$UpdateAgeCategoryRequestSerializer implements PrimitiveSerializer<Update
       yield r'clear';
       yield serializers.serialize(
         object.clear,
-        specifiedType: const FullType(BuiltSet, [FullType(UpdateAgeCategoryRequestClearEnum)]),
+        specifiedType: const FullType(
+            BuiltSet, [FullType(UpdateAgeCategoryRequestClearEnum)]),
       );
     }
   }
@@ -102,7 +112,9 @@ class _$UpdateAgeCategoryRequestSerializer implements PrimitiveSerializer<Update
     UpdateAgeCategoryRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -152,7 +164,8 @@ class _$UpdateAgeCategoryRequestSerializer implements PrimitiveSerializer<Update
         case r'clear':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateAgeCategoryRequestClearEnum)]),
+            specifiedType: const FullType.nullable(
+                BuiltSet, [FullType(UpdateAgeCategoryRequestClearEnum)]),
           ) as BuiltSet<UpdateAgeCategoryRequestClearEnum>?;
           if (valueDes == null) continue;
           result.clear.replace(valueDes);
@@ -186,19 +199,21 @@ class _$UpdateAgeCategoryRequestSerializer implements PrimitiveSerializer<Update
   }
 }
 
-
 class UpdateAgeCategoryRequestClearEnum extends EnumClass {
-
   @BuiltValueEnumConst(wireName: r'maxAge')
-  static const UpdateAgeCategoryRequestClearEnum maxAge = _$updateAgeCategoryRequestClearEnum_maxAge;
+  static const UpdateAgeCategoryRequestClearEnum maxAge =
+      _$updateAgeCategoryRequestClearEnum_maxAge;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const UpdateAgeCategoryRequestClearEnum unknownDefaultOpenApi = _$updateAgeCategoryRequestClearEnum_unknownDefaultOpenApi;
+  static const UpdateAgeCategoryRequestClearEnum unknownDefaultOpenApi =
+      _$updateAgeCategoryRequestClearEnum_unknownDefaultOpenApi;
 
-  static Serializer<UpdateAgeCategoryRequestClearEnum> get serializer => _$updateAgeCategoryRequestClearEnumSerializer;
+  static Serializer<UpdateAgeCategoryRequestClearEnum> get serializer =>
+      _$updateAgeCategoryRequestClearEnumSerializer;
 
-  const UpdateAgeCategoryRequestClearEnum._(String name): super(name);
+  const UpdateAgeCategoryRequestClearEnum._(String name) : super(name);
 
-  static BuiltSet<UpdateAgeCategoryRequestClearEnum> get values => _$updateAgeCategoryRequestClearEnumValues;
-  static UpdateAgeCategoryRequestClearEnum valueOf(String name) => _$updateAgeCategoryRequestClearEnumValueOf(name);
+  static BuiltSet<UpdateAgeCategoryRequestClearEnum> get values =>
+      _$updateAgeCategoryRequestClearEnumValues;
+  static UpdateAgeCategoryRequestClearEnum valueOf(String name) =>
+      _$updateAgeCategoryRequestClearEnumValueOf(name);
 }
-

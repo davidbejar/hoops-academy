@@ -12,24 +12,28 @@ part 'player_batch_request.g.dart';
 /// PlayerBatchRequest
 ///
 /// Properties:
-/// * [playerIds] 
+/// * [playerIds]
 @BuiltValue()
-abstract class PlayerBatchRequest implements Built<PlayerBatchRequest, PlayerBatchRequestBuilder> {
+abstract class PlayerBatchRequest
+    implements Built<PlayerBatchRequest, PlayerBatchRequestBuilder> {
   @BuiltValueField(wireName: r'playerIds')
   BuiltSet<String> get playerIds;
 
   PlayerBatchRequest._();
 
-  factory PlayerBatchRequest([void updates(PlayerBatchRequestBuilder b)]) = _$PlayerBatchRequest;
+  factory PlayerBatchRequest([void updates(PlayerBatchRequestBuilder b)]) =
+      _$PlayerBatchRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(PlayerBatchRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PlayerBatchRequest> get serializer => _$PlayerBatchRequestSerializer();
+  static Serializer<PlayerBatchRequest> get serializer =>
+      _$PlayerBatchRequestSerializer();
 }
 
-class _$PlayerBatchRequestSerializer implements PrimitiveSerializer<PlayerBatchRequest> {
+class _$PlayerBatchRequestSerializer
+    implements PrimitiveSerializer<PlayerBatchRequest> {
   @override
   final Iterable<Type> types = const [PlayerBatchRequest, _$PlayerBatchRequest];
 
@@ -54,7 +58,9 @@ class _$PlayerBatchRequestSerializer implements PrimitiveSerializer<PlayerBatchR
     PlayerBatchRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -104,5 +110,3 @@ class _$PlayerBatchRequestSerializer implements PrimitiveSerializer<PlayerBatchR
     return result.build();
   }
 }
-
-

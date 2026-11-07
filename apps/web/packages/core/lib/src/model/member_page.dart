@@ -14,8 +14,8 @@ part 'member_page.g.dart';
 /// MemberPage
 ///
 /// Properties:
-/// * [items] 
-/// * [page] 
+/// * [items]
+/// * [page]
 @BuiltValue()
 abstract class MemberPage implements Built<MemberPage, MemberPageBuilder> {
   @BuiltValueField(wireName: r'items')
@@ -65,7 +65,9 @@ class _$MemberPageSerializer implements PrimitiveSerializer<MemberPage> {
     MemberPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -122,5 +124,3 @@ class _$MemberPageSerializer implements PrimitiveSerializer<MemberPage> {
     return result.build();
   }
 }
-
-

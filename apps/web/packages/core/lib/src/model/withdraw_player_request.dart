@@ -11,26 +11,33 @@ part 'withdraw_player_request.g.dart';
 /// WithdrawPlayerRequest
 ///
 /// Properties:
-/// * [reason] 
+/// * [reason]
 @BuiltValue()
-abstract class WithdrawPlayerRequest implements Built<WithdrawPlayerRequest, WithdrawPlayerRequestBuilder> {
+abstract class WithdrawPlayerRequest
+    implements Built<WithdrawPlayerRequest, WithdrawPlayerRequestBuilder> {
   @BuiltValueField(wireName: r'reason')
   String? get reason;
 
   WithdrawPlayerRequest._();
 
-  factory WithdrawPlayerRequest([void updates(WithdrawPlayerRequestBuilder b)]) = _$WithdrawPlayerRequest;
+  factory WithdrawPlayerRequest(
+      [void updates(WithdrawPlayerRequestBuilder b)]) = _$WithdrawPlayerRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(WithdrawPlayerRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<WithdrawPlayerRequest> get serializer => _$WithdrawPlayerRequestSerializer();
+  static Serializer<WithdrawPlayerRequest> get serializer =>
+      _$WithdrawPlayerRequestSerializer();
 }
 
-class _$WithdrawPlayerRequestSerializer implements PrimitiveSerializer<WithdrawPlayerRequest> {
+class _$WithdrawPlayerRequestSerializer
+    implements PrimitiveSerializer<WithdrawPlayerRequest> {
   @override
-  final Iterable<Type> types = const [WithdrawPlayerRequest, _$WithdrawPlayerRequest];
+  final Iterable<Type> types = const [
+    WithdrawPlayerRequest,
+    _$WithdrawPlayerRequest
+  ];
 
   @override
   final String wireName = r'WithdrawPlayerRequest';
@@ -55,7 +62,9 @@ class _$WithdrawPlayerRequestSerializer implements PrimitiveSerializer<WithdrawP
     WithdrawPlayerRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -106,5 +115,3 @@ class _$WithdrawPlayerRequestSerializer implements PrimitiveSerializer<WithdrawP
     return result.build();
   }
 }
-
-

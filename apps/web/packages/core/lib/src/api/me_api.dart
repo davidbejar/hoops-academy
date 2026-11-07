@@ -13,7 +13,6 @@ import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/update_me_request.dart';
 
 class MeApi {
-
   final Dio _dio;
 
   final Serializers _serializers;
@@ -33,7 +32,7 @@ class MeApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Me] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Me>> getMe({ 
+  Future<Response<Me>> getMe({
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -72,11 +71,12 @@ class MeApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(Me),
-      ) as Me;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(Me),
+            ) as Me;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -100,10 +100,10 @@ class MeApi {
   }
 
   /// Update the caller&#39;s preferences
-  /// 
+  ///
   ///
   /// Parameters:
-  /// * [updateMeRequest] 
+  /// * [updateMeRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -113,7 +113,7 @@ class MeApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Me] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Me>> updateMe({ 
+  Future<Response<Me>> updateMe({
     required UpdateMeRequest updateMeRequest,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -147,10 +147,9 @@ class MeApi {
     try {
       const _type = FullType(UpdateMeRequest);
       _bodyData = _serializers.serialize(updateMeRequest, specifiedType: _type);
-
-    } catch(error, stackTrace) {
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
+        requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -173,11 +172,12 @@ class MeApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null ? null : _serializers.deserialize(
-        rawResponse,
-        specifiedType: const FullType(Me),
-      ) as Me;
-
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(Me),
+            ) as Me;
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -199,5 +199,4 @@ class MeApi {
       extra: _response.extra,
     );
   }
-
 }

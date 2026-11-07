@@ -15,9 +15,9 @@ part 'orphan.g.dart';
 /// Orphan
 ///
 /// Properties:
-/// * [player] 
-/// * [previousTeam] 
-/// * [reasons] 
+/// * [player]
+/// * [previousTeam]
+/// * [reasons]
 @BuiltValue()
 abstract class Orphan implements Built<Orphan, OrphanBuilder> {
   @BuiltValueField(wireName: r'player')
@@ -77,7 +77,9 @@ class _$OrphanSerializer implements PrimitiveSerializer<Orphan> {
     Orphan object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -110,7 +112,8 @@ class _$OrphanSerializer implements PrimitiveSerializer<Orphan> {
         case r'reasons':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(EligibilityReason)]),
+            specifiedType:
+                const FullType(BuiltList, [FullType(EligibilityReason)]),
           ) as BuiltList<EligibilityReason>;
           result.reasons.replace(valueDes);
           break;
@@ -142,5 +145,3 @@ class _$OrphanSerializer implements PrimitiveSerializer<Orphan> {
     return result.build();
   }
 }
-
-

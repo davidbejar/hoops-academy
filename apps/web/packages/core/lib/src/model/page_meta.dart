@@ -11,10 +11,10 @@ part 'page_meta.g.dart';
 /// PageMeta
 ///
 /// Properties:
-/// * [page] 
-/// * [size] 
-/// * [totalElements] 
-/// * [totalPages] 
+/// * [page]
+/// * [size]
+/// * [totalElements]
+/// * [totalPages]
 @BuiltValue()
 abstract class PageMeta implements Built<PageMeta, PageMetaBuilder> {
   @BuiltValueField(wireName: r'page')
@@ -80,7 +80,9 @@ class _$PageMetaSerializer implements PrimitiveSerializer<PageMeta> {
     PageMeta object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -151,5 +153,3 @@ class _$PageMetaSerializer implements PrimitiveSerializer<PageMeta> {
     return result.build();
   }
 }
-
-

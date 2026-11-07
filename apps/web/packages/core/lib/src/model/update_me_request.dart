@@ -12,25 +12,29 @@ part 'update_me_request.g.dart';
 /// UpdateMeRequest
 ///
 /// Properties:
-/// * [locale] 
+/// * [locale]
 @BuiltValue()
-abstract class UpdateMeRequest implements Built<UpdateMeRequest, UpdateMeRequestBuilder> {
+abstract class UpdateMeRequest
+    implements Built<UpdateMeRequest, UpdateMeRequestBuilder> {
   @BuiltValueField(wireName: r'locale')
   Locale get locale;
   // enum localeEnum {  es,  en,  id,  };
 
   UpdateMeRequest._();
 
-  factory UpdateMeRequest([void updates(UpdateMeRequestBuilder b)]) = _$UpdateMeRequest;
+  factory UpdateMeRequest([void updates(UpdateMeRequestBuilder b)]) =
+      _$UpdateMeRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateMeRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateMeRequest> get serializer => _$UpdateMeRequestSerializer();
+  static Serializer<UpdateMeRequest> get serializer =>
+      _$UpdateMeRequestSerializer();
 }
 
-class _$UpdateMeRequestSerializer implements PrimitiveSerializer<UpdateMeRequest> {
+class _$UpdateMeRequestSerializer
+    implements PrimitiveSerializer<UpdateMeRequest> {
   @override
   final Iterable<Type> types = const [UpdateMeRequest, _$UpdateMeRequest];
 
@@ -55,7 +59,9 @@ class _$UpdateMeRequestSerializer implements PrimitiveSerializer<UpdateMeRequest
     UpdateMeRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -105,5 +111,3 @@ class _$UpdateMeRequestSerializer implements PrimitiveSerializer<UpdateMeRequest
     return result.build();
   }
 }
-
-

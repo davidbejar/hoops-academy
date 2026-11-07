@@ -11,10 +11,12 @@ part 'create_guardian_link_request.g.dart';
 /// CreateGuardianLinkRequest
 ///
 /// Properties:
-/// * [guardianPersonId] 
-/// * [playerId] 
+/// * [guardianPersonId]
+/// * [playerId]
 @BuiltValue()
-abstract class CreateGuardianLinkRequest implements Built<CreateGuardianLinkRequest, CreateGuardianLinkRequestBuilder> {
+abstract class CreateGuardianLinkRequest
+    implements
+        Built<CreateGuardianLinkRequest, CreateGuardianLinkRequestBuilder> {
   @BuiltValueField(wireName: r'guardianPersonId')
   String get guardianPersonId;
 
@@ -23,18 +25,25 @@ abstract class CreateGuardianLinkRequest implements Built<CreateGuardianLinkRequ
 
   CreateGuardianLinkRequest._();
 
-  factory CreateGuardianLinkRequest([void updates(CreateGuardianLinkRequestBuilder b)]) = _$CreateGuardianLinkRequest;
+  factory CreateGuardianLinkRequest(
+          [void updates(CreateGuardianLinkRequestBuilder b)]) =
+      _$CreateGuardianLinkRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(CreateGuardianLinkRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<CreateGuardianLinkRequest> get serializer => _$CreateGuardianLinkRequestSerializer();
+  static Serializer<CreateGuardianLinkRequest> get serializer =>
+      _$CreateGuardianLinkRequestSerializer();
 }
 
-class _$CreateGuardianLinkRequestSerializer implements PrimitiveSerializer<CreateGuardianLinkRequest> {
+class _$CreateGuardianLinkRequestSerializer
+    implements PrimitiveSerializer<CreateGuardianLinkRequest> {
   @override
-  final Iterable<Type> types = const [CreateGuardianLinkRequest, _$CreateGuardianLinkRequest];
+  final Iterable<Type> types = const [
+    CreateGuardianLinkRequest,
+    _$CreateGuardianLinkRequest
+  ];
 
   @override
   final String wireName = r'CreateGuardianLinkRequest';
@@ -62,7 +71,9 @@ class _$CreateGuardianLinkRequestSerializer implements PrimitiveSerializer<Creat
     CreateGuardianLinkRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -119,5 +130,3 @@ class _$CreateGuardianLinkRequestSerializer implements PrimitiveSerializer<Creat
     return result.build();
   }
 }
-
-

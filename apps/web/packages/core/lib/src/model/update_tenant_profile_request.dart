@@ -13,14 +13,16 @@ part 'update_tenant_profile_request.g.dart';
 /// UpdateTenantProfileRequest
 ///
 /// Properties:
-/// * [name] 
-/// * [timezone] 
-/// * [defaultLocale] 
-/// * [contactEmail] 
-/// * [websiteUrl] 
+/// * [name]
+/// * [timezone]
+/// * [defaultLocale]
+/// * [contactEmail]
+/// * [websiteUrl]
 /// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
-abstract class UpdateTenantProfileRequest implements Built<UpdateTenantProfileRequest, UpdateTenantProfileRequestBuilder> {
+abstract class UpdateTenantProfileRequest
+    implements
+        Built<UpdateTenantProfileRequest, UpdateTenantProfileRequestBuilder> {
   @BuiltValueField(wireName: r'name')
   String? get name;
 
@@ -44,18 +46,25 @@ abstract class UpdateTenantProfileRequest implements Built<UpdateTenantProfileRe
 
   UpdateTenantProfileRequest._();
 
-  factory UpdateTenantProfileRequest([void updates(UpdateTenantProfileRequestBuilder b)]) = _$UpdateTenantProfileRequest;
+  factory UpdateTenantProfileRequest(
+          [void updates(UpdateTenantProfileRequestBuilder b)]) =
+      _$UpdateTenantProfileRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateTenantProfileRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateTenantProfileRequest> get serializer => _$UpdateTenantProfileRequestSerializer();
+  static Serializer<UpdateTenantProfileRequest> get serializer =>
+      _$UpdateTenantProfileRequestSerializer();
 }
 
-class _$UpdateTenantProfileRequestSerializer implements PrimitiveSerializer<UpdateTenantProfileRequest> {
+class _$UpdateTenantProfileRequestSerializer
+    implements PrimitiveSerializer<UpdateTenantProfileRequest> {
   @override
-  final Iterable<Type> types = const [UpdateTenantProfileRequest, _$UpdateTenantProfileRequest];
+  final Iterable<Type> types = const [
+    UpdateTenantProfileRequest,
+    _$UpdateTenantProfileRequest
+  ];
 
   @override
   final String wireName = r'UpdateTenantProfileRequest';
@@ -104,7 +113,8 @@ class _$UpdateTenantProfileRequestSerializer implements PrimitiveSerializer<Upda
       yield r'clear';
       yield serializers.serialize(
         object.clear,
-        specifiedType: const FullType(BuiltSet, [FullType(UpdateTenantProfileRequestClearEnum)]),
+        specifiedType: const FullType(
+            BuiltSet, [FullType(UpdateTenantProfileRequestClearEnum)]),
       );
     }
   }
@@ -115,7 +125,9 @@ class _$UpdateTenantProfileRequestSerializer implements PrimitiveSerializer<Upda
     UpdateTenantProfileRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
+    return _serializeProperties(serializers, object,
+            specifiedType: specifiedType)
+        .toList();
   }
 
   void _deserializeProperties(
@@ -173,7 +185,8 @@ class _$UpdateTenantProfileRequestSerializer implements PrimitiveSerializer<Upda
         case r'clear':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTenantProfileRequestClearEnum)]),
+            specifiedType: const FullType.nullable(
+                BuiltSet, [FullType(UpdateTenantProfileRequestClearEnum)]),
           ) as BuiltSet<UpdateTenantProfileRequestClearEnum>?;
           if (valueDes == null) continue;
           result.clear.replace(valueDes);
@@ -207,21 +220,24 @@ class _$UpdateTenantProfileRequestSerializer implements PrimitiveSerializer<Upda
   }
 }
 
-
 class UpdateTenantProfileRequestClearEnum extends EnumClass {
-
   @BuiltValueEnumConst(wireName: r'contactEmail')
-  static const UpdateTenantProfileRequestClearEnum contactEmail = _$updateTenantProfileRequestClearEnum_contactEmail;
+  static const UpdateTenantProfileRequestClearEnum contactEmail =
+      _$updateTenantProfileRequestClearEnum_contactEmail;
   @BuiltValueEnumConst(wireName: r'websiteUrl')
-  static const UpdateTenantProfileRequestClearEnum websiteUrl = _$updateTenantProfileRequestClearEnum_websiteUrl;
+  static const UpdateTenantProfileRequestClearEnum websiteUrl =
+      _$updateTenantProfileRequestClearEnum_websiteUrl;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const UpdateTenantProfileRequestClearEnum unknownDefaultOpenApi = _$updateTenantProfileRequestClearEnum_unknownDefaultOpenApi;
+  static const UpdateTenantProfileRequestClearEnum unknownDefaultOpenApi =
+      _$updateTenantProfileRequestClearEnum_unknownDefaultOpenApi;
 
-  static Serializer<UpdateTenantProfileRequestClearEnum> get serializer => _$updateTenantProfileRequestClearEnumSerializer;
+  static Serializer<UpdateTenantProfileRequestClearEnum> get serializer =>
+      _$updateTenantProfileRequestClearEnumSerializer;
 
-  const UpdateTenantProfileRequestClearEnum._(String name): super(name);
+  const UpdateTenantProfileRequestClearEnum._(String name) : super(name);
 
-  static BuiltSet<UpdateTenantProfileRequestClearEnum> get values => _$updateTenantProfileRequestClearEnumValues;
-  static UpdateTenantProfileRequestClearEnum valueOf(String name) => _$updateTenantProfileRequestClearEnumValueOf(name);
+  static BuiltSet<UpdateTenantProfileRequestClearEnum> get values =>
+      _$updateTenantProfileRequestClearEnumValues;
+  static UpdateTenantProfileRequestClearEnum valueOf(String name) =>
+      _$updateTenantProfileRequestClearEnumValueOf(name);
 }
-
