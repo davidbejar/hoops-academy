@@ -32,12 +32,12 @@ its own baseline; survivors killed.
 4. **CI**: `mutation.yml` (manual + monthly) gains the Dart job.
 
 ## Acceptance
-- [ ] `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` green (fresh; totals; ArchUnit green after the
+- [x] `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` green (fresh; totals; ArchUnit green after the
       extractions)
-- [ ] `just mutation` for the three services at or above the new baselines (scores and mutant counts recorded)
-- [ ] `just web-mutation` runs end to end with its baseline recorded; `flutter analyze` and `just web-format-check`
+- [x] `just mutation` for the three services at or above the new baselines (scores and mutant counts recorded)
+- [x] `just web-mutation` runs end to end with its baseline recorded; `flutter analyze` and `just web-format-check`
       clean; `just web-test` green (fresh; totals)
-- [ ] `docs/quality/mutation.md` updated; handover appended (extractions, equivalents, runtime)
+- [x] `docs/quality/mutation.md` updated; handover appended (extractions, equivalents, runtime)
 
 ## Working rules
 - Work only in your worktree on your branch; `source scripts/env.sh` first. Do not touch `main`, do not push.
@@ -54,4 +54,59 @@ its own baseline; survivors killed.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - **Extractions** (framework-free, unit tested, in the PIT scope; table in `docs/quality/mutation.md` § Extractions):
+    common `ExclusiveLocks` (from `TenantScope`: advisory key, lock timeout clamp), common `ProblemMapping` (from
+    `ProblemExceptionMappers`: concurrent-modification cause chain, violation order, ROLE/FINE_GRAINED); core
+    `BackfillPlan` (from `BackfillRosterEvents`, WP81: topic order, candidates, aggregate ids, chunks), core domain
+    `EndedSeasons` (from `PastSeasons`, WP80); game `EventAdmission` (from `IngestEventBatch`: duplicate, cancelled,
+    authz, season closed, device sequence), game domain `SeasonClose` (from `PastSeasons`, WP80).
+  - **Scope widened** with existing or new pure tests: common `TenantScopedPaths`; core `DecideAcademyRequest` (WP90),
+    `ChangedFields`, `AuditEntry`, `PatchBody`; game `EventLedger`, `MatchEventDecoder`, `RosterEventDecoder`; athlete
+    `ApplyRosterEvent` + `RosterChange`/`RosterTopic` (new `ApplyRosterEventRulesTest`), `ReplicaRetention`/
+    `ParkedPosition` (WP82, new `ReplicaRetentionRulesTest` as in game), `CoreEventDecoder`, `AcceptLanguage`,
+    `PatchBody`, `RosterSource`.
+  - **Survivors killed**: KafkaEventBroker (metrics bound/removed, interrupt, close without producer, the real producer
+    factory), RosterEventAppender (a person alone brings its player), PatchBody bounds/values/messages (core and
+    athlete), decoders' reason cut, DecideAcademyRequest.list. Redundant branches whose mutants were equivalent were
+    removed rather than listed (listed in mutation.md: PatchBody `reject` return, `isTextual` before the e-mail
+    pattern, athlete non-object check, decoders' `Math.min` and `requireNonNull`, `TenantScopedPaths` blank filter).
+  - **Bug fix (one commit, 7099b4b)**: athlete `AcceptLanguage` threw `ArrayIndexOutOfBoundsException` (a 500) for an
+    entry of parameters only (`"es,;"`: `";".split(";")` is empty); now split with limit -1.
+  - **Baselines** = score rounded down to a whole percent (decision 56): common 99, core 99, game 99, athlete 100.
+  - **Dart mutation tool** `apps/web/tool/mutation/` (plain Dart, no Node): `mutation.dart` (lexer skipping comments and
+    strings; negate condition, swap comparison, remove statement, boundary ±1, boolean flip; regions by top-level
+    declaration; manifest with equivalents by file/operator/line/replacement[/column/occurrence]; verdicts incl. "not
+    viable" for compile errors; score), `run.dart` (per-worker copies of apps/web in the system temp, unmutated run
+    first, timeout = factor × that run ≥ 60 s, `flutter test --no-pub`, report `build/mutation/report.json`, exit 1
+    below the baseline), `manifest.json` (14 rule files, 12 equivalents, baseline 100); 20 unit tests in
+    `test/mutation/mutation_test.dart`. `just web-mutation [--workers n] [--target f] [--list]`; `mutation.yml` gains
+    the `web` job (artifact `web-mutation-report`).
+  - **Web tests for the survivors** (tests only, no `lib/` change): `capabilities_matrix_test` (13 personas × 40
+    affordances, equality), `event_ordering_test`, `backoff_test`, `sync_status_test`, `projector_rules_test`, more
+    cases in `game_clock_test`, `team_figures_test`, `match_store_test`, `scoring_rights_test`.
+- Verified (2026-11-07, fresh):
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`: BUILD SUCCESS in 6:05 min — common 274, contracts 279,
+    core 992, game 466, athlete 905, e2e 31 (25 skipped without a stack), 0 failures/errors; ArchUnit, SpotBugs and
+    JaCoCo gates green. (Run after the last backend code change; only a pom comment changed afterwards.)
+  - `just mutation` (281 s): common-quarkus 210/211 (99.5 %, 25 s; was 172/173), core-service 777/778 (99.9 %, 103 s;
+    was 622/629), game-service 548/550 (99.6 %, 78 s; was 469/471), athlete-service 687/687 (100 %, 75 s; was
+    495/495); every module at or above its new threshold. Survivors left are the listed equivalents only
+    (CoreRosterClient.zoneOf, Eligibility.reasons, ProjectionRun.apply, EventVisibility.visible).
+  - `just web-mutation`: first run 280/442 (63 %, 30 not viable, 478 s, 4 workers); final 430/430 (100 %; 428 killed,
+    2 timed out), 30 not viable, 12 equivalent, 617 s with 3 workers (target < 30 min met). Temp copies deleted.
+  - `flutter analyze` no issues; `just web-format-check` 0 changed (368 files); `just web-test` 1069 passed (81 s).
+- Decisions/ADRs: no ADR (decision 56 already covers it). Thresholds are the floor of the score, not a multiple of 5
+  (documented in mutation.md § Changing the baseline). An equivalent mutant caused by redundant code is fixed by
+  removing the redundancy (a refactor, behaviour unchanged) instead of listing it; in `apps/web/lib` such mutants are
+  listed in the manifest instead (no `lib/` edits outside bug fixes). The web baseline is 100 like athlete: any new
+  survivor in the listed rule files fails the monthly run.
+- Open points / follow-ups:
+  - The decoders now fail with `NullPointerException` (message names the resource) instead of
+    `IllegalStateException` when the contracts jar is missing at startup.
+  - Equivalent mutants in `apps/web/lib` could be removed by small refactors (`backoff.dart` `1 << min(attempt, 20)`,
+    `game_clock.dart` clamp, projector's dead initial values) — not done, `lib/` was out of scope except bug fixes.
+  - Not yet mutated: athlete `HealthAccess`/`TrainingAccess`/`PlanAccess` (access rules, tested only through
+    `@QuarkusTest`), core `RolloverSeason`, `EligibilityEngine`, `ManageTenantAdmins`; the web roster/training
+    providers. Candidates for the next round (pure unit tests with mocks, as done for `ApplyRosterEvent`).
+  - `ReplicaRetention` is a copy in game and athlete (and now so is its rules test).

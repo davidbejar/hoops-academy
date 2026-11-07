@@ -6,33 +6,37 @@ compiled code one small fault at a time (a `<` becomes `<=`, a condition is forc
 assertion.
 
 Decision of 2026-11-05 (WP37): PIT is **not** part of every build. It runs on demand and once a month on the pure rule
-code of four modules; a baseline per module makes a later run fail when the score drops.
+code of four modules; a baseline per module makes a later run fail when the score drops. Decision 56 of 2026-11-06
+(WP88): rule code that only container tests reached is extracted into framework-free classes and added to the scope,
+the baselines are the scores themselves (rounded down to a whole percent), and the web rule code gets the same
+treatment with a Dart mutation tool ([Web rule code](#web-rule-code-dart-mutation-tool)).
 
 ## What runs where
 
 | Module | Mutated classes (`pit.targetClasses`) | Tests PIT runs (`pit.targetTests`) | Mutants | Runtime¹ | Baseline |
 |---|---|---|---|---|---|
-| `common-quarkus` | `TenantId`, `TenantContext`, `AuthzContext`, `Problem`, `ProblemType`, `CoreRosterClient`, `RosterAuthzResolver`, `TenantHeaderPropagationFilter`, `ServiceTokenClientFilter` | their plain unit tests | 109 | 11 s | 95 |
-| `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction` + the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67) | `core.domain.*` tests + the tests of those classes (`EventTopicTest`, `RosterEventAppenderTest`, `EventEnvelopesTest` for the event ones) | 560 | 68 s² | 95 |
-| `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility` + the replica rules `ReplicaAuthzResolver`, `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant`, `ReplicaPerson` (WP68) | `game.domain.*` tests + `EventAuthorizationTest`, `StatVisibilityTest`, `ReplicaAuthzResolverTest`, `ReplicaRosterPortTest` | 440 | 42 s² | 95 |
-| `athlete-service` | `athlete.domain.*` (the WP69 replica code is in `application`/adapters, outside the scope) | `athlete.domain.*` tests | 471 | 34 s² | 100 |
+| `common-quarkus` | `TenantId`, `TenantContext`, `AuthzContext`, `Problem`, `ProblemType`, `CoreRosterClient`, `RosterAuthzResolver`, `TenantHeaderPropagationFilter`, `ServiceTokenClientFilter`, `AuthzDenial`, `DenialKind`, `TokenFailureReason` (WP85) + `ExclusiveLocks`, `TenantScopedPaths`, `ProblemMapping` (WP88) | their plain unit tests | 211 | 25 s | 99 |
+| `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction`, the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67), `KafkaEventBroker` (WP81) + `BackfillPlan`, `DecideAcademyRequest`, `ChangedFields`, `AuditEntry`, `PatchBody` (WP88) | `core.domain.*` tests + the tests of those classes | 778 | 103 s | 99 |
+| `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility`, the replica rules `ReplicaAuthzResolver`, `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant`, `ReplicaPerson` (WP68), `ReplicaRetention`, `ParkedPosition` (WP82) + `EventAdmission`, `EventLedger`, `MatchEventDecoder`, `RosterEventDecoder` (WP88) | `game.domain.*` tests + the tests of those classes | 550 | 78 s | 99 |
+| `athlete-service` | `athlete.domain.*` + the replica rules `ApplyRosterEvent`, `ReplicaRetention`, `ParkedPosition`, `RosterChange`, `RosterTopic` and the adapters' parsers `CoreEventDecoder`, `AcceptLanguage`, `PatchBody`, `RosterSource` (WP88) | `athlete.domain.*` tests + `ApplyRosterEventRulesTest`, `ReplicaRetentionRulesTest`, `CoreEventDecoderTest`, `AcceptLanguageTest`, `PatchBodyTest`, `RosterSourceTest` | 687 | 75 s | 100 |
 
 ¹ Wall clock of `just mutation <module>` including compilation, on the development Mac (Apple M1 Pro, 10 cores, shared
-with other work), `threads = 4`. All four modules in turn: about 2.5 minutes.
-² Runtime measured in WP37 with the mutant counts of then (core 494, game 401, athlete 430); not re-measured.
+with other work), `threads = 4`, measured in WP88 (2026-11-07). All four modules in turn (`just mutation`): 281 s.
 
-Latest scores (2026-11-06, round 4): core-service 558/560 (99.6 %, WP67), game-service 438/440 (99.5 %, WP68),
-athlete-service 471/471 (100 %, WP61, WP62 and WP69), common-quarkus 108/109 (99.1 %, WP37; not re-run since).
+Latest scores (2026-11-07, WP88): common-quarkus 210/211 (99.5 %), core-service 777/778 (99.9 %), game-service 548/550
+(99.6 %), athlete-service 687/687 (100 %). Before WP88 (same day, scopes of round 4 plus WP78–WP90): common 172/173,
+core 622/629, game 469/471, athlete 495/495.
 
 Settings (root `pom.xml` `pluginManagement`, PIT 1.30.1 + JUnit 5 plugin 1.2.3): `STRONGER` mutators (they stay far
 below the ~10 min per module budget), HTML + XML reports in `<module>/target/pit-reports` without timestamps, never
 bound to a lifecycle phase. Each module's `mutation` profile sets `pit.skip=false` and its baseline
 (`pit.mutationThreshold`); the targets are module properties because the default build reads them too (below).
 
-**Not mutated**: `@QuarkusTest` code paths (Quarkus boot + Postgres per mutant would take minutes each), adapters,
-generated code (`libs/contracts`, Dart clients), and the Flutter app — Dart has no mature mutation tool. Rule code
-that only container tests reach (`TenantScope`, `ProblemExceptionMappers`, the use cases) is covered by the RLS and
-integration suites instead.
+**Not mutated**: `@QuarkusTest` code paths (Quarkus boot + Postgres per mutant would take minutes each), adapters
+except the pure parsers listed above, generated code (`libs/contracts`, Dart clients). The decisions of container code
+are extracted into pure classes instead ([Extractions](#extractions-wp88)); what stays behind (transactions, advisory
+locks, JAX-RS responses, repository calls) is covered by the RLS and integration suites. The Flutter app's rule code
+runs through the Dart tool below; its widgets do not.
 
 ## Running it
 
@@ -67,6 +71,26 @@ PIT by breaking the default build.
 
 To widen the scope: add the class glob to `pit.targetClasses`, its pure unit test to `pit.targetTests`, run
 `just mutation <module>` and kill or document what survives.
+
+## Extractions (WP88)
+
+Decision logic of classes PIT cannot run (CDI beans with transactions, JAX-RS mappers, use cases) moved into
+framework-free classes next to them; the container class now delegates, and ArchUnit stays green (domain classes have
+no framework import, the application ones no CDI).
+
+| Pure class (new) | Taken from | Rule |
+|---|---|---|
+| common `tenancy.ExclusiveLocks` | `TenantScope` | advisory key of a lock name (first 8 bytes of its SHA-256); the lock transaction's timeout in whole seconds, capped at `Integer.MAX_VALUE` |
+| common `problem.ProblemMapping` | `ProblemExceptionMappers` | a lost `@Version` race found in the cause chain (self-causing chains end); violations ordered by field; ROLE vs FINE_GRAINED denial |
+| core `application.events.BackfillPlan` | `BackfillRosterEvents` (WP81) | topic order, live aggregates without an event, the id each event is keyed by, chunks per transaction |
+| core `domain.roster.EndedSeasons` | `PastSeasons` (WP80) | which of some seasons have ended on a day |
+| game `application.EventAdmission` | `IngestEventBatch` | duplicate, cancelled match, authz matrix, season closed, device sequence taken — in that order |
+| game `domain.SeasonClose` | `PastSeasons` (WP80) | a season closes at the start of the day after its last day in the academy's zone |
+
+Classes that were already pure but outside the scope joined it with their unit tests: `TenantScopedPaths` (own test now),
+core `DecideAcademyRequest` (WP90), `ChangedFields`, `AuditEntry`, `PatchBody`; game `EventLedger`, `MatchEventDecoder`,
+`RosterEventDecoder`; athlete `ApplyRosterEvent`, `ReplicaRetention` (the WP82 rules, now also tested without a database
+as in game), `CoreEventDecoder`, `AcceptLanguage`, `PatchBody`, `RosterSource`.
 
 ## Reading a report
 
@@ -131,9 +155,75 @@ exposed a production defect: **no production code was changed** in WP37.
 
 Not equivalent: core `ApprovalPayload.empty()` (no coverage) was not called anywhere — dead code, deleted in WP38.
 
+Removed instead of listed (WP88): a branch whose mutant cannot change behaviour is redundant code, so it went:
+`TenantScopedPaths` (a blank exempt path filter: "" is never tenant scoped), core and athlete `PatchBody` (`reject`
+returned the empty Optional the caller returns anyway; an `isTextual` check before the e-mail pattern; athlete: a
+non-object check, a body without members is an empty patch either way), the decoders' `length <= max ? s : cut`
+(`Math.min`), athlete `CoreEventDecoder.text` (`Optional.ofNullable`), the "resource missing" guards of the three event
+decoders (`Objects.requireNonNull`, the startup fails either way). Since then each module's survivors are exactly the
+rows above (core 1, game 2, common 1, athlete 0; the uncovered `KafkaEventBroker` producer factory is now run by a unit test).
+
+## Web rule code (Dart mutation tool)
+
+Dart has no mature mutation tool, so WP88 wrote a small one (plain Dart, no Node): `apps/web/tool/mutation/`.
+
+```
+just web-mutation                                  # every file of the manifest, 3 workers
+just web-mutation --workers 2                      # fewer parallel flutter test runs
+just web-mutation --target lib/core/session/capabilities.dart
+just web-mutation --list                           # print the mutants (line:column), run nothing
+```
+
+- **Manifest** `tool/mutation/manifest.json`: per rule file the tests that must notice its mutants and, optionally,
+  the top-level declarations to mutate (`only`, e.g. the two counter helpers of `usage_trend.dart`); the accepted
+  equivalent mutants (file, operator, trimmed source line, replacement, column when the line holds the mutant twice,
+  reason); `baseline` (percent) and `timeoutFactor`.
+- **Operators** (`mutation.dart`, a small lexer that skips comments and strings): *negate condition* (`if (c)` /
+  `while (c)` to `!(c)`, `==` and `!=` swapped, a prefix `!` removed), *swap comparison* (`<` and `<=`, `>` and `>=`,
+  `&&` and `||`; only spaced binary operators, so generics never), *remove statement* (an expression statement of a
+  code block becomes `;`), *boundary* (an integer literal one up and one down), *boolean flip*.
+- **Run** (`run.dart`): the manifest's files are copied into one private copy of `apps/web` per worker (system temp,
+  deleted afterwards); each file's tests first run unmutated (they must pass; the duration times `timeoutFactor`, at
+  least 60 s, is the timeout of one mutant); then each mutant is written into a copy and `flutter test --no-pub` runs
+  that file's tests. A failing run **kills** the mutant, a passing one lets it **survive**, a run over the timeout
+  **times out** (detected, as in PIT), a mutant that does not compile (typically `!= null` swapped where null safety
+  then refuses the code) is **not viable** and left out of the score. Score = (killed + timed out) / viable, rounded
+  down; below `baseline` the run exits 1. Report: `apps/web/build/mutation/report.json` (counts per file, survivors with
+  line and column, the equivalents with their reason).
+- **CI**: the `web` job of `mutation.yml` (same triggers as PIT) runs `just web-mutation --workers 2` and keeps the
+  report as the artifact `web-mutation-report`.
+- The tool's own rules are unit tested in `apps/web/test/mutation/mutation_test.dart` (part of `just web-test`).
+
+**Files and baseline** (manifest of 2026-11-07, WP88):
+
+| Area | Files (`lib/…`) | Tests the mutants run against |
+|---|---|---|
+| offline sync / outbox merge | `features/match/domain/projector/merge.dart`, `features/match/application/sync/backoff.dart`, `…/sync/sync_status.dart` | `sync_worker_test`, `backoff_test`, `sync_status_test` |
+| cache scoping | `features/match/data/local/match_store.dart` | `match_store_test`, `match_store_scope_test`, `match_store_wipe_test` |
+| match clock and score | `features/match/application/game_clock.dart`, `…/projector/event_ordering.dart`, `…/projector/projector.dart`, `…/projector/team_figures.dart`, `features/match/domain/scoring_rights.dart`, `…/feed_visibility.dart` | `game_clock_test`, `event_ordering_test`, `projector_vectors_test`, `projector_rules_test`, `team_figures_test`, `scoring_rights_test`, `feed_visibility_test` |
+| eligibility views / rights | `core/session/capabilities.dart` | `capabilities_test`, `capabilities_matrix_test` |
+| usage counters | `features/platform/presentation/usage_trend.dart` (`counterIn`, `counterKeys` only) | `platform_test` |
+| locale negotiation | `core/l10n/locale_controller.dart`, `core/http/interceptors.dart` (`_LocaleInterceptor`, `_TenantInterceptor` only) | `locale_test`, `interceptors_test` |
+
+First run: 280 of 442 viable mutants detected (63 %; 30 not viable), 478 s with 4 workers — the Capabilities matrix,
+the game-order tie-breaks and the Java UUID order, Backoff, SyncStatus and the game clock had almost no assertions.
+After the new tests (`capabilities_matrix_test`, `event_ordering_test`, `backoff_test`, `sync_status_test`,
+`projector_rules_test`, more cases in `game_clock_test`, `team_figures_test`, `match_store_test`,
+`scoring_rights_test`; no `lib/` change was needed) and 12 accepted equivalents: **430/430 detected (100 %; 428
+killed, 2 timed out), 30 not viable, 617 s with 3 workers** (`just web-mutation`, development Mac shared with other
+work). **Baseline 100.**
+
+Accepted equivalents (`equivalent` in the manifest, with the full reasons): `backoff.dart` `attempt >= 20` as `> 20`
+or `>= 21` (at attempt 20 both branches give `1 << 20`); `game_clock.dart` `seconds < 0` as `<= 0` or `< 1` (0 maps to
+0 either way) and the `_remaining = 0` after the last tick (it is exactly 0 there); `event_ordering.dart` `radix: 16`
+as 17 (the same for hex digits); `projector.dart` the fold's `?? 0` as `-1`, the `_enteredAt` initial value, `max(0, …)`
+as `max(-1, …)` and the `_enteredAt = clock` after an accrual (the Dart twins of the Java `ProjectionRun` case: the
+value is always set before it is read, and game order never lets the clock go up).
+
 ## Changing the baseline
 
-Each threshold is the achieved score rounded down to a multiple of 5. Raise it when a module's score settles higher;
-lower it only with a reason recorded here (for example a new equivalent mutant PIT cannot exclude). A scheduled run
+Each threshold is the achieved score rounded down to a whole percent (decision 56, WP88; until then a multiple of 5).
+Raise it when a module's score settles higher; lower it only with a reason recorded here (for example a new equivalent
+mutant PIT cannot exclude). A scheduled run
 that fails below the baseline means a recent change added rule code without the assertions that pin it: open the
 module's report, kill the survivors, keep the threshold.
