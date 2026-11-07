@@ -71,7 +71,7 @@ owner's decisions 1–63 and the backlog are in `docs/wp/FOLLOW-UPS.md`. The for
 1. **Podman API without the idle timeout** (WP87): **done 2026-11-07** (drop-in `no-timeout.conf` in the VM, service
    running with `--time=0`). Survives stop/start and reboots; lost on `podman machine rm` / `reset`. Follow-up in
    FOLLOW-UPS "Infra": a repo playbook for `podman machine init --playbook` plus a self-healing `just doctor` step.
-   Also new there: `NVD_API_KEY` must exist as a *Dependabot* secret too (dependency-check is red on Dependabot PRs).
+   `NVD_API_KEY` (new key of 2026-11-07) is now a repository and a Dependabot secret and in the owner's `.env`.
 2. **GitHub for `bump-pins`** (WP89): settings **done 2026-11-07** (Actions may create PRs, token read-only, label
    `dependencies`). No run yet; first schedule Monday 2026-11-09 05:17 UTC. When the PR arrives: close and reopen it
    (a `GITHUB_TOKEN` PR does not start `ci` / `e2e`); its Envoy Gateway v1.10.0 bump needs the Gateway API matrix
@@ -80,9 +80,9 @@ owner's decisions 1–63 and the backlog are in `docs/wp/FOLLOW-UPS.md`. The for
    (decision 49); when it is fixed upstream, drop the `path: /` selector (ADR-0033 amendment).
 4. **Local chromedriver** is 156, CI pins Chrome for Testing + chromedriver 157.0.8103.38; update the local one
    (Chrome for Testing download, `xattr -d com.apple.quarantine`) when the local Chrome moves.
-5. **Compose stack after the round**: `just up` (nginx edge headers of WP84, Keycloak event log level of WP85) and
-   `just seed-users` (patches the realm's event settings). The SMTP keys of `.env.example` are optional locally (the
-   defaults reach MailHog).
+5. **Compose stack after the round**: **done 2026-11-07** (`just up` 19:28, `just seed-users` 20:40: realm event
+   settings of WP85 applied, dev users unchanged). The SMTP keys of `.env.example` are optional locally (the defaults
+   reach MailHog).
 6. **Events default flip**: run a shadow period (ADR-0037, `runbooks/events.md` "Backfill and shadow period"), then
    decide.
 7. Review the Dependabot and `bump-pins` PRs as they arrive (weekly, Monday).
@@ -126,6 +126,10 @@ owner's decisions 1–63 and the backlog are in `docs/wp/FOLLOW-UPS.md`. The for
   before each check; by hand: `podman machine ssh "sudo date -u -s @$(date +%s)"`.
 
 ## Next candidates without a work package (see FOLLOW-UPS.md for the full list)
+- **Super admin console as a hub** (owner, 2026-11-07; FOLLOW-UPS "Web app"): Academies, Users (new
+  `GET /platform/users`), Pending approvals, Audit trail, Billing "coming soon"; landing on the hub; nav entry for a
+  super admin with memberships. Confirm first why the owner lands on the audit trail (code sends a pure super admin
+  to the academies list).
 - **Exercise catalogue** (decision 54): exercises as an entity (global localised plus tenant-defined), templates
   referencing them, searchable and quick-addable on their own; athlete 3.0.0.
 - **Events default flip**: a shadow period over days on kind or staging (parked 0, lag in seconds), then `replica` by

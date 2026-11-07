@@ -272,10 +272,11 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
   home is on its disk) and is lost only on `podman machine rm` / `reset` / a re-init: making it re-apply itself is the
   item "Podman machine drop-in: playbook + doctor check" under "Infra, CI, e2e". CI's rootless `podman.socket` has
   the same default.
-- **NVD key for Dependabot PRs** (found 2026-11-07): `dependency-check` is red on every Dependabot PR (first: PR #5,
-  run 42367339615) because a workflow triggered by Dependabot sees only *Dependabot* secrets, and `NVD_API_KEY` exists
-  only as a repository secret (`NVD_API_KEY:` empty in the job log, "Error updating the NVD Data"). Add the same value
-  under Settings > Secrets and variables > Dependabot (`gh secret set NVD_API_KEY --app dependabot`), re-run the job.
+- **NVD key for Dependabot PRs** (found 2026-11-07, **done by the owner the same day**): a workflow triggered by
+  Dependabot sees only *Dependabot* secrets, so `dependency-check` was red on Dependabot PR #5 (run 42367339615,
+  `NVD_API_KEY:` empty). A new NVD key (the old one was not kept anywhere) is now the repository secret and the
+  Dependabot secret of the same name, and in the owner's `.env` for `just scan`. PR #5 closed and reopened (the old
+  run cannot be re-run): `dependency-check` green on the new `ci` run 42376816401 with the Dependabot secret.
 - **bump-pins PRs** (WP89): repository settings **done by the owner on 2026-11-07** ("Allow GitHub Actions to create
   and approve pull requests" on, default token permissions read, label `dependencies` present; verified with
   `gh api repos/davidbejar/hoops-academy/actions/permissions/workflow`). The workflow has not run yet (first schedule
@@ -332,6 +333,23 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
 - **Offline end-session** is skipped, not queued (SSO session lives until its 4 h idle timeout) — accepted, ADR-0019.
 
 ### Web app (`apps/web`)
+- **Super admin console: a proper admin menu** (owner, 2026-11-07). Today a super admin without memberships lands on
+  `/platform`: the academies list (title "Platform", search, status chips, "New academy"), with two header buttons,
+  "Requests" (`/platform/requests`, WP90) and "Academies' activity" (`/platform/activity`, WP34), and per academy a
+  detail page (admins, usage, suspend/withdraw/reactivate, its activity). A super admin who is also a member lands on
+  that academy's hub and reaches the console only through Profile → Platform (WP14). There was never a hub or submenu
+  (the console was born as the list in ced3680 and was restyled, not restructured, in WP75), so nothing was lost;
+  the owner reports landing on the audit trail: confirm with the account used (memberships? deep link?) before
+  building. Wanted: the platform destination becomes a hub like the academy admin hub (WP75), with one sub-screen per
+  area and the rail/bottom nav or a hub list to move between them: **Academies** (the current list + detail),
+  **Users** (every login across academies: `core.app_user`, with its memberships per academy, e-mail change (WP31),
+  temporary password; needs a new contract `GET /platform/users` with search and paging, core minor), **Pending
+  approvals** (the sign-up requests from the landing form, WP90: accept creates the academy and its administrator,
+  reject mails the requester; the pending count as a badge; the eligibility approvals inside an academy are not this), **Audit trail** (the current platform activity), **Billing** (placeholder screen "coming
+  soon" over the v2 seams; no backend). Also: the super admin's landing is the hub, not a sub-screen; a super admin
+  with memberships gets the platform entry in the nav (or the switcher), not only in Profile; es/en/id labels, goldens,
+  the `web_smoke.sh` platform step and the user guide `docs/guides` updated. Probably two WPs: core `/platform/users`
+  (Opus: cross-tenant read of logins, platform read policy as the audit one) and the web hub (Sonnet).
 - **Design-system kit follow-ups** (WP72–WP75): `PageBody` / `ContentFrame` centre a narrower section (a bare
   `PageHeader` is centred; worked around with `SizedBox(width: double.infinity)`): stretch sections in the kit;
   `SectionCard` should provide a transparent `Material` for a `CheckboxListTile`; `AsyncBody` still renders
