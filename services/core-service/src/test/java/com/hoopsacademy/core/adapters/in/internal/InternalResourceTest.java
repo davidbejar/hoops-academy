@@ -95,9 +95,11 @@ class InternalResourceTest {
         RosterDb.assignment(tenant, nextTeam, child, "7");
 
         given().filter(Contract.CORE).get("/internal/authz/{t}/{s}", tenant, coach).then().statusCode(200)
-                .body("staffTeamIds", containsInAnyOrder(todayTeam.toString(), nextTeam.toString()));
+                .body("staffTeamIds", containsInAnyOrder(todayTeam.toString(), nextTeam.toString()))
+                .body("historicStaffTeamIds", contains(oldTeam.toString()));
         given().filter(Contract.CORE).get("/internal/authz/{t}/{s}", tenant, subject).then().statusCode(200)
-                .body("playerTeamIds", containsInAnyOrder(todayTeam.toString(), nextTeam.toString()));
+                .body("playerTeamIds", containsInAnyOrder(todayTeam.toString(), nextTeam.toString()))
+                .body("historicStaffTeamIds", empty());
     }
 
     @Test

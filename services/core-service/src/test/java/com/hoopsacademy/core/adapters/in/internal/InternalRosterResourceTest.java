@@ -66,6 +66,7 @@ class InternalRosterResourceTest {
                 .body("tenantId", equalTo(tenant))
                 .body("teamId", equalTo(lions.toString()))
                 .body("seasonId", equalTo(season.toString()))
+                .body("seasonEndDate", equalTo(RosterDb.TODAY.plusDays(240).toString()))
                 .body("teamName", equalTo("Lions"))
                 .body("players.playerId", containsInAnyOrder(ann.toString(), bob.toString()))
                 .body("players.find { it.playerId == '" + ann + "' }.displayName", equalTo("Ann A"))
