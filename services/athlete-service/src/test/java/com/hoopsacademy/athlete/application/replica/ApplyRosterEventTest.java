@@ -142,6 +142,55 @@ class ApplyRosterEventTest {
     }
 
     @Test
+    void aRemovalKeepsOnlyTheIdentityOfEveryAggregateAndALateOlderChangeCannotBringItBack() {
+        UUID person = UUID.randomUUID();
+        UUID player = UUID.randomUUID();
+        UUID assignment = UUID.randomUUID();
+        List<CoreEvents.Record> changes = List.of(
+                CoreEvents.tenant(tenant, "ACTIVE", "Europe/Madrid"),
+                CoreEvents.person(tenant, person, "Pablo Player", "kc-" + person, List.of("PLAYER"), true),
+                CoreEvents.player(tenant, player, person, "Pablo Player", "ACTIVE", LocalDate.of(2014, 3, 9), "MALE"),
+                CoreEvents.team(tenant, team, "U12", SEASON_END),
+                CoreEvents.teamPlayer(tenant, assignment, team, player, "7", LocalDate.of(2026, 9, 15), null, null));
+        List<CoreEvents.Record> removals = List.of(CoreEvents.tenantRemoved(tenant),
+                CoreEvents.removed(tenant, "person", person), CoreEvents.removed(tenant, "player", player),
+                CoreEvents.removed(tenant, "team", team), CoreEvents.removed(tenant, "team-player", assignment));
+
+        assertThat(feed.apply(removals.toArray(CoreEvents.Record[]::new))).containsOnly(Outcome.APPLIED);
+        assertThat(feed.apply(changes.toArray(CoreEvents.Record[]::new))).as("built before the removals: older")
+                .containsOnly(Outcome.STALE);
+
+        assertThat(count("select count(*) from athlete.tenant_ref where tenant_id = ? and removed and status is null "
+                + "and timezone is null")).isEqualTo(1);
+        assertThat(count("select count(*) from athlete.person_ref where tenant_id = ? and removed and display_name is null "
+                + "and subject is null and roles is null and active is null")).isEqualTo(1);
+        assertThat(count("select count(*) from athlete.player_ref where tenant_id = ? and removed and person_id is null "
+                + "and display_name is null and status is null and birth_date is null and gender is null")).isEqualTo(1);
+        assertThat(count("select count(*) from athlete.team_ref where tenant_id = ? and removed and season_id is null "
+                + "and season_end_date is null and name is null")).isEqualTo(1);
+        assertThat(count("select count(*) from athlete.team_player_ref where tenant_id = ? and removed and team_id is null "
+                + "and player_id is null and jersey_number is null and joined_on is null")).isEqualTo(1);
+        assertNotFound(this::roster);
+    }
+
+    @Test
+    void anAggregateChangedAfterItsRemovalIsBack() {
+        feed.apply(CoreEvents.team(tenant, team, "U12", SEASON_END), CoreEvents.removed(tenant, "team", team));
+        assertNotFound(this::roster);
+
+        assertThat(feed.apply(CoreEvents.team(tenant, team, "U12 again", SEASON_END))).isEqualTo(Outcome.APPLIED);
+
+        assertThat(roster().teamName()).isEqualTo("U12 again");
+    }
+
+    @Test
+    void aTenantRemovalLeavesTheTenantRegistryAlone() {
+        feed.apply(CoreEvents.tenantRemoved(tenant));
+
+        assertThat(registry.zoneOf(tenant)).contains(ZoneId.of("Europe/Madrid"));
+    }
+
+    @Test
     void everyAggregateOfTheRosterIsUpserted() {
         UUID person = UUID.randomUUID();
         UUID player = UUID.randomUUID();

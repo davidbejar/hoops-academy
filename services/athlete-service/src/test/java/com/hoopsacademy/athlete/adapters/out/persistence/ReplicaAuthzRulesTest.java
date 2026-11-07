@@ -169,6 +169,55 @@ class ReplicaAuthzRulesTest {
         assertThat(resolve()).isPresent();
     }
 
+    /** WP82: what core removed is gone, as from core's answer (the rows are soft-removed). */
+    @Test
+    void removedPlayersAssignmentsAndTeamsNoLongerCount() {
+        UUID own = UUID.randomUUID();
+        UUID child = UUID.randomUUID();
+        UUID removedChild = UUID.randomUUID();
+        UUID current = UUID.randomUUID();
+        UUID removedTeam = UUID.randomUUID();
+        UUID removedAssignment = UUID.randomUUID();
+        feed.apply(CoreEvents.person(tenant, person, "Mia Member", subject, List.of("COACH", "PARENT", "PLAYER"), true),
+                CoreEvents.player(tenant, own, person, "Mia Member", "ACTIVE", LocalDate.of(2010, 1, 1), "FEMALE"),
+                CoreEvents.player(tenant, child, UUID.randomUUID(), "Kid", "ACTIVE", LocalDate.of(2014, 1, 1), "MALE"),
+                CoreEvents.player(tenant, removedChild, UUID.randomUUID(), "Gone", "ACTIVE", LocalDate.of(2014, 1, 1),
+                        "MALE"),
+                CoreEvents.guardianLink(tenant, UUID.randomUUID(), person, child),
+                CoreEvents.guardianLink(tenant, UUID.randomUUID(), person, removedChild),
+                CoreEvents.team(tenant, current, "Current", FUTURE), CoreEvents.team(tenant, removedTeam, "Gone", FUTURE),
+                CoreEvents.teamPlayer(tenant, removedAssignment, current, child, null, LocalDate.now().minusMonths(1), null,
+                        null),
+                assignment(removedTeam, child, null, null), assignment(current, removedChild, null, null),
+                CoreEvents.teamStaff(tenant, removedTeam, person, "COACH"),
+                CoreEvents.removed(tenant, "player", own), CoreEvents.removed(tenant, "player", removedChild),
+                CoreEvents.removed(tenant, "team-player", removedAssignment), CoreEvents.removed(tenant, "team", removedTeam));
+
+        AuthzContext context = resolve().orElseThrow();
+
+        assertThat(context.ownPlayerId()).isEmpty();
+        assertThat(context.linkedPlayerIds()).containsExactly(child);
+        assertThat(context.playerTeamIds()).isEmpty();
+        assertThat(context.staffTeamIds()).isEmpty();
+        assertThat(context.historicStaffTeamIds()).isEmpty();
+    }
+
+    @Test
+    void aRemovedPersonIsNotAMember() {
+        feed.apply(CoreEvents.person(tenant, person, "Ada Admin", subject, List.of("ADMIN"), true),
+                CoreEvents.removed(tenant, "person", person));
+
+        assertThat(resolve()).isEmpty();
+    }
+
+    @Test
+    void aRemovedTenantHasNoMembers() {
+        feed.apply(CoreEvents.person(tenant, person, "Ada Admin", subject, List.of("ADMIN"), true),
+                CoreEvents.tenantRemoved(tenant));
+
+        assertThat(resolve()).isEmpty();
+    }
+
     private CoreEvents.Record assignment(UUID team, UUID player, LocalDate leftOn, String invalidReason) {
         return CoreEvents.teamPlayer(tenant, UUID.randomUUID(), team, player, null, LocalDate.now().minusMonths(1), leftOn,
                 invalidReason);

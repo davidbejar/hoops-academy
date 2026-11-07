@@ -155,6 +155,40 @@ class ReplicaRosterRulesTest {
         assertThat(tenantScope.runAs(tenant, () -> replica.players(tenant, List.of()))).isEmpty();
     }
 
+    /** WP82: removed players, assignments and staff persons leave the roster; a removed team is not found. */
+    @Test
+    void removedPlayersAssignmentsAndPersonsLeaveTheRoster() {
+        UUID kept = player("Cara Current", LocalDate.of(2013, 1, 1), "FEMALE");
+        UUID removedPlayer = player("Gina Gone", LocalDate.of(2013, 1, 1), "FEMALE");
+        UUID unassigned = player("Una Unassigned", LocalDate.of(2013, 1, 1), "FEMALE");
+        UUID assignment = UUID.randomUUID();
+        UUID coach = UUID.randomUUID();
+        UUID removedCoach = UUID.randomUUID();
+        assign(kept, LocalDate.of(2026, 9, 1), null, null);
+        assign(removedPlayer, LocalDate.of(2026, 9, 1), null, null);
+        feed.apply(CoreEvents.teamPlayer(tenant, assignment, team, unassigned, null, LocalDate.of(2026, 9, 1), null, null),
+                CoreEvents.person(tenant, coach, "Cole Coach", null, List.of("COACH"), true),
+                CoreEvents.person(tenant, removedCoach, "Gus Gone", null, List.of("COACH"), true),
+                CoreEvents.teamStaff(tenant, team, coach, "COACH"), CoreEvents.teamStaff(tenant, team, removedCoach, "COACH"),
+                CoreEvents.removed(tenant, "player", removedPlayer), CoreEvents.removed(tenant, "team-player", assignment),
+                CoreEvents.removed(tenant, "person", removedCoach));
+
+        assertThat(roster().playerIds()).containsExactly(new PlayerId(kept));
+        assertThat(roster().staff()).containsExactly(new PersonId(coach));
+        assertThat(tenantScope.runAs(tenant, () -> replica.players(tenant,
+                List.of(new PlayerId(kept), new PlayerId(removedPlayer))))).containsOnlyKeys(new PlayerId(kept));
+    }
+
+    @Test
+    void aRemovedTeamOrTenantIsNotFound() {
+        UUID p = player("Cara Current", LocalDate.of(2013, 1, 1), "FEMALE");
+        feed.apply(CoreEvents.removed(tenant, "team", team));
+        assertThatThrownBy(this::roster).isInstanceOf(NotFoundException.class);
+
+        feed.apply(CoreEvents.tenantRemoved(tenant));
+        assertThat(tenantScope.runAs(tenant, () -> replica.players(tenant, List.of(new PlayerId(p))))).isEmpty();
+    }
+
     private TeamRoster roster() {
         return tenantScope.runAs(tenant, () -> replica.teamRoster(tenant, new TeamId(team)));
     }

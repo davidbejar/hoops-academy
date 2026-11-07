@@ -164,6 +164,19 @@ public final class CoreEvents {
         return record("core.guardian-link", "guardian-link.removed", tenant, link, linkPayload(guardian, player));
     }
 
+    /**
+     * The removal core publishes when it deletes a person, player, team, team assignment or tenant (WP81):
+     * {@code <aggregate>.removed} with an empty payload ({@code aggregate} is {@code person}, {@code player}, {@code team},
+     * {@code team-player} or {@code tenant}, whose id is the tenant's).
+     */
+    public static Record removed(TenantId tenant, String aggregate, UUID id) {
+        return record("core." + aggregate, aggregate + ".removed", tenant, id, JSON.createObjectNode());
+    }
+
+    public static Record tenantRemoved(TenantId tenant) {
+        return removed(tenant, "tenant", tenant.value());
+    }
+
     /** Core's team-staff aggregate id: UUID v3 of {@code team-staff:<teamId>:<personId>}. */
     public static UUID staffId(UUID team, UUID person) {
         return UUID.nameUUIDFromBytes(("team-staff:" + team + ":" + person).getBytes(StandardCharsets.UTF_8));

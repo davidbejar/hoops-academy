@@ -68,19 +68,20 @@ class CoreEventDecoderTest {
     }
 
     /** WP81: core removes any aggregate now; athlete keeps those rows until WP82 adds their soft removal. */
+    /** WP81 publishes a removal for every aggregate; athlete soft-removes all of them (WP82). */
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"core.person", "core.player", "core.team",
             "core.team-player", "core.tenant"})
-    void theRemovalsAthleteDoesNotApplyYetAreValidButIgnored(String topic) throws IOException {
+    void theRemovalsOfPersonsPlayersTeamsAssignmentsAndTenantsCarryTheirIdentity(String topic) throws IOException {
         JsonNode removal = removalExample(topic);
 
-        DecodedEvent decoded = decoder.decode(topic,
-                removal.get("tenantId").asText() + ":" + removal.get("aggregateId").asText(), removal.toString());
+        RosterEvent event = valid(topic, removal);
 
-        assertThat(decoded).isInstanceOfSatisfying(DecodedEvent.Ignored.class, ignored -> {
-            assertThat(ignored.type()).isEqualTo(removal.get("type").asText());
-            assertThat(ignored.occurredAt()).isEqualTo(Instant.parse(removal.get("occurredAt").asText()));
-        });
+        assertThat(event.change()).isEqualTo(new RosterChange.Removed(RosterTopic.of(topic).orElseThrow()));
+        assertThat(event.topic().topicName()).isEqualTo(topic);
+        assertThat(event.eventId()).hasToString(removal.get("eventId").asText());
+        assertThat(event.aggregateId()).hasToString(removal.get("aggregateId").asText());
+        assertThat(event.occurredAt()).isEqualTo(Instant.parse(removal.get("occurredAt").asText()));
     }
 
     @Test
