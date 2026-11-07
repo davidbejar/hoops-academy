@@ -2,11 +2,14 @@ import '../../../core/api/athlete_api.dart' as ath;
 
 /// Training plans, assignments and completions.
 abstract class PlansRepository {
+  /// Template names and texts come in [language] (`Accept-Language`, ISO code of the UI language); tenant plans are
+  /// returned as stored.
   Future<List<ath.TrainingPlanSummary>> plans({
     required bool templates,
     String? query,
+    String? language,
   });
-  Future<ath.TrainingPlan> plan(String planId);
+  Future<ath.TrainingPlan> plan(String planId, {String? language});
   Future<ath.TrainingPlan> createPlan(ath.CreateTrainingPlanRequest request);
   Future<ath.TrainingPlan> updatePlan(
     String planId,
@@ -15,7 +18,11 @@ abstract class PlansRepository {
   Future<void> deletePlan(String planId);
 
   /// Copy-on-use: templates are read-only, so they are copied before use.
-  Future<ath.TrainingPlan> copyPlan(String planId, {String? name});
+  Future<ath.TrainingPlan> copyPlan(
+    String planId, {
+    String? name,
+    String? language,
+  });
   Future<ath.PlanItem> addItem(String planId, ath.PlanItemInput input);
   Future<ath.PlanItem> updateItem(
     String planId,
@@ -59,16 +66,22 @@ class ApiPlansRepository implements PlansRepository {
   Future<List<ath.TrainingPlanSummary>> plans({
     required bool templates,
     String? query,
+    String? language,
   }) async => (await _plans.listTrainingPlans(
     xTenantId: _t,
     template: templates,
     q: query,
     size: 100,
+    acceptLanguage: language,
   )).data!.items.toList();
 
   @override
-  Future<ath.TrainingPlan> plan(String planId) async =>
-      (await _plans.getTrainingPlan(xTenantId: _t, planId: planId)).data!;
+  Future<ath.TrainingPlan> plan(String planId, {String? language}) async =>
+      (await _plans.getTrainingPlan(
+        xTenantId: _t,
+        planId: planId,
+        acceptLanguage: language,
+      )).data!;
 
   @override
   Future<ath.TrainingPlan> createPlan(
@@ -94,14 +107,16 @@ class ApiPlansRepository implements PlansRepository {
   }
 
   @override
-  Future<ath.TrainingPlan> copyPlan(String planId, {String? name}) async =>
-      (await _plans.copyTrainingPlan(
-        xTenantId: _t,
-        planId: planId,
-        copyTrainingPlanRequest: ath.CopyTrainingPlanRequest(
-          (b) => b.name = name,
-        ),
-      )).data!;
+  Future<ath.TrainingPlan> copyPlan(
+    String planId, {
+    String? name,
+    String? language,
+  }) async => (await _plans.copyTrainingPlan(
+    xTenantId: _t,
+    planId: planId,
+    acceptLanguage: language,
+    copyTrainingPlanRequest: ath.CopyTrainingPlanRequest((b) => b.name = name),
+  )).data!;
 
   @override
   Future<ath.PlanItem> addItem(String planId, ath.PlanItemInput input) async =>

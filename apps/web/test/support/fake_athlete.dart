@@ -620,6 +620,9 @@ class FakePlansRepository with Faulty implements PlansRepository {
   final List<ath.PlanAssignment> assignmentList;
   final List<ath.PlanCompletion> completionList;
   String? lastQuery;
+
+  /// `Accept-Language` code of every plan read / copy, in call order (null = none given).
+  final List<String?> languages = [];
   ath.CreatePlanAssignmentRequest? assigned;
   String? copiedFrom;
 
@@ -644,8 +647,10 @@ class FakePlansRepository with Faulty implements PlansRepository {
   Future<List<ath.TrainingPlanSummary>> plans({
     required bool templates,
     String? query,
+    String? language,
   }) => run('plans', () {
     lastQuery = query;
+    languages.add(language);
     final q = query?.toLowerCase();
     return [
       for (final p in planList)
@@ -672,8 +677,11 @@ class FakePlansRepository with Faulty implements PlansRepository {
   ];
 
   @override
-  Future<ath.TrainingPlan> plan(String planId) =>
-      run('plan', () => _get(planId));
+  Future<ath.TrainingPlan> plan(String planId, {String? language}) =>
+      run('plan', () {
+        languages.add(language);
+        return _get(planId);
+      });
 
   @override
   Future<ath.TrainingPlan> createPlan(ath.CreateTrainingPlanRequest request) =>
@@ -701,18 +709,22 @@ class FakePlansRepository with Faulty implements PlansRepository {
       run('deletePlan', () => planList.removeWhere((p) => p.id == planId));
 
   @override
-  Future<ath.TrainingPlan> copyPlan(String planId, {String? name}) =>
-      run('copyPlan', () {
-        copiedFrom = planId;
-        final src = _get(planId);
-        final copy = planOf(
-          'copy-${planList.length}',
-          name ?? src.name,
-          items: src.items.toList(),
-        );
-        planList.add(copy);
-        return copy;
-      });
+  Future<ath.TrainingPlan> copyPlan(
+    String planId, {
+    String? name,
+    String? language,
+  }) => run('copyPlan', () {
+    copiedFrom = planId;
+    languages.add(language);
+    final src = _get(planId);
+    final copy = planOf(
+      'copy-${planList.length}',
+      name ?? src.name,
+      items: src.items.toList(),
+    );
+    planList.add(copy);
+    return copy;
+  });
 
   @override
   Future<ath.PlanItem> addItem(String planId, ath.PlanItemInput input) =>

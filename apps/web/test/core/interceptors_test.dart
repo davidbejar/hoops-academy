@@ -51,6 +51,20 @@ void main() {
     expect(headers['Accept-Language'], 'id');
   });
 
+  test(
+    'an explicit Accept-Language of the call wins over the ambient one',
+    () async {
+      final (dio, adapter, _) = _build([const FakeResponse(200, '{}')]);
+
+      await dio.get<Object>(
+        '/api/athlete/training-plans',
+        options: Options(headers: {'Accept-Language': 'en'}),
+      );
+
+      expect(adapter.requests.single.headers['Accept-Language'], 'en');
+    },
+  );
+
   test('does not send X-Tenant-Id to /me or /platform', () async {
     final (dio, adapter, _) = _build([const FakeResponse(200, '{}')]);
 

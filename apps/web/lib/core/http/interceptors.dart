@@ -6,7 +6,7 @@ import '../errors/app_error.dart';
 
 const _retriedKey = 'hoops.retried';
 
-/// Builds the interceptor chain, in order: locale, tenant, auth (bearer +
+/// Builds the interceptor chain, in order: locale (an explicit header wins), tenant, auth (bearer +
 /// 401 refresh), Problem+JSON mapping. Dependencies are callbacks so the
 /// chain is trivial to test and has no knowledge of Riverpod.
 List<Interceptor> buildInterceptors({
@@ -41,7 +41,9 @@ class _LocaleInterceptor extends Interceptor {
     // still be building. One microtask later the app root has published the
     // current language/tenant into the request context.
     await Future<void>.microtask(() {});
-    options.headers['Accept-Language'] = _languageCode();
+    // A call that names its language (plan templates, which refetch on a
+    // language switch before the app root has published it) keeps it.
+    options.headers.putIfAbsent('Accept-Language', _languageCode);
     handler.next(options);
   }
 }

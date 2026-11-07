@@ -5,6 +5,7 @@ import '../../tenant/application/tenant_providers.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/api/clear_list.dart';
+import '../../../core/l10n/locale_controller.dart';
 import '../../../core/session/capabilities.dart';
 import '../../roster/application/roster_providers.dart';
 import '../data/plans_repository.dart';
@@ -24,6 +25,11 @@ final plansRepositoryProvider = Provider<PlansRepository>(
     ref.watch(ath.athleteApiProvider),
     ref.watch(api.tenantIdProvider),
   ),
+);
+
+/// The UI language code sent with template reads: watching it refetches them when the person switches language.
+final _uiLanguageProvider = Provider<String>(
+  (ref) => ref.watch(effectiveLocaleProvider).languageCode,
 );
 
 ath.Date toAthDate(DateTime d) => ath.Date(d.year, d.month, d.day);
@@ -384,14 +390,18 @@ class PlanLibraryNotifier extends AsyncNotifier<List<ath.TrainingPlanSummary>> {
     final q = ref.watch(planSearchProvider).trim();
     return ref
         .watch(plansRepositoryProvider)
-        .plans(templates: templates, query: q.isEmpty ? null : q);
+        .plans(
+          templates: templates,
+          query: q.isEmpty ? null : q,
+          language: ref.watch(_uiLanguageProvider),
+        );
   }
 
   /// Copy-on-use: returns the copy so the caller can open/assign it.
   Future<ath.TrainingPlan> copy(String planId, {String? name}) async {
     final copy = await ref
         .read(plansRepositoryProvider)
-        .copyPlan(planId, name: name);
+        .copyPlan(planId, name: name, language: ref.read(_uiLanguageProvider));
     ref.invalidate(planLibraryProvider);
     return copy;
   }
@@ -431,10 +441,11 @@ class PlanSearchResults {
 final planSearchResultsProvider = FutureProvider.autoDispose
     .family<PlanSearchResults, String>((ref, query) async {
       final repo = ref.watch(plansRepositoryProvider);
+      final language = ref.watch(_uiLanguageProvider);
       final q = query.trim().isEmpty ? null : query.trim();
       final both = await Future.wait([
-        repo.plans(templates: false, query: q),
-        repo.plans(templates: true, query: q),
+        repo.plans(templates: false, query: q, language: language),
+        repo.plans(templates: true, query: q, language: language),
       ]);
       return PlanSearchResults(academy: both[0], templates: both[1]);
     });
@@ -453,8 +464,9 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
   PlansRepository get _repo => ref.read(plansRepositoryProvider);
 
   @override
-  Future<ath.TrainingPlan> build() =>
-      ref.watch(plansRepositoryProvider).plan(planId);
+  Future<ath.TrainingPlan> build() => ref
+      .watch(plansRepositoryProvider)
+      .plan(planId, language: ref.watch(_uiLanguageProvider));
 
   Future<void> _reload() async {
     ref.invalidateSelf();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/athlete_api.dart' as ath;
+import 'package:hoops_app/core/l10n/locale_controller.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
@@ -36,6 +37,49 @@ FakePlansRepository _plans() => FakePlansRepository(
 );
 
 void main() {
+  group('plan templates follow the UI language (WP61)', () {
+    testWidgets('the library asks for the language and refetches on a switch', (
+      tester,
+    ) async {
+      final plans = _plans();
+      final h = await pumpAs(
+        tester,
+        roles: {TenantRole.coach},
+        staffTeamIds: {'t1'},
+        core: athleteCore(),
+        athlete: FakeAthlete(plans: plans),
+        location: '/training/plans',
+      );
+      expect(plans.languages, isNotEmpty);
+      expect(plans.languages.toSet(), {'es'});
+      plans.languages.clear();
+
+      await h.container.read(localePreferenceProvider.notifier).set('id');
+      await tester.pumpAndSettle();
+
+      expect(plans.languages, isNotEmpty);
+      expect(plans.languages.toSet(), {'id'});
+    });
+
+    testWidgets('an open plan is read again in the new language', (
+      tester,
+    ) async {
+      final plans = _plans();
+      final h = await pumpAs(
+        tester,
+        roles: {TenantRole.coach},
+        staffTeamIds: {'t1'},
+        core: athleteCore(),
+        athlete: FakeAthlete(plans: plans),
+        location: '/training/plans/tpl-1',
+      );
+      expect(plans.languages.last, 'es');
+      await h.container.read(localePreferenceProvider.notifier).set('en');
+      await tester.pumpAndSettle();
+      expect(plans.languages.last, 'en');
+    });
+  });
+
   group('plan library', () {
     testWidgets(
       'own plans first, templates on the second tab; summary shows items and minutes',
