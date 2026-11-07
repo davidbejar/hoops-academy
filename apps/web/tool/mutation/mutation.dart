@@ -223,6 +223,10 @@ class Mutant {
   }
 }
 
+/// The 1-based column of [mutant] in [source].
+int columnOf(String source, Mutant mutant) =>
+    mutant.offset - source.lastIndexOf('\n', mutant.offset - 1);
+
 String applyMutant(String source, Mutant mutant) => source.replaceRange(
   mutant.offset,
   mutant.offset + mutant.original.length,
@@ -509,6 +513,8 @@ class Equivalent {
     required this.line,
     required this.replacement,
     required this.reason,
+    this.column,
+    this.occurrence,
   });
 
   final String file;
@@ -520,6 +526,14 @@ class Equivalent {
   /// The replacement text of the mutant.
   final String replacement;
   final String reason;
+
+  /// The 1-based column of the mutant, when the line holds the same mutant
+  /// more than once.
+  final int? column;
+
+  /// Which of the file's lines with this text (1 = the first), when the file
+  /// holds the line more than once.
+  final int? occurrence;
 }
 
 /// `tool/mutation/manifest.json`: what to mutate, which tests run, the
@@ -562,6 +576,8 @@ class Manifest {
             line: e['line'] as String,
             replacement: e['replacement'] as String,
             reason: e['reason'] as String,
+            column: e['column'] as int?,
+            occurrence: e['occurrence'] as int?,
           ),
       ],
     );
@@ -575,13 +591,23 @@ class Manifest {
   /// A mutant's run may take this many times the unmutated run.
   final int timeoutFactor;
 
-  /// The accepted equivalent matching [mutant] of [file] on [sourceLine].
-  Equivalent? equivalentFor(String file, Mutant mutant, String sourceLine) {
+  /// The accepted equivalent matching [mutant] of [file], whose [source] it
+  /// changes.
+  Equivalent? equivalentFor(String file, Mutant mutant, String source) {
+    final lines = source.split('\n');
+    final line = lines[mutant.line - 1].trim();
+    final column = columnOf(source, mutant);
+    final occurrence = lines
+        .take(mutant.line)
+        .where((l) => l.trim() == line)
+        .length;
     for (final e in equivalents) {
       if (e.file == file &&
           e.operator == mutant.operator.name &&
-          e.line == sourceLine.trim() &&
-          e.replacement == mutant.replacement) {
+          e.line == line &&
+          e.replacement == mutant.replacement &&
+          (e.column == null || e.column == column) &&
+          (e.occurrence == null || e.occurrence == occurrence)) {
         return e;
       }
     }

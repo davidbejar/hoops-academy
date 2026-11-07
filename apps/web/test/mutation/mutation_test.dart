@@ -186,6 +186,57 @@ final e = f((v) {
       expect(manifest.equivalentFor('lib/b.dart', mutant, 'x = 3;'), isNull);
     });
 
+    test('a column tells two equal mutants of one line apart', () {
+      final manifest = Manifest.parse('''
+{
+  "baseline": 90,
+  "targets": [{"file": "lib/a.dart", "tests": ["test/a_test.dart"]}],
+  "equivalent": [
+    {"file": "lib/a.dart", "operator": "boundary", "line": "f(2, 2);",
+     "replacement": "3", "column": 6, "reason": "the second 2 is a cap"}
+  ]
+}
+''');
+      const source = 'g();\nf(2, 2);\n';
+      final threes = [
+        for (final m in findMutants(source))
+          if (m.replacement == '3') m,
+      ];
+      expect(threes.map((m) => columnOf(source, m)), [3, 6]);
+      expect(
+        manifest.equivalentFor('lib/a.dart', threes.first, source),
+        isNull,
+      );
+      expect(
+        manifest.equivalentFor('lib/a.dart', threes.last, source),
+        isNotNull,
+      );
+    });
+
+    test('an occurrence tells equal lines of one file apart', () {
+      final manifest = Manifest.parse('''
+{
+  "baseline": 90,
+  "targets": [{"file": "lib/a.dart", "tests": ["test/a_test.dart"]}],
+  "equivalent": [
+    {"file": "lib/a.dart", "operator": "removeStatement", "line": "g();",
+     "replacement": ";", "occurrence": 2, "reason": "the second call repeats"}
+  ]
+}
+''');
+      const source = 'void f() {\n  g();\n  g();\n}\n';
+      final removals = findMutants(source);
+      expect(removals, hasLength(2));
+      expect(
+        manifest.equivalentFor('lib/a.dart', removals.first, source),
+        isNull,
+      );
+      expect(
+        manifest.equivalentFor('lib/a.dart', removals.last, source),
+        isNotNull,
+      );
+    });
+
     test('a target without tests is rejected', () {
       expect(
         () => Manifest.parse(

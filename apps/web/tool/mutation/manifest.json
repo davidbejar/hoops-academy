@@ -1,0 +1,195 @@
+{
+  "baseline": 100,
+  "timeoutFactor": 3,
+  "targets": [
+    {
+      "file": "lib/features/match/domain/projector/merge.dart",
+      "tests": [
+        "test/features/match/application/sync_worker_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/application/sync/backoff.dart",
+      "tests": [
+        "test/features/match/application/backoff_test.dart",
+        "test/features/match/application/sync_worker_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/application/sync/sync_status.dart",
+      "tests": [
+        "test/features/match/application/sync_status_test.dart",
+        "test/features/match/application/sync_worker_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/data/local/match_store.dart",
+      "tests": [
+        "test/features/match/data/match_store_test.dart",
+        "test/features/match/data/match_store_scope_test.dart",
+        "test/features/match/data/match_store_wipe_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/application/game_clock.dart",
+      "tests": [
+        "test/features/match/application/game_clock_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/domain/projector/event_ordering.dart",
+      "tests": [
+        "test/features/match/domain/event_ordering_test.dart",
+        "test/features/match/domain/projector_vectors_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/domain/projector/projector.dart",
+      "tests": [
+        "test/features/match/domain/projector_rules_test.dart",
+        "test/features/match/domain/projector_vectors_test.dart",
+        "test/features/match/domain/team_figures_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/domain/projector/team_figures.dart",
+      "tests": [
+        "test/features/match/domain/team_figures_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/domain/scoring_rights.dart",
+      "tests": [
+        "test/features/match/domain/scoring_rights_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/match/domain/feed_visibility.dart",
+      "tests": [
+        "test/features/match/domain/feed_visibility_test.dart"
+      ]
+    },
+    {
+      "file": "lib/core/session/capabilities.dart",
+      "tests": [
+        "test/core/capabilities_matrix_test.dart",
+        "test/core/capabilities_test.dart"
+      ]
+    },
+    {
+      "file": "lib/features/platform/presentation/usage_trend.dart",
+      "tests": [
+        "test/features/platform/platform_test.dart"
+      ],
+      "only": [
+        "counterIn",
+        "counterKeys"
+      ]
+    },
+    {
+      "file": "lib/core/l10n/locale_controller.dart",
+      "tests": [
+        "test/app/locale_test.dart"
+      ]
+    },
+    {
+      "file": "lib/core/http/interceptors.dart",
+      "tests": [
+        "test/core/interceptors_test.dart"
+      ],
+      "only": [
+        "_LocaleInterceptor",
+        "_TenantInterceptor"
+      ]
+    }
+  ],
+  "equivalent": [
+    {
+      "file": "lib/features/match/application/sync/backoff.dart",
+      "operator": "swapComparison",
+      "line": "final factor = attempt >= 20 ? 1 << 20 : 1 << attempt;",
+      "replacement": ">",
+      "reason": "at attempt 20 both branches give 1 << 20"
+    },
+    {
+      "file": "lib/features/match/application/sync/backoff.dart",
+      "operator": "boundary",
+      "line": "final factor = attempt >= 20 ? 1 << 20 : 1 << attempt;",
+      "replacement": "21",
+      "column": 31,
+      "reason": "at attempt 20 both branches give 1 << 20, from 21 on the threshold changes nothing"
+    },
+    {
+      "file": "lib/features/match/application/game_clock.dart",
+      "operator": "swapComparison",
+      "line": "_remaining = seconds < 0 ? 0 : seconds;",
+      "replacement": "<=",
+      "reason": "0 maps to 0 either way"
+    },
+    {
+      "file": "lib/features/match/application/game_clock.dart",
+      "operator": "boundary",
+      "line": "_remaining = seconds < 0 ? 0 : seconds;",
+      "replacement": "1",
+      "column": 28,
+      "reason": "seconds < 1 differs from seconds < 0 only for 0, which both map to 0 (ints)"
+    },
+    {
+      "file": "lib/features/match/application/game_clock.dart",
+      "operator": "removeStatement",
+      "line": "_remaining = 0;",
+      "replacement": ";",
+      "reason": "the timer only runs from a positive time and counts down by one, so a time <= 0 after the decrement is exactly 0"
+    },
+    {
+      "file": "lib/features/match/domain/projector/event_ordering.dart",
+      "operator": "boundary",
+      "line": "final negA = int.parse(a[0], radix: 16) >= 8;",
+      "replacement": "17",
+      "reason": "radix 17 reads the hex digits 0-f like radix 16; the input is a hex digit"
+    },
+    {
+      "file": "lib/features/match/domain/projector/event_ordering.dart",
+      "operator": "boundary",
+      "line": "final negB = int.parse(b[0], radix: 16) >= 8;",
+      "replacement": "17",
+      "reason": "radix 17 reads the hex digits 0-f like radix 16; the input is a hex digit"
+    },
+    {
+      "file": "lib/features/match/domain/projector/projector.dart",
+      "operator": "boundary",
+      "line": "(m, e) => math.max(m, e.serverSeq ?? 0),",
+      "replacement": "(-1)",
+      "reason": "the fold starts at 0, so max(m, -1) never wins"
+    },
+    {
+      "file": "lib/features/match/domain/projector/projector.dart",
+      "operator": "boundary",
+      "line": "int _enteredAt = 0;",
+      "replacement": "1",
+      "reason": "enter() or resumeAt() always sets it before accrueUntil() reads it (accrual only while a period runs)"
+    },
+    {
+      "file": "lib/features/match/domain/projector/projector.dart",
+      "operator": "boundary",
+      "line": "int _enteredAt = 0;",
+      "replacement": "(-1)",
+      "reason": "enter() or resumeAt() always sets it before accrueUntil() reads it (accrual only while a period runs)"
+    },
+    {
+      "file": "lib/features/match/domain/projector/projector.dart",
+      "operator": "boundary",
+      "line": "seconds += math.max(0, _enteredAt - clock);",
+      "replacement": "(-1)",
+      "reason": "game order sorts a period's events by clock descending and the clock is clamped, so _enteredAt - clock is never negative"
+    },
+    {
+      "file": "lib/features/match/domain/projector/projector.dart",
+      "operator": "removeStatement",
+      "line": "_enteredAt = clock;",
+      "replacement": ";",
+      "reason": "accrueUntil() never runs twice without enter() or resumeAt() in between (a sub-out leaves the court, a period end stops the clock, finish() accrues only while a period runs)",
+      "occurrence": 2
+    }
+  ]
+}

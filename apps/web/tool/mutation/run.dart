@@ -37,7 +37,9 @@ Future<void> main(List<String> args) async {
     );
     if (options.list) {
       for (final m in p.mutants) {
-        stdout.writeln('  ${m.line}: ${m.description}');
+        stdout.writeln(
+          '  ${m.line}:${columnOf(p.source, m)}: ${m.description}',
+        );
       }
     }
   }
@@ -72,7 +74,8 @@ Future<void> main(List<String> args) async {
             done++;
             stdout.writeln(
               '[$done/$total] ${job.verdict!.name.padRight(9)} '
-              '${job.planned.target.file}:${job.mutant.line} '
+              '${job.planned.target.file}:${job.mutant.line}:'
+              '${columnOf(job.planned.source, job.mutant)} '
               '${job.mutant.description}',
             );
             job.planned.results.add(job);
@@ -150,15 +153,10 @@ class _Planned {
 
   factory _Planned.of(Target target, Manifest manifest) {
     final source = File(target.file).readAsStringSync();
-    final lines = source.split('\n');
     final mutants = <Mutant>[];
     final equivalents = <(Mutant, Equivalent)>[];
     for (final m in findMutants(source, only: target.only)) {
-      final accepted = manifest.equivalentFor(
-        target.file,
-        m,
-        lines[m.line - 1],
-      );
+      final accepted = manifest.equivalentFor(target.file, m, source);
       if (accepted == null) {
         mutants.add(m);
       } else {
@@ -320,18 +318,29 @@ int _report(List<_Planned> plan, Manifest manifest, Duration elapsed) {
     ]..sort((a, b) => a.offset.compareTo(b.offset));
     for (final m in survivors) {
       stdout.writeln(
-        '    SURVIVED ${p.target.file}:${m.line} ${m.description}',
+        '    SURVIVED ${p.target.file}:${m.line}:${columnOf(p.source, m)} '
+        '${m.description}',
       );
     }
     files.add({
       'file': p.target.file,
       'counts': {for (final e in perFile.entries) e.key.name: e.value},
       'survived': [
-        for (final m in survivors) {'line': m.line, 'mutant': m.description},
+        for (final m in survivors)
+          {
+            'line': m.line,
+            'column': columnOf(p.source, m),
+            'mutant': m.description,
+          },
       ],
       'equivalent': [
         for (final (m, e) in p.equivalents)
-          {'line': m.line, 'mutant': m.description, 'reason': e.reason},
+          {
+            'line': m.line,
+            'column': columnOf(p.source, m),
+            'mutant': m.description,
+            'reason': e.reason,
+          },
       ],
     });
   }
