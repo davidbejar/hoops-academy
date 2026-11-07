@@ -8,6 +8,7 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.game.application.replica.EventEnvelope;
 import com.hoopsacademy.game.application.replica.RosterEvent;
+import com.hoopsacademy.game.application.replica.RosterEvent.Aggregate;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.SeasonId;
 import com.hoopsacademy.game.domain.TeamId;
@@ -48,18 +49,7 @@ public class RosterEventDecoder {
 
         /** @param eventId the record's event id when it could be read */
         record Invalid(Optional<UUID> eventId, String reason) implements Decoded {}
-
-        /**
-         * A valid event game does not apply (WP81): core publishes a removal for every aggregate, but the replica
-         * soft-removes only staff entries and guardian links; persons, players, teams, assignments and tenants keep
-         * their row until WP82. Counted {@code ignored}, never parked.
-         */
-        record Ignored(EventEnvelope envelope, String type) implements Decoded {}
     }
-
-    /** The removals of {@link Decoded.Ignored}. */
-    private static final Set<String> NOT_APPLIED = Set.of("person.removed", "player.removed", "team.removed",
-            "team-player.removed", "tenant.removed");
 
     private static final int MAX_REASON_LENGTH = 1000;
     /** The topics of the contracts this decoder knows (the channel subscribes to the same list). */
@@ -99,9 +89,6 @@ public class RosterEventDecoder {
             return invalid(eventId, "key " + key + " is not " + expectedKey);
         }
         String type = event.get("type").asText();
-        if (NOT_APPLIED.contains(type)) {
-            return new Decoded.Ignored(envelope, type);
-        }
         try {
             return new Decoded.Valid(event(envelope, type, event.get("payload")));
         } catch (InvalidEvent e) {
@@ -131,20 +118,31 @@ public class RosterEventDecoder {
                     uuid(payload, "guardianPersonId"), PlayerId.of(uuid(payload, "playerId")));
             case "guardian-link.removed" -> new RosterEvent.GuardianLinkRemoved(envelope,
                     uuid(payload, "guardianPersonId"), PlayerId.of(uuid(payload, "playerId")));
+            case "person.removed" -> new RosterEvent.Removed(envelope, Aggregate.PERSON);
+            case "player.removed" -> new RosterEvent.Removed(envelope, Aggregate.PLAYER);
+            case "team.removed" -> new RosterEvent.Removed(envelope, Aggregate.TEAM);
+            case "team-player.removed" -> new RosterEvent.Removed(envelope, Aggregate.TEAM_PLAYER);
+            case "tenant.removed" -> new RosterEvent.Removed(ownTenant(envelope), Aggregate.TENANT);
             default -> throw new InvalidEvent("unknown event type " + type);
         };
     }
 
     private static RosterEvent tenant(EventEnvelope envelope, JsonNode payload) {
-        if (!envelope.aggregateId().equals(envelope.tenantId().value())) {
-            throw new InvalidEvent("a tenant event must be about its own tenant, not " + envelope.aggregateId());
-        }
+        ownTenant(envelope);
         String zone = text(payload, "timezone");
         try {
             return new RosterEvent.TenantChanged(envelope, TenantStatus.valueOf(text(payload, "status")), ZoneId.of(zone));
         } catch (DateTimeException e) {
             throw new InvalidEvent("unknown time zone " + zone);
         }
+    }
+
+    /** A tenant event (changed or removed) is about the tenant it belongs to, never another one. */
+    private static EventEnvelope ownTenant(EventEnvelope envelope) {
+        if (!envelope.aggregateId().equals(envelope.tenantId().value())) {
+            throw new InvalidEvent("a tenant event must be about its own tenant, not " + envelope.aggregateId());
+        }
+        return envelope;
     }
 
     private static EventEnvelope envelope(JsonNode event) {

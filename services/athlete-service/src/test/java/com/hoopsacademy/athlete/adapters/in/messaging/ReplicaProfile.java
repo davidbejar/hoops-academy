@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * athlete as it runs with hoops.roster.source=replica: the consumer reads a Redpanda broker ({@link RosterBrokerResource}),
- * the RosterPort and the tenant filter's membership come from the replica (the test-jar's resolver is removed), and no
- * core-service exists.
+ * athlete as it runs with hoops.roster.source=replica: the consumer reads a Redpanda broker
+ * ({@link RosterBrokerResource}), the RosterPort and the tenant filter's membership come from the replica (the
+ * test-jar's resolver is removed), and no core-service exists.
  */
 public class ReplicaProfile implements QuarkusTestProfile {
 

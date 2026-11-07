@@ -28,9 +28,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The consumer of core's roster topics against a Redpanda broker (RosterBrokerResource, the pinned image, ADR-0036/0037): records
- * of every topic reach the replica in their own tenant; a redelivered event is applied once, an older one never wins,
- * a tombstone is skipped, an invalid record is parked without stopping the records behind it; the metrics count it.
+ * The consumer of core's roster topics against a Redpanda broker (RosterBrokerResource, the pinned image,
+ * ADR-0036/0037): records of every topic reach the replica in their own tenant; a redelivered event is applied once, an
+ * older one never wins, a tombstone is skipped, an invalid record is parked without stopping the records behind it; the
+ * metrics count it.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "game"))

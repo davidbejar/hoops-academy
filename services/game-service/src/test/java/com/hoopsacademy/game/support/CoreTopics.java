@@ -11,7 +11,10 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 
-/** Publishes fixture records to the test broker's core.* topics (RosterBrokerResource), in order, as core's publisher does. */
+/**
+ * Publishes fixture records to the test broker's core.* topics (RosterBrokerResource), in order, as core's publisher
+ * does.
+ */
 public final class CoreTopics {
 
     private CoreTopics() {}

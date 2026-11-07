@@ -17,6 +17,25 @@ import java.util.UUID;
  */
 public sealed interface RosterEvent {
 
+    /** The aggregates whose removal carries only their identity (WP81's {@code <aggregate>.removed}, empty payload). */
+    enum Aggregate {
+        TENANT("core.tenant"),
+        PERSON("core.person"),
+        PLAYER("core.player"),
+        TEAM("core.team"),
+        TEAM_PLAYER("core.team-player");
+
+        private final String topic;
+
+        Aggregate(String topic) {
+            this.topic = topic;
+        }
+
+        public String topic() {
+            return topic;
+        }
+    }
+
     EventEnvelope envelope();
 
     /** The topic the event came from (kept with the applied event id). */
@@ -92,6 +111,17 @@ public sealed interface RosterEvent {
         @Override
         public String topic() {
             return "core.guardian-link";
+        }
+    }
+
+    /**
+     * A person, player, team, team assignment or tenant core deleted (WP81): the replica keeps the row as removed, with
+     * nothing but its identity, so a late older change cannot bring it back (ADR-0037 point 3, WP82).
+     */
+    record Removed(EventEnvelope envelope, Aggregate aggregate) implements RosterEvent {
+        @Override
+        public String topic() {
+            return aggregate.topic();
         }
     }
 }

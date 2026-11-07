@@ -18,8 +18,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * V4 (WP68, ADR-0037): the roster replica tables are tenant tables (so the generic RLS suites cover them), and the
- * parking table, the one table without a tenant, is write-only for the app role.
+ * V4 (WP68, ADR-0037): the roster replica tables are tenant tables (so the generic RLS suites cover them); the parking
+ * table has no tenant, so the app role may write it and (V6, WP82) prune it, never read what a record said.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "game"))
@@ -43,20 +43,49 @@ class RosterReplicaSchemaTest {
         }
     }
 
+    /** WP82: the retention job may delete inspected rows and read their coordinates, never what a record said. */
     @Test
-    void theAppRoleMayParkAnEventButNeverReadOrChangeParkedEvents() throws SQLException {
+    void theAppRoleMayParkAndPruneButNeverReadWhatAParkedRecordSaid() throws SQLException {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
+            app.setAutoCommit(false);
             try (PreparedStatement insert = app.prepareStatement("""
                     insert into game.parked_event (topic, kafka_partition, kafka_offset, record_key, reason)
                     values ('core.team', 0, 42, 'k', 'schema violation')""")) {
                 assertThat(insert.executeUpdate()).isOne();
             }
-            for (String sql : List.of("select count(*) from game.parked_event",
-                    "update game.parked_event set reason = 'x'", "delete from game.parked_event")) {
+            app.createStatement().execute("select id, topic, kafka_partition, kafka_offset, parked_at, inspected_at "
+                    + "from game.parked_event");
+            app.createStatement().execute("delete from game.parked_event where inspected_at < now()");
+            for (String sql : List.of("select record_key from game.parked_event",
+                    "select event_id from game.parked_event", "select reason from game.parked_event",
+                    "update game.parked_event set reason = 'x'",
+                    "update game.parked_event set inspected_at = now()")) {
+                app.createStatement().execute("savepoint attempt");
                 assertThatThrownBy(() -> app.createStatement().execute(sql)).as(sql)
                         .isInstanceOf(SQLException.class)
                         .extracting(e -> ((SQLException) e).getSQLState()).isEqualTo("42501");
+                app.createStatement().execute("rollback to savepoint attempt");
             }
+            app.rollback();
+        }
+    }
+
+    /** WP82: the global list of the replica's tenants is append-only for the app role. */
+    @Test
+    void theAppRoleMayListAndAddReplicaTenantsButNeverChangeThem() throws SQLException {
+        try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
+            app.setAutoCommit(false);
+            app.createStatement().execute("insert into game.replica_tenant (id) values (gen_random_uuid())");
+            app.createStatement().execute("select id, first_seen_at from game.replica_tenant");
+            for (String sql : List.of("update game.replica_tenant set first_seen_at = now()",
+                    "delete from game.replica_tenant")) {
+                app.createStatement().execute("savepoint attempt");
+                assertThatThrownBy(() -> app.createStatement().execute(sql)).as(sql)
+                        .isInstanceOf(SQLException.class)
+                        .extracting(e -> ((SQLException) e).getSQLState()).isEqualTo("42501");
+                app.createStatement().execute("rollback to savepoint attempt");
+            }
+            app.rollback();
         }
     }
 

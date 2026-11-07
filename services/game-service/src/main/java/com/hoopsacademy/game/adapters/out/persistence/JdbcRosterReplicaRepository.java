@@ -9,10 +9,12 @@ import com.hoopsacademy.game.application.replica.ReplicaPlayer;
 import com.hoopsacademy.game.application.replica.ReplicaTeam;
 import com.hoopsacademy.game.application.replica.ReplicaTenant;
 import com.hoopsacademy.game.application.replica.RosterEvent;
+import com.hoopsacademy.game.application.replica.RosterEvent.Aggregate;
 import com.hoopsacademy.game.application.replica.RosterEvent.GuardianLinkChanged;
 import com.hoopsacademy.game.application.replica.RosterEvent.GuardianLinkRemoved;
 import com.hoopsacademy.game.application.replica.RosterEvent.PersonChanged;
 import com.hoopsacademy.game.application.replica.RosterEvent.PlayerChanged;
+import com.hoopsacademy.game.application.replica.RosterEvent.Removed;
 import com.hoopsacademy.game.application.replica.RosterEvent.TeamChanged;
 import com.hoopsacademy.game.application.replica.RosterEvent.TeamPlayerChanged;
 import com.hoopsacademy.game.application.replica.RosterEvent.TeamStaffChanged;
@@ -64,17 +66,28 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
     /** A guarded upsert statement; {@code hasId} false for the tenant's own row (keyed by tenant only). */
     private record Upsert(String sql, boolean hasId) {}
 
-    private static final Upsert TENANT_REF = upsert("game.tenant_ref", false, "status", "timezone");
-    private static final Upsert PERSON_REF = upsert("game.person_ref", true, "display_name", "subject", "roles", "active");
+    private static final Upsert TENANT_REF = upsert("game.tenant_ref", false, "status", "timezone", "removed");
+    private static final Upsert PERSON_REF =
+            upsert("game.person_ref", true, "display_name", "subject", "roles", "active", "removed");
     private static final Upsert PLAYER_REF =
-            upsert("game.player_ref", true, "person_id", "display_name", "status", "birth_date", "gender");
-    private static final Upsert TEAM_REF = upsert("game.team_ref", true, "season_id", "season_end_date", "name");
+            upsert("game.player_ref", true, "person_id", "display_name", "status", "birth_date", "gender", "removed");
+    private static final Upsert TEAM_REF =
+            upsert("game.team_ref", true, "season_id", "season_end_date", "name", "removed");
     private static final Upsert TEAM_PLAYER_REF = upsert("game.team_player_ref", true, "team_id", "player_id",
-            "jersey_number", "joined_on", "left_on", "invalid_reason");
+            "jersey_number", "joined_on", "left_on", "invalid_reason", "removed");
     private static final Upsert TEAM_STAFF_REF =
             upsert("game.team_staff_ref", true, "team_id", "person_id", "role", "removed");
     private static final Upsert GUARDIAN_LINK_REF =
             upsert("game.guardian_link_ref", true, "guardian_person_id", "player_id", "removed");
+    /** The soft removals of {@link Removed}: only the identity stays, every state column becomes null. */
+    private static final Map<Aggregate, Upsert> REMOVALS = Map.of(
+            Aggregate.TENANT, removal("game.tenant_ref", false, "status", "timezone"),
+            Aggregate.PERSON, removal("game.person_ref", true, "display_name", "subject", "roles", "active"),
+            Aggregate.PLAYER, removal("game.player_ref", true, "person_id", "display_name", "status", "birth_date",
+                    "gender"),
+            Aggregate.TEAM, removal("game.team_ref", true, "season_id", "season_end_date", "name"),
+            Aggregate.TEAM_PLAYER, removal("game.team_player_ref", true, "team_id", "player_id", "jersey_number",
+                    "joined_on", "left_on", "invalid_reason"));
 
     private final EntityManager em;
 
@@ -89,6 +102,8 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
 
     @Override
     public boolean markApplied(EventEnvelope envelope, String topic) {
+        update("insert into game.replica_tenant (id) values (app.current_tenant()) on conflict do nothing",
+                statement -> { });
         return update("""
                 insert into game.applied_event (tenant_id, event_id, topic) values (app.current_tenant(), ?, ?)
                 on conflict do nothing""", statement -> {
@@ -101,18 +116,19 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
     public boolean save(RosterEvent event) {
         return switch (event) {
             case TenantChanged tenant -> upsertRow(TENANT_REF, tenant.envelope(),
-                    text(tenant.status().name()), text(tenant.timezone().getId()));
+                    text(tenant.status().name()), text(tenant.timezone().getId()), flag(false));
             case PersonChanged person -> upsertRow(PERSON_REF, person.envelope(), text(person.displayName()),
-                    text(person.subject().orElse(null)), roles(person), flag(person.active()));
+                    text(person.subject().orElse(null)), roles(person), flag(person.active()), flag(false));
             case PlayerChanged player -> upsertRow(PLAYER_REF, player.envelope(), object(player.personId()),
                     text(player.displayName()), text(player.status()), object(player.birthDate().orElse(null)),
-                    text(player.gender().orElse(null)));
+                    text(player.gender().orElse(null)), flag(false));
             case TeamChanged team -> upsertRow(TEAM_REF, team.envelope(), object(team.seasonId().value()),
-                    object(team.seasonEndDate()), text(team.name()));
+                    object(team.seasonEndDate()), text(team.name()), flag(false));
             case TeamPlayerChanged assignment -> upsertRow(TEAM_PLAYER_REF, assignment.envelope(),
                     object(assignment.teamId().value()), object(assignment.playerId().value()),
                     text(assignment.jerseyNumber().orElse(null)), object(assignment.joinedOn()),
-                    object(assignment.leftOn().orElse(null)), text(assignment.invalidReason().orElse(null)));
+                    object(assignment.leftOn().orElse(null)), text(assignment.invalidReason().orElse(null)),
+                    flag(false));
             case TeamStaffChanged staff -> upsertRow(TEAM_STAFF_REF, staff.envelope(),
                     object(staff.teamId().value()), object(staff.personId()), text(staff.role()), flag(false));
             case TeamStaffRemoved staff -> upsertRow(TEAM_STAFF_REF, staff.envelope(),
@@ -121,12 +137,13 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
                     object(link.guardianPersonId()), object(link.playerId().value()), flag(false));
             case GuardianLinkRemoved link -> upsertRow(GUARDIAN_LINK_REF, link.envelope(),
                     object(link.guardianPersonId()), object(link.playerId().value()), flag(true));
+            case Removed removed -> upsertRow(REMOVALS.get(removed.aggregate()), removed.envelope());
         };
     }
 
     @Override
     public Optional<ReplicaTenant> tenant(TenantId tenantId) {
-        return first(query("select status, timezone from game.tenant_ref where tenant_id = ?",
+        return first(query("select status, timezone from game.tenant_ref where tenant_id = ? and not removed",
                 statement -> statement.setObject(1, tenantId.value()),
                 row -> new ReplicaTenant(TenantStatus.valueOf(row.getString("status")),
                         ZoneId.of(row.getString("timezone")))));
@@ -134,7 +151,8 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
 
     @Override
     public Optional<ReplicaTeam> team(TeamId teamId) {
-        return first(query("select id, season_id, name, season_end_date from game.team_ref where id = ?",
+        return first(query(
+                "select id, season_id, name, season_end_date from game.team_ref where id = ? and not removed",
                 statement -> statement.setObject(1, teamId.value()),
                 row -> new ReplicaTeam(TeamId.of(uuid(row, "id")), SeasonId.of(uuid(row, "season_id")),
                         row.getString("name"), row.getObject("season_end_date", LocalDate.class))));
@@ -146,35 +164,43 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
                 select p.id, p.display_name, p.birth_date, p.gender, a.jersey_number
                   from game.team_player_ref a
                   join game.player_ref p on p.tenant_id = a.tenant_id and p.id = a.player_id
-                 where a.team_id = ? and a.left_on is null and a.invalid_reason is null
+                 where a.team_id = ? and a.left_on is null and a.invalid_reason is null and not a.removed
+                   and not p.removed
                  order by a.joined_on, a.id""", statement -> statement.setObject(1, teamId.value()),
                 row -> new RosterLine(player(row), Optional.ofNullable(row.getString("jersey_number"))));
     }
 
     @Override
     public List<ReplicaPlayer> players(Collection<PlayerId> ids) {
-        return query("select id, display_name, birth_date, gender from game.player_ref where id = any (?) order by id",
+        return query("""
+                select id, display_name, birth_date, gender from game.player_ref
+                 where id = any (?) and not removed order by id""",
                 statement -> statement.setArray(1, uuids(statement, ids.stream().map(PlayerId::value).toList())),
                 JdbcRosterReplicaRepository::player);
     }
 
     @Override
     public Optional<ReplicaPerson> activePerson(String subject) {
-        return first(query("select id, roles from game.person_ref where subject = ? and active order by id limit 1",
+        return first(query("""
+                select id, roles from game.person_ref where subject = ? and active and not removed
+                 order by id limit 1""",
                 statement -> statement.setString(1, subject),
                 row -> new ReplicaPerson(uuid(row, "id"), roles(row.getArray("roles")))));
     }
 
     @Override
     public Optional<PlayerId> playerOf(UUID personId) {
-        return first(query("select id from game.player_ref where person_id = ? order by id limit 1",
+        return first(query("select id from game.player_ref where person_id = ? and not removed order by id limit 1",
                 statement -> statement.setObject(1, personId), row -> PlayerId.of(uuid(row, "id"))));
     }
 
     @Override
     public Set<PlayerId> linkedPlayers(UUID guardianPersonId) {
-        return new HashSet<>(query(
-                "select player_id from game.guardian_link_ref where guardian_person_id = ? and not removed",
+        return new HashSet<>(query("""
+                select l.player_id from game.guardian_link_ref l
+                 where l.guardian_person_id = ? and not l.removed
+                   and not exists (select 1 from game.player_ref p
+                                    where p.tenant_id = l.tenant_id and p.id = l.player_id and p.removed)""",
                 statement -> statement.setObject(1, guardianPersonId), row -> PlayerId.of(uuid(row, "player_id"))));
     }
 
@@ -188,7 +214,7 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
     public Set<TeamId> openValidTeamsOf(Collection<PlayerId> players) {
         return new HashSet<>(query("""
                 select team_id from game.team_player_ref
-                 where player_id = any (?) and left_on is null and invalid_reason is null""",
+                 where player_id = any (?) and left_on is null and invalid_reason is null and not removed""",
                 statement -> statement.setArray(1, uuids(statement, players.stream().map(PlayerId::value).toList())),
                 row -> TeamId.of(uuid(row, "team_id"))));
     }
@@ -198,7 +224,7 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
         if (teams.isEmpty()) {
             return Map.of();
         }
-        return query("select id, season_end_date from game.team_ref where id = any (?)",
+        return query("select id, season_end_date from game.team_ref where id = any (?) and not removed",
                 statement -> statement.setArray(1, uuids(statement, teams.stream().map(TeamId::value).toList())),
                 row -> Map.entry(TeamId.of(uuid(row, "id")), row.getObject("season_end_date", LocalDate.class)))
                 .stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -247,6 +273,20 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
                 .collect(Collectors.joining(", "));
         return new Upsert("insert into " + table + " (" + String.join(", ", all) + ") values (" + placeholders + ")"
                 + " on conflict (" + key + ") do update set " + assignments
+                + " where " + table + ".occurred_at <= excluded.occurred_at", hasId);
+    }
+
+    /**
+     * {@code insert ... (removed = true) on conflict do update set removed = true, <columns> = null ...} guarded like
+     * {@link #upsert}: the row keeps its identity, {@code occurred_at} and {@code event_id}, and no state.
+     */
+    private static Upsert removal(String table, boolean hasId, String... columns) {
+        String key = hasId ? "tenant_id, id" : "tenant_id";
+        String values = hasId ? "app.current_tenant(), ?" : "app.current_tenant()";
+        String cleared = Arrays.stream(columns).map(c -> c + " = null").collect(Collectors.joining(", "));
+        return new Upsert("insert into " + table + " (" + key + ", removed, occurred_at, event_id) values (" + values
+                + ", true, ?, ?) on conflict (" + key + ") do update set removed = true, " + cleared
+                + ", occurred_at = excluded.occurred_at, event_id = excluded.event_id"
                 + " where " + table + ".occurred_at <= excluded.occurred_at", hasId);
     }
 

@@ -16,6 +16,8 @@ class GameRlsSchemaMetaTest extends RlsSchemaMetaTest {
     @Override
     protected Map<String, String> globalTables() {
         return Map.of("game.parked_event", "roster events that failed validation may name no tenant; the app role may "
-                + "only insert (ADR-0037), operators read them as the owner");
+                + "only insert and prune inspected rows (ADR-0037, WP82), operators read them as the owner",
+                "game.replica_tenant", "ids of the tenants the replica holds rows of, so the retention job can enter "
+                + "each one (WP82); no tenant content");
     }
 }

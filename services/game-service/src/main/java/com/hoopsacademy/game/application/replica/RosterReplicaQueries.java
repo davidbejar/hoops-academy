@@ -12,8 +12,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Reads of the roster replica (ADR-0037) in the tenant bound to the current transaction (RLS). Removed staff entries
- * and guardian links are never returned; assignments only when open and valid and their player is known.
+ * Reads of the roster replica (ADR-0037) in the tenant bound to the current transaction (RLS). Removed rows (WP82) are
+ * never returned, nor guardian links to a removed player; assignments only when open and valid and their player is
+ * known and not removed.
  */
 public interface RosterReplicaQueries {
 

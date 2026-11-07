@@ -50,10 +50,6 @@ public class RosterEventConsumer {
         }
         switch (decoder.decode(record.topic(), record.key(), record.value())) {
             case Decoded.Valid valid -> apply(record.topic(), valid.event());
-            case Decoded.Ignored ignored -> {
-                metrics.processed(record.topic(), "ignored");
-                metrics.lag(record.topic(), ignored.envelope().occurredAt(), clock.instant());
-            }
             case Decoded.Invalid invalid -> park(record, invalid);
         }
     }

@@ -114,8 +114,9 @@ public final class CoreEvents {
     }
 
     /**
-     * The removal core publishes when an aggregate is deleted (WP81): {@code <aggregate>.removed} with an empty payload,
-     * for {@code person}, {@code player}, {@code team}, {@code team-player} and {@code tenant} (whose id is the tenant's).
+     * The removal core publishes when an aggregate is deleted (WP81): {@code <aggregate>.removed} with an empty
+     * payload, for {@code person}, {@code player}, {@code team}, {@code team-player} and {@code tenant} (whose id is the
+     * tenant's).
      */
     public Record removed(String aggregate, UUID id) {
         return record("core." + aggregate, aggregate + ".removed", id, JSON.createObjectNode());
