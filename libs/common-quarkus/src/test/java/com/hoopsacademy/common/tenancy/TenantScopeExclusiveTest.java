@@ -99,12 +99,6 @@ class TenantScopeExclusiveTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
-    @Test
-    void lockKeysMapToStableDistinctAdvisoryKeys() {
-        assertThat(TenantScope.advisoryKey("athlete.materialisation")).isEqualTo(TenantScope.advisoryKey("athlete.materialisation"));
-        assertThat(TenantScope.advisoryKey("athlete.materialisation")).isNotEqualTo(TenantScope.advisoryKey("core.eligibility-sweep"));
-    }
-
     private static void await(CountDownLatch latch) {
         try {
             latch.await(10, TimeUnit.SECONDS);

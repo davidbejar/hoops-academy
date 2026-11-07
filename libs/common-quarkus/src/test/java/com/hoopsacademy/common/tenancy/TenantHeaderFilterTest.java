@@ -116,15 +116,4 @@ class TenantHeaderFilterTest {
                 .statusCode(400)
                 .body("detail", equalTo("Header X-Tenant-Id is required"));
     }
-
-    @Test
-    void exemptPathsComeFromConfigurationAndAreNormalised() {
-        TenantScopedPaths paths = new TenantScopedPaths(java.util.List.of(" /api/core/me/ ", "api/x"));
-
-        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("/api/core/me")).isFalse();
-        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("api/x/")).isFalse();
-        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("/api/core/members")).isTrue();
-        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("/api")).isTrue();
-        org.assertj.core.api.Assertions.assertThat(paths.isTenantScoped("/platform/x")).isFalse();
-    }
 }

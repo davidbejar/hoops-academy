@@ -10,10 +10,6 @@ import jakarta.transaction.NotSupportedException;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -100,7 +96,7 @@ public class TenantScope {
             if (transactionManager.getTransaction() != null) {
                 throw new IllegalStateException("runExclusive(" + lockKey + ") must not run inside a transaction");
             }
-            transactionManager.setTransactionTimeout((int) Math.min(Integer.MAX_VALUE, exclusiveLockTimeout.toSeconds()));
+            transactionManager.setTransactionTimeout(ExclusiveLocks.transactionTimeoutSeconds(exclusiveLockTimeout));
             try {
                 transactionManager.begin();
             } finally {
@@ -140,12 +136,7 @@ public class TenantScope {
 
     /** Stable 64-bit advisory lock key of a lock name (first 8 bytes of its SHA-256), equal in every JVM. */
     public static long advisoryKey(String lockKey) {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(lockKey.getBytes(StandardCharsets.UTF_8));
-            return ByteBuffer.wrap(digest).getLong();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is always available", e);
-        }
+        return ExclusiveLocks.advisoryKey(lockKey);
     }
 
     private boolean tryAdvisoryLock(long key) {

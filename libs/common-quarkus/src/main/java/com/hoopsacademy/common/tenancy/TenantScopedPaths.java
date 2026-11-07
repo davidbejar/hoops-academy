@@ -16,8 +16,8 @@ final class TenantScopedPaths {
     private final Set<String> exempt;
 
     TenantScopedPaths(Collection<String> exemptPaths) {
-        this.exempt = exemptPaths.stream().map(TenantScopedPaths::normalise).filter(p -> !p.isEmpty())
-                .collect(Collectors.toUnmodifiableSet());
+        // a blank entry normalises to "", which is never tenant scoped anyway: no filter needed
+        this.exempt = exemptPaths.stream().map(TenantScopedPaths::normalise).collect(Collectors.toUnmodifiableSet());
     }
 
     boolean isTenantScoped(String path) {

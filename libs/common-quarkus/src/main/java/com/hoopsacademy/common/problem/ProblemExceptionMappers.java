@@ -8,13 +8,11 @@ import com.hoopsacademy.common.security.TokenFailureReason;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.UnauthorizedException;
 import jakarta.persistence.OptimisticLockException;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
-import java.util.Comparator;
 import java.util.List;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
@@ -52,8 +50,7 @@ public class ProblemExceptionMappers {
     /** Every 403 of the tenancy layer and the use cases: a {@code role} or {@code fine_grained} security event. */
     @ServerExceptionMapper
     public Response accessDenied(AccessDeniedException e, UriInfo uri) {
-        securityEvents.denied(e instanceof TenantRoleDeniedException ? DenialKind.ROLE : DenialKind.FINE_GRAINED,
-                e.getMessage());
+        securityEvents.denied(ProblemMapping.denialKindOf(e), e.getMessage());
         return coded(ProblemType.FORBIDDEN, e, uri);
     }
 
@@ -100,7 +97,7 @@ public class ProblemExceptionMappers {
 
     @ServerExceptionMapper
     public Response constraintViolation(ConstraintViolationException e, UriInfo uri) {
-        return Problem.validation(violationsOf(e), path(uri)).toResponse();
+        return Problem.validation(ProblemMapping.violationsOf(e.getConstraintViolations()), path(uri)).toResponse();
     }
 
     @ServerExceptionMapper
@@ -110,22 +107,12 @@ public class ProblemExceptionMappers {
 
     @ServerExceptionMapper
     public Response unexpected(Throwable e, UriInfo uri) {
-        if (causedByConcurrentModification(e)) {
+        if (ProblemMapping.causedByConcurrentModification(e)) {
             return concurrentModificationProblem(uri);
         }
         Problem problem = Problem.of(ProblemType.INTERNAL_ERROR, null, path(uri));
         LOG.errorf(e, "Unhandled exception on %s (traceId=%s)", problem.instance(), problem.traceId());
         return problem.toResponse();
-    }
-
-    /** A lost {@code @Version} race often arrives wrapped (flush at commit, RollbackException, ...). */
-    private static boolean causedByConcurrentModification(Throwable e) {
-        for (Throwable cause = e; cause != null; cause = cause.getCause() == cause ? null : cause.getCause()) {
-            if (cause instanceof OptimisticLockException || cause instanceof org.hibernate.StaleStateException) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static Response concurrentModificationProblem(UriInfo uri) {
@@ -143,16 +130,5 @@ public class ProblemExceptionMappers {
 
     private static String path(UriInfo uri) {
         return uri.getRequestUri().getRawPath();
-    }
-
-    private static List<Problem.Violation> violationsOf(ConstraintViolationException e) {
-        return e.getConstraintViolations().stream()
-                .map(ProblemExceptionMappers::toViolation)
-                .sorted(Comparator.comparing(Problem.Violation::field))
-                .toList();
-    }
-
-    private static Problem.Violation toViolation(ConstraintViolation<?> violation) {
-        return new Problem.Violation(violation.getPropertyPath().toString(), violation.getMessage());
     }
 }
