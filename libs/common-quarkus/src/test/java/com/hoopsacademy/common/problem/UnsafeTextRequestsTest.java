@@ -65,12 +65,31 @@ class UnsafeTextRequestsTest {
     }
 
     @Test
-    void unstorableTextThatReachesTheDatabaseAnotherWayIsA400NotA500() {
-        given().contentType("application/json").body("{\"note\":\"\\u0000\"}").post("/probe/text/tree").then()
+    void aNulCharacterAnywhereInAJsonTreeBodyIsA400ProblemNamingThePath() {
+        tree("{\"note\":\"\\u0000\"}").statusCode(400)
+                .contentType("application/problem+json")
+                .body("type", equalTo("urn:hoops:problem:validation"))
+                .body("violations[0].field", equalTo("note"))
+                .body("violations[0].code", equalTo(UnsafeText.CODE));
+        tree("{\"items\":[{\"x\":\"ok\"},{\"x\":\"a\\u0000\"}]}").statusCode(400)
+                .body("violations[0].field", equalTo("items[1].x"));
+        tree("{\"a\\u0000\":1}").statusCode(400).body("violations[0].field", equalTo("body"));
+        tree("{\"note\":\"line\\nbreak\"}").statusCode(200);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/probe/text/raw", "/probe/text/raw-json"})
+    void unstorableTextThatReachesTheDatabaseAnotherWayIsA400NotA500(String path) {
+        String body = path.endsWith("json") ? "{\"note\":\"\\u0000\"}" : "a\u0000b";
+        given().contentType("text/plain").body(body).post(path).then()
                 .statusCode(400)
                 .contentType("application/problem+json")
                 .body("type", equalTo("urn:hoops:problem:bad-request"))
                 .body("code", equalTo(UnsafeText.CODE));
+    }
+
+    private static ValidatableResponse tree(String json) {
+        return given().contentType("application/json").body(json).post("/probe/text/tree").then();
     }
 
     private static ValidatableResponse echo(String json) {

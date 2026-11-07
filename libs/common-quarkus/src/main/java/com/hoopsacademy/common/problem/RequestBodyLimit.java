@@ -1,6 +1,5 @@
 package com.hoopsacademy.common.problem;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.vertx.core.http.HttpHeaders;
@@ -57,18 +56,7 @@ public class RequestBodyLimit {
     private void reject(RoutingContext ctx, long max) {
         Problem problem = Problem.of(ProblemType.PAYLOAD_TOO_LARGE,
                 "The request body exceeds the limit of " + max + " bytes", ctx.request().path(), CODE, List.of());
-        ctx.response()
-                .setStatusCode(problem.status())
-                .putHeader(HttpHeaders.CONTENT_TYPE, Problem.MEDIA_TYPE)
-                .putHeader(HttpHeaders.CONNECTION, "close")
-                .end(json(problem));
-    }
-
-    private String json(Problem problem) {
-        try {
-            return mapper.writeValueAsString(problem);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Problem is always serialisable", e);
-        }
+        ctx.response().putHeader(HttpHeaders.CONNECTION, "close");
+        RouteProblems.end(ctx, problem, mapper);
     }
 }

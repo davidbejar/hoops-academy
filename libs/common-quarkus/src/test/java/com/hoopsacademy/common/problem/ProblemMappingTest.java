@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.hoopsacademy.common.security.DenialKind;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.RollbackException;
@@ -72,6 +74,31 @@ class ProblemMappingTest {
         assertThat(ProblemMapping.causedByUnstorableText(new SQLException("no state"))).isFalse();
         assertThat(ProblemMapping.causedByUnstorableText(new IllegalStateException("22021"))).isFalse();
         assertThat(ProblemMapping.causedByUnstorableText(new SelfCaused())).isFalse();
+    }
+
+    @Test
+    void theFieldOfARefusedJsonValueIsItsPath() {
+        assertThat(ProblemMapping.fieldOf(refused(new Reference(null, "name")))).isEqualTo("name");
+        assertThat(ProblemMapping.fieldOf(refused(new Reference(null, "tags"), new Reference(null, 1))))
+                .isEqualTo("tags[1]");
+        assertThat(ProblemMapping.fieldOf(refused(new Reference(null, "address"), new Reference(null, "city"))))
+                .isEqualTo("address.city");
+        assertThat(ProblemMapping.fieldOf(refused(new Reference(null, "items"), new Reference(null, 0),
+                new Reference(null, "name")))).isEqualTo("items[0].name");
+        assertThat(ProblemMapping.fieldOf(refused(new Reference(null, 2)))).isEqualTo("[2]");
+    }
+
+    @Test
+    void aRefusedValueWithoutAPathIsTheBody() {
+        assertThat(ProblemMapping.fieldOf(refused())).isEqualTo("body");
+    }
+
+    private static JsonMappingException refused(Reference... path) {
+        JsonMappingException e = new JsonMappingException(null, "refused");
+        for (int i = path.length - 1; i >= 0; i--) {
+            e.prependPath(path[i]);
+        }
+        return e;
     }
 
     private static ConstraintViolation<?> violation(String field, String message) {

@@ -53,6 +53,20 @@ public class TextProbeResource {
         return query("select cast(cast(? as jsonb) as text)", body.toString());
     }
 
+    @POST
+    @Path("/raw")
+    @Consumes(MediaType.TEXT_PLAIN)
+    public String raw(String body) {
+        return query("select cast(? as text)", body);
+    }
+
+    @POST
+    @Path("/raw-json")
+    @Consumes(MediaType.TEXT_PLAIN)
+    public String rawJson(String body) {
+        return query("select cast(cast(? as jsonb) as text)", body);
+    }
+
     private String query(String sql, String parameter) {
         try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, parameter);

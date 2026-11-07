@@ -100,6 +100,13 @@ public class ProblemExceptionMappers {
         return Problem.validation(ProblemMapping.violationsOf(e.getConstraintViolations()), path(uri)).toResponse();
     }
 
+    /** A NUL in a JSON string (SD-02): a validation Problem naming the field. */
+    @ServerExceptionMapper
+    public Response unsafeText(UnsafeTextException e, UriInfo uri) {
+        return Problem.validation(List.of(new Problem.Violation(ProblemMapping.fieldOf(e), UnsafeText.CODE,
+                UnsafeTextException.MESSAGE)), path(uri)).toResponse();
+    }
+
     @ServerExceptionMapper
     public Response httpError(WebApplicationException e, UriInfo uri) {
         return Problem.ofStatus(e.getResponse().getStatus(), path(uri)).toResponse();
@@ -109,6 +116,10 @@ public class ProblemExceptionMappers {
     public Response unexpected(Throwable e, UriInfo uri) {
         if (ProblemMapping.causedByConcurrentModification(e)) {
             return concurrentModificationProblem(uri);
+        }
+        if (ProblemMapping.causedByUnstorableText(e)) {
+            return Problem.of(ProblemType.BAD_REQUEST, "The request contains text that cannot be stored", path(uri),
+                    UnsafeText.CODE, List.of()).toResponse();
         }
         Problem problem = Problem.of(ProblemType.INTERNAL_ERROR, null, path(uri));
         LOG.errorf(e, "Unhandled exception on %s (traceId=%s)", problem.instance(), problem.traceId());
