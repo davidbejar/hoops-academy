@@ -428,6 +428,120 @@ grep -q "^RELOADER_CHART_VERSION=\"[0-9][0-9.]*\"$" deploy/kind/up.sh && grep -q
   && grep -q "^RELOADER_IMAGE_DIGEST=\"$sha\"$" deploy/kind/up.sh \
   && ok "Reloader pinned in deploy/kind/up.sh (chart version + digest, image digest)" || bad "Reloader not pinned in deploy/kind/up.sh"
 
+echo "== observability (WP86, ADR-0046: OpenTelemetry collector)"
+# global.observability.enabled (on in values-kind.yaml): an OTLP collector `otel-collector` (traces + logs, debug exporter,
+# traces on to an in-memory Jaeger on kind), the services export to it (SDK on, logs on, parent-based ratio sampling,
+# resource attributes without a tenant), the Envoy proxy traces the edge. Off: nothing rendered, the SDK stays off.
+img_pinned() { # image line of document $1 matches repository $2 with tag and sha256 digest
+  echo "$1" | grep -Eq "image: \"$2:[0-9][0-9.]*@sha256:[0-9a-f]{64}\""; }
+hardened() { # document $1: non-root, read-only root FS, no privilege escalation, drop ALL, no token, memory limit
+  echo "$1" | grep -q 'runAsNonRoot: true' && echo "$1" | grep -q 'readOnlyRootFilesystem: true' \
+    && echo "$1" | grep -q 'allowPrivilegeEscalation: false' && echo "$1" | grep -A2 'capabilities:' | grep -q -- '- ALL\|drop: \[ALL\]' \
+    && echo "$1" | grep -q 'automountServiceAccountToken: false' && echo "$1" | grep -A1 'limits:' | grep -q 'memory:'; }
+oc=$(doc otel-collector Deployment)
+img_pinned "$oc" docker.io/otel/opentelemetry-collector && hardened "$oc" \
+  && echo "$oc" | grep -q 'name: config, mountPath: /etc/otelcol, readOnly: true' && echo "$oc" | grep -q 'checksum/config:' \
+  && echo "$oc" | grep -q 'path: /, port: health' \
+  && ok "kind: otel-collector pinned by digest, non-root, read-only root FS, config read-only (checksum rolls it), health probes" \
+  || bad "otel-collector Deployment"
+doc otel-collector Service | grep -q '{name: otlp-grpc, port: 4317, targetPort: otlp-grpc' \
+  && doc otel-collector Service | grep -q '{name: otlp-http, port: 4318, targetPort: otlp-http' \
+  && ok "otel-collector Service: OTLP gRPC 4317, OTLP/HTTP 4318" || bad "otel-collector Service"
+cfg=$(doc otel-collector-config ConfigMap | awk '/^  config.yaml: \|$/ {c=1; next} c && /^    / {sub(/^    /, ""); print; next} c {exit}')
+pipeline() { echo "$cfg" | awk -v p="    $1:" '$0 == p {f=1; next} f && /^      / {print; next} f {exit}'; }
+echo "$cfg" | grep -q '^  otlp:$' && pipeline traces | grep -q 'receivers: \[otlp\]' && pipeline logs | grep -q 'receivers: \[otlp\]' \
+  && pipeline traces | grep -q 'processors: \[memory_limiter, attributes/strip-ids, batch\]' && pipeline logs | grep -q 'processors: \[memory_limiter, batch\]' \
+  && pipeline traces | grep -q 'exporters: \[debug, otlp_grpc/jaeger\]' && pipeline logs | grep -q 'exporters: \[debug\]' \
+  && ! echo "$cfg" | grep -q '^    metrics:$' \
+  && ok "collector pipelines: traces (debug + Jaeger) and logs (debug) from OTLP, memory_limiter first, ids stripped from spans, no metrics" \
+  || bad "collector config: $(echo "$cfg" | tr '\n' ' ' | head -c 400)"
+# Span attributes that carry concrete paths or message keys (tenant and other ids: /internal/usage/<tenant>, /platform/
+# tenants/<id>, Kafka keys <tenant>:<id>) are deleted before any exporter; http.route (the template) and span names stay.
+strip=$(echo "$cfg" | awk '/^  attributes\/strip-ids:$/ {s=1; next} s && /^    / {print; next} s {exit}' | { grep -o 'key: [a-z._]*' || true; } | sort | tr '\n' ' ')
+[ "$strip" = "key: http.target key: http.url key: messaging.kafka.message.key key: url.full key: url.path key: url.query " ] \
+  && [ "$(echo "$cfg" | awk '/^  attributes\/strip-ids:$/ {s=1; next} s && /^    / {print; next} s {exit}' | grep -c 'action: delete')" = 6 ] \
+  && ok "spans: url.full, url.path, url.query, http.url, http.target and Kafka message keys deleted (no tenant id leaves)" || bad "strip-ids processor: $strip"
+echo "$cfg" | grep -q 'endpoint: jaeger.hoops.svc.cluster.local:4317' && echo "$cfg" | grep -q 'insecure: true' \
+  && echo "$cfg" | grep -q 'level: none' && ok "collector: traces to jaeger.hoops:4317, own metrics off" || bad "collector exporters/telemetry"
+n=$(doc otel-collector NetworkPolicy)
+admitted=$(echo "$n" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
+[ "$admitted" = "athlete-service core-service game-service " ] && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' \
+  && [ "$(echo "$n" | grep -c -- '- from:')" = 2 ] && ! echo "$n" | grep -q 'namespaceSelector: {}' \
+  && echo "$n" | awk '/- from:/ {f++} f==1 && /port: otlp-grpc/ {g=1} f==1 && /port: otlp-http/ {h=1} END {exit !(g && h)}' \
+  && echo "$n" | awk '/- from:/ {f++} f==2 && /kubernetes.io\/metadata.name: envoy-gateway-system/ {e=1} f==2 && /app.kubernetes.io\/component: proxy/ {p=1} f==2 && /port: otlp-grpc/ {g=1} f==2 && /port: otlp-http/ {h=1} END {exit !(e && p && g && !h)}' \
+  && echo "$n" | grep -q 'k8s-app: kube-dns' && [ "$(echo "$n" | grep -c -- '- to:')" = 2 ] \
+  && echo "$n" | awk '/- to:/ {t++} t==2 && /app.kubernetes.io\/name: jaeger/ {j=1} t==2 && /port: 4317/ {p=1} END {exit !(j && p)}' \
+  && ok "otel-collector NetworkPolicy: OTLP from the three services + Envoy proxies (gRPC), egress DNS + Jaeger only" \
+  || bad "otel-collector NetworkPolicy (admitted: $admitted)"
+for u in core-service game-service athlete-service; do
+  doc "$u" Deployment | grep -q "app.kubernetes.io/name: $u" || bad "collector client $u has no Deployment with that name label"
+done
+j=$(doc jaeger Deployment)
+img_pinned "$j" docker.io/jaegertracing/jaeger && hardened "$j" \
+  && ok "kind: jaeger pinned by digest, non-root, read-only root FS, memory limit" || bad "jaeger Deployment"
+doc jaeger-config ConfigMap | grep -q 'max_traces: 5000' && ! doc jaeger-config ConfigMap | grep -q '4318\|9411\|14250\|14268' \
+  && ok "jaeger: in-memory store capped (5000 traces), OTLP gRPC receiver only" || bad "jaeger config"
+n=$(doc jaeger NetworkPolicy)
+echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' && echo "$n" | grep -q 'egress: \[\]' \
+  && [ "$(echo "$n" | grep -c -- '- from:')" = 1 ] && echo "$n" | grep -A6 -- '- from:' | grep -q 'app.kubernetes.io/name: otel-collector' \
+  && echo "$n" | grep -q 'port: otlp-grpc' && ! echo "$n" | grep -q 'port: ui\|16686' \
+  && ok "jaeger NetworkPolicy: OTLP from the collector only, UI by port-forward only, no egress" || bad "jaeger NetworkPolicy"
+for s in core game athlete; do
+  c=$(doc "$s-service-env" ConfigMap)
+  echo "$c" | grep -qx '  QUARKUS_OTEL_SDK_DISABLED: "false"' \
+    && echo "$c" | grep -qx '  QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"' \
+    && echo "$c" | grep -qx '  QUARKUS_OTEL_TRACES_SAMPLER_ARG: "1.0"' \
+    && echo "$c" | grep -qx '  QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"' \
+    && ok "kind: $s-service exports to otel-collector:4317, all traces sampled, resource attributes without a tenant" \
+    || bad "kind: $s-service OTel env"
+  p=services/$s-service/src/main/resources/application.properties
+  grep -qx 'quarkus.otel.logs.enabled=true' "$p" && grep -qx 'quarkus.otel.traces.sampler=parentbased_traceidratio' "$p" \
+    && ok "$s-service build: logs exporter and parent-based ratio sampler compiled in (build-time keys)" || bad "$s-service OTel build keys"
+  doc "$s-service-env" ConfigMap "$D" | grep -qx '  QUARKUS_OTEL_SDK_DISABLED: "true"' && ! doc "$s-service-env" ConfigMap "$D" | grep -q 'OTLP_ENDPOINT' \
+    && ok "default: $s-service OTel SDK off, no endpoint" || bad "default: $s-service OTel env"
+done
+! grep -qi 'tenant' <(grep -h 'QUARKUS_OTEL_RESOURCE_ATTRIBUTES' "$WORK"/*.yaml) && ok "no tenant in any resource attribute" || bad "tenant in resource attributes"
+e=$(doc hoops EnvoyProxy)
+echo "$e" | grep -A8 '^    tracing:$' | grep -q 'type: OpenTelemetry' \
+  && echo "$e" | grep -A8 '^    tracing:$' | grep -q 'backendRefs: \[{name: otel-collector, port: 4317}\]' \
+  && echo "$e" | grep -A8 '^    tracing:$' | grep -q 'samplingFraction: {numerator: 10000, denominator: 10000}' \
+  && ok "kind: Envoy proxy traces the edge to otel-collector:4317 (W3C traceparent, same ratio)" || bad "EnvoyProxy tracing"
+for f in umbrella-default umbrella-tls service-defaults; do
+  grep -q 'otel-collector\|jaeger\|tracing:' "$WORK/$f.yaml" && { bad "$f: observability rendered while global.observability.enabled is off"; continue; }
+  ok "$f: no collector, no Jaeger, no edge tracing (global.observability.enabled off)"
+done
+grep -qx '  QUARKUS_OTEL_SDK_DISABLED: "true"' "$WORK/service-defaults.yaml" && ok "service chart alone: OTel SDK off" || bad "service chart default OTel"
+a=$(doc demo-service-env ConfigMap "$WORK/service-all.yaml")
+echo "$a" | grep -qx '  QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"' \
+  && echo "$a" | grep -qx '  QUARKUS_OTEL_TRACES_SAMPLER_ARG: "0.25"' \
+  && echo "$a" | grep -qx '  QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=hoops,k8s.namespace.name=hoops"' \
+  && ok "service chart with global.observability: endpoint, ratio from global, environment = namespace by default" || bad "service chart OTel on"
+grep -q '^  observability: {enabled: true' "$CHART/values-kind.yaml" && ok "values-kind.yaml: global.observability.enabled on" \
+  || bad "values-kind.yaml does not switch global.observability.enabled on"
+# Another environment: the platform's own collector/agent (no chart collector), or the chart's collector forwarding to a
+# backend (extra exporter, its credential from a Secret, an egress rule for it).
+helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set observability.collector.enabled=false \
+  --set observability.jaeger.enabled=false --set global.observability.otlpEndpoint=http://otel-agent.monitoring:4317 > "$WORK/extra/agent.yaml"
+! grep -q 'name: otel-collector\|name: jaeger' "$WORK/extra/agent.yaml" \
+  && [ "$(grep -c 'QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-agent.monitoring:4317"' "$WORK/extra/agent.yaml")" = 3 ] \
+  && ! grep -q 'tracing:' "$WORK/extra/agent.yaml" \
+  && ok "external collector: no chart collector, services and nothing else point at global.observability.otlpEndpoint" || bad "external collector"
+refused 'otlpEndpoint' "${K[@]}" --set observability.collector.enabled=false \
+  && refused 'jaeger' "${K[@]}" --set observability.collector.enabled=false --set global.observability.otlpEndpoint=http://x:4317 \
+  && ok "collector off needs global.observability.otlpEndpoint; Jaeger needs the chart collector" || bad "collector-off guards"
+helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set observability.jaeger.enabled=false \
+  --set-json 'observability.collector.exporters={"otlp_http/backend":{"endpoint":"https://otlp.example.test","headers":{"authorization":"Bearer ${env:BACKEND_TOKEN}"}}}' \
+  --set-json 'observability.collector.pipelineExporters={"traces":["otlp_http/backend"],"logs":["otlp_http/backend"]}' \
+  --set-json 'observability.collector.secretEnv=[{"name":"BACKEND_TOKEN","secretName":"otel-backend","key":"token"}]' \
+  --set-json 'observability.collector.networkPolicy.extraEgress=[{"ports":[{"port":443,"protocol":"TCP"}]}]' > "$WORK/extra/backend.yaml"
+bcfg=$(doc otel-collector-config ConfigMap "$WORK/extra/backend.yaml")
+bd=$(doc otel-collector Deployment "$WORK/extra/backend.yaml")
+echo "$bcfg" | grep -q 'exporters: \[debug, otlp_http/backend\]' && [ "$(echo "$bcfg" | grep -c 'exporters: \[debug, otlp_http/backend\]')" = 2 ] \
+  && echo "$bcfg" | grep -q 'Bearer ${env:BACKEND_TOKEN}' && ! grep -q 'name: jaeger' "$WORK/extra/backend.yaml" \
+  && echo "$bd" | grep -q 'secretKeyRef: {name: otel-backend, key: token}' && echo "$bd" | grep -q 'secret.reloader.stakater.com/auto: "true"' \
+  && doc otel-collector NetworkPolicy "$WORK/extra/backend.yaml" | grep -q 'port: 443' \
+  && ok "backend: extra exporter in both pipelines, its token from a Secret (Reloader rolls it), egress rule added" || bad "collector backend wiring"
+
 echo "== gitleaks (rendered manifests)"
 if command -v gitleaks >/dev/null; then
   if cat "$WORK"/*.yaml | gitleaks detect --pipe --no-banner --redact --config .gitleaks.toml >"$WORK/gl.txt" 2>&1; then ok "gitleaks clean"

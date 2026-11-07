@@ -19,5 +19,5 @@ pdb: {enabled: true, minAvailable: 1}
 hpa: {enabled: true, minReplicas: 2, maxReplicas: 4}
 metrics: {enabled: true, path: /q/metrics}
 # Event broker client (WP71): on through the umbrella's mirror global.events.enabled; offEnv applies only when off.
-global: {events: {enabled: true}, reloader: {enabled: true}}   # reloader: WP87
+global: {events: {enabled: true}, reloader: {enabled: true}, observability: {enabled: true, tracesSampleRatio: "0.25"}}   # reloader: WP87, observability: WP86
 events: {offEnv: {DEMO_EVENTS: "off"}}
