@@ -30,7 +30,8 @@ import java.util.stream.Collectors;
  * Reads a subject's membership in the BOUND tenant from the database: roles, relations (staff teams, linked players,
  * own player, teams of those players), the tenant's time zone and lifecycle status. Teams whose season has ended (in
  * the academy's time zone) are left out of both team sets, even while a staff row or an assignment is still open
- * (WP58): the summary grants today's access, past seasons are history.
+ * (WP58): the summary grants today's access, past seasons are history. The staff rows of those teams become the
+ * historic staff teams (read-only history, ADR-0042).
  */
 @ApplicationScoped
 public class MembershipLookup {
@@ -83,7 +84,7 @@ public class MembershipLookup {
                 tenant.timezone()));
         return new AuthzContext(subject, person.id().value(), tenantContext.requireTenantId(), person.roles(),
                 retain(staffTeamIds, notEnded), linkedPlayers, ownPlayer, retain(playerTeamIds, notEnded),
-                Optional.of(tenant.timezone()));
+                Optional.of(tenant.timezone()), ended(staffTeamIds, notEnded));
     }
 
     /** One query for both team sets. */
@@ -96,6 +97,11 @@ public class MembershipLookup {
 
     private static Set<UUID> retain(Set<UUID> teamIds, Set<UUID> notEnded) {
         return teamIds.stream().filter(notEnded::contains).collect(Collectors.toSet());
+    }
+
+    /** Every staff row points to an existing team (foreign key), so a staff team not "not ended" has ended. */
+    private static Set<UUID> ended(Set<UUID> teamIds, Set<UUID> notEnded) {
+        return teamIds.stream().filter(id -> !notEnded.contains(id)).collect(Collectors.toSet());
     }
 
     /** Teams with an open, valid assignment of the own or a linked player (what the roster endpoint lists). */

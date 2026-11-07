@@ -79,10 +79,11 @@ public class TeamResource {
     @GET
     public TeamDto.PageDto list(@QueryParam("seasonId") UUID seasonId, @QueryParam("ageCategoryId") UUID ageCategoryId,
             @QueryParam("staffedByMe") @DefaultValue("false") boolean staffedByMe,
+            @QueryParam("includeEnded") @DefaultValue("false") boolean includeEnded,
             @QueryParam("page") @DefaultValue("0") @Min(0) int page,
             @QueryParam("size") @DefaultValue("50") @Min(1) @Max(200) int size) {
         TeamQuery query = new TeamQuery(Optional.ofNullable(seasonId).map(SeasonId::new),
-                Optional.ofNullable(ageCategoryId).map(AgeCategoryId::new), staffedByMe);
+                Optional.ofNullable(ageCategoryId).map(AgeCategoryId::new), staffedByMe, includeEnded);
         return TeamDto.PageDto.of(teams.list(query, new PageRequest(page, size)));
     }
 

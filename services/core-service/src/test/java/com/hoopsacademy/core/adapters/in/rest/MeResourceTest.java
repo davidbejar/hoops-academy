@@ -82,9 +82,7 @@ class MeResourceTest {
         com.hoopsacademy.core.testsupport.RosterDb.staff(t, lions, coach, "COACH");
 
         given().filter(Contract.CORE).get(ME).then().statusCode(200)
-                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.staffTeamIds", contains(lions.toString()))
-                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.historicStaffTeamIds",
-                        contains(oldLions.toString()));
+                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.staffTeamIds", contains(lions.toString()));
     }
 
     @Test
@@ -103,7 +101,9 @@ class MeResourceTest {
         com.hoopsacademy.core.testsupport.RosterDb.staff(t, lions, coach, "COACH");
 
         given().filter(Contract.CORE).get(ME).then().statusCode(200)
-                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.staffTeamIds", contains(lions.toString()));
+                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.staffTeamIds", contains(lions.toString()))
+                .body("memberships.find { it.tenant.id == '" + t + "' }.authz.historicStaffTeamIds",
+                        contains(oldLions.toString()));
     }
 
     @Test

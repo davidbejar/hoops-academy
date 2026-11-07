@@ -84,7 +84,7 @@ class SeasonHistoryTest {
 
         request().get(TEAMS + pastLions).then().statusCode(200).body("seasonEnded", equalTo(true));
         request().get(TEAMS + lions).then().statusCode(200).body("seasonEnded", equalTo(false));
-        request().get(TEAMS + pastLions + "/players").then().statusCode(200).body("playerId", contains(ann.toString()));
+        request().get(TEAMS + pastLions + "/players").then().statusCode(200).body("player.id", contains(ann.toString()));
     }
 
     @Test
@@ -102,8 +102,8 @@ class SeasonHistoryTest {
         seasonEnded(request().delete(TEAMS + pastLions + "/players/" + ann).then());
 
         request().get(TEAMS + pastLions).then().body("name", equalTo("Lions"));
-        request().get(TEAMS + pastLions + "/staff").then().body("person.id", contains(coach.toString()));
-        request().get(TEAMS + pastLions + "/players").then().body("playerId", contains(ann.toString()))
+        request().get(TEAMS + pastLions + "/staff").then().body("person.personId", contains(coach.toString()));
+        request().get(TEAMS + pastLions + "/players").then().body("player.id", contains(ann.toString()))
                 .body("jerseyNumber", contains("7"));
     }
 

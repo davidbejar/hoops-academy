@@ -2501,8 +2501,7 @@ components:
           type: array
           description: |
             Teams of seasons that have ended (academy time zone) where the caller is still recorded as staff: their
-            read-only history (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`; empty for a caller without a
-            COACH / ASSISTANT_COACH role.
+            read-only history for a COACH / ASSISTANT_COACH (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`.
           items: {type: string, format: uuid}
         linkedPlayerIds:
           type: array
@@ -3283,8 +3282,8 @@ components:
         historicStaffTeamIds:
           type: array
           description: |
-            Teams of ended seasons the caller is still recorded as staff of (with a COACH / ASSISTANT_COACH role): read
-            access to their history, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`.
+            Teams of ended seasons the caller is still recorded as staff of: read access to their history for a
+            COACH / ASSISTANT_COACH, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`.
           items: {type: string, format: uuid}
         linkedPlayerIds:
           type: array

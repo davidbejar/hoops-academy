@@ -49,6 +49,11 @@ public class RosterAuthz {
         return isTeamStaffMember() ? caller().staffTeamIds() : Set.of();
     }
 
+    /** Teams of ended seasons the caller was staff of (empty unless they hold a staff role; ADR-0042). */
+    public Set<UUID> historicStaffTeams() {
+        return isTeamStaffMember() ? caller().historicStaffTeamIds() : Set.of();
+    }
+
     public PersonId callerPerson() {
         return new PersonId(caller().personId());
     }

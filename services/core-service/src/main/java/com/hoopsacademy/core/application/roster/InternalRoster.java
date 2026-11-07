@@ -5,6 +5,7 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository.PlayerSummary;
+import com.hoopsacademy.core.application.port.SeasonRepository;
 import com.hoopsacademy.core.application.port.TeamPlayerRepository;
 import com.hoopsacademy.core.application.port.TeamRepository;
 import com.hoopsacademy.core.application.port.TeamStaffRepository;
@@ -17,6 +18,7 @@ import com.hoopsacademy.core.domain.roster.TeamPlayer;
 import com.hoopsacademy.core.domain.roster.TeamStaffMember;
 import com.hoopsacademy.core.domain.tenant.TenantStatus;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,21 +34,25 @@ public class InternalRoster {
     /** A roster line: open, valid assignment with the player's data. */
     public record RosterLine(PlayerSummary player, JerseyNumber jersey) {}
 
-    /** Contract {@code TeamRoster}. */
-    public record TeamRosterView(TenantId tenant, Team team, List<RosterLine> players, List<TeamStaffMember> staff) {}
+    /** Contract {@code TeamRoster}; {@code seasonEnd} is the last day of the team's season (ADR-0042). */
+    public record TeamRosterView(TenantId tenant, Team team, LocalDate seasonEnd, List<RosterLine> players,
+            List<TeamStaffMember> staff) {}
 
     private final TenantScope tenantScope;
     private final TenantProfileRepository profiles;
     private final TeamRepository teams;
+    private final SeasonRepository seasons;
     private final TeamPlayerRepository assignments;
     private final TeamStaffRepository staff;
     private final PlayerRepository players;
 
     public InternalRoster(TenantScope tenantScope, TenantProfileRepository profiles, TeamRepository teams,
-            TeamPlayerRepository assignments, TeamStaffRepository staff, PlayerRepository players) {
+            SeasonRepository seasons, TeamPlayerRepository assignments, TeamStaffRepository staff,
+            PlayerRepository players) {
         this.tenantScope = tenantScope;
         this.profiles = profiles;
         this.teams = teams;
+        this.seasons = seasons;
         this.assignments = assignments;
         this.staff = staff;
         this.players = players;
@@ -62,7 +68,8 @@ public class InternalRoster {
                     .map(assignment -> new RosterLine(summaries.get(assignment.player()), assignment.jersey()))
                     .filter(line -> hasBirthAndGender(line.player()))
                     .toList();
-            return new TeamRosterView(tenant, team, lines, staff.ofTeam(teamId));
+            LocalDate seasonEnd = seasons.find(team.season()).orElseThrow().endsOn();
+            return new TeamRosterView(tenant, team, seasonEnd, lines, staff.ofTeam(teamId));
         });
     }
 

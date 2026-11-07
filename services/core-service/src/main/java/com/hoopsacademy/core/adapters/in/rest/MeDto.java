@@ -13,8 +13,8 @@ public record MeDto(UUID userId, String sub, String email, String displayName, S
 
     public record TenantSummaryDto(UUID id, String slug, String name, String status, boolean hasLogo) {}
 
-    public record AuthzSummaryDto(List<UUID> staffTeamIds, List<UUID> linkedPlayerIds, UUID ownPlayerId,
-            List<UUID> playerTeamIds, String timezone) {}
+    public record AuthzSummaryDto(List<UUID> staffTeamIds, List<UUID> historicStaffTeamIds, List<UUID> linkedPlayerIds,
+            UUID ownPlayerId, List<UUID> playerTeamIds, String timezone) {}
 
     static MeDto of(MeView me) {
         return new MeDto(me.user().id().value(), me.caller().subject(), me.caller().email(), me.caller().displayName(),
@@ -29,6 +29,7 @@ public record MeDto(UUID userId, String sub, String email, String displayName, S
                         tenant.hasLogo()),
                 authz.personId(), authz.roles().stream().map(Enum::name).sorted().toList(),
                 new AuthzSummaryDto(authz.staffTeamIds().stream().sorted().toList(),
+                        authz.historicStaffTeamIds().stream().sorted().toList(),
                         authz.linkedPlayerIds().stream().sorted().toList(), authz.ownPlayerId().orElse(null),
                         authz.playerTeamIds().stream().sorted().toList(),
                         authz.timezone().map(java.time.ZoneId::getId).orElse(null)));

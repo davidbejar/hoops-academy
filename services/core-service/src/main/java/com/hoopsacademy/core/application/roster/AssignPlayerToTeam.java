@@ -43,24 +43,24 @@ public class AssignPlayerToTeam {
     private final EligibilityEngine engine;
     private final PlayerStatusSync statuses;
     private final TenantToday calendar;
-    private final RosterAuthz authz;
+    private final PastSeasons pastSeasons;
 
     public AssignPlayerToTeam(TeamRepository teams, TeamPlayerRepository assignments, PlayerRepository players,
-            EligibilityEngine engine, PlayerStatusSync statuses, TenantToday calendar, RosterAuthz authz) {
+            EligibilityEngine engine, PlayerStatusSync statuses, TenantToday calendar, PastSeasons pastSeasons) {
         this.teams = teams;
         this.assignments = assignments;
         this.players = players;
         this.engine = engine;
         this.statuses = statuses;
         this.calendar = calendar;
-        this.authz = authz;
+        this.pastSeasons = pastSeasons;
     }
 
     @Transactional
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
     public TeamPlayerView assign(Assignment request) {
         Team team = teams.find(request.team()).orElseThrow(() -> new NotFoundException("Team not found"));
-        authz.requireCoachOf(team.id());
+        pastSeasons.requireOpenForCoach(team);
         PlayerSummary player = players.summary(request.player())
                 .orElseThrow(() -> new NotFoundException("Player not found"));
         if (assignments.findOpen(team.id(), player.id()).isPresent()) {

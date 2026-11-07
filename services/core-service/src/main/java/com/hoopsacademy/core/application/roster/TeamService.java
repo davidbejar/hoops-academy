@@ -24,7 +24,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Teams: any member reads, ADMIN writes; names are unique per season (409 {@code TEAM_NAME_TAKEN}). */
+/**
+ * Teams: any member reads, ADMIN writes; names are unique per season (409 {@code TEAM_NAME_TAKEN}); a team of an ended
+ * season is read-only (409 {@code SEASON_ENDED}, ADR-0042).
+ */
 @ApplicationScoped
 public class TeamService {
 
@@ -33,8 +36,12 @@ public class TeamService {
     /** Contract {@code CreateTeamRequest}. */
     public record NewTeam(SeasonId season, String name, String alias, AgeCategoryId category, GenderPolicy genderPolicy) {}
 
-    /** Contract query of {@code listTeams}. */
-    public record TeamQuery(Optional<SeasonId> season, Optional<AgeCategoryId> category, boolean staffedByMe) {}
+    /**
+     * Contract query of {@code listTeams}; {@code includeEnded} adds the caller's historic staff teams to
+     * {@code staffedByMe} (ADR-0042).
+     */
+    public record TeamQuery(Optional<SeasonId> season, Optional<AgeCategoryId> category, boolean staffedByMe,
+            boolean includeEnded) {}
 
     private final TenantContext tenantContext;
     private final TeamRepository teams;
@@ -44,10 +51,11 @@ public class TeamService {
     private final EligibilityEngine engine;
     private final TeamViews views;
     private final RosterAuthz authz;
+    private final PastSeasons pastSeasons;
 
     public TeamService(TenantContext tenantContext, TeamRepository teams, SeasonRepository seasons,
             AgeCategoryRepository categories, EntitlementService entitlements, EligibilityEngine engine, TeamViews views,
-            RosterAuthz authz) {
+            RosterAuthz authz, PastSeasons pastSeasons) {
         this.tenantContext = tenantContext;
         this.teams = teams;
         this.seasons = seasons;
@@ -56,12 +64,13 @@ public class TeamService {
         this.engine = engine;
         this.views = views;
         this.authz = authz;
+        this.pastSeasons = pastSeasons;
     }
 
     @Transactional
     public PageResult<TeamView> list(TeamQuery query, PageRequest page) {
         Optional<Set<TeamId>> onlyTeams = query.staffedByMe()
-                ? Optional.of(authz.staffTeams().stream().map(TeamId::new).collect(Collectors.toSet()))
+                ? Optional.of(staffedByCaller(query.includeEnded()))
                 : Optional.empty();
         PageResult<Team> found = teams.list(new TeamFilter(query.season(), query.category(), onlyTeams), page);
         return new PageResult<>(views.of(found.items()), page, found.totalElements());
@@ -90,6 +99,7 @@ public class TeamService {
     @RequiresTenantRole(TenantRole.ADMIN)
     public TeamView update(TeamId id, TeamChanges changes) {
         Team before = find(id);
+        pastSeasons.requireOpenForAdmin(before);
         Team after = before.apply(changes);
         requireCategory(after.category());
         requireUniqueName(after);
@@ -101,6 +111,14 @@ public class TeamService {
             engine.reevaluateTeam(after);
         }
         return views.of(after);
+    }
+
+    private Set<TeamId> staffedByCaller(boolean includeEnded) {
+        Set<TeamId> staffed = authz.staffTeams().stream().map(TeamId::new).collect(Collectors.toSet());
+        if (includeEnded) {
+            authz.historicStaffTeams().forEach(id -> staffed.add(new TeamId(id)));
+        }
+        return staffed;
     }
 
     Team find(TeamId id) {

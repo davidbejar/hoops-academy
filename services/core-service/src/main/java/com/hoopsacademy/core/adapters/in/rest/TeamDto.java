@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.UUID;
 
 /** Contract {@code Team}. */
-public record TeamDto(UUID id, UUID seasonId, String name, String alias, AgeCategoryDto ageCategory,
-        GenderPolicy genderPolicy, long playerCount) {
+public record TeamDto(UUID id, UUID seasonId, boolean seasonEnded, String name, String alias,
+        AgeCategoryDto ageCategory, GenderPolicy genderPolicy, long playerCount) {
 
     /** Contract {@code TeamPage}. */
     public record PageDto(List<TeamDto> items, PageMetaDto page) {
@@ -20,7 +20,7 @@ public record TeamDto(UUID id, UUID seasonId, String name, String alias, AgeCate
     }
 
     static TeamDto of(TeamView view) {
-        return new TeamDto(view.team().id().value(), view.team().season().value(), view.team().name(),
+        return new TeamDto(view.team().id().value(), view.team().season().value(), view.seasonEnded(), view.team().name(),
                 view.team().alias(), AgeCategoryDto.of(view.category()), view.team().genderPolicy(), view.playerCount());
     }
 }

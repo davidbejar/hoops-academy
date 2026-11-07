@@ -55,12 +55,12 @@ public class InternalRosterResource {
     public record RosterStaffDto(UUID personId, StaffRole role) {}
 
     /** Contract {@code TeamRoster}. */
-    public record TeamRosterDto(UUID tenantId, UUID teamId, UUID seasonId, String teamName, List<RosterPlayerDto> players,
-            List<RosterStaffDto> staff) {
+    public record TeamRosterDto(UUID tenantId, UUID teamId, UUID seasonId, LocalDate seasonEndDate, String teamName,
+            List<RosterPlayerDto> players, List<RosterStaffDto> staff) {
 
         static TeamRosterDto of(TeamRosterView view) {
             return new TeamRosterDto(view.tenant().value(), view.team().id().value(), view.team().season().value(),
-                    view.team().name(),
+                    view.seasonEnd(), view.team().name(),
                     view.players().stream().map(line -> new RosterPlayerDto(line.player().id().value(),
                             line.player().displayName(), line.jersey() == null ? null : line.jersey().value(),
                             line.player().birthDate(), line.player().gender(), line.player().status())).toList(),

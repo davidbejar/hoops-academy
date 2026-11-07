@@ -10,6 +10,7 @@ import com.hoopsacademy.core.application.port.TeamPlayerRepository;
 import com.hoopsacademy.core.application.port.TeamRepository;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.roster.JerseyNumber;
+import com.hoopsacademy.core.domain.roster.Team;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamPlayer;
 import com.hoopsacademy.core.domain.shared.Patch;
@@ -19,7 +20,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/** A team's assignments: any member lists them; ADMIN or the team's COACH renumbers and unassigns. */
+/**
+ * A team's assignments: any member lists them; ADMIN or the team's COACH renumbers and unassigns, never once the
+ * team's season has ended (409 {@code SEASON_ENDED}, ADR-0042).
+ */
 @ApplicationScoped
 public class TeamPlayerService {
 
@@ -28,16 +32,16 @@ public class TeamPlayerService {
     private final PlayerRepository players;
     private final PlayerStatusSync statuses;
     private final TenantToday calendar;
-    private final RosterAuthz authz;
+    private final PastSeasons pastSeasons;
 
     public TeamPlayerService(TeamRepository teams, TeamPlayerRepository assignments, PlayerRepository players,
-            PlayerStatusSync statuses, TenantToday calendar, RosterAuthz authz) {
+            PlayerStatusSync statuses, TenantToday calendar, PastSeasons pastSeasons) {
         this.teams = teams;
         this.assignments = assignments;
         this.players = players;
         this.statuses = statuses;
         this.calendar = calendar;
-        this.authz = authz;
+        this.pastSeasons = pastSeasons;
     }
 
     @Transactional
@@ -74,13 +78,12 @@ public class TeamPlayerService {
     }
 
     private TeamPlayer openAssignment(TeamId team, PlayerId player) {
-        requireTeam(team);
-        authz.requireCoachOf(team);
+        pastSeasons.requireOpenForCoach(requireTeam(team));
         return assignments.findOpen(team, player).orElseThrow(() -> new NotFoundException("No open assignment"));
     }
 
-    private void requireTeam(TeamId team) {
-        teams.find(team).orElseThrow(() -> new NotFoundException("Team not found"));
+    private Team requireTeam(TeamId team) {
+        return teams.find(team).orElseThrow(() -> new NotFoundException("Team not found"));
     }
 
     private static TeamPlayerView view(TeamPlayer assignment, PlayerSummary player) {

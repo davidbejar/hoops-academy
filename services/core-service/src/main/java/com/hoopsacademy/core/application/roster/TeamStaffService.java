@@ -12,6 +12,7 @@ import com.hoopsacademy.core.application.port.TeamStaffRepository;
 import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.roster.StaffRole;
+import com.hoopsacademy.core.domain.roster.Team;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamStaffMember;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,15 +36,17 @@ public class TeamStaffService {
     private final PersonRepository persons;
     private final AuthzCache authzCache;
     private final TenantToday calendar;
+    private final PastSeasons pastSeasons;
 
     public TeamStaffService(TenantContext tenantContext, TeamRepository teams, TeamStaffRepository staff,
-            PersonRepository persons, AuthzCache authzCache, TenantToday calendar) {
+            PersonRepository persons, AuthzCache authzCache, TenantToday calendar, PastSeasons pastSeasons) {
         this.tenantContext = tenantContext;
         this.teams = teams;
         this.staff = staff;
         this.persons = persons;
         this.authzCache = authzCache;
         this.calendar = calendar;
+        this.pastSeasons = pastSeasons;
     }
 
     @Transactional
@@ -59,7 +62,7 @@ public class TeamStaffService {
     @Transactional
     @RequiresTenantRole(TenantRole.ADMIN)
     public StaffView put(TeamId team, PersonId personId, StaffRole role) {
-        requireTeam(team);
+        pastSeasons.requireOpenForAdmin(requireTeam(team));
         Person person = persons.find(personId).orElseThrow(() -> new NotFoundException("Person not found"));
         if (!person.roles().contains(role.tenantRole())) {
             throw new DomainRuleViolation("The person must hold the " + role.tenantRole() + " role", ROLE_MISSING);
@@ -74,13 +77,13 @@ public class TeamStaffService {
     @Transactional
     @RequiresTenantRole(TenantRole.ADMIN)
     public void remove(TeamId team, PersonId person) {
-        requireTeam(team);
+        pastSeasons.requireOpenForAdmin(requireTeam(team));
         staff.find(team, person).orElseThrow(() -> new NotFoundException("Staff member not found"));
         staff.delete(team, person);
         authzCache.invalidate(tenantContext.requireTenantId());
     }
 
-    private void requireTeam(TeamId team) {
-        teams.find(team).orElseThrow(() -> new NotFoundException("Team not found"));
+    private Team requireTeam(TeamId team) {
+        return teams.find(team).orElseThrow(() -> new NotFoundException("Team not found"));
     }
 }
