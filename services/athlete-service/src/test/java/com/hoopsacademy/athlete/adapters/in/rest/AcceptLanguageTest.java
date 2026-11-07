@@ -25,4 +25,16 @@ class AcceptLanguageTest {
         assertThat(AcceptLanguage.negotiate("es;q=abc")).as("unreadable quality counts as 1").isEqualTo(ContentLocale.ES);
         assertThat(AcceptLanguage.negotiate(",,;q=1,")).isEqualTo(ContentLocale.EN);
     }
+
+    @Test
+    void anEntryOfParametersOnlyIsSkipped() {
+        assertThat(AcceptLanguage.negotiate(";")).isEqualTo(ContentLocale.EN);
+        assertThat(AcceptLanguage.negotiate("es,;")).isEqualTo(ContentLocale.ES);
+        assertThat(AcceptLanguage.negotiate(";;, id")).isEqualTo(ContentLocale.ID);
+    }
+
+    @Test
+    void onlyTheQParameterSetsTheQuality() {
+        assertThat(AcceptLanguage.negotiate("es;v=0, id;q=0.5")).isEqualTo(ContentLocale.ES);
+    }
 }

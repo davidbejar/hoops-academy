@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 
 /**
  * Reads an {@code Accept-Language} header (RFC 9110 §12.5.4) into the template language: entries by descending
@@ -21,18 +20,16 @@ final class AcceptLanguage {
         if (header == null) {
             return ContentLocale.FALLBACK;
         }
-        List<String> preferred = Arrays.stream(header.split(",")).map(AcceptLanguage::entry).filter(Objects::nonNull)
+        List<String> preferred = Arrays.stream(header.split(",")).map(AcceptLanguage::entry)
                 .filter(e -> e.quality() > 0).sorted(Comparator.comparingDouble(Entry::quality).reversed())
                 .map(Entry::tag).toList();
         return ContentLocale.negotiate(preferred);
     }
 
+    /** An entry without a tag (e.g. {@code ";q=1"}) keeps an empty tag, which names no language. */
     private static Entry entry(String raw) {
-        String[] parts = raw.split(";");
+        String[] parts = raw.split(";", -1);
         String tag = parts[0].trim();
-        if (tag.isEmpty()) {
-            return null;
-        }
         double quality = 1;
         for (int i = 1; i < parts.length; i++) {
             String parameter = parts[i].trim().toLowerCase(Locale.ROOT);
