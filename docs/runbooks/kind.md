@@ -13,7 +13,7 @@ event broker (ADR-0036). The compose stack
 - Capacity: the full stack requests ~1.5 CPU / ~2.5 GiB inside the kind node (Keycloak 512 Mi–1 Gi, three
   services 192–448 Mi, two Postgres 192–512 Mi, Envoy Gateway controller 256 Mi + one Envoy proxy 64–256 Mi, its
   rate limit service `envoy-ratelimit` 32–128 Mi + `ratelimit-redis` 16–64 Mi, `redpanda` 512–768 Mi with a 1 Gi volume,
-  CNPG operator, control plane ~1 GiB).
+  `otel-collector` 64–256 Mi + `jaeger` 64–256 Mi (WP86), CNPG operator, control plane ~1 GiB).
 
 ### Rootless vs rootful Podman
 kind's Podman provider works best on a **rootful** machine. Rootless needs cgroup v2 with the
@@ -29,7 +29,7 @@ podman machine start
 ```bash
 source scripts/env.sh
 just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.9.3 (Gateway API v1.6.1 CRDs) with its
-                      # rate limit service (Redis backend ratelimit-redis.hoops:6379) + CNPG 1.30.1
+                      # rate limit service (Redis backend ratelimit-redis.hoops:6379) + CNPG 1.30.1 (no leader election, WP86)
                       # + ns hoops + Secrets from .env + self-signed TLS Secret hoops-gateway-tls
                       # + Stakater Reloader 2.2.19 (v1.4.23, namespace hoops-reloader, WP87)
 just tilt             # = tilt up: builds 4 images with Podman, kind-loads them, deploys the chart, port-forwards
@@ -57,7 +57,8 @@ the container), `--skip-flutter` (reuse `apps/web/build/web`).
 | `http://localhost:8090/api/<svc>/q/health[/live\|ready\|started]` | rewritten to `/q/health…` of the service (nothing else under `/q`) |
 | `http://localhost:8090/internal/**` | **403** (routed to the web nginx `location /internal`) |
 | (not routed) `redpanda.hoops.svc.cluster.local:9092` | Redpanda `redpanda-0` (Kafka API, SASL/SCRAM; only from the services' pods) |
-| Tilt port-forwards | Keycloak `:18080`, core `:18081`, game `:18082`, athlete `:18083` |
+| Tilt port-forwards | Keycloak `:18080`, core `:18081`, game `:18082`, athlete `:18083`, Jaeger UI `:16686` |
+| (not routed) `otel-collector.hoops.svc.cluster.local:4317/4318` | OpenTelemetry collector (WP86): the services' traces and logs and the Envoy edge spans; `kubectl -n hoops logs deploy/otel-collector`, traces in `jaeger` (`docs/runbooks/observability.md`) |
 
 How the gateway is wired: the chart renders GatewayClass `envoy-gateway` (kind only, `gateway.gatewayClass.create`),
 Gateway `hoops` (listeners `http` :80, `https` :443 with `hoops-gateway-tls`), one HTTPRoute per prefix, the exact
@@ -308,6 +309,39 @@ single control plane (applied: `--leader-elect=false` in both manifests). The ne
 itself (TLS handshake timeout, `http2: client connection lost`). Not run yet, all waiting for a quiet machine: the
 rotation proof (`GAME_APP_PASSWORD`, `hoops-redpanda-game-service`), `events.enabled=false`, the game replica flip,
 `tilt ci`, `--eso` with the events, a complete `up.sh --eso --deploy`. Cluster deleted.
+
+WP86 (2026-11-07; WP87's six proofs first on chart 0.8.0, then chart 0.9.0; other agents' Testcontainers builds pushed the
+Podman VM load to 30-75 at times, each proof waited for the load guard). (6) `up.sh --eso --deploy --from-host`: the first run
+lost the API server while applying CNPG (`http2: client connection lost`, the `clusters` CRD missing, operator crash-looping);
+the re-run on the same cluster finished in 13 min 31 s, after the CNPG operator was switched to `--leader-elect=false` by
+hand (it had lost its lease, `leader election lost`; `up.sh` now does this itself, re-checked by re-applying the CNPG manifest
+and running the `up.sh` lines: `--leader-elect` -> `--leader-elect=false`, rolled out). 17/17 ExternalSecrets `SecretSynced`;
+`smoke.sh core game athlete` passed (16 s; outbox 0 -> 6, both replicas +6). (5) `--eso` with the events: the same run
+(broker, bootstrap Job, three SCRAM logins, replicas fed). (1) Rotation through ESO: `GAME_APP_PASSWORD` -> Secret changed
+at 08:17:43, Reloader `updated 'game-service'` in the same second, but CNPG kept the old role password (the Secret had no
+`cnpg.io/reload` label, which CNPG needs to watch it), so the new pod stayed unready for 3.5 min until the label was added by
+hand (CNPG applied it 3 s later, rollout done 3 s after). Fixed in the chart and `secrets.sh`; re-proved on chart 0.9.0
+without any manual step: Secret changed 08:47:44, CNPG password status updated by 08:48:02, Reloader rolled game at 08:47:51,
+new pod Ready and old one gone at 08:48:45. `REDPANDA_GAME_SERVICE_PASSWORD` -> Reloader rolled game (25 s), its consumer
+failed SASL until `helm upgrade` re-ran `redpanda-bootstrap` (Job complete in 7 s), then logged in; `smoke.sh` passed.
+(3) `--set game.rosterSource=replica`: `GAME_ROSTER_SOURCE=replica`, `smoke.sh` passed (game replica +6, "admin1 lists the
+new team's matches (200, roster source replica)"). (2) `--set events.enabled=false --set global.events.enabled=false`:
+redpanda removed, all pods Ready, `smoke.sh` passed; game and athlete log no broker line (one `SRMSG00207` "not connected"
+warning at start); core's Kafka producer `kafka-producer-core-events` keeps trying `localhost:19092` (two NetworkClient
+WARN lines every 6-10 s): open point (needs `mp.messaging.outgoing.core-events.enabled` in core, not settable by env because
+of the dash). (4) `helm uninstall hoops` (the first attempt timed out on ESO's webhook under load, the retry passed), then
+`tilt ci -- --eso --from-host` on chart 0.9.0: "SUCCESS. All workloads are healthy" in 4 min 32 s, including
+`otel-collector` and `jaeger`; `smoke.sh` passed. Observability (chart 0.9.0): one trace for superadmin
+`GET /platform/tenants/{id}/usage`: `hoops.hoops ingress` -> `router ... core-service-platform` -> core server span -> two
+core client spans -> game and athlete `GET /internal/usage/{tenantId}` (trace `3b41a334...`, all spans in the collector's
+debug output and in Jaeger, the tenant id in none of them); 215 log records from the three services in the collector within
+minutes of start (audit lines included); NetworkPolicy: a pod labelled like the Gateway's proxies reaches the collector, one
+with only `component=proxy` and an unlabelled pod in `hoops` do not. Collector at 0 replicas: services Ready, 0 restarts,
+health UP, one `Failed to export ... Timeout 10000 (ms)` warning per batch, `smoke.sh` passed; found on the way: with tracing
+`backendRefs` Envoy Gateway set the Gateway `Accepted=False` ("no ready endpoints for ... hoops/otel-collector") and
+`smoke.sh` failed its Programmed check, so the chart now names the collector by DNS (`host`/`port`); after the switch the
+Gateway stayed Programmed with the collector down, and the first request after scaling it back produced Envoy and core spans
+of one trace. `kubectl apply --dry-run=server` of the final 0.9.0 render: 82 objects, clean. Cluster deleted.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.

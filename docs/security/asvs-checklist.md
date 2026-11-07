@@ -126,7 +126,7 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | 16.3.4 | Unexpected errors logged | Met | `ProblemExceptionMappers.unexpected` logs with traceId |
 | 16.4.1 | Log injection prevented | Met | JSON formatter in prod escapes values; audit metadata is jsonb |
 | 16.4.2 | Logs protected from modification | Met (DB) / Partial (logs) | `AuditEventRlsTest` (append-only trigger, platform insert-only); container logs depend on the cluster log pipeline |
-| 16.4.3 | Logs shipped off-box | Gap | No log shipper/OTel collector deployed yet (OTel off by default; configuration only) |
+| 16.4.3 | Logs shipped off-box | Met (chart) | WP86, ADR-0046: with `global.observability.enabled` the services export every log record (and traces) over OTLP to the chart's `otel-collector`, which forwards to the environment's backend (`observability.collector.exporters`); proven on kind (`docs/runbooks/observability.md`); chart tests `deploy/helm/tests/run.sh` "observability"; the backend's storage and retention are the environment's |
 | 16.5.1 | Generic error messages | Met | `ProblemExceptionMappersTest.unexpectedExceptionIs500WithoutAnyDetail`, 503 without upstream internals |
 
 ## Not applicable
@@ -138,5 +138,5 @@ server-side templating/HTML sanitisation.
 - F-03 / F-07 / F-08 web logout and storage (7.4.1, 14.3.1); F-08 refresh-token rotation done in WP56.
 - 6.2.12 breached passwords (no extension, decision 39); 6.3.3 MFA optional only (decision 39). 6.2.4 password blocklist done in WP57 (ADR-0038).
 - Token audience (V9) — done in WP56 (ADR-0034).
-- 16.3.1 Keycloak events, 16.3.2 authorization-failure logging, 16.4.3 log shipping.
+- 16.3.1 Keycloak events, 16.3.2 authorization-failure logging; 16.4.3 log shipping done in WP86 (ADR-0046, the backend is the environment's).
 - Production TLS certificates (the Gateway API chart supports them, ADR-0031; none issued); SBOM.

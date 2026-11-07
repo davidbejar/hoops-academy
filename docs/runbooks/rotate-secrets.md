@@ -5,8 +5,9 @@ name. Rotate on a schedule, when someone leaves, and after any suspected leak (`
 
 Verification status: the kind-side mechanism is documented in `docs/runbooks/kind.md` ("Secrets") and exercised in
 `docs/wp/WP16-kind-helm-tilt.md`; the ESO path (section E) in `docs/wp/WP65-external-secrets-operator.md`, the automatic restarts (Reloader) in
-`docs/wp/WP87-chart-reloader-kind-proofs.md` (chart render and controller install verified; the rotation proof on kind
-is still open, see its handover). The compose and Keycloak steps below were assembled from the scripts and the realm
+`docs/wp/WP87-chart-reloader-kind-proofs.md` (chart render and controller install) and, on kind,
+`docs/wp/WP86-otel-collector.md` (rotation of `GAME_APP_PASSWORD` and `REDPANDA_GAME_SERVICE_PASSWORD` through ESO:
+Reloader restarted game-service in the second the Secret changed; the database half needed the `cnpg.io/reload` label, D). The compose and Keycloak steps below were assembled from the scripts and the realm
 file and have **not been executed end to end**. Items marked (design) do not exist yet.
 
 ## Inventory
@@ -77,7 +78,10 @@ in Keycloak too, or delete the `keycloak-db` Cluster (`kubectl -n hoops delete c
 ## D. CloudNativePG managed roles
 The `databases` chart declares 7 `managed.roles`, each with `passwordSecret` (a `kubernetes.io/basic-auth` Secret whose
 `username` equals the role name). Update the Secret (section C) and CNPG re-applies the password: it reports the role as
-`reconciled` (`kubectl -n hoops get cluster hoops-db -o jsonpath='{.status.managedRolesStatus}'`). Reloader restarts
+`reconciled` (`kubectl -n hoops get cluster hoops-db -o jsonpath='{.status.managedRolesStatus}'`). CNPG watches only Secrets
+labelled `cnpg.io/reload: "true"` (WP86): `secrets.sh` (`db_role`) and the chart's ExternalSecrets (`labels` of the
+`hoops-db-*` / `keycloak-db-app` entries) set it. Without it the role kept its old password and the restarted service never
+got Ready (WP86 on kind); with it CNPG applied the new password within 18 s and the new pod was Ready after 61 s. Reloader restarts
 the consumers when the Secret changes, possibly before CNPG applied the password: the new pod then fails its start and
 retries until the role has it (the old pod keeps serving meanwhile). Changed passwords of an already-bootstrapped `keycloak-db` (`initdb.secret`) are only used at bootstrap: use
 `ALTER ROLE` there (design).
