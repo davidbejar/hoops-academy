@@ -42,7 +42,7 @@ public class RealmKeycloakResource implements QuarkusTestResourceLifecycleManage
     /**
      * A Keycloak like the compose one, not started: {@code realm} imported from the test classpath (written there as
      * {@code classpathImport}), the hoops login theme and the realm's password blocklist (ADR-0038) copied in, with
-     * the blocklist's false-positive rate of compose.
+     * the blocklist's false-positive rate and the login-event log level of compose.
      */
     public static KeycloakContainer container(ObjectNode realm, String classpathImport) {
         TestRealm.write(realm, Path.of("target/test-classes").resolve(classpathImport));
@@ -53,6 +53,7 @@ public class RealmKeycloakResource implements QuarkusTestResourceLifecycleManage
                 .withCopyFileToContainer(MountableFile.forHostPath(TestRealm.locate(TestRealm.PASSWORD_BLOCKLIST)),
                         "/opt/keycloak/data/password-blacklists")
                 .withEnv(TestRealm.BLOCKLIST_FALSE_POSITIVE_ENV, TestRealm.BLOCKLIST_FALSE_POSITIVE_RATE)
+                .withEnv(TestRealm.EVENTS_SUCCESS_LEVEL_ENV, TestRealm.EVENTS_SUCCESS_LEVEL)
                 // Podman under parallel builds can take longer than the 2-minute default to answer /health/ready
                 .withStartupTimeout(Duration.ofMinutes(5));
     }

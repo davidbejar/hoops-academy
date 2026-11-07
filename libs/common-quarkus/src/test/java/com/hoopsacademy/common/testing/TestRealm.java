@@ -43,6 +43,9 @@ public final class TestRealm {
     public static final String BLOCKLIST_FALSE_POSITIVE_ENV =
             "KC_SPI_PASSWORD_POLICY__PASSWORD_BLACKLIST__FALSE_POSITIVE_PROBABILITY";
     public static final String BLOCKLIST_FALSE_POSITIVE_RATE = "1e-12";
+    /** Successful login events at INFO (Keycloak's default is DEBUG), as compose and the chart set it (ADR-0043). */
+    public static final String EVENTS_SUCCESS_LEVEL_ENV = "KC_SPI_EVENTS_LISTENER__JBOSS_LOGGING__SUCCESS_LEVEL";
+    public static final String EVENTS_SUCCESS_LEVEL = "info";
 
     private static final ObjectMapper JSON = new ObjectMapper();
 

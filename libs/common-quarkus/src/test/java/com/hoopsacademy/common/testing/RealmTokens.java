@@ -41,6 +41,12 @@ public final class RealmTokens {
                 "password", password, "scope", "openid profile email")));
     }
 
+    /** Password grant like {@link #password}, the raw answer (a refused login is a 401 the caller asserts). */
+    public HttpResponse<String> passwordAttempt(String clientId, String username, String password) {
+        return post(Map.of("grant_type", "password", "client_id", clientId, "username", username,
+                "password", password, "scope", "openid"));
+    }
+
     /** Refresh-token grant of a public client; the raw answer (a rejected refresh is a 400 the caller asserts). */
     public HttpResponse<String> refresh(String clientId, String refreshToken) {
         return post(Map.of("grant_type", "refresh_token", "client_id", clientId, "refresh_token", refreshToken));
