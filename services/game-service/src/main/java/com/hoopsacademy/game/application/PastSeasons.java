@@ -3,6 +3,7 @@ package com.hoopsacademy.game.application;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.problem.SeasonEndedException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
+import com.hoopsacademy.game.domain.SeasonClose;
 import com.hoopsacademy.game.domain.TeamId;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Clock;
@@ -39,8 +40,8 @@ public class PastSeasons {
             return Optional.empty();
         }
         ZoneId zone = authz.timezone().orElse(ZoneOffset.UTC);
-        return seasonEnd(team).map(lastDay -> lastDay.plusDays(1).atStartOfDay(zone).toInstant())
-                .filter(closed -> !clock.instant().isBefore(closed));
+        return seasonEnd(team).map(lastDay -> SeasonClose.after(lastDay, zone))
+                .filter(close -> close.hasPassed(clock.instant())).map(SeasonClose::at);
     }
 
     /** @throws SeasonEndedException (409) when the team's season has ended */
