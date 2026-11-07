@@ -187,6 +187,14 @@
       "fingerprint": "d6a60d203051e8c5",
       "reason": "Developer/CI maintenance tool, not shipped (WP89): CONTAINER_ENGINE names the container engine (podman or docker), set by the developer or the bump-pins workflow (trusted environment), passed as an argv list without a shell; the image and arguments are constants.",
       "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-permitall-on-api-resource",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/in/platform/PlatformAcademyRequestResource.java",
+      "line": 67,
+      "fingerprint": "ad078fb4517040cc",
+      "reason": "Not applicable (WP90, ADR-0044): the one deliberately public operation, submitAcademyRequest (the landing's invitation request). Only this method is @PermitAll; the class stays @RolesAllowed(super_admin); the contract lists it in OpenApiConventionsTest.PUBLIC_OPERATIONS; rate-limited at the gateway, answers 202 whatever happened. Any other @PermitAll still fails the gate.",
+      "expires": "2027-05-06"
     }
   ]
 }

@@ -66,17 +66,19 @@ class PlatformAcademyRequestRepository implements AcademyRequestRepository {
 
     @Override
     public boolean tenantNamed(AcademyName name) {
-        return exists("""
+        return any(em.createNativeQuery("""
                 select count(*) from core.tenant
-                 where core.academy_name_key(name) = core.academy_name_key(:name)""", name);
+                 where core.academy_name_key(name) = core.academy_name_key(:name)""")
+                .setParameter("name", name.value()));
     }
 
     @Override
     public boolean openRequestNamed(AcademyName name) {
-        return exists("""
+        return any(em.createNativeQuery("""
                 select count(*) from core.academy_request
                  where core.academy_name_key(academy_name) = core.academy_name_key(:name)
-                   and status in ('PENDING', 'ACCEPTED')""", name);
+                   and status in ('PENDING', 'ACCEPTED')""")
+                .setParameter("name", name.value()));
     }
 
     @Override
@@ -143,9 +145,8 @@ class PlatformAcademyRequestRepository implements AcademyRequestRepository {
                 .setParameter("at", notified.notifiedAt()).setParameter("id", notified.id().value()).executeUpdate();
     }
 
-    private boolean exists(String countSql, AcademyName name) {
-        return ((Number) em.createNativeQuery(countSql).setParameter("name", name.value()).getSingleResult())
-                .longValue() > 0;
+    private static boolean any(Query count) {
+        return ((Number) count.getSingleResult()).longValue() > 0;
     }
 
     @SuppressWarnings("unchecked")
