@@ -63,6 +63,7 @@ gh release download codeql-bundle-v2.27.4 -R github/codeql-action -p 'codeql-bun
 rsync -a --exclude target --exclude .git --exclude .dart_tool ./ /tmp/cq-src/
 podman run --rm -m 6500m -v /tmp/cq/codeql:/codeql:ro -v /tmp/cq-src:/src -v "$HOME/.m2:/root/.m2" -w /src \
   docker.io/library/maven:3-eclipse-temurin-21 bash -c '
+  mkdir -p /src/target &&
   /codeql/codeql database create /src/target/cq-db --language=java --ram 4500 --threads 1 \
     --command "./mvnw -B -ntp -Dmaven.test.skip=true -Djacoco.skip=true -Dspotbugs.skip=true compile" &&
   /codeql/codeql database analyze /src/target/cq-db codeql/java-queries:codeql-suites/java-security-extended.qls \
@@ -138,3 +139,16 @@ ZAP full scan alerts (compose, `HOOPS_EXPOSE_KC_ADMIN=true` locally):
 Things learned on the way: keep the Mac awake for the scans (a host sleep froze the Podman VM mid-scan and the token
 expired; `.zap/hooks/bearer_refresh.py` now refreshes right after ZAP starts); the `events:batch` rate limit makes
 ZAP's boolean SQL-injection rule fire (429 against 400), hence the scoped acceptance; CodeQL needs about 4.5 GB.
+
+## Re-run after the fixes (WP84, 2026-11-07)
+WP84 fixed SD-01, SD-02, SD-04 … SD-08 and accepted SD-03 (`.zap/baseline.conf`, 40040, until 2027-05-07); the
+statuses and every tool's re-run result are in
+[`review-2026-11.md`](review-2026-11.md#re-run-after-the-fixes-wp84-2026-11-07). All gates green locally. Notes for
+the next local run:
+- To scan the edge as CI sees it while the local `.env` exposes the Keycloak admin console, recreate only nginx with
+  the default: `HOOPS_EXPOSE_KC_ADMIN=false podman compose --env-file .env -f infra/compose/compose.yaml up -d nginx`
+  (and again without the override afterwards; `just e2e` needs `true`).
+- The Podman VM's resolver failed intermittently for `semgrep.dev` (registry rulesets are fetched at run time):
+  `podman run --dns 1.1.1.1 …` made the Semgrep scan reliable; it does not change what is scanned.
+- New request-text rules (SD-02) answer `400` with code `INVALID_CHARACTERS`; a ZAP "Server Error" alert on a NUL or
+  control-character payload is a regression.
