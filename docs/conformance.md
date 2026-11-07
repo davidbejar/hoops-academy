@@ -105,8 +105,8 @@ Deferred-v2: S-15, V-02.)
    pub, GitHub Actions; the `json-schema-validator` major is ignored, WP43). Mutation testing runs on demand (`just mutation`, WP37: scores 99.1–100 %, baselines kept;
    latest: core 558/560 after WP67, game 438/440 after WP68, athlete 471/471 after WP61/WP69). Fifth round: SAST/DAST
    gates (SpotBugs in `verify`, CodeQL, Semgrep, ZAP API scans; ADR-0045, WP83) and two more workflows `codeql` and
-   `semgrep`; an SBOM per image (WP85); every push of the round green after the orchestrator's fixes (e.g. b520476,
-   49ba555). Mutation after WP88/WP84: common 312/313, core 777/778, game 548/550, athlete 687/687, web 430/430.
+   `semgrep`; an SBOM per image (WP85); all five workflows green at the end of the round (49ba555), after fixes for
+   the reds during the round (`docs/HANDOVER.md`). Mutation after WP88/WP84: common 312/313, core 777/778, game 548/550, athlete 687/687, web 430/430.
 10. **Withdrawn/suspended tenants**: members are blocked at once in core but up to 30 s later in game/athlete (membership
     cache); Keycloak logins themselves stay enabled; both accepted by design on 2026-11-05 (decision 6, ADR-0025: a
     login may belong to other academies); no purge job (R-15).
@@ -233,8 +233,9 @@ reason; none is a silent gap.
 - **Backend**: final full verify of the fifth round (WP84 at 49ba555, 2026-11-07, `./mvnw -B -ntp -T 1C verify`):
   contracts 279, common-quarkus 392, core-service 914, game-service 468, athlete-service 994 = **3,047 tests**,
   0 failures, every coverage and SpotBugs gate met. The `e2e` module runs 32 in `verify`: 6 `MailSinkTest` tests and the
-  26 `JourneyTest` steps reported as skipped (no `e2e.baseUrl`). CI `ci` green on every round-5 push after the
-  orchestrator's fixes (red once on 91c1e4f, run 42361107787, a weekday-dependent athlete test fixed in b520476).
+  26 `JourneyTest` steps reported as skipped (no `e2e.baseUrl`). CI `ci` green at the end of the round (49ba555, run
+  42367239213); red during the round on five pushes (weekday-dependent athlete tests, SpotBugs on a new class), each
+  fixed by the next commit (`HANDOVER.md`).
   (After the fourth round: 2,481; after the third round: 2,039; CI on 3b59360 after WP37: 1,970; WP26 baseline on
   ec3360e: 1,760; WP20 review: 1,467.)
 - **Flutter**: `flutter test` on `main` after the round: **1077 tests passed** (fresh run in the docs pass; 865 after

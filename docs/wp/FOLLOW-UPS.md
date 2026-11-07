@@ -290,7 +290,7 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
   `/platform/academy-requests` (the gateway limits it, 10/min + 2/s per IP); the requester's name stays optional
   (contract and landing form; decide whether to require it); decided requests (personal data of non-members) are kept
   until the v2 purge job; a crash between claim and onboarding leaves an ACCEPTED request without an academy (runbook
-  `onboard-tenant.md` "Recovery"); no retry of a failed decision mail (`notifiedAt` stays empty).
+  `onboard-tenant.md` "Requests", Recovery); no retry of a failed decision mail (`notifiedAt` stays empty).
 - **Self-service name edit** (WP76): `UpdateMeRequest` carries `locale` only and `PATCH /members` is ADMIN, so a
   non-admin cannot change their own name or e-mail; needs a core contract change. An ADMIN reaches the own member
   record from the profile (`profile-own-data`).
@@ -542,7 +542,8 @@ Fifth round (WP72–WP90 without WP79, 2026-11-06/07; each line names the open i
 - Orchestrator fixes during the round: Semgrep acceptances for WP81's backfill helpers and WP89's bump tool
   (483d595, 94b755b), the SpotBugs exclusion for the CDI `KafkaEventBroker` (7cdded2), the offline cold-start marker
   after WP72's switcher (599d38a, WP74's open point), the SBOM attach on the rootless runner (054b629), the
-  weekday-dependent schedule test (b520476; `ci` was red on 91c1e4f, run 42361107787).
+  weekday-dependent schedule tests (WP78 710b18f, b520476). Every red run on `main` during the round is listed in
+  `docs/HANDOVER.md` "State".
 - Already resolved in the fourth round, re-checked: F-07, F-08, F-14 (`security/review-2026-11.md`).
 
 Fourth round (WP52–WP71, 2026-11-06; each line names the open item it closed):
