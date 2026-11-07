@@ -26,6 +26,8 @@ class CoreRlsSchemaMetaTest extends RlsSchemaMetaTest {
                         + "id = app.current_tenant(), core_platform sees all — see TenantRegistryRlsTest",
                 "core.app_user", "platform-wide login identity (id, keycloak_sub, email, locale only); never listed, "
                         + "looked up by sub or via a tenant's person row",
-                "billing.plan", "global catalogue of billing plans (no tenant data)");
+                "billing.plan", "global catalogue of billing plans (no tenant data)",
+                "core.academy_request", "requests for a NEW academy from anonymous visitors (WP90, ADR-0044); RLS "
+                        + "forced, only core_platform has a policy — see AcademyRequestRlsTest");
     }
 }
