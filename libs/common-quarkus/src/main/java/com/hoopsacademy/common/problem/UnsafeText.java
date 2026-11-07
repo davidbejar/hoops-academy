@@ -48,26 +48,32 @@ public final class UnsafeText {
      * the object whose field name has one; empty when there is none.
      */
     static Optional<List<Object>> nulPathIn(JsonNode node) {
-        if (node.isTextual()) {
-            return containsNul(node.textValue()) ? Optional.of(List.of()) : Optional.empty();
-        }
-        if (node.isArray()) {
-            for (int i = 0; i < node.size(); i++) {
-                Optional<List<Object>> found = nulPathIn(node.get(i));
-                if (found.isPresent()) {
-                    return Optional.of(prepend(i, found.get()));
-                }
+        return switch (node.getNodeType()) {
+            case STRING -> containsNul(node.textValue()) ? Optional.of(List.of()) : Optional.empty();
+            case ARRAY -> nulPathInElements(node);
+            case OBJECT -> nulPathInFields(node);
+            default -> Optional.empty();
+        };
+    }
+
+    private static Optional<List<Object>> nulPathInElements(JsonNode array) {
+        for (int i = 0; i < array.size(); i++) {
+            Optional<List<Object>> found = nulPathIn(array.get(i));
+            if (found.isPresent()) {
+                return Optional.of(prepend(i, found.get()));
             }
         }
-        if (node.isObject()) {
-            for (Map.Entry<String, JsonNode> field : node.properties()) {
-                if (containsNul(field.getKey())) {
-                    return Optional.of(List.of());
-                }
-                Optional<List<Object>> found = nulPathIn(field.getValue());
-                if (found.isPresent()) {
-                    return Optional.of(prepend(field.getKey(), found.get()));
-                }
+        return Optional.empty();
+    }
+
+    private static Optional<List<Object>> nulPathInFields(JsonNode object) {
+        for (Map.Entry<String, JsonNode> field : object.properties()) {
+            if (containsNul(field.getKey())) {
+                return Optional.of(List.of());
+            }
+            Optional<List<Object>> found = nulPathIn(field.getValue());
+            if (found.isPresent()) {
+                return Optional.of(prepend(field.getKey(), found.get()));
             }
         }
         return Optional.empty();
@@ -86,24 +92,15 @@ public final class UnsafeText {
         }
         int high = hexValue(rawUri.charAt(digits));
         int low = hexValue(rawUri.charAt(digits + 1));
-        return high >= 0 && low >= 0 && isControl((char) (high * 16 + low));
+        return high >= 0 && low >= 0 && isControl(high * 16 + low);
     }
 
-    private static boolean isControl(char c) {
+    private static boolean isControl(int c) {
         return c < FIRST_PRINTABLE || c == DEL;
     }
 
-    /** ASCII hex digits only ({@code Character.digit} also takes other scripts' digits). */
+    /** ASCII hex digits only: {@code Character.digit} alone also takes other scripts' digits. */
     private static int hexValue(char c) {
-        if (c >= '0' && c <= '9') {
-            return c - '0';
-        }
-        if (c >= 'a' && c <= 'f') {
-            return c - 'a' + 10;
-        }
-        if (c >= 'A' && c <= 'F') {
-            return c - 'A' + 10;
-        }
-        return -1;
+        return c <= 'f' ? Character.digit(c, 16) : -1;
     }
 }
