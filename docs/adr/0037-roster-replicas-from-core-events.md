@@ -1,6 +1,7 @@
 # ADR-0037: Roster replicas in game and athlete, fed by core's events, behind `RosterPort`
 
-- Status: Accepted (game: WP68; athlete: WP69, its section at the end)
+- Status: Accepted (game: WP68; athlete: WP69, its section at the end); amended 2026-11-07 (WP81: shadow evidence and
+  done items in "When rest flips"; WP82: every removal applied, replica housekeeping, at the end)
 - Date: 2026-11-06
 - Related: decision 48 of 2026-11-06, ADR-0008 (v1 sync REST, v2 outbox + events; amended in WP67), ADR-0036 (Redpanda:
   topics, keys, compaction, ACLs), ADR-0006 / ADR-0011 (RLS, tenant binding per transaction), WP19 brief, WP67
@@ -69,17 +70,21 @@ Not in WP68/WP69. All of:
 - ~~the chart wires the services' Kafka client (bootstrap, SASL user and Secret, `events.enabled`)~~ — done in WP71
   (chart 0.7.0): behind `events.enabled` together with `global.events.enabled`, which must match (a subchart sees only
   `global`; the render refuses a release where the two differ); `game.rosterSource` / `athlete.rosterSource` set the
-  switch, and `replica` without events is refused. The athlete flip is proven on kind; the game flip is not run yet.
+  switch, and `replica` without events is refused. The athlete flip is proven on kind (WP71), the game flip too (WP86,
+  chart 0.9.0: `game.rosterSource=replica`, `smoke.sh` passed with "roster source replica").
 - ~~core's producer recovers when the broker users appear after it started~~ — done in WP81: the publisher replaces
   a producer after consecutive failed sends (`ProducerRecoveryTest`); the restart in `deploy/kind/up.sh` can go.
-- the replica has run in the shadow in an environment for a while with `hoops_roster_replica_parked_total` at 0 and
-  the lag metric in seconds, and `just e2e` is green with `replica` for both services.
+- ~~`just e2e` is green with `replica` for both services~~ — done in WP81 on compose (JourneyTest 23/23 with
+  `GAME_ROSTER_SOURCE=replica ATHLETE_ROSTER_SOURCE=replica`, parked 0 and both groups' lag 0 afterwards).
+- ~~the game flip on kind~~ — done in WP86 (above).
+- **still open:** the replica has run in the shadow in a shared environment (kind or a staging cluster) over days with
+  `hoops_roster_replica_parked_total` at 0 and the lag metric in seconds; run the backfill there first.
 Then the default flips; the REST adapter stays as the fallback switch until a later decision removes it.
 
 Evidence so far (WP81, compose, 2026-11-07): the backfill completed the topics of 46 academies (416 events; every topic's
 live keys equal core's rows, both replicas hold exactly core's counts), parked 0, lag under 1 s, both groups' lag 0, and
-`just e2e` with `replica` for both services: JourneyTest 23/23. Still missing: the shadow period over days in a shared environment (kind or a staging cluster) and the game flip
-on kind; then the owner decides the flip. Since WP81 core also publishes `person.removed`, `player.removed`,
+`just e2e` with `replica` for both services: JourneyTest 23/23. Still missing (2026-11-07, after the fifth round): only the shadow period over days in a shared environment (kind or
+a staging cluster); then the owner decides the flip. Since WP81 core also publishes `person.removed`, `player.removed`,
 `team.removed`, `team-player.removed` and `tenant.removed`; game and athlete accept them as valid but do not apply them
 yet (`outcome="ignored"`, never parked; the row stays): their soft removal is WP82 (wave 3) — done, see the amendment
 WP82 at the end.

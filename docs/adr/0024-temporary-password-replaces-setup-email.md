@@ -1,6 +1,7 @@
 # ADR-0024: Temporary password at first sign-in replaces the setup and verification e-mails
 
-- Status: Accepted; amended by ADR-0035 — the §7 alias `resendTenantAdminInvitation` is removed in core 3.0.0
+- Status: Accepted; amended by ADR-0035 — the §7 alias `resendTenantAdminInvitation` is removed in core 3.0.0; §8
+  amended by ADR-0044 (WP90) — core sends the two sign-up decision e-mails (never a password)
 - Date: 2026-11-02
 - Supersedes: the e-mail parts of ADR-0013 §(setup e-mail as the last saga step), ADR-0017 (player logins: setup e-mail
   last), ADR-0020 §5 (setup e-mail last) and ADR-0023 §1 (`resend-invitation`, set-password e-mail) / §2
@@ -57,7 +58,9 @@ take the account over.
 8. **No e-mail at all from core.** `updateLogin` moves username, e-mail (unverified) and names only; the password and a
    pending temporary password stay valid. `executeActionsEmail` is gone from core-service, and with it the mail-failure
    compensation of ADR-0023 §2 and `hoops.keycloak.setup-email-lifespan`. The realm keeps `verifyEmail: false`; MailHog
-   / SMTP stay for Keycloak's own "forgot password" flow.
+   / SMTP stay for Keycloak's own "forgot password" flow. *Amended by ADR-0044 (WP90, core 3.3.0): core sends the
+   acceptance and rejection e-mails of an academy request over SMTP, in the request's language and never with a
+   password; nothing else changes.*
 
 ## Consequences
 - The creator sees the password; the account is only the person's own once they have chosen their password at the

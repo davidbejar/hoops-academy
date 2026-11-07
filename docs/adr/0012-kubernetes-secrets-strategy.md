@@ -1,6 +1,7 @@
 # ADR-0012: Kubernetes secrets — Secrets from .env locally, External Secrets Operator beyond local
 
-- Status: Accepted
+- Status: Accepted; amended 2026-11-06 (decision 47, WP65: the chart sources its Secrets from ESO) and 2026-11-07
+  (decision 63, WP87: Stakater Reloader rolls the pods that read a rotated Secret)
 - Date: 2026-11-02
 
 ## Context

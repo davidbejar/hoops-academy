@@ -1,14 +1,14 @@
 # Runbook: release
 
 Status: describes the process the repository's tooling supports. **No release has been cut yet**: the Maven version is
-`0.1.0-SNAPSHOT` and the Helm chart `0.8.0` (2026-11-07); the workflows in `.github/workflows` run on GitHub since
+`0.1.0-SNAPSHOT` and the Helm chart `0.9.0` (`hoops-service` 0.7.0, `keycloak` 0.5.0; 2026-11-07); the workflows in `.github/workflows` run on GitHub since
 2026-11-02 and `images` pushes every commit's images to `ghcr.io/davidbejar/hoops-academy` (public). Steps marked
 (design) are not implemented.
 
 ## 1. What is versioned
 | Artifact | Version source | Rule |
 |---|---|---|
-| OpenAPI contracts | `info.version` in `libs/contracts/openapi/{core,game,athlete,common}.yaml` (now core 3.0.0, game 2.2.0, athlete 2.2.0, common 1.1.1); event JSON Schemas in `libs/contracts/events` (version per event envelope, breaking change = `<topic>.v2`, `libs/contracts/README.md`) | SemVer; policy in `libs/contracts/README.md` |
+| OpenAPI contracts | `info.version` in `libs/contracts/openapi/{core,game,athlete,common}.yaml` (now core 3.3.0, game 2.3.0, athlete 2.4.0, common 1.1.1); event JSON Schemas in `libs/contracts/events` (version per event envelope, breaking change = `<topic>.v2`, `libs/contracts/README.md`) | SemVer; policy in `libs/contracts/README.md` |
 | Maven modules and service jars | root `pom.xml` (`0.1.0-SNAPSHOT`) | one version for the repo |
 | Container images | tag `dev` locally; `${{ github.sha }}` in `images.yml` | immutable, per commit |
 | Helm chart | `deploy/helm/hoops/Chart.yaml` (`version`, `appVersion`) | bump with every chart change |
@@ -20,7 +20,9 @@ Status: describes the process the repository's tooling supports. **No release ha
   response enum**. Needs an ADR and a migration note (ADR-0016 is the template). No parallel `/v2` paths: services and web
   ship together. Latest major: core 3.0.0 removed the deprecated `resendTenantAdminInvitation` alias
   (`POST /platform/tenants/{id}/admins/{personId}/resend-invitation` now answers 404; callers use
-  `issueTenantAdminTemporaryPassword`, `.../temporary-password`); migration note in ADR-0035 (WP59).
+  `issueTenantAdminTemporaryPassword`, `.../temporary-password`); migration note in ADR-0035 (WP59). Since then
+  additive minors only: core 3.1.0 events backfill (WP81), 3.2.0 / game 2.3.0 / athlete 2.4.0 season history (WP80),
+  athlete 2.3.0 session plans and quick-add (WP78), core 3.3.0 academy requests (WP90).
 - Patch: descriptions and examples.
 - Steps for a contract change:
   1. Edit the YAML and bump `info.version`.
@@ -38,7 +40,10 @@ just scan                      # gitleaks (full history) + OWASP dependency-chec
 deploy/helm/tests/run.sh       # lint, snapshots, kubeconform, policy assertions, gitleaks on rendered output
 just e2e                       # journey on compose (docs/runbooks/e2e.md)
 ```
-Also: ADR for any decision taken, handover notes in `docs/wp`, `docs/roadmap.md` updated.
+Also: ADR for any decision taken, handover notes in `docs/wp`, `docs/roadmap.md` updated. CI must be green on the
+release commit in all five workflows (`ci`, `e2e` with the ZAP API scans, `images` with the SBOMs of section 3,
+`codeql`, `semgrep`; the SAST/DAST gates and their expiring acceptances: ADR-0045, `docs/security/sast-dast.md`), and no
+acceptance may be past its expiry.
 Dependency bumps arrive as weekly grouped Dependabot PRs (`.github/dependabot.yml`: Maven with Quarkus in its own
 group, pub for `apps/web`, GitHub Actions); `ci` and `e2e` run on each PR. Container base images, the chart's image
 tags and the Envoy Gateway / kind pins are bumped by the weekly `bump-pins` PR (section 6). Ignored on purpose: semver-major updates of
@@ -68,7 +73,8 @@ kubectl -n hoops create secret docker-registry ghcr-pull --docker-server=ghcr.io
   --docker-username=<owner> --docker-password=<PAT with read:packages>
 helm upgrade --install hoops deploy/helm/hoops -n hoops --set 'global.imagePullSecrets[0].name=ghcr-pull' ...
 ```
-Pin the `ubi9/openjdk-21-runtime` tag in `deploy/containers/service.Containerfile` before the first release (open item).
+The `ubi9/openjdk-21-runtime` tag and digest in `deploy/containers/service.Containerfile` are bumped by the weekly
+`bump-pins` PR (section 6).
 
 ### SBOM
 ADR-0043 (WP85). Every image job of `images.yml` writes CycloneDX SBOMs (Maven plugin 1.6, Trivy 1.7), validates each
@@ -190,9 +196,9 @@ new pods in `CreateContainerConfigError` (the old ReplicaSet keeps serving). Wit
 core's publisher and the consumers off (`CORE_OUTBOX_POLL_INTERVAL=off`, `*_ROSTER_CONSUMER_ENABLED=false`); for a managed
 Kafka set `KAFKA_*` and those keys in the services' `env`/`secretEnv` instead. `game.rosterSource` / `athlete.rosterSource`
 stay `rest` (ADR-0037 "When rest flips"); `replica` needs the events on. Upgrading from 0.6.0 rolls the three services
-(new env). On a **fresh** install the bootstrap Job runs after the services are up, so restart core once it succeeded
-(`kubectl -n hoops rollout restart deploy/core-service`): its producer does not recover from starting before its broker
-user existed (`events.md` "Kubernetes (chart, WP71)"). Check: `curl -s <public url>/api/core/q/health/ready` shows `outbox-publisher` `UP` with `state` `OK`
+(new env). On a **fresh** install the bootstrap Job runs after the services are up; since core 3.1.0 (WP81) core's
+publisher replaces its producer after consecutive failed sends, so it recovers by itself once its broker user exists
+(no restart needed). Check: `curl -s <public url>/api/core/q/health/ready` shows `outbox-publisher` `UP` with `state` `OK`
 (`DEGRADED` = no broker), and `docs/runbooks/events.md` "Kubernetes (chart, WP71)".
 
 Rotation without manual restarts (chart 0.8.0, WP87, ADR-0012 amendment): `global.reloader.enabled=true` annotates every
@@ -205,6 +211,43 @@ and give Envoy Gateway's `rateLimitDeployment` the same annotation (`patch`, see
 controller the annotation does nothing and section E of `rotate-secrets.md` lists the manual restarts. Upgrading from 0.7.0
 rolls every pod once (chart labels in the ConfigMap checksums). Check: `kubectl -n hoops-reloader logs deploy/reloader-reloader`
 starts with `Watching scoped namespaces: ...` and logs each workload it rolls after a rotation.
+
+Observability (chart 0.9.0, WP86, ADR-0046): `global.observability.enabled=true` renders the OpenTelemetry collector
+(`otel-collector`, OTLP gRPC 4317 / HTTP 4318, traces and logs, no metrics) and points the three services at it
+(`global.observability.tracesSampleRatio`, default `0.1`; `global.observability.environment` for
+`deployment.environment.name`); Jaeger (`observability.jaeger.enabled`) is for kind only. For a real environment send
+the collector's output to the platform's backend: `observability.collector.exporters` and `pipelineExporters`
+(`traces`, `logs`), credentials through `observability.collector.secretEnv` (Secrets created first; Reloader rolls the
+collector on a rotation) and the backend's address in `observability.collector.networkPolicy.extraEgress`; or set
+`observability.collector.enabled=false` and `global.observability.otlpEndpoint` to the platform's own collector. The
+edge span needs the `EnvoyProxy` tracing settings of `deploy/kind/up.sh` (by the collector's DNS name, not
+`backendRefs`). Check: `runbooks/observability.md`.
+
+Switches in one place (all default off; subcharts see only `global`; `values-kind.yaml` turns on the events, Reloader and
+observability, `up.sh --eso` the External Secrets):
+
+| Value | Effect | Since |
+|---|---|---|
+| `events.enabled` + `global.events.enabled` (must match) | Redpanda, its bootstrap Job and the services' broker wiring | 0.6.0 / 0.7.0 |
+| `game.rosterSource` / `athlete.rosterSource` | `rest` (default) or `replica` (needs the events) | 0.7.0 |
+| `global.reloader.enabled` | Reloader annotation on every workload that reads a Secret (controller installed separately) | 0.8.0 |
+| `global.observability.enabled` | OpenTelemetry collector and the services' OTLP export | 0.9.0 |
+| `externalSecrets.enabled` | `ExternalSecret`s instead of hand-made Secrets | 0.5.0 |
+
+Mail (core 3.3.0, WP90, ADR-0044): core sends the academy-request decision e-mails over SMTP. The chart does **not**
+set core's mail keys yet (open item in `docs/wp/FOLLOW-UPS.md`); until it does, give them through the core subchart's
+`env` / `secretEnv` values, else core falls back to `localhost:1025` and the mails fail (the decisions still work,
+`notifiedAt` stays empty):
+
+| Key | kind (Mailpit) | Real server |
+|---|---|---|
+| `SMTP_HOST` | `mailhog` (the Mailpit Service keeps the realm's name) | the relay's host |
+| `SMTP_PORT` | `"1025"` | e.g. `"587"` |
+| `SMTP_START_TLS` | `OPTIONAL` | `REQUIRED` |
+| `MAIL_FROM` | any address | the academy platform's sender |
+| `HOOPS_PUBLIC_URL` | `{{ .Values.global.publicUrl }}` | the public URL (links in the mails) |
+| `SMTP_USERNAME` | — | the relay login |
+| `SMTP_PASSWORD` | — | `secretEnv` from a Secret, e.g. `hoops-smtp` key `password` |
 
 Order that matters: Secrets -> CNPG clusters -> Keycloak -> services (Flyway runs on start as `*_migrator`) -> web.
 Services restart a few times on first install until `hoops-db-rw` is ready; they converge by themselves (WP18).
@@ -247,7 +290,7 @@ keep the `NAME="value"` / `tag: x` shapes, or update the pattern in `scripts/bum
 
 Before merging a bump PR: `ci` and `e2e` green (a PR opened with GITHUB_TOKEN does not start them: close and reopen it).
 A bump of Envoy Gateway, CloudNativePG or External Secrets also needs the chart and kind proofs: `deploy/helm/tests/run.sh`
-(for ESO regenerate the CRD schemas with `deploy/helm/tests/update-eso.sh`), then `just kind-up` and the isolation check on
+(for ESO regenerate the CRD schemas with `deploy/helm/tests/schemas/update-eso.sh`), then `just kind-up` and the isolation check on
 the new cluster. A Reloader bump needs `deploy/helm/tests/run.sh` (it asserts the digest pins in `up.sh`) and a kind run.
 One-time repository setup: Settings > Actions > "Allow GitHub Actions to create and approve pull requests", and a
 `dependencies` label.

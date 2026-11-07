@@ -1,6 +1,7 @@
 # ADR-0008: Synchronous REST behind a RosterPort for v1; outbox + Redpanda for v2
 
-- Status: Accepted
+- Status: Accepted; amended 2026-11-06 (decision 48, WP67: the outbox and its publisher in core) and (decision 59,
+  WP81: the producer recovers by itself, every deletion publishes a removal, backfill)
 - Date: 2026-11-01
 
 ## Context
