@@ -4,6 +4,9 @@
 #   podman build -f deploy/containers/service.Containerfile --build-arg SERVICE=game-service \
 #     --ignorefile deploy/containers/service.containerignore -t hoops/game-service:dev .
 #
+# The maven stage also writes the service's CycloneDX SBOM (`-Psbom`); stage `sbom` holds only that file:
+#   scripts/sbom.sh maven <service> <dir>      (images.yml; builds `--target sbom` from cache and copies it out)
+#
 # APP_SOURCE selects where the fast-jar comes from:
 #   maven (default) - stage `app-maven` compiles inside the container (reproducible, CI);
 #   host            - stage `app-host` copies services/$SERVICE/target/quarkus-app built on the host by
@@ -26,8 +29,9 @@ COPY services services
 COPY e2e/pom.xml e2e/pom.xml
 RUN --mount=type=cache,target=/root/.m2,id=hoops-m2 \
     test -n "${SERVICE}" || { echo "build-arg SERVICE is required" >&2; exit 1; }; \
-    mvn -B -ntp -q -pl "services/${SERVICE}" -am package -DskipTests \
- && mkdir -p /out && cp -R "services/${SERVICE}/target/quarkus-app" /out/quarkus-app
+    mvn -B -ntp -q -pl "services/${SERVICE}" -am package -DskipTests -Psbom \
+ && mkdir -p /out/sbom && cp -R "services/${SERVICE}/target/quarkus-app" /out/quarkus-app \
+ && cp "services/${SERVICE}/target/bom.json" "/out/sbom/${SERVICE}-maven.cdx.json"
 
 # ---------- stage 1b: take the fast-jar built on the host --------------------------------------------------------
 FROM ${RUNTIME_IMAGE} AS app-host
@@ -35,6 +39,10 @@ ARG SERVICE
 COPY services/${SERVICE}/target/quarkus-app /out/quarkus-app
 
 FROM app-${APP_SOURCE} AS app
+
+# ---------- SBOM export (WP85): only the CycloneDX of the Maven build above (scripts/sbom.sh maven)
+FROM scratch AS sbom
+COPY --from=app-maven /out/sbom/ /
 
 # ---------- stage 2: runtime (non-root UBI9 OpenJDK 21) ----------------------------------------------------------
 FROM ${RUNTIME_IMAGE}

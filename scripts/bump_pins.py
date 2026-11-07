@@ -29,7 +29,8 @@ class Pin:
 #   service.Containerfile  RUNTIME_IMAGE tag+digest   | skopeo list-tags + inspect
 #   web.Containerfile      NGINX_IMAGE tag (even minor)| skopeo list-tags
 #   values.yaml            redis tag, redpanda tag+digest, mailpit tag | skopeo
-#   ci.yml images.yml      aquasec/trivy tag          | skopeo list-tags (Docker Hub)
+#   ci.yml images.yml sbom.sh aquasec/trivy tag       | skopeo list-tags (Docker Hub)
+#   sbom.sh                cyclonedx-cli, oras tag+digest | skopeo
 #   semgrep.yml            semgrep tag+digest         | skopeo
 #   ci.yml zap-api-scan.sh zaproxy:stable digest      | skopeo inspect (floating tag)
 #   kind/up.sh             Envoy Gateway, CNPG, ESO   | GitHub releases API
@@ -52,11 +53,17 @@ PINS = [
     Pin("mailpit (chart)", ["deploy/helm/hoops/values.yaml"],
         r"repository: docker\.io/axllent/mailpit, tag: (?P<tag>[\w.\-]+)\}", "image",
         repo="docker.io/axllent/mailpit", tag_re=SEMVER),
-    Pin("trivy", [".github/workflows/ci.yml", ".github/workflows/images.yml"],
+    Pin("trivy", [".github/workflows/ci.yml", ".github/workflows/images.yml", "scripts/sbom.sh"],
         r"aquasec/trivy:(?P<tag>[\w.\-]+)", "image", repo="docker.io/aquasec/trivy", tag_re=SEMVER),
     Pin("semgrep", [".github/workflows/semgrep.yml"],
         rf"semgrep/semgrep:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
         repo="docker.io/semgrep/semgrep", tag_re=SEMVER),
+    Pin("cyclonedx-cli", ["scripts/sbom.sh"],
+        rf"cyclonedx/cyclonedx-cli:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
+        repo="docker.io/cyclonedx/cyclonedx-cli", tag_re=SEMVER),
+    Pin("oras", ["scripts/sbom.sh"],
+        rf"oras-project/oras:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
+        repo="ghcr.io/oras-project/oras", tag_re=SEMVER),
     Pin("zaproxy stable", [".github/workflows/ci.yml", "scripts/zap-api-scan.sh"],
         rf"zaproxy/zaproxy:stable@(?P<digest>{DIGEST})", "image",
         repo="ghcr.io/zaproxy/zaproxy", floating="stable"),

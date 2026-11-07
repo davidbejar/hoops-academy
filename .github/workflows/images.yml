@@ -5,10 +5,15 @@ name: images
 # the secrets REGISTRY_USERNAME + REGISTRY_PASSWORD when BOTH exist (any registry); with neither, the job's own
 # GITHUB_TOKEN pushes to ghcr.io under this repository's owner (the push jobs request `packages: write`). A single
 # secret set is a configuration error and fails the step.
+# SBOMs (WP85, ADR-0043): every image gets CycloneDX SBOMs, validated with cyclonedx-cli, kept as the workflow
+# artifact `sbom-<image>` (90 days) and, when pushed, attached to the pushed image as OCI referrers (ORAS,
+# artifact type application/vnd.cyclonedx+json): services `<svc>-maven.cdx.json` (runtime dependencies,
+# cyclonedx-maven-plugin in the image's Maven stage) and `<svc>-image.cdx.json` (Trivy: OS packages and jars of the
+# image); web `web-image.cdx.json` (Trivy). Same commands locally: scripts/sbom.sh.
 on:
   push:
     branches: [main]
-    paths: ['services/**', 'libs/**', 'apps/web/**', 'deploy/containers/**', 'pom.xml', '.github/workflows/images.yml']
+    paths: ['services/**', 'libs/**', 'apps/web/**', 'deploy/containers/**', 'pom.xml', 'scripts/sbom.sh', '.github/workflows/images.yml']
   workflow_dispatch:
 
 permissions:
@@ -45,6 +50,18 @@ jobs:
           podman save -o image.tar "$IMAGE"
           docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
+      - name: SBOM (CycloneDX of the Maven build and of the image, validated)
+        run: |
+          # the Maven stage is cached from the build step: this only copies out its target/bom.json
+          scripts/sbom.sh maven ${{ matrix.service }} sbom
+          scripts/sbom.sh generate ${{ matrix.service }} "$IMAGE" sbom
+      - name: Keep the SBOMs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-${{ matrix.service }}
+          path: sbom/*.cdx.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Push
         if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
         env:
@@ -53,6 +70,7 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NAME: ${{ matrix.service }}
+          REGISTRY_AUTH_FILE: ${{ runner.temp }}/registry-auth.json
         run: |
           set -euo pipefail
           registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
@@ -61,7 +79,9 @@ jobs:
           else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
           echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
           podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
-          podman push "$registry/$NAME:${{ github.sha }}"
+          podman push --digestfile digest.txt "$registry/$NAME:${{ github.sha }}"
+          # the SBOMs as OCI referrers of the pushed digest (ghcr.io: ORAS falls back to the referrers tag schema)
+          scripts/sbom.sh attach "$registry/$NAME@$(cat digest.txt)" sbom "$REGISTRY_AUTH_FILE"
 
   web:
     runs-on: ubuntu-latest
@@ -88,6 +108,15 @@ jobs:
           podman save -o image.tar "$IMAGE"
           docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
             --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
+      - name: SBOM (CycloneDX of the image, validated)
+        run: scripts/sbom.sh generate web "$IMAGE" sbom
+      - name: Keep the SBOM
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-web
+          path: sbom/*.cdx.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Push
         if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
         env:
@@ -96,6 +125,7 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NAME: web
+          REGISTRY_AUTH_FILE: ${{ runner.temp }}/registry-auth.json
         run: |
           set -euo pipefail
           registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
@@ -104,7 +134,9 @@ jobs:
           else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
           echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
           podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
-          podman push "$registry/$NAME:${{ github.sha }}"
+          podman push --digestfile digest.txt "$registry/$NAME:${{ github.sha }}"
+          # the SBOMs as OCI referrers of the pushed digest (ghcr.io: ORAS falls back to the referrers tag schema)
+          scripts/sbom.sh attach "$registry/$NAME@$(cat digest.txt)" sbom "$REGISTRY_AUTH_FILE"
 
   charts:
     runs-on: ubuntu-latest
