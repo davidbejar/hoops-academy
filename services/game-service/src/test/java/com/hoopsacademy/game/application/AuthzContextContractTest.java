@@ -182,6 +182,52 @@ class AuthzContextContractTest {
         assertThat(resolve(source, expected)).contains(expected);
     }
 
+    /** WP82: what core removed is gone from the replica's answer as from core's (its row is soft-removed). */
+    @ParameterizedTest
+    @EnumSource(Source.class)
+    void removedPlayersAssignmentsAndTeamsNoLongerCount(Source source) {
+        UUID own = UUID.randomUUID();
+        UUID child = UUID.randomUUID();
+        UUID removedChild = UUID.randomUUID();
+        UUID assignment = UUID.randomUUID();
+        UUID removedTeam = UUID.randomUUID();
+        given(source, member(TenantRole.COACH, TenantRole.PARENT, TenantRole.PLAYER),
+                events.player(own, person, "Mia Member", "ACTIVE", BORN, "FEMALE"),
+                events.player(child, UUID.randomUUID(), "Kid Ruiz", "ACTIVE", BORN, "FEMALE"),
+                events.player(removedChild, UUID.randomUUID(), "Gone Ruiz", "ACTIVE", BORN, "MALE"),
+                events.link(UUID.randomUUID(), person, child), events.link(UUID.randomUUID(), person, removedChild),
+                events.team(removedTeam, UUID.randomUUID(), TODAY.plusMonths(3), "Gone"),
+                events.assignment(assignment, current, child, "7", JOINED, null, null),
+                events.assignment(UUID.randomUUID(), removedTeam, child, "8", JOINED, null, null),
+                events.assignment(UUID.randomUUID(), current, removedChild, "9", JOINED, null, null),
+                events.staff(removedTeam, person, "COACH"),
+                events.removed("player", own), events.removed("player", removedChild),
+                events.removed("team-player", assignment), events.removed("team", removedTeam));
+        AuthzContext expected = context(Set.of(TenantRole.COACH, TenantRole.PARENT, TenantRole.PLAYER), Set.of(),
+                Set.of(child), Optional.empty(), Set.of());
+
+        assertThat(resolve(source, expected)).contains(expected);
+    }
+
+    @ParameterizedTest
+    @EnumSource(Source.class)
+    void aRemovedPersonIsNoMember(Source source) {
+        given(source, member(TenantRole.ADMIN), events.removed("person", person),
+                CoreEvents.tombstone(events.removed("person", person)));
+        coreAnswers(source, () -> CoreAnswers.notAMember(core, tenant, subject));
+
+        assertThat(inTenant(() -> resolver(source).resolve(subject, tenant))).isEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(Source.class)
+    void aRemovedTenantHasNoMembers(Source source) {
+        given(source, member(TenantRole.ADMIN), events.tenantRemoved());
+        coreAnswers(source, () -> CoreAnswers.notAMember(core, tenant, subject));
+
+        assertThat(inTenant(() -> resolver(source).resolve(subject, tenant))).isEmpty();
+    }
+
     @ParameterizedTest
     @EnumSource(Source.class)
     void aDeactivatedPersonIsNoMember(Source source) {

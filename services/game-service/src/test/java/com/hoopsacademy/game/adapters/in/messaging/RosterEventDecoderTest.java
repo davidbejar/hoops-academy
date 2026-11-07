@@ -14,6 +14,7 @@ import com.hoopsacademy.game.application.replica.RosterEvent.GuardianLinkChanged
 import com.hoopsacademy.game.application.replica.RosterEvent.GuardianLinkRemoved;
 import com.hoopsacademy.game.application.replica.RosterEvent.PersonChanged;
 import com.hoopsacademy.game.application.replica.RosterEvent.PlayerChanged;
+import com.hoopsacademy.game.application.replica.RosterEvent.Removed;
 import com.hoopsacademy.game.application.replica.RosterEvent.TeamChanged;
 import com.hoopsacademy.game.application.replica.RosterEvent.TeamPlayerChanged;
 import com.hoopsacademy.game.application.replica.RosterEvent.TeamStaffChanged;
@@ -30,6 +31,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -57,25 +59,41 @@ class RosterEventDecoderTest {
         }
     }
 
-    /** WP81: core removes any aggregate now; game keeps those rows until WP82 adds their soft removal. */
+    /** WP81 publishes a removal for every aggregate; game soft-removes all of them (WP82). */
     @Test
-    void theRemovalsGameDoesNotApplyYetAreValidButIgnored() {
-        for (String topic : List.of("core.person", "core.player", "core.team", "core.team-player", "core.tenant")) {
+    void theRemovalsOfPersonsPlayersTeamsAssignmentsAndTenantsCarryTheirIdentity() {
+        Map<String, RosterEvent.Aggregate> aggregates = Map.of("core.person", RosterEvent.Aggregate.PERSON,
+                "core.player", RosterEvent.Aggregate.PLAYER, "core.team", RosterEvent.Aggregate.TEAM,
+                "core.team-player", RosterEvent.Aggregate.TEAM_PLAYER, "core.tenant", RosterEvent.Aggregate.TENANT);
+        aggregates.forEach((topic, aggregate) -> {
             JsonNode removal = examples(topic).stream().filter(e -> e.get("type").asText().endsWith(".removed"))
                     .findFirst().orElseThrow();
 
             Decoded decoded = decode(topic, removal);
 
-            assertThat(decoded).as(topic).isInstanceOfSatisfying(Decoded.Ignored.class, ignored -> {
-                assertThat(ignored.type()).isEqualTo(removal.get("type").asText());
-                assertThat(ignored.envelope().eventId().toString()).isEqualTo(removal.get("eventId").asText());
-                assertThat(ignored.envelope().tenantId()).isEqualTo(TENANT);
-            });
-        }
-        JsonNode staffRemoval = examples("core.team-staff").stream()
-                .filter(e -> e.get("type").asText().endsWith(".removed")).findFirst().orElseThrow();
-        assertThat(decode("core.team-staff", staffRemoval)).as("removals game applies stay valid")
-                .isInstanceOf(Decoded.Valid.class);
+            assertThat(decoded).as(topic).isInstanceOfSatisfying(Decoded.Valid.class, valid ->
+                    assertThat(valid.event()).isInstanceOfSatisfying(Removed.class, removed -> {
+                        assertThat(removed.aggregate()).isEqualTo(aggregate);
+                        assertThat(removed.topic()).isEqualTo(topic);
+                        assertThat(removed.envelope().eventId().toString()).isEqualTo(removal.get("eventId").asText());
+                        assertThat(removed.envelope().aggregateId().toString())
+                                .isEqualTo(removal.get("aggregateId").asText());
+                        assertThat(removed.envelope().tenantId()).isEqualTo(TENANT);
+                    }));
+        });
+    }
+
+    @Test
+    void aTenantRemovalAboutAnotherTenantIsInvalid() {
+        ObjectNode removal = examples("core.tenant").stream().filter(e -> e.get("type").asText().endsWith(".removed"))
+                .findFirst().orElseThrow().deepCopy();
+        String other = UUID.randomUUID().toString();
+        removal.put("aggregateId", other);
+
+        Decoded decoded = decoder.decode("core.tenant", TENANT + ":" + other, removal.toString());
+
+        assertThat(decoded).isInstanceOfSatisfying(Decoded.Invalid.class,
+                invalid -> assertThat(invalid.reason()).contains("own tenant"));
     }
 
     @Test

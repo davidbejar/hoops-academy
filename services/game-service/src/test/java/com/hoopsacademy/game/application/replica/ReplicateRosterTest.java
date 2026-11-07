@@ -20,6 +20,7 @@ import jakarta.inject.Inject;
 import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -142,6 +143,56 @@ class ReplicateRosterTest {
     }
 
     @Test
+    void aRemovalKeepsOnlyTheIdentityOfEveryAggregateAndALateOlderChangeCannotBringItBack() {
+        UUID person = UUID.randomUUID();
+        UUID player = UUID.randomUUID();
+        UUID team = UUID.randomUUID();
+        UUID season = UUID.randomUUID();
+        UUID assignment = UUID.randomUUID();
+        Record tenantChanged = core.at(T1).tenant("ACTIVE", "Europe/Madrid");
+        Record personChanged = core.person(person, "Ana Ruiz", "sub-ana", true, TenantRole.PLAYER);
+        Record playerChanged = core.player(player, person, "Ana Ruiz", "ACTIVE", LocalDate.parse("2012-05-01"), "FEMALE");
+        Record teamChanged = core.team(team, season, SEASON_END, "Lions");
+        Record assignmentChanged = core.assignment(assignment, team, player, "7", LocalDate.parse("2026-09-01"), null,
+                null);
+        core.at(T2);
+
+        for (Record removal : List.of(core.removed("person", person), core.removed("player", player),
+                core.removed("team", team), core.removed("team-player", assignment), core.tenantRemoved())) {
+            assertThat(apply(removal)).as(removal.topic()).isEqualTo(Outcome.APPLIED);
+        }
+        for (Record late : List.of(tenantChanged, personChanged, playerChanged, teamChanged, assignmentChanged)) {
+            assertThat(apply(late)).as(late.topic()).isEqualTo(Outcome.STALE);
+        }
+
+        assertThat(ReplicaDb.rows(tenant, "select removed, status, timezone from game.tenant_ref")).containsExactly(
+                nulls("removed", true, "status", "timezone"));
+        assertThat(ReplicaDb.rows(tenant, "select removed, display_name, subject, roles, active from game.person_ref"))
+                .containsExactly(nulls("removed", true, "display_name", "subject", "roles", "active"));
+        assertThat(ReplicaDb.rows(tenant, "select removed, person_id, display_name, status, birth_date, gender "
+                + "from game.player_ref")).containsExactly(
+                        nulls("removed", true, "person_id", "display_name", "status", "birth_date", "gender"));
+        assertThat(ReplicaDb.rows(tenant, "select removed, season_id, season_end_date, name from game.team_ref"))
+                .containsExactly(nulls("removed", true, "season_id", "season_end_date", "name"));
+        assertThat(ReplicaDb.rows(tenant, "select removed, team_id, player_id, jersey_number, joined_on "
+                + "from game.team_player_ref")).containsExactly(
+                        nulls("removed", true, "team_id", "player_id", "jersey_number", "joined_on"));
+    }
+
+    @Test
+    void anAggregateChangedAfterItsRemovalIsBack() {
+        UUID team = UUID.randomUUID();
+        UUID season = UUID.randomUUID();
+
+        apply(core.team(team, season, SEASON_END, "Lions"));
+        apply(core.removed("team", team));
+        assertThat(apply(core.team(team, season, SEASON_END, "New Lions"))).isEqualTo(Outcome.APPLIED);
+
+        assertThat(ReplicaDb.rows(tenant, "select removed, name from game.team_ref"))
+                .containsExactly(Map.of("removed", false, "name", "New Lions"));
+    }
+
+    @Test
     void everyAggregateKeepsTheStateGameReads() {
         UUID person = UUID.randomUUID();
         UUID player = UUID.randomUUID();
@@ -222,6 +273,16 @@ class ReplicateRosterTest {
                     .containsEntry("reason", "schema violation: x");
             assertThat(row.get("event_id")).isNotNull();
         });
+    }
+
+    /** A row with {@code flag} = {@code value} and every other column null. */
+    private static Map<String, Object> nulls(String flag, Object value, String... columns) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put(flag, value);
+        for (String column : columns) {
+            row.put(column, null);
+        }
+        return row;
     }
 
     private Outcome apply(Record record) {

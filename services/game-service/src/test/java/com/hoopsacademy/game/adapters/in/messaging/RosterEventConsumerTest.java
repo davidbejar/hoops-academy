@@ -3,8 +3,6 @@ package com.hoopsacademy.game.adapters.in.messaging;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -126,22 +124,25 @@ class RosterEventConsumerTest {
         assertThat(events("core.team-staff", "tombstone") - tombstones).isEqualTo(1.0);
     }
 
-    /** WP81: a removal game does not apply yet (soft removal: WP82) is counted ignored, never parked. */
+    /** WP82: every removal is applied as a soft removal; its tombstone is skipped, nothing is parked. */
     @Test
-    void aRemovalGameDoesNotApplyYetIsCountedIgnoredAndNotParked() throws Exception {
+    void aRemovalIsAppliedAndItsTombstoneSkipped() {
         UUID team = UUID.randomUUID();
         UUID season = UUID.randomUUID();
         Record lions = core.team(team, season, SEASON_END, "Lions");
-        Record removal = removal(core.team(team, season, SEASON_END, "Lions"), "team.removed");
+        Record removal = core.removed("team", team);
         UUID marker = UUID.randomUUID();
-        double ignored = events("core.team", "ignored");
+        double applied = events("core.team", "applied");
+        double tombstones = events("core.team", "tombstone");
         double parked = parked("core.team");
 
         CoreTopics.publish(lions, removal, CoreEvents.tombstone(removal), core.team(marker, season, SEASON_END, "Marker"));
 
         await().atMost(WAIT).untilAsserted(() -> assertThat(teamName(marker)).isEqualTo("Marker"));
-        assertThat(teamName(team)).as("kept until WP82").isEqualTo("Lions");
-        assertThat(events("core.team", "ignored") - ignored).isEqualTo(1.0);
+        assertThat(ReplicaDb.value(tenant, "select removed from game.team_ref where id = '" + team + "'")).isEqualTo(true);
+        assertThat(teamName(team)).as("a removal keeps only the identity").isNull();
+        assertThat(events("core.team", "applied") - applied).isEqualTo(3.0);
+        assertThat(events("core.team", "tombstone") - tombstones).isEqualTo(1.0);
         assertThat(parked("core.team") - parked).isZero();
     }
 
@@ -193,15 +194,6 @@ class RosterEventConsumerTest {
 
     private long count(String table) {
         return (Long) ReplicaDb.value(tenant, "select count(*) from " + table);
-    }
-
-    /** {@code changed} turned into the contract's {@code <aggregate>.removed} (same key, own event id, empty payload). */
-    private static Record removal(Record changed, String type) throws Exception {
-        ObjectMapper json = new ObjectMapper();
-        ObjectNode value = (ObjectNode) json.readTree(changed.value());
-        value.put("type", type);
-        value.putObject("payload");
-        return new Record(changed.topic(), changed.key(), json.writeValueAsString(value));
     }
 
     private Object teamName(UUID team) {

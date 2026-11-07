@@ -190,6 +190,60 @@ class RosterPortContractTest {
         assertThat(inTenant(() -> port(source).players(tenant, List.of()))).isEmpty();
     }
 
+    /** WP82: removed players and assignments leave the roster, a removed team or tenant is not found, as in core. */
+    @ParameterizedTest
+    @EnumSource(Source.class)
+    void removedPlayersAndAssignmentsLeaveTheRoster(Source source) {
+        UUID ana = UUID.randomUUID();
+        UUID bea = UUID.randomUUID();
+        UUID carl = UUID.randomUUID();
+        UUID beasAssignment = UUID.randomUUID();
+        given(source, events.tenant("ACTIVE", "Europe/Madrid"), lions(), player(ana, "Ana Ruiz", BORN, "FEMALE"),
+                player(bea, "Bea Gil", BORN, "FEMALE"), player(carl, "Carl Gone", BORN, "MALE"),
+                events.assignment(UUID.randomUUID(), team, ana, "7", LocalDate.parse("2026-09-01"), null, null),
+                events.assignment(beasAssignment, team, bea, "8", LocalDate.parse("2026-09-01"), null, null),
+                events.assignment(UUID.randomUUID(), team, carl, "9", LocalDate.parse("2026-09-01"), null, null),
+                events.removed("team-player", beasAssignment), events.removed("player", carl));
+        TeamRoster expected = new TeamRoster(TeamId.of(team), SeasonId.of(season), "Lions",
+                List.of(new TeamRoster.Player(PlayerId.of(ana), "Ana Ruiz", "7")), SEASON_END);
+        List<PlayerBrief> briefs = List.of(new PlayerBrief(PlayerId.of(bea), "Bea Gil"));
+        coreAnswers(source, () -> {
+            CoreAnswers.teamRoster(core, tenant, expected);
+            CoreAnswers.players(core, tenant, briefs);
+        });
+
+        assertThat(inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team)))).isEqualTo(expected);
+        assertThat(inTenant(() -> port(source).players(tenant, List.of(PlayerId.of(bea), PlayerId.of(carl)))))
+                .containsExactlyElementsOf(briefs);
+    }
+
+    @ParameterizedTest
+    @EnumSource(Source.class)
+    void aRemovedTeamIsNotFound(Source source) {
+        given(source, events.tenant("ACTIVE", "Europe/Madrid"), lions(), events.removed("team", team));
+        coreAnswers(source, () -> CoreAnswers.teamNotFound(core, team));
+
+        assertThatThrownBy(() -> inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team))))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(Source.class)
+    void aRemovedTenantHasNoRosterAndNoPlayers(Source source) {
+        UUID ana = UUID.randomUUID();
+        given(source, events.tenant("ACTIVE", "Europe/Madrid"), lions(), player(ana, "Ana Ruiz", BORN, "FEMALE"),
+                events.tenantRemoved());
+        coreAnswers(source, () -> {
+            CoreAnswers.teamNotFound(core, team);
+            CoreAnswers.playersNotFound(core);
+        });
+
+        assertThatThrownBy(() -> inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team))))
+                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> inTenant(() -> port(source).players(tenant, List.of(PlayerId.of(ana)))))
+                .isInstanceOf(NotFoundException.class);
+    }
+
     private Record lions() {
         return events.team(team, season, SEASON_END, "Lions");
     }

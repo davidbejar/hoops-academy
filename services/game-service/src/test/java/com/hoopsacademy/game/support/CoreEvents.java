@@ -113,6 +113,19 @@ public final class CoreEvents {
         return record("core.guardian-link", "guardian-link.removed", id, linkPayload(guardianPersonId, playerId));
     }
 
+    /**
+     * The removal core publishes when an aggregate is deleted (WP81): {@code <aggregate>.removed} with an empty payload,
+     * for {@code person}, {@code player}, {@code team}, {@code team-player} and {@code tenant} (whose id is the tenant's).
+     */
+    public Record removed(String aggregate, UUID id) {
+        return record("core." + aggregate, aggregate + ".removed", id, JSON.createObjectNode());
+    }
+
+    /** The tenant's own removal (a failed onboarding, WP81). */
+    public Record tenantRemoved() {
+        return removed("tenant", tenant.value());
+    }
+
     /** The tombstone core sends after a removal. */
     public static Record tombstone(Record removal) {
         return new Record(removal.topic(), removal.key(), null);
