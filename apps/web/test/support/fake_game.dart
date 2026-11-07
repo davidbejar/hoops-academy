@@ -19,6 +19,7 @@ gen.Match gameMatch(
   String id, {
   gen.MatchStatus? status,
   String teamId = teamA,
+  String seasonId = 'season-1',
   String opponent = 'Tigres',
   int team = 0,
   int opponentScore = 0,
@@ -27,7 +28,7 @@ gen.Match gameMatch(
   (b) => b
     ..id = id
     ..teamId = teamId
-    ..seasonId = 'season-1'
+    ..seasonId = seasonId
     ..opponentName = opponent
     ..homeAway = gen.HomeAway.HOME
     ..scheduledAt = at ?? DateTime.utc(2026, 11, 7, 10)
@@ -121,7 +122,9 @@ class FakeMatchesRepository with Faulty implements MatchesRepository {
     'list',
     () => [
       for (final m in matches)
-        if (teamId == null || m.teamId == teamId) m,
+        if ((teamId == null || m.teamId == teamId) &&
+            (seasonId == null || m.seasonId == seasonId))
+          m,
     ],
   );
   @override

@@ -31,6 +31,7 @@ CurrentUser userWith(
 TenantMembership membershipWithRoles(
   Set<TenantRole> roles, {
   Set<String> staffTeamIds = const {},
+  Set<String> historicStaffTeamIds = const {},
   Set<String> linkedPlayerIds = const {},
   String personId = 'person-me',
   String? ownPlayerId,
@@ -38,6 +39,7 @@ TenantMembership membershipWithRoles(
 }) => TenantMembership(
   personId: personId,
   staffTeamIds: staffTeamIds,
+  historicStaffTeamIds: historicStaffTeamIds,
   linkedPlayerIds: linkedPlayerIds,
   ownPlayerId: ownPlayerId,
   tenantId: '33333333-3333-4333-8333-333333333333',

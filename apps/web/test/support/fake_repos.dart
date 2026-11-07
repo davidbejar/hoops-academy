@@ -409,6 +409,17 @@ class FakeTeamsRepository with Faulty implements TeamsRepository {
     ],
   );
   @override
+  Future<List<api.Team>> historicStaffTeams() => run(
+    'historicStaffTeams',
+    () => [
+      for (final t in teams)
+        if (t.seasonEnded && historicStaffIds.contains(t.id)) t,
+    ],
+  );
+
+  /// Teams `historicStaffTeams` answers with (the caller's `historicStaffTeamIds`).
+  final Set<String> historicStaffIds = {};
+  @override
   Future<api.Team> get(String teamId) =>
       run('get', () => teams.firstWhere((t) => t.id == teamId));
   @override

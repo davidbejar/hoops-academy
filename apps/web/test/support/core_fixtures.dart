@@ -19,12 +19,17 @@ api.AgeCategory category(String id, String code, int rank, {int? maxAge}) =>
 final u12 = category(catU12Id, 'U12', 1, maxAge: 12);
 final u14 = category(catU14Id, 'U14', 2, maxAge: 14);
 
-api.Season season(String id, String name, {bool current = false}) => api.Season(
+api.Season season(
+  String id,
+  String name, {
+  bool current = false,
+  api.Date? endsOn,
+}) => api.Season(
   (b) => b
     ..id = id
     ..name = name
     ..startsOn = api.Date(2026, 9, 1)
-    ..endsOn = api.Date(2027, 6, 30)
+    ..endsOn = endsOn ?? api.Date(2027, 6, 30)
     ..referenceYear = 2026
     ..current = current,
 );

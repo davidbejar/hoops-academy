@@ -17,6 +17,7 @@ Future<Harness> pumpAs(
   required FakeCore core,
   String? location,
   Set<String> staffTeamIds = const {},
+  Set<String> historicStaffTeamIds = const {},
   Set<String> linkedPlayerIds = const {},
   Size size = const Size(360, 780),
   bool settle = true,
@@ -35,6 +36,7 @@ Future<Harness> pumpAs(
         membershipWithRoles(
           roles,
           staffTeamIds: staffTeamIds,
+          historicStaffTeamIds: historicStaffTeamIds,
           linkedPlayerIds: linkedPlayerIds,
           ownPlayerId: ownPlayerId,
           timezone: timezone,
