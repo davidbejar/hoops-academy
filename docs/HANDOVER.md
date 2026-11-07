@@ -68,13 +68,14 @@ owner's decisions 1–63 and the backlog are in `docs/wp/FOLLOW-UPS.md`. The for
   `bump-pins` workflow covers the rest (WP89).
 
 ## Pending user actions
-1. **Podman API without the idle timeout** (WP87): in the VM a drop-in for `podman.service`
-   (`~/.config/systemd/user/podman.service.d/`, `[Service]`, `ExecStart=`,
-   `ExecStart=/usr/bin/podman $LOGGING system service --time=0`), then `systemctl --user daemon-reload`; effective at
-   the service's next restart, lost on `podman machine rm`.
-2. **GitHub for `bump-pins`** (WP89): Settings > Actions > "Allow GitHub Actions to create and approve pull requests"
-   and a `dependencies` label. The first PR, opened with `GITHUB_TOKEN`, does not start `ci` / `e2e`: close and reopen
-   it. Its Envoy Gateway v1.10.0 bump needs the Gateway API matrix check and a kind proof.
+1. **Podman API without the idle timeout** (WP87): **done 2026-11-07** (drop-in `no-timeout.conf` in the VM, service
+   running with `--time=0`). Survives stop/start and reboots; lost on `podman machine rm` / `reset`. Follow-up in
+   FOLLOW-UPS "Infra": a repo playbook for `podman machine init --playbook` plus a self-healing `just doctor` step.
+   Also new there: `NVD_API_KEY` must exist as a *Dependabot* secret too (dependency-check is red on Dependabot PRs).
+2. **GitHub for `bump-pins`** (WP89): settings **done 2026-11-07** (Actions may create PRs, token read-only, label
+   `dependencies`). No run yet; first schedule Monday 2026-11-09 05:17 UTC. When the PR arrives: close and reopen it
+   (a `GITHUB_TOKEN` PR does not start `ci` / `e2e`); its Envoy Gateway v1.10.0 bump needs the Gateway API matrix
+   check and a kind proof before merging.
 3. **File the Envoy Gateway issue** from `docs/upstream/envoy-gateway-global-ratelimit-descriptor-collision.md`
    (decision 49); when it is fixed upstream, drop the `path: /` selector (ADR-0033 amendment).
 4. **Local chromedriver** is 156, CI pins Chrome for Testing + chromedriver 157.0.8103.38; update the local one
@@ -103,7 +104,7 @@ owner's decisions 1–63 and the backlog are in `docs/wp/FOLLOW-UPS.md`. The for
 - **"localhost:2375 failed to respond"** (Testcontainers / Dev Services): the Podman API service (`--time 5`) closes
   keep-alive connections idle for 10 s and docker-java never re-validates them, so a container start after a long
   Quarkus restart meets a dead connection (WP87). `ContainerStarts` contains it for the test-jar resources and Kafka
-  Dev Services are off in tests (WP82); the root fix is the `--time=0` drop-in (pending user action 1).
+  Dev Services are off in tests (WP82); the root fix is the `--time=0` drop-in (applied 2026-11-07, user action 1).
 - **Rate-limit pauses** (agent sessions): long rounds hit the account's rate limit; an agent pauses and later resumes
   in the same worktree and branch. After a resume, check the worktree's `git status` and log before trusting the
   agent's last report.

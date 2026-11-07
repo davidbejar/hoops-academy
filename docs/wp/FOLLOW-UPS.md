@@ -267,14 +267,21 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
 
 ### Pending user actions
 - **Podman API without the idle timeout** (WP87, root cause of the Testcontainers "localhost:2375 failed to respond"
-  flake): in the VM, `mkdir -p ~/.config/systemd/user/podman.service.d` and a drop-in with `[Service]`, `ExecStart=`,
-  `ExecStart=/usr/bin/podman $LOGGING system service --time=0`, then `systemctl --user daemon-reload`; it takes effect
-  at the service's next restart and is lost on `podman machine rm`. The code-side containment (`ContainerStarts`, WP87)
-  and Kafka Dev Services off in tests (WP82) keep the suite green without it; worth a check in `just doctor` /
-  `scripts/env.sh` and a line in the `podman-dev-env` skill. CI's rootless `podman.socket` has the same default.
-- **bump-pins PRs** (WP89): Settings > Actions > "Allow GitHub Actions to create and approve pull requests" and a
-  `dependencies` label; the workflow has not run on GitHub yet. A PR opened with `GITHUB_TOKEN` does not start `ci` /
-  `e2e`: close and reopen the first one (or move to a PAT / GitHub App token later).
+  flake): **applied by the owner on 2026-11-07** (drop-in `~/.config/systemd/user/podman.service.d/no-timeout.conf`
+  in the VM; the running service shows `--time=0`). It survives `podman machine stop/start` and host reboots (the VM's
+  home is on its disk) and is lost only on `podman machine rm` / `reset` / a re-init: making it re-apply itself is the
+  item "Podman machine drop-in: playbook + doctor check" under "Infra, CI, e2e". CI's rootless `podman.socket` has
+  the same default.
+- **NVD key for Dependabot PRs** (found 2026-11-07): `dependency-check` is red on every Dependabot PR (first: PR #5,
+  run 42367339615) because a workflow triggered by Dependabot sees only *Dependabot* secrets, and `NVD_API_KEY` exists
+  only as a repository secret (`NVD_API_KEY:` empty in the job log, "Error updating the NVD Data"). Add the same value
+  under Settings > Secrets and variables > Dependabot (`gh secret set NVD_API_KEY --app dependabot`), re-run the job.
+- **bump-pins PRs** (WP89): repository settings **done by the owner on 2026-11-07** ("Allow GitHub Actions to create
+  and approve pull requests" on, default token permissions read, label `dependencies` present; verified with
+  `gh api repos/davidbejar/hoops-academy/actions/permissions/workflow`). The workflow has not run yet (first schedule
+  Monday 2026-11-09 05:17 UTC, or `gh workflow run bump-pins`). Left for when the PR arrives: a PR opened with
+  `GITHUB_TOKEN` does not start `ci` / `e2e`, so close and reopen it (or move to a PAT / GitHub App token later); its
+  Envoy Gateway v1.9.3 → v1.10.0 bump needs the Gateway API matrix check (ADR-0031) and a kind proof before merging.
 - **File the Envoy Gateway issue** from `docs/upstream/envoy-gateway-global-ratelimit-descriptor-collision.md`
   (decision 49); drop the `path: /` selector once fixed (item under "Infra, CI, e2e").
 - **Local chromedriver** (WP55): the hand-installed one is 156, CI pins Chrome for Testing + chromedriver
@@ -403,6 +410,19 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
+- **Podman machine drop-in: playbook + doctor check** (owner decision 2026-11-07, both A and B): the `--time=0`
+  drop-in for `podman.service` (WP87) lives on the VM disk and is lost on `podman machine rm` / `reset` / re-init; the
+  stock `quay.io/podman/machine-os` image cannot carry it. (A) An Ansible playbook in the repo (`infra/podman/
+  machine-playbook.yml`; `ansible-playbook` is in the machine image, Podman 6.1.4) that writes the drop-in with explicit
+  `core` ownership, for `podman machine init --playbook infra/podman/machine-playbook.yml ...` (runs once after the
+  first boot); check whether Podman runs it as root or as `core` before relying on `systemctl --user daemon-reload`
+  inside it. (B) A self-healing step in `scripts/doctor.sh` (not `env.sh`: one `podman machine ssh` round trip per
+  call): read `systemctl --user cat podman.service` through `podman machine ssh`; when `--time=0` is missing, write the
+  drop-in, `daemon-reload`, restart the service when no container is running, and print the effective `ExecStart`.
+  Docs: the init command in `docs/runbooks` (or the README dev setup), a line in the `podman-dev-env` skill and in
+  HANDOVER "Working conventions". Verification: (B) on the owner's current machine (remove the drop-in, run
+  `just doctor`, see it restored); (A) by `ansible-playbook --check` inside the existing VM, a real `machine rm` +
+  `init --playbook` only in a quiet window of the owner's choosing.
 - **Chart SMTP settings for core** (WP90): core sends the decision mails since core 3.3.0 but the chart sets no mail
   keys, so on kind core falls back to `localhost:1025` and the mails fail (decisions still work, `notifiedAt` empty).
   Needed in the core subchart values: `SMTP_HOST: mailhog`, `SMTP_PORT: "1025"` (kind's Mailpit Service keeps the

@@ -36,7 +36,7 @@ The match-event JSON Schema is mirrored in `game.yaml`; `MatchEventSchemaConsist
 source scripts/env.sh
 just test                      # ./mvnw verify: unit, integration, ArchUnit, RLS suites, coverage gates
 just web-test                  # flutter test
-just scan                      # gitleaks (full history) + OWASP dependency-check (needs an NVD API key)
+just scan                      # gitleaks (full history) + OWASP dependency-check (NVD_API_KEY from .env, see .env.example)
 deploy/helm/tests/run.sh       # lint, snapshots, kubeconform, policy assertions, gitleaks on rendered output
 just e2e                       # journey on compose (docs/runbooks/e2e.md)
 ```

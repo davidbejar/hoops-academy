@@ -87,10 +87,12 @@ web-format:
 web-format-check:
     cd apps/web && dart format --output=none --set-exit-if-changed lib test integration_test tool
 
-# Security: secrets scan (full history) and dependency check
+# Security: secrets scan (full history) and dependency check. NVD_API_KEY from .env (dotenv-load) speeds up the NVD
+# update like CI's secret does; without it dependency-check warns and the first update takes very long.
 scan:
     gitleaks detect --source . --redact
-    source scripts/env.sh && ./mvnw -q -Psecurity-scan org.owasp:dependency-check-maven:aggregate
+    source scripts/env.sh && ./mvnw -q -Psecurity-scan org.owasp:dependency-check-maven:aggregate \
+      ${NVD_API_KEY:+-DnvdApiKey="$NVD_API_KEY"}
 
 # kind cluster lifecycle (WP16, WP36): cluster + Envoy Gateway + CNPG + namespace/secrets. ARGS: --deploy [--from-host]
 kind-up *ARGS:
