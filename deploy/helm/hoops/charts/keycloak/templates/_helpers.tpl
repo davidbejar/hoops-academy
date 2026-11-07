@@ -40,10 +40,19 @@ X-Forwarded-Host = host[:port] of publicUrl on every rule that reaches Keycloak.
 KC_HOSTNAME_BACKCHANNEL_DYNAMIC the back-channel URLs in the discovery document (token, JWKS, userinfo) come from the
 forwarded headers; Envoy sets X-Forwarded-Proto but no X-Forwarded-Host, so Keycloak would fall back to the scheme's
 default port (http://localhost/...). Setting it also overwrites any client-supplied value.
+Response headers Keycloak does not set itself (SD-08 of the 2026-11 review; the same set as infra/compose/nginx/
+keycloak-proxy.conf): Permissions-Policy, COOP same-origin (the app signs in by same-page redirect and Keycloak is
+same-origin with it), CORP same-origin (CORS requests are not affected).
 */}}
 {{- define "keycloak.forwardedHostFilter" -}}
 filters:
   - type: RequestHeaderModifier
     requestHeaderModifier:
       set: [{name: X-Forwarded-Host, value: {{ (urlParse .Values.publicUrl).host | quote }}}]
+  - type: ResponseHeaderModifier
+    responseHeaderModifier:
+      set:
+        - {name: Permissions-Policy, value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()"}
+        - {name: Cross-Origin-Opener-Policy, value: same-origin}
+        - {name: Cross-Origin-Resource-Policy, value: same-origin}
 {{- end -}}

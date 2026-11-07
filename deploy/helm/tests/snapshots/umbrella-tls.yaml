@@ -12285,6 +12285,12 @@ spec:
         - type: RequestHeaderModifier
           requestHeaderModifier:
             set: [{name: X-Forwarded-Host, value: "hoops.example.test"}]
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - {name: Permissions-Policy, value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()"}
+              - {name: Cross-Origin-Opener-Policy, value: same-origin}
+              - {name: Cross-Origin-Resource-Policy, value: same-origin}
       backendRefs:
         - {name: keycloak, port: 8080}
       timeouts: {request: 60s}
@@ -12316,6 +12322,12 @@ spec:
         - type: RequestHeaderModifier
           requestHeaderModifier:
             set: [{name: X-Forwarded-Host, value: "hoops.example.test"}]
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - {name: Permissions-Policy, value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()"}
+              - {name: Cross-Origin-Opener-Policy, value: same-origin}
+              - {name: Cross-Origin-Resource-Policy, value: same-origin}
       backendRefs:
         - {name: keycloak, port: 8080}
       timeouts: {request: 60s}
@@ -12325,6 +12337,12 @@ spec:
         - type: RequestHeaderModifier
           requestHeaderModifier:
             set: [{name: X-Forwarded-Host, value: "hoops.example.test"}]
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - {name: Permissions-Policy, value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()"}
+              - {name: Cross-Origin-Opener-Policy, value: same-origin}
+              - {name: Cross-Origin-Resource-Policy, value: same-origin}
       backendRefs:
         - {name: keycloak, port: 8080}
       timeouts: {request: 60s}

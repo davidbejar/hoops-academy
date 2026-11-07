@@ -614,6 +614,19 @@ class JourneyTest {
         assertThat(reused.body()).contains("invalid_grant");
     }
 
+    /** SD-08 (ZAP, 2026-11): the edge's own 403 and Keycloak's answers carry the web app's policy headers too. */
+    @Test
+    @Order(54)
+    void theEdgesDenyPageAndKeycloakCarryPermissionsAndCrossOriginPolicies() {
+        for (String path : List.of("/internal/usage/" + tenantA, "/auth/realms/academy",
+                "/auth/realms/academy/.well-known/openid-configuration")) {
+            var response = io.restassured.RestAssured.given().baseUri(E2eEnv.baseUrl()).get(path);
+            assertThat(response.header("Permissions-Policy")).as(path).contains("camera=()", "geolocation=()");
+            assertThat(response.header("Cross-Origin-Resource-Policy")).as(path).isEqualTo("same-origin");
+            assertThat(response.header("Cross-Origin-Opener-Policy")).as(path).isEqualTo("same-origin");
+        }
+    }
+
     // ------------------------------------------------------------------------------------------ lifecycle
 
     @Test
