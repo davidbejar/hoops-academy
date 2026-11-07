@@ -10445,6 +10445,50 @@ data:
       "waitIncrementSeconds": 60,
       "permanentLockout": false,
       "maxDeltaTimeSeconds": 43200,
+      "eventsEnabled": true,
+      "eventsExpiration": 2592000,
+      "eventsListeners": [
+        "jboss-logging"
+      ],
+      "enabledEventTypes": [
+        "LOGIN",
+        "LOGIN_ERROR",
+        "LOGOUT",
+        "LOGOUT_ERROR",
+        "CODE_TO_TOKEN",
+        "CODE_TO_TOKEN_ERROR",
+        "REFRESH_TOKEN_ERROR",
+        "CLIENT_LOGIN",
+        "CLIENT_LOGIN_ERROR",
+        "INTROSPECT_TOKEN_ERROR",
+        "UPDATE_PASSWORD",
+        "UPDATE_PASSWORD_ERROR",
+        "UPDATE_CREDENTIAL",
+        "UPDATE_CREDENTIAL_ERROR",
+        "REMOVE_CREDENTIAL",
+        "REMOVE_CREDENTIAL_ERROR",
+        "UPDATE_TOTP",
+        "UPDATE_TOTP_ERROR",
+        "REMOVE_TOTP",
+        "REMOVE_TOTP_ERROR",
+        "RESET_PASSWORD",
+        "RESET_PASSWORD_ERROR",
+        "SEND_RESET_PASSWORD",
+        "SEND_RESET_PASSWORD_ERROR",
+        "UPDATE_EMAIL",
+        "UPDATE_EMAIL_ERROR",
+        "EXECUTE_ACTIONS",
+        "EXECUTE_ACTIONS_ERROR",
+        "EXECUTE_ACTION_TOKEN",
+        "EXECUTE_ACTION_TOKEN_ERROR",
+        "USER_DISABLED_BY_TEMPORARY_LOCKOUT",
+        "USER_DISABLED_BY_PERMANENT_LOCKOUT"
+      ],
+      "adminEventsEnabled": true,
+      "adminEventsDetailsEnabled": false,
+      "attributes": {
+        "adminEventsExpiration": "2592000"
+      },
       "passwordPolicy": "length(12) and maxLength(128) and notUsername and notEmail and passwordBlacklist(hoops-password-blocklist.txt)",
       "otpPolicyType": "totp",
       "otpPolicyAlgorithm": "HmacSHA1",
@@ -11378,7 +11422,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: keycloak-0.5.0
       annotations:
-        checksum/realm: db7e9c6a8b09245e0e2fd03691b8f9d569c3ff28045410eb4ad5d5224e537e96
+        checksum/realm: f5808feb4253dcb2f568c8d9b33b556897129c1f68043c73c59f7b62d4aa221a
         checksum/theme: 7c4460da41862635509b1de67c77bd4130b289fc8cf62939fcd2342508a75d6f
         checksum/blocklist: d1395df3bc5d7565aad8f5b64f7576358a0db58af72571c9c61d1a6dff9174d9
     spec:
@@ -11424,6 +11468,8 @@ spec:
             # Password blocklist (ADR-0038): Keycloak keeps it in a Bloom filter; at its default false-positive rate
             # of 1e-4 one temporary password in 10,000 would be refused although it is on no list.
             - {name: KC_SPI_PASSWORD_POLICY__PASSWORD_BLACKLIST__FALSE_POSITIVE_PROBABILITY, value: "1e-12"}
+            # Security events (ADR-0043): successful logins at INFO (Keycloak's default DEBUG drops them)
+            - {name: KC_SPI_EVENTS_LISTENER__JBOSS_LOGGING__SUCCESS_LEVEL, value: info}
             - name: JAVA_OPTS_APPEND
               value: "-XX:MaxRAMPercentage=70.0"
             - name: CORE_SERVICE_CLIENT_SECRET
