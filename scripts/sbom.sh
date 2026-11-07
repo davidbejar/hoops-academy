@@ -81,7 +81,9 @@ attach() {
   for f in "$dir"/*.cdx.json; do
     [ -e "$f" ] || die "no *.cdx.json in $2"
     # relative file name: ORAS refuses absolute paths; the SBOM's own file name becomes its title annotation
-    "$ENGINE" run --rm ${net[@]+"${net[@]}"} --user "$(id -u):$(id -g)" -v "$dir:/sbom:ro" -v "$auth:/auth.json:ro" -w /sbom \
+    # No --user here: in rootless Podman (the GitHub runner) the container's root is the host user, which can read the
+    # 0600 auth file; a numeric --user maps to a sub-uid that cannot (open /auth.json: permission denied).
+    "$ENGINE" run --rm ${net[@]+"${net[@]}"} -v "$dir:/sbom:ro" -v "$auth:/auth.json:ro" -w /sbom \
       "$ORAS_IMAGE" attach --registry-config /auth.json ${plain[@]+"${plain[@]}"} --artifact-type "$SBOM_MEDIA_TYPE" \
       "$ref" "$(basename "$f"):$SBOM_MEDIA_TYPE"
   done
