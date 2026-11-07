@@ -24,6 +24,10 @@ final class ProblemMapping {
         return false;
     }
 
+    static boolean causedByUnstorableText(Throwable e) {
+        return false;
+    }
+
     /** The violations of a rejected request, ordered by field. */
     static List<Problem.Violation> violationsOf(Collection<? extends ConstraintViolation<?>> violations) {
         return violations.stream()

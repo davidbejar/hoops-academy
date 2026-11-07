@@ -9,6 +9,7 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.RollbackException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Path;
+import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.hibernate.StaleStateException;
@@ -56,6 +57,21 @@ class ProblemMappingTest {
                 .isEqualTo(DenialKind.ROLE);
         assertThat(ProblemMapping.denialKindOf(new AccessDeniedException("Not the team's coach")))
                 .isEqualTo(DenialKind.FINE_GRAINED);
+    }
+
+    @Test
+    void textPostgresCannotStoreIsRecognisedDirectlyAndWrapped() {
+        assertThat(ProblemMapping.causedByUnstorableText(new SQLException("invalid byte sequence", "22021"))).isTrue();
+        assertThat(ProblemMapping.causedByUnstorableText(
+                new IllegalStateException(new SQLException("unsupported Unicode escape sequence", "22P05")))).isTrue();
+    }
+
+    @Test
+    void anyOtherDatabaseOrNonDatabaseFailureIsNotUnstorableText() {
+        assertThat(ProblemMapping.causedByUnstorableText(new SQLException("unique violation", "23505"))).isFalse();
+        assertThat(ProblemMapping.causedByUnstorableText(new SQLException("no state"))).isFalse();
+        assertThat(ProblemMapping.causedByUnstorableText(new IllegalStateException("22021"))).isFalse();
+        assertThat(ProblemMapping.causedByUnstorableText(new SelfCaused())).isFalse();
     }
 
     private static ConstraintViolation<?> violation(String field, String message) {
