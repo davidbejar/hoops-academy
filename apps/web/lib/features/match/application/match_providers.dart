@@ -189,6 +189,30 @@ class MatchListNotifier extends AsyncNotifier<MatchList> {
     ref.invalidateSelf();
     return m;
   }
+
+  /// Edits a match from the list (staff only; the server decides what a started match may change).
+  Future<void> updateMatch(
+    String matchId, {
+    required String opponentName,
+    required DateTime scheduledAt,
+    required gen.HomeAway homeAway,
+    String? venue,
+    int? periodCount,
+    int? periodMinutes,
+  }) async {
+    await ref
+        .read(matchesRepositoryProvider)
+        .update(
+          matchId,
+          opponentName: opponentName,
+          scheduledAt: scheduledAt,
+          homeAway: homeAway,
+          venue: venue,
+          periodCount: periodCount,
+          periodMinutes: periodMinutes,
+        );
+    ref.invalidateSelf();
+  }
 }
 
 final matchListProvider = AsyncNotifierProvider<MatchListNotifier, MatchList>(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoops_app/app/router.dart';
 import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
@@ -131,5 +132,43 @@ void main() {
       location: '/matches/$sched',
     );
     expect(find.byKey(const Key('match-menu')), findsNothing);
+  });
+
+  group('from the list tile', () {
+    testWidgets('staff edit a match without opening it; the list refreshes', (
+      tester,
+    ) async {
+      final game = scheduledGame();
+      final h = await pumpCoach(tester, game, '/matches');
+      await tapKey(tester, 'match-edit-$sched');
+      expect(find.byKey(const Key('match-edit-opponent')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('match-edit-opponent')),
+        'Osos',
+      );
+      await tapKey(tester, 'form-submit');
+      await tester.pumpAndSettle();
+      expect(game.matches.updates.single.matchId, sched);
+      expect(find.byKey(const Key('match-edit-opponent')), findsNothing);
+      expect(find.textContaining('Osos'), findsOneWidget);
+      expect(h.container.read(routerProvider).state.uri.path, '/matches');
+    });
+
+    testWidgets('a cancelled match offers no edit', (tester) async {
+      final game = FakeGame(
+        matches: FakeMatchesRepository(
+          matches: [
+            gameMatch('m-x', status: gen.MatchStatus.CANCELLED, opponent: 'X'),
+          ],
+        ),
+      );
+      await pumpCoach(tester, game, '/matches');
+      expect(find.byKey(const Key('match-edit-m-x')), findsNothing);
+    });
+
+    testWidgets('a parent sees no edit', (tester) async {
+      await pumpParent(tester, scheduledGame(), '/matches');
+      expect(find.byKey(const Key('match-edit-$sched')), findsNothing);
+    });
   });
 }

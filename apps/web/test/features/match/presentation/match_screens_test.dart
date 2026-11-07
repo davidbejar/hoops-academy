@@ -186,7 +186,8 @@ void main() {
 
     testWidgets('create a match', (tester) async {
       final game = gameWith();
-      await pumpCoach(tester, game, '/matches');
+      // Tall enough for the list (tiles carry an edit action) to build the new match.
+      await pumpCoach(tester, game, '/matches', size: const Size(360, 1400));
       await tapKey(tester, 'match-new');
       await enter(tester, 'match-new-opponent', 'Halcones');
       await tapKey(tester, 'form-submit');

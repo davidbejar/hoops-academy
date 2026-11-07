@@ -14,6 +14,7 @@ import '../../tenant/application/tenant_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/match_providers.dart';
+import 'match_edit_dialog.dart';
 import 'match_labels.dart';
 import 'sync_banner.dart';
 
@@ -145,6 +146,9 @@ class MatchTile extends ConsumerWidget {
     final played =
         match.status == gen.MatchStatus.LIVE ||
         match.status == gen.MatchStatus.FINISHED;
+    final canEdit =
+        match.status != gen.MatchStatus.CANCELLED &&
+        ref.watch(capabilitiesProvider).canRunMatch(match.teamId);
     return ListRow(
       key: Key('match-${match.id}'),
       // Phones give the opponent and the kick-off the whole width.
@@ -173,6 +177,33 @@ class MatchTile extends ConsumerWidget {
           ],
         ],
       ),
+      details: canEdit
+          ? Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                key: Key('match-edit-${match.id}'),
+                icon: const Icon(Icons.edit_outlined),
+                label: Text(l.matchEdit),
+                onPressed: () => showDialog<bool>(
+                  context: context,
+                  builder: (_) => MatchEditDialog(
+                    match: match,
+                    save: (e) => ref
+                        .read(matchListProvider.notifier)
+                        .updateMatch(
+                          match.id,
+                          opponentName: e.opponentName,
+                          scheduledAt: e.scheduledAt,
+                          homeAway: e.homeAway,
+                          venue: e.venue,
+                          periodCount: e.periodCount,
+                          periodMinutes: e.periodMinutes,
+                        ),
+                  ),
+                ),
+              ),
+            )
+          : null,
       onTap: () => context.go('/matches/${match.id}'),
     );
   }
