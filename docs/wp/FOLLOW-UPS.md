@@ -215,7 +215,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 | 3 | WP85 | Security logging: Keycloak login events, authz-failure events in the services, SBOM in CI | Opus | Done (ADR-0043; security events + metric; realm events 30 d; SBOM per image; combined verify 0 failures) |
 | 3 | WP90 | Invitation-only sign-up: request API, super admin workbench, landing form wired, rejection mail | Opus | Done (ADR-0044; core 3.3.0, V17; core 968 tests, mutation 98.9 %; web 997; e2e 25/25 with mails) |
 | 4 | WP77 | Landing: language switch in the header, screenshots per locale re-captured from the redesigned app | Sonnet | Done (header language menu; 12 per-locale screenshots; web 1005 tests; Lighthouse PWA 1) |
-| 4 | WP88 | Mutation round: wider PIT scope, baselines raised, Dart mutation tool for the web rule code | Opus | After wave 3 (alone on the backend) |
+| 4 | WP88 | Mutation round: wider PIT scope, baselines raised, Dart mutation tool for the web rule code | Opus | Done (PIT common 210/211, core 777/778, game 548/550, athlete 687/687; Dart tool 430/430; web 1077 tests on the combined tree) |
 | 5 | WP84 | Security fixes: every SAST/DAST finding of WP83 fixed or accepted, review file updated | Opus | Last alone |
 
 ### Decisions of 2026-11-06, fourth interview (product owner)
