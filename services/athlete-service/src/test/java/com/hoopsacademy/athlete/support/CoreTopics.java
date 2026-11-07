@@ -13,8 +13,9 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
- * Publishes {@link CoreEvents} records to the Dev Services Redpanda the way core's publisher does (topic per aggregate,
- * key {@code <tenant>:<aggregate>}, a tombstone after a removal), so the consumer under test reads real records.
+ * Publishes {@link CoreEvents} records to the test broker (RosterBrokerResource) the way core's publisher does (topic
+ * per aggregate, key {@code <tenant>:<aggregate>}, a tombstone after a removal), so the consumer under test reads real
+ * records.
  */
 public final class CoreTopics implements AutoCloseable {
 

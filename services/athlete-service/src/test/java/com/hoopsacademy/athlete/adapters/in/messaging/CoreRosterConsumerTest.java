@@ -36,9 +36,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The consumer on a real broker (Dev Services Redpanda): records of the seven roster topics reach the replica,
- * redeliveries and late older events change nothing, a record that breaks the contract is parked and the next one is
- * still applied, tombstones are skipped, and the outcomes are counted on /q/metrics.
+ * The consumer on a real broker (RosterBrokerResource, the pinned Redpanda): records of the seven roster topics reach
+ * the replica, redeliveries and late older events change nothing, a record that breaks the contract is parked and the
+ * next one is still applied, tombstones are skipped, and the outcomes are counted on /q/metrics.
  */
 @QuarkusTest
 @TestProfile(ReplicaProfile.class)

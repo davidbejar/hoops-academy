@@ -132,6 +132,12 @@
       <artifactId>testcontainers-postgresql</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- RosterBrokerResource: the pinned Redpanda image started through ContainerStarts (WP82); BOM version -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-redpanda</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.github.dasniko</groupId>
       <artifactId>testcontainers-keycloak</artifactId>

@@ -19,6 +19,7 @@ import com.hoopsacademy.game.support.CoreEvents;
 import com.hoopsacademy.game.support.CoreTopics;
 import com.hoopsacademy.game.support.CoreWireMockResource;
 import com.hoopsacademy.game.support.ReplicaDb;
+import com.hoopsacademy.game.support.RosterBrokerResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestProfile(RosterConsumerFailureTest.TwoAttempts.class)
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "game"))
 @WithTestResource(CoreWireMockResource.class)
+@WithTestResource(RosterBrokerResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class RosterConsumerFailureTest {
 

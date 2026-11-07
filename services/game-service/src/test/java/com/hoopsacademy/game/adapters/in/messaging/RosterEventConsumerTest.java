@@ -13,6 +13,7 @@ import com.hoopsacademy.game.support.CoreEvents.Record;
 import com.hoopsacademy.game.support.CoreTopics;
 import com.hoopsacademy.game.support.CoreWireMockResource;
 import com.hoopsacademy.game.support.ReplicaDb;
+import com.hoopsacademy.game.support.RosterBrokerResource;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -29,13 +30,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * The consumer of core's roster topics against the Dev Services Redpanda (the pinned image, ADR-0036/0037): records
+ * The consumer of core's roster topics against a Redpanda broker (RosterBrokerResource, the pinned image, ADR-0036/0037): records
  * of every topic reach the replica in their own tenant; a redelivered event is applied once, an older one never wins,
  * a tombstone is skipped, an invalid record is parked without stopping the records behind it; the metrics count it.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "game"))
 @WithTestResource(CoreWireMockResource.class)
+@WithTestResource(RosterBrokerResource.class)
 class RosterEventConsumerTest {
 
     private static final Duration WAIT = Duration.ofSeconds(30);
