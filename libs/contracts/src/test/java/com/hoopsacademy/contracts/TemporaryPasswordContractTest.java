@@ -32,7 +32,8 @@ class TemporaryPasswordContractTest {
             "inviteMember, 201",
             "issueMemberTemporaryPassword, 200",
             "createPlayer, 201",
-            "approveApprovalRequest, 200"})
+            "approveApprovalRequest, 200",
+            "acceptAcademyRequest, 200"})
     void responsesThatCanCarryATemporaryPasswordDeclareItReadOnlyAndUncached(String operationId, String status) {
         ApiResponse response = operation(operationId).getResponses().get(status);
 

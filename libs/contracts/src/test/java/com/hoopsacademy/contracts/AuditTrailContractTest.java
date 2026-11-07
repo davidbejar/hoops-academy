@@ -36,7 +36,7 @@ class AuditTrailContractTest {
 
         assertThat(action.getType()).isEqualTo("string");
         List<String> values = action.getEnum().stream().map(String::valueOf).toList();
-        assertThat(values).doesNotHaveDuplicates().hasSize(29)
+        assertThat(values).doesNotHaveDuplicates().hasSize(30)
                 .contains("member.invited", "member.invitation_accepted", "member.temporary_password_expired",
                         "player.approved", "player.rejected", "tenant.suspended", "admin.added");
         assertThat(values).allMatch(value -> value.matches("[a-z_]+\\.[a-z_]+"));
@@ -97,7 +97,7 @@ class AuditTrailContractTest {
         Parameter action = parameters.get("action");
         assertThat(action.getSchema().getType()).isEqualTo("array");
         assertThat(action.getExplode()).isTrue();
-        assertThat(action.getSchema().getItems().getEnum()).hasSize(29);
+        assertThat(action.getSchema().getItems().getEnum()).hasSize(30);
         assertThat(operation.getResponses()).containsKeys("200", "400", "401", "403", "404");
         assertThat(operation.getDescription()).contains("Authz:").containsIgnoringCase("retention");
     }

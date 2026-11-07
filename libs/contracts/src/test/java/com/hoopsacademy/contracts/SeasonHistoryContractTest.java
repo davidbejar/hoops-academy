@@ -101,7 +101,9 @@ class SeasonHistoryContractTest {
     @ParameterizedTest
     @CsvSource({"core, 3.2.0", "game, 2.3.0", "athlete, 2.4.0"})
     void theContractsCarryTheirSeasonHistoryVersion(String service, String version) {
-        assertThat(OpenApiSpecs.parse(service).getOpenAPI().getInfo().getVersion()).isEqualTo(version);
+        assertThat(java.lang.module.ModuleDescriptor.Version.parse(
+                OpenApiSpecs.parse(service).getOpenAPI().getInfo().getVersion()))
+                .isGreaterThanOrEqualTo(java.lang.module.ModuleDescriptor.Version.parse(version));
         assertThat(OpenApiSpecs.parse(service).getOpenAPI().getInfo().getDescription()).contains("SEASON_ENDED",
                 "ADR-0042");
     }

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 3.2.0
+  version: 3.3.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -34,6 +34,10 @@ info:
     marks it. Nobody writes it any more: the team's PATCH, staff and assignment writes answer 409 Problem with
     `code` = `SEASON_ENDED` to everybody who could write it otherwise (ADMIN included). Seasons stay editable.
 
+    Invitation-only sign-up (ADR-0044, core 3.3.0, decisions 51 and 58): `POST /platform/academy-requests` is the one
+    public operation (no sign-in); the super admin lists the requests and accepts (the academy is created with the
+    requester as its first ADMIN, temporary password once) or rejects them (the reason is e-mailed).
+
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
   - url: /
@@ -43,6 +47,8 @@ security:
 tags:
   - name: Platform
     description: Tenant lifecycle, the tenant's administrators and usage statistics (super_admin).
+  - name: AcademyRequests
+    description: Invitation-only sign-up (ADR-0044) — the public request and the super admin's decisions.
   - name: Me
     description: The calling user and their memberships.
   - name: Tenant
@@ -490,6 +496,126 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /platform/academy-requests:
+    post:
+      operationId: submitAcademyRequest
+      tags: [AcademyRequests]
+      summary: Request a new academy (public, no sign-in)
+      security: []
+      description: |
+        The landing page's invitation request (decision 51 and 58, ADR-0044). Anyone may ask for a new academy as its
+        future administrator, a coach or a parent (players never request); on acceptance the requester becomes the
+        academy's first ADMIN. No sign-in, no `X-Tenant-Id`. Rate-limited per client IP at the gateway (429 from the
+        gateway, without a Problem body).
+
+        The answer never tells whether the e-mail already signs in, already asked or was dropped: every accepted body
+        gets the same `202`. Silently dropped (still `202`): a filled honeypot `website`, and a fourth pending request
+        of the same e-mail. Nothing is e-mailed on submission (the endpoint can never be used to send mail to a third
+        party). The academy name must be free: 409 `ACADEMY_NAME_TAKEN` when an academy or a pending or accepted
+        request already has it (compared trimmed, inner spaces collapsed, case-insensitive).
+        Authz: anonymous (the only public operation of the platform).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SubmitAcademyRequest'}
+      responses:
+        '202':
+          description: Received (the same body in every case).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AcademyRequestReceived'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+    get:
+      operationId: listAcademyRequests
+      tags: [AcademyRequests]
+      summary: List academy requests (the super admin's workbench)
+      description: 'Newest first; `status` filters. Authz: super_admin.'
+      parameters:
+        - name: status
+          in: query
+          schema: {$ref: '#/components/schemas/AcademyRequestStatus'}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of requests.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AcademyRequestPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /platform/academy-requests/{requestId}:accept:
+    parameters:
+      - $ref: '#/components/parameters/AcademyRequestIdPath'
+    post:
+      operationId: acceptAcademyRequest
+      tags: [AcademyRequests]
+      summary: Accept a pending request and create the academy with the requester as its first ADMIN
+      description: |
+        Runs `createTenant` with the request's academy name and e-mail plus the slug, time zone, default language and
+        the administrator's names given here (ADR-0044). The requester becomes the first ADMIN whatever role they
+        asked with. A new login gets a temporary password, returned once in `temporaryPassword` (ADR-0024); an
+        existing login is linked and gets none. The requester then receives an e-mail in the request's language with
+        the sign-in address and their login (never the password); `request.notifiedAt` stays null when it could not be
+        sent. Audit: `tenant.request_accepted` in the new academy's trail. 409 `REQUEST_NOT_PENDING` (already decided),
+        `SLUG_TAKEN`, `ACADEMY_NAME_TAKEN` (an academy got the name meanwhile); 502 when Keycloak fails (the request
+        stays pending). Authz: super_admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AcceptAcademyRequest'}
+      responses:
+        '200':
+          description: The accepted request, the new academy and, for a new login, its temporary password.
+          headers:
+            Cache-Control: {$ref: '#/components/headers/NoStore'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AcademyRequestAccepted'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '502': {$ref: './common.yaml#/components/responses/UpstreamIdentityProvider'}
+  /platform/academy-requests/{requestId}:reject:
+    parameters:
+      - $ref: '#/components/parameters/AcademyRequestIdPath'
+    post:
+      operationId: rejectAcademyRequest
+      tags: [AcademyRequests]
+      summary: Reject a pending request with a reason (e-mailed to the requester)
+      description: |
+        Records the decision (who, when, the reason) on the request and e-mails the reason to the requester in the
+        request's language; `notifiedAt` stays null when the e-mail could not be sent (the decision stands). No academy
+        exists, so there is no academy audit row: the request row is the record (ADR-0044). 409 `REQUEST_NOT_PENDING`.
+        Authz: super_admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RejectAcademyRequest'}
+      responses:
+        '200':
+          description: The rejected request.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AcademyRequest'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
 
   # ------------------------------------------------------------------ me
   /api/core/me:
@@ -1960,6 +2086,11 @@ components:
       $ref: './common.yaml#/components/securitySchemes/bearerAuth'
 
   parameters:
+    AcademyRequestIdPath:
+      name: requestId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
     PersonId:
       name: personId
       in: path
@@ -2011,7 +2142,7 @@ components:
       explode: true
       schema:
         type: array
-        maxItems: 28
+        maxItems: 30
         items: {$ref: '#/components/schemas/AuditAction'}
 
   headers:
@@ -2072,6 +2203,7 @@ components:
         - tenant.master_data_changed
         - tenant.profile_changed
         - tenant.reactivated
+        - tenant.request_accepted
         - tenant.settings_changed
         - tenant.suspended
         - tenant.withdrawn
@@ -2306,6 +2438,114 @@ components:
           nullable: true
           description: For WITHDRAWN tenants, the date until which data is retained.
         temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
+    AcademyRequestRole:
+      type: string
+      description: What the requester is at the academy; players never request (decision 58). Accepted → first ADMIN.
+      enum: [ADMIN, COACH, PARENT]
+    AcademyRequestStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, REJECTED]
+    SubmitAcademyRequest:
+      type: object
+      description: The landing page's invitation form (ADR-0044). Text without control characters.
+      required: [email, role, academyName]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: The requester's name (optional).
+        email: {type: string, format: email, maxLength: 254}
+        role: {$ref: '#/components/schemas/AcademyRequestRole'}
+        academyName: {type: string, minLength: 1, maxLength: 120}
+        locale:
+          description: The page's language; the decision e-mail is written in it (default en).
+          allOf: [{$ref: './common.yaml#/components/schemas/Locale'}]
+        website:
+          type: string
+          maxLength: 2048
+          description: Honeypot; must be absent or empty. A request with a value is answered 202 and dropped.
+    AcademyRequestReceived:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [RECEIVED]
+    AcademyRequest:
+      type: object
+      description: A request for a new academy as the super admin sees it (ADR-0044).
+      required: [id, status, email, role, academyName, locale, requestedAt]
+      properties:
+        id: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/AcademyRequestStatus'}
+        name: {type: string, nullable: true}
+        email: {type: string, format: email}
+        role: {$ref: '#/components/schemas/AcademyRequestRole'}
+        academyName: {type: string}
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+        requestedAt: {type: string, format: date-time}
+        decidedAt: {type: string, format: date-time, nullable: true}
+        decidedBy:
+          type: string
+          nullable: true
+          description: The super admin's login (token subject) that accepted or rejected the request.
+        reason:
+          type: string
+          nullable: true
+          description: The rejection reason, as e-mailed to the requester.
+        tenantId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The academy created on acceptance.
+        notifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the decision e-mail was handed to the mail server; null while pending or when it failed.
+    AcademyRequestPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/AcademyRequest'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    AcceptAcademyRequest:
+      type: object
+      description: What the request does not carry; the academy name and the administrator's e-mail come from the request.
+      required: [slug, timezone, defaultLocale, firstAdmin]
+      properties:
+        slug:
+          type: string
+          pattern: '^[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])$'
+        timezone: {type: string, example: Europe/Madrid}
+        defaultLocale: {$ref: './common.yaml#/components/schemas/Locale'}
+        firstAdmin: {$ref: '#/components/schemas/AcceptedAdmin'}
+    AcceptedAdmin:
+      type: object
+      required: [givenName, familyName]
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        locale: {$ref: './common.yaml#/components/schemas/Locale'}
+    AcademyRequestAccepted:
+      type: object
+      required: [request, tenant]
+      properties:
+        request: {$ref: '#/components/schemas/AcademyRequest'}
+        tenant: {$ref: '#/components/schemas/Tenant'}
+        temporaryPassword: {$ref: '#/components/schemas/TemporaryPassword'}
+    RejectAcademyRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Sent to the requester in the e-mail; write it for them.
     TenantPage:
       type: object
       required: [items, page]

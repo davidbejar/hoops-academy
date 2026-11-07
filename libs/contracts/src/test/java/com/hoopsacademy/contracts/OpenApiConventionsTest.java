@@ -102,16 +102,36 @@ class OpenApiConventionsTest {
         });
     }
 
+    /** Operations deliberately open to anonymous callers, each with its ADR. */
+    private static final Set<String> PUBLIC_OPERATIONS = Set.of(
+            "submitAcademyRequest"); // invitation request from the landing page, ADR-0044
+
     @ParameterizedTest
     @FieldSource("SERVICES")
     void everyOperationIsSecured(String service) {
         OpenAPI api = OpenApiSpecs.parseFullyResolved(service);
 
-        assertThat(operations(service)).allSatisfy(op -> {
-            var effective = op.operation().getSecurity() != null ? op.operation().getSecurity() : api.getSecurity();
-            assertThat(effective).as(op.id() + " security").isNotEmpty();
-            assertThat(effective).as(op.id() + " security must not be anonymous").noneMatch(Map::isEmpty);
-        });
+        assertThat(operations(service)).filteredOn(op -> !PUBLIC_OPERATIONS.contains(op.operation().getOperationId()))
+                .allSatisfy(op -> {
+                    var effective = op.operation().getSecurity() != null ? op.operation().getSecurity()
+                            : api.getSecurity();
+                    assertThat(effective).as(op.id() + " security").isNotEmpty();
+                    assertThat(effective).as(op.id() + " security must not be anonymous").noneMatch(Map::isEmpty);
+                });
+    }
+
+    @Test
+    void thePublicOperationsAreExplicitlyAnonymousPlatformOperations() {
+        List<Op> open = SERVICES.stream().flatMap(service -> operations(service).stream())
+                .filter(op -> PUBLIC_OPERATIONS.contains(op.operation().getOperationId())).toList();
+
+        assertThat(open).as("every listed public operation exists").hasSize(PUBLIC_OPERATIONS.size())
+                .allSatisfy(op -> {
+                    assertThat(op.path()).as(op.id()).startsWith("/platform/");
+                    assertThat(op.operation().getSecurity()).as(op.id() + " security: []").isNotNull()
+                            .allMatch(Map::isEmpty);
+                    assertThat(op.operation().getDescription()).as(op.id()).contains("Authz: anonymous");
+                });
     }
 
     @ParameterizedTest
