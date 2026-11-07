@@ -52,6 +52,11 @@ create table athlete.replica_tenant (
   first_seen_at  timestamptz not null default now()
 );
 revoke update, delete, truncate, references, trigger on athlete.replica_tenant from athlete_app;
+-- The tenants whose events were applied before this migration: applied_event is FORCEd RLS, so the owner lifts FORCE for
+-- this one read and restores it in the same transaction (nobody else sees the table without it).
+alter table athlete.applied_event no force row level security;
+insert into athlete.replica_tenant (id) select distinct tenant_id from athlete.applied_event on conflict do nothing;
+alter table athlete.applied_event force row level security;
 
 -- 3. Retention of parked_event: an operator marks a row inspected (as athlete_migrator: update ... set inspected_at =
 -- now()); the job deletes rows inspected longer than hoops.roster.replica.retention.parked-events ago. Uninspected
