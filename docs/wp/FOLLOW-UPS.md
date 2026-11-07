@@ -204,7 +204,7 @@ passes (mutation, security fixes) run last and alone. Caffeinate pid noted by th
 | 1 | WP81 | Core: producer recovery, `.removed` events on deletion, backfill and shadow period | Opus | Done (core 3.1.0 backfill op; producer reset; .removed types; core 887 tests, mutation 98.8 %; e2e 23/23 both replicas) |
 | 1 | WP83 | CI: SAST (CodeQL, Semgrep, find-sec-bugs) and DAST (ZAP API scan, full scan on kind) gates, findings triaged | Opus | Done (ADR-0045; SpotBugs in verify; CodeQL + Semgrep + ZAP API gates; findings SD-01..SD-08 for WP84) |
 | 1 | WP87 | Chart: Reloader on Secret rotation, remaining kind proofs, rate-limit load guard, Testcontainers flake | Opus | Done (chart 0.8.0 Reloader; ADR-0012 amendment; flake root cause; kind proofs moved to WP86 step 0) |
-| 2 | WP73 | Web redesign: training, plans, sessions, health and fitness screens | Opus | After wave 1 |
+| 2 | WP73 | Web redesign: training, plans, sessions, health and fitness screens | Opus | Done (web 918 tests on the combined tree; kit ListRow details; 10 goldens) |
 | 2 | WP74 | Web redesign: live match, match list and match statistics screens | Opus | Done (web 910 tests on the combined tree; 14 match goldens; kit SheetAction key) |
 | 2 | WP75 | Web redesign: admin, platform, auth, profile and shell screens | Sonnet | Done (web 877 tests; kit IconTile; platform usage goldens) |
 | 2 | WP80 | Season history: read-only access to past seasons for former staff and admins (core, game, athlete, web) | Opus | After wave 1 |
