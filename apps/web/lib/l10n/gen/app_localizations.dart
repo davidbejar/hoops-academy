@@ -712,6 +712,12 @@ abstract class AppLocalizations {
   /// **'Los datos han cambiado. Actualiza e inténtalo de nuevo.'**
   String get errorConflict;
 
+  /// No description provided for @errorSeasonEnded.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporada terminada: solo lectura'**
+  String get errorSeasonEnded;
+
   /// No description provided for @errorValidation.
   ///
   /// In es, this message translates to:
@@ -1395,6 +1401,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Temporada'**
   String get teamsSeason;
+
+  /// No description provided for @teamsPastSeasons.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporadas anteriores'**
+  String get teamsPastSeasons;
+
+  /// No description provided for @seasonBarLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporada'**
+  String get seasonBarLabel;
+
+  /// No description provided for @pastSeasonBanner.
+  ///
+  /// In es, this message translates to:
+  /// **'Estás viendo una temporada terminada: solo lectura.'**
+  String get pastSeasonBanner;
+
+  /// No description provided for @teamSeasonEnded.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporada terminada'**
+  String get teamSeasonEnded;
 
   /// No description provided for @teamNew.
   ///
@@ -2565,6 +2595,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'partido cancelado'**
   String get matchReasonCancelled;
+
+  /// No description provided for @matchReasonSeasonEnded.
+  ///
+  /// In es, this message translates to:
+  /// **'temporada terminada'**
+  String get matchReasonSeasonEnded;
 
   /// No description provided for @matchReasonSeqConflict.
   ///

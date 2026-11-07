@@ -45,6 +45,8 @@ class _Body extends ConsumerWidget {
     final s = detail.session;
     final caps = ref.watch(capabilitiesProvider);
     final staff = caps.canManageTraining(s.teamId);
+    // The whole sheet is readable by former staff and by the admin of an ended season (ADR-0042), not editable.
+    final canRead = caps.canReadTraining(s.teamId);
     final zone = ref.watch(tenantZoneProvider);
     final end = s.startsAt.add(Duration(minutes: s.durationMinutes));
     final names = ref.watch(teamNamesProvider);
@@ -142,8 +144,12 @@ class _Body extends ConsumerWidget {
               children: actions,
             ),
           ),
-        if (staff && detail.attendance != null && !cancelled)
-          AttendanceSheet(key: ValueKey('attendance-${s.id}'), detail: detail),
+        if (canRead && detail.attendance != null && !cancelled)
+          AttendanceSheet(
+            key: ValueKey('attendance-${s.id}'),
+            detail: detail,
+            readOnly: !staff,
+          ),
       ],
     );
   }
@@ -223,8 +229,15 @@ class _PlanLine extends ConsumerWidget {
 /// Staff attendance sheet: one row per roster player with PRESENT / LATE
 /// (minutes) / ABSENT / EXCUSED, the planned-absence overlay and injuries.
 class AttendanceSheet extends ConsumerStatefulWidget {
-  const AttendanceSheet({super.key, required this.detail});
+  const AttendanceSheet({
+    super.key,
+    required this.detail,
+    this.readOnly = false,
+  });
   final SessionDetail detail;
+
+  /// The sheet of a past season: statuses are shown, nothing can be changed.
+  final bool readOnly;
 
   @override
   ConsumerState<AttendanceSheet> createState() => _AttendanceSheetState();
@@ -321,7 +334,7 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
               if (i > 0) const Divider(height: HoopsSpace.lg),
               _rowView(l, r),
             ],
-            if (_rows.isNotEmpty) ...[
+            if (_rows.isNotEmpty && !widget.readOnly) ...[
               const SizedBox(height: HoopsSpace.md),
               FilledButton(
                 key: const Key('attendance-save'),
@@ -374,12 +387,14 @@ class _AttendanceSheetState extends ConsumerState<AttendanceSheet> {
                 key: Key('att-${r.playerId}-${s.name}'),
                 label: Text(s.label(l)),
                 selected: r.status == s,
-                onSelected: (_) =>
-                    setState(() => r.status = r.status == s ? null : s),
+                onSelected: widget.readOnly
+                    ? null
+                    : (_) =>
+                          setState(() => r.status = r.status == s ? null : s),
               ),
           ],
         ),
-        if (r.status == ath.AttendanceStatus.LATE)
+        if (r.status == ath.AttendanceStatus.LATE && !widget.readOnly)
           ConstrainedBox(
             constraints: const BoxConstraints(
               maxWidth: HoopsSize.minTapTarget * 4,

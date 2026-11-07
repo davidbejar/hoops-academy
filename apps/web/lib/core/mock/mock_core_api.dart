@@ -79,6 +79,7 @@ class MockCoreApi {
 
   static const meId = '00000000-0000-4000-8000-0000000000a1';
   static const ownTeamId = 'team-mini-a';
+  static const pastTeamId = 'team-mini-a-2025';
   static const norteTeamId = 'team-norte-a';
 
   /// The user's own player in the demo academy when the PLAYER role is on (the player record carries the login's person).
@@ -226,6 +227,12 @@ class MockCoreApi {
               team(ownTeamId, 'Mini A', 'Leones', 'cat-u12', 'MIXED'),
               team('team-mini-b', 'Mini B', null, 'cat-u12', 'FEMALE'),
               team('team-inf-a', 'Infantil A', 'Halcones', 'cat-u14', 'MIXED'),
+              // Last season's team: ended, read-only history (ADR-0042).
+              {
+                ...team(pastTeamId, 'Premini A', 'Tigres', 'cat-u10', 'MIXED'),
+                'seasonId': 'season-2025',
+                'seasonEnded': true,
+              },
             ]
           : [team(norteTeamId, 'Norte A', 'Osos', 'cat-u12', 'MIXED')],
     );
@@ -254,6 +261,16 @@ class MockCoreApi {
           'since': '2026-09-01',
         },
     ];
+    if (demo &&
+        (roles.contains('COACH') || roles.contains('ASSISTANT_COACH'))) {
+      _staff[pastTeamId] = [
+        {
+          'person': _person('a1', 'Casey Coach'),
+          'role': roles.contains('COACH') ? 'COACH' : 'ASSISTANT_COACH',
+          'since': '2025-09-01',
+        },
+      ];
+    }
     final seed = demo
         ? [
             ('p-ana', 'Ana', 'Ruiz', 2015, 'FEMALE', ownTeamId, '7'),
@@ -427,16 +444,24 @@ class MockCoreApi {
     );
   }
 
+  /// Teams the demo user is staff of, of seasons that have not ended (or, with [ended], of ended ones: history).
+  Set<String> _ownStaffTeams({required bool ended}) =>
+      roles.contains('COACH') || roles.contains('ASSISTANT_COACH')
+      ? {
+          for (final e in _staff.entries)
+            if (e.value.any((s) => (s['person']! as Map)['personId'] == 'a1') &&
+                _teams.any(
+                  (t) => t['id'] == e.key && t['seasonEnded'] == ended,
+                ))
+              e.key,
+        }
+      : <String>{};
+
   /// What the demo user may see here, from the roles and the live roster and links (authz matrix).
   MockAuthz get authz => MockAuthz(
     roles: roles.toSet(),
-    staffTeamIds: roles.contains('COACH') || roles.contains('ASSISTANT_COACH')
-        ? {
-            for (final e in _staff.entries)
-              if (e.value.any((s) => (s['person']! as Map)['personId'] == 'a1'))
-                e.key,
-          }
-        : <String>{},
+    staffTeamIds: _ownStaffTeams(ended: false),
+    historicStaffTeamIds: _ownStaffTeams(ended: true),
     linkedPlayerIds: {
       for (final l in _links)
         if (roles.contains('PARENT') &&
@@ -1009,6 +1034,10 @@ class MockCoreApi {
         _page([
           for (final t in _teams)
             if (authz.canSeeTeam(t['id']! as String) &&
+                (q['staffedByMe'] != true ||
+                    authz.staffTeamIds.contains(t['id']) ||
+                    (q['includeEnded'] == true &&
+                        authz.historicStaffTeamIds.contains(t['id']))) &&
                 (q['seasonId'] == null || t['seasonId'] == q['seasonId']) &&
                 (q['ageCategoryId'] == null ||
                     (t['ageCategory']! as Map)['id'] == q['ageCategoryId']))

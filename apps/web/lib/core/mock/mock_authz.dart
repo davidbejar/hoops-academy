@@ -5,6 +5,7 @@ class MockAuthz {
   const MockAuthz({
     required this.roles,
     required this.staffTeamIds,
+    this.historicStaffTeamIds = const {},
     required this.linkedPlayerIds,
     required this.selfPlayerIds,
     required this.teamsOf,
@@ -16,6 +17,9 @@ class MockAuthz {
 
   /// Teams the user is staff of (COACH / ASSISTANT_COACH only).
   final Set<String> staffTeamIds;
+
+  /// Teams of ended seasons the user was staff of: readable history (ADR-0042), never in [staffTeamIds].
+  final Set<String> historicStaffTeamIds;
 
   /// Players the user is a guardian of (PARENT only).
   final Set<String> linkedPlayerIds;
@@ -41,7 +45,10 @@ class MockAuthz {
 
   /// Teams whose schedule, sessions and matches the user reads.
   bool canSeeTeam(String teamId) =>
-      admin || staffTeamIds.contains(teamId) || playerTeamIds.contains(teamId);
+      admin ||
+      staffTeamIds.contains(teamId) ||
+      historicStaffTeamIds.contains(teamId) ||
+      playerTeamIds.contains(teamId);
 
   /// Staff of the team (or an admin): may mark attendance and write for the team's players.
   bool canManageTeam(String teamId) => admin || staffTeamIds.contains(teamId);

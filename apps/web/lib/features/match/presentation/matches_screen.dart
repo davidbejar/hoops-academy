@@ -13,6 +13,7 @@ import '../../../core/ui/kit.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
+import '../../roster/presentation/season_bar.dart';
 import '../application/match_providers.dart';
 import 'match_edit_dialog.dart';
 import 'match_labels.dart';
@@ -58,6 +59,7 @@ class MatchesScreen extends ConsumerWidget {
                     title: l.navMatches,
                     subtitle: zone == null ? null : l.timesShownIn(zone),
                   ),
+                  const SeasonBar(),
                   if (caps.canSeeModule) ...[
                     const SizedBox(height: HoopsSpace.md),
                     const _TeamFilter(),

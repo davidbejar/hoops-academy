@@ -11,6 +11,7 @@ class TenantMembership {
     required this.roles,
     this.personId,
     this.staffTeamIds = const {},
+    this.historicStaffTeamIds = const {},
     this.linkedPlayerIds = const {},
     this.ownPlayerId,
     this.timezone,
@@ -27,6 +28,10 @@ class TenantMembership {
 
   /// Teams the caller is staff of (coach / assistant), from `/me.authz`.
   final Set<String> staffTeamIds;
+
+  /// Teams of seasons that have ended where the caller was staff: read-only history (ADR-0042), never part of
+  /// [staffTeamIds]. From `/me.authz.historicStaffTeamIds`.
+  final Set<String> historicStaffTeamIds;
 
   /// Players the caller is guardian of (PARENT), from `/me.authz`.
   final Set<String> linkedPlayerIds;

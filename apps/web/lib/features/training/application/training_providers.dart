@@ -8,6 +8,8 @@ import '../../../core/api/clear_list.dart';
 import '../../../core/l10n/locale_controller.dart';
 import '../../../core/session/capabilities.dart';
 import '../../roster/application/roster_providers.dart';
+import '../../roster/application/season_view.dart'
+    show viewedPastSeasonProvider;
 import '../data/plans_repository.dart';
 import '../data/training_repository.dart';
 import '../domain/week.dart';
@@ -75,12 +77,22 @@ class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
     final monday = ref.watch(weekStartProvider);
     final team = ref.watch(calendarTeamProvider);
     final caps = ref.watch(capabilitiesProvider);
+    final pastSeason = ref.watch(viewedPastSeasonProvider);
     final repo = ref.watch(trainingRepositoryProvider);
     final from = toAthDate(monday);
     final to = toAthDate(addWeeks(monday, 1).subtract(const Duration(days: 1)));
     List<ath.TrainingSession> all;
     if (team != null) {
       all = await repo.sessions(teamId: team, from: from, to: to);
+    } else if (!caps.isAdmin && pastSeason != null) {
+      // A past season: the teams of that season the caller was staff of.
+      final teams = await ref.watch(teamsProvider.future);
+      final lists = await Future.wait([
+        for (final t in teams)
+          if (caps.historicStaffTeamIds.contains(t.id))
+            repo.sessions(teamId: t.id, from: from, to: to),
+      ]);
+      all = [for (final l in lists) ...l];
     } else if (!caps.isAdmin && caps.staffTeamIds.isNotEmpty) {
       // Staff of specific teams: their teams only.
       final lists = await Future.wait([
@@ -154,8 +166,9 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
     final repo = ref.watch(trainingRepositoryProvider);
     final caps = ref.watch(capabilitiesProvider);
     final session = await repo.session(sessionId);
-    if (!caps.canManageTraining(session.teamId))
+    if (!caps.canReadTraining(session.teamId)) {
       return SessionDetail(session: session);
+    }
     final r = await Future.wait([
       repo.attendance(sessionId),
       ref.watch(teamsRepositoryProvider).roster(session.teamId),

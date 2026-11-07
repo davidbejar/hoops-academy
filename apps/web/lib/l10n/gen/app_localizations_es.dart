@@ -363,6 +363,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Los datos han cambiado. Actualiza e inténtalo de nuevo.';
 
   @override
+  String get errorSeasonEnded => 'Temporada terminada: solo lectura';
+
+  @override
   String get errorValidation => 'Revisa los datos introducidos.';
 
   @override
@@ -727,6 +730,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get teamsSeason => 'Temporada';
+
+  @override
+  String get teamsPastSeasons => 'Temporadas anteriores';
+
+  @override
+  String get seasonBarLabel => 'Temporada';
+
+  @override
+  String get pastSeasonBanner =>
+      'Estás viendo una temporada terminada: solo lectura.';
+
+  @override
+  String get teamSeasonEnded => 'Temporada terminada';
 
   @override
   String get teamNew => 'Nuevo equipo';
@@ -1372,6 +1388,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get matchReasonCancelled => 'partido cancelado';
+
+  @override
+  String get matchReasonSeasonEnded => 'temporada terminada';
 
   @override
   String get matchReasonSeqConflict => 'conflicto de secuencia';

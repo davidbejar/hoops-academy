@@ -7,7 +7,10 @@ import 'empty_state.dart';
 
 extension AppErrorMessage on AppError {
   /// Localised, user-facing text for this error (never raw server text).
-  String message(AppLocalizations l) => switch (kind) {
+  String message(AppLocalizations l) =>
+      code == 'SEASON_ENDED' ? l.errorSeasonEnded : _byKind(l);
+
+  String _byKind(AppLocalizations l) => switch (kind) {
     AppErrorKind.network => l.errorNetwork,
     AppErrorKind.timeout => l.errorTimeout,
     AppErrorKind.unauthorized => l.errorUnauthorized,

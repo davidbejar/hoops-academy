@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/core/session/capabilities.dart';
+import 'package:hoops_app/core/ui/app_error_view.dart';
 import 'package:hoops_app/features/match/presentation/match_labels.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart'
@@ -11,7 +12,6 @@ import 'package:hoops_app/features/roster/application/roster_providers.dart'
 import 'package:hoops_app/l10n/gen/app_localizations_es.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
-import '../support/athlete_scenarios.dart';
 import '../support/core_fixtures.dart';
 import '../support/fake_athlete.dart';
 import '../support/fake_game.dart';

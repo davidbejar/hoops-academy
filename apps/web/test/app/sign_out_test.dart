@@ -69,7 +69,12 @@ Future<Harness> _pump(
 Future<void> _tapSignOut(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('profile-button')));
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.byKey(const Key('sign-out-button')));
+  // The profile page is a lazy list: scroll until the button is built.
+  await tester.scrollUntilVisible(
+    find.byKey(const Key('sign-out-button')),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
   await tester.tap(find.byKey(const Key('sign-out-button')));
   await tester.pumpAndSettle();
 }

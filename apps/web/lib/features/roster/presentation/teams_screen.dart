@@ -15,6 +15,7 @@ import '../../health/presentation/player_health_view.dart'
 import '../../health/application/health_providers.dart'
     show openInjuriesProvider;
 import '../application/roster_providers.dart';
+import '../application/season_view.dart' show historicTeamsProvider;
 import 'eligibility_widgets.dart';
 
 /// Room under the last row so the extended FAB never covers it.
@@ -32,7 +33,8 @@ class TeamsScreen extends ConsumerWidget {
     final seasons = ref.watch(seasonsProvider);
     final season = ref.watch(activeSeasonProvider).value;
     return Scaffold(
-      floatingActionButton: caps.canManageTeams && season != null
+      floatingActionButton:
+          caps.canManageTeams && season != null && !caps.viewingPastSeason
           ? FloatingActionButton.extended(
               key: const Key('team-new'),
               onPressed: () => showDialog<bool>(
@@ -87,17 +89,46 @@ class TeamsScreen extends ConsumerWidget {
                     onRetry: () => ref.invalidate(teamsProvider),
                     isEmpty: (d) => d.isEmpty,
                     emptyMessage: l.teamsEmpty,
-                    builder: (context, data) => ListView.separated(
-                      padding: const EdgeInsets.only(
-                        top: HoopsSpace.md,
-                        bottom: _fabClearance,
-                      ),
-                      itemCount: data.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: HoopsSpace.gap),
-                      itemBuilder: (context, i) =>
-                          ContentFrame(child: TeamCard(team: data[i])),
-                    ),
+                    builder: (context, data) {
+                      final past = caps.viewingPastSeason
+                          ? const <api.Team>[]
+                          : [
+                              for (final t
+                                  in ref.watch(historicTeamsProvider).value ??
+                                      const <api.Team>[])
+                                if (!data.any((d) => d.id == t.id)) t,
+                            ];
+                      return ListView.separated(
+                        padding: const EdgeInsets.only(
+                          top: HoopsSpace.md,
+                          bottom: _fabClearance,
+                        ),
+                        itemCount:
+                            data.length + (past.isEmpty ? 0 : past.length + 1),
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: HoopsSpace.gap),
+                        itemBuilder: (context, i) {
+                          if (i < data.length) {
+                            return ContentFrame(child: TeamCard(team: data[i]));
+                          }
+                          if (i == data.length) {
+                            return ContentFrame(
+                              child: Text(
+                                l.teamsPastSeasons,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                            );
+                          }
+                          final t = past[i - data.length - 1];
+                          return ContentFrame(
+                            child: TeamCard(
+                              key: Key('past-team-${t.id}'),
+                              team: t,
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
           ),
         ],
@@ -130,6 +161,8 @@ class TeamCard extends ConsumerWidget {
           ),
           if (mine)
             StatusChip(l.roleCoach, tone: HoopsTone.info, icon: Icons.sports),
+          if (team.seasonEnded)
+            StatusChip(l.teamSeasonEnded, icon: Icons.lock_outline),
         ],
       ),
       onTap: () => context.go('/teams/${team.id}'),
@@ -286,7 +319,7 @@ class TeamDetailScreen extends ConsumerWidget {
       title: detail.value?.team.displayLabel ?? l.navTeams,
       parentPath: '/teams',
       actions: [
-        if (caps.canManageTeams && detail.hasValue)
+        if (caps.canManageTeam(teamId) && detail.hasValue)
           IconButton(
             key: const Key('team-edit'),
             tooltip: l.teamEdit,
@@ -325,7 +358,9 @@ class TeamDetailScreen extends ConsumerWidget {
                     StatusChip(data.team.genderPolicy.label(l)),
                     if (!canEdit)
                       StatusChip(
-                        l.readOnlyHint,
+                        data.team.seasonEnded
+                            ? l.teamSeasonEnded
+                            : l.readOnlyHint,
                         key: const Key('read-only'),
                         tone: HoopsTone.info,
                         icon: Icons.lock_outline,
@@ -356,7 +391,7 @@ class _StaffSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final canManage = ref.watch(capabilitiesProvider).canManageTeams;
+    final canManage = ref.watch(capabilitiesProvider).canManageTeam(teamId);
     final c = HoopsTokens.colorsOf(context);
     return SectionCard(
       title: l.teamStaff,

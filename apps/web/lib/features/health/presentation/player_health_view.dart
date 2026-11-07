@@ -13,6 +13,7 @@ import '../../training/presentation/player_picker.dart' show playerNameProvider;
 import '../../training/presentation/training_labels.dart' show fullDate;
 import '../../training/application/training_providers.dart' show toAthDate;
 import '../application/health_providers.dart';
+import '../../roster/presentation/season_bar.dart';
 import 'charts.dart';
 import 'health_labels.dart';
 import 'scale_hint.dart';
@@ -133,7 +134,15 @@ class PlayerHealthScreen extends ConsumerWidget {
             // Full width: a bare section would be centred by the frame.
             SizedBox(
               width: double.infinity,
-              child: PlayerHealthView(playerId: playerId),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SeasonBar(
+                    padding: EdgeInsets.only(bottom: HoopsSpace.md),
+                  ),
+                  PlayerHealthView(playerId: playerId),
+                ],
+              ),
             ),
           ],
         ),

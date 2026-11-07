@@ -360,6 +360,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get errorConflict => 'Data telah berubah. Muat ulang lalu coba lagi.';
 
   @override
+  String get errorSeasonEnded => 'Musim berakhir: hanya baca';
+
+  @override
   String get errorValidation => 'Periksa kembali data yang Anda masukkan.';
 
   @override
@@ -722,6 +725,19 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get teamsSeason => 'Musim';
+
+  @override
+  String get teamsPastSeasons => 'Musim sebelumnya';
+
+  @override
+  String get seasonBarLabel => 'Musim';
+
+  @override
+  String get pastSeasonBanner =>
+      'Anda melihat musim yang sudah berakhir: hanya baca.';
+
+  @override
+  String get teamSeasonEnded => 'Musim berakhir';
 
   @override
   String get teamNew => 'Tim baru';
@@ -1365,6 +1381,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get matchReasonCancelled => 'pertandingan dibatalkan';
+
+  @override
+  String get matchReasonSeasonEnded => 'musim berakhir';
 
   @override
   String get matchReasonSeqConflict => 'konflik urutan';

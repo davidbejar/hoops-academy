@@ -14,6 +14,8 @@ import '../../../core/errors/app_error.dart';
 import '../../../core/http/dio_provider.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_providers.dart';
+import '../../roster/application/season_view.dart'
+    show viewedPastSeasonProvider;
 import '../data/api_events_remote.dart';
 import '../data/events_remote.dart';
 import '../data/local/connection/connection.dart';
@@ -143,13 +145,15 @@ class MatchListNotifier extends AsyncNotifier<MatchList> {
   @override
   Future<MatchList> build() async {
     final team = ref.watch(matchTeamFilterProvider);
+    // A past season on screen narrows the list to it; otherwise today's list (every match the caller may read).
+    final pastSeason = ref.watch(viewedPastSeasonProvider);
     final store = ref.watch(matchStoreProvider);
     final tenant = ref.watch(tenantIdProvider);
     await ref.watch(matchOwnerProvider.future);
     try {
       final list = await ref
           .watch(matchesRepositoryProvider)
-          .list(teamId: team);
+          .list(teamId: team, seasonId: pastSeason?.id);
       for (final m in list) {
         await store.saveMatchJson(
           tenantId: tenant,

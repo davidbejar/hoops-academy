@@ -4,6 +4,9 @@ import '../../../core/api/clear_list.dart';
 /// Teams, staff and rosters (`/api/core/teams*`).
 abstract class TeamsRepository {
   Future<List<api.Team>> list({String? seasonId});
+
+  /// The caller's own teams of ended seasons (`staffedByMe` + `includeEnded`, ADR-0042); read-only history.
+  Future<List<api.Team>> historicStaffTeams();
   Future<api.Team> get(String teamId);
   Future<api.Team> create(api.CreateTeamRequest request);
   Future<api.Team> update(String teamId, api.UpdateTeamRequest request);
@@ -47,6 +50,17 @@ class ApiTeamsRepository implements TeamsRepository {
         seasonId: seasonId,
         size: 100,
       )).data!.items.toList();
+
+  @override
+  Future<List<api.Team>> historicStaffTeams() async => [
+    for (final t in (await _api.listTeams(
+      xTenantId: _t,
+      staffedByMe: true,
+      includeEnded: true,
+      size: 100,
+    )).data!.items)
+      if (t.seasonEnded) t,
+  ];
 
   @override
   Future<api.Team> get(String teamId) async =>

@@ -111,6 +111,7 @@ String reasonLabel(AppLocalizations l, String? reason) => switch (reason) {
   'SCHEMA_INVALID' => l.matchReasonSchema,
   'NOT_AUTHORIZED' => l.matchReasonNotAuthorized,
   'MATCH_CANCELLED' => l.matchReasonCancelled,
+  'SEASON_ENDED' => l.matchReasonSeasonEnded,
   'CLIENT_SEQ_CONFLICT' => l.matchReasonSeqConflict,
   _ => l.matchReasonOther,
 };

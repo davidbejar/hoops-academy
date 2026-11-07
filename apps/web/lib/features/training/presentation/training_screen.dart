@@ -13,6 +13,7 @@ import '../../tenant/application/tenant_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../../roster/presentation/eligibility_widgets.dart' show TeamLabel;
+import '../../roster/presentation/season_bar.dart';
 import '../application/training_providers.dart';
 import '../domain/week.dart';
 import 'plan_search.dart';
@@ -61,8 +62,19 @@ class TrainingScreen extends ConsumerWidget {
                       key: const Key('timezone-note'),
                       style: text.bodySmall!.copyWith(color: c.inkMuted),
                     ),
+                  SeasonBar(
+                    onChanged: (season) {
+                      // The calendar follows the season: its last week, or this week again.
+                      ref.read(calendarTeamProvider.notifier).select(null);
+                      final week = ref.read(weekStartProvider.notifier);
+                      season == null || season.current
+                          ? week.today()
+                          : week.set(season.endsOn.toDateTime());
+                    },
+                  ),
                   const _TrainingMenu(),
-                  if (caps.canManageAnyTraining) const _TeamFilter(),
+                  if (caps.canManageAnyTraining || caps.viewingPastSeason)
+                    const _TeamFilter(),
                 ],
               ),
             ),
@@ -192,7 +204,10 @@ class _TeamFilter extends ConsumerWidget {
     final caps = ref.watch(capabilitiesProvider);
     final teams = [
       for (final t in ref.watch(teamsProvider).value ?? const <api.Team>[])
-        if (caps.isAdmin || caps.isStaffOf(t.id)) t,
+        if (caps.isAdmin ||
+            caps.isStaffOf(t.id) ||
+            caps.historicStaffTeamIds.contains(t.id))
+          t,
     ];
     if (teams.length < 2) return const SizedBox.shrink();
     return Padding(

@@ -360,6 +360,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorConflict => 'The data has changed. Refresh and try again.';
 
   @override
+  String get errorSeasonEnded => 'Season ended: read only';
+
+  @override
   String get errorValidation => 'Please check the data you entered.';
 
   @override
@@ -719,6 +722,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamsSeason => 'Season';
+
+  @override
+  String get teamsPastSeasons => 'Past seasons';
+
+  @override
+  String get seasonBarLabel => 'Season';
+
+  @override
+  String get pastSeasonBanner =>
+      'You are viewing a season that has ended: read only.';
+
+  @override
+  String get teamSeasonEnded => 'Season ended';
 
   @override
   String get teamNew => 'New team';
@@ -1361,6 +1377,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get matchReasonCancelled => 'match cancelled';
+
+  @override
+  String get matchReasonSeasonEnded => 'season ended';
 
   @override
   String get matchReasonSeqConflict => 'sequence conflict';

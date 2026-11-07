@@ -40,7 +40,12 @@ void main() {
   group('core reads per role', () {
     test('ADMIN reads everything', () async {
       final d = asRoles(['ADMIN']);
-      expect(await teams(d), {mini, 'team-mini-b', 'team-inf-a'});
+      expect(await teams(d), {
+        mini,
+        'team-mini-b',
+        'team-inf-a',
+        'team-mini-a-2025',
+      });
       expect((await players(d)).length, 10);
       expect((await get(d, '/api/core/members')).statusCode, 200);
       expect(ids(await get(d, '/api/core/guardian-links')), isNotEmpty);
@@ -49,7 +54,8 @@ void main() {
     for (final role in ['COACH', 'ASSISTANT_COACH']) {
       test('$role: staff team only, other teams and players are 404', () async {
         final d = asRoles([role]);
-        expect(await teams(d), {mini});
+        // the staff team, and last season's team as read-only history (ADR-0042)
+        expect(await teams(d), {mini, 'team-mini-a-2025'});
         final seen = await players(d);
         expect(seen, containsAll(['p-ana', 'p-leo']));
         expect(seen, isNot(contains('p-dan')));

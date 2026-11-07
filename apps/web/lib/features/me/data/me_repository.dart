@@ -43,6 +43,7 @@ class ApiMeRepository implements MeRepository {
           hasLogo: m.tenant.hasLogo,
           personId: m.personId,
           staffTeamIds: m.authz.staffTeamIds.toSet(),
+          historicStaffTeamIds: m.authz.historicStaffTeamIds.toSet(),
           linkedPlayerIds: m.authz.linkedPlayerIds.toSet(),
           ownPlayerId: m.authz.ownPlayerId,
           timezone: m.authz.timezone,
