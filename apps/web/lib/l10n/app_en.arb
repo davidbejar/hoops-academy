@@ -965,6 +965,8 @@
   "myPlayersTitle": "My players",
   "myPlayersEmpty": "You have no linked players",
   "profilePlatform": "Platform console",
+  "profileAccount": "Account and security",
+  "profileAccountHint": "Password, two-step verification and sessions. Opens in a new tab.",
   "profileResetDemo": "Reset demo data",
   "mePlansEmpty": "No assigned plans",
   "platformTitle": "Platform",

@@ -1304,6 +1304,8 @@
   "myPlayersTitle": "Mis jugadores",
   "myPlayersEmpty": "No tienes jugadores vinculados",
   "profilePlatform": "Consola de plataforma",
+  "profileAccount": "Cuenta y seguridad",
+  "profileAccountHint": "Contraseña, verificación en dos pasos y sesiones. Se abre en una pestaña nueva.",
   "profileResetDemo": "Restablecer datos de demostración",
   "mePlansEmpty": "Sin planes asignados",
   "platformTitle": "Plataforma",

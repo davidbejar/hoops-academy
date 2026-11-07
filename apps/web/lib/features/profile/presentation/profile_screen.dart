@@ -6,6 +6,7 @@ import '../../../app/sign_out.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/http/mock_api_adapter.dart';
 import '../../../core/l10n/locale_controller.dart';
+import '../../../core/navigation/external_link.dart';
 import '../../../core/mock/mock_reload.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_providers.dart';
@@ -30,6 +31,11 @@ class ProfileScreen extends ConsumerWidget {
       // The local choice already applies; the server copy catches up later.
     }
   }
+
+  /// Keycloak's account console of the realm: `<issuer>/account` (password, two-step verification, sessions).
+  Uri _accountConsole(Uri issuer) => issuer.replace(
+    path: '${issuer.path.replaceFirst(RegExp(r'/+$'), '')}/account',
+  );
 
   /// Demo mode only: forgets what was changed (browser storage and the running mock) and starts the page afresh.
   Future<void> _resetDemo(WidgetRef ref) async {
@@ -61,13 +67,21 @@ class ProfileScreen extends ConsumerWidget {
                 subtitle: user.email,
                 trailing: const SizedBox.shrink(),
               ),
-            if (user != null &&
-                (user.memberships.length > 1 ||
-                    user.superAdmin ||
-                    ref.watch(appConfigProvider).mockApi))
+            if (user != null)
               Column(
                 spacing: HoopsSpace.gap,
                 children: [
+                  if (!ref.watch(appConfigProvider).mockApi)
+                    ListRow(
+                      key: const Key('open-account-console'),
+                      leading: const IconTile(Icons.manage_accounts_outlined),
+                      title: l.profileAccount,
+                      subtitle: l.profileAccountHint,
+                      trailing: Icon(Icons.open_in_new, color: c.inkMuted),
+                      onTap: () => ref.read(externalLinkOpenerProvider)(
+                        _accountConsole(ref.read(appConfigProvider).issuer),
+                      ),
+                    ),
                   if (user.memberships.length > 1)
                     ListRow(
                       key: const Key('switch-academy'),

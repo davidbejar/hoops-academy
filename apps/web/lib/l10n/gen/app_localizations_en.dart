@@ -2347,6 +2347,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profilePlatform => 'Platform console';
 
   @override
+  String get profileAccount => 'Account and security';
+
+  @override
+  String get profileAccountHint =>
+      'Password, two-step verification and sessions. Opens in a new tab.';
+
+  @override
   String get profileResetDemo => 'Reset demo data';
 
   @override

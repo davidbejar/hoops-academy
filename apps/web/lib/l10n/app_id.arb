@@ -965,6 +965,8 @@
   "myPlayersTitle": "Pemain saya",
   "myPlayersEmpty": "Anda belum memiliki pemain terhubung",
   "profilePlatform": "Konsol platform",
+  "profileAccount": "Akun dan keamanan",
+  "profileAccountHint": "Kata sandi, verifikasi dua langkah, dan sesi. Dibuka di tab baru.",
   "profileResetDemo": "Atur ulang data demo",
   "mePlansEmpty": "Tidak ada rencana ditugaskan",
   "platformTitle": "Platform",

@@ -4378,6 +4378,18 @@ abstract class AppLocalizations {
   /// **'Consola de plataforma'**
   String get profilePlatform;
 
+  /// No description provided for @profileAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta y seguridad'**
+  String get profileAccount;
+
+  /// No description provided for @profileAccountHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña, verificación en dos pasos y sesiones. Se abre en una pestaña nueva.'**
+  String get profileAccountHint;
+
   /// No description provided for @profileResetDemo.
   ///
   /// In es, this message translates to:

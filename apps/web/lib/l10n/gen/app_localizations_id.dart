@@ -2356,6 +2356,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get profilePlatform => 'Konsol platform';
 
   @override
+  String get profileAccount => 'Akun dan keamanan';
+
+  @override
+  String get profileAccountHint =>
+      'Kata sandi, verifikasi dua langkah, dan sesi. Dibuka di tab baru.';
+
+  @override
   String get profileResetDemo => 'Atur ulang data demo';
 
   @override
