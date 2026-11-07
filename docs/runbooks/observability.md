@@ -56,6 +56,53 @@ kubectl -n hoops scale deploy/otel-collector --replicas=1
 ```
 Data produced while the collector is down is dropped after the exporters' retries (no disk buffer).
 
+## Security events
+ADR-0043 (WP85). Two sources, both in the logs; nothing extra to deploy.
+
+**Services** (`core`, `game`, `athlete`): one WARN record of category `hoops.security` per refused request, message
+`authz_denied kind=<kind> outcome=<status> tenant=<id> subject=<sub> roles=<roles> resource="<METHOD /route/{template}>"
+reason="<reason>"`, the same values as MDC fields (`security.event=authz_denied`, `security.kind`, `security.outcome`,
+`tenantId`, `security.subject`, `security.roles`, `security.resource`, `security.reason`): in the JSON console log under
+`mdc`, in the OTLP log record as attributes, so they reach the collector and the backend with every other log line.
+
+| kind | status | decided by | reason |
+|---|---|---|---|
+| `unauthenticated` | 401 | tenant filter, `@Authenticated` / `@RolesAllowed` | `no credentials` |
+| `invalid_token` | 401 | Quarkus OIDC (`AuthenticationFailureEvent`), a token without `sub` | `expired`, `not_yet_valid`, `audience`, `signature`, `issuer`, `invalid`, `no_sub` |
+| `not_member` | 404 | tenant filter | `no membership in the requested tenant` |
+| `tenant_mismatch` | 404 | tenant filter (the resolver answered another tenant's membership: a bug, never bound) | `membership resolved for another tenant` |
+| `role` | 403 | `@RequiresTenantRole` | `Requires one of [...]` |
+| `fine_grained` | 403 | `Authz.require`, any `AccessDeniedException` of a use case | the check's text, e.g. `Not staff of this team` |
+| `realm_role` | 403 | `@RolesAllowed` (`super_admin` on /platform, `service` on /internal) | `Resource#method` |
+
+Never in an event: tokens, claims of a refused token, names, e-mails, exception messages; the subject is the `sub` id.
+Metric: `hoops_authz_denied_total{kind}` on `/q/metrics` (every kind present from start at 0).
+```bash
+# compose / dev: the plain console format shows the message
+grep 'hoops.security\|authz_denied' <service log>
+# kind, through the collector (debugVerbosity normal):
+kubectl -n hoops logs deploy/otel-collector | grep -B1 -A2 authz_denied
+# rate per kind (Prometheus): sum by (kind) (rate(hoops_authz_denied_total[5m]))
+curl -s localhost:8081/q/metrics | grep hoops_authz_denied_total   # one service directly
+```
+A burst of `not_member` / `invalid_token` from one client is probing; many `fine_grained` for one subject after a
+release is more likely a role-matrix regression (compare with `docs/domain/authz-matrix.md`).
+
+**Keycloak** (realm `academy`): the `jboss-logging` event listener writes every login, logout, token, password, OTP and
+lockout event as a line of category `org.keycloak.events` (`type="LOGIN_ERROR", realmName="academy", clientId=..., userId=...,
+ipAddress=..., error="invalid_user_credentials", ..., username="<e-mail>"`): failures at WARN, successes at INFO
+(`KC_SPI_EVENTS_LISTENER__JBOSS_LOGGING__SUCCESS_LEVEL=info`). Admin events (`operationType=..., resourceType=...,
+resourcePath=...`) without representation. The user events of the realm's list and the admin events are also stored in
+Keycloak's database for 30 days: admin console, realm `academy`, "Events" (user / admin), or
+`GET /auth/admin/realms/academy/events?type=LOGIN_ERROR`. The `username` field is the login's e-mail: Keycloak's log and
+store are the only places that hold it (ADR-0043).
+```bash
+podman logs hoops-keycloak 2>&1 | grep 'org.keycloak.events'                  # compose
+kubectl -n hoops logs deploy/keycloak | grep 'org.keycloak.events'        # kind (the pod's log; not exported over OTLP)
+```
+An existing compose realm gets the event settings from `just seed-users`; on kind recreate the Keycloak database
+(`IGNORE_EXISTING`, ADR-0038) or set them in the admin console (Realm settings, "Events").
+
 ## Another environment
 The chart standardises the OTLP egress; the backend is the environment's (Grafana Cloud / Tempo + Loki, a vendor's OTLP
 endpoint, the platform's own collector). Two ways:

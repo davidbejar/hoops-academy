@@ -70,6 +70,36 @@ helm upgrade --install hoops deploy/helm/hoops -n hoops --set 'global.imagePullS
 ```
 Pin the `ubi9/openjdk-21-runtime` tag in `deploy/containers/service.Containerfile` before the first release (open item).
 
+### SBOM
+ADR-0043 (WP85). Every image job of `images.yml` writes CycloneDX SBOMs (Maven plugin 1.6, Trivy 1.7), validates each
+against the schema of its version (`cyclonedx-cli`, the job fails on an invalid file) and keeps them as the workflow artifact `sbom-<image>` (90 days):
+
+| Image | File | Content |
+|---|---|---|
+| core / game / athlete | `<svc>-maven.cdx.json` | the service's compile + runtime dependencies (`cyclonedx-maven-plugin`, profile `sbom`, run in the image's Maven stage) |
+| core / game / athlete | `<svc>-image.cdx.json` | the whole image: UBI packages, the JDK, every jar (Trivy) |
+| web | `web-image.cdx.json` | the image: Alpine/nginx packages (Trivy; the Flutter bundle carries no package metadata) |
+
+When the job pushes (main, `IMAGE_REGISTRY` set) it attaches each file to the pushed digest as an OCI referrer (ORAS,
+artifact type `application/vnd.cyclonedx+json`; on ghcr.io via the referrers tag `sha256-<digest>`). Read them back:
+```bash
+img=ghcr.io/<owner>/hoops-academy/core-service@sha256:<digest>
+oras=ghcr.io/oras-project/oras:v1.3.6     # scripts/sbom.sh pins the digest
+podman run --rm "$oras" discover --artifact-type application/vnd.cyclonedx+json "$img"   # the SBOMs' digests
+podman run --rm -v "$PWD:/w" -w /w "$oras" pull -o sbom "ghcr.io/<owner>/hoops-academy/core-service@<SBOM digest>"
+```
+(private packages: add `-v $REGISTRY_AUTH_FILE:/auth.json:ro --registry-config /auth.json`). Locally, the same steps
+as CI (Podman; Trivy, cyclonedx-cli and ORAS run in pinned containers):
+```bash
+scripts/build-images.sh core-service                            # or podman build ... as images.yml does
+scripts/sbom.sh maven core-service target/sbom                  # Maven SBOM from the image build's cache
+scripts/sbom.sh generate core-service localhost/hoops/core-service:dev target/sbom   # image SBOM + validate all
+scripts/sbom.sh generate web localhost/hoops/web:dev target/sbom
+scripts/sbom.sh validate target/sbom
+```
+No signed attestation yet (no cosign / `actions/attest-sbom`, ADR-0043). `trivy sbom target/sbom/<file>` scans an SBOM
+for vulnerabilities without the image.
+
 ## 4. Deploy with Helm
 Umbrella chart `deploy/helm/hoops`; values `values.yaml` (defaults), `values-kind.yaml`, git-ignored `values-local.yaml`.
 Image per service: `core|game|athlete.image.repository` and `.tag`.
@@ -196,7 +226,8 @@ Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned 
 | UBI openjdk-21-runtime tag + digest | `deploy/containers/service.Containerfile` | registry (skopeo) |
 | nginx-unprivileged tag (even minors) | `deploy/containers/web.Containerfile` | registry |
 | redis, redpanda (tag + digest), mailpit | `deploy/helm/hoops/values.yaml` | registry |
-| Trivy tag | `ci.yml`, `images.yml` | Docker Hub |
+| Trivy tag | `ci.yml`, `images.yml`, `scripts/sbom.sh` | Docker Hub |
+| cyclonedx-cli, ORAS tag + digest | `scripts/sbom.sh` | registry |
 | Semgrep tag + digest | `semgrep.yml` | Docker Hub |
 | ZAP `stable` digest | `ci.yml`, `scripts/zap-api-scan.sh` | ghcr.io |
 | Envoy Gateway, CloudNativePG, External Secrets | `deploy/kind/up.sh` | GitHub releases |

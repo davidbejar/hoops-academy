@@ -111,7 +111,7 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 ## V15 Secure Coding and Architecture
 | ID | Requirement | Status | Evidence |
 |---|---|---|---|
-| V15 (SBOM/inventory) | Dependency inventory and pinned versions | Partial | Maven BOM-pinned versions, Flutter `pubspec.lock`, pinned image tags (`nginx-unprivileged:1.30-alpine`, Keycloak 26.8.1, mailpit tag). No SBOM is published yet |
+| V15 (SBOM/inventory) | Dependency inventory and pinned versions | Met | WP85, ADR-0043: `images.yml` writes CycloneDX SBOMs per image (1.6 Maven, 1.7 Trivy) (services: Maven runtime dependencies via `cyclonedx-maven-plugin` 2.9.3 in the image's Maven stage + Trivy image SBOM; web: Trivy), validates them with `cyclonedx-cli` (job fails otherwise), keeps them as the artifact `sbom-<image>` and attaches them to the pushed digest as OCI referrers (ORAS); `scripts/sbom.sh`, proven locally (handover WP85). Pins: Maven BOM, `pubspec.lock`, image tags/digests (`scripts/bump-pins.sh`) |
 | V15 (isolation) | Least-privilege components | Met | Non-owner DB roles, NOBYPASSRLS (`PostgresRlsResourceTest`), non-root read-only containers (chart security assertions), NetworkPolicies |
 
 ## V16 Security Logging and Error Handling (all L2)
@@ -120,8 +120,8 @@ Legend: **Met**, **Partial**, **Gap** (open), **N/A**. Paths are relative to the
 | 16.2.1 | when/where/who/what in entries | Met | `core.audit_event` (at, tenant, actor sub + person, action, target); JSON logs with `tenantId`/`traceId` MDC (`TenantHeaderFilterTest.theBoundTenantIsInTheLoggingMdcOfTheRequest`, `TenantContextTest`) |
 | 16.2.2 | Synchronised time | Met (platform) | DB `now()` for audit rows; container hosts NTP |
 | 16.2.5 | Sensitive data handled in logs | Met | See V14; Problem 500 has no detail (`unexpectedExceptionIs500WithoutAnyDetail`) |
-| 16.3.1 | Authentication events logged | Partial (delegated) | Keycloak login events need `eventsEnabled` in the realm (see the realm export / handover); the services log 401s only implicitly |
-| 16.3.2 | Failed authorization logged | Gap | 403/404 decisions are not logged as security events (follow-up: a log line in the authz interceptor) |
+| 16.3.1 | Authentication events logged | Met | WP85, ADR-0043: realm `eventsEnabled` (login, logout, token, password, OTP, lockout types, failures and successes), stored 30 days, `jboss-logging` listener (failures WARN, successes INFO), admin events without representation (`RealmSecurityEventsPolicyTest`; `RealmSecurityEventsKeycloakTest` with `-Pkeycloak-it`: a failed login is a WARN `LOGIN_ERROR` line and a stored event, never the password); refused bearer tokens in the services are `invalid_token` events with the reason (`InvalidTokenEventsTest`: expired, audience, signature, garbage; `MissingSubjectTest`: no `sub`) |
+| 16.3.2 | Failed authorization logged | Met | WP85, ADR-0043: one `hoops.security` WARN event (kind, tenant, subject id, roles, route template, outcome, reason; never tokens or names) per `not_member`, `tenant_mismatch`, `role`, `fine_grained`, `realm_role`, `unauthenticated` refusal, counted in `hoops_authz_denied_total{kind}` (`AuthzDenialEventsTest`, `AuthzDenialTest`; through real endpoints: `SecurityEventsTest` in core, game and athlete); shipped with the logs over OTLP (ADR-0046) |
 | 16.3.3 | Security-relevant events (admin actions) | Met | Audit trail for members/roles, approvals, guardian links, tenant lifecycle, profile/settings/logo: `MemberResourceTest`, `GuardianLinkResourceTest`, `PlayerResourceTest`, `ApprovalRequestResourceTest`, `TenantResourceTest`, `TenantLogoResourceTest`, `PlatformTenantResourceTest` |
 | 16.3.4 | Unexpected errors logged | Met | `ProblemExceptionMappers.unexpected` logs with traceId |
 | 16.4.1 | Log injection prevented | Met | JSON formatter in prod escapes values; audit metadata is jsonb |
@@ -138,5 +138,5 @@ server-side templating/HTML sanitisation.
 - F-03 / F-07 / F-08 web logout and storage (7.4.1, 14.3.1); F-08 refresh-token rotation done in WP56.
 - 6.2.12 breached passwords (no extension, decision 39); 6.3.3 MFA optional only (decision 39). 6.2.4 password blocklist done in WP57 (ADR-0038).
 - Token audience (V9) — done in WP56 (ADR-0034).
-- 16.3.1 Keycloak events, 16.3.2 authorization-failure logging; 16.4.3 log shipping done in WP86 (ADR-0046, the backend is the environment's).
-- Production TLS certificates (the Gateway API chart supports them, ADR-0031; none issued); SBOM.
+- 16.3.1 Keycloak events and 16.3.2 authorization-failure logging done in WP85 (ADR-0043); 16.4.3 log shipping done in WP86 (ADR-0046, the backend is the environment's).
+- Production TLS certificates (the Gateway API chart supports them, ADR-0031; none issued). SBOM done in WP85 (ADR-0043; signed attestation open).
