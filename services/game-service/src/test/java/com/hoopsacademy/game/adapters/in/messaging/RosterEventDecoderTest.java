@@ -238,6 +238,16 @@ class RosterEventDecoderTest {
                 .isInstanceOfSatisfying(Decoded.Invalid.class, invalid -> assertThat(invalid.reason()).contains("topic"));
     }
 
+    @Test
+    void aLongReasonIsCutToTheParkedRecordsLimit() {
+        String topic = "core." + "x".repeat(2_000);
+
+        assertThat(decoder.decode(topic, TENANT + ":x", "{}")).isInstanceOfSatisfying(Decoded.Invalid.class,
+                invalid -> assertThat(invalid.reason()).hasSize(1_000).startsWith("unknown topic core.xxx"));
+        assertThat(decoder.decode("core.unknown", TENANT + ":x", "{}")).isInstanceOfSatisfying(Decoded.Invalid.class,
+                invalid -> assertThat(invalid.reason()).isEqualTo("unknown topic core.unknown"));
+    }
+
     private RosterEvent event(String topic, int index) {
         Decoded decoded = decode(topic, examples(topic).get(index));
         assertThat(decoded).isInstanceOf(Decoded.Valid.class);

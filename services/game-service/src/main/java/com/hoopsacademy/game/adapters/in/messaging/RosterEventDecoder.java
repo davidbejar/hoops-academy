@@ -178,8 +178,7 @@ public class RosterEventDecoder {
     }
 
     private static Decoded invalid(Optional<UUID> eventId, String reason) {
-        return new Decoded.Invalid(eventId, reason.length() <= MAX_REASON_LENGTH ? reason
-                : reason.substring(0, MAX_REASON_LENGTH));
+        return new Decoded.Invalid(eventId, reason.substring(0, Math.min(reason.length(), MAX_REASON_LENGTH)));
     }
 
     private JsonNode load(String resource) {
