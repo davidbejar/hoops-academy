@@ -275,6 +275,7 @@ so the replica stays current while REST answers.
 |---|---|---|
 | `hoops.roster.source` (`ATHLETE_ROSTER_SOURCE`) | `replica` (since WP98; `rest` before) | `replica` = RosterPort + membership from the replica; needs the consumer on (startup fails otherwise); `rest` = core's API, the fallback |
 | `hoops.roster.consumer.enabled` (`ATHLETE_ROSTER_CONSUMER_ENABLED`) | `true` | consumer of channel `core-roster` (all seven `core.*` topics), group `athlete-service.roster` |
+| `mp.messaging.incoming.core-roster.poll-timeout`, `.fetch.max.wait.ms` | `100` | ms; with the connector's 1 s default a burst was applied one topic per second (4 s of lag, WP98), as game's before WP68 |
 | `hoops.roster.replica.max-attempts` (`ATHLETE_ROSTER_REPLICA_MAX_ATTEMPTS`) | `5` | tries per record when the database fails (backoff 0.5 s, doubling); then the channel fails |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
 | `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `athlete-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-athlete-service` Secret (SCRAM-SHA-256) |

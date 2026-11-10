@@ -219,6 +219,12 @@ Applies to game and athlete alike (game `V6__replica_housekeeping.sql`, athlete 
   `ATHLETE_ROSTER_SOURCE=rest` (chart: `game.rosterSource` / `athlete.rosterSource`). No data is lost either way: the
   consumer keeps feeding the replica in both modes and core's `/internal` API is unchanged, so switching back to
   `replica` later needs no replay (run the drift check first). The REST adapter stays until a later decision removes it.
+- **Lag matters now.** The first journey run on the flipped default failed: athlete applied a guardian link 4 s after
+  core wrote it (one topic per second, the connector's 1 s poll timeout) and refused the parent in between; game, tuned
+  in WP68, took 0.25 s. athlete's consumer now polls every 100 ms as game's does (`RosterSourceDefaultsTest` checks
+  both), and the journeys wait for game and athlete to know a new academy and a new guardian link before acting there.
+  A change in core still reaches the replicas after core's poll (1 s) plus the fetch: callers that act within that
+  window on another service see the old state (Consequences above).
 - **Shared code.** `ReplicaRetention` (with `ReplicaHistory`, `ParkedPosition` and its rules test, in PIT scope) lives once
   in common-quarkus (`com.hoopsacademy.common.replica`, a plain class: core depends on the library and keeps no replica);
   game and athlete only produce it from their settings. The test broker `RosterBrokerResource` is in the common test-jar.
