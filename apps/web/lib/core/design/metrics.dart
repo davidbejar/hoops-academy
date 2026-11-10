@@ -81,6 +81,9 @@ abstract final class HoopsSize {
   /// Avatar of a list row and of the profile button.
   static const avatar = 40.0;
 
+  /// Width of the list-picker dialogs (they shrink to the screen on phones).
+  static const pickerWidth = WidthClass.readingMax / 2;
+
   /// Bottom padding of a list under an extended floating action button, so
   /// the last row is never covered by it.
   static const fabClearance = 88.0;

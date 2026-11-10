@@ -563,62 +563,29 @@ class _EligibleTeamsDialogState extends ConsumerState<EligibleTeamsDialog> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l.playerAssignToTeam),
-      content: SizedBox(
-        width: pickerDialogWidth,
-        child: FutureBuilder<List<api.EligibleTeam>>(
-          future: _teams,
-          builder: (context, snap) {
-            if (snap.hasError) return Text(AppErrorText.of(snap.error!, l));
-            final teams = snap.data;
-            if (teams == null) {
-              return const SizedBox(
-                height: HoopsSpace.xxxl,
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (teams.isEmpty) {
-              return Text(
-                l.playerNoEligibleTeams,
-                key: const Key('no-eligible-teams'),
-              );
-            }
-            return ListView(
-              shrinkWrap: true,
-              children: [
-                for (final e in teams)
-                  ListTile(
-                    key: Key('eligible-${e.team.id}'),
-                    title: Text(e.team.displayLabel),
-                    subtitle: EligibilityBadge(
-                      result: e.eligibility.result,
-                      playUpLevels: e.eligibility.playUpLevels ?? 0,
-                    ),
-                    onTap: () async {
-                      final ok = await runAction(
-                        context,
-                        () => ref
-                            .read(
-                              playerDetailProvider(widget.playerId).notifier,
-                            )
-                            .assignTo(e.team.id),
-                        success: l.rosterAssigned,
-                      );
-                      if (ok && context.mounted) Navigator.of(context).pop();
-                    },
-                  ),
-              ],
-            );
-          },
+    return PickerDialog<api.EligibleTeam>(
+      title: l.playerAssignToTeam,
+      future: _teams,
+      emptyText: l.playerNoEligibleTeams,
+      emptyKey: const Key('no-eligible-teams'),
+      itemBuilder: (context, e) => ListTile(
+        key: Key('eligible-${e.team.id}'),
+        title: Text(e.team.displayLabel),
+        subtitle: EligibilityBadge(
+          result: e.eligibility.result,
+          playUpLevels: e.eligibility.playUpLevels ?? 0,
         ),
+        onTap: () async {
+          final ok = await runAction(
+            context,
+            () => ref
+                .read(playerDetailProvider(widget.playerId).notifier)
+                .assignTo(e.team.id),
+            success: l.rosterAssigned,
+          );
+          if (ok && context.mounted) Navigator.of(context).pop();
+        },
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l.close),
-        ),
-      ],
     );
   }
 }

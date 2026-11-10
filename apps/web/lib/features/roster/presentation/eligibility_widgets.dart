@@ -92,10 +92,6 @@ class PlayUpBadge extends StatelessWidget {
   );
 }
 
-/// Width of the roster's picker dialogs (they shrink to the screen on
-/// phones).
-const pickerDialogWidth = WidthClass.readingMax / 2;
-
 extension TeamLabel on api.Team {
   String get displayLabel =>
       alias == null || alias!.isEmpty ? name : '$name ($alias)';

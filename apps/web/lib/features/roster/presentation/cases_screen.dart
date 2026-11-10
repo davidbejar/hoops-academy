@@ -121,75 +121,45 @@ class _ReassignDialog extends ConsumerStatefulWidget {
 }
 
 class _ReassignDialogState extends ConsumerState<_ReassignDialog> {
-  late final Future<List<api.EligibleTeam>> _teams = ref
+  /// The teams the player can move to: not the current one, not ineligible.
+  late final Future<List<api.EligibleTeam>> _options = ref
       .read(casesProvider.notifier)
-      .eligibleTeamsFor(widget.eligibilityCase);
+      .eligibleTeamsFor(widget.eligibilityCase)
+      .then(
+        (teams) => [
+          for (final e in teams)
+            if (e.team.id != widget.eligibilityCase.team.id &&
+                e.eligibility.result != api.EligibilityResult.INELIGIBLE)
+              e,
+        ],
+      );
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final c = widget.eligibilityCase;
-    return AlertDialog(
-      title: Text(l.caseReassignTitle(c.player.displayName)),
-      content: SizedBox(
-        width: pickerDialogWidth,
-        child: FutureBuilder<List<api.EligibleTeam>>(
-          future: _teams,
-          builder: (context, snap) {
-            if (snap.hasError) return Text(AppErrorText.of(snap.error!, l));
-            final teams = snap.data;
-            if (teams == null) {
-              return const SizedBox(
-                height: HoopsSpace.xxxl,
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            final options = [
-              for (final e in teams)
-                if (e.team.id != c.team.id &&
-                    e.eligibility.result != api.EligibilityResult.INELIGIBLE)
-                  e,
-            ];
-            if (options.isEmpty) {
-              return Text(
-                l.playerNoEligibleTeams,
-                key: const Key('no-eligible-teams'),
-              );
-            }
-            return ListView(
-              shrinkWrap: true,
-              children: [
-                Text(l.casePickTeam),
-                for (final e in options)
-                  ListTile(
-                    key: Key('reassign-to-${e.team.id}'),
-                    title: Text(e.team.displayLabel),
-                    subtitle: EligibilityBadge(
-                      result: e.eligibility.result,
-                      playUpLevels: e.eligibility.playUpLevels ?? 0,
-                    ),
-                    onTap: () async {
-                      final ok = await runAction(
-                        context,
-                        () => ref
-                            .read(casesProvider.notifier)
-                            .reassign(c, e.team.id),
-                        success: l.caseResolved,
-                      );
-                      if (ok && context.mounted) Navigator.of(context).pop();
-                    },
-                  ),
-              ],
-            );
-          },
+    return PickerDialog<api.EligibleTeam>(
+      title: l.caseReassignTitle(c.player.displayName),
+      future: _options,
+      intro: l.casePickTeam,
+      emptyText: l.playerNoEligibleTeams,
+      emptyKey: const Key('no-eligible-teams'),
+      itemBuilder: (context, e) => ListTile(
+        key: Key('reassign-to-${e.team.id}'),
+        title: Text(e.team.displayLabel),
+        subtitle: EligibilityBadge(
+          result: e.eligibility.result,
+          playUpLevels: e.eligibility.playUpLevels ?? 0,
         ),
+        onTap: () async {
+          final ok = await runAction(
+            context,
+            () => ref.read(casesProvider.notifier).reassign(c, e.team.id),
+            success: l.caseResolved,
+          );
+          if (ok && context.mounted) Navigator.of(context).pop();
+        },
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l.close),
-        ),
-      ],
     );
   }
 }

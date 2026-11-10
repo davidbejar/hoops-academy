@@ -588,7 +588,6 @@ class _PickPlayerDialog extends ConsumerStatefulWidget {
 }
 
 class _PickPlayerDialogState extends ConsumerState<_PickPlayerDialog> {
-  String _query = '';
   late Future<List<api.Player>> _players = ref
       .read(playersRepositoryProvider)
       .list();
@@ -596,72 +595,35 @@ class _PickPlayerDialogState extends ConsumerState<_PickPlayerDialog> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l.memberGuardianAdd),
-      content: SizedBox(
-        width: 360,
-        height: 360,
-        child: Column(
-          children: [
-            TextField(
-              key: const Key('pick-player-search'),
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: l.playersSearchHint,
-              ),
-              onSubmitted: (v) => setState(() {
-                _query = v;
-                _players = ref.read(playersRepositoryProvider).list(query: v);
-              }),
-            ),
-            Expanded(
-              child: FutureBuilder<List<api.Player>>(
-                key: ValueKey(_query),
-                future: _players,
-                builder: (context, snap) {
-                  if (snap.hasError) return Center(child: Text(l.errorUnknown));
-                  final players = snap.data;
-                  if (players == null)
-                    return const Center(child: CircularProgressIndicator());
-                  return ListView(
-                    children: [
-                      for (final p in players)
-                        ListRow(
-                          key: Key('pick-player-${p.id}'),
-                          leading: InitialsAvatar(
-                            name: p.displayName,
-                            size: 36,
-                          ),
-                          title: p.displayName,
-                          onTap: () async {
-                            final ok = await runAction(
-                              context,
-                              () => ref
-                                  .read(
-                                    guardianLinksProvider(
-                                      widget.guardianPersonId,
-                                    ).notifier,
-                                  )
-                                  .add(p.id),
-                            );
-                            if (ok && context.mounted)
-                              Navigator.of(context).pop();
-                          },
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
+    return PickerDialog<api.Player>(
+      title: l.memberGuardianAdd,
+      future: _players,
+      height: 360,
+      emptyText: l.noResults,
+      header: TextField(
+        key: const Key('pick-player-search'),
+        decoration: InputDecoration(
+          prefixIcon: const Icon(Icons.search),
+          hintText: l.playersSearchHint,
+        ),
+        onSubmitted: (v) => setState(
+          () => _players = ref.read(playersRepositoryProvider).list(query: v),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l.close),
-        ),
-      ],
+      itemBuilder: (context, p) => ListRow(
+        key: Key('pick-player-${p.id}'),
+        leading: InitialsAvatar(name: p.displayName, size: 36),
+        title: p.displayName,
+        onTap: () async {
+          final ok = await runAction(
+            context,
+            () => ref
+                .read(guardianLinksProvider(widget.guardianPersonId).notifier)
+                .add(p.id),
+          );
+          if (ok && context.mounted) Navigator.of(context).pop();
+        },
+      ),
     );
   }
 }

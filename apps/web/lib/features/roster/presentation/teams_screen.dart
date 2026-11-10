@@ -762,8 +762,8 @@ class _AssignPlayerDialogState extends ConsumerState<AssignPlayerDialog> {
     return AlertDialog(
       title: Text(l.rosterAssign),
       content: SizedBox(
-        width: pickerDialogWidth,
-        height: pickerDialogWidth * 7 / 6,
+        width: HoopsSize.pickerWidth,
+        height: HoopsSize.pickerWidth * 7 / 6,
         child: _selected == null
             ? Column(
                 children: [
