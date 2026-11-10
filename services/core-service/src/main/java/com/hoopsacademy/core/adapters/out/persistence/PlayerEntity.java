@@ -24,6 +24,9 @@ public class PlayerEntity {
 
     public String status;
 
+    @Column(name = "preferred_jersey_number")
+    public String preferredJerseyNumber;
+
     @Column(name = "created_at", updatable = false)
     public Instant createdAt;
 }

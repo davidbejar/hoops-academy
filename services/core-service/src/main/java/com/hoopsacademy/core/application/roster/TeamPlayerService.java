@@ -16,16 +16,20 @@ import com.hoopsacademy.core.domain.roster.TeamPlayer;
 import com.hoopsacademy.core.domain.shared.Patch;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * A team's assignments: any member lists them; ADMIN or the team's COACH renumbers and unassigns, never once the
- * team's season has ended (409 {@code SEASON_ENDED}, ADR-0042).
+ * A team's assignments: any member lists them and their taken numbers; ADMIN or the team's COACH renumbers and
+ * unassigns, never once the team's season has ended (409 {@code SEASON_ENDED}, ADR-0042).
  */
 @ApplicationScoped
 public class TeamPlayerService {
+
+    /** Contract {@code TakenJerseyNumber}. */
+    public record TakenNumber(JerseyNumber number, PlayerId player, String playerName) {}
 
     private final TeamRepository teams;
     private final TeamPlayerRepository assignments;
@@ -50,6 +54,16 @@ public class TeamPlayerService {
         List<TeamPlayer> found = assignments.ofTeam(team, includeLeft);
         Map<PlayerId, PlayerSummary> summaries = players.summaries(found.stream().map(TeamPlayer::player).toList());
         return found.stream().map(a -> view(a, summaries.get(a.player()))).toList();
+    }
+
+    /** The numbers of the team's open assignments, by value (ADR-0048). */
+    @Transactional
+    public List<TakenNumber> takenNumbers(TeamId team) {
+        requireTeam(team);
+        List<TeamPlayer> numbered = assignments.ofTeam(team, false).stream().filter(a -> a.jersey() != null).toList();
+        Map<PlayerId, PlayerSummary> summaries = players.summaries(numbered.stream().map(TeamPlayer::player).toList());
+        return numbered.stream().sorted(Comparator.comparing(TeamPlayer::jersey))
+                .map(a -> new TakenNumber(a.jersey(), a.player(), summaries.get(a.player()).displayName())).toList();
     }
 
     @Transactional

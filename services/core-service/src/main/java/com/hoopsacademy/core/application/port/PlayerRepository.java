@@ -7,6 +7,7 @@ import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.core.domain.roster.JerseyNumber;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -18,9 +19,9 @@ import java.util.Set;
 /** Player records of the bound tenant; roster facts (birth date, gender, name) come from the player's person. */
 public interface PlayerRepository {
 
-    /** What the roster needs to know about a player. */
+    /** What the roster needs to know about a player; {@code preferredJersey} may be null (ADR-0048). */
     record PlayerSummary(PlayerId id, PersonId person, String displayName, PlayerStatus status, LocalDate birthDate,
-            Gender gender, String givenName, String familyName) {
+            Gender gender, String givenName, String familyName, JerseyNumber preferredJersey) {
 
         public EligibilityCandidate candidate() {
             return new EligibilityCandidate(id, status, birthDate, gender);
@@ -63,6 +64,9 @@ public interface PlayerRepository {
     PageResult<PlayerRow> page(PlayerFilter filter, PageRequest page);
 
     void updateStatus(PlayerId player, PlayerStatus status);
+
+    /** Stores the preferred number ({@code null} clears it); no roster event, which does not carry it. */
+    void updatePreferredJersey(PlayerId player, JerseyNumber preferred);
 
     long count();
 

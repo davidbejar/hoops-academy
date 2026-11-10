@@ -1,15 +1,20 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.application.approvals.CreatePlayer;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.approvals.PlayerCommandResult;
 import com.hoopsacademy.core.application.approvals.WithdrawPlayer;
 import com.hoopsacademy.core.application.players.PlayerQueries;
+import com.hoopsacademy.core.application.players.UpdatePlayerPreference;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
+import com.hoopsacademy.core.domain.roster.JerseyNumber;
 import com.hoopsacademy.core.domain.roster.TeamId;
+import com.hoopsacademy.core.domain.shared.Patch;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -19,6 +24,7 @@ import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -27,9 +33,13 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
-/** Players: list/get with the matrix visibility, add and withdraw (ADMIN direct, COACH via approval request). */
+/**
+ * Players: list/get with the matrix visibility, the preferred jersey number, add and withdraw (ADMIN direct, COACH via
+ * approval request).
+ */
 @Path("/api/core/players")
 @Produces(MediaType.APPLICATION_JSON)
 public class PlayerResource {
@@ -37,14 +47,20 @@ public class PlayerResource {
     /** Contract {@code WithdrawPlayerRequest}. */
     public record WithdrawRequest(@Size(max = 500) String reason) {}
 
+    private static final String PREFERRED = "preferredJerseyNumber";
+    private static final java.util.regex.Pattern JERSEY = java.util.regex.Pattern.compile(Constraints.JERSEY);
+
     private final PlayerQueries queries;
     private final CreatePlayer createPlayer;
     private final WithdrawPlayer withdrawPlayer;
+    private final UpdatePlayerPreference preference;
 
-    public PlayerResource(PlayerQueries queries, CreatePlayer createPlayer, WithdrawPlayer withdrawPlayer) {
+    public PlayerResource(PlayerQueries queries, CreatePlayer createPlayer, WithdrawPlayer withdrawPlayer,
+            UpdatePlayerPreference preference) {
         this.queries = queries;
         this.createPlayer = createPlayer;
         this.withdrawPlayer = withdrawPlayer;
+        this.preference = preference;
     }
 
     @GET
@@ -62,6 +78,18 @@ public class PlayerResource {
     @Path("/{playerId}")
     public PlayerDto get(@PathParam("playerId") UUID id) {
         return PlayerDto.of(queries.get(new PlayerId(id)));
+    }
+
+    /** Contract {@code UpdatePlayerRequest} (ADR-0032 clear list). */
+    @PATCH
+    @Path("/{playerId}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public PlayerDto update(@PathParam("playerId") UUID id, @NotNull JsonNode body) {
+        PatchBody patch = PatchBody.of(body, Set.of(PREFERRED));
+        patch.allowOnly(PREFERRED, "clear");
+        Patch<JerseyNumber> preferred = patch.matching(PREFERRED, JERSEY).map(JerseyNumber::of);
+        patch.validate();
+        return PlayerDto.of(preference.preferJersey(new PlayerId(id), preferred));
     }
 
     @POST

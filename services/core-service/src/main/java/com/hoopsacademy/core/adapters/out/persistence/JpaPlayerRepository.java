@@ -6,6 +6,7 @@ import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
+import com.hoopsacademy.core.domain.roster.JerseyNumber;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import com.hoopsacademy.core.application.shared.PageRequest;
@@ -160,6 +161,13 @@ class JpaPlayerRepository implements PlayerRepository {
     }
 
     @Override
+    public void updatePreferredJersey(PlayerId player, JerseyNumber preferred) {
+        em.createQuery("select p from PlayerEntity p where p.id = :id", PlayerEntity.class)
+                .setParameter("id", player.value()).getResultStream().findFirst()
+                .ifPresent(row -> row.preferredJerseyNumber = preferred == null ? null : preferred.value());
+    }
+
+    @Override
     public long count() {
         return em.createQuery("select count(p) from PlayerEntity p", Long.class).getSingleResult();
     }
@@ -181,6 +189,7 @@ class JpaPlayerRepository implements PlayerRepository {
     private static PlayerSummary toSummary(PlayerEntity player, PersonEntity person) {
         return new PlayerSummary(new PlayerId(player.id), new PersonId(person.id),
                 person.givenName + " " + person.familyName, PlayerStatus.valueOf(player.status), person.birthDate,
-                person.gender == null ? null : Gender.valueOf(person.gender), person.givenName, person.familyName);
+                person.gender == null ? null : Gender.valueOf(person.gender), person.givenName, person.familyName,
+                JerseyNumber.ofNullable(player.preferredJerseyNumber));
     }
 }

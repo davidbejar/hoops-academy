@@ -93,6 +93,13 @@ class JpaTeamPlayerRepository implements TeamPlayerRepository {
     }
 
     @Override
+    public List<TeamPlayer> ofPlayer(PlayerId player) {
+        return em.createQuery("select a from TeamPlayerEntity a where a.playerId = :player order by a.joinedOn, a.id",
+                        TeamPlayerEntity.class)
+                .setParameter("player", player.value()).getResultStream().map(JpaTeamPlayerRepository::toDomain).toList();
+    }
+
+    @Override
     public boolean jerseyTaken(TeamId team, JerseyNumber jersey, Optional<TeamPlayerId> except) {
         UUID exceptId = except.map(TeamPlayerId::value).orElse(null);
         return em.createQuery("""

@@ -12,7 +12,10 @@ import com.hoopsacademy.core.application.port.TeamPlayerRepository;
 import com.hoopsacademy.core.application.port.TeamRepository;
 import com.hoopsacademy.core.domain.eligibility.Eligibility;
 import com.hoopsacademy.core.domain.membership.PlayerId;
+import com.hoopsacademy.core.domain.roster.JerseyCarryOver;
+import com.hoopsacademy.core.domain.roster.JerseyChoice;
 import com.hoopsacademy.core.domain.roster.JerseyNumber;
+import com.hoopsacademy.core.domain.roster.JerseySource;
 import com.hoopsacademy.core.domain.roster.Team;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamPlayer;
@@ -20,12 +23,16 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The eligibility-checked assignment command (ADMIN, or COACH of the team). INELIGIBLE → 422
  * {@code PLAYER_INELIGIBLE} with one violation per reason; PLAY_UP within the tenant limit is allowed. WP5 (approval of
- * ADD_PLAYER with a team) and case resolution (REASSIGNED) call this same command.
+ * ADD_PLAYER with a team) and case resolution (REASSIGNED) call this same command. Without a requested number the
+ * jersey is carried over ({@link JerseyCarryOver}, ADR-0048): the preferred number, else the previous one, when free.
  */
 @ApplicationScoped
 public class AssignPlayerToTeam {
@@ -36,6 +43,9 @@ public class AssignPlayerToTeam {
 
     /** Contract {@code AssignPlayerRequest}; {@code joinedOn} defaults to today in the tenant's time zone. */
     public record Assignment(TeamId team, PlayerId player, Optional<JerseyNumber> jersey, Optional<LocalDate> joinedOn) {}
+
+    /** The new assignment and the rule that chose its number (contract {@code AssignedTeamPlayer}). */
+    public record Assigned(TeamPlayerView view, JerseySource jerseySource) {}
 
     private final TeamRepository teams;
     private final TeamPlayerRepository assignments;
@@ -58,7 +68,7 @@ public class AssignPlayerToTeam {
 
     @Transactional
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
-    public TeamPlayerView assign(Assignment request) {
+    public Assigned assign(Assignment request) {
         Team team = teams.find(request.team()).orElseThrow(() -> new NotFoundException("Team not found"));
         pastSeasons.requireOpenForCoach(team);
         PlayerSummary player = players.summary(request.player())
@@ -66,7 +76,8 @@ public class AssignPlayerToTeam {
         if (assignments.findOpen(team.id(), player.id()).isPresent()) {
             throw new ConflictException("The player is already on the team", ALREADY_ON_TEAM);
         }
-        request.jersey().filter(jersey -> assignments.jerseyTaken(team.id(), jersey, Optional.empty())).ifPresent(j -> {
+        Set<JerseyNumber> taken = takenNumbers(team);
+        request.jersey().filter(taken::contains).ifPresent(j -> {
             throw new ConflictException("Jersey " + j.value() + " is already used on the team", JERSEY_TAKEN);
         });
         LocalDate today = calendar.today();
@@ -75,12 +86,19 @@ public class AssignPlayerToTeam {
         if (!verdict.allowed()) {
             throw ineligible(verdict);
         }
-        TeamPlayer assignment = TeamPlayer.assign(team.id(), player.id(), request.jersey().orElse(null), joinedOn,
+        JerseyChoice jersey = JerseyCarryOver.choose(request.jersey(), Optional.ofNullable(player.preferredJersey()),
+                assignments.ofPlayer(player.id()), taken);
+        TeamPlayer assignment = TeamPlayer.assign(team.id(), player.id(), jersey.number(), joinedOn,
                 verdict.playUpLevels());
         assignments.insert(assignment);
         statuses.rederive(List.of(player.id()), today);
-        return new TeamPlayerView(assignment, player.displayName(),
-                players.summary(player.id()).orElseThrow().status());
+        return new Assigned(new TeamPlayerView(assignment, player.displayName(),
+                players.summary(player.id()).orElseThrow().status()), jersey.source());
+    }
+
+    private Set<JerseyNumber> takenNumbers(Team team) {
+        return assignments.ofTeam(team.id(), false).stream().map(TeamPlayer::jersey).filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     static DomainRuleViolation ineligible(Eligibility verdict) {

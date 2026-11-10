@@ -65,7 +65,7 @@ public class TeamPlayerResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response assign(@PathParam("teamId") UUID team, @Valid @NotNull AssignPlayerRequest request) {
-        TeamPlayerDto created = TeamPlayerDto.of(assign.assign(new Assignment(new TeamId(team),
+        AssignedTeamPlayerDto created = AssignedTeamPlayerDto.of(assign.assign(new Assignment(new TeamId(team),
                 new PlayerId(request.playerId()), Optional.ofNullable(JerseyNumber.ofNullable(request.jerseyNumber())),
                 Optional.ofNullable(request.joinedOn()))));
         return Response.status(Response.Status.CREATED).entity(created).build();

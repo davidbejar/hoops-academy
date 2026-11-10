@@ -29,6 +29,9 @@ public interface TeamPlayerRepository {
 
     List<TeamPlayer> openOfPlayers(Collection<PlayerId> players);
 
+    /** Every assignment of the player, open or closed, to any team (the jersey carry-over, ADR-0048). */
+    List<TeamPlayer> ofPlayer(PlayerId player);
+
     boolean jerseyTaken(TeamId team, JerseyNumber jersey, Optional<TeamPlayerId> except);
 
     Map<TeamId, Long> countOpenValid(Collection<TeamId> teams);
