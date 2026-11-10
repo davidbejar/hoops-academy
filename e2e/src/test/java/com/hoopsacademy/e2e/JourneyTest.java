@@ -543,6 +543,13 @@ class JourneyTest {
         tenantB = id(t, "id");
         adminB = signIn("adminB", emailB, tenantB);
         status(adminB.get("/api/core/tenant"), 200);
+        // game and athlete read the roster from their replicas (ADR-0037, the default since WP98): until core's events
+        // about B have arrived (a second or two) B is unknown there and every call is a 404, which would make the
+        // not-found checks below pass for the wrong reason. Wait until both answer B's admin as a member.
+        await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+            assertEquals(200, adminB.get("/api/game/matches").statusCode(), "game knows academy B");
+            assertEquals(200, adminB.get("/api/athlete/training-schedules").statusCode(), "athlete knows academy B");
+        });
 
         // by id inside B's tenant: not found (never 403, never data)
         status(adminB.get("/api/core/teams/" + teamId), 404);
