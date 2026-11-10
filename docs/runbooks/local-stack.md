@@ -18,6 +18,18 @@ keeps the realm it was first started with. After a realm change re-import it:
 WP56 the token audiences and refresh-token rotation of ADR-0034); anything else in the realm file needs the re-import.
 Symptom of a realm from before WP56: every API call of the signed-in app answers 401 (`aud` lacks the service).
 
+## Podman machine (API service without idle exit)
+`podman.service` (the Docker-compatible API, a user unit in the VM) exits after 5 s idle by default; the next request
+restarts it and Testcontainers or compose see "localhost:2375 failed to respond". The fix is a drop-in with
+`--time=0`, `~core/.config/systemd/user/podman.service.d/no-timeout.conf`.
+- New machine: `podman machine init --playbook "$PWD/infra/podman/machine-playbook.yml"` writes the drop-in at first boot
+  (owner `core`). Dry run inside an existing VM: copy the file in and run
+  `ansible-playbook -i localhost, -c local --check --diff <file>` (it reports `changed=0` when the drop-in exists).
+- Existing machine: `just doctor` reads the unit with one `podman machine ssh`, writes the drop-in and reloads systemd
+  when `--time=0` is missing, and restarts the service only when no container runs; otherwise it prints that a restart
+  is pending (run `podman machine ssh 'systemctl --user restart podman.service'` in a quiet moment). It prints the
+  effective `ExecStart`.
+
 ## Entry points
 | What | URL |
 |---|---|

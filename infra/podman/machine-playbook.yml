@@ -1,0 +1,43 @@
+---
+# Ansible playbook for `podman machine init --playbook infra/podman/machine-playbook.yml` (WP93, owner decision of
+# 2026-11-07). Podman runs it once, at the first boot of the new VM, and it may run as root or as the machine user, so
+# every path is absolute and owned explicitly by `core`.
+#
+# Why: the Podman API service (podman.service, a user unit) exits after its idle timeout (5 s by default) and socket
+# activation restarts it. Under a long Testcontainers or compose session that restart drops the connection and the
+# tests fail with "localhost:2375 failed to respond". `--time=0` keeps the service running.
+#
+# An existing machine gets the same drop-in from `just doctor` (scripts/doctor.sh).
+# Verify without changing anything, inside a VM: ansible-playbook -i localhost, -c local --check --diff <this file>
+- name: Keep the Podman API service running
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    machine_user: core
+    machine_home: /var/home/core
+    dropin_dir: "{{ machine_home }}/.config/systemd/user/podman.service.d"
+  tasks:
+    - name: Create the user unit directories owned by the machine user
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ machine_user }}"
+        group: "{{ machine_user }}"
+        mode: "0755"
+      loop:
+        - "{{ machine_home }}/.config"
+        - "{{ machine_home }}/.config/systemd"
+        - "{{ machine_home }}/.config/systemd/user"
+        - "{{ dropin_dir }}"
+
+    - name: Write the no-timeout drop-in
+      ansible.builtin.copy:
+        dest: "{{ dropin_dir }}/no-timeout.conf"
+        owner: "{{ machine_user }}"
+        group: "{{ machine_user }}"
+        mode: "0644"
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/bin/podman $LOGGING system service --time=0

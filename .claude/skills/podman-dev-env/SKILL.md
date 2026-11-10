@@ -17,6 +17,10 @@ Always `source scripts/env.sh` first; `just doctor` verifies the setup.
   source `scripts/env.sh`, or the socket path changed after a machine re-init.
 - `host.docker.internal` is `host.containers.internal` under Podman. Prefer compose networks over host access.
 
+- `localhost:2375 failed to respond` mid-run: the API service idled out. It needs the `--time=0` drop-in
+  (`infra/podman/machine-playbook.yml` for `podman machine init --playbook`; `just doctor` adds it to an existing
+  machine and never restarts the service while containers run). Do not restart `podman.service` while other builds use it.
+
 ## Compose
 `podman compose` delegates to `podman-compose` (installed by bootstrap). Use `--wait` with healthchecks.
 Volumes with `:Z` labels are harmless on macOS. Never run compose from the OneDrive folder.
