@@ -259,6 +259,44 @@
   "rosterJersey": "Jersey number",
   "rosterJerseyEdit": "Change jersey number",
   "rosterJerseyEmptyHint": "Leave empty to remove the number",
+  "jerseyRuleRequested": "Jersey {number} assigned, as requested.",
+  "@jerseyRuleRequested": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "jerseyRulePreferred": "Jersey {number} assigned: the number the player prefers.",
+  "@jerseyRulePreferred": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "jerseyRulePrevious": "Jersey {number} assigned: the number from the previous team.",
+  "@jerseyRulePrevious": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "jerseyRuleNone": "No jersey number was assigned: none was requested, or the preferred one is taken. Pick one now.",
+  "jerseyTakenTitle": "Taken numbers",
+  "jerseyFreeTitle": "Free numbers",
+  "jerseyTakenBy": "{number} is taken by {name}",
+  "@jerseyTakenBy": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "rosterAssigned": "Player assigned",
   "rosterInvalid": "No longer eligible",
   "rosterEligibilityPending": "Checking eligibility…",
@@ -299,6 +337,11 @@
   "playerRequestSent": "Request sent to the administrator",
   "playerBasics": "Basic data",
   "playerNaturalCategory": "Natural category",
+  "playerPreferredJersey": "Preferred jersey number",
+  "playerPreferredJerseyWish": "Jersey number wish",
+  "playerPreferredJerseyNone": "No preferred number",
+  "playerPreferredJerseyEdit": "Change preferred number",
+  "playerPreferredJerseyWishHint": "It is a wish: the coach gives the number when the player joins a team and uses this one if it is free.",
   "playerGuardians": "Guardians",
   "playerNoGuardians": "No linked guardians",
   "playerGuardianAdd": "Add guardian",

@@ -11,7 +11,10 @@ import '../../support/pump_helpers.dart';
 /// Ana wears 7 and Leo 10 in Mini A; Mia (p3) and Dan (p4) can be assigned.
 FakeCore _core() => FakeCore(
   teams: FakeTeamsRepository(
-    teams: [team('t1', 'Mini A', players: 2), team('t2', 'Infantil', cat: u14)],
+    teams: [
+      team('t1', 'Mini A', players: 2),
+      team('t2', 'Infantil', cat: u14),
+    ],
     rosters: {
       't1': [
         teamPlayer('t1', 'p1', 'Ana Ruiz', jersey: '7'),
@@ -99,14 +102,12 @@ void main() {
 
       expect(find.byKey(const Key('jersey-field')), findsOneWidget);
       expect(find.byKey(const Key('jersey-notice')), findsOneWidget);
-      expect(
-        find.textContaining('No se asignó dorsal'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('No se asignó dorsal'), findsOneWidget);
       await tester.enterText(find.byKey(const Key('jersey-field')), '12');
       await tapKey(tester, 'form-submit');
       expect(
-        core.teams.rosters['t1']!.firstWhere((p) => p.player.id == 'p3')
+        core.teams.rosters['t1']!
+            .firstWhere((p) => p.player.id == 'p3')
             .jerseyNumber,
         '12',
       );
@@ -136,7 +137,11 @@ void main() {
   });
 
   group('jersey dialog', () {
-    Future<void> open(WidgetTester tester, FakeCore core, String playerId) async {
+    Future<void> open(
+      WidgetTester tester,
+      FakeCore core,
+      String playerId,
+    ) async {
       await pumpAs(
         tester,
         roles: {TenantRole.admin},

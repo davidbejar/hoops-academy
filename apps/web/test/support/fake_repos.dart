@@ -483,6 +483,9 @@ class FakeTeamsRepository with Faulty implements TeamsRepository {
         check(teamId, playerId, api.EligibilityResult.ELIGIBLE),
   );
 
+  /// Thrown by `setJersey` only (a clash the dialog could not see coming).
+  Object? setJerseyFailure;
+
   /// The rule `assign` reports (core 3.5.0); the number it gives is the requested one, else [carriedNumber].
   api.JerseySource assignSource = api.JerseySource.REQUESTED;
   String? carriedNumber;
@@ -521,6 +524,8 @@ class FakeTeamsRepository with Faulty implements TeamsRepository {
     String playerId,
     String? jerseyNumber,
   ) => run('setJersey', () {
+    final failure = setJerseyFailure;
+    if (failure != null) throw failure;
     final list = rosters[teamId]!;
     final i = list.indexWhere((p) => p.player.id == playerId);
     list[i] = list[i].rebuild((b) => b.jerseyNumber = jerseyNumber);

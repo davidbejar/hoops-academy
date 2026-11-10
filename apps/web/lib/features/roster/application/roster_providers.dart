@@ -168,9 +168,19 @@ class TeamDetailNotifier extends AsyncNotifier<TeamDetail> {
   Future<api.EligibilityCheck> check(String playerId) =>
       _repo.checkEligibility(teamId, playerId);
 
-  Future<void> assign(String playerId, {String? jerseyNumber}) async {
-    await _repo.assign(teamId, playerId, jerseyNumber: jerseyNumber);
+  /// Assigns the player; the answer says which rule chose the jersey number.
+  Future<api.AssignedTeamPlayer> assign(
+    String playerId, {
+    String? jerseyNumber,
+  }) async {
+    final assigned = await _repo.assign(
+      teamId,
+      playerId,
+      jerseyNumber: jerseyNumber,
+    );
     await _reload();
+    ref.invalidate(teamJerseyNumbersProvider(teamId));
+    return assigned;
   }
 
   Future<void> unassign(String playerId) async {
@@ -181,6 +191,8 @@ class TeamDetailNotifier extends AsyncNotifier<TeamDetail> {
   Future<void> setJersey(String playerId, String? jerseyNumber) async {
     await _repo.setJersey(teamId, playerId, jerseyNumber);
     await _reload();
+    ref.invalidate(teamJerseyNumbersProvider(teamId));
+    ref.invalidate(playerDetailProvider(playerId));
   }
 
   Future<void> addStaff(String personId, api.StaffRole role) async {
@@ -197,6 +209,12 @@ class TeamDetailNotifier extends AsyncNotifier<TeamDetail> {
 final teamDetailProvider =
     AsyncNotifierProvider.family<TeamDetailNotifier, TeamDetail, String>(
       TeamDetailNotifier.new,
+    );
+
+/// The numbers taken in a team with their players (the jersey dialog's list).
+final teamJerseyNumbersProvider = FutureProvider.autoDispose
+    .family<List<api.TakenJerseyNumber>, String>(
+      (ref, teamId) => ref.watch(teamsRepositoryProvider).jerseyNumbers(teamId),
     );
 
 // --------------------------------------------------------------------- players
@@ -302,12 +320,24 @@ class PlayerDetailNotifier extends AsyncNotifier<api.Player> {
       ref.read(playersRepositoryProvider).eligibleTeams(playerId, seasonId);
 
   /// Assign to a team chosen from [eligibleTeams] and refresh.
-  Future<void> assignTo(String teamId) async {
-    await ref.read(teamsRepositoryProvider).assign(teamId, playerId);
+  Future<api.AssignedTeamPlayer> assignTo(String teamId) async {
+    final assigned = await ref
+        .read(teamsRepositoryProvider)
+        .assign(teamId, playerId);
     ref.invalidateSelf();
     ref.invalidate(teamsProvider);
     ref.invalidate(playersProvider);
+    ref.invalidate(teamJerseyNumbersProvider(teamId));
     await future;
+    return assigned;
+  }
+
+  /// The number the player would like (null removes it); the detail shows the saved player.
+  Future<void> setPreferredJersey(String? number) async {
+    final saved = await ref
+        .read(playersRepositoryProvider)
+        .setPreferredJersey(playerId, number);
+    state = AsyncData(saved);
   }
 }
 

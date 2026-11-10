@@ -842,6 +842,36 @@ class AppLocalizationsId extends AppLocalizations {
   String get rosterJerseyEmptyHint => 'Kosongkan untuk menghapus nomor';
 
   @override
+  String jerseyRuleRequested(String number) {
+    return 'Nomor $number diberikan sesuai permintaan.';
+  }
+
+  @override
+  String jerseyRulePreferred(String number) {
+    return 'Nomor $number diberikan: nomor pilihan pemain.';
+  }
+
+  @override
+  String jerseyRulePrevious(String number) {
+    return 'Nomor $number diberikan: nomor dari tim sebelumnya.';
+  }
+
+  @override
+  String get jerseyRuleNone =>
+      'Belum ada nomor: tidak diminta, atau nomor pilihan sudah dipakai. Pilih sekarang.';
+
+  @override
+  String get jerseyTakenTitle => 'Nomor terpakai';
+
+  @override
+  String get jerseyFreeTitle => 'Nomor kosong';
+
+  @override
+  String jerseyTakenBy(String number, String name) {
+    return '$number dipakai $name';
+  }
+
+  @override
   String get rosterAssigned => 'Pemain ditetapkan';
 
   @override
@@ -964,6 +994,22 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get playerNaturalCategory => 'Kategori alami';
+
+  @override
+  String get playerPreferredJersey => 'Nomor punggung pilihan';
+
+  @override
+  String get playerPreferredJerseyWish => 'Keinginan nomor punggung';
+
+  @override
+  String get playerPreferredJerseyNone => 'Belum ada nomor pilihan';
+
+  @override
+  String get playerPreferredJerseyEdit => 'Ubah nomor pilihan';
+
+  @override
+  String get playerPreferredJerseyWishHint =>
+      'Ini hanya keinginan: pelatih memberi nomor saat pemain masuk tim dan memakai nomor ini jika masih kosong.';
 
   @override
   String get playerGuardians => 'Wali';

@@ -8,6 +8,7 @@ import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../health/presentation/player_health_view.dart';
+import '../../roster/presentation/preferred_jersey.dart';
 import '../../training/application/training_providers.dart';
 import '../../training/presentation/assignment_widgets.dart';
 import '../../training/presentation/assignments_screen.dart'
@@ -53,6 +54,7 @@ class _PlayerHubState extends ConsumerState<PlayerHub> {
         ],
       ),
       children: [
+        PreferredJerseyCard(playerId: id),
         Wrap(
           spacing: HoopsSpace.sm,
           runSpacing: HoopsSpace.sm,

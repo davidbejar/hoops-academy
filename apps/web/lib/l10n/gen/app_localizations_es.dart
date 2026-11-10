@@ -847,6 +847,36 @@ class AppLocalizationsEs extends AppLocalizations {
   String get rosterJerseyEmptyHint => 'Déjalo vacío para quitar el dorsal';
 
   @override
+  String jerseyRuleRequested(String number) {
+    return 'Dorsal $number asignado, el que se pidió.';
+  }
+
+  @override
+  String jerseyRulePreferred(String number) {
+    return 'Dorsal $number asignado: es el que el jugador prefería.';
+  }
+
+  @override
+  String jerseyRulePrevious(String number) {
+    return 'Dorsal $number asignado: es el que tenía en su equipo anterior.';
+  }
+
+  @override
+  String get jerseyRuleNone =>
+      'No se asignó dorsal: no se pidió ninguno o el preferido ya está ocupado. Elige uno ahora.';
+
+  @override
+  String get jerseyTakenTitle => 'Dorsales ocupados';
+
+  @override
+  String get jerseyFreeTitle => 'Dorsales libres';
+
+  @override
+  String jerseyTakenBy(String number, String name) {
+    return 'El $number lo tiene $name';
+  }
+
+  @override
   String get rosterAssigned => 'Jugador asignado';
 
   @override
@@ -970,6 +1000,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get playerNaturalCategory => 'Categoría natural';
+
+  @override
+  String get playerPreferredJersey => 'Dorsal preferido';
+
+  @override
+  String get playerPreferredJerseyWish => 'Dorsal deseado';
+
+  @override
+  String get playerPreferredJerseyNone => 'Sin dorsal preferido';
+
+  @override
+  String get playerPreferredJerseyEdit => 'Cambiar dorsal preferido';
+
+  @override
+  String get playerPreferredJerseyWishHint =>
+      'Es un deseo: el entrenador asigna el dorsal al unirse a un equipo y usa este si está libre.';
 
   @override
   String get playerGuardians => 'Tutores';

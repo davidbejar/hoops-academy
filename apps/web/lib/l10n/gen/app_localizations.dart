@@ -1618,6 +1618,48 @@ abstract class AppLocalizations {
   /// **'Déjalo vacío para quitar el dorsal'**
   String get rosterJerseyEmptyHint;
 
+  /// No description provided for @jerseyRuleRequested.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsal {number} asignado, el que se pidió.'**
+  String jerseyRuleRequested(String number);
+
+  /// No description provided for @jerseyRulePreferred.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsal {number} asignado: es el que el jugador prefería.'**
+  String jerseyRulePreferred(String number);
+
+  /// No description provided for @jerseyRulePrevious.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsal {number} asignado: es el que tenía en su equipo anterior.'**
+  String jerseyRulePrevious(String number);
+
+  /// No description provided for @jerseyRuleNone.
+  ///
+  /// In es, this message translates to:
+  /// **'No se asignó dorsal: no se pidió ninguno o el preferido ya está ocupado. Elige uno ahora.'**
+  String get jerseyRuleNone;
+
+  /// No description provided for @jerseyTakenTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsales ocupados'**
+  String get jerseyTakenTitle;
+
+  /// No description provided for @jerseyFreeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsales libres'**
+  String get jerseyFreeTitle;
+
+  /// No description provided for @jerseyTakenBy.
+  ///
+  /// In es, this message translates to:
+  /// **'El {number} lo tiene {name}'**
+  String jerseyTakenBy(String number, String name);
+
   /// No description provided for @rosterAssigned.
   ///
   /// In es, this message translates to:
@@ -1857,6 +1899,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Categoría natural'**
   String get playerNaturalCategory;
+
+  /// No description provided for @playerPreferredJersey.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsal preferido'**
+  String get playerPreferredJersey;
+
+  /// No description provided for @playerPreferredJerseyWish.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsal deseado'**
+  String get playerPreferredJerseyWish;
+
+  /// No description provided for @playerPreferredJerseyNone.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin dorsal preferido'**
+  String get playerPreferredJerseyNone;
+
+  /// No description provided for @playerPreferredJerseyEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar dorsal preferido'**
+  String get playerPreferredJerseyEdit;
+
+  /// No description provided for @playerPreferredJerseyWishHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Es un deseo: el entrenador asigna el dorsal al unirse a un equipo y usa este si está libre.'**
+  String get playerPreferredJerseyWishHint;
 
   /// No description provided for @playerGuardians.
   ///

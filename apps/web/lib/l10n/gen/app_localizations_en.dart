@@ -839,6 +839,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rosterJerseyEmptyHint => 'Leave empty to remove the number';
 
   @override
+  String jerseyRuleRequested(String number) {
+    return 'Jersey $number assigned, as requested.';
+  }
+
+  @override
+  String jerseyRulePreferred(String number) {
+    return 'Jersey $number assigned: the number the player prefers.';
+  }
+
+  @override
+  String jerseyRulePrevious(String number) {
+    return 'Jersey $number assigned: the number from the previous team.';
+  }
+
+  @override
+  String get jerseyRuleNone =>
+      'No jersey number was assigned: none was requested, or the preferred one is taken. Pick one now.';
+
+  @override
+  String get jerseyTakenTitle => 'Taken numbers';
+
+  @override
+  String get jerseyFreeTitle => 'Free numbers';
+
+  @override
+  String jerseyTakenBy(String number, String name) {
+    return '$number is taken by $name';
+  }
+
+  @override
   String get rosterAssigned => 'Player assigned';
 
   @override
@@ -961,6 +991,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playerNaturalCategory => 'Natural category';
+
+  @override
+  String get playerPreferredJersey => 'Preferred jersey number';
+
+  @override
+  String get playerPreferredJerseyWish => 'Jersey number wish';
+
+  @override
+  String get playerPreferredJerseyNone => 'No preferred number';
+
+  @override
+  String get playerPreferredJerseyEdit => 'Change preferred number';
+
+  @override
+  String get playerPreferredJerseyWishHint =>
+      'It is a wish: the coach gives the number when the player joins a team and uses this one if it is free.';
 
   @override
   String get playerGuardians => 'Guardians';

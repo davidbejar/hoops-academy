@@ -363,6 +363,44 @@
   "rosterJersey": "Dorsal",
   "rosterJerseyEdit": "Cambiar dorsal",
   "rosterJerseyEmptyHint": "Déjalo vacío para quitar el dorsal",
+  "jerseyRuleRequested": "Dorsal {number} asignado, el que se pidió.",
+  "@jerseyRuleRequested": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "jerseyRulePreferred": "Dorsal {number} asignado: es el que el jugador prefería.",
+  "@jerseyRulePreferred": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "jerseyRulePrevious": "Dorsal {number} asignado: es el que tenía en su equipo anterior.",
+  "@jerseyRulePrevious": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "jerseyRuleNone": "No se asignó dorsal: no se pidió ninguno o el preferido ya está ocupado. Elige uno ahora.",
+  "jerseyTakenTitle": "Dorsales ocupados",
+  "jerseyFreeTitle": "Dorsales libres",
+  "jerseyTakenBy": "El {number} lo tiene {name}",
+  "@jerseyTakenBy": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "rosterAssigned": "Jugador asignado",
   "rosterInvalid": "Ya no es elegible",
   "rosterEligibilityPending": "Comprobando elegibilidad…",
@@ -417,6 +455,11 @@
   "playerRequestSent": "Solicitud enviada al administrador",
   "playerBasics": "Datos básicos",
   "playerNaturalCategory": "Categoría natural",
+  "playerPreferredJersey": "Dorsal preferido",
+  "playerPreferredJerseyWish": "Dorsal deseado",
+  "playerPreferredJerseyNone": "Sin dorsal preferido",
+  "playerPreferredJerseyEdit": "Cambiar dorsal preferido",
+  "playerPreferredJerseyWishHint": "Es un deseo: el entrenador asigna el dorsal al unirse a un equipo y usa este si está libre.",
   "playerGuardians": "Tutores",
   "playerNoGuardians": "Sin tutores vinculados",
   "playerGuardianAdd": "Añadir tutor",

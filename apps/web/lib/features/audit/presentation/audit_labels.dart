@@ -40,8 +40,7 @@ extension AuditActionLabel on api.AuditAction {
     api.AuditAction.playerPeriodRejected => l.auditActionPlayerRejected,
     api.AuditAction.playerPeriodRequested => l.auditActionPlayerRequested,
     api.AuditAction.playerPeriodWithdrawn => l.auditActionPlayerWithdrawn,
-    api.AuditAction.teamPeriodRosterExported =>
-      l.auditActionTeamRosterExported,
+    api.AuditAction.teamPeriodRosterExported => l.auditActionTeamRosterExported,
     api.AuditAction.tenantPeriodCreated => l.auditActionTenantCreated,
     api.AuditAction.tenantPeriodEventsBackfilled =>
       l.auditActionTenantEventsBackfilled,

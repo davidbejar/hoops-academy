@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
@@ -98,13 +97,18 @@ void main() {
         location: '/players/p1',
       );
       await tapKey(tester, 'preferred-jersey-edit');
-      await tester.enterText(find.byKey(const Key('preferred-jersey-field')), '');
+      await tester.enterText(
+        find.byKey(const Key('preferred-jersey-field')),
+        '',
+      );
       await tapKey(tester, 'form-submit');
 
       expect(core.players.lastPreferred, ('p1', null));
     });
 
-    testWidgets('more than two digits or letters are refused', (tester) async {
+    testWidgets('letters are refused (the field stops at two characters)', (
+      tester,
+    ) async {
       final core = _core();
       await _pump(
         tester,
@@ -113,7 +117,7 @@ void main() {
         location: '/players/p1',
       );
       await tapKey(tester, 'preferred-jersey-edit');
-      for (final bad in ['123', 'ab']) {
+      for (final bad in ['ab', '1a']) {
         await tester.enterText(
           find.byKey(const Key('preferred-jersey-field')),
           bad,
@@ -151,10 +155,16 @@ void main() {
         linkedPlayerIds: const {'p1'},
       );
       expect(find.text('Dorsal deseado'), findsOneWidget);
-      expect(find.byKey(const Key('preferred-jersey-wish-hint')), findsOneWidget);
+      expect(
+        find.byKey(const Key('preferred-jersey-wish-hint')),
+        findsOneWidget,
+      );
 
       await tapKey(tester, 'preferred-jersey-edit');
-      await tester.enterText(find.byKey(const Key('preferred-jersey-field')), '5');
+      await tester.enterText(
+        find.byKey(const Key('preferred-jersey-field')),
+        '5',
+      );
       await tapKey(tester, 'form-submit');
       expect(core.players.lastPreferred, ('p1', '5'));
     });
@@ -175,7 +185,10 @@ void main() {
         findsOneWidget,
       );
       await tapKey(tester, 'preferred-jersey-edit');
-      await tester.enterText(find.byKey(const Key('preferred-jersey-field')), '');
+      await tester.enterText(
+        find.byKey(const Key('preferred-jersey-field')),
+        '',
+      );
       await tapKey(tester, 'form-submit');
       expect(core.players.lastPreferred, ('p1', null));
     });

@@ -14,6 +14,8 @@ import '../../admin/application/admin_providers.dart';
 import '../application/roster_providers.dart';
 import 'eligibility_widgets.dart';
 import 'guardian_dialog.dart';
+import 'jersey_dialog.dart' show showAssignmentOutcome;
+import 'preferred_jersey.dart';
 
 const _filterableStatuses = [
   api.PlayerStatus.ACTIVE,
@@ -369,6 +371,7 @@ class _PlayerDetailBody extends ConsumerWidget {
                 ],
               ),
             ),
+            PreferredJerseyCard(playerId: player.id),
             SectionCard(
               title: l.playerTeams,
               child: Column(
@@ -411,11 +414,17 @@ class _PlayerDetailBody extends ConsumerWidget {
                         key: const Key('player-assign'),
                         icon: const Icon(Icons.group_add_outlined),
                         label: Text(l.playerAssignToTeam),
-                        onPressed: () => showDialog<void>(
-                          context: context,
-                          builder: (_) =>
-                              EligibleTeamsDialog(playerId: player.id),
-                        ),
+                        onPressed: () async {
+                          final assigned =
+                              await showDialog<api.AssignedTeamPlayer>(
+                                context: context,
+                                builder: (_) =>
+                                    EligibleTeamsDialog(playerId: player.id),
+                              );
+                          if (assigned != null && context.mounted) {
+                            await showAssignmentOutcome(context, assigned);
+                          }
+                        },
                       ),
                     ),
                 ],
@@ -576,14 +585,13 @@ class _EligibleTeamsDialogState extends ConsumerState<EligibleTeamsDialog> {
           playUpLevels: e.eligibility.playUpLevels ?? 0,
         ),
         onTap: () async {
-          final ok = await runAction(
-            context,
-            () => ref
+          api.AssignedTeamPlayer? assigned;
+          final ok = await runAction(context, () async {
+            assigned = await ref
                 .read(playerDetailProvider(widget.playerId).notifier)
-                .assignTo(e.team.id),
-            success: l.rosterAssigned,
-          );
-          if (ok && context.mounted) Navigator.of(context).pop();
+                .assignTo(e.team.id);
+          });
+          if (ok && context.mounted) Navigator.of(context).pop(assigned);
         },
       ),
     );

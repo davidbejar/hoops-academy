@@ -17,6 +17,7 @@ import '../../health/application/health_providers.dart'
 import '../application/roster_providers.dart';
 import '../application/season_view.dart' show historicTeamsProvider;
 import 'eligibility_widgets.dart';
+import 'jersey_dialog.dart';
 
 /// Teams of the selected season (deferred module behind the Teams tab).
 class TeamsScreen extends ConsumerWidget {
@@ -330,10 +331,15 @@ class TeamDetailScreen extends ConsumerWidget {
       floatingActionButton: canEdit
           ? FloatingActionButton.extended(
               key: const Key('roster-assign'),
-              onPressed: () => showDialog<bool>(
-                context: context,
-                builder: (_) => AssignPlayerDialog(teamId: teamId),
-              ),
+              onPressed: () async {
+                final assigned = await showDialog<api.AssignedTeamPlayer>(
+                  context: context,
+                  builder: (_) => AssignPlayerDialog(teamId: teamId),
+                );
+                if (assigned != null && context.mounted) {
+                  await showAssignmentOutcome(context, assigned);
+                }
+              },
               icon: const Icon(Icons.person_add_alt),
               label: Text(l.rosterAssign),
             )
@@ -561,68 +567,12 @@ class _RosterSection extends ConsumerWidget {
       await showDialog<bool>(
         context: context,
         builder: (_) => JerseyDialog(
+          teamId: teamId,
+          playerId: tp.player.id,
           current: tp.jerseyNumber,
-          save: (jersey) => notifier.setJersey(tp.player.id, jersey),
         ),
       );
     }
-  }
-}
-
-/// Sets or removes a player's jersey number: an empty value is saved as null, which the repository sends in
-/// `clear` (ADR-0032). A failure keeps the dialog open.
-class JerseyDialog extends StatefulWidget {
-  const JerseyDialog({super.key, required this.current, required this.save});
-  final String? current;
-  final Future<void> Function(String? jersey) save;
-
-  @override
-  State<JerseyDialog> createState() => _JerseyDialogState();
-}
-
-class _JerseyDialogState extends State<JerseyDialog> {
-  final _form = GlobalKey<FormState>();
-  late final _jersey = TextEditingController(text: widget.current ?? '');
-
-  @override
-  void dispose() {
-    _jersey.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    return FormDialog(
-      title: l.rosterJerseyEdit,
-      formKey: _form,
-      onSubmit: () {
-        final text = _jersey.text.trim();
-        return runAction(
-          context,
-          () => widget.save(text.isEmpty ? null : text),
-          success: l.saved,
-        );
-      },
-      children: [
-        TextFormField(
-          key: const Key('jersey-field'),
-          controller: _jersey,
-          maxLength: 2,
-          keyboardType: TextInputType.number,
-          validator: (v) {
-            final t = (v ?? '').trim();
-            return t.isEmpty || RegExp(r'^[0-9]{1,2}$').hasMatch(t)
-                ? null
-                : l.fieldInvalidNumber;
-          },
-          decoration: InputDecoration(
-            labelText: l.rosterJersey,
-            helperText: l.rosterJerseyEmptyHint,
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -733,18 +683,16 @@ class _AssignPlayerDialogState extends ConsumerState<AssignPlayerDialog> {
 
   Future<void> _assign() async {
     setState(() => _busy = true);
-    final l = AppLocalizations.of(context);
     final jersey = _jersey.text.trim().isEmpty ? null : _jersey.text.trim();
-    final ok = await runAction(
-      context,
-      () => ref
+    api.AssignedTeamPlayer? assigned;
+    final ok = await runAction(context, () async {
+      assigned = await ref
           .read(teamDetailProvider(widget.teamId).notifier)
-          .assign(_selected!.id, jerseyNumber: jersey),
-      success: l.rosterAssigned,
-    );
+          .assign(_selected!.id, jerseyNumber: jersey);
+    });
     if (!mounted) return;
     if (ok) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(assigned);
     } else {
       setState(() => _busy = false);
     }
