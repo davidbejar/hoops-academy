@@ -169,7 +169,7 @@ class KafkaEventBrokerTest {
     @Test
     void theInjectedBrokerCreatesARealKafkaProducerFromTheSettings() {
         KafkaEventBroker broker = new KafkaEventBroker(Map.of("bootstrap.servers", "localhost:1", "max.block.ms", "100"),
-                registry, TIMEOUT, 3);
+                registry, TIMEOUT, 3, true);
         try {
             assertThatThrownBy(() -> broker.send("core.team", "t:a", "{}"))
                     .isInstanceOf(EventBroker.UnavailableException.class)
@@ -178,6 +178,32 @@ class KafkaEventBrokerTest {
         } finally {
             broker.close();
         }
+    }
+
+    @Test
+    void withEventsOffNoProducerIsEverCreatedAndASendFailsWithoutCountingAsABrokerFailure() {
+        KafkaEventBroker broker = new KafkaEventBroker(this::producer, TIMEOUT, 1, registry, false);
+
+        for (int i = 0; i < 3; i++) {
+            assertThatThrownBy(() -> broker.send("core.team", "t:a", "{}"))
+                    .isInstanceOf(EventBroker.UnavailableException.class)
+                    .hasMessageContaining("hoops.outbox.enabled=false").hasNoCause();
+        }
+
+        assertThat(created).as("no producer, so no connection attempt and no Kafka WARN line").isEmpty();
+        assertThat(resets()).as("an intended stop is not a failing producer").isZero();
+    }
+
+    @Test
+    void theInjectedBrokerWithEventsOffNeverBuildsAKafkaProducer() {
+        KafkaEventBroker broker = new KafkaEventBroker(Map.of("bootstrap.servers", "localhost:1", "max.block.ms", "100"),
+                registry, TIMEOUT, 3, false);
+
+        assertThatThrownBy(() -> broker.send("core.team", "t:a", "{}"))
+                .isInstanceOf(EventBroker.UnavailableException.class).hasNoCause();
+        assertThat(registry.find("kafka.producer.record.send.total").meter()).as("no producer metrics bound")
+                .isNull();
+        broker.close();
     }
 
     @Test
