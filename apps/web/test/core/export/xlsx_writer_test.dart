@@ -82,7 +82,7 @@ void main() {
 
   test('empty cells stay empty', () {
     final sheet = read(table);
-    expect(sheet.rows[2][1], isNull);
+    expect(sheet.rows[2][1]?.value, isNull);
   });
 
   test('the sheet name is made legal (31 characters, no : / ? * [ ] \\)', () {

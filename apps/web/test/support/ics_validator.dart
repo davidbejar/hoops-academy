@@ -87,12 +87,15 @@ List<String> validateIcs(List<int> bytes) {
     if (name == 'DTSTAMP' && !RegExp(r'^\d{8}T\d{6}Z$').hasMatch(value)) {
       problems.add('DTSTAMP must be UTC: $value');
     }
-    if ((name == 'DTSTART' || name == 'DTEND') && params.isEmpty) {
+    final inEvent = stack.isNotEmpty && stack.last == 'VEVENT';
+    if (inEvent && (name == 'DTSTART' || name == 'DTEND') && params.isEmpty) {
       if (!RegExp(r'^\d{8}T\d{6}Z$').hasMatch(value)) {
         problems.add('$name without TZID must be UTC: $value');
       }
     }
-    if ((name == 'DTSTART' || name == 'DTEND') && params.isNotEmpty) {
+    if (inEvent &&
+        (name == 'DTSTART' || name == 'DTEND') &&
+        params.isNotEmpty) {
       if (!RegExp(r'^\d{8}T\d{6}$').hasMatch(value)) {
         problems.add('$name with TZID must be local time: $value');
       }
