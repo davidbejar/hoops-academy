@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -481,20 +482,33 @@ class FakeTeamsRepository with Faulty implements TeamsRepository {
         checks['$teamId/$playerId'] ??
         check(teamId, playerId, api.EligibilityResult.ELIGIBLE),
   );
+
+  /// The rule `assign` reports (core 3.5.0); the number it gives is the requested one, else [carriedNumber].
+  api.JerseySource assignSource = api.JerseySource.REQUESTED;
+  String? carriedNumber;
+  api.AssignedTeamPlayer? lastAssigned;
+
   @override
-  Future<api.TeamPlayer> assign(
+  Future<api.AssignedTeamPlayer> assign(
     String teamId,
     String playerId, {
     String? jerseyNumber,
   }) => run('assign', () {
-    final tp = teamPlayer(
-      teamId,
-      playerId,
-      'Player $playerId',
-      jersey: jerseyNumber,
-    );
+    final number = jerseyNumber ?? carriedNumber;
+    final tp = teamPlayer(teamId, playerId, 'Player $playerId', jersey: number);
     (rosters[teamId] ??= []).add(tp);
-    return tp;
+    return lastAssigned = api.AssignedTeamPlayer(
+      (b) => b
+        ..player.replace(tp.player)
+        ..teamId = tp.teamId
+        ..jerseyNumber = tp.jerseyNumber
+        ..joinedOn = tp.joinedOn
+        ..playUpLevels = tp.playUpLevels
+        ..playerStatus = tp.playerStatus
+        ..jerseySource = jerseyNumber != null
+            ? api.JerseySource.REQUESTED
+            : assignSource,
+    );
   });
   @override
   Future<void> unassign(String teamId, String playerId) => run(
@@ -512,6 +526,35 @@ class FakeTeamsRepository with Faulty implements TeamsRepository {
     list[i] = list[i].rebuild((b) => b.jerseyNumber = jerseyNumber);
     return list[i];
   });
+
+  @override
+  Future<List<api.TakenJerseyNumber>> jerseyNumbers(String teamId) => run(
+    'jerseyNumbers',
+    () => [
+      for (final tp in rosters[teamId] ?? const <api.TeamPlayer>[])
+        if (tp.jerseyNumber != null)
+          api.TakenJerseyNumber(
+            (b) => b
+              ..jerseyNumber = tp.jerseyNumber
+              ..player.replace(tp.player),
+          ),
+    ],
+  );
+
+  /// The team and language of every roster export asked for.
+  final List<(String, String)> rosterExports = [];
+
+  /// What `exportRoster` answers (a UTF-8 CSV).
+  Uint8List rosterCsv = Uint8List.fromList(
+    utf8.encode('Role,Name\r\nPLAYER,Ana\r\n'),
+  );
+
+  @override
+  Future<Uint8List> exportRoster(String teamId, {required String language}) =>
+      run('exportRoster', () {
+        rosterExports.add((teamId, language));
+        return rosterCsv;
+      });
 }
 
 class FakePlayersRepository with Faulty implements PlayersRepository {
@@ -530,6 +573,9 @@ class FakePlayersRepository with Faulty implements PlayersRepository {
   String? newLoginPassword = 'test-temp-password-1';
   api.CreatePlayerRequest? lastCreate;
   String? withdrawn;
+
+  /// The player and number of the last `setPreferredJersey` (null number: removed).
+  (String, String?)? lastPreferred;
   api.PlayerStatus? lastStatus;
   String? lastTeamId;
 
@@ -554,6 +600,16 @@ class FakePlayersRepository with Faulty implements PlayersRepository {
   @override
   Future<api.Player> get(String playerId) =>
       run('get', () => players.firstWhere((p) => p.id == playerId));
+  @override
+  Future<api.Player> setPreferredJersey(String playerId, String? number) => run(
+    'setPreferredJersey',
+    () {
+      lastPreferred = (playerId, number);
+      final i = players.indexWhere((p) => p.id == playerId);
+      players[i] = players[i].rebuild((b) => b.preferredJerseyNumber = number);
+      return players[i];
+    },
+  );
   @override
   Future<api.PlayerCommandResult> create(api.CreatePlayerRequest request) =>
       run('create', () {

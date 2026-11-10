@@ -3096,6 +3096,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get auditTargetGuardianLink => 'Tautan wali';
 
   @override
+  String get auditTargetTeam => 'Tim';
+
+  @override
   String get auditActionAdminAdded => 'Administrator ditambahkan';
 
   @override
@@ -3110,6 +3113,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get auditActionApprovalCancelled => 'Permintaan dibatalkan';
+
+  @override
+  String get auditActionAuditExported => 'Jejak audit diekspor';
 
   @override
   String get auditActionGuardianLinkCreated => 'Tautan wali dibuat';
@@ -3154,6 +3160,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get auditActionPlayerWithdrawn => 'Pemain ditarik';
+
+  @override
+  String get auditActionTeamRosterExported => 'Daftar tim diekspor';
 
   @override
   String get auditActionTenantCreated => 'Akademi dibuat';

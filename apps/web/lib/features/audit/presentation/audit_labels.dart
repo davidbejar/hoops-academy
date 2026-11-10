@@ -18,6 +18,7 @@ extension AuditActionLabel on api.AuditAction {
       l.auditActionAdminTemporaryPasswordIssued,
     api.AuditAction.adminPeriodUpdated => l.auditActionAdminUpdated,
     api.AuditAction.approvalPeriodCancelled => l.auditActionApprovalCancelled,
+    api.AuditAction.auditPeriodExported => l.auditActionAuditExported,
     api.AuditAction.guardianLinkPeriodCreated =>
       l.auditActionGuardianLinkCreated,
     api.AuditAction.guardianLinkPeriodRemoved =>
@@ -39,6 +40,8 @@ extension AuditActionLabel on api.AuditAction {
     api.AuditAction.playerPeriodRejected => l.auditActionPlayerRejected,
     api.AuditAction.playerPeriodRequested => l.auditActionPlayerRequested,
     api.AuditAction.playerPeriodWithdrawn => l.auditActionPlayerWithdrawn,
+    api.AuditAction.teamPeriodRosterExported =>
+      l.auditActionTeamRosterExported,
     api.AuditAction.tenantPeriodCreated => l.auditActionTenantCreated,
     api.AuditAction.tenantPeriodEventsBackfilled =>
       l.auditActionTenantEventsBackfilled,
@@ -67,6 +70,7 @@ extension AuditTargetTypeLabel on api.AuditTargetType {
     api.AuditTargetType.tenant => l.auditTargetTenant,
     api.AuditTargetType.approvalRequest => l.auditTargetApprovalRequest,
     api.AuditTargetType.guardianLink => l.auditTargetGuardianLink,
+    api.AuditTargetType.team => l.auditTargetTeam,
     _ => name,
   };
 }

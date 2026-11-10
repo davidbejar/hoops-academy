@@ -5740,6 +5740,12 @@ abstract class AppLocalizations {
   /// **'Vínculo familiar'**
   String get auditTargetGuardianLink;
 
+  /// No description provided for @auditTargetTeam.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipo'**
+  String get auditTargetTeam;
+
   /// No description provided for @auditActionAdminAdded.
   ///
   /// In es, this message translates to:
@@ -5769,6 +5775,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Solicitud cancelada'**
   String get auditActionApprovalCancelled;
+
+  /// No description provided for @auditActionAuditExported.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro de auditoría exportado'**
+  String get auditActionAuditExported;
 
   /// No description provided for @auditActionGuardianLinkCreated.
   ///
@@ -5853,6 +5865,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Jugador dado de baja'**
   String get auditActionPlayerWithdrawn;
+
+  /// No description provided for @auditActionTeamRosterExported.
+  ///
+  /// In es, this message translates to:
+  /// **'Plantilla del equipo exportada'**
+  String get auditActionTeamRosterExported;
 
   /// No description provided for @auditActionTenantCreated.
   ///

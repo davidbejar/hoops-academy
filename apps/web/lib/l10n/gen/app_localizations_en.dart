@@ -3098,6 +3098,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get auditTargetGuardianLink => 'Guardian link';
 
   @override
+  String get auditTargetTeam => 'Team';
+
+  @override
   String get auditActionAdminAdded => 'Administrator added';
 
   @override
@@ -3112,6 +3115,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get auditActionApprovalCancelled => 'Request cancelled';
+
+  @override
+  String get auditActionAuditExported => 'Audit trail exported';
 
   @override
   String get auditActionGuardianLinkCreated => 'Guardian link created';
@@ -3156,6 +3162,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get auditActionPlayerWithdrawn => 'Player withdrawn';
+
+  @override
+  String get auditActionTeamRosterExported => 'Team roster exported';
 
   @override
   String get auditActionTenantCreated => 'Academy created';

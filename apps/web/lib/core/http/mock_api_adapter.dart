@@ -235,6 +235,7 @@ class MockApiAdapter implements HttpClientAdapter {
       path: path,
       query: options.queryParameters,
       body: body,
+      language: options.headers['Accept-Language'] as String?,
     );
     _platformLog.record(method, path, options.queryParameters, body, result);
     return _result(
@@ -250,6 +251,7 @@ class MockApiAdapter implements HttpClientAdapter {
       Headers.contentTypeHeader: [
         result.status >= 400 ? 'application/problem+json' : result.contentType,
       ],
+      for (final e in result.headers.entries) e.key: [e.value],
     },
   );
 
@@ -371,6 +373,7 @@ class _Academy {
         query: r.query,
         body: r.body,
         bytes: r.bytes,
+        language: r.language,
       );
     }
     return null;

@@ -48,7 +48,10 @@ void main() {
     test('only one or two digits are accepted', () async {
       final players = ApiPlayersRepository(clientFor(['ADMIN']), t);
       for (final bad in ['123', 'a', '']) {
-        await expectLater(players.setPreferredJersey('p-eva', bad), status(400));
+        await expectLater(
+          players.setPreferredJersey('p-eva', bad),
+          status(400),
+        );
       }
     });
 
@@ -94,15 +97,18 @@ void main() {
       expect(assigned.jerseyNumber, '3');
     });
 
-    test('a preferred number that is taken falls back to the previous', () async {
-      final client = clientFor(['ADMIN']);
-      await ApiPlayersRepository(client, t).setPreferredJersey('p-leo', '9');
-      final assigned = await ApiTeamsRepository(
-        client,
-        t,
-      ).assign('team-inf-a', 'p-leo');
-      expect(assigned.jerseySource, api.JerseySource.PREVIOUS);
-    });
+    test(
+      'a preferred number that is taken falls back to the previous',
+      () async {
+        final client = clientFor(['ADMIN']);
+        await ApiPlayersRepository(client, t).setPreferredJersey('p-leo', '9');
+        final assigned = await ApiTeamsRepository(
+          client,
+          t,
+        ).assign('team-inf-a', 'p-leo');
+        expect(assigned.jerseySource, api.JerseySource.PREVIOUS);
+      },
+    );
 
     test('a requested number is used, a taken one is a 409', () async {
       final teams = ApiTeamsRepository(clientFor(['ADMIN']), t);
@@ -169,8 +175,9 @@ void main() {
             teamId: 'team-mini-a',
             acceptLanguage: 'es',
           );
-      final text = utf8.decode(response.data!);
-      expect(text.startsWith('\u{feff}'), isTrue);
+      final bytes = response.data!;
+      final text = utf8.decode(bytes);
+      expect(bytes.take(3), [0xEF, 0xBB, 0xBF]);
       expect(text, contains('Ana'));
       expect(text, contains('\r\n'));
       expect(response.headers.value('content-type'), startsWith('text/csv'));
@@ -181,35 +188,39 @@ void main() {
       expect(response.headers.value('cache-control'), 'no-store');
     });
 
-    test('the roster is for the admin and the coach of the team only', () async {
-      Future<void> roster(List<String> roles, String team) => ApiTeamsRepository(
-        clientFor(roles),
-        t,
-      ).exportRoster(team, language: 'en');
+    test(
+      'the roster is for the admin and the coach of the team only',
+      () async {
+        Future<void> roster(List<String> roles, String team) =>
+            ApiTeamsRepository(
+              clientFor(roles),
+              t,
+            ).exportRoster(team, language: 'en');
 
-      await roster(['COACH'], 'team-mini-a');
-      await expectLater(roster(['COACH'], 'team-inf-a'), status(403));
-      await expectLater(roster(['ASSISTANT_COACH'], 'team-mini-a'), status(403));
-      await expectLater(roster(['PARENT'], 'team-mini-a'), status(403));
-    });
+        await roster(['COACH'], 'team-mini-a');
+        await expectLater(roster(['COACH'], 'team-inf-a'), status(403));
+        await expectLater(
+          roster(['ASSISTANT_COACH'], 'team-mini-a'),
+          status(403),
+        );
+        await expectLater(roster(['PARENT'], 'team-mini-a'), status(403));
+      },
+    );
 
     test('the academy audit trail is for the admin only', () async {
-      final bytes = await ApiAuditRepository(
-        clientFor(['ADMIN']),
-      ).exportAcademy(t, const AuditQuery(), language: 'en');
+      final bytes = await ApiAuditRepository(clientFor(['ADMIN']))
+          .exportAcademy(t, const AuditQuery(), language: 'en');
       expect(utf8.decode(bytes), contains('member.invited'));
       await expectLater(
-        ApiAuditRepository(
-          clientFor(['COACH']),
-        ).exportAcademy(t, const AuditQuery(), language: 'en'),
+        ApiAuditRepository(clientFor(['COACH']))
+            .exportAcademy(t, const AuditQuery(), language: 'en'),
         status(403),
       );
     });
 
     test('the platform audit trail is a CSV too', () async {
-      final bytes = await ApiAuditRepository(
-        clientFor(['ADMIN']),
-      ).exportPlatform(const AuditQuery(), language: 'en');
+      final bytes = await ApiAuditRepository(clientFor(['ADMIN']))
+          .exportPlatform(const AuditQuery(), language: 'en');
       expect(bytes, isNotEmpty);
     });
   });

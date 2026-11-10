@@ -1,4 +1,5 @@
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/clear_list.dart';
 
 /// Players (`/api/core/players*`).
 abstract class PlayersRepository {
@@ -16,6 +17,9 @@ abstract class PlayersRepository {
     String playerId,
     String seasonId,
   );
+
+  /// The number a player would like (core 3.5.0); null removes it (named in `clear`, ADR-0032).
+  Future<api.Player> setPreferredJersey(String playerId, String? number);
 }
 
 class ApiPlayersRepository implements PlayersRepository {
@@ -69,4 +73,20 @@ class ApiPlayersRepository implements PlayersRepository {
     playerId: playerId,
     seasonId: seasonId,
   )).data!.toList();
+
+  @override
+  Future<api.Player> setPreferredJersey(
+    String playerId,
+    String? number,
+  ) async => (await _api.updatePlayer(
+    xTenantId: _t,
+    playerId: playerId,
+    updatePlayerRequest: api.UpdatePlayerRequest(
+      (b) => b
+        ..preferredJerseyNumber = number
+        ..clear = clearList({
+          api.UpdatePlayerRequestClearEnum.preferredJerseyNumber: number,
+        }),
+    ),
+  )).data!;
 }

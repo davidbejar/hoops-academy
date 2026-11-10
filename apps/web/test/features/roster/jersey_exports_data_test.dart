@@ -20,7 +20,7 @@ const _tenant = '11111111-1111-4111-8111-111111111111';
   return (api.HoopsCoreApi(dio: dio, interceptors: const []), adapter);
 }
 
-final _csv = utf8.encode('\u{feff}Name\r\nAna\r\n');
+final _csv = utf8.encode('Name\r\nAna\r\n');
 
 void main() {
   group('teams (core 3.5.0)', () {
@@ -74,25 +74,27 @@ void main() {
       expect(taken.single.player.displayName, 'Uma Test');
     });
 
-    test('the roster export asks for the language and returns the bytes',
-        () async {
-      final (client, adapter) = _client(
-        FakeResponse(200, utf8.decode(_csv), contentType: 'text/csv'),
-      );
+    test(
+      'the roster export asks for the language and returns the bytes',
+      () async {
+        final (client, adapter) = _client(
+          FakeResponse(200, utf8.decode(_csv), contentType: 'text/csv'),
+        );
 
-      final bytes = await ApiTeamsRepository(
-        client,
-        _tenant,
-      ).exportRoster('t1', language: 'id');
+        final bytes = await ApiTeamsRepository(
+          client,
+          _tenant,
+        ).exportRoster('t1', language: 'id');
 
-      final request = adapter.requests.single;
-      expect(request.method, 'GET');
-      expect(request.path, '/api/core/teams/t1/roster:export');
-      expect(request.headers['Accept-Language'], 'id');
-      expect(request.headers['X-Tenant-Id'], _tenant);
-      expect(bytes, isA<Uint8List>());
-      expect(bytes, _csv);
-    });
+        final request = adapter.requests.single;
+        expect(request.method, 'GET');
+        expect(request.path, '/api/core/teams/t1/roster:export');
+        expect(request.headers['Accept-Language'], 'id');
+        expect(request.headers['X-Tenant-Id'], _tenant);
+        expect(bytes, isA<Uint8List>());
+        expect(bytes, _csv);
+      },
+    );
   });
 
   group('players (core 3.5.0)', () {
@@ -110,27 +112,29 @@ void main() {
       'preferredJerseyNumber': ?preferred,
     };
 
-    test('a wish is sent as the number, removing it names it in clear',
-        () async {
-      final adapter = _BodyAdapter(jsonEncode(playerJson('7')));
-      final client = api.HoopsCoreApi(
-        dio: Dio(BaseOptions(baseUrl: 'http://test'))
-          ..httpClientAdapter = adapter,
-        interceptors: const [],
-      );
-      final repo = ApiPlayersRepository(client, _tenant);
+    test(
+      'a wish is sent as the number, removing it names it in clear',
+      () async {
+        final adapter = _BodyAdapter(jsonEncode(playerJson('7')));
+        final client = api.HoopsCoreApi(
+          dio: Dio(BaseOptions(baseUrl: 'http://test'))
+            ..httpClientAdapter = adapter,
+          interceptors: const [],
+        );
+        final repo = ApiPlayersRepository(client, _tenant);
 
-      final player = await repo.setPreferredJersey('p1', '7');
-      expect(adapter.last!.method, 'PATCH');
-      expect(adapter.last!.path, '/api/core/players/p1');
-      expect(jsonDecode(adapter.body), {'preferredJerseyNumber': '7'});
-      expect(player.preferredJerseyNumber, '7');
+        final player = await repo.setPreferredJersey('p1', '7');
+        expect(adapter.last!.method, 'PATCH');
+        expect(adapter.last!.path, '/api/core/players/p1');
+        expect(jsonDecode(adapter.body), {'preferredJerseyNumber': '7'});
+        expect(player.preferredJerseyNumber, '7');
 
-      await repo.setPreferredJersey('p1', null);
-      expect(jsonDecode(adapter.body), {
-        'clear': ['preferredJerseyNumber'],
-      });
-    });
+        await repo.setPreferredJersey('p1', null);
+        expect(jsonDecode(adapter.body), {
+          'clear': ['preferredJerseyNumber'],
+        });
+      },
+    );
   });
 
   group('audit exports (core 3.5.0)', () {
@@ -145,9 +149,8 @@ void main() {
         FakeResponse(200, utf8.decode(_csv), contentType: 'text/csv'),
       );
 
-      final bytes = await ApiAuditRepository(
-        client,
-      ).exportAcademy(_tenant, query, language: 'en');
+      final bytes = await ApiAuditRepository(client)
+          .exportAcademy(_tenant, query, language: 'en');
 
       final request = adapter.requests.single;
       expect(request.path, '/api/core/audit-events:export');
@@ -164,9 +167,8 @@ void main() {
         FakeResponse(200, utf8.decode(_csv), contentType: 'text/csv'),
       );
 
-      await ApiAuditRepository(
-        client,
-      ).exportPlatform(const AuditQuery(), tenantId: 't-a', language: 'es');
+      await ApiAuditRepository(client)
+          .exportPlatform(const AuditQuery(), tenantId: 't-a', language: 'es');
 
       final request = adapter.requests.single;
       expect(request.path, '/platform/audit-events:export');

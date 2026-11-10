@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/clear_list.dart';
 
@@ -21,7 +23,9 @@ abstract class TeamsRepository {
   Future<void> removeStaff(String teamId, String personId);
 
   Future<api.EligibilityCheck> checkEligibility(String teamId, String playerId);
-  Future<api.TeamPlayer> assign(
+
+  /// The answer says which rule chose the jersey number (`jerseySource`, core 3.5.0).
+  Future<api.AssignedTeamPlayer> assign(
     String teamId,
     String playerId, {
     String? jerseyNumber,
@@ -34,6 +38,12 @@ abstract class TeamsRepository {
     String playerId,
     String? jerseyNumber,
   );
+
+  /// The numbers taken in the team, with their players, ordered by value.
+  Future<List<api.TakenJerseyNumber>> jerseyNumbers(String teamId);
+
+  /// The roster as the server's CSV file (ADMIN, COACH of the team), headers in [language].
+  Future<Uint8List> exportRoster(String teamId, {required String language});
 }
 
 class ApiTeamsRepository implements TeamsRepository {
@@ -121,7 +131,7 @@ class ApiTeamsRepository implements TeamsRepository {
   )).data!;
 
   @override
-  Future<api.TeamPlayer> assign(
+  Future<api.AssignedTeamPlayer> assign(
     String teamId,
     String playerId, {
     String? jerseyNumber,
@@ -160,5 +170,22 @@ class ApiTeamsRepository implements TeamsRepository {
           api.UpdateTeamPlayerRequestClearEnum.jerseyNumber: jerseyNumber,
         }),
     ),
+  )).data!;
+
+  @override
+  Future<List<api.TakenJerseyNumber>> jerseyNumbers(String teamId) async =>
+      (await _api.listTeamJerseyNumbers(
+        xTenantId: _t,
+        teamId: teamId,
+      )).data!.toList();
+
+  @override
+  Future<Uint8List> exportRoster(
+    String teamId, {
+    required String language,
+  }) async => (await _api.exportTeamRoster(
+    xTenantId: _t,
+    teamId: teamId,
+    acceptLanguage: language,
   )).data!;
 }

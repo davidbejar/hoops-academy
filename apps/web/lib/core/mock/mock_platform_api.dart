@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'mock_core_api.dart';
 import 'mock_query.dart';
 
@@ -464,6 +467,7 @@ class MockPlatformApi {
     required String path,
     required Map<String, dynamic> query,
     Object? body,
+    String? language,
   }) {
     final seg = path
         .split('/')
@@ -474,6 +478,9 @@ class MockPlatformApi {
     final b = body is Map ? body.cast<String, Object?>() : <String, Object?>{};
 
     if (seg[1] == 'audit-events' && method == 'GET') return _auditList(q);
+    if (seg[1] == 'audit-events:export' && method == 'GET') {
+      return _auditExport(q, language);
+    }
     if (seg[1] == 'academy-requests') return _requestRoute(method, seg, q, b);
     if (seg[1] == 'users' && seg.length == 2 && method == 'GET') {
       return _userList(q);
@@ -892,22 +899,76 @@ class MockPlatformApi {
 
   // ------------------------------------------------------------------ audit
   MockResult _auditList(MockQuery q) {
+    final (items, problem) = _auditMatching(q);
+    return problem ?? q.page(items, defaultSize: 50);
+  }
+
+  /// `GET /platform/audit-events:export` (core 3.5.0): the filtered trail as CSV, not one page.
+  MockResult _auditExport(MockQuery q, String? language) {
+    final (items, problem) = _auditMatching(q);
+    if (problem != null) return problem;
+    final lang = (language ?? 'en').toLowerCase();
+    final header = lang.startsWith('es')
+        ? ['Fecha', 'Academia', 'Acción', 'Autor']
+        : lang.startsWith('id')
+        ? ['Waktu', 'Akademi', 'Tindakan', 'Pelaku']
+        : ['When', 'Academy', 'Action', 'Actor'];
+    String cell(Object? v) {
+      final text = '${v ?? ''}';
+      return text.contains(RegExp('[",\\r\\n]'))
+          ? '"${text.replaceAll('"', '""')}"'
+          : text;
+    }
+
+    final rows = [
+      header,
+      for (final e in items.cast<Map<String, Object?>>())
+        [
+          e['at'],
+          e['tenantName'],
+          e['action'],
+          (e['actor']! as Map)['displayName'],
+        ].map((v) => '${v ?? ''}').toList(),
+    ];
+    final text =
+        '\u{feff}${rows.map((r) => r.map(cell).join(',')).join('\r\n')}\r\n';
+    final day = DateTime.now()
+        .toIso8601String()
+        .substring(0, 10)
+        .replaceAll('-', '');
+    return MockResult.bytes(
+      200,
+      Uint8List.fromList(utf8.encode(text)),
+      'text/csv; charset=utf-8',
+      headers: {
+        'content-disposition':
+            'attachment; filename="hoops-platform-audit-$day.csv"',
+        'cache-control': 'no-store',
+      },
+    );
+  }
+
+  (List<Map<String, Object?>>, MockResult?) _auditMatching(MockQuery q) {
     final tenantId = q.text('tenantId');
-    if (tenantId != null && _find(tenantId) == null)
-      return mockProblem(404, 'Not found');
+    if (tenantId != null && _find(tenantId) == null) {
+      return (const [], mockProblem(404, 'Not found'));
+    }
     final from = q.instant('from');
     final to = q.instant('to');
-    if (from != null && to != null && !from.isBefore(to))
-      return mockProblem(400, 'Bad Request');
+    if (from != null && to != null && !from.isBefore(to)) {
+      return (const [], mockProblem(400, 'Bad Request'));
+    }
     final actions = q.set('action');
-    final items = [
-      for (final e in _audit)
-        if ((tenantId == null || e['tenantId'] == tenantId) &&
-            (actions.isEmpty || actions.contains(e['action'])) &&
-            (from == null || !DateTime.parse('${e['at']}').isBefore(from)) &&
-            (to == null || DateTime.parse('${e['at']}').isBefore(to)))
-          e,
-    ];
-    return q.page(items, defaultSize: 50);
+    return (
+      [
+        for (final e in _audit)
+          if ((tenantId == null || e['tenantId'] == tenantId) &&
+              (actions.isEmpty || actions.contains(e['action'])) &&
+              (from == null || !DateTime.parse('${e['at']}').isBefore(from)) &&
+              (to == null || DateTime.parse('${e['at']}').isBefore(to)))
+            e,
+      ],
+      null,
+    );
   }
 }

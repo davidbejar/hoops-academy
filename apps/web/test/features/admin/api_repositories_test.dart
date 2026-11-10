@@ -126,6 +126,7 @@ void main() {
         'joinedOn': '2026-09-01',
         'playUpLevels': 0,
         'playerStatus': 'ACTIVE',
+        'jerseySource': 'REQUESTED',
       },
     );
     await ApiTeamsRepository(

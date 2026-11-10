@@ -207,6 +207,7 @@ class AuditEntryTile extends StatelessWidget {
     api.AuditTargetType.tenant => Icons.business_outlined,
     api.AuditTargetType.approvalRequest => Icons.how_to_reg_outlined,
     api.AuditTargetType.guardianLink => Icons.family_restroom_outlined,
+    api.AuditTargetType.team => Icons.groups_outlined,
     _ => Icons.person_outline,
   };
 }

@@ -3116,6 +3116,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get auditTargetGuardianLink => 'Vínculo familiar';
 
   @override
+  String get auditTargetTeam => 'Equipo';
+
+  @override
   String get auditActionAdminAdded => 'Administrador añadido';
 
   @override
@@ -3130,6 +3133,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get auditActionApprovalCancelled => 'Solicitud cancelada';
+
+  @override
+  String get auditActionAuditExported => 'Registro de auditoría exportado';
 
   @override
   String get auditActionGuardianLinkCreated => 'Vínculo familiar creado';
@@ -3174,6 +3180,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get auditActionPlayerWithdrawn => 'Jugador dado de baja';
+
+  @override
+  String get auditActionTeamRosterExported => 'Plantilla del equipo exportada';
 
   @override
   String get auditActionTenantCreated => 'Academia creada';

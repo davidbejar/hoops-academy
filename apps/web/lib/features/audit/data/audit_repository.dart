@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:built_collection/built_collection.dart';
 
 import '../../../core/api/api.dart' as api;
@@ -8,6 +10,18 @@ import '../domain/audit_entry.dart';
 abstract class AuditRepository {
   Future<AuditPage> academy(String tenantId, AuditQuery query);
   Future<AuditPage> platform(AuditQuery query, {String? tenantId});
+
+  /// The server's CSV of everything the filters select, not one page (core 3.5.0); headers in [language].
+  Future<Uint8List> exportAcademy(
+    String tenantId,
+    AuditQuery query, {
+    required String language,
+  });
+  Future<Uint8List> exportPlatform(
+    AuditQuery query, {
+    String? tenantId,
+    required String language,
+  });
 }
 
 class ApiAuditRepository implements AuditRepository {
@@ -57,6 +71,32 @@ class ApiAuditRepository implements AuditRepository {
         ),
     ]);
   }
+
+  @override
+  Future<Uint8List> exportAcademy(
+    String tenantId,
+    AuditQuery query, {
+    required String language,
+  }) async => (await _audit.exportAuditEvents(
+    xTenantId: tenantId,
+    from: query.fromInstant,
+    to: query.toInstant,
+    action: _actions(query),
+    acceptLanguage: language,
+  )).data!;
+
+  @override
+  Future<Uint8List> exportPlatform(
+    AuditQuery query, {
+    String? tenantId,
+    required String language,
+  }) async => (await _platform.exportPlatformAuditEvents(
+    tenantId: tenantId,
+    from: query.fromInstant,
+    to: query.toInstant,
+    action: _actions(query),
+    acceptLanguage: language,
+  )).data!;
 
   static BuiltList<api.AuditAction>? _actions(AuditQuery query) =>
       query.actions.isEmpty ? null : BuiltList<api.AuditAction>(query.actions);

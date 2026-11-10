@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/audit/application/audit_providers.dart';
@@ -69,6 +72,31 @@ class FakeAuditRepository with Faulty implements AuditRepository {
         platformQueries.add((tenantId, query));
         return _page(query);
       });
+
+  /// The query and language of every export asked for (`platform` ones carry the academy filter).
+  final List<(String?, AuditQuery, String)> academyExports = [];
+  final List<(String?, AuditQuery, String)> platformExports = [];
+  Uint8List csv = Uint8List.fromList(utf8.encode('When,Action\r\n'));
+
+  @override
+  Future<Uint8List> exportAcademy(
+    String tenantId,
+    AuditQuery query, {
+    required String language,
+  }) => run('exportAcademy', () {
+    academyExports.add((tenantId, query, language));
+    return csv;
+  });
+
+  @override
+  Future<Uint8List> exportPlatform(
+    AuditQuery query, {
+    String? tenantId,
+    required String language,
+  }) => run('exportPlatform', () {
+    platformExports.add((tenantId, query, language));
+    return csv;
+  });
 
   List<Override> get overrides => [
     auditRepositoryProvider.overrideWithValue(this),

@@ -77,6 +77,9 @@ class MockCoreApi {
   final Map<String, List<Map<String, Object?>>> _staff = {};
   var _seq = 100;
 
+  /// `Accept-Language` of the call being handled (the CSV exports follow it).
+  String? _language;
+
   static const meId = '00000000-0000-4000-8000-0000000000a1';
   static const ownTeamId = 'team-mini-a';
   static const pastTeamId = 'team-mini-a-2025';
@@ -527,6 +530,162 @@ class MockCoreApi {
     };
   }
 
+  /// The numbers taken in [teamId] (open assignments), by value then length, with their players.
+  List<Map<String, Object?>> _takenNumbers(String teamId) {
+    final taken = <Map<String, Object?>>[
+      for (final p in _players)
+        for (final a in (p['teams']! as List).cast<Map<String, Object?>>())
+          if ((a['team'] as Map)['id'] == teamId && a['jerseyNumber'] != null)
+            {
+              'jerseyNumber': a['jerseyNumber'],
+              'player': _ref(p['id']! as String, p['displayName']! as String),
+            },
+    ];
+    taken.sort((a, b) {
+      final x = a['jerseyNumber']! as String;
+      final y = b['jerseyNumber']! as String;
+      final byValue = int.parse(x).compareTo(int.parse(y));
+      return byValue != 0 ? byValue : x.length.compareTo(y.length);
+    });
+    return taken;
+  }
+
+  /// `POST /teams/{id}/players`: requested number (taken: 409), else the preferred one, else the number the player
+  /// had in another team, each only when free; otherwise none (core 3.5.0 `jerseySource`).
+  MockResult _assignWithRule(
+    String teamId,
+    String playerId,
+    String? requested,
+  ) {
+    final p = _playerById(playerId);
+    final taken = {
+      for (final t in _takenNumbers(teamId))
+        if ((t['player']! as Map)['id'] != playerId) t['jerseyNumber'],
+    };
+    if (requested != null && taken.contains(requested)) {
+      return const MockResult.json(409, {
+        'type': 'urn:hoops:problem:mock',
+        'title': 'Jersey number taken',
+        'status': 409,
+        'code': 'TEAM_PLAYER_CONFLICT',
+      });
+    }
+    final preferred = p['preferredJerseyNumber'] as String?;
+    final previous = [
+      for (final a in (p['teams']! as List).cast<Map<String, Object?>>())
+        if ((a['team'] as Map)['id'] != teamId && a['jerseyNumber'] != null)
+          a['jerseyNumber']! as String,
+    ].lastOrNull;
+    final (number, source) = switch ((requested, preferred, previous)) {
+      (final String r, _, _) => (r, 'REQUESTED'),
+      (_, final String f, _) when !taken.contains(f) => (f, 'PREFERRED'),
+      (_, _, final String v) when !taken.contains(v) => (v, 'PREVIOUS'),
+      _ => (null, 'NONE'),
+    };
+    return MockResult.json(201, {
+      ..._assign(teamId, playerId, number),
+      'jerseySource': source,
+    });
+  }
+
+  /// `PATCH /players/{id}`: the preferred number (`^[0-9]{1,2}$`), by an admin, a coach, a linked parent or the
+  /// player; an assistant coach is refused.
+  MockResult _updatePlayer(Map<String, Object?> p, Map<String, Object?> b) {
+    final id = p['id']! as String;
+    final may =
+        authz.admin ||
+        roles.contains('COACH') ||
+        authz.linkedPlayerIds.contains(id) ||
+        authz.selfPlayerIds.contains(id);
+    if (!may) return _forbidden;
+    final number = b['preferredJerseyNumber'];
+    if (number != null && !RegExp(r'^[0-9]{1,2}$').hasMatch('$number')) {
+      return mockProblem(400, 'Bad Request');
+    }
+    final error = mockApplyUpdate(
+      p,
+      b,
+      clearable: const {'preferredJerseyNumber'},
+    );
+    if (error != null) return error;
+    if (p['preferredJerseyNumber'] == null) p.remove('preferredJerseyNumber');
+    return MockResult.json(200, _playerJson(p));
+  }
+
+  // ------------------------------------------------------------ CSV exports (core 3.5.0)
+  static const _bom = '\u{feff}';
+
+  MockResult _csv(String name, List<List<String>> rows) {
+    String cell(String v) =>
+        v.contains(RegExp('[",\r\n]')) ? '"${v.replaceAll('"', '""')}"' : v;
+    final text = _bom + rows.map((r) => r.map(cell).join(',')).join('\r\n');
+    final day = DateTime.now()
+        .toIso8601String()
+        .substring(0, 10)
+        .replaceAll('-', '');
+    return MockResult.bytes(
+      200,
+      Uint8List.fromList(utf8.encode('$text\r\n')),
+      'text/csv; charset=utf-8',
+      headers: {
+        'content-disposition':
+            'attachment; filename="hoops-demo-$name-$day.csv"',
+        'cache-control': 'no-store',
+      },
+    );
+  }
+
+  String get _lang {
+    final l = (_language ?? 'en').toLowerCase();
+    return l.startsWith('es') ? 'es' : (l.startsWith('id') ? 'id' : 'en');
+  }
+
+  MockResult _exportRoster(String teamId) {
+    final team = _teams.where((t) => t['id'] == teamId).firstOrNull;
+    if (team == null) return _notFound;
+    final coachOfTeam =
+        roles.contains('COACH') &&
+        (authz.staffTeamIds.contains(teamId) ||
+            authz.historicStaffTeamIds.contains(teamId));
+    if (!authz.admin && !coachOfTeam) return _forbidden;
+    final header = switch (_lang) {
+      'es' => ['Rol', 'Nombre', 'Apellidos', 'Dorsal'],
+      'id' => ['Peran', 'Nama depan', 'Nama belakang', 'Nomor'],
+      _ => ['Role', 'Given name', 'Family name', 'Jersey'],
+    };
+    final rows = [
+      for (final p in _players)
+        for (final a in (p['teams']! as List).cast<Map<String, Object?>>())
+          if ((a['team'] as Map)['id'] == teamId)
+            [
+              'PLAYER',
+              p['givenName']! as String,
+              p['familyName']! as String,
+              '${a['jerseyNumber'] ?? ''}',
+            ],
+    ];
+    final slug = (team['name']! as String).toLowerCase().replaceAll(' ', '-');
+    return _csv('roster-$slug', [header, ...rows]);
+  }
+
+  MockResult _exportAudit(String tenantId) {
+    final header = switch (_lang) {
+      'es' => ['Fecha', 'Acción', 'Autor', 'Objetivo'],
+      'id' => ['Waktu', 'Tindakan', 'Pelaku', 'Sasaran'],
+      _ => ['When', 'Action', 'Actor', 'Target'],
+    };
+    final rows = [
+      for (final e in _auditEvents(tenantId).cast<Map<String, Object?>>())
+        [
+          e['at']! as String,
+          e['action']! as String,
+          '${(e['actor']! as Map)['displayName'] ?? ''}',
+          '${(e['target']! as Map)['displayName'] ?? ''}',
+        ],
+    ];
+    return _csv('audit', [header, ...rows]);
+  }
+
   Map<String, Object?> _assign(String teamId, String playerId, String? jersey) {
     final p = _playerById(playerId);
     final t = _teamById(teamId);
@@ -604,7 +763,9 @@ class MockCoreApi {
     required Map<String, dynamic> query,
     Object? body,
     Uint8List? bytes,
+    String? language,
   }) {
+    _language = language;
     final seg = path
         .split('/')
         .where((s) => s.isNotEmpty)
@@ -760,6 +921,8 @@ class MockCoreApi {
         return _players_(method, id, sub, query, b);
       case 'approval-requests':
         return _approvals_(method, id, sub, query, b);
+      case 'audit-events:export':
+        if (id == null && is_('GET')) return _exportAudit(tenantId);
       case 'audit-events':
         if (id == null && is_('GET'))
           return MockResult.json(200, _page(_auditEvents(tenantId)));
@@ -779,7 +942,7 @@ class MockCoreApi {
           final c = _cases.where((c) => c['id'] == id).firstOrNull;
           if (c == null || !_mayReadCase(c)) return _notFound;
           if (b['resolution'] == 'REASSIGNED') {
-            _assign(
+            _assignWithRule(
               b['targetTeamId']! as String,
               (c['player']! as Map)['id']! as String,
               null,
@@ -827,12 +990,16 @@ class MockCoreApi {
     final allowed = switch (res) {
       'tenant' || 'seasons' || 'age-categories' => !write,
       'guardian-links' => !write && a.roles.contains('PARENT'),
-      'members' || 'guardians' || 'audit-events' => false,
+      'members' ||
+      'guardians' ||
+      'audit-events' ||
+      'audit-events:export' => false,
       'approval-requests' => a.staff && !write,
       'eligibility-cases' => a.coachRole,
       'teams' =>
         !write || (sub == 'players' && id != null && a.canManageTeam(id)),
-      'players' => !write || a.coachRole,
+      // the preferred number is also written by a linked parent and the player himself (checked in `_players_`)
+      'players' => !write || a.coachRole || (method == 'PATCH' && sub == null),
       _ => true,
     };
     return allowed ? null : _forbidden;
@@ -1087,7 +1254,9 @@ class MockCoreApi {
       return MockResult.json(201, t);
     }
     final t = _teams.where((t) => t['id'] == id).firstOrNull;
-    if (t == null || (method == 'GET' && !authz.canSeeTeam(id!)))
+    // the roster export answers 403, not 404, to a member who may not export this team
+    if (t == null ||
+        (method == 'GET' && sub != 'roster:export' && !authz.canSeeTeam(id!)))
       return _notFound;
     if (sub == null && method == 'GET') return MockResult.json(200, t);
     if (sub == null && method == 'PATCH') {
@@ -1124,6 +1293,10 @@ class MockCoreApi {
         return const MockResult.empty(204);
       }
     }
+    if (sub == 'jersey-numbers' && method == 'GET') {
+      return MockResult.json(200, _takenNumbers(id!));
+    }
+    if (sub == 'roster:export' && method == 'GET') return _exportRoster(id!);
     if (sub == 'players') {
       final playerId = seg.length > 5 ? seg[5] : null;
       final tail = seg.length > 6 ? seg[6] : null;
@@ -1148,10 +1321,7 @@ class MockCoreApi {
             'code': 'PLAYER_INELIGIBLE',
           });
         }
-        return MockResult.json(
-          201,
-          _assign(id, pid, b['jerseyNumber'] as String?),
-        );
+        return _assignWithRule(id, pid, b['jerseyNumber'] as String?);
       }
       if (playerId != null && tail == 'eligibility' && method == 'GET') {
         if (!authz.canSeePlayer(playerId)) return _notFound;
@@ -1245,6 +1415,7 @@ class MockCoreApi {
     if (p == null || !authz.canSeePlayer(id!)) return _notFound;
     if (sub == null && method == 'GET')
       return MockResult.json(200, _playerJson(p));
+    if (sub == null && method == 'PATCH') return _updatePlayer(p, b);
     if (sub == 'eligible-teams' && method == 'GET') {
       return MockResult.json(200, [
         for (final t in _teams)

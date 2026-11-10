@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 
 /// Coarse classification the UI branches on (and localises).
@@ -74,7 +77,7 @@ class AppError implements Exception {
 
   factory AppError.fromResponse(Response<dynamic>? response) {
     final status = response?.statusCode;
-    final body = response?.data;
+    final body = _decoded(response?.data);
     final json = body is Map ? body : const <dynamic, dynamic>{};
     final rawViolations = json['violations'];
     return AppError(
@@ -95,6 +98,16 @@ class AppError implements Exception {
               ),
       ],
     );
+  }
+
+  /// A download is requested as bytes, so its Problem arrives as bytes too: read it as JSON.
+  static Object? _decoded(Object? body) {
+    if (body is! Uint8List) return body;
+    try {
+      return jsonDecode(utf8.decode(body));
+    } on FormatException {
+      return null;
+    }
   }
 
   static AppErrorKind _kindFor(int? status) {
