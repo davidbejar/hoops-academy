@@ -23,6 +23,7 @@ class ExportJob {
     required this.day,
     required this.table,
     this.ics,
+    this.notice,
   });
 
   final String slug;
@@ -30,6 +31,15 @@ class ExportJob {
   final DateTime day;
   final ExportTable table;
   final Uint8List Function()? ics;
+
+  /// A localised note to show after the download (e.g. one source of the
+  /// calendar could not be read).
+  final String? notice;
+}
+
+/// There is no data to put in the file.
+class NothingToExport implements Exception {
+  const NothingToExport();
 }
 
 sealed class ExportOutcome {
