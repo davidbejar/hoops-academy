@@ -7,6 +7,7 @@ env:
   DEMO_URL: http://example.invalid
 secretEnv:
   - {name: DEMO_PASSWORD, secretName: demo-db, key: password}
+  - {name: DEMO_OPTIONAL, secretName: demo-optional, key: token, optional: true}   # WP100: may be absent
 existingSecret: demo-extra
 route:
   hostnames: [hoops.example.test]

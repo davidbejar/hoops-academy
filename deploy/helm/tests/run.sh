@@ -129,6 +129,13 @@ ratelimited game-service-events-batch 120 20 && ok "events:batch: global rate li
 routes_to core-service-academy-requests '/platform/academy-requests' RegularExpression core-service \
   && ratelimited core-service-academy-requests 10 2 \
   && ok "academy requests (public, WP90): exact-path route, global rate limit 10/min and 2/s per client IP" || bad "academy-requests rate limit"
+# WP96/WP100: the CSV exports (one page-by-page read of up to 10,000 rows each) get the same brake, the colon or %3A form.
+for spec in 'roster-export:/api/core/teams/[^/]+/roster(:|%3[Aa])export' 'audit-export:/api/core/audit-events(:|%3[Aa])export' \
+    'platform-audit-export:/platform/audit-events(:|%3[Aa])export'; do
+  n=${spec%%:*}; p=${spec#*:}
+  routes_to "core-service-$n" "$p" RegularExpression core-service && ratelimited "core-service-$n" 10 2 \
+    && ok "$n (WP96): regex route incl. %3A, path not rewritten, global rate limit 10/min and 2/s per client IP" || bad "$n rate limit"
+done
 ratelimited demo-service-batch 120 20 "$WORK/service-all.yaml" && ratelimited demo-service-plain 10 0 "$WORK/service-all.yaml" \
   && ok "service chart: per-second rule only where rateLimits[].rps is set" || bad "service chart rps"
 # WP40 (ADR-0033): every Envoy replica shares the counters; no per-replica local limit is left in any render.
@@ -179,6 +186,21 @@ grep -q '"loginTheme": "hoops"' "$R" && doc keycloak Deployment | grep -q 'mount
   && ok "realm login theme hoops mounted from keycloak-theme ConfigMap" || bad "login theme not mounted"
 doc mailhog Service | grep -q 'port: 1025' && ok "kind: SMTP sink Service mailhog:1025 (realm smtpServer)" || bad "mailhog in kind"
 ! grep -q 'name: mailhog' "$WORK/umbrella-default.yaml" && ok "SMTP sink disabled outside kind" || bad "mailpit enabled by default"
+# WP100: core's decision e-mails (WP90) go to the same SMTP host as Keycloak's; the login link uses the public URL; the
+# password of a real server comes from the optional Secret hoops-smtp (absent on kind: the pod starts without it).
+c=$(doc core-service-env ConfigMap)
+echo "$c" | grep -qx '  SMTP_HOST: "mailhog"' && echo "$c" | grep -qx '  SMTP_PORT: "1025"' && echo "$c" | grep -qx '  SMTP_START_TLS: "OPTIONAL"' \
+  && echo "$c" | grep -qx '  MAIL_FROM: "Hoops Academy <no-reply@hoops.localhost>"' && echo "$c" | grep -qx '  HOOPS_PUBLIC_URL: "http://localhost:8090"' \
+  && ! echo "$c" | grep -q 'SMTP_PASSWORD' \
+  && doc core-service Deployment | grep -A6 -- '- name: SMTP_PASSWORD$' | grep -q 'name: hoops-smtp$' \
+  && doc core-service Deployment | grep -A6 -- '- name: SMTP_PASSWORD$' | grep -q 'optional: true$' \
+  && ok "core SMTP: mailhog:1025, STARTTLS optional, MAIL_FROM, HOOPS_PUBLIC_URL = global.publicUrl, SMTP_PASSWORD from optional Secret hoops-smtp" \
+  || bad "core SMTP env"
+doc core-service-env ConfigMap "$WORK/umbrella-tls.yaml" | grep -qx '  HOOPS_PUBLIC_URL: "https://hoops.example.test"' \
+  && ok "TLS: HOOPS_PUBLIC_URL follows global.publicUrl" || bad "TLS HOOPS_PUBLIC_URL"
+! grep -q 'optional: true' "$WORK/service-defaults.yaml" && doc demo-service Deployment "$WORK/service-all.yaml" | grep -A6 -- '- name: DEMO_OPTIONAL$' | grep -q 'optional: true$' \
+  && [ "$(grep -c 'optional: true' "$R")" = 1 ] \
+  && ok "service chart: secretEnv[].optional renders optional: true only where set" || bad "secretEnv optional"
 
 echo "== rate limit store (WP40, ADR-0033)"
 d=$(doc ratelimit-redis Deployment)
@@ -295,7 +317,7 @@ for s in core game athlete; do
     && ! echo "$c" | grep -q 'KAFKA_SASL_PASSWORD' \
     && ok "events on: $u gets redpanda.hoops...:9092, SASL_PLAINTEXT, user $u, password from Secret hoops-redpanda-$u" \
     || bad "events on: $u Kafka client"
-  ! echo "$c" | grep -q '_OUTBOX_POLL_INTERVAL: "off"\|_ROSTER_CONSUMER_ENABLED: "false"' \
+  ! echo "$c" | grep -q '_OUTBOX_POLL_INTERVAL: "off"\|_OUTBOX_ENABLED: "false"\|_ROSTER_CONSUMER_ENABLED: "false"' \
     && ok "events on: $u publisher/consumer not switched off" || bad "events on: $u switched off"
   # the Secret the Deployment reads is the one secrets.sh and the ESO render create and the bootstrap Job gives the user
   grep -Eq "^basic_auth hoops-redpanda-$u +$u +REDPANDA_$(upper "$s")_SERVICE_PASSWORD$" deploy/kind/secrets.sh \
@@ -306,15 +328,19 @@ for s in core game athlete; do
     || bad "Secret hoops-redpanda-$u differs between the Deployment, secrets.sh, ESO and the bootstrap Job"
 done
 ! grep -q 'KAFKA_' "$D" && ok "events off: no KAFKA_* in any workload" || bad "events off: KAFKA_* rendered"
-doc core-service-env ConfigMap "$D" | grep -qx '  CORE_OUTBOX_POLL_INTERVAL: "off"' \
-  && ok "events off: core publisher off (CORE_OUTBOX_POLL_INTERVAL=off)" || bad "events off: core publisher"
+# WP91/WP100: hoops.outbox.enabled=false keeps core quiet without a broker (no KafkaProducer, so no NetworkClient warnings
+# about localhost:19092); the poll interval switch alone stopped the publisher job but not the producer's connection attempts.
+doc core-service-env ConfigMap "$D" | grep -qx '  CORE_OUTBOX_ENABLED: "false"' \
+  && doc core-service-env ConfigMap "$D" | grep -qx '  CORE_OUTBOX_POLL_INTERVAL: "off"' \
+  && ok "events off: core publisher and producer off (CORE_OUTBOX_ENABLED=false, CORE_OUTBOX_POLL_INTERVAL=off)" || bad "events off: core publisher"
+# Decision 66 (ADR-0037 flip, WP98/WP100): rosterSource empty = replica with events, rest without; always rendered
+# explicitly, so the services' own default (replica) never applies to a release without a broker.
 for s in game athlete; do
   doc "$s-service-env" ConfigMap "$D" | grep -qx "  $(upper "$s")_ROSTER_CONSUMER_ENABLED: \"false\"" \
     && ok "events off: $s consumer off ($(upper "$s")_ROSTER_CONSUMER_ENABLED=false)" || bad "events off: $s consumer"
-  for f in "$R" "$D"; do
-    doc "$s-service-env" ConfigMap "$f" | grep -qx "  $(upper "$s")_ROSTER_SOURCE: \"rest\"" || { bad "$s roster source in $(basename "$f")"; continue 2; }
-  done
-  ok "$s roster source rest by default and on kind"
+  doc "$s-service-env" ConfigMap "$R" | grep -qx "  $(upper "$s")_ROSTER_SOURCE: \"replica\"" \
+    && doc "$s-service-env" ConfigMap "$D" | grep -qx "  $(upper "$s")_ROSTER_SOURCE: \"rest\"" \
+    && ok "$s roster source replica with events (kind), rest without (default render)" || bad "$s roster source default"
 done
 ! grep -q 'ROSTER_SOURCE\|ROSTER_CONSUMER\|OUTBOX_POLL' "$WORK/service-defaults.yaml" && ! grep -q 'KAFKA_' "$WORK/service-defaults.yaml" \
   && ok "service chart alone: no broker client, no switches" || bad "service chart defaults carry event settings"
@@ -322,20 +348,24 @@ a=$(doc demo-service-env ConfigMap "$WORK/service-all.yaml")
 echo "$a" | grep -qx '  KAFKA_SASL_USERNAME: "demo-service"' && echo "$a" | grep -qx '  KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"' \
   && ! echo "$a" | grep -q 'DEMO_EVENTS' && doc demo-service Deployment "$WORK/service-all.yaml" | grep -A5 -- '- name: KAFKA_SASL_PASSWORD$' | grep -q 'name: hoops-redpanda-demo-service$' \
   && ok "service chart with global.events.enabled: client named after the service, events.offEnv not applied" || bad "service chart events on"
-# Cutover of one service (ADR-0037): only athlete's ConfigMap (and so its checksum) changes.
-helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set athlete.rosterSource=replica > "$WORK/extra/replica.yaml"
-doc athlete-service-env ConfigMap "$WORK/extra/replica.yaml" | grep -qx '  ATHLETE_ROSTER_SOURCE: "replica"' \
-  && [ "$(diff "$R" "$WORK/extra/replica.yaml" | grep -c '^[<>]')" = 4 ] \
-  && [ "$(diff "$R" "$WORK/extra/replica.yaml" | grep '^[<>]' | grep -vc 'ATHLETE_ROSTER_SOURCE\|checksum/env')" = 0 ] \
-  && ok "--set athlete.rosterSource=replica changes ATHLETE_ROSTER_SOURCE (and the pod checksum) only" || bad "athlete replica flip"
+# Rollback of one service to rest (ADR-0037 "Rollback to rest"): only athlete's ConfigMap (and so its checksum) changes;
+# an explicit replica with events renders the same as the default.
+helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set athlete.rosterSource=rest > "$WORK/extra/rest.yaml"
+helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set athlete.rosterSource=replica --set game.rosterSource=replica > "$WORK/extra/replica.yaml"
+doc athlete-service-env ConfigMap "$WORK/extra/rest.yaml" | grep -qx '  ATHLETE_ROSTER_SOURCE: "rest"' \
+  && [ "$(diff "$R" "$WORK/extra/rest.yaml" | grep -c '^[<>]')" = 4 ] \
+  && [ "$(diff "$R" "$WORK/extra/rest.yaml" | grep '^[<>]' | grep -vc 'ATHLETE_ROSTER_SOURCE\|checksum/env')" = 0 ] \
+  && diff -q "$R" "$WORK/extra/replica.yaml" >/dev/null \
+  && ok "--set athlete.rosterSource=rest changes ATHLETE_ROSTER_SOURCE (and the pod checksum) only; explicit replica = default" || bad "athlete rollback to rest"
 refused() { # message helm-args...: the render fails and names the message
   local m="$1"; shift
   ! helm template hoops "$CHART" -n hoops "$@" >/dev/null 2>"$WORK/extra/refused.txt" && grep -q -- "$m" "$WORK/extra/refused.txt"; }
 K=(-f "$CHART/values-kind.yaml")
 refused 'global.events.enabled' --set events.enabled=true && refused 'global.events.enabled' "${K[@]}" --set global.events.enabled=false \
   && ok "events.enabled and global.events.enabled must agree (broker and clients switch together)" || bad "events switch mismatch rendered"
-refused 'rosterSource' --set athlete.rosterSource=replica && refused 'rosterSource' "${K[@]}" --set game.rosterSource=cache \
-  && ok "rosterSource: rest|replica only, replica only with events" || bad "rosterSource guard"
+refused 'rosterSource' --set athlete.rosterSource=replica && refused 'rosterSource' --set game.rosterSource=replica \
+  && refused 'rosterSource' "${K[@]}" --set game.rosterSource=cache \
+  && ok "rosterSource: empty|rest|replica only, replica only with events" || bad "rosterSource guard"
 refused 'KAFKA_BOOTSTRAP_SERVERS' "${K[@]}" --set core.env.KAFKA_BOOTSTRAP_SERVERS=elsewhere:9092 \
   && refused 'KAFKA_SASL_PASSWORD' "${K[@]}" --set-json 'game.secretEnv=[{"name":"KAFKA_SASL_PASSWORD","secretName":"x","key":"password"}]' \
   && ok "events on: KAFKA_* in env/secretEnv refused (the chart sets the client)" || bad "KAFKA_* override rendered"
@@ -353,12 +383,15 @@ diff -u <(without_es "$R") <(without_es "$E") >"$WORK/eso-workloads.diff" \
   || { bad "umbrella-eso changes more than ExternalSecrets"; head -40 "$WORK/eso-workloads.diff"; }
 ! grep -q '^kind: Secret' "$E" && ! grep -q '^kind: \(Cluster\)\{0,1\}SecretStore' "$E" \
   && ok "ESO render: no Secret, no SecretStore (the store belongs to the cluster)" || bad "ESO render creates a Secret or store"
-secret_refs() { # "<secret> <key>" for every Secret key the workloads of render $1 read (env, CNPG roles and initdb)
+secret_refs() { # "<secret> <key>" for every Secret key the workloads of render $1 read (env, CNPG roles and initdb); an
+  # optional reference (secretEnv[].optional, WP100: hoops-smtp for a real SMTP server) may have no source and is skipped
   awk '
+    ref == 2 && !/^ *optional: true$/ { print pk }
+    ref == 2 { ref=0 }
     /secretKeyRef: \{name: / { n=$0; sub(/.*secretKeyRef: \{name: /, "", n); k=n; sub(/,.*/, "", n); sub(/.*key: /, "", k); sub(/\}.*/, "", k); print n, k; next }
     /^ *secretKeyRef:$/ { ref=1; next }
     ref && /^ *name: / { n=$2; next }
-    ref && /^ *key: / { print n, $2; ref=0; next }
+    ref && /^ *key: / { pk=n " " $2; ref=2; next }
     /^ *(passwordSecret|secret):$/ { basic=1; next }
     basic && /^ *name: / { print $2, "username"; print $2, "password"; basic=0 }' "$1" | sort -u; }
 es_keys() { # the keys ExternalSecret $1 (of render $E) writes: its data secretKeys and the template data keys
