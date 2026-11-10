@@ -11,6 +11,8 @@ import com.hoopsacademy.core.domain.membership.PlayerId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -83,6 +85,17 @@ class JpaGuardianLinkRepository implements GuardianLinkRepository {
                         UUID.class)
                 .setParameter("guardian", guardian.value())
                 .getResultStream().map(PlayerId::new).collect(Collectors.toSet());
+    }
+
+    @Override
+    public List<GuardianLink> ofPlayers(Collection<PlayerId> players) {
+        if (players.isEmpty()) {
+            return List.of();
+        }
+        return em.createQuery("select g from GuardianLinkEntity g where g.playerId in :players order by g.createdAt, g.id",
+                        GuardianLinkEntity.class)
+                .setParameter("players", players.stream().map(PlayerId::value).toList())
+                .getResultStream().map(JpaGuardianLinkRepository::toDomain).toList();
     }
 
     private static GuardianLink toDomain(GuardianLinkEntity row) {

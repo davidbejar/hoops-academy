@@ -9,7 +9,8 @@ public enum AuditTargetType {
     PLAYER("player"),
     TENANT("tenant"),
     APPROVAL_REQUEST("approval_request"),
-    GUARDIAN_LINK("guardian_link");
+    GUARDIAN_LINK("guardian_link"),
+    TEAM("team");
 
     private final String wireName;
 

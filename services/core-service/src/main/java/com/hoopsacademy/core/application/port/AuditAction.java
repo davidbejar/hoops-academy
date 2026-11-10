@@ -4,6 +4,7 @@ import static com.hoopsacademy.core.application.port.AuditTargetType.APPROVAL_RE
 import static com.hoopsacademy.core.application.port.AuditTargetType.GUARDIAN_LINK;
 import static com.hoopsacademy.core.application.port.AuditTargetType.PERSON;
 import static com.hoopsacademy.core.application.port.AuditTargetType.PLAYER;
+import static com.hoopsacademy.core.application.port.AuditTargetType.TEAM;
 import static com.hoopsacademy.core.application.port.AuditTargetType.TENANT;
 
 import java.util.Arrays;
@@ -21,6 +22,7 @@ public enum AuditAction {
     ADMIN_TEMPORARY_PASSWORD_ISSUED("admin.temporary_password_issued", PERSON),
     ADMIN_UPDATED("admin.updated", PERSON),
     APPROVAL_CANCELLED("approval.cancelled", APPROVAL_REQUEST),
+    AUDIT_EXPORTED("audit.exported", TENANT),
     GUARDIAN_LINK_CREATED("guardian_link.created", GUARDIAN_LINK),
     GUARDIAN_LINK_REMOVED("guardian_link.removed", GUARDIAN_LINK),
     MEMBER_DEACTIVATED("member.deactivated", PERSON),
@@ -35,6 +37,7 @@ public enum AuditAction {
     PLAYER_REJECTED("player.rejected", PLAYER),
     PLAYER_REQUESTED("player.requested", PLAYER),
     PLAYER_WITHDRAWN("player.withdrawn", PLAYER),
+    TEAM_ROSTER_EXPORTED("team.roster_exported", TEAM),
     TENANT_CREATED("tenant.created", TENANT),
     TENANT_EVENTS_BACKFILLED("tenant.events_backfilled", TENANT),
     TENANT_LOGO_REMOVED("tenant.logo_removed", TENANT),

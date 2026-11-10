@@ -33,6 +33,7 @@ appearing in all three.
 | `admin.temporary_password_issued` | person | – | super admin, re-issue for a pending administrator |
 | `admin.updated` | person | `fields` (changed field names: `givenName`, `familyName`, `email`) | super admin, `PATCH /platform/tenants/{id}/admins/{personId}` |
 | `approval.cancelled` | approval_request | `action` (`ADD_PLAYER` / `WITHDRAW_PLAYER`), `playerId` | the requester withdrew a PENDING request |
+| `audit.exported` | tenant | `rows` (rows of this academy in the file), `from`, `to` (RFC 3339, when given), `actions` (wire names, when given) | ADMIN, `GET /api/core/audit-events:export`; super admin, `GET /platform/audit-events:export` (in the trail of the academy given as `tenantId`, or of each academy with rows in the file; WP96, ADR-0048) |
 | `guardian_link.created` | guardian_link | `guardianPersonId`, `playerId` | ADMIN |
 | `guardian_link.removed` | guardian_link | – | ADMIN |
 | `member.deactivated` | person | `roles` (roles left, normally none) | ADMIN |
@@ -47,6 +48,7 @@ appearing in all three.
 | `player.rejected` | player | as `player.approved` | ADMIN decision (also an outbox event) |
 | `player.requested` | player | `approvalRequestId`, `action`, `playerId`, `status`, `requestedBy` | COACH request (also an outbox event) |
 | `player.withdrawn` | player | as `player.approved` | ADMIN withdrawal or approved WITHDRAW_PLAYER (also an outbox event) |
+| `team.roster_exported` | team | `rows` (players plus staff in the file) | ADMIN or the team's COACH, `GET /api/core/teams/{teamId}/roster:export` (WP96, ADR-0048; the file holds personal data, the row none) |
 | `tenant.created` | tenant | `slug` | super admin, onboarding |
 | `tenant.events_backfilled` | tenant | `force`, `events` (count appended), `topics` (topic names) | super admin, `POST /platform/events/backfill` (WP81) |
 | `tenant.logo_removed` | tenant | – | ADMIN |

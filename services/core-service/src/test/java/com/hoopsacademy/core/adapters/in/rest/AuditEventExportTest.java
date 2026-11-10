@@ -118,7 +118,7 @@ class AuditEventExportTest {
         CoreDb.inTenant(tenant, c -> CoreDb.update(c, """
                 insert into core.audit_event (id, tenant_id, actor_sub, action, target_type, target_id, metadata, at)
                 select gen_random_uuid(), ?, 'bulk', 'member.updated', 'person', ?, '{}'::jsonb,
-                       ? + make_interval(secs => n)
+                       cast(? as timestamptz) + make_interval(secs => n)
                   from generate_series(1, 10001) n""", UUID.fromString(tenant), coach.toString(),
                 java.sql.Timestamp.from(T0)));
 

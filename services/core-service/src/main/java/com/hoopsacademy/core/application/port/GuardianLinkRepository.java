@@ -6,6 +6,8 @@ import com.hoopsacademy.core.domain.membership.GuardianLink;
 import com.hoopsacademy.core.domain.membership.GuardianLinkId;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,4 +25,7 @@ public interface GuardianLinkRepository {
     PageResult<GuardianLink> list(Optional<PlayerId> player, Optional<PersonId> guardian, PageRequest page);
 
     Set<PlayerId> playersOf(PersonId guardian);
+
+    /** The links of these players, oldest first (the roster export, ADR-0048). */
+    List<GuardianLink> ofPlayers(Collection<PlayerId> players);
 }
