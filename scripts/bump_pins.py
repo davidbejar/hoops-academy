@@ -14,7 +14,9 @@ import sys
 import urllib.request
 from pathlib import Path
 
-SKOPEO_IMAGE = "quay.io/skopeo/stable:v1.20.0@sha256:f42bdedcd3939726c896ecad0b2fe2a4071be93a8c0ce068d78fc104b60a207c"
+SKOPEO_IMAGE = "quay.io/skopeo/stable:v1.20.0@sha256:47853bb9fb24202af9110531ebd6e43c5f97701254ca290596640290d17942f4"
+# The digest must be the multi-arch index (arm64 laptop and amd64 runner); a platform manifest fails with "Exec format
+# error" (run 42629848979). scripts/tests/test_pins_multiarch.py checks every executed pin.
 DIGEST = r"sha256:[0-9a-f]{64}"
 
 
