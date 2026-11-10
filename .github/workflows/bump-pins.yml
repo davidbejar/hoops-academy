@@ -53,7 +53,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          scripts/bump-pins.sh --apply --markdown > "$RUNNER_TEMP/table.md"
+          # Pins inside .github/workflows stay out of the PR: GITHUB_TOKEN may not push workflow files ("refusing to allow
+          # a GitHub App to create or update workflow ... without `workflows` permission"). The body lists them.
+          scripts/bump-pins.sh --apply --skip-workflows --markdown > "$RUNNER_TEMP/table.md"
+          if [ -z "$(git status --porcelain)" ]; then echo "::notice::only workflow pins are outdated: no PR"; fi
           {
             echo "Scheduled bump of the pins Dependabot does not cover (WP89). Same major only; a major is a manual change."
             echo

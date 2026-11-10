@@ -56,6 +56,16 @@ class IndexParsing(unittest.TestCase):
         self.assertIn(digest, {d for (_, d) in pins_in_repo()})
 
 
+class WorkflowPinsStayManual(unittest.TestCase):
+    def test_a_pin_in_a_workflow_file_is_by_hand_only_when_asked(self):
+        in_workflow = [p for p in bump_pins.PINS if any(f.startswith(".github/workflows/") for f in p.files)]
+        elsewhere = [p for p in bump_pins.PINS if p not in in_workflow]
+        self.assertTrue(in_workflow and elsewhere)
+        self.assertTrue(all(bump_pins.by_hand(p, True) for p in in_workflow))
+        self.assertFalse(any(bump_pins.by_hand(p, True) for p in elsewhere))
+        self.assertFalse(any(bump_pins.by_hand(p, False) for p in bump_pins.PINS))
+
+
 @unittest.skipUnless(os.environ.get("BUMP_PINS_ONLINE") == "1", "set BUMP_PINS_ONLINE=1 to inspect the registries")
 class PinsAreMultiArch(unittest.TestCase):
     def test_every_executed_pin_is_an_index_with_amd64_and_arm64(self):

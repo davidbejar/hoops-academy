@@ -180,6 +180,11 @@ def rewrite(pin, root, new):
         path.write_text(text)
 
 
+def by_hand(pin, skip_workflows):
+    """True for a pin --apply must leave alone: one of its files is a workflow and GITHUB_TOKEN may not push those."""
+    return skip_workflows and any(rel.startswith(".github/workflows/") for rel in pin.files)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     mode = ap.add_mutually_exclusive_group(required=True)
@@ -187,6 +192,8 @@ def main():
     mode.add_argument("--apply", action="store_true", help="rewrite the files")
     ap.add_argument("--major", action="store_true", help="allow major version bumps")
     ap.add_argument("--markdown", action="store_true", help="markdown table (PR body)")
+    ap.add_argument("--skip-workflows", action="store_true",
+                    help="--apply leaves pins that live in .github/workflows alone and lists them as manual")
     ap.add_argument("--root", default=str(Path(__file__).resolve().parent.parent), help="repository root to read/write")
     args = ap.parse_args()
     root, rows, failed = Path(args.root), [], False
@@ -199,17 +206,26 @@ def main():
             failed = True
             continue
         changed = new != cur
-        if changed and args.apply:
+        manual = changed and by_hand(pin, args.skip_workflows)
+        if changed and args.apply and not manual:
             rewrite(pin, root, new)
         show = lambda g: " ".join(str(g.get(k, ""))[:19] for k in ("tag", "digest") if g.get(k))  # noqa: E731
-        rows.append((pin.name, show(cur), show(new) if changed else "", link, note, ", ".join(pin.files)))
+        rows.append((pin.name, show(cur), show(new) if changed else "", link, note, ", ".join(pin.files), manual))
     outdated = [r for r in rows if r[2]]
     if args.markdown:
-        print("| Pin | Current | New | Release | Files |\n|---|---|---|---|---|")
-        for n, c, nw, link, note, files in outdated:
-            print(f"| {n} | `{c}` | `{nw}` | {link} | {files} |")
+        head = "| Pin | Current | New | Release | Files |\n|---|---|---|---|---|"
+        print(head)
+        for n, c, nw, link, note, files, manual in outdated:
+            if not manual:
+                print(f"| {n} | `{c}` | `{nw}` | {link} | {files} |")
+        if any(r[6] for r in outdated):
+            print("\n**Not in this PR, bump by hand** (workflow files: the Actions token may not push them; run "
+                  "`scripts/bump-pins.sh --apply` locally):\n\n" + head)
+            for n, c, nw, link, note, files, manual in outdated:
+                if manual:
+                    print(f"| {n} | `{c}` | `{nw}` | {link} | {files} |")
     else:
-        for n, c, nw, link, note, _ in rows:
+        for n, c, nw, link, note, _, _ in rows:
             line = f"OUTDATED {n}: {c} -> {nw}  {link}" if nw else f"ok       {n}: {c}"
             print(line + (f"  [{note}]" if note else ""))
         print(f"{len(outdated)} outdated of {len(rows)} pins")
