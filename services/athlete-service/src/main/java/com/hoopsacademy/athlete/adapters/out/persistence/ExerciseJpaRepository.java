@@ -23,7 +23,7 @@ class ExerciseJpaRepository implements ExerciseRepository {
      */
     private static final String SHOWN_TITLE = "coalesce("
             + "cast(function('jsonb_extract_path_text', e.i18n, :language, 'title') as String), "
-            + "cast(function('jsonb_extract_path_text', e.i18n, '" + ContentLocale.FALLBACK.code() + "', 'title') as String), "
+            + "cast(function('jsonb_extract_path_text', e.i18n, :fallback, 'title') as String), "
             + "e.title)";
 
     private static final String ANY_SCOPE = "ANY";
@@ -92,7 +92,8 @@ class ExerciseJpaRepository implements ExerciseRepository {
         for (var query : List.of(select, count)) {
             query.setParameter("scope", scope).setParameter("includeArchived", search.includeArchived())
                     .setParameter("hasQuery", search.query().isPresent()).setParameter("q", pattern)
-                    .setParameter("language", search.language().code());
+                    .setParameter("language", search.language().code())
+                    .setParameter("fallback", ContentLocale.FALLBACK.code());
         }
         List<Exercise> page = select.setFirstResult(PageOffset.of(search.page(), search.size()))
                 .setMaxResults(search.size()).getResultList().stream().map(ExerciseJpaRepository::toDomain).toList();

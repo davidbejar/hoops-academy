@@ -163,6 +163,14 @@
       "fingerprint": "ad078fb4517040cc",
       "reason": "Not applicable (WP90, ADR-0044): the one deliberately public operation, submitAcademyRequest (the landing's invitation request). Only this method is @PermitAll; the class stays @RolesAllowed(super_admin); the contract lists it in OpenApiConventionsTest.PUBLIC_OPERATIONS; rate-limited at the gateway, answers 202 whatever happened. Any other @PermitAll still fails the gate.",
       "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/platform/PlatformUserRepository.java",
+      "line": 53,
+      "fingerprint": "1e3af5068579288e",
+      "reason": "By design (WP91, ADR-0029 amendment, V18): the super admin's Users list runs on the platform persistence unit (core_platform, no BYPASSRLS) and binds the nil tenant transaction-locally so the tenant_isolation policies match nothing and only core_platform's own column-granted SELECT policies decide; reviewed by the orchestrator on 2026-11-10.",
+      "expires": "2027-05-06"
     }
   ]
 }
