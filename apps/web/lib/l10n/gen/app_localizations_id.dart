@@ -250,7 +250,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get navTeams => 'Tim';
 
   @override
-  String get navMatches => 'Pertandingan';
+  String get navMatches => 'Laga';
 
   @override
   String get navTraining => 'Latihan';
