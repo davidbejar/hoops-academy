@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.client.CoreMembership.TenantStatus;
+import com.hoopsacademy.common.contracts.ContractResources;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.game.application.replica.EventEnvelope;
@@ -17,9 +18,6 @@ import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,7 +25,6 @@ import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -63,7 +60,8 @@ public class RosterEventDecoder {
     public RosterEventDecoder() {
         SchemaRegistry registry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
         this.schemas = TOPICS.stream().collect(Collectors.toUnmodifiableMap(Function.identity(),
-                topic -> registry.getSchema(load("/events/" + topic + ".schema.json"))));
+                topic -> registry.getSchema(ContractResources.json(json, RosterEventDecoder.class,
+                        "/events/" + topic + ".schema.json"))));
     }
 
     /** @param value the record's value, never null (tombstones are skipped before decoding) */
@@ -180,16 +178,6 @@ public class RosterEventDecoder {
 
     private static Decoded invalid(Optional<UUID> eventId, String reason) {
         return new Decoded.Invalid(eventId, reason.substring(0, Math.min(reason.length(), MAX_REASON_LENGTH)));
-    }
-
-    private JsonNode load(String resource) {
-        try (InputStream in = RosterEventDecoder.class.getResourceAsStream(resource)) {
-            // a build without the contracts jar fails at startup, naming the resource
-            Objects.requireNonNull(in, resource + " is missing from the contracts jar");
-            return json.readTree(in);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     /** A record that matches its schema but breaks a rule the schema cannot express. */

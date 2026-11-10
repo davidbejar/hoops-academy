@@ -2,6 +2,7 @@ package com.hoopsacademy.game.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hoopsacademy.common.contracts.ContractResources;
 import com.hoopsacademy.game.adapters.json.MatchEventJson;
 import com.hoopsacademy.game.application.SubmittedEvent;
 import com.networknt.schema.Error;
@@ -9,11 +10,7 @@ import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -32,13 +29,8 @@ public class MatchEventDecoder {
     private final Schema schema;
 
     public MatchEventDecoder(ObjectMapper mapper) {
-        try (InputStream in = MatchEventDecoder.class.getResourceAsStream(SCHEMA_RESOURCE)) {
-            // a build without the contracts jar fails at startup, naming the resource
-            Objects.requireNonNull(in, SCHEMA_RESOURCE + " is not on the classpath (contracts jar)");
-            this.schema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(mapper.readTree(in));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        this.schema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12)
+                .getSchema(ContractResources.json(mapper, MatchEventDecoder.class, SCHEMA_RESOURCE));
     }
 
     public SubmittedEvent decode(JsonNode json) {

@@ -12,6 +12,7 @@ import com.hoopsacademy.athlete.domain.Gender;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
+import com.hoopsacademy.common.contracts.ContractResources;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.networknt.schema.Error;
@@ -19,9 +20,6 @@ import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -30,7 +28,6 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -59,7 +56,8 @@ public class CoreEventDecoder {
         this.mapper = mapper;
         SchemaRegistry registry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
         for (RosterTopic topic : RosterTopic.values()) {
-            schemas.put(topic, registry.getSchema(read("/events/" + topic.topicName() + ".schema.json")));
+            schemas.put(topic, registry.getSchema(ContractResources.json(mapper, CoreEventDecoder.class,
+                    "/events/" + topic.topicName() + ".schema.json")));
         }
     }
 
@@ -152,15 +150,5 @@ public class CoreEventDecoder {
 
     private static Invalid invalid(Optional<UUID> eventId, String reason) {
         return new Invalid(eventId, reason.substring(0, Math.min(reason.length(), MAX_REASON_LENGTH)));
-    }
-
-    private JsonNode read(String resource) {
-        try (InputStream in = CoreEventDecoder.class.getResourceAsStream(resource)) {
-            // a build without the contracts jar fails at startup, naming the resource
-            Objects.requireNonNull(in, resource + " is not on the classpath (contracts jar)");
-            return mapper.readTree(in);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 }

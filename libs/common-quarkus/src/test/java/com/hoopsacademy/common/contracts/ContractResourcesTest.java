@@ -26,7 +26,8 @@ class ContractResourcesTest {
 
     @Test
     void aMissingResourceFailsTheStartNamingIt() {
-        assertThatThrownBy(() -> ContractResources.json(mapper, ContractResourcesTest.class, "/events/core.nothing.json"))
+        assertThatThrownBy(() -> ContractResources.json(mapper, ContractResourcesTest.class,
+                "/events/core.nothing.json"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("/events/core.nothing.json is not on the classpath (is the contracts jar a dependency?)");
     }
