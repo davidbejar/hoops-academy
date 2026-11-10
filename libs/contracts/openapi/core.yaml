@@ -1,14 +1,15 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 3.3.0
+  version: 3.4.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
     Path families (all served by core-service):
     - `/api/core/**` — tenant API; every operation except `/api/core/me` requires `X-Tenant-Id`.
-    - `/platform/**` — platform super-admin API (realm role `super_admin`); never exposes tenant content, with one
-      documented exception: the identity of a tenant's administrators (`/platform/tenants/{tenantId}/admins`, ADR-0023).
+    - `/platform/**` — platform super-admin API (realm role `super_admin`); never exposes tenant content, with two
+      documented exceptions: the identity of a tenant's administrators (`/platform/tenants/{tenantId}/admins`, ADR-0023)
+      and every login's name and roles in each academy (`/platform/users`, core 3.4.0, ADR-0029 amendment).
     - `/internal/**` — service-to-service API (client-credentials token with role `service`), blocked at the proxy,
       marked `x-internal` so it is not generated into the Flutter client.
 
@@ -37,6 +38,10 @@ info:
     Invitation-only sign-up (ADR-0044, core 3.3.0, decisions 51 and 58): `POST /platform/academy-requests` is the one
     public operation (no sign-in); the super admin lists the requests and accepts (the academy is created with the
     requester as its first ADMIN, temporary password once) or rejects them (the reason is e-mailed).
+
+    Application admin and own name (core 3.4.0, decisions 71 and 73, WP91): `GET /platform/users` lists every login
+    across academies with its memberships (read-only); `PATCH /api/core/me` also changes the caller's own first and
+    last name in one academy (`tenantId` in the body); the e-mail stays with the academy's administrators.
 
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
@@ -470,6 +475,42 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
 
+  /platform/users:
+    get:
+      operationId: listPlatformUsers
+      tags: [Platform]
+      summary: Every login across academies, with its memberships
+      description: |
+        The application admin's Users area (decision 71): one item per login (`core.app_user`), ordered by e-mail
+        (case-insensitive; a login without e-mail last), each with its person in every academy it belongs to (any
+        academy status, active or deactivated), ordered by academy name. A login without memberships (a super admin
+        registered on first sign-in) has an empty list. `q` matches, case-insensitively and anywhere in the text, the
+        login's e-mail or a person's given name, family name or "given family" in any academy; at least 2 characters
+        (400). Whether a login holds the realm role `super_admin` is not known to core (Keycloak keeps it) and is not
+        returned. Read-only: an e-mail change or a temporary password stays with the per-academy operations
+        (`updateMember`, `updateTenantAdmin`, the temporary-password operations). Reads are not recorded in the audit
+        trail (ADR-0029 records administrative changes only). Read through the platform datasource (ADR-0029
+        amendment, WP91): it sees the id, e-mail and creation time of logins and, of persons with a login, only the
+        name, roles and active flag. Authz: super_admin.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Case-insensitive substring of the e-mail or of a person's name (at least 2 characters).
+          schema: {type: string, minLength: 2, maxLength: 100}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of logins.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlatformUserPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
   /platform/events/backfill:
     post:
       operationId: backfillRosterEvents
@@ -637,7 +678,16 @@ paths:
     patch:
       operationId: updateMe
       tags: [Me]
-      summary: Update the caller's preferences
+      summary: Update the caller's preferences and own name
+      description: |
+        `locale` is the login's language (every academy). `givenName` / `familyName` (decision 73, core 3.4.0) change
+        the caller's own person in the academy `tenantId`, which the body must then name (and may only name then):
+        400 for a name without `tenantId` or a `tenantId` without a name. The same validation and side effects as an administrator's
+        `updateMember` of that person: an audit row `member.updated` (the person as actor, the changed fields) and a
+        `core.person` event; nothing is written when the name is unchanged. The e-mail is not accepted here (400): it
+        stays with the academy's administrators. 404 when the caller is not an active member of `tenantId` or the
+        academy is not ACTIVE. The name is validated and checked for membership before the locale is stored.
+        Authz: any active member of `tenantId` (own person only); `locale` alone: any signed-in login.
       requestBody:
         required: true
         content:
@@ -2290,6 +2340,49 @@ components:
           type: array
           items: {$ref: '#/components/schemas/PlatformAuditEvent'}
         page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    PlatformUser:
+      type: object
+      description: One login (core.app_user) and its person in every academy it belongs to (core 3.4.0).
+      required: [id, createdAt, memberships]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The login, as `Me.userId` and `Member.userId`.
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: The login's e-mail (its Keycloak username).
+        createdAt: {type: string, format: date-time}
+        memberships:
+          type: array
+          items: {$ref: '#/components/schemas/PlatformUserMembership'}
+    PlatformUserMembership:
+      type: object
+      description: The login's person in one academy, as that academy stores it.
+      required: [tenantId, tenantName, tenantSlug, tenantStatus, personId, givenName, familyName, roles, active]
+      properties:
+        tenantId: {type: string, format: uuid}
+        tenantName: {type: string}
+        tenantSlug: {type: string}
+        tenantStatus: {$ref: '#/components/schemas/TenantStatus'}
+        personId: {type: string, format: uuid}
+        givenName: {type: string}
+        familyName: {type: string}
+        roles:
+          type: array
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/TenantRole'}
+        active: {type: boolean, description: False once the academy deactivated the person.}
+    PlatformUserPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PlatformUser'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
     EventBackfillRequest:
       type: object
       additionalProperties: false
@@ -2765,9 +2858,19 @@ components:
           example: Europe/Madrid
     UpdateMeRequest:
       type: object
-      required: [locale]
+      minProperties: 1
+      additionalProperties: false
+      description: |
+        At least one member. A name change needs `tenantId` (the academy of the person renamed); core 3.4.0 made
+        `locale` optional.
       properties:
         locale: {$ref: './common.yaml#/components/schemas/Locale'}
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        tenantId:
+          type: string
+          format: uuid
+          description: The academy whose person (the caller's own) gets the new name; required with a name only.
 
     # ---------------- tenant profile
     TenantProfile:
