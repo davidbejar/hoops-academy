@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-/** hoops.roster.source: rest (default) or replica; the replica needs its consumer. */
+/** hoops.roster.source: replica (default, RosterSourceDefaultsTest) or rest; the replica needs its consumer. */
 class RosterSourceTest {
 
     @Test
-    void restIsTheDefaultAndNeedsNoConsumer() {
+    void restNeedsNoConsumer() {
         assertThat(RosterSource.of("rest", false)).isEqualTo(RosterSource.REST);
         assertThat(RosterSource.of("REST", true)).isEqualTo(RosterSource.REST);
     }

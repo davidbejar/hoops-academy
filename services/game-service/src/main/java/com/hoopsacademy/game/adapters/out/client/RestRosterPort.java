@@ -18,7 +18,7 @@ import java.util.UUID;
 /**
  * {@link RosterPort} over common-quarkus' {@link CoreRosterClient} (core {@code /internal}, cached, 404 → not found,
  * anything else → 503 UPSTREAM_UNAVAILABLE); this adapter only maps to game's types. Selected by
- * {@code hoops.roster.source=rest} (the default, ADR-0037).
+ * {@code hoops.roster.source=rest} (the fallback, ADR-0037).
  */
 @ApplicationScoped
 @Typed(RestRosterPort.class)

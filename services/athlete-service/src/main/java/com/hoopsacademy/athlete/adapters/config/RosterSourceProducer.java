@@ -15,9 +15,9 @@ import org.jboss.logging.Logger;
 
 /**
  * hoops.roster.source picks the {@link RosterPort} of the use cases and the tenant filter's
- * {@link AuthzContextResolver}: core's REST API (default) or the local replica. Both adapters exist either way (the
- * replica may be warmed up by its consumer while REST still answers); only the produced beans follow the switch. A
- * replica without its consumer fails the startup.
+ * {@link AuthzContextResolver}: the local replica (default since WP98) or core's REST API (the fallback). Both adapters
+ * exist either way (the replica fills from its consumer while REST answers); only the produced beans follow the switch.
+ * A replica without its consumer fails the startup.
  */
 @ApplicationScoped
 @Startup
@@ -27,7 +27,7 @@ public class RosterSourceProducer {
 
     private final RosterSource source;
 
-    RosterSourceProducer(@ConfigProperty(name = "hoops.roster.source", defaultValue = "rest") String source,
+    RosterSourceProducer(@ConfigProperty(name = "hoops.roster.source", defaultValue = "replica") String source,
             @ConfigProperty(name = "hoops.roster.consumer.enabled", defaultValue = "true") boolean consume) {
         this.source = RosterSource.of(source, consume);
         LOG.infof("Roster source: %s (replica consumer %s)", this.source, consume ? "on" : "off");

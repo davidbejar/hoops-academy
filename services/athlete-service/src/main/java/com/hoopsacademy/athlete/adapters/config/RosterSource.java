@@ -4,9 +4,9 @@ import java.util.Locale;
 
 /** Where athlete reads core's roster and memberships from (hoops.roster.source, ADR-0037). */
 public enum RosterSource {
-    /** core's /internal REST API, cached 30 s (ADR-0008 v1). */
+    /** core's /internal REST API, cached 30 s (ADR-0008 v1); the fallback since the flip (WP98). */
     REST,
-    /** The local replica fed by core's events (needs hoops.roster.consumer.enabled=true). */
+    /** The local replica fed by core's events (needs hoops.roster.consumer.enabled=true); the default since WP98. */
     REPLICA;
 
     /** @throws IllegalStateException for an unknown source, or a replica nothing would ever fill */
