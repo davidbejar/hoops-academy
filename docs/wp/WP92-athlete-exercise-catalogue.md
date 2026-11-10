@@ -82,8 +82,25 @@ optional exercise reference, so nothing a coach wrote changes. Athlete 3.0.0.
     copy/edit/localize; `ManageExercises`, `ExerciseRepository`/JPA, `ExerciseResource`; `QuickAddItems` takes
     `FromExercise` / `FromPlan` sources. Authz: plan managers write, every role reads, globals 403 `EXERCISE_IS_GLOBAL`,
     other academies 404.
-  - **Web** (sub-agent, `features/training`, mock, l10n, goldens): red tests committed (`71e364e`); implementation was
-    still in progress and uncommitted when this handover was written (see Open points).
+  - **Web** (`features/training`): an "Ejercicios" tab in the plan library (the library search also searches the
+    catalogue; scope chips all / global / academy; staff-only "show archived"; load more; global entries marked,
+    read-only; FAB "New exercise"); exercise editor (create, edit with `clear`, archive / restore, staff only);
+    quick-add dialog lists the catalogue first and the plan-search item matches second (no duplicates), multi-select in
+    picking order, on the session screen, in the new-session dialog (added once the session exists; if that fails the
+    session stays and the dialog says why) and in the plan editor ("Añadir del catálogo", `copyItemsToPlan`); a marker
+    on items from the catalogue; own messages for `EXERCISE_ARCHIVED` / `EXERCISE_IS_GLOBAL`. 23 l10n keys after
+    `sessionExercisesAdded` (es / en / id); `planSearchHint` and `sessionExerciseSearchEmpty` reworded. Demo mock:
+    catalogue from the mock's templates plus the Cooper test (localised), template items with `exerciseId`, both
+    source kinds, paging, scope, `includeArchived`, 422 / 403 codes. New goldens `exercise_catalogue_*`,
+    `exercise_editor_*` (360×780, 1024×768). After the rebase on `main` (WP95 kit): training uses
+    `HoopsSize.fabClearance` and the kit `TimezoneNote` (own copies removed); no training golden changed, none
+    re-recorded. The search dialogs stay training's own (grouped, live query, multi-select: not the kit
+    `PickerDialog`'s close-on-tap list).
+  - **Shared mock plumbing** (additive only, for WP99): `lib/core/mock/mock_state_log.dart`: `MockRequest` gains an
+    optional named `language` (`Accept-Language`), `MockStateLog.record` an optional `language`, stored as key `l` in
+    the replay log and read back on replay (old logs without `l` replay as before). `lib/core/http/mock_api_adapter.dart`:
+    passes `options.headers['Accept-Language']` into `MockRequest`, to `log.record` and to the athlete mock's
+    `handle(…, language:)`. Nothing else changed in core mock files.
 - Verified:
   - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` (fresh, after the service commits): **BUILD SUCCESS**;
     athlete 1000, core 994, game 468, common-quarkus 392, contracts 298, e2e 32 (26 skipped off compose); jacoco checks
@@ -92,17 +109,25 @@ optional exercise reference, so nothing a coach wrote changes. Athlete 3.0.0.
   - `ExerciseCatalogueMigrationTest` migrates a V9 database (template seed of V9 as a test fixture) holding an academy's
     plan, items (one a template copy), a session with its own plan and one on a template; every academy row is equal
     after V10 + seeds. Proven to fail when a seed touches tenant items.
-  - Web: `flutter analyze` clean after the `PlanItemSource` rename (contract commit). Full `flutter test`,
-    `web-format-check` and the goldens of the web part: **not verified by me**.
+  - Web, fresh after the rebase on `main` and the kit adoption: `flutter analyze` no issues; `just web-format-check`
+    0 changed (386 files); full `flutter test` **1146 passed, 0 failed** (training + exercise tests 136 before the
+    rebase). The web sub-agent saw one earlier full run fail on the temporary-password golden (360×780 dark, not a
+    training file) that passed on re-run: possible flake, not reproduced by me.
+  - The rebase touched no JVM code (`main` changed nothing under `services/`, `libs/`, `e2e/` since the branch point),
+    so the Maven verify above stands.
 - Decisions/ADRs: **ADR-0047** (one table instead of the brief's "tenant table through `enable_tenant_rls`": the helper
   needs `tenant_id not null`, globals cannot have it, and one FK / one paged query beat two tables; breaking points;
   plan search of 2.3.0 kept); ADR index and three authz-matrix rows appended.
 - Open points / follow-ups:
-  - Web half: finish, commit and verify (`flutter test`, analyze, format, goldens); the sub-agent also touched
-    `lib/core/http/mock_api_adapter.dart` and `lib/core/mock/mock_state_log.dart` (shared mock plumbing).
+  - PARENT and PLAYER cannot reach the catalogue in the web (the plan library is staff-only) although the API lets
+    every role read it.
+  - The demo mock's catalogue comes from its three templates plus the Cooper test, not the real ten, and the mock's
+    template texts are still Spanish only (pre-existing).
   - User guides must say: the catalogue (global exercises read-only, own exercises created/edited/archived by
     coaches), "add exercises" from the catalogue in session, new-session dialog and plan editor, items keep their own
     text, archived exercises stay on items, the Cooper test is in the catalogue (not in a template).
-  - `just e2e` not run (compose DB shared; V10 would be applied there). `docs/quality/mutation.md` athlete row not
-    updated (713 mutants).
-  - Kit wishes: none recorded by me; see the web sub-agent's report.
+  - `just e2e` not run (compose DB shared; V10 would be applied there). `docs/quality/mutation.md` updated (713).
+  - Kit wishes: empty / error views that scroll in short areas (on phones the FAB covers the centred retry button);
+    `runAction` snack bars that replace instead of queue; a business-code → message registry; a shared filter-chip row;
+    a searchable multi-select / sectioned `PickerDialog` (would replace training's search dialogs); a marker slot on
+    `ListRow`.
