@@ -47,4 +47,28 @@ void main() {
     expect(find.text('body'), findsOneWidget);
     expect(find.byType(Semantics), findsWidgets);
   });
+
+  testWidgets('a CheckboxListTile works inside a card without a Material', (
+    tester,
+  ) async {
+    var checked = false;
+    await pumpKit(
+      tester,
+      StatefulBuilder(
+        builder: (context, setState) => SectionCard(
+          child: CheckboxListTile(
+            key: const Key('tile'),
+            value: checked,
+            title: const Text('Incluir archivados'),
+            onChanged: (v) => setState(() => checked = v!),
+          ),
+        ),
+      ),
+      scaffold: false,
+    );
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('tile')));
+    await tester.pump();
+    expect(checked, isTrue);
+  });
 }

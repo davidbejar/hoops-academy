@@ -35,47 +35,51 @@ class SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(HoopsRadius.lg),
         border: Border.all(color: c.border),
       ),
-      child: Padding(
-        padding:
-            padding ??
-            EdgeInsets.all(compact ? HoopsSpace.md + 4 : HoopsSpace.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hasHeader) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (title != null)
-                          Semantics(
-                            header: true,
-                            child: Text(
-                              title!,
-                              style: text.titleMedium!.copyWith(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
+      // Transparent Material: list tiles and inks in the body need one.
+      child: Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding:
+              padding ??
+              EdgeInsets.all(compact ? HoopsSpace.md + 4 : HoopsSpace.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasHeader) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (title != null)
+                            Semantics(
+                              header: true,
+                              child: Text(
+                                title!,
+                                style: text.titleMedium!.copyWith(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
-                          ),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: HoopsSpace.xxs),
-                          Text(subtitle!, style: text.bodySmall),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: HoopsSpace.xxs),
+                            Text(subtitle!, style: text.bodySmall),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  ...actions,
-                ],
-              ),
-              const SizedBox(height: HoopsSpace.gap),
+                    ...actions,
+                  ],
+                ),
+                const SizedBox(height: HoopsSpace.gap),
+              ],
+              child,
             ],
-            child,
-          ],
+          ),
         ),
       ),
     );
