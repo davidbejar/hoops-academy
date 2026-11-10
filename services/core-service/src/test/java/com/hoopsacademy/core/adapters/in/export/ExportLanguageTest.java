@@ -29,7 +29,10 @@ class ExportLanguageTest {
             ";q=1, es|ES",
             "es;q=abc, id;q=0.5|ES",
             "es; Q=0.1, id;q=0.5|ID",
-            "es;level=1;q=0.1, id|ID"})
+            "es;level=1;q=0.1, id|ID",
+            "es;q=0.1;level=1, id;q=0.5|ID",
+            "es;q=0, fr|EN",
+            "id;q=0.0|EN"})
     void theFirstSupportedLanguageInPreferenceOrderWins(String header, AppLocale expected) {
         assertThat(ExportLanguage.negotiate(header)).isEqualTo(expected);
     }

@@ -30,7 +30,7 @@ public final class ExportFileName {
         String plain = Normalizer.normalize(text, Normalizer.Form.NFKD).replaceAll("\\p{M}", "")
                 .toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-");
         String trimmed = trimDashes(plain);
-        return trimDashes(trimmed.length() > MAX_PART ? trimmed.substring(0, MAX_PART) : trimmed);
+        return trimDashes(trimmed.substring(0, Math.min(MAX_PART, trimmed.length())));
     }
 
     /** {@code Content-Disposition} of a download. */

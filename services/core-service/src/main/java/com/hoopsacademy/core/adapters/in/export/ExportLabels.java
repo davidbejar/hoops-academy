@@ -33,10 +33,12 @@ public final class ExportLabels {
                 ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES)), locale);
     }
 
-    /** The label of {@code key}, its {@code {0}}… placeholders filled with {@code arguments}. */
+    /**
+     * The label of {@code key}, its {@code {0}}… placeholders filled with {@code arguments}. Every label is a
+     * {@link MessageFormat} pattern (an apostrophe is written {@code ''}).
+     */
     public String text(String key, Object... arguments) {
-        String pattern = bundle.getString(key);
-        return arguments.length == 0 ? pattern : new MessageFormat(pattern, locale).format(arguments);
+        return new MessageFormat(bundle.getString(key), locale).format(arguments);
     }
 
     public Set<String> keys() {
