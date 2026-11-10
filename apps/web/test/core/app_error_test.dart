@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/errors/app_error.dart';
@@ -20,6 +23,28 @@ DioException _dioError(int status, Object? data, {String? contentType}) {
 
 void main() {
   group('AppError.fromDioException', () {
+    test('reads a Problem sent as bytes (a binary download that failed)', () {
+      final error = AppError.fromDioException(
+        _dioError(
+          422,
+          Uint8List.fromList(
+            utf8.encode('{"title":"Too large","code":"EXPORT_TOO_LARGE"}'),
+          ),
+        ),
+      );
+      expect(error.kind, AppErrorKind.validation);
+      expect(error.code, 'EXPORT_TOO_LARGE');
+      expect(error.title, 'Too large');
+    });
+
+    test('bytes that are not JSON keep the status only', () {
+      final error = AppError.fromDioException(
+        _dioError(500, Uint8List.fromList([0xff, 0x00])),
+      );
+      expect(error.kind, AppErrorKind.server);
+      expect(error.code, isNull);
+    });
+
     test(
       'maps a Problem+JSON body to code, detail, traceId and violations',
       () {
