@@ -51,7 +51,7 @@ void main() {
     final found = await plans.plans(templates: true, query: 'cooper');
     expect(found.map((p) => p.id), ['tpl-conditioning']);
     expect(found.single.matchedItems!.map((i) => (i.id, i.planId, i.title)), [
-      ('tpl-c1', 'tpl-conditioning', 'Test de Cooper 12 min'),
+      ('tpl-c1', 'tpl-conditioning', 'Test de Cooper (12 min)'),
     ]);
     final byName = await plans.plans(templates: true, query: 'manejo');
     expect(byName.single.matchedItems, isNull);
@@ -75,9 +75,9 @@ void main() {
       ]);
       expect(again.id, own.id);
       expect(again.items.map((i) => i.title), [
-        'Test de Cooper 12 min',
+        'Test de Cooper (12 min)',
         'Tiros libres',
-        'Test de Cooper 12 min',
+        'Test de Cooper (12 min)',
       ]);
       expect(
         (await plans.plans(templates: false)).any((p) => p.id == own.id),

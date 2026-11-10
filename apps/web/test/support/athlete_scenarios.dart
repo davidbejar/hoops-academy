@@ -84,3 +84,18 @@ FakeAthlete weekAthlete() => FakeAthlete(
     ],
   ),
 );
+
+/// A small exercise catalogue (athlete 3.0.0): two global exercises, one of
+/// the academy's own and an archived one of its own.
+List<ath.Exercise> catalogueExercises() => [
+  exercise(
+    'g-cooper',
+    'Test de Cooper (12 min)',
+    global: true,
+    minutes: 12,
+    description: 'Corre la mayor distancia posible en 12 minutos.',
+  ),
+  exercise('g-ft', 'Tiros libres', global: true, minutes: 8, sets: 2, reps: 10),
+  exercise('own-1', 'Rueda de pases', minutes: 8, description: 'Dos filas'),
+  exercise('own-old', 'Zona 2-3', archived: true, minutes: 15),
+];

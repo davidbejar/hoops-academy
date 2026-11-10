@@ -4,7 +4,9 @@ import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/health/application/health_providers.dart';
 import 'package:hoops_app/features/health/data/fitness_repository.dart';
 import 'package:hoops_app/features/health/data/health_repository.dart';
+import 'package:hoops_app/features/training/application/exercise_providers.dart';
 import 'package:hoops_app/features/training/application/training_providers.dart';
+import 'package:hoops_app/features/training/data/exercises_repository.dart';
 import 'package:hoops_app/features/training/data/plans_repository.dart';
 import 'package:hoops_app/features/training/data/training_repository.dart';
 
@@ -100,6 +102,7 @@ ath.PlanItem planItem(
   int? sets,
   int? reps,
   String? video,
+  String? exerciseId,
 }) => ath.PlanItem(
   (b) => b
     ..id = id
@@ -108,8 +111,62 @@ ath.PlanItem planItem(
     ..durationMinutes = minutes
     ..sets = sets
     ..repetitions = reps
-    ..videoUrl = video,
+    ..videoUrl = video
+    ..exerciseId = exerciseId,
 );
+
+/// A catalogue exercise (athlete 3.0.0): [global] ones are the platform's.
+ath.Exercise exercise(
+  String id,
+  String title, {
+  bool global = false,
+  bool archived = false,
+  String? description,
+  int? minutes,
+  int? sets,
+  int? reps,
+  String? video,
+}) => ath.Exercise(
+  (b) => b
+    ..id = id
+    ..title = title
+    ..description = description
+    ..durationMinutes = minutes
+    ..sets = sets
+    ..repetitions = reps
+    ..videoUrl = video
+    ..global = global
+    ..nameKey = global ? id : null
+    ..archived = archived,
+);
+
+/// What a quick-add appends for [source] (athlete 3.0.0, before the server
+/// gives it an id and a position): a catalogue exercise becomes an item that
+/// references it; an item of a plan is copied with its own reference.
+ath.PlanItem quickAddCopy(
+  ath.PlanItemSource source, {
+  required List<ath.TrainingPlan> plans,
+  required List<ath.Exercise> exercises,
+}) {
+  final exerciseId = source.exerciseId;
+  if (exerciseId != null) {
+    final e = exercises.firstWhere((e) => e.id == exerciseId);
+    return planItem(
+      e.id,
+      e.title,
+      0,
+      minutes: e.durationMinutes,
+      sets: e.sets,
+      reps: e.repetitions,
+      video: e.videoUrl,
+      exerciseId: e.id,
+    ).rebuild((b) => b..description = e.description);
+  }
+  return plans
+      .firstWhere((p) => p.id == source.planId)
+      .items
+      .firstWhere((i) => i.id == source.itemId);
+}
 
 ath.TrainingPlan planOf(
   String id,
@@ -296,7 +353,13 @@ ath.PhysicalTestResult testResult(
 class FakeTrainingRepository with Faulty implements TrainingRepository {
   /// The plans quick-adds read from and write to (set by [FakeAthlete]).
   FakePlansRepository? plans;
+
+  /// The catalogue quick-adds copy exercises from (set by [FakeAthlete]).
+  FakeExercisesRepository? exercises;
   final List<List<ath.PlanItemSource>> quickAdded = [];
+
+  /// Fails quick-adds only (a session is still created).
+  Object? failCopyWith;
 
   FakeTrainingRepository({
     List<ath.TrainingSession>? sessions,
@@ -347,13 +410,14 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
   Future<ath.TrainingSession> session(String sessionId) =>
       run('session', () => sessionList.firstWhere((s) => s.id == sessionId));
 
-  /// Like athlete 2.3.0: copies go to the session's own plan, created on the
+  /// Like athlete 3.0.0: copies go to the session's own plan, created on the
   /// first quick-add with the items of the plan it referenced.
   @override
   Future<ath.TrainingPlan> copyItemsToSession(
     String sessionId,
     List<ath.PlanItemSource> items,
   ) => run('copyItemsToSession', () {
+    if (failCopyWith case final error?) throw error;
     quickAdded.add(items);
     final store = plans!;
     final index = sessionList.indexWhere((s) => s.id == sessionId);
@@ -370,11 +434,12 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
             sessionId: sessionId,
           );
     final copies = [
-      for (final ref in items)
-        store.planList
-            .firstWhere((p) => p.id == ref.planId)
-            .items
-            .firstWhere((i) => i.id == ref.itemId),
+      for (final source in items)
+        quickAddCopy(
+          source,
+          plans: store.planList,
+          exercises: exercises?.exerciseList ?? const [],
+        ),
     ];
     final all = [...own.items, ...copies];
     own = planOf(
@@ -621,6 +686,12 @@ class FakePlansRepository with Faulty implements PlansRepository {
   final List<ath.PlanCompletion> completionList;
   String? lastQuery;
 
+  /// The catalogue quick-adds copy exercises from (set by [FakeAthlete]).
+  FakeExercisesRepository? exercises;
+
+  /// The sources of every quick-add into a plan, per call.
+  final List<List<ath.PlanItemSource>> quickAdded = [];
+
   /// `Accept-Language` code of every plan read / copy, in call order (null = none given).
   final List<String?> languages = [];
   ath.CreatePlanAssignmentRequest? assigned;
@@ -672,7 +743,8 @@ class FakePlansRepository with Faulty implements PlansRepository {
           (b) => b
             ..id = i.id
             ..planId = p.id
-            ..title = i.title,
+            ..title = i.title
+            ..exerciseId = i.exerciseId,
         ),
   ];
 
@@ -805,6 +877,39 @@ class FakePlansRepository with Faulty implements PlansRepository {
           ]),
         );
       });
+
+  /// Like athlete 3.0.0: copies of the sources at the end of the plan.
+  @override
+  Future<ath.TrainingPlan> copyItems(
+    String planId,
+    List<ath.PlanItemSource> items, {
+    String? language,
+  }) => run('copyItems', () {
+    quickAdded.add(items);
+    languages.add(language);
+    final p = _get(planId);
+    final copies = [
+      for (final source in items)
+        quickAddCopy(
+          source,
+          plans: planList,
+          exercises: exercises?.exerciseList ?? const [],
+        ),
+    ];
+    final first = p.items.length;
+    _put(
+      _recount(p, [
+        ...p.items,
+        for (var n = 0; n < copies.length; n++)
+          copies[n].rebuild(
+            (b) => b
+              ..id = '$planId-c${first + n}'
+              ..position = first + n,
+          ),
+      ]),
+    );
+    return _get(planId);
+  });
 
   List<String>? lastOrder;
   ath.UpdatePlanItemRequest? updatedItem;
@@ -1244,28 +1349,180 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
       run('deleteNorm', () => normList.removeWhere((n) => n.id == id));
 }
 
+/// One `listExercises` call as the server gets it.
+typedef ExerciseQuery = ({
+  String? query,
+  ath.ExerciseScope? scope,
+  bool includeArchived,
+  int page,
+  int size,
+  String? language,
+});
+
+/// The catalogue order: the shown title, case-insensitive, then the id.
+int byTitleThenId(ath.Exercise a, ath.Exercise b) {
+  final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+  return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
+}
+
+/// The exercise catalogue like athlete 3.0.0: ordered by title (then id),
+/// `query` a part of the title, archived ones only on request, paged.
+class FakeExercisesRepository with Faulty implements ExercisesRepository {
+  FakeExercisesRepository({List<ath.Exercise>? exercises})
+    : exerciseList = exercises ?? [];
+
+  final List<ath.Exercise> exerciseList;
+  final List<ExerciseQuery> queries = [];
+  ath.ExerciseInput? created;
+  ath.UpdateExerciseRequest? updated;
+
+  @override
+  Future<ath.ExercisePage> exercises({
+    String? query,
+    ath.ExerciseScope? scope,
+    bool includeArchived = false,
+    int page = 0,
+    int size = 50,
+    String? language,
+  }) => run('exercises', () {
+    queries.add((
+      query: query,
+      scope: scope,
+      includeArchived: includeArchived,
+      page: page,
+      size: size,
+      language: language,
+    ));
+    final q = query?.toLowerCase();
+    final found = [
+      for (final e in exerciseList)
+        if ((includeArchived || !e.archived) &&
+            (scope == null ||
+                e.global == (scope == ath.ExerciseScope.GLOBAL)) &&
+            (q == null || e.title.toLowerCase().contains(q)))
+          e,
+    ]..sort(byTitleThenId);
+    final from = (page * size).clamp(0, found.length);
+    final to = (from + size).clamp(0, found.length);
+    return ath.ExercisePage(
+      (b) => b
+        ..items.replace(found.sublist(from, to))
+        ..page.page = page
+        ..page.size = size
+        ..page.totalElements = found.length
+        ..page.totalPages = (found.length + size - 1) ~/ size,
+    );
+  });
+
+  ath.Exercise _put(String id, ath.Exercise Function(ath.Exercise) change) {
+    final i = exerciseList.indexWhere((e) => e.id == id);
+    return exerciseList[i] = change(exerciseList[i]);
+  }
+
+  @override
+  Future<ath.Exercise> create(ath.ExerciseInput input) => run('create', () {
+    created = input;
+    final e = exercise(
+      'own-${exerciseList.length}',
+      input.title,
+      description: input.description,
+      minutes: input.durationMinutes,
+      sets: input.sets,
+      reps: input.repetitions,
+      video: input.videoUrl,
+    );
+    exerciseList.add(e);
+    return e;
+  });
+
+  @override
+  Future<ath.Exercise> update(
+    String exerciseId,
+    ath.UpdateExerciseRequest request,
+  ) => run('update', () {
+    updated = request;
+    final clear = request.clear;
+    return _put(
+      exerciseId,
+      (e) => e.rebuild(
+        (b) => b
+          ..title = request.title ?? b.title
+          ..description = patched(
+            clear,
+            ath.UpdateExerciseRequestClearEnum.description,
+            request.description,
+            b.description,
+          )
+          ..durationMinutes = patched(
+            clear,
+            ath.UpdateExerciseRequestClearEnum.durationMinutes,
+            request.durationMinutes,
+            b.durationMinutes,
+          )
+          ..sets = patched(
+            clear,
+            ath.UpdateExerciseRequestClearEnum.sets,
+            request.sets,
+            b.sets,
+          )
+          ..repetitions = patched(
+            clear,
+            ath.UpdateExerciseRequestClearEnum.repetitions,
+            request.repetitions,
+            b.repetitions,
+          )
+          ..videoUrl = patched(
+            clear,
+            ath.UpdateExerciseRequestClearEnum.videoUrl,
+            request.videoUrl,
+            b.videoUrl,
+          ),
+      ),
+    );
+  });
+
+  @override
+  Future<ath.Exercise> archive(String exerciseId) => run(
+    'archive',
+    () => _put(exerciseId, (e) => e.rebuild((b) => b..archived = true)),
+  );
+
+  @override
+  Future<ath.Exercise> unarchive(String exerciseId) => run(
+    'unarchive',
+    () => _put(exerciseId, (e) => e.rebuild((b) => b..archived = false)),
+  );
+}
+
 /// All athlete-service fakes; plug into the Harness like `FakeGame`.
 class FakeAthlete {
   FakeAthlete({
     FakeTrainingRepository? training,
     FakePlansRepository? plans,
+    FakeExercisesRepository? exercises,
     FakeHealthRepository? health,
     FakeFitnessRepository? fitness,
   }) : training = training ?? FakeTrainingRepository(),
        plans = plans ?? FakePlansRepository(),
+       exercises = exercises ?? FakeExercisesRepository(),
        health = health ?? FakeHealthRepository(),
        fitness = fitness ?? FakeFitnessRepository() {
-    this.training.plans = this.plans;
+    this.training
+      ..plans = this.plans
+      ..exercises = this.exercises;
+    this.plans.exercises = this.exercises;
   }
 
   final FakeTrainingRepository training;
   final FakePlansRepository plans;
+  final FakeExercisesRepository exercises;
   final FakeHealthRepository health;
   final FakeFitnessRepository fitness;
 
   List<Override> get overrides => [
     trainingRepositoryProvider.overrideWithValue(training),
     plansRepositoryProvider.overrideWithValue(plans),
+    exercisesRepositoryProvider.overrideWithValue(exercises),
     healthRepositoryProvider.overrideWithValue(health),
     fitnessRepositoryProvider.overrideWithValue(fitness),
   ];
