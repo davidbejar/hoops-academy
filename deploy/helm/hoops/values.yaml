@@ -253,8 +253,12 @@ core:
     health: {enabled: true, prefix: /api/core}
     # The public invitation request (WP90, ADR-0044): 10/min and 2/s per client IP. The route matches the exact path for
     # every method, so the super admin's list (GET, same path) shares the counter; accept / reject are not limited.
+    # The CSV exports (WP96, ADR-0048: up to 10,000 rows read page by page) get the same brake, colon or %3A form.
     rateLimits:
       - {name: academy-requests, path: "/platform/academy-requests", rpm: 10, rps: 2}
+      - {name: roster-export, path: "/api/core/teams/[^/]+/roster(:|%3[Aa])export", rpm: 10, rps: 2}
+      - {name: audit-export, path: "/api/core/audit-events(:|%3[Aa])export", rpm: 10, rps: 2}
+      - {name: platform-audit-export, path: "/platform/audit-events(:|%3[Aa])export", rpm: 10, rps: 2}
   env:
     CORE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
     # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
@@ -264,14 +268,27 @@ core:
     KEYCLOAK_URL: http://keycloak:8080/auth
     GAME_SERVICE_URL: http://game-service:8082
     ATHLETE_SERVICE_URL: http://athlete-service:8083
-  # Without the event broker (events.enabled off) the outbox publisher stops (the outbox still fills; WP67).
+    # Decision e-mails of the academy requests (WP90, ADR-0044) over SMTP: the same host as the realm's smtpServer (kind:
+    # the chart's Mailpit, Service `mailhog`). A real server: set SMTP_HOST/SMTP_PORT, SMTP_START_TLS: REQUIRED,
+    # SMTP_USERNAME here and the password in Secret hoops-smtp (key password; secretEnv below). The links in the mails
+    # point at HOOPS_PUBLIC_URL (the browser's base URL).
+    SMTP_HOST: mailhog
+    SMTP_PORT: "1025"
+    SMTP_START_TLS: OPTIONAL
+    MAIL_FROM: "Hoops Academy <no-reply@hoops.localhost>"
+    HOOPS_PUBLIC_URL: '{{ .Values.global.publicUrl }}'
+  # Without the event broker (events.enabled off) the outbox publisher stops and no Kafka producer is created, so core logs
+  # no broker warnings (WP91: hoops.outbox.enabled); the outbox still fills (WP67).
   events:
-    offEnv: {CORE_OUTBOX_POLL_INTERVAL: "off"}
+    offEnv: {CORE_OUTBOX_ENABLED: "false", CORE_OUTBOX_POLL_INTERVAL: "off"}
   secretEnv:
     - {name: CORE_APP_PASSWORD,          secretName: hoops-db-core-app,       key: password}
     - {name: CORE_PLATFORM_PASSWORD,     secretName: hoops-db-core-platform,  key: password}
     - {name: CORE_MIGRATOR_PASSWORD,     secretName: hoops-db-core-migrator,  key: password}
     - {name: CORE_SERVICE_CLIENT_SECRET, secretName: hoops-oidc-core-service, key: client-secret}
+    # Only for an SMTP server with a login; the pod starts without the Secret (kind has none, secrets.sh writes it when
+    # .env sets SMTP_PASSWORD). Create it before the install (ADR-0012), or restart core after creating it later.
+    - {name: SMTP_PASSWORD,              secretName: hoops-smtp,              key: password, optional: true}
 
 game:
   enabled: true
@@ -294,10 +311,12 @@ game:
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
-    GAME_ROSTER_SOURCE: '{{ .Values.rosterSource }}'
+    GAME_ROSTER_SOURCE: '{{ .Values.rosterSource | default (ternary "replica" "rest" (include "hoops-service.eventsEnabled" . | eq "true")) }}'
   # Where the roster and the authorisation context come from (ADR-0037, WP68): rest = core's /internal API, replica = the
-  # local replica fed by core's events (needs events.enabled). The default flips only per ADR-0037 "When rest flips".
-  rosterSource: rest
+  # local replica fed by core's events (needs events.enabled). Empty (decision 66, WP100): replica with events, rest
+  # without; always rendered, so the service's own default (replica) never meets a release without a broker. Rollback:
+  # --set game.rosterSource=rest (docs/runbooks/events.md "Rollback to rest").
+  rosterSource: ""
   # Without the event broker the replica consumer is off (no broker warnings in the log).
   events:
     offEnv: {GAME_ROSTER_CONSUMER_ENABLED: "false"}
@@ -321,10 +340,11 @@ athlete:
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
-    ATHLETE_ROSTER_SOURCE: '{{ .Values.rosterSource }}'
+    ATHLETE_ROSTER_SOURCE: '{{ .Values.rosterSource | default (ternary "replica" "rest" (include "hoops-service.eventsEnabled" . | eq "true")) }}'
   # Where the roster and the authorisation context come from (ADR-0037, WP69): rest = core's /internal API, replica = the
-  # local replica fed by core's events (needs events.enabled). The default flips only per ADR-0037 "When rest flips".
-  rosterSource: rest
+  # local replica fed by core's events (needs events.enabled). Empty (decision 66, WP100): replica with events, rest
+  # without (athlete refuses replica without its consumer). Rollback: --set athlete.rosterSource=rest.
+  rosterSource: ""
   # Without the event broker the replica consumer is off (no broker warnings in the log).
   events:
     offEnv: {ATHLETE_ROSTER_CONSUMER_ENABLED: "false"}

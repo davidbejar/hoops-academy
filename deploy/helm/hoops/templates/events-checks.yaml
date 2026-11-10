@@ -4,7 +4,8 @@ Services on the event broker (WP71, ADR-0036/0037). Renders nothing; refuses a h
   to wire their Kafka client) must agree;
 - with events on, every enabled service needs its events user (name = the service's name) with Secret
   hoops-redpanda-<name>, the Secret its Deployment reads KAFKA_SASL_PASSWORD from;
-- game/athlete rosterSource is rest or replica, and replica needs the events (the consumer feeds the replica).
+- game/athlete rosterSource is empty (replica with events, rest without: decision 66, WP100), rest or replica, and replica
+  needs the events (the consumer feeds the replica).
 */ -}}
 {{- $on := .Values.events.enabled | default false -}}
 {{- $mirror := ((.Values.global | default dict).events | default dict).enabled | default false -}}
@@ -25,8 +26,8 @@ Services on the event broker (WP71, ADR-0036/0037). Renders nothing; refuses a h
 {{- end }}
 {{- end }}
 {{- if hasKey $svc "rosterSource" }}
-{{- if not (has $svc.rosterSource (list "rest" "replica")) }}
-{{- fail (printf "%s.rosterSource must be rest or replica, not %v" $alias $svc.rosterSource) }}
+{{- if not (has $svc.rosterSource (list "" "rest" "replica")) }}
+{{- fail (printf "%s.rosterSource must be empty (replica with events, rest without), rest or replica, not %v" $alias $svc.rosterSource) }}
 {{- end }}
 {{- if and (eq $svc.rosterSource "replica") (not $on) }}
 {{- fail (printf "%s.rosterSource=replica needs events.enabled (the replica is fed by core's events)" $alias) }}

@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.7.0
+    helm.sh/chart: athlete-0.8.0
 spec:
   podSelector:
     matchLabels:
@@ -43,7 +43,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
 spec:
   podSelector:
     matchLabels:
@@ -105,7 +105,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.7.0
+    helm.sh/chart: game-0.8.0
 spec:
   podSelector:
     matchLabels:
@@ -136,7 +136,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 spec:
   podSelector:
     matchLabels:
@@ -363,11 +363,11 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.7.0
+    helm.sh/chart: athlete-0.8.0
 data:
   QUARKUS_HTTP_PORT: "8083"
   ATHLETE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
-  ATHLETE_ROSTER_SOURCE: "rest"
+  ATHLETE_ROSTER_SOURCE: "replica"
   HOOPS_CORE_URL: "http://core-service:8081"
   HOOPS_CORS_ORIGINS: "http://localhost:8090"
   KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"
@@ -392,22 +392,27 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
 data:
   QUARKUS_HTTP_PORT: "8081"
   ATHLETE_SERVICE_URL: "http://athlete-service:8083"
   CORE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
   GAME_SERVICE_URL: "http://game-service:8082"
   HOOPS_CORS_ORIGINS: "http://localhost:8090"
+  HOOPS_PUBLIC_URL: "http://localhost:8090"
   KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"
   KAFKA_SASL_USERNAME: "core-service"
   KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
   KEYCLOAK_URL: "http://keycloak:8080/auth"
+  MAIL_FROM: "Hoops Academy <no-reply@hoops.localhost>"
   OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
   QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"
   QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"
   QUARKUS_OTEL_SDK_DISABLED: "false"
   QUARKUS_OTEL_TRACES_SAMPLER_ARG: "1.0"
+  SMTP_HOST: "mailhog"
+  SMTP_PORT: "1025"
+  SMTP_START_TLS: "OPTIONAL"
 
 ---
 # Source: hoops/charts/databases/templates/hoops-db.yaml
@@ -557,11 +562,11 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.7.0
+    helm.sh/chart: game-0.8.0
 data:
   QUARKUS_HTTP_PORT: "8082"
   GAME_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
-  GAME_ROSTER_SOURCE: "rest"
+  GAME_ROSTER_SOURCE: "replica"
   HOOPS_CORE_URL: "http://core-service:8081"
   HOOPS_CORS_ORIGINS: "http://localhost:8090"
   KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"
@@ -586,7 +591,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 data:
   hoops-password-blocklist.txt: |
     123qweasdzxc
@@ -10604,7 +10609,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 data:
   realm-academy.json: |
     {
@@ -10968,7 +10973,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 data:
   basketball.svg: |
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><!-- Material Icons "sports_basketball" (Apache-2.0), the app's logo icon --><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM5.23 7.75C6.1 8.62 6.7 9.74 6.91 11H4.07c.17-1.24.6-2.31 1.16-3.25zM4.07 13h2.84c-.21 1.26-.81 2.38-1.68 3.25-.56-.94-.99-2.01-1.16-3.25zM11 19.93c-1.73-.22-3.29-1-4.49-2.14 1.3-1.24 2.19-2.91 2.42-4.79H11v6.93zM11 11H8.93C8.69 9.12 7.81 7.44 6.5 6.2c1.2-1.13 2.76-1.92 4.5-2.13V11zm8.93 0h-2.84c.21-1.26.81-2.38 1.68-3.25.56.94.99 2.01 1.16 3.25zM13 4.07c1.73.22 3.29.99 4.5 2.13-1.31 1.24-2.19 2.92-2.43 4.8H13V4.07zm0 15.86V13h2.07c.24 1.88 1.12 3.55 2.42 4.79-1.2 1.15-2.76 1.92-4.49 2.14zm5.77-3.68c-.87-.86-1.46-1.99-1.68-3.25h2.84c-.17 1.24-.6 2.31-1.16 3.25z"/></svg>
@@ -11395,7 +11400,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.7.0
+    helm.sh/chart: athlete-0.8.0
 spec:
   type: ClusterIP
   selector:
@@ -11420,7 +11425,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
 spec:
   type: ClusterIP
   selector:
@@ -11445,7 +11450,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.7.0
+    helm.sh/chart: game-0.8.0
 spec:
   type: ClusterIP
   selector:
@@ -11470,7 +11475,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 spec:
   selector:
     app.kubernetes.io/name: keycloak
@@ -11591,7 +11596,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.7.0
+    helm.sh/chart: athlete-0.8.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11611,9 +11616,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: athlete-0.7.0
+        helm.sh/chart: athlete-0.8.0
       annotations:
-        checksum/env: b16b2bad98696f4adfd8a65791d7289a209fbee92a4f92723a273630a4411c71
+        checksum/env: 173184c9782cf39462348b17e6cd2c1a720fcd90d29f5d564d343b8c0fca8c31
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8083"
@@ -11707,7 +11712,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11727,9 +11732,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: core-0.7.0
+        helm.sh/chart: core-0.8.0
       annotations:
-        checksum/env: a90fb8614d228e090433655006cfd35696f9cccd495af42cc3f07e60a4b3db0e
+        checksum/env: 8cc5053cfbde7bb8d0fa0f26438797694334f34ad41007e3c15a028045754a6d
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8081"
@@ -11775,6 +11780,12 @@ spec:
                 secretKeyRef:
                   name: hoops-oidc-core-service
                   key: client-secret
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hoops-smtp
+                  key: password
+                  optional: true
             - name: KAFKA_SASL_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -11828,7 +11839,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.7.0
+    helm.sh/chart: game-0.8.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11848,9 +11859,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: game-0.7.0
+        helm.sh/chart: game-0.8.0
       annotations:
-        checksum/env: d95d5590557d8151b8922be24c08310aeb00e6171eb858636c54a2bb6e1a5051
+        checksum/env: 23bdb218c1a49cf075d2761d91abe691ff275146e76e702efce5922f7011266f
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"
@@ -11944,7 +11955,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11965,11 +11976,11 @@ spec:
         app.kubernetes.io/component: identity
         app.kubernetes.io/version: "26.8.1"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: keycloak-0.5.0
+        helm.sh/chart: keycloak-0.6.0
       annotations:
-        checksum/realm: f5808feb4253dcb2f568c8d9b33b556897129c1f68043c73c59f7b62d4aa221a
-        checksum/theme: 7c4460da41862635509b1de67c77bd4130b289fc8cf62939fcd2342508a75d6f
-        checksum/blocklist: d1395df3bc5d7565aad8f5b64f7576358a0db58af72571c9c61d1a6dff9174d9
+        checksum/realm: 676beaf9960fb9ec33dbce6b8e4b65f7d84ffa149851895d8d5d45ca856a3857
+        checksum/theme: 0be0306c32db0fa770d4df059413d8a6ea04b4ad18b1eb555c3e2e65a3f821f4
+        checksum/blocklist: 2593eec96b22bbd67a809b1b9424434cc8d95d1b2526b287c886a37e630032ff
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -12571,10 +12582,145 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-academy-requests}
+  rateLimit:
+    global:
+      rules:
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+          limit: {requests: 10, unit: Minute}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+            - path: {type: PathPrefix, value: /}
+          limit: {requests: 2, unit: Second}
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+          limit: {requests: 10, unit: Minute}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+            - path: {type: PathPrefix, value: /}
+          limit: {requests: 2, unit: Second}
+
+---
+# Source: hoops/charts/core/templates/httproute.yaml
+# Envoy Gateway global rate limit: 10 requests per minute per client IP, counted by the rate limit service in
+# Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
+# Plus a burst cap of 2 requests per second per client IP, so the fixed minute windows cannot pass 2 x 10 in a
+# few seconds around a minute boundary (WP46, ADR-0033 amendment).
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: core-service-roster-export
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.8.0
+spec:
+  targetRefs:
+    - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-roster-export}
+  rateLimit:
+    global:
+      rules:
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+          limit: {requests: 10, unit: Minute}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+            - path: {type: PathPrefix, value: /}
+          limit: {requests: 2, unit: Second}
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+          limit: {requests: 10, unit: Minute}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+            - path: {type: PathPrefix, value: /}
+          limit: {requests: 2, unit: Second}
+
+---
+# Source: hoops/charts/core/templates/httproute.yaml
+# Envoy Gateway global rate limit: 10 requests per minute per client IP, counted by the rate limit service in
+# Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
+# Plus a burst cap of 2 requests per second per client IP, so the fixed minute windows cannot pass 2 x 10 in a
+# few seconds around a minute boundary (WP46, ADR-0033 amendment).
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: core-service-audit-export
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.8.0
+spec:
+  targetRefs:
+    - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-audit-export}
+  rateLimit:
+    global:
+      rules:
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+          limit: {requests: 10, unit: Minute}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
+            - path: {type: PathPrefix, value: /}
+          limit: {requests: 2, unit: Second}
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+          limit: {requests: 10, unit: Minute}
+        # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
+        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
+        - clientSelectors:
+            - sourceCIDR: {type: Distinct, value: "::/0"}
+            - path: {type: PathPrefix, value: /}
+          limit: {requests: 2, unit: Second}
+
+---
+# Source: hoops/charts/core/templates/httproute.yaml
+# Envoy Gateway global rate limit: 10 requests per minute per client IP, counted by the rate limit service in
+# Redis (one-minute window shared by every Envoy replica). Over the limit: 429. Unreachable Redis: fail open (ADR-0033).
+# Plus a burst cap of 2 requests per second per client IP, so the fixed minute windows cannot pass 2 x 10 in a
+# few seconds around a minute boundary (WP46, ADR-0033 amendment).
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: core-service-platform-audit-export
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.8.0
+spec:
+  targetRefs:
+    - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-platform-audit-export}
   rateLimit:
     global:
       rules:
@@ -12616,7 +12762,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.7.0
+    helm.sh/chart: game-0.8.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: game-service-events-batch}
@@ -12661,7 +12807,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: keycloak-ratelimited}
@@ -12954,7 +13100,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.7.0
+    helm.sh/chart: athlete-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -12979,7 +13125,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.7.0
+    helm.sh/chart: athlete-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -13034,7 +13180,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -13058,7 +13204,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -13083,7 +13229,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -13140,13 +13286,91 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.7.0
+    helm.sh/chart: core-0.8.0
 spec:
   parentRefs:
     - name: hoops
   rules:
     - matches:
         - path: {type: RegularExpression, value: "/platform/academy-requests"}
+      backendRefs:
+        - {name: core-service, port: 8081}
+      timeouts: {request: 60s}
+
+---
+# Source: hoops/charts/core/templates/httproute.yaml
+# Rate-limited path: RE2 regex matched against the request path as sent (no rewrite, no decoding of %3A), so the
+# colon of ":batch" reaches the service unchanged. Its own route, because a BackendTrafficPolicy applies per route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: core-service-roster-export
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.8.0
+spec:
+  parentRefs:
+    - name: hoops
+  rules:
+    - matches:
+        - path: {type: RegularExpression, value: "/api/core/teams/[^/]+/roster(:|%3[Aa])export"}
+      backendRefs:
+        - {name: core-service, port: 8081}
+      timeouts: {request: 60s}
+
+---
+# Source: hoops/charts/core/templates/httproute.yaml
+# Rate-limited path: RE2 regex matched against the request path as sent (no rewrite, no decoding of %3A), so the
+# colon of ":batch" reaches the service unchanged. Its own route, because a BackendTrafficPolicy applies per route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: core-service-audit-export
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.8.0
+spec:
+  parentRefs:
+    - name: hoops
+  rules:
+    - matches:
+        - path: {type: RegularExpression, value: "/api/core/audit-events(:|%3[Aa])export"}
+      backendRefs:
+        - {name: core-service, port: 8081}
+      timeouts: {request: 60s}
+
+---
+# Source: hoops/charts/core/templates/httproute.yaml
+# Rate-limited path: RE2 regex matched against the request path as sent (no rewrite, no decoding of %3A), so the
+# colon of ":batch" reaches the service unchanged. Its own route, because a BackendTrafficPolicy applies per route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: core-service-platform-audit-export
+  labels:
+    app.kubernetes.io/name: core-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: core-0.8.0
+spec:
+  parentRefs:
+    - name: hoops
+  rules:
+    - matches:
+        - path: {type: RegularExpression, value: "/platform/audit-events(:|%3[Aa])export"}
       backendRefs:
         - {name: core-service, port: 8081}
       timeouts: {request: 60s}
@@ -13164,7 +13388,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.7.0
+    helm.sh/chart: game-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -13189,7 +13413,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.7.0
+    helm.sh/chart: game-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -13246,7 +13470,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.7.0
+    helm.sh/chart: game-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -13272,7 +13496,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -13309,7 +13533,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 spec:
   parentRefs:
     - name: hoops
@@ -13360,7 +13584,7 @@ metadata:
     app.kubernetes.io/component: identity
     app.kubernetes.io/version: "26.8.1"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: keycloak-0.5.0
+    helm.sh/chart: keycloak-0.6.0
 spec:
   parentRefs:
     - name: hoops

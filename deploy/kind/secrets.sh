@@ -45,3 +45,6 @@ basic_auth hoops-redpanda-admin           admin           REDPANDA_ADMIN_PASSWOR
 basic_auth hoops-redpanda-core-service    core-service    REDPANDA_CORE_SERVICE_PASSWORD
 basic_auth hoops-redpanda-game-service    game-service    REDPANDA_GAME_SERVICE_PASSWORD
 basic_auth hoops-redpanda-athlete-service athlete-service REDPANDA_ATHLETE_SERVICE_PASSWORD
+# core's SMTP login (WP100): only for a real server, so only when .env sets SMTP_PASSWORD; core reads Secret hoops-smtp as
+# optional (kind's Mailpit needs none, and the Secret is then not written).
+[ -z "${SMTP_PASSWORD:-}" ] || emit hoops-smtp --from-file=password=<(printf '%s' "$SMTP_PASSWORD")

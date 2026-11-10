@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   podSelector:
     matchLabels:
@@ -42,7 +42,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   minAvailable: 1
   selector:
@@ -63,7 +63,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 data:
   QUARKUS_HTTP_PORT: "8099"
   DEMO_URL: "http://example.invalid"
@@ -88,7 +88,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   type: ClusterIP
   selector:
@@ -113,7 +113,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -132,9 +132,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: hoops-service-0.7.0
+        helm.sh/chart: hoops-service-0.8.0
       annotations:
-        checksum/env: c904182a9b3ec90e0ef86e114e599ed01cb0d9a05ef2700fcd432f78d2b69174
+        checksum/env: 5a5183c08a46a4610eff43db1ff1982839771fc3493fa548bc08ce02daf8ee58
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8099"
@@ -167,6 +167,12 @@ spec:
                 secretKeyRef:
                   name: demo-db
                   key: password
+            - name: DEMO_OPTIONAL
+              valueFrom:
+                secretKeyRef:
+                  name: demo-optional
+                  key: token
+                  optional: true
             - name: KAFKA_SASL_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -220,7 +226,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -253,7 +259,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: demo-service-batch}
@@ -296,7 +302,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: demo-service-plain}
@@ -323,7 +329,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -349,7 +355,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -376,7 +382,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -435,7 +441,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   parentRefs:
     - name: hoops
@@ -463,7 +469,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.7.0
+    helm.sh/chart: hoops-service-0.8.0
 spec:
   parentRefs:
     - name: hoops

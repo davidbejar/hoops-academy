@@ -19,7 +19,8 @@ gateway:
     nodePorts: {http: 30080, https: 30443}
     resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 256Mi}}
 # Event broker (WP66, ADR-0036): small Redpanda in developer mode (relaxed memory/fsync checks for the shared 2-CPU VM).
-# The services connect to it (WP71): core publishes, game and athlete feed their replicas; roster source stays rest.
+# The services connect to it (WP71): core publishes, game and athlete feed their replicas and read the roster from them
+# (roster source replica since decision 66, WP100; --set <game|athlete>.rosterSource=rest rolls one service back).
 events:
   enabled: true
   redpanda:
@@ -50,7 +51,7 @@ athlete:
 databases:
   hoopsDb:
     storage: {size: 2Gi}
-# Invitation / password-setup e-mails need an SMTP server (core rolls an invite back when the e-mail fails).
+# Invitation / password-setup e-mails (Keycloak) and core's academy-request decisions (WP90) go to this SMTP sink.
 mailpit:
   enabled: true
 # deploy/kind/up.sh --eso (WP65) enables externalSecrets against its ClusterSecretStore `hoops`; refresh quickly so a
