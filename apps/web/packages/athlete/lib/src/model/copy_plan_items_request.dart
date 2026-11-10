@@ -4,7 +4,7 @@
 
 // ignore_for_file: unused_element
 import 'package:built_collection/built_collection.dart';
-import 'package:hoops_athlete_api/src/model/plan_item_ref.dart';
+import 'package:hoops_athlete_api/src/model/plan_item_source.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
@@ -13,12 +13,12 @@ part 'copy_plan_items_request.g.dart';
 /// CopyPlanItemsRequest
 ///
 /// Properties:
-/// * [items] - Items to copy, in this order; the same item may be given twice (two copies).
+/// * [items] - Sources to copy, in this order; the same source may be given twice (two copies).
 @BuiltValue()
 abstract class CopyPlanItemsRequest implements Built<CopyPlanItemsRequest, CopyPlanItemsRequestBuilder> {
-  /// Items to copy, in this order; the same item may be given twice (two copies).
+  /// Sources to copy, in this order; the same source may be given twice (two copies).
   @BuiltValueField(wireName: r'items')
-  BuiltList<PlanItemRef> get items;
+  BuiltList<PlanItemSource> get items;
 
   CopyPlanItemsRequest._();
 
@@ -46,7 +46,7 @@ class _$CopyPlanItemsRequestSerializer implements PrimitiveSerializer<CopyPlanIt
     yield r'items';
     yield serializers.serialize(
       object.items,
-      specifiedType: const FullType(BuiltList, [FullType(PlanItemRef)]),
+      specifiedType: const FullType(BuiltList, [FullType(PlanItemSource)]),
     );
   }
 
@@ -74,8 +74,8 @@ class _$CopyPlanItemsRequestSerializer implements PrimitiveSerializer<CopyPlanIt
         case r'items':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(BuiltList, [FullType(PlanItemRef)]),
-          ) as BuiltList<PlanItemRef>;
+            specifiedType: const FullType(BuiltList, [FullType(PlanItemSource)]),
+          ) as BuiltList<PlanItemSource>;
           result.items.replace(valueDes);
           break;
         default:

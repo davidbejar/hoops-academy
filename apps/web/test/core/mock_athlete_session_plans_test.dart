@@ -26,7 +26,7 @@ void main() {
     plans = ApiPlansRepository(athlete, t);
   });
 
-  ath.PlanItemRef ref(String plan, String item) => ath.PlanItemRef(
+  ath.PlanItemSource ref(String plan, String item) => ath.PlanItemSource(
     (b) => b
       ..planId = plan
       ..itemId = item,

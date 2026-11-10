@@ -221,7 +221,7 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
   }
 
   /// Quick-add: copies [items] to the session's own plan; returns how many.
-  Future<int> addExercises(List<ath.PlanItemRef> items) async {
+  Future<int> addExercises(List<ath.PlanItemSource> items) async {
     final plan = await ref
         .read(trainingRepositoryProvider)
         .copyItemsToSession(sessionId, items);

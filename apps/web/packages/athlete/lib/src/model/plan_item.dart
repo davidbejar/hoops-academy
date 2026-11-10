@@ -11,14 +11,15 @@ part 'plan_item.g.dart';
 /// The `title` and `description` of a template's item follow the plan's language rule (`TrainingPlan.name`).
 ///
 /// Properties:
-/// * [title]
-/// * [description]
-/// * [durationMinutes]
-/// * [sets]
-/// * [repetitions]
-/// * [videoUrl]
-/// * [id]
+/// * [title] 
+/// * [description] 
+/// * [durationMinutes] 
+/// * [sets] 
+/// * [repetitions] 
+/// * [videoUrl] 
+/// * [id] 
 /// * [position] - 0-based order within the plan.
+/// * [exerciseId] - The catalogue exercise this item was copied from (3.0.0, ADR-0047): set on every item of a global template and kept by every copy; null for items written by hand. The item's text is its own copy. Set only by quick-add and plan copies, never by a client. 
 @BuiltValue()
 abstract class PlanItem implements Built<PlanItem, PlanItemBuilder> {
   @BuiltValueField(wireName: r'title')
@@ -45,6 +46,10 @@ abstract class PlanItem implements Built<PlanItem, PlanItemBuilder> {
   /// 0-based order within the plan.
   @BuiltValueField(wireName: r'position')
   int get position;
+
+  /// The catalogue exercise this item was copied from (3.0.0, ADR-0047): set on every item of a global template and kept by every copy; null for items written by hand. The item's text is its own copy. Set only by quick-add and plan copies, never by a client. 
+  @BuiltValueField(wireName: r'exerciseId')
+  String? get exerciseId;
 
   PlanItem._();
 
@@ -119,6 +124,13 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
       object.position,
       specifiedType: const FullType(int),
     );
+    if (object.exerciseId != null) {
+      yield r'exerciseId';
+      yield serializers.serialize(
+        object.exerciseId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override
@@ -203,6 +215,14 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
           ) as int;
           result.position = valueDes;
           break;
+        case r'exerciseId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.exerciseId = valueDes;
+          break;
         default:
           unhandled.add(key);
           unhandled.add(value);
@@ -231,3 +251,5 @@ class _$PlanItemSerializer implements PrimitiveSerializer<PlanItem> {
     return result.build();
   }
 }
+
+

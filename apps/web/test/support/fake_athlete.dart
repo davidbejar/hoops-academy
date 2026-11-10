@@ -296,7 +296,7 @@ ath.PhysicalTestResult testResult(
 class FakeTrainingRepository with Faulty implements TrainingRepository {
   /// The plans quick-adds read from and write to (set by [FakeAthlete]).
   FakePlansRepository? plans;
-  final List<List<ath.PlanItemRef>> quickAdded = [];
+  final List<List<ath.PlanItemSource>> quickAdded = [];
 
   FakeTrainingRepository({
     List<ath.TrainingSession>? sessions,
@@ -352,7 +352,7 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
   @override
   Future<ath.TrainingPlan> copyItemsToSession(
     String sessionId,
-    List<ath.PlanItemRef> items,
+    List<ath.PlanItemSource> items,
   ) => run('copyItemsToSession', () {
     quickAdded.add(items);
     final store = plans!;

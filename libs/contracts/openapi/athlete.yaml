@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — athlete-service API
-  version: 2.4.0
+  version: 3.0.0
   description: |
     Training & attendance, athlete health & fitness.
 
@@ -33,6 +33,17 @@ info:
     team plan assignment and completion writes for that team, and a health write by a coach whose only relation to
     the player is such a team, answer 409 Problem with `code` = `SEASON_ENDED` to the callers who could write it
     otherwise (a former staff member gets 409, not 403).
+
+    Exercise catalogue (3.0.0, decision 72, ADR-0047): exercises are their own resource (`/exercises`): global ones,
+    read-only and localised by `Accept-Language` like the templates, and the academy's own (created, edited and
+    archived by whoever manages plans; read by every member). Every item of a global template references its catalogue
+    exercise (`PlanItem.exerciseId`). Quick-add (`copyItemsToPlan`, `copyItemsToSession`) takes, per copy, either a
+    catalogue exercise (`exerciseId`) or an item of a readable plan (`planId` + `itemId`): the item gets its own copy of
+    the text and keeps the reference, so editing the item never changes the exercise and editing or archiving the
+    exercise never changes the item. Breaking (3.0.0): `PlanItemRef` is replaced by `PlanItemSource`, whose fields
+    are all optional (exactly one source per entry, 400 otherwise), and quick-add answers 422 `EXERCISE_ARCHIVED`.
+    Items written before 3.0.0 keep their text and have no `exerciseId`. The plan search of 2.3.0 is kept: `q` on
+    `listTrainingPlans` still finds plans by an item title and `PlanItemMatch.exerciseId` names the catalogue entry.
 servers:
   - url: /
     description: Gateway root (tenant API under /api/athlete, internal API under /internal).
@@ -46,6 +57,8 @@ tags:
   - name: PlannedAbsences
   - name: TrainingPlans
     description: Plans and global templates (templates are copied on use).
+  - name: Exercises
+    description: The exercise catalogue (global exercises and the academy's own) that plan items are copied from.
   - name: PlanAssignments
   - name: PlanCompletions
   - name: Injuries
@@ -297,12 +310,14 @@ paths:
       tags: [TrainingSessions]
       summary: Quick-add exercises of any readable plan or template to a session
       description: |
-        Copies the given items (in the given order) to the end of the session's own plan and returns that plan.
-        A session without a plan of its own (no plan, a template or a shared tenant plan) first gets an ad-hoc tenant
-        plan (`sessionId` = this session) that starts with the items of its current plan, if any; the session then
-        references it, so the template or shared plan is never changed (copy on write, ADR-0041). Template items are
-        copied with their texts in the negotiated language. Unknown or foreign plans or items are 404; CANCELLED
-        sessions cannot be changed (409). Authz: ADMIN; team staff.
+        Copies the given sources (in the given order) to the end of the session's own plan and returns that plan.
+        Each source is a catalogue exercise or an item of a readable plan (`PlanItemSource`); the copy keeps the
+        `exerciseId` of its source (3.0.0, ADR-0047). A session without a plan of its own (no plan, a template or a
+        shared tenant plan) first gets an ad-hoc tenant plan (`sessionId` = this session) that starts with the items
+        of its current plan, if any; the session then references it, so the template or shared plan is never changed
+        (copy on write, ADR-0041). Global exercises and template items are copied with their texts in the negotiated
+        language. Unknown or foreign plans, items or exercises are 404; an archived exercise is 422
+        `EXERCISE_ARCHIVED`; CANCELLED sessions cannot be changed (409). Authz: ADMIN; team staff.
         409 `SEASON_ENDED` once the season of the team has ended (ADR-0042).
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
@@ -322,6 +337,7 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-sessions/{sessionId}/attendance:
     parameters:
@@ -720,7 +736,12 @@ paths:
       operationId: copyItemsToPlan
       tags: [TrainingPlans]
       summary: Quick-add exercises of any readable plan or template to a tenant plan
-      description: 'Copies the given items (in the given order) to the end of the plan; template items with their texts in the negotiated language. Templates are read-only (403); unknown or foreign plans or items are 404. Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      description: |
+        Copies the given sources (in the given order) to the end of the plan: catalogue exercises and items of readable
+        plans (`PlanItemSource`), global exercises and template items with their texts in the negotiated language; each
+        copy keeps the `exerciseId` of its source (3.0.0, ADR-0047). Templates are read-only (403); unknown or foreign
+        plans, items or exercises are 404; an archived exercise is 422 `EXERCISE_ARCHIVED`.
+        Authz: ADMIN; COACH; ASSISTANT_COACH.
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
       requestBody:
@@ -738,6 +759,7 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/athlete/training-plans/{planId}/items/{itemId}:
     parameters:
@@ -777,6 +799,155 @@ paths:
       responses:
         '204':
           description: Item removed.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+
+  # ------------------------------------------------------------------ exercise catalogue
+  /api/athlete/exercises:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listExercises
+      tags: [Exercises]
+      summary: List or search the exercise catalogue (global exercises and the academy's own)
+      description: |
+        Ordered by the shown title. Global exercises in the negotiated language; the academy's own as stored. Archived
+        exercises (the academy's own only) are left out unless `includeArchived` is true. Authz: any member.
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive part of the title (a global exercise's in the negotiated language).
+          schema: {type: string, maxLength: 100}
+        - name: scope
+          in: query
+          description: GLOBAL = the platform's exercises only; TENANT = the academy's own only; absent = both.
+          schema: {$ref: '#/components/schemas/ExerciseScope'}
+        - name: includeArchived
+          in: query
+          description: true = also the academy's archived exercises.
+          schema: {type: boolean, default: false}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Page of exercises.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ExercisePage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+    post:
+      operationId: createExercise
+      tags: [Exercises]
+      summary: Add an exercise of the academy's own to the catalogue
+      description: 'Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ExerciseInput'}
+      responses:
+        '201':
+          description: Exercise created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Exercise'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+  /api/athlete/exercises/{exerciseId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/ExerciseId'
+    get:
+      operationId: getExercise
+      tags: [Exercises]
+      summary: Get an exercise (archived ones included, so items that reference them can show it)
+      description: 'Another academy''s exercise is 404. Authz: any member.'
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The exercise.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Exercise'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+    patch:
+      operationId: updateExercise
+      tags: [Exercises]
+      summary: Edit an exercise of the academy's own
+      description: |
+        Items copied from the exercise keep their own text. Global exercises are read-only (403 `EXERCISE_IS_GLOBAL`).
+        Authz: ADMIN; COACH; ASSISTANT_COACH.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateExerciseRequest'}
+      responses:
+        '200':
+          description: Updated exercise.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Exercise'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+  /api/athlete/exercises/{exerciseId}:archive:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/ExerciseId'
+    post:
+      operationId: archiveExercise
+      tags: [Exercises]
+      summary: Archive an exercise of the academy's own (hidden from the catalogue, cannot be added)
+      description: |
+        Idempotent. Items already copied from it keep their text and reference, and the exercise stays readable by id.
+        Global exercises are read-only (403 `EXERCISE_IS_GLOBAL`). Authz: ADMIN; COACH; ASSISTANT_COACH.
+      responses:
+        '200':
+          description: The exercise.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Exercise'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+  /api/athlete/exercises/{exerciseId}:unarchive:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/ExerciseId'
+    post:
+      operationId: unarchiveExercise
+      tags: [Exercises]
+      summary: Bring an archived exercise of the academy's own back into the catalogue
+      description: 'Idempotent. Global exercises are read-only (403 `EXERCISE_IS_GLOBAL`). Authz: ADMIN; COACH; ASSISTANT_COACH.'
+      responses:
+        '200':
+          description: The exercise.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Exercise'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -1548,7 +1719,8 @@ components:
       required: false
       description: |
         Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`,
-        `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans.
+        `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans and the academy's
+        own exercises (global exercises follow it, 3.0.0).
       schema: {type: string, maxLength: 200}
     SessionId:
       name: sessionId
@@ -1557,6 +1729,11 @@ components:
       schema: {type: string, format: uuid}
     PlanId:
       name: planId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    ExerciseId:
+      name: exerciseId
       in: path
       required: true
       schema: {type: string, format: uuid}
@@ -1853,6 +2030,14 @@ components:
           format: int32
           minimum: 0
           description: 0-based order within the plan.
+        exerciseId:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            The catalogue exercise this item was copied from (3.0.0, ADR-0047): set on every item of a global template
+            and kept by every copy; null for items written by hand. The item's text is its own copy. Set only by
+            quick-add and plan copies, never by a client.
     UpdatePlanItemRequest:
       type: object
       minProperties: 1
@@ -1971,6 +2156,11 @@ components:
         title:
           type: string
           description: In the negotiated language for a template's item; as stored otherwise.
+        exerciseId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The catalogue exercise the item was copied from (`PlanItem.exerciseId`, 3.0.0).
     TrainingPlanSummaryPage:
       type: object
       required: [items, page]
@@ -2010,15 +2200,25 @@ components:
           minLength: 1
           maxLength: 120
           description: Defaults to the source plan's name.
-    PlanItemRef:
+    PlanItemSource:
       type: object
-      required: [planId, itemId]
+      description: |
+        What one quick-added item is copied from (3.0.0, replaces `PlanItemRef`): either `exerciseId` alone (a
+        catalogue exercise the academy reads, not archived) or `planId` + `itemId` (an item of any readable plan or
+        template). Any other combination is 400.
       properties:
+        exerciseId:
+          type: string
+          format: uuid
+          description: A global exercise or one of the academy's own.
         planId:
           type: string
           format: uuid
-          description: Any plan the academy can read (a tenant plan or a global template).
-        itemId: {type: string, format: uuid}
+          description: Any plan the academy can read (a tenant plan or a global template); with `itemId`.
+        itemId:
+          type: string
+          format: uuid
+          description: An item of `planId`.
     CopyPlanItemsRequest:
       type: object
       required: [items]
@@ -2027,8 +2227,73 @@ components:
           type: array
           minItems: 1
           maxItems: 50
-          description: Items to copy, in this order; the same item may be given twice (two copies).
-          items: {$ref: '#/components/schemas/PlanItemRef'}
+          description: Sources to copy, in this order; the same source may be given twice (two copies).
+          items: {$ref: '#/components/schemas/PlanItemSource'}
+
+    # ---------------- exercise catalogue
+    ExerciseScope:
+      type: string
+      enum: [GLOBAL, TENANT]
+    ExerciseInput:
+      type: object
+      required: [title]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, maxLength: 4000}
+        durationMinutes: {type: integer, format: int32, minimum: 1, maximum: 480}
+        sets: {type: integer, format: int32, minimum: 1, maximum: 100}
+        repetitions: {type: integer, format: int32, minimum: 1, maximum: 1000}
+        videoUrl: {type: string, format: uri, maxLength: 2000}
+    Exercise:
+      type: object
+      description: |
+        A catalogue exercise. A global one (`global`) is read-only and its `title` and `description` follow
+        `Accept-Language` (fallback `en`), as a template's do; the academy's own are returned as stored.
+      x-extends: [ExerciseInput]
+      required: [title, id, global, archived]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, maxLength: 4000}
+        durationMinutes: {type: integer, format: int32, minimum: 1, maximum: 480}
+        sets: {type: integer, format: int32, minimum: 1, maximum: 100}
+        repetitions: {type: integer, format: int32, minimum: 1, maximum: 1000}
+        videoUrl: {type: string, format: uri, maxLength: 2000}
+        id: {type: string, format: uuid}
+        nameKey:
+          type: string
+          nullable: true
+          description: Stable key of a global exercise (e.g. `cooper-test`), the same in every language; null for the academy's own.
+        global:
+          type: boolean
+          description: Platform-provided, read-only exercise.
+        archived:
+          type: boolean
+          description: Archived exercises (the academy's own) are hidden from the catalogue and cannot be added.
+    UpdateExerciseRequest:
+      type: object
+      minProperties: 1
+      properties:
+        title: {type: string, minLength: 1, maxLength: 120}
+        description: {type: string, maxLength: 4000, nullable: true}
+        durationMinutes: {type: integer, format: int32, minimum: 1, maximum: 480, nullable: true}
+        sets: {type: integer, format: int32, minimum: 1, maximum: 100, nullable: true}
+        repetitions: {type: integer, format: int32, minimum: 1, maximum: 1000, nullable: true}
+        videoUrl: {type: string, format: uri, maxLength: 2000, nullable: true}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [description, durationMinutes, sets, repetitions, videoUrl]
+    ExercisePage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Exercise'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
 
     # ---------------- assignments & completions
     CreatePlanAssignmentRequest:

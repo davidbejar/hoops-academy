@@ -115,12 +115,12 @@ class ExerciseSearchDialog extends ConsumerStatefulWidget {
 
 class _ExerciseSearchDialogState extends ConsumerState<ExerciseSearchDialog> {
   String _query = '';
-  final _picked = <String, ath.PlanItemRef>{};
+  final _picked = <String, ath.PlanItemSource>{};
 
   void _toggle(String planId, String itemId, bool on) => setState(() {
     final key = '$planId/$itemId';
     if (on) {
-      _picked[key] = ath.PlanItemRef(
+      _picked[key] = ath.PlanItemSource(
         (b) => b
           ..planId = planId
           ..itemId = itemId,

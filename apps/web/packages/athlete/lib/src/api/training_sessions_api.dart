@@ -135,13 +135,13 @@ class TrainingSessionsApi {
   }
 
   /// Quick-add exercises of any readable plan or template to a session
-  /// Copies the given items (in the given order) to the end of the session&#39;s own plan and returns that plan. A session without a plan of its own (no plan, a template or a shared tenant plan) first gets an ad-hoc tenant plan (&#x60;sessionId&#x60; &#x3D; this session) that starts with the items of its current plan, if any; the session then references it, so the template or shared plan is never changed (copy on write, ADR-0041). Template items are copied with their texts in the negotiated language. Unknown or foreign plans or items are 404; CANCELLED sessions cannot be changed (409). Authz: ADMIN; team staff. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). 
+  /// Copies the given sources (in the given order) to the end of the session&#39;s own plan and returns that plan. Each source is a catalogue exercise or an item of a readable plan (&#x60;PlanItemSource&#x60;); the copy keeps the &#x60;exerciseId&#x60; of its source (3.0.0, ADR-0047). A session without a plan of its own (no plan, a template or a shared tenant plan) first gets an ad-hoc tenant plan (&#x60;sessionId&#x60; &#x3D; this session) that starts with the items of its current plan, if any; the session then references it, so the template or shared plan is never changed (copy on write, ADR-0041). Global exercises and template items are copied with their texts in the negotiated language. Unknown or foreign plans, items or exercises are 404; an archived exercise is 422 &#x60;EXERCISE_ARCHIVED&#x60;; CANCELLED sessions cannot be changed (409). Authz: ADMIN; team staff. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
   /// * [sessionId] 
   /// * [copyPlanItemsRequest] 
-  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans. 
+  /// * [acceptLanguage] - Language of the template texts (RFC 9110 list, e.g. `id, en;q=0.8`). The first supported language (`es`, `en`, `id`) in preference order wins; absent, `*` or unsupported = `en`. Ignored for tenant plans and the academy's own exercises (global exercises follow it, 3.0.0). 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request

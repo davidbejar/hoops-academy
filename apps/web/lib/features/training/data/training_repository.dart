@@ -22,7 +22,7 @@ abstract class TrainingRepository {
   /// or template to the end of the session's own plan, created on first use.
   Future<ath.TrainingPlan> copyItemsToSession(
     String sessionId,
-    List<ath.PlanItemRef> items,
+    List<ath.PlanItemSource> items,
   );
 
   Future<List<ath.TrainingSchedule>> schedules({String? teamId});
@@ -119,7 +119,7 @@ class ApiTrainingRepository implements TrainingRepository {
   @override
   Future<ath.TrainingPlan> copyItemsToSession(
     String sessionId,
-    List<ath.PlanItemRef> items,
+    List<ath.PlanItemSource> items,
   ) async => (await _sessions.copyItemsToSession(
     xTenantId: _t,
     sessionId: sessionId,

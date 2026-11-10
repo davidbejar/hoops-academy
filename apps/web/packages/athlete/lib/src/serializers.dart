@@ -29,6 +29,10 @@ import 'package:hoops_athlete_api/src/model/create_plan_assignment_request.dart'
 import 'package:hoops_athlete_api/src/model/create_training_plan_request.dart';
 import 'package:hoops_athlete_api/src/model/create_training_session_request.dart';
 import 'package:hoops_athlete_api/src/model/day_of_week.dart';
+import 'package:hoops_athlete_api/src/model/exercise.dart';
+import 'package:hoops_athlete_api/src/model/exercise_input.dart';
+import 'package:hoops_athlete_api/src/model/exercise_page.dart';
+import 'package:hoops_athlete_api/src/model/exercise_scope.dart';
 import 'package:hoops_athlete_api/src/model/gender.dart';
 import 'package:hoops_athlete_api/src/model/injury.dart';
 import 'package:hoops_athlete_api/src/model/injury_page.dart';
@@ -51,7 +55,7 @@ import 'package:hoops_athlete_api/src/model/plan_completion_page.dart';
 import 'package:hoops_athlete_api/src/model/plan_item.dart';
 import 'package:hoops_athlete_api/src/model/plan_item_input.dart';
 import 'package:hoops_athlete_api/src/model/plan_item_match.dart';
-import 'package:hoops_athlete_api/src/model/plan_item_ref.dart';
+import 'package:hoops_athlete_api/src/model/plan_item_source.dart';
 import 'package:hoops_athlete_api/src/model/plan_progress.dart';
 import 'package:hoops_athlete_api/src/model/plan_progress_counts.dart';
 import 'package:hoops_athlete_api/src/model/planned_absence.dart';
@@ -74,6 +78,7 @@ import 'package:hoops_athlete_api/src/model/training_session.dart';
 import 'package:hoops_athlete_api/src/model/training_session_page.dart';
 import 'package:hoops_athlete_api/src/model/training_session_status.dart';
 import 'package:hoops_athlete_api/src/model/update_body_measurement_request.dart';
+import 'package:hoops_athlete_api/src/model/update_exercise_request.dart';
 import 'package:hoops_athlete_api/src/model/update_injury_request.dart';
 import 'package:hoops_athlete_api/src/model/update_physical_test_result_request.dart';
 import 'package:hoops_athlete_api/src/model/update_physical_test_type_request.dart';
@@ -102,6 +107,10 @@ part 'serializers.g.dart';
   CreateTrainingPlanRequest,
   CreateTrainingSessionRequest,
   DayOfWeek,
+  Exercise,
+  ExerciseInput,
+  ExercisePage,
+  ExerciseScope,
   Gender,
   Injury,
   InjuryPage,
@@ -124,7 +133,7 @@ part 'serializers.g.dart';
   PlanItem,
   PlanItemInput,
   PlanItemMatch,
-  PlanItemRef,
+  PlanItemSource,
   PlanProgress,
   PlanProgressCounts,
   PlannedAbsence,
@@ -147,6 +156,7 @@ part 'serializers.g.dart';
   TrainingSessionPage,
   TrainingSessionStatus,
   UpdateBodyMeasurementRequest,
+  UpdateExerciseRequest,
   UpdateInjuryRequest,
   UpdatePhysicalTestResultRequest,
   UpdatePhysicalTestTypeRequest,
@@ -183,10 +193,6 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<BodyMeasurement>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltList, [FullType(PlanItemRef)]),
-        () => ListBuilder<PlanItemRef>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlanAssignment)]),
         () => ListBuilder<PlanAssignment>(),
       )
@@ -211,6 +217,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<PlanItemInput>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(Exercise)]),
+        () => ListBuilder<Exercise>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(TrainingSession)]),
         () => ListBuilder<TrainingSession>(),
       )
@@ -233,6 +243,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(AttendanceInput)]),
         () => ListBuilder<AttendanceInput>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlanItemSource)]),
+        () => ListBuilder<PlanItemSource>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(String)]),

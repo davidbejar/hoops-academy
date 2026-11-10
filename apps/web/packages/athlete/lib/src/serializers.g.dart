@@ -22,6 +22,10 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(CreateTrainingPlanRequest.serializer)
       ..add(CreateTrainingSessionRequest.serializer)
       ..add(DayOfWeek.serializer)
+      ..add(Exercise.serializer)
+      ..add(ExerciseInput.serializer)
+      ..add(ExercisePage.serializer)
+      ..add(ExerciseScope.serializer)
       ..add(Gender.serializer)
       ..add(Injury.serializer)
       ..add(InjuryPage.serializer)
@@ -44,7 +48,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PlanItem.serializer)
       ..add(PlanItemInput.serializer)
       ..add(PlanItemMatch.serializer)
-      ..add(PlanItemRef.serializer)
+      ..add(PlanItemSource.serializer)
       ..add(PlanProgress.serializer)
       ..add(PlanProgressCounts.serializer)
       ..add(PlannedAbsence.serializer)
@@ -68,6 +72,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(TrainingSessionStatus.serializer)
       ..add(UpdateBodyMeasurementRequest.serializer)
       ..add(UpdateBodyMeasurementRequestClearEnum.serializer)
+      ..add(UpdateExerciseRequest.serializer)
+      ..add(UpdateExerciseRequestClearEnum.serializer)
       ..add(UpdateInjuryRequest.serializer)
       ..add(UpdateInjuryRequestClearEnum.serializer)
       ..add(UpdatePhysicalTestResultRequest.serializer)
@@ -94,6 +100,9 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(AttendanceInput)]),
           () => ListBuilder<AttendanceInput>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(Exercise)]),
+          () => ListBuilder<Exercise>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Injury)]),
           () => ListBuilder<Injury>())
       ..addBuilderFactory(
@@ -115,8 +124,8 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(PlanItemMatch)]),
           () => ListBuilder<PlanItemMatch>())
       ..addBuilderFactory(
-          const FullType(BuiltList, const [const FullType(PlanItemRef)]),
-          () => ListBuilder<PlanItemRef>())
+          const FullType(BuiltList, const [const FullType(PlanItemSource)]),
+          () => ListBuilder<PlanItemSource>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(PlannedAbsence)]),
           () => ListBuilder<PlannedAbsence>())
@@ -147,6 +156,10 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltSet,
               const [const FullType(UpdateBodyMeasurementRequestClearEnum)]),
           () => SetBuilder<UpdateBodyMeasurementRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltSet, const [const FullType(UpdateExerciseRequestClearEnum)]),
+          () => SetBuilder<UpdateExerciseRequestClearEnum>())
       ..addBuilderFactory(
           const FullType(
               BuiltSet, const [const FullType(UpdateInjuryRequestClearEnum)]),

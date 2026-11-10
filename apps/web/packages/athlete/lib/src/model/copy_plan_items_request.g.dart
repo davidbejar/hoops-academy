@@ -8,7 +8,7 @@ part of 'copy_plan_items_request.dart';
 
 class _$CopyPlanItemsRequest extends CopyPlanItemsRequest {
   @override
-  final BuiltList<PlanItemRef> items;
+  final BuiltList<PlanItemSource> items;
 
   factory _$CopyPlanItemsRequest(
           [void Function(CopyPlanItemsRequestBuilder)? updates]) =>
@@ -50,10 +50,10 @@ class CopyPlanItemsRequestBuilder
     implements Builder<CopyPlanItemsRequest, CopyPlanItemsRequestBuilder> {
   _$CopyPlanItemsRequest? _$v;
 
-  ListBuilder<PlanItemRef>? _items;
-  ListBuilder<PlanItemRef> get items =>
-      _$this._items ??= ListBuilder<PlanItemRef>();
-  set items(ListBuilder<PlanItemRef>? items) => _$this._items = items;
+  ListBuilder<PlanItemSource>? _items;
+  ListBuilder<PlanItemSource> get items =>
+      _$this._items ??= ListBuilder<PlanItemSource>();
+  set items(ListBuilder<PlanItemSource>? items) => _$this._items = items;
 
   CopyPlanItemsRequestBuilder() {
     CopyPlanItemsRequest._defaults(this);

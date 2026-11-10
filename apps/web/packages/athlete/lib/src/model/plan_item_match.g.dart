@@ -13,12 +13,17 @@ class _$PlanItemMatch extends PlanItemMatch {
   final String planId;
   @override
   final String title;
+  @override
+  final String? exerciseId;
 
   factory _$PlanItemMatch([void Function(PlanItemMatchBuilder)? updates]) =>
       (PlanItemMatchBuilder()..update(updates))._build();
 
   _$PlanItemMatch._(
-      {required this.id, required this.planId, required this.title})
+      {required this.id,
+      required this.planId,
+      required this.title,
+      this.exerciseId})
       : super._();
   @override
   PlanItemMatch rebuild(void Function(PlanItemMatchBuilder) updates) =>
@@ -33,7 +38,8 @@ class _$PlanItemMatch extends PlanItemMatch {
     return other is PlanItemMatch &&
         id == other.id &&
         planId == other.planId &&
-        title == other.title;
+        title == other.title &&
+        exerciseId == other.exerciseId;
   }
 
   @override
@@ -42,6 +48,7 @@ class _$PlanItemMatch extends PlanItemMatch {
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, planId.hashCode);
     _$hash = $jc(_$hash, title.hashCode);
+    _$hash = $jc(_$hash, exerciseId.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -51,7 +58,8 @@ class _$PlanItemMatch extends PlanItemMatch {
     return (newBuiltValueToStringHelper(r'PlanItemMatch')
           ..add('id', id)
           ..add('planId', planId)
-          ..add('title', title))
+          ..add('title', title)
+          ..add('exerciseId', exerciseId))
         .toString();
   }
 }
@@ -72,6 +80,10 @@ class PlanItemMatchBuilder
   String? get title => _$this._title;
   set title(String? title) => _$this._title = title;
 
+  String? _exerciseId;
+  String? get exerciseId => _$this._exerciseId;
+  set exerciseId(String? exerciseId) => _$this._exerciseId = exerciseId;
+
   PlanItemMatchBuilder() {
     PlanItemMatch._defaults(this);
   }
@@ -82,6 +94,7 @@ class PlanItemMatchBuilder
       _id = $v.id;
       _planId = $v.planId;
       _title = $v.title;
+      _exerciseId = $v.exerciseId;
       _$v = null;
     }
     return this;
@@ -108,6 +121,7 @@ class PlanItemMatchBuilder
               planId, r'PlanItemMatch', 'planId'),
           title: BuiltValueNullFieldError.checkNotNull(
               title, r'PlanItemMatch', 'title'),
+          exerciseId: exerciseId,
         );
     replace(_$result);
     return _$result;

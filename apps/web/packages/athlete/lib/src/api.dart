@@ -11,6 +11,7 @@ import 'package:hoops_athlete_api/src/auth/bearer_auth.dart';
 import 'package:hoops_athlete_api/src/auth/oauth.dart';
 import 'package:hoops_athlete_api/src/api/attendance_api.dart';
 import 'package:hoops_athlete_api/src/api/body_measurements_api.dart';
+import 'package:hoops_athlete_api/src/api/exercises_api.dart';
 import 'package:hoops_athlete_api/src/api/injuries_api.dart';
 import 'package:hoops_athlete_api/src/api/physical_tests_api.dart';
 import 'package:hoops_athlete_api/src/api/plan_assignments_api.dart';
@@ -124,6 +125,12 @@ class HoopsAthleteApi {
   /// by doing that all interceptors will not be executed
   BodyMeasurementsApi getBodyMeasurementsApi() {
     return BodyMeasurementsApi(dio, serializers);
+  }
+
+  /// Get ExercisesApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  ExercisesApi getExercisesApi() {
+    return ExercisesApi(dio, serializers);
   }
 
   /// Get InjuriesApi instance, base route and serializer can be overridden by a given but be careful,

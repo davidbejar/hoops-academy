@@ -23,6 +23,8 @@ class _$PlanItem extends PlanItem {
   final String id;
   @override
   final int position;
+  @override
+  final String? exerciseId;
 
   factory _$PlanItem([void Function(PlanItemBuilder)? updates]) =>
       (PlanItemBuilder()..update(updates))._build();
@@ -35,7 +37,8 @@ class _$PlanItem extends PlanItem {
       this.repetitions,
       this.videoUrl,
       required this.id,
-      required this.position})
+      required this.position,
+      this.exerciseId})
       : super._();
   @override
   PlanItem rebuild(void Function(PlanItemBuilder) updates) =>
@@ -55,7 +58,8 @@ class _$PlanItem extends PlanItem {
         repetitions == other.repetitions &&
         videoUrl == other.videoUrl &&
         id == other.id &&
-        position == other.position;
+        position == other.position &&
+        exerciseId == other.exerciseId;
   }
 
   @override
@@ -69,6 +73,7 @@ class _$PlanItem extends PlanItem {
     _$hash = $jc(_$hash, videoUrl.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, position.hashCode);
+    _$hash = $jc(_$hash, exerciseId.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -83,7 +88,8 @@ class _$PlanItem extends PlanItem {
           ..add('repetitions', repetitions)
           ..add('videoUrl', videoUrl)
           ..add('id', id)
-          ..add('position', position))
+          ..add('position', position)
+          ..add('exerciseId', exerciseId))
         .toString();
   }
 }
@@ -124,6 +130,10 @@ class PlanItemBuilder implements Builder<PlanItem, PlanItemBuilder> {
   int? get position => _$this._position;
   set position(int? position) => _$this._position = position;
 
+  String? _exerciseId;
+  String? get exerciseId => _$this._exerciseId;
+  set exerciseId(String? exerciseId) => _$this._exerciseId = exerciseId;
+
   PlanItemBuilder() {
     PlanItem._defaults(this);
   }
@@ -139,6 +149,7 @@ class PlanItemBuilder implements Builder<PlanItem, PlanItemBuilder> {
       _videoUrl = $v.videoUrl;
       _id = $v.id;
       _position = $v.position;
+      _exerciseId = $v.exerciseId;
       _$v = null;
     }
     return this;
@@ -170,6 +181,7 @@ class PlanItemBuilder implements Builder<PlanItem, PlanItemBuilder> {
           id: BuiltValueNullFieldError.checkNotNull(id, r'PlanItem', 'id'),
           position: BuiltValueNullFieldError.checkNotNull(
               position, r'PlanItem', 'position'),
+          exerciseId: exerciseId,
         );
     replace(_$result);
     return _$result;

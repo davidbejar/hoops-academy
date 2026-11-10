@@ -14,6 +14,7 @@ part 'plan_item_match.g.dart';
 /// * [id] 
 /// * [planId] 
 /// * [title] - In the negotiated language for a template's item; as stored otherwise.
+/// * [exerciseId] - The catalogue exercise the item was copied from (`PlanItem.exerciseId`, 3.0.0).
 @BuiltValue()
 abstract class PlanItemMatch implements Built<PlanItemMatch, PlanItemMatchBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -25,6 +26,10 @@ abstract class PlanItemMatch implements Built<PlanItemMatch, PlanItemMatchBuilde
   /// In the negotiated language for a template's item; as stored otherwise.
   @BuiltValueField(wireName: r'title')
   String get title;
+
+  /// The catalogue exercise the item was copied from (`PlanItem.exerciseId`, 3.0.0).
+  @BuiltValueField(wireName: r'exerciseId')
+  String? get exerciseId;
 
   PlanItemMatch._();
 
@@ -64,6 +69,13 @@ class _$PlanItemMatchSerializer implements PrimitiveSerializer<PlanItemMatch> {
       object.title,
       specifiedType: const FullType(String),
     );
+    if (object.exerciseId != null) {
+      yield r'exerciseId';
+      yield serializers.serialize(
+        object.exerciseId,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override
@@ -107,6 +119,14 @@ class _$PlanItemMatchSerializer implements PrimitiveSerializer<PlanItemMatch> {
             specifiedType: const FullType(String),
           ) as String;
           result.title = valueDes;
+          break;
+        case r'exerciseId':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.exerciseId = valueDes;
           break;
         default:
           unhandled.add(key);
