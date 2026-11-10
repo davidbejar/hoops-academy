@@ -71,3 +71,10 @@ appearing in all three.
 - Indexes: `(tenant_id, at desc)` (V9) for the academy page, `(tenant_id, action, at desc)` for the action filter and
   `(at desc)` for the platform page (V12; measured with EXPLAIN ANALYZE, see the WP34 handover). Counting a large
   unfiltered trail still scans it (about 0.1–0.2 s per million rows); acceptable in v1.
+
+## Exporting the trail (WP96, ADR-0048)
+- `GET /api/core/audit-events:export` (ADMIN) and `GET /platform/audit-events:export` (super_admin) return the rows of
+  the list for the same filter as one CSV file, read page by page through the list's use cases (same names, same
+  masking), at most 10,000 rows (422 `EXPORT_TOO_LARGE`). Reading the trail is not recorded; exporting it is
+  (`audit.exported`), and so is exporting a team roster (`team.roster_exported`), because a file leaves the
+  application.
