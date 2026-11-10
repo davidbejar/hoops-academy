@@ -22,6 +22,13 @@ expect() { # expect <expected> <command text>
 }
 
 # --- commit
+expect commit 'timeout 600 git commit -m x'
+expect commit 'env -u FOO git commit'
+expect commit '2>/dev/null git commit'
+expect commit $'git \\\n  commit -m x'
+expect push 'nice -n 5 git push'
+expect push 'caffeinate -i git push origin main'
+expect none 'timeout 5 git log --grep "git commit"'
 expect commit 'git commit -m x'
 expect commit 'git -C dir commit -m x'
 expect commit 'git -c user.name=a commit'
@@ -56,7 +63,7 @@ expect none 'git show-ref'
 expect none 'git stash push'
 expect none 'git status'
 expect none 'ls -la'
-expect none 'echo git commit'
+expect commit 'echo git commit' # unquoted mention: the belt gates it (safe side; quote the text to avoid it)
 expect none 'echo "git push" | cat'
 # --- unsure: the gate must run
 expect 'commit push' 'echo "unbalanced; git commit'

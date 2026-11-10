@@ -77,6 +77,10 @@ classify_command() {
       loose_git push "$raw" && want_push=1
     fi
     classify_simple "$cur" "$raw"
+    # Belt: a wrapper the strict parser does not know (timeout, nice, env -u X, caffeinate, a redirection first) still
+    # runs git. Quoted text is already gone from $cur, so a mention inside quotes stays a non-match.
+    loose_git commit "$cur" && want_commit=1
+    loose_git push "$cur" && want_push=1
     cur="" raw="" loose=0 word_start=1
   }
   while [ "$i" -lt "$len" ]; do
@@ -98,7 +102,9 @@ classify_command() {
     fi
     case "$ch" in
       "'" | '"') q=$ch; raw+=$ch; [ "$word_start" -eq 0 ] || cur+="Q"; word_start=0 ;;
-      '\') cur+="${ch}${next}"; raw+="${ch}${next}"; i=$((i + 1)); word_start=0 ;;
+      '\') if [ "$next" = $'\n' ]; then cur+=" "; raw+=" "; word_start=1 # a line continuation joins the lines
+            else cur+="${ch}${next}"; raw+="${ch}${next}"; word_start=0; fi
+            i=$((i + 1)) ;;
       '#') if [ "$word_start" -eq 1 ]; then
              while [ "$i" -lt "$len" ] && [ "${text:i:1}" != $'\n' ]; do i=$((i + 1)); done
              continue
