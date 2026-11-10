@@ -312,17 +312,14 @@ void main() {
       membershipWithRoles({TenantRole.coach}),
     ]);
 
-    test(
-      'super_admin with memberships may open /platform and /platform/<id>',
-      () {
-        final s = SessionState.ready(
-          user: user,
-          membership: user.memberships.first,
-        );
-        expect(redirectFor(s, '/platform'), isNull);
-        expect(redirectFor(s, '/platform/abc'), isNull);
-      },
-    );
+    test('an old /platform link of a super admin keeps its target (WP99)', () {
+      final s = SessionState.ready(
+        user: user,
+        membership: user.memberships.first,
+      );
+      expect(redirectFor(s, '/platform'), '/app-admin/academies');
+      expect(redirectFor(s, '/platform/abc'), '/app-admin/academies/abc');
+    });
 
     test('a regular member is still bounced from /platform', () {
       final s = SessionState.ready(

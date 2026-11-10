@@ -105,14 +105,90 @@ void main() {
       expect(redirectFor(s, '/tenants'), isNull);
     });
 
-    test('super_admin without memberships lands on /platform', () {
-      final s = SessionState.ready(
+    group('application admin (WP99)', () {
+      final admin = userWith([], superAdmin: true);
+      final inApp = SessionState.ready(
+        user: admin,
+        membership: null,
+        applicationAdmin: true,
+      );
+
+      test('a super admin without academies lands on the hub', () {
+        expect(redirectFor(inApp, '/login'), '/app-admin');
+        expect(redirectFor(inApp, '/splash'), '/app-admin');
+        expect(redirectFor(inApp, '/'), '/app-admin');
+        expect(redirectFor(inApp, '/teams'), '/app-admin');
+        expect(redirectFor(inApp, '/app-admin'), isNull);
+      });
+
+      test('every area of the hub is open, with its sub-routes', () {
+        for (final path in [
+          '/app-admin/academies',
+          '/app-admin/academies/t-1',
+          '/app-admin/academies/t-1/activity',
+          '/app-admin/users',
+          '/app-admin/requests',
+          '/app-admin/activity',
+          '/app-admin/billing',
+        ]) {
+          expect(redirectFor(inApp, path), isNull, reason: path);
+        }
+      });
+
+      test('a super admin in an academy context is kept out of the hub', () {
+        final user = userWith([tenantNorth], superAdmin: true);
+        final inAcademy = SessionState.ready(
+          user: user,
+          membership: tenantNorth,
+        );
+        expect(redirectFor(inAcademy, '/app-admin'), '/admin');
+        expect(redirectFor(inAcademy, '/admin'), isNull);
+      });
+
+      test('a regular member never reaches it', () {
+        final s = SessionState.ready(
+          user: userWith([tenantSouth]),
+          membership: tenantSouth,
+        );
+        expect(redirectFor(s, '/app-admin/users'), '/matches');
+      });
+
+      test('the chooser and the profile stay open in either context', () {
+        expect(redirectFor(inApp, '/tenants'), isNull);
+        expect(redirectFor(inApp, '/profile'), isNull);
+      });
+    });
+
+    group('the old /platform links keep working (WP99)', () {
+      final inApp = SessionState.ready(
         user: userWith([], superAdmin: true),
         membership: null,
+        applicationAdmin: true,
       );
-      expect(redirectFor(s, '/login'), '/platform');
-      expect(redirectFor(s, '/platform'), isNull);
-      expect(redirectFor(s, '/teams'), '/platform');
+
+      test('they redirect to the matching application admin screen', () {
+        expect(redirectFor(inApp, '/platform'), '/app-admin/academies');
+        expect(redirectFor(inApp, '/platform/requests'), '/app-admin/requests');
+        expect(redirectFor(inApp, '/platform/activity'), '/app-admin/activity');
+        expect(
+          redirectFor(inApp, '/platform/t-1'),
+          '/app-admin/academies/t-1',
+        );
+        expect(
+          redirectFor(inApp, '/platform/t-1/activity'),
+          '/app-admin/academies/t-1/activity',
+        );
+      });
+
+      test('a signed-out visitor is asked to sign in first', () {
+        expect(redirectFor(const SessionState.signedOut(), '/platform'), '/login');
+      });
+
+      test('legacyPlatformPath leaves every other path alone', () {
+        expect(legacyPlatformPath('/platformer'), isNull);
+        expect(legacyPlatformPath('/admin'), isNull);
+        expect(legacyPlatformPath('/app-admin'), isNull);
+      });
     });
   });
 }

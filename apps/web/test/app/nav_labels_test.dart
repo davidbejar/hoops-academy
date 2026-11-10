@@ -10,9 +10,12 @@ import 'package:hoops_app/l10n/gen/app_localizations.dart';
 /// letters are all 12 px wide, so the width is checked on the text instead.
 void main() {
   const maxLetters = 10;
-  // Admin has the most destinations (five); parents and players have fewer,
-  // wider slots.
-  final widest = destinationsFor(roles: {TenantRole.admin}, superAdmin: false);
+  // Admin and the application admin have the most destinations (five);
+  // parents and players have fewer, wider slots.
+  final widest = [
+    ...destinationsFor(roles: {TenantRole.admin}, applicationAdmin: false),
+    ...destinationsFor(roles: const {}, applicationAdmin: true),
+  ];
   for (final locale in AppLocalizations.supportedLocales) {
     test(
       'bottom navigation labels fit one line at 360 px (${locale.languageCode})',

@@ -3,8 +3,10 @@ import 'package:hoops_app/core/navigation/destinations.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 void main() {
-  List<AppDestination> nav(Set<TenantRole> roles, {bool superAdmin = false}) =>
-      destinationsFor(roles: roles, superAdmin: superAdmin);
+  List<AppDestination> nav(
+    Set<TenantRole> roles, {
+    bool applicationAdmin = false,
+  }) => destinationsFor(roles: roles, applicationAdmin: applicationAdmin);
 
   test('ADMIN sees Admin, Teams, Matches, Training, Players', () {
     expect(nav({TenantRole.admin}), [
@@ -54,19 +56,32 @@ void main() {
     );
   });
 
-  test('super_admin without a tenant role sees only Platform', () {
-    expect(nav({}, superAdmin: true), [AppDestination.platform]);
+  test('the application admin context has its own menu (WP99)', () {
+    expect(nav({}, applicationAdmin: true), [
+      AppDestination.appAdmin,
+      AppDestination.appAcademies,
+      AppDestination.appUsers,
+      AppDestination.appRequests,
+      AppDestination.appActivity,
+    ]);
   });
 
-  test('no roles and no super_admin yields no destinations', () {
+  test('the application admin menu wins over any tenant role', () {
+    expect(
+      nav({TenantRole.admin}, applicationAdmin: true).first,
+      AppDestination.appAdmin,
+    );
+  });
+
+  test('no roles and no application admin context: no destinations', () {
     expect(nav({}), isEmpty);
   });
 
   test('home path is the first destination', () {
     expect(
-      homePathFor(roles: {TenantRole.parent}, superAdmin: false),
+      homePathFor(roles: {TenantRole.parent}, applicationAdmin: false),
       '/matches',
     );
-    expect(homePathFor(roles: {}, superAdmin: true), '/platform');
+    expect(homePathFor(roles: {}, applicationAdmin: true), '/app-admin');
   });
 }
