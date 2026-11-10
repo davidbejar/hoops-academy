@@ -146,7 +146,7 @@ public class TrainingPlanResource {
     @Path("/{planId}/items:copy")
     public PlanDtos.Plan copyItems(@PathParam("planId") UUID planId, @Valid @NotNull PlanDtos.CopyItemsRequest request,
             @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
-        return PlanDtos.Plan.from(quickAdd.toPlan(caller(), new PlanId(planId), request.refs(),
+        return PlanDtos.Plan.from(quickAdd.toPlan(caller(), new PlanId(planId), request.sources(),
                 AcceptLanguage.negotiate(acceptLanguage)));
     }
 

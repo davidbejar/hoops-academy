@@ -4,6 +4,7 @@ import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.application.PlanRepository;
 import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.ContentLocale;
+import com.hoopsacademy.athlete.domain.ExerciseId;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItem;
@@ -77,6 +78,7 @@ class PlanJpaRepository implements PlanRepository {
             entity.sets = item.sets();
             entity.repetitions = item.repetitions();
             entity.videoUrl = item.videoUrl();
+            entity.exerciseId = item.exercise().map(ExerciseId::value).orElse(null);
             em.persist(entity);
             kept.add(entity.id);
         }
@@ -181,7 +183,8 @@ class PlanJpaRepository implements PlanRepository {
                 items.stream().sorted(java.util.Comparator.comparingInt(i -> i.position))
                         .map(i -> new PlanItem(new PlanItemId(i.id), i.position, i.title, i.description,
                                 i.durationMinutes, i.sets, i.repetitions, i.videoUrl,
-                                TemplateTextsJson.read(i.i18n, "title"))).toList(),
+                                TemplateTextsJson.read(i.i18n, "title"),
+                                i.exerciseId == null ? null : new ExerciseId(i.exerciseId))).toList(),
                 e.createdAt, e.updatedAt);
     }
 }

@@ -58,7 +58,7 @@ public class TrainingSessionResource {
             @Valid @NotNull PlanDtos.CopyItemsRequest request, @HeaderParam("Accept-Language") String acceptLanguage) {
         AuthzContext caller = caller();
         return PlanDtos.Plan.from(quickAdd.toSession(caller, actors.of(caller), new SessionId(sessionId),
-                request.refs(), AcceptLanguage.negotiate(acceptLanguage)));
+                request.sources(), AcceptLanguage.negotiate(acceptLanguage)));
     }
 
     @GET

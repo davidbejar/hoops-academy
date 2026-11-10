@@ -41,6 +41,10 @@ class PlanItemEntity {
     @Column(name = "video_url")
     String videoUrl;
 
+    /** V10: the catalogue exercise the item was copied from (ADR-0047); null for items written by hand. */
+    @Column(name = "exercise_id")
+    UUID exerciseId;
+
     /** Template items only (see {@link PlanEntity}): jsonb {@code {"es": {"title": …, "description": …}, …}}, read as text. */
     @Column(name = "i18n", insertable = false, updatable = false)
     String i18n;

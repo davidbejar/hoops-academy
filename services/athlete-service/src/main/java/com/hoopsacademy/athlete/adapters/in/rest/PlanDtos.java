@@ -1,8 +1,10 @@
 package com.hoopsacademy.athlete.adapters.in.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.hoopsacademy.athlete.application.InvalidRequestException;
 import com.hoopsacademy.athlete.application.ManagePlans;
 import com.hoopsacademy.athlete.application.QuickAddItems;
+import com.hoopsacademy.athlete.domain.ExerciseId;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItem;
 import com.hoopsacademy.athlete.domain.PlanItemId;
@@ -38,31 +40,44 @@ final class PlanDtos {
 
     record ReorderRequest(@NotNull @NotEmpty List<@NotNull UUID> itemIds) {}
 
-    record ItemRef(@NotNull UUID planId, @NotNull UUID itemId) {
+    /** One copy's source (athlete 3.0.0, PlanItemSource): an exercise, or an item of a readable plan. */
+    record ItemSource(UUID exerciseId, UUID planId, UUID itemId) {
 
-        QuickAddItems.ItemRef toRef() {
-            return new QuickAddItems.ItemRef(new PlanId(planId), new PlanItemId(itemId));
+        QuickAddItems.ItemSource toSource(int index) {
+            if (exerciseId != null && planId == null && itemId == null) {
+                return new QuickAddItems.FromExercise(new ExerciseId(exerciseId));
+            }
+            if (exerciseId == null && planId != null && itemId != null) {
+                return new QuickAddItems.FromPlan(new PlanId(planId), new PlanItemId(itemId));
+            }
+            throw new InvalidRequestException("items[" + index + "]", "INVALID_VALUE",
+                    "Give either exerciseId, or planId and itemId");
         }
     }
 
-    /** Quick-add (athlete 2.3.0): 1 to 50 items of readable plans, copied in this order. */
-    record CopyItemsRequest(@NotNull @Size(min = 1, max = 50) List<@Valid @NotNull ItemRef> items) {
+    /** Quick-add (athlete 2.3.0, sources 3.0.0): 1 to 50 exercises or items of readable plans, copied in this order. */
+    record CopyItemsRequest(@NotNull @Size(min = 1, max = 50) List<@NotNull ItemSource> items) {
 
-        List<QuickAddItems.ItemRef> refs() {
-            return items.stream().map(ItemRef::toRef).toList();
+        List<QuickAddItems.ItemSource> sources() {
+            return java.util.stream.IntStream.range(0, items.size()).mapToObj(i -> items.get(i).toSource(i)).toList();
         }
     }
 
-    record ItemMatch(UUID id, UUID planId, String title) {}
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    record ItemMatch(UUID id, UUID planId, String title, UUID exerciseId) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record Item(UUID id, int position, String title, String description, Integer durationMinutes, Integer sets,
-            Integer repetitions, String videoUrl) {
+            Integer repetitions, String videoUrl, UUID exerciseId) {
 
         static Item from(PlanItem i) {
             return new Item(i.id().value(), i.position(), i.title(), i.description(), i.durationMinutes(), i.sets(),
-                    i.repetitions(), i.videoUrl());
+                    i.repetitions(), i.videoUrl(), exerciseOf(i));
         }
+    }
+
+    private static UUID exerciseOf(PlanItem item) {
+        return item.exercise().map(ExerciseId::value).orElse(null);
     }
 
     /** {@code matchedItems} is null (absent) unless a search matched item titles. */
@@ -79,7 +94,7 @@ final class PlanDtos {
         static Summary from(ManagePlans.PlanHit hit) {
             Summary s = from(hit.plan());
             List<ItemMatch> matches = hit.matchedItems().stream()
-                    .map(i -> new ItemMatch(i.id().value(), s.id(), i.title())).toList();
+                    .map(i -> new ItemMatch(i.id().value(), s.id(), i.title(), exerciseOf(i))).toList();
             return new Summary(s.id(), s.name(), s.nameKey(), s.description(), s.template(), s.sourceTemplateId(),
                     s.itemCount(), s.totalDurationMinutes(), s.archived(), s.sessionId(),
                     matches.isEmpty() ? null : matches);
