@@ -1,8 +1,8 @@
 package com.hoopsacademy.game.adapters.in.job;
 
+import com.hoopsacademy.common.replica.ReplicaRetention;
+import com.hoopsacademy.common.replica.ReplicaRetention.Report;
 import com.hoopsacademy.common.tenancy.TenantScope;
-import com.hoopsacademy.game.application.replica.ReplicaRetention;
-import com.hoopsacademy.game.application.replica.ReplicaRetention.Report;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.scheduler.Scheduled;

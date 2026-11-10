@@ -1,8 +1,8 @@
 package com.hoopsacademy.game.adapters.out.persistence;
 
+import com.hoopsacademy.common.replica.ParkedPosition;
+import com.hoopsacademy.common.replica.ReplicaHistory;
 import com.hoopsacademy.common.tenancy.TenantId;
-import com.hoopsacademy.game.application.replica.ParkedPosition;
-import com.hoopsacademy.game.application.replica.ReplicaHistory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.sql.Connection;

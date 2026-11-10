@@ -5,11 +5,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder;
 import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent.Outcome;
-import com.hoopsacademy.athlete.application.replica.ReplicaRetention.Report;
 import com.hoopsacademy.athlete.support.CoreEvents;
 import com.hoopsacademy.athlete.support.CoreEvents.Record;
 import com.hoopsacademy.athlete.support.ReplicaDb;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
+import com.hoopsacademy.common.replica.ParkedPosition;
+import com.hoopsacademy.common.replica.ReplicaHistory;
+import com.hoopsacademy.common.replica.ReplicaRetention;
+import com.hoopsacademy.common.replica.ReplicaRetention.Report;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;

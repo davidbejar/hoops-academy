@@ -3,11 +3,14 @@ package com.hoopsacademy.game.application.replica;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hoopsacademy.common.replica.ParkedPosition;
+import com.hoopsacademy.common.replica.ReplicaHistory;
+import com.hoopsacademy.common.replica.ReplicaRetention;
+import com.hoopsacademy.common.replica.ReplicaRetention.Report;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
-import com.hoopsacademy.game.application.replica.ReplicaRetention.Report;
 import com.hoopsacademy.game.application.replica.ReplicateRoster.Outcome;
 import com.hoopsacademy.game.support.CoreEvents;
 import com.hoopsacademy.game.support.CoreEvents.Record;

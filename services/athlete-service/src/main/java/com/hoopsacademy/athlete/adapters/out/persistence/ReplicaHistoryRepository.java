@@ -1,7 +1,7 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
-import com.hoopsacademy.athlete.application.replica.ParkedPosition;
-import com.hoopsacademy.athlete.application.replica.ReplicaHistory;
+import com.hoopsacademy.common.replica.ParkedPosition;
+import com.hoopsacademy.common.replica.ReplicaHistory;
 import com.hoopsacademy.common.tenancy.TenantId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;

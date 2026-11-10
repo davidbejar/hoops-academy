@@ -1,4 +1,4 @@
-package com.hoopsacademy.game.application.replica;
+package com.hoopsacademy.common.replica;
 
 import com.hoopsacademy.common.tenancy.TenantId;
 import java.time.Instant;
