@@ -11643,7 +11643,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
           limit: {requests: 10, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -11653,7 +11653,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "::/0"}
           limit: {requests: 10, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "::/0"}
@@ -11688,7 +11688,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
           limit: {requests: 10, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -11698,7 +11698,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "::/0"}
           limit: {requests: 10, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "::/0"}
@@ -11733,7 +11733,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
           limit: {requests: 10, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -11743,7 +11743,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "::/0"}
           limit: {requests: 10, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "::/0"}
@@ -11778,7 +11778,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
           limit: {requests: 10, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -11788,7 +11788,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "::/0"}
           limit: {requests: 10, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "::/0"}
@@ -11823,7 +11823,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
           limit: {requests: 120, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -11833,7 +11833,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "::/0"}
           limit: {requests: 120, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "::/0"}
@@ -11868,7 +11868,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
           limit: {requests: 60, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "0.0.0.0/0"}
@@ -11878,7 +11878,7 @@ spec:
             - sourceCIDR: {type: Distinct, value: "::/0"}
           limit: {requests: 60, unit: Minute}
         # The always-true path selector keeps this rule's descriptor apart from the per-minute rule's: Envoy Gateway
-        # v1.9 builds sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
+        # v1.9 and v1.10 build sourceCIDR descriptors without the rule index, so two rules with equal selectors share one
         # counter (counted twice per request, with the first rule's limit) and the per-second limit is lost.
         - clientSelectors:
             - sourceCIDR: {type: Distinct, value: "::/0"}

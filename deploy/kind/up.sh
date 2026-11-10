@@ -16,9 +16,10 @@ cd "$(dirname "$0")/../.."
 
 CLUSTER="${KIND_CLUSTER:-hoops}"
 NS="${HOOPS_NAMESPACE:-hoops}"
-# Envoy Gateway v1.9.x bundles and needs Gateway API v1.6.1 (CRDs installed by its chart; compatibility matrix:
-# https://gateway.envoyproxy.io/news/releases/matrix/). Bump both together, see docs/adr/0031-gateway-api.md.
-ENVOY_GATEWAY_VERSION="v1.9.3"
+# Envoy Gateway v1.10.x bundles and needs Gateway API v1.6.1, Kubernetes 1.34 to 1.37 (CRDs installed by its chart;
+# compatibility matrix: https://gateway.envoyproxy.io/news/releases/matrix/). Bump both together, see
+# docs/adr/0031-gateway-api.md (amendment WP100).
+ENVOY_GATEWAY_VERSION="v1.10.0"
 GATEWAY_API_VERSION="v1.6.1"
 CNPG_VERSION="1.30.1"
 CNPG_BRANCH="release-${CNPG_VERSION%.*}"
@@ -164,15 +165,10 @@ if [ "$DEPLOY" = 1 ]; then
   [ "$ESO" = 0 ] || VALUES+=(--set externalSecrets.enabled=true)
   helm --kube-context "kind-$CLUSTER" upgrade --install hoops deploy/helm/hoops -n "$NS" "${VALUES[@]}" \
     --wait --timeout 15m
-  # WP71: the Job redpanda-bootstrap (a post-install hook) creates the broker users only after --wait, so on a fresh install
-  # the services start before their users exist. The consumers recover by themselves; core's idempotent producer does not
-  # when its very first producer-id request failed authentication (it does after later failures). Restart it once.
-  # (grep without -q: with -q it stops at the first match, kubectl dies of SIGPIPE and pipefail turns the match false.)
-  if "${K[@]}" -n "$NS" logs deploy/core-service 2>/dev/null | grep 'SASL authentication failed' >/dev/null; then
-    step "restart core-service (it started before its broker user existed)"
-    "${K[@]}" -n "$NS" rollout restart deployment/core-service
-    "${K[@]}" -n "$NS" rollout status deployment/core-service --timeout=600s
-  fi
+  # The Job redpanda-bootstrap (a post-install hook) creates the broker users only after --wait, so on a fresh install the
+  # services start before their users exist and log `SASL authentication failed` for a while. Everyone recovers by itself:
+  # the consumers reconnect, and core's publisher replaces a producer that failed hoops.outbox.producer-reset-after times
+  # in a row (WP71 needed a restart of core here; WP100 removed it and proved the recovery on a fresh install).
 fi
 
 cat <<MSG

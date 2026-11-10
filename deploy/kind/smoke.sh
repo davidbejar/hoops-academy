@@ -174,11 +174,11 @@ if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CT
   [ "$pub" = "UP OK" ] && ok "core readiness outbox-publisher: $pub" || bad "core readiness outbox-publisher: '$pub' (want UP OK)"
   [ "$(metrics core-service | total hoops_outbox_broker_available)" = 1 ] && ok "core: hoops_outbox_broker_available 1" \
     || bad "core: broker not available to the publisher"
-  for s in core:producer game:consumer athlete:consumer; do
-    n=$(metrics "${s%:*}-service" | total "kafka_${s#*:}_successful_authentication_total")
-    [ "$n" -ge 1 ] && ok "${s%:*}-service: Kafka ${s#*:} logged in as ${s%:*}-service (SCRAM, $n successful authentications)" \
-      || bad "${s%:*}-service: no successful Kafka authentication"
-  done
+  kafka_login() { # service:client; core's producer exists only once it has sent (lazy), so it is checked after the seed
+    local n; n=$(metrics "${1%:*}-service" | total "kafka_${1#*:}_successful_authentication_total")
+    [ "$n" -ge 1 ] && ok "${1%:*}-service: Kafka ${1#*:} logged in as ${1%:*}-service (SCRAM, $n successful authentications)" \
+      || bad "${1%:*}-service: no successful Kafka authentication"; }
+  kafka_login game:consumer; kafka_login athlete:consumer
   source_of() { kubectl "${CTX[@]}" get configmap "$1-service-env" -o jsonpath="{.data.$(echo "$1" | tr '[:lower:]' '[:upper:]')_ROSTER_SOURCE}"; }
   echo "  roster source: game $(source_of game), athlete $(source_of athlete)"
   before_p=$(metrics core-service | total hoops_outbox_published_total)
@@ -212,6 +212,7 @@ if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CT
     caught_up() { [ "$(group_lag "$1-service.roster")" = 0 ]; }
     eventually published && ok "core: hoops_outbox_pending 0, published $before_p -> $(metrics core-service | total hoops_outbox_published_total)" \
       || bad "core: pending $(metrics core-service | total hoops_outbox_pending), published $before_p -> $(metrics core-service | total hoops_outbox_published_total) (never sent: events.md 'Kubernetes')"
+    kafka_login core:producer
     for s in game athlete; do
       eventually caught_up "$s" || bad "$s-service.roster: group lag $(group_lag "$s-service.roster")"
       m=$(metrics "$s-service")

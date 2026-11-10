@@ -4,7 +4,9 @@
 # share the traffic (one counter per client IP in Redis); a tight burst (all requests at once) is cut by the per-second
 # rule; the percent-encoded `events%3Abatch` shares the counter, an unrelated route is not limited, and another client
 # IP (a pod inside the cluster) has its own counter. The ACL check proves the Redis login of the rate limit service.
-#   deploy/kind/ratelimit-check.sh [events|token|acl|all|redis-down]      default: all (events, token, acl)
+#   deploy/kind/ratelimit-check.sh [events|token|exports|acl|all|redis-down]   default: all (events, token, exports, acl)
+# exports (WP100): the roster CSV export (10/min and 2/s per client IP, WP96), anonymous (401 below the limit); its %3A form
+# shares the counter; the academy audit export has a counter of its own.
 # acl: from a pod that the Redis NetworkPolicy admits, the rate limit user may only PING / INCRBY / EXPIRE its own keys
 # (EVAL, GET, FLUSHALL, CONFIG, ... refused), and neither an anonymous client nor the `default` user gets in.
 # redis-down: stops the ratelimit-redis Deployment, checks that requests pass (failClosed=false: fail open), starts it
@@ -178,6 +180,15 @@ if want token && timed token; then
   c=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/auth/realms/academy/.well-known/openid-configuration")
   [ "$c" = 200 ] && ok "rest of /auth not limited (discovery -> 200)" || bad "discovery -> $c"
   tight_burst "POST /auth/realms/academy/protocol/openid-connect/token" 60 10 "${TOKEN[@]}"
+fi
+if want exports && timed exports; then
+  echo "== CSV exports (10/min and 2/s per client IP)"
+  team="00000000-0000-0000-0000-$(printf '%012d' $$)"
+  burst "GET /api/core/teams/<id>/roster:export" 10 2 "$BASE/api/core/teams/$team/roster:export"
+  c=$(curl -s -o /dev/null -w '%{http_code}' --path-as-is "$BASE/api/core/teams/$team/roster%3Aexport")
+  [ "$c" = 429 ] && ok "roster%3Aexport shares the counter (429)" || bad "roster%3Aexport -> $c (expected 429: same route, same counter)"
+  c=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/core/audit-events:export")
+  [ "$c" = 401 ] && ok "audit-events:export has its own counter (401 anonymous, not 429)" || bad "audit-events:export -> $c (expected 401)"
 fi
 if want acl; then
   echo "== Redis ACL (user of the rate limit service)"
