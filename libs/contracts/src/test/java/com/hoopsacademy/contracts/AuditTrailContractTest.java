@@ -36,7 +36,7 @@ class AuditTrailContractTest {
 
         assertThat(action.getType()).isEqualTo("string");
         List<String> values = action.getEnum().stream().map(String::valueOf).toList();
-        assertThat(values).doesNotHaveDuplicates().hasSize(30)
+        assertThat(values).doesNotHaveDuplicates().hasSize(32)
                 .contains("member.invited", "member.invitation_accepted", "member.temporary_password_expired",
                         "player.approved", "player.rejected", "tenant.suspended", "admin.added");
         assertThat(values).allMatch(value -> value.matches("[a-z_]+\\.[a-z_]+"));
@@ -45,7 +45,7 @@ class AuditTrailContractTest {
     @Test
     void theTargetTypesAreAnEnum() {
         assertThat(schema("AuditTargetType").getEnum()).map(String::valueOf)
-                .containsExactlyInAnyOrder("person", "player", "tenant", "approval_request", "guardian_link");
+                .containsExactlyInAnyOrder("person", "player", "tenant", "approval_request", "guardian_link", "team");
     }
 
     @Test
