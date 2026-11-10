@@ -12,12 +12,11 @@ part 'update_tenant_request.g.dart';
 /// UpdateTenantRequest
 ///
 /// Properties:
-/// * [name]
-/// * [timezone]
-/// * [defaultLocale]
+/// * [name] 
+/// * [timezone] 
+/// * [defaultLocale] 
 @BuiltValue()
-abstract class UpdateTenantRequest
-    implements Built<UpdateTenantRequest, UpdateTenantRequestBuilder> {
+abstract class UpdateTenantRequest implements Built<UpdateTenantRequest, UpdateTenantRequestBuilder> {
   @BuiltValueField(wireName: r'name')
   String? get name;
 
@@ -30,24 +29,18 @@ abstract class UpdateTenantRequest
 
   UpdateTenantRequest._();
 
-  factory UpdateTenantRequest([void updates(UpdateTenantRequestBuilder b)]) =
-      _$UpdateTenantRequest;
+  factory UpdateTenantRequest([void updates(UpdateTenantRequestBuilder b)]) = _$UpdateTenantRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateTenantRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateTenantRequest> get serializer =>
-      _$UpdateTenantRequestSerializer();
+  static Serializer<UpdateTenantRequest> get serializer => _$UpdateTenantRequestSerializer();
 }
 
-class _$UpdateTenantRequestSerializer
-    implements PrimitiveSerializer<UpdateTenantRequest> {
+class _$UpdateTenantRequestSerializer implements PrimitiveSerializer<UpdateTenantRequest> {
   @override
-  final Iterable<Type> types = const [
-    UpdateTenantRequest,
-    _$UpdateTenantRequest
-  ];
+  final Iterable<Type> types = const [UpdateTenantRequest, _$UpdateTenantRequest];
 
   @override
   final String wireName = r'UpdateTenantRequest';
@@ -86,9 +79,7 @@ class _$UpdateTenantRequestSerializer
     UpdateTenantRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -155,3 +146,5 @@ class _$UpdateTenantRequestSerializer
     return result.build();
   }
 }
+
+

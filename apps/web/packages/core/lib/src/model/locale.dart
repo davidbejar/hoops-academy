@@ -11,6 +11,7 @@ part 'locale.g.dart';
 
 /// UI language.
 class Locale extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'es')
   static const Locale es = _$es;
   @BuiltValueEnumConst(wireName: r'en')
@@ -22,7 +23,7 @@ class Locale extends EnumClass {
 
   static Serializer<Locale> get serializer => _$localeSerializer;
 
-  const Locale._(String name) : super(name);
+  const Locale._(String name): super(name);
 
   static BuiltSet<Locale> get values => _$values;
   static Locale valueOf(String name) => _$valueOf(name);
@@ -35,3 +36,4 @@ class Locale extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class LocaleMixin = Object with _$LocaleMixin;
+

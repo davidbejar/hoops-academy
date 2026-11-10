@@ -15,12 +15,12 @@ part 'tenant_admin.g.dart';
 /// An administrator of a tenant as the platform sees it (identity only, ADR-0023).
 ///
 /// Properties:
-/// * [personId]
-/// * [givenName]
-/// * [familyName]
-/// * [email]
-/// * [invitationStatus]
-/// * [temporaryPasswordStatus]
+/// * [personId] 
+/// * [givenName] 
+/// * [familyName] 
+/// * [email] 
+/// * [invitationStatus] 
+/// * [temporaryPasswordStatus] 
 /// * [otherRoles] - The person's tenant roles besides ADMIN (removing the administrator keeps these).
 @BuiltValue()
 abstract class TenantAdmin implements Built<TenantAdmin, TenantAdminBuilder> {
@@ -116,9 +116,7 @@ class _$TenantAdminSerializer implements PrimitiveSerializer<TenantAdmin> {
     TenantAdmin object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -211,3 +209,5 @@ class _$TenantAdminSerializer implements PrimitiveSerializer<TenantAdmin> {
     return result.build();
   }
 }
+
+

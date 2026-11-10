@@ -14,8 +14,8 @@ part 'tenant_page.g.dart';
 /// TenantPage
 ///
 /// Properties:
-/// * [items]
-/// * [page]
+/// * [items] 
+/// * [page] 
 @BuiltValue()
 abstract class TenantPage implements Built<TenantPage, TenantPageBuilder> {
   @BuiltValueField(wireName: r'items')
@@ -65,9 +65,7 @@ class _$TenantPageSerializer implements PrimitiveSerializer<TenantPage> {
     TenantPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -124,3 +122,5 @@ class _$TenantPageSerializer implements PrimitiveSerializer<TenantPage> {
     return result.build();
   }
 }
+
+

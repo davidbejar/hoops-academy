@@ -10,6 +10,7 @@ import 'package:built_value/serializer.dart';
 part 'tenant_role.g.dart';
 
 class TenantRole extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'ADMIN')
   static const TenantRole ADMIN = _$ADMIN;
   @BuiltValueEnumConst(wireName: r'COACH')
@@ -25,7 +26,7 @@ class TenantRole extends EnumClass {
 
   static Serializer<TenantRole> get serializer => _$tenantRoleSerializer;
 
-  const TenantRole._(String name) : super(name);
+  const TenantRole._(String name): super(name);
 
   static BuiltSet<TenantRole> get values => _$values;
   static TenantRole valueOf(String name) => _$valueOf(name);
@@ -38,3 +39,4 @@ class TenantRole extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class TenantRoleMixin = Object with _$TenantRoleMixin;
+

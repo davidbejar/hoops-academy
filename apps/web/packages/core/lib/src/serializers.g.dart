@@ -28,6 +28,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(ApprovalRequestWithPassword.serializer)
       ..add(ApprovalStatus.serializer)
       ..add(AssignPlayerRequest.serializer)
+      ..add(AssignedTeamPlayer.serializer)
       ..add(AuditAction.serializer)
       ..add(AuditActor.serializer)
       ..add(AuditActorKind.serializer)
@@ -60,6 +61,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GuardianLinkWithPassword.serializer)
       ..add(InvitationStatus.serializer)
       ..add(InviteMemberRequest.serializer)
+      ..add(JerseySource.serializer)
       ..add(Locale.serializer)
       ..add(Me.serializer)
       ..add(Member.serializer)
@@ -97,6 +99,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(SeasonRolloverResult.serializer)
       ..add(StaffRole.serializer)
       ..add(SubmitAcademyRequest.serializer)
+      ..add(TakenJerseyNumber.serializer)
       ..add(Team.serializer)
       ..add(TeamPage.serializer)
       ..add(TeamPlayer.serializer)
@@ -129,6 +132,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(UpdateMeRequest.serializer)
       ..add(UpdateMemberRequest.serializer)
       ..add(UpdateMemberRequestClearEnum.serializer)
+      ..add(UpdatePlayerRequest.serializer)
+      ..add(UpdatePlayerRequestClearEnum.serializer)
       ..add(UpdateSeasonRequest.serializer)
       ..add(UpdateTeamPlayerRequest.serializer)
       ..add(UpdateTeamPlayerRequestClearEnum.serializer)
@@ -316,6 +321,10 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(
               BuiltSet, const [const FullType(UpdateMemberRequestClearEnum)]),
           () => SetBuilder<UpdateMemberRequestClearEnum>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltSet, const [const FullType(UpdatePlayerRequestClearEnum)]),
+          () => SetBuilder<UpdatePlayerRequestClearEnum>())
       ..addBuilderFactory(
           const FullType(BuiltSet,
               const [const FullType(UpdateTeamPlayerRequestClearEnum)]),

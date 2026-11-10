@@ -13,14 +13,13 @@ part 'create_tenant_request.g.dart';
 /// CreateTenantRequest
 ///
 /// Properties:
-/// * [slug]
-/// * [name]
-/// * [timezone]
-/// * [defaultLocale]
-/// * [firstAdmin]
+/// * [slug] 
+/// * [name] 
+/// * [timezone] 
+/// * [defaultLocale] 
+/// * [firstAdmin] 
 @BuiltValue()
-abstract class CreateTenantRequest
-    implements Built<CreateTenantRequest, CreateTenantRequestBuilder> {
+abstract class CreateTenantRequest implements Built<CreateTenantRequest, CreateTenantRequestBuilder> {
   @BuiltValueField(wireName: r'slug')
   String get slug;
 
@@ -39,24 +38,18 @@ abstract class CreateTenantRequest
 
   CreateTenantRequest._();
 
-  factory CreateTenantRequest([void updates(CreateTenantRequestBuilder b)]) =
-      _$CreateTenantRequest;
+  factory CreateTenantRequest([void updates(CreateTenantRequestBuilder b)]) = _$CreateTenantRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(CreateTenantRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<CreateTenantRequest> get serializer =>
-      _$CreateTenantRequestSerializer();
+  static Serializer<CreateTenantRequest> get serializer => _$CreateTenantRequestSerializer();
 }
 
-class _$CreateTenantRequestSerializer
-    implements PrimitiveSerializer<CreateTenantRequest> {
+class _$CreateTenantRequestSerializer implements PrimitiveSerializer<CreateTenantRequest> {
   @override
-  final Iterable<Type> types = const [
-    CreateTenantRequest,
-    _$CreateTenantRequest
-  ];
+  final Iterable<Type> types = const [CreateTenantRequest, _$CreateTenantRequest];
 
   @override
   final String wireName = r'CreateTenantRequest';
@@ -99,9 +92,7 @@ class _$CreateTenantRequestSerializer
     CreateTenantRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -179,3 +170,5 @@ class _$CreateTenantRequestSerializer
     return result.build();
   }
 }
+
+

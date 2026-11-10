@@ -10,6 +10,7 @@ import 'package:built_value/serializer.dart';
 part 'audit_target_type.g.dart';
 
 class AuditTargetType extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'person')
   static const AuditTargetType person = _$person;
   @BuiltValueEnumConst(wireName: r'player')
@@ -20,13 +21,14 @@ class AuditTargetType extends EnumClass {
   static const AuditTargetType approvalRequest = _$approvalRequest;
   @BuiltValueEnumConst(wireName: r'guardian_link')
   static const AuditTargetType guardianLink = _$guardianLink;
+  @BuiltValueEnumConst(wireName: r'team')
+  static const AuditTargetType team = _$team;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
   static const AuditTargetType unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 
-  static Serializer<AuditTargetType> get serializer =>
-      _$auditTargetTypeSerializer;
+  static Serializer<AuditTargetType> get serializer => _$auditTargetTypeSerializer;
 
-  const AuditTargetType._(String name) : super(name);
+  const AuditTargetType._(String name): super(name);
 
   static BuiltSet<AuditTargetType> get values => _$values;
   static AuditTargetType valueOf(String name) => _$valueOf(name);
@@ -39,3 +41,4 @@ class AuditTargetType extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class AuditTargetTypeMixin = Object with _$AuditTargetTypeMixin;
+

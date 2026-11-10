@@ -12,14 +12,13 @@ part 'event_backfill.g.dart';
 /// EventBackfill
 ///
 /// Properties:
-/// * [force]
+/// * [force] 
 /// * [tenants] - Academies examined.
 /// * [failed] - Academies whose backfill failed (logged; the others went on). Run again to retry them.
 /// * [appended] - Events appended to the outbox (all topics).
 /// * [appendedByTopic] - Events appended per topic (`core.<aggregate>`); topics without any are left out.
 @BuiltValue()
-abstract class EventBackfill
-    implements Built<EventBackfill, EventBackfillBuilder> {
+abstract class EventBackfill implements Built<EventBackfill, EventBackfillBuilder> {
   @BuiltValueField(wireName: r'force')
   bool get force;
 
@@ -41,15 +40,13 @@ abstract class EventBackfill
 
   EventBackfill._();
 
-  factory EventBackfill([void updates(EventBackfillBuilder b)]) =
-      _$EventBackfill;
+  factory EventBackfill([void updates(EventBackfillBuilder b)]) = _$EventBackfill;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(EventBackfillBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<EventBackfill> get serializer =>
-      _$EventBackfillSerializer();
+  static Serializer<EventBackfill> get serializer => _$EventBackfillSerializer();
 }
 
 class _$EventBackfillSerializer implements PrimitiveSerializer<EventBackfill> {
@@ -87,8 +84,7 @@ class _$EventBackfillSerializer implements PrimitiveSerializer<EventBackfill> {
     yield r'appendedByTopic';
     yield serializers.serialize(
       object.appendedByTopic,
-      specifiedType:
-          const FullType(BuiltMap, [FullType(String), FullType(int)]),
+      specifiedType: const FullType(BuiltMap, [FullType(String), FullType(int)]),
     );
   }
 
@@ -98,9 +94,7 @@ class _$EventBackfillSerializer implements PrimitiveSerializer<EventBackfill> {
     EventBackfill object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -146,8 +140,7 @@ class _$EventBackfillSerializer implements PrimitiveSerializer<EventBackfill> {
         case r'appendedByTopic':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType:
-                const FullType(BuiltMap, [FullType(String), FullType(int)]),
+            specifiedType: const FullType(BuiltMap, [FullType(String), FullType(int)]),
           ) as BuiltMap<String, int>;
           result.appendedByTopic.replace(valueDes);
           break;
@@ -179,3 +172,5 @@ class _$EventBackfillSerializer implements PrimitiveSerializer<EventBackfill> {
     return result.build();
   }
 }
+
+

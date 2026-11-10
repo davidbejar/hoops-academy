@@ -11,13 +11,11 @@ part 'update_tenant_admin_request.g.dart';
 /// UpdateTenantAdminRequest
 ///
 /// Properties:
-/// * [givenName]
-/// * [familyName]
-/// * [email]
+/// * [givenName] 
+/// * [familyName] 
+/// * [email] 
 @BuiltValue()
-abstract class UpdateTenantAdminRequest
-    implements
-        Built<UpdateTenantAdminRequest, UpdateTenantAdminRequestBuilder> {
+abstract class UpdateTenantAdminRequest implements Built<UpdateTenantAdminRequest, UpdateTenantAdminRequestBuilder> {
   @BuiltValueField(wireName: r'givenName')
   String? get givenName;
 
@@ -29,25 +27,18 @@ abstract class UpdateTenantAdminRequest
 
   UpdateTenantAdminRequest._();
 
-  factory UpdateTenantAdminRequest(
-          [void updates(UpdateTenantAdminRequestBuilder b)]) =
-      _$UpdateTenantAdminRequest;
+  factory UpdateTenantAdminRequest([void updates(UpdateTenantAdminRequestBuilder b)]) = _$UpdateTenantAdminRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateTenantAdminRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateTenantAdminRequest> get serializer =>
-      _$UpdateTenantAdminRequestSerializer();
+  static Serializer<UpdateTenantAdminRequest> get serializer => _$UpdateTenantAdminRequestSerializer();
 }
 
-class _$UpdateTenantAdminRequestSerializer
-    implements PrimitiveSerializer<UpdateTenantAdminRequest> {
+class _$UpdateTenantAdminRequestSerializer implements PrimitiveSerializer<UpdateTenantAdminRequest> {
   @override
-  final Iterable<Type> types = const [
-    UpdateTenantAdminRequest,
-    _$UpdateTenantAdminRequest
-  ];
+  final Iterable<Type> types = const [UpdateTenantAdminRequest, _$UpdateTenantAdminRequest];
 
   @override
   final String wireName = r'UpdateTenantAdminRequest';
@@ -86,9 +77,7 @@ class _$UpdateTenantAdminRequestSerializer
     UpdateTenantAdminRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -155,3 +144,5 @@ class _$UpdateTenantAdminRequestSerializer
     return result.build();
   }
 }
+
+

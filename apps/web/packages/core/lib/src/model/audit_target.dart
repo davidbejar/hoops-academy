@@ -12,19 +12,19 @@ part 'audit_target.g.dart';
 /// AuditTarget
 ///
 /// Properties:
-/// * [type]
-/// * [id]
-/// * [displayName] - Name of the person, player or academy while it exists; null for other target types and for rows that no longer exist or are not resolved.
+/// * [type] 
+/// * [id] 
+/// * [displayName] - Name of the person, player or academy while it exists; null for other target types and for rows that no longer exist or are not resolved. 
 @BuiltValue()
 abstract class AuditTarget implements Built<AuditTarget, AuditTargetBuilder> {
   @BuiltValueField(wireName: r'type')
   AuditTargetType get type;
-  // enum typeEnum {  person,  player,  tenant,  approval_request,  guardian_link,  };
+  // enum typeEnum {  person,  player,  tenant,  approval_request,  guardian_link,  team,  };
 
   @BuiltValueField(wireName: r'id')
   String get id;
 
-  /// Name of the person, player or academy while it exists; null for other target types and for rows that no longer exist or are not resolved.
+  /// Name of the person, player or academy while it exists; null for other target types and for rows that no longer exist or are not resolved. 
   @BuiltValueField(wireName: r'displayName')
   String? get displayName;
 
@@ -76,9 +76,7 @@ class _$AuditTargetSerializer implements PrimitiveSerializer<AuditTarget> {
     AuditTarget object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -143,3 +141,5 @@ class _$AuditTargetSerializer implements PrimitiveSerializer<AuditTarget> {
     return result.build();
   }
 }
+
+

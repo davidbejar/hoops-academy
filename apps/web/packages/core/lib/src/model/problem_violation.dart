@@ -13,10 +13,9 @@ part 'problem_violation.g.dart';
 /// Properties:
 /// * [field] - Dotted path of the offending field, when applicable.
 /// * [code] - Machine-readable reason, e.g. `MISSING_BIRTH_DATE`.
-/// * [message]
+/// * [message] 
 @BuiltValue()
-abstract class ProblemViolation
-    implements Built<ProblemViolation, ProblemViolationBuilder> {
+abstract class ProblemViolation implements Built<ProblemViolation, ProblemViolationBuilder> {
   /// Dotted path of the offending field, when applicable.
   @BuiltValueField(wireName: r'field')
   String? get field;
@@ -30,19 +29,16 @@ abstract class ProblemViolation
 
   ProblemViolation._();
 
-  factory ProblemViolation([void updates(ProblemViolationBuilder b)]) =
-      _$ProblemViolation;
+  factory ProblemViolation([void updates(ProblemViolationBuilder b)]) = _$ProblemViolation;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(ProblemViolationBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<ProblemViolation> get serializer =>
-      _$ProblemViolationSerializer();
+  static Serializer<ProblemViolation> get serializer => _$ProblemViolationSerializer();
 }
 
-class _$ProblemViolationSerializer
-    implements PrimitiveSerializer<ProblemViolation> {
+class _$ProblemViolationSerializer implements PrimitiveSerializer<ProblemViolation> {
   @override
   final Iterable<Type> types = const [ProblemViolation, _$ProblemViolation];
 
@@ -81,9 +77,7 @@ class _$ProblemViolationSerializer
     ProblemViolation object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -149,3 +143,5 @@ class _$ProblemViolationSerializer
     return result.build();
   }
 }
+
+

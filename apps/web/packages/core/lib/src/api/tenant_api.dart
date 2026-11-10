@@ -16,6 +16,7 @@ import 'package:hoops_core_api/src/model/tenant_settings.dart';
 import 'package:hoops_core_api/src/model/update_tenant_profile_request.dart';
 
 class TenantApi {
+
   final Dio _dio;
 
   final Serializers _serializers;
@@ -36,7 +37,7 @@ class TenantApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> deleteTenantLogo({
+  Future<Response<void>> deleteTenantLogo({ 
     required String xTenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -81,7 +82,7 @@ class TenantApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [ifNoneMatch]
+  /// * [ifNoneMatch] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -91,7 +92,7 @@ class TenantApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Uint8List] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Uint8List>> getTenantLogo({
+  Future<Response<Uint8List>> getTenantLogo({ 
     required String xTenantId,
     String? ifNoneMatch,
     CancelToken? cancelToken,
@@ -136,6 +137,7 @@ class TenantApi {
     try {
       final rawResponse = _response.data;
       _responseData = rawResponse == null ? null : rawResponse as Uint8List;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -172,7 +174,7 @@ class TenantApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantProfile] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantProfile>> getTenantProfile({
+  Future<Response<TenantProfile>> getTenantProfile({ 
     required String xTenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -213,12 +215,11 @@ class TenantApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(TenantProfile),
-            ) as TenantProfile;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantProfile),
+      ) as TenantProfile;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -255,7 +256,7 @@ class TenantApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantSettings] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantSettings>> getTenantSettings({
+  Future<Response<TenantSettings>> getTenantSettings({ 
     required String xTenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -296,12 +297,11 @@ class TenantApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(TenantSettings),
-            ) as TenantSettings;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantSettings),
+      ) as TenantSettings;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -325,11 +325,11 @@ class TenantApi {
   }
 
   /// Upload or replace the academy logo
-  /// Raw image body, at most 512 KB (524 288 bytes). The &#x60;Content-Type&#x60; must be one of the listed image types; the server identifies the format from the magic bytes (PNG, JPEG or WebP — anything else, including SVG, is 415, ADR-0009) and stores/serves that detected type with &#x60;X-Content-Type-Options: nosniff&#x60;. Authz: ADMIN.
+  /// Raw image body, at most 512 KB (524 288 bytes). The &#x60;Content-Type&#x60; must be one of the listed image types; the server identifies the format from the magic bytes (PNG, JPEG or WebP — anything else, including SVG, is 415, ADR-0009) and stores/serves that detected type with &#x60;X-Content-Type-Options: nosniff&#x60;. Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [body]
+  /// * [body] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -339,7 +339,7 @@ class TenantApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantLogo] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantLogo>> putTenantLogo({
+  Future<Response<TenantLogo>> putTenantLogo({ 
     required String xTenantId,
     required MultipartFile body,
     CancelToken? cancelToken,
@@ -374,9 +374,10 @@ class TenantApi {
 
     try {
       _bodyData = body.finalize();
-    } catch (error, stackTrace) {
+
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(
+         requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -399,12 +400,11 @@ class TenantApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(TenantLogo),
-            ) as TenantLogo;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantLogo),
+      ) as TenantLogo;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -428,11 +428,11 @@ class TenantApi {
   }
 
   /// Replace roster rules and defaults
-  /// Changing &#x60;ageRule&#x60; or &#x60;maxPlayUpLevels&#x60; triggers a synchronous eligibility evaluation; resulting orphans are reported as eligibility cases. Authz: ADMIN.
+  /// Changing &#x60;ageRule&#x60; or &#x60;maxPlayUpLevels&#x60; triggers a synchronous eligibility evaluation; resulting orphans are reported as eligibility cases. Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [tenantSettings]
+  /// * [tenantSettings] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -442,7 +442,7 @@ class TenantApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantSettings] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantSettings>> replaceTenantSettings({
+  Future<Response<TenantSettings>> replaceTenantSettings({ 
     required String xTenantId,
     required TenantSettings tenantSettings,
     CancelToken? cancelToken,
@@ -478,9 +478,10 @@ class TenantApi {
     try {
       const _type = FullType(TenantSettings);
       _bodyData = _serializers.serialize(tenantSettings, specifiedType: _type);
-    } catch (error, stackTrace) {
+
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(
+         requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -503,12 +504,11 @@ class TenantApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(TenantSettings),
-            ) as TenantSettings;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantSettings),
+      ) as TenantSettings;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -536,7 +536,7 @@ class TenantApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [updateTenantProfileRequest]
+  /// * [updateTenantProfileRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -546,7 +546,7 @@ class TenantApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TenantProfile] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TenantProfile>> updateTenantProfile({
+  Future<Response<TenantProfile>> updateTenantProfile({ 
     required String xTenantId,
     required UpdateTenantProfileRequest updateTenantProfileRequest,
     CancelToken? cancelToken,
@@ -581,11 +581,11 @@ class TenantApi {
 
     try {
       const _type = FullType(UpdateTenantProfileRequest);
-      _bodyData = _serializers.serialize(updateTenantProfileRequest,
-          specifiedType: _type);
-    } catch (error, stackTrace) {
+      _bodyData = _serializers.serialize(updateTenantProfileRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(
+         requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -608,12 +608,11 @@ class TenantApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(TenantProfile),
-            ) as TenantProfile;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(TenantProfile),
+      ) as TenantProfile;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -635,4 +634,5 @@ class TenantApi {
       extra: _response.extra,
     );
   }
+
 }

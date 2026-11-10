@@ -11,13 +11,12 @@ part 'age_category_input.g.dart';
 /// AgeCategoryInput
 ///
 /// Properties:
-/// * [code]
-/// * [name]
+/// * [code] 
+/// * [name] 
 /// * [maxAge] - Inclusive maximum age; null = senior (no limit).
 /// * [rank] - Ordering; higher rank = older category.
 @BuiltValue()
-abstract class AgeCategoryInput
-    implements Built<AgeCategoryInput, AgeCategoryInputBuilder> {
+abstract class AgeCategoryInput implements Built<AgeCategoryInput, AgeCategoryInputBuilder> {
   @BuiltValueField(wireName: r'code')
   String get code;
 
@@ -34,19 +33,16 @@ abstract class AgeCategoryInput
 
   AgeCategoryInput._();
 
-  factory AgeCategoryInput([void updates(AgeCategoryInputBuilder b)]) =
-      _$AgeCategoryInput;
+  factory AgeCategoryInput([void updates(AgeCategoryInputBuilder b)]) = _$AgeCategoryInput;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(AgeCategoryInputBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AgeCategoryInput> get serializer =>
-      _$AgeCategoryInputSerializer();
+  static Serializer<AgeCategoryInput> get serializer => _$AgeCategoryInputSerializer();
 }
 
-class _$AgeCategoryInputSerializer
-    implements PrimitiveSerializer<AgeCategoryInput> {
+class _$AgeCategoryInputSerializer implements PrimitiveSerializer<AgeCategoryInput> {
   @override
   final Iterable<Type> types = const [AgeCategoryInput, _$AgeCategoryInput];
 
@@ -88,9 +84,7 @@ class _$AgeCategoryInputSerializer
     AgeCategoryInput object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -162,3 +156,5 @@ class _$AgeCategoryInputSerializer
     return result.build();
   }
 }
+
+

@@ -11,8 +11,8 @@ part 'person_ref.g.dart';
 /// Minimal reference to a person (member) for audit fields.
 ///
 /// Properties:
-/// * [personId]
-/// * [displayName]
+/// * [personId] 
+/// * [displayName] 
 @BuiltValue()
 abstract class PersonRef implements Built<PersonRef, PersonRefBuilder> {
   @BuiltValueField(wireName: r'personId')
@@ -62,9 +62,7 @@ class _$PersonRefSerializer implements PrimitiveSerializer<PersonRef> {
     PersonRef object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -121,3 +119,5 @@ class _$PersonRefSerializer implements PrimitiveSerializer<PersonRef> {
     return result.build();
   }
 }
+
+

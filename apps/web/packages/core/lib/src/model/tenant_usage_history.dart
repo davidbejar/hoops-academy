@@ -14,13 +14,12 @@ part 'tenant_usage_history.g.dart';
 /// TenantUsageHistory
 ///
 /// Properties:
-/// * [tenantId]
-/// * [from]
-/// * [to]
+/// * [tenantId] 
+/// * [from] 
+/// * [to] 
 /// * [snapshots] - At most one per UTC day, ascending; days without a snapshot are absent.
 @BuiltValue()
-abstract class TenantUsageHistory
-    implements Built<TenantUsageHistory, TenantUsageHistoryBuilder> {
+abstract class TenantUsageHistory implements Built<TenantUsageHistory, TenantUsageHistoryBuilder> {
   @BuiltValueField(wireName: r'tenantId')
   String get tenantId;
 
@@ -36,19 +35,16 @@ abstract class TenantUsageHistory
 
   TenantUsageHistory._();
 
-  factory TenantUsageHistory([void updates(TenantUsageHistoryBuilder b)]) =
-      _$TenantUsageHistory;
+  factory TenantUsageHistory([void updates(TenantUsageHistoryBuilder b)]) = _$TenantUsageHistory;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TenantUsageHistoryBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantUsageHistory> get serializer =>
-      _$TenantUsageHistorySerializer();
+  static Serializer<TenantUsageHistory> get serializer => _$TenantUsageHistorySerializer();
 }
 
-class _$TenantUsageHistorySerializer
-    implements PrimitiveSerializer<TenantUsageHistory> {
+class _$TenantUsageHistorySerializer implements PrimitiveSerializer<TenantUsageHistory> {
   @override
   final Iterable<Type> types = const [TenantUsageHistory, _$TenantUsageHistory];
 
@@ -88,9 +84,7 @@ class _$TenantUsageHistorySerializer
     TenantUsageHistory object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -129,8 +123,7 @@ class _$TenantUsageHistorySerializer
         case r'snapshots':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType:
-                const FullType(BuiltList, [FullType(TenantUsageSnapshot)]),
+            specifiedType: const FullType(BuiltList, [FullType(TenantUsageSnapshot)]),
           ) as BuiltList<TenantUsageSnapshot>;
           result.snapshots.replace(valueDes);
           break;
@@ -162,3 +155,5 @@ class _$TenantUsageHistorySerializer
     return result.build();
   }
 }
+
+

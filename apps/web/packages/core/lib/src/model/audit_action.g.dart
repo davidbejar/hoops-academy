@@ -15,6 +15,8 @@ const AuditAction _$adminPeriodUpdated =
     const AuditAction._('adminPeriodUpdated');
 const AuditAction _$approvalPeriodCancelled =
     const AuditAction._('approvalPeriodCancelled');
+const AuditAction _$auditPeriodExported =
+    const AuditAction._('auditPeriodExported');
 const AuditAction _$guardianLinkPeriodCreated =
     const AuditAction._('guardianLinkPeriodCreated');
 const AuditAction _$guardianLinkPeriodRemoved =
@@ -43,6 +45,8 @@ const AuditAction _$playerPeriodRequested =
     const AuditAction._('playerPeriodRequested');
 const AuditAction _$playerPeriodWithdrawn =
     const AuditAction._('playerPeriodWithdrawn');
+const AuditAction _$teamPeriodRosterExported =
+    const AuditAction._('teamPeriodRosterExported');
 const AuditAction _$tenantPeriodCreated =
     const AuditAction._('tenantPeriodCreated');
 const AuditAction _$tenantPeriodEventsBackfilled =
@@ -80,6 +84,8 @@ AuditAction _$valueOf(String name) {
       return _$adminPeriodUpdated;
     case 'approvalPeriodCancelled':
       return _$approvalPeriodCancelled;
+    case 'auditPeriodExported':
+      return _$auditPeriodExported;
     case 'guardianLinkPeriodCreated':
       return _$guardianLinkPeriodCreated;
     case 'guardianLinkPeriodRemoved':
@@ -108,6 +114,8 @@ AuditAction _$valueOf(String name) {
       return _$playerPeriodRequested;
     case 'playerPeriodWithdrawn':
       return _$playerPeriodWithdrawn;
+    case 'teamPeriodRosterExported':
+      return _$teamPeriodRosterExported;
     case 'tenantPeriodCreated':
       return _$tenantPeriodCreated;
     case 'tenantPeriodEventsBackfilled':
@@ -144,6 +152,7 @@ final BuiltSet<AuditAction> _$values =
   _$adminPeriodTemporaryPasswordIssued,
   _$adminPeriodUpdated,
   _$approvalPeriodCancelled,
+  _$auditPeriodExported,
   _$guardianLinkPeriodCreated,
   _$guardianLinkPeriodRemoved,
   _$memberPeriodDeactivated,
@@ -158,6 +167,7 @@ final BuiltSet<AuditAction> _$values =
   _$playerPeriodRejected,
   _$playerPeriodRequested,
   _$playerPeriodWithdrawn,
+  _$teamPeriodRosterExported,
   _$tenantPeriodCreated,
   _$tenantPeriodEventsBackfilled,
   _$tenantPeriodLogoRemoved,
@@ -180,6 +190,7 @@ class _$AuditActionMeta {
       _$adminPeriodTemporaryPasswordIssued;
   AuditAction get adminPeriodUpdated => _$adminPeriodUpdated;
   AuditAction get approvalPeriodCancelled => _$approvalPeriodCancelled;
+  AuditAction get auditPeriodExported => _$auditPeriodExported;
   AuditAction get guardianLinkPeriodCreated => _$guardianLinkPeriodCreated;
   AuditAction get guardianLinkPeriodRemoved => _$guardianLinkPeriodRemoved;
   AuditAction get memberPeriodDeactivated => _$memberPeriodDeactivated;
@@ -198,6 +209,7 @@ class _$AuditActionMeta {
   AuditAction get playerPeriodRejected => _$playerPeriodRejected;
   AuditAction get playerPeriodRequested => _$playerPeriodRequested;
   AuditAction get playerPeriodWithdrawn => _$playerPeriodWithdrawn;
+  AuditAction get teamPeriodRosterExported => _$teamPeriodRosterExported;
   AuditAction get tenantPeriodCreated => _$tenantPeriodCreated;
   AuditAction get tenantPeriodEventsBackfilled =>
       _$tenantPeriodEventsBackfilled;
@@ -230,6 +242,7 @@ class _$AuditActionSerializer implements PrimitiveSerializer<AuditAction> {
     'adminPeriodTemporaryPasswordIssued': 'admin.temporary_password_issued',
     'adminPeriodUpdated': 'admin.updated',
     'approvalPeriodCancelled': 'approval.cancelled',
+    'auditPeriodExported': 'audit.exported',
     'guardianLinkPeriodCreated': 'guardian_link.created',
     'guardianLinkPeriodRemoved': 'guardian_link.removed',
     'memberPeriodDeactivated': 'member.deactivated',
@@ -244,6 +257,7 @@ class _$AuditActionSerializer implements PrimitiveSerializer<AuditAction> {
     'playerPeriodRejected': 'player.rejected',
     'playerPeriodRequested': 'player.requested',
     'playerPeriodWithdrawn': 'player.withdrawn',
+    'teamPeriodRosterExported': 'team.roster_exported',
     'tenantPeriodCreated': 'tenant.created',
     'tenantPeriodEventsBackfilled': 'tenant.events_backfilled',
     'tenantPeriodLogoRemoved': 'tenant.logo_removed',
@@ -263,6 +277,7 @@ class _$AuditActionSerializer implements PrimitiveSerializer<AuditAction> {
     'admin.temporary_password_issued': 'adminPeriodTemporaryPasswordIssued',
     'admin.updated': 'adminPeriodUpdated',
     'approval.cancelled': 'approvalPeriodCancelled',
+    'audit.exported': 'auditPeriodExported',
     'guardian_link.created': 'guardianLinkPeriodCreated',
     'guardian_link.removed': 'guardianLinkPeriodRemoved',
     'member.deactivated': 'memberPeriodDeactivated',
@@ -277,6 +292,7 @@ class _$AuditActionSerializer implements PrimitiveSerializer<AuditAction> {
     'player.rejected': 'playerPeriodRejected',
     'player.requested': 'playerPeriodRequested',
     'player.withdrawn': 'playerPeriodWithdrawn',
+    'team.roster_exported': 'teamPeriodRosterExported',
     'tenant.created': 'tenantPeriodCreated',
     'tenant.events_backfilled': 'tenantPeriodEventsBackfilled',
     'tenant.logo_removed': 'tenantPeriodLogoRemoved',

@@ -9,8 +9,9 @@ import 'package:built_value/serializer.dart';
 
 part 'audit_actor_kind.g.dart';
 
-/// PERSON = a member of the academy (`personId` set); PLATFORM = the super admin, acting from the platform console (no person in the academy); SYSTEM = a background job of the platform (`subject` is `system`).
+/// PERSON = a member of the academy (`personId` set); PLATFORM = the super admin, acting from the platform console (no person in the academy); SYSTEM = a background job of the platform (`subject` is `system`). 
 class AuditActorKind extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'PERSON')
   static const AuditActorKind PERSON = _$PERSON;
   @BuiltValueEnumConst(wireName: r'PLATFORM')
@@ -20,10 +21,9 @@ class AuditActorKind extends EnumClass {
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
   static const AuditActorKind unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 
-  static Serializer<AuditActorKind> get serializer =>
-      _$auditActorKindSerializer;
+  static Serializer<AuditActorKind> get serializer => _$auditActorKindSerializer;
 
-  const AuditActorKind._(String name) : super(name);
+  const AuditActorKind._(String name): super(name);
 
   static BuiltSet<AuditActorKind> get values => _$values;
   static AuditActorKind valueOf(String name) => _$valueOf(name);
@@ -36,3 +36,4 @@ class AuditActorKind extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class AuditActorKindMixin = Object with _$AuditActorKindMixin;
+

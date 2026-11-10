@@ -14,8 +14,7 @@ part 'event_backfill_request.g.dart';
 /// * [tenantId] - Only this academy (404 when unknown); every academy when absent.
 /// * [force] - Also aggregates that have events already (a fresh snapshot of everything).
 @BuiltValue()
-abstract class EventBackfillRequest
-    implements Built<EventBackfillRequest, EventBackfillRequestBuilder> {
+abstract class EventBackfillRequest implements Built<EventBackfillRequest, EventBackfillRequestBuilder> {
   /// Only this academy (404 when unknown); every academy when absent.
   @BuiltValueField(wireName: r'tenantId')
   String? get tenantId;
@@ -26,24 +25,19 @@ abstract class EventBackfillRequest
 
   EventBackfillRequest._();
 
-  factory EventBackfillRequest([void updates(EventBackfillRequestBuilder b)]) =
-      _$EventBackfillRequest;
+  factory EventBackfillRequest([void updates(EventBackfillRequestBuilder b)]) = _$EventBackfillRequest;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(EventBackfillRequestBuilder b) => b..force = false;
+  static void _defaults(EventBackfillRequestBuilder b) => b
+      ..force = false;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<EventBackfillRequest> get serializer =>
-      _$EventBackfillRequestSerializer();
+  static Serializer<EventBackfillRequest> get serializer => _$EventBackfillRequestSerializer();
 }
 
-class _$EventBackfillRequestSerializer
-    implements PrimitiveSerializer<EventBackfillRequest> {
+class _$EventBackfillRequestSerializer implements PrimitiveSerializer<EventBackfillRequest> {
   @override
-  final Iterable<Type> types = const [
-    EventBackfillRequest,
-    _$EventBackfillRequest
-  ];
+  final Iterable<Type> types = const [EventBackfillRequest, _$EventBackfillRequest];
 
   @override
   final String wireName = r'EventBackfillRequest';
@@ -75,9 +69,7 @@ class _$EventBackfillRequestSerializer
     EventBackfillRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -136,3 +128,5 @@ class _$EventBackfillRequestSerializer
     return result.build();
   }
 }
+
+

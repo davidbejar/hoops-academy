@@ -10,6 +10,7 @@ import 'package:built_value/serializer.dart';
 part 'gender_policy.g.dart';
 
 class GenderPolicy extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'MALE')
   static const GenderPolicy MALE = _$MALE;
   @BuiltValueEnumConst(wireName: r'FEMALE')
@@ -21,7 +22,7 @@ class GenderPolicy extends EnumClass {
 
   static Serializer<GenderPolicy> get serializer => _$genderPolicySerializer;
 
-  const GenderPolicy._(String name) : super(name);
+  const GenderPolicy._(String name): super(name);
 
   static BuiltSet<GenderPolicy> get values => _$values;
   static GenderPolicy valueOf(String name) => _$valueOf(name);
@@ -34,3 +35,4 @@ class GenderPolicy extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class GenderPolicyMixin = Object with _$GenderPolicyMixin;
+

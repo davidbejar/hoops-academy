@@ -15,15 +15,15 @@ part 'team_player.g.dart';
 /// A player's assignment to a team (team_player).
 ///
 /// Properties:
-/// * [player]
-/// * [teamId]
+/// * [player] 
+/// * [teamId] 
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
-/// * [joinedOn]
-/// * [leftOn]
+/// * [joinedOn] 
+/// * [leftOn] 
 /// * [playUpLevels] - 0 = natural category; n > 0 = playing up n categories.
 /// * [invalidatedAt] - Set when the evaluator found the assignment no longer valid (never deleted).
-/// * [invalidReason]
-/// * [playerStatus]
+/// * [invalidReason] 
+/// * [playerStatus] 
 @BuiltValue()
 abstract class TeamPlayer implements Built<TeamPlayer, TeamPlayerBuilder> {
   @BuiltValueField(wireName: r'player')
@@ -142,9 +142,7 @@ class _$TeamPlayerSerializer implements PrimitiveSerializer<TeamPlayer> {
     TeamPlayer object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -254,3 +252,5 @@ class _$TeamPlayerSerializer implements PrimitiveSerializer<TeamPlayer> {
     return result.build();
   }
 }
+
+

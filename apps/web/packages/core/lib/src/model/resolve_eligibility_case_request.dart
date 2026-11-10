@@ -12,14 +12,11 @@ part 'resolve_eligibility_case_request.g.dart';
 /// ResolveEligibilityCaseRequest
 ///
 /// Properties:
-/// * [resolution]
+/// * [resolution] 
 /// * [targetTeamId] - Required when resolution = REASSIGNED.
-/// * [note]
+/// * [note] 
 @BuiltValue()
-abstract class ResolveEligibilityCaseRequest
-    implements
-        Built<ResolveEligibilityCaseRequest,
-            ResolveEligibilityCaseRequestBuilder> {
+abstract class ResolveEligibilityCaseRequest implements Built<ResolveEligibilityCaseRequest, ResolveEligibilityCaseRequestBuilder> {
   @BuiltValueField(wireName: r'resolution')
   EligibilityCaseResolution get resolution;
   // enum resolutionEnum {  REASSIGNED,  REMOVED_FROM_TEAM,  DISMISSED,  };
@@ -33,25 +30,18 @@ abstract class ResolveEligibilityCaseRequest
 
   ResolveEligibilityCaseRequest._();
 
-  factory ResolveEligibilityCaseRequest(
-          [void updates(ResolveEligibilityCaseRequestBuilder b)]) =
-      _$ResolveEligibilityCaseRequest;
+  factory ResolveEligibilityCaseRequest([void updates(ResolveEligibilityCaseRequestBuilder b)]) = _$ResolveEligibilityCaseRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(ResolveEligibilityCaseRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<ResolveEligibilityCaseRequest> get serializer =>
-      _$ResolveEligibilityCaseRequestSerializer();
+  static Serializer<ResolveEligibilityCaseRequest> get serializer => _$ResolveEligibilityCaseRequestSerializer();
 }
 
-class _$ResolveEligibilityCaseRequestSerializer
-    implements PrimitiveSerializer<ResolveEligibilityCaseRequest> {
+class _$ResolveEligibilityCaseRequestSerializer implements PrimitiveSerializer<ResolveEligibilityCaseRequest> {
   @override
-  final Iterable<Type> types = const [
-    ResolveEligibilityCaseRequest,
-    _$ResolveEligibilityCaseRequest
-  ];
+  final Iterable<Type> types = const [ResolveEligibilityCaseRequest, _$ResolveEligibilityCaseRequest];
 
   @override
   final String wireName = r'ResolveEligibilityCaseRequest';
@@ -88,9 +78,7 @@ class _$ResolveEligibilityCaseRequestSerializer
     ResolveEligibilityCaseRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -156,3 +144,5 @@ class _$ResolveEligibilityCaseRequestSerializer
     return result.build();
   }
 }
+
+

@@ -15,10 +15,10 @@ part 'membership.g.dart';
 /// Membership
 ///
 /// Properties:
-/// * [tenant]
-/// * [personId]
-/// * [roles]
-/// * [authz]
+/// * [tenant] 
+/// * [personId] 
+/// * [roles] 
+/// * [authz] 
 @BuiltValue()
 abstract class Membership implements Built<Membership, MembershipBuilder> {
   @BuiltValueField(wireName: r'tenant')
@@ -84,9 +84,7 @@ class _$MembershipSerializer implements PrimitiveSerializer<Membership> {
     Membership object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -157,3 +155,5 @@ class _$MembershipSerializer implements PrimitiveSerializer<Membership> {
     return result.build();
   }
 }
+
+

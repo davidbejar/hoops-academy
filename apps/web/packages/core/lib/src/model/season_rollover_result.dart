@@ -14,14 +14,13 @@ part 'season_rollover_result.g.dart';
 /// SeasonRolloverResult
 ///
 /// Properties:
-/// * [fromSeasonId]
-/// * [toSeasonId]
-/// * [clonedTeams]
+/// * [fromSeasonId] 
+/// * [toSeasonId] 
+/// * [clonedTeams] 
 /// * [orphans] - Active players left without a valid open assignment in the target season.
-/// * [openedCaseIds]
+/// * [openedCaseIds] 
 @BuiltValue()
-abstract class SeasonRolloverResult
-    implements Built<SeasonRolloverResult, SeasonRolloverResultBuilder> {
+abstract class SeasonRolloverResult implements Built<SeasonRolloverResult, SeasonRolloverResultBuilder> {
   @BuiltValueField(wireName: r'fromSeasonId')
   String get fromSeasonId;
 
@@ -40,24 +39,18 @@ abstract class SeasonRolloverResult
 
   SeasonRolloverResult._();
 
-  factory SeasonRolloverResult([void updates(SeasonRolloverResultBuilder b)]) =
-      _$SeasonRolloverResult;
+  factory SeasonRolloverResult([void updates(SeasonRolloverResultBuilder b)]) = _$SeasonRolloverResult;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(SeasonRolloverResultBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<SeasonRolloverResult> get serializer =>
-      _$SeasonRolloverResultSerializer();
+  static Serializer<SeasonRolloverResult> get serializer => _$SeasonRolloverResultSerializer();
 }
 
-class _$SeasonRolloverResultSerializer
-    implements PrimitiveSerializer<SeasonRolloverResult> {
+class _$SeasonRolloverResultSerializer implements PrimitiveSerializer<SeasonRolloverResult> {
   @override
-  final Iterable<Type> types = const [
-    SeasonRolloverResult,
-    _$SeasonRolloverResult
-  ];
+  final Iterable<Type> types = const [SeasonRolloverResult, _$SeasonRolloverResult];
 
   @override
   final String wireName = r'SeasonRolloverResult';
@@ -100,9 +93,7 @@ class _$SeasonRolloverResultSerializer
     SeasonRolloverResult object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -180,3 +171,5 @@ class _$SeasonRolloverResultSerializer
     return result.build();
   }
 }
+
+

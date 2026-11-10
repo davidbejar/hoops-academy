@@ -14,11 +14,10 @@ part 'platform_audit_event_page.g.dart';
 /// PlatformAuditEventPage
 ///
 /// Properties:
-/// * [items]
-/// * [page]
+/// * [items] 
+/// * [page] 
 @BuiltValue()
-abstract class PlatformAuditEventPage
-    implements Built<PlatformAuditEventPage, PlatformAuditEventPageBuilder> {
+abstract class PlatformAuditEventPage implements Built<PlatformAuditEventPage, PlatformAuditEventPageBuilder> {
   @BuiltValueField(wireName: r'items')
   BuiltList<PlatformAuditEvent> get items;
 
@@ -27,25 +26,18 @@ abstract class PlatformAuditEventPage
 
   PlatformAuditEventPage._();
 
-  factory PlatformAuditEventPage(
-          [void updates(PlatformAuditEventPageBuilder b)]) =
-      _$PlatformAuditEventPage;
+  factory PlatformAuditEventPage([void updates(PlatformAuditEventPageBuilder b)]) = _$PlatformAuditEventPage;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(PlatformAuditEventPageBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PlatformAuditEventPage> get serializer =>
-      _$PlatformAuditEventPageSerializer();
+  static Serializer<PlatformAuditEventPage> get serializer => _$PlatformAuditEventPageSerializer();
 }
 
-class _$PlatformAuditEventPageSerializer
-    implements PrimitiveSerializer<PlatformAuditEventPage> {
+class _$PlatformAuditEventPageSerializer implements PrimitiveSerializer<PlatformAuditEventPage> {
   @override
-  final Iterable<Type> types = const [
-    PlatformAuditEventPage,
-    _$PlatformAuditEventPage
-  ];
+  final Iterable<Type> types = const [PlatformAuditEventPage, _$PlatformAuditEventPage];
 
   @override
   final String wireName = r'PlatformAuditEventPage';
@@ -73,9 +65,7 @@ class _$PlatformAuditEventPageSerializer
     PlatformAuditEventPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -93,8 +83,7 @@ class _$PlatformAuditEventPageSerializer
         case r'items':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType:
-                const FullType(BuiltList, [FullType(PlatformAuditEvent)]),
+            specifiedType: const FullType(BuiltList, [FullType(PlatformAuditEvent)]),
           ) as BuiltList<PlatformAuditEvent>;
           result.items.replace(valueDes);
           break;
@@ -133,3 +122,5 @@ class _$PlatformAuditEventPageSerializer
     return result.build();
   }
 }
+
+

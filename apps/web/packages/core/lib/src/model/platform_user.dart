@@ -15,11 +15,10 @@ part 'platform_user.g.dart';
 /// Properties:
 /// * [id] - The login, as `Me.userId` and `Member.userId`.
 /// * [email] - The login's e-mail (its Keycloak username).
-/// * [createdAt]
-/// * [memberships]
+/// * [createdAt] 
+/// * [memberships] 
 @BuiltValue()
-abstract class PlatformUser
-    implements Built<PlatformUser, PlatformUserBuilder> {
+abstract class PlatformUser implements Built<PlatformUser, PlatformUserBuilder> {
   /// The login, as `Me.userId` and `Member.userId`.
   @BuiltValueField(wireName: r'id')
   String get id;
@@ -77,8 +76,7 @@ class _$PlatformUserSerializer implements PrimitiveSerializer<PlatformUser> {
     yield r'memberships';
     yield serializers.serialize(
       object.memberships,
-      specifiedType:
-          const FullType(BuiltList, [FullType(PlatformUserMembership)]),
+      specifiedType: const FullType(BuiltList, [FullType(PlatformUserMembership)]),
     );
   }
 
@@ -88,9 +86,7 @@ class _$PlatformUserSerializer implements PrimitiveSerializer<PlatformUser> {
     PlatformUser object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -130,8 +126,7 @@ class _$PlatformUserSerializer implements PrimitiveSerializer<PlatformUser> {
         case r'memberships':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType:
-                const FullType(BuiltList, [FullType(PlatformUserMembership)]),
+            specifiedType: const FullType(BuiltList, [FullType(PlatformUserMembership)]),
           ) as BuiltList<PlatformUserMembership>;
           result.memberships.replace(valueDes);
           break;
@@ -163,3 +158,5 @@ class _$PlatformUserSerializer implements PrimitiveSerializer<PlatformUser> {
     return result.build();
   }
 }
+
+

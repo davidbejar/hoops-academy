@@ -17,17 +17,18 @@ part 'player.g.dart';
 /// Player
 ///
 /// Properties:
-/// * [id]
-/// * [personId]
-/// * [givenName]
-/// * [familyName]
-/// * [displayName]
-/// * [birthDate]
-/// * [gender]
-/// * [status]
+/// * [id] 
+/// * [personId] 
+/// * [givenName] 
+/// * [familyName] 
+/// * [displayName] 
+/// * [birthDate] 
+/// * [gender] 
+/// * [status] 
 /// * [naturalCategory] - Lowest-ranked category the player qualifies for in the current season.
 /// * [teams] - Open assignments.
-/// * [createdAt]
+/// * [createdAt] 
+/// * [preferredJerseyNumber] - The number the player would like to wear (core 3.5.0, ADR-0048); a wish, not unique. A new assignment without a number takes it when it is free on the team. 
 @BuiltValue()
 abstract class Player implements Built<Player, PlayerBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -66,6 +67,10 @@ abstract class Player implements Built<Player, PlayerBuilder> {
 
   @BuiltValueField(wireName: r'createdAt')
   DateTime get createdAt;
+
+  /// The number the player would like to wear (core 3.5.0, ADR-0048); a wish, not unique. A new assignment without a number takes it when it is free on the team. 
+  @BuiltValueField(wireName: r'preferredJerseyNumber')
+  String? get preferredJerseyNumber;
 
   Player._();
 
@@ -140,14 +145,20 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
     yield r'teams';
     yield serializers.serialize(
       object.teams,
-      specifiedType:
-          const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),
+      specifiedType: const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),
     );
     yield r'createdAt';
     yield serializers.serialize(
       object.createdAt,
       specifiedType: const FullType(DateTime),
     );
+    if (object.preferredJerseyNumber != null) {
+      yield r'preferredJerseyNumber';
+      yield serializers.serialize(
+        object.preferredJerseyNumber,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override
@@ -156,9 +167,7 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
     Player object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -240,8 +249,7 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
         case r'teams':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType:
-                const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),
+            specifiedType: const FullType(BuiltList, [FullType(PlayerTeamAssignment)]),
           ) as BuiltList<PlayerTeamAssignment>;
           result.teams.replace(valueDes);
           break;
@@ -251,6 +259,14 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
             specifiedType: const FullType(DateTime),
           ) as DateTime;
           result.createdAt = valueDes;
+          break;
+        case r'preferredJerseyNumber':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.preferredJerseyNumber = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -280,3 +296,5 @@ class _$PlayerSerializer implements PrimitiveSerializer<Player> {
     return result.build();
   }
 }
+
+

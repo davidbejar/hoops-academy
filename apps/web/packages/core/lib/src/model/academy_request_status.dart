@@ -10,6 +10,7 @@ import 'package:built_value/serializer.dart';
 part 'academy_request_status.g.dart';
 
 class AcademyRequestStatus extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'PENDING')
   static const AcademyRequestStatus PENDING = _$PENDING;
   @BuiltValueEnumConst(wireName: r'ACCEPTED')
@@ -17,13 +18,11 @@ class AcademyRequestStatus extends EnumClass {
   @BuiltValueEnumConst(wireName: r'REJECTED')
   static const AcademyRequestStatus REJECTED = _$REJECTED;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const AcademyRequestStatus unknownDefaultOpenApi =
-      _$unknownDefaultOpenApi;
+  static const AcademyRequestStatus unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 
-  static Serializer<AcademyRequestStatus> get serializer =>
-      _$academyRequestStatusSerializer;
+  static Serializer<AcademyRequestStatus> get serializer => _$academyRequestStatusSerializer;
 
-  const AcademyRequestStatus._(String name) : super(name);
+  const AcademyRequestStatus._(String name): super(name);
 
   static BuiltSet<AcademyRequestStatus> get values => _$values;
   static AcademyRequestStatus valueOf(String name) => _$valueOf(name);
@@ -35,5 +34,5 @@ class AcademyRequestStatus extends EnumClass {
 /// corresponding Angular template.
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
-abstract class AcademyRequestStatusMixin = Object
-    with _$AcademyRequestStatusMixin;
+abstract class AcademyRequestStatusMixin = Object with _$AcademyRequestStatusMixin;
+

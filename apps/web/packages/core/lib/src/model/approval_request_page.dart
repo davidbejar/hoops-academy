@@ -14,11 +14,10 @@ part 'approval_request_page.g.dart';
 /// ApprovalRequestPage
 ///
 /// Properties:
-/// * [items]
-/// * [page]
+/// * [items] 
+/// * [page] 
 @BuiltValue()
-abstract class ApprovalRequestPage
-    implements Built<ApprovalRequestPage, ApprovalRequestPageBuilder> {
+abstract class ApprovalRequestPage implements Built<ApprovalRequestPage, ApprovalRequestPageBuilder> {
   @BuiltValueField(wireName: r'items')
   BuiltList<ApprovalRequest> get items;
 
@@ -27,24 +26,18 @@ abstract class ApprovalRequestPage
 
   ApprovalRequestPage._();
 
-  factory ApprovalRequestPage([void updates(ApprovalRequestPageBuilder b)]) =
-      _$ApprovalRequestPage;
+  factory ApprovalRequestPage([void updates(ApprovalRequestPageBuilder b)]) = _$ApprovalRequestPage;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(ApprovalRequestPageBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<ApprovalRequestPage> get serializer =>
-      _$ApprovalRequestPageSerializer();
+  static Serializer<ApprovalRequestPage> get serializer => _$ApprovalRequestPageSerializer();
 }
 
-class _$ApprovalRequestPageSerializer
-    implements PrimitiveSerializer<ApprovalRequestPage> {
+class _$ApprovalRequestPageSerializer implements PrimitiveSerializer<ApprovalRequestPage> {
   @override
-  final Iterable<Type> types = const [
-    ApprovalRequestPage,
-    _$ApprovalRequestPage
-  ];
+  final Iterable<Type> types = const [ApprovalRequestPage, _$ApprovalRequestPage];
 
   @override
   final String wireName = r'ApprovalRequestPage';
@@ -72,9 +65,7 @@ class _$ApprovalRequestPageSerializer
     ApprovalRequestPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -92,8 +83,7 @@ class _$ApprovalRequestPageSerializer
         case r'items':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType:
-                const FullType(BuiltList, [FullType(ApprovalRequest)]),
+            specifiedType: const FullType(BuiltList, [FullType(ApprovalRequest)]),
           ) as BuiltList<ApprovalRequest>;
           result.items.replace(valueDes);
           break;
@@ -132,3 +122,5 @@ class _$ApprovalRequestPageSerializer
     return result.build();
   }
 }
+
+

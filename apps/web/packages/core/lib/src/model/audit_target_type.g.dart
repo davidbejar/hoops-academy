@@ -12,6 +12,7 @@ const AuditTargetType _$tenant = const AuditTargetType._('tenant');
 const AuditTargetType _$approvalRequest =
     const AuditTargetType._('approvalRequest');
 const AuditTargetType _$guardianLink = const AuditTargetType._('guardianLink');
+const AuditTargetType _$team = const AuditTargetType._('team');
 const AuditTargetType _$unknownDefaultOpenApi =
     const AuditTargetType._('unknownDefaultOpenApi');
 
@@ -27,6 +28,8 @@ AuditTargetType _$valueOf(String name) {
       return _$approvalRequest;
     case 'guardianLink':
       return _$guardianLink;
+    case 'team':
+      return _$team;
     case 'unknownDefaultOpenApi':
       return _$unknownDefaultOpenApi;
     default:
@@ -41,6 +44,7 @@ final BuiltSet<AuditTargetType> _$values =
   _$tenant,
   _$approvalRequest,
   _$guardianLink,
+  _$team,
   _$unknownDefaultOpenApi,
 ]);
 
@@ -51,6 +55,7 @@ class _$AuditTargetTypeMeta {
   AuditTargetType get tenant => _$tenant;
   AuditTargetType get approvalRequest => _$approvalRequest;
   AuditTargetType get guardianLink => _$guardianLink;
+  AuditTargetType get team => _$team;
   AuditTargetType get unknownDefaultOpenApi => _$unknownDefaultOpenApi;
   AuditTargetType valueOf(String name) => _$valueOf(name);
   BuiltSet<AuditTargetType> get values => _$values;
@@ -72,6 +77,7 @@ class _$AuditTargetTypeSerializer
     'tenant': 'tenant',
     'approvalRequest': 'approval_request',
     'guardianLink': 'guardian_link',
+    'team': 'team',
     'unknownDefaultOpenApi': 'unknown_default_open_api',
   };
   static const Map<Object, String> _fromWire = const <Object, String>{
@@ -80,6 +86,7 @@ class _$AuditTargetTypeSerializer
     'tenant': 'tenant',
     'approval_request': 'approvalRequest',
     'guardian_link': 'guardianLink',
+    'team': 'team',
     'unknown_default_open_api': 'unknownDefaultOpenApi',
   };
 

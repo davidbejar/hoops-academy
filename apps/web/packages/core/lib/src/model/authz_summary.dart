@@ -12,20 +12,19 @@ part 'authz_summary.g.dart';
 /// The caller's scope within the tenant (what the UI may offer; the server re-checks every call).
 ///
 /// Properties:
-/// * [staffTeamIds] - Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the academy's time zone) even while the staff row is still open (core 2.8.0).
-/// * [historicStaffTeamIds] - Teams of seasons that have ended (academy time zone) where the caller is still recorded as staff: their read-only history for a COACH / ASSISTANT_COACH (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`.
+/// * [staffTeamIds] - Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the academy's time zone) even while the staff row is still open (core 2.8.0). 
+/// * [historicStaffTeamIds] - Teams of seasons that have ended (academy time zone) where the caller is still recorded as staff: their read-only history for a COACH / ASSISTANT_COACH (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`. 
 /// * [linkedPlayerIds] - Players linked to the caller as guardian (PARENT).
 /// * [ownPlayerId] - The caller's own player id when they hold the PLAYER role (null otherwise).
-/// * [playerTeamIds] - Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. Teams whose season has ended are left out even while the assignment is still open (core 2.8.0).
+/// * [playerTeamIds] - Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. Teams whose season has ended are left out even while the assignment is still open (core 2.8.0). 
 /// * [timezone] - IANA time zone of the tenant (calendar days of sessions, birthdays, availability).
 @BuiltValue()
-abstract class AuthzSummary
-    implements Built<AuthzSummary, AuthzSummaryBuilder> {
-  /// Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the academy's time zone) even while the staff row is still open (core 2.8.0).
+abstract class AuthzSummary implements Built<AuthzSummary, AuthzSummaryBuilder> {
+  /// Teams where the caller is COACH or ASSISTANT_COACH staff, without teams whose season has ended (in the academy's time zone) even while the staff row is still open (core 2.8.0). 
   @BuiltValueField(wireName: r'staffTeamIds')
   BuiltList<String> get staffTeamIds;
 
-  /// Teams of seasons that have ended (academy time zone) where the caller is still recorded as staff: their read-only history for a COACH / ASSISTANT_COACH (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`.
+  /// Teams of seasons that have ended (academy time zone) where the caller is still recorded as staff: their read-only history for a COACH / ASSISTANT_COACH (ADR-0042, core 3.2.0). Never overlaps `staffTeamIds`. 
   @BuiltValueField(wireName: r'historicStaffTeamIds')
   BuiltList<String> get historicStaffTeamIds;
 
@@ -37,7 +36,7 @@ abstract class AuthzSummary
   @BuiltValueField(wireName: r'ownPlayerId')
   String? get ownPlayerId;
 
-  /// Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. Teams whose season has ended are left out even while the assignment is still open (core 2.8.0).
+  /// Teams with a current (open, valid) assignment of the caller's own player (PLAYER) or of a linked player (PARENT); empty for other roles. Teams whose season has ended are left out even while the assignment is still open (core 2.8.0). 
   @BuiltValueField(wireName: r'playerTeamIds')
   BuiltList<String> get playerTeamIds;
 
@@ -108,9 +107,7 @@ class _$AuthzSummarySerializer implements PrimitiveSerializer<AuthzSummary> {
     AuthzSummary object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -196,3 +193,5 @@ class _$AuthzSummarySerializer implements PrimitiveSerializer<AuthzSummary> {
     return result.build();
   }
 }
+
+

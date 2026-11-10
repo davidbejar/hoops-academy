@@ -12,18 +12,17 @@ part 'tenant_profile.g.dart';
 /// TenantProfile
 ///
 /// Properties:
-/// * [id]
-/// * [slug]
-/// * [name]
-/// * [timezone]
-/// * [defaultLocale]
-/// * [contactEmail]
-/// * [websiteUrl]
-/// * [hasLogo]
-/// * [logoEtag]
+/// * [id] 
+/// * [slug] 
+/// * [name] 
+/// * [timezone] 
+/// * [defaultLocale] 
+/// * [contactEmail] 
+/// * [websiteUrl] 
+/// * [hasLogo] 
+/// * [logoEtag] 
 @BuiltValue()
-abstract class TenantProfile
-    implements Built<TenantProfile, TenantProfileBuilder> {
+abstract class TenantProfile implements Built<TenantProfile, TenantProfileBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -54,15 +53,13 @@ abstract class TenantProfile
 
   TenantProfile._();
 
-  factory TenantProfile([void updates(TenantProfileBuilder b)]) =
-      _$TenantProfile;
+  factory TenantProfile([void updates(TenantProfileBuilder b)]) = _$TenantProfile;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TenantProfileBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantProfile> get serializer =>
-      _$TenantProfileSerializer();
+  static Serializer<TenantProfile> get serializer => _$TenantProfileSerializer();
 }
 
 class _$TenantProfileSerializer implements PrimitiveSerializer<TenantProfile> {
@@ -136,9 +133,7 @@ class _$TenantProfileSerializer implements PrimitiveSerializer<TenantProfile> {
     TenantProfile object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -247,3 +242,5 @@ class _$TenantProfileSerializer implements PrimitiveSerializer<TenantProfile> {
     return result.build();
   }
 }
+
+

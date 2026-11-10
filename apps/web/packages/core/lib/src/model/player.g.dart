@@ -29,6 +29,8 @@ class _$Player extends Player {
   final BuiltList<PlayerTeamAssignment> teams;
   @override
   final DateTime createdAt;
+  @override
+  final String? preferredJerseyNumber;
 
   factory _$Player([void Function(PlayerBuilder)? updates]) =>
       (PlayerBuilder()..update(updates))._build();
@@ -44,7 +46,8 @@ class _$Player extends Player {
       required this.status,
       this.naturalCategory,
       required this.teams,
-      required this.createdAt})
+      required this.createdAt,
+      this.preferredJerseyNumber})
       : super._();
   @override
   Player rebuild(void Function(PlayerBuilder) updates) =>
@@ -67,7 +70,8 @@ class _$Player extends Player {
         status == other.status &&
         naturalCategory == other.naturalCategory &&
         teams == other.teams &&
-        createdAt == other.createdAt;
+        createdAt == other.createdAt &&
+        preferredJerseyNumber == other.preferredJerseyNumber;
   }
 
   @override
@@ -84,6 +88,7 @@ class _$Player extends Player {
     _$hash = $jc(_$hash, naturalCategory.hashCode);
     _$hash = $jc(_$hash, teams.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
+    _$hash = $jc(_$hash, preferredJerseyNumber.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -101,7 +106,8 @@ class _$Player extends Player {
           ..add('status', status)
           ..add('naturalCategory', naturalCategory)
           ..add('teams', teams)
-          ..add('createdAt', createdAt))
+          ..add('createdAt', createdAt)
+          ..add('preferredJerseyNumber', preferredJerseyNumber))
         .toString();
   }
 }
@@ -156,6 +162,11 @@ class PlayerBuilder implements Builder<Player, PlayerBuilder> {
   DateTime? get createdAt => _$this._createdAt;
   set createdAt(DateTime? createdAt) => _$this._createdAt = createdAt;
 
+  String? _preferredJerseyNumber;
+  String? get preferredJerseyNumber => _$this._preferredJerseyNumber;
+  set preferredJerseyNumber(String? preferredJerseyNumber) =>
+      _$this._preferredJerseyNumber = preferredJerseyNumber;
+
   PlayerBuilder() {
     Player._defaults(this);
   }
@@ -174,6 +185,7 @@ class PlayerBuilder implements Builder<Player, PlayerBuilder> {
       _naturalCategory = $v.naturalCategory?.toBuilder();
       _teams = $v.teams.toBuilder();
       _createdAt = $v.createdAt;
+      _preferredJerseyNumber = $v.preferredJerseyNumber;
       _$v = null;
     }
     return this;
@@ -216,6 +228,7 @@ class PlayerBuilder implements Builder<Player, PlayerBuilder> {
             teams: teams.build(),
             createdAt: BuiltValueNullFieldError.checkNotNull(
                 createdAt, r'Player', 'createdAt'),
+            preferredJerseyNumber: preferredJerseyNumber,
           );
     } catch (_) {
       late String _$failedField;

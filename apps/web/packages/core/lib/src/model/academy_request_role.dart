@@ -11,6 +11,7 @@ part 'academy_request_role.g.dart';
 
 /// What the requester is at the academy; players never request (decision 58). Accepted → first ADMIN.
 class AcademyRequestRole extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'ADMIN')
   static const AcademyRequestRole ADMIN = _$ADMIN;
   @BuiltValueEnumConst(wireName: r'COACH')
@@ -18,13 +19,11 @@ class AcademyRequestRole extends EnumClass {
   @BuiltValueEnumConst(wireName: r'PARENT')
   static const AcademyRequestRole PARENT = _$PARENT;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const AcademyRequestRole unknownDefaultOpenApi =
-      _$unknownDefaultOpenApi;
+  static const AcademyRequestRole unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 
-  static Serializer<AcademyRequestRole> get serializer =>
-      _$academyRequestRoleSerializer;
+  static Serializer<AcademyRequestRole> get serializer => _$academyRequestRoleSerializer;
 
-  const AcademyRequestRole._(String name) : super(name);
+  const AcademyRequestRole._(String name): super(name);
 
   static BuiltSet<AcademyRequestRole> get values => _$values;
   static AcademyRequestRole valueOf(String name) => _$valueOf(name);
@@ -37,3 +36,4 @@ class AcademyRequestRole extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class AcademyRequestRoleMixin = Object with _$AcademyRequestRoleMixin;
+

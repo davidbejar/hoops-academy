@@ -14,8 +14,8 @@ part 'player_page.g.dart';
 /// PlayerPage
 ///
 /// Properties:
-/// * [items]
-/// * [page]
+/// * [items] 
+/// * [page] 
 @BuiltValue()
 abstract class PlayerPage implements Built<PlayerPage, PlayerPageBuilder> {
   @BuiltValueField(wireName: r'items')
@@ -65,9 +65,7 @@ class _$PlayerPageSerializer implements PrimitiveSerializer<PlayerPage> {
     PlayerPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -124,3 +122,5 @@ class _$PlayerPageSerializer implements PrimitiveSerializer<PlayerPage> {
     return result.build();
   }
 }
+
+

@@ -14,18 +14,17 @@ part 'platform_user_membership.g.dart';
 /// The login's person in one academy, as that academy stores it.
 ///
 /// Properties:
-/// * [tenantId]
-/// * [tenantName]
-/// * [tenantSlug]
-/// * [tenantStatus]
-/// * [personId]
-/// * [givenName]
-/// * [familyName]
-/// * [roles]
+/// * [tenantId] 
+/// * [tenantName] 
+/// * [tenantSlug] 
+/// * [tenantStatus] 
+/// * [personId] 
+/// * [givenName] 
+/// * [familyName] 
+/// * [roles] 
 /// * [active] - False once the academy deactivated the person.
 @BuiltValue()
-abstract class PlatformUserMembership
-    implements Built<PlatformUserMembership, PlatformUserMembershipBuilder> {
+abstract class PlatformUserMembership implements Built<PlatformUserMembership, PlatformUserMembershipBuilder> {
   @BuiltValueField(wireName: r'tenantId')
   String get tenantId;
 
@@ -57,25 +56,18 @@ abstract class PlatformUserMembership
 
   PlatformUserMembership._();
 
-  factory PlatformUserMembership(
-          [void updates(PlatformUserMembershipBuilder b)]) =
-      _$PlatformUserMembership;
+  factory PlatformUserMembership([void updates(PlatformUserMembershipBuilder b)]) = _$PlatformUserMembership;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(PlatformUserMembershipBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PlatformUserMembership> get serializer =>
-      _$PlatformUserMembershipSerializer();
+  static Serializer<PlatformUserMembership> get serializer => _$PlatformUserMembershipSerializer();
 }
 
-class _$PlatformUserMembershipSerializer
-    implements PrimitiveSerializer<PlatformUserMembership> {
+class _$PlatformUserMembershipSerializer implements PrimitiveSerializer<PlatformUserMembership> {
   @override
-  final Iterable<Type> types = const [
-    PlatformUserMembership,
-    _$PlatformUserMembership
-  ];
+  final Iterable<Type> types = const [PlatformUserMembership, _$PlatformUserMembership];
 
   @override
   final String wireName = r'PlatformUserMembership';
@@ -138,9 +130,7 @@ class _$PlatformUserMembershipSerializer
     PlatformUserMembership object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -246,3 +236,5 @@ class _$PlatformUserMembershipSerializer
     return result.build();
   }
 }
+
+

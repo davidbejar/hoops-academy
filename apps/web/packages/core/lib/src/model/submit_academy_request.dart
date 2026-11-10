@@ -14,14 +14,13 @@ part 'submit_academy_request.g.dart';
 ///
 /// Properties:
 /// * [name] - The requester's name (optional).
-/// * [email]
-/// * [role]
-/// * [academyName]
+/// * [email] 
+/// * [role] 
+/// * [academyName] 
 /// * [locale] - The page's language; the decision e-mail is written in it (default en).
 /// * [website] - Honeypot; must be absent or empty. A request with a value is answered 202 and dropped.
 @BuiltValue()
-abstract class SubmitAcademyRequest
-    implements Built<SubmitAcademyRequest, SubmitAcademyRequestBuilder> {
+abstract class SubmitAcademyRequest implements Built<SubmitAcademyRequest, SubmitAcademyRequestBuilder> {
   /// The requester's name (optional).
   @BuiltValueField(wireName: r'name')
   String? get name;
@@ -47,24 +46,18 @@ abstract class SubmitAcademyRequest
 
   SubmitAcademyRequest._();
 
-  factory SubmitAcademyRequest([void updates(SubmitAcademyRequestBuilder b)]) =
-      _$SubmitAcademyRequest;
+  factory SubmitAcademyRequest([void updates(SubmitAcademyRequestBuilder b)]) = _$SubmitAcademyRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(SubmitAcademyRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<SubmitAcademyRequest> get serializer =>
-      _$SubmitAcademyRequestSerializer();
+  static Serializer<SubmitAcademyRequest> get serializer => _$SubmitAcademyRequestSerializer();
 }
 
-class _$SubmitAcademyRequestSerializer
-    implements PrimitiveSerializer<SubmitAcademyRequest> {
+class _$SubmitAcademyRequestSerializer implements PrimitiveSerializer<SubmitAcademyRequest> {
   @override
-  final Iterable<Type> types = const [
-    SubmitAcademyRequest,
-    _$SubmitAcademyRequest
-  ];
+  final Iterable<Type> types = const [SubmitAcademyRequest, _$SubmitAcademyRequest];
 
   @override
   final String wireName = r'SubmitAcademyRequest';
@@ -118,9 +111,7 @@ class _$SubmitAcademyRequestSerializer
     SubmitAcademyRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -208,3 +199,5 @@ class _$SubmitAcademyRequestSerializer
     return result.build();
   }
 }
+
+

@@ -16,17 +16,16 @@ part 'platform_audit_event.g.dart';
 /// An audit event and the academy it belongs to.
 ///
 /// Properties:
-/// * [id]
-/// * [at]
-/// * [action]
-/// * [actor]
-/// * [target]
+/// * [id] 
+/// * [at] 
+/// * [action] 
+/// * [actor] 
+/// * [target] 
 /// * [metadata] - Ids, role and enum names and the names of changed fields; never personal data.
-/// * [tenantId]
-/// * [tenantName]
+/// * [tenantId] 
+/// * [tenantName] 
 @BuiltValue()
-abstract class PlatformAuditEvent
-    implements Built<PlatformAuditEvent, PlatformAuditEventBuilder> {
+abstract class PlatformAuditEvent implements Built<PlatformAuditEvent, PlatformAuditEventBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -35,7 +34,7 @@ abstract class PlatformAuditEvent
 
   @BuiltValueField(wireName: r'action')
   AuditAction get action;
-  // enum actionEnum {  admin.added,  admin.removed,  admin.temporary_password_issued,  admin.updated,  approval.cancelled,  guardian_link.created,  guardian_link.removed,  member.deactivated,  member.invitation_accepted,  member.invited,  member.login_email_changed,  member.roles_replaced,  member.temporary_password_expired,  member.temporary_password_issued,  member.updated,  player.approved,  player.rejected,  player.requested,  player.withdrawn,  tenant.created,  tenant.events_backfilled,  tenant.logo_removed,  tenant.logo_replaced,  tenant.master_data_changed,  tenant.profile_changed,  tenant.reactivated,  tenant.request_accepted,  tenant.settings_changed,  tenant.suspended,  tenant.withdrawn,  };
+  // enum actionEnum {  admin.added,  admin.removed,  admin.temporary_password_issued,  admin.updated,  approval.cancelled,  audit.exported,  guardian_link.created,  guardian_link.removed,  member.deactivated,  member.invitation_accepted,  member.invited,  member.login_email_changed,  member.roles_replaced,  member.temporary_password_expired,  member.temporary_password_issued,  member.updated,  player.approved,  player.rejected,  player.requested,  player.withdrawn,  team.roster_exported,  tenant.created,  tenant.events_backfilled,  tenant.logo_removed,  tenant.logo_replaced,  tenant.master_data_changed,  tenant.profile_changed,  tenant.reactivated,  tenant.request_accepted,  tenant.settings_changed,  tenant.suspended,  tenant.withdrawn,  };
 
   @BuiltValueField(wireName: r'actor')
   AuditActor get actor;
@@ -55,19 +54,16 @@ abstract class PlatformAuditEvent
 
   PlatformAuditEvent._();
 
-  factory PlatformAuditEvent([void updates(PlatformAuditEventBuilder b)]) =
-      _$PlatformAuditEvent;
+  factory PlatformAuditEvent([void updates(PlatformAuditEventBuilder b)]) = _$PlatformAuditEvent;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(PlatformAuditEventBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PlatformAuditEvent> get serializer =>
-      _$PlatformAuditEventSerializer();
+  static Serializer<PlatformAuditEvent> get serializer => _$PlatformAuditEventSerializer();
 }
 
-class _$PlatformAuditEventSerializer
-    implements PrimitiveSerializer<PlatformAuditEvent> {
+class _$PlatformAuditEventSerializer implements PrimitiveSerializer<PlatformAuditEvent> {
   @override
   final Iterable<Type> types = const [PlatformAuditEvent, _$PlatformAuditEvent];
 
@@ -107,8 +103,7 @@ class _$PlatformAuditEventSerializer
     yield r'metadata';
     yield serializers.serialize(
       object.metadata,
-      specifiedType: const FullType(
-          BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
+      specifiedType: const FullType(BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
     );
     yield r'tenantId';
     yield serializers.serialize(
@@ -128,9 +123,7 @@ class _$PlatformAuditEventSerializer
     PlatformAuditEvent object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -183,8 +176,7 @@ class _$PlatformAuditEventSerializer
         case r'metadata':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(
-                BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
+            specifiedType: const FullType(BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
           ) as BuiltMap<String, JsonObject?>;
           result.metadata.replace(valueDes);
           break;
@@ -230,3 +222,5 @@ class _$PlatformAuditEventSerializer
     return result.build();
   }
 }
+
+

@@ -11,13 +11,12 @@ part 'approval_payload.g.dart';
 /// Action parameters captured at request time.
 ///
 /// Properties:
-/// * [teamId]
+/// * [teamId] 
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
-/// * [note]
-/// * [reason]
+/// * [note] 
+/// * [reason] 
 @BuiltValue()
-abstract class ApprovalPayload
-    implements Built<ApprovalPayload, ApprovalPayloadBuilder> {
+abstract class ApprovalPayload implements Built<ApprovalPayload, ApprovalPayloadBuilder> {
   @BuiltValueField(wireName: r'teamId')
   String? get teamId;
 
@@ -33,19 +32,16 @@ abstract class ApprovalPayload
 
   ApprovalPayload._();
 
-  factory ApprovalPayload([void updates(ApprovalPayloadBuilder b)]) =
-      _$ApprovalPayload;
+  factory ApprovalPayload([void updates(ApprovalPayloadBuilder b)]) = _$ApprovalPayload;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(ApprovalPayloadBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<ApprovalPayload> get serializer =>
-      _$ApprovalPayloadSerializer();
+  static Serializer<ApprovalPayload> get serializer => _$ApprovalPayloadSerializer();
 }
 
-class _$ApprovalPayloadSerializer
-    implements PrimitiveSerializer<ApprovalPayload> {
+class _$ApprovalPayloadSerializer implements PrimitiveSerializer<ApprovalPayload> {
   @override
   final Iterable<Type> types = const [ApprovalPayload, _$ApprovalPayload];
 
@@ -93,9 +89,7 @@ class _$ApprovalPayloadSerializer
     ApprovalPayload object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -170,3 +164,5 @@ class _$ApprovalPayloadSerializer
     return result.build();
   }
 }
+
+

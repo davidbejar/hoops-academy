@@ -14,15 +14,15 @@ part 'tenant.g.dart';
 /// Tenant
 ///
 /// Properties:
-/// * [id]
-/// * [slug]
-/// * [name]
-/// * [status]
+/// * [id] 
+/// * [slug] 
+/// * [name] 
+/// * [status] 
 /// * [timezone] - IANA time zone id.
-/// * [defaultLocale]
-/// * [createdAt]
-/// * [suspendedAt]
-/// * [withdrawnAt]
+/// * [defaultLocale] 
+/// * [createdAt] 
+/// * [suspendedAt] 
+/// * [withdrawnAt] 
 /// * [retainUntil] - For WITHDRAWN tenants, the date until which data is retained.
 @BuiltValue()
 abstract class Tenant implements Built<Tenant, TenantBuilder> {
@@ -147,9 +147,7 @@ class _$TenantSerializer implements PrimitiveSerializer<Tenant> {
     Tenant object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -265,3 +263,5 @@ class _$TenantSerializer implements PrimitiveSerializer<Tenant> {
     return result.build();
   }
 }
+
+

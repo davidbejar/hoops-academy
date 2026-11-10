@@ -12,13 +12,12 @@ part 'player_team_assignment.g.dart';
 /// PlayerTeamAssignment
 ///
 /// Properties:
-/// * [team]
+/// * [team] 
 /// * [jerseyNumber] - Jersey as printed (\"0\", \"00\" and \"7\" are different numbers).
-/// * [playUpLevels]
+/// * [playUpLevels] 
 /// * [valid] - False when the assignment was invalidated by the evaluator.
 @BuiltValue()
-abstract class PlayerTeamAssignment
-    implements Built<PlayerTeamAssignment, PlayerTeamAssignmentBuilder> {
+abstract class PlayerTeamAssignment implements Built<PlayerTeamAssignment, PlayerTeamAssignmentBuilder> {
   @BuiltValueField(wireName: r'team')
   TeamRef get team;
 
@@ -35,24 +34,18 @@ abstract class PlayerTeamAssignment
 
   PlayerTeamAssignment._();
 
-  factory PlayerTeamAssignment([void updates(PlayerTeamAssignmentBuilder b)]) =
-      _$PlayerTeamAssignment;
+  factory PlayerTeamAssignment([void updates(PlayerTeamAssignmentBuilder b)]) = _$PlayerTeamAssignment;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(PlayerTeamAssignmentBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PlayerTeamAssignment> get serializer =>
-      _$PlayerTeamAssignmentSerializer();
+  static Serializer<PlayerTeamAssignment> get serializer => _$PlayerTeamAssignmentSerializer();
 }
 
-class _$PlayerTeamAssignmentSerializer
-    implements PrimitiveSerializer<PlayerTeamAssignment> {
+class _$PlayerTeamAssignmentSerializer implements PrimitiveSerializer<PlayerTeamAssignment> {
   @override
-  final Iterable<Type> types = const [
-    PlayerTeamAssignment,
-    _$PlayerTeamAssignment
-  ];
+  final Iterable<Type> types = const [PlayerTeamAssignment, _$PlayerTeamAssignment];
 
   @override
   final String wireName = r'PlayerTeamAssignment';
@@ -92,9 +85,7 @@ class _$PlayerTeamAssignmentSerializer
     PlayerTeamAssignment object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -166,3 +157,5 @@ class _$PlayerTeamAssignmentSerializer
     return result.build();
   }
 }
+
+

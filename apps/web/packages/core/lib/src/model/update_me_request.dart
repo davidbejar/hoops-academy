@@ -9,16 +9,15 @@ import 'package:built_value/serializer.dart';
 
 part 'update_me_request.g.dart';
 
-/// At least one member. A name change needs `tenantId` (the academy of the person renamed); core 3.4.0 made `locale` optional.
+/// At least one member. A name change needs `tenantId` (the academy of the person renamed); core 3.4.0 made `locale` optional. 
 ///
 /// Properties:
-/// * [locale]
-/// * [givenName]
-/// * [familyName]
+/// * [locale] 
+/// * [givenName] 
+/// * [familyName] 
 /// * [tenantId] - The academy whose person (the caller's own) gets the new name; required with a name only.
 @BuiltValue()
-abstract class UpdateMeRequest
-    implements Built<UpdateMeRequest, UpdateMeRequestBuilder> {
+abstract class UpdateMeRequest implements Built<UpdateMeRequest, UpdateMeRequestBuilder> {
   @BuiltValueField(wireName: r'locale')
   Locale? get locale;
   // enum localeEnum {  es,  en,  id,  };
@@ -35,19 +34,16 @@ abstract class UpdateMeRequest
 
   UpdateMeRequest._();
 
-  factory UpdateMeRequest([void updates(UpdateMeRequestBuilder b)]) =
-      _$UpdateMeRequest;
+  factory UpdateMeRequest([void updates(UpdateMeRequestBuilder b)]) = _$UpdateMeRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateMeRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateMeRequest> get serializer =>
-      _$UpdateMeRequestSerializer();
+  static Serializer<UpdateMeRequest> get serializer => _$UpdateMeRequestSerializer();
 }
 
-class _$UpdateMeRequestSerializer
-    implements PrimitiveSerializer<UpdateMeRequest> {
+class _$UpdateMeRequestSerializer implements PrimitiveSerializer<UpdateMeRequest> {
   @override
   final Iterable<Type> types = const [UpdateMeRequest, _$UpdateMeRequest];
 
@@ -95,9 +91,7 @@ class _$UpdateMeRequestSerializer
     UpdateMeRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -172,3 +166,5 @@ class _$UpdateMeRequestSerializer
     return result.build();
   }
 }
+
+

@@ -13,33 +13,26 @@ part 'player_batch_response.g.dart';
 /// PlayerBatchResponse
 ///
 /// Properties:
-/// * [players]
+/// * [players] 
 @BuiltValue()
-abstract class PlayerBatchResponse
-    implements Built<PlayerBatchResponse, PlayerBatchResponseBuilder> {
+abstract class PlayerBatchResponse implements Built<PlayerBatchResponse, PlayerBatchResponseBuilder> {
   @BuiltValueField(wireName: r'players')
   BuiltList<PlayerBrief> get players;
 
   PlayerBatchResponse._();
 
-  factory PlayerBatchResponse([void updates(PlayerBatchResponseBuilder b)]) =
-      _$PlayerBatchResponse;
+  factory PlayerBatchResponse([void updates(PlayerBatchResponseBuilder b)]) = _$PlayerBatchResponse;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(PlayerBatchResponseBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PlayerBatchResponse> get serializer =>
-      _$PlayerBatchResponseSerializer();
+  static Serializer<PlayerBatchResponse> get serializer => _$PlayerBatchResponseSerializer();
 }
 
-class _$PlayerBatchResponseSerializer
-    implements PrimitiveSerializer<PlayerBatchResponse> {
+class _$PlayerBatchResponseSerializer implements PrimitiveSerializer<PlayerBatchResponse> {
   @override
-  final Iterable<Type> types = const [
-    PlayerBatchResponse,
-    _$PlayerBatchResponse
-  ];
+  final Iterable<Type> types = const [PlayerBatchResponse, _$PlayerBatchResponse];
 
   @override
   final String wireName = r'PlayerBatchResponse';
@@ -62,9 +55,7 @@ class _$PlayerBatchResponseSerializer
     PlayerBatchResponse object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -114,3 +105,5 @@ class _$PlayerBatchResponseSerializer
     return result.build();
   }
 }
+
+

@@ -11,8 +11,8 @@ part 'player_ref.g.dart';
 /// PlayerRef
 ///
 /// Properties:
-/// * [id]
-/// * [displayName]
+/// * [id] 
+/// * [displayName] 
 @BuiltValue()
 abstract class PlayerRef implements Built<PlayerRef, PlayerRefBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -62,9 +62,7 @@ class _$PlayerRefSerializer implements PrimitiveSerializer<PlayerRef> {
     PlayerRef object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -121,3 +119,5 @@ class _$PlayerRefSerializer implements PrimitiveSerializer<PlayerRef> {
     return result.build();
   }
 }
+
+

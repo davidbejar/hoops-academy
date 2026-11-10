@@ -17,19 +17,18 @@ part 'eligibility_case.g.dart';
 /// EligibilityCase
 ///
 /// Properties:
-/// * [id]
-/// * [player]
-/// * [team]
-/// * [reason]
-/// * [status]
-/// * [openedAt]
-/// * [resolvedAt]
-/// * [resolvedBy]
-/// * [resolution]
-/// * [resolutionNote]
+/// * [id] 
+/// * [player] 
+/// * [team] 
+/// * [reason] 
+/// * [status] 
+/// * [openedAt] 
+/// * [resolvedAt] 
+/// * [resolvedBy] 
+/// * [resolution] 
+/// * [resolutionNote] 
 @BuiltValue()
-abstract class EligibilityCase
-    implements Built<EligibilityCase, EligibilityCaseBuilder> {
+abstract class EligibilityCase implements Built<EligibilityCase, EligibilityCaseBuilder> {
   @BuiltValueField(wireName: r'id')
   String get id;
 
@@ -65,19 +64,16 @@ abstract class EligibilityCase
 
   EligibilityCase._();
 
-  factory EligibilityCase([void updates(EligibilityCaseBuilder b)]) =
-      _$EligibilityCase;
+  factory EligibilityCase([void updates(EligibilityCaseBuilder b)]) = _$EligibilityCase;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(EligibilityCaseBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<EligibilityCase> get serializer =>
-      _$EligibilityCaseSerializer();
+  static Serializer<EligibilityCase> get serializer => _$EligibilityCaseSerializer();
 }
 
-class _$EligibilityCaseSerializer
-    implements PrimitiveSerializer<EligibilityCase> {
+class _$EligibilityCaseSerializer implements PrimitiveSerializer<EligibilityCase> {
   @override
   final Iterable<Type> types = const [EligibilityCase, _$EligibilityCase];
 
@@ -155,9 +151,7 @@ class _$EligibilityCaseSerializer
     EligibilityCase object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -274,3 +268,5 @@ class _$EligibilityCaseSerializer
     return result.build();
   }
 }
+
+

@@ -12,15 +12,14 @@ part 'create_guardian_request.g.dart';
 /// A new guardian (member with the PARENT role) of `playerId`.
 ///
 /// Properties:
-/// * [givenName]
-/// * [familyName]
+/// * [givenName] 
+/// * [familyName] 
 /// * [email] - Gives the guardian a login; a new login's temporary password is returned once.
-/// * [phone]
-/// * [locale]
-/// * [playerId]
+/// * [phone] 
+/// * [locale] 
+/// * [playerId] 
 @BuiltValue()
-abstract class CreateGuardianRequest
-    implements Built<CreateGuardianRequest, CreateGuardianRequestBuilder> {
+abstract class CreateGuardianRequest implements Built<CreateGuardianRequest, CreateGuardianRequestBuilder> {
   @BuiltValueField(wireName: r'givenName')
   String get givenName;
 
@@ -43,24 +42,18 @@ abstract class CreateGuardianRequest
 
   CreateGuardianRequest._();
 
-  factory CreateGuardianRequest(
-      [void updates(CreateGuardianRequestBuilder b)]) = _$CreateGuardianRequest;
+  factory CreateGuardianRequest([void updates(CreateGuardianRequestBuilder b)]) = _$CreateGuardianRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(CreateGuardianRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<CreateGuardianRequest> get serializer =>
-      _$CreateGuardianRequestSerializer();
+  static Serializer<CreateGuardianRequest> get serializer => _$CreateGuardianRequestSerializer();
 }
 
-class _$CreateGuardianRequestSerializer
-    implements PrimitiveSerializer<CreateGuardianRequest> {
+class _$CreateGuardianRequestSerializer implements PrimitiveSerializer<CreateGuardianRequest> {
   @override
-  final Iterable<Type> types = const [
-    CreateGuardianRequest,
-    _$CreateGuardianRequest
-  ];
+  final Iterable<Type> types = const [CreateGuardianRequest, _$CreateGuardianRequest];
 
   @override
   final String wireName = r'CreateGuardianRequest';
@@ -114,9 +107,7 @@ class _$CreateGuardianRequestSerializer
     CreateGuardianRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -204,3 +195,5 @@ class _$CreateGuardianRequestSerializer
     return result.build();
   }
 }
+
+

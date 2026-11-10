@@ -13,13 +13,12 @@ part 'accept_academy_request.g.dart';
 /// What the request does not carry; the academy name and the administrator's e-mail come from the request.
 ///
 /// Properties:
-/// * [slug]
-/// * [timezone]
-/// * [defaultLocale]
-/// * [firstAdmin]
+/// * [slug] 
+/// * [timezone] 
+/// * [defaultLocale] 
+/// * [firstAdmin] 
 @BuiltValue()
-abstract class AcceptAcademyRequest
-    implements Built<AcceptAcademyRequest, AcceptAcademyRequestBuilder> {
+abstract class AcceptAcademyRequest implements Built<AcceptAcademyRequest, AcceptAcademyRequestBuilder> {
   @BuiltValueField(wireName: r'slug')
   String get slug;
 
@@ -35,24 +34,18 @@ abstract class AcceptAcademyRequest
 
   AcceptAcademyRequest._();
 
-  factory AcceptAcademyRequest([void updates(AcceptAcademyRequestBuilder b)]) =
-      _$AcceptAcademyRequest;
+  factory AcceptAcademyRequest([void updates(AcceptAcademyRequestBuilder b)]) = _$AcceptAcademyRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(AcceptAcademyRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AcceptAcademyRequest> get serializer =>
-      _$AcceptAcademyRequestSerializer();
+  static Serializer<AcceptAcademyRequest> get serializer => _$AcceptAcademyRequestSerializer();
 }
 
-class _$AcceptAcademyRequestSerializer
-    implements PrimitiveSerializer<AcceptAcademyRequest> {
+class _$AcceptAcademyRequestSerializer implements PrimitiveSerializer<AcceptAcademyRequest> {
   @override
-  final Iterable<Type> types = const [
-    AcceptAcademyRequest,
-    _$AcceptAcademyRequest
-  ];
+  final Iterable<Type> types = const [AcceptAcademyRequest, _$AcceptAcademyRequest];
 
   @override
   final String wireName = r'AcceptAcademyRequest';
@@ -90,9 +83,7 @@ class _$AcceptAcademyRequestSerializer
     AcceptAcademyRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -163,3 +154,5 @@ class _$AcceptAcademyRequestSerializer
     return result.build();
   }
 }
+
+

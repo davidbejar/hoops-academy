@@ -11,34 +11,26 @@ part 'approval_decision_request.g.dart';
 /// ApprovalDecisionRequest
 ///
 /// Properties:
-/// * [note]
+/// * [note] 
 @BuiltValue()
-abstract class ApprovalDecisionRequest
-    implements Built<ApprovalDecisionRequest, ApprovalDecisionRequestBuilder> {
+abstract class ApprovalDecisionRequest implements Built<ApprovalDecisionRequest, ApprovalDecisionRequestBuilder> {
   @BuiltValueField(wireName: r'note')
   String? get note;
 
   ApprovalDecisionRequest._();
 
-  factory ApprovalDecisionRequest(
-          [void updates(ApprovalDecisionRequestBuilder b)]) =
-      _$ApprovalDecisionRequest;
+  factory ApprovalDecisionRequest([void updates(ApprovalDecisionRequestBuilder b)]) = _$ApprovalDecisionRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(ApprovalDecisionRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<ApprovalDecisionRequest> get serializer =>
-      _$ApprovalDecisionRequestSerializer();
+  static Serializer<ApprovalDecisionRequest> get serializer => _$ApprovalDecisionRequestSerializer();
 }
 
-class _$ApprovalDecisionRequestSerializer
-    implements PrimitiveSerializer<ApprovalDecisionRequest> {
+class _$ApprovalDecisionRequestSerializer implements PrimitiveSerializer<ApprovalDecisionRequest> {
   @override
-  final Iterable<Type> types = const [
-    ApprovalDecisionRequest,
-    _$ApprovalDecisionRequest
-  ];
+  final Iterable<Type> types = const [ApprovalDecisionRequest, _$ApprovalDecisionRequest];
 
   @override
   final String wireName = r'ApprovalDecisionRequest';
@@ -63,9 +55,7 @@ class _$ApprovalDecisionRequestSerializer
     ApprovalDecisionRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -116,3 +106,5 @@ class _$ApprovalDecisionRequestSerializer
     return result.build();
   }
 }
+
+

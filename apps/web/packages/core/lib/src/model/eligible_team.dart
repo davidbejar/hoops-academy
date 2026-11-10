@@ -13,11 +13,10 @@ part 'eligible_team.g.dart';
 /// EligibleTeam
 ///
 /// Properties:
-/// * [team]
-/// * [eligibility]
+/// * [team] 
+/// * [eligibility] 
 @BuiltValue()
-abstract class EligibleTeam
-    implements Built<EligibleTeam, EligibleTeamBuilder> {
+abstract class EligibleTeam implements Built<EligibleTeam, EligibleTeamBuilder> {
   @BuiltValueField(wireName: r'team')
   Team get team;
 
@@ -65,9 +64,7 @@ class _$EligibleTeamSerializer implements PrimitiveSerializer<EligibleTeam> {
     EligibleTeam object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -124,3 +121,5 @@ class _$EligibleTeamSerializer implements PrimitiveSerializer<EligibleTeam> {
     return result.build();
   }
 }
+
+

@@ -12,12 +12,11 @@ part 'tenant_settings.g.dart';
 /// TenantSettings
 ///
 /// Properties:
-/// * [ageRule]
+/// * [ageRule] 
 /// * [maxPlayUpLevels] - Maximum category levels a player may play up; null = unlimited.
 /// * [attendanceLateThresholdMinutes] - Minutes after which a LATE arrival is highlighted.
 @BuiltValue()
-abstract class TenantSettings
-    implements Built<TenantSettings, TenantSettingsBuilder> {
+abstract class TenantSettings implements Built<TenantSettings, TenantSettingsBuilder> {
   @BuiltValueField(wireName: r'ageRule')
   AgeRule get ageRule;
   // enum ageRuleEnum {  BIRTH_YEAR,  BIRTHDAY,  };
@@ -32,20 +31,17 @@ abstract class TenantSettings
 
   TenantSettings._();
 
-  factory TenantSettings([void updates(TenantSettingsBuilder b)]) =
-      _$TenantSettings;
+  factory TenantSettings([void updates(TenantSettingsBuilder b)]) = _$TenantSettings;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(TenantSettingsBuilder b) =>
-      b..attendanceLateThresholdMinutes = 10;
+  static void _defaults(TenantSettingsBuilder b) => b
+      ..attendanceLateThresholdMinutes = 10;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantSettings> get serializer =>
-      _$TenantSettingsSerializer();
+  static Serializer<TenantSettings> get serializer => _$TenantSettingsSerializer();
 }
 
-class _$TenantSettingsSerializer
-    implements PrimitiveSerializer<TenantSettings> {
+class _$TenantSettingsSerializer implements PrimitiveSerializer<TenantSettings> {
   @override
   final Iterable<Type> types = const [TenantSettings, _$TenantSettings];
 
@@ -63,12 +59,10 @@ class _$TenantSettingsSerializer
       specifiedType: const FullType(AgeRule),
     );
     yield r'maxPlayUpLevels';
-    yield object.maxPlayUpLevels == null
-        ? null
-        : serializers.serialize(
-            object.maxPlayUpLevels,
-            specifiedType: const FullType.nullable(int),
-          );
+    yield object.maxPlayUpLevels == null ? null : serializers.serialize(
+      object.maxPlayUpLevels,
+      specifiedType: const FullType.nullable(int),
+    );
     if (object.attendanceLateThresholdMinutes != null) {
       yield r'attendanceLateThresholdMinutes';
       yield serializers.serialize(
@@ -84,9 +78,7 @@ class _$TenantSettingsSerializer
     TenantSettings object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -152,3 +144,5 @@ class _$TenantSettingsSerializer
     return result.build();
   }
 }
+
+

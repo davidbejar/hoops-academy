@@ -11,11 +11,11 @@ part 'age_category.g.dart';
 /// AgeCategory
 ///
 /// Properties:
-/// * [code]
-/// * [name]
+/// * [code] 
+/// * [name] 
 /// * [maxAge] - Inclusive maximum age; null = senior (no limit).
 /// * [rank] - Ordering; higher rank = older category.
-/// * [id]
+/// * [id] 
 @BuiltValue()
 abstract class AgeCategory implements Built<AgeCategory, AgeCategoryBuilder> {
   @BuiltValueField(wireName: r'code')
@@ -93,9 +93,7 @@ class _$AgeCategorySerializer implements PrimitiveSerializer<AgeCategory> {
     AgeCategory object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -174,3 +172,5 @@ class _$AgeCategorySerializer implements PrimitiveSerializer<AgeCategory> {
     return result.build();
   }
 }
+
+

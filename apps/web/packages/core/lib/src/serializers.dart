@@ -34,6 +34,7 @@ import 'package:hoops_core_api/src/model/approval_request_page.dart';
 import 'package:hoops_core_api/src/model/approval_request_with_password.dart';
 import 'package:hoops_core_api/src/model/approval_status.dart';
 import 'package:hoops_core_api/src/model/assign_player_request.dart';
+import 'package:hoops_core_api/src/model/assigned_team_player.dart';
 import 'package:hoops_core_api/src/model/audit_action.dart';
 import 'package:hoops_core_api/src/model/audit_actor.dart';
 import 'package:hoops_core_api/src/model/audit_actor_kind.dart';
@@ -66,6 +67,7 @@ import 'package:hoops_core_api/src/model/guardian_link_page.dart';
 import 'package:hoops_core_api/src/model/guardian_link_with_password.dart';
 import 'package:hoops_core_api/src/model/invitation_status.dart';
 import 'package:hoops_core_api/src/model/invite_member_request.dart';
+import 'package:hoops_core_api/src/model/jersey_source.dart';
 import 'package:hoops_core_api/src/model/locale.dart';
 import 'package:hoops_core_api/src/model/me.dart';
 import 'package:hoops_core_api/src/model/member.dart';
@@ -103,6 +105,7 @@ import 'package:hoops_core_api/src/model/season_rollover_request.dart';
 import 'package:hoops_core_api/src/model/season_rollover_result.dart';
 import 'package:hoops_core_api/src/model/staff_role.dart';
 import 'package:hoops_core_api/src/model/submit_academy_request.dart';
+import 'package:hoops_core_api/src/model/taken_jersey_number.dart';
 import 'package:hoops_core_api/src/model/team.dart';
 import 'package:hoops_core_api/src/model/team_page.dart';
 import 'package:hoops_core_api/src/model/team_player.dart';
@@ -130,6 +133,7 @@ import 'package:hoops_core_api/src/model/tenant_with_password.dart';
 import 'package:hoops_core_api/src/model/update_age_category_request.dart';
 import 'package:hoops_core_api/src/model/update_me_request.dart';
 import 'package:hoops_core_api/src/model/update_member_request.dart';
+import 'package:hoops_core_api/src/model/update_player_request.dart';
 import 'package:hoops_core_api/src/model/update_season_request.dart';
 import 'package:hoops_core_api/src/model/update_team_player_request.dart';
 import 'package:hoops_core_api/src/model/update_team_request.dart';
@@ -162,6 +166,7 @@ part 'serializers.g.dart';
   ApprovalRequestWithPassword,
   ApprovalStatus,
   AssignPlayerRequest,
+  AssignedTeamPlayer,
   AuditAction,
   AuditActor,
   AuditActorKind,
@@ -194,6 +199,7 @@ part 'serializers.g.dart';
   GuardianLinkWithPassword,
   InvitationStatus,
   InviteMemberRequest,
+  JerseySource,
   Locale,
   Me,
   Member,
@@ -231,6 +237,7 @@ part 'serializers.g.dart';
   SeasonRolloverResult,
   StaffRole,
   SubmitAcademyRequest,
+  TakenJerseyNumber,
   Team,
   TeamPage,
   TeamPlayer,
@@ -258,6 +265,7 @@ part 'serializers.g.dart';
   UpdateAgeCategoryRequest,
   UpdateMeRequest,
   UpdateMemberRequest,
+  UpdatePlayerRequest,
   UpdateSeasonRequest,
   UpdateTeamPlayerRequest,
   UpdateTeamRequest,
@@ -323,6 +331,10 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformUserMembership)]),
         () => ListBuilder<PlatformUserMembership>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(TakenJerseyNumber)]),
+        () => ListBuilder<TakenJerseyNumber>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformUser)]),
@@ -393,8 +405,7 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<AuditAction>(),
       )
       ..addBuilderFactory(
-        const FullType(
-            BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
+        const FullType(BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
         () => MapBuilder<String, JsonObject?>(),
       )
       ..addBuilderFactory(
@@ -412,8 +423,8 @@ Serializers serializers = (_$serializers.toBuilder()
       ..add(const OneOfSerializer())
       ..add(const AnyOfSerializer())
       ..add(const DateSerializer())
-      ..add(Iso8601DateTimeSerializer()))
-    .build();
+      ..add(Iso8601DateTimeSerializer())
+    ).build();
 
 Serializers standardSerializers =
     (serializers.toBuilder()..addPlugin(StandardJsonPlugin())).build();

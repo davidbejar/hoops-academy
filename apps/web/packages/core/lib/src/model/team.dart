@@ -13,13 +13,13 @@ part 'team.g.dart';
 /// Team
 ///
 /// Properties:
-/// * [id]
-/// * [seasonId]
-/// * [seasonEnded] - The team's season has ended (academy time zone): the team is read-only history and every write on it answers 409 `SEASON_ENDED` (ADR-0042, core 3.2.0).
-/// * [name]
-/// * [alias]
-/// * [ageCategory]
-/// * [genderPolicy]
+/// * [id] 
+/// * [seasonId] 
+/// * [seasonEnded] - The team's season has ended (academy time zone): the team is read-only history and every write on it answers 409 `SEASON_ENDED` (ADR-0042, core 3.2.0). 
+/// * [name] 
+/// * [alias] 
+/// * [ageCategory] 
+/// * [genderPolicy] 
 /// * [playerCount] - Open, valid assignments.
 @BuiltValue()
 abstract class Team implements Built<Team, TeamBuilder> {
@@ -29,7 +29,7 @@ abstract class Team implements Built<Team, TeamBuilder> {
   @BuiltValueField(wireName: r'seasonId')
   String get seasonId;
 
-  /// The team's season has ended (academy time zone): the team is read-only history and every write on it answers 409 `SEASON_ENDED` (ADR-0042, core 3.2.0).
+  /// The team's season has ended (academy time zone): the team is read-only history and every write on it answers 409 `SEASON_ENDED` (ADR-0042, core 3.2.0). 
   @BuiltValueField(wireName: r'seasonEnded')
   bool get seasonEnded;
 
@@ -123,9 +123,7 @@ class _$TeamSerializer implements PrimitiveSerializer<Team> {
     Team object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -225,3 +223,5 @@ class _$TeamSerializer implements PrimitiveSerializer<Team> {
     return result.build();
   }
 }
+
+

@@ -14,20 +14,19 @@ part 'authz_context.g.dart';
 /// AuthzContext
 ///
 /// Properties:
-/// * [sub]
-/// * [personId]
-/// * [tenantId]
-/// * [tenantStatus]
-/// * [roles]
+/// * [sub] 
+/// * [personId] 
+/// * [tenantId] 
+/// * [tenantStatus] 
+/// * [roles] 
 /// * [staffTeamIds] - Teams the caller is staff of; teams whose season has ended are left out (core 2.8.0).
-/// * [historicStaffTeamIds] - Teams of ended seasons the caller is still recorded as staff of: read access to their history for a COACH / ASSISTANT_COACH, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`.
-/// * [linkedPlayerIds]
+/// * [historicStaffTeamIds] - Teams of ended seasons the caller is still recorded as staff of: read access to their history for a COACH / ASSISTANT_COACH, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`. 
+/// * [linkedPlayerIds] 
 /// * [ownPlayerId] - The subject's own player id when they hold the PLAYER role.
-/// * [playerTeamIds] - Teams with an open, valid assignment of the own player or of a linked player; teams whose season has ended are left out (core 2.8.0).
+/// * [playerTeamIds] - Teams with an open, valid assignment of the own player or of a linked player; teams whose season has ended are left out (core 2.8.0). 
 /// * [timezone] - IANA time zone of the tenant.
 @BuiltValue()
-abstract class AuthzContext
-    implements Built<AuthzContext, AuthzContextBuilder> {
+abstract class AuthzContext implements Built<AuthzContext, AuthzContextBuilder> {
   @BuiltValueField(wireName: r'sub')
   String get sub;
 
@@ -48,7 +47,7 @@ abstract class AuthzContext
   @BuiltValueField(wireName: r'staffTeamIds')
   BuiltList<String> get staffTeamIds;
 
-  /// Teams of ended seasons the caller is still recorded as staff of: read access to their history for a COACH / ASSISTANT_COACH, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`.
+  /// Teams of ended seasons the caller is still recorded as staff of: read access to their history for a COACH / ASSISTANT_COACH, never write access (ADR-0042, core 3.2.0). Disjoint from `staffTeamIds`. 
   @BuiltValueField(wireName: r'historicStaffTeamIds')
   BuiltList<String> get historicStaffTeamIds;
 
@@ -59,7 +58,7 @@ abstract class AuthzContext
   @BuiltValueField(wireName: r'ownPlayerId')
   String? get ownPlayerId;
 
-  /// Teams with an open, valid assignment of the own player or of a linked player; teams whose season has ended are left out (core 2.8.0).
+  /// Teams with an open, valid assignment of the own player or of a linked player; teams whose season has ended are left out (core 2.8.0). 
   @BuiltValueField(wireName: r'playerTeamIds')
   BuiltList<String> get playerTeamIds;
 
@@ -155,9 +154,7 @@ class _$AuthzContextSerializer implements PrimitiveSerializer<AuthzContext> {
     AuthzContext object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -278,3 +275,5 @@ class _$AuthzContextSerializer implements PrimitiveSerializer<AuthzContext> {
     return result.build();
   }
 }
+
+

@@ -14,11 +14,10 @@ part 'academy_request_page.g.dart';
 /// AcademyRequestPage
 ///
 /// Properties:
-/// * [items]
-/// * [page]
+/// * [items] 
+/// * [page] 
 @BuiltValue()
-abstract class AcademyRequestPage
-    implements Built<AcademyRequestPage, AcademyRequestPageBuilder> {
+abstract class AcademyRequestPage implements Built<AcademyRequestPage, AcademyRequestPageBuilder> {
   @BuiltValueField(wireName: r'items')
   BuiltList<AcademyRequest> get items;
 
@@ -27,19 +26,16 @@ abstract class AcademyRequestPage
 
   AcademyRequestPage._();
 
-  factory AcademyRequestPage([void updates(AcademyRequestPageBuilder b)]) =
-      _$AcademyRequestPage;
+  factory AcademyRequestPage([void updates(AcademyRequestPageBuilder b)]) = _$AcademyRequestPage;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(AcademyRequestPageBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AcademyRequestPage> get serializer =>
-      _$AcademyRequestPageSerializer();
+  static Serializer<AcademyRequestPage> get serializer => _$AcademyRequestPageSerializer();
 }
 
-class _$AcademyRequestPageSerializer
-    implements PrimitiveSerializer<AcademyRequestPage> {
+class _$AcademyRequestPageSerializer implements PrimitiveSerializer<AcademyRequestPage> {
   @override
   final Iterable<Type> types = const [AcademyRequestPage, _$AcademyRequestPage];
 
@@ -69,9 +65,7 @@ class _$AcademyRequestPageSerializer
     AcademyRequestPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -89,8 +83,7 @@ class _$AcademyRequestPageSerializer
         case r'items':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType:
-                const FullType(BuiltList, [FullType(AcademyRequest)]),
+            specifiedType: const FullType(BuiltList, [FullType(AcademyRequest)]),
           ) as BuiltList<AcademyRequest>;
           result.items.replace(valueDes);
           break;
@@ -129,3 +122,5 @@ class _$AcademyRequestPageSerializer
     return result.build();
   }
 }
+
+

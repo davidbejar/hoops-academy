@@ -12,35 +12,27 @@ part 'academy_request_received.g.dart';
 /// AcademyRequestReceived
 ///
 /// Properties:
-/// * [status]
+/// * [status] 
 @BuiltValue()
-abstract class AcademyRequestReceived
-    implements Built<AcademyRequestReceived, AcademyRequestReceivedBuilder> {
+abstract class AcademyRequestReceived implements Built<AcademyRequestReceived, AcademyRequestReceivedBuilder> {
   @BuiltValueField(wireName: r'status')
   AcademyRequestReceivedStatusEnum get status;
   // enum statusEnum {  RECEIVED,  };
 
   AcademyRequestReceived._();
 
-  factory AcademyRequestReceived(
-          [void updates(AcademyRequestReceivedBuilder b)]) =
-      _$AcademyRequestReceived;
+  factory AcademyRequestReceived([void updates(AcademyRequestReceivedBuilder b)]) = _$AcademyRequestReceived;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(AcademyRequestReceivedBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AcademyRequestReceived> get serializer =>
-      _$AcademyRequestReceivedSerializer();
+  static Serializer<AcademyRequestReceived> get serializer => _$AcademyRequestReceivedSerializer();
 }
 
-class _$AcademyRequestReceivedSerializer
-    implements PrimitiveSerializer<AcademyRequestReceived> {
+class _$AcademyRequestReceivedSerializer implements PrimitiveSerializer<AcademyRequestReceived> {
   @override
-  final Iterable<Type> types = const [
-    AcademyRequestReceived,
-    _$AcademyRequestReceived
-  ];
+  final Iterable<Type> types = const [AcademyRequestReceived, _$AcademyRequestReceived];
 
   @override
   final String wireName = r'AcademyRequestReceived';
@@ -63,9 +55,7 @@ class _$AcademyRequestReceivedSerializer
     AcademyRequestReceived object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -116,21 +106,19 @@ class _$AcademyRequestReceivedSerializer
   }
 }
 
+
 class AcademyRequestReceivedStatusEnum extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'RECEIVED')
-  static const AcademyRequestReceivedStatusEnum RECEIVED =
-      _$academyRequestReceivedStatusEnum_RECEIVED;
+  static const AcademyRequestReceivedStatusEnum RECEIVED = _$academyRequestReceivedStatusEnum_RECEIVED;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const AcademyRequestReceivedStatusEnum unknownDefaultOpenApi =
-      _$academyRequestReceivedStatusEnum_unknownDefaultOpenApi;
+  static const AcademyRequestReceivedStatusEnum unknownDefaultOpenApi = _$academyRequestReceivedStatusEnum_unknownDefaultOpenApi;
 
-  static Serializer<AcademyRequestReceivedStatusEnum> get serializer =>
-      _$academyRequestReceivedStatusEnumSerializer;
+  static Serializer<AcademyRequestReceivedStatusEnum> get serializer => _$academyRequestReceivedStatusEnumSerializer;
 
-  const AcademyRequestReceivedStatusEnum._(String name) : super(name);
+  const AcademyRequestReceivedStatusEnum._(String name): super(name);
 
-  static BuiltSet<AcademyRequestReceivedStatusEnum> get values =>
-      _$academyRequestReceivedStatusEnumValues;
-  static AcademyRequestReceivedStatusEnum valueOf(String name) =>
-      _$academyRequestReceivedStatusEnumValueOf(name);
+  static BuiltSet<AcademyRequestReceivedStatusEnum> get values => _$academyRequestReceivedStatusEnumValues;
+  static AcademyRequestReceivedStatusEnum valueOf(String name) => _$academyRequestReceivedStatusEnumValueOf(name);
 }
+

@@ -11,8 +11,8 @@ part 'team_ref.g.dart';
 /// TeamRef
 ///
 /// Properties:
-/// * [id]
-/// * [name]
+/// * [id] 
+/// * [name] 
 @BuiltValue()
 abstract class TeamRef implements Built<TeamRef, TeamRefBuilder> {
   @BuiltValueField(wireName: r'id')
@@ -62,9 +62,7 @@ class _$TeamRefSerializer implements PrimitiveSerializer<TeamRef> {
     TeamRef object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -121,3 +119,5 @@ class _$TeamRefSerializer implements PrimitiveSerializer<TeamRef> {
     return result.build();
   }
 }
+
+

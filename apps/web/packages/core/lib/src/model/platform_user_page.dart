@@ -14,11 +14,10 @@ part 'platform_user_page.g.dart';
 /// PlatformUserPage
 ///
 /// Properties:
-/// * [items]
-/// * [page]
+/// * [items] 
+/// * [page] 
 @BuiltValue()
-abstract class PlatformUserPage
-    implements Built<PlatformUserPage, PlatformUserPageBuilder> {
+abstract class PlatformUserPage implements Built<PlatformUserPage, PlatformUserPageBuilder> {
   @BuiltValueField(wireName: r'items')
   BuiltList<PlatformUser> get items;
 
@@ -27,19 +26,16 @@ abstract class PlatformUserPage
 
   PlatformUserPage._();
 
-  factory PlatformUserPage([void updates(PlatformUserPageBuilder b)]) =
-      _$PlatformUserPage;
+  factory PlatformUserPage([void updates(PlatformUserPageBuilder b)]) = _$PlatformUserPage;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(PlatformUserPageBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<PlatformUserPage> get serializer =>
-      _$PlatformUserPageSerializer();
+  static Serializer<PlatformUserPage> get serializer => _$PlatformUserPageSerializer();
 }
 
-class _$PlatformUserPageSerializer
-    implements PrimitiveSerializer<PlatformUserPage> {
+class _$PlatformUserPageSerializer implements PrimitiveSerializer<PlatformUserPage> {
   @override
   final Iterable<Type> types = const [PlatformUserPage, _$PlatformUserPage];
 
@@ -69,9 +65,7 @@ class _$PlatformUserPageSerializer
     PlatformUserPage object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -128,3 +122,5 @@ class _$PlatformUserPageSerializer
     return result.build();
   }
 }
+
+

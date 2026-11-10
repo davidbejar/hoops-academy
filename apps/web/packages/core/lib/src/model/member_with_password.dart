@@ -18,26 +18,25 @@ part 'member_with_password.g.dart';
 /// A member and, when this call created or re-issued their login's password, that password.
 ///
 /// Properties:
-/// * [personId]
+/// * [personId] 
 /// * [userId] - Platform user (login) of the person; null for persons without login (e.g. young players).
-/// * [givenName]
-/// * [familyName]
-/// * [displayName]
-/// * [email]
-/// * [phone]
-/// * [birthDate]
-/// * [gender]
-/// * [locale]
-/// * [roles]
+/// * [givenName] 
+/// * [familyName] 
+/// * [displayName] 
+/// * [email] 
+/// * [phone] 
+/// * [birthDate] 
+/// * [gender] 
+/// * [locale] 
+/// * [roles] 
 /// * [playerId] - Set when the member holds the PLAYER role.
-/// * [active]
-/// * [invitationStatus]
-/// * [temporaryPasswordStatus]
-/// * [createdAt]
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+/// * [active] 
+/// * [invitationStatus] 
+/// * [temporaryPasswordStatus] 
+/// * [createdAt] 
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
 @BuiltValue()
-abstract class MemberWithPassword
-    implements Built<MemberWithPassword, MemberWithPasswordBuilder> {
+abstract class MemberWithPassword implements Built<MemberWithPassword, MemberWithPasswordBuilder> {
   @BuiltValueField(wireName: r'personId')
   String get personId;
 
@@ -92,25 +91,22 @@ abstract class MemberWithPassword
   @BuiltValueField(wireName: r'createdAt')
   DateTime get createdAt;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
   MemberWithPassword._();
 
-  factory MemberWithPassword([void updates(MemberWithPasswordBuilder b)]) =
-      _$MemberWithPassword;
+  factory MemberWithPassword([void updates(MemberWithPasswordBuilder b)]) = _$MemberWithPassword;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(MemberWithPasswordBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<MemberWithPassword> get serializer =>
-      _$MemberWithPasswordSerializer();
+  static Serializer<MemberWithPassword> get serializer => _$MemberWithPasswordSerializer();
 }
 
-class _$MemberWithPasswordSerializer
-    implements PrimitiveSerializer<MemberWithPassword> {
+class _$MemberWithPasswordSerializer implements PrimitiveSerializer<MemberWithPassword> {
   @override
   final Iterable<Type> types = const [MemberWithPassword, _$MemberWithPassword];
 
@@ -231,9 +227,7 @@ class _$MemberWithPasswordSerializer
     MemberWithPassword object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -403,3 +397,5 @@ class _$MemberWithPasswordSerializer
     return result.build();
   }
 }
+
+

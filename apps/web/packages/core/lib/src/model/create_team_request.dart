@@ -12,14 +12,13 @@ part 'create_team_request.g.dart';
 /// CreateTeamRequest
 ///
 /// Properties:
-/// * [seasonId]
-/// * [name]
-/// * [alias]
-/// * [ageCategoryId]
-/// * [genderPolicy]
+/// * [seasonId] 
+/// * [name] 
+/// * [alias] 
+/// * [ageCategoryId] 
+/// * [genderPolicy] 
 @BuiltValue()
-abstract class CreateTeamRequest
-    implements Built<CreateTeamRequest, CreateTeamRequestBuilder> {
+abstract class CreateTeamRequest implements Built<CreateTeamRequest, CreateTeamRequestBuilder> {
   @BuiltValueField(wireName: r'seasonId')
   String get seasonId;
 
@@ -38,19 +37,16 @@ abstract class CreateTeamRequest
 
   CreateTeamRequest._();
 
-  factory CreateTeamRequest([void updates(CreateTeamRequestBuilder b)]) =
-      _$CreateTeamRequest;
+  factory CreateTeamRequest([void updates(CreateTeamRequestBuilder b)]) = _$CreateTeamRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(CreateTeamRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<CreateTeamRequest> get serializer =>
-      _$CreateTeamRequestSerializer();
+  static Serializer<CreateTeamRequest> get serializer => _$CreateTeamRequestSerializer();
 }
 
-class _$CreateTeamRequestSerializer
-    implements PrimitiveSerializer<CreateTeamRequest> {
+class _$CreateTeamRequestSerializer implements PrimitiveSerializer<CreateTeamRequest> {
   @override
   final Iterable<Type> types = const [CreateTeamRequest, _$CreateTeamRequest];
 
@@ -97,9 +93,7 @@ class _$CreateTeamRequestSerializer
     CreateTeamRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -178,3 +172,5 @@ class _$CreateTeamRequestSerializer
     return result.build();
   }
 }
+
+

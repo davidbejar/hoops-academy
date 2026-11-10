@@ -11,34 +11,26 @@ part 'tenant_lifecycle_request.g.dart';
 /// TenantLifecycleRequest
 ///
 /// Properties:
-/// * [reason]
+/// * [reason] 
 @BuiltValue()
-abstract class TenantLifecycleRequest
-    implements Built<TenantLifecycleRequest, TenantLifecycleRequestBuilder> {
+abstract class TenantLifecycleRequest implements Built<TenantLifecycleRequest, TenantLifecycleRequestBuilder> {
   @BuiltValueField(wireName: r'reason')
   String get reason;
 
   TenantLifecycleRequest._();
 
-  factory TenantLifecycleRequest(
-          [void updates(TenantLifecycleRequestBuilder b)]) =
-      _$TenantLifecycleRequest;
+  factory TenantLifecycleRequest([void updates(TenantLifecycleRequestBuilder b)]) = _$TenantLifecycleRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(TenantLifecycleRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<TenantLifecycleRequest> get serializer =>
-      _$TenantLifecycleRequestSerializer();
+  static Serializer<TenantLifecycleRequest> get serializer => _$TenantLifecycleRequestSerializer();
 }
 
-class _$TenantLifecycleRequestSerializer
-    implements PrimitiveSerializer<TenantLifecycleRequest> {
+class _$TenantLifecycleRequestSerializer implements PrimitiveSerializer<TenantLifecycleRequest> {
   @override
-  final Iterable<Type> types = const [
-    TenantLifecycleRequest,
-    _$TenantLifecycleRequest
-  ];
+  final Iterable<Type> types = const [TenantLifecycleRequest, _$TenantLifecycleRequest];
 
   @override
   final String wireName = r'TenantLifecycleRequest';
@@ -61,9 +53,7 @@ class _$TenantLifecycleRequestSerializer
     TenantLifecycleRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -113,3 +103,5 @@ class _$TenantLifecycleRequestSerializer
     return result.build();
   }
 }
+
+

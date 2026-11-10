@@ -10,6 +10,7 @@ import 'package:built_value/serializer.dart';
 part 'eligibility_result.g.dart';
 
 class EligibilityResult extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'ELIGIBLE')
   static const EligibilityResult ELIGIBLE = _$ELIGIBLE;
   @BuiltValueEnumConst(wireName: r'PLAY_UP')
@@ -17,13 +18,11 @@ class EligibilityResult extends EnumClass {
   @BuiltValueEnumConst(wireName: r'INELIGIBLE')
   static const EligibilityResult INELIGIBLE = _$INELIGIBLE;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const EligibilityResult unknownDefaultOpenApi =
-      _$unknownDefaultOpenApi;
+  static const EligibilityResult unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 
-  static Serializer<EligibilityResult> get serializer =>
-      _$eligibilityResultSerializer;
+  static Serializer<EligibilityResult> get serializer => _$eligibilityResultSerializer;
 
-  const EligibilityResult._(String name) : super(name);
+  const EligibilityResult._(String name): super(name);
 
   static BuiltSet<EligibilityResult> get values => _$values;
   static EligibilityResult valueOf(String name) => _$valueOf(name);
@@ -36,3 +35,4 @@ class EligibilityResult extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class EligibilityResultMixin = Object with _$EligibilityResultMixin;
+

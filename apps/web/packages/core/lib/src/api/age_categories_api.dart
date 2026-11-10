@@ -16,6 +16,7 @@ import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/update_age_category_request.dart';
 
 class AgeCategoriesApi {
+
   final Dio _dio;
 
   final Serializers _serializers;
@@ -27,7 +28,7 @@ class AgeCategoriesApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [ageCategoryInput]
+  /// * [ageCategoryInput] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -37,7 +38,7 @@ class AgeCategoriesApi {
   ///
   /// Returns a [Future] containing a [Response] with a [AgeCategory] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<AgeCategory>> createAgeCategory({
+  Future<Response<AgeCategory>> createAgeCategory({ 
     required String xTenantId,
     required AgeCategoryInput ageCategoryInput,
     CancelToken? cancelToken,
@@ -72,11 +73,11 @@ class AgeCategoriesApi {
 
     try {
       const _type = FullType(AgeCategoryInput);
-      _bodyData =
-          _serializers.serialize(ageCategoryInput, specifiedType: _type);
-    } catch (error, stackTrace) {
+      _bodyData = _serializers.serialize(ageCategoryInput, specifiedType: _type);
+
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(
+         requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -99,12 +100,11 @@ class AgeCategoriesApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(AgeCategory),
-            ) as AgeCategory;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(AgeCategory),
+      ) as AgeCategory;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -132,7 +132,7 @@ class AgeCategoriesApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [ageCategoryId]
+  /// * [ageCategoryId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -142,7 +142,7 @@ class AgeCategoriesApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> deleteAgeCategory({
+  Future<Response<void>> deleteAgeCategory({ 
     required String xTenantId,
     required String ageCategoryId,
     CancelToken? cancelToken,
@@ -152,11 +152,7 @@ class AgeCategoriesApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/age-categories/{ageCategoryId}'.replaceAll(
-        '{' r'ageCategoryId' '}',
-        encodeQueryParameter(
-                _serializers, ageCategoryId, const FullType(String))
-            .toString());
+    final _path = r'/api/core/age-categories/{ageCategoryId}'.replaceAll('{' r'ageCategoryId' '}', encodeQueryParameter(_serializers, ageCategoryId, const FullType(String)).toString());
     final _options = Options(
       method: r'DELETE',
       headers: <String, dynamic>{
@@ -201,7 +197,7 @@ class AgeCategoriesApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<AgeCategory>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<AgeCategory>>> listAgeCategories({
+  Future<Response<BuiltList<AgeCategory>>> listAgeCategories({ 
     required String xTenantId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -242,12 +238,11 @@ class AgeCategoriesApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(BuiltList, [FullType(AgeCategory)]),
-            ) as BuiltList<AgeCategory>;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(BuiltList, [FullType(AgeCategory)]),
+      ) as BuiltList<AgeCategory>;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -275,8 +270,8 @@ class AgeCategoriesApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [ageCategoryId]
-  /// * [updateAgeCategoryRequest]
+  /// * [ageCategoryId] 
+  /// * [updateAgeCategoryRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -286,7 +281,7 @@ class AgeCategoriesApi {
   ///
   /// Returns a [Future] containing a [Response] with a [AgeCategory] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<AgeCategory>> updateAgeCategory({
+  Future<Response<AgeCategory>> updateAgeCategory({ 
     required String xTenantId,
     required String ageCategoryId,
     required UpdateAgeCategoryRequest updateAgeCategoryRequest,
@@ -297,11 +292,7 @@ class AgeCategoriesApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/age-categories/{ageCategoryId}'.replaceAll(
-        '{' r'ageCategoryId' '}',
-        encodeQueryParameter(
-                _serializers, ageCategoryId, const FullType(String))
-            .toString());
+    final _path = r'/api/core/age-categories/{ageCategoryId}'.replaceAll('{' r'ageCategoryId' '}', encodeQueryParameter(_serializers, ageCategoryId, const FullType(String)).toString());
     final _options = Options(
       method: r'PATCH',
       headers: <String, dynamic>{
@@ -326,11 +317,11 @@ class AgeCategoriesApi {
 
     try {
       const _type = FullType(UpdateAgeCategoryRequest);
-      _bodyData = _serializers.serialize(updateAgeCategoryRequest,
-          specifiedType: _type);
-    } catch (error, stackTrace) {
+      _bodyData = _serializers.serialize(updateAgeCategoryRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(
+         requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -353,12 +344,11 @@ class AgeCategoriesApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(AgeCategory),
-            ) as AgeCategory;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(AgeCategory),
+      ) as AgeCategory;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -380,4 +370,5 @@ class AgeCategoriesApi {
       extra: _response.extra,
     );
   }
+
 }

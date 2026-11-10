@@ -12,13 +12,12 @@ part 'update_season_request.g.dart';
 /// UpdateSeasonRequest
 ///
 /// Properties:
-/// * [name]
-/// * [startsOn]
-/// * [endsOn]
-/// * [referenceYear]
+/// * [name] 
+/// * [startsOn] 
+/// * [endsOn] 
+/// * [referenceYear] 
 @BuiltValue()
-abstract class UpdateSeasonRequest
-    implements Built<UpdateSeasonRequest, UpdateSeasonRequestBuilder> {
+abstract class UpdateSeasonRequest implements Built<UpdateSeasonRequest, UpdateSeasonRequestBuilder> {
   @BuiltValueField(wireName: r'name')
   String? get name;
 
@@ -33,24 +32,18 @@ abstract class UpdateSeasonRequest
 
   UpdateSeasonRequest._();
 
-  factory UpdateSeasonRequest([void updates(UpdateSeasonRequestBuilder b)]) =
-      _$UpdateSeasonRequest;
+  factory UpdateSeasonRequest([void updates(UpdateSeasonRequestBuilder b)]) = _$UpdateSeasonRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateSeasonRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateSeasonRequest> get serializer =>
-      _$UpdateSeasonRequestSerializer();
+  static Serializer<UpdateSeasonRequest> get serializer => _$UpdateSeasonRequestSerializer();
 }
 
-class _$UpdateSeasonRequestSerializer
-    implements PrimitiveSerializer<UpdateSeasonRequest> {
+class _$UpdateSeasonRequestSerializer implements PrimitiveSerializer<UpdateSeasonRequest> {
   @override
-  final Iterable<Type> types = const [
-    UpdateSeasonRequest,
-    _$UpdateSeasonRequest
-  ];
+  final Iterable<Type> types = const [UpdateSeasonRequest, _$UpdateSeasonRequest];
 
   @override
   final String wireName = r'UpdateSeasonRequest';
@@ -96,9 +89,7 @@ class _$UpdateSeasonRequestSerializer
     UpdateSeasonRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -173,3 +164,5 @@ class _$UpdateSeasonRequestSerializer
     return result.build();
   }
 }
+
+

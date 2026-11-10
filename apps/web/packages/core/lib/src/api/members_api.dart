@@ -19,6 +19,7 @@ import 'package:hoops_core_api/src/model/tenant_role.dart';
 import 'package:hoops_core_api/src/model/update_member_request.dart';
 
 class MembersApi {
+
   final Dio _dio;
 
   final Serializers _serializers;
@@ -30,7 +31,7 @@ class MembersApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId]
+  /// * [personId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -40,7 +41,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> deactivateMember({
+  Future<Response<Member>> deactivateMember({ 
     required String xTenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -50,10 +51,7 @@ class MembersApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/members/{personId}/deactivate'.replaceAll(
-        '{' r'personId' '}',
-        encodeQueryParameter(_serializers, personId, const FullType(String))
-            .toString());
+    final _path = r'/api/core/members/{personId}/deactivate'.replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
     final _options = Options(
       method: r'POST',
       headers: <String, dynamic>{
@@ -85,12 +83,11 @@ class MembersApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(Member),
-            ) as Member;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(Member),
+      ) as Member;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -118,7 +115,7 @@ class MembersApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId]
+  /// * [personId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -128,7 +125,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> getMember({
+  Future<Response<Member>> getMember({ 
     required String xTenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -138,10 +135,7 @@ class MembersApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/members/{personId}'.replaceAll(
-        '{' r'personId' '}',
-        encodeQueryParameter(_serializers, personId, const FullType(String))
-            .toString());
+    final _path = r'/api/core/members/{personId}'.replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
     final _options = Options(
       method: r'GET',
       headers: <String, dynamic>{
@@ -173,12 +167,11 @@ class MembersApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(Member),
-            ) as Member;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(Member),
+      ) as Member;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -202,11 +195,11 @@ class MembersApi {
   }
 
   /// Invite a member
-  /// Creates the person with the given roles and, with &#x60;sendInvitation&#x60; (default) and an &#x60;email&#x60;, gives them a login: a new Keycloak login gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login (the e-mail already signs in elsewhere) is linked and gets none. The PLAYER role requires &#x60;birthDate&#x60; and &#x60;gender&#x60; (422). Players created here are ACTIVE (admin path); coaches add players through &#x60;POST /api/core/players&#x60;. Authz: ADMIN.
+  /// Creates the person with the given roles and, with &#x60;sendInvitation&#x60; (default) and an &#x60;email&#x60;, gives them a login: a new Keycloak login gets a temporary password, returned once in &#x60;temporaryPassword&#x60;; an existing login (the e-mail already signs in elsewhere) is linked and gets none. The PLAYER role requires &#x60;birthDate&#x60; and &#x60;gender&#x60; (422). Players created here are ACTIVE (admin path); coaches add players through &#x60;POST /api/core/players&#x60;. Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [inviteMemberRequest]
+  /// * [inviteMemberRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -216,7 +209,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [MemberWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<MemberWithPassword>> inviteMember({
+  Future<Response<MemberWithPassword>> inviteMember({ 
     required String xTenantId,
     required InviteMemberRequest inviteMemberRequest,
     CancelToken? cancelToken,
@@ -251,11 +244,11 @@ class MembersApi {
 
     try {
       const _type = FullType(InviteMemberRequest);
-      _bodyData =
-          _serializers.serialize(inviteMemberRequest, specifiedType: _type);
-    } catch (error, stackTrace) {
+      _bodyData = _serializers.serialize(inviteMemberRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(
+         requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -278,12 +271,11 @@ class MembersApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(MemberWithPassword),
-            ) as MemberWithPassword;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(MemberWithPassword),
+      ) as MemberWithPassword;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -307,11 +299,11 @@ class MembersApi {
   }
 
   /// Issue a new temporary password for a pending member (or a first login for a guardian)
-  /// Replaces the password of the member&#39;s login by a new temporary password, returned once in &#x60;temporaryPassword&#x60;; Keycloak asks for a new password at the first sign-in. Also renews an expired temporary password (&#x60;temporaryPasswordStatus&#x60; EXPIRED: the login is enabled again, ADR-0028). Only for an active member whose invitation is PENDING and who has not chosen a password of their own (409 &#x60;INVITATION_NOT_PENDING&#x60; otherwise, also for a member without a login); 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may reset it); 502 when Keycloak fails (nothing is changed).  Guardians without a login (core 2.8.0, ADR-0024 amendment): an active member with the PARENT role, an e-mail and no login gets one. A login created by this call comes with &#x60;temporaryPassword&#x60; (invitation PENDING); when the e-mail already signs in (another academy, ADR-0025) that login is linked, its password is never touched, the invitation is ACCEPTED and &#x60;temporaryPassword&#x60; is absent. 409 &#x60;LOGIN_ALREADY_MEMBER&#x60; when that login already belongs to another member of this academy. Authz: ADMIN.
+  /// Replaces the password of the member&#39;s login by a new temporary password, returned once in &#x60;temporaryPassword&#x60;; Keycloak asks for a new password at the first sign-in. Also renews an expired temporary password (&#x60;temporaryPasswordStatus&#x60; EXPIRED: the login is enabled again, ADR-0028). Only for an active member whose invitation is PENDING and who has not chosen a password of their own (409 &#x60;INVITATION_NOT_PENDING&#x60; otherwise, also for a member without a login); 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may reset it); 502 when Keycloak fails (nothing is changed).  Guardians without a login (core 2.8.0, ADR-0024 amendment): an active member with the PARENT role, an e-mail and no login gets one. A login created by this call comes with &#x60;temporaryPassword&#x60; (invitation PENDING); when the e-mail already signs in (another academy, ADR-0025) that login is linked, its password is never touched, the invitation is ACCEPTED and &#x60;temporaryPassword&#x60; is absent. 409 &#x60;LOGIN_ALREADY_MEMBER&#x60; when that login already belongs to another member of this academy. Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId]
+  /// * [personId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -321,7 +313,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [MemberWithPassword] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<MemberWithPassword>> issueMemberTemporaryPassword({
+  Future<Response<MemberWithPassword>> issueMemberTemporaryPassword({ 
     required String xTenantId,
     required String personId,
     CancelToken? cancelToken,
@@ -331,10 +323,7 @@ class MembersApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/members/{personId}/temporary-password'.replaceAll(
-        '{' r'personId' '}',
-        encodeQueryParameter(_serializers, personId, const FullType(String))
-            .toString());
+    final _path = r'/api/core/members/{personId}/temporary-password'.replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
     final _options = Options(
       method: r'POST',
       headers: <String, dynamic>{
@@ -366,12 +355,11 @@ class MembersApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(MemberWithPassword),
-            ) as MemberWithPassword;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(MemberWithPassword),
+      ) as MemberWithPassword;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -399,8 +387,8 @@ class MembersApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [role]
-  /// * [active]
+  /// * [role] 
+  /// * [active] 
   /// * [q] - Case-insensitive match on name or e-mail.
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
@@ -413,7 +401,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [MemberPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<MemberPage>> listMembers({
+  Future<Response<MemberPage>> listMembers({ 
     required String xTenantId,
     TenantRole? role,
     bool? active,
@@ -448,18 +436,11 @@ class MembersApi {
     );
 
     final _queryParameters = <String, dynamic>{
-      if (role != null)
-        r'role': encodeQueryParameter(
-            _serializers, role, const FullType(TenantRole)),
-      if (active != null)
-        r'active':
-            encodeQueryParameter(_serializers, active, const FullType(bool)),
-      if (q != null)
-        r'q': encodeQueryParameter(_serializers, q, const FullType(String)),
-      if (page != null)
-        r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
-      if (size != null)
-        r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
+      if (role != null) r'role': encodeQueryParameter(_serializers, role, const FullType(TenantRole)),
+      if (active != null) r'active': encodeQueryParameter(_serializers, active, const FullType(bool)),
+      if (q != null) r'q': encodeQueryParameter(_serializers, q, const FullType(String)),
+      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
+      if (size != null) r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(
@@ -475,12 +456,11 @@ class MembersApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(MemberPage),
-            ) as MemberPage;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(MemberPage),
+      ) as MemberPage;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -504,12 +484,12 @@ class MembersApi {
   }
 
   /// Replace a member&#39;s role set
-  /// Roles are additive per person. Adding PLAYER requires birth date and gender (422); removing the last ADMIN of the tenant is rejected (409). Authz: ADMIN.
+  /// Roles are additive per person. Adding PLAYER requires birth date and gender (422); removing the last ADMIN of the tenant is rejected (409). Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId]
-  /// * [replaceMemberRolesRequest]
+  /// * [personId] 
+  /// * [replaceMemberRolesRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -519,7 +499,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> replaceMemberRoles({
+  Future<Response<Member>> replaceMemberRoles({ 
     required String xTenantId,
     required String personId,
     required ReplaceMemberRolesRequest replaceMemberRolesRequest,
@@ -530,10 +510,7 @@ class MembersApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/members/{personId}/roles'.replaceAll(
-        '{' r'personId' '}',
-        encodeQueryParameter(_serializers, personId, const FullType(String))
-            .toString());
+    final _path = r'/api/core/members/{personId}/roles'.replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
     final _options = Options(
       method: r'PUT',
       headers: <String, dynamic>{
@@ -558,11 +535,11 @@ class MembersApi {
 
     try {
       const _type = FullType(ReplaceMemberRolesRequest);
-      _bodyData = _serializers.serialize(replaceMemberRolesRequest,
-          specifiedType: _type);
-    } catch (error, stackTrace) {
+      _bodyData = _serializers.serialize(replaceMemberRolesRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(
+         requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -585,12 +562,11 @@ class MembersApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(Member),
-            ) as Member;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(Member),
+      ) as Member;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -614,12 +590,12 @@ class MembersApi {
   }
 
   /// Update a member&#39;s personal data
-  /// Absent or &#x60;null&#x60; fields are left unchanged; the optional fields named in &#x60;clear&#x60; are emptied (ADR-0032). Changing the &#x60;email&#x60; of a member with a login (&#x60;userId&#x60;) also moves the login (ADR-0023): the Keycloak username and e-mail become the new address (no e-mail is sent, the password is unchanged, ADR-0024). 409 &#x60;EMAIL_TAKEN&#x60; when another member of the tenant or another login uses the address; 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may move it); 422 &#x60;LOGIN_REQUIRES_EMAIL&#x60; when the e-mail of a member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN.
+  /// Absent or &#x60;null&#x60; fields are left unchanged; the optional fields named in &#x60;clear&#x60; are emptied (ADR-0032). Changing the &#x60;email&#x60; of a member with a login (&#x60;userId&#x60;) also moves the login (ADR-0023): the Keycloak username and e-mail become the new address (no e-mail is sent, the password is unchanged, ADR-0024). 409 &#x60;EMAIL_TAKEN&#x60; when another member of the tenant or another login uses the address; 409 &#x60;LOGIN_SHARED&#x60; when the login is also used by an active member of another academy (only the platform super admin may move it); 422 &#x60;LOGIN_REQUIRES_EMAIL&#x60; when the e-mail of a member with a login is cleared; 502 when Keycloak fails (nothing is changed). Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [personId]
-  /// * [updateMemberRequest]
+  /// * [personId] 
+  /// * [updateMemberRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -629,7 +605,7 @@ class MembersApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Member] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Member>> updateMember({
+  Future<Response<Member>> updateMember({ 
     required String xTenantId,
     required String personId,
     required UpdateMemberRequest updateMemberRequest,
@@ -640,10 +616,7 @@ class MembersApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/core/members/{personId}'.replaceAll(
-        '{' r'personId' '}',
-        encodeQueryParameter(_serializers, personId, const FullType(String))
-            .toString());
+    final _path = r'/api/core/members/{personId}'.replaceAll('{' r'personId' '}', encodeQueryParameter(_serializers, personId, const FullType(String)).toString());
     final _options = Options(
       method: r'PATCH',
       headers: <String, dynamic>{
@@ -668,11 +641,11 @@ class MembersApi {
 
     try {
       const _type = FullType(UpdateMemberRequest);
-      _bodyData =
-          _serializers.serialize(updateMemberRequest, specifiedType: _type);
-    } catch (error, stackTrace) {
+      _bodyData = _serializers.serialize(updateMemberRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(
+         requestOptions: _options.compose(
           _dio.options,
           _path,
         ),
@@ -695,12 +668,11 @@ class MembersApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(Member),
-            ) as Member;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(Member),
+      ) as Member;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -722,4 +694,5 @@ class MembersApi {
       extra: _response.extra,
     );
   }
+
 }

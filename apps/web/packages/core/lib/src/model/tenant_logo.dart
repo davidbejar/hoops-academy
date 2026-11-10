@@ -12,10 +12,10 @@ part 'tenant_logo.g.dart';
 /// TenantLogo
 ///
 /// Properties:
-/// * [contentType]
-/// * [sizeBytes]
-/// * [etag]
-/// * [updatedAt]
+/// * [contentType] 
+/// * [sizeBytes] 
+/// * [etag] 
+/// * [updatedAt] 
 @BuiltValue()
 abstract class TenantLogo implements Built<TenantLogo, TenantLogoBuilder> {
   @BuiltValueField(wireName: r'contentType')
@@ -82,9 +82,7 @@ class _$TenantLogoSerializer implements PrimitiveSerializer<TenantLogo> {
     TenantLogo object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -156,27 +154,23 @@ class _$TenantLogoSerializer implements PrimitiveSerializer<TenantLogo> {
   }
 }
 
+
 class TenantLogoContentTypeEnum extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'image/png')
-  static const TenantLogoContentTypeEnum imageSlashPng =
-      _$tenantLogoContentTypeEnum_imageSlashPng;
+  static const TenantLogoContentTypeEnum imageSlashPng = _$tenantLogoContentTypeEnum_imageSlashPng;
   @BuiltValueEnumConst(wireName: r'image/jpeg')
-  static const TenantLogoContentTypeEnum imageSlashJpeg =
-      _$tenantLogoContentTypeEnum_imageSlashJpeg;
+  static const TenantLogoContentTypeEnum imageSlashJpeg = _$tenantLogoContentTypeEnum_imageSlashJpeg;
   @BuiltValueEnumConst(wireName: r'image/webp')
-  static const TenantLogoContentTypeEnum imageSlashWebp =
-      _$tenantLogoContentTypeEnum_imageSlashWebp;
+  static const TenantLogoContentTypeEnum imageSlashWebp = _$tenantLogoContentTypeEnum_imageSlashWebp;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const TenantLogoContentTypeEnum unknownDefaultOpenApi =
-      _$tenantLogoContentTypeEnum_unknownDefaultOpenApi;
+  static const TenantLogoContentTypeEnum unknownDefaultOpenApi = _$tenantLogoContentTypeEnum_unknownDefaultOpenApi;
 
-  static Serializer<TenantLogoContentTypeEnum> get serializer =>
-      _$tenantLogoContentTypeEnumSerializer;
+  static Serializer<TenantLogoContentTypeEnum> get serializer => _$tenantLogoContentTypeEnumSerializer;
 
-  const TenantLogoContentTypeEnum._(String name) : super(name);
+  const TenantLogoContentTypeEnum._(String name): super(name);
 
-  static BuiltSet<TenantLogoContentTypeEnum> get values =>
-      _$tenantLogoContentTypeEnumValues;
-  static TenantLogoContentTypeEnum valueOf(String name) =>
-      _$tenantLogoContentTypeEnumValueOf(name);
+  static BuiltSet<TenantLogoContentTypeEnum> get values => _$tenantLogoContentTypeEnumValues;
+  static TenantLogoContentTypeEnum valueOf(String name) => _$tenantLogoContentTypeEnumValueOf(name);
 }
+

@@ -13,43 +13,35 @@ part 'academy_request_accepted.g.dart';
 /// AcademyRequestAccepted
 ///
 /// Properties:
-/// * [request]
-/// * [tenant]
-/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+/// * [request] 
+/// * [tenant] 
+/// * [temporaryPassword] - Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
 @BuiltValue()
-abstract class AcademyRequestAccepted
-    implements Built<AcademyRequestAccepted, AcademyRequestAcceptedBuilder> {
+abstract class AcademyRequestAccepted implements Built<AcademyRequestAccepted, AcademyRequestAcceptedBuilder> {
   @BuiltValueField(wireName: r'request')
   AcademyRequest get request;
 
   @BuiltValueField(wireName: r'tenant')
   Tenant get tenant;
 
-  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password).
+  /// Server-generated temporary password of the login this call created (or re-issued). Shown once, never stored: pass it on privately; the person signs in with their e-mail and this password and must then choose their own. Absent when the person already had a login (they sign in with their own password). 
   @BuiltValueField(wireName: r'temporaryPassword')
   String? get temporaryPassword;
 
   AcademyRequestAccepted._();
 
-  factory AcademyRequestAccepted(
-          [void updates(AcademyRequestAcceptedBuilder b)]) =
-      _$AcademyRequestAccepted;
+  factory AcademyRequestAccepted([void updates(AcademyRequestAcceptedBuilder b)]) = _$AcademyRequestAccepted;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(AcademyRequestAcceptedBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AcademyRequestAccepted> get serializer =>
-      _$AcademyRequestAcceptedSerializer();
+  static Serializer<AcademyRequestAccepted> get serializer => _$AcademyRequestAcceptedSerializer();
 }
 
-class _$AcademyRequestAcceptedSerializer
-    implements PrimitiveSerializer<AcademyRequestAccepted> {
+class _$AcademyRequestAcceptedSerializer implements PrimitiveSerializer<AcademyRequestAccepted> {
   @override
-  final Iterable<Type> types = const [
-    AcademyRequestAccepted,
-    _$AcademyRequestAccepted
-  ];
+  final Iterable<Type> types = const [AcademyRequestAccepted, _$AcademyRequestAccepted];
 
   @override
   final String wireName = r'AcademyRequestAccepted';
@@ -84,9 +76,7 @@ class _$AcademyRequestAcceptedSerializer
     AcademyRequestAccepted object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -151,3 +141,5 @@ class _$AcademyRequestAcceptedSerializer
     return result.build();
   }
 }
+
+

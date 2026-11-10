@@ -13,32 +13,25 @@ part 'reject_academy_request.g.dart';
 /// Properties:
 /// * [reason] - Sent to the requester in the e-mail; write it for them.
 @BuiltValue()
-abstract class RejectAcademyRequest
-    implements Built<RejectAcademyRequest, RejectAcademyRequestBuilder> {
+abstract class RejectAcademyRequest implements Built<RejectAcademyRequest, RejectAcademyRequestBuilder> {
   /// Sent to the requester in the e-mail; write it for them.
   @BuiltValueField(wireName: r'reason')
   String get reason;
 
   RejectAcademyRequest._();
 
-  factory RejectAcademyRequest([void updates(RejectAcademyRequestBuilder b)]) =
-      _$RejectAcademyRequest;
+  factory RejectAcademyRequest([void updates(RejectAcademyRequestBuilder b)]) = _$RejectAcademyRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(RejectAcademyRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<RejectAcademyRequest> get serializer =>
-      _$RejectAcademyRequestSerializer();
+  static Serializer<RejectAcademyRequest> get serializer => _$RejectAcademyRequestSerializer();
 }
 
-class _$RejectAcademyRequestSerializer
-    implements PrimitiveSerializer<RejectAcademyRequest> {
+class _$RejectAcademyRequestSerializer implements PrimitiveSerializer<RejectAcademyRequest> {
   @override
-  final Iterable<Type> types = const [
-    RejectAcademyRequest,
-    _$RejectAcademyRequest
-  ];
+  final Iterable<Type> types = const [RejectAcademyRequest, _$RejectAcademyRequest];
 
   @override
   final String wireName = r'RejectAcademyRequest';
@@ -61,9 +54,7 @@ class _$RejectAcademyRequestSerializer
     RejectAcademyRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -113,3 +104,5 @@ class _$RejectAcademyRequestSerializer
     return result.build();
   }
 }
+
+

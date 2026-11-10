@@ -15,17 +15,16 @@ part 'update_member_request.g.dart';
 /// UpdateMemberRequest
 ///
 /// Properties:
-/// * [givenName]
-/// * [familyName]
-/// * [email]
-/// * [phone]
-/// * [birthDate]
-/// * [gender]
-/// * [locale]
+/// * [givenName] 
+/// * [familyName] 
+/// * [email] 
+/// * [phone] 
+/// * [birthDate] 
+/// * [gender] 
+/// * [locale] 
 /// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
-abstract class UpdateMemberRequest
-    implements Built<UpdateMemberRequest, UpdateMemberRequestBuilder> {
+abstract class UpdateMemberRequest implements Built<UpdateMemberRequest, UpdateMemberRequestBuilder> {
   @BuiltValueField(wireName: r'givenName')
   String? get givenName;
 
@@ -56,24 +55,18 @@ abstract class UpdateMemberRequest
 
   UpdateMemberRequest._();
 
-  factory UpdateMemberRequest([void updates(UpdateMemberRequestBuilder b)]) =
-      _$UpdateMemberRequest;
+  factory UpdateMemberRequest([void updates(UpdateMemberRequestBuilder b)]) = _$UpdateMemberRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateMemberRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateMemberRequest> get serializer =>
-      _$UpdateMemberRequestSerializer();
+  static Serializer<UpdateMemberRequest> get serializer => _$UpdateMemberRequestSerializer();
 }
 
-class _$UpdateMemberRequestSerializer
-    implements PrimitiveSerializer<UpdateMemberRequest> {
+class _$UpdateMemberRequestSerializer implements PrimitiveSerializer<UpdateMemberRequest> {
   @override
-  final Iterable<Type> types = const [
-    UpdateMemberRequest,
-    _$UpdateMemberRequest
-  ];
+  final Iterable<Type> types = const [UpdateMemberRequest, _$UpdateMemberRequest];
 
   @override
   final String wireName = r'UpdateMemberRequest';
@@ -136,8 +129,7 @@ class _$UpdateMemberRequestSerializer
       yield r'clear';
       yield serializers.serialize(
         object.clear,
-        specifiedType:
-            const FullType(BuiltSet, [FullType(UpdateMemberRequestClearEnum)]),
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateMemberRequestClearEnum)]),
       );
     }
   }
@@ -148,9 +140,7 @@ class _$UpdateMemberRequestSerializer
     UpdateMemberRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -224,8 +214,7 @@ class _$UpdateMemberRequestSerializer
         case r'clear':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(
-                BuiltSet, [FullType(UpdateMemberRequestClearEnum)]),
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateMemberRequestClearEnum)]),
           ) as BuiltSet<UpdateMemberRequestClearEnum>?;
           if (valueDes == null) continue;
           result.clear.replace(valueDes);
@@ -259,30 +248,25 @@ class _$UpdateMemberRequestSerializer
   }
 }
 
+
 class UpdateMemberRequestClearEnum extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'email')
-  static const UpdateMemberRequestClearEnum email =
-      _$updateMemberRequestClearEnum_email;
+  static const UpdateMemberRequestClearEnum email = _$updateMemberRequestClearEnum_email;
   @BuiltValueEnumConst(wireName: r'phone')
-  static const UpdateMemberRequestClearEnum phone =
-      _$updateMemberRequestClearEnum_phone;
+  static const UpdateMemberRequestClearEnum phone = _$updateMemberRequestClearEnum_phone;
   @BuiltValueEnumConst(wireName: r'birthDate')
-  static const UpdateMemberRequestClearEnum birthDate =
-      _$updateMemberRequestClearEnum_birthDate;
+  static const UpdateMemberRequestClearEnum birthDate = _$updateMemberRequestClearEnum_birthDate;
   @BuiltValueEnumConst(wireName: r'gender')
-  static const UpdateMemberRequestClearEnum gender =
-      _$updateMemberRequestClearEnum_gender;
+  static const UpdateMemberRequestClearEnum gender = _$updateMemberRequestClearEnum_gender;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const UpdateMemberRequestClearEnum unknownDefaultOpenApi =
-      _$updateMemberRequestClearEnum_unknownDefaultOpenApi;
+  static const UpdateMemberRequestClearEnum unknownDefaultOpenApi = _$updateMemberRequestClearEnum_unknownDefaultOpenApi;
 
-  static Serializer<UpdateMemberRequestClearEnum> get serializer =>
-      _$updateMemberRequestClearEnumSerializer;
+  static Serializer<UpdateMemberRequestClearEnum> get serializer => _$updateMemberRequestClearEnumSerializer;
 
-  const UpdateMemberRequestClearEnum._(String name) : super(name);
+  const UpdateMemberRequestClearEnum._(String name): super(name);
 
-  static BuiltSet<UpdateMemberRequestClearEnum> get values =>
-      _$updateMemberRequestClearEnumValues;
-  static UpdateMemberRequestClearEnum valueOf(String name) =>
-      _$updateMemberRequestClearEnumValueOf(name);
+  static BuiltSet<UpdateMemberRequestClearEnum> get values => _$updateMemberRequestClearEnumValues;
+  static UpdateMemberRequestClearEnum valueOf(String name) => _$updateMemberRequestClearEnumValueOf(name);
 }
+

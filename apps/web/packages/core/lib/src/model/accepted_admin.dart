@@ -12,12 +12,11 @@ part 'accepted_admin.g.dart';
 /// AcceptedAdmin
 ///
 /// Properties:
-/// * [givenName]
-/// * [familyName]
-/// * [locale]
+/// * [givenName] 
+/// * [familyName] 
+/// * [locale] 
 @BuiltValue()
-abstract class AcceptedAdmin
-    implements Built<AcceptedAdmin, AcceptedAdminBuilder> {
+abstract class AcceptedAdmin implements Built<AcceptedAdmin, AcceptedAdminBuilder> {
   @BuiltValueField(wireName: r'givenName')
   String get givenName;
 
@@ -30,15 +29,13 @@ abstract class AcceptedAdmin
 
   AcceptedAdmin._();
 
-  factory AcceptedAdmin([void updates(AcceptedAdminBuilder b)]) =
-      _$AcceptedAdmin;
+  factory AcceptedAdmin([void updates(AcceptedAdminBuilder b)]) = _$AcceptedAdmin;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(AcceptedAdminBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AcceptedAdmin> get serializer =>
-      _$AcceptedAdminSerializer();
+  static Serializer<AcceptedAdmin> get serializer => _$AcceptedAdminSerializer();
 }
 
 class _$AcceptedAdminSerializer implements PrimitiveSerializer<AcceptedAdmin> {
@@ -78,9 +75,7 @@ class _$AcceptedAdminSerializer implements PrimitiveSerializer<AcceptedAdmin> {
     AcceptedAdmin object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -145,3 +140,5 @@ class _$AcceptedAdminSerializer implements PrimitiveSerializer<AcceptedAdmin> {
     return result.build();
   }
 }
+
+

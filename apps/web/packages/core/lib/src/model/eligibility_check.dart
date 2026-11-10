@@ -16,17 +16,16 @@ part 'eligibility_check.g.dart';
 /// EligibilityCheck
 ///
 /// Properties:
-/// * [playerId]
-/// * [teamId]
-/// * [asOf]
-/// * [result]
+/// * [playerId] 
+/// * [teamId] 
+/// * [asOf] 
+/// * [result] 
 /// * [playUpLevels] - Set when result = PLAY_UP.
 /// * [reasons] - Non-empty iff result = INELIGIBLE.
 /// * [age] - Age computed with the tenant's age rule (null when the birth date is missing).
-/// * [naturalCategory]
+/// * [naturalCategory] 
 @BuiltValue()
-abstract class EligibilityCheck
-    implements Built<EligibilityCheck, EligibilityCheckBuilder> {
+abstract class EligibilityCheck implements Built<EligibilityCheck, EligibilityCheckBuilder> {
   @BuiltValueField(wireName: r'playerId')
   String get playerId;
 
@@ -57,19 +56,16 @@ abstract class EligibilityCheck
 
   EligibilityCheck._();
 
-  factory EligibilityCheck([void updates(EligibilityCheckBuilder b)]) =
-      _$EligibilityCheck;
+  factory EligibilityCheck([void updates(EligibilityCheckBuilder b)]) = _$EligibilityCheck;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(EligibilityCheckBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<EligibilityCheck> get serializer =>
-      _$EligibilityCheckSerializer();
+  static Serializer<EligibilityCheck> get serializer => _$EligibilityCheckSerializer();
 }
 
-class _$EligibilityCheckSerializer
-    implements PrimitiveSerializer<EligibilityCheck> {
+class _$EligibilityCheckSerializer implements PrimitiveSerializer<EligibilityCheck> {
   @override
   final Iterable<Type> types = const [EligibilityCheck, _$EligibilityCheck];
 
@@ -135,9 +131,7 @@ class _$EligibilityCheckSerializer
     EligibilityCheck object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -191,8 +185,7 @@ class _$EligibilityCheckSerializer
         case r'reasons':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType:
-                const FullType(BuiltList, [FullType(EligibilityReason)]),
+            specifiedType: const FullType(BuiltList, [FullType(EligibilityReason)]),
           ) as BuiltList<EligibilityReason>;
           result.reasons.replace(valueDes);
           break;
@@ -240,3 +233,5 @@ class _$EligibilityCheckSerializer
     return result.build();
   }
 }
+
+

@@ -9,8 +9,9 @@ import 'package:built_value/serializer.dart';
 
 part 'invitation_status.g.dart';
 
-/// NONE = person without login; PENDING = login created by this academy, the person has not signed in here yet (a temporary password can be issued); ACCEPTED = signed in, or an existing login was linked.
+/// NONE = person without login; PENDING = login created by this academy, the person has not signed in here yet (a temporary password can be issued); ACCEPTED = signed in, or an existing login was linked. 
 class InvitationStatus extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'NONE')
   static const InvitationStatus NONE = _$NONE;
   @BuiltValueEnumConst(wireName: r'PENDING')
@@ -20,10 +21,9 @@ class InvitationStatus extends EnumClass {
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
   static const InvitationStatus unknownDefaultOpenApi = _$unknownDefaultOpenApi;
 
-  static Serializer<InvitationStatus> get serializer =>
-      _$invitationStatusSerializer;
+  static Serializer<InvitationStatus> get serializer => _$invitationStatusSerializer;
 
-  const InvitationStatus._(String name) : super(name);
+  const InvitationStatus._(String name): super(name);
 
   static BuiltSet<InvitationStatus> get values => _$values;
   static InvitationStatus valueOf(String name) => _$valueOf(name);
@@ -36,3 +36,4 @@ class InvitationStatus extends EnumClass {
 ///
 /// Trigger mixin generation by writing a line like this one next to your enum.
 abstract class InvitationStatusMixin = Object with _$InvitationStatusMixin;
+

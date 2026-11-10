@@ -8,6 +8,7 @@ import 'package:built_value/json_object.dart';
 import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
+import 'dart:typed_data';
 import 'package:built_collection/built_collection.dart';
 import 'package:hoops_core_api/src/api_util.dart';
 import 'package:hoops_core_api/src/model/audit_action.dart';
@@ -15,14 +16,111 @@ import 'package:hoops_core_api/src/model/audit_event_page.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
 
 class AuditApi {
+
   final Dio _dio;
 
   final Serializers _serializers;
 
   const AuditApi(this._dio, this._serializers);
 
+  /// Export the academy&#39;s audit trail as CSV
+  /// The rows &#x60;listAuditEvents&#x60; would return for the same &#x60;from&#x60;, &#x60;to&#x60; and &#x60;action&#x60;, all of them in one CSV file (no paging; ADR-0048: UTF-8 with BOM, &#x60;,&#x60;, RFC 4180 quoting, CRLF, one header row, the formula guard), newest first, with the same masking: a PLATFORM actor has no login, person or name (the actor column says \&quot;Platform administrator\&quot;). Columns: date, time and time zone (the academy&#39;s), action label and code, actor kind, name, person id and login, target type, id and name, details (the metadata as &#x60;key&#x3D;value&#x60; pairs). Rows written after the export started are left out. More than 10,000 rows: 422 &#x60;EXPORT_TOO_LARGE&#x60; (narrow the range or the actions). File name &#x60;hoops-&lt;academy-slug&gt;-audit-&lt;yyyyMMdd&gt;.csv&#x60;. Every export writes the audit row &#x60;audit.exported&#x60; (target the academy, metadata &#x60;rows&#x60; and the filter given: &#x60;from&#x60;, &#x60;to&#x60;, &#x60;actions&#x60;). Authz: ADMIN. 
+  ///
+  /// Parameters:
+  /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
+  /// * [from] - Inclusive lower bound on `at`.
+  /// * [to] - Exclusive upper bound on `at`.
+  /// * [action] - One or several actions (`?action=member.invited&action=member.updated`); any action when absent.
+  /// * [acceptLanguage] - Language of the export's header and enum labels (RFC 9110 list, e.g. `id, en;q=0.8`): the first of `es`, `en`, `id` in preference order; absent, `*` or unsupported = `en`. Values are not translated. 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [Uint8List] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<Uint8List>> exportAuditEvents({ 
+    required String xTenantId,
+    DateTime? from,
+    DateTime? to,
+    BuiltList<AuditAction>? action,
+    String? acceptLanguage,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/api/core/audit-events:export';
+    final _options = Options(
+      method: r'GET',
+      responseType: ResponseType.bytes,
+      headers: <String, dynamic>{
+        r'X-Tenant-Id': xTenantId,
+        if (acceptLanguage != null) r'Accept-Language': acceptLanguage,
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (from != null) r'from': encodeQueryParameter(_serializers, from, const FullType(DateTime)),
+      if (to != null) r'to': encodeQueryParameter(_serializers, to, const FullType(DateTime)),
+      if (action != null) r'action': encodeCollectionQueryParameter<AuditAction>(_serializers, action, const FullType(BuiltList, [FullType(AuditAction)]), format: ListFormat.multi,),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    Uint8List? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : rawResponse as Uint8List;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<Uint8List>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// The academy&#39;s audit trail
-  /// Administrative actions recorded in this academy (by its members, by the super admin and by the platform&#39;s background jobs), newest first. Actor and target names are resolved at read time while the person, player or academy still exists; metadata never holds personal data (&#x60;docs/domain/audit-events.md&#x60;). The super admin is masked: a PLATFORM actor carries no &#x60;subject&#x60;, &#x60;personId&#x60; or &#x60;displayName&#x60; (the web shows \&quot;Platform administrator\&quot;); the metadata, such as the &#x60;reason&#x60; of &#x60;tenant.suspended&#x60;, is unchanged. &#x60;from&#x60; must be before &#x60;to&#x60; (400). Retention: none in v1 (a purge job is a v2 item); rows are append-only. Authz: ADMIN.
+  /// Administrative actions recorded in this academy (by its members, by the super admin and by the platform&#39;s background jobs), newest first. Actor and target names are resolved at read time while the person, player or academy still exists; metadata never holds personal data (&#x60;docs/domain/audit-events.md&#x60;). The super admin is masked: a PLATFORM actor carries no &#x60;subject&#x60;, &#x60;personId&#x60; or &#x60;displayName&#x60; (the web shows \&quot;Platform administrator\&quot;); the metadata, such as the &#x60;reason&#x60; of &#x60;tenant.suspended&#x60;, is unchanged. &#x60;from&#x60; must be before &#x60;to&#x60; (400). Retention: none in v1 (a purge job is a v2 item); rows are append-only. Authz: ADMIN. 
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
@@ -40,7 +138,7 @@ class AuditApi {
   ///
   /// Returns a [Future] containing a [Response] with a [AuditEventPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<AuditEventPage>> listAuditEvents({
+  Future<Response<AuditEventPage>> listAuditEvents({ 
     required String xTenantId,
     DateTime? from,
     DateTime? to,
@@ -75,22 +173,11 @@ class AuditApi {
     );
 
     final _queryParameters = <String, dynamic>{
-      if (from != null)
-        r'from':
-            encodeQueryParameter(_serializers, from, const FullType(DateTime)),
-      if (to != null)
-        r'to': encodeQueryParameter(_serializers, to, const FullType(DateTime)),
-      if (action != null)
-        r'action': encodeCollectionQueryParameter<AuditAction>(
-          _serializers,
-          action,
-          const FullType(BuiltList, [FullType(AuditAction)]),
-          format: ListFormat.multi,
-        ),
-      if (page != null)
-        r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
-      if (size != null)
-        r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
+      if (from != null) r'from': encodeQueryParameter(_serializers, from, const FullType(DateTime)),
+      if (to != null) r'to': encodeQueryParameter(_serializers, to, const FullType(DateTime)),
+      if (action != null) r'action': encodeCollectionQueryParameter<AuditAction>(_serializers, action, const FullType(BuiltList, [FullType(AuditAction)]), format: ListFormat.multi,),
+      if (page != null) r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
+      if (size != null) r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(
@@ -106,12 +193,11 @@ class AuditApi {
 
     try {
       final rawResponse = _response.data;
-      _responseData = rawResponse == null
-          ? null
-          : _serializers.deserialize(
-              rawResponse,
-              specifiedType: const FullType(AuditEventPage),
-            ) as AuditEventPage;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(AuditEventPage),
+      ) as AuditEventPage;
+
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -133,4 +219,5 @@ class AuditApi {
       extra: _response.extra,
     );
   }
+
 }

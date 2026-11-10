@@ -13,14 +13,13 @@ part 'update_team_request.g.dart';
 /// UpdateTeamRequest
 ///
 /// Properties:
-/// * [name]
-/// * [alias]
-/// * [ageCategoryId]
-/// * [genderPolicy]
+/// * [name] 
+/// * [alias] 
+/// * [ageCategoryId] 
+/// * [genderPolicy] 
 /// * [clear] - Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
 @BuiltValue()
-abstract class UpdateTeamRequest
-    implements Built<UpdateTeamRequest, UpdateTeamRequestBuilder> {
+abstract class UpdateTeamRequest implements Built<UpdateTeamRequest, UpdateTeamRequestBuilder> {
   @BuiltValueField(wireName: r'name')
   String? get name;
 
@@ -41,19 +40,16 @@ abstract class UpdateTeamRequest
 
   UpdateTeamRequest._();
 
-  factory UpdateTeamRequest([void updates(UpdateTeamRequestBuilder b)]) =
-      _$UpdateTeamRequest;
+  factory UpdateTeamRequest([void updates(UpdateTeamRequestBuilder b)]) = _$UpdateTeamRequest;
 
   @BuiltValueHook(initializeBuilder: true)
   static void _defaults(UpdateTeamRequestBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<UpdateTeamRequest> get serializer =>
-      _$UpdateTeamRequestSerializer();
+  static Serializer<UpdateTeamRequest> get serializer => _$UpdateTeamRequestSerializer();
 }
 
-class _$UpdateTeamRequestSerializer
-    implements PrimitiveSerializer<UpdateTeamRequest> {
+class _$UpdateTeamRequestSerializer implements PrimitiveSerializer<UpdateTeamRequest> {
   @override
   final Iterable<Type> types = const [UpdateTeamRequest, _$UpdateTeamRequest];
 
@@ -97,8 +93,7 @@ class _$UpdateTeamRequestSerializer
       yield r'clear';
       yield serializers.serialize(
         object.clear,
-        specifiedType:
-            const FullType(BuiltSet, [FullType(UpdateTeamRequestClearEnum)]),
+        specifiedType: const FullType(BuiltSet, [FullType(UpdateTeamRequestClearEnum)]),
       );
     }
   }
@@ -109,9 +104,7 @@ class _$UpdateTeamRequestSerializer
     UpdateTeamRequest object, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    return _serializeProperties(serializers, object,
-            specifiedType: specifiedType)
-        .toList();
+    return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
   }
 
   void _deserializeProperties(
@@ -161,8 +154,7 @@ class _$UpdateTeamRequestSerializer
         case r'clear':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(
-                BuiltSet, [FullType(UpdateTeamRequestClearEnum)]),
+            specifiedType: const FullType.nullable(BuiltSet, [FullType(UpdateTeamRequestClearEnum)]),
           ) as BuiltSet<UpdateTeamRequestClearEnum>?;
           if (valueDes == null) continue;
           result.clear.replace(valueDes);
@@ -196,21 +188,19 @@ class _$UpdateTeamRequestSerializer
   }
 }
 
+
 class UpdateTeamRequestClearEnum extends EnumClass {
+
   @BuiltValueEnumConst(wireName: r'alias')
-  static const UpdateTeamRequestClearEnum alias =
-      _$updateTeamRequestClearEnum_alias;
+  static const UpdateTeamRequestClearEnum alias = _$updateTeamRequestClearEnum_alias;
   @BuiltValueEnumConst(wireName: r'unknown_default_open_api', fallback: true)
-  static const UpdateTeamRequestClearEnum unknownDefaultOpenApi =
-      _$updateTeamRequestClearEnum_unknownDefaultOpenApi;
+  static const UpdateTeamRequestClearEnum unknownDefaultOpenApi = _$updateTeamRequestClearEnum_unknownDefaultOpenApi;
 
-  static Serializer<UpdateTeamRequestClearEnum> get serializer =>
-      _$updateTeamRequestClearEnumSerializer;
+  static Serializer<UpdateTeamRequestClearEnum> get serializer => _$updateTeamRequestClearEnumSerializer;
 
-  const UpdateTeamRequestClearEnum._(String name) : super(name);
+  const UpdateTeamRequestClearEnum._(String name): super(name);
 
-  static BuiltSet<UpdateTeamRequestClearEnum> get values =>
-      _$updateTeamRequestClearEnumValues;
-  static UpdateTeamRequestClearEnum valueOf(String name) =>
-      _$updateTeamRequestClearEnumValueOf(name);
+  static BuiltSet<UpdateTeamRequestClearEnum> get values => _$updateTeamRequestClearEnumValues;
+  static UpdateTeamRequestClearEnum valueOf(String name) => _$updateTeamRequestClearEnumValueOf(name);
 }
+
