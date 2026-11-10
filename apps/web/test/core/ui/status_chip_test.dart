@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/design/tokens.dart';
-import 'package:hoops_app/core/ui/page_scaffold.dart';
 import 'package:hoops_app/core/ui/status_chip.dart';
 
 import '../../support/kit_harness.dart';
@@ -54,30 +53,5 @@ void main() {
         decorationColorOf(tester, find.byWidget(e.widget)),
     };
     expect(colors, {for (final t in HoopsTone.values) c.tone(t).container});
-  });
-
-  testWidgets('InfoChip keeps its API and maps ChipTone to the kit tones', (
-    tester,
-  ) async {
-    await pumpKit(
-      tester,
-      const Column(
-        children: [
-          InfoChip('ok', tone: ChipTone.good),
-          InfoChip('warn', tone: ChipTone.warn),
-          InfoChip('bad', tone: ChipTone.bad, icon: Icons.block),
-          InfoChip('neutral'),
-        ],
-      ),
-    );
-    final c = HoopsColors.light;
-    expect(decorationColorOf(tester, find.text('ok')), c.success.container);
-    expect(decorationColorOf(tester, find.text('warn')), c.warning.container);
-    expect(decorationColorOf(tester, find.text('bad')), c.danger.container);
-    expect(
-      decorationColorOf(tester, find.text('neutral')),
-      c.neutral.container,
-    );
-    expect(find.byIcon(Icons.block), findsOneWidget);
   });
 }

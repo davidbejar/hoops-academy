@@ -2,27 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../core/design/tokens.dart';
 
-/// Short names of the most used tokens, kept for the screens written before
-/// the design system (ADR-0040). New code uses [HoopsSpace], [HoopsRadius],
-/// [HoopsSize] and [WidthClass] directly; wave 2 migrates the rest.
-abstract final class AppTokens {
-  static const seedColor = HoopsColors.brandOrange;
-
-  static const spaceXs = HoopsSpace.xs;
-  static const spaceSm = HoopsSpace.sm;
-  static const spaceMd = HoopsSpace.md;
-  static const spaceLg = HoopsSpace.lg;
-  static const spaceXl = HoopsSpace.xl;
-
-  static const radiusSm = HoopsRadius.sm;
-  static const radiusMd = HoopsRadius.md;
-  static const radiusLg = HoopsRadius.lg;
-
-  static const minTapTarget = HoopsSize.minTapTarget;
-  static const wideBreakpoint = WidthClass.mediumMin;
-  static const maxContentWidth = WidthClass.readingMax;
-}
-
 /// The Material 3 colour scheme of [c]: every role mapped to a token, nothing
 /// generated from a seed (a seed gave the pink tint the app had before).
 ColorScheme hoopsColorScheme(HoopsColors c) {

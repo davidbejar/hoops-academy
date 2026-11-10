@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/theme.dart';
 import '../design/tokens.dart';
 import '../errors/app_error.dart';
 import 'app_error_view.dart';
-import 'status_chip.dart';
 
 /// Sub-page inside the shell: its own title bar with back button, content
 /// capped to the design's max width and centred on wide screens.
@@ -44,43 +42,11 @@ class SubPage extends StatelessWidget {
     body: Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
+        constraints: const BoxConstraints(maxWidth: WidthClass.readingMax),
         child: child,
       ),
     ),
   );
-}
-
-/// Small coloured label (status, play-up, read-only...). Kept for the
-/// screens written before the design system; new code uses [StatusChip]
-/// with a [HoopsTone].
-class InfoChip extends StatelessWidget {
-  const InfoChip(
-    this.label, {
-    super.key,
-    this.tone = ChipTone.neutral,
-    this.icon,
-  });
-
-  final String label;
-  final ChipTone tone;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) =>
-      StatusChip(label, tone: tone.hoopsTone, icon: icon);
-}
-
-enum ChipTone {
-  neutral(HoopsTone.neutral),
-  good(HoopsTone.success),
-  warn(HoopsTone.warning),
-  bad(HoopsTone.danger);
-
-  const ChipTone(this.hoopsTone);
-
-  /// The design system's tone this legacy tone maps to.
-  final HoopsTone hoopsTone;
 }
 
 /// Per-route capability check on top of the destination guard: shows the

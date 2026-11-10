@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../app/theme.dart';
+import '../design/tokens.dart';
 import '../../l10n/gen/app_localizations.dart';
 
 /// Tells the creator of a login what happened (ADR-0024).
@@ -96,12 +96,12 @@ class _TemporaryPasswordDialogState extends State<TemporaryPasswordDialog> {
                 l.tempPasswordLoginWith(widget.email!),
                 style: theme.textTheme.bodyMedium,
               ),
-            const SizedBox(height: AppTokens.spaceMd),
+            const SizedBox(height: HoopsSpace.md),
             Container(
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
+              padding: const EdgeInsets.all(HoopsSpace.md),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppTokens.radiusSm),
+                borderRadius: BorderRadius.circular(HoopsRadius.sm),
               ),
               child: SelectableText(
                 widget.password,
@@ -118,14 +118,14 @@ class _TemporaryPasswordDialogState extends State<TemporaryPasswordDialog> {
                 ),
               ),
             ),
-            const SizedBox(height: AppTokens.spaceSm),
+            const SizedBox(height: HoopsSpace.sm),
             OutlinedButton.icon(
               key: const Key('temp-password-copy'),
               onPressed: _copy,
               icon: Icon(_copied ? Icons.check : Icons.copy_outlined),
               label: Text(_copied ? l.tempPasswordCopied : l.tempPasswordCopy),
             ),
-            const SizedBox(height: AppTokens.spaceMd),
+            const SizedBox(height: HoopsSpace.md),
             _Hint(icon: Icons.lock_outline, text: l.tempPasswordShareHint),
             _Hint(
               icon: Icons.visibility_off_outlined,
@@ -155,12 +155,12 @@ class _Hint extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppTokens.spaceSm),
+      padding: const EdgeInsets.only(bottom: HoopsSpace.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: AppTokens.spaceSm),
+          const SizedBox(width: HoopsSpace.sm),
           Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
         ],
       ),

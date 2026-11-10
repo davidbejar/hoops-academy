@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/theme.dart';
+import '../../../core/design/tokens.dart';
 
 /// Colours of the landing page: one accent (the app's basketball orange) on
 /// off-white or near-black, following the system brightness.
@@ -21,7 +21,7 @@ class LandingPalette {
   });
 
   /// The brand colour; buttons, icons and the glow behind the device mock-ups.
-  static const accent = AppTokens.seedColor;
+  static const accent = HoopsColors.brandOrange;
   static const onAccent = Colors.white;
 
   static const light = LandingPalette._(

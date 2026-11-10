@@ -63,3 +63,9 @@ become `StatusChip` with a `HoopsTone` (role, availability, match state, injury)
 - The landing keeps its own `LandingPalette` (same values); a later clean-up can point it at `HoopsColors`.
 - Positive statuses that used the orange container (`ChipTone.good`) are green now (success tone).
 - A colour change is a token change plus a green contrast test; a failing pair names itself.
+
+## Amendment (WP95)
+`AppTokens`, `InfoChip` and `ChipTone` are deleted (nothing used them); `LandingPalette` reads `HoopsColors`.
+`ContentFrame` stretches a narrower section to the column; `SectionCard` provides a transparent `Material`;
+`AsyncBody` renders `EmptyState`; `HoopsSize.fabClearance` replaces the per-feature copies; `PickerDialog` is the
+kit's list picker.

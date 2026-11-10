@@ -81,13 +81,6 @@ void main() {
     });
   }
 
-  test('AppTokens keeps the pre-design-system names on the new scale', () {
-    expect(AppTokens.spaceMd, HoopsSpace.md);
-    expect(AppTokens.radiusMd, HoopsRadius.md);
-    expect(AppTokens.wideBreakpoint, WidthClass.mediumMin);
-    expect(AppTokens.seedColor, HoopsColors.brandOrange);
-  });
-
   test('width classes switch at 720 and 1024 px', () {
     expect(WidthClass.forWidth(360), WidthClass.compact);
     expect(WidthClass.forWidth(719), WidthClass.compact);

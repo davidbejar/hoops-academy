@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/theme.dart';
+import '../design/tokens.dart';
 import '../../features/tenant/application/tenant_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
 
@@ -15,7 +15,7 @@ class TimezoneNote extends ConsumerWidget {
     final label = ref.watch(tenantZoneProvider).label;
     if (label == null) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd),
+      padding: const EdgeInsets.symmetric(horizontal: HoopsSpace.md),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
