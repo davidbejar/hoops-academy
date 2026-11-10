@@ -48,13 +48,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 
+  String? lastPath;
+
   // No initialLocation: a cold start keeps the browser's path, so an
   // anonymous visit to `/` can become the landing (WP70).
   final router = GoRouter(
     refreshListenable: refresh,
     redirect: (context, state) {
-      _enterApplicationAdminForLink(ref, state.uri.path);
-      return redirectFor(ref.read(sessionProvider), state.uri.path);
+      final path = state.uri.path;
+      // A refresh (the session changed) asks again for the same location;
+      // only a navigation to a new one is a link being followed.
+      if (path != lastPath) _enterApplicationAdminForLink(ref, path);
+      lastPath = path;
+      return redirectFor(ref.read(sessionProvider), path);
     },
     routes: [
       GoRoute(path: '/', builder: (_, _) => const _LandingGate()),
@@ -82,22 +88,18 @@ final routerProvider = Provider<GoRouter>((ref) {
 });
 
 /// A link to the application admin (`/app-admin/...`, or an old `/platform/...`
-/// one) is an explicit choice of that context for a super admin: remember it
-/// before the guard decides, so the link opens instead of bouncing to the menu
-/// of whichever academy was active (WP99).
+/// one) followed by a super admin working in an academy is an explicit choice
+/// of that context: remember it before the guard decides, so the link opens
+/// instead of bouncing to the menu of the academy that was active (WP99).
 void _enterApplicationAdminForLink(Ref ref, String location) {
   if (!isApplicationAdminPath(location) &&
       legacyPlatformPath(location) == null) {
     return;
   }
   final session = ref.read(sessionProvider);
-  final needsSwitch = switch (session) {
-    Ready(:final user, :final applicationAdmin) =>
-      user.superAdmin && !applicationAdmin,
-    NeedsTenant(:final user) => user.superAdmin,
-    _ => false,
-  };
-  if (needsSwitch) {
+  if (session is Ready &&
+      session.user.superAdmin &&
+      !session.applicationAdmin) {
     ref.read(selectedTenantIdProvider.notifier).select(platformContextId);
   }
 }

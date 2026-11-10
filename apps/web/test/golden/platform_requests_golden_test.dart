@@ -33,7 +33,7 @@ void main() {
       me: FakeMeRepository(userWith(const [], superAdmin: true)),
       core: FakeCore(),
       platform: FakePlatform(repo: FakePlatformRepository()),
-      extraOverrides: repo.overrides,
+      academyRequests: repo,
     );
     await h.pump(tester, size: size);
     await h.go(tester, '/platform/requests');

@@ -264,9 +264,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navMe => 'Me';
 
   @override
-  String get navPlatform => 'Platform';
-
-  @override
   String get navAppHub => 'Overview';
 
   @override
@@ -303,21 +300,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get academy => 'Academy';
-
-  @override
-  String get switchAcademy => 'Switch academy';
-
-  @override
-  String get chooseAcademyTitle => 'Choose your academy';
-
-  @override
-  String get chooseAcademySubtitle =>
-      'You belong to several academies. Which one do you want to work with?';
-
-  @override
-  String rolesInAcademy(String roles) {
-    return 'Roles: $roles';
-  }
 
   @override
   String get switchContext => 'Switch context';
@@ -2474,9 +2456,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myPlayersEmpty => 'You have no linked players';
 
   @override
-  String get profilePlatform => 'Platform console';
-
-  @override
   String get profileAccount => 'Account and security';
 
   @override
@@ -2507,9 +2486,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mePlansEmpty => 'No assigned plans';
-
-  @override
-  String get platformTitle => 'Platform';
 
   @override
   String get platformSearchHint => 'Search by name or slug';
@@ -2902,12 +2878,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminActivity => 'Activity';
-
-  @override
-  String get platformActivity => 'Academies\' activity';
-
-  @override
-  String get platformRequests => 'Requests';
 
   @override
   String get academyRequestsTitle => 'Academy requests';

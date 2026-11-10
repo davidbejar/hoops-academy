@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
+import '../../support/core_fixtures.dart' show member;
+import '../../support/fake_repos.dart' show FakeCore, FakeMembersRepository;
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 import '../../support/pump_helpers.dart';
@@ -111,6 +114,38 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.text('Carlos Coach'), findsOneWidget);
+    });
+
+    testWidgets('the academy member list shows the new name afterwards', (
+      tester,
+    ) async {
+      final members = FakeMembersRepository([
+        member('person-me', 'Casey Coach', roles: {api.TenantRole.ADMIN}),
+      ]);
+      final member0 = membershipWithRoles({TenantRole.admin});
+      final h = Harness(
+        me: FakeMeRepository(userWith([member0])),
+        core: FakeCore(members: members),
+        prefs: {'hoops.selectedTenantId': member0.tenantId},
+      );
+      await h.pump(tester);
+      await h.go(tester, '/admin/members');
+      expect(find.text('Casey Coach'), findsOneWidget);
+
+      await h.go(tester, '/profile');
+      await _scrollTo(tester, 'profile-given-name');
+      await enter(tester, 'profile-given-name', 'Carlos');
+      // The server renames the person; the list must be read again.
+      members.members[0] = member(
+        'person-me',
+        'Carlos Coach',
+        roles: {api.TenantRole.ADMIN},
+      );
+      await tapKey(tester, 'profile-name-save');
+      await h.go(tester, '/admin/members');
+
+      expect(find.text('Carlos Coach'), findsOneWidget);
+      expect(find.text('Casey Coach'), findsNothing);
     });
 
     testWidgets('nothing to save while nothing changed', (tester) async {

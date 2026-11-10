@@ -165,10 +165,14 @@ void main() {
         reason: 'a week of demo sessions',
       );
 
-      // platform console (WP41): the mock user is a super admin; the profile menu opens the tenant list
-      await tester.tap(find.byKey(const Key('profile-button')));
+      // application admin (WP41, WP99): the mock user is a super admin, so the context switcher lists Application
+      // admin next to the academies; its hub opens the academies area
+      await tester.tap(find.byKey(const Key('tenant-chip')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('open-platform')));
+      await tester.tap(find.byKey(const Key('tenant-platform')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('app-admin-hub')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('app-admin-academies')));
       await tester.pumpAndSettle();
       expect(
         find.text('Academia Sur'),

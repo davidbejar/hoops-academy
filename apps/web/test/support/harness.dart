@@ -28,6 +28,7 @@ import 'package:hoops_app/features/tenant/data/tenant_repository.dart';
 import 'package:hoops_app/features/tenant/domain/tenant_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'fake_academy_requests.dart';
 import 'fake_athlete.dart';
 import 'fake_game.dart';
 import 'fake_platform.dart';
@@ -115,8 +116,10 @@ class Harness {
     FakeGame? game,
     FakeAthlete? athlete,
     FakePlatform? platform,
+    FakeAcademyRequestRepository? academyRequests,
     this.extraOverrides = const [],
-  }) : game = game ?? FakeGame(),
+  }) : academyRequests = academyRequests ?? FakeAcademyRequestRepository(),
+       game = game ?? FakeGame(),
        athlete = athlete ?? FakeAthlete(),
        platform = platform ?? FakePlatform(),
        auth =
@@ -146,6 +149,9 @@ class Harness {
 
   /// In-memory platform console repository.
   final FakePlatform platform;
+
+  /// The requests behind the application admin's pending badge (empty by default).
+  final FakeAcademyRequestRepository academyRequests;
   final List<Override> extraOverrides;
   final online = StreamController<bool>.broadcast();
   late SharedPreferences prefs;
@@ -210,6 +216,7 @@ class Harness {
         ...game.overrides,
         ...athlete.overrides,
         ...platform.overrides,
+        ...academyRequests.overrides,
         ...extraOverrides,
         // Deferred libraries load in real time; make them instant in tests.
         libraryLoaderProvider.overrideWithValue(

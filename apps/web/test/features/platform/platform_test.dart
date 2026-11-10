@@ -67,6 +67,7 @@ void main() {
             membershipWithRoles({TenantRole.admin}),
           ], superAdmin: true),
         ),
+        prefs: {'hoops.selectedTenantId': membershipWithRoles({}).tenantId},
         core: athleteCore(),
         platform: FakePlatform(repo: _repo()..hang = true),
       );
@@ -1126,6 +1127,7 @@ void main() {
             membershipWithRoles({TenantRole.admin}),
           ], superAdmin: true),
         ),
+        prefs: {'hoops.selectedTenantId': membershipWithRoles({}).tenantId},
         core: athleteCore(),
         platform: FakePlatform(repo: _repo()),
       );

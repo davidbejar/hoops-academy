@@ -544,12 +544,6 @@ abstract class AppLocalizations {
   /// **'Yo'**
   String get navMe;
 
-  /// No description provided for @navPlatform.
-  ///
-  /// In es, this message translates to:
-  /// **'Plataforma'**
-  String get navPlatform;
-
   /// No description provided for @navAppHub.
   ///
   /// In es, this message translates to:
@@ -621,30 +615,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Academia'**
   String get academy;
-
-  /// No description provided for @switchAcademy.
-  ///
-  /// In es, this message translates to:
-  /// **'Cambiar de academia'**
-  String get switchAcademy;
-
-  /// No description provided for @chooseAcademyTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Elige tu academia'**
-  String get chooseAcademyTitle;
-
-  /// No description provided for @chooseAcademySubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Perteneces a varias academias. ¿Con cuál quieres trabajar?'**
-  String get chooseAcademySubtitle;
-
-  /// No description provided for @rolesInAcademy.
-  ///
-  /// In es, this message translates to:
-  /// **'Roles: {roles}'**
-  String rolesInAcademy(String roles);
 
   /// No description provided for @switchContext.
   ///
@@ -4618,12 +4588,6 @@ abstract class AppLocalizations {
   /// **'No tienes jugadores vinculados'**
   String get myPlayersEmpty;
 
-  /// No description provided for @profilePlatform.
-  ///
-  /// In es, this message translates to:
-  /// **'Consola de plataforma'**
-  String get profilePlatform;
-
   /// No description provided for @profileAccount.
   ///
   /// In es, this message translates to:
@@ -4683,12 +4647,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Sin planes asignados'**
   String get mePlansEmpty;
-
-  /// No description provided for @platformTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Plataforma'**
-  String get platformTitle;
 
   /// No description provided for @platformSearchHint.
   ///
@@ -5385,18 +5343,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Actividad'**
   String get adminActivity;
-
-  /// No description provided for @platformActivity.
-  ///
-  /// In es, this message translates to:
-  /// **'Actividad de las academias'**
-  String get platformActivity;
-
-  /// No description provided for @platformRequests.
-  ///
-  /// In es, this message translates to:
-  /// **'Solicitudes'**
-  String get platformRequests;
 
   /// No description provided for @academyRequestsTitle.
   ///

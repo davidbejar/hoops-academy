@@ -265,9 +265,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get navMe => 'Saya';
 
   @override
-  String get navPlatform => 'Platform';
-
-  @override
   String get navAppHub => 'Ringkasan';
 
   @override
@@ -304,21 +301,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get academy => 'Akademi';
-
-  @override
-  String get switchAcademy => 'Ganti akademi';
-
-  @override
-  String get chooseAcademyTitle => 'Pilih akademi Anda';
-
-  @override
-  String get chooseAcademySubtitle =>
-      'Anda tergabung di beberapa akademi. Akademi mana yang ingin Anda gunakan?';
-
-  @override
-  String rolesInAcademy(String roles) {
-    return 'Peran: $roles';
-  }
 
   @override
   String get switchContext => 'Ganti konteks';
@@ -2482,9 +2464,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get myPlayersEmpty => 'Anda belum memiliki pemain terhubung';
 
   @override
-  String get profilePlatform => 'Konsol platform';
-
-  @override
   String get profileAccount => 'Akun dan keamanan';
 
   @override
@@ -2515,9 +2494,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get mePlansEmpty => 'Tidak ada rencana ditugaskan';
-
-  @override
-  String get platformTitle => 'Platform';
 
   @override
   String get platformSearchHint => 'Cari nama atau slug';
@@ -2901,12 +2877,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get adminActivity => 'Aktivitas';
-
-  @override
-  String get platformActivity => 'Aktivitas akademi';
-
-  @override
-  String get platformRequests => 'Permintaan';
 
   @override
   String get academyRequestsTitle => 'Permintaan akademi';

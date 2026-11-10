@@ -48,7 +48,7 @@ Future<Harness> _pump(
           platform ??
           FakePlatformRepository(tenants: [tenantOf('t-a', 'Club Norte')]),
     ),
-    extraOverrides: repo.overrides,
+    academyRequests: repo,
   );
   await h.pump(tester, size: const Size(390, 1400));
   await h.go(tester, location);

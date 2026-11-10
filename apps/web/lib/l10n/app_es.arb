@@ -84,7 +84,6 @@
   "navPlayers": "Jugadores",
   "navMyPlayers": "Mis jugadores",
   "navMe": "Yo",
-  "navPlatform": "Plataforma",
   "navAppHub": "Resumen",
   "navAppAcademies": "Academias",
   "navAppUsers": "Usuarios",
@@ -104,22 +103,11 @@
   "languageName_en": "English",
   "languageName_id": "Bahasa Indonesia",
   "academy": "Academia",
-  "switchAcademy": "Cambiar de academia",
-  "chooseAcademyTitle": "Elige tu academia",
-  "chooseAcademySubtitle": "Perteneces a varias academias. ¿Con cuál quieres trabajar?",
-  "rolesInAcademy": "Roles: {roles}",
   "switchContext": "Cambiar de contexto",
   "chooseContextTitle": "¿Dónde quieres trabajar?",
   "chooseContextSubtitle": "Tu acceso incluye varios espacios. Elige uno; puedes cambiar en cualquier momento.",
   "contextApplicationAdmin": "Administración de la aplicación",
   "contextApplicationAdminRole": "Super administrador",
-  "@rolesInAcademy": {
-    "placeholders": {
-      "roles": {
-        "type": "String"
-      }
-    }
-  },
   "roleAdmin": "Administrador",
   "roleCoach": "Entrenador",
   "roleAssistantCoach": "Entrenador asistente",
@@ -1351,7 +1339,6 @@
   "meNoPlayer": "Tu cuenta aún no está vinculada a un jugador",
   "myPlayersTitle": "Mis jugadores",
   "myPlayersEmpty": "No tienes jugadores vinculados",
-  "profilePlatform": "Consola de plataforma",
   "profileAccount": "Cuenta y seguridad",
   "profileAccountHint": "Contraseña, verificación en dos pasos y sesiones. Se abre en una pestaña nueva.",
   "profileOwnData": "Mis datos personales",
@@ -1362,7 +1349,6 @@
   "profileNameNeedsConnection": "Necesitas conexión para cambiar tu nombre",
   "profileResetDemo": "Restablecer datos de demostración",
   "mePlansEmpty": "Sin planes asignados",
-  "platformTitle": "Plataforma",
   "platformSearchHint": "Buscar por nombre o identificador",
   "platformEmpty": "No hay academias con este filtro",
   "platformNew": "Nueva academia",
@@ -1545,8 +1531,6 @@
   "memberErrorEmailTaken": "Ese correo electrónico ya lo usa otra persona",
   "playerEmailHint": "Con correo, el jugador tendrá acceso: verás una contraseña temporal para entregársela.",
   "adminActivity": "Actividad",
-  "platformActivity": "Actividad de las academias",
-  "platformRequests": "Solicitudes",
   "academyRequestsTitle": "Solicitudes de academia",
   "academyRequestStatusPending": "Pendientes",
   "academyRequestStatusAccepted": "Aceptadas",

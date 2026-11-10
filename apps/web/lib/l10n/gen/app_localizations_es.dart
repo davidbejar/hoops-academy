@@ -266,9 +266,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navMe => 'Yo';
 
   @override
-  String get navPlatform => 'Plataforma';
-
-  @override
   String get navAppHub => 'Resumen';
 
   @override
@@ -305,21 +302,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get academy => 'Academia';
-
-  @override
-  String get switchAcademy => 'Cambiar de academia';
-
-  @override
-  String get chooseAcademyTitle => 'Elige tu academia';
-
-  @override
-  String get chooseAcademySubtitle =>
-      'Perteneces a varias academias. ¿Con cuál quieres trabajar?';
-
-  @override
-  String rolesInAcademy(String roles) {
-    return 'Roles: $roles';
-  }
 
   @override
   String get switchContext => 'Cambiar de contexto';
@@ -2491,9 +2473,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get myPlayersEmpty => 'No tienes jugadores vinculados';
 
   @override
-  String get profilePlatform => 'Consola de plataforma';
-
-  @override
   String get profileAccount => 'Cuenta y seguridad';
 
   @override
@@ -2524,9 +2503,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get mePlansEmpty => 'Sin planes asignados';
-
-  @override
-  String get platformTitle => 'Plataforma';
 
   @override
   String get platformSearchHint => 'Buscar por nombre o identificador';
@@ -2918,12 +2894,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get adminActivity => 'Actividad';
-
-  @override
-  String get platformActivity => 'Actividad de las academias';
-
-  @override
-  String get platformRequests => 'Solicitudes';
 
   @override
   String get academyRequestsTitle => 'Solicitudes de academia';
