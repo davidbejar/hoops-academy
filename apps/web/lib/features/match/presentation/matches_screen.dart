@@ -19,9 +19,6 @@ import 'match_edit_dialog.dart';
 import 'match_labels.dart';
 import 'sync_banner.dart';
 
-/// Room under the last row so the extended FAB never covers it.
-const _fabClearance = HoopsSpace.xxxl + HoopsSpace.lg;
-
 /// Matches of the caller's teams (deferred module behind the Matches tab).
 class MatchesScreen extends ConsumerWidget {
   const MatchesScreen({super.key});
@@ -91,7 +88,7 @@ class MatchesScreen extends ConsumerWidget {
                 child: ListView.separated(
                   padding: const EdgeInsets.only(
                     top: HoopsSpace.md,
-                    bottom: _fabClearance,
+                    bottom: HoopsSize.fabClearance,
                   ),
                   itemCount: data.matches.length,
                   separatorBuilder: (_, _) =>

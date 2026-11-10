@@ -10,7 +10,6 @@ import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/health_providers.dart';
-import '../../training/presentation/training_labels.dart' show fabClearance;
 import 'health_labels.dart';
 
 /// Test types: global ones plus the academy's custom tests (ADMIN creates).
@@ -45,7 +44,7 @@ class TestTypesScreen extends ConsumerWidget {
           builder: (context, data) => ListView.separated(
             padding: const EdgeInsets.only(
               top: HoopsSpace.md,
-              bottom: fabClearance,
+              bottom: HoopsSize.fabClearance,
             ),
             itemCount: data.length,
             separatorBuilder: (_, _) => const SizedBox(height: HoopsSpace.gap),
@@ -330,7 +329,7 @@ class NormsScreen extends ConsumerWidget {
                 builder: (context, data) => ListView.separated(
                   padding: const EdgeInsets.only(
                     top: HoopsSpace.md,
-                    bottom: fabClearance,
+                    bottom: HoopsSize.fabClearance,
                   ),
                   itemCount: data.length,
                   separatorBuilder: (_, _) =>

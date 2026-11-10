@@ -15,9 +15,6 @@ import '../application/roster_providers.dart';
 import 'eligibility_widgets.dart';
 import 'guardian_dialog.dart';
 
-/// Room under the last row so the extended FAB never covers it.
-const _fabClearance = HoopsSize.minTapTarget + HoopsSpace.xl + HoopsSpace.sm;
-
 const _filterableStatuses = [
   api.PlayerStatus.ACTIVE,
   api.PlayerStatus.ORPHAN,
@@ -156,7 +153,7 @@ class PlayersScreen extends ConsumerWidget {
               isEmpty: (d) => d.isEmpty,
               emptyMessage: l.playersEmpty,
               builder: (context, data) => ListView.separated(
-                padding: const EdgeInsets.only(bottom: _fabClearance),
+                padding: const EdgeInsets.only(bottom: HoopsSize.fabClearance),
                 itemCount: data.length,
                 separatorBuilder: (_, _) =>
                     const SizedBox(height: HoopsSpace.gap),

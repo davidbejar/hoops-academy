@@ -18,9 +18,6 @@ import '../application/roster_providers.dart';
 import '../application/season_view.dart' show historicTeamsProvider;
 import 'eligibility_widgets.dart';
 
-/// Room under the last row so the extended FAB never covers it.
-const _fabClearance = HoopsSize.minTapTarget + HoopsSpace.xl + HoopsSpace.sm;
-
 /// Teams of the selected season (deferred module behind the Teams tab).
 class TeamsScreen extends ConsumerWidget {
   const TeamsScreen({super.key});
@@ -101,7 +98,7 @@ class TeamsScreen extends ConsumerWidget {
                       return ListView.separated(
                         padding: const EdgeInsets.only(
                           top: HoopsSpace.md,
-                          bottom: _fabClearance,
+                          bottom: HoopsSize.fabClearance,
                         ),
                         itemCount:
                             data.length + (past.isEmpty ? 0 : past.length + 1),
@@ -373,7 +370,7 @@ class TeamDetailScreen extends ConsumerWidget {
                   roster: data.roster,
                   canEdit: canEdit,
                 ),
-                const SizedBox(height: _fabClearance),
+                const SizedBox(height: HoopsSize.fabClearance),
               ],
             ),
           ],

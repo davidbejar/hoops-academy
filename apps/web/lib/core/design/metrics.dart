@@ -80,6 +80,10 @@ abstract final class HoopsSize {
 
   /// Avatar of a list row and of the profile button.
   static const avatar = 40.0;
+
+  /// Bottom padding of a list under an extended floating action button, so
+  /// the last row is never covered by it.
+  static const fabClearance = 88.0;
 }
 
 /// Width classes: phones (compact), tablets (medium), desktops (expanded).
