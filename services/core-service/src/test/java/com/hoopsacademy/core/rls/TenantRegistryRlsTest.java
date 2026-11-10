@@ -80,11 +80,15 @@ class TenantRegistryRlsTest {
         try (Connection platform = TestDatabases.openAsPlatform()) {
             assertThat(count(platform, "select count(*) from core.tenant where id in ('" + tenantA + "', '"
                     + tenantB + "')")).isEqualTo(2);
-            for (String table : new String[] {"core.person", "core.membership_role", "core.player",
-                    "core.guardian_link", "core.tenant_settings", "core.tenant_logo", "core.app_user",
-                    "core.user_membership_index"}) {
+            for (String table : new String[] {"core.player", "core.guardian_link", "core.tenant_settings",
+                    "core.tenant_logo", "core.user_membership_index"}) {
                 assertThat(sqlState(platform, "select count(*) from " + table))
                         .as("platform must not read %s", table).isEqualTo(INSUFFICIENT_PRIVILEGE);
+            }
+            // since WP91 (V18) a few columns of these, for GET /platform/users: PlatformUserReadRlsTest
+            for (String table : new String[] {"core.person", "core.membership_role", "core.app_user"}) {
+                assertThat(sqlState(platform, "select * from " + table))
+                        .as("platform must not read whole rows of %s", table).isEqualTo(INSUFFICIENT_PRIVILEGE);
             }
             assertThat(count(platform, "select count(*) from billing.plan where code = 'FREE'")).isEqualTo(1);
             assertThat(count(platform, "select count(*) from core.usage_snapshot")).isGreaterThanOrEqualTo(0);
