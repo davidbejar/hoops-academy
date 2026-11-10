@@ -26,6 +26,16 @@ class ExerciseJpaRepository implements ExerciseRepository {
             + "cast(function('jsonb_extract_path_text', e.i18n, '" + ContentLocale.FALLBACK.code() + "', 'title') as String), "
             + "e.title)";
 
+    private static final String ANY_SCOPE = "ANY";
+    private static final String SEARCH_WHERE = " where (:scope = '" + ANY_SCOPE + "'"
+            + " or (:scope = 'GLOBAL' and e.ownerTenantId is null)"
+            + " or (:scope <> 'GLOBAL' and :scope <> '" + ANY_SCOPE + "' and e.ownerTenantId is not null))"
+            + " and (:includeArchived = true or e.archived = false)"
+            + " and (:hasQuery = false or lower(" + SHOWN_TITLE + ") like :q escape '\\')";
+    private static final String SEARCH_SELECT = "select e from ExerciseEntity e" + SEARCH_WHERE + " order by "
+            + SHOWN_TITLE + ", e.id";
+    private static final String SEARCH_COUNT = "select count(e) from ExerciseEntity e" + SEARCH_WHERE;
+
     private final EntityManager em;
     private final CurrentTenant currentTenant;
 
@@ -73,22 +83,17 @@ class ExerciseJpaRepository implements ExerciseRepository {
 
     @Override
     public PageResult<Exercise> search(Search search) {
-        StringBuilder where = new StringBuilder(" where 1 = 1");
-        search.scope().ifPresent(scope -> where.append(scope == Scope.GLOBAL ? " and e.ownerTenantId is null"
-                : " and e.ownerTenantId is not null"));
-        if (!search.includeArchived()) {
-            where.append(" and e.archived = false");
+        // Constant JPQL: every filter is a bound parameter that switches its own condition off, never query text.
+        String scope = search.scope().map(Enum::name).orElse(ANY_SCOPE);
+        String pattern = search.query().map(q -> "%" + q.toLowerCase(Locale.ROOT).replace("\\", "\\\\")
+                .replace("%", "\\%").replace("_", "\\_") + "%").orElse("%");
+        var select = em.createQuery(SEARCH_SELECT, ExerciseEntity.class);
+        var count = em.createQuery(SEARCH_COUNT, Long.class);
+        for (var query : List.of(select, count)) {
+            query.setParameter("scope", scope).setParameter("includeArchived", search.includeArchived())
+                    .setParameter("hasQuery", search.query().isPresent()).setParameter("q", pattern)
+                    .setParameter("language", search.language().code());
         }
-        search.query().ifPresent(q -> where.append(" and lower(" + SHOWN_TITLE + ") like :q escape '\\'"));
-        var select = em.createQuery("select e from ExerciseEntity e" + where + " order by " + SHOWN_TITLE + ", e.id",
-                ExerciseEntity.class).setParameter("language", search.language().code());
-        var count = em.createQuery("select count(e) from ExerciseEntity e" + where, Long.class);
-        search.query().ifPresent(q -> {
-            String pattern = "%" + q.toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                    + "%";
-            select.setParameter("q", pattern);
-            count.setParameter("q", pattern).setParameter("language", search.language().code());
-        });
         List<Exercise> page = select.setFirstResult(PageOffset.of(search.page(), search.size()))
                 .setMaxResults(search.size()).getResultList().stream().map(ExerciseJpaRepository::toDomain).toList();
         return new PageResult<>(page, search.page(), search.size(), count.getSingleResult());

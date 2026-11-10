@@ -274,7 +274,7 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
 | 1 | WP91 | Core: `GET /platform/users`, own-name edit in `PATCH /me`, events-off producer switch, `ContainerStarts` in core | Opus · high | Running |
-| 1 | WP92 | Athlete + web: exercise catalogue (athlete 3.0.0), quick-add in the new-session dialog and plan editor | Opus · high | Running |
+| 1 | WP92 | Athlete + web: exercise catalogue (athlete 3.0.0), quick-add in the new-session dialog and plan editor | Opus · high | Done (ADR-0047; athlete 3.0.0, V10; athlete 1000 tests, mutation 713/713; web 1146) |
 | 1 | WP93 | Tooling: bump-pins multi-arch pin, hook false positive with a shell test, Podman machine playbook + doctor | Sonnet · medium | Done (skopeo index pin; hook matcher 49 cases; Podman playbook + doctor) |
 | 1 | WP94 | Docs: ER and class diagrams per service, generated and drift-checked | Sonnet · medium | Running |
 | 1 | WP95 | Web leftovers: kit follow-ups, Indonesian bottom nav, audit label, landing screenshots out of the precache | Sonnet · medium | Done (web 1091 tests; kit follow-ups; "Laga"; precache en only) |
