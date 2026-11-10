@@ -168,6 +168,23 @@ class RolloverResourceTest {
         assertThat(CoreDb.count(tenant, "select count(*) from core.team where season_id = ?", current)).isZero();
     }
 
+    @Test
+    void theCopiedAssignmentsKeepTheirNumbersEligibleOrNot() {
+        // WP96 (decision 70): numbers carry over with the roster, also on a copy the evaluator invalidates at once
+        rollover(current, "{\"fromSeasonId\":\"" + last + "\"}").statusCode(200);
+
+        assertThat(copiedJersey(ann)).as("invalidated copy").isEqualTo("4");
+        assertThat(copiedJersey(bea)).isEqualTo("5");
+        assertThat(copiedJersey(cat)).as("no number stays none").isNull();
+        assertThat(CoreDb.count(tenant, "select count(*) from core.team_player p join core.team t on t.id = p.team_id "
+                + "where t.season_id = ?", current)).as("the withdrawn player is not copied").isEqualTo(3);
+    }
+
+    private String copiedJersey(UUID player) {
+        return RosterDb.text(tenant, "select p.jersey_number from core.team_player p join core.team t on t.id = p.team_id "
+                + "where t.season_id = ? and p.player_id = ?", current, player);
+    }
+
     private ValidatableResponse rollover(UUID target, String json) {
         return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON).body(json)
                 .post("/api/core/seasons/" + target + "/rollover").then();
