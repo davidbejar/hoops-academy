@@ -132,6 +132,7 @@ CSV; the team roster with guardians and the audit log are produced by the server
   athlete-service 1000, e2e 32 (26 skipped); 0 failures. `just mutation core-service`: 925/926 killed (99.9 %, baseline
   99; the survivor is the older `Eligibility.reasons` one), 108 s. `just diagrams` committed (`core-model.md`). A scratch
   `scripts/gen-api.sh core` (outside the repo) generated the three exports as `Response<Uint8List>`.
+  `just isolation-check` (real Keycloak): 6 tests passed.
 - **Decisions**: ADR-0048 (export spec, `:export` operations, staff as a second block, `key=value` details, audit rows,
   jersey rules). "Previous number" = the most recent assignment *with* a number. The roster's eligibility is the
   stored assignment state; the age category is the natural one in the team's season; only active guardians. A former
