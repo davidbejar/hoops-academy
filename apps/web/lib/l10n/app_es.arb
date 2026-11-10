@@ -784,6 +784,54 @@
       }
     }
   },
+  "exportTooltip": "Exportar",
+  "exportCsv": "Archivo CSV",
+  "exportExcel": "Archivo Excel",
+  "exportCalendar": "Archivo de calendario (.ics)",
+  "exportSaved": "Descargado {fileName}",
+  "@exportSaved": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "exportExcelUnavailable": "No se pudo cargar Excel (¿sin conexión?). Inténtalo con conexión o usa el archivo CSV.",
+  "exportNothing": "No hay nada que exportar",
+  "exportCalendarNoMatches": "No se pudieron cargar los partidos: el archivo solo incluye los entrenamientos.",
+  "exportCalendarNoSessions": "No se pudieron cargar los entrenamientos: el archivo solo incluye los partidos.",
+  "exportColPlayer": "Jugador",
+  "exportColNumber": "Dorsal",
+  "exportColStarter": "Titular",
+  "exportColTime": "Hora de inicio",
+  "exportColEndTime": "Hora de fin",
+  "exportColZone": "Zona horaria",
+  "exportColType": "Tipo",
+  "exportKindMatch": "Partido",
+  "exportKindTraining": "Entrenamiento",
+  "exportColEvent": "Evento",
+  "exportColStatus": "Estado",
+  "exportMade": "{label} anotados",
+  "@exportMade": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "exportAttempted": "{label} intentados",
+  "@exportAttempted": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "exportYes": "Sí",
+  "exportNo": "No",
+  "exportSheetPlayerStats": "Estadísticas",
+  "exportSheetBoxScore": "Estadísticas del partido",
+  "exportSheetCalendar": "Calendario",
   "seasonStatsTitle": "Estadísticas de temporada",
   "seasonStatsGames": "{played} partidos · {started} de titular",
   "@seasonStatsGames": {

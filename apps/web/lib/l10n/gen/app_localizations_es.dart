@@ -1522,6 +1522,96 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get exportTooltip => 'Exportar';
+
+  @override
+  String get exportCsv => 'Archivo CSV';
+
+  @override
+  String get exportExcel => 'Archivo Excel';
+
+  @override
+  String get exportCalendar => 'Archivo de calendario (.ics)';
+
+  @override
+  String exportSaved(String fileName) {
+    return 'Descargado $fileName';
+  }
+
+  @override
+  String get exportExcelUnavailable =>
+      'No se pudo cargar Excel (¿sin conexión?). Inténtalo con conexión o usa el archivo CSV.';
+
+  @override
+  String get exportNothing => 'No hay nada que exportar';
+
+  @override
+  String get exportCalendarNoMatches =>
+      'No se pudieron cargar los partidos: el archivo solo incluye los entrenamientos.';
+
+  @override
+  String get exportCalendarNoSessions =>
+      'No se pudieron cargar los entrenamientos: el archivo solo incluye los partidos.';
+
+  @override
+  String get exportColPlayer => 'Jugador';
+
+  @override
+  String get exportColNumber => 'Dorsal';
+
+  @override
+  String get exportColStarter => 'Titular';
+
+  @override
+  String get exportColTime => 'Hora de inicio';
+
+  @override
+  String get exportColEndTime => 'Hora de fin';
+
+  @override
+  String get exportColZone => 'Zona horaria';
+
+  @override
+  String get exportColType => 'Tipo';
+
+  @override
+  String get exportKindMatch => 'Partido';
+
+  @override
+  String get exportKindTraining => 'Entrenamiento';
+
+  @override
+  String get exportColEvent => 'Evento';
+
+  @override
+  String get exportColStatus => 'Estado';
+
+  @override
+  String exportMade(String label) {
+    return '$label anotados';
+  }
+
+  @override
+  String exportAttempted(String label) {
+    return '$label intentados';
+  }
+
+  @override
+  String get exportYes => 'Sí';
+
+  @override
+  String get exportNo => 'No';
+
+  @override
+  String get exportSheetPlayerStats => 'Estadísticas';
+
+  @override
+  String get exportSheetBoxScore => 'Estadísticas del partido';
+
+  @override
+  String get exportSheetCalendar => 'Calendario';
+
+  @override
   String get seasonStatsTitle => 'Estadísticas de temporada';
 
   @override

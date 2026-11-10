@@ -1515,6 +1515,96 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get exportTooltip => 'Ekspor';
+
+  @override
+  String get exportCsv => 'File CSV';
+
+  @override
+  String get exportExcel => 'File Excel';
+
+  @override
+  String get exportCalendar => 'File kalender (.ics)';
+
+  @override
+  String exportSaved(String fileName) {
+    return '$fileName diunduh';
+  }
+
+  @override
+  String get exportExcelUnavailable =>
+      'Excel tidak dapat dimuat (tidak ada koneksi?). Coba lagi saat online atau gunakan file CSV.';
+
+  @override
+  String get exportNothing => 'Tidak ada yang dapat diekspor';
+
+  @override
+  String get exportCalendarNoMatches =>
+      'Pertandingan tidak dapat dimuat: file hanya berisi sesi latihan.';
+
+  @override
+  String get exportCalendarNoSessions =>
+      'Sesi latihan tidak dapat dimuat: file hanya berisi pertandingan.';
+
+  @override
+  String get exportColPlayer => 'Pemain';
+
+  @override
+  String get exportColNumber => 'Nomor';
+
+  @override
+  String get exportColStarter => 'Starter';
+
+  @override
+  String get exportColTime => 'Jam mulai';
+
+  @override
+  String get exportColEndTime => 'Jam selesai';
+
+  @override
+  String get exportColZone => 'Zona waktu';
+
+  @override
+  String get exportColType => 'Jenis';
+
+  @override
+  String get exportKindMatch => 'Pertandingan';
+
+  @override
+  String get exportKindTraining => 'Latihan';
+
+  @override
+  String get exportColEvent => 'Acara';
+
+  @override
+  String get exportColStatus => 'Status';
+
+  @override
+  String exportMade(String label) {
+    return '$label masuk';
+  }
+
+  @override
+  String exportAttempted(String label) {
+    return '$label percobaan';
+  }
+
+  @override
+  String get exportYes => 'Ya';
+
+  @override
+  String get exportNo => 'Tidak';
+
+  @override
+  String get exportSheetPlayerStats => 'Statistik pemain';
+
+  @override
+  String get exportSheetBoxScore => 'Statistik pertandingan';
+
+  @override
+  String get exportSheetCalendar => 'Kalender';
+
+  @override
   String get seasonStatsTitle => 'Statistik musim';
 
   @override

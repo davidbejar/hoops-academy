@@ -1509,6 +1509,96 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get exportTooltip => 'Export';
+
+  @override
+  String get exportCsv => 'CSV file';
+
+  @override
+  String get exportExcel => 'Excel file';
+
+  @override
+  String get exportCalendar => 'Calendar file (.ics)';
+
+  @override
+  String exportSaved(String fileName) {
+    return 'Downloaded $fileName';
+  }
+
+  @override
+  String get exportExcelUnavailable =>
+      'Excel could not be loaded (no connection?). Try again online or use the CSV file.';
+
+  @override
+  String get exportNothing => 'There is nothing to export';
+
+  @override
+  String get exportCalendarNoMatches =>
+      'The matches could not be loaded: the file has the training sessions only.';
+
+  @override
+  String get exportCalendarNoSessions =>
+      'The training sessions could not be loaded: the file has the matches only.';
+
+  @override
+  String get exportColPlayer => 'Player';
+
+  @override
+  String get exportColNumber => 'Jersey';
+
+  @override
+  String get exportColStarter => 'Starter';
+
+  @override
+  String get exportColTime => 'Start time';
+
+  @override
+  String get exportColEndTime => 'End time';
+
+  @override
+  String get exportColZone => 'Time zone';
+
+  @override
+  String get exportColType => 'Type';
+
+  @override
+  String get exportKindMatch => 'Match';
+
+  @override
+  String get exportKindTraining => 'Training';
+
+  @override
+  String get exportColEvent => 'Event';
+
+  @override
+  String get exportColStatus => 'Status';
+
+  @override
+  String exportMade(String label) {
+    return '$label made';
+  }
+
+  @override
+  String exportAttempted(String label) {
+    return '$label attempted';
+  }
+
+  @override
+  String get exportYes => 'Yes';
+
+  @override
+  String get exportNo => 'No';
+
+  @override
+  String get exportSheetPlayerStats => 'Player stats';
+
+  @override
+  String get exportSheetBoxScore => 'Box score';
+
+  @override
+  String get exportSheetCalendar => 'Calendar';
+
+  @override
   String get seasonStatsTitle => 'Season statistics';
 
   @override

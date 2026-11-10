@@ -2836,6 +2836,168 @@ abstract class AppLocalizations {
   /// **'{name}: {points} pts, {rebounds} reb, {assists} ast'**
   String matchShareLine(String name, int points, int rebounds, int assists);
 
+  /// No description provided for @exportTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Exportar'**
+  String get exportTooltip;
+
+  /// No description provided for @exportCsv.
+  ///
+  /// In es, this message translates to:
+  /// **'Archivo CSV'**
+  String get exportCsv;
+
+  /// No description provided for @exportExcel.
+  ///
+  /// In es, this message translates to:
+  /// **'Archivo Excel'**
+  String get exportExcel;
+
+  /// No description provided for @exportCalendar.
+  ///
+  /// In es, this message translates to:
+  /// **'Archivo de calendario (.ics)'**
+  String get exportCalendar;
+
+  /// No description provided for @exportSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Descargado {fileName}'**
+  String exportSaved(String fileName);
+
+  /// No description provided for @exportExcelUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar Excel (¿sin conexión?). Inténtalo con conexión o usa el archivo CSV.'**
+  String get exportExcelUnavailable;
+
+  /// No description provided for @exportNothing.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay nada que exportar'**
+  String get exportNothing;
+
+  /// No description provided for @exportCalendarNoMatches.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar los partidos: el archivo solo incluye los entrenamientos.'**
+  String get exportCalendarNoMatches;
+
+  /// No description provided for @exportCalendarNoSessions.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar los entrenamientos: el archivo solo incluye los partidos.'**
+  String get exportCalendarNoSessions;
+
+  /// No description provided for @exportColPlayer.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador'**
+  String get exportColPlayer;
+
+  /// No description provided for @exportColNumber.
+  ///
+  /// In es, this message translates to:
+  /// **'Dorsal'**
+  String get exportColNumber;
+
+  /// No description provided for @exportColStarter.
+  ///
+  /// In es, this message translates to:
+  /// **'Titular'**
+  String get exportColStarter;
+
+  /// No description provided for @exportColTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora de inicio'**
+  String get exportColTime;
+
+  /// No description provided for @exportColEndTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora de fin'**
+  String get exportColEndTime;
+
+  /// No description provided for @exportColZone.
+  ///
+  /// In es, this message translates to:
+  /// **'Zona horaria'**
+  String get exportColZone;
+
+  /// No description provided for @exportColType.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo'**
+  String get exportColType;
+
+  /// No description provided for @exportKindMatch.
+  ///
+  /// In es, this message translates to:
+  /// **'Partido'**
+  String get exportKindMatch;
+
+  /// No description provided for @exportKindTraining.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrenamiento'**
+  String get exportKindTraining;
+
+  /// No description provided for @exportColEvent.
+  ///
+  /// In es, this message translates to:
+  /// **'Evento'**
+  String get exportColEvent;
+
+  /// No description provided for @exportColStatus.
+  ///
+  /// In es, this message translates to:
+  /// **'Estado'**
+  String get exportColStatus;
+
+  /// No description provided for @exportMade.
+  ///
+  /// In es, this message translates to:
+  /// **'{label} anotados'**
+  String exportMade(String label);
+
+  /// No description provided for @exportAttempted.
+  ///
+  /// In es, this message translates to:
+  /// **'{label} intentados'**
+  String exportAttempted(String label);
+
+  /// No description provided for @exportYes.
+  ///
+  /// In es, this message translates to:
+  /// **'Sí'**
+  String get exportYes;
+
+  /// No description provided for @exportNo.
+  ///
+  /// In es, this message translates to:
+  /// **'No'**
+  String get exportNo;
+
+  /// No description provided for @exportSheetPlayerStats.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas'**
+  String get exportSheetPlayerStats;
+
+  /// No description provided for @exportSheetBoxScore.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas del partido'**
+  String get exportSheetBoxScore;
+
+  /// No description provided for @exportSheetCalendar.
+  ///
+  /// In es, this message translates to:
+  /// **'Calendario'**
+  String get exportSheetCalendar;
+
   /// No description provided for @seasonStatsTitle.
   ///
   /// In es, this message translates to:
