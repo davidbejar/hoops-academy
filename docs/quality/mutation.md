@@ -18,7 +18,7 @@ treatment with a Dart mutation tool ([Web rule code](#web-rule-code-dart-mutatio
 | `common-quarkus` | `TenantId`, `TenantContext`, `AuthzContext`, `Problem`, `ProblemType`, `CoreRosterClient`, `RosterAuthzResolver`, `TenantHeaderPropagationFilter`, `ServiceTokenClientFilter`, `AuthzDenial`, `DenialKind`, `TokenFailureReason` (WP85) + `ExclusiveLocks`, `TenantScopedPaths`, `ProblemMapping` (WP88) + `UnsafeText`, `PageOffset` (WP84) | their plain unit tests | 313 | 25 s | 99 |
 | `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction`, the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67), `KafkaEventBroker` (WP81) + `BackfillPlan`, `DecideAcademyRequest`, `ChangedFields`, `AuditEntry`, `PatchBody` (WP88) | `core.domain.*` tests + the tests of those classes | 778 | 103 s | 99 |
 | `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility`, the replica rules `ReplicaAuthzResolver`, `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant`, `ReplicaPerson` (WP68), `ReplicaRetention`, `ParkedPosition` (WP82) + `EventAdmission`, `EventLedger`, `MatchEventDecoder`, `RosterEventDecoder` (WP88) | `game.domain.*` tests + the tests of those classes | 550 | 78 s | 99 |
-| `athlete-service` | `athlete.domain.*` + the replica rules `ApplyRosterEvent`, `ReplicaRetention`, `ParkedPosition`, `RosterChange`, `RosterTopic` and the adapters' parsers `CoreEventDecoder`, `AcceptLanguage`, `PatchBody`, `RosterSource` (WP88) | `athlete.domain.*` tests + `ApplyRosterEventRulesTest`, `ReplicaRetentionRulesTest`, `CoreEventDecoderTest`, `AcceptLanguageTest`, `PatchBodyTest`, `RosterSourceTest` | 687 | 75 s | 100 |
+| `athlete-service` | `athlete.domain.*` + the replica rules `ApplyRosterEvent`, `ReplicaRetention`, `ParkedPosition`, `RosterChange`, `RosterTopic` and the adapters' parsers `CoreEventDecoder`, `AcceptLanguage`, `PatchBody`, `RosterSource` (WP88) | `athlete.domain.*` tests + `ApplyRosterEventRulesTest`, `ReplicaRetentionRulesTest`, `CoreEventDecoderTest`, `AcceptLanguageTest`, `PatchBodyTest`, `RosterSourceTest` | 713 | 114 s² | 100 |
 
 ¹ Wall clock of `just mutation <module>` including compilation, on the development Mac (Apple M1 Pro, 10 cores, shared
 with other work), `threads = 4`, measured in WP88 (2026-11-07). All four modules in turn (`just mutation`): 281 s.
@@ -27,6 +27,10 @@ Latest scores (2026-11-07, WP84): common-quarkus 312/313 (99.7 %; the scope grew
 `ProblemMapping` additions), core-service 777/778 (99.9 %), game-service 548/550 (99.6 %), athlete-service 687/687
 (100 %). WP88 (same day): common-quarkus 210/211, the other three as now. Before WP88 (same day, scopes of round 4 plus WP78–WP90): common 172/173,
 core 622/629, game 469/471, athlete 495/495.
+WP92 (2026-11-10): athlete-service 713/713 (100 %; the scope grew by the exercise catalogue: `Exercise`, `ExerciseId`,
+`ItemContent` and the exercise reference of `PlanItem`).
+
+² WP92, 2026-11-10, host shared with four other worktrees.
 
 Settings (root `pom.xml` `pluginManagement`, PIT 1.30.1 + JUnit 5 plugin 1.2.3): `STRONGER` mutators (they stay far
 below the ~10 min per module budget), HTML + XML reports in `<module>/target/pit-reports` without timestamps, never
