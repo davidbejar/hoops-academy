@@ -48,6 +48,8 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Exercise catalogue: list, search and read exercises (`GET /api/athlete/exercises`, `…/{id}`; global ones in the caller's language, archived ones by id or with `includeArchived`; WP92, ADR-0047) | yes | yes | yes | yes | yes |
 | Exercise catalogue: create, edit, archive and unarchive the academy's own exercises (`POST /api/athlete/exercises`, `PATCH …/{id}`, `…:archive`, `…:unarchive`; global exercises read-only for everyone, 403 `EXERCISE_IS_GLOBAL`; another academy's 404; ADR-0047) | yes | yes | yes | – | – |
 | Add catalogue exercises to a tenant plan or a session (the `exerciseId` source of `…/items:copy` and `POST /api/athlete/training-sessions/{id}/items`; the item copies the text and keeps the reference; archived 422 `EXERCISE_ARCHIVED`; ADR-0047) | yes | plan: yes; session: team | plan: yes; session: team | – | – |
+| Users of the application (`GET /platform/users`, WP91, decision 71): every login with its person in each academy (name, roles, active flag, academy name / slug / status), read-only | `super_admin` (platform) only, through core_platform (V18, ADR-0029 amendment); every tenant role 403, anonymous 401 | | | | |
+| Own first and last name in one academy (`PATCH /api/core/me` with `givenName` / `familyName` and `tenantId`, WP91, decision 73): the caller's own person only, never the e-mail (400); no active membership of an ACTIVE academy there: 404 | self | self | self | self | self |
 
 Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of

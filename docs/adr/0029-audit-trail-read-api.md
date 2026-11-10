@@ -71,3 +71,29 @@ Decision 16 of the 2026-11-06 interview: an academy's ADMINs keep reading the su
 - `GET /platform/audit-events` (the super admin's own view) is unchanged and carries the subject.
 - Contract core **2.6.0**: `AuditActor.subject` stays required and becomes nullable (written as an explicit null; core
   otherwise omits nulls). No new field: the kind already tells the client that the platform acted.
+
+## Amendment 2026-11-10 (WP91): the platform reads logins and their names for the Users area
+Decision 71 of 2026-11-10 gives the super admin an "Application admin" hub with a Users area: every login across academies
+with its person in each. That widens what core_platform reads beyond ADR-0023 (administrators only) and decision 4 above.
+- **Same mechanism, narrowest columns** (V18): `grant select (id, email, created_at)` on `core.app_user` (no RLS; never
+  `keycloak_sub`, `locale` or the temporary-password columns); a select policy `person_platform_read`
+  (`user_id is not null`) with `grant select (id, tenant_id, user_id, given_name, family_name, active)` on `core.person`;
+  `membership_role_platform_read` (the roles of the persons it can see) with a column grant on `core.membership_role`.
+  No BYPASSRLS, no security-definer function, nothing for core_app, no write grant. Persons without a login (young
+  players), every other person column (e-mail, phone, birth date, gender, locale, invitation) and every other content
+  table (player, guardian links, teams, …) stay invisible (`PlatformUserReadRlsTest`).
+- **The nil tenant is bound** in the read's transaction (as `GET /me` does for the membership index): the standard
+  `tenant_isolation` policy applies to every role and raises without `app.tenant_id`; with the nil tenant it matches
+  nothing and only the platform policies admit rows. Without the binding a read fails closed (42501).
+- **Read path**: `GET /platform/users` (super_admin; tenant roles 403, anonymous 401): one count and one page statement
+  (the page's logins left-joined to persons, academies and roles), whatever the page size; `q` (2–100 characters) is a
+  literal, case-insensitive substring of the e-mail or of "given family"; ordered by e-mail. Read-only: e-mail changes
+  and temporary passwords stay with the per-academy operations.
+- **Not audited**: like every other read (this ADR and ADR-0017 record administrative changes only), listing the users
+  writes no audit row; the search text may be an e-mail and is never logged.
+- **Not returned**: whether a login holds the realm role `super_admin`. Keycloak keeps realm roles (ADR-0005) and core
+  stores no copy; asking Keycloak for every page would put the identity provider on a read path. The web marks the
+  caller from `GET /me` (`superAdmin`).
+- Rejected: a widened policy for core_app (any academy request could then read other academies' persons); a
+  per-academy `TenantScope.runAs` merge (one transaction per academy per page, as rejected for the trail above);
+  BYPASSRLS.

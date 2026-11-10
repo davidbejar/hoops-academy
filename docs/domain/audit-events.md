@@ -42,7 +42,7 @@ appearing in all three.
 | `member.roles_replaced` | person | `before`, `after` (role names) | ADMIN |
 | `member.temporary_password_expired` | person | – | `system`: the expiry sweep, in every academy where the login's person is PENDING (ADR-0028) |
 | `member.temporary_password_issued` | person | – | ADMIN or super admin: every temporary password (invite, re-issue, new login) |
-| `member.updated` | person | `fields` (changed field names) | ADMIN, super admin (`admin.updated` path) |
+| `member.updated` | person | `fields` (changed field names) | ADMIN, super admin (`admin.updated` path), the member for their own `givenName` / `familyName` (`PATCH /api/core/me`, WP91; actor = target) |
 | `player.approved` | player | `approvalRequestId`, `action`, `playerId`, `status`, `requestedBy`, `decidedBy` | ADMIN decision, or an ADMIN's auto-approved request (also an outbox event) |
 | `player.rejected` | player | as `player.approved` | ADMIN decision (also an outbox event) |
 | `player.requested` | player | `approvalRequestId`, `action`, `playerId`, `status`, `requestedBy` | COACH request (also an outbox event) |
