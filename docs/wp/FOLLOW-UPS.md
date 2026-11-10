@@ -275,9 +275,9 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 |---|---|---|---|---|
 | 1 | WP91 | Core: `GET /platform/users`, own-name edit in `PATCH /me`, events-off producer switch, `ContainerStarts` in core | Opus · high | Running |
 | 1 | WP92 | Athlete + web: exercise catalogue (athlete 3.0.0), quick-add in the new-session dialog and plan editor | Opus · high | Running |
-| 1 | WP93 | Tooling: bump-pins multi-arch pin, hook false positive with a shell test, Podman machine playbook + doctor | Sonnet · medium | Running |
+| 1 | WP93 | Tooling: bump-pins multi-arch pin, hook false positive with a shell test, Podman machine playbook + doctor | Sonnet · medium | Done (skopeo index pin; hook matcher 49 cases; Podman playbook + doctor) |
 | 1 | WP94 | Docs: ER and class diagrams per service, generated and drift-checked | Sonnet · medium | Running |
-| 1 | WP95 | Web leftovers: kit follow-ups, Indonesian bottom nav, audit label, landing screenshots out of the precache | Sonnet · medium | Running |
+| 1 | WP95 | Web leftovers: kit follow-ups, Indonesian bottom nav, audit label, landing screenshots out of the precache | Sonnet · medium | Done (web 1091 tests; kit follow-ups; "Laga"; precache en only) |
 | 2 | WP96 | Core: preferred jersey number with carry-over, free numbers; server-side CSV exports (roster, audit log) | Opus · high | After wave 1 |
 | 2 | WP97 | Web: browser-built exports for player stats, box score and team calendar (CSV, deferred XLSX, ICS) | Sonnet · high | After wave 1 |
 | 2 | WP98 | Events flip: `replica` by default in game and athlete, drift check, shared replica code, e2e await | Opus · high | After wave 1 |

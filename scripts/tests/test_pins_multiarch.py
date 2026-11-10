@@ -59,7 +59,8 @@ class IndexParsing(unittest.TestCase):
 @unittest.skipUnless(os.environ.get("BUMP_PINS_ONLINE") == "1", "set BUMP_PINS_ONLINE=1 to inspect the registries")
 class PinsAreMultiArch(unittest.TestCase):
     def test_every_executed_pin_is_an_index_with_amd64_and_arm64(self):
-        engine = os.environ.get("CONTAINER_ENGINE", "podman")
+        # Only two literal engine names reach the command line (the env value itself never does: Semgrep taint rule).
+        engine = "docker" if os.environ.get("CONTAINER_ENGINE") == "docker" else "podman"
         bad = []
         for (repo, digest), where in pins_in_repo().items():
             done = subprocess.run([engine, "run", "--rm", "--entrypoint", "skopeo", bump_pins.SKOPEO_IMAGE.split("@")[0],
