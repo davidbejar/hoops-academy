@@ -83,4 +83,33 @@ Three independent fixes; commit each on its own.
   quiet window.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  1. bump-pins: cause confirmed, `SKOPEO_IMAGE` pinned the arm64 manifest (`f42bdedc...`) of `skopeo/stable:v1.20.0`.
+     Now the index `sha256:47853bb9...42f4` (amd64, arm64, ppc64le, s390x). `skopeo inspect --raw` media type of the new pin:
+     `application/vnd.oci.image.index.v1+json`. Every other pin the repo executes (zaproxy, cyclonedx-cli, semgrep, oras,
+     ubi9 openjdk-21-runtime, kindest/node) was checked: all are indexes with amd64 and arm64; redpanda and the OTel
+     collector in values.yaml (outside the scan, checked by hand) too. New `scripts/tests/test_pins_multiarch.py`: offline parsing and
+     pin-scan tests always; the registry check runs with `BUMP_PINS_ONLINE=1` (red before the fix, green after).
+  2. Hook: `runs_git` replaced by a small parser (simple commands split on `; & | ( ) newline $( ` `, comments and quoted
+     strings dropped, `VAR=`/env/time/sudo prefixes and git global options skipped). Unsure cases gate: unbalanced quotes,
+     quoted or `$VAR` command word, `bash -c`/`sh -c`/eval/xargs wrappers and `$(...)` inside double quotes fall back to
+     the old loose match. `TENANCY_GATE_CLASSIFY_ONLY=1` prints the classification (used by the test). Result line:
+     `tenancy-gate: isolation-check PASSED in N s` (or `db-role-check`), on stderr. `gate()` stays fail-closed.
+     `scripts/hooks/tenancy-gate.test.sh`: 39 table cases (all of the brief's plus unsure cases) and 3 end-to-end cases
+     with stub gate scripts in a throwaway repo (pass, block, skip).
+  3. Podman: `infra/podman/machine-playbook.yml` (absolute paths, `core` ownership, idempotent) and
+     `ensure_podman_dropin` in `scripts/doctor.sh` (one ssh to read; write + daemon-reload only when missing; restart only
+     when `podman ps -q` is empty, else "restart is pending"; prints the effective ExecStart). doctor.sh is sourceable
+     now (main runs only when executed). Stub test `scripts/tests/doctor-podman-dropin.test.sh`. Docs: runbook section, skill line.
+- Verified: `just test-hooks` green (matcher 42/42, doctor 5/5, python 24 tests, 1 skipped online test); online test green
+  with `BUMP_PINS_ONLINE=1`; `shellcheck -x` clean on the changed shell files; `actionlint .github/workflows/*.yml` clean;
+  `python3 scripts/bump_pins.py --check` runs on this arm64 host (5 of 14 outdated, no error); `just doctor` shows
+  "podman API --time=0 drop-in present"; `ansible-playbook -i localhost, -c local --check --diff` inside the VM (as `core`):
+  `ok=2 changed=0`. Not run: no JVM or Flutter build (not needed).
+- Decisions/ADRs: none. Not verified: whether Podman runs `--playbook` as root or `core` at init (not observable without
+  `podman machine init`, forbidden here); the playbook uses absolute paths and explicit ownership so both work, and was
+  checked as `core` only. The real "missing drop-in" and "restart" branches of doctor ran only against stubs.
+- Open points: after the merge run `gh workflow run bump-pins` (the ~PR it opens bumps Envoy Gateway etc.). Real doctor
+  drop-in write/restart in a quiet window. The hook that gates the session is the one configured at session start;
+  the new matcher applies once the merged `.claude/hooks/tenancy-gate.sh` is in the main checkout. A heredoc body
+  containing `git commit` still gates (accepted false positive).
