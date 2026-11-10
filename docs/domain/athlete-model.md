@@ -14,7 +14,7 @@ long member lists are capped.
 
 <!-- BEGIN GENERATED: er -->
 <details open>
-<summary>attendance and 6 more</summary>
+<summary>attendance and 7 more</summary>
 
 ```mermaid
 erDiagram
@@ -28,6 +28,23 @@ erDiagram
         uuid recorded_by_person_id "not null"
         text recorded_by_name "not null"
         timestamptz recorded_at "not null"
+    }
+    exercise {
+        uuid id PK
+        uuid owner_tenant_id
+        text name_key
+        text title "not null"
+        text description
+        integer duration_min
+        integer sets
+        integer repetitions
+        text video_url
+        text locale "not null"
+        jsonb i18n
+        boolean archived "not null"
+        timestamptz created_at "not null"
+        timestamptz updated_at "not null"
+        bigint version "not null"
     }
     plan_assignment {
         uuid id PK
@@ -64,6 +81,7 @@ erDiagram
         integer repetitions
         text video_url
         jsonb i18n
+        uuid exercise_id FK
     }
     training_plan {
         uuid id PK
@@ -111,6 +129,7 @@ erDiagram
         boolean manually_edited "not null"
         timestamptz created_at "not null"
     }
+    exercise |o--o{ plan_item : "exercise_id"
     plan_assignment ||--o{ plan_completion : "tenant_id, assignment_id"
     training_plan |o--o{ plan_item : "plan_id, owner_tenant_id"
     training_plan |o--o{ training_session : "plan_id"
@@ -389,8 +408,8 @@ classDiagram
         +Integer repetitions
         +String videoUrl
         +Translations translations
-        +translatedAs(Translations) PlanItem
-        and 1 more
+        +ExerciseId exerciseOrNull
+        and 3 more
     }
     class PlanProgress {
         <<record>>
@@ -698,6 +717,11 @@ classDiagram
         +UUID value
         +toString() String
     }
+    class ExerciseId {
+        <<record>>
+        +UUID value
+        +toString() String
+    }
     class InjuryId {
         <<record>>
         +UUID value
@@ -756,6 +780,31 @@ classDiagram
 ```
 
 </details>
+
+<details open>
+<summary>Other domain types</summary>
+
+```mermaid
+classDiagram
+    class Exercise {
+        <<record>>
+        +ExerciseId id
+        +String nameKeyOrNull
+        +String title
+        +String description
+        +Integer durationMinutes
+        +Integer sets
+        +Integer repetitions
+        +String videoUrl
+        +boolean global
+        +String locale
+        and 10 more
+    }
+    class ItemContent {
+    }
+```
+
+</details>
 <!-- END GENERATED: domain -->
 
 ## Application ports
@@ -795,6 +844,13 @@ classDiagram
         +upsertAll(Collection~Attendance~) void
         +sessionsWithAttendance(Collection~SessionId~) Set~SessionId~
         +count() long
+    }
+    class ExerciseRepository {
+        <<interface>>
+        +save(Exercise) void
+        +find(ExerciseId) Optional~Exercise~
+        +findAll(Collection~ExerciseId~) List~Exercise~
+        +search(Search) PageResult~Exercise~
     }
     class InjuryRepository {
         <<interface>>
@@ -862,13 +918,6 @@ classDiagram
         +zoneOf(TenantId) ZoneId
         +today(TenantId) LocalDate
     }
-    class TenantRegistry {
-        <<interface>>
-        +register(TenantId,ZoneId) void
-        +registerIfAbsent(TenantId,ZoneId) void
-        +zoneOf(TenantId) Optional~ZoneId~
-        +tenants() List~TenantId~
-    }
 ```
 
 </details>
@@ -878,6 +927,13 @@ classDiagram
 
 ```mermaid
 classDiagram
+    class TenantRegistry {
+        <<interface>>
+        +register(TenantId,ZoneId) void
+        +registerIfAbsent(TenantId,ZoneId) void
+        +zoneOf(TenantId) Optional~ZoneId~
+        +tenants() List~TenantId~
+    }
     class TestResultRepository {
         <<interface>>
         +save(PhysicalTestResult) void

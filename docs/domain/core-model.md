@@ -1131,6 +1131,10 @@ classDiagram
         <<interface>>
         +write(OutboxEvent) void
     }
+    class PlatformUsers {
+        <<interface>>
+        +list(Optional~String~,PageRequest) PageResult~Login~
+    }
     class PlayerRepository {
         <<interface>>
         +create(PersonId,PlayerStatus) PlayerId
@@ -1215,14 +1219,6 @@ classDiagram
         +usesCategory(AgeCategoryId) boolean
         +count() long
     }
-    class TeamStaffRepository {
-        <<interface>>
-        +ofTeam(TeamId) List~TeamStaffMember~
-        +find(TeamId,PersonId) Optional~TeamStaffMember~
-        +save(TeamStaffMember) void
-        +delete(TeamId,PersonId) void
-        +teamsOf(PersonId) Set~TeamId~
-    }
 ```
 
 </details>
@@ -1232,6 +1228,14 @@ classDiagram
 
 ```mermaid
 classDiagram
+    class TeamStaffRepository {
+        <<interface>>
+        +ofTeam(TeamId) List~TeamStaffMember~
+        +find(TeamId,PersonId) Optional~TeamStaffMember~
+        +save(TeamStaffMember) void
+        +delete(TeamId,PersonId) void
+        +teamsOf(PersonId) Set~TeamId~
+    }
     class TemporaryPasswordLogins {
         <<interface>>
         +issued(String,Instant) boolean
