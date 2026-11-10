@@ -23,6 +23,16 @@ class RosterSourceDefaultsTest {
     }
 
     @Test
+    void theConsumerPollsEvery100MillisecondsSoTheReplicaLagsBelowASecond() {
+        // with the connector's 1 s default each paused poll added up to a second per burst (WP68: 1-4 s of lag on
+        // compose); on the replica that lag is a wrong answer (WP98: a parent refused right after the link was made)
+        ShippedConfig prod = ShippedConfig.load("prod", Map.of());
+
+        assertThat(prod.value("mp.messaging.incoming.core-roster.poll-timeout")).contains("100");
+        assertThat(prod.value("mp.messaging.incoming.core-roster.fetch.max.wait.ms")).contains("100");
+    }
+
+    @Test
     void restStaysTheFallbackSwitch() {
         ShippedConfig prod = ShippedConfig.load("prod", Map.of("GAME_ROSTER_SOURCE", "rest"));
 
