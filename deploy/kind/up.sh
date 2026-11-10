@@ -25,7 +25,7 @@ CNPG_VERSION="1.30.1"
 CNPG_BRANCH="release-${CNPG_VERSION%.*}"
 # External Secrets Operator (--eso): API external-secrets.io/v1. The chart tests validate the ExternalSecrets against this
 # version's CRD (deploy/helm/tests/schemas, regenerate with update-eso.sh when bumping).
-ESO_VERSION="v2.14.0"
+ESO_VERSION="v2.15.0"
 # Stakater Reloader (WP87, ADR-0012 amendment): rolls every Deployment/StatefulSet annotated with
 # secret.reloader.stakater.com/auto (the chart with global.reloader.enabled, on in values-kind.yaml; envoy-ratelimit through
 # EG_VALUES) when a Secret it reads changes, whether ESO refreshed it or secrets.sh re-applied it. Pinned by chart version +

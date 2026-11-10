@@ -359,4 +359,4 @@ web:
 # Local SMTP sink named `mailhog` (the realm's SMTP host). Enabled in values-kind.yaml only.
 mailpit:
   enabled: false
-  image: {repository: docker.io/axllent/mailpit, tag: v1.32.0}
+  image: {repository: docker.io/axllent/mailpit, tag: v1.33.1}
