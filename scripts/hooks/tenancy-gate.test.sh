@@ -22,6 +22,7 @@ expect() { # expect <expected> <command text>
 }
 
 # --- commit
+expect none '-x foo' # a first word starting with a dash must not index before the array (bash 3.2)
 expect commit 'timeout 600 git commit -m x'
 expect commit 'env -u FOO git commit'
 expect commit '2>/dev/null git commit'

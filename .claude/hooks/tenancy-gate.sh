@@ -35,7 +35,7 @@ classify_simple() {
   read -r -a w <<<"$1"
   n=${#w[@]}
   [ "$n" -gt 0 ] || return 0
-  while [ "$i" -lt "$n" ] && { is_prefix_word "${w[i]}" || { [ "${w[i]:0:1}" = - ] && [ "${w[i - 1]:-}" = env ]; }; }; do i=$((i + 1)); done
+  while [ "$i" -lt "$n" ] && { is_prefix_word "${w[i]}" || { [ "$i" -gt 0 ] && [ "${w[i]:0:1}" = - ] && [ "${w[i - 1]:-}" = env ]; }; }; do i=$((i + 1)); done
   [ "$i" -lt "$n" ] || return 0
   word=${w[i]}
   case "$word" in
