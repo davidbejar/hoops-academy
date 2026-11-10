@@ -199,7 +199,7 @@
       </activation>
       <properties>
         <pit.skip>false</pit.skip>
-        <!-- baseline (docs/quality/mutation.md): 99.5 % (210/211) on 2026-11-07 (WP88), the score rounded down to a whole
+        <!-- baseline (docs/quality/mutation.md): 99.7 % (337/338) on 2026-11-10 (WP98), the score rounded down to a whole
              percent -->
         <pit.mutationThreshold>99</pit.mutationThreshold>
       </properties>
