@@ -282,10 +282,10 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 | 2 | WP97 | Web: browser-built exports for player stats, box score and team calendar (CSV, deferred XLSX, ICS) | Sonnet · high | Done (web 1372 tests; `excel_community` deferred, not precached) |
 | 2 | WP98 | Events flip: `replica` by default in game and athlete, drift check, shared replica code, e2e await | Opus · high | Done (ADR-0037 amendment; `just events-drift`; common 403, game 467, athlete 999 tests; e2e 26/26 on replica) |
 | 2 | WP99 | Web: context switcher, application admin hub, own-name edit | Sonnet · high | Done (ADR-0049; `/app-admin` routes; web 1250 tests) |
-| 3 | WP100 | Chart and kind: replica default, core SMTP, Envoy Gateway v1.10.0, pending proofs, chart 0.10.0 | Opus · high | Running |
+| 3 | WP100 | Chart and kind: replica default, core SMTP, Envoy Gateway v1.10.0, pending proofs, chart 0.10.0 | Opus · high | Done (chart 0.10.0, keycloak 0.6.0, hoops-service 0.8.0; Envoy Gateway v1.10.0; kind proofs; ADR-0031, ADR-0033 amendments) |
 | 3 | WP101 | Web: jersey preference and assignment dialogs, roster and audit export buttons | Sonnet · medium | Done (web 1436 tests; core Dart package 3.5.0) |
-| 4 | WP103 | Seed a test academy through the real API (`just seed-academy`) | Sonnet · medium | After wave 3 |
-| 5 | WP102 | Docs pass | Opus · medium | Last alone |
+| 4 | WP103 | Seed a test academy through the real API (`just seed-academy`) | Sonnet · medium | Done (`just seed-academy`; 23 logins; run in the main checkout, drift check equal) |
+| 5 | WP102 | Docs pass | Opus · medium | Running |
 
 ### Decisions of 2026-11-10, fifth interview (product owner)
 64. **Scope of the round → WP91–WP103**: the four owner-requested features (super admin hub, jersey numbers,
