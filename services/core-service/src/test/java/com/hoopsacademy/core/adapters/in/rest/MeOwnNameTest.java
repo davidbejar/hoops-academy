@@ -33,6 +33,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class MeOwnNameTest {
 
     private static final String ME = "/api/core/me";
+    private static final java.time.LocalDate BORN = java.time.LocalDate.of(2010, 4, 1);
 
     @ParameterizedTest
     @EnumSource(TenantRole.class)
@@ -41,8 +42,9 @@ class MeOwnNameTest {
         String academy = tenant("ACTIVE");
         String other = tenant("ACTIVE");
         UUID login = CoreDb.login("me-own-matrix");
-        UUID mine = CoreDb.person(academy, login, "Old", "Name", null, null, null, role);
-        UUID elsewhere = CoreDb.person(other, login, "Old", "Name", null, null, null, role);
+        // a PLAYER always has a birth date and a gender (Person's invariant, checked again on every edit)
+        UUID mine = CoreDb.person(academy, login, "Old", "Name", null, BORN, "FEMALE", role);
+        UUID elsewhere = CoreDb.person(other, login, "Old", "Name", null, BORN, "FEMALE", role);
 
         rename("{\"givenName\": \"Ada\", \"familyName\": \"Lovelace\", \"tenantId\": \"" + academy + "\"}")
                 .statusCode(200).body("userId", equalTo(login.toString()));

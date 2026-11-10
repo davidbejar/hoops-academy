@@ -14,13 +14,17 @@ import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.TemporaryPasswordLogins;
 import com.hoopsacademy.core.application.port.TemporaryPasswordSweeps;
 import com.hoopsacademy.core.application.port.TenantProfileRepository;
+import com.hoopsacademy.core.application.shared.ChangedFields;
 import com.hoopsacademy.core.domain.identity.AppUser;
 import com.hoopsacademy.core.domain.membership.InvitationStatus;
+import com.hoopsacademy.core.domain.membership.Person;
+import com.hoopsacademy.core.domain.membership.PersonalDataChanges;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.domain.tenant.TenantProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Transactional building blocks of GET/PATCH /me (each call is its own transaction). */
@@ -69,6 +73,28 @@ public class MeLookup {
         AppUser changed = loginOf(caller).withLocale(locale);
         appUsers.save(changed);
         return changed;
+    }
+
+    /**
+     * Runs inside {@code TenantScope.runAs(tenant)}: the caller's own active person in that ACTIVE academy gets the new
+     * name, with what an administrator's edit of the person writes (decision 73): the change, the {@code core.person}
+     * event (through the repository) and {@code member.updated} with the changed field names, the person as actor. An
+     * unchanged name writes nothing.
+     */
+    @Transactional
+    public void renameOwnPerson(String subject, PersonalDataChanges changes) {
+        membershipLookup.find(subject).filter(MemberAuthz::tenantActive)
+                .orElseThrow(() -> new NotFoundException("Membership not found"));
+        Person current = persons.findActiveByLogin(subject)
+                .orElseThrow(() -> new NotFoundException("Membership not found"));
+        Person changed = current.withData(changes);
+        ChangedFields fields = ChangedFields.of(current.data(), changed.data());
+        if (fields.isEmpty()) {
+            return;
+        }
+        persons.update(changed);
+        audit.recordAs(current.id(), AuditEvent.of(AuditAction.MEMBER_UPDATED, current.id().value(),
+                Map.of("fields", fields.names())));
     }
 
     /** Cross-tenant index read; must not run inside a tenant-bound transaction. */

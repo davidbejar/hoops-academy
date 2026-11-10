@@ -28,8 +28,16 @@ public class GetMe {
         return viewOf(caller, lookup.loginOf(caller));
     }
 
-    public MeView changeLocale(Caller caller, AppLocale locale) {
-        return viewOf(caller, lookup.changeLocale(caller, locale));
+    /**
+     * The own name first, inside the named academy's scope (404 when the caller is no active member of an ACTIVE
+     * academy there, before anything is stored), then the locale.
+     */
+    public MeView update(Caller caller, MeChanges changes) {
+        changes.ownName().ifPresent(name -> tenantScope.runAs(name.tenant(),
+                () -> lookup.renameOwnPerson(caller.subject(), name.changes())));
+        AppUser user = changes.locale().map(locale -> lookup.changeLocale(caller, locale))
+                .orElseGet(() -> lookup.loginOf(caller));
+        return viewOf(caller, user);
     }
 
     private MeView viewOf(Caller caller, AppUser user) {
