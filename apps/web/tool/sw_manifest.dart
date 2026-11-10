@@ -33,6 +33,43 @@ bool _otherLanguageLandingShot(String path) =>
     path.endsWith('.png') &&
     !path.endsWith('_en.png');
 
+/// Deferred imports whose parts are fetched only when the person asks for
+/// the feature, never at start-up or install (WP97, decision 69): the Excel
+/// export's library. Names are the import prefixes in the code
+/// (`import '...' deferred as xlsx`).
+const onDemandLibraries = {'xlsx'};
+
+/// The parts only the [onDemandLibraries] load, as file names. dart2js lists
+/// the parts of every deferred import in `main.dart.js`
+/// (`deferredPartUris` and `deferredLibraryParts`, a library's parts being
+/// indexes into the former); a part a screen's import needs as well stays
+/// precached, because that screen needs it offline.
+Set<String> onDemandParts(String mainJs) {
+  final uris = RegExp(r'deferredPartUris:\[([^\]]*)\]').firstMatch(mainJs);
+  final libraries = RegExp(r'deferredLibraryParts:\{([^}]*)\}')
+      .firstMatch(mainJs);
+  if (uris == null || libraries == null) return {};
+  final files = [
+    for (final m in RegExp(r'"([^"]+)"').allMatches(uris.group(1)!))
+      m.group(1)!,
+  ];
+  final used = <String, Set<int>>{
+    for (final m in RegExp(
+      r'(\w+):\[([\d,]*)\]',
+    ).allMatches(libraries.group(1)!))
+      m.group(1)!: {
+        for (final i in m.group(2)!.split(','))
+          if (i.isNotEmpty) int.parse(i),
+      },
+  };
+  final onDemand = <int>{for (final name in onDemandLibraries) ...?used[name]};
+  final needed = <int>{
+    for (final e in used.entries)
+      if (!onDemandLibraries.contains(e.key)) ...e.value,
+  };
+  return {for (final i in onDemand.difference(needed)) files[i]};
+}
+
 bool _excluded(String path) =>
     path == 'sw.js' ||
     _otherLanguageLandingShot(path) ||
@@ -60,6 +97,10 @@ List<String> collectPrecache(Directory build) {
         .substring(root.length + 1)
         .replaceAll(r'\', '/');
     if (!_excluded(rel)) files.add(rel);
+  }
+  final mainJs = File('${build.path}/main.dart.js');
+  if (mainJs.existsSync()) {
+    files.removeWhere(onDemandParts(mainJs.readAsStringSync()).contains);
   }
   files.sort();
   for (final required in requiredShellFiles) {

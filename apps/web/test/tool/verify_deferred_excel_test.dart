@@ -50,7 +50,8 @@ void main() {
 
   test('fails when the xlsx import is missing from the build map', () {
     final dir = _build(
-      main: 'var v={deferredPartUris:["main.dart.js_1.part.js"],'
+      main:
+          'var v={deferredPartUris:["main.dart.js_1.part.js"],'
           'deferredLibraryParts:{matches:[0]}};',
     );
     addTearDown(() => dir.deleteSync(recursive: true));
