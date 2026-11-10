@@ -9,6 +9,7 @@ import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/date_field.dart';
 import '../../../core/ui/kit.dart';
+import '../../../core/ui/timezone_note.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
@@ -33,9 +34,6 @@ class TrainingScreen extends ConsumerWidget {
     final caps = ref.watch(capabilitiesProvider);
     final monday = ref.watch(weekStartProvider);
     final sessions = ref.watch(weekSessionsProvider);
-    final zone = ref.watch(tenantZoneProvider).label;
-    final text = Theme.of(context).textTheme;
-    final c = HoopsTokens.colorsOf(context);
     return Scaffold(
       floatingActionButton: caps.canManageAnyTraining
           ? FloatingActionButton.extended(
@@ -57,12 +55,7 @@ class TrainingScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _WeekHeader(monday: monday),
-                  if (zone != null)
-                    Text(
-                      l.timesShownIn(zone),
-                      key: const Key('timezone-note'),
-                      style: text.bodySmall!.copyWith(color: c.inkMuted),
-                    ),
+                  const TimezoneNote(),
                   SeasonBar(
                     onChanged: (season) {
                       // The calendar follows the season: its last week, or this week again.
@@ -248,7 +241,10 @@ class WeekCalendar extends ConsumerWidget {
     Widget framed(Widget child) => ContentFrame(child: child);
     return ListView(
       key: const Key('week-calendar'),
-      padding: const EdgeInsets.only(top: HoopsSpace.sm, bottom: fabClearance),
+      padding: const EdgeInsets.only(
+        top: HoopsSpace.sm,
+        bottom: HoopsSize.fabClearance,
+      ),
       children: [
         for (final day in weekDays(monday)) ...[
           framed(

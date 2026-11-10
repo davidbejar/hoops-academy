@@ -43,7 +43,7 @@ class AbsencesScreen extends ConsumerWidget {
         builder: (context, data) => ListView.separated(
           padding: const EdgeInsets.only(
             top: HoopsSpace.md,
-            bottom: fabClearance,
+            bottom: HoopsSize.fabClearance,
           ),
           itemCount: data.length,
           separatorBuilder: (_, _) => const SizedBox(height: HoopsSpace.gap),

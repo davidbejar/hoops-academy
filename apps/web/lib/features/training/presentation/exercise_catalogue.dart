@@ -34,7 +34,7 @@ class ExerciseCatalogue extends ConsumerWidget {
               key: const Key('exercise-list'),
               padding: const EdgeInsets.only(
                 top: HoopsSpace.md,
-                bottom: fabClearance,
+                bottom: HoopsSize.fabClearance,
               ),
               itemCount: d.items.length + (d.hasMore ? 1 : 0),
               separatorBuilder: (_, _) =>

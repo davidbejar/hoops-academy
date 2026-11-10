@@ -8,9 +8,6 @@ import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart' show AppErrorText;
 import '../../../l10n/gen/app_localizations.dart';
 
-/// Room under the last row of a list so the extended FAB never covers it.
-const fabClearance = HoopsSize.minTapTarget + HoopsSpace.xl + HoopsSpace.sm;
-
 const weekdays = [
   ath.DayOfWeek.MONDAY,
   ath.DayOfWeek.TUESDAY,

@@ -19,7 +19,7 @@ import 'exercise_catalogue.dart';
 import 'exercise_form.dart';
 import 'plan_search.dart' show ExerciseSearchDialog;
 import 'player_picker.dart';
-import 'training_labels.dart' show exerciseFacts, fabClearance;
+import 'training_labels.dart' show exerciseFacts;
 
 /// Plan library: the academy's plans, the templates (read-only, copy on use)
 /// and the exercise catalogue (WP92); one search box for the three tabs.
@@ -234,7 +234,7 @@ class _PlanList extends ConsumerWidget {
       builder: (context, data) => ListView.separated(
         padding: const EdgeInsets.only(
           top: HoopsSpace.md,
-          bottom: fabClearance,
+          bottom: HoopsSize.fabClearance,
         ),
         itemCount: data.length,
         separatorBuilder: (_, _) => const SizedBox(height: HoopsSpace.gap),
@@ -345,7 +345,7 @@ class _PlanBody extends ConsumerWidget {
     return ListView(
       padding: EdgeInsets.only(
         top: WidthClass.of(context).sectionGap,
-        bottom: fabClearance,
+        bottom: HoopsSize.fabClearance,
       ),
       children: [
         ContentFrame(
