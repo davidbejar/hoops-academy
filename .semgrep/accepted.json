@@ -171,6 +171,14 @@
       "fingerprint": "1e3af5068579288e",
       "reason": "By design (WP91, ADR-0029 amendment, V18): the super admin's Users list runs on the platform persistence unit (core_platform, no BYPASSRLS) and binds the nil tenant transaction-locally so the tenant_isolation policies match nothing and only core_platform's own column-granted SELECT policies decide; reviewed by the orchestrator on 2026-11-10.",
       "expires": "2027-05-06"
+    },
+    {
+      "rule": "python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args",
+      "path": "apps/web/tool/excel_on_demand_check.py",
+      "line": 23,
+      "fingerprint": "7ac0c9c664a4e828",
+      "reason": "Developer test tool, not shipped (WP97): CHROMEDRIVER names the chromedriver binary to start, set by the developer (trusted environment), passed as an argv list without a shell; same pattern as offline_cold_start.py.",
+      "expires": "2027-05-06"
     }
   ]
 }

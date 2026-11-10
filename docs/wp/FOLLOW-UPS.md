@@ -278,12 +278,12 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 | 1 | WP93 | Tooling: bump-pins multi-arch pin, hook false positive with a shell test, Podman machine playbook + doctor | Sonnet · medium | Done (skopeo index pin; hook matcher 49 cases; Podman playbook + doctor) |
 | 1 | WP94 | Docs: ER and class diagrams per service, generated and drift-checked | Sonnet · medium | Done (three model pages; `just diagrams`, `diagrams-check`; CI job) |
 | 1 | WP95 | Web leftovers: kit follow-ups, Indonesian bottom nav, audit label, landing screenshots out of the precache | Sonnet · medium | Done (web 1091 tests; kit follow-ups; "Laga"; precache en only) |
-| 2 | WP96 | Core: preferred jersey number with carry-over, free numbers; server-side CSV exports (roster, audit log) | Opus · high | Running |
-| 2 | WP97 | Web: browser-built exports for player stats, box score and team calendar (CSV, deferred XLSX, ICS) | Sonnet · high | Running |
+| 2 | WP96 | Core: preferred jersey number with carry-over, free numbers; server-side CSV exports (roster, audit log) | Opus · high | Done (ADR-0048; core 3.5.0, V19; core 1163 tests, mutation 925/926) |
+| 2 | WP97 | Web: browser-built exports for player stats, box score and team calendar (CSV, deferred XLSX, ICS) | Sonnet · high | Done (web 1372 tests; `excel_community` deferred, not precached) |
 | 2 | WP98 | Events flip: `replica` by default in game and athlete, drift check, shared replica code, e2e await | Opus · high | Running |
-| 2 | WP99 | Web: context switcher, application admin hub, own-name edit | Sonnet · high | Running |
+| 2 | WP99 | Web: context switcher, application admin hub, own-name edit | Sonnet · high | Done (ADR-0049; `/app-admin` routes; web 1250 tests) |
 | 3 | WP100 | Chart and kind: replica default, core SMTP, Envoy Gateway v1.10.0, pending proofs, chart 0.10.0 | Opus · high | After wave 2 |
-| 3 | WP101 | Web: jersey preference and assignment dialogs, roster and audit export buttons | Sonnet · medium | After wave 2 |
+| 3 | WP101 | Web: jersey preference and assignment dialogs, roster and audit export buttons | Sonnet · medium | Running |
 | 4 | WP103 | Seed a test academy through the real API (`just seed-academy`) | Sonnet · medium | After wave 3 |
 | 5 | WP102 | Docs pass | Opus · medium | Last alone |
 
