@@ -123,6 +123,40 @@ void main() {
       }
     });
 
+    group('on-demand deferred libraries (WP97, decision 69)', () {
+      // dart2js lists a deferred import's parts as indexes into
+      // `deferredPartUris`: `xlsx` loads parts 1 and 2; part 1 is also used
+      // by the `matches` screen, part 2 by nothing else.
+      const mainJs =
+          'var v={deferredPartUris:["main.dart.js_1.part.js",'
+          '"main.dart.js_12.part.js","main.dart.js_13.part.js"],'
+          'deferredLibraryParts:{matches:[0,1],xlsx:[1,2],admin:[0]}};';
+
+      setUp(() {
+        File('${build.path}/main.dart.js').writeAsStringSync(mainJs);
+        File('${build.path}/main.dart.js_13.part.js').writeAsStringSync('x');
+      });
+
+      test('the parts only the Excel library loads are not precached', () {
+        final files = collectPrecache(build);
+        expect(files, isNot(contains('main.dart.js_13.part.js')));
+      });
+
+      test('parts shared with a screen stay precached', () {
+        final files = collectPrecache(build);
+        expect(files, contains('main.dart.js_12.part.js'));
+        expect(files, contains('main.dart.js_1.part.js'));
+      });
+
+      test('onDemandParts names the excluded files', () {
+        expect(onDemandParts(mainJs), {'main.dart.js_13.part.js'});
+      });
+
+      test('a build without deferred parts excludes nothing', () {
+        expect(onDemandParts('var v={};'), isEmpty);
+      });
+    });
+
     test('fails when a required shell file is missing from the build', () {
       File('${build.path}/sqlite3.wasm').deleteSync();
       expect(
