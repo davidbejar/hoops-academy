@@ -34,18 +34,25 @@ import org.jboss.logging.Logger;
  * After {@code hoops.outbox.producer-reset-after} consecutive failed sends the producer is closed and a new one is
  * created at the next send ({@code hoops_outbox_producer_resets_total}). A broker that is merely down costs one new
  * producer per that many failed runs; the outbox keeps the events either way.
+ *
+ * <p>Events off (WP91): with {@code hoops.outbox.enabled=false} ({@code CORE_OUTBOX_ENABLED=false}) no producer is ever
+ * created, so nothing connects to a broker or logs the Kafka client's warnings; a send fails at once without counting as
+ * a broker failure. The scheduled publisher does not run either ({@code OutboxPublisherJob}); the outbox still fills.
  */
 @ApplicationScoped
 class KafkaEventBroker implements EventBroker {
 
     private static final Logger LOG = Logger.getLogger(KafkaEventBroker.class);
     static final String CLIENT_ID = "core-events";
+    /** The events-off switch (env {@code CORE_OUTBOX_ENABLED}); {@code OutboxPublisherJob} reads it too. */
+    static final String ENABLED = "hoops.outbox.enabled";
 
     private final Supplier<Producer<String, String>> producers;
     private final Duration timeout;
     private final int resetAfter;
     private final Counter resets;
     private final MeterRegistry registry;
+    private final boolean enabled;
 
     private Producer<String, String> producer;
     private KafkaClientMetrics producerMetrics;
@@ -54,12 +61,18 @@ class KafkaEventBroker implements EventBroker {
     @Inject
     KafkaEventBroker(@Identifier("default-kafka-broker") Map<String, Object> kafka, MeterRegistry registry,
             @ConfigProperty(name = "hoops.outbox.send-timeout", defaultValue = "PT10S") Duration timeout,
-            @ConfigProperty(name = "hoops.outbox.producer-reset-after", defaultValue = "3") int resetAfter) {
-        this(() -> new KafkaProducer<>(producerConfig(kafka)), timeout, resetAfter, registry);
+            @ConfigProperty(name = "hoops.outbox.producer-reset-after", defaultValue = "3") int resetAfter,
+            @ConfigProperty(name = ENABLED, defaultValue = "true") boolean enabled) {
+        this(() -> new KafkaProducer<>(producerConfig(kafka)), timeout, resetAfter, registry, enabled);
     }
 
     KafkaEventBroker(Supplier<Producer<String, String>> producers, Duration timeout, int resetAfter,
             MeterRegistry registry) {
+        this(producers, timeout, resetAfter, registry, true);
+    }
+
+    KafkaEventBroker(Supplier<Producer<String, String>> producers, Duration timeout, int resetAfter,
+            MeterRegistry registry, boolean enabled) {
         if (resetAfter < 1) {
             throw new IllegalArgumentException("hoops.outbox.producer-reset-after must be at least 1: " + resetAfter);
         }
@@ -67,6 +80,7 @@ class KafkaEventBroker implements EventBroker {
         this.registry = registry;
         this.timeout = timeout;
         this.resetAfter = resetAfter;
+        this.enabled = enabled;
         this.resets = Counter.builder("hoops.outbox.producer.resets")
                 .description("Kafka producers the outbox publisher replaced after consecutive failed sends")
                 .register(registry);
@@ -74,6 +88,9 @@ class KafkaEventBroker implements EventBroker {
 
     @Override
     public synchronized void send(String topic, String key, String value) {
+        if (!enabled) {
+            throw new UnavailableException("Events are off (" + ENABLED + "=false): nothing is sent to " + topic, null);
+        }
         try {
             current().send(new ProducerRecord<>(topic, key, value)).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
             consecutiveFailures = 0;
