@@ -24,15 +24,12 @@ public class UpdatePlayerPreference {
     private final PlayerQueries queries;
     private final PlayerRepository players;
     private final PlayerViews views;
-    private final PlayerAccess access;
     private final Authz authz;
 
-    public UpdatePlayerPreference(PlayerQueries queries, PlayerRepository players, PlayerViews views,
-            PlayerAccess access, Authz authz) {
+    public UpdatePlayerPreference(PlayerQueries queries, PlayerRepository players, PlayerViews views, Authz authz) {
         this.queries = queries;
         this.players = players;
         this.views = views;
-        this.access = access;
         this.authz = authz;
     }
 
@@ -41,7 +38,8 @@ public class UpdatePlayerPreference {
             TenantRole.PLAYER})
     public PlayerView preferJersey(PlayerId id, Patch<JerseyNumber> preferred) {
         PlayerRow row = queries.visible(id);
-        authz.require(authz.hasAnyRole(TenantRole.ADMIN, TenantRole.COACH) || access.isLinkedOrSelf(id),
+        authz.require(authz.hasAnyRole(TenantRole.ADMIN, TenantRole.COACH) || authz.isGuardianOf(id.value())
+                || authz.isSelf(id.value()),
                 "Only ADMIN, a COACH, the player's guardian or the player may set the preferred jersey number");
         JerseyNumber current = row.summary().preferredJersey();
         JerseyNumber next = preferred.applyTo(current);

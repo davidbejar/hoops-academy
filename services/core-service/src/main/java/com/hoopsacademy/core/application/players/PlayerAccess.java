@@ -74,11 +74,6 @@ public class PlayerAccess {
         return !pending && relatedPlayers().contains(id);
     }
 
-    /** A PARENT linked to the player, or the PLAYER themselves (whatever other roles the caller holds). */
-    public boolean isLinkedOrSelf(PlayerId id) {
-        return relatedPlayers().contains(id);
-    }
-
     private Set<PlayerId> relatedPlayers() {
         AuthzContext caller = caller();
         Set<PlayerId> ids = new HashSet<>();
