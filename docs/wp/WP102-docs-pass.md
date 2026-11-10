@@ -45,3 +45,22 @@ Depends on: every handover of this round (`docs/wp/WP91-*.md` … `WP103-*.md`),
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built (documentation only): `docs/HANDOVER.md` rewritten for the sixth round (merge order with commits, versions,
+  totals, CI run ids, pending user actions, working conventions incl. the test academy, `just events-drift`,
+  `just diagrams`, `just test-hooks`, next candidates); `docs/wp/FOLLOW-UPS.md` (header, WP102 Done, a "Sixth round"
+  block in Resolved, resolved Open items removed, new Open items from the handovers' open points and the orchestrator's
+  notes); README (features by role, `just seed-academy`, model pages, status); `docs/conformance.md` (sixth-round
+  reconciliation, **V-01 Partial → Implemented**: 55 / 7 / 5 / 0 / 2, S-37, S-38, S-09, baseline); `docs/roadmap.md`;
+  `docs/architecture.md` (replica as the default roster source in the container, request-flow and events diagrams and
+  text, chart 0.10.0, ADR rows 0047–0049, links to the three model pages, counts, new section 12); `docs/adr/README.md`
+  (amendments of 0029, 0031, 0033, 0040; 0047–0049 already in order); `docs/runbooks/release.md` (Envoy Gateway
+  v1.10.0); the user guides es / en / id (super admin: contexts, hub, Users, Approvals, Audit with export; admin:
+  switcher, own name, jersey numbers, exports; coach: catalogue, quick-add, jersey numbers, exports, own name; parent and
+  player: jersey wish, downloads incl. the calendar file, own name).
+- Verified: a relative-link check over every touched Markdown file (23 files, 172 links, 0 broken, anchors included);
+  `just diagrams-check` "pages up to date" (no generated block touched); `gh run list -b main -L 12` for the run ids;
+  `docs/quality/mutation.md` agrees with the scores; the UI labels quoted in the guides were taken from `app_{en,es,id}.arb`.
+- Decisions/ADRs: none.
+- Open points: the guides are written from handovers, labels and code, not from a browser walk-through; Mermaid in
+  `architecture.md` is not rendered locally; the Flutter total is the orchestrator's 1436 at the WP101 merge (WP101's
+  own last run said 1435).

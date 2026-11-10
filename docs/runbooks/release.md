@@ -116,7 +116,7 @@ just kind-up --deploy --from-host
 helm upgrade --install hoops deploy/helm/hoops -n hoops -f values.prod.yaml \
   --set core.image.tag=<sha> --set game.image.tag=<sha> --set athlete.image.tag=<sha> --set web.image.tag=<sha>
 ```
-Edge prerequisites (ADR-0031): the cluster runs Envoy Gateway (kind pins v1.9.3 with Gateway API v1.6.1 CRDs,
+Edge prerequisites (ADR-0031): the cluster runs Envoy Gateway (kind pins v1.10.0 with Gateway API v1.6.1 CRDs,
 `deploy/kind/up.sh`) and provides a GatewayClass (default name `envoy-gateway`; `--set gateway.gatewayClass.create=true`
 renders one). The chart creates the Gateway `hoops` and the HTTPRoutes; for HTTPS create a `kubernetes.io/tls` Secret
 first (e.g. cert-manager) and set `gateway.tls.enabled=true`, `gateway.tls.certificateRefs[0].name=<secret>`,
@@ -129,7 +129,7 @@ Global rate limits (chart 0.3.0, ADR-0033): the rate-limit policies are global, 
 limit service with a Redis backend. The cluster operator owns the Envoy Gateway install; these are the values kind pins
 in `deploy/kind/up.sh`:
 ```bash
-helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v1.9.3 -n envoy-gateway-system --reuse-values \
+helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v1.10.0 -n envoy-gateway-system --reuse-values \
   --set config.envoyGateway.rateLimit.backend.type=Redis \
   --set config.envoyGateway.rateLimit.backend.redis.url=<host:port> \
   --set config.envoyGateway.rateLimit.failClosed=false \

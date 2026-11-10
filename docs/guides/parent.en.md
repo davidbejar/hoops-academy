@@ -50,5 +50,20 @@ the expected band when a norm exists ("Reference pending" marks provisional norm
 You never see other families' children, their stats or their health data. Anything outside your linked players answers
 "We could not find what you are looking for".
 
+## 6. Jersey number wish
+**My players** shows **Jersey number wish** for each linked child: tap it to enter one or two digits, or leave it empty
+to remove it. It is a wish: the coach gives the number when the child joins a team and uses this one if it is free.
+
+## 7. Downloading files
+Built on your device from what the screen has already loaded (download icon **Export**): **Season statistics**
+(one row per match plus the totals) and a match's box score as a **CSV file** or an **Excel file**; the matches list and
+the training week as a team calendar (matches and sessions of the selected season) as CSV, Excel or **Calendar file
+(.ics)**, which a phone or desktop calendar can import. Excel is loaded the first time you choose it and needs a
+connection then; without one the app says so and the CSV file still works.
+
+## 8. Your name
+**Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
+connection). Your e-mail stays with the administrator.
+
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

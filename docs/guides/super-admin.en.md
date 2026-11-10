@@ -6,20 +6,30 @@ You sign in with your e-mail address and your password.
 
 The **super administrator** runs the platform: creates and withdraws academies and reads their usage. It is a Keycloak
 realm role (`super_admin`), not an academy role. A super administrator **cannot read academy content** (players, matches,
-health data): the platform has no access to it. The one exception is the list of an academy's **administrators** (their
-names, e-mail and invitation state), which the super administrator manages (see below, ADR-0023).
+health data): the platform has no access to it. The exceptions are the list of an academy's **administrators** (their
+names, e-mail and invitation state), which the super administrator manages (see below, ADR-0023), and the **Users**
+search, which shows each login with its name and roles in every academy (ADR-0029 amendment).
 
-## Finding the console
-- A super administrator with no academy membership lands on **Platform** directly.
-- One who also belongs to an academy sees that academy's navigation; open **Profile > Platform console** to get to the
-  platform.
+## Application admin and contexts
+Your login can work in several **contexts**: **Application admin** (because you are a super administrator) and each
+academy you are a member of. Each context has its own menu.
+- With Application admin as your only context (no academy membership) you land on its **Overview** directly.
+- With several contexts you land on the one you used last in this browser, or on the list to choose one. Switch at any
+  time with the context chip in the header: on a phone it opens a sheet at the bottom, on a wider screen a panel beside
+  the side menu (button **Switch context**). Each row shows the name and your role there, e.g. "Application admin /
+  Super admin" or "Hangtuah / Administrator". The choice is remembered in this browser and forgotten when you sign out.
+- An old link to a `/platform/...` page opens the same page under Application admin.
 
-## Tenant (academy) list
-**Platform** lists academies with a search box (name or slug) and status chips: **Active**, **Suspended**, **Withdrawn**.
-Open one for its detail and usage.
+The Application admin menu has **Overview** (the hub), **Academies**, **Users**, **Approvals** (a badge counts the
+pending academy requests) and **Audit**. The hub shows the same areas as cards (**Pending approvals**, **Audit trail**)
+plus **Billing**, which says "Coming soon": there is nothing to set up yet.
+
+## Academies
+**Academies** lists academies with a search box (name or slug) and status chips: **Active**, **Suspended**,
+**Withdrawn**. Open one for its detail and usage.
 
 ## Creating an academy
-**Platform > New academy** (see also `docs/runbooks/onboard-tenant.md`):
+**Academies > New academy** (see also `docs/runbooks/onboard-tenant.md`):
 - **Academy name**, **Identifier (slug)** (lowercase letters, numbers and hyphens, 3-50), **Time zone**, **Language**.
 - **First admin e-mail**, first name and last name.
 On **Create**, the academy and its first administrator exist at once, default age categories (U8 to U18, SENIOR) are
@@ -60,7 +70,7 @@ Actions on an academy's detail page:
 Every lifecycle change is written to the academy's append-only audit trail.
 
 ## Administrators
-On the academy detail page (**Platform >** the academy) the **Administrators** section lists each administrator with
+On the academy detail page (**Academies >** the academy) the **Administrators** section lists each administrator with
 name, e-mail, invitation state (**Invitation pending** / **Invitation accepted**) and their other roles in the academy.
 Every row has **Edit**, **Remove administrator** and, while the invitation is pending, the key button **Generate a new
 temporary password**; **Add
@@ -95,12 +105,36 @@ seasons, matches, live matches, match events, training sessions, attendance reco
 body measurements. If a service did not answer, a notice "No data from: ..." names it; the rest still shows. A snapshot is
 stored per academy per day (02:30 UTC); a trend chart is not in the app yet.
 
-## Activity (audit trail of every academy)
-**Academies' activity** above the academy list shows the audit trail of every academy, newest first, each entry with its
-academy; the clock icon on an academy's page shows that academy only. Filter by a date range and by one or several
-actions; page with the arrows at the bottom. Names are shown for academies and for each academy's current administrators
-only; other members and players appear by type, because the platform does not read academy content beyond the
-administrators' identity (ADR-0023, ADR-0029). Entries are append-only and kept (no retention job yet).
+## Users
+**Users** finds any login of the platform: type at least 2 characters of a name or an e-mail (upper and lower case do
+not matter); 25 results per page. Each login shows its e-mail and, for every academy it belongs to, the person's name,
+roles and state (also inactive members and suspended or withdrawn academies), or "Not a member of any academy". Tap an
+academy to open its page. The list is read-only: change an administrator's e-mail or issue a temporary password on the
+academy's page (**Administrators**, above).
+
+## Approvals (academy requests)
+Visitors ask for an academy with the form on the landing page. **Approvals** lists those requests by state
+(**Pending**, **Accepted**, **Rejected**); the badge in the menu counts the pending ones. Requests from inside an
+academy (player approvals) are not here.
+- **Accept** opens **Create the academy**, pre-filled from the request: check the identifier (slug), the time zone and
+  the administrator's names. The requester becomes the academy's first administrator, whatever role they gave. A new
+  login gets a temporary password shown once (see "First sign-in" above); a login that already exists gets none. The
+  requester receives an acceptance e-mail in the request's language with the sign-in address, never the password.
+- **Reject** asks for a **Reason**, which is e-mailed to the requester.
+- If the e-mail could not be sent the request shows **E-mail not sent**; the decision stands.
+- A request someone else has already decided answers "This request has already been decided".
+
+## Audit trail
+**Audit** shows the audit trail of every academy, newest first, each entry with its academy; the clock icon on an
+academy's page shows that academy only. Filter by a date range and by one or several actions; page with the arrows at
+the bottom. Names are shown for academies and for each academy's current administrators only; other members and
+players appear by type, because the platform does not read academy content beyond the administrators' identity
+(ADR-0023, ADR-0029). Entries are append-only and kept (no retention job yet).
+
+The download icon (**Export the activity (CSV)**) saves everything the current filters select, not only the page on
+screen, as a CSV file in the app's language. It needs a connection (the server builds the file) and stops at 10,000
+rows: narrow the dates or the actions if it says so. The export is itself recorded as **Audit trail exported** in each
+academy that has rows in the file.
 
 ---
 Status: written from the implemented screens, the contract and the translation files; not yet checked in a manual browser walk-through.

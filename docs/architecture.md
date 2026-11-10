@@ -46,8 +46,8 @@ flowchart TB
   N -->|"/api/game"| GAME
   N -->|"/api/athlete"| ATH
   N -. "/internal blocked: 403" .-> N
-  GAME -->|"/internal/authz, roster (REST, 30 s cache)"| CORE
-  ATH -->|"/internal/authz, roster (REST, 30 s cache)"| CORE
+  GAME -. "rest fallback: /internal/authz, roster (30 s cache)" .-> CORE
+  ATH -. "rest fallback: /internal/authz, roster (30 s cache)" .-> CORE
   CORE -->|"/internal/usage"| GAME
   CORE -->|"/internal/usage"| ATH
   CORE --> PG
@@ -55,18 +55,21 @@ flowchart TB
   ATH --> PG
   KC --> KCDB
   CORE -->|"Admin API"| KC
-  CORE -. "outbox publisher" .-> RP
-  RP -. "roster events" .-> GAME
-  RP -. "roster events" .-> ATH
+  CORE -->|"outbox publisher"| RP
+  RP -->|"roster events into the replicas (default source)"| GAME
+  RP -->|"roster events into the replicas (default source)"| ATH
   CORE & GAME & ATH -. "OTLP traces, logs" .-> OT
   N -. "edge spans (Envoy)" .-> OT
 ```
-Dotted arrows between core, Redpanda and the services are the v2 event path (section 5): built and running, but game
-and athlete still read through REST unless `hoops.roster.source=replica`. Dotted arrows to the collector exist only in
-the chart with `global.observability.enabled` (section 11).
+Since 2026-11-10 (decision 66, WP98, WP100) game and athlete read the roster and the authorisation context from their
+own replicas, fed by core's events (section 5): `hoops.roster.source=replica` is the default in the services, in compose
+and in the chart wherever `events.enabled` is on. The dotted REST arrows to core's `/internal` are the fallback
+(`GAME_ROSTER_SOURCE` / `ATHLETE_ROSTER_SOURCE=rest`, and the chart without events); `just events-drift` compares core's
+rows with both replicas. Dotted arrows to the collector exist only in the chart with `global.observability.enabled`
+(section 11).
 Locally: `podman compose` (Postgres, Keycloak, MailHog, Redpanda on :19092 without auth, nginx on :8080) plus the three
-services on the host. On kind: Helm umbrella chart `hoops` (0.9.0), CloudNativePG clusters, Keycloak, Mailpit (Service
-`mailhog`), Envoy Gateway (Gateway API, ADR-0031) on :8090 with its rate limit service and the chart's in-memory
+services on the host. On kind: Helm umbrella chart `hoops` (0.10.0), CloudNativePG clusters, Keycloak, Mailpit (Service
+`mailhog`, also core's SMTP server since chart 0.10.0), Envoy Gateway v1.10.0 (Gateway API, ADR-0031) on :8090 with its rate limit service and the chart's in-memory
 `ratelimit-redis` (global rate limits with per-minute and per-second rules; Redis ACL user `ratelimit`, ADR-0033 and
 its amendment), and one Redpanda node behind `events.enabled` (section 5) (`runbooks/kind.md`). Secrets come from
 `.env` through `deploy/kind/secrets.sh`, or from the External Secrets Operator when `externalSecrets.enabled` is set
@@ -98,8 +101,12 @@ sequenceDiagram
   W->>X: GET /api/game/matches (Authorization, X-Tenant-Id)
   X->>S: forward
   S->>S: validate JWT (sub required, else 401)
-  S->>C: GET /internal/authz/{tenant}/{sub} (service token, cached 30 s)
-  C-->>S: roles, staffTeamIds, linkedPlayerIds, ownPlayerId, timezone
+  alt replica (default since 2026-11-10)
+    S->>D: authz context from the roster replica (game.*_ref)
+  else rest (fallback)
+    S->>C: GET /internal/authz/{tenant}/{sub} (service token, cached 30 s)
+    C-->>S: roles, staffTeamIds, linkedPlayerIds, ownPlayerId, timezone
+  end
   Note over S: not a member of the tenant gives 404, never 403
   S->>S: @RequiresTenantRole + fine-grained Authz checks
   S->>D: BEGIN, then select set_config('app.tenant_id', tenant, true)
@@ -141,7 +148,7 @@ Idempotency key is the client event id; `(match, deviceId, clientSeq)` is unique
 authorization only, never game consistency; contradictions become projection warnings that staff fix with VOID
 (ADR-0014). The Dart projector mirrors the Java one and both pass the same vectors (`libs/contracts/vectors`).
 
-## 5. Roster events (v2, behind a switch)
+## 5. Roster events and replicas (the default roster source since 2026-11-10)
 ```mermaid
 flowchart LR
   UC["core use case<br/>(roster write)"] -->|"same transaction"| OB[("core.outbox<br/>topic, seq")]
@@ -153,10 +160,11 @@ flowchart LR
   AC --> AR[("athlete.*_ref<br/>applied_event, parked_event")]
   GR --> GP{"hoops.roster.source"}
   AR --> AP{"hoops.roster.source"}
-  GP -->|"replica"| GRP["RosterPort + authz context<br/>from the replica"]
-  GP -->|"rest (default)"| REST["REST to core /internal<br/>(30 s cache)"]
-  AP -->|"replica"| ARP["RosterPort + authz context<br/>from the replica"]
-  AP -->|"rest (default)"| REST
+  GP -->|"replica (default)"| GRP["RosterPort + authz context<br/>from the replica"]
+  GP -.->|"rest (fallback)"| REST["REST to core /internal<br/>(30 s cache)"]
+  AP -->|"replica (default)"| ARP["RosterPort + authz context<br/>from the replica"]
+  AP -.->|"rest (fallback)"| REST
+  GR & AR -. "just events-drift" .-> DR["drift check against<br/>core's rows"]
 ```
 - **Producer (ADR-0008 amendment, WP67).** Every roster change appends its aggregate's full current state to
   `core.outbox` in the writer's transaction; a scheduled publisher sends pending rows in outbox order per aggregate
@@ -170,8 +178,10 @@ flowchart LR
   NetworkPolicy, a bootstrap Job.
 - **Replicas (ADR-0037, WP68, WP69).** game and athlete apply each event in the event's tenant (RLS tenant tables),
   skip known `eventId`s, never let an older `occurredAt` win, keep removals soft and park invalid records in a
-  write-only table. `hoops.roster.source=rest|replica` (default `rest`) selects both the `RosterPort` and the
-  authorisation context resolver; the consumer runs in both modes, so the replica fills in the shadow. A consumer that
+  write-only table. `hoops.roster.source=replica|rest` (default `replica` since the flip of 2026-11-10, ADR-0037
+  amendment, WP98; the test profile pins `rest`) selects both the `RosterPort` and the authorisation context resolver;
+  the consumer runs in both modes, so a rollback to `rest` keeps the replica filled. Both consumers poll every 100 ms
+  (a replica typically lags core by 1–2 s; the e2e journeys wait for it after a roster change). A consumer that
   exhausts its retries turns the pod's health DOWN. Removals are soft (identity kept, state nulled, reads treat the row
   as absent; a tenant removal is marked, not cascaded); a nightly retention job per service prunes `applied_event`
   after 7 days and `parked_event` rows 30 days after an operator's inspection mark, walking the tenants of the global
@@ -179,9 +189,15 @@ flowchart LR
 - **Chart (WP71, chart 0.7.0).** `events.enabled` renders the broker; `global.events.enabled` must match (the service
   subcharts see only `global`), and then each service gets `KAFKA_BOOTSTRAP_SERVERS`, SASL settings and its password
   from `hoops-redpanda-<service>`; without events the publisher and consumers are switched off.
-  `game.rosterSource` / `athlete.rosterSource` set the switch. Proven on kind: publish → apply in under a second,
-  athlete answering from its replica with core scaled to 0, and (WP86) game on `replica`. The default stays `rest`
-  until the shadow period of ADR-0037 "When rest flips" is done and the owner decides.
+  `game.rosterSource` / `athlete.rosterSource` set the switch: empty (the default since chart 0.10.0, WP100) renders
+  `replica` with events and `rest` without; an explicit `rest` rolls one service back; `replica` without events is
+  refused. With events off core's producer is never created (`CORE_OUTBOX_ENABLED=false`, WP91). Proven on kind:
+  publish → apply in under a second, athlete answering from its replica with core scaled to 0, (WP86) game on
+  `replica`, and (WP100) a fresh install on `replica` in both services with `just events-drift --kind` equal.
+- **Drift check (WP98).** `just events-drift [--kind]` compares core's persons, players, teams, assignments, staff and
+  guardian links with each replica (missing, extra, differing rows per aggregate, no personal data in the output) and
+  exits non-zero on a difference; runbook `runbooks/events.md` "Drift check" and "Rollback to rest". It replaced the
+  shadow period over days that ADR-0037 first asked for.
 
 ## 6. Eligibility and season rollover
 ```mermaid
@@ -238,7 +254,7 @@ request; any requester (admin, coach or parent) becomes the first ADMIN. Details
 | Identity | Keycloak authenticates; tenant roles live in `core.membership_role` | [0005](adr/0005-keycloak-authentication-only.md) |
 | Isolation | shared schema, `tenant_id` + RLS + Hibernate filter, non-owner app roles | [0006](adr/0006-rls-multitenancy.md), [0011](adr/0011-tenant-binding-in-transactions.md) |
 | Services | three: core, game, athlete | [0007](adr/0007-three-services.md) |
-| Integration | synchronous REST behind `RosterPort` by default; core outbox publisher (self-recovering producer, removals, backfill), Redpanda and roster replicas (soft removals, retention) behind `hoops.roster.source` | [0008](adr/0008-sync-rest-then-outbox.md), [0036](adr/0036-redpanda-event-broker.md), [0037](adr/0037-roster-replicas-from-core-events.md) |
+| Integration | core outbox publisher (self-recovering producer, removals, backfill), Redpanda and roster replicas (soft removals, retention) behind `RosterPort`, the default since 2026-11-10; synchronous REST to core as the fallback (`hoops.roster.source=rest`); drift check | [0008](adr/0008-sync-rest-then-outbox.md), [0036](adr/0036-redpanda-event-broker.md), [0037](adr/0037-roster-replicas-from-core-events.md) |
 | Logo | stored in Postgres, ETag cached | [0009](adr/0009-tenant-logo-in-postgres.md) |
 | Age rule | `BIRTH_YEAR` default, `BIRTHDAY` optional | [0010](adr/0010-age-rule-birth-year-default.md) |
 | Secrets on Kubernetes | Secrets referenced by name; ESO beyond local; Reloader rolls pods on a rotation | [0012](adr/0012-kubernetes-secrets-strategy.md) |
@@ -264,9 +280,12 @@ request; any requester (admin, coach or parent) becomes the first ADMIN. Details
 | Security events, SBOM | Keycloak login events, `hoops.security` denial events, CycloneDX SBOM per image | [0043](adr/0043-security-events-login-events-and-sbom.md) |
 | SAST / DAST | SpotBugs, CodeQL, Semgrep, ZAP gates with expiring acceptances | [0045](adr/0045-sast-dast-gates-and-expiring-acceptances.md) |
 | Observability | OpenTelemetry collector for traces and logs, backend of the environment | [0046](adr/0046-opentelemetry-collector-traces-and-logs.md) |
+| Exercise catalogue | global exercises (read-only, es/en/id) and the academy's own in one table; items keep `exerciseId` | [0047](adr/0047-exercise-catalogue-global-and-academy-exercises.md) |
+| Exports, jersey numbers | one CSV spec; roster and audit CSV built by core (audited, rate-limited); other exports built in the browser; preferred number with carry-over | [0048](adr/0048-exports-csv-spec-and-server-side-roster-and-audit-exports.md) |
+| Web contexts | academies of a login plus the application admin, each with its own menu; `/app-admin` hub | [0049](adr/0049-contexts-and-the-application-admin.md) |
 
-Not done yet: the switch to `replica` by default (ADR-0037 "When rest flips": a shadow period); billing exists as seams (`billing.plan`,
-`billing.tenant_subscription`, a no-op `EntitlementService`). See `roadmap.md`.
+Not done yet: billing exists as seams (`billing.plan`, `billing.tenant_subscription`, a no-op `EntitlementService`; the
+application admin hub shows a placeholder); PDF exports; the purge job. See `roadmap.md`.
 
 ## 9. Data ownership
 | Schema | Owner service | Main tables | App role / migrator |
@@ -274,36 +293,39 @@ Not done yet: the switch to `replica` by default (ADR-0037 "When rest flips": a 
 | `core` | core-service | `tenant`, `tenant_settings`, `tenant_logo`, `app_user`, `person`, `membership_role`, `user_membership_index`, `player`, `guardian_link`, `season`, `age_category`, `team`, `team_player`, `team_staff`, `eligibility_case`, `approval_request`, `usage_snapshot`, `outbox` (published to Redpanda), `audit_event`, `academy_request` (platform table, WP90) | `core_app`, `core_platform` (registry, usage, billing, audit insert only, outbox queue columns read-only, academy requests) / `core_migrator` |
 | `billing` | core-service | `plan`, `tenant_subscription` | `core_platform` / `core_migrator` |
 | `game` | game-service | `match`, `match_roster`, `match_event` (append-only), `match_player_stats`, `match_summary` projections; roster replica `*_ref` (soft `removed`), `applied_event`, `parked_event` (global; the app role inserts, and deletes for retention), `replica_tenant` (global, tenants to prune) | `game_app` / `game_migrator` |
-| `athlete` | athlete-service | `training_schedule`, `training_session`, `training_plan` (templates have no tenant; texts in es/en/id), `plan_item`, `plan_assignment`, `plan_completion`, `planned_absence`, `attendance`, `injury`, `body_measurement`, `physical_test_type`, `physical_test_result`, `physical_test_norm`; roster replica `*_ref` (soft `removed`), `applied_event`, `parked_event` (global; the app role inserts, and deletes for retention), `replica_tenant` (global, tenants to prune) | `athlete_app` / `athlete_migrator` |
+| `athlete` | athlete-service | `training_schedule`, `training_session`, `training_plan` (templates have no tenant; texts in es/en/id), `exercise` (catalogue: global rows without a tenant, es/en/id, plus the academy's own; WP92), `plan_item` (optional `exercise_id`), `plan_assignment`, `plan_completion`, `planned_absence`, `attendance`, `injury`, `body_measurement`, `physical_test_type`, `physical_test_result`, `physical_test_norm`; roster replica `*_ref` (soft `removed`), `applied_event`, `parked_event` (global; the app role inserts, and deletes for retention), `replica_tenant` (global, tenants to prune) | `athlete_app` / `athlete_migrator` |
 | database `keycloak` | Keycloak | users, credentials, sessions | role `keycloak` |
 Cross-service reads go through `RosterPort` (REST to core `/internal`, or the service's own replica fed by core's
 events); no service reads another schema. game denormalises
 player names at roster creation so offline sync never depends on core. The exact table lists are authoritative in each
-service's Flyway migrations.
+service's Flyway migrations; the generated ER and class diagrams per service are in
+[`domain/core-model.md`](domain/core-model.md), [`domain/game-model.md`](domain/game-model.md) and
+[`domain/athlete-model.md`](domain/athlete-model.md) (`just diagrams`, drift-checked by `just diagrams-check` in CI).
 
 ## 10. Testing strategy and current counts
-JVM counts are from the final full verify of the fifth round (WP84 at 49ba555, 2026-11-07, `./mvnw -B -ntp -T 1C
-verify`); the Flutter count from `flutter test` on `main` after the round. They change with every commit.
+JVM counts are from the last full verify of the sixth round (WP98 after its rebase, 2026-11-10, `./mvnw -B -ntp -T 1C
+verify`); the Flutter count from `flutter test` on the combined tree at the WP101 merge. They change with every commit.
 
 | Layer | Kinds of test | Count |
 |---|---|---|
-| `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON (incl. control characters and NUL as 400), paging offsets, security events and token-failure reasons, `ContainerStarts`, the real realm in Keycloak Testcontainers (`TestRealm`) | 392 |
-| `libs/contracts` | OpenAPI convention tests (incl. the named public operations), JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation, strict-validator compatibility (no `allOf`, ADR-0027), `clear`-list convention per service (ADR-0032), season history and academy request contracts, the core event schemas incl. `.removed` | 279 |
-| `services/core-service` | domain unit and jqwik property tests (eligibility, sign-up), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, outbox appends per use case, the publisher and its producer recovery on Redpanda, backfill, season history, academy requests with decision mails, token audience and refresh rotation through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile) | 914 |
-| `services/game-service` | domain/projection tests with shared vectors, event admission rules, feed visibility in SQL against `EventVisibility` (ADR-0030), ingest API tests, season close, WireMock peers, RLS suites, contract validation, `RosterPort` and authz contract cases on REST and replica, consumer, replay, removals and retention | 468 |
-| `services/athlete-service` | domain, norm seed and band resolver tests, template languages, session plans and quick-add, season history caps, role matrix, RLS suites (incl. nullable-tenant tables), contract validation, `RosterPort` and membership contracts on REST and replica, consumer, replay, removals and retention | 994 |
-| `apps/web` | `flutter test`: unit, provider, widget per role and state, design-system kit and contrast, goldens (360 px, light and dark), projector vectors, sync worker, sign-out, refresh serialisation, tenant/person-scoped match cache, service worker / CSP / build guards, l10n key parity, landing page and its per-locale screenshots, academy requests, past seasons, demo mock routes, role filtering and persistence, capability matrix, the Dart mutation tool | 1077 |
-| `e2e` | black-box journey through the gateway with real Keycloak logins: 26 ordered steps, two tenants, every request and response validated against the OpenAPI, token audience and refresh-token reuse, edge headers, the sign-up flow, mail checks against MailHog or Mailpit; `MailSinkTest` unit tests run in every `verify` | 6 unit + 26 steps, green on compose (CI; locally also with `replica` in both services) |
+| `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON (incl. control characters and NUL as 400), paging offsets, security events and token-failure reasons, `ContainerStarts`, the real realm in Keycloak Testcontainers (`TestRealm`), the shared replica retention and roster broker fixture, shipped-config checks | 403 |
+| `libs/contracts` | OpenAPI convention tests (incl. the named public operations), JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation, strict-validator compatibility (no `allOf`, ADR-0027), `clear`-list convention per service (ADR-0032), season history and academy request contracts, the core event schemas incl. `.removed`, platform users, the exercise catalogue, jersey numbers and the CSV exports | 315 |
+| `services/core-service` | domain unit and jqwik property tests (eligibility, sign-up), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, outbox appends per use case, the publisher and its producer recovery on Redpanda, backfill, season history, academy requests with decision mails, token audience and refresh rotation through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile), platform users and own name, jersey carry-over, CSV exports | 1163 |
+| `services/game-service` | domain/projection tests with shared vectors, event admission rules, feed visibility in SQL against `EventVisibility` (ADR-0030), ingest API tests, season close, WireMock peers, RLS suites, contract validation, `RosterPort` and authz contract cases on REST and replica, consumer, replay, removals and retention, the shipped roster source per profile | 467 |
+| `services/athlete-service` | domain, norm seed and band resolver tests, template languages, session plans and quick-add, season history caps, role matrix, RLS suites (incl. nullable-tenant tables), contract validation, `RosterPort` and membership contracts on REST and replica, consumer, replay, removals and retention, the exercise catalogue and its migration | 999 |
+| `apps/web` | `flutter test`: unit, provider, widget per role and state, design-system kit and contrast, goldens (360 px, light and dark), projector vectors, sync worker, sign-out, refresh serialisation, tenant/person-scoped match cache, service worker / CSP / build guards, l10n key parity, landing page and its per-locale screenshots, academy requests, past seasons, demo mock routes, role filtering and persistence, capability matrix, the Dart mutation tool, contexts and the application admin hub, exports (CSV, ICS, deferred XLSX), jersey dialogs, the exercise catalogue | 1436 |
+| `e2e` | black-box journey through the gateway with real Keycloak logins: 26 ordered steps, two tenants, every request and response validated against the OpenAPI, token audience and refresh-token reuse, edge headers, the sign-up flow, mail checks against MailHog or Mailpit; `MailSinkTest` unit tests run in every `verify` | 6 unit + 26 steps, green on compose with the replica default (WP98, CI) |
 | Browser | `tool/web_smoke.sh` (mock mode) in the `ci` job `web-browser`; browser login round trip with a temporary password in the `e2e` job; `tool/lighthouse.sh` and `tool/offline_cold_start.sh` locally (WP54) | CI green on `main`; Lighthouse PWA score 1 |
 | Security (CI) | SpotBugs + find-sec-bugs in `verify`; CodeQL `security-extended` and Semgrep (registry + repository rules) with SARIF gates; ZAP API scan per service after the journeys and the ZAP baseline; gate scripts' unit tests (ADR-0045) | 0 SpotBugs findings; every CodeQL/Semgrep/ZAP result fixed or accepted with an expiry |
-| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform (incl. the ExternalSecret schema), Gateway API route and policy assertions, Redpanda and event wiring, Reloader annotations, collector and NetworkPolicies, gitleaks; `deploy/kind/smoke.sh` and `ratelimit-check.sh` (with the load guard) on kind | 176 checks (WP90), kubeconform 254/254 (WP84); kind proofs of WP86 |
-| Mutation (on demand) | PIT per module (`just mutation [module]`) and the Dart tool for the web rule code (`just web-mutation`), workflow `mutation.yml` manual + monthly; never in `verify`; baselines equal to the scores rounded down; see [`quality/mutation.md`](quality/mutation.md) | common 312/313, core 777/778, game 548/550, athlete 687/687, web 430/430 |
+| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform (incl. the ExternalSecret schema), Gateway API route and policy assertions, Redpanda and event wiring, Reloader annotations, collector and NetworkPolicies, gitleaks; `deploy/kind/smoke.sh` and `ratelimit-check.sh` (with the load guard) on kind | 182 checks, kubeconform 278/278 (WP100); kind proofs of WP100 |
+| Mutation (on demand) | PIT per module (`just mutation [module]`) and the Dart tool for the web rule code (`just web-mutation`), workflow `mutation.yml` manual + monthly; never in `verify`; baselines equal to the scores rounded down; see [`quality/mutation.md`](quality/mutation.md) | common 337/338, core 925/926, game 525/527, athlete 690/690, web 430/430 |
 
-JVM total: **3,047 tests** (0 failures; plus the e2e module's 6 unit tests, the 26 journey steps skipped without a
-stack), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **1077 tests**, analyze and format
-check clean. e2e: **26/26 green on compose** in every CI `e2e` run on `main` (with the browser login round trip and the
-ZAP API scans), 23/23 locally with `replica` in both services (WP81); on kind the WP86 proofs (full deploy with ESO and
-events, rotation, game flip, events off, `tilt ci`) passed on chart 0.9.0.
+JVM total: **3,347 tests** (0 failures; plus the e2e module's 6 unit tests, the 26 journey steps skipped without a
+stack), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **1436 tests**, analyze and format
+check clean. e2e: **26/26 green on compose** with the replica as the roster source (WP98) and in every CI `e2e` run on
+`main` (with the browser login round trip and the ZAP API scans); on kind the WP100 proofs (fresh install with ESO and
+events on `replica`, events off with a quiet core, producer recovery, core's mail to Mailpit, Envoy Gateway v1.10.0
+limits, a Redis password rotation, `just events-drift --kind`) passed on chart 0.10.0 (`tilt ci` last ran on 0.9.0).
 Statement-by-statement evidence: [`conformance.md`](conformance.md).
 
 ## 11. Security posture
@@ -343,7 +365,7 @@ Statement-by-statement evidence: [`conformance.md`](conformance.md).
 - Edge: nginx locally; Gateway API with Envoy Gateway in the chart (ADR-0031): per-IP global rate limits shared by
   every Envoy replica (Envoy Gateway's rate limit service with a Redis counter store behind a NetworkPolicy and an ACL
   whose only user `ratelimit` may run `PING`/`INCRBY`/`EXPIRE` on the rate-limit keys; per-minute limits plus per-second
-  burst caps, 10/s token + login form and 20/s `events:batch`; fail open when Redis is down, ADR-0033 and its WP46
+  burst caps, 10/s token + login form and 20/s `events:batch`, 10/min + 2/s on each CSV export (WP100); fail open when Redis is down, ADR-0033 and its WP46
   amendment), `/internal` and the Keycloak admin console routed to a 403, HSTS on the HTTPS listener; no
   body-size limit at the gateway (the services reject bodies above 2 MB, accepted in ADR-0033). The edge forwards no
   client `Upgrade` / `Connection` and pins `Host` (compose; the chart with `gateway.hostname`), and its deny pages and
@@ -351,3 +373,27 @@ Statement-by-statement evidence: [`conformance.md`](conformance.md).
 Documents: [`security/review-2026-11.md`](security/review-2026-11.md) (24 findings: 0 critical, 0 high, 6 medium;
 plus SD-01..SD-08, 0 high), [`security/sast-dast.md`](security/sast-dast.md),
 [`security/threat-model.md`](security/threat-model.md), [`security/asvs-checklist.md`](security/asvs-checklist.md).
+
+## 12. Contexts, exports, jersey numbers and the exercise catalogue (sixth round)
+- **Contexts and the application admin (ADR-0049, WP91, WP99).** A context is one academy of the login or, for a super
+  admin, "Application admin"; each has its own menu, and a switcher in the shell (bottom sheet on a phone, panel beside
+  the rail) moves between them. With one context the app lands in it, with several on the last one used in this browser
+  or on the chooser. Application admin is a hub at `/app-admin` (Academies, Users, Pending approvals with a badge, Audit
+  trail, a Billing placeholder); old `/platform/...` web links redirect. Users reads `GET /platform/users` (core 3.4.0;
+  logins with their memberships per academy, through `core_platform` and V18 column grants; read-only, not audited).
+  Every member edits their own first and last name through `PATCH /me` with `tenantId` (decision 73).
+- **Exports (ADR-0048, WP96, WP97, WP101).** One CSV spec (UTF-8 with BOM, RFC 4180, CRLF, a formula guard, labels in
+  the user's language, `hoops-<slug>-<what>-<yyyyMMdd>`). Core builds the files with personal data or a trail as
+  `:export` operations: the team roster with staff and guardians (ADMIN and the team's coach), the academy audit trail
+  and the platform audit trail; each writes an audit row (`team.roster_exported`, `audit.exported`), stops at 10,000
+  rows (422 `EXPORT_TOO_LARGE`) and is rate-limited at the gateway. The browser builds player stats, the box score and
+  the team calendar from data it already holds: CSV, Excel (`.xlsx`, a deferred library loaded on first use and kept out
+  of the precache, decision 69) and ICS for the calendar.
+- **Jersey numbers (ADR-0048, WP96, WP101).** A player has an optional preferred number (`core.player`, V19), set by
+  ADMIN or COACH and wished by the linked PARENT or the PLAYER. Assigning a player without a number takes the preferred
+  one if free on the team, else the number of the most recent numbered assignment if free, else none; the response says
+  which (`jerseySource`), and `GET /teams/{id}/jersey-numbers` lists the taken numbers for the picker.
+- **Exercise catalogue (ADR-0047, WP92, athlete 3.0.0).** Global exercises (the template items plus the Cooper test,
+  es / en / id, read-only) and the academy's own (created, edited and archived by plan managers) in one table with a
+  nullable owner and per-command RLS; template items reference the catalogue, and quick-add copies an exercise's text
+  into a plan or session item that keeps the `exerciseId`.

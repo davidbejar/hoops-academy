@@ -6,20 +6,31 @@ Anda masuk dengan alamat e-mail dan kata sandi Anda.
 
 **Super administrator** menjalankan platform: membuat dan menarik akademi serta melihat penggunaannya. Ini adalah peran
 realm Keycloak (`super_admin`), bukan peran akademi. Super administrator **tidak dapat membaca isi akademi** (pemain,
-pertandingan, data kesehatan): platform tidak punya akses ke sana. Satu-satunya pengecualian adalah daftar
-**administrator** akademi (nama, email, dan status undangan), yang dikelola oleh super administrator (lihat di bawah,
-ADR-0023).
+pertandingan, data kesehatan): platform tidak punya akses ke sana. Pengecualiannya adalah daftar **administrator**
+akademi (nama, email, dan status undangan), yang dikelola oleh super administrator (lihat di bawah, ADR-0023), dan
+pencarian **Pengguna**, yang menampilkan setiap login dengan nama dan perannya di setiap akademi (amandemen ADR-0029).
 
-## Menemukan konsol
-- Super administrator tanpa keanggotaan akademi langsung masuk ke **Platform**.
-- Yang juga tergabung di sebuah akademi melihat navigasi akademi itu; buka **Profil > Konsol platform** untuk ke platform.
+## Admin aplikasi dan konteks
+Login Anda dapat bekerja dalam beberapa **konteks**: **Admin aplikasi** (karena Anda super administrator) dan setiap
+akademi tempat Anda menjadi anggota. Setiap konteks punya menunya sendiri.
+- Jika satu-satunya konteks Anda adalah Admin aplikasi (tanpa keanggotaan akademi), Anda langsung masuk ke
+  **Ringkasan**.
+- Dengan beberapa konteks Anda masuk ke konteks terakhir yang dipakai di peramban ini, atau ke daftar untuk memilih.
+  Ganti kapan saja lewat chip konteks di header: di ponsel terbuka lembar di bawah, di layar lebar sebuah panel di
+  samping menu samping (tombol **Ganti konteks**). Setiap baris menampilkan nama dan peran Anda, mis. "Admin aplikasi /
+  Super admin" atau "Hangtuah / Administrator". Pilihan diingat di peramban ini dan dilupakan saat Anda keluar.
+- Tautan lama ke halaman `/platform/...` membuka halaman yang sama di dalam Admin aplikasi.
 
-## Daftar akademi
-**Platform** menampilkan akademi dengan kolom pencarian (nama atau slug) dan filter status: **Aktif**, **Ditangguhkan**,
+Menu Admin aplikasi berisi **Ringkasan** (hub), **Akademi**, **Pengguna**, **Permintaan** (lencana menghitung
+permintaan akademi yang menunggu) dan **Audit**. Hub menampilkan area yang sama sebagai kartu (**Persetujuan tertunda**,
+**Jejak audit**) ditambah **Penagihan**, yang bertuliskan "Segera hadir": belum ada yang perlu diatur.
+
+## Akademi
+**Akademi** menampilkan akademi dengan kolom pencarian (nama atau slug) dan filter status: **Aktif**, **Ditangguhkan**,
 **Ditarik**. Buka satu akademi untuk melihat detail dan penggunaannya.
 
 ## Membuat akademi
-**Platform > Akademi baru** (lihat juga `docs/runbooks/onboard-tenant.md`):
+**Akademi > Akademi baru** (lihat juga `docs/runbooks/onboard-tenant.md`):
 - **Nama akademi**, **Pengenal (slug)** (huruf kecil, angka, dan tanda hubung, 3-50), **Zona waktu**, **Bahasa**.
 - **Email admin pertama**, nama depan, dan nama belakang.
 Saat **Buat**, akademi dan administrator pertamanya langsung ada, kategori usia bawaan (U8 sampai U18, SENIOR) terisi, dan
@@ -62,7 +73,7 @@ Aksi di halaman detail akademi:
 Setiap perubahan siklus hidup tercatat di jejak audit akademi (hanya bisa ditambah).
 
 ## Administrator
-Di halaman detail akademi (**Platform >** akademi itu) bagian **Administrator** menampilkan setiap administrator dengan
+Di halaman detail akademi (**Akademi >** akademi itu) bagian **Administrator** menampilkan setiap administrator dengan
 nama, email, status undangan (**Undangan tertunda** / **Undangan diterima**), dan peran lain mereka di akademi. Setiap
 baris punya **Ubah administrator**, **Hapus administrator** dan, selama undangan masih tertunda, tombol kunci **Buat kata sandi sementara baru**;
 **Tambah administrator** ada di bagian atas. Bagian ini berlaku untuk akademi aktif dan ditangguhkan; untuk akademi yang
@@ -100,12 +111,37 @@ pertandingan, pertandingan langsung, peristiwa pertandingan, sesi latihan, catat
 dan pengukuran tubuh. Jika sebuah layanan tidak menjawab, pemberitahuan "Tidak ada data dari: ..." menyebutkannya dan
 sisanya tetap tampil. Satu rekam jepret disimpan per akademi per hari (02:30 UTC); grafik tren belum ada di aplikasi.
 
-## Aktivitas (jejak audit semua akademi)
-**Aktivitas akademi** di atas daftar akademi menampilkan jejak audit semua akademi, dari yang terbaru, setiap entri dengan
-akademinya; ikon jam di halaman sebuah akademi hanya menampilkan akademi itu. Saring menurut rentang tanggal dan satu atau
-beberapa tindakan; pindah halaman dengan panah di bawah. Nama hanya ditampilkan untuk akademi dan administratornya saat
-ini; anggota lain dan pemain tampil menurut jenisnya, karena platform tidak membaca isi akademi selain identitas
-administratornya (ADR-0023, ADR-0029). Entri hanya bisa ditambah dan disimpan (belum ada retensi).
+## Pengguna
+**Pengguna** mencari login mana pun di platform: ketik minimal 2 karakter dari nama atau email (huruf besar atau kecil
+tidak berpengaruh); 25 hasil per halaman. Setiap login menampilkan emailnya dan, untuk setiap akademi tempat ia
+bergabung, nama orang itu, perannya, dan statusnya (termasuk anggota tidak aktif dan akademi yang ditangguhkan atau
+ditarik), atau "Bukan anggota akademi mana pun". Ketuk sebuah akademi untuk membuka halamannya. Daftar ini hanya untuk
+dibaca: email administrator atau kata sandi sementara diubah di halaman akademi (**Administrator**, di atas).
+
+## Permintaan (permintaan akademi)
+Pengunjung meminta akademi lewat formulir di halaman depan. **Permintaan** menampilkan permintaan itu menurut status
+(**Menunggu**, **Diterima**, **Ditolak**); lencana di menu menghitung yang menunggu. Permintaan dari dalam akademi
+(persetujuan pemain) tidak ada di sini.
+- **Terima** membuka **Buat akademi**, terisi dari permintaan: periksa pengenal (slug), zona waktu, dan nama
+  administrator. Peminta menjadi administrator pertama akademi, apa pun peran yang ia sebutkan. Login baru mendapat
+  kata sandi sementara yang ditampilkan satu kali (lihat "Masuk pertama kali" di atas); login yang sudah ada tidak
+  mendapatkannya. Peminta menerima email penerimaan dalam bahasa permintaan berisi alamat masuk, tidak pernah kata
+  sandinya.
+- **Tolak** meminta **Alasan**, yang dikirim ke peminta lewat email.
+- Jika email gagal dikirim, permintaan menampilkan **Email tidak terkirim**; keputusan tetap berlaku.
+- Permintaan yang sudah diputuskan orang lain menjawab "Permintaan ini sudah diputuskan".
+
+## Audit
+**Audit** menampilkan jejak audit semua akademi, dari yang terbaru, setiap entri dengan akademinya; ikon jam di halaman
+sebuah akademi hanya menampilkan akademi itu. Saring menurut rentang tanggal dan satu atau beberapa tindakan; pindah
+halaman dengan panah di bawah. Nama hanya ditampilkan untuk akademi dan administratornya saat ini; anggota lain dan
+pemain tampil menurut jenisnya, karena platform tidak membaca isi akademi selain identitas administratornya (ADR-0023,
+ADR-0029). Entri hanya bisa ditambah dan disimpan (belum ada retensi).
+
+Ikon unduh (**Ekspor aktivitas (CSV)**) menyimpan semua yang dipilih filter saat ini, bukan hanya halaman di layar,
+sebagai file CSV dalam bahasa aplikasi. Perlu koneksi (file dibuat di server) dan berhenti di 10.000 baris: jika
+diminta, persempit tanggal atau tindakan. Ekspor itu sendiri tercatat sebagai **Jejak audit diekspor** di setiap
+akademi yang punya baris di file tersebut.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan, kontrak, dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

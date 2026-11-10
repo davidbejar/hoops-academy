@@ -40,5 +40,21 @@ entrenador registra una prueba y la norma es provisional verás "Referencia pend
 "No hay conexión con el servidor" o el aviso de sin conexión indican que no hay red; lo que ya abriste sigue visible. "Tu
 sesión ha caducado" significa que debes iniciar sesión otra vez.
 
+## Dorsal deseado
+**Yo** muestra el **Dorsal deseado**: tócalo para indicar una o dos cifras, o déjalo vacío para quitarlo. Es un deseo:
+el entrenador asigna el dorsal cuando entras en un equipo y usa este si está libre.
+
+## Descargar archivos
+Se generan en tu dispositivo con lo que la pantalla ya cargó (icono de descarga **Exportar**): las **Estadísticas de
+temporada** (una fila por partido más los totales) y las estadísticas de un partido como **Archivo CSV** o **Archivo
+Excel**; la lista de partidos y la semana de entrenos como calendario del equipo (partidos y sesiones de la temporada
+elegida) en CSV, Excel o **Archivo de calendario (.ics)**, que el calendario del móvil o del ordenador puede importar.
+Excel se carga la primera vez que lo eliges y entonces necesita conexión; sin ella la aplicación lo indica y el CSV sigue
+funcionando.
+
+## Tu nombre
+**Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
+conexión). El correo lo cambia el administrador.
+
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.

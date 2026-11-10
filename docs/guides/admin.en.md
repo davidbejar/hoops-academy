@@ -11,7 +11,10 @@ decide on player requests. Menu names below are the labels shown in the English 
 - Sign in with your e-mail and the temporary password the platform administrator gave you; the first time, Keycloak
   asks you to choose your own password (at least 12 characters). No invitation e-mail is sent (ADR-0024).
 - Bottom bar on a phone (side rail on a wide screen): **Admin**, **Teams**, **Matches**, **Training**, **Players**.
-- Tap the academy logo/name in the top bar to **Switch academy** if you belong to several.
+- If your login belongs to several academies, the context chip in the top bar (**Switch context**) moves between
+  them; the app opens the one you used last in this browser.
+- **Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
+  connection). Your e-mail stays with the administrator.
 - **Profile** (top bar) holds **Language** (Español, English, Bahasa Indonesia) and **Sign out**.
 
 ## 1. Academy profile and logo
@@ -109,6 +112,36 @@ suspended…). Each entry names the action, what it was about and who did it ("S
 administrator" for the super admin, whose identity is not shown; the reason of a suspension or withdrawal is). Names are shown as they are today; an entry about something that no longer exists
 shows its type only. Filter by a date range and by one or several actions; move between pages with the arrows at the
 bottom. Only administrators see it. Entries are never edited or deleted, and they are kept (no automatic clean-up yet).
+
+## 11. Jersey numbers
+- A player can have a **Preferred jersey number** (player page, **Change preferred number**; one or two digits; empty
+  removes it). You and the coaches set it; a parent or the player may set it as a wish (they are told the coach
+  decides).
+- When you assign a player to a team (**Roster > Assign player**, or **Assign to a team** on the player page) without
+  typing a number, the app picks one: the preferred number if it is free on that team, else the number of the player's
+  most recent team that had one, if free there, else none. A message says which rule applied, e.g. "Jersey 7 assigned:
+  the number the player prefers."; when no number was assigned the number picker opens at once.
+- The number picker (also behind **Change jersey number**) lists the **Taken numbers** with their players and the
+  **Free numbers** (0-99, tap one to fill it in). A taken number is refused with its holder ("7 is taken by ...").
+- A season rollover keeps the numbers of the copied assignments.
+
+## 12. Exports
+Made by the server (they need a connection, are written in the app's language and stop at 10,000 rows):
+- **Team roster**: the download icon in a team's top bar (**Export the roster (CSV)**) saves the team's players with
+  their data, category and eligibility, each player's active guardians with their contact data, and the team's staff
+  as a second block. Administrators and the team's coach have it (also a coach of the team in an ended season). Each
+  export appears in the activity as **Team roster exported**.
+- **Activity**: the download icon on **Activity** (**Export the activity (CSV)**) saves every entry the current filters
+  select, not only the page on screen; if there are more than 10,000 rows, narrow the dates or the actions. Recorded
+  as **Audit trail exported**.
+
+Built on your device from what the screen has already loaded (download icon **Export**): **Season statistics**
+(one row per match plus the totals) and a match's box score as a **CSV file** or an **Excel file**; the matches list and
+the training week as a team calendar (matches and sessions of the selected season) as CSV, Excel or **Calendar file
+(.ics)**, which a phone or desktop calendar can import. Excel is loaded the first time you choose it and needs a
+connection then; without one the app says so and the CSV file still works.
+
+File names look like `hoops-<academy>-<what>-<yyyyMMdd>.csv`; the CSV files open directly in Excel.
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

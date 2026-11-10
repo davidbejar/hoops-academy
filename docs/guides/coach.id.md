@@ -15,6 +15,9 @@ Anda adalah **Pelatih** atau **Asisten pelatih**. Hak Anda berlaku untuk tim tem
 | Cedera, tinggi/berat, hasil tes fisik | ya | ya |
 | Menetapkan pemain ke tim, menyelesaikan kasus kelayakan (tim sendiri) | ya | tidak (hanya baca) |
 | Mengajukan pemain baru atau pengunduran (perlu persetujuan administrator) | ya | tidak |
+| Mengubah nomor punggung pilihan pemain | ya | tidak (hanya baca) |
+| Mengekspor daftar tim (CSV) | ya (tim sendiri) | tidak |
+| Katalog latihan: membuat, mengubah, mengarsipkan latihan sendiri | ya | ya |
 
 Layar yang tidak diizinkan menampilkan "Hanya baca: Anda tidak berhak mengubah ini."
 
@@ -84,6 +87,43 @@ Tab **Latihan**: kalender mingguan dengan sebelumnya/berikutnya/hari ini dan fil
 untuk administrator. **Permintaan saya** menampilkannya; batalkan yang tertunda dengan **Batalkan permintaan**. Untuk
 mengeluarkan pemain dari tim Anda, gunakan **Keluarkan** di detail pemain: ini dikirim sebagai permintaan. Sampai
 disetujui, pemain hanya terlihat oleh Anda dan administrator. Anda tidak dapat menyetujui permintaan sendiri.
+
+## 7. Katalog latihan dan menambah latihan
+**Latihan > Rencana** punya tab ketiga, **Latihan**: katalog latihan.
+- Latihan **Global** (latihan dari templat ditambah tes Cooper, dalam bahasa Anda) hanya bisa dibaca. Latihan milik
+  akademi dibuat dengan **Latihan baru**, diubah, diarsipkan (**Arsipkan**) dan dipulihkan (**Pulihkan**) oleh pelatih,
+  asisten pelatih, dan administrator. Saring dengan **Semua**, **Global**, dan **Akademi**; **Tampilkan arsip** ikut
+  menampilkan yang diarsipkan; **Muat lagi** di bagian akhir. Pencarian rencana juga menemukan latihan katalog.
+- **Tambah latihan** di sebuah sesi, di dialog **Sesi baru**, dan **Tambah dari katalog** di editor rencana: cari
+  (mis. "cooper"); latihan katalog tampil lebih dulu, item yang cocok dari rencana dan templat Anda di bawahnya. Centang
+  beberapa lalu tekan **Tambah (n)**: ditambahkan sesuai urutan Anda mencentang. Di dialog sesi baru latihan ditambahkan
+  setelah sesi dibuat; jika gagal, sesi tetap ada dan dialog menjelaskan sebabnya.
+- Item yang ditambahkan menyimpan teksnya sendiri, yang boleh Anda ubah, dan bertanda **Dari katalog latihan**.
+  Mengarsipkan latihan tidak mengubah item yang memakainya, tetapi latihan yang diarsipkan tidak dapat ditambahkan lagi
+  ("Latihan itu diarsipkan: pilih yang lain").
+
+## 8. Nomor punggung
+- Halaman pemain menampilkan **Nomor punggung pilihan**. Pelatih mengubahnya (**Ubah nomor pilihan**; satu atau dua
+  angka, kosong menghapusnya); asisten pelatih hanya melihatnya. Orang tua dan pemain boleh mengisinya sebagai keinginan.
+- Saat Anda menetapkan pemain ke salah satu tim Anda tanpa mengetik nomor, aplikasi memakai nomor pilihan jika kosong
+  di tim itu; jika tidak, nomor dari tim terbaru pemain yang punya nomor, jika kosong; jika tidak, tidak ada, dan
+  menyebut aturan yang dipakai. Tanpa nomor, pemilih langsung terbuka: menampilkan **Nomor terpakai** beserta pemainnya
+  dan **Nomor kosong** (0-99); nomor terpakai ditolak dengan menyebut pemakainya.
+
+## 9. Ekspor
+- **Daftar tim** (hanya pelatih tim itu, juga tim yang Anda latih di musim yang sudah selesai): ikon unduh di bilah atas
+  tim (**Ekspor daftar pemain (CSV)**) menyimpan pemain dengan datanya, kategori, kelayakan, dan kontak walinya, serta
+  staf sebagai blok kedua. Dibuat oleh server: perlu koneksi, memakai bahasa aplikasi, dan tercatat di aktivitas
+  akademi. Asisten pelatih tidak punya ekspor ini.
+- Dibuat di perangkat Anda dari data yang sudah dimuat layar (ikon unduh **Ekspor**): **Statistik musim** (satu baris per
+  pertandingan ditambah total) dan statistik sebuah pertandingan sebagai **File CSV** atau **File Excel**; daftar
+  pertandingan dan minggu latihan sebagai kalender tim (pertandingan dan sesi musim yang dipilih) dalam CSV, Excel, atau
+  **File kalender (.ics)**, yang bisa diimpor kalender ponsel atau komputer. Excel dimuat saat pertama kali Anda memilihnya
+  dan saat itu perlu koneksi; tanpa koneksi aplikasi memberi tahu dan file CSV tetap bisa dipakai.
+
+## 10. Nama Anda
+**Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
+perlu koneksi). Email Anda diubah oleh administrator.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

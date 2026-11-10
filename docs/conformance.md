@@ -1,4 +1,4 @@
-# Spec conformance checklist (WP20 review, 2026-11-02; reconciled 2026-11-05, WP26, 2026-11-06, after WP37, WP42, WP51 and WP71, and 2026-11-07, after WP90)
+# Spec conformance checklist (WP20 review, 2026-11-02; reconciled 2026-11-05, WP26, 2026-11-06, after WP37, WP42, WP51 and WP71, 2026-11-07, after WP90, and 2026-11-10, after WP103)
 
 This page walks the original requirements — [`SPEC.md`](SPEC.md) sentence by sentence, the two additions the user made
 when the plan was locked (trilingual UI, admin-uploaded logo), and the domain rules of [`PLAN.md`](PLAN.md) §2 — and
@@ -30,6 +30,15 @@ academies are requested from the landing page and accepted or rejected by the su
 past seasons are read-only history for former staff and admins (ADR-0042, WP80; R-14); SAST/DAST gates, security
 events, an SBOM per image and an OpenTelemetry collector were added (ADR-0043, ADR-0045, ADR-0046; WP83–WP86); V-01
 gained the producer recovery, removals, backfill and housekeeping (WP81, WP82) but the default is still `rest`.
+The reconciliation after the sixth round (WP91–WP103, all merged on 2026-11-10): **V-01 moved from Partial to
+Implemented** (the replica is the default roster source of game and athlete in the services, compose and the chart with
+events, a drift check `just events-drift` compares core with both replicas, `rest` stays the fallback; ADR-0037
+amendment, decision 66, WP98, WP100), so the count is 55 / 7 / 5 / 0 / 2. Also: an exercise catalogue with global and
+academy exercises (ADR-0047, WP92, athlete 3.0.0; S-37); a preferred jersey number with carry-over on assignment and
+the taken numbers per team (ADR-0048, WP96, WP101; beyond the spec); CSV exports of the roster and the audit trails built by core,
+and CSV / Excel / ICS exports of player stats, box score and team calendar built in the browser (ADR-0048, WP96, WP97,
+WP101); the application admin hub with a Users area and a context switcher (ADR-0049, WP91, WP99; S-38); a member
+edits their own name (WP91, WP99); chart 0.10.0 with Envoy Gateway v1.10.0 (WP100; S-04).
 
 **Status legend**
 - **Implemented** — built as asked and covered by automated tests.
@@ -48,15 +57,15 @@ Flutter tests run by `flutter test` in `apps/web`; e2e steps are methods of `e2e
 
 | Status | Count |
 |---|---|
-| Implemented | 54 |
-| Partial | 8 |
+| Implemented | 55 |
+| Partial | 7 |
 | Deviated | 5 |
 | Not implemented | 0 |
 | Deferred-v2 | 2 |
 | **Total statements** | **69** |
 
 (Spec statements S-01…S-50, user additions U-01…U-02, plan §2 rules R-01…R-15, v2 items V-01…V-02; one row each.
-Partial: S-04, S-09, S-16, S-43, S-44, R-13, R-15, V-01. Deviated: S-25, S-41, R-01, R-04, R-09.
+Partial: S-04, S-09, S-16, S-43, S-44, R-13, R-15. Deviated: S-25, S-41, R-01, R-04, R-09.
 Deferred-v2: S-15, V-02.)
 
 ### Top gaps a user should know
@@ -75,7 +84,9 @@ Deferred-v2: S-15, V-02.)
    (WP65), 0.6.0 adds Redpanda and 0.7.0 wires the services to it (WP66, WP71; kind smoke 46 checks with events end
    to end and the athlete replica flip). Chart 0.8.0 adds Stakater Reloader for rotated Secrets (WP87) and 0.9.0 an
    OpenTelemetry collector (WP86); WP86 re-proved on kind the full `up.sh --eso --deploy`, a rotation, the game
-   replica flip, events off and `tilt ci`. No cluster beyond kind exists (S-04).
+   replica flip, events off and `tilt ci`. Chart 0.10.0 (WP100) runs both services on the replica with events, sends
+   core's mail to Mailpit, rate-limits the CSV exports and moves to Envoy Gateway v1.10.0; its kind proofs passed
+   (`tilt ci` was not re-run on 0.10.0). No cluster beyond kind exists (S-04).
 3. **Event feed visibility (F-01) — resolved in WP33.** The feed now follows the box score's rule (ADR-0030): ADMIN and
    team staff read every event, anybody else team-level events plus their own or linked players' (S-30, R-11).
 4. **Fitness norms are partly placeholders.** Since WP62 (2026-11-06), 475 of 630 norm rows are sourced (beep test
@@ -93,10 +104,9 @@ Deferred-v2: S-15, V-02.)
    session's plan, a location, a note, an injury's dates or a team alias can be removed (S-36, S-35). Since WP52 the
    app also removes a jersey, edits a match and a member's personal data and the academy's contact e-mail / website.
 7. **Players see their own line in the live box score** since WP28 (S-46); no longer a gap.
-8. **Billing is seams only** (S-15, S-16). The outbox is published since WP67 (Redpanda, ADR-0036), and game and
-   athlete can serve their roster from replicas of those events (ADR-0037), but the default is still the REST path
-   until a shadow period over days (the backfill, producer recovery, removals and the game flip on kind are done,
-   WP81, WP82, WP86; V-01).
+8. **Billing is seams only** (S-15, S-16; the application admin hub shows a Billing placeholder, WP99). The outbox is
+   published since WP67 (Redpanda, ADR-0036), and since 2026-11-10 game and athlete serve their roster from replicas
+   of those events by default (ADR-0037 amendment, WP98, WP100; `just events-drift` checks them; V-01).
 9. **CI** is green on GitHub since 2026-11-02 (`ci` incl. OWASP dependency-check with a valid NVD key, `e2e` journey
    on the runner, `images` built, scanned and pushed to ghcr.io), apart from one `trivy-fs` failure on 3b59360 fixed on
    2026-11-06; `ci`, `e2e` and `images` green on bb68194 (WP39), 33441be (WP41), 71e459a (WP50), a99c211 (WP44),
@@ -107,6 +117,8 @@ Deferred-v2: S-15, V-02.)
    gates (SpotBugs in `verify`, CodeQL, Semgrep, ZAP API scans; ADR-0045, WP83) and two more workflows `codeql` and
    `semgrep`; an SBOM per image (WP85); all five workflows green at the end of the round (49ba555), after fixes for
    the reds during the round (`docs/HANDOVER.md`). Mutation after WP88/WP84: common 312/313, core 777/778, game 548/550, athlete 687/687, web 430/430.
+   Sixth round: a `model-diagrams` CI job (WP94); every workflow green at the end of the round after fixes for the reds
+   during it (`docs/HANDOVER.md`); mutation common 337/338, core 925/926, game 525/527, athlete 690/690.
 10. **Withdrawn/suspended tenants**: members are blocked at once in core but up to 30 s later in game/athlete (membership
     cache); Keycloak logins themselves stay enabled; both accepted by design on 2026-11-05 (decision 6, ADR-0025: a
     login may belong to other academies); no purge job (R-15).
@@ -123,7 +135,7 @@ Deferred-v2: S-15, V-02.)
 | S-06 | Frontend: avoid Node, use something different | Implemented | Flutter/Dart only; sqlite3.wasm fetched + `dart compile js` for the drift worker (`tool/fetch_web_db_assets.sh`) | no `package.json` in the repo; WP11/WP13. (A one-off `deno` run checked `sw.js` in WP14; not part of the toolchain) |
 | S-07 | Backend with docker compose, but with Podman | Implemented | `infra/compose/compose.yaml` (Postgres 17, Keycloak 26.8.1, MailHog, nginx) + `e2e/bin/services-up.sh` | WP1 checks; **e2e journey 20/20 green on compose, three consecutive runs** (WP18b) |
 | S-08 | Then, when the app works, kind + Helm + Tilt | Implemented | `deploy/kind/{up,down,secrets,seed-users,smoke}.sh`, `Tiltfile`, `just kind-up` / `just tilt` | WP16: `tilt ci` green for game + athlete + web; WP18: core/game/athlete via Helm + smoke. WP30: the Tiltfile runs `scripts/sync-chart-files.sh` before rendering; WP36: Gateway API routes and rate limits checked on kind; WP40: global rate limits (Redis) checked with 1 and 2 Envoy replicas; WP42: `just tilt ci -- --from-host` "All workloads are healthy" with core, game, athlete and web on a fresh cluster (5 min 55 s) |
-| S-09 | Write tests for everything | Partial | JUnit 5/AssertJ/jqwik/REST Assured/WireMock/ArchUnit/Testcontainers as non-owner roles; `flutter test`; e2e module | 2,481 JVM tests (last full builds of round 4: contracts 223, common 186, core 871, game 411, athlete 790) plus 4 e2e unit tests, 778 Flutter tests, 23 e2e steps on compose (CI) and 21 on kind (mail checks included); JaCoCo gates (≥ 80 %, domain ≥ 90 %) met; all three CI workflows green since 2026-11-02; mutation testing on demand (PIT, WP37: common 99.1 %, core 99.6 %, game 99.5 %, athlete 100 %; latest core 558/560, game 438/440, athlete 471/471). Browser smoke and login round trip in CI (WP55). Gaps: Lighthouse and airplane-mode scripts local only, several WPs admit code written before its tests. Fifth round: 3,047 JVM tests (contracts 279, common 392, core 914, game 468, athlete 994, WP84), 1077 Flutter tests, 26 e2e steps on compose; SpotBugs + find-sec-bugs in `verify`, CodeQL, Semgrep and ZAP API scans in CI (ADR-0045); mutation baselines equal to the scores and a Dart mutation tool for the web rule code (WP88) |
+| S-09 | Write tests for everything | Partial | JUnit 5/AssertJ/jqwik/REST Assured/WireMock/ArchUnit/Testcontainers as non-owner roles; `flutter test`; e2e module | 2,481 JVM tests (last full builds of round 4: contracts 223, common 186, core 871, game 411, athlete 790) plus 4 e2e unit tests, 778 Flutter tests, 23 e2e steps on compose (CI) and 21 on kind (mail checks included); JaCoCo gates (≥ 80 %, domain ≥ 90 %) met; all three CI workflows green since 2026-11-02; mutation testing on demand (PIT, WP37: common 99.1 %, core 99.6 %, game 99.5 %, athlete 100 %; latest core 558/560, game 438/440, athlete 471/471). Browser smoke and login round trip in CI (WP55). Gaps: Lighthouse and airplane-mode scripts local only, several WPs admit code written before its tests. Sixth round: 3,347 JVM tests (contracts 315, common 403, core 1163, game 467, athlete 999, WP98), 1436 Flutter tests, 26 e2e steps on compose with the replica default. Fifth round: 3,047 JVM tests (contracts 279, common 392, core 914, game 468, athlete 994, WP84), 1077 Flutter tests, 26 e2e steps on compose; SpotBugs + find-sec-bugs in `verify`, CodeQL, Semgrep and ZAP API scans in CI (ADR-0045); mutation baselines equal to the scores and a Dart mutation tool for the web rule code (WP88) |
 | S-10 | One big git project or several: your choice | Implemented | single monorepo (ADR-0002) | repo layout |
 | S-11 | A lightweight database that works well in k8s | Implemented | PostgreSQL 17, one database, schema per service, CloudNativePG on kind (`charts/databases`) | WP16 CNPG clusters healthy, managed roles reconciled; RLS suites. (Postgres rather than an embedded DB: chosen for RLS and CNPG) |
 | S-12 | Make sure secrets are not pushed to git | Implemented | `.env` ignored, `.env.example` placeholders, gitleaks pre-commit + CI, realm export without credentials, Secrets from `.env` (ADR-0012) | WP0 (fake AWS key blocked), WP16/WP17 `helm template … \| gitleaks detect --pipe` clean, `gitleaks detect --no-git` hits only in ignored `.env`; `NoBuiltInCredentialsTest` (game, athlete) |
@@ -151,8 +163,8 @@ Deferred-v2: S-15, V-02.)
 | S-34 | Starting team, minutes played, when they came to the court | Implemented | `match_roster.is_starter`; SUB_IN/SUB_OUT with period + clock; `seconds_played`, `was_starter` projected; event log shows each substitution | `MinutesTest` (re-entry, period boundaries, overtime), vector `substitutions-and-minutes`; `startWithoutStarterIs422` |
 | S-35 | Coach, assistant coach and parent can enter injuries and expected return date | Implemented | `injury(occurred_on, body_part, severity, expected_return_on ≥ occurred_on, actual_return_on, OPEN/RECOVERED)`; PARENT for linked players (create/update, not delete); availability derived. **Web**: injury edit dialog (dates, description, return; emptied fields in `clear`, WP48) | `InjuryApiTest`, `HealthRoleMatrixTest`, `HealthDomainTest`; web `health_test.dart` (incl. the edit dialog); e2e `injuryMakesPlayerUnavailableThenMeasurementAndPhysicalTestWithBand` |
 | S-36 | Coach and assistant enter the training calendar: location, schedule and training plan | Implemented | schedules (weekday, time, duration, location, validity) materialised 8 weeks ahead in the tenant zone; ad-hoc sessions; `training_session.plan_id` in the API. **Web**: plan picker on ad-hoc sessions and a session edit dialog (WP35); emptied fields are cleared and a plan can be detached (`clear` list, ADR-0032, WP39); plans also reach players through assignments (team/player, due date). Since WP78 (ADR-0041, athlete 2.3.0) a session references any readable plan or template directly (no assignment) through a plan picker, and exercises can be quick-added into the session's own plan | `ScheduleApiTest`, `SessionMaterialiserTest` (DST Madrid, Jakarta), `SessionPlanApiTest`; web `calendar_test.dart`, `schedules_absences_test.dart`, `session_edit_test.dart`; e2e `scheduleMaterialisesSessionsAndAttendanceHonoursPlannedAbsence` |
-| S-37 | Predefined training plans, and the coach can also enter their own | Implemented | 10 global templates (`R__plan_templates.sql`, texts in es/en/id from `Accept-Language` since WP61, ADR-0039), copy-on-use into the tenant; own plans with items, reorder, archive; plan search also matches item titles (`matchedItems`, WP78) and items are copied into a plan or session (quick-add); an exercise catalogue entity is planned (decision 54) | `SessionQuickAddApiTest`, `TemplateSeedTest`, `TemplateRlsIsolationTest` (templates read-only), `TrainingPlanApiTest`; web `plans_test.dart`; e2e `planCopyOnUseAssignmentAndCompletion` |
-| S-38 | Overall admin manages tenants: sign up and withdraw tenants | Implemented | `/platform/tenants` create (tenant + FREE subscription + seeded categories + first ADMIN login, saga ADR-0013), suspend, reactivate, withdraw (retention `P365D`); `super_admin` realm role. Sign-up is invitation-only since WP90 (ADR-0044, core 3.3.0): a visitor requests an academy from the landing page (`POST /platform/academy-requests`, anonymous, 202, honeypot, rate-limited), the super admin accepts (the academy is created with the requester as first ADMIN) or rejects with a reason, and core e-mails the decision; the super admin also lists, adds, edits and removes each academy's administrators (`/platform/tenants/{id}/admins`, ADR-0023). A new login's temporary password is returned once and Keycloak forces a new password at the first sign-in; no setup e-mail (ADR-0024, re-issue while PENDING) | `PlatformTenantResourceTest` (saga compensation cases), `PlatformAdminResourceTest`, `OnboardingRepairTest`, `KeycloakTemporaryPasswordKeycloakTest` (`-Pkeycloak-it`), `AcademyRequestContractTest`, `domain.signup` tests; web `platform_test.dart`, `academy_requests_test.dart`; e2e steps 70–71 (request, accept, decision mail, first login; rejection mail); e2e `superAdminCreatesTenantWithFirstAdmin`, `firstAdminSignsInWithTheTemporaryPasswordAndMustChooseTheirOwn`, `suspendedTenantAnswersNotFound…` |
+| S-37 | Predefined training plans, and the coach can also enter their own | Implemented | 10 global templates (`R__plan_templates.sql`, texts in es/en/id from `Accept-Language` since WP61, ADR-0039), copy-on-use into the tenant; own plans with items, reorder, archive; plan search also matches item titles (`matchedItems`, WP78) and items are copied into a plan or session (quick-add). Since WP92 (ADR-0047, athlete 3.0.0) an exercise catalogue: 60 global exercises (the template items plus the Cooper test, es/en/id, read-only) and the academy's own (created, edited, archived by plan managers); templates reference it; quick-add from the catalogue in the session, the new-session dialog and the plan editor | `ExerciseApiTest`, `ExerciseRoleMatrixTest`, `ExerciseRlsIsolationTest`, `ExerciseCatalogueMigrationTest`, `ExerciseCatalogueContractTest`; web `exercise_catalogue_test.dart`; `SessionQuickAddApiTest`, `TemplateSeedTest`, `TemplateRlsIsolationTest` (templates read-only), `TrainingPlanApiTest`; web `plans_test.dart`; e2e `planCopyOnUseAssignmentAndCompletion` |
+| S-38 | Overall admin manages tenants: sign up and withdraw tenants | Implemented | `/platform/tenants` create (tenant + FREE subscription + seeded categories + first ADMIN login, saga ADR-0013), suspend, reactivate, withdraw (retention `P365D`); `super_admin` realm role. Sign-up is invitation-only since WP90 (ADR-0044, core 3.3.0): a visitor requests an academy from the landing page (`POST /platform/academy-requests`, anonymous, 202, honeypot, rate-limited), the super admin accepts (the academy is created with the requester as first ADMIN) or rejects with a reason, and core e-mails the decision; the super admin also lists, adds, edits and removes each academy's administrators (`/platform/tenants/{id}/admins`, ADR-0023). A new login's temporary password is returned once and Keycloak forces a new password at the first sign-in; no setup e-mail (ADR-0024, re-issue while PENDING). Since WP99 (ADR-0049) the web console is an application admin hub (Academies, Users across academies through `GET /platform/users` of core 3.4.0, Pending approvals, Audit trail with CSV export, Billing placeholder) reached through a context switcher | `PlatformUserResourceTest`, `PlatformUsersContractTest`; web `context_landing_test.dart`, `platform_users_test.dart`; `PlatformTenantResourceTest` (saga compensation cases), `PlatformAdminResourceTest`, `OnboardingRepairTest`, `KeycloakTemporaryPasswordKeycloakTest` (`-Pkeycloak-it`), `AcademyRequestContractTest`, `domain.signup` tests; web `platform_test.dart`, `academy_requests_test.dart`; e2e steps 70–71 (request, accept, decision mail, first login; rejection mail); e2e `superAdminCreatesTenantWithFirstAdmin`, `firstAdminSignsInWithTheTemporaryPasswordAndMustChooseTheirOwn`, `suspendedTenantAnswersNotFound…` |
 | S-39 | … can see how many teams, players, games and other usage statistics | Implemented | `GET /platform/tenants/{id}/usage` aggregating core + game + athlete `/internal/usage` (`unavailableServices` on failure), daily snapshots + `/usage/history` | `TenantUsageResourceTest`, `TenantUsageHistoryResourceTest`, `UsageSnapshotJobTest`, `UsageAndInternalApiTest`; web usage dashboard and trend chart (`platform_test.dart`, WP35); e2e `platformUsageShowsTheCounts` |
 | S-40 | Admin and coach can add or withdraw players; by a coach it needs admin approval | Implemented | `approval_request` ADD_PLAYER / WITHDRAW_PLAYER; ADMIN direct (auto-approved audit row), COACH → PENDING, approval runs the eligibility-checked assignment (ADR-0020) | `ApprovalPolicyTest`, `ApprovalRequestResourceTest` (422 keeps PENDING, double decide 409, concurrent decisions), `PlayerResourceTest`; web `approvals_cases_test.dart`; e2e `adminAddsPlayerAndCoachRequestsOneWhichTheAdminApproves` |
 | S-41 | (Approval outcome: rejected requests) | Deviated | a rejected ADD leaves the player `REJECTED` (a fifth status, contracts 2.0, ADR-0016/0020), hidden from non-admins; web labels it "Rejected" (es/en/id, WP28) | `rejectingAnAddLeavesThePlayerRejected…` (core); web `labels_test.dart` |
@@ -203,7 +215,7 @@ match statistics R-07…R-11, training R-12, health & fitness R-13, authorizatio
 
 | ID | Item | Status | Notes |
 |---|---|---|---|
-| V-01 | Events v2: transactional outbox publisher + Redpanda + local replicas (WP19, optional) | Partial | Built behind a switch (decision 48): Redpanda in compose, chart and Dev Services (ADR-0036, WP66); core appends each roster change to the outbox and publishes it to `core.<aggregate>` (ADR-0008 amendment, WP67; `OutboxPublisherJobTest`, 7 event schemas); game and athlete replicas behind `RosterPort` with `hoops.roster.source=rest|replica` (ADR-0037, WP68, WP69; port contract tests on both sources, replay tests, e2e 23/23 with `replica`); chart wiring and a kind proof with the athlete flip (WP71). WP81: producer recovery (`ProducerRecoveryTest`), `.removed` for every aggregate, backfill (`just events-backfill`; on compose the replicas equal core, e2e 23/23 with `replica` in both services); WP82: soft removals and retention jobs; WP86: the game flip on kind. Gap: the default is still `rest` (a shadow period over days, then the owner's decision) |
+| V-01 | Events v2: transactional outbox publisher + Redpanda + local replicas (WP19, optional) | Implemented | Built behind a switch (decision 48): Redpanda in compose, chart and Dev Services (ADR-0036, WP66); core appends each roster change to the outbox and publishes it to `core.<aggregate>` (ADR-0008 amendment, WP67; `OutboxPublisherJobTest`, 7 event schemas); game and athlete replicas behind `RosterPort` with `hoops.roster.source=rest|replica` (ADR-0037, WP68, WP69; port contract tests on both sources, replay tests, e2e 23/23 with `replica`); chart wiring and a kind proof with the athlete flip (WP71). WP81: producer recovery (`ProducerRecoveryTest`), `.removed` for every aggregate, backfill (`just events-backfill`; on compose the replicas equal core, e2e 23/23 with `replica` in both services); WP82: soft removals and retention jobs; WP86: the game flip on kind. Since 2026-11-10 (decision 66, ADR-0037 amendment "Flip of 2026-11-10") `replica` is the default roster source of game and athlete in the services and compose (WP98: `RosterSourceDefaultsTest` per service, `just events-drift` and its 49-check test, e2e JourneyTest 26/26 on the replica default) and in chart 0.10.0 wherever events are on (WP100: chart tests, kind `smoke.sh` "roster source: game replica, athlete replica", `just events-drift --kind` equal); `rest` stays the fallback switch (runbook `events.md` "Rollback to rest"). Left: game still starts on `replica` with its consumer switched off, a combination athlete refuses (WP98 open point) |
 | V-02 | Purge job for withdrawn tenants, push notifications, native images, Pact broker | Deferred-v2 | PLAN §8; roadmap |
 
 ## Deviations, stated plainly
@@ -230,15 +242,15 @@ reason; none is a silent gap.
 | One login, several academies | an invite of an e-mail that already signs in links that login without asking its owner and reveals that it exists (F-11, accepted by design); logins stay enabled when an academy is suspended or withdrawn | ADR-0025 |
 
 ## Verification baseline
-- **Backend**: final full verify of the fifth round (WP84 at 49ba555, 2026-11-07, `./mvnw -B -ntp -T 1C verify`):
-  contracts 279, common-quarkus 392, core-service 914, game-service 468, athlete-service 994 = **3,047 tests**,
+- **Backend**: last full verify of the sixth round (WP98 after its rebase, 2026-11-10, `./mvnw -B -ntp -T 1C verify`):
+  contracts 315, common-quarkus 403, core-service 1163, game-service 467, athlete-service 999 = **3,347 tests**,
   0 failures, every coverage and SpotBugs gate met. The `e2e` module runs 32 in `verify`: 6 `MailSinkTest` tests and the
-  26 `JourneyTest` steps reported as skipped (no `e2e.baseUrl`). CI `ci` green at the end of the round (49ba555, run
-  42367239213); red during the round on five pushes (weekday-dependent athlete tests, SpotBugs on a new class), each
-  fixed by the next commit (`HANDOVER.md`).
-  (After the fourth round: 2,481; after the third round: 2,039; CI on 3b59360 after WP37: 1,970; WP26 baseline on
+  26 `JourneyTest` steps reported as skipped (no `e2e.baseUrl`). CI on `main` green at the end of the round; the reds
+  during the round and the run ids are in `HANDOVER.md`.
+  (After the fifth round: 3,047 at 49ba555; after the fourth round: 2,481; after the third round: 2,039; CI on 3b59360 after WP37: 1,970; WP26 baseline on
   ec3360e: 1,760; WP20 review: 1,467.)
-- **Flutter**: `flutter test` on `main` after the round: **1077 tests passed** (fresh run in the docs pass; 865 after
+- **Flutter**: `flutter test` on the combined tree at the WP101 merge: **1436 tests passed** (1077 after the fifth
+  round; 1146 after WP92, 1250 after WP99, 1372 after WP97; 865 after
   WP72, 959 after WP76, 997 after WP90, 1005 after WP77; 778 after the fourth round). Goldens re-recorded per feature
   in light and dark (WP72–WP77).
 - **Browser**: CI `ci` job `web-browser` (mock-mode smoke) and `e2e` step "Browser login round trip (first sign-in,
@@ -246,14 +258,19 @@ reason; none is a silent gap.
   green (marker fixed after WP72 in 599d38a).
 - **e2e**: CI `e2e` green on every push to `main` (compose stack on the runner; requests and responses validated,
   ADR-0027; ZAP API scans per service since WP83); **26/26** since WP84 (sign-up steps 70–71 with MailHog, WP90; edge
-  step 54, WP84). Locally 23/23 with `replica` in game and athlete at once (WP81).
+  step 54, WP84). On compose with the replica default (no override) 26/26 (WP98); earlier 23/23 with `replica` set by
+  hand (WP81). The test academy of `just seed-academy` (WP103: 23 logins, 10 players with guardians) is equal in core
+  and both replicas (`just events-drift`).
 - **Security gates**: SpotBugs `BugInstance size is 0` in all four modules; CodeQL High 2 (both accepted false
   positives); Semgrep ERROR 20 (all accepted); ZAP API scans and baseline green; full scan triaged (WP84 re-run,
   `security/review-2026-11.md` "Round 5 SAST/DAST findings").
-- **Mutation**: PIT common 312/313, core 777/778, game 548/550, athlete 687/687; Dart tool 430/430; baselines 99 / 99 /
-  99 / 100 and web 100 (WP88, WP84; `quality/mutation.md`).
-- **Charts**: chart 0.9.0 (`hoops-service` 0.7.0); `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED (176 checks at
-  WP90; kubeconform 254/254 at WP84). On kind (WP86): `up.sh --eso --deploy --from-host` + `smoke.sh`, a rotation
+- **Mutation**: PIT common 337/338, core 925/926, game 525/527, athlete 690/690 (WP96, WP98); Dart tool 430/430 (WP88);
+  baselines 99 / 99 / 99 / 100 and web 100 (`quality/mutation.md`).
+- **Charts**: chart 0.10.0 (`keycloak` 0.6.0, `hoops-service` 0.8.0); `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED
+  (182 checks, kubeconform 278/278, WP100). On kind (WP100, fresh cluster): `up.sh --eso --deploy --from-host` (18/18
+  ExternalSecrets), `smoke.sh` 47 checks with both replicas, events off with a quiet core, producer recovery after a
+  deleted broker user, core's decision mail in Mailpit, export rate limits, a Redis password rotation rolled by
+  Reloader, `just events-drift --kind` equal. On kind (WP86, chart 0.9.0): `up.sh --eso --deploy --from-host` + `smoke.sh`, a rotation
   rolled by Reloader, the game replica flip, `events.enabled=false`, `tilt ci -- --eso --from-host`, traces and logs
   in the collector. Earlier: `ratelimit-check.sh` with 1 and 2 Envoy replicas incl. `acl` and `redis-down` (WP63),
   14/14 ExternalSecrets synced (WP65), `smoke.sh` 46 checks with events end to end (WP71).

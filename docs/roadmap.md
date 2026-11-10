@@ -3,8 +3,8 @@
 Sources: `wp/FOLLOW-UPS.md`, the WP handovers, `security/review-2026-11.md`, `PLAN.md`. Items are grouped by theme, not
 ordered by date; there are no committed dates. IDs F-nn refer to the security review. "Seam" means the extension point
 already exists in v1. The plans of 2026-11-05 (`wp/FOLLOW-UPS.md`, WP26–WP37) and of 2026-11-06/07 (WP38–WP42, third
-round WP43–WP51, fourth round WP52–WP71, fifth round WP72–WP90) are done (all merged by 2026-11-07); the items they
-closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
+round WP43–WP51, fourth round WP52–WP71, fifth round WP72–WP90) and of 2026-11-10 (sixth round WP91–WP103) are done
+(all merged by 2026-11-10); the items they closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
 items below are deliberately not planned.
 
 ## Product and billing
@@ -15,16 +15,23 @@ items below are deliberately not planned.
 - **Tenant purge job.** Withdrawn tenants keep data until `retainUntil` (default 365 days) but nothing deletes it afterwards.
   Needs a platform job, per-schema deletion in FK order, an audit record and a dry-run mode. It is also the only clean-up of
   old audit rows and of decided academy requests (WP90). Also a per-tenant export for data portability (not designed).
-- **Super admin who is also a member.** Done in the Profile menu (Platform console); only a product check remains.
-- **Exercise catalogue** (decision 54, next round). Exercises as their own entity: global localised ones plus
-  tenant-defined ones, templates referencing them, listed, searchable and quick-addable on their own (athlete 3.0.0).
-  Since WP78 the plan search finds an exercise inside a template and quick-add copies items into a plan or session.
+- **Landed in the sixth round:** the application admin hub (Academies, Users across academies, Pending approvals,
+  Audit trail, a Billing placeholder) and a context switcher between a login's academies and the application admin
+  (WP91, WP99, ADR-0049); a member edits their own name (WP91, WP99); a preferred jersey number with carry-over on
+  assignment and the taken numbers per team (WP96, WP101); CSV exports of the team roster and the audit trails from
+  core and CSV / Excel / ICS exports of player stats, box score and team calendar built in the browser (WP96, WP97,
+  WP101, ADR-0048); the exercise catalogue with global and academy exercises (WP92, ADR-0047, athlete 3.0.0).
+- **Exports, next steps.** PDF where a printable sheet makes sense (decision 67: later); a name for the audit `team`
+  target (shows the type only); the compose nginx has no `limit_req` for the export paths (the gateway limits them).
+- **Users area depth.** E-mail change and a temporary password from the application admin's Users list (not in WP99);
+  `/me` with given and family name per membership so the own-name form need not split the display name.
+- **Exercise catalogue for families.** PARENT and PLAYER may read the catalogue through the API but the web shows it
+  only in the staff plan library (owner's decision pending).
 - **Landed in the fifth round:** invitation-only sign-up from the landing page with a super admin workbench and
   decision e-mails (WP90, ADR-0044); read-only history of past seasons for former staff and admins (WP80, ADR-0042);
   sessions that reference any plan directly (WP78, ADR-0041); the whole web app on one design system (WP72–WP77,
-  ADR-0040). Sign-up leftovers: an audit label, a compose `limit_req` for the public path, the purge of decided
-  requests (with the purge job above), mail retry.
-- **Self-service name edit**: a member who is not an ADMIN cannot change their own name (core contract change).
+  ADR-0040). Sign-up leftovers: a compose `limit_req` for the public path, the purge of decided requests (with the
+  purge job above), mail retry.
 - **If it goes commercial (ADR-0025).** F-11 (invite links an existing login without consent and reveals it) and F-22
   (pre-account hijacking) are accepted by design today. Before real users: verify the e-mail before linking an existing
   login into another academy, ask for consent and notify on a link, give invites a uniform response.
@@ -41,8 +48,12 @@ items below are deliberately not planned.
   (`just events-backfill`) completes the topics with pre-WP67 data, retention jobs prune `applied_event` (7 days) and
   inspected `parked_event` rows, and the game flip ran on kind. On compose the replicas equal core and `just e2e` is
   green with `replica` for both services.
-- **Still to do before `replica` is the default:** a shadow period over days in a shared environment (parked 0, lag in
-  seconds), then the owner flips the defaults. That removes the runtime coupling to core and the 30 s authz staleness.
+- **Landed in the sixth round (WP98, WP100, decision 66):** `replica` is the default roster source of game and
+  athlete (services, compose, chart 0.10.0 with events) without the shadow period over days; a drift check
+  (`just events-drift [--kind]`) compares core's rows with both replicas; `rest` stays the fallback switch. The shared
+  replica code lives in common-quarkus. Core's producer is never created with events off (`CORE_OUTBOX_ENABLED`, WP91).
+- **Still open:** game starts on `replica` with its consumer switched off (athlete refuses that combination); the web
+  can show the old roster for the 1–2 s of replica lag; Redpanda outside kind is unproven.
 
 ## Native images
 Quarkus native builds for the three services (ADR-0003 calls it an optional later step): faster start and lower memory per
@@ -66,7 +77,9 @@ service worker exists since WP14b.)
   (attestation); the ZAP API scan runs as the super admin, not as an academy member.
 - **Pins.** Image digests, chart image tags and kind pins are bumped by a weekly PR (WP89); GitHub Actions are pinned to
   commit SHAs and Dependabot waits 7 days for a release (WP50, WP84). Drop the guava pin once the Quarkus BOM ships
-  >= 33.7.2; the Envoy Gateway v1.10.0 bump needs the Gateway API matrix check.
+  >= 33.7.2. Envoy Gateway is on v1.10.0 since WP100. The weekly PR cannot carry workflow-file pins (the Actions token
+  may not push workflows): Trivy, Semgrep and the ZAP digest are bumped by hand with `scripts/bump-pins.sh --apply`, or
+  a fine-grained token lets the PR include them.
 - **json-schema-validator 3.x** (WP43): blocked until the strict OpenAPI validator (ADR-0027) moves to networknt 3.x;
   then drop the Dependabot ignore rule and apply the migration recorded in the WP43 handover.
 
@@ -75,9 +88,10 @@ service worker exists since WP14b.)
   the airplane-mode cold start run by script locally (WP54). Still to do: put those two scripts in CI, check the
   landing's colour contrast, replace a previously registered Flutter worker and the wasm/IndexedDB path in a real
   browser. (The account-console link and the plan refetch on a language change landed in WP76.)
-- **Design system leftovers** (WP72–WP77): kit fixes (`PageBody` centring, `SectionCard` Material, `AsyncBody` empty
-  state), delete the old `AppTokens` / `InfoChip`, the landing palette on `HoopsColors`, the Indonesian bottom
-  navigation at 360 px, precache only the current language's landing screenshots.
+- **Design system leftovers:** the kit follow-ups and the Indonesian bottom navigation landed in WP95; left are kit
+  wishes from WP92 (scrolling empty / error views, replacing snack bars, a business-code message registry, a searchable
+  multi-select picker), training's own copies of `fabClearance` and pickers, and recapturing the landing screenshots
+  after the shell and screen changes of the sixth round.
 - Two tabs on one device can allocate the same `clientSeq` (visible `CLIENT_SEQ_CONFLICT`); add a cross-tab lock if it matters.
 - **Mutation testing** runs on demand and monthly (WP37, `docs/quality/mutation.md`); since WP88 pure rules are
   extracted from use cases and mappers, the baselines equal the scores, and a Dart tool mutates the web rule code.
@@ -101,9 +115,10 @@ leads: `domain/norms.md`.
   Rate limits are global since WP40 (ADR-0033: Envoy Gateway's rate limit service + Redis, shared by every Envoy
   replica, fail open); since WP46 Redis has an ACL (only the rate limit user, only `PING`/`INCRBY`/`EXPIRE`) and every
   limited route a per-second burst cap next to its per-minute limit (ADR-0033 amendment, chart 0.4.0); WP63 re-proved
-  2 replicas, `tilt ci` and the controller-restart branch. Still open: a restart-free Redis password rotation and an
-  alert when a wrong login silently disables the limits, and filing the Envoy Gateway descriptor collision upstream
-  (drafted in `upstream/`; then drop the `path: /` selector); accepted: no body-size limit at the gateway (the
+  2 replicas, `tilt ci` and the controller-restart branch. WP100 moved to Envoy Gateway v1.10.0, limited the CSV
+  exports and proved a Redis password rotation rolled by Reloader on kind. Still open: an alert when a wrong login
+  silently disables the limits, and filing the Envoy Gateway descriptor collision upstream (drafted in `upstream/`;
+  re-tested on v1.10.0: not fixed, so the `path: /` selector stays); accepted: no body-size limit at the gateway (the
   services reject > 2 MB); a production certificate and cluster.
 - **Secrets.** The chart can source every Secret from the External Secrets Operator (WP65, ADR-0012 amendment) and
   rolls the pods that read a rotated Secret through Stakater Reloader (`global.reloader.enabled`, WP87, ADR-0012
@@ -113,7 +128,8 @@ leads: `domain/norms.md`.
   `global.observability.enabled` is set (WP86, ADR-0046; Jaeger in memory on kind); the backend is the environment's.
   Still open: dashboards, alerting on audit and authz failures (`hoops_authz_denied_total`, WP85), Keycloak, Envoy
   access and Redpanda logs to the collector, metrics stay Prometheus.
-- **Mail.** Core sends the sign-up decision e-mails (WP90); the chart does not set core's SMTP keys yet.
+- **Mail.** Core sends the sign-up decision e-mails (WP90); since chart 0.10.0 (WP100) the chart sets core's SMTP keys
+  (Mailpit on kind, an optional `hoops-smtp` Secret for a real server; ESO has no `hoops-smtp` entry by default).
 - **Release.** `ci`, `e2e` and `images` are green on GitHub since 2026-11-02 (NVD key valid, images pushed to ghcr.io per
   commit, each with its SBOM since WP85), `codeql` and `semgrep` since WP83; Dependabot opens weekly grouped update PRs
   (Maven, pub, GitHub Actions pinned to SHAs) and `bump-pins` a weekly PR for base images, chart image tags and kind

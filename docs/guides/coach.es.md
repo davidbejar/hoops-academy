@@ -16,6 +16,9 @@ barra superior.
 | Lesiones, altura/peso, resultados de pruebas físicas | sí | sí |
 | Asignar jugadores a un equipo, resolver casos de elegibilidad (equipos propios) | sí | no (solo lectura) |
 | Solicitar un jugador nuevo o una baja (requiere aprobación del administrador) | sí | no |
+| Cambiar el dorsal preferido de un jugador | sí | no (solo lectura) |
+| Exportar la plantilla del equipo (CSV) | sí (equipos propios) | no |
+| Catálogo de ejercicios: crear, editar y archivar los propios | sí | sí |
 
 Las pantallas no permitidas muestran "Solo lectura: no tienes permiso para modificar esto."
 
@@ -86,6 +89,47 @@ Pestaña **Entrenos**: calendario semanal con anterior/siguiente/hoy y filtro de
 inicial (uno que entrenes) y una nota para el administrador. **Mis solicitudes** las lista; cancela una pendiente con
 **Cancelar solicitud**. Para dar de baja a un jugador de tu equipo usa **Dar de baja** en su ficha: se envía como
 solicitud. Hasta su aprobación, el jugador solo lo ven los administradores y tú. No puedes aprobar tu propia solicitud.
+
+## 7. Catálogo de ejercicios y añadir ejercicios
+**Entrenos > Planes** tiene una tercera pestaña, **Ejercicios**: el catálogo de ejercicios.
+- Los ejercicios **Globales** (los de las plantillas más el test de Cooper, en tu idioma) son de solo lectura. Los
+  ejercicios propios de la academia se crean con **Nuevo ejercicio**, se editan, se archivan (**Archivar**) y se
+  restauran (**Restaurar**); pueden hacerlo entrenadores, entrenadores asistentes y administradores. Filtra con
+  **Todos**, **Globales** y **De la academia**; **Mostrar archivados** incluye los archivados; **Cargar más** al final.
+  La búsqueda de planes también encuentra ejercicios del catálogo.
+- **Añadir ejercicios** en una sesión, en el diálogo **Nueva sesión** y **Añadir del catálogo** en el editor de planes:
+  busca (p. ej. "cooper"); primero salen los ejercicios del catálogo y debajo los elementos de tus planes y plantillas
+  que coinciden. Marca varios y pulsa **Añadir (n)**: se añaden en el orden en que los marcaste. En el diálogo de nueva
+  sesión se añaden cuando la sesión ya existe; si falla, la sesión se mantiene y el diálogo explica por qué.
+- El elemento añadido conserva su propio texto, que puedes editar, y lleva la marca **Del catálogo de ejercicios**.
+  Archivar un ejercicio no cambia los elementos que lo usan, pero un ejercicio archivado no se puede volver a añadir
+  ("Ese ejercicio está archivado: elige otro").
+
+## 8. Dorsales
+- La página del jugador muestra el **Dorsal preferido**. Los entrenadores lo cambian (**Cambiar dorsal preferido**; una
+  o dos cifras, vacío lo quita); los entrenadores asistentes solo lo ven. Familias y jugadores pueden indicarlo como
+  deseo.
+- Al asignar un jugador a uno de tus equipos sin escribir dorsal, la aplicación usa el preferido si está libre en ese
+  equipo; si no, el de su equipo más reciente que tuviera dorsal, si está libre; si no, ninguno, y dice qué regla se
+  aplicó. Sin dorsal se abre en el acto el selector: muestra los **Dorsales ocupados** con su jugador y los **Dorsales
+  libres** (0-99); un dorsal ocupado se rechaza nombrando a quien lo tiene.
+
+## 9. Exportaciones
+- **Plantilla del equipo** (solo entrenadores del equipo, también de un equipo que entrenaste en una temporada
+  terminada): el icono de descarga de la barra superior del equipo (**Exportar la plantilla (CSV)**) guarda los
+  jugadores con sus datos, categoría, elegibilidad y el contacto de sus tutores, y el cuerpo técnico como segundo
+  bloque. Lo genera el servidor: necesita conexión, usa el idioma de la aplicación y queda registrado en la actividad de
+  la academia. Los entrenadores asistentes no tienen esta exportación.
+- Se generan en tu dispositivo con lo que la pantalla ya cargó (icono de descarga **Exportar**): las **Estadísticas de
+  temporada** (una fila por partido más los totales) y las estadísticas de un partido como **Archivo CSV** o **Archivo
+  Excel**; la lista de partidos y la semana de entrenos como calendario del equipo (partidos y sesiones de la temporada
+  elegida) en CSV, Excel o **Archivo de calendario (.ics)**, que el calendario del móvil o del ordenador puede importar.
+  Excel se carga la primera vez que lo eliges y entonces necesita conexión; sin ella la aplicación lo indica y el CSV sigue
+  funcionando.
+
+## 10. Tu nombre
+**Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
+conexión). El correo lo cambia el administrador.
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.

@@ -53,5 +53,21 @@ bagi orang tua dan menampilkan pita yang diharapkan bila ada norma ("Rujukan men
 Anda tidak pernah melihat anak keluarga lain, statistiknya, maupun data kesehatannya. Apa pun di luar pemain terkait Anda
 dijawab "Kami tidak menemukan yang Anda cari".
 
+## 6. Keinginan nomor punggung
+**Pemain saya** menampilkan **Keinginan nomor punggung** untuk setiap anak yang tertaut: ketuk untuk mengisi satu atau
+dua angka, atau kosongkan untuk menghapusnya. Ini hanya keinginan: pelatih memberi nomor saat anak masuk tim dan memakai
+nomor ini jika masih kosong.
+
+## 7. Mengunduh file
+Dibuat di perangkat Anda dari data yang sudah dimuat layar (ikon unduh **Ekspor**): **Statistik musim** (satu baris per
+pertandingan ditambah total) dan statistik sebuah pertandingan sebagai **File CSV** atau **File Excel**; daftar
+pertandingan dan minggu latihan sebagai kalender tim (pertandingan dan sesi musim yang dipilih) dalam CSV, Excel, atau
+**File kalender (.ics)**, yang bisa diimpor kalender ponsel atau komputer. Excel dimuat saat pertama kali Anda memilihnya
+dan saat itu perlu koneksi; tanpa koneksi aplikasi memberi tahu dan file CSV tetap bisa dipakai.
+
+## 8. Nama Anda
+**Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
+perlu koneksi). Email Anda diubah oleh administrator.
+
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

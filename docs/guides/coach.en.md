@@ -15,6 +15,9 @@ You are a **Coach** or an **Assistant coach**. Your rights apply to the teams wh
 | Injuries, height/weight, physical test results | yes | yes |
 | Assign players to a team, resolve eligibility cases (own teams) | yes | no (read only) |
 | Request a new player or a withdrawal (needs administrator approval) | yes | no |
+| Change a player's preferred jersey number | yes | no (read only) |
+| Export the team roster (CSV) | yes (own teams) | no |
+| Exercise catalogue: create, edit, archive own exercises | yes | yes |
 
 Screens you may not use show "Read-only: you are not allowed to change this".
 
@@ -81,6 +84,43 @@ the app tab stays open.
 and a note for the administrator. **Players > My requests** lists them; cancel a pending one with **Cancel request**.
 To withdraw a player of your team use **Withdraw** on the player: it is sent as a request. The player stays visible only
 to you and the administrators until approved. You cannot approve your own request.
+
+## 7. Exercise catalogue and adding exercises
+**Training > Plans** has a third tab, **Exercises**: the exercise catalogue.
+- **Global** exercises (the exercises of the templates plus the Cooper test, shown in your language) are read-only.
+  Your academy's own exercises are created with **New exercise**, edited, archived (**Archive**) and restored
+  (**Restore**) by coaches, assistant coaches and administrators. Filter with **All**, **Global** and **Academy**;
+  **Show archived** lists archived ones too; **Load more** at the end. The plan search also finds catalogue exercises.
+- **Add exercises** on a session, in the **New session** dialog and **Add from catalogue** in the plan editor: search
+  (e.g. "cooper"); catalogue exercises come first, matching items of your plans and templates below. Tick several and
+  press **Add (n)**: they are added in the order you ticked them. In the new-session dialog they are added once the
+  session exists; if that fails, the session is kept and the dialog says why.
+- An added item keeps its own text, which you may edit, and is marked **From the exercise catalogue**. Archiving an
+  exercise leaves the items that use it as they are, but an archived exercise cannot be added again ("That exercise is
+  archived: pick another one").
+
+## 8. Jersey numbers
+- The player page shows the **Preferred jersey number**. Coaches change it (**Change preferred number**; one or two
+  digits, empty removes it); assistant coaches only see it. Parents and players may enter it as a wish.
+- When you assign a player to one of your teams without typing a number, the app uses the preferred number if it is
+  free on that team, else the number of the player's most recent team that had one, if free, else none, and says which
+  rule applied. With no number the picker opens at once: it lists **Taken numbers** with their players and **Free
+  numbers** (0-99); a taken number is refused with its holder.
+
+## 9. Exports
+- **Team roster** (coaches of the team only, also for a team you coached in an ended season): the download icon in the
+  team's top bar (**Export the roster (CSV)**) saves the players with their data, category, eligibility and guardians'
+  contact data, and the staff as a second block. The server builds it: it needs a connection, uses the app's language
+  and is recorded in the academy's activity. Assistant coaches have no roster export.
+- Built on your device from what the screen has already loaded (download icon **Export**): **Season statistics**
+  (one row per match plus the totals) and a match's box score as a **CSV file** or an **Excel file**; the matches list and
+  the training week as a team calendar (matches and sessions of the selected season) as CSV, Excel or **Calendar file
+  (.ics)**, which a phone or desktop calendar can import. Excel is loaded the first time you choose it and needs a
+  connection then; without one the app says so and the CSV file still works.
+
+## 10. Your name
+**Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
+connection). Your e-mail stays with the administrator.
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

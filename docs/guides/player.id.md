@@ -38,5 +38,20 @@ dan normanya sementara, Anda akan melihat "Rujukan menyusul".
 "Tidak dapat terhubung ke server" atau banner offline berarti jaringan mati; data yang sudah dibuka tetap terlihat. "Sesi
 Anda telah berakhir" berarti Anda perlu masuk lagi.
 
+## Keinginan nomor punggung
+**Saya** menampilkan **Keinginan nomor punggung**: ketuk untuk mengisi satu atau dua angka, atau kosongkan untuk
+menghapusnya. Ini hanya keinginan: pelatih memberi nomor saat Anda masuk tim dan memakai nomor ini jika masih kosong.
+
+## Mengunduh file
+Dibuat di perangkat Anda dari data yang sudah dimuat layar (ikon unduh **Ekspor**): **Statistik musim** (satu baris per
+pertandingan ditambah total) dan statistik sebuah pertandingan sebagai **File CSV** atau **File Excel**; daftar
+pertandingan dan minggu latihan sebagai kalender tim (pertandingan dan sesi musim yang dipilih) dalam CSV, Excel, atau
+**File kalender (.ics)**, yang bisa diimpor kalender ponsel atau komputer. Excel dimuat saat pertama kali Anda memilihnya
+dan saat itu perlu koneksi; tanpa koneksi aplikasi memberi tahu dan file CSV tetap bisa dipakai.
+
+## Nama Anda
+**Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
+perlu koneksi). Email Anda diubah oleh administrator.
+
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

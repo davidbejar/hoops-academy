@@ -11,7 +11,10 @@ memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbah
 - Masuk dengan email Anda dan kata sandi sementara yang diberikan administrator platform; pertama kali, Keycloak meminta
   Anda memilih kata sandi sendiri (minimal 12 karakter). Tidak ada email undangan yang dikirim (ADR-0024).
 - Bilah bawah di ponsel (rail samping di layar lebar): **Admin**, **Tim**, **Pertandingan**, **Latihan**, **Pemain**.
-- Ketuk logo/nama akademi di bilah atas untuk **Ganti akademi** jika Anda tergabung di beberapa akademi.
+- Jika login Anda tergabung di beberapa akademi, chip konteks di bilah atas (**Ganti konteks**) berpindah di antara
+  akademi itu; aplikasi membuka akademi terakhir yang Anda pakai di peramban ini.
+- **Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
+  perlu koneksi). Email Anda diubah oleh administrator.
 - **Profil** (bilah atas): **Bahasa** (Español, English, Bahasa Indonesia) dan **Keluar**.
 
 ## 1. Profil akademi dan logo
@@ -114,6 +117,36 @@ pengajuan dan keputusan pemain, perubahan profil, pengaturan dan logo, serta tin
 entri tentang sesuatu yang sudah tidak ada hanya menampilkan jenisnya. Saring menurut rentang tanggal dan satu atau
 beberapa tindakan; pindah halaman dengan panah di bawah. Hanya administrator yang dapat melihatnya. Entri tidak pernah
 diubah atau dihapus, dan disimpan (belum ada pembersihan otomatis).
+
+## 11. Nomor punggung
+- Pemain dapat memiliki **Nomor punggung pilihan** (halaman pemain, **Ubah nomor pilihan**; satu atau dua angka; kosong
+  menghapusnya). Anda dan pelatih yang mengaturnya; orang tua atau pemain sendiri boleh mengisinya sebagai keinginan
+  (mereka diberi tahu bahwa pelatih yang memutuskan).
+- Saat Anda menetapkan pemain ke tim (**Daftar pemain > Tetapkan pemain**, atau **Tetapkan ke tim** di halaman pemain)
+  tanpa mengetik nomor, aplikasi memilih: nomor pilihan jika masih kosong di tim itu; jika tidak, nomor dari tim
+  terbaru pemain yang punya nomor, jika kosong; jika tidak, tidak ada. Sebuah pesan menyebut aturan yang dipakai, mis.
+  "Nomor 7 diberikan: nomor pilihan pemain."; jika tidak ada nomor, pemilih nomor langsung terbuka.
+- Pemilih nomor (juga di balik **Ubah nomor punggung**) menampilkan **Nomor terpakai** beserta pemainnya dan **Nomor
+  kosong** (0-99, ketuk untuk mengisi). Nomor terpakai ditolak dengan menyebut pemakainya ("7 dipakai ...").
+- Pergantian musim mempertahankan nomor dari penetapan yang disalin.
+
+## 12. Ekspor
+Dibuat oleh server (perlu koneksi, dalam bahasa aplikasi, dan berhenti di 10.000 baris):
+- **Daftar tim**: ikon unduh di bilah atas tim (**Ekspor daftar pemain (CSV)**) menyimpan pemain tim dengan datanya,
+  kategori dan kelayakan, wali aktif setiap pemain beserta kontaknya, dan staf tim sebagai blok kedua. Tersedia untuk
+  administrator dan pelatih tim (juga pelatih tim itu di musim yang sudah selesai). Setiap ekspor muncul di aktivitas
+  sebagai **Daftar tim diekspor**.
+- **Aktivitas**: ikon unduh di **Aktivitas** (**Ekspor aktivitas (CSV)**) menyimpan semua entri yang dipilih filter
+  saat ini, bukan hanya halaman di layar; jika lebih dari 10.000 baris, persempit tanggal atau tindakan. Tercatat
+  sebagai **Jejak audit diekspor**.
+
+Dibuat di perangkat Anda dari data yang sudah dimuat layar (ikon unduh **Ekspor**): **Statistik musim** (satu baris per
+pertandingan ditambah total) dan statistik sebuah pertandingan sebagai **File CSV** atau **File Excel**; daftar
+pertandingan dan minggu latihan sebagai kalender tim (pertandingan dan sesi musim yang dipilih) dalam CSV, Excel, atau
+**File kalender (.ics)**, yang bisa diimpor kalender ponsel atau komputer. Excel dimuat saat pertama kali Anda memilihnya
+dan saat itu perlu koneksi; tanpa koneksi aplikasi memberi tahu dan file CSV tetap bisa dipakai.
+
+Nama file seperti `hoops-<akademi>-<apa>-<yyyyMMdd>.csv`; file CSV langsung terbuka di Excel.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

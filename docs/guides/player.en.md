@@ -38,5 +38,20 @@ test and the norm is a placeholder you will see "Reference pending".
 "Cannot reach the server" or the offline banner means the network is down; data already opened stays visible. "Your session
 has expired" means sign in again.
 
+## Jersey number wish
+**Me** shows **Jersey number wish**: tap it to enter one or two digits, or leave it empty to remove it. It is a wish:
+the coach gives the number when you join a team and uses this one if it is free.
+
+## Downloading files
+Built on your device from what the screen has already loaded (download icon **Export**): **Season statistics**
+(one row per match plus the totals) and a match's box score as a **CSV file** or an **Excel file**; the matches list and
+the training week as a team calendar (matches and sessions of the selected season) as CSV, Excel or **Calendar file
+(.ics)**, which a phone or desktop calendar can import. Excel is loaded the first time you choose it and needs a
+connection then; without one the app says so and the CSV file still works.
+
+## Your name
+**Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
+connection). Your e-mail stays with the administrator.
+
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

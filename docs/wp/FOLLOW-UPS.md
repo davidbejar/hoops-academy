@@ -3,7 +3,7 @@
 Collected from the WP handovers and the WP20 review (2026-11-02); reconciled with the product interview of 2026-11-05
 (WP26), with the WP26–WP37 handovers on 2026-11-06, with the WP38–WP42 handovers on the evening of 2026-11-06, with
 the WP43–WP51 handovers (third round) later that evening, with the WP52–WP71 handovers (fourth round) that night and
-with the WP72–WP90 handovers (fifth round) on 2026-11-07.
+with the WP72–WP90 handovers (fifth round) on 2026-11-07 and with the WP91–WP103 handovers (sixth round) on 2026-11-10.
 Grouped by area; **[v2]** marks items that are out of v1 by decision (PLAN §8, roadmap); **→ WPnn** marked an item the plans below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
 closed them. The statement-by-statement status of the spec is in [`../conformance.md`](../conformance.md).
 
@@ -285,7 +285,7 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 | 3 | WP100 | Chart and kind: replica default, core SMTP, Envoy Gateway v1.10.0, pending proofs, chart 0.10.0 | Opus · high | Done (chart 0.10.0, keycloak 0.6.0, hoops-service 0.8.0; Envoy Gateway v1.10.0; kind proofs; ADR-0031, ADR-0033 amendments) |
 | 3 | WP101 | Web: jersey preference and assignment dialogs, roster and audit export buttons | Sonnet · medium | Done (web 1436 tests; core Dart package 3.5.0) |
 | 4 | WP103 | Seed a test academy through the real API (`just seed-academy`) | Sonnet · medium | Done (`just seed-academy`; 23 logins; run in the main checkout, drift check equal) |
-| 5 | WP102 | Docs pass | Opus · medium | Running |
+| 5 | WP102 | Docs pass | Opus · medium | Done (HANDOVER, FOLLOW-UPS, README, conformance V-01 Implemented, roadmap, architecture, ADR index, guides es/en/id) |
 
 ### Decisions of 2026-11-10, fifth interview (product owner)
 64. **Scope of the round → WP91–WP103**: the four owner-requested features (super admin hub, jersey numbers,
@@ -322,79 +322,49 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 ## Open
 
 ### Pending user actions
-- **Podman API without the idle timeout** (WP87, root cause of the Testcontainers "localhost:2375 failed to respond"
-  flake): **applied by the owner on 2026-11-07** (drop-in `~/.config/systemd/user/podman.service.d/no-timeout.conf`
-  in the VM; the running service shows `--time=0`). It survives `podman machine stop/start` and host reboots (the VM's
-  home is on its disk) and is lost only on `podman machine rm` / `reset` / a re-init: making it re-apply itself is the
-  item "Podman machine drop-in: playbook + doctor check" under "Infra, CI, e2e". CI's rootless `podman.socket` has
-  the same default.
-- **NVD key for Dependabot PRs** (found 2026-11-07, **done by the owner the same day**): a workflow triggered by
-  Dependabot sees only *Dependabot* secrets, so `dependency-check` was red on Dependabot PR #5 (run 42367339615,
-  `NVD_API_KEY:` empty). A new NVD key (the old one was not kept anywhere) is now the repository secret and the
-  Dependabot secret of the same name, and in the owner's `.env` for `just scan`. PR #5 closed and reopened (the old
-  run cannot be re-run): `dependency-check` green on the new `ci` run 42376816401 with the Dependabot secret.
-- **bump-pins PRs** (WP89): repository settings **done by the owner on 2026-11-07** ("Allow GitHub Actions to create
-  and approve pull requests" on, default token permissions read, label `dependencies` present; verified with
-  `gh api repos/davidbejar/hoops-academy/actions/permissions/workflow`). The workflow has not run yet (first schedule
-  Monday 2026-11-09 05:17 UTC, or `gh workflow run bump-pins`). Left for when the PR arrives: a PR opened with
-  `GITHUB_TOKEN` does not start `ci` / `e2e`, so close and reopen it (or move to a PAT / GitHub App token later); its
-  Envoy Gateway v1.9.3 → v1.10.0 bump needs the Gateway API matrix check (ADR-0031) and a kind proof before merging.
+- **bump-pins PR #6** (WP89, WP93; found 2026-11-10): the workflow runs on GitHub since WP93 (skopeo index pin) and
+  f96389a3 (`--skip-workflows`: the Actions token may not push workflow files); run 42796164975 on 2274eb4 opened PR #6
+  (mailpit v1.33.1, External Secrets Operator v2.15.0). Close and reopen it so `ci` / `e2e` start (a `GITHUB_TOKEN` PR
+  starts no checks); the ESO bump needs a kind proof (`up.sh --eso --deploy --from-host`, ExternalSecrets synced)
+  before merging.
+- **Workflow-file pins by hand** (f96389a3): Trivy, Semgrep and the ZAP digest live in workflow files, which the weekly
+  PR only lists; bump them with `scripts/bump-pins.sh --apply` and `actionlint`. Optional: a fine-grained PAT
+  (contents, pull requests, workflows) so the PR carries them and starts its own checks.
+- **Real-browser checks nobody ran** (WP97, WP99, WP101): `superadmin@hoops-academy.com` (no academy membership,
+  checked in the database: a pure super admin) should land on the application admin hub (decision 71; WP99 found no
+  code path to the audit trail); the hub and the context switcher against the real stack (WP99's rewritten
+  `journey_smoke_test.dart` platform step never ran); a calendar `.ics` imported into a calendar app (only a line
+  validator, no real parser, WP97); the server-side roster and audit exports downloaded from the web (WP101). The
+  compose nginx does not serve the web app: start it locally to sign in.
+- **Podman machine re-init path** (WP93): `just doctor`'s real write-and-restart branch for the drop-in ran only
+  against stubs, and `podman machine init --playbook infra/podman/machine-playbook.yml` was never run (whether Podman
+  runs the playbook as root or `core` is unobserved; the playbook works for both). The drop-in is present today. Try in
+  a quiet window: remove the drop-in, `just doctor`, see it restored.
 - **File the Envoy Gateway issue** from `docs/upstream/envoy-gateway-global-ratelimit-descriptor-collision.md`
-  (decision 49); drop the `path: /` selector once fixed (item under "Infra, CI, e2e").
+  (decision 49); WP100 re-tested on v1.10.0 without the selector: still collides (first 429 at #6, not #11), so add
+  v1.10.0 to the draft; drop the `path: /` selector once fixed (item under "Infra, CI, e2e").
 - **Local chromedriver** (WP55): the hand-installed one is 156, CI pins Chrome for Testing + chromedriver
   157.0.8103.38; update it when the local Chrome moves.
 
 ### Product / contract decisions
-- **Jersey number across teams: preferred number and carry-over** (owner, 2026-11-07). The number exists today on
-  the *assignment*, not the player: `core.team_player.jersey_number` (optional, `^[0-9]{1,2}$`, "0" ≠ "00"), unique
-  among the open assignments of a team (partial unique index; 409 on a clash), set with `AssignPlayerRequest` or
-  changed later with `UpdateTeamPlayerRequest` (`clear: [jerseyNumber]` removes it, ADR-0032), edited in the web
-  team screen (`JerseyDialog`) and denormalised into the match roster of game. So a player can carry different
-  numbers in different teams and a move never breaks uniqueness. Missing: nothing carries over. A new assignment
-  starts without a number unless the admin types one, and nobody is told that the player's previous number is free
-  or taken on the new team. Wanted: (1) a **preferred number** on the player (`core.player.preferred_jersey_number`,
-  same pattern, nullable; `Player` / `UpdatePlayerRequest` with `clear`; editable by ADMIN and COACH, visible to
-  PARENT / PLAYER, maybe editable by them as a wish: decision); (2) on **assignment** (`POST /teams/{teamId}/players`)
-  without an explicit number: take the preferred number when free on the new team, else the number of the player's
-  most recent assignment when free, else none; the response says which rule applied (`jerseySource`:
-  `REQUESTED` / `PREFERRED` / `PREVIOUS` / `NONE`) so the web can tell the admin "7 is taken by X; free: 4, 9, 12"
-  and offer the dialog at once; (3) a **free numbers** read per team (`GET /teams/{teamId}/jersey-numbers` or a
-  field on the roster: taken numbers with the player, so the dialog shows what is free); (4) the roster event
-  `core.team_player.changed` already carries the number (game replica) — no change there. Rules: never silently take
-  a number from another open assignment; season rollover (`/seasons/{id}/rollover`) keeps the numbers of the copied
-  assignments (check that it does today). Core minor (contract + V18), web team/assign dialogs, es/en/id, role-matrix
-  tests (who edits the preference). Possibly one WP with the players-screen part of the export WP.
-- **Export** (owner, 2026-11-07): nothing can be exported today (no CSV / PDF / ICS endpoint, no library in the
-  poms). Wanted, downloadable from the web app (a button on each screen) and as contract endpoints with `Accept` /
-  `format=` (CSV first, UTF-8 with BOM for Excel, `;`-safe quoting; PDF later where a printable sheet makes sense):
-  (1) **audit log** (core `GET /api/core/audit-events` with the current filters: date range, action; the platform
-  variant for the super admin; the same actor masking as the screen, ADR-0029), (2) **player stats** (game
-  `/api/game/players/{playerId}/season-stats`: per match rows plus the season totals), (3) **game stats** (game
-  box score of one match: both teams, every player line, the event log optional), (4) **team calendar** (the team's
-  matches of game and training sessions of athlete over a season: CSV and **ICS** for phone calendars, with the
-  venue and the cancel state; needs a cross-service read or a web-side merge of the two lists), (5) **team players
-  with coach and parents** (core: the team's roster with each player's person data, age category, eligibility
-  state, the team's staff with role, and each player's guardians with contact data; PARENT / PLAYER never get this
-  one; it is personal data → audit row `team.roster_exported`, rate-limited, ADMIN and the team's COACH only, see
-  `docs/domain/authz-matrix.md`). Decisions needed: formats (CSV + ICS now, PDF later?), the locale of headers and
-  dates (the user's, es / en / id), file naming, size limits (paging vs one file), and whether exports stream from the
-  services or the web builds them from the JSON it already has (simpler, offline-capable, but no audit row and no
-  server-side limits: the roster export at least must be server-side). Each export is a contract change (`text/csv`,
-  `text/calendar` responses) in the owning service, generated Dart clients, OpenAPI validation of the new media
-  types in the contract tests, a role-matrix test, and goldens for the buttons.
-- **Exercise catalogue** (decision 54, next round): exercises as their own entity (global localised ones plus
-  tenant-defined), templates referencing them, listed and searchable on their own (athlete 3.0.0). WP78 only finds
-  items inside templates and quick-adds copies; the seeded templates have no Cooper item yet (the catalogue should
-  bring it; the demo mock has one).
-- **Sign-up leftovers** (WP90, ADR-0044): the audit screen has no label for `tenant.request_accepted` (shows the wire
-  name; add `auditActionTenantRequestAccepted` in `features/audit`); compose nginx has no `limit_req` for the public
-  `/platform/academy-requests` (the gateway limits it, 10/min + 2/s per IP); the requester's name stays optional
-  (contract and landing form; decide whether to require it); decided requests (personal data of non-members) are kept
-  until the v2 purge job; a crash between claim and onboarding leaves an ACCEPTED request without an academy (runbook
-  `onboard-tenant.md` "Requests", Recovery); no retry of a failed decision mail (`notifiedAt` stays empty).
-- **Self-service name edit** (WP76): `UpdateMeRequest` carries `locale` only and `PATCH /members` is ADMIN, so a
-  non-admin cannot change their own name or e-mail; needs a core contract change. An ADMIN reaches the own member
-  record from the profile (`profile-own-data`).
+- **Roster export for a former coach** (WP96, ADR-0048, owner to decide): the roster CSV with the guardians' contact
+  data is allowed for a coach of the team in an ended season through the season-history rule (`wasStaffOf`,
+  ADR-0042), as for the screens. Keep, or restrict the export to the team's current staff and ADMIN.
+- **Exercise catalogue for PARENT and PLAYER** (WP92, owner to decide): the API lets every role read the catalogue,
+  but the web shows it only in the plan library, which is staff-only.
+- **Export follow-ups** (WP96, WP97, WP101): PDF where a printable sheet helps (decision 67: later); the audit `team`
+  target shows the type without a name (`displayName` null: core should resolve team names); the browser exports do
+  not apply the 10,000-row limit (the data is already loaded); the box score holds the opponent as one score line and
+  no period scores; Excel offline on first use fails by design (message, CSV still works) and is cached only after the
+  first online use.
+- **Sign-up leftovers** (WP90, ADR-0044): compose nginx has no `limit_req` for the public `/platform/academy-requests`
+  (the gateway limits it, 10/min + 2/s per IP); the requester's name stays optional (contract and landing form; decide
+  whether to require it); decided requests (personal data of non-members) are kept until the v2 purge job; a crash
+  between claim and onboarding leaves an ACCEPTED request without an academy (runbook `onboard-tenant.md` "Requests",
+  Recovery); no retry of a failed decision mail (`notifiedAt` stays empty).
+- **Own name: given and family name in `/me`** (WP99): `/me` carries a display name only, so the web's "Your name"
+  form splits it at the first space and sends only the changed field (a family name of several words can show split
+  wrongly; nothing is overwritten unless edited). Core minor: `givenName` / `familyName` per membership in `/me`.
 - **Season history details** (WP80, WP76): game's `Match` and athlete's session responses carry no `seasonEnded` flag
   (the web derives it from core's team / season); the matches list without a selected past season still returns
   every season.
@@ -410,12 +380,14 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   `opentelemetry-logs` + `telemetry-logs-*`), nor are Envoy access logs or Redpanda's; no signed SBOM attestation
   (cosign / `actions/attest-sbom` need `id-token: write` and a signing decision); retention and integrity of shipped
   logs belong to the environment's backend (16.4.2).
-- **Edge headers on kind** (WP84): the chart's Keycloak `ResponseHeaderModifier` (SD-08) is validated by the chart
-  tests only, not proven on kind; the chart pins `Host` only when `gateway.hostname` is set (kind accepts any host,
-  local only); some Keycloak answers carry `X-Content-Type-Options: nosniff` twice (harmless).
+- **Edge headers on kind** (WP84, WP100): the chart's Keycloak `ResponseHeaderModifier` (SD-08) is now proven on kind
+  (WP100: `Permissions-Policy`, COOP, CORP on discovery, auth and token); the chart pins `Host` only when
+  `gateway.hostname` is set (kind accepts any host, local only); some Keycloak answers carry `X-Content-Type-Options:
+  nosniff` twice (harmless).
 - **Acceptances with an expiry** (ADR-0045): SD-03 Keycloak CORS reflection and the ZAP 40038 false positive until
   2027-05-07 (re-check SD-03 on every Keycloak upgrade); the Semgrep `@PermitAll` of the public academy request until
-  2027-05-06; dependency-check suppressions until 2027-05-01 (Infra below).
+  2027-05-06; two dated Semgrep acceptances of the sixth round: the platform users nil-tenant bind (WP91, 744129f9) and
+  the Excel on-demand check tool (WP97, 6d07a4e4); dependency-check suppressions until 2027-05-01 (Infra below).
 - **ZAP API scan as a member** (WP83): the scan signs in as the super admin, who is in no academy, so tenant endpoints
   stop at 404/400; a member token with `X-Tenant-Id` (an e2e-created admin) would reach the academy logic.
 - **SAST drift** (WP83): the Semgrep registry rulesets (`p/java`, `p/owasp-top-ten`) are fetched at run time, so the
@@ -426,45 +398,34 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 - **Offline end-session** is skipped, not queued (SSO session lives until its 4 h idle timeout) — accepted, ADR-0019.
 
 ### Web app (`apps/web`)
-- **Super admin console: a proper admin menu** (owner, 2026-11-07). Today a super admin without memberships lands on
-  `/platform`: the academies list (title "Platform", search, status chips, "New academy"), with two header buttons,
-  "Requests" (`/platform/requests`, WP90) and "Academies' activity" (`/platform/activity`, WP34), and per academy a
-  detail page (admins, usage, suspend/withdraw/reactivate, its activity). A super admin who is also a member lands on
-  that academy's hub and reaches the console only through Profile → Platform (WP14). There was never a hub or submenu
-  (the console was born as the list in ced3680 and was restyled, not restructured, in WP75), so nothing was lost;
-  the owner reports landing on the audit trail: confirm with the account used (memberships? deep link?) before
-  building. Wanted: the platform destination becomes a hub like the academy admin hub (WP75), with one sub-screen per
-  area and the rail/bottom nav or a hub list to move between them: **Academies** (the current list + detail),
-  **Users** (every login across academies: `core.app_user`, with its memberships per academy, e-mail change (WP31),
-  temporary password; needs a new contract `GET /platform/users` with search and paging, core minor), **Pending
-  approvals** (the sign-up requests from the landing form, WP90: accept creates the academy and its administrator,
-  reject mails the requester; the pending count as a badge; the eligibility approvals inside an academy are not this), **Audit trail** (the current platform activity), **Billing** (placeholder screen "coming
-  soon" over the v2 seams; no backend). Also: the super admin's landing is the hub, not a sub-screen; a super admin
-  with memberships gets the platform entry in the nav (or the switcher), not only in Profile; es/en/id labels, goldens,
-  the `web_smoke.sh` platform step and the user guide `docs/guides` updated. Probably two WPs: core `/platform/users`
-  (Opus: cross-tenant read of logins, platform read policy as the audit one) and the web hub (Sonnet).
-- **Design-system kit follow-ups** (WP72–WP75): `PageBody` / `ContentFrame` centre a narrower section (a bare
-  `PageHeader` is centred; worked around with `SizedBox(width: double.infinity)`): stretch sections in the kit;
-  `SectionCard` should provide a transparent `Material` for a `CheckboxListTile`; `AsyncBody` still renders
-  `EmptyView` for empty lists (switch to `EmptyState`); delete `AppTokens` and `InfoChip` / `ChipTone` once unused;
-  point `LandingPalette` at `HoopsColors` (same values today); a fab-clearance constant in `HoopsSize` instead of the
-  per-feature copies; a kit `PickerDialog` for the `AlertDialog` + `ListTile` pickers; `TimezoneNote` pads itself
-  16 px and does not line up in a `ContentFrame`; the chart card (`GrowthChart`) could become a `SectionCard` when the
-  platform usage goldens are re-recorded.
-- **Indonesian bottom navigation** (WP77): "Pertandingan" wraps over two lines at 360 px (visible in
-  `assets/landing/live_match_id.png`).
-- **PWA precache of the landing screenshots** (WP77): the service worker precaches every build file, so an install
-  fetches all twelve PNGs (about 900 KB more than before); exclude the other languages from `collectPrecache` or
-  quantise the PNGs (no tool on the host). The capture script fails once on a clean tree (run it twice).
-- **Quick-add** (WP78): only on the session screen; not in the "new session" dialog, and `copyItemsToPlan` exists in
-  the contract but is not wired in the plan editor.
-- **Demo mock limits** (WP47, WP53, WP76): members stay ADMIN-only (403); replay re-stamps `createdAt` / `now`-derived
-  fields and re-draws temporary passwords; a log from an older mock build may replay differently (bump the `v1` key
-  when seeds change); a locale change (`PATCH /me`) is not stored; the logo and long logs share the browser quota; the
-  reset reloads without a confirm dialog; roles per academy only by dart-define; plan completions and assignment
-  progress filter by visible players, not by team; no suspended-tenant behaviour; no `/internal/usage`; templates are
-  not localised by `Accept-Language`; writes on the ended demo team do not answer 409 (the UI hides them). The
-  academy-request mock (WP90) sends no mail.
+- **Jersey dialog leftovers** (WP101): after a 409 the holder's name comes from the re-read taken list, not the
+  server's Problem text; the new rights live in `roster/application/roster_rights.dart`, not in `Capabilities`.
+- **Possible golden flake** (WP92): the temporary-password golden (360×780 dark) failed once in a full run and passed on
+  re-run; not reproduced.
+- **Application admin leftovers** (WP99): the Users list shows memberships but offers no e-mail change or temporary
+  password (wanted in the original item; on the academy page today); a cold start drops any deep link (the guard parks
+  on `/splash`, then goes home), so an old `/platform` bookmark opened cold lands on the home, not the page; the wide
+  switcher is a dialog panel aligned top-left, not an anchored popup; the user guide's super admin screens are written
+  from the code, not a browser walk-through.
+- **Landing screenshots after the sixth round** (WP95, WP97, WP99, WP101, owner to decide): `assets/landing/*` were not
+  recaptured after the export icons, the new shell and the jersey cards (`flutter test
+  test/golden/landing_screens_capture.dart`); the super admin views would need a login with and without academies.
+- **Design-system kit follow-ups** (after WP95): training still has its own `fabClearance` in
+  `training_labels.dart`, an `AlertDialog` picker in `plan_search.dart`, the team-assign search dialog and an inline
+  time-zone note (`TimezoneNote` has no user yet); the chart card (`GrowthChart`) could become a `SectionCard`. Kit
+  wishes from WP92: empty / error views that scroll in short areas (on phones the FAB covers the centred retry button),
+  `runAction` snack bars that replace instead of queue, a business-code → message registry, a shared filter-chip row,
+  a searchable multi-select / sectioned `PickerDialog` (would replace training's search dialogs), a marker slot on
+  `ListRow`.
+- **Demo mock limits** (WP47, WP53, WP76, WP92, WP101): members stay ADMIN-only (403); replay re-stamps `createdAt` /
+  `now`-derived fields and re-draws temporary passwords; a log from an older mock build may replay differently (bump the
+  `v1` key when seeds change); the logo and long logs share the browser quota; the reset reloads without a confirm
+  dialog; roles per academy only by dart-define; plan completions and assignment progress filter by visible players,
+  not by team; no suspended-tenant behaviour; no `/internal/usage`; templates are not localised by `Accept-Language`
+  (Spanish only) and the catalogue holds only the mock's three templates' items plus the Cooper test; writes on the
+  ended demo team do not answer 409 (the UI hides them). The academy-request mock (WP90) sends no mail. The mock's
+  roster and audit CSVs have only a few columns, not the ADR-0048 layout, and `EXPORT_TOO_LARGE` cannot be provoked
+  there (a widget test with a fake covers it).
 - **Landing contrast** (WP54, WP70): the app's fills are AA since WP72 (contrast test, ADR-0040); the landing's own
   palette is unverified by Lighthouse (no DOM text in the Flutter canvas) and its screenshots are light-theme captures
   in dark mode too.
@@ -487,35 +448,21 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
 
 ### Backend
-- **Entity and class diagrams per service** (owner, 2026-11-07). `docs/architecture.md` has Mermaid flowcharts and
-  sequence diagrams of the system, nothing at the model level. Wanted, one page per service under `docs/domain/`
-  (`core-model.md`, `game-model.md`, `athlete-model.md`): (1) an `erDiagram` of the schema (core 22 tables, game 16,
-  athlete 24 by the Flyway files, incl. the `*_ref` replicas, outbox and billing seams) with keys, `tenant_id` and the
-  main relations, and (2) a `classDiagram` of the domain layer (aggregates, value objects such as `TenantId` /
-  `PlayerId`, ports) per hexagon. Keep them honest: generate the ER part from the live schema (a script in
-  `scripts/`, e.g. `scripts/er-diagram.sh` reading `information_schema` of the compose database, or from the Flyway
-  files) and the class part from the `domain` packages (a small tool over the sources, or by hand with a drift check
-  in `just test` that fails when a `domain` class is missing from the diagram), so they do not rot; link them from
-  `architecture.md` and the README. Mermaid renders on GitHub; no new build dependency.
-- **Events-off producer warnings in core** (WP86): on kind with `events.enabled=false` core's producer kept connecting
-  to `localhost:19092` (2 WARN lines every 6–10 s; game and athlete were quiet). Core needs a switch that keeps the
-  producer from being created (set by the chart's `core.events.offEnv`); an env var alone could not address the old
-  messaging channel (`MP_MESSAGING_OUTGOING_CORE_EVENTS_ENABLED` crash-looped core, rolled back). Re-check on the
-  plain `KafkaProducer` of WP81.
+- **game on `replica` without its consumer** (WP98): game starts with `GAME_ROSTER_CONSUMER_ENABLED=false` and serves
+  a replica that never changes; athlete refuses that combination. Add the guard and give `ReplicaRosterSourceTest` a
+  consumer, or keep it documented. The chart never renders that pair (WP100).
+- **Replica lag seen by the web** (WP98, ADR-0037): the journeys wait for the replicas after a roster change; the web
+  app can show the old state for the 1–2 s of lag.
+- **Model diagrams limits** (WP94): class relations are drawn only inside a group; port return types as declared;
+  the Mermaid output is validated by a grammar subset, not rendered (no Mermaid CLI; GitHub renders it).
 - **Replica housekeeping choices** (WP82, ADR-0037 amendment): `applied_event` retention has a floor of 7 days (the
   tombstone retention; startup refuses less); soft-removed rows are kept for ever (pruning those older than the
   tombstone retention is a possible later step); uninspected parked rows are never deleted (by design); a tenant
   removal is marked, not cascaded.
-- **Duplicated test and job code** (WP82, WP88): `RosterBrokerResource` and `ReplicaRetention` (with its rules test)
-  exist in both game and athlete; the common-quarkus (test-)jar could host one copy.
-- **Decoders on a missing contracts jar** (WP88): they now fail with `NullPointerException` (the message names the
-  resource) instead of `IllegalStateException` at startup.
 - **Outside PIT** (WP88): athlete `HealthAccess` / `TrainingAccess` / `PlanAccess`, core `RolloverSeason`,
   `EligibilityEngine`, `ManageTenantAdmins` (tested through `@QuarkusTest` only); candidates for pure unit tests.
 - **Trigram index for the item search** (WP78, ADR-0041): needs `pg_trgm` created in `infra/db/init` and the chart's
   init (the migrator cannot create extensions); not needed at today's sizes.
-- **Core test containers outside `ContainerStarts`** (WP87): core's `KeycloakContainerResource` and its MailHog
-  container start without the ping-and-retry; wrap them with `ContainerStarts.start(...)`.
 - **Keycloak ahead of the database** (WP22, as ADR-0013): a commit failure right after a successful login update leaves
   Keycloak with the new e-mail; no repair job detects `app_user.email` ≠ Keycloak e-mail yet.
 - **Entitlement seam** has no test of a denial path (the noop implementation always allows).
@@ -531,50 +478,19 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
-- **Claude commit/push hook: false positive on quoted text** (owner, 2026-11-07): `.claude/hooks/tenancy-gate.sh`
-  (PreToolUse on Bash) greps the whole command text for `git commit` / `git push` with `runs_git`, so a command that
-  only *mentions* them, e.g. `echo "=== git commit times"; git log ...`, runs the full isolation check (~3.5 min,
-  seen 2026-11-07 20:38) before a read-only command. Match the words only at a command position: strip single- and
-  double-quoted strings and comments (`#...`) from the command before matching, or tokenise on `;`, `&&`, `||`, `|`
-  and test each simple command's first word(s). Keep `git -C dir commit`, `git -c k=v push`, `git --no-pager commit`
-  matching; add a shell test file (`scripts/hooks/tenancy-gate.test.sh`) with the positive and negative cases, run by
-  `just doctor` or `just test-hooks`. Also surface the hook's result line to the owner: Claude quotes it when it
-  reports a commit or push (the hook output reaches only Claude's context).
-- **Podman machine drop-in: playbook + doctor check** (owner decision 2026-11-07, both A and B): the `--time=0`
-  drop-in for `podman.service` (WP87) lives on the VM disk and is lost on `podman machine rm` / `reset` / re-init; the
-  stock `quay.io/podman/machine-os` image cannot carry it. (A) An Ansible playbook in the repo (`infra/podman/
-  machine-playbook.yml`; `ansible-playbook` is in the machine image, Podman 6.1.4) that writes the drop-in with explicit
-  `core` ownership, for `podman machine init --playbook infra/podman/machine-playbook.yml ...` (runs once after the
-  first boot); check whether Podman runs it as root or as `core` before relying on `systemctl --user daemon-reload`
-  inside it. (B) A self-healing step in `scripts/doctor.sh` (not `env.sh`: one `podman machine ssh` round trip per
-  call): read `systemctl --user cat podman.service` through `podman machine ssh`; when `--time=0` is missing, write the
-  drop-in, `daemon-reload`, restart the service when no container is running, and print the effective `ExecStart`.
-  Docs: the init command in `docs/runbooks` (or the README dev setup), a line in the `podman-dev-env` skill and in
-  HANDOVER "Working conventions". Verification: (B) on the owner's current machine (remove the drop-in, run
-  `just doctor`, see it restored); (A) by `ansible-playbook --check` inside the existing VM, a real `machine rm` +
-  `init --playbook` only in a quiet window of the owner's choosing.
-- **Chart SMTP settings for core** (WP90): core sends the decision mails since core 3.3.0 but the chart sets no mail
-  keys, so on kind core falls back to `localhost:1025` and the mails fail (decisions still work, `notifiedAt` empty).
-  Needed in the core subchart values: `SMTP_HOST: mailhog`, `SMTP_PORT: "1025"` (kind's Mailpit Service keeps the
-  name), `SMTP_START_TLS: OPTIONAL` (`REQUIRED` for a real server), `MAIL_FROM`, `HOOPS_PUBLIC_URL:
-  '{{ .Values.global.publicUrl }}'`, and for a real server `SMTP_USERNAME` plus a `secretEnv` `SMTP_PASSWORD` (e.g.
-  Secret `hoops-smtp`, key `password`). Mailpit's NetworkPolicy already admits the namespace's pods.
-- **Chart version after WP84/WP85** (WP85): the Keycloak template env (event log level), the realm copy and the Keycloak
-  route headers changed after chart 0.9.0 without a version bump; bump with the next chart change. Existing kind realms
-  keep their event settings until the Keycloak database is recreated (`IGNORE_EXISTING`).
-- **Core restart on a fresh install can go** (WP81): `deploy/kind/up.sh` still restarts core after
-  `SASL authentication failed`, and `runbooks/events.md` still says "Fresh install: restart core once after the Job";
-  since WP81 the producer recovers by itself (`ProducerRecoveryTest`). A kind proof of the recovery is still to run.
-- **Envoy Gateway v1.10.0** (WP89): the first `bump-pins.sh --check` found Envoy Gateway v1.9.3 → v1.10.0 (plus mailpit,
-  Trivy, Semgrep and the ZAP digest); the Envoy Gateway bump needs the Gateway API compatibility matrix check
-  (ADR-0031) and a kind proof before merging. Pin shapes in `values.yaml` / `up.sh` must keep the patterns of
-  `scripts/bump_pins.py` (exit 2 otherwise).
+- **Tenancy-gate hook, accepted false positives** (WP93, orchestrator ee5f64cc): an unquoted `echo git commit` and a
+  heredoc with unbalanced quotes still run the isolation check (unsure cases gate, by choice). The hook that gates a
+  session is the one configured at its start.
+- **Compose nginx has no `limit_req` for the CSV exports** (WP96, WP100): the gateway limits them (10/min + 2/s per IP,
+  ADR-0033 amendment); locally they are unlimited.
+- **Chart 0.10.0 leftovers** (WP100): `tilt ci` not re-run on 0.10.0; ESO has no `hoops-smtp` entry by default (core
+  sends without a password unless `.env` sets `SMTP_PASSWORD`); the Gateway showed `Programmed=False` once after a proxy
+  readiness flap under load (cleared by a later reconcile); services were liveness-killed at VM load 13–66.
+- **Test academy re-seed** (WP103): the slug stays taken after a withdraw and the Keycloak logins survive it, so a
+  re-seed after a withdraw needs another slug.
 - **Envoy Gateway tracing `backendRefs`** (WP86): a Gateway turns `Accepted=False` when a tracing `backendRefs` Service
   has no ready endpoint; the chart uses the collector's DNS name instead. Worth an upstream issue / a note for clusters
   with their own `EnvoyProxy`.
-- **Replica lag in the e2e tenant test** (WP82): with `replica` in game and athlete,
-  `secondTenantCannotSeeTheFirstTenantsData` can ask game about tenant B before the replica knows it (1–2 s); an await
-  on the first game/athlete call for tenant B would make it deterministic.
 - **Redpanda outside kind** (WP66): the default (non-kind) sizing is unproven; the bootstrap Job never deletes ACLs or
   changes partition counts.
 - **dependency-check suppressions** (WP64): check in a `dependency-check` report that keycloak-admin-client
@@ -583,12 +499,12 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 - **Per-IP limits** (WP40, ADR-0033, accepted): they can be dodged by rotating addresses (an IPv6 /64). The
   minute-boundary doubling is closed by the per-second caps (WP46).
 - **Wrong Redis login fails open silently** (WP46): limits stop applying and only `WRONGPASS` / `NOPERM` in the
-  `envoy-ratelimit` logs show it; no alert. The Reloader rotation of `RATELIMIT_REDIS_PASSWORD` (WP87) is not proven
-  on kind (WP86 proved the database and broker passwords).
-- **Envoy Gateway descriptor collision** (WP46): v1.9.3 builds the `sourceCIDR` descriptor without the rule index, so a
-  per-minute and a per-second rule on the same route collapse into one; worked around with an always-true
-  `path: {type: PathPrefix, value: /}` selector on the per-second rules (ADR-0033 amendment). Filing the drafted issue
-  is the owner's action (above); drop the selector once fixed.
+  `envoy-ratelimit` logs show it; no alert. The Reloader rotation of `RATELIMIT_REDIS_PASSWORD` is proven on kind
+  (WP100: `WRONGPASS` for about 7 s until both pods rolled).
+- **Envoy Gateway descriptor collision** (WP46, WP100): v1.9.3 and v1.10.0 build the `sourceCIDR` descriptor without
+  the rule index, so a per-minute and a per-second rule on the same route collapse into one; worked around with an
+  always-true `path: {type: PathPrefix, value: /}` selector on the per-second rules (ADR-0033 amendments). Filing the
+  drafted issue is the owner's action (above); drop the selector once fixed.
 - **No gateway body-size limit** (WP36; accepted, decision 18): Envoy streams bodies; the services reject bodies above
   2 MB with a 413 Problem. A gateway limit needs `BackendTrafficPolicy.requestBuffer`, which buffers every request.
 - **Port 18080 while Tilt runs** (WP42): Tilt's Keycloak port-forward holds 18080, so the runbook's 18080 forward for
@@ -604,10 +520,6 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 - **Optimised Keycloak image** (read-only root FS; KSV-0014 accepted until 2027-03-31; not now, decision 63).
 
 ### v2 (by decision)
-- **[v2] Events, default flip** (ADR-0037 "When rest flips"): done are the backfill, the producer recovery and
-  `just e2e` with `replica` for both services (WP81), the game flip on kind (WP86) and the soft removals (WP82). Left:
-  run the backfill once in each environment with pre-WP67 data, a shadow period over days in a shared environment
-  (kind or staging) with `hoops_roster_replica_parked_total` at 0 and lag in seconds, then the owner decides the flip.
 - **[v2] Fail-stop consumer and health** (WP68, ADR-0037 §5): a consumer that exhausts its retries turns liveness and
   readiness DOWN, so a long database outage restarts game/athlete pods also in `rest` mode (the consumer runs in both
   modes); revisit if it bites.
@@ -617,6 +529,46 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+Sixth round (WP91–WP103, 2026-11-10; each line names the open item it closed):
+- WP91, WP99 (decisions 71, 73): **Super admin console: a proper admin menu**: an application admin context with a hub
+  at `/app-admin` (Academies, Users, Pending approvals with a badge, Audit trail, Billing placeholder), a context
+  switcher between the academies of a login and the application admin, landing on the hub (ADR-0049); `GET
+  /platform/users` (core 3.4.0, V18, ADR-0029 amendment). The audit-trail landing was not reproduced (WP99 step 1).
+  **Self-service name edit**: `PATCH /me` with `givenName` / `familyName` and `tenantId`; Profile → "Your name".
+  Leftovers under "Web app" and "Product / contract decisions".
+- WP91, WP100: **Events-off producer warnings in core**: `hoops.outbox.enabled` / `CORE_OUTBOX_ENABLED=false` keeps the
+  producer from being created; the chart's `core.events.offEnv` sets it (0 Kafka lines in 5 min 40 s on kind).
+  **Core test containers outside `ContainerStarts`** (WP91).
+- WP92 (decisions 54, 72): **Exercise catalogue**: global (template items plus the Cooper test, es/en/id) and academy
+  exercises in one table, templates reference them, quick-add from the catalogue (athlete 3.0.0, V10, ADR-0047);
+  **Quick-add** in the new-session dialog and `copyItemsToPlan` in the plan editor.
+- WP93: **bump-pins `Exec format error`** (skopeo pinned to the multi-arch index, an online pin test); **Claude
+  commit/push hook: false positive on quoted text** (a command parser, `just test-hooks`, the result line; hardened by
+  the orchestrator in ee5f64cc and 778ea6ab); **Podman machine drop-in: playbook + doctor check** (the real re-init
+  path is a pending user action).
+- WP94: **Entity and class diagrams per service**: generated ER and class diagrams in `docs/domain/*-model.md`,
+  `just diagrams`, drift-checked in CI.
+- WP95: **Design-system kit follow-ups** (ADR-0040 amendment; the rest under "Web app"), **Indonesian bottom
+  navigation** ("Laga"), the `tenant.request_accepted` audit label of the **Sign-up leftovers** (and
+  `tenant.events_backfilled`), **PWA precache of the landing screenshots** (English only; the capture script did not
+  fail on a clean tree).
+- WP96, WP97, WP101 (decisions 67–70): **Jersey number across teams: preferred number and carry-over** (core 3.5.0,
+  V19; rollover already kept numbers) and **Export**: one CSV spec, the roster and audit trails as audited,
+  rate-limited `:export` operations of core, player stats, box score and team calendar (CSV, deferred XLSX, ICS) built
+  in the browser (ADR-0048); the web dialogs and buttons (WP101).
+- WP98, WP100 (decision 66): **[v2] Events, default flip**: `replica` by default in game and athlete without the shadow
+  period, `just events-drift [--kind]`, `rest` as the fallback (ADR-0037 amendment); chart 0.10.0 renders `replica`
+  wherever events are on. **Duplicated test and job code** (`ReplicaRetention` and `RosterBrokerResource` in
+  common-quarkus; the job stays per service), **Decoders on a missing contracts jar** (`IllegalStateException` naming
+  the resource again), **Replica lag in the e2e tenant test** (the journeys wait for the replicas).
+- WP100: **Chart SMTP settings for core**, **Chart version after WP84/WP85** (chart 0.10.0, keycloak 0.6.0),
+  **Core restart on a fresh install can go** (`up.sh` no longer restarts core; the recovery proven by a forced SASL
+  failure), **Envoy Gateway v1.10.0** (matrix checked, kind proof, ADR-0031 amendment), the kind proof of SD-08's
+  Keycloak headers and of the `RATELIMIT_REDIS_PASSWORD` rotation.
+- WP103 (decision 74): a seeded **test academy** through the real API (`just seed-academy`).
+- Owner, 2026-11-07: **Podman API without the idle timeout** (the `--time=0` drop-in) and **NVD key for Dependabot
+  PRs** (repository and Dependabot secret).
+
 Fifth round (WP72–WP90 without WP79, 2026-11-06/07; each line names the open item it closed):
 - WP72, WP73, WP74, WP75, WP77 (decisions 52, 57): **App UI redesign to the landing-page look**: design tokens
   (`HoopsColors` light/dark, spacing, radii, type, motion), a token-mapped Material 3 theme and a shared kit

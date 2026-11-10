@@ -12,7 +12,10 @@ decides sobre las solicitudes de jugadores. Los nombres de menú son los que mue
   Keycloak te pide elegir tu propia contraseña (al menos 12 caracteres). No se envía correo de invitación (ADR-0024).
 - Barra inferior en el móvil (barra lateral en pantallas anchas): **Admin**, **Equipos**, **Partidos**, **Entrenos**,
   **Jugadores**.
-- Toca el logo o el nombre de la academia en la barra superior para **Cambiar de academia** si perteneces a varias.
+- Si tu login pertenece a varias academias, la etiqueta de contexto de la barra superior (**Cambiar de contexto**) te
+  lleva de una a otra; la aplicación abre la última que usaste en este navegador.
+- **Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
+  conexión). El correo lo cambia el administrador.
 - **Perfil** (barra superior): **Idioma** (Español, English, Bahasa Indonesia) y **Cerrar sesión**.
 
 ## 1. Perfil de la academia y logo
@@ -113,6 +116,40 @@ qué fue y quién la hizo («Sistema» para los procesos automáticos, «Adminis
 superadministrador, cuya identidad no se muestra; el motivo de una suspensión o baja sí). Los nombres se muestran como son hoy; una entrada sobre algo que ya no existe muestra solo su tipo.
 Filtra por intervalo de fechas y por una o varias acciones; cambia de página con las flechas de abajo. Solo la ven los
 administradores. Las entradas nunca se editan ni se borran y se conservan (todavía no hay limpieza automática).
+
+## 11. Dorsales
+- Un jugador puede tener un **Dorsal preferido** (página del jugador, **Cambiar dorsal preferido**; una o dos cifras;
+  vacío lo quita). Lo fijáis tú y los entrenadores; la familia o el propio jugador pueden indicarlo como deseo (se les
+  avisa de que decide el entrenador).
+- Al asignar un jugador a un equipo (**Plantilla > Asignar jugador**, o **Asignar a un equipo** en la página del
+  jugador) sin escribir dorsal, la aplicación elige uno: el preferido si está libre en ese equipo; si no, el de su
+  equipo más reciente que tuviera dorsal, si está libre; si no, ninguno. Un mensaje dice qué regla se aplicó, p. ej.
+  "Dorsal 7 asignado: es el que el jugador prefería."; si no se asignó ninguno, se abre en el acto el selector de
+  dorsal.
+- El selector (también tras **Cambiar dorsal**) muestra los **Dorsales ocupados** con su jugador y los **Dorsales
+  libres** (0-99, toca uno para rellenarlo). Un dorsal ocupado se rechaza nombrando a quien lo tiene ("El 7 lo tiene
+  ...").
+- El cambio de temporada conserva los dorsales de las asignaciones copiadas.
+
+## 12. Exportaciones
+Las genera el servidor (necesitan conexión, salen en el idioma de la aplicación y se detienen en 10.000 filas):
+- **Plantilla del equipo**: el icono de descarga en la barra superior de un equipo (**Exportar la plantilla (CSV)**)
+  guarda los jugadores del equipo con sus datos, categoría y elegibilidad, los tutores activos de cada jugador con sus
+  datos de contacto, y el cuerpo técnico como segundo bloque. Lo tienen los administradores y el entrenador del equipo
+  (también quien lo entrenó en una temporada terminada). Cada exportación aparece en la actividad como **Plantilla del
+  equipo exportada**.
+- **Actividad**: el icono de descarga en **Actividad** (**Exportar la actividad (CSV)**) guarda todas las entradas que
+  seleccionan los filtros actuales, no solo la página en pantalla; si hay más de 10.000 filas, acota las fechas o las
+  acciones. Queda registrada como **Registro de auditoría exportado**.
+
+Se generan en tu dispositivo con lo que la pantalla ya cargó (icono de descarga **Exportar**): las **Estadísticas de
+temporada** (una fila por partido más los totales) y las estadísticas de un partido como **Archivo CSV** o **Archivo
+Excel**; la lista de partidos y la semana de entrenos como calendario del equipo (partidos y sesiones de la temporada
+elegida) en CSV, Excel o **Archivo de calendario (.ics)**, que el calendario del móvil o del ordenador puede importar.
+Excel se carga la primera vez que lo eliges y entonces necesita conexión; sin ella la aplicación lo indica y el CSV sigue
+funcionando.
+
+Los archivos se llaman `hoops-<academia>-<qué>-<aaaammdd>.csv`; los CSV se abren directamente en Excel.
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.
