@@ -5,6 +5,8 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import 'package:intl/intl.dart';
 
 import '../../../core/api/api.dart' as api;
+import '../../../core/export/export_menu.dart';
+import '../../../core/export/export_runner.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
@@ -12,6 +14,7 @@ import '../../admin/application/admin_providers.dart';
 import '../../roster/application/roster_providers.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/match_providers.dart';
+import 'match_export_actions.dart';
 import 'match_labels.dart';
 
 /// Narrowest average tile: two in a row on a phone, four from tablets.
@@ -46,6 +49,18 @@ class _SeasonStatsScreenState extends ConsumerState<SeasonStatsScreen> {
     return SubPage(
       title: l.seasonStatsTitle,
       parentPath: '/matches',
+      actions: [
+        if (seasonId != null)
+          ExportMenu(
+            formats: const [ExportFormat.csv, ExportFormat.xlsx],
+            prepare: (ref, l) => prepareStatsExport(
+              ref,
+              l,
+              playerId: widget.playerId,
+              seasonId: seasonId,
+            ),
+          ),
+      ],
       child: Column(
         children: [
           if (seasons.length > 1)

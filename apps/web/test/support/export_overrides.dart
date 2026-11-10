@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:hoops_app/core/export/export_context.dart';
 import 'package:hoops_app/core/export/export_runner.dart';

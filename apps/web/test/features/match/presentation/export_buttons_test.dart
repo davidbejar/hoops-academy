@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/export/ics_writer.dart';
-import 'package:hoops_app/core/ui/kit.dart';
 import 'package:hoops_app/features/match/domain/match_event.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
@@ -183,8 +182,9 @@ void main() {
       await choose(tester, 'csv');
       final f = downloader.saved.single;
       expect(f.fileName, 'hoops-role-test-player-stats-ana-ruiz-20261110.csv');
+      expect(f.bytes.take(3), [0xEF, 0xBB, 0xBF], reason: 'UTF-8 BOM');
       final text = csvOf(f);
-      expect(text, startsWith('﻿Jugador,Fecha,Hora de inicio'));
+      expect(text, startsWith('Jugador,Fecha,Hora de inicio'));
       expect(text, contains('Ana Ruiz,2026-10-31,'));
       expect(text, contains(',Lobos,Finalizado,Sí,'));
       expect(text, contains(',Totales,'));
@@ -332,35 +332,52 @@ void main() {
       );
     });
 
-    testWidgets(
-      'matches unreadable and nothing cached: sessions only, said so',
-      (tester) async {
-        final g = game();
-        await pumpAt(
-          tester,
-          '/matches',
-          withGame: g,
-          athlete: athleteWithSessions(),
-        );
-        g.matches.failWith = const AppError(kind: AppErrorKind.network);
-        await choose(tester, 'ics');
-        final text = utf8.decode(downloader.saved.single.bytes);
-        expect(text, contains('UID:training-s1@hoops-academy'));
-        expect(text, isNot(contains('UID:match')));
-        expect(
-          find.textContaining('el archivo solo incluye los entrenamientos'),
-          findsOneWidget,
-        );
-      },
-    );
+    testWidgets('matches unreadable but seen on the list: the cache is used', (
+      tester,
+    ) async {
+      final g = game();
+      await pumpAt(
+        tester,
+        '/matches',
+        withGame: g,
+        athlete: athleteWithSessions(),
+      );
+      g.matches.failWith = const AppError(kind: AppErrorKind.network);
+      await choose(tester, 'ics');
+      final text = utf8.decode(downloader.saved.single.bytes);
+      expect(text, contains('UID:match-$fin@hoops-academy'));
+      expect(text, contains('UID:training-s1@hoops-academy'));
+      expect(find.textContaining('solo incluye'), findsNothing);
+    });
+
+    testWidgets('matches unreadable, nothing cached: sessions only, said so', (
+      tester,
+    ) async {
+      final g = game()
+        ..matches.failWith = const AppError(kind: AppErrorKind.network);
+      await pumpAt(
+        tester,
+        '/training',
+        withGame: g,
+        athlete: athleteWithSessions(),
+      );
+      await choose(tester, 'ics');
+      final text = utf8.decode(downloader.saved.single.bytes);
+      expect(text, contains('UID:training-s1@hoops-academy'));
+      expect(text, isNot(contains('UID:match')));
+      expect(
+        find.textContaining('el archivo solo incluye los entrenamientos'),
+        findsOneWidget,
+      );
+    });
 
     testWidgets('both sources down: the error message, no file', (
       tester,
     ) async {
-      final g = game();
+      final g = game()
+        ..matches.failWith = const AppError(kind: AppErrorKind.network);
       final athlete = athleteWithSessions();
-      await pumpAt(tester, '/matches', withGame: g, athlete: athlete);
-      g.matches.failWith = const AppError(kind: AppErrorKind.network);
+      await pumpAt(tester, '/training', withGame: g, athlete: athlete);
       athlete.training.failWith = const AppError(kind: AppErrorKind.network);
       await choose(tester, 'ics');
       expect(downloader.saved, isEmpty);

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:hoops_app/core/export/export_runner.dart';
@@ -28,5 +29,5 @@ class FakeFileDownloader implements FileDownloader {
 /// offline failure.
 XlsxBuilder fakeXlsx({bool offline = false}) => (ExportTable table) async {
   if (offline) throw const XlsxUnavailable('offline');
-  return Uint8List.fromList('xlsx:${table.sheetName}'.codeUnits);
+  return Uint8List.fromList(utf8.encode('xlsx:${table.sheetName}'));
 };

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
+import '../../../core/export/export_menu.dart';
+import '../../../core/export/export_runner.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
@@ -14,6 +16,7 @@ import 'box_score_view.dart';
 import 'court_panel.dart';
 import 'event_log.dart';
 import 'live_scoreboard.dart';
+import 'match_export_actions.dart';
 import 'match_edit_dialog.dart';
 import 'sync_banner.dart';
 
@@ -55,7 +58,18 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
     return SubPage(
       title: m == null ? l.navMatches : l.matchVs(m.match.opponentName),
       parentPath: '/matches',
-      actions: [if (m != null && m.rights.canRunMatch) _StaffMenu(live: m)],
+      actions: [
+        if (m != null && m.roster.isNotEmpty)
+          ExportMenu(
+            formats: const [ExportFormat.csv, ExportFormat.xlsx],
+            prepare: (ref, l) async => boxScoreJob(
+              ref,
+              l,
+              await ref.read(liveMatchProvider(widget.matchId).future),
+            ),
+          ),
+        if (m != null && m.rights.canRunMatch) _StaffMenu(live: m),
+      ],
       child: AsyncBody<LiveMatch>(
         value: value,
         onRetry: () => ref.invalidate(liveMatchProvider(widget.matchId)),

@@ -11,6 +11,7 @@ import '../../../core/ui/async_body.dart';
 import '../../../core/ui/date_field.dart';
 import '../../../core/ui/kit.dart';
 import '../../tenant/application/tenant_providers.dart';
+import '../../training/presentation/calendar_exports.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../../roster/presentation/season_bar.dart';
@@ -55,6 +56,11 @@ class MatchesScreen extends ConsumerWidget {
                   PageHeader(
                     title: l.navMatches,
                     subtitle: zone == null ? null : l.timesShownIn(zone),
+                    actions: [
+                      calendarExportMenu(
+                        teamId: ref.watch(matchTeamFilterProvider),
+                      ),
+                    ],
                   ),
                   const SeasonBar(),
                   if (caps.canSeeModule) ...[

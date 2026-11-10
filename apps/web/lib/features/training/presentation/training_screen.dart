@@ -18,6 +18,7 @@ import '../../roster/presentation/season_bar.dart';
 import '../application/training_providers.dart';
 import '../domain/exercise_pick.dart';
 import '../domain/week.dart';
+import 'calendar_exports.dart';
 import 'plan_search.dart';
 import 'training_labels.dart';
 
@@ -55,7 +56,14 @@ class TrainingScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _WeekHeader(monday: monday),
-                  const TimezoneNote(),
+                  Row(
+                    children: [
+                      const Expanded(child: TimezoneNote()),
+                      calendarExportMenu(
+                        teamId: ref.watch(calendarTeamProvider),
+                      ),
+                    ],
+                  ),
                   SeasonBar(
                     onChanged: (season) {
                       // The calendar follows the season: its last week, or this week again.
