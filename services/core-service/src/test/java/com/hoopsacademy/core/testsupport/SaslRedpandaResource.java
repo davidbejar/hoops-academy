@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.testsupport;
 
+import com.hoopsacademy.common.testing.ContainerStarts;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,7 +33,7 @@ public class SaslRedpandaResource implements QuarkusTestResourceLifecycleManager
         // docker.io/redpandadata/redpanda is the image Testcontainers expects under another registry name
         broker = new RedpandaContainer(DockerImageName.parse(image).asCompatibleSubstituteFor("redpandadata/redpanda"))
                 .enableSasl();
-        broker.start();
+        ContainerStarts.start(broker);   // WP87: survives Docker API connections closed while idle
         List<String> create = new ArrayList<>(List.of("rpk", "topic", "create"));
         create.addAll(TOPICS);
         create.addAll(List.of("-p", "1", "-c", "cleanup.policy=compact"));

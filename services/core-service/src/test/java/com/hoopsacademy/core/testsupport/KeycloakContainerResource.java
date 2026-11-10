@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.testsupport;
 
+import com.hoopsacademy.common.testing.ContainerStarts;
 import com.hoopsacademy.common.testing.RealmKeycloakResource;
 import com.hoopsacademy.common.testing.TestRealm;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
@@ -48,11 +49,11 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
             network = Network.newNetwork();
             mailhog = new GenericContainer<>(MAILHOG_IMAGE).withNetwork(network).withNetworkAliases("mailhog")
                     .withExposedPorts(MAILHOG_API);
-            mailhog.start();
+            ContainerStarts.start(mailhog);   // WP87: survives Docker API connections closed while idle
             keycloak.withNetwork(network);
             config.put(MAILHOG_URL, "http://" + mailhog.getHost() + ":" + mailhog.getMappedPort(MAILHOG_API));
         }
-        keycloak.start();
+        ContainerStarts.start(keycloak);
         String server = keycloak.getAuthServerUrl();
         config.putAll(Map.of(
                 "quarkus.keycloak.admin-client.server-url", server,
