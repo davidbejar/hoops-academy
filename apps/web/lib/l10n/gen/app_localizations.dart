@@ -5428,6 +5428,12 @@ abstract class AppLocalizations {
   /// **'Academia creada'**
   String get auditActionTenantCreated;
 
+  /// No description provided for @auditActionTenantEventsBackfilled.
+  ///
+  /// In es, this message translates to:
+  /// **'Eventos de la academia regenerados'**
+  String get auditActionTenantEventsBackfilled;
+
   /// No description provided for @auditActionTenantLogoRemoved.
   ///
   /// In es, this message translates to:
@@ -5457,6 +5463,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Academia reactivada'**
   String get auditActionTenantReactivated;
+
+  /// No description provided for @auditActionTenantRequestAccepted.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud de academia aceptada'**
+  String get auditActionTenantRequestAccepted;
 
   /// No description provided for @auditActionTenantSettingsChanged.
   ///

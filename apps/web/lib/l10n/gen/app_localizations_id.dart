@@ -2933,6 +2933,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get auditActionTenantCreated => 'Akademi dibuat';
 
   @override
+  String get auditActionTenantEventsBackfilled => 'Event akademi dibuat ulang';
+
+  @override
   String get auditActionTenantLogoRemoved => 'Logo dihapus';
 
   @override
@@ -2946,6 +2949,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get auditActionTenantReactivated => 'Akademi diaktifkan kembali';
+
+  @override
+  String get auditActionTenantRequestAccepted => 'Permintaan akademi diterima';
 
   @override
   String get auditActionTenantSettingsChanged => 'Pengaturan diubah';

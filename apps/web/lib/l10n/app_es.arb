@@ -1576,11 +1576,13 @@
   "auditActionPlayerRequested": "Alta de jugador solicitada",
   "auditActionPlayerWithdrawn": "Jugador dado de baja",
   "auditActionTenantCreated": "Academia creada",
+  "auditActionTenantEventsBackfilled": "Eventos de la academia regenerados",
   "auditActionTenantLogoRemoved": "Logo eliminado",
   "auditActionTenantLogoReplaced": "Logo cambiado",
   "auditActionTenantMasterDataChanged": "Datos de la academia cambiados por la plataforma",
   "auditActionTenantProfileChanged": "Perfil de la academia cambiado",
   "auditActionTenantReactivated": "Academia reactivada",
+  "auditActionTenantRequestAccepted": "Solicitud de academia aceptada",
   "auditActionTenantSettingsChanged": "Ajustes cambiados",
   "auditActionTenantSuspended": "Academia suspendida",
   "auditActionTenantWithdrawn": "Academia dada de baja"

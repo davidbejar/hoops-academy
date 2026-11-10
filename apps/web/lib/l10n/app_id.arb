@@ -1203,11 +1203,13 @@
   "auditActionPlayerRequested": "Pemain diajukan",
   "auditActionPlayerWithdrawn": "Pemain ditarik",
   "auditActionTenantCreated": "Akademi dibuat",
+  "auditActionTenantEventsBackfilled": "Event akademi dibuat ulang",
   "auditActionTenantLogoRemoved": "Logo dihapus",
   "auditActionTenantLogoReplaced": "Logo diganti",
   "auditActionTenantMasterDataChanged": "Data induk akademi diubah",
   "auditActionTenantProfileChanged": "Profil akademi diubah",
   "auditActionTenantReactivated": "Akademi diaktifkan kembali",
+  "auditActionTenantRequestAccepted": "Permintaan akademi diterima",
   "auditActionTenantSettingsChanged": "Pengaturan diubah",
   "auditActionTenantSuspended": "Akademi ditangguhkan",
   "auditActionTenantWithdrawn": "Akademi ditarik"

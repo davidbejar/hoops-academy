@@ -2934,6 +2934,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get auditActionTenantCreated => 'Academy created';
 
   @override
+  String get auditActionTenantEventsBackfilled => 'Academy events backfilled';
+
+  @override
   String get auditActionTenantLogoRemoved => 'Logo removed';
 
   @override
@@ -2948,6 +2951,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get auditActionTenantReactivated => 'Academy reactivated';
+
+  @override
+  String get auditActionTenantRequestAccepted => 'Academy request accepted';
 
   @override
   String get auditActionTenantSettingsChanged => 'Settings changed';

@@ -1203,11 +1203,13 @@
   "auditActionPlayerRequested": "Player requested",
   "auditActionPlayerWithdrawn": "Player withdrawn",
   "auditActionTenantCreated": "Academy created",
+  "auditActionTenantEventsBackfilled": "Academy events backfilled",
   "auditActionTenantLogoRemoved": "Logo removed",
   "auditActionTenantLogoReplaced": "Logo replaced",
   "auditActionTenantMasterDataChanged": "Academy master data changed",
   "auditActionTenantProfileChanged": "Academy profile changed",
   "auditActionTenantReactivated": "Academy reactivated",
+  "auditActionTenantRequestAccepted": "Academy request accepted",
   "auditActionTenantSettingsChanged": "Settings changed",
   "auditActionTenantSuspended": "Academy suspended",
   "auditActionTenantWithdrawn": "Academy withdrawn"

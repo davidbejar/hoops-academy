@@ -40,6 +40,8 @@ extension AuditActionLabel on api.AuditAction {
     api.AuditAction.playerPeriodRequested => l.auditActionPlayerRequested,
     api.AuditAction.playerPeriodWithdrawn => l.auditActionPlayerWithdrawn,
     api.AuditAction.tenantPeriodCreated => l.auditActionTenantCreated,
+    api.AuditAction.tenantPeriodEventsBackfilled =>
+      l.auditActionTenantEventsBackfilled,
     api.AuditAction.tenantPeriodLogoRemoved => l.auditActionTenantLogoRemoved,
     api.AuditAction.tenantPeriodLogoReplaced => l.auditActionTenantLogoReplaced,
     api.AuditAction.tenantPeriodMasterDataChanged =>
@@ -47,6 +49,8 @@ extension AuditActionLabel on api.AuditAction {
     api.AuditAction.tenantPeriodProfileChanged =>
       l.auditActionTenantProfileChanged,
     api.AuditAction.tenantPeriodReactivated => l.auditActionTenantReactivated,
+    api.AuditAction.tenantPeriodRequestAccepted =>
+      l.auditActionTenantRequestAccepted,
     api.AuditAction.tenantPeriodSettingsChanged =>
       l.auditActionTenantSettingsChanged,
     api.AuditAction.tenantPeriodSuspended => l.auditActionTenantSuspended,

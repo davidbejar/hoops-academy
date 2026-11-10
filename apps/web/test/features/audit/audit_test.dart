@@ -376,6 +376,13 @@ void main() {
         expect(labels.where((s) => s.trim().isEmpty), isEmpty);
         expect(labels.toSet(), hasLength(auditActions.length));
         expect(labels, isNot(contains(contains('.'))), reason: 'no wire names');
+        for (final a in auditActions) {
+          expect(
+            a.label(l),
+            isNot(anyOf(a.name, auditWireName(a))),
+            reason: '${auditWireName(a)} has no label of its own',
+          );
+        }
       });
     }
   });
