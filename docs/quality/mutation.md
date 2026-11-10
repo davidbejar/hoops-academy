@@ -16,7 +16,7 @@ treatment with a Dart mutation tool ([Web rule code](#web-rule-code-dart-mutatio
 | Module | Mutated classes (`pit.targetClasses`) | Tests PIT runs (`pit.targetTests`) | Mutants | Runtime¹ | Baseline |
 |---|---|---|---|---|---|
 | `common-quarkus` | `TenantId`, `TenantContext`, `AuthzContext`, `Problem`, `ProblemType`, `CoreRosterClient`, `RosterAuthzResolver`, `TenantHeaderPropagationFilter`, `ServiceTokenClientFilter`, `AuthzDenial`, `DenialKind`, `TokenFailureReason` (WP85) + `ExclusiveLocks`, `TenantScopedPaths`, `ProblemMapping` (WP88) + `UnsafeText`, `PageOffset` (WP84) | their plain unit tests | 313 | 25 s | 99 |
-| `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction`, the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67), `KafkaEventBroker` (WP81) + `BackfillPlan`, `DecideAcademyRequest`, `ChangedFields`, `AuditEntry`, `PatchBody` (WP88) | `core.domain.*` tests + the tests of those classes | 778 | 103 s | 99 |
+| `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction`, the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67), `KafkaEventBroker` (WP81) + `BackfillPlan`, `DecideAcademyRequest`, `ChangedFields`, `AuditEntry`, `PatchBody` (WP88) + the export renderers `adapters.in.export.*` and `ExportPages` (WP96) | `core.domain.*` tests + the tests of those classes | 926 | 108 s | 99 |
 | `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility`, the replica rules `ReplicaAuthzResolver`, `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant`, `ReplicaPerson` (WP68), `ReplicaRetention`, `ParkedPosition` (WP82) + `EventAdmission`, `EventLedger`, `MatchEventDecoder`, `RosterEventDecoder` (WP88) | `game.domain.*` tests + the tests of those classes | 550 | 78 s | 99 |
 | `athlete-service` | `athlete.domain.*` + the replica rules `ApplyRosterEvent`, `ReplicaRetention`, `ParkedPosition`, `RosterChange`, `RosterTopic` and the adapters' parsers `CoreEventDecoder`, `AcceptLanguage`, `PatchBody`, `RosterSource` (WP88) | `athlete.domain.*` tests + `ApplyRosterEventRulesTest`, `ReplicaRetentionRulesTest`, `CoreEventDecoderTest`, `AcceptLanguageTest`, `PatchBodyTest`, `RosterSourceTest` | 713 | 114 s² | 100 |
 
@@ -29,6 +29,9 @@ Latest scores (2026-11-07, WP84): common-quarkus 312/313 (99.7 %; the scope grew
 core 622/629, game 469/471, athlete 495/495.
 WP92 (2026-11-10): athlete-service 713/713 (100 %; the scope grew by the exercise catalogue: `Exercise`, `ExerciseId`,
 `ItemContent` and the exercise reference of `PlanItem`).
+WP96 (2026-11-10): core-service 925/926 (99.9 %; the scope grew by the jersey carry-over and the export limit in
+`core.domain`, the CSV writer, labels, language, file names, roster and audit renderers, and `ExportPages`; the one
+survivor is the older `Eligibility.reasons` one).
 
 ² WP92, 2026-11-10, host shared with four other worktrees.
 

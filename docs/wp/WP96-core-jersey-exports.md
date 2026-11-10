@@ -91,3 +91,53 @@ CSV; the team roster with guardians and the audit log are produced by the server
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- **Built** (red test commit before each change; rebased on `main` after WP99):
+  - **Contract core 3.5.0** in two commits (jersey, exports); contract tests `JerseyNumbersContractTest`,
+    `ExportsContractTest`, the clear-list entry for `UpdatePlayerRequest`, `AuditTrailContractTest` counts (32 actions,
+    target `team`).
+  - **Preferred number**: Flyway **V19** (`core.player.preferred_jersey_number`, nullable, `^[0-9]{1,2}$`, not
+    unique). `PATCH /api/core/players/{id}` (`updatePlayer`): ADMIN, COACH (any player they read), PARENT linked,
+    PLAYER self; ASSISTANT_COACH 403; unreadable player 404; unchanged value writes nothing; no audit row, no event.
+    `Player.preferredJerseyNumber` for every reader.
+  - **Carry-over** (`JerseyCarryOver`, domain, PIT): requested → preferred if free → most recent *numbered* assignment's
+    number if free → none; `AssignedTeamPlayer.jerseySource`. Approval with a team and REASSIGNED case resolution use
+    the same command. A race on the same free number answers 409 `TEAM_PLAYER_CONFLICT`.
+  - **Taken numbers**: `GET /api/core/teams/{id}/jersey-numbers` (any member), ordered by value then length.
+  - **Rollover** already kept numbers (invalidated copies too): proven by
+    `RolloverResourceTest.theCopiedAssignmentsKeepTheirNumbersEligibleOrNot`, no fix needed. Event schemas untouched.
+  - **Exports** as `:export` operations (ADR-0048 says why not content negotiation): roster (one file; staff as a second
+    block of rows, same header), academy audit, platform audit. Writer, labels (`i18n/export_{en,es,id}.properties`),
+    language, file name, renderers in `adapters.in.export` (pure, PIT); `ExportPages` reads the existing list use
+    cases page by page (no new SQL, no `set_config`).
+- **Shapes for WP101's mock** (core omits null members):
+  - `PATCH /api/core/players/{id}` `{"preferredJerseyNumber":"7"}` or `{"clear":["preferredJerseyNumber"]}` → `Player`
+    (+ `preferredJerseyNumber`); any other member 400.
+  - `POST /api/core/teams/{id}/players` → 201 `AssignedTeamPlayer` = `TeamPlayer` + `"jerseySource":
+    "REQUESTED|PREFERRED|PREVIOUS|NONE"`.
+  - `GET /api/core/teams/{id}/jersey-numbers` → `[{"jerseyNumber":"7","player":{"id":uuid,"displayName":"Uma Test"}}]`.
+  - `GET /api/core/teams/{id}/roster:export`, `GET /api/core/audit-events:export?from&to&action`,
+    `GET /platform/audit-events:export?tenantId&from&to&action`: 200 `text/csv; charset=utf-8` bytes (Dart:
+    `Response<Uint8List>`, parameter `acceptLanguage`), `Content-Disposition: attachment; filename="hoops-<slug>-roster-<team>-<yyyyMMdd>.csv"`
+    / `…-audit-…` / `hoops-platform-audit-…`, `Cache-Control: no-store`; 422 Problem `code: EXPORT_TOO_LARGE` above
+    10,000 rows; roster 403 for ASSISTANT_COACH / PARENT / PLAYER and for a coach of another team.
+- **Audit actions for WP101's labels**: `team.roster_exported` (target type **`team`**, new) and `audit.exported`
+  (target tenant); server labels en "Team roster exported" / "Audit trail exported", es "Plantilla del equipo
+  exportada" / "Registro de auditoría exportado", id "Daftar tim diekspor" / "Jejak audit diekspor".
+- **Rate limits for WP100** (`core.route.rateLimits`, RE2 on the raw path, per client IP):
+  `{name: roster-export, path: "/api/core/teams/[^/]+/roster(:|%3[Aa])export", rpm: 10, rps: 2}`,
+  `{name: audit-export, path: "/api/core/audit-events(:|%3[Aa])export", rpm: 10, rps: 2}`,
+  `{name: platform-audit-export, path: "/platform/audit-events(:|%3[Aa])export", rpm: 10, rps: 2}`.
+- **Verified** (fresh, after the rebase, `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`, BUILD SUCCESS,
+  coverage and SpotBugs gates met): common-quarkus 392, contracts 315, core-service 1163, game-service 468,
+  athlete-service 1000, e2e 32 (26 skipped); 0 failures. `just mutation core-service`: 925/926 killed (99.9 %, baseline
+  99; the survivor is the older `Eligibility.reasons` one), 108 s. `just diagrams` committed (`core-model.md`). A scratch
+  `scripts/gen-api.sh core` (outside the repo) generated the three exports as `Response<Uint8List>`.
+- **Decisions**: ADR-0048 (export spec, `:export` operations, staff as a second block, `key=value` details, audit rows,
+  jersey rules). "Previous number" = the most recent assignment *with* a number. The roster's eligibility is the
+  stored assignment state; the age category is the natural one in the team's season; only active guardians. A former
+  coach of an ended season may export that team (ADR-0042 history). The platform export records `audit.exported` in
+  each academy with rows in the file.
+- **Open points**: the commit hook once treated a Bash heredoc with unbalanced quotes as a commit and failed its
+  isolation check on a Quarkus boot timeout after 607 s (host load), blocking that command; later commits passed.
+  The audit `team` target shows no name (`displayName` null; resolving team names is a small follow-up). The compose
+  nginx has no `limit_req` for the export paths (WP100 or infra). `docs/adr/README.md`: 0048 placed before WP99's 0049.
