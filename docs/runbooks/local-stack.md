@@ -50,6 +50,28 @@ curl -s localhost:8080/auth/realms/academy/protocol/openid-connect/token -d gran
   -d client_id=core-service -d client_secret=$CORE_SERVICE_CLIENT_SECRET
 ```
 
+## Test academy
+`just seed-academy` (script `infra/keycloak/seed-academy.sh`, decision 74) creates the academy "Test Academy" (slug
+`test-academy`, Europe/Madrid, `es`) through the real API, so the outbox publishes and game/athlete get their roster
+replicas: admins `testadmin1`, `testadmin2`; coach `testcoach1` (coach of the team); players `testplayer1` ..
+`testplayer10` (each with a PLAYER login, U14, jerseys 4-13); parents `testparentplayer1` .. `testparentplayer10`
+(parent N is the guardian of player N only); season "Test Season", team "Test Team". Logins are
+`<name>@hoops-academy.com`, first name "Test". All are active and need no verification or password change.
+- Needs: stack up (`just up`, `just seed-users`), the three services running (`just services-up`) and in `.env`
+  `TEST_ACADEMY_PASSWORD` (>= 12 characters; the realm policy applies) next to the Keycloak and `DEV_USER_PASSWORD`
+  values. Core issues temporary passwords; the script then sets the shared password with `kcadm set-password` (not
+  temporary), clears required actions, marks the e-mail verified and signs in once as each login (which accepts the
+  invitation). Secrets only travel in the environment of `podman exec` and on stdin; nothing is printed.
+- Idempotent: it looks things up by slug, e-mail and name; a second run reports "nothing to create" and only resets
+  the passwords; an interrupted run is completed by the next one. A run takes about 70 s (the gateway limits `/auth`
+  to 60 requests/min; the script waits out a 429).
+- At the end it adds `TEST_ACADEMY_USERS=<logins>` to `.env` once (other lines untouched) and prints the logins.
+- Local only: it refuses a base URL (`SEED_ACADEMY_BASE_URL`, default `http://localhost:8080`) that is not
+  `localhost` / `127.0.0.1` unless `SEED_ACADEMY_ALLOW_REMOTE=1`.
+- Remove: sign in as `superadmin@hoops-academy.com` and `POST /platform/tenants/{id}/withdraw` with
+  `{"reason": "..."}` (Platform > academy > Withdraw in the app). The slug stays taken afterwards, and the script
+  refuses a non-ACTIVE academy; the Keycloak logins remain (delete them in the admin console if needed).
+
 ## Troubleshooting
 - `Cannot connect to Podman` / compose fails: `podman machine start`, then `source scripts/env.sh`.
 - `required variable ... set in .env`: copy `.env.example` to `.env` and fill it.

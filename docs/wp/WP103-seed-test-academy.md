@@ -70,4 +70,18 @@ to use: every login active, no e-mail verification, no forced password change, o
   behind, withdraw it through the API and say so.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built: `infra/keycloak/seed-academy.sh` + `just seed-academy`, `.env.example` keys, runbook section "Test academy" in
+  `docs/runbooks/local-stack.md`. Logins (all `@hoops-academy.com`): testadmin1, testadmin2, testcoach1,
+  testplayer1..10, testparentplayer1..10. Flow: super admin creates the tenant (first admin testadmin1), final password
+  via kcadm, then as testadmin1: members (admin2, coach, 10 parents), season, team, coach staff, players with logins
+  (`POST /api/core/players` with e-mail, ACTIVE directly, assigned with jersey 3+N), guardian links; then final
+  passwords for all, one sign-in each (`/api/core/me` accepts the invitation: 23 ACCEPTED, temp-password status NONE),
+  and a polled wait (60 s deadline) until game and athlete accept each parent's guardian link.
+- Verified: first run hit the nginx `auth` rate limit (60/min, burst 30; a login is 3 requests) -> `login` retries on
+  429. A run takes ~70 s. Second run: "nothing to create"; the interrupted first runs were completed by later ones.
+  Tokens for testadmin1, testcoach1, testparentplayer3, testplayer3 obtained by auth-code+PKCE (reaches the redirect, so
+  no required action). Parent 3: `/me` linkedPlayerIds = player 3 only, `/api/core/players` = 1 ("Test Player 3").
+  Team roster rows with `left_on is null`: game 10, athlete 10. `just events-drift` exit 0. shellcheck clean.
+- Decisions/ADRs: none. Players are created by the admin (no approval request needed).
+- Open points: the slug stays taken after a withdraw, so a re-seed needs another slug; Keycloak logins survive a
+  withdraw. The docs pass could add the test academy to the admin guide and the owner's sign-in note.
