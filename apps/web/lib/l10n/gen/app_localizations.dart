@@ -550,6 +550,36 @@ abstract class AppLocalizations {
   /// **'Plataforma'**
   String get navPlatform;
 
+  /// No description provided for @navAppHub.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen'**
+  String get navAppHub;
+
+  /// No description provided for @navAppAcademies.
+  ///
+  /// In es, this message translates to:
+  /// **'Academias'**
+  String get navAppAcademies;
+
+  /// No description provided for @navAppUsers.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuarios'**
+  String get navAppUsers;
+
+  /// No description provided for @navAppRequests.
+  ///
+  /// In es, this message translates to:
+  /// **'Peticiones'**
+  String get navAppRequests;
+
+  /// No description provided for @navAppActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Auditoría'**
+  String get navAppActivity;
+
   /// No description provided for @placeholderModule.
   ///
   /// In es, this message translates to:
@@ -615,6 +645,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Roles: {roles}'**
   String rolesInAcademy(String roles);
+
+  /// No description provided for @switchContext.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar de contexto'**
+  String get switchContext;
+
+  /// No description provided for @chooseContextTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Dónde quieres trabajar?'**
+  String get chooseContextTitle;
+
+  /// No description provided for @chooseContextSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu acceso incluye varios espacios. Elige uno; puedes cambiar en cualquier momento.'**
+  String get chooseContextSubtitle;
+
+  /// No description provided for @contextApplicationAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Administración de la aplicación'**
+  String get contextApplicationAdmin;
+
+  /// No description provided for @contextApplicationAdminRole.
+  ///
+  /// In es, this message translates to:
+  /// **'Super administrador'**
+  String get contextApplicationAdminRole;
 
   /// No description provided for @roleAdmin.
   ///
@@ -4582,6 +4642,36 @@ abstract class AppLocalizations {
   /// **'Mis datos personales'**
   String get profileOwnData;
 
+  /// No description provided for @profileNameTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu nombre'**
+  String get profileNameTitle;
+
+  /// No description provided for @profileNameHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Es el nombre con el que te ve esta academia.'**
+  String get profileNameHint;
+
+  /// No description provided for @profileNameSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar nombre'**
+  String get profileNameSave;
+
+  /// No description provided for @profileNameSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre actualizado'**
+  String get profileNameSaved;
+
+  /// No description provided for @profileNameNeedsConnection.
+  ///
+  /// In es, this message translates to:
+  /// **'Necesitas conexión para cambiar tu nombre'**
+  String get profileNameNeedsConnection;
+
   /// No description provided for @profileResetDemo.
   ///
   /// In es, this message translates to:
@@ -4617,6 +4707,102 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Nueva academia'**
   String get platformNew;
+
+  /// No description provided for @appAdminTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Administración de la aplicación'**
+  String get appAdminTitle;
+
+  /// No description provided for @appAdminAcademies.
+  ///
+  /// In es, this message translates to:
+  /// **'Academias'**
+  String get appAdminAcademies;
+
+  /// No description provided for @appAdminUsers.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuarios'**
+  String get appAdminUsers;
+
+  /// No description provided for @appAdminPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprobaciones pendientes'**
+  String get appAdminPending;
+
+  /// No description provided for @appAdminAudit.
+  ///
+  /// In es, this message translates to:
+  /// **'Auditoría'**
+  String get appAdminAudit;
+
+  /// No description provided for @appAdminBilling.
+  ///
+  /// In es, this message translates to:
+  /// **'Facturación'**
+  String get appAdminBilling;
+
+  /// No description provided for @appAdminSoon.
+  ///
+  /// In es, this message translates to:
+  /// **'Próximamente'**
+  String get appAdminSoon;
+
+  /// No description provided for @billingSoonTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'La facturación llega pronto'**
+  String get billingSoonTitle;
+
+  /// No description provided for @billingSoonBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay nada que configurar aquí.'**
+  String get billingSoonBody;
+
+  /// No description provided for @usersTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Usuarios'**
+  String get usersTitle;
+
+  /// No description provided for @usersSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por nombre o correo'**
+  String get usersSearchHint;
+
+  /// No description provided for @usersSearchTooShort.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe al menos 2 caracteres'**
+  String get usersSearchTooShort;
+
+  /// No description provided for @usersEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Ningún usuario coincide'**
+  String get usersEmpty;
+
+  /// No description provided for @usersNoEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin correo'**
+  String get usersNoEmail;
+
+  /// No description provided for @usersNoMemberships.
+  ///
+  /// In es, this message translates to:
+  /// **'No pertenece a ninguna academia'**
+  String get usersNoMemberships;
+
+  /// No description provided for @usersInactiveMember.
+  ///
+  /// In es, this message translates to:
+  /// **'Inactivo'**
+  String get usersInactiveMember;
 
   /// No description provided for @tenantName.
   ///

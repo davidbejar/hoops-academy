@@ -1132,7 +1132,11 @@ void main() {
       await h.pump(tester);
       await h.go(tester, '/platform');
       expect(find.text('Club Norte'), findsOneWidget);
-      expect(h.container.read(routerProvider).state.uri.path, '/platform');
+      // The old link opens the Academies area of the application admin.
+      expect(
+        h.container.read(routerProvider).state.uri.path,
+        '/app-admin/academies',
+      );
     });
 
     testWidgets(

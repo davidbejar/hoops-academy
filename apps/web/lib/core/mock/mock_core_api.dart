@@ -620,6 +620,8 @@ class MockCoreApi {
     if (denied != null) return denied;
 
     switch (res) {
+      case 'me':
+        if (id == null && is_('PATCH')) return _renameSelf(b);
       case 'tenant':
         if (id == null) {
           if (is_('GET')) return MockResult.json(200, _profileJson(tenantId));
@@ -834,6 +836,30 @@ class MockCoreApi {
       _ => true,
     };
     return allowed ? null : _forbidden;
+  }
+
+  /// The demo user's own name in this academy (what `/me` reports as `displayName`).
+  String get selfName =>
+      _members.firstWhere((m) => m['personId'] == 'a1')['displayName']!
+          as String;
+
+  /// `PATCH /api/core/me` with a name (core 3.4.0): the caller's own person gets the new first / last name; the
+  /// member list shows it afterwards.
+  MockResult _renameSelf(Map<String, Object?> b) {
+    final me = _members.firstWhere((m) => m['personId'] == 'a1');
+    for (final key in const ['givenName', 'familyName']) {
+      final value = b[key];
+      if (value is String) me[key] = value;
+    }
+    me['displayName'] = '${me['givenName']} ${me['familyName']}';
+    for (final staff in _staff.values) {
+      for (final row in staff) {
+        final person = row['person']! as Map<String, Object?>;
+        if (person['personId'] == 'a1')
+          person['displayName'] = me['displayName'];
+      }
+    }
+    return const MockResult.empty(204);
   }
 
   Map<String, Object?> _rollover(String fromId) {

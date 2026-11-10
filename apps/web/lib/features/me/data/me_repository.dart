@@ -8,6 +8,14 @@ abstract class MeRepository {
 
   /// Persists the language preference server-side (best effort for callers).
   Future<void> updateLocale(String localeCode);
+
+  /// The caller's own first and/or last name in the academy [tenantId] (`PATCH /me`, core 3.4.0); a field left null
+  /// stays as it is. 404 when the caller is not an active member of that academy.
+  Future<void> updateName({
+    required String tenantId,
+    String? givenName,
+    String? familyName,
+  });
 }
 
 /// `/api/core/me` through the generated client.
@@ -25,6 +33,22 @@ class ApiMeRepository implements MeRepository {
     await _api.updateMe(
       updateMeRequest: api.UpdateMeRequest(
         (b) => b.locale = api.Locale.valueOf(localeCode),
+      ),
+    );
+  }
+
+  @override
+  Future<void> updateName({
+    required String tenantId,
+    String? givenName,
+    String? familyName,
+  }) async {
+    await _api.updateMe(
+      updateMeRequest: api.UpdateMeRequest(
+        (b) => b
+          ..tenantId = tenantId
+          ..givenName = givenName
+          ..familyName = familyName,
       ),
     );
   }

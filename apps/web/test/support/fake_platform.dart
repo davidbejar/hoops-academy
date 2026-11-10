@@ -25,6 +25,39 @@ api.Tenant tenantOf(
     ..createdAt = DateTime.utc(2026, 1, 5),
 );
 
+api.PlatformUserMembership userMembership(
+  String tenantId,
+  String tenantName, {
+  String given = 'Casey',
+  String family = 'Coach',
+  Set<api.TenantRole> roles = const {api.TenantRole.COACH},
+  bool active = true,
+  api.TenantStatus status = api.TenantStatus.ACTIVE,
+}) => api.PlatformUserMembership(
+  (b) => b
+    ..tenantId = tenantId
+    ..tenantName = tenantName
+    ..tenantSlug = tenantName.toLowerCase().replaceAll(' ', '-')
+    ..tenantStatus = status
+    ..personId = 'p-$tenantId'
+    ..givenName = given
+    ..familyName = family
+    ..roles = SetBuilder<api.TenantRole>(roles)
+    ..active = active,
+);
+
+api.PlatformUser platformUserOf(
+  String id,
+  String? email, {
+  List<api.PlatformUserMembership> memberships = const [],
+}) => api.PlatformUser(
+  (b) => b
+    ..id = id
+    ..email = email
+    ..createdAt = DateTime.utc(2026, 10, 1)
+    ..memberships = ListBuilder<api.PlatformUserMembership>(memberships),
+);
+
 api.UsageReport usageReport(String service, Map<String, int> counters) =>
     api.UsageReport(
       (b) => b
@@ -131,6 +164,44 @@ class FakePlatformRepository with Faulty implements PlatformRepository {
               t,
         ];
       });
+
+  /// Logins returned by `users` (filtered by name or e-mail like the server does).
+  final List<api.PlatformUser> userList = [];
+  final List<({String? query, int page})> userRequests = [];
+
+  @override
+  Future<api.PlatformUserPage> users({
+    String? query,
+    int page = 0,
+    int size = platformUsersPageSize,
+  }) => run('users', () {
+    userRequests.add((query: query, page: page));
+    final q = query?.toLowerCase();
+    final all = [
+      for (final u in userList)
+        if (q == null ||
+            (u.email ?? '').toLowerCase().contains(q) ||
+            u.memberships.any(
+              (m) => '${m.givenName} ${m.familyName}'.toLowerCase().contains(q),
+            ))
+          u,
+    ];
+    final from = (page * size).clamp(0, all.length);
+    final to = (from + size).clamp(0, all.length);
+    return api.PlatformUserPage(
+      (b) => b
+        ..items = ListBuilder<api.PlatformUser>(all.sublist(from, to))
+        ..page.replace(
+          api.PageMeta(
+            (p) => p
+              ..page = page
+              ..size = size
+              ..totalElements = all.length
+              ..totalPages = (all.length / size).ceil(),
+          ),
+        ),
+    );
+  });
 
   @override
   Future<api.Tenant> tenant(String tenantId) =>

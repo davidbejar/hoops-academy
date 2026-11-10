@@ -268,6 +268,21 @@ class AppLocalizationsId extends AppLocalizations {
   String get navPlatform => 'Platform';
 
   @override
+  String get navAppHub => 'Ringkasan';
+
+  @override
+  String get navAppAcademies => 'Akademi';
+
+  @override
+  String get navAppUsers => 'Pengguna';
+
+  @override
+  String get navAppRequests => 'Permintaan';
+
+  @override
+  String get navAppActivity => 'Audit';
+
+  @override
   String placeholderModule(String module) {
     return '$module: segera hadir';
   }
@@ -304,6 +319,22 @@ class AppLocalizationsId extends AppLocalizations {
   String rolesInAcademy(String roles) {
     return 'Peran: $roles';
   }
+
+  @override
+  String get switchContext => 'Ganti konteks';
+
+  @override
+  String get chooseContextTitle => 'Di mana Anda ingin bekerja?';
+
+  @override
+  String get chooseContextSubtitle =>
+      'Akun Anda mencakup beberapa tempat. Pilih satu; Anda bisa berganti kapan saja.';
+
+  @override
+  String get contextApplicationAdmin => 'Admin aplikasi';
+
+  @override
+  String get contextApplicationAdminRole => 'Super admin';
 
   @override
   String get roleAdmin => 'Administrator';
@@ -2464,6 +2495,22 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileOwnData => 'Data pribadi saya';
 
   @override
+  String get profileNameTitle => 'Nama Anda';
+
+  @override
+  String get profileNameHint => 'Ini nama yang dilihat akademi ini.';
+
+  @override
+  String get profileNameSave => 'Simpan nama';
+
+  @override
+  String get profileNameSaved => 'Nama diperbarui';
+
+  @override
+  String get profileNameNeedsConnection =>
+      'Anda perlu koneksi untuk mengganti nama';
+
+  @override
   String get profileResetDemo => 'Atur ulang data demo';
 
   @override
@@ -2480,6 +2527,54 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get platformNew => 'Akademi baru';
+
+  @override
+  String get appAdminTitle => 'Admin aplikasi';
+
+  @override
+  String get appAdminAcademies => 'Akademi';
+
+  @override
+  String get appAdminUsers => 'Pengguna';
+
+  @override
+  String get appAdminPending => 'Persetujuan tertunda';
+
+  @override
+  String get appAdminAudit => 'Jejak audit';
+
+  @override
+  String get appAdminBilling => 'Penagihan';
+
+  @override
+  String get appAdminSoon => 'Segera hadir';
+
+  @override
+  String get billingSoonTitle => 'Penagihan segera hadir';
+
+  @override
+  String get billingSoonBody => 'Belum ada yang perlu diatur di sini.';
+
+  @override
+  String get usersTitle => 'Pengguna';
+
+  @override
+  String get usersSearchHint => 'Cari nama atau email';
+
+  @override
+  String get usersSearchTooShort => 'Ketik minimal 2 karakter';
+
+  @override
+  String get usersEmpty => 'Tidak ada pengguna yang cocok';
+
+  @override
+  String get usersNoEmail => 'Tanpa email';
+
+  @override
+  String get usersNoMemberships => 'Bukan anggota akademi mana pun';
+
+  @override
+  String get usersInactiveMember => 'Tidak aktif';
 
   @override
   String get tenantName => 'Nama akademi';

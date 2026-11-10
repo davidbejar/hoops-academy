@@ -170,10 +170,7 @@ void main() {
         expect(redirectFor(inApp, '/platform'), '/app-admin/academies');
         expect(redirectFor(inApp, '/platform/requests'), '/app-admin/requests');
         expect(redirectFor(inApp, '/platform/activity'), '/app-admin/activity');
-        expect(
-          redirectFor(inApp, '/platform/t-1'),
-          '/app-admin/academies/t-1',
-        );
+        expect(redirectFor(inApp, '/platform/t-1'), '/app-admin/academies/t-1');
         expect(
           redirectFor(inApp, '/platform/t-1/activity'),
           '/app-admin/academies/t-1/activity',
@@ -181,7 +178,10 @@ void main() {
       });
 
       test('a signed-out visitor is asked to sign in first', () {
-        expect(redirectFor(const SessionState.signedOut(), '/platform'), '/login');
+        expect(
+          redirectFor(const SessionState.signedOut(), '/platform'),
+          '/login',
+        );
       });
 
       test('legacyPlatformPath leaves every other path alone', () {

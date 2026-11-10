@@ -276,8 +276,8 @@ void main() {
             tenantName: 'Academia Sur',
           ),
         ]);
-        await _pumpPlatform(tester, repo, '/platform');
-        await tester.tap(find.byKey(const Key('platform-activity')));
+        await _pumpPlatform(tester, repo, '/app-admin');
+        await tester.tap(find.byKey(const Key('app-admin-activity')));
         await tester.pumpAndSettle();
         expect(repo.platformQueries.last.$1, isNull);
         expect(

@@ -4,8 +4,9 @@ import '../storage/preferences.dart';
 
 const _prefKey = 'hoops.selectedTenantId';
 
-/// The tenant id the user picked, persisted locally. Whether it is still a
-/// valid membership is decided by the session provider.
+/// The context the user picked, persisted locally: a tenant id, or
+/// `platformContextId` for the application admin of a super admin. Whether it
+/// is still valid is decided by the session provider.
 class SelectedTenantId extends Notifier<String?> {
   @override
   String? build() => ref.watch(sharedPreferencesProvider).getString(_prefKey);

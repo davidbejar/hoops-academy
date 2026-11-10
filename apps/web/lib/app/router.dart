@@ -7,6 +7,7 @@ import '../core/auth/auth_service.dart';
 import '../core/navigation/destinations.dart';
 import '../core/session/session.dart';
 import '../core/session/session_providers.dart';
+import '../core/tenancy/tenant_selection.dart';
 import '../core/ui/app_error_view.dart';
 import '../core/ui/deferred_screen.dart';
 import '../features/landing/presentation/landing_screen.dart';
@@ -51,8 +52,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   // anonymous visit to `/` can become the landing (WP70).
   final router = GoRouter(
     refreshListenable: refresh,
-    redirect: (context, state) =>
-        redirectFor(ref.read(sessionProvider), state.uri.path),
+    redirect: (context, state) {
+      _enterApplicationAdminForLink(ref, state.uri.path);
+      return redirectFor(ref.read(sessionProvider), state.uri.path);
+    },
     routes: [
       GoRoute(path: '/', builder: (_, _) => const _LandingGate()),
       GoRoute(path: '/welcome', builder: (_, _) => const _LandingGate()),
@@ -77,6 +80,27 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// A link to the application admin (`/app-admin/...`, or an old `/platform/...`
+/// one) is an explicit choice of that context for a super admin: remember it
+/// before the guard decides, so the link opens instead of bouncing to the menu
+/// of whichever academy was active (WP99).
+void _enterApplicationAdminForLink(Ref ref, String location) {
+  if (!isApplicationAdminPath(location) &&
+      legacyPlatformPath(location) == null) {
+    return;
+  }
+  final session = ref.read(sessionProvider);
+  final needsSwitch = switch (session) {
+    Ready(:final user, :final applicationAdmin) =>
+      user.superAdmin && !applicationAdmin,
+    NeedsTenant(:final user) => user.superAdmin,
+    _ => false,
+  };
+  if (needsSwitch) {
+    ref.read(selectedTenantIdProvider.notifier).select(platformContextId);
+  }
+}
 
 /// The landing for anonymous visitors; the splash while the auth status is
 /// still unknown, so a signed-in user never sees the landing flash by.

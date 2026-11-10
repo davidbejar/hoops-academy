@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/config/app_config.dart';
 import '../core/connectivity/connectivity_providers.dart';
+import '../core/navigation/context_switcher.dart';
 import '../core/navigation/destination_labels.dart';
 import '../core/navigation/destinations.dart';
 import '../core/pwa/update_providers.dart';
@@ -12,8 +13,22 @@ import '../core/session/session_providers.dart';
 import '../core/design/tokens.dart';
 import '../core/ui/list_row.dart';
 import '../core/ui/notice_banner.dart';
-import '../features/tenant/presentation/tenant_avatar.dart';
+import '../features/platform/application/academy_request_providers.dart';
 import '../l10n/gen/app_localizations.dart';
+
+/// The destination of [location]: the longest matching path, because the
+/// application admin's hub path (`/app-admin`) is a prefix of its areas.
+int selectedDestination(List<AppDestination> destinations, String location) {
+  var best = -1;
+  for (final (i, d) in destinations.indexed) {
+    final matches = location == d.path || location.startsWith('${d.path}/');
+    if (matches &&
+        (best < 0 || d.path.length > destinations[best].path.length)) {
+      best = i;
+    }
+  }
+  return best < 0 ? 0 : best;
+}
 
 /// Scaffold around every role destination: tenant header, banners and the
 /// role-aware navigation (bottom bar on phones, rail on wide screens).
@@ -31,12 +46,23 @@ class AppShell extends ConsumerWidget {
 
     final destinations = destinationsFor(
       roles: session.roles,
-      superAdmin: session.user.superAdmin,
+      applicationAdmin: session.applicationAdmin,
     );
-    final selected = destinations.indexWhere(
-      (d) => location == d.path || location.startsWith('${d.path}/'),
-    );
-    final selectedIndex = selected < 0 ? 0 : selected;
+    final selectedIndex = selectedDestination(destinations, location);
+    final pending = session.applicationAdmin
+        ? ref.watch(pendingRequestsCountProvider) ?? 0
+        : 0;
+    Widget icon(AppDestination d, {bool selected = false}) {
+      final icon = Icon(selected ? d.selectedIcon : d.icon);
+      return d == AppDestination.appRequests && pending > 0
+          ? Badge.count(
+              key: const Key('nav-requests-badge'),
+              count: pending,
+              child: icon,
+            )
+          : icon;
+    }
+
     final width = WidthClass.of(context);
     final showNav = destinations.length > 1;
     final online = ref.watch(onlineProvider).value ?? true;
@@ -68,7 +94,7 @@ class AppShell extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: width.gutter - HoopsSpace.sm,
-        title: _TenantChip(session: session),
+        title: ContextChip(session: session),
         actions: [
           _ProfileButton(name: session.user.displayName),
           SizedBox(width: width.gutter - HoopsSpace.sm),
@@ -84,12 +110,17 @@ class AppShell extends ConsumerWidget {
                       ? NavigationRailLabelType.none
                       : NavigationRailLabelType.all,
                   onDestinationSelected: go,
-                  leading: _RailBrand(extended: width == WidthClass.expanded),
+                  leading: Column(
+                    children: [
+                      _RailBrand(extended: width == WidthClass.expanded),
+                      RailContextButton(extended: width == WidthClass.expanded),
+                    ],
+                  ),
                   destinations: [
                     for (final d in destinations)
                       NavigationRailDestination(
-                        icon: Icon(d.icon),
-                        selectedIcon: Icon(d.selectedIcon),
+                        icon: icon(d),
+                        selectedIcon: icon(d, selected: true),
                         label: Text(d.label(l)),
                       ),
                   ],
@@ -111,64 +142,14 @@ class AppShell extends ConsumerWidget {
                 destinations: [
                   for (final d in destinations)
                     NavigationDestination(
-                      icon: Icon(d.icon),
-                      selectedIcon: Icon(d.selectedIcon),
+                      icon: icon(d),
+                      selectedIcon: icon(d, selected: true),
                       label: d.label(l),
                     ),
                 ],
               ),
             )
           : null,
-    );
-  }
-}
-
-/// The academy (logo or initials + name); opens the switcher when the user
-/// belongs to more than one academy.
-class _TenantChip extends StatelessWidget {
-  const _TenantChip({required this.session});
-
-  final Ready session;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final c = HoopsTokens.colorsOf(context);
-    final membership = session.membership;
-    final canSwitch = session.user.memberships.length > 1;
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: InkWell(
-        key: const Key('tenant-chip'),
-        borderRadius: BorderRadius.circular(HoopsRadius.md),
-        onTap: canSwitch ? () => context.go('/tenants') : null,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: HoopsSize.minTapTarget),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: HoopsSpace.sm),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (membership != null) ...[
-                  TenantAvatar(name: membership.tenantName, radius: 18),
-                  const SizedBox(width: HoopsSpace.gap),
-                ],
-                Flexible(
-                  child: Text(
-                    membership?.tenantName ?? l.appName,
-                    overflow: TextOverflow.ellipsis,
-                    style: HoopsType.brand(Theme.of(context).textTheme, c),
-                  ),
-                ),
-                if (canSwitch) ...[
-                  const SizedBox(width: HoopsSpace.xs),
-                  Icon(Icons.expand_more, color: c.inkMuted),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -23,7 +23,23 @@ enum AppDestination {
     Icons.family_restroom,
   ),
   me('/me', Icons.person_outline, Icons.person),
-  platform('/platform', Icons.apartment_outlined, Icons.apartment);
+  appAdmin(
+    '/app-admin',
+    Icons.admin_panel_settings_outlined,
+    Icons.admin_panel_settings,
+  ),
+  appAcademies(
+    '/app-admin/academies',
+    Icons.apartment_outlined,
+    Icons.apartment,
+  ),
+  appUsers('/app-admin/users', Icons.people_outline, Icons.people),
+  appRequests(
+    '/app-admin/requests',
+    Icons.mark_email_unread_outlined,
+    Icons.mark_email_unread,
+  ),
+  appActivity('/app-admin/activity', Icons.history, Icons.history);
 
   const AppDestination(this.path, this.icon, this.selectedIcon);
 
@@ -32,13 +48,24 @@ enum AppDestination {
   final IconData selectedIcon;
 }
 
-/// Bottom-navigation destinations for the person's effective role. When a
-/// person holds several roles the highest wins (ADMIN > COACH/ASSISTANT >
-/// PARENT > PLAYER); the server still authorises every call.
+/// Bottom-navigation destinations of the active context. In the application
+/// admin of a super admin they are the hub's areas; in an academy they follow
+/// the person's effective role. When a person holds several roles the highest
+/// wins (ADMIN > COACH/ASSISTANT > PARENT > PLAYER); the server still
+/// authorises every call.
 List<AppDestination> destinationsFor({
   required Set<TenantRole> roles,
-  required bool superAdmin,
+  required bool applicationAdmin,
 }) {
+  if (applicationAdmin) {
+    return const [
+      AppDestination.appAdmin,
+      AppDestination.appAcademies,
+      AppDestination.appUsers,
+      AppDestination.appRequests,
+      AppDestination.appActivity,
+    ];
+  }
   if (roles.contains(TenantRole.admin)) {
     return const [
       AppDestination.admin,
@@ -71,11 +98,16 @@ List<AppDestination> destinationsFor({
       AppDestination.me,
     ];
   }
-  if (superAdmin) return const [AppDestination.platform];
   return const [];
 }
 
-String homePathFor({required Set<TenantRole> roles, required bool superAdmin}) {
-  final destinations = destinationsFor(roles: roles, superAdmin: superAdmin);
+String homePathFor({
+  required Set<TenantRole> roles,
+  required bool applicationAdmin,
+}) {
+  final destinations = destinationsFor(
+    roles: roles,
+    applicationAdmin: applicationAdmin,
+  );
   return destinations.isEmpty ? '/no-access' : destinations.first.path;
 }

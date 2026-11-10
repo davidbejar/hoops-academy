@@ -62,3 +62,12 @@ final academyRequestsProvider =
       List<api.AcademyRequest>,
       api.AcademyRequestStatus
     >(AcademyRequestsNotifier.new);
+
+/// How many requests wait for a decision (the badge of the hub and of the
+/// navigation); null while unknown or when the list cannot be loaded.
+final pendingRequestsCountProvider = Provider<int?>(
+  (ref) => ref
+      .watch(academyRequestsProvider(api.AcademyRequestStatus.PENDING))
+      .value
+      ?.length,
+);

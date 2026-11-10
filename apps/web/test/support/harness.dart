@@ -39,6 +39,13 @@ class FakeMeRepository implements MeRepository {
   Object? error;
   final List<String> localeUpdates = [];
 
+  /// Every name change as `PATCH /me` got it (null: not sent).
+  final List<({String tenantId, String? givenName, String? familyName})>
+  nameUpdates = [];
+
+  /// Thrown by [updateName] only.
+  Object? nameError;
+
   @override
   Future<CurrentUser> fetch() async {
     if (error != null) throw error!;
@@ -48,6 +55,30 @@ class FakeMeRepository implements MeRepository {
   @override
   Future<void> updateLocale(String localeCode) async =>
       localeUpdates.add(localeCode);
+
+  @override
+  Future<void> updateName({
+    required String tenantId,
+    String? givenName,
+    String? familyName,
+  }) async {
+    if (nameError != null) throw nameError!;
+    nameUpdates.add((
+      tenantId: tenantId,
+      givenName: givenName,
+      familyName: familyName,
+    ));
+    final parts = user.displayName.split(' ');
+    final given = givenName ?? parts.first;
+    final family = familyName ?? parts.skip(1).join(' ');
+    user = CurrentUser(
+      displayName: '$given $family',
+      email: user.email,
+      localeCode: user.localeCode,
+      superAdmin: user.superAdmin,
+      memberships: user.memberships,
+    );
+  }
 }
 
 class FakeTenantRepository implements TenantRepository {

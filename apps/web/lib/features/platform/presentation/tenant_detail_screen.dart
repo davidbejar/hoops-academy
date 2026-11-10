@@ -30,14 +30,15 @@ class TenantDetailScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final detail = ref.watch(tenantDetailProvider(tenantId));
     return SubPage(
-      title: detail.value?.tenant.name ?? l.platformTitle,
-      parentPath: '/platform',
+      title: detail.value?.tenant.name ?? l.appAdminAcademies,
+      parentPath: '/app-admin/academies',
       actions: [
         IconButton(
           key: const Key('tenant-activity'),
           tooltip: l.auditTitle,
           icon: const Icon(Icons.history),
-          onPressed: () => context.go('/platform/$tenantId/activity'),
+          onPressed: () =>
+              context.go('/app-admin/academies/$tenantId/activity'),
         ),
       ],
       child: Guarded(

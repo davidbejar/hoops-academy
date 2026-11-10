@@ -14,6 +14,7 @@ import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../me/application/me_providers.dart';
 import '../../me/domain/current_user.dart' show TenantRole;
+import 'profile_name_section.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -62,6 +63,12 @@ class ProfileScreen extends ConsumerWidget {
       _ => null,
     };
     final c = HoopsTokens.colorsOf(context);
+    // The own name belongs to the person in the active academy; the
+    // application admin has none.
+    final ownAcademyId = switch (session) {
+      Ready(:final membership) => membership?.tenantId,
+      _ => null,
+    };
 
     return Scaffold(
       appBar: AppBar(title: Text(l.profileTitle)),
@@ -97,19 +104,12 @@ class ProfileScreen extends ConsumerWidget {
                         _accountConsole(ref.read(appConfigProvider).issuer),
                       ),
                     ),
-                  if (user.memberships.length > 1)
+                  if (contextsOf(user).length > 1)
                     ListRow(
                       key: const Key('switch-academy'),
                       leading: const IconTile(Icons.swap_horiz),
-                      title: l.switchAcademy,
+                      title: l.switchContext,
                       onTap: () => context.go('/tenants'),
-                    ),
-                  if (user.superAdmin)
-                    ListRow(
-                      key: const Key('open-platform'),
-                      leading: const IconTile(Icons.apartment_outlined),
-                      title: l.profilePlatform,
-                      onTap: () => context.go('/platform'),
                     ),
                   if (ref.watch(appConfigProvider).mockApi)
                     ListRow(
@@ -122,6 +122,11 @@ class ProfileScreen extends ConsumerWidget {
                       onTap: () => _resetDemo(ref),
                     ),
                 ],
+              ),
+            if (user != null && ownAcademyId != null)
+              ProfileNameSection(
+                tenantId: ownAcademyId,
+                displayName: user.displayName,
               ),
             SectionCard(
               title: l.language,

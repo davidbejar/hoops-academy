@@ -136,11 +136,8 @@ class MockApiAdapter implements HttpClientAdapter {
 
     if (path == '/api/core/me') {
       if (method == 'PATCH') {
-        final body = options.data;
-        final decoded = body is String ? jsonDecode(body) : body;
-        if (decoded is Map && decoded['locale'] is String) {
-          _locale = decoded['locale'] as String;
-        }
+        final problem = _patchMe(options.data);
+        if (problem != null) return problem;
       }
       return _json(_me());
     }
@@ -203,6 +200,29 @@ class MockApiAdapter implements HttpClientAdapter {
     return _result(result);
   }
 
+  /// `PATCH /api/core/me`: the language, and a name of the caller's own person in one academy (core 3.4.0: the body
+  /// carries `tenantId`; `email` is refused; 404 when the caller is not a member of that academy). Null on success.
+  ResponseBody? _patchMe(Object? data) {
+    final decoded = data is String ? jsonDecode(data) : data;
+    if (decoded is! Map) return null;
+    if (decoded['locale'] is String) _locale = decoded['locale'] as String;
+    if (decoded.containsKey('email')) return _problem(400, 'Bad Request');
+    final renames =
+        decoded.containsKey('givenName') || decoded.containsKey('familyName');
+    if (!renames) return null;
+    final tenant = decoded['tenantId'];
+    if (tenant is! String) return _problem(400, 'Bad Request');
+    final academy = _academies[tenant];
+    if (academy == null) return _problem(404, 'Not found');
+    final result = academy.handle(
+      tenant,
+      MockRequest('PATCH', '/api/core/me', const {}, decoded, null),
+    );
+    return result == null || result.status >= 400
+        ? _problem(result?.status ?? 404, 'Not found')
+        : null;
+  }
+
   ResponseBody _platformCall(
     RequestOptions options,
     String method,
@@ -237,7 +257,7 @@ class MockApiAdapter implements HttpClientAdapter {
     'userId': '00000000-0000-4000-8000-000000000001',
     'sub': 'mock-sub',
     'email': 'coach1@hoops-academy.com',
-    'displayName': 'Casey Coach',
+    'displayName': _academies[mockTenantAId]!.core.selfName,
     'locale': _locale,
     'superAdmin': _superAdmin,
     'memberships': [

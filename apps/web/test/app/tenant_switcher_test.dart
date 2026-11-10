@@ -83,7 +83,7 @@ void main() {
     expect(find.byKey(const Key('tenant-list')), findsOneWidget);
   });
 
-  testWidgets('the app bar chip switches academy when there are several', (
+  testWidgets('the app bar chip opens the switcher when there are several', (
     tester,
   ) async {
     final h = Harness(
@@ -95,7 +95,8 @@ void main() {
     await tester.tap(find.byKey(const Key('tenant-chip')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('tenant-list')), findsOneWidget);
+    expect(find.byKey(const Key('context-switcher')), findsOneWidget);
+    expect(find.byKey(Key('tenant-${tenantSouth.tenantId}')), findsOneWidget);
   });
 
   testWidgets(

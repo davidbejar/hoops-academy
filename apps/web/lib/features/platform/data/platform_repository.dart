@@ -1,9 +1,19 @@
 import '../../../core/api/api.dart' as api;
 
+/// Users shown per page of the platform's user list.
+const platformUsersPageSize = 25;
+
 /// Tenant lifecycle and usage (`/platform/**`, super_admin only).
 abstract class PlatformRepository {
   Future<List<api.Tenant>> tenants({api.TenantStatus? status, String? query});
   Future<api.Tenant> tenant(String tenantId);
+
+  /// Every login across the academies with its memberships (`GET /platform/users`); [query] is 2 to 100 characters.
+  Future<api.PlatformUserPage> users({
+    String? query,
+    int page = 0,
+    int size = platformUsersPageSize,
+  });
 
   /// The temporary password of the first administrator's new login is in the result, returned once (ADR-0024).
   Future<api.TenantWithPassword> create(api.CreateTenantRequest request);
@@ -50,6 +60,14 @@ class ApiPlatformRepository implements PlatformRepository {
     q: query,
     size: 100,
   )).data!.items.toList();
+
+  @override
+  Future<api.PlatformUserPage> users({
+    String? query,
+    int page = 0,
+    int size = platformUsersPageSize,
+  }) async =>
+      (await _api.listPlatformUsers(q: query, page: page, size: size)).data!;
 
   @override
   Future<api.Tenant> tenant(String tenantId) async =>

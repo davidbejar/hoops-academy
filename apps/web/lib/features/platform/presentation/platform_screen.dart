@@ -28,7 +28,7 @@ class TenantStatusChip extends StatelessWidget {
   );
 }
 
-/// Tenants of the platform (super_admin).
+/// The academies of the platform (super_admin): the Academies area of the application admin.
 class PlatformScreen extends ConsumerWidget {
   const PlatformScreen({super.key});
 
@@ -60,23 +60,7 @@ class PlatformScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   spacing: HoopsSpace.gap,
                   children: [
-                    PageHeader(
-                      title: l.platformTitle,
-                      actions: [
-                        OutlinedButton.icon(
-                          key: const Key('platform-requests'),
-                          icon: const Icon(Icons.mark_email_unread_outlined),
-                          label: Text(l.platformRequests),
-                          onPressed: () => context.go('/platform/requests'),
-                        ),
-                        OutlinedButton.icon(
-                          key: const Key('platform-activity'),
-                          icon: const Icon(Icons.history),
-                          label: Text(l.platformActivity),
-                          onPressed: () => context.go('/platform/activity'),
-                        ),
-                      ],
-                    ),
+                    PageHeader(title: l.appAdminAcademies),
                     TextField(
                       key: const Key('tenant-search'),
                       decoration: InputDecoration(
@@ -143,7 +127,8 @@ class PlatformScreen extends ConsumerWidget {
                             title: t.name,
                             subtitle: t.slug,
                             trailing: TenantStatusChip(t.status),
-                            onTap: () => context.go('/platform/${t.id}'),
+                            onTap: () =>
+                                context.go('/app-admin/academies/${t.id}'),
                           ),
                         const SizedBox(height: HoopsSize.appBar),
                       ],

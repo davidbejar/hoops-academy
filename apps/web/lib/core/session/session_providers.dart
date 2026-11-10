@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/me/application/me_providers.dart';
-import '../../features/me/domain/current_user.dart';
 import '../auth/auth_providers.dart';
 import '../auth/auth_service.dart';
 import '../tenancy/tenant_selection.dart';
@@ -27,15 +26,7 @@ final Provider<SessionState> sessionProvider = Provider<SessionState>((ref) {
         : const SessionState.loadingProfile();
   }
 
-  final selected = ref.watch(selectedTenantIdProvider);
-  TenantMembership? membership = user.membershipFor(selected);
-  if (membership == null && user.memberships.length == 1) {
-    membership = user.memberships.single;
-  }
-  if (membership == null && user.memberships.length > 1) {
-    return SessionState.needsTenant(user);
-  }
-  return SessionState.ready(user: user, membership: membership);
+  return sessionFor(user, ref.watch(selectedTenantIdProvider));
 });
 
 /// The tenant requests are scoped to, if any.

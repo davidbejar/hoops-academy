@@ -198,7 +198,8 @@ class _RequestCard extends ConsumerWidget {
               key: Key('request-open-${request.id}'),
               icon: const Icon(Icons.open_in_new),
               label: Text(l.academyRequestOpenAcademy),
-              onPressed: () => context.go('/platform/${request.tenantId}'),
+              onPressed: () =>
+                  context.go('/app-admin/academies/${request.tenantId}'),
             ),
         ],
       ),

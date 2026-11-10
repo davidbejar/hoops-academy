@@ -266,9 +266,9 @@ void main() {
     });
   });
 
-  group('Profile menu and platform entry', () {
+  group('Profile menu and context entry', () {
     testWidgets(
-      'super_admin WITH memberships gets the Platform entry; others do not',
+      'super_admin WITH an academy can switch context; a plain member cannot',
       (tester) async {
         final h = await pumpAs(
           tester,
@@ -277,16 +277,19 @@ void main() {
           superAdmin: true,
           location: '/profile',
         );
-        expect(find.byKey(const Key('open-platform')), findsOneWidget);
-        await tapKey(tester, 'open-platform');
-        expect(h.container.read(routerProvider).state.uri.path, '/platform');
+        // The old "Platform console" entry is gone: the switcher lists it.
+        expect(find.byKey(const Key('open-platform')), findsNothing);
+        expect(find.byKey(const Key('switch-academy')), findsOneWidget);
+        await tapKey(tester, 'switch-academy');
+        expect(h.container.read(routerProvider).state.uri.path, '/tenants');
+        expect(find.byKey(const Key('tenant-platform')), findsOneWidget);
         await pumpAs(
           tester,
           roles: {TenantRole.admin},
           core: athleteCore(),
           location: '/profile',
         );
-        expect(find.byKey(const Key('open-platform')), findsNothing);
+        expect(find.byKey(const Key('switch-academy')), findsNothing);
       },
     );
 
@@ -297,6 +300,7 @@ void main() {
         ownPlayerId: 'p1',
         core: athleteCore(),
         location: '/profile',
+        size: const Size(360, 1600),
       );
       for (final k in ['lang-es', 'lang-en', 'lang-id', 'sign-out-button']) {
         expect(find.byKey(Key(k)), findsOneWidget, reason: k);

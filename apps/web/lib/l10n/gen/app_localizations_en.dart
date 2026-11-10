@@ -267,6 +267,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navPlatform => 'Platform';
 
   @override
+  String get navAppHub => 'Overview';
+
+  @override
+  String get navAppAcademies => 'Academies';
+
+  @override
+  String get navAppUsers => 'Users';
+
+  @override
+  String get navAppRequests => 'Approvals';
+
+  @override
+  String get navAppActivity => 'Audit';
+
+  @override
   String placeholderModule(String module) {
     return '$module: coming soon';
   }
@@ -303,6 +318,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String rolesInAcademy(String roles) {
     return 'Roles: $roles';
   }
+
+  @override
+  String get switchContext => 'Switch context';
+
+  @override
+  String get chooseContextTitle => 'Where do you want to work?';
+
+  @override
+  String get chooseContextSubtitle =>
+      'Your login covers several places. Pick one; you can switch at any time.';
+
+  @override
+  String get contextApplicationAdmin => 'Application admin';
+
+  @override
+  String get contextApplicationAdminRole => 'Super admin';
 
   @override
   String get roleAdmin => 'Administrator';
@@ -2456,6 +2487,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileOwnData => 'My personal data';
 
   @override
+  String get profileNameTitle => 'Your name';
+
+  @override
+  String get profileNameHint => 'This is the name this academy sees.';
+
+  @override
+  String get profileNameSave => 'Save name';
+
+  @override
+  String get profileNameSaved => 'Name updated';
+
+  @override
+  String get profileNameNeedsConnection =>
+      'You need a connection to change your name';
+
+  @override
   String get profileResetDemo => 'Reset demo data';
 
   @override
@@ -2472,6 +2519,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get platformNew => 'New academy';
+
+  @override
+  String get appAdminTitle => 'Application admin';
+
+  @override
+  String get appAdminAcademies => 'Academies';
+
+  @override
+  String get appAdminUsers => 'Users';
+
+  @override
+  String get appAdminPending => 'Pending approvals';
+
+  @override
+  String get appAdminAudit => 'Audit trail';
+
+  @override
+  String get appAdminBilling => 'Billing';
+
+  @override
+  String get appAdminSoon => 'Coming soon';
+
+  @override
+  String get billingSoonTitle => 'Billing is coming soon';
+
+  @override
+  String get billingSoonBody => 'There is nothing to set up here yet.';
+
+  @override
+  String get usersTitle => 'Users';
+
+  @override
+  String get usersSearchHint => 'Search by name or e-mail';
+
+  @override
+  String get usersSearchTooShort => 'Type at least 2 characters';
+
+  @override
+  String get usersEmpty => 'No users match';
+
+  @override
+  String get usersNoEmail => 'No e-mail';
+
+  @override
+  String get usersNoMemberships => 'Not a member of any academy';
+
+  @override
+  String get usersInactiveMember => 'Inactive';
 
   @override
   String get tenantName => 'Academy name';

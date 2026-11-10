@@ -75,6 +75,8 @@ Future<void> _tapSignOut(WidgetTester tester) async {
     200,
     scrollable: find.byType(Scrollable).first,
   );
+  await tester.ensureVisible(find.byKey(const Key('sign-out-button')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('sign-out-button')));
   await tester.pumpAndSettle();
 }

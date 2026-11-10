@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/core/session/app_context.dart';
 import 'package:hoops_app/core/session/session.dart';
 
 import '../support/fixtures.dart';
@@ -56,22 +55,18 @@ void main() {
     });
 
     test('the remembered context is entered (academy)', () {
-      final s =
-          sessionFor(
-                userWith([tenantNorth, tenantSouth]),
-                tenantSouth.tenantId,
-              )
-              as Ready;
+      final s = sessionFor(
+        userWith([tenantNorth, tenantSouth]),
+        tenantSouth.tenantId,
+      ) as Ready;
       expect(s.membership, tenantSouth);
     });
 
     test('the remembered context is entered (Application admin)', () {
-      final s =
-          sessionFor(
-                userWith([tenantNorth, tenantSouth], superAdmin: true),
-                platformContextId,
-              )
-              as Ready;
+      final s = sessionFor(
+        userWith([tenantNorth, tenantSouth], superAdmin: true),
+        platformContextId,
+      ) as Ready;
       expect(s.applicationAdmin, isTrue);
       expect(s.membership, isNull);
       expect(s.roles, isEmpty);

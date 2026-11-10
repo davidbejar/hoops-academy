@@ -37,20 +37,31 @@ void main() {
     await tester.tap(find.byKey(const Key('profile-button')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('lang-en')));
-    await tester.pumpAndSettle();
+    // The profile is a lazy list: the language rows sit below the name.
+    Future<void> pick(String code) async {
+      final row = find.byKey(Key('lang-$code'));
+      await tester.scrollUntilVisible(
+        row,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+    }
+
+    await pick('en');
     expect(find.text('Profile'), findsOneWidget);
     expect(h.prefs.getString('hoops.locale'), 'en');
     expect(h.container.read(effectiveLocaleProvider), const Locale('en'));
 
-    await tester.tap(find.byKey(const Key('lang-id')));
-    await tester.pumpAndSettle();
+    await pick('id');
     expect(find.text('Profil'), findsOneWidget);
     expect(h.prefs.getString('hoops.locale'), 'id');
     expect(me.localeUpdates, ['en', 'id']);
 
-    await tester.tap(find.byKey(const Key('lang-es')));
-    await tester.pumpAndSettle();
+    await pick('es');
     expect(find.text('Perfil'), findsOneWidget);
   });
 

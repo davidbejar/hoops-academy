@@ -338,6 +338,92 @@ class MockPlatformApi {
     'otherRoles': other,
   };
 
+  // ------------------------------------------------------------------ users (core 3.4.0)
+
+  /// What `GET /platform/users` answers: the administrators of every academy grouped by e-mail (a login in
+  /// several academies is one user), plus the demo coach, who is also a PARENT in another academy.
+  List<Map<String, Object?>> _users() {
+    Map<String, Object?> membership(
+      Map<String, Object?> tenant,
+      String personId,
+      String given,
+      String family,
+      List<String> roles,
+    ) => {
+      'tenantId': tenant['id'],
+      'tenantName': tenant['name'],
+      'tenantSlug': tenant['slug'],
+      'tenantStatus': tenant['status'],
+      'personId': personId,
+      'givenName': given,
+      'familyName': family,
+      'roles': roles,
+      'active': true,
+    };
+
+    final byEmail = <String, Map<String, Object?>>{};
+    Map<String, Object?> user(String email) => byEmail.putIfAbsent(
+      email,
+      () => {
+        'id':
+            '00000000-0000-4000-8000-${(900 + byEmail.length).toString().padLeft(12, '0')}',
+        'email': email,
+        'createdAt': _now()
+            .toUtc()
+            .subtract(Duration(days: 20 + byEmail.length))
+            .toIso8601String(),
+        'memberships': <Map<String, Object?>>[],
+      },
+    );
+    void add(String email, Map<String, Object?> m) =>
+        (user(email)['memberships']! as List).add(m);
+
+    for (final t in _tenants) {
+      for (final a in _admins[t['id']] ?? const <Map<String, Object?>>[]) {
+        add(
+          a['email']! as String,
+          membership(
+            t,
+            a['personId']! as String,
+            a['givenName']! as String,
+            a['familyName']! as String,
+            ['ADMIN', ...(a['otherRoles']! as List).cast<String>()],
+          ),
+        );
+      }
+    }
+    final demo = _find(tenantAId)!;
+    final norte = _find(tenantBId)!;
+    const coach = 'coach1@hoops-academy.com';
+    add(coach, membership(demo, 'a1', 'Casey', 'Coach', ['ADMIN', 'COACH']));
+    add(coach, membership(norte, 'a1', 'Casey', 'Coach', ['PARENT']));
+    add(
+      'pat@demo.example',
+      membership(demo, 'm-pat', 'Pat', 'Padre', ['PARENT']),
+    );
+    return byEmail.values.toList();
+  }
+
+  MockResult _userList(MockQuery q) {
+    final text = q.text('q')?.trim();
+    if (text != null && (text.length < 2 || text.length > 100)) {
+      return mockProblem(400, 'Bad Request');
+    }
+    final needle = text?.toLowerCase();
+    bool matches(Map<String, Object?> u) =>
+        needle == null ||
+        '${u['email']}'.toLowerCase().contains(needle) ||
+        (u['memberships']! as List).any(
+          (m) => '${(m as Map)['givenName']} ${m['familyName']}'
+              .toLowerCase()
+              .contains(needle),
+        );
+    return q.page([
+      for (final u in _users())
+        if (matches(u)) u,
+    ], defaultSize: 50);
+  }
+
   Map<String, Object?>? _find(String id) =>
       _tenants.where((t) => t['id'] == id).firstOrNull;
 
@@ -389,6 +475,9 @@ class MockPlatformApi {
 
     if (seg[1] == 'audit-events' && method == 'GET') return _auditList(q);
     if (seg[1] == 'academy-requests') return _requestRoute(method, seg, q, b);
+    if (seg[1] == 'users' && seg.length == 2 && method == 'GET') {
+      return _userList(q);
+    }
     if (seg[1] != 'tenants') return null;
     if (seg.length == 2) {
       if (method == 'GET') return _list(q);

@@ -27,6 +27,46 @@ final tenantFilterProvider =
       TenantFilterNotifier.new,
     );
 
+/// The search text and page of the application admin's user list.
+class UsersQuery {
+  const UsersQuery({this.text = '', this.page = 0});
+  final String text;
+  final int page;
+
+  /// What the server accepts (`q` is 2 to 100 characters); anything shorter lists everybody.
+  String? get serverQuery {
+    final t = text.trim();
+    return t.length < minUsersQueryLength ? null : t;
+  }
+}
+
+const minUsersQueryLength = 2;
+const maxUsersQueryLength = 100;
+
+class UsersQueryNotifier extends Notifier<UsersQuery> {
+  @override
+  UsersQuery build() => const UsersQuery();
+
+  /// A new search starts at the first page.
+  void search(String text) => state = UsersQuery(text: text);
+
+  void goToPage(int page) => state = UsersQuery(text: state.text, page: page);
+}
+
+final usersQueryProvider = NotifierProvider<UsersQueryNotifier, UsersQuery>(
+  UsersQueryNotifier.new,
+);
+
+/// One page of logins with their memberships (the Users area).
+final platformUsersProvider = FutureProvider.autoDispose<api.PlatformUserPage>((
+  ref,
+) {
+  final q = ref.watch(usersQueryProvider);
+  return ref
+      .watch(platformRepositoryProvider)
+      .users(query: q.serverQuery, page: q.page);
+});
+
 class TenantsNotifier extends AsyncNotifier<List<api.Tenant>> {
   @override
   Future<List<api.Tenant>> build() {

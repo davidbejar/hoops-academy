@@ -37,7 +37,7 @@ Future<Harness> _pump(
   WidgetTester tester,
   FakeAcademyRequestRepository repo, {
   bool superAdmin = true,
-  String location = '/platform/requests',
+  String location = '/app-admin/requests',
   FakePlatformRepository? platform,
 }) async {
   final h = Harness(
@@ -67,9 +67,9 @@ Finder _in(String key, String text) =>
     find.descendant(of: find.byKey(Key(key)), matching: find.text(text));
 
 void main() {
-  testWidgets('the platform console opens the requests', (tester) async {
-    await _pump(tester, _requests(), location: '/platform');
-    await tapKey2(tester, 'platform-requests');
+  testWidgets('the application admin hub opens the requests', (tester) async {
+    await _pump(tester, _requests(), location: '/app-admin');
+    await tapKey2(tester, 'app-admin-requests');
     expect(find.text('Solicitudes de academia'), findsOneWidget);
     expect(find.text('Escuela de Baloncesto Valle'), findsOneWidget);
   });

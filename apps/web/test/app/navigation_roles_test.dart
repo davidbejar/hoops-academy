@@ -76,15 +76,15 @@ void main() {
     );
   });
 
-  testWidgets('super_admin without memberships lands on Platform', (
-    tester,
-  ) async {
+  testWidgets('super_admin without memberships lands on the application '
+      'admin hub (WP99)', (tester) async {
     final h = Harness(me: FakeMeRepository(userWith([], superAdmin: true)));
     await h.pump(tester);
 
-    // WP14: the placeholder became the platform console (tenants list, create button).
-    expect(find.byKey(const Key('tenant-new')), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byKey(const Key('app-admin-hub')), findsOneWidget);
+    expect(navLabel('Academias'), findsOneWidget);
+    expect(navLabel('Usuarios'), findsOneWidget);
+    expect(navLabel('Peticiones'), findsOneWidget);
   });
 
   testWidgets('tapping a destination opens its (deferred) module screen', (

@@ -29,8 +29,16 @@ import '../features/health/presentation/player_health_view.dart'
 import '../features/me/presentation/me_screen.dart' deferred as me;
 import '../features/my_players/presentation/my_players_screen.dart'
     deferred as my_players;
+import '../features/platform/presentation/app_admin_hub_screen.dart'
+    deferred as app_admin;
+import '../features/platform/presentation/billing_screen.dart'
+    deferred as app_billing
+    show BillingScreen;
 import '../features/platform/presentation/platform_screen.dart'
     deferred as platform;
+import '../features/platform/presentation/platform_users_screen.dart'
+    deferred as platform_users
+    show PlatformUsersScreen;
 import '../features/platform/presentation/academy_requests_screen.dart'
     deferred as platform_requests
     show AcademyRequestsScreen;
@@ -228,20 +236,23 @@ final Map<AppDestination, FeatureModule> featureModules = {
     () => my_players.MyPlayersScreen(),
   ),
   AppDestination.me: FeatureModule(me.loadLibrary, () => me.MePageScreen()),
-  AppDestination.platform: FeatureModule(
+  // The application admin context of a super admin (WP99): a hub and one
+  // module per area.
+  AppDestination.appAdmin: FeatureModule(
+    app_admin.loadLibrary,
+    () => app_admin.AppAdminHubScreen(),
+    subPages: [
+      ModulePage(
+        'billing',
+        app_billing.loadLibrary,
+        (_) => app_billing.BillingScreen(),
+      ),
+    ],
+  ),
+  AppDestination.appAcademies: FeatureModule(
     platform.loadLibrary,
     () => platform.PlatformScreen(),
     subPages: [
-      ModulePage(
-        'activity',
-        audit.loadLibrary,
-        (_) => audit.PlatformActivityScreen(),
-      ),
-      ModulePage(
-        'requests',
-        platform_requests.loadLibrary,
-        (_) => platform_requests.AcademyRequestsScreen(),
-      ),
       ModulePage(
         ':tenantId',
         tenant_detail.loadLibrary,
@@ -253,5 +264,17 @@ final Map<AppDestination, FeatureModule> featureModules = {
         (p) => audit.PlatformActivityScreen(tenantId: p['tenantId']!),
       ),
     ],
+  ),
+  AppDestination.appUsers: FeatureModule(
+    platform_users.loadLibrary,
+    () => platform_users.PlatformUsersScreen(),
+  ),
+  AppDestination.appRequests: FeatureModule(
+    platform_requests.loadLibrary,
+    () => platform_requests.AcademyRequestsScreen(),
+  ),
+  AppDestination.appActivity: FeatureModule(
+    audit.loadLibrary,
+    () => audit.PlatformActivityScreen(),
   ),
 };

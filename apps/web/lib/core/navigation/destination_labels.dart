@@ -11,7 +11,11 @@ extension DestinationLabel on AppDestination {
     AppDestination.players => l.navPlayers,
     AppDestination.myPlayers => l.navMyPlayers,
     AppDestination.me => l.navMe,
-    AppDestination.platform => l.navPlatform,
+    AppDestination.appAdmin => l.navAppHub,
+    AppDestination.appAcademies => l.navAppAcademies,
+    AppDestination.appUsers => l.navAppUsers,
+    AppDestination.appRequests => l.navAppRequests,
+    AppDestination.appActivity => l.navAppActivity,
   };
 }
 

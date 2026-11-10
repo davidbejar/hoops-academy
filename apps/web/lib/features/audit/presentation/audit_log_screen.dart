@@ -39,7 +39,9 @@ class PlatformActivityScreen extends ConsumerWidget {
       title: tenantName == null
           ? l.auditTitle
           : '${l.auditTitle} · $tenantName',
-      parentPath: tenantId == null ? '/platform' : '/platform/$tenantId',
+      parentPath: tenantId == null
+          ? '/app-admin'
+          : '/app-admin/academies/$tenantId',
       child: Guarded(
         allowed: ref.watch(isSuperAdminProvider),
         child: AuditLogView(

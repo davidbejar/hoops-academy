@@ -269,6 +269,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navPlatform => 'Plataforma';
 
   @override
+  String get navAppHub => 'Resumen';
+
+  @override
+  String get navAppAcademies => 'Academias';
+
+  @override
+  String get navAppUsers => 'Usuarios';
+
+  @override
+  String get navAppRequests => 'Peticiones';
+
+  @override
+  String get navAppActivity => 'Auditoría';
+
+  @override
   String placeholderModule(String module) {
     return '$module: próximamente';
   }
@@ -305,6 +320,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String rolesInAcademy(String roles) {
     return 'Roles: $roles';
   }
+
+  @override
+  String get switchContext => 'Cambiar de contexto';
+
+  @override
+  String get chooseContextTitle => '¿Dónde quieres trabajar?';
+
+  @override
+  String get chooseContextSubtitle =>
+      'Tu acceso incluye varios espacios. Elige uno; puedes cambiar en cualquier momento.';
+
+  @override
+  String get contextApplicationAdmin => 'Administración de la aplicación';
+
+  @override
+  String get contextApplicationAdminRole => 'Super administrador';
 
   @override
   String get roleAdmin => 'Administrador';
@@ -2473,6 +2504,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileOwnData => 'Mis datos personales';
 
   @override
+  String get profileNameTitle => 'Tu nombre';
+
+  @override
+  String get profileNameHint => 'Es el nombre con el que te ve esta academia.';
+
+  @override
+  String get profileNameSave => 'Guardar nombre';
+
+  @override
+  String get profileNameSaved => 'Nombre actualizado';
+
+  @override
+  String get profileNameNeedsConnection =>
+      'Necesitas conexión para cambiar tu nombre';
+
+  @override
   String get profileResetDemo => 'Restablecer datos de demostración';
 
   @override
@@ -2489,6 +2536,54 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get platformNew => 'Nueva academia';
+
+  @override
+  String get appAdminTitle => 'Administración de la aplicación';
+
+  @override
+  String get appAdminAcademies => 'Academias';
+
+  @override
+  String get appAdminUsers => 'Usuarios';
+
+  @override
+  String get appAdminPending => 'Aprobaciones pendientes';
+
+  @override
+  String get appAdminAudit => 'Auditoría';
+
+  @override
+  String get appAdminBilling => 'Facturación';
+
+  @override
+  String get appAdminSoon => 'Próximamente';
+
+  @override
+  String get billingSoonTitle => 'La facturación llega pronto';
+
+  @override
+  String get billingSoonBody => 'Todavía no hay nada que configurar aquí.';
+
+  @override
+  String get usersTitle => 'Usuarios';
+
+  @override
+  String get usersSearchHint => 'Buscar por nombre o correo';
+
+  @override
+  String get usersSearchTooShort => 'Escribe al menos 2 caracteres';
+
+  @override
+  String get usersEmpty => 'Ningún usuario coincide';
+
+  @override
+  String get usersNoEmail => 'Sin correo';
+
+  @override
+  String get usersNoMemberships => 'No pertenece a ninguna academia';
+
+  @override
+  String get usersInactiveMember => 'Inactivo';
 
   @override
   String get tenantName => 'Nombre de la academia';
