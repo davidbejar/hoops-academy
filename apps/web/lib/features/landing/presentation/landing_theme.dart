@@ -24,33 +24,50 @@ class LandingPalette {
   static const accent = HoopsColors.brandOrange;
   static const onAccent = Colors.white;
 
-  static const light = LandingPalette._(
-    background: Color(0xFFFAF7F2),
-    surface: Color(0xFFFFFFFF),
-    text: Color(0xFF16130F),
-    muted: Color(0xFF5E5850),
-    border: Color(0xFFE8E1D6),
-    // Darker orange for small text on off-white (4.5:1 and up).
-    accentText: Color(0xFFC2410C),
-    accentSoft: Color(0xFFFDEADC),
-    band: Color(0xFF16130F),
-    bandText: Color(0xFFF7F3EC),
-    bandMuted: Color(0xFFB9B2A7),
-    bandBorder: Color(0xFF2E2A25),
+  static final light = LandingPalette._fromTokens(
+    HoopsColors.light,
+    band: const Color(0xFF16130F),
+    bandText: const Color(0xFFF7F3EC),
+    bandMuted: const Color(0xFFB9B2A7),
+    bandBorder: const Color(0xFF2E2A25),
+    accentSoft: HoopsColors.light.accentSoft,
+    border: HoopsColors.light.border,
   );
 
-  static const dark = LandingPalette._(
-    background: Color(0xFF0E0F11),
-    surface: Color(0xFF17191C),
-    text: Color(0xFFF4F1EC),
-    muted: Color(0xFFA7A39C),
-    border: Color(0xFF282B30),
-    accentText: Color(0xFFF2783A),
-    accentSoft: Color(0xFF2B1A10),
-    band: Color(0xFF17191C),
-    bandText: Color(0xFFF4F1EC),
-    bandMuted: Color(0xFFA7A39C),
-    bandBorder: Color(0xFF2C2F34),
+  static final dark = LandingPalette._fromTokens(
+    HoopsColors.dark,
+    band: HoopsColors.dark.surface,
+    bandText: HoopsColors.dark.ink,
+    bandMuted: HoopsColors.dark.inkMuted,
+    bandBorder: const Color(0xFF2C2F34),
+    // The landing's own fills, a shade apart from the app's.
+    accentSoft: const Color(0xFF2B1A10),
+    border: const Color(0xFF282B30),
+  );
+
+  /// The page, text and accent roles come from the app's tokens; the band
+  /// and the two fills the landing tints differently are given.
+  factory LandingPalette._fromTokens(
+    HoopsColors c, {
+    required Color band,
+    required Color bandText,
+    required Color bandMuted,
+    required Color bandBorder,
+    required Color accentSoft,
+    required Color border,
+  }) => LandingPalette._(
+    background: c.canvas,
+    surface: c.surface,
+    text: c.ink,
+    muted: c.inkMuted,
+    border: border,
+    // Small orange text: the accent fill, which is AA on the canvas.
+    accentText: c.accent,
+    accentSoft: accentSoft,
+    band: band,
+    bandText: bandText,
+    bandMuted: bandMuted,
+    bandBorder: bandBorder,
   );
 
   final Color background;
