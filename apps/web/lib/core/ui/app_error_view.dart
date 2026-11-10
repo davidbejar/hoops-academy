@@ -56,15 +56,3 @@ class LoadingView extends StatelessWidget {
   Widget build(BuildContext context) =>
       const Center(child: CircularProgressIndicator());
 }
-
-class EmptyView extends StatelessWidget {
-  const EmptyView({super.key, this.message});
-
-  final String? message;
-
-  @override
-  Widget build(BuildContext context) => EmptyState(
-    icon: Icons.inbox_outlined,
-    title: message ?? AppLocalizations.of(context).emptyTitle,
-  );
-}
