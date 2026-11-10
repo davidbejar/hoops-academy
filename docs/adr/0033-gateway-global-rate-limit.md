@@ -3,7 +3,8 @@
 - Status: Accepted
 - Date: 2026-11-06
 - Related: decision 18 of 2026-11-06, WP40, ADR-0031 (its decision 4 is replaced here), ADR-0017 (HTTP hardening),
-  ADR-0012 (Secrets); amended by decision 27 of 2026-11-06 (WP46: Redis ACL, per-second burst cap)
+  ADR-0012 (Secrets); amended by decision 27 of 2026-11-06 (WP46: Redis ACL, per-second burst cap) and on 2026-11-10
+  (WP100: export limits, the path selector re-tested on Envoy Gateway v1.10.0)
 
 ## Context
 ADR-0031 limited the token endpoint, the login form and `events:batch` with Envoy Gateway **local** rate limits: a token
@@ -127,3 +128,20 @@ requests, no 429). Details in the WP46 handover.
 - **Redis with persistence or a replica / Sentinel**: not needed for one-minute counters; the Envoy Gateway URL
   accepts a Sentinel or Cluster list if the edge ever needs it.
 - **Global and local together** (a local bucket in front of the global counter): more moving parts, no need yet.
+
+## Amendment 2026-11-10 (WP100): CSV exports, Envoy Gateway v1.10.0
+**Exports.** The three CSV exports of ADR-0048 (WP96) get their own rate-limited routes on core, per client IP, with the
+numbers of the public academy request (WP90): 10/min and 2/s each, the colon or `%3A` form
+(`/api/core/teams/[^/]+/roster(:|%3[Aa])export`, `/api/core/audit-events(:|%3[Aa])export`,
+`/platform/audit-events(:|%3[Aa])export`). An export reads up to 10,000 rows page by page; ten a minute is far above any
+real use and caps the database work one client can cause. Per-user counting (a counter per token subject) is not done:
+the gateway does not validate tokens, so a per-user key would be a client-chosen header; the per-IP counter is the
+gateway's control and core's authorisation (`403`/`404`) the access control, as for the other limited routes.
+
+**The path selector stays.** Envoy Gateway v1.10.0 (ADR-0031 amendment) still builds the descriptor of a `sourceCIDR`
+selector without the rule index. Probe on kind (2026-11-10): an HTTPRoute with two global rules per client IP, 10/min and
+2/s, both with only `sourceCIDR {Distinct, 0.0.0.0/0}`: `/rlconfig` listed one MINUTE entry per listener and no SECOND
+entry, and a paced burst (one request a second, below 2/s) got its first 429 at request #6 instead of #11 (every request
+counted twice against the minute). The chart's routes with the always-true `path` selector list a MINUTE and a
+`rule-<n>-path` SECOND entry each, as with v1.9.3. The selector, its chart comment and the chart test stay; re-test on the
+next Envoy Gateway bump (probe in the WP100 handover).

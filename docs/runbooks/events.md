@@ -350,14 +350,15 @@ half; `values-kind.yaml` sets both.
 | `KAFKA_SECURITY_PROTOCOL` | `SASL_PLAINTEXT` (SCRAM-SHA-256 is the services' own setting) | not set |
 | `KAFKA_SASL_USERNAME` | the service's name (`core-service`, `game-service`, `athlete-service`) | not set |
 | `KAFKA_SASL_PASSWORD` | Secret `hoops-redpanda-<service>`, key `password` (a `secretKeyRef`, never in the ConfigMap) | not set |
-| core publisher | on (`CORE_OUTBOX_POLL_INTERVAL` default `1s`) | `CORE_OUTBOX_POLL_INTERVAL=off` (the outbox still fills) |
+| core publisher | on (`CORE_OUTBOX_POLL_INTERVAL` default `1s`) | `CORE_OUTBOX_ENABLED=false` (chart 0.10.0, WP91: no Kafka producer, no broker warnings) and `CORE_OUTBOX_POLL_INTERVAL=off`; the outbox still fills |
 | game / athlete consumer | on | `GAME_ROSTER_CONSUMER_ENABLED=false`, `ATHLETE_ROSTER_CONSUMER_ENABLED=false` |
-| roster source | `game.rosterSource` / `athlete.rosterSource` -> `GAME_ROSTER_SOURCE` / `ATHLETE_ROSTER_SOURCE`, default `rest` | `rest` only (`replica` is refused) |
+| roster source | `game.rosterSource` / `athlete.rosterSource` -> `GAME_ROSTER_SOURCE` / `ATHLETE_ROSTER_SOURCE`; empty (default, chart 0.10.0) = `replica`; `rest` rolls a service back | empty = `rest` (an explicit `replica` is refused) |
 
 The render also refuses: a service without its `events.users` entry (name = the service, `passwordSecret:
-hoops-redpanda-<service>`), a `rosterSource` other than `rest`/`replica`, and `KAFKA_*` in a service's `env`/`secretEnv`
+hoops-redpanda-<service>`), a `rosterSource` other than empty/`rest`/`replica`, and `KAFKA_*` in a service's `env`/`secretEnv`
 while events are on (the chart owns the client). The off switches live in `<service>.events.offEnv`; a service's `env`
-overrides them (a managed Kafka with `events.enabled=false`: set `KAFKA_*` and `CORE_OUTBOX_POLL_INTERVAL` in `env`, the
+overrides them (a managed Kafka with `events.enabled=false`: set `KAFKA_*`, `CORE_OUTBOX_ENABLED: "true"` and
+`CORE_OUTBOX_POLL_INTERVAL` in `env`, the
 password through `secretEnv`). Check a release: `kubectl -n hoops get configmap core-service-env -o yaml | grep -E 'KAFKA|OUTBOX'`.
 
 Watch it on kind (`/q/metrics` is not routed; read it inside the pod):
@@ -373,24 +374,21 @@ rpk_k "group describe game-service.roster"                          # TOTAL-LAG 
 season, a team, a player), waits for `hoops_outbox_pending` 0 and both groups' lag 0, and checks parked 0 and that game
 and athlete answer for the new academy.
 
-**Fresh install: restart core once after the Job.** The Job `redpanda-bootstrap` is a post-install hook, so Helm runs it
-only after `--wait`, when the services are already up: they start before their broker users exist and log `SASL
-authentication failed`. game and athlete reconnect by themselves once the Job has run. core's idempotent producer does not
-when its very first producer-id request failed authentication: every record then expires ("Expiring 1 record(s) ...
-8000 ms has passed since batch creation", `hoops_outbox_pending` grows, state `DEGRADED`) until the pod restarts. Later
-authentication failures (a user deleted or a password changed while core runs) heal by themselves once the user is back
-(WP71: 2 pending, healed 10 s after the Job). `deploy/kind/up.sh` restarts core when its log shows the failure; Tilt
-deploys core after `redpanda-bootstrap`; anywhere else: `kubectl -n hoops rollout restart deploy/core-service` after the
-first install. The real fix (the producer recovering) is a core-service follow-up.
+**Fresh install: no restart (WP100).** The Job `redpanda-bootstrap` is a post-install hook, so Helm runs it only after
+`--wait`, when the services are already up: they start before their broker users exist and log `SASL authentication
+failed`. game and athlete reconnect by themselves once the Job has run; core replaces its producer after
+`hoops.outbox.producer-reset-after` failed sends (WP81, section "Core publisher") and drains the outbox. WP71's restart of
+core in `deploy/kind/up.sh` is gone; WP100 proved the recovery on a fresh `up.sh --eso --deploy` (handover of WP100).
 
-Flip one service to its replica (ADR-0037; the services default to `replica` since WP98, the chart sets the variable
-explicitly and still defaults to `rest` until WP100):
+Roll one service back to core's API (ADR-0037 "Rollback to rest"; since chart 0.10.0 both read their replica wherever
+the events are on):
 ```bash
 helm upgrade hoops deploy/helm/hoops -n hoops -f deploy/helm/hoops/values-kind.yaml \
-  --set athlete.rosterSource=replica --wait          # only athlete's ConfigMap changes; its pod rolls (checksum)
-kubectl -n hoops logs deploy/athlete-service | grep 'Roster source'     # REPLICA (replica consumer on)
+  --set athlete.rosterSource=rest --wait             # only athlete's ConfigMap changes; its pod rolls (checksum)
+kubectl -n hoops logs deploy/athlete-service | grep 'Roster source'     # REST
 ```
-Back: the same with `rest`. With Tilt, put `athlete: {rosterSource: replica}` into the git-ignored `values-local.yaml`.
+Back: the same without the `--set` (or `replica`). With Tilt, put `athlete: {rosterSource: rest}` into the git-ignored
+`values-local.yaml`. A release with `events.enabled=false` renders `rest` for both.
 
 Secret rotation of a service's broker login (`hoops-redpanda-<service>`): the password is an env var, so a changed Secret
 reaches no running pod by itself and Helm does not roll the Deployment for it (its checksum covers the ConfigMap only).

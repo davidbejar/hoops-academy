@@ -27,11 +27,13 @@ of the remote secret `hoops` when the chart runs with `externalSecrets.enabled=t
 | `hoops-redpanda-admin` | basic-auth, `username` = `admin`, `password` | `REDPANDA_ADMIN_PASSWORD` | Redpanda superuser: `RP_BOOTSTRAP_USER` of `redpanda-0` (first bootstrap only), the `redpanda-bootstrap` Job, operators' `rpk` (ADR-0036) |
 | `hoops-redpanda-core-service`, `hoops-redpanda-game-service`, `hoops-redpanda-athlete-service` | basic-auth, `username` = broker user, `password` | `REDPANDA_<SVC>_SERVICE_PASSWORD` | the `redpanda-bootstrap` Job (sets the SCRAM password on every install/upgrade); the services from WP67-WP69 |
 | `hoops-dev-users` | `password` | `DEV_USER_PASSWORD` | nothing in the cluster: `seed-users.sh` and `smoke.sh` read `.env` (rendered by `secrets.sh` only, not by ESO) |
+| `hoops-smtp` (optional, chart 0.10.0) | `password` | `SMTP_PASSWORD` (written by `secrets.sh` only when set; ESO: add `{name: hoops-smtp, data: {password: SMTP_PASSWORD}}` to `externalSecrets.secrets`) | core-service `SMTP_PASSWORD` (an optional `secretKeyRef`: core starts without it; kind's Mailpit needs no login). Reloader rolls core when it changes; a Secret created after core started needs `kubectl -n hoops rollout restart deploy/core-service` |
 | `hoops-gateway-tls` | kubernetes.io/tls | none: self-signed by `up.sh` (kind), cert-manager elsewhere | Gateway `hoops` HTTPS listener (`gateway.tls.certificateRefs`) |
 
 Compose only: `POSTGRES_SUPERUSER_PASSWORD` (`.env`; the compose Postgres, never in kind, where CNPG keeps superuser access
-off). SMTP: none; the realm's `smtpServer` is the unauthenticated Mailpit sink `mailhog:1025` (kind, compose), so a real
-SMTP relay with credentials would add a realm change and a Secret (not built).
+off). SMTP: the realm's `smtpServer` is the unauthenticated Mailpit sink `mailhog:1025` (kind, compose), so a real SMTP
+relay with credentials needs a realm change for Keycloak's mails (not built); core's own decision mails (WP90) take
+`core.env.SMTP_*` and the optional Secret `hoops-smtp` (chart 0.10.0, WP100).
 
 ## A. Compose (`.env`)
 1. Edit `.env` with new random values (for example `openssl rand -base64 24`). Never paste them into a shell history

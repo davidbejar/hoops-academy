@@ -1,6 +1,7 @@
 # ADR-0031: Gateway API with Envoy Gateway replaces ingress-nginx
 
-- Status: Accepted; decision 4 (local rate limits) replaced by ADR-0033 (global rate limits, WP40)
+- Status: Accepted; decision 4 (local rate limits) replaced by ADR-0033 (global rate limits, WP40); point 3 amended
+  2026-11-10 (Envoy Gateway v1.10.0, WP100)
 - Date: 2026-11-06
 - Related: decision 10 of 2026-11-05, WP36, ADR-0012 (Secrets), ADR-0017 (HTTP hardening), WP16/WP17 (chart, kind)
 
@@ -103,3 +104,18 @@ compose edge must keep the same routes and limits; the chart tests and `docs/run
 - Values renamed (`ingress.*` -> `route.*`, `networkPolicy.ingressControllerNamespace` -> `gatewayNamespace`), chart
   version 0.2.0; overlays written for 0.1.0 must be adapted.
 - Local rate limits are per replica; a burst equals the per-minute rate instead of five times it.
+
+## Amendment 2026-11-10 (WP100): Envoy Gateway v1.10.0
+Point 3 changes from v1.9.3 to **Envoy Gateway v1.10.0**. Compatibility matrix row (checked 2026-11-10,
+https://gateway.envoyproxy.io/news/releases/matrix/): v1.10 runs Envoy `distroless-v1.40.x` (v1.40.2 on kind), the rate
+limit image `5ae0682e` (unchanged), **Gateway API v1.6.1** (unchanged, so `GATEWAY_API_VERSION` stays and no CRD
+migration is needed) and **Kubernetes v1.34 to v1.37** (kind's `kindest/node:v1.36.4` stays inside). The pulled chart
+`oci://docker.io/envoyproxy/gateway-helm:v1.10.0` bundles CRDs labelled `bundle-version: v1.6.1`, which `up.sh` checks.
+The release notes' breaking changes touch nothing the chart uses (cookie sessions, Lua, Wasm, OIDC, JWT names, TCPRoute,
+zero durations); two visible changes: a 429 now carries `Retry-After` (opt out with
+`ClientTrafficPolicy.headers.disableRetryAfterHeader`; kept), and the proxies reach the rate limit service through its
+EndpointSlices. The `rateLimit` values in `deploy/kind/up.sh` (Redis backend, `failClosed=false`, 100 ms, the
+`rateLimitDeployment` env and patch) work unchanged. Proof on a fresh kind cluster in the WP100 handover (`up.sh --eso
+--deploy`, `smoke.sh`, `ratelimit-check.sh`). The sourceCIDR descriptor collision of ADR-0033's amendment is still there
+(ADR-0033, amendment 2026-11-10). Observed once under VM load: the Gateway stayed `Programmed=False` ("Envoy replicas
+unavailable") after the proxy pod had become Ready again, until a later reconcile; traffic was served throughout.

@@ -28,7 +28,7 @@ podman machine start
 ## Start
 ```bash
 source scripts/env.sh
-just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.9.3 (Gateway API v1.6.1 CRDs) with its
+just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.10.0 (Gateway API v1.6.1 CRDs) with its
                       # rate limit service (Redis backend ratelimit-redis.hoops:6379) + CNPG 1.30.1 (no leader election, WP86)
                       # + ns hoops + Secrets from .env + self-signed TLS Secret hoops-gateway-tls
                       # + Stakater Reloader 2.2.19 (v1.4.23, namespace hoops-reloader, WP87)
@@ -63,7 +63,7 @@ the container), `--skip-flutter` (reuse `apps/web/build/web`).
 How the gateway is wired: the chart renders GatewayClass `envoy-gateway` (kind only, `gateway.gatewayClass.create`),
 Gateway `hoops` (listeners `http` :80, `https` :443 with `hoops-gateway-tls`), one HTTPRoute per prefix, the exact
 health routes, the rate-limited routes with their `BackendTrafficPolicy` (global limits, ADR-0033: 60/min and 10/s token +
-login form, 120/min and 20/s `events:batch`, per client IP, one counter shared by every Envoy replica) and one
+login form, 120/min and 20/s `events:batch`, 10/min and 2/s the public academy request and the three CSV exports, per client IP, one counter shared by every Envoy replica) and one
 `ClientTrafficPolicy` per listener. The counters live in `ratelimit-redis` (namespace `hoops`, `rateLimit.redis.enabled`
 in `values-kind.yaml`), read and written only by Envoy Gateway's `envoy-gateway-system/envoy-ratelimit` pods, which
 `up.sh` enables with `config.envoyGateway.rateLimit` (Redis backend, `failClosed=false`, 100 ms timeout). Two layers
@@ -83,8 +83,14 @@ basic auth on the admin API, ACLs enforced; the NetworkPolicy admits Kafka only 
 resource `redpanda-bootstrap`) sets the cluster properties, the users `core-service`, `game-service`, `athlete-service`
 with the passwords of `hoops-redpanda-<service>`, their ACLs and the seven topics. `rpk`, consumer groups, rotation:
 `docs/runbooks/events.md`. Since WP71 the services connect as those users (`global.events.enabled`, the mirror of
-`events.enabled`): core publishes its outbox, game and athlete feed their roster replicas (roster source `rest`;
-flip one with `--set athlete.rosterSource=replica`, `events.md` "Kubernetes (chart, WP71)").
+`events.enabled`): core publishes its outbox, game and athlete feed their roster replicas and, since chart 0.10.0
+(decision 66, WP100), read the roster from them (roster source `replica`; roll one back with
+`--set athlete.rosterSource=rest`, `events.md` "Kubernetes (chart, WP71)"). With `events.enabled=false` the chart renders
+`rest` and switches core's publisher and producer off (`CORE_OUTBOX_ENABLED=false`).
+
+Mail: Keycloak (realm `smtpServer`) and core (`SMTP_HOST`/`SMTP_PORT` in `core.env`, WP90's academy-request decisions,
+links to `global.publicUrl`) both send to the chart's Mailpit, Service `mailhog:1025`; read it with
+`kubectl -n hoops port-forward svc/mailhog 8025` and `http://localhost:8025` (API `/api/v1/messages`).
 
 In-cluster: services reach Keycloak at `http://keycloak:8080/auth` (back-channel; `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`
 keeps the token issuer on the public URL), Postgres at `hoops-db-rw:5432/hoops`, Keycloak's DB at `keycloak-db-rw`.
@@ -101,7 +107,8 @@ curl -s http://localhost:8090/api/game/q/health/ready       # {"status":"UP",...
 curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8090/internal/x   # 403
 deploy/kind/smoke.sh core game athlete      # all of the above and more (pods, gateway, event broker, tokens, seeded superadmin,
                                             # events: a seeded academy through core's outbox into both replicas, WP71)
-deploy/kind/ratelimit-check.sh              # paced burst -> first 429 at rpm+1 per client IP, with any number of Envoy
+deploy/kind/ratelimit-check.sh              # paced burst -> first 429 at rpm+1 per client IP (events:batch, token, roster
+                                            # export), with any number of Envoy
                                             # replicas; tight burst (all at once) -> 429 from the per-second rule; Redis ACL
                                             # (waits for a fresh one-minute window per burst, ~5 min in all; limits this
                                             # client until that window ends)
@@ -186,10 +193,10 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
 - Realm changes are not applied to an existing Keycloak DB (import = IGNORE_EXISTING): delete the
   `keycloak-db` Cluster (`kubectl -n hoops delete cluster keycloak-db`) and let Helm/Tilt recreate it.
 - DB init SQL runs once (`postInitApplicationSQLRefs`); to re-run, delete the `hoops-db` Cluster (data loss).
-- core's publisher stays `DEGRADED` after a fresh install, its log shows `SASL authentication failed` and then only
-  "Expiring 1 record(s) ...": it started before the Job `redpanda-bootstrap` created its broker user and its idempotent
-  producer does not recover from that first failure. `kubectl -n hoops rollout restart deploy/core-service` (`up.sh` does
-  it; `events.md` "Kubernetes (chart, WP71)").
+- core logs `SASL authentication failed` right after a fresh install: it started before the Job `redpanda-bootstrap`
+  created its broker user. It recovers by itself (it replaces its producer after three failed sends, WP81) and drains the
+  outbox; `up.sh` no longer restarts it (WP100). If `hoops_outbox_pending` still grows minutes after the Job finished,
+  see `events.md` "Core publisher".
 - `flutter build web` hangs at "Compiling lib/main.dart" with `font-subset` processes at 0 % CPU (seen 2026-11-06):
   stop it and build with `--no-tree-shake-icons` (`cd apps/web && flutter build web --release --pwa-strategy=offline-first
   --no-tree-shake-icons`), then `scripts/build-images.sh web --skip-web-build --kind-load`.
@@ -207,7 +214,7 @@ in-container Maven build ≈ 10 min (dependency download into the `hoops-m2` cac
 - `up.sh: Gateway API CRDs are vX, Envoy Gateway ... needs vY`: CRDs of another version were installed before (e.g. by
   another tool). Apply the bundled CRDs as in ADR-0031 "Upgrade path", or recreate the cluster.
 - Every request answers 429: this client used its counter for this minute (`deploy/kind/ratelimit-check.sh` does that on
-  purpose); wait for the next full minute. The limit only covers the token endpoint, the login form and `events:batch`.
+  purpose); wait for the next full minute. The limits cover the token endpoint, the login form, `events:batch`, the academy request and the three `:export` paths.
 - `envoy-ratelimit` restarts once right after `just kind-up` (`creating redis connection error`): Redis only exists after
   the chart is deployed. It reconnects by itself; `kubectl -n envoy-gateway-system logs deploy/envoy-ratelimit` shows
   `redis connection re-established`.
@@ -342,6 +349,24 @@ health UP, one `Failed to export ... Timeout 10000 (ms)` warning per batch, `smo
 `smoke.sh` failed its Programmed check, so the chart now names the collector by DNS (`host`/`port`); after the switch the
 Gateway stayed Programmed with the collector down, and the first request after scaling it back produced Envoy and core spans
 of one trace. `kubectl apply --dry-run=server` of the final 0.9.0 render: 82 objects, clean. Cluster deleted.
+
+WP100 (2026-11-10, chart 0.10.0, Envoy Gateway v1.10.0 with Gateway API v1.6.1, Envoy v1.40.2, kindest/node v1.36.4, compose
+stopped; Podman VM load up to 66 at times, every timing check behind the load guard). `up.sh --eso --deploy --from-host` on a
+fresh cluster: 19 min 21 s, exit 0, no core restart step; 18/18 ExternalSecrets `SecretSynced`; `apply --dry-run=server` of
+the render 72 objects clean; Gateway `Programmed`, the six BackendTrafficPolicies `Accepted`. `smoke.sh core game athlete`
+passed (47 checks, "roster source game replica, athlete replica"; the check of core's producer login now follows the seed,
+because core creates its producer at the first send). Fresh-install recovery: core's broker user deleted, core restarted,
+12 events backfilled: 144 `SASL authentication failed` lines, 16 producer replacements, `DEGRADED`, 12 pending; `helm upgrade`
+re-ran the Job (user created 09:25:15), pending 0 by 09:25:18, same pod, 0 restarts; both replicas +12; `just events-drift
+--kind` exit 0. `events.enabled=false`: core's log silent for 5 min 40 s after start (12 WARN lines at start, all
+OpenTelemetry; 0 Kafka/NetworkClient lines), game and athlete `REST (replica consumer off)`. A rejected academy request:
+mail in Mailpit (`no-reply@hoops.localhost`, Spanish text, link `http://localhost:8090/`). Keycloak routes answer with
+`Permissions-Policy`, `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy` (discovery 200, auth 302, token 401).
+`ratelimit-check.sh`: events:batch #121 and 20/60 tight, token #61 and 10/40 tight, roster export #11 (first run #12 under
+host load 11: one request uncounted, re-run exact), `%3A` shares the counter, ACL probe passed; 429s carry `Retry-After`.
+`RATELIMIT_REDIS_PASSWORD` rotated at the ESO source: Reloader rolled `ratelimit-redis` and `envoy-ratelimit` within 1 s,
+5 s of `WRONGPASS` while both restarted, then `acl` and `events` passed. Seen once: Gateway `Programmed=False` ("Envoy replicas
+unavailable") left after the proxy's probes timed out under load, cleared by a later reconcile. Cluster deleted.
 
 ## Stop
 `just kind-down` deletes the cluster (CNPG volumes included). Recreate with `just kind-up && just tilt`.
