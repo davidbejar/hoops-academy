@@ -49,6 +49,15 @@ info:
     among the team's open assignments, else the number of the player's most recent numbered assignment when free, else
     none; `AssignedTeamPlayer.jerseySource` says which rule applied. `listTeamJerseyNumbers` lists the taken numbers.
 
+    Exports (core 3.5.0, decisions 67 and 68, WP96, ADR-0048): `exportTeamRoster`, `exportAuditEvents` and
+    `exportPlatformAuditEvents` answer one CSV file (`text/csv; charset=utf-8`, UTF-8 with BOM, `,` separator, RFC 4180
+    quoting, CRLF, one header row; a text cell starting with `=`, `+`, `-`, `@`, TAB or CR gets a leading `'`). Header
+    labels and enum labels follow `Accept-Language` (`es`, `en`, `id`; else `en`); dates are `yyyy-MM-dd` and times
+    `HH:mm` in the academy's time zone, with the zone id in its own column. `Content-Disposition: attachment` names the
+    file `hoops-<academy-slug>-<what>-<yyyyMMdd>.csv`; `Cache-Control: no-store`. More than 10,000 rows: 422
+    `EXPORT_TOO_LARGE` (narrow the filter). Every export is recorded in the audit trail (`team.roster_exported`,
+    `audit.exported`); the file content is never logged.
+
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
   - url: /
@@ -480,6 +489,46 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /platform/audit-events:export:
+    get:
+      operationId: exportPlatformAuditEvents
+      tags: [Platform]
+      summary: Export the audit trail of every academy (or of one) as CSV
+      description: |
+        The rows `listPlatformAuditEvents` would return for the same `tenantId`, `from`, `to` and `action`, all of them
+        in one CSV file (no paging; ADR-0048: UTF-8 with BOM, `,`, RFC 4180 quoting, CRLF, one header row, the formula
+        guard), newest first, with the same names (academies and their active administrators only, ADR-0029) and the
+        actor's login. Columns: the academy's name and id, then those of `exportAuditEvents`; each row's date and time
+        are in its own academy's time zone. More than 10,000 rows: 422 `EXPORT_TOO_LARGE`. File name
+        `hoops-<academy-slug>-audit-<yyyyMMdd>.csv` with `tenantId`, else `hoops-platform-audit-<yyyyMMdd>.csv` (UTC
+        day). Every export writes the audit row `audit.exported` (actor the super admin, metadata `rows` of that
+        academy and the filter) into the trail of the academy given as `tenantId`, or of each academy with rows in
+        the file. Authz: super_admin.
+      parameters:
+        - name: tenantId
+          in: query
+          required: false
+          description: Only this academy.
+          schema: {type: string, format: uuid}
+        - $ref: '#/components/parameters/AuditFrom'
+        - $ref: '#/components/parameters/AuditTo'
+        - $ref: '#/components/parameters/AuditActionFilter'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The audit trail file.
+          headers:
+            Content-Disposition: {$ref: '#/components/headers/ContentDisposition'}
+            Cache-Control: {$ref: '#/components/headers/NoStoreExport'}
+          content:
+            text/csv:
+              schema: {$ref: '#/components/schemas/CsvFile'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
 
   /platform/users:
     get:
@@ -1662,6 +1711,43 @@ paths:
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/teams/{teamId}/roster:export:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      operationId: exportTeamRoster
+      tags: [Teams]
+      summary: Export the team's roster with guardians and staff as CSV
+      description: |
+        One CSV file (ADR-0048; UTF-8 with BOM, `,`, RFC 4180 quoting, CRLF, one header row, the formula guard): one row
+        per player of the team's open assignments (role, given and family name, birth date, gender, natural age
+        category in the team's season, eligibility of the assignment and play-up levels, jersey number, joining day,
+        e-mail, phone, then each active guardian's given name, family name, e-mail and phone in repeated column groups
+        `Guardian 1 …`, `Guardian 2 …`, as many as the player with the most guardians has, at least one), ordered by
+        family and given name; then the team's staff as rows of the same columns (role COACH / ASSISTANT_COACH, names,
+        e-mail, phone, `since` in the joining column). Header labels and enum labels (role, gender, eligibility) in the
+        language of `Accept-Language`. File name `hoops-<academy-slug>-roster-<team>-<yyyyMMdd>.csv` (ASCII, the day
+        in the academy's time zone). More than 10,000 rows: 422 `EXPORT_TOO_LARGE`. Every export writes the audit row
+        `team.roster_exported` (target the team, metadata `rows`; no personal data); the content is never logged.
+        A team of an ended season is history (ADR-0042): its former coach may export it too.
+        Authz: ADMIN; COACH of this team. ASSISTANT_COACH, PARENT and PLAYER 403; non-members 404.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The roster file.
+          headers:
+            Content-Disposition: {$ref: '#/components/headers/ContentDisposition'}
+            Cache-Control: {$ref: '#/components/headers/NoStoreExport'}
+          content:
+            text/csv:
+              schema: {$ref: '#/components/schemas/CsvFile'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
   /api/core/teams/{teamId}/jersey-numbers:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -2101,6 +2187,43 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
 
+  /api/core/audit-events:export:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: exportAuditEvents
+      tags: [Audit]
+      summary: Export the academy's audit trail as CSV
+      description: |
+        The rows `listAuditEvents` would return for the same `from`, `to` and `action`, all of them in one CSV file
+        (no paging; ADR-0048: UTF-8 with BOM, `,`, RFC 4180 quoting, CRLF, one header row, the formula guard), newest
+        first, with the same masking: a PLATFORM actor has no login, person or name (the actor column says
+        "Platform administrator"). Columns: date, time and time zone (the academy's), action label and code, actor kind, name,
+        person id and login, target type, id and name, details (the metadata as `key=value` pairs). Rows written
+        after the export started are left out. More than 10,000 rows: 422 `EXPORT_TOO_LARGE` (narrow the range or the
+        actions). File name `hoops-<academy-slug>-audit-<yyyyMMdd>.csv`. Every export writes the audit row
+        `audit.exported` (target the academy, metadata `rows` and the filter given: `from`, `to`, `actions`).
+        Authz: ADMIN.
+      parameters:
+        - $ref: '#/components/parameters/AuditFrom'
+        - $ref: '#/components/parameters/AuditTo'
+        - $ref: '#/components/parameters/AuditActionFilter'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The audit trail file.
+          headers:
+            Content-Disposition: {$ref: '#/components/headers/ContentDisposition'}
+            Cache-Control: {$ref: '#/components/headers/NoStoreExport'}
+          content:
+            text/csv:
+              schema: {$ref: '#/components/schemas/CsvFile'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
   # ------------------------------------------------------------------ internal
   /internal/authz/{tenantId}/{sub}:
     parameters:
@@ -2254,8 +2377,16 @@ components:
       explode: true
       schema:
         type: array
-        maxItems: 30
+        maxItems: 32
         items: {$ref: '#/components/schemas/AuditAction'}
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: |
+        Language of the export's header and enum labels (RFC 9110 list, e.g. `id, en;q=0.8`): the first of `es`, `en`,
+        `id` in preference order; absent, `*` or unsupported = `en`. Values are not translated.
+      schema: {type: string, maxLength: 200}
 
   headers:
     Location:
@@ -2270,6 +2401,12 @@ components:
     NoStore:
       description: '`no-store`: the response may carry a temporary password, which must never be cached (ADR-0024).'
       schema: {type: string, example: no-store}
+    NoStoreExport:
+      description: '`no-store`: an export holds personal data and is never cached (ADR-0048).'
+      schema: {type: string, example: no-store}
+    ContentDisposition:
+      description: '`attachment; filename="hoops-<academy-slug>-<what>-<yyyyMMdd>.csv"` (ASCII, ADR-0048).'
+      schema: {type: string, example: 'attachment; filename="hoops-hangtuah-audit-20261110.csv"'}
 
   schemas:
     # ---------------- enums
@@ -2294,6 +2431,7 @@ components:
         - admin.temporary_password_issued
         - admin.updated
         - approval.cancelled
+        - audit.exported
         - guardian_link.created
         - guardian_link.removed
         - member.deactivated
@@ -2308,6 +2446,7 @@ components:
         - player.rejected
         - player.requested
         - player.withdrawn
+        - team.roster_exported
         - tenant.created
         - tenant.events_backfilled
         - tenant.logo_removed
@@ -2321,7 +2460,7 @@ components:
         - tenant.withdrawn
     AuditTargetType:
       type: string
-      enum: [person, player, tenant, approval_request, guardian_link]
+      enum: [person, player, tenant, approval_request, guardian_link, team]
     AuditActorKind:
       type: string
       description: |
@@ -2989,6 +3128,12 @@ components:
           maximum: 120
           default: 10
           description: Minutes after which a LATE arrival is highlighted.
+    CsvFile:
+      type: string
+      format: binary
+      description: |
+        A CSV file (ADR-0048): UTF-8 with BOM, `,` separator, RFC 4180 quoting, CRLF line ends, one header row; a text
+        cell starting with `=`, `+`, `-`, `@`, TAB or CR is prefixed with `'`.
     LogoBinary:
       type: string
       format: binary

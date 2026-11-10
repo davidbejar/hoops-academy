@@ -97,7 +97,7 @@ class AuditTrailContractTest {
         Parameter action = parameters.get("action");
         assertThat(action.getSchema().getType()).isEqualTo("array");
         assertThat(action.getExplode()).isTrue();
-        assertThat(action.getSchema().getItems().getEnum()).hasSize(30);
+        assertThat(action.getSchema().getItems().getEnum()).hasSize(32);
         assertThat(operation.getResponses()).containsKeys("200", "400", "401", "403", "404");
         assertThat(operation.getDescription()).contains("Authz:").containsIgnoringCase("retention");
     }
