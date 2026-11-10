@@ -572,12 +572,6 @@ classDiagram
         <<interface>>
         +park(ParkedRecord) void
     }
-    class ReplicaHistory {
-        <<interface>>
-        +tenants() List~TenantId~
-        +deleteAppliedBefore(Instant,int) int
-        +deleteParkedInspectedBefore(Instant) List~ParkedPosition~
-    }
     class RosterEvent {
         <<interface>>
         +envelope() EventEnvelope

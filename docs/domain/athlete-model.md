@@ -965,12 +965,6 @@ classDiagram
         <<interface>>
         +park(ParkedEvent) void
     }
-    class ReplicaHistory {
-        <<interface>>
-        +tenants() List~TenantId~
-        +deleteAppliedBefore(Instant,int) int
-        +deleteParkedInspectedBefore(Instant) List~ParkedPosition~
-    }
     class ReplicaMembershipReads {
         <<interface>>
         +tenant(TenantId) Optional~TenantState~
