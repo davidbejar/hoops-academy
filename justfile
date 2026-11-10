@@ -21,6 +21,11 @@ isolation-check:
 db-role-check:
     scripts/hooks/db-role-check.sh
 
+# Command matcher of the Claude Code tenancy hook (.claude/hooks/tenancy-gate.sh) and the pin-script tests; no containers
+test-hooks:
+    scripts/hooks/tenancy-gate.test.sh
+    python3 -I -m unittest discover -s scripts/tests
+
 # Fast compile + unit tests only
 unit:
     source scripts/env.sh && ./mvnw -q -T 1C test
