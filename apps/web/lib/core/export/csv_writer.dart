@@ -29,11 +29,16 @@ class CsvWriter {
 
   static String _text(ExportCell cell) => switch (cell) {
     TextCell(:final value) => guardFormula(value),
-    NumberCell(:final value) => '$value',
+    NumberCell(:final value) => _number(value),
     DateCell(:final value) => isoDate(value),
     TimeCell(:final hour, :final minute) => isoTime(hour, minute),
     EmptyCell() => '',
   };
+
+  static String _number(num value) =>
+      value is double && value == value.truncateToDouble()
+      ? '${value.toInt()}'
+      : '$value';
 
   static void _record(StringBuffer out, List<String> fields) {
     out

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/export/csv_writer.dart';
 import 'package:hoops_app/core/export/export_table.dart';
 import 'package:hoops_app/core/time/tenant_zone.dart';
-import 'package:hoops_app/features/match/application/match_exports.dart';
+import 'package:hoops_app/features/match/presentation/match_exports.dart';
 import 'package:hoops_app/features/match/domain/projector/projection.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;

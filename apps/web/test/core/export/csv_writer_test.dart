@@ -99,6 +99,15 @@ void main() {
       expect(text, '﻿a,b\r\n2026-03-07,09:05\r\n12.5,7\r\n');
     });
 
+    test('a whole decimal has no trailing .0', () {
+      final text = CsvWriter.write(
+        table([
+          [const NumberCell(12.0), const NumberCell(0.5)],
+        ]),
+      );
+      expect(text, '\uFEFFa,b\r\n12,0.5\r\n');
+    });
+
     test('non-ASCII text survives the UTF-8 round trip', () {
       final bytes = CsvWriter.encode(
         table([
