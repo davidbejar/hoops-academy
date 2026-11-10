@@ -51,6 +51,14 @@ mutation MODULE="all":
 web-mutation *ARGS:
     cd apps/web && flutter pub get >/dev/null && dart run tool/mutation/run.dart {{ARGS}}
 
+# Regenerate the Mermaid ER and class diagrams of docs/domain/*-model.md (throwaway PostgreSQL via Podman, ~10 s)
+diagrams:
+    scripts/model-diagrams.sh
+
+# Fail with a diff when docs/domain/*-model.md are stale against the migrations and sources (CI runs this)
+diagrams-check:
+    scripts/model-diagrams.sh --check
+
 # Start the local stack (Postgres, Keycloak, proxy, mail, Redpanda + its topics)
 up:
     podman compose --env-file .env -f infra/compose/compose.yaml up -d --wait

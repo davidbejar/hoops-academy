@@ -53,4 +53,28 @@ Worktree: `~/code/hoops-wt/wp94-model-diagrams`, branch `wp94-model-diagrams`.
   regenerates on the combined tree when it merges you last in this wave.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built: `scripts/model-diagrams.sh` (+ `scripts/model_diagrams.py`, stdlib only) and three pages
+  `docs/domain/{core,game,athlete}-model.md` (hand-written intro, generated blocks between `<!-- BEGIN/END GENERATED:
+  er|domain|ports -->`). ER: a throwaway container `hoops-diagrams-pg-<pid>-<rand>` from the compose image (read
+  from `infra/compose/compose.yaml`), no published port (everything via `podman exec`), `infra/db/init/01_roles_schemas.sql`
+  then the service's Flyway files (V by number, then R__) as `<svc>_migrator`; `pg_catalog` read as JSON; one
+  `erDiagram` per FK-connected group (lone tables share one), PK/FK/UK/`tenant_id` (RLS) marked, tables over 24
+  columns summarised. Classes: regex/brace-depth parser over `domain` (grouped by sub-package; flat packages by the
+  `FLAT_GROUPS` table, unlisted classes land in "Other"; `*Id` records in "Identifiers") and over `application`
+  interfaces/enums (ports), members capped at 10, no private members. Container and temp dir are removed by an
+  EXIT trap. `just diagrams` / `just diagrams-check`; CI job `model-diagrams` (unit tests + `--check`).
+- Verified: `just diagrams` twice: identical md5 of the three pages. `just diagrams-check`: "pages up to date",
+  about 9 s (container start dominates). Drift: a temporary `V99` migration adding `athlete.injury.drift_probe`
+  made `--check` print `+ text drift_probe` and exit 1; a temporary `game/domain/DriftProbe` record showed up as
+  `+ class DriftProbe` and failed; an edit inside a generated block fails (rc=1); both probes removed, check green
+  again. Hand-written text outside the markers is not compared. `python3 -m unittest discover -s scripts/tests -p
+  'test_model*'`: 5 tests OK; they validate every Mermaid block of the three pages against the erDiagram /
+  classDiagram grammar subset used (entity/attribute/relationship/class/member/edge regexes, declared endpoints,
+  50 000 characters and 500 edges limits) and I checked the validator rejects bad input. `actionlint` clean.
+  Not verified: real rendering on GitHub (no Mermaid CLI).
+- Decisions/ADRs: none. The throwaway DB needs no port, so no clash with other agents.
+- Open points: pages describe `main` at branch time; regenerate with `just diagrams` after merging WP91/WP92 (a
+  migration or a domain/application class changes the pages, then `just diagrams-check` fails until committed).
+  Docs pass: link the three pages from `docs/architecture.md` and the README docs list. Class relations are drawn
+  only inside a group; method return types of ports are as declared. Needs `python3` and Podman on the runner
+  (ubuntu-latest has both; not run on GitHub yet).

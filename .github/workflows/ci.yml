@@ -31,6 +31,17 @@ jobs:
       - name: Build and verify
         run: ./mvnw -B -ntp verify
 
+  # docs/domain/*-model.md are generated: ER diagrams from a throwaway PostgreSQL (Podman, on the runner) with the
+  # Flyway files applied, class diagrams from the Java sources. Fails with a diff when a page is stale: `just diagrams`.
+  model-diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Diagram generator tests (parser, Mermaid syntax of the pages)
+        run: python3 -m unittest discover -s scripts/tests -p 'test_model_diagrams.py'
+      - name: Pages are up to date
+        run: scripts/model-diagrams.sh --check
+
   flutter:
     runs-on: ubuntu-latest
     steps:
