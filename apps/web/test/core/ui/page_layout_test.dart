@@ -128,4 +128,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.getRect(find.byKey(const Key('two'))).top, lessThan(two.top));
   });
+
+  testWidgets('PageBody stretches a section narrower than the frame', (
+    tester,
+  ) async {
+    await pumpKit(
+      tester,
+      const PageBody(
+        header: PageHeader(key: Key('head'), title: 'Inicio'),
+        children: [Text('corto', key: Key('short'))],
+      ),
+      size: const Size(360, 500),
+      scaffold: false,
+    );
+    final gutter = WidthClass.compact.gutter;
+    expect(
+      tester.getSize(find.byKey(const Key('head'))).width,
+      360 - 2 * gutter,
+    );
+    expect(tester.getTopLeft(find.byKey(const Key('short'))).dx, gutter);
+  });
 }

@@ -104,13 +104,9 @@ class _StatsBody extends ConsumerWidget {
         final zone = ref.watch(tenantZoneProvider);
         return PageBody(
           key: const Key('season-stats'),
-          // Full width, so the heading starts at the frame's edge.
-          header: SizedBox(
-            width: double.infinity,
-            child: PageHeader(
-              key: const Key('stats-games'),
-              title: l.seasonStatsGames(s.gamesPlayed, s.gamesStarted),
-            ),
+          header: PageHeader(
+            key: const Key('stats-games'),
+            title: l.seasonStatsGames(s.gamesPlayed, s.gamesStarted),
           ),
           children: [
             _Section(

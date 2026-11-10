@@ -72,7 +72,8 @@ class PageHeader extends StatelessWidget {
 }
 
 /// Centres [child] in a column of at most [maxWidth] with the device's
-/// gutter (16 / 24 / 32 px for phones / tablets / desktops).
+/// gutter (16 / 24 / 32 px for phones / tablets / desktops). A narrower child
+/// is stretched to the column's width.
 class ContentFrame extends StatelessWidget {
   const ContentFrame({
     super.key,
@@ -92,7 +93,7 @@ class ContentFrame extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: maxWidth + 2 * gutter),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: gutter),
-          child: child,
+          child: SizedBox(width: double.infinity, child: child),
         ),
       ),
     );

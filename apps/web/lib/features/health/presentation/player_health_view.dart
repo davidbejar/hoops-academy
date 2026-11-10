@@ -131,18 +131,14 @@ class PlayerHealthScreen extends ConsumerWidget {
         allowed: caps.canSeeModule,
         child: PageBody(
           children: [
-            // Full width: a bare section would be centred by the frame.
-            SizedBox(
-              width: double.infinity,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SeasonBar(
-                    padding: EdgeInsets.only(bottom: HoopsSpace.md),
-                  ),
-                  PlayerHealthView(playerId: playerId),
-                ],
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SeasonBar(
+                  padding: EdgeInsets.only(bottom: HoopsSpace.md),
+                ),
+                PlayerHealthView(playerId: playerId),
+              ],
             ),
           ],
         ),
