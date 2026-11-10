@@ -1,9 +1,10 @@
 # ADR-0037: Roster replicas in game and athlete, fed by core's events, behind `RosterPort`
 
 - Status: Accepted (game: WP68; athlete: WP69, its section at the end); amended 2026-11-07 (WP81: shadow evidence and
-  done items in "When rest flips"; WP82: every removal applied, replica housekeeping, at the end)
+  done items in "When rest flips"; WP82: every removal applied, replica housekeeping, at the end); amended 2026-11-10
+  (WP98: the flip, `replica` is the default, with a drift check; "Flip of 2026-11-10" at the end)
 - Date: 2026-11-06
-- Related: decision 48 of 2026-11-06, ADR-0008 (v1 sync REST, v2 outbox + events; amended in WP67), ADR-0036 (Redpanda:
+- Related: decision 48 of 2026-11-06, decision 66 of 2026-11-10 (the flip), ADR-0008 (v1 sync REST, v2 outbox + events; amended in WP67), ADR-0036 (Redpanda:
   topics, keys, compaction, ACLs), ADR-0006 / ADR-0011 (RLS, tenant binding per transaction), WP19 brief, WP67
   (contracts `libs/contracts/events/core.<aggregate>.schema.json`, publisher)
 
@@ -53,7 +54,7 @@ key, and both paths must give the same answers.
    ACTIVE tenant: roles, own player (PLAYER role), linked players (PARENT role), staff teams, teams of the own and
    linked players' open valid assignments, both team sets without teams whose season ended before today in the
    academy's time zone, plus that zone. No cache: the replica is a local indexed read.
-7. **`hoops.roster.source=rest|replica`** (runtime, default `rest`) selects both the `RosterPort` adapter and the
+7. **`hoops.roster.source=rest|replica`** (runtime, default `rest`; `replica` since the flip of 2026-11-10) selects both the `RosterPort` adapter and the
    authorisation context resolver. The consumer runs in both modes, so in `rest` mode the replica fills up in the
    shadow and can be compared before the switch.
 8. **Replay = rebuild from the compacted topics.** Stop the service (the group must have no members), empty the
@@ -77,7 +78,8 @@ Not in WP68/WP69. All of:
 - ~~`just e2e` is green with `replica` for both services~~ — done in WP81 on compose (JourneyTest 23/23 with
   `GAME_ROSTER_SOURCE=replica ATHLETE_ROSTER_SOURCE=replica`, parked 0 and both groups' lag 0 afterwards).
 - ~~the game flip on kind~~ — done in WP86 (above).
-- **still open:** the replica has run in the shadow in a shared environment (kind or a staging cluster) over days with
+- ~~**still open:**~~ skipped by decision 66 (see "Flip of 2026-11-10" at the end): the replica has run in the shadow
+  in a shared environment (kind or a staging cluster) over days with
   `hoops_roster_replica_parked_total` at 0 and the lag metric in seconds; run the backfill there first.
 Then the default flips; the REST adapter stays as the fallback switch until a later decision removes it.
 
@@ -187,3 +189,36 @@ Applies to game and athlete alike (game `V6__replica_housekeeping.sql`, athlete 
   `ReplicaAuthzRulesTest`). The test profiles turn Dev Services off; the classes that run the consumer get
   `RosterBrokerResource` (the pinned image through `ContainerStarts`, the seven topics, consumer on). Dev mode keeps
   Dev Services.
+
+## Amendment 2026-11-10 (decision 66, WP98): Flip of 2026-11-10
+- **The default flips.** `hoops.roster.source` defaults to `replica` in game and athlete (`GAME_ROSTER_SOURCE`,
+  `ATHLETE_ROSTER_SOURCE` still override): compose and dev mode (consumer on, Kafka Dev Services) read the replica without
+  any setting. The test profile pins `rest`, because its tests run no broker; the tests that run the consumer switch source
+  and consumer on themselves (`RosterSourceDefaultsTest` per service reads the shipped configuration per profile). Both
+  sources keep their contract tests (`RosterPortContract`, `MembershipContract`, the authorisation context contract). The
+  chart sets the variable explicitly from `game.rosterSource` / `athlete.rosterSource` (still `rest` until WP100 flips the
+  chart's default in wave 3, together with its tests), so a Kubernetes release changes only when the chart does. game's
+  consumer switch is now named like athlete's, `hoops.roster.consumer.enabled` (`GAME_ROSTER_CONSUMER_ENABLED` unchanged).
+- **What was skipped, and why.** The last item of "When `rest` flips": the shadow period over days in a shared environment.
+  This is a pet project without production data, and the evidence that period would have collected is already there:
+  the backfill of 46 academies left both replicas equal to core, parked 0 (WP81), the journeys passed on `replica` in
+  both services (WP81) and the flips of athlete and game were proven on kind (WP71, WP86). What a shadow period would
+  still have caught (a divergence that only real use produces) the drift check below finds on demand instead.
+- **Drift check** (`just events-drift`, `scripts/events-drift.sh`; runbook `events.md`, "Drift check"). An operator tool,
+  read-only: per aggregate (tenant, person, player, team, team-player, team-staff, guardian-link) and service it compares
+  core's rows with the replica's rows that are not removed, on exactly the columns the replica keeps (roles as a set,
+  athlete's staff `since` too), and reports rows missing in the replica (or only removed there), extra in it (gone in
+  core) and differing. It runs SQL in one `REPEATABLE READ READ ONLY` transaction as the operator the runbooks already use
+  for inspection (compose: the superuser through `podman exec`; kind: `--kind`, the CNPG primary through `kubectl exec`),
+  so no service role gains a grant (ADR-0006; `just db-role-check` unchanged). A row that differs is checked once more
+  after a short wait (`EVENTS_DRIFT_WAIT`, 5 s) before it counts, so an event on its way is lag, not drift. Output: counts
+  per aggregate and service and the first differing ids (ids only, never names or logins); exit 0 equal, 1 drift, 2 the
+  check could not run. Proof: `just events-drift-test` plants a missing, an extra and a differing row per aggregate and
+  service, a lag that heals during the wait and an unreachable database (49 checks, throwaway PostgreSQL).
+- **Going back to `rest`** is one setting per service and a restart: `GAME_ROSTER_SOURCE=rest` /
+  `ATHLETE_ROSTER_SOURCE=rest` (chart: `game.rosterSource` / `athlete.rosterSource`). No data is lost either way: the
+  consumer keeps feeding the replica in both modes and core's `/internal` API is unchanged, so switching back to
+  `replica` later needs no replay (run the drift check first). The REST adapter stays until a later decision removes it.
+- **Shared code.** `ReplicaRetention` (with `ReplicaHistory`, `ParkedPosition` and its rules test, in PIT scope) lives once
+  in common-quarkus (`com.hoopsacademy.common.replica`, a plain class: core depends on the library and keeps no replica);
+  game and athlete only produce it from their settings. The test broker `RosterBrokerResource` is in the common test-jar.

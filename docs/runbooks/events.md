@@ -164,14 +164,11 @@ podman exec hoops-redpanda rpk topic describe core.person -p      # high waterma
 podman exec -i hoops-postgres psql -U postgres -d hoops -c 'select count(*) from core.person'
 ```
 
-### Shadow period, then the flip
-1. Run the backfill with both services on `rest` (the default); the consumers fill the replicas in the shadow.
-2. Watch, over days in a shared environment: `hoops_roster_replica_parked_total` stays 0 in game and athlete, the
-   `hoops_roster_replica_lag_seconds` gauges stay in seconds, both groups' `TOTAL-LAG` is 0 (`rpk group describe`),
-   and the replica row counts equal core's (`game.*_ref`, `athlete.*_ref` without `removed` rows vs `core.*`).
-3. Run the journeys with both replicas: `GAME_ROSTER_SOURCE=replica ATHLETE_ROSTER_SOURCE=replica just e2e`.
-4. The flip (ADR-0037) then needs a decision of the owner: change the default of `hoops.roster.source` (or the chart's
-   `game.rosterSource` / `athlete.rosterSource`) to `replica`; `rest` stays the fallback switch.
+### The flip (done 2026-11-10, decision 66, WP98)
+The plan was a shadow period over days in a shared environment before the flip; decision 66 skipped it (ADR-0037,
+"Flip of 2026-11-10") and replaced it by the drift check below. Since WP98 game and athlete read the replica by default
+(`hoops.roster.source=replica`); `rest` is the fallback switch. In a new environment: run the backfill first (a replica
+only knows aggregates that have an event), then `just events-drift` (exit 0), then let the services answer.
 
 Evidence of WP81 on compose (2026-11-07, data from rounds 1 to 4, 46 academies): before the backfill the topics held
 31 of 169 persons, 12 of 64 players, 8 of 43 teams, 21 of 121 assignments, 7 of 41 staff entries, 4 of 22 guardian
@@ -186,8 +183,8 @@ game keeps a replica of the roster data it reads from core (`game.*_ref`, V4), f
 
 | Setting | Default | What |
 |---|---|---|
-| `hoops.roster.source` (`GAME_ROSTER_SOURCE`) | `rest` | `rest` = core `/internal` (cached 30 s); `replica` = the local replica, no call to core on the request path |
-| `mp.messaging.incoming.core-roster.enabled` (`GAME_ROSTER_CONSUMER_ENABLED`) | `true` | `false` stops feeding the replica (escape hatch; only with `rest`) |
+| `hoops.roster.source` (`GAME_ROSTER_SOURCE`) | `replica` (since WP98; `rest` before) | `replica` = the local replica, no call to core on the request path; `rest` = core `/internal` (cached 30 s), the fallback |
+| `hoops.roster.consumer.enabled` (`GAME_ROSTER_CONSUMER_ENABLED`) | `true` | `false` stops feeding the replica (escape hatch; only with `rest`); drives `mp.messaging.incoming.core-roster.enabled` (the name athlete uses since WP98) |
 | `hoops.roster.replica.apply-attempts` | `3` | attempts per event (1 s, 2 s between) before the consumer stops |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
 | `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `game-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-game-service` Secret (SCRAM-SHA-256) |
@@ -262,27 +259,28 @@ kind: `kubectl -n hoops scale deploy/game-service --replicas=0`; empty the table
 game.guardian_link_ref, game.applied_event`); `rpk_k group seek game-service.roster --to start`; scale back. With
 `hoops.roster.source=replica`, switch to `rest` for the duration (requests would otherwise see an empty replica).
 
-### Before switching to `replica`
-ADR-0037 "When rest flips to replica": core has published every aggregate (a replica only knows aggregates that changed
-after core's publisher went live; data older than WP67 needs a core backfill), `parked_total` is 0, `lag_seconds` stays
-in seconds, and the chart wires the Kafka client. Switch with `GAME_ROSTER_SOURCE=replica` and a restart; back with
-`rest`.
+### Switching between `replica` and `rest`
+`replica` is the default since WP98. It needs core to have published every aggregate (a replica only knows aggregates
+that changed after core's publisher went live; data older than WP67 needs a core backfill), `parked_total` 0,
+`lag_seconds` in seconds, and on Kubernetes the chart wiring the Kafka client. Back to core's API: `GAME_ROSTER_SOURCE=rest`
+and a restart ("Rollback to rest" below).
 
 ## Athlete replica (WP69)
 athlete keeps a local copy of core's roster in `athlete.*_ref` (V6), fed by core's events (ADR-0037, athlete section).
 `hoops.roster.source` decides whether the use cases' `RosterPort` and the tenant filter's membership read it
-(`replica`) or core's `/internal` API (`rest`, the default). The consumer runs in both modes, so the replica fills in
-the shadow while REST answers.
+(`replica`, the default since WP98) or core's `/internal` API (`rest`, the fallback). The consumer runs in both modes,
+so the replica stays current while REST answers.
 
 | Setting | Default | What |
 |---|---|---|
-| `hoops.roster.source` (`ATHLETE_ROSTER_SOURCE`) | `rest` | `replica` = RosterPort + membership from the replica; needs the consumer on (startup fails otherwise) |
+| `hoops.roster.source` (`ATHLETE_ROSTER_SOURCE`) | `replica` (since WP98; `rest` before) | `replica` = RosterPort + membership from the replica; needs the consumer on (startup fails otherwise); `rest` = core's API, the fallback |
 | `hoops.roster.consumer.enabled` (`ATHLETE_ROSTER_CONSUMER_ENABLED`) | `true` | consumer of channel `core-roster` (all seven `core.*` topics), group `athlete-service.roster` |
 | `hoops.roster.replica.max-attempts` (`ATHLETE_ROSTER_REPLICA_MAX_ATTEMPTS`) | `5` | tries per record when the database fails (backoff 0.5 s, doubling); then the channel fails |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
 | `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `athlete-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-athlete-service` Secret (SCRAM-SHA-256) |
 
-Run it on compose with the replica: `ATHLETE_ROSTER_SOURCE=replica just e2e` (or export it before `e2e/bin/services-up.sh`).
+`just e2e` runs both services on their replicas (the default); on core's API: `GAME_ROSTER_SOURCE=rest
+ATHLETE_ROSTER_SOURCE=rest just e2e` (or export them before `e2e/bin/services-up.sh`).
 
 Watch it:
 ```bash
@@ -384,7 +382,8 @@ authentication failures (a user deleted or a password changed while core runs) h
 deploys core after `redpanda-bootstrap`; anywhere else: `kubectl -n hoops rollout restart deploy/core-service` after the
 first install. The real fix (the producer recovering) is a core-service follow-up.
 
-Flip one service to its replica (ADR-0037; the default stays `rest` until "When rest flips"):
+Flip one service to its replica (ADR-0037; the services default to `replica` since WP98, the chart sets the variable
+explicitly and still defaults to `rest` until WP100):
 ```bash
 helm upgrade hoops deploy/helm/hoops -n hoops -f deploy/helm/hoops/values-kind.yaml \
   --set athlete.rosterSource=replica --wait          # only athlete's ConfigMap changes; its pod rolls (checksum)
@@ -401,3 +400,48 @@ service), then run the Job (`helm upgrade`, or trigger `redpanda-bootstrap` in T
 with `SASL_AUTHENTICATION_FAILED`; core's publisher turns `DEGRADED` and catches up once both agree, a consumer resumes
 from its committed offset. Only that service's pod restarts (the superuser
 `hoops-redpanda-admin` restarts `redpanda-0`, section "Rotate the superuser").
+
+## Drift check (WP98)
+Since the flip (ADR-0037, "Flip of 2026-11-10") game and athlete answer from their replicas, so a replica that differs
+from core gives wrong answers (a member unknown: 404; a role or a team missing: 403 or a shorter list). The drift check
+finds that on demand. It is read-only: one `REPEATABLE READ READ ONLY` transaction as the operator (compose: the
+superuser through `podman exec`; kind: the CNPG primary through `kubectl exec`); no service role is involved.
+```bash
+just events-drift                        # compose (container hoops-postgres; POSTGRES_CONTAINER to change it)
+just events-drift --kind                 # kind/chart: the primary of CNPG cluster hoops-db in namespace hoops
+                                         #   (HOOPS_DB_CLUSTER, HOOPS_NAMESPACE to change them)
+EVENTS_DRIFT_WAIT=15 just events-drift   # seconds before a differing row is checked again (default 5)
+EVENTS_DRIFT_SHOW=20 just events-drift   # ids shown per service, aggregate and kind (default 5)
+just events-drift-test                   # the check against planted differences (throwaway PostgreSQL, ~1 min)
+```
+Per aggregate (tenant, person, player, team, team-player, team-staff, guardian-link) and service it prints core's rows,
+the replica's rows (not removed) and how many are:
+- **missing**: core has the row, the replica has none or only a removed one (the event never arrived, or was parked);
+- **extra**: the replica has the row, not removed, and core has not (a removal that never arrived);
+- **differ**: both have it and a replicated column differs (display name, login subject, roles as a set, active; player
+  person, name, status, birth date, gender; team season, season end, name; assignment team, player, jersey, joined, left,
+  invalid reason; staff role, and in athlete `since`; guardian link guardian and player; tenant status and time zone).
+
+then `drift: <service> <aggregate> <kind> <id>` for the first ids (team-staff: `<team id>:<person id>`; ids only, never
+names or logins). A row that differs is checked again after `EVENTS_DRIFT_WAIT` seconds; only rows that still differ
+count (`... matched on the retry (lag, not drift)` otherwise). Exit 0: the replicas equal core; 1: drift; 2: the check
+could not run (database unreachable, a schema missing, an unknown option).
+
+On drift:
+1. Lag first: `rpk group describe <service>-service.roster` (`TOTAL-LAG` 0?), `hoops_outbox_pending` in core (0?); run
+   the check again with a longer `EVENTS_DRIFT_WAIT`.
+2. Parked records (`hoops_roster_replica_parked_total` > 0, the `parked_event` table): the event broke its contract;
+   fix the producer, then replay.
+3. **missing** in both services for aggregates older than core's publisher: run the backfill (`just events-backfill`).
+4. Anything else: switch the service to `rest` (below), replay its replica ("Replay ..." sections), check again (exit 0),
+   switch back to `replica`.
+
+## Rollback to rest (WP98)
+One setting per service and a restart; nothing is lost and nothing has to be replayed afterwards, because the consumer
+feeds the replica in both modes and core's `/internal` API is unchanged:
+```bash
+GAME_ROSTER_SOURCE=rest ATHLETE_ROSTER_SOURCE=rest e2e/bin/services-up.sh     # compose (just services-down first)
+helm upgrade hoops deploy/helm/hoops -n hoops -f deploy/helm/hoops/values-kind.yaml \
+  --set game.rosterSource=rest --set athlete.rosterSource=rest --wait          # chart
+```
+Back to the replica: drop the overrides (compose) or set `replica` (chart), after `just events-drift` exits 0.

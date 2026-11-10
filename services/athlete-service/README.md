@@ -50,7 +50,7 @@ entities + `V2__...sql`) and reuses `TrainingAccess`, `RosterPort`, `CallerActor
 | `hoops.athlete.default-timezone` | `Europe/Madrid` | tenant zone only when the caller's `AuthzContext` carries none (older core) |
 | `hoops.athlete.horizon-weeks` | `8` | materialisation horizon |
 | `hoops.athlete.materialise.cron` | `0 15 2 * * ?` | nightly job (`off` disables) |
-| `hoops.roster.source` | `rest` (`ATHLETE_ROSTER_SOURCE`) | `rest` = core's `/internal` API; `replica` = local replica (needs the consumer) |
+| `hoops.roster.source` | `replica` (`ATHLETE_ROSTER_SOURCE`; since WP98) | `replica` = local replica (needs the consumer); `rest` = core's `/internal` API, the fallback; the test profile pins `rest` |
 | `hoops.roster.consumer.enabled` | `true` (`ATHLETE_ROSTER_CONSUMER_ENABLED`) | the replica consumer (group `athlete-service.roster`); off in the default test profile |
 | `hoops.roster.replica.max-attempts` | `5` | tries per record on a database failure before the channel fails |
 | `kafka.bootstrap.servers` | `KAFKA_BOOTSTRAP_SERVERS`, `localhost:19092` (prod) | broker; `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME` (`athlete-service`), `KAFKA_SASL_PASSWORD` for the chart |
