@@ -122,6 +122,7 @@ erDiagram
         uuid person_id FK,UK "not null"
         text status "not null"
         timestamptz created_at "not null"
+        text preferred_jersey_number
     }
     season {
         uuid id PK
@@ -433,6 +434,18 @@ classDiagram
 </details>
 
 <details open>
+<summary>Package export</summary>
+
+```mermaid
+classDiagram
+    class ExportLimit {
+        +requireWithin(long) void
+    }
+```
+
+</details>
+
+<details open>
 <summary>Package identity</summary>
 
 ```mermaid
@@ -635,9 +648,26 @@ classDiagram
         FEMALE
         MIXED
     }
+    class JerseyCarryOver {
+        +choose(Optional~JerseyNumber~,Optional~JerseyNumber~,List~TeamPlayer~,Set~JerseyNumber~) JerseyChoice
+        +previous(Collection~TeamPlayer~) Optional~JerseyNumber~
+    }
+    class JerseyChoice {
+        <<record>>
+        +JerseyNumber number
+        +JerseySource source
+    }
     class JerseyNumber {
         <<record>>
         +String value
+        +compareTo(JerseyNumber) int
+    }
+    class JerseySource {
+        <<enumeration>>
+        REQUESTED
+        PREFERRED
+        PREVIOUS
+        NONE
     }
     class Season {
         <<record>>
@@ -719,6 +749,8 @@ classDiagram
         +forTeam(TeamId,LocalDate) TeamStaffMember
     }
     AgeCategory --> AgeCategoryId : id
+    JerseyChoice --> JerseyNumber : number
+    JerseyChoice --> JerseySource : source
     Season --> SeasonId : id
     Team --> AgeCategoryId : category
     Team --> GenderPolicy : genderPolicy
@@ -989,10 +1021,10 @@ classDiagram
         ADMIN_TEMPORARY_PASSWORD_ISSUED
         ADMIN_UPDATED
         APPROVAL_CANCELLED
+        AUDIT_EXPORTED
         GUARDIAN_LINK_CREATED
         GUARDIAN_LINK_REMOVED
-        MEMBER_DEACTIVATED
-        and 22 more
+        and 24 more
     }
     class AuditLog {
         <<interface>>
@@ -1014,6 +1046,7 @@ classDiagram
         TENANT
         APPROVAL_REQUEST
         GUARDIAN_LINK
+        TEAM
     }
     class AuditTrail {
         <<interface>>
@@ -1053,6 +1086,7 @@ classDiagram
         +delete(GuardianLinkId) void
         +list(Optional~PlayerId~,Optional~PersonId~,PageRequest) PageResult~GuardianLink~
         +playersOf(PersonId) Set~PlayerId~
+        +ofPlayers(Collection~PlayerId~) List~GuardianLink~
     }
     class IdentityProviderPort {
         <<interface>>
@@ -1146,8 +1180,8 @@ classDiagram
         +find(PlayerId) Optional~PlayerRow~
         +page(PlayerFilter,PageRequest) PageResult~PlayerRow~
         +updateStatus(PlayerId,PlayerStatus) void
-        +count() long
-        and 2 more
+        +updatePreferredJersey(PlayerId,JerseyNumber) void
+        and 3 more
     }
     class RemoteUsagePort {
         <<interface>>
@@ -1203,6 +1237,7 @@ classDiagram
         +ofTeam(TeamId,boolean) List~TeamPlayer~
         +openValidOfTeams(Collection~TeamId~) List~TeamPlayer~
         +openOfPlayers(Collection~PlayerId~) List~TeamPlayer~
+        +ofPlayer(PlayerId) List~TeamPlayer~
         +jerseyTaken(TeamId,JerseyNumber,Optional~TeamPlayerId~) boolean
         +countOpenValid(Collection~TeamId~) Map~TeamId,Long~
     }
