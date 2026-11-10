@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 3.4.0
+  version: 3.5.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -42,6 +42,12 @@ info:
     Application admin and own name (core 3.4.0, decisions 71 and 73, WP91): `GET /platform/users` lists every login
     across academies with its memberships (read-only); `PATCH /api/core/me` also changes the caller's own first and
     last name in one academy (`tenantId` in the body); the e-mail stays with the academy's administrators.
+
+    Jersey numbers (core 3.5.0, decision 70, WP96, ADR-0048): a player has an optional preferred number
+    (`Player.preferredJerseyNumber`, `updatePlayer`), set by ADMIN and COACH and as a wish by a PARENT for a linked
+    player or a PLAYER for themselves. Assigning a player without a number takes the preferred number when it is free
+    among the team's open assignments, else the number of the player's most recent numbered assignment when free, else
+    none; `AssignedTeamPlayer.jerseySource` says which rule applied. `listTeamJerseyNumbers` lists the taken numbers.
 
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
@@ -1569,7 +1575,12 @@ paths:
       description: |
         Runs the eligibility check; INELIGIBLE → 422 with `code=PLAYER_INELIGIBLE` and the reasons in `violations[].code`.
         PLAY_UP is allowed within the tenant's limit. 409 when the player already has an open assignment to this team.
-        409 `SEASON_ENDED` once the season of the team has ended (ADR-0042). Authz: ADMIN; COACH of this team (a former coach gets the 409).
+        409 `SEASON_ENDED` once the season of the team has ended (ADR-0042).
+        Jersey (core 3.5.0, ADR-0048): a given `jerseyNumber` is used as requested (409 `JERSEY_NUMBER_TAKEN` when
+        another open assignment of the team has it). Without one, the player's preferred number is taken when no open
+        assignment of the team has it (`PREFERRED`), else the number of the player's most recent assignment that had a
+        number, when free (`PREVIOUS`), else none (`NONE`); a number is never taken from another open assignment.
+        `jerseySource` in the response says which rule applied. Authz: ADMIN; COACH of this team (a former coach gets the 409).
       requestBody:
         required: true
         content:
@@ -1580,7 +1591,7 @@ paths:
           description: Assignment created.
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/TeamPlayer'}
+              schema: {$ref: '#/components/schemas/AssignedTeamPlayer'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -1647,6 +1658,31 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/EligibilityCheck'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/core/teams/{teamId}/jersey-numbers:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      operationId: listTeamJerseyNumbers
+      tags: [Teams]
+      summary: The jersey numbers taken on the team
+      description: |
+        The numbers of the team's open assignments, each with its player, ordered by value and then by length ("0",
+        "00", "7", "07", "8"); every other number of `JerseyNumber` ("0"-"99" and "00"-"09") is free. Feeds the jersey
+        dialog (core 3.5.0, ADR-0048).
+        Authz: any member (as `listTeamPlayers`).
+      responses:
+        '200':
+          description: Taken numbers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/TakenJerseyNumber'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
@@ -1733,6 +1769,32 @@ paths:
       responses:
         '200':
           description: The player.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Player'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updatePlayer
+      tags: [Players]
+      summary: Update a player (preferred jersey number)
+      description: |
+        Sets or clears (`clear: [preferredJerseyNumber]`, ADR-0032) the player's preferred jersey number (core 3.5.0,
+        decision 70, ADR-0048). The preference is a wish: it is not unique and it never changes an assignment; staff
+        still decide the number of each assignment, and a new assignment without a number takes it when it is free.
+        An unchanged value writes nothing. No audit row and no `core.player` event (the event does not carry it).
+        Authz: ADMIN; COACH; PARENT (linked); PLAYER (self). An ASSISTANT_COACH gets 403; a caller who cannot read the
+        player (`getPlayer`) gets 404.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdatePlayerRequest'}
+      responses:
+        '200':
+          description: The updated player.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Player'}
@@ -2470,6 +2532,13 @@ components:
       description: Jersey as printed ("0", "00" and "7" are different numbers).
       pattern: '^[0-9]{1,2}$'
       example: '7'
+    JerseySource:
+      type: string
+      description: |
+        Which rule numbered a new assignment (ADR-0048): REQUESTED = the number given in the request; PREFERRED = the
+        player's preferred number; PREVIOUS = the number of the player's most recent assignment that had one; NONE = no
+        number (none given, and neither the preferred nor the previous number was free, or the player has neither).
+      enum: [REQUESTED, PREFERRED, PREVIOUS, NONE]
 
     # ---------------- platform
     Tenant:
@@ -3358,6 +3427,41 @@ components:
           allOf: [{$ref: '#/components/schemas/EligibilityReason'}]
           nullable: true
         playerStatus: {$ref: '#/components/schemas/PlayerStatus'}
+    AssignedTeamPlayer:
+      description: A new assignment and the rule that chose its jersey number (core 3.5.0).
+      type: object
+      x-extends: [TeamPlayer]
+      required: [player, teamId, joinedOn, playUpLevels, playerStatus, jerseySource]
+      properties:
+        player: {$ref: '#/components/schemas/PlayerRef'}
+        teamId: {type: string, format: uuid}
+        jerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+        joinedOn: {type: string, format: date}
+        leftOn: {type: string, format: date, nullable: true}
+        playUpLevels:
+          type: integer
+          format: int32
+          minimum: 0
+          description: 0 = natural category; n > 0 = playing up n categories.
+        invalidatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when the evaluator found the assignment no longer valid (never deleted).
+        invalidReason:
+          allOf: [{$ref: '#/components/schemas/EligibilityReason'}]
+          nullable: true
+        playerStatus: {$ref: '#/components/schemas/PlayerStatus'}
+        jerseySource: {$ref: '#/components/schemas/JerseySource'}
+    TakenJerseyNumber:
+      type: object
+      description: A number held by an open assignment of the team.
+      required: [jerseyNumber, player]
+      properties:
+        jerseyNumber: {$ref: '#/components/schemas/JerseyNumber'}
+        player: {$ref: '#/components/schemas/PlayerRef'}
     AssignPlayerRequest:
       type: object
       required: [playerId]
@@ -3443,6 +3547,12 @@ components:
           description: Open assignments.
           items: {$ref: '#/components/schemas/PlayerTeamAssignment'}
         createdAt: {type: string, format: date-time}
+        preferredJerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+          description: |
+            The number the player would like to wear (core 3.5.0, ADR-0048); a wish, not unique. A new assignment
+            without a number takes it when it is free on the team.
     PlayerTeamAssignment:
       type: object
       required: [team, playUpLevels, valid]
@@ -3485,6 +3595,20 @@ components:
           type: string
           maxLength: 500
           description: Message to the approving admin (coach path).
+    UpdatePlayerRequest:
+      type: object
+      minProperties: 1
+      properties:
+        preferredJerseyNumber:
+          allOf: [{$ref: '#/components/schemas/JerseyNumber'}]
+          nullable: true
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [preferredJerseyNumber]
     WithdrawPlayerRequest:
       type: object
       properties:
