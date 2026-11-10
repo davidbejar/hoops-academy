@@ -1,6 +1,5 @@
-package com.hoopsacademy.athlete.support;
+package com.hoopsacademy.common.testing;
 
-import com.hoopsacademy.common.testing.ContainerStarts;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -13,14 +12,17 @@ import org.testcontainers.redpanda.RedpandaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * The broker of the test classes that run the roster consumer (WP82): the pinned Redpanda image of the Kafka Dev
- * Services, started through {@link ContainerStarts} (Dev Services start their container without it, the WP87
- * "localhost:2375 failed to respond" flake), with the seven {@code core.*} topics of one partition each, and the
- * consumer switched on (it is off in the test profile, which needs no broker; {@code ReplicaProfile} adds it).
+ * The broker of the test classes that run the roster replica consumer of game or athlete (WP82; one copy in the
+ * test-jar since WP98): the pinned Redpanda image of the Kafka Dev Services, started through {@link ContainerStarts}
+ * (Dev Services start their container without it, the WP87 "localhost:2375 failed to respond" flake), with the seven
+ * {@code core.*} topics of one partition each, and the consumer switched on ({@code hoops.roster.consumer.enabled}, off
+ * in the services' test profile, which needs no broker). A consumer needs {@code testcontainers-redpanda} as a test
+ * dependency.
  */
 public class RosterBrokerResource implements QuarkusTestResourceLifecycleManager {
 
-    private static final List<String> TOPICS = List.of("core.person", "core.player", "core.team", "core.team-player",
+    /** The roster topics, as {@code infra/compose/redpanda-topics.sh} and the chart create them. */
+    static final List<String> TOPICS = List.of("core.person", "core.player", "core.team", "core.team-player",
             "core.team-staff", "core.guardian-link", "core.tenant");
 
     private RedpandaContainer broker;
@@ -34,17 +36,18 @@ public class RosterBrokerResource implements QuarkusTestResourceLifecycleManager
         create.addAll(TOPICS);
         create.addAll(List.of("-p", "1"));
         rpk(create.toArray(String[]::new));
-        return Map.of("kafka.bootstrap.servers", broker.getBootstrapServers(),
-                "hoops.roster.consumer.enabled", "true");
+        return Map.of("kafka.bootstrap.servers", broker.getBootstrapServers(), "hoops.roster.consumer.enabled", "true");
     }
 
-    private void rpk(String... command) {
+    /** Runs an {@code rpk} command in the broker; @return its standard output */
+    String rpk(String... command) {
         try {
             ExecResult result = broker.execInContainer(command);
             if (result.getExitCode() != 0) {
                 throw new IllegalStateException(String.join(" ", command) + " failed: " + result.getStderr()
                         + result.getStdout());
             }
+            return result.getStdout();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {

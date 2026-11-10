@@ -26,7 +26,7 @@ class RosterConsumerSwitchedOffTest {
     public static class ConsumerOff implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
-            return Map.of("mp.messaging.incoming.core-roster.enabled", "false");
+            return Map.of("hoops.roster.consumer.enabled", "false");
         }
     }
 

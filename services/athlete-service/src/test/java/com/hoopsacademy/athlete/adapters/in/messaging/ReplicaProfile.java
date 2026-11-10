@@ -1,6 +1,6 @@
 package com.hoopsacademy.athlete.adapters.in.messaging;
 
-import com.hoopsacademy.athlete.support.RosterBrokerResource;
+import com.hoopsacademy.common.testing.RosterBrokerResource;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import java.util.List;
 import java.util.Map;

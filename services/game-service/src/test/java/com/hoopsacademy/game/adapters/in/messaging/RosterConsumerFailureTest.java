@@ -13,13 +13,13 @@ import static org.mockito.Mockito.verify;
 
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.RosterBrokerResource;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
 import com.hoopsacademy.game.application.replica.RosterEvent;
 import com.hoopsacademy.game.support.CoreEvents;
 import com.hoopsacademy.game.support.CoreTopics;
 import com.hoopsacademy.game.support.CoreWireMockResource;
 import com.hoopsacademy.game.support.ReplicaDb;
-import com.hoopsacademy.game.support.RosterBrokerResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
