@@ -1682,7 +1682,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get sessionExerciseSearchEmpty =>
-      'Ketik untuk mencari di rencana dan templat';
+      'Ketik untuk juga mencari di rencana dan templat';
 
   @override
   String sessionExercisesAddCount(int count) {
@@ -1692,6 +1692,77 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String sessionExercisesAdded(int count) {
     return 'Latihan ditambahkan: $count';
+  }
+
+  @override
+  String get exerciseCatalogueTab => 'Latihan';
+
+  @override
+  String get exerciseCatalogueSection => 'Katalog latihan';
+
+  @override
+  String get exercisePlansSection => 'Di rencana dan templat Anda';
+
+  @override
+  String get exerciseScopeAll => 'Semua';
+
+  @override
+  String get exerciseScopeGlobal => 'Global';
+
+  @override
+  String get exerciseScopeAcademy => 'Akademi';
+
+  @override
+  String get exerciseShowArchived => 'Tampilkan arsip';
+
+  @override
+  String get exerciseGlobal => 'Global';
+
+  @override
+  String get exerciseArchived => 'Diarsipkan';
+
+  @override
+  String get exerciseEmpty => 'Tidak ada latihan yang cocok';
+
+  @override
+  String get exerciseNew => 'Latihan baru';
+
+  @override
+  String get exerciseCreated => 'Latihan dibuat';
+
+  @override
+  String get exerciseSaved => 'Latihan disimpan';
+
+  @override
+  String get exerciseArchive => 'Arsipkan';
+
+  @override
+  String get exerciseUnarchive => 'Pulihkan';
+
+  @override
+  String get exerciseArchivedDone => 'Latihan diarsipkan';
+
+  @override
+  String get exerciseUnarchivedDone => 'Latihan dipulihkan';
+
+  @override
+  String get exerciseLoadMore => 'Muat lagi';
+
+  @override
+  String get exerciseIsGlobal => 'Latihan global tidak dapat diubah';
+
+  @override
+  String get exerciseArchivedError => 'Latihan itu diarsipkan: pilih yang lain';
+
+  @override
+  String get exerciseFromCatalogue => 'Dari katalog latihan';
+
+  @override
+  String get planAddFromCatalogue => 'Tambah dari katalog';
+
+  @override
+  String sessionCreatedExercisesFailed(String reason) {
+    return 'Sesi dibuat, tetapi tanpa latihan: $reason';
   }
 
   @override
@@ -1853,7 +1924,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get planMine => 'Rencana kami';
 
   @override
-  String get planSearchHint => 'Cari rencana';
+  String get planSearchHint => 'Cari rencana dan latihan';
 
   @override
   String get planEmptyTemplates => 'Tidak ada templat';

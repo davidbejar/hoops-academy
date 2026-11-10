@@ -18,11 +18,13 @@ FakeAthlete catalogueAthlete({List<ath.Exercise>? exercises}) => FakeAthlete(
   ),
 );
 
-/// Opens the plan library on its exercise tab.
+/// Opens the plan library on its exercise tab, on a phone tall enough to
+/// show the whole small catalogue.
 Future<void> openCatalogue(
   WidgetTester tester,
   FakeAthlete athlete, {
   Set<TenantRole> roles = const {TenantRole.coach},
+  Size size = const Size(360, 1600),
 }) async {
   await pumpAs(
     tester,
@@ -30,9 +32,18 @@ Future<void> openCatalogue(
     staffTeamIds: {'t1'},
     core: athleteCore(),
     athlete: athlete,
+    size: size,
     location: '/training/plans',
   );
   await tapKey(tester, 'tab-exercises');
+}
+
+/// Snack bars queue up: clears the one shown so the next one appears.
+Future<void> dismissSnackBar(WidgetTester tester) async {
+  tester
+      .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger).first)
+      .removeCurrentSnackBar();
+  await tester.pumpAndSettle();
 }
 
 Finder row(String id) => find.byKey(Key('exercise-row-$id'));
@@ -191,6 +202,7 @@ void main() {
 
     expect(find.text('Ejercicio archivado'), findsOneWidget);
     expect(row('own-1'), findsNothing);
+    await dismissSnackBar(tester);
 
     await tapKey(tester, 'exercise-show-archived');
     await tapKey(tester, 'exercise-menu-own-1');
@@ -231,6 +243,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const Key('exercise-title')), findsOneWidget);
+    await dismissSnackBar(tester);
 
     athlete.exercises.failWith = const AppError(
       kind: AppErrorKind.notFound,
@@ -250,7 +263,8 @@ void main() {
   testWidgets('a failed load offers a retry', (tester) async {
     final athlete = catalogueAthlete();
     athlete.exercises.failWith = const AppError(kind: AppErrorKind.server);
-    await openCatalogue(tester, athlete);
+    // Wide: on a phone the floating button covers the centred retry button.
+    await openCatalogue(tester, athlete, size: const Size(1024, 768));
 
     expect(
       find.text('El servidor ha tenido un problema. Inténtalo más tarde.'),

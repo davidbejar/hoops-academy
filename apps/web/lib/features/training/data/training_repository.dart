@@ -18,8 +18,9 @@ abstract class TrainingRepository {
   );
   Future<ath.TrainingSession> cancelSession(String sessionId, String reason);
 
-  /// Quick-add (athlete 2.3.0, ADR-0041): copies items of any readable plan
-  /// or template to the end of the session's own plan, created on first use.
+  /// Quick-add (athlete 2.3.0, ADR-0041; sources 3.0.0, ADR-0047): copies
+  /// catalogue exercises and items of any readable plan or template to the
+  /// end of the session's own plan, created on first use.
   Future<ath.TrainingPlan> copyItemsToSession(
     String sessionId,
     List<ath.PlanItemSource> items,

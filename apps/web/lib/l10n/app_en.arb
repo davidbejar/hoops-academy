@@ -551,7 +551,7 @@
   "sessionOwnPlanDropped": "The exercises added to this session will be removed",
   "sessionAddExercises": "Add exercises",
   "sessionExerciseSearchHint": "Search exercises (e.g. cooper)",
-  "sessionExerciseSearchEmpty": "Type to search your plans and templates",
+  "sessionExerciseSearchEmpty": "Type to also search your plans and templates",
   "sessionExercisesAddCount": "Add ({count})",
   "@sessionExercisesAddCount": {
     "placeholders": {
@@ -565,6 +565,36 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "exerciseCatalogueTab": "Exercises",
+  "exerciseCatalogueSection": "Exercise catalogue",
+  "exercisePlansSection": "In your plans and templates",
+  "exerciseScopeAll": "All",
+  "exerciseScopeGlobal": "Global",
+  "exerciseScopeAcademy": "Academy",
+  "exerciseShowArchived": "Show archived",
+  "exerciseGlobal": "Global",
+  "exerciseArchived": "Archived",
+  "exerciseEmpty": "No exercise matches",
+  "exerciseNew": "New exercise",
+  "exerciseCreated": "Exercise created",
+  "exerciseSaved": "Exercise saved",
+  "exerciseArchive": "Archive",
+  "exerciseUnarchive": "Restore",
+  "exerciseArchivedDone": "Exercise archived",
+  "exerciseUnarchivedDone": "Exercise restored",
+  "exerciseLoadMore": "Load more",
+  "exerciseIsGlobal": "Global exercises cannot be changed",
+  "exerciseArchivedError": "That exercise is archived: pick another one",
+  "exerciseFromCatalogue": "From the exercise catalogue",
+  "planAddFromCatalogue": "Add from catalogue",
+  "sessionCreatedExercisesFailed": "Session created, but without the exercises: {reason}",
+  "@sessionCreatedExercisesFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
       }
     }
   },
@@ -657,7 +687,7 @@
   "planLibraryTitle": "Training plans",
   "planTemplates": "Templates",
   "planMine": "Our plans",
-  "planSearchHint": "Search plans",
+  "planSearchHint": "Search plans and exercises",
   "planEmptyTemplates": "No templates",
   "planEmptyMine": "No plans yet. Create one or use a template.",
   "planSummary": "{count} exercises · {minutes} min",

@@ -1688,7 +1688,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sessionExerciseSearchEmpty =>
-      'Escribe para buscar en tus planes y plantillas';
+      'Escribe para buscar también en tus planes y plantillas';
 
   @override
   String sessionExercisesAddCount(int count) {
@@ -1698,6 +1698,79 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String sessionExercisesAdded(int count) {
     return 'Ejercicios añadidos: $count';
+  }
+
+  @override
+  String get exerciseCatalogueTab => 'Ejercicios';
+
+  @override
+  String get exerciseCatalogueSection => 'Catálogo de ejercicios';
+
+  @override
+  String get exercisePlansSection => 'En tus planes y plantillas';
+
+  @override
+  String get exerciseScopeAll => 'Todos';
+
+  @override
+  String get exerciseScopeGlobal => 'Globales';
+
+  @override
+  String get exerciseScopeAcademy => 'De la academia';
+
+  @override
+  String get exerciseShowArchived => 'Mostrar archivados';
+
+  @override
+  String get exerciseGlobal => 'Global';
+
+  @override
+  String get exerciseArchived => 'Archivado';
+
+  @override
+  String get exerciseEmpty => 'Ningún ejercicio coincide';
+
+  @override
+  String get exerciseNew => 'Nuevo ejercicio';
+
+  @override
+  String get exerciseCreated => 'Ejercicio creado';
+
+  @override
+  String get exerciseSaved => 'Ejercicio guardado';
+
+  @override
+  String get exerciseArchive => 'Archivar';
+
+  @override
+  String get exerciseUnarchive => 'Restaurar';
+
+  @override
+  String get exerciseArchivedDone => 'Ejercicio archivado';
+
+  @override
+  String get exerciseUnarchivedDone => 'Ejercicio restaurado';
+
+  @override
+  String get exerciseLoadMore => 'Cargar más';
+
+  @override
+  String get exerciseIsGlobal =>
+      'Los ejercicios globales no se pueden modificar';
+
+  @override
+  String get exerciseArchivedError =>
+      'Ese ejercicio está archivado: elige otro';
+
+  @override
+  String get exerciseFromCatalogue => 'Del catálogo de ejercicios';
+
+  @override
+  String get planAddFromCatalogue => 'Añadir del catálogo';
+
+  @override
+  String sessionCreatedExercisesFailed(String reason) {
+    return 'Sesión creada, pero sin los ejercicios: $reason';
   }
 
   @override
@@ -1859,7 +1932,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get planMine => 'Mis planes';
 
   @override
-  String get planSearchHint => 'Buscar planes';
+  String get planSearchHint => 'Buscar planes y ejercicios';
 
   @override
   String get planEmptyTemplates => 'No hay plantillas';

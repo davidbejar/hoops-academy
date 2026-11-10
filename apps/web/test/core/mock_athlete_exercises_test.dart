@@ -122,6 +122,7 @@ void main() {
       expect(await titles(query: 'TIRO', language: 'es'), [
         'Tiro en estático',
         'Tiro tras bote',
+        'Tiros libres',
       ]);
       expect(await titles(query: 'tiro'), isEmpty); // English titles
     });

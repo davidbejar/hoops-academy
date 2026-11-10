@@ -9,6 +9,7 @@ import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/training_providers.dart';
+import 'exercise_form.dart' show CatalogueMarker;
 import 'plan_search.dart';
 import 'training_labels.dart';
 import 'training_screen.dart' show SessionDialog;
@@ -70,7 +71,11 @@ class _Body extends ConsumerWidget {
           label: Text(l.sessionAddExercises),
           onPressed: () => showDialog<void>(
             context: context,
-            builder: (_) => ExerciseSearchDialog(sessionId: s.id),
+            builder: (_) => ExerciseSearchDialog(
+              onAdd: ref
+                  .read(sessionDetailProvider(s.id).notifier)
+                  .addExercises,
+            ),
           ),
         ),
       if (staff && planned)
@@ -177,7 +182,7 @@ class _Line extends StatelessWidget {
 }
 
 /// The session's plan and its exercises; marks the session's own plan
-/// (quick-added exercises, ADR-0041).
+/// (quick-added exercises, ADR-0041) and the items copied from the catalogue.
 class _PlanLine extends ConsumerWidget {
   const _PlanLine({required this.session});
   final ath.TrainingSession session;
@@ -218,6 +223,8 @@ class _PlanLine extends ConsumerWidget {
                   style: text.bodyMedium!.copyWith(color: c.inkMuted),
                 ),
                 Expanded(child: Text(item.title)),
+                if (item.exerciseId != null)
+                  CatalogueMarker(key: Key('item-from-catalogue-${item.id}')),
               ],
             ),
           ),

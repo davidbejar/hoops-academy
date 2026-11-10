@@ -15,6 +15,7 @@ import '../../roster/application/roster_providers.dart';
 import '../../roster/presentation/eligibility_widgets.dart' show TeamLabel;
 import '../../roster/presentation/season_bar.dart';
 import '../application/training_providers.dart';
+import '../domain/exercise_pick.dart';
 import '../domain/week.dart';
 import 'plan_search.dart';
 import 'training_labels.dart';
@@ -377,6 +378,13 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
       ref.read(tenantZoneProvider).today(DateTime.now());
   late TimeOfDay _time = _initialTime();
 
+  /// A new session's exercises, quick-added once it exists (decision 72).
+  final _picks = <ExercisePick>[];
+
+  /// Set once the new session exists: a failed quick-add must not create it
+  /// again, so the dialog closes and says why.
+  ath.TrainingSession? _created;
+
   @override
   void initState() {
     super.initState();
@@ -412,26 +420,57 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
         ? null
         : _location.text.trim();
     final notes = _notes.text.trim().isEmpty ? null : _notes.text.trim();
-    return widget.session == null
-        ? ref
-              .read(weekSessionsProvider.notifier)
-              .create(
-                teamId: _teamId!,
-                startsAt: startsAt,
-                durationMinutes: duration,
-                location: location,
-                planId: _planId,
-                notes: notes,
-              )
-        : ref
-              .read(sessionDetailProvider(widget.session!.id).notifier)
-              .edit(
-                startsAt: startsAt,
-                durationMinutes: duration,
-                location: location,
-                planId: _planId,
-                notes: notes,
-              );
+    final editing = widget.session;
+    if (editing != null) {
+      return ref
+          .read(sessionDetailProvider(editing.id).notifier)
+          .edit(
+            startsAt: startsAt,
+            durationMinutes: duration,
+            location: location,
+            planId: _planId,
+            notes: notes,
+          );
+    }
+    return _create(
+      startsAt: startsAt,
+      duration: duration,
+      location: location,
+      notes: notes,
+    );
+  }
+
+  Future<void> _create({
+    required DateTime startsAt,
+    required int duration,
+    String? location,
+    String? notes,
+  }) async {
+    final week = ref.read(weekSessionsProvider.notifier);
+    final created = _created ??= await week.create(
+      teamId: _teamId!,
+      startsAt: startsAt,
+      durationMinutes: duration,
+      location: location,
+      planId: _planId,
+      notes: notes,
+    );
+    if (_picks.isNotEmpty) {
+      await week.addExercises(created.id, [for (final p in _picks) p.source]);
+    }
+  }
+
+  String _errorText(Object error, AppLocalizations l) {
+    final reason = exerciseErrorText(error, l);
+    return _created == null ? reason : l.sessionCreatedExercisesFailed(reason);
+  }
+
+  Future<void> _pickExercises() async {
+    final picks = await showDialog<List<ExercisePick>>(
+      context: context,
+      builder: (_) => const ExerciseSearchDialog(),
+    );
+    if (picks != null) setState(() => _picks.addAll(picks));
   }
 
   /// Leaving the session's own plan deletes it with its quick-added exercises.
@@ -462,11 +501,15 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
       title: editing ? l.sessionEdit : l.sessionNew,
       formKey: _form,
       canSubmit: editing || teams.isNotEmpty,
-      onSubmit: () => runAction(
-        context,
-        () => _submit(context, l),
-        success: editing ? l.sessionUpdated : l.sessionCreated,
-      ),
+      onSubmit: () async {
+        final ok = await runAction(
+          context,
+          () => _submit(context, l),
+          success: editing ? l.sessionUpdated : l.sessionCreated,
+          errorText: _errorText,
+        );
+        return ok || _created != null;
+      },
       children: [
         if (!editing) ...[
           DropdownButtonFormField<String>(
@@ -553,6 +596,7 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
             ),
           ),
         ),
+        if (!editing) ...[formGap, ..._exercises(l)],
         formGap,
         TextFormField(
           key: const Key('session-notes'),
@@ -563,4 +607,31 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
       ],
     );
   }
+
+  /// The exercises picked for a new session, in order, and the picker.
+  List<Widget> _exercises(AppLocalizations l) => [
+    for (final (i, pick) in _picks.indexed)
+      Row(
+        key: Key('session-pick-$i'),
+        children: [
+          Text('${i + 1}. '),
+          Expanded(child: Text(pick.title)),
+          IconButton(
+            key: Key('session-pick-remove-$i'),
+            tooltip: l.delete,
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() => _picks.removeAt(i)),
+          ),
+        ],
+      ),
+    Align(
+      alignment: Alignment.centerLeft,
+      child: OutlinedButton.icon(
+        key: const Key('session-exercises'),
+        icon: const Icon(Icons.playlist_add),
+        label: Text(l.sessionAddExercises),
+        onPressed: _pickExercises,
+      ),
+    ),
+  ];
 }

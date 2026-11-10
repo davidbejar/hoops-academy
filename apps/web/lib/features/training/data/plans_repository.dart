@@ -24,6 +24,15 @@ abstract class PlansRepository {
     String? language,
   });
   Future<ath.PlanItem> addItem(String planId, ath.PlanItemInput input);
+
+  /// Quick-add (athlete 3.0.0, ADR-0047): copies catalogue exercises and
+  /// items of readable plans, in order, to the end of a tenant plan; global
+  /// texts in [language].
+  Future<ath.TrainingPlan> copyItems(
+    String planId,
+    List<ath.PlanItemSource> items, {
+    String? language,
+  });
   Future<ath.PlanItem> updateItem(
     String planId,
     String itemId,
@@ -125,6 +134,20 @@ class ApiPlansRepository implements PlansRepository {
         planId: planId,
         planItemInput: input,
       )).data!;
+
+  @override
+  Future<ath.TrainingPlan> copyItems(
+    String planId,
+    List<ath.PlanItemSource> items, {
+    String? language,
+  }) async => (await _plans.copyItemsToPlan(
+    xTenantId: _t,
+    planId: planId,
+    acceptLanguage: language,
+    copyPlanItemsRequest: ath.CopyPlanItemsRequest(
+      (b) => b.items.replace(items),
+    ),
+  )).data!;
 
   @override
   Future<ath.PlanItem> updateItem(

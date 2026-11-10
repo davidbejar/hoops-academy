@@ -1675,7 +1675,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionExerciseSearchEmpty =>
-      'Type to search your plans and templates';
+      'Type to also search your plans and templates';
 
   @override
   String sessionExercisesAddCount(int count) {
@@ -1685,6 +1685,78 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String sessionExercisesAdded(int count) {
     return 'Exercises added: $count';
+  }
+
+  @override
+  String get exerciseCatalogueTab => 'Exercises';
+
+  @override
+  String get exerciseCatalogueSection => 'Exercise catalogue';
+
+  @override
+  String get exercisePlansSection => 'In your plans and templates';
+
+  @override
+  String get exerciseScopeAll => 'All';
+
+  @override
+  String get exerciseScopeGlobal => 'Global';
+
+  @override
+  String get exerciseScopeAcademy => 'Academy';
+
+  @override
+  String get exerciseShowArchived => 'Show archived';
+
+  @override
+  String get exerciseGlobal => 'Global';
+
+  @override
+  String get exerciseArchived => 'Archived';
+
+  @override
+  String get exerciseEmpty => 'No exercise matches';
+
+  @override
+  String get exerciseNew => 'New exercise';
+
+  @override
+  String get exerciseCreated => 'Exercise created';
+
+  @override
+  String get exerciseSaved => 'Exercise saved';
+
+  @override
+  String get exerciseArchive => 'Archive';
+
+  @override
+  String get exerciseUnarchive => 'Restore';
+
+  @override
+  String get exerciseArchivedDone => 'Exercise archived';
+
+  @override
+  String get exerciseUnarchivedDone => 'Exercise restored';
+
+  @override
+  String get exerciseLoadMore => 'Load more';
+
+  @override
+  String get exerciseIsGlobal => 'Global exercises cannot be changed';
+
+  @override
+  String get exerciseArchivedError =>
+      'That exercise is archived: pick another one';
+
+  @override
+  String get exerciseFromCatalogue => 'From the exercise catalogue';
+
+  @override
+  String get planAddFromCatalogue => 'Add from catalogue';
+
+  @override
+  String sessionCreatedExercisesFailed(String reason) {
+    return 'Session created, but without the exercises: $reason';
   }
 
   @override
@@ -1845,7 +1917,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planMine => 'Our plans';
 
   @override
-  String get planSearchHint => 'Search plans';
+  String get planSearchHint => 'Search plans and exercises';
 
   @override
   String get planEmptyTemplates => 'No templates';

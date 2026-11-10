@@ -13,11 +13,16 @@ import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../../roster/presentation/eligibility_widgets.dart' show TeamLabel;
+import '../application/exercise_providers.dart';
 import '../application/training_providers.dart';
+import 'exercise_catalogue.dart';
+import 'exercise_form.dart';
+import 'plan_search.dart' show ExerciseSearchDialog;
 import 'player_picker.dart';
-import 'training_labels.dart' show fabClearance;
+import 'training_labels.dart' show exerciseFacts, fabClearance;
 
-/// Plan library: templates (read-only, copy on use) and the academy's plans.
+/// Plan library: the academy's plans, the templates (read-only, copy on use)
+/// and the exercise catalogue (WP92); one search box for the three tabs.
 class PlanLibraryScreen extends ConsumerWidget {
   const PlanLibraryScreen({super.key});
 
@@ -25,21 +30,14 @@ class PlanLibraryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final caps = ref.watch(capabilitiesProvider);
-    return SubPage(
-      title: l.planLibraryTitle,
-      parentPath: '/training',
-      floatingActionButton: caps.canEditPlans
-          ? FloatingActionButton.extended(
-              key: const Key('plan-new'),
-              onPressed: () => _newPlan(context, ref),
-              icon: const Icon(Icons.add),
-              label: Text(l.planNew),
-            )
-          : null,
-      child: Guarded(
-        allowed: caps.canSeeModule,
-        child: DefaultTabController(
-          length: 2,
+    return DefaultTabController(
+      length: 3,
+      child: SubPage(
+        title: l.planLibraryTitle,
+        parentPath: '/training',
+        floatingActionButton: caps.canEditPlans ? const _LibraryFab() : null,
+        child: Guarded(
+          allowed: caps.canSeeModule,
           child: Column(
             children: [
               ContentFrame(
@@ -52,8 +50,10 @@ class PlanLibraryScreen extends ConsumerWidget {
                       hintText: l.planSearchHint,
                       isDense: true,
                     ),
-                    onChanged: (v) =>
-                        ref.read(planSearchProvider.notifier).set(v),
+                    onChanged: (v) {
+                      ref.read(planSearchProvider.notifier).set(v);
+                      ref.read(exerciseFilterProvider.notifier).search(v);
+                    },
                   ),
                 ),
               ),
@@ -61,6 +61,10 @@ class PlanLibraryScreen extends ConsumerWidget {
                 tabs: [
                   Tab(key: const Key('tab-mine'), text: l.planMine),
                   Tab(key: const Key('tab-templates'), text: l.planTemplates),
+                  Tab(
+                    key: const Key('tab-exercises'),
+                    text: l.exerciseCatalogueTab,
+                  ),
                 ],
               ),
               const Expanded(
@@ -68,6 +72,7 @@ class PlanLibraryScreen extends ConsumerWidget {
                   children: [
                     _PlanList(templates: false),
                     _PlanList(templates: true),
+                    ExerciseCatalogue(),
                   ],
                 ),
               ),
@@ -77,8 +82,15 @@ class PlanLibraryScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Future<void> _newPlan(BuildContext context, WidgetRef ref) async {
+/// "New plan" on the plan tabs, "new exercise" on the catalogue tab.
+class _LibraryFab extends StatelessWidget {
+  const _LibraryFab();
+
+  static const _catalogueTab = 2;
+
+  Future<void> _newPlan(BuildContext context) async {
     ath.TrainingPlan? created;
     final ok = await showDialog<bool>(
       context: context,
@@ -86,6 +98,31 @@ class PlanLibraryScreen extends ConsumerWidget {
     );
     if ((ok ?? false) && created != null && context.mounted)
       context.go('/training/plans/${created!.id}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final tabs = DefaultTabController.of(context);
+    return ListenableBuilder(
+      listenable: tabs,
+      builder: (context, _) => tabs.index == _catalogueTab
+          ? FloatingActionButton.extended(
+              key: const Key('exercise-new'),
+              onPressed: () => showDialog<bool>(
+                context: context,
+                builder: (_) => const ExerciseDialog(),
+              ),
+              icon: const Icon(Icons.add),
+              label: Text(l.exerciseNew),
+            )
+          : FloatingActionButton.extended(
+              key: const Key('plan-new'),
+              onPressed: () => _newPlan(context),
+              icon: const Icon(Icons.add),
+              label: Text(l.planNew),
+            ),
+    );
   }
 }
 
@@ -353,6 +390,20 @@ class _PlanBody extends ConsumerWidget {
                     ],
                   ),
                 ),
+              if (editable)
+                FilledButton.tonalIcon(
+                  key: const Key('plan-add-from-catalogue'),
+                  icon: const Icon(Icons.library_add_outlined),
+                  label: Text(l.planAddFromCatalogue),
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => ExerciseSearchDialog(
+                      onAdd: ref
+                          .read(planDetailProvider(plan.id).notifier)
+                          .addExercises,
+                    ),
+                  ),
+                ),
               if (!plan.template && caps.canAssignPlans)
                 FilledButton.icon(
                   key: const Key('plan-assign'),
@@ -457,63 +508,38 @@ class _ItemRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final item = plan.items[index];
+    final fromCatalogue = item.exerciseId != null;
     return ListRow(
       leading: InitialsAvatar(name: '${index + 1}'),
       title: item.title,
-      subtitle: _facts(l, item),
+      subtitle: exerciseFacts(
+        l,
+        minutes: item.durationMinutes,
+        sets: item.sets,
+        repetitions: item.repetitions,
+      ),
       details: item.description == null && item.videoUrl == null
           ? null
-          : _ItemInfo(item: item),
-      trailing: editable
-          ? IconButton(
-              key: Key('item-menu-${item.id}'),
-              tooltip: l.moreActions,
-              icon: const Icon(Icons.more_vert),
-              onPressed: () => _act(context, ref),
+          : ExerciseInfo(
+              description: item.description,
+              videoUrl: item.videoUrl,
+            ),
+      trailing: editable || fromCatalogue
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (fromCatalogue)
+                  CatalogueMarker(key: Key('item-from-catalogue-${item.id}')),
+                if (editable)
+                  IconButton(
+                    key: Key('item-menu-${item.id}'),
+                    tooltip: l.moreActions,
+                    icon: const Icon(Icons.more_vert),
+                    onPressed: () => _act(context, ref),
+                  ),
+              ],
             )
           : null,
-    );
-  }
-}
-
-String? _facts(AppLocalizations l, ath.PlanItem item) {
-  final facts = [
-    if (item.durationMinutes != null)
-      l.sessionDurationMinutes(item.durationMinutes!),
-    if (item.sets != null && item.repetitions != null)
-      l.planItemSetsReps(item.repetitions!, item.sets!),
-  ];
-  return facts.isEmpty ? null : facts.join(' · ');
-}
-
-/// The description and the video link of an exercise.
-class _ItemInfo extends StatelessWidget {
-  const _ItemInfo({required this.item});
-  final ath.PlanItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = HoopsTokens.colorsOf(context);
-    final text = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: HoopsSpace.xs,
-      children: [
-        if (item.description != null) Text(item.description!),
-        if (item.videoUrl != null)
-          Row(
-            spacing: HoopsSpace.xs,
-            children: [
-              Icon(Icons.play_circle_outline, color: c.brand),
-              Expanded(
-                child: SelectableText(
-                  item.videoUrl!,
-                  style: text.bodySmall!.copyWith(color: c.accentText),
-                ),
-              ),
-            ],
-          ),
-      ],
     );
   }
 }
@@ -530,126 +556,67 @@ class PlanItemDialog extends ConsumerStatefulWidget {
 
 class _PlanItemDialogState extends ConsumerState<PlanItemDialog> {
   final _form = GlobalKey<FormState>();
-  late final _title = TextEditingController(text: widget.item?.title);
-  late final _description = TextEditingController(
-    text: widget.item?.description,
+  late final _fields = ExerciseFields(
+    title: widget.item?.title,
+    description: widget.item?.description,
+    minutes: widget.item?.durationMinutes,
+    sets: widget.item?.sets,
+    repetitions: widget.item?.repetitions,
+    videoUrl: widget.item?.videoUrl,
   );
-  late final _duration = TextEditingController(
-    text: widget.item?.durationMinutes?.toString(),
-  );
-  late final _sets = TextEditingController(text: widget.item?.sets?.toString());
-  late final _reps = TextEditingController(
-    text: widget.item?.repetitions?.toString(),
-  );
-  late final _video = TextEditingController(text: widget.item?.videoUrl);
 
   @override
   void dispose() {
-    for (final c in [_title, _description, _duration, _sets, _reps, _video]) {
-      c.dispose();
-    }
+    _fields.dispose();
     super.dispose();
   }
 
-  int? _int(TextEditingController c) => int.tryParse(c.text.trim());
-  String? _text(TextEditingController c) =>
-      c.text.trim().isEmpty ? null : c.text.trim();
-
-  String? _optionalInt(AppLocalizations l, String? v) {
-    if ((v ?? '').trim().isEmpty) return null;
-    final n = int.tryParse(v!.trim());
-    return n == null || n < 1 ? l.fieldInvalidNumber : null;
+  Future<void> _save() {
+    final notifier = ref.read(planDetailProvider(widget.planId).notifier);
+    final f = _fields;
+    final item = widget.item;
+    if (item == null) {
+      return notifier.addItem(
+        ath.PlanItemInput(
+          (b) => b
+            ..title = f.title
+            ..description = f.description
+            ..durationMinutes = f.minutes
+            ..sets = f.sets
+            ..repetitions = f.repetitions
+            ..videoUrl = f.videoUrl,
+        ),
+      );
+    }
+    return notifier.updateItem(
+      item.id,
+      ath.UpdatePlanItemRequest(
+        (b) => b
+          ..title = f.title
+          ..description = f.description
+          ..durationMinutes = f.minutes
+          ..sets = f.sets
+          ..repetitions = f.repetitions
+          ..videoUrl = f.videoUrl
+          ..clear = clearList({
+            ath.UpdatePlanItemRequestClearEnum.description: f.description,
+            ath.UpdatePlanItemRequestClearEnum.durationMinutes: f.minutes,
+            ath.UpdatePlanItemRequestClearEnum.sets: f.sets,
+            ath.UpdatePlanItemRequestClearEnum.repetitions: f.repetitions,
+            ath.UpdatePlanItemRequestClearEnum.videoUrl: f.videoUrl,
+          }),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final notifier = ref.read(planDetailProvider(widget.planId).notifier);
-    Widget number(String key, TextEditingController c, String label) =>
-        Expanded(
-          child: TextFormField(
-            key: Key(key),
-            controller: c,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: label),
-            validator: (v) => _optionalInt(l, v),
-          ),
-        );
     return FormDialog(
       title: widget.item == null ? l.planItemAdd : l.planItemEdit,
       formKey: _form,
-      onSubmit: () => runAction(context, () async {
-        if (widget.item == null) {
-          await notifier.addItem(
-            ath.PlanItemInput(
-              (b) => b
-                ..title = _title.text.trim()
-                ..description = _text(_description)
-                ..durationMinutes = _int(_duration)
-                ..sets = _int(_sets)
-                ..repetitions = _int(_reps)
-                ..videoUrl = _text(_video),
-            ),
-          );
-        } else {
-          await notifier.updateItem(
-            widget.item!.id,
-            ath.UpdatePlanItemRequest(
-              (b) => b
-                ..title = _title.text.trim()
-                ..description = _text(_description)
-                ..durationMinutes = _int(_duration)
-                ..sets = _int(_sets)
-                ..repetitions = _int(_reps)
-                ..videoUrl = _text(_video)
-                ..clear = clearList({
-                  ath.UpdatePlanItemRequestClearEnum.description: b.description,
-                  ath.UpdatePlanItemRequestClearEnum.durationMinutes:
-                      b.durationMinutes,
-                  ath.UpdatePlanItemRequestClearEnum.sets: b.sets,
-                  ath.UpdatePlanItemRequestClearEnum.repetitions: b.repetitions,
-                  ath.UpdatePlanItemRequestClearEnum.videoUrl: b.videoUrl,
-                }),
-            ),
-          );
-        }
-      }),
-      children: [
-        TextFormField(
-          key: const Key('item-title'),
-          controller: _title,
-          decoration: InputDecoration(labelText: l.planItemTitle),
-          validator: (v) => requiredValidator(l, v),
-        ),
-        formGap,
-        TextFormField(
-          key: const Key('item-description'),
-          controller: _description,
-          maxLines: 2,
-          decoration: InputDecoration(labelText: l.planDescription),
-        ),
-        formGap,
-        Row(
-          children: [
-            number('item-duration', _duration, l.planItemDuration),
-            const SizedBox(width: HoopsSpace.sm),
-            number('item-sets', _sets, l.planItemSets),
-            const SizedBox(width: HoopsSpace.sm),
-            number('item-reps', _reps, l.planItemReps),
-          ],
-        ),
-        formGap,
-        TextFormField(
-          key: const Key('item-video'),
-          controller: _video,
-          keyboardType: TextInputType.url,
-          decoration: InputDecoration(labelText: l.planItemVideo),
-          validator: (v) =>
-              (v ?? '').trim().isEmpty || v!.trim().startsWith('https://')
-              ? null
-              : l.planItemVideoInvalid,
-        ),
-      ],
+      onSubmit: () => runAction(context, _save),
+      children: _fields.build(l, keyPrefix: 'item'),
     );
   }
 }

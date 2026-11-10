@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/design/tokens.dart';
+import '../../../core/errors/app_error.dart';
+import '../../../core/ui/actions.dart' show AppErrorText;
 import '../../../l10n/gen/app_localizations.dart';
 
 /// Room under the last row of a list so the extended FAB never covers it.
@@ -103,3 +105,28 @@ String shortDate(DateTime d) => '${two(d.day)}/${two(d.month)}';
 
 /// `dd/MM/yyyy` from a contract date.
 String fullDate(ath.Date d) => '${two(d.day)}/${two(d.month)}/${d.year}';
+
+/// "10 min · 3 × 10": the facts of an exercise or a plan item; null when it
+/// has none.
+String? exerciseFacts(
+  AppLocalizations l, {
+  int? minutes,
+  int? sets,
+  int? repetitions,
+}) {
+  final facts = [
+    if (minutes != null) l.sessionDurationMinutes(minutes),
+    if (sets != null && repetitions != null)
+      l.planItemSetsReps(repetitions, sets),
+  ];
+  return facts.isEmpty ? null : facts.join(' · ');
+}
+
+/// The exercise catalogue's business codes (ADR-0047) in words; any other
+/// failure gets the generic message of its kind.
+String exerciseErrorText(Object error, AppLocalizations l) =>
+    switch (AppError.of(error).code) {
+      'EXERCISE_ARCHIVED' => l.exerciseArchivedError,
+      'EXERCISE_IS_GLOBAL' => l.exerciseIsGlobal,
+      _ => AppErrorText.of(error, l),
+    };

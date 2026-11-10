@@ -30,7 +30,7 @@ final plansRepositoryProvider = Provider<PlansRepository>(
 );
 
 /// The UI language code sent with template reads: watching it refetches them when the person switches language.
-final _uiLanguageProvider = Provider<String>(
+final uiLanguageProvider = Provider<String>(
   (ref) => ref.watch(effectiveLocaleProvider).languageCode,
 );
 
@@ -112,7 +112,8 @@ class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
     await future;
   }
 
-  Future<void> create({
+  /// Creates an ad-hoc session and returns it (for a quick-add right after).
+  Future<ath.TrainingSession> create({
     required String teamId,
     required DateTime startsAt,
     required int durationMinutes,
@@ -120,7 +121,7 @@ class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
     String? planId,
     String? notes,
   }) async {
-    await ref
+    final session = await ref
         .read(trainingRepositoryProvider)
         .createSession(
           ath.CreateTrainingSessionRequest(
@@ -133,6 +134,18 @@ class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
               ..notes = notes,
           ),
         );
+    await reload();
+    return session;
+  }
+
+  /// Quick-add into a session of the week (e.g. one just created).
+  Future<void> addExercises(
+    String sessionId,
+    List<ath.PlanItemSource> items,
+  ) async {
+    await ref
+        .read(trainingRepositoryProvider)
+        .copyItemsToSession(sessionId, items);
     await reload();
   }
 }
@@ -220,14 +233,13 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
     await _reload();
   }
 
-  /// Quick-add: copies [items] to the session's own plan; returns how many.
-  Future<int> addExercises(List<ath.PlanItemSource> items) async {
+  /// Quick-add: copies [items] to the session's own plan.
+  Future<void> addExercises(List<ath.PlanItemSource> items) async {
     final plan = await ref
         .read(trainingRepositoryProvider)
         .copyItemsToSession(sessionId, items);
     ref.invalidate(planDetailProvider(plan.id));
     await _reload();
-    return items.length;
   }
 
   Future<void> saveAttendance(List<ath.AttendanceInput> entries) async {
@@ -406,7 +418,7 @@ class PlanLibraryNotifier extends AsyncNotifier<List<ath.TrainingPlanSummary>> {
         .plans(
           templates: templates,
           query: q.isEmpty ? null : q,
-          language: ref.watch(_uiLanguageProvider),
+          language: ref.watch(uiLanguageProvider),
         );
   }
 
@@ -414,7 +426,7 @@ class PlanLibraryNotifier extends AsyncNotifier<List<ath.TrainingPlanSummary>> {
   Future<ath.TrainingPlan> copy(String planId, {String? name}) async {
     final copy = await ref
         .read(plansRepositoryProvider)
-        .copyPlan(planId, name: name, language: ref.read(_uiLanguageProvider));
+        .copyPlan(planId, name: name, language: ref.read(uiLanguageProvider));
     ref.invalidate(planLibraryProvider);
     return copy;
   }
@@ -454,7 +466,7 @@ class PlanSearchResults {
 final planSearchResultsProvider = FutureProvider.autoDispose
     .family<PlanSearchResults, String>((ref, query) async {
       final repo = ref.watch(plansRepositoryProvider);
-      final language = ref.watch(_uiLanguageProvider);
+      final language = ref.watch(uiLanguageProvider);
       final q = query.trim().isEmpty ? null : query.trim();
       final both = await Future.wait([
         repo.plans(templates: false, query: q, language: language),
@@ -479,7 +491,7 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
   @override
   Future<ath.TrainingPlan> build() => ref
       .watch(plansRepositoryProvider)
-      .plan(planId, language: ref.watch(_uiLanguageProvider));
+      .plan(planId, language: ref.watch(uiLanguageProvider));
 
   Future<void> _reload() async {
     ref.invalidateSelf();
@@ -504,6 +516,16 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
 
   Future<void> addItem(ath.PlanItemInput input) async {
     await _repo.addItem(planId, input);
+    await _reload();
+  }
+
+  /// Quick-add: copies catalogue exercises and plan items to the end.
+  Future<void> addExercises(List<ath.PlanItemSource> items) async {
+    await _repo.copyItems(
+      planId,
+      items,
+      language: ref.read(uiLanguageProvider),
+    );
     await _reload();
   }
 

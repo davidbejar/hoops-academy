@@ -175,7 +175,14 @@ class MockApiAdapter implements HttpClientAdapter {
     final body = data is String && data.isNotEmpty ? jsonDecode(data) : data;
     final result = academy.handle(
       tenant!,
-      MockRequest(method, path, options.queryParameters, body, bytes),
+      MockRequest(
+        method,
+        path,
+        options.queryParameters,
+        body,
+        bytes,
+        language: options.headers['Accept-Language'] as String?,
+      ),
     );
     if (result == null) return _problem(404, 'Not found');
     if (path.startsWith('/api/core/')) {
@@ -305,7 +312,15 @@ class _Academy {
 
   MockResult? handle(String tenantId, MockRequest r) {
     final result = handleUnlogged(r, tenantId: tenantId);
-    log.record(r.method, r.path, r.query, r.body, result, bytes: r.bytes);
+    log.record(
+      r.method,
+      r.path,
+      r.query,
+      r.body,
+      result,
+      bytes: r.bytes,
+      language: r.language,
+    );
     return result;
   }
 
@@ -316,6 +331,7 @@ class _Academy {
             path: r.path,
             query: r.query,
             body: r.body,
+            language: r.language,
           ) ??
           const MockResult.json(404, {'title': 'Not found', 'status': 404});
     }

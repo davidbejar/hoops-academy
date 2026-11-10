@@ -3139,7 +3139,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionExerciseSearchEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Escribe para buscar en tus planes y plantillas'**
+  /// **'Escribe para buscar también en tus planes y plantillas'**
   String get sessionExerciseSearchEmpty;
 
   /// No description provided for @sessionExercisesAddCount.
@@ -3153,6 +3153,144 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Ejercicios añadidos: {count}'**
   String sessionExercisesAdded(int count);
+
+  /// No description provided for @exerciseCatalogueTab.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejercicios'**
+  String get exerciseCatalogueTab;
+
+  /// No description provided for @exerciseCatalogueSection.
+  ///
+  /// In es, this message translates to:
+  /// **'Catálogo de ejercicios'**
+  String get exerciseCatalogueSection;
+
+  /// No description provided for @exercisePlansSection.
+  ///
+  /// In es, this message translates to:
+  /// **'En tus planes y plantillas'**
+  String get exercisePlansSection;
+
+  /// No description provided for @exerciseScopeAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get exerciseScopeAll;
+
+  /// No description provided for @exerciseScopeGlobal.
+  ///
+  /// In es, this message translates to:
+  /// **'Globales'**
+  String get exerciseScopeGlobal;
+
+  /// No description provided for @exerciseScopeAcademy.
+  ///
+  /// In es, this message translates to:
+  /// **'De la academia'**
+  String get exerciseScopeAcademy;
+
+  /// No description provided for @exerciseShowArchived.
+  ///
+  /// In es, this message translates to:
+  /// **'Mostrar archivados'**
+  String get exerciseShowArchived;
+
+  /// No description provided for @exerciseGlobal.
+  ///
+  /// In es, this message translates to:
+  /// **'Global'**
+  String get exerciseGlobal;
+
+  /// No description provided for @exerciseArchived.
+  ///
+  /// In es, this message translates to:
+  /// **'Archivado'**
+  String get exerciseArchived;
+
+  /// No description provided for @exerciseEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Ningún ejercicio coincide'**
+  String get exerciseEmpty;
+
+  /// No description provided for @exerciseNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo ejercicio'**
+  String get exerciseNew;
+
+  /// No description provided for @exerciseCreated.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejercicio creado'**
+  String get exerciseCreated;
+
+  /// No description provided for @exerciseSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejercicio guardado'**
+  String get exerciseSaved;
+
+  /// No description provided for @exerciseArchive.
+  ///
+  /// In es, this message translates to:
+  /// **'Archivar'**
+  String get exerciseArchive;
+
+  /// No description provided for @exerciseUnarchive.
+  ///
+  /// In es, this message translates to:
+  /// **'Restaurar'**
+  String get exerciseUnarchive;
+
+  /// No description provided for @exerciseArchivedDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejercicio archivado'**
+  String get exerciseArchivedDone;
+
+  /// No description provided for @exerciseUnarchivedDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejercicio restaurado'**
+  String get exerciseUnarchivedDone;
+
+  /// No description provided for @exerciseLoadMore.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargar más'**
+  String get exerciseLoadMore;
+
+  /// No description provided for @exerciseIsGlobal.
+  ///
+  /// In es, this message translates to:
+  /// **'Los ejercicios globales no se pueden modificar'**
+  String get exerciseIsGlobal;
+
+  /// No description provided for @exerciseArchivedError.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese ejercicio está archivado: elige otro'**
+  String get exerciseArchivedError;
+
+  /// No description provided for @exerciseFromCatalogue.
+  ///
+  /// In es, this message translates to:
+  /// **'Del catálogo de ejercicios'**
+  String get exerciseFromCatalogue;
+
+  /// No description provided for @planAddFromCatalogue.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir del catálogo'**
+  String get planAddFromCatalogue;
+
+  /// No description provided for @sessionCreatedExercisesFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión creada, pero sin los ejercicios: {reason}'**
+  String sessionCreatedExercisesFailed(String reason);
 
   /// No description provided for @attendanceTitle.
   ///
@@ -3451,7 +3589,7 @@ abstract class AppLocalizations {
   /// No description provided for @planSearchHint.
   ///
   /// In es, this message translates to:
-  /// **'Buscar planes'**
+  /// **'Buscar planes y ejercicios'**
   String get planSearchHint;
 
   /// No description provided for @planEmptyTemplates.

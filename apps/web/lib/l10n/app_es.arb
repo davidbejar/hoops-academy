@@ -890,7 +890,7 @@
   "sessionOwnPlanDropped": "Los ejercicios añadidos a esta sesión se eliminarán",
   "sessionAddExercises": "Añadir ejercicios",
   "sessionExerciseSearchHint": "Buscar ejercicios (p. ej. cooper)",
-  "sessionExerciseSearchEmpty": "Escribe para buscar en tus planes y plantillas",
+  "sessionExerciseSearchEmpty": "Escribe para buscar también en tus planes y plantillas",
   "sessionExercisesAddCount": "Añadir ({count})",
   "@sessionExercisesAddCount": {
     "placeholders": {
@@ -904,6 +904,36 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "exerciseCatalogueTab": "Ejercicios",
+  "exerciseCatalogueSection": "Catálogo de ejercicios",
+  "exercisePlansSection": "En tus planes y plantillas",
+  "exerciseScopeAll": "Todos",
+  "exerciseScopeGlobal": "Globales",
+  "exerciseScopeAcademy": "De la academia",
+  "exerciseShowArchived": "Mostrar archivados",
+  "exerciseGlobal": "Global",
+  "exerciseArchived": "Archivado",
+  "exerciseEmpty": "Ningún ejercicio coincide",
+  "exerciseNew": "Nuevo ejercicio",
+  "exerciseCreated": "Ejercicio creado",
+  "exerciseSaved": "Ejercicio guardado",
+  "exerciseArchive": "Archivar",
+  "exerciseUnarchive": "Restaurar",
+  "exerciseArchivedDone": "Ejercicio archivado",
+  "exerciseUnarchivedDone": "Ejercicio restaurado",
+  "exerciseLoadMore": "Cargar más",
+  "exerciseIsGlobal": "Los ejercicios globales no se pueden modificar",
+  "exerciseArchivedError": "Ese ejercicio está archivado: elige otro",
+  "exerciseFromCatalogue": "Del catálogo de ejercicios",
+  "planAddFromCatalogue": "Añadir del catálogo",
+  "sessionCreatedExercisesFailed": "Sesión creada, pero sin los ejercicios: {reason}",
+  "@sessionCreatedExercisesFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
       }
     }
   },
@@ -996,7 +1026,7 @@
   "planLibraryTitle": "Planes de entrenamiento",
   "planTemplates": "Plantillas",
   "planMine": "Mis planes",
-  "planSearchHint": "Buscar planes",
+  "planSearchHint": "Buscar planes y ejercicios",
   "planEmptyTemplates": "No hay plantillas",
   "planEmptyMine": "Aún no hay planes propios. Crea uno o usa una plantilla.",
   "planSummary": "{count} ejercicios · {minutes} min",

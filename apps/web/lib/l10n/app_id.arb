@@ -551,7 +551,7 @@
   "sessionOwnPlanDropped": "Latihan yang ditambahkan ke sesi ini akan dihapus",
   "sessionAddExercises": "Tambah latihan",
   "sessionExerciseSearchHint": "Cari latihan (mis. cooper)",
-  "sessionExerciseSearchEmpty": "Ketik untuk mencari di rencana dan templat",
+  "sessionExerciseSearchEmpty": "Ketik untuk juga mencari di rencana dan templat",
   "sessionExercisesAddCount": "Tambah ({count})",
   "@sessionExercisesAddCount": {
     "placeholders": {
@@ -565,6 +565,36 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "exerciseCatalogueTab": "Latihan",
+  "exerciseCatalogueSection": "Katalog latihan",
+  "exercisePlansSection": "Di rencana dan templat Anda",
+  "exerciseScopeAll": "Semua",
+  "exerciseScopeGlobal": "Global",
+  "exerciseScopeAcademy": "Akademi",
+  "exerciseShowArchived": "Tampilkan arsip",
+  "exerciseGlobal": "Global",
+  "exerciseArchived": "Diarsipkan",
+  "exerciseEmpty": "Tidak ada latihan yang cocok",
+  "exerciseNew": "Latihan baru",
+  "exerciseCreated": "Latihan dibuat",
+  "exerciseSaved": "Latihan disimpan",
+  "exerciseArchive": "Arsipkan",
+  "exerciseUnarchive": "Pulihkan",
+  "exerciseArchivedDone": "Latihan diarsipkan",
+  "exerciseUnarchivedDone": "Latihan dipulihkan",
+  "exerciseLoadMore": "Muat lagi",
+  "exerciseIsGlobal": "Latihan global tidak dapat diubah",
+  "exerciseArchivedError": "Latihan itu diarsipkan: pilih yang lain",
+  "exerciseFromCatalogue": "Dari katalog latihan",
+  "planAddFromCatalogue": "Tambah dari katalog",
+  "sessionCreatedExercisesFailed": "Sesi dibuat, tetapi tanpa latihan: {reason}",
+  "@sessionCreatedExercisesFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
       }
     }
   },
@@ -657,7 +687,7 @@
   "planLibraryTitle": "Rencana latihan",
   "planTemplates": "Templat",
   "planMine": "Rencana kami",
-  "planSearchHint": "Cari rencana",
+  "planSearchHint": "Cari rencana dan latihan",
   "planEmptyTemplates": "Tidak ada templat",
   "planEmptyMine": "Belum ada rencana. Buat satu atau gunakan templat.",
   "planSummary": "{count} latihan · {minutes} menit",

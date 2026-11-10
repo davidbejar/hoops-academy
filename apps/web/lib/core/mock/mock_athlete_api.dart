@@ -4,8 +4,8 @@ import 'mock_core_api.dart';
 import 'mock_query.dart';
 
 /// In-memory stand-in for athlete-service (`/api/athlete/**`) for one demo academy, dev mock mode only: a week of
-/// training sessions with attendance, planned absences, plans, injuries, measurements and physical tests with norm
-/// bands. The team rosters and the players' facts are read from [core] (one source per academy, WP47); the `clear`
+/// training sessions with attendance, planned absences, plans, the exercise catalogue (global exercises in es / en / id
+/// following `Accept-Language`, and the academy's own), injuries, measurements and physical tests with norm bands. The team rosters and the players' facts are read from [core] (one source per academy, WP47); the `clear`
 /// lists of update requests follow ADR-0032. What a role sees and may change follows `docs/domain/authz-matrix.md`
 /// through `core.authz`: a staff member their teams, a guardian the linked players, a player himself; a player or
 /// team the user may not see is a 404, a visible one they may not change a 403.
@@ -44,6 +44,9 @@ class MockAthleteApi {
   final _attendance = <String, Map<String, Map<String, Object?>>>{};
   final _absences = <Map<String, Object?>>[];
   final _plans = <Map<String, Object?>>[];
+
+  /// Catalogue rows: a global one keeps its texts per language in `texts`.
+  final _exercises = <Map<String, Object?>>[];
   final _assignments = <Map<String, Object?>>[];
   final _completions = <Map<String, Object?>>[];
   final _injuries = <Map<String, Object?>>[];
@@ -52,6 +55,9 @@ class MockAthleteApi {
   final _results = <Map<String, Object?>>[];
   final _norms = <Map<String, Object?>>[];
   var _seq = 100;
+
+  /// The language negotiated for the call being handled (athlete 2.2.0 rule).
+  var _lang = 'en';
 
   String _id(String prefix) => '$prefix-${_seq++}';
   String get _stamp => _now().toUtc().toIso8601String();
@@ -63,6 +69,7 @@ class MockAthleteApi {
   // ------------------------------------------------------------------ seed
   void _seed() {
     _seedTraining();
+    _seedExercises();
     _seedPlans();
     _seedHealth();
     _seedFitness();
@@ -241,6 +248,137 @@ class MockAthleteApi {
     'recordedAt': _stamp,
   };
 
+  /// The global catalogue is every distinct item of the templates plus the Cooper test (as athlete 3.0.0 seeds it);
+  /// the academy has one exercise of its own and an archived one.
+  void _seedExercises() {
+    void global(
+      String nameKey,
+      Map<String, (String, String?)> texts, {
+      int? minutes,
+      int? sets,
+      int? reps,
+    }) => _exercises.add({
+      'id': 'ex-$nameKey',
+      'nameKey': nameKey,
+      'global': true,
+      'archived': false,
+      'texts': {
+        for (final e in texts.entries)
+          e.key: {'title': e.value.$1, 'description': e.value.$2},
+      },
+      'durationMinutes': minutes,
+      'sets': sets,
+      'repetitions': reps,
+      'videoUrl': null,
+    });
+    global(
+      'stationary-shooting',
+      {
+        'es': ('Tiro en estático', 'Codo bajo el balón, seguimiento largo'),
+        'en': (
+          'Stationary shooting',
+          'Elbow under the ball, long follow-through',
+        ),
+        'id': (
+          'Tembakan di tempat',
+          'Siku di bawah bola, gerakan lanjutan panjang',
+        ),
+      },
+      minutes: 10,
+      sets: 3,
+      reps: 10,
+    );
+    global(
+      'free-throws',
+      {
+        'es': ('Tiros libres', null),
+        'en': ('Free throws', null),
+        'id': ('Lemparan bebas', null),
+      },
+      minutes: 8,
+      sets: 2,
+      reps: 10,
+    );
+    global(
+      'shot-off-the-dribble',
+      {
+        'es': ('Tiro tras bote', null),
+        'en': ('Shot off the dribble', null),
+        'id': ('Tembakan setelah dribel', null),
+      },
+      minutes: 12,
+      sets: 3,
+      reps: 8,
+    );
+    global('two-ball-dribbling', {
+      'es': ('Bote con dos balones', null),
+      'en': ('Two-ball dribbling', null),
+      'id': ('Dribel dua bola', null),
+    }, minutes: 10);
+    global(
+      'slalom-crossovers',
+      {
+        'es': ('Cambios de mano en slalom', null),
+        'en': ('Slalom crossovers', null),
+        'id': ('Crossover slalom', null),
+      },
+      minutes: 12,
+      sets: 4,
+    );
+    global('cooper-test', {
+      'es': (
+        'Test de Cooper (12 min)',
+        'Corre la mayor distancia posible en 12 minutos; anota la distancia en metros.',
+      ),
+      'en': (
+        'Cooper test (12 min)',
+        'Run as far as you can in 12 minutes; record the distance in metres.',
+      ),
+      'id': (
+        'Tes Cooper (12 menit)',
+        'Lari sejauh mungkin dalam 12 menit; catat jaraknya dalam meter.',
+      ),
+    }, minutes: 12);
+    global(
+      'suicide-runs',
+      {
+        'es': ('Suicidios', null),
+        'en': ('Suicide runs', null),
+        'id': ('Lari suicide', null),
+      },
+      minutes: 8,
+      sets: 4,
+    );
+    global(
+      'sprints-20m',
+      {
+        'es': ('Sprints de 20 m', null),
+        'en': ('20 m sprints', null),
+        'id': ('Sprint 20 m', null),
+      },
+      minutes: 6,
+      sets: 6,
+    );
+    _exercises.addAll([
+      {
+        ..._newExercise({
+          'title': 'Rueda de pases',
+          'description': 'Pases en movimiento en dos filas',
+          'durationMinutes': 8,
+        }),
+        'id': 'ex-own-passing',
+      },
+      {
+        ..._newExercise({
+          'title': 'Defensa en zona 2-3',
+          'durationMinutes': 15,
+        }),
+        'id': 'ex-own-zone',
+        'archived': true,
+      },
+    ]);
+  }
+
   void _seedPlans() {
     Map<String, Object?> item(
       String id,
@@ -250,6 +388,7 @@ class MockAthleteApi {
       int? minutes,
       int? sets,
       int? reps,
+      String? exercise,
     }) => {
       'id': id,
       'position': position,
@@ -258,6 +397,7 @@ class MockAthleteApi {
       'durationMinutes': minutes,
       'sets': sets,
       'repetitions': reps,
+      'exerciseId': exercise,
     };
     Map<String, Object?> plan(
       String id,
@@ -289,14 +429,44 @@ class MockAthleteApi {
             minutes: 10,
             sets: 3,
             reps: 10,
+            exercise: 'ex-stationary-shooting',
           ),
-          item('tpl-s2', 1, 'Tiros libres', minutes: 8, sets: 2, reps: 10),
-          item('tpl-s3', 2, 'Tiro tras bote', minutes: 12, sets: 3, reps: 8),
+          item(
+            'tpl-s2',
+            1,
+            'Tiros libres',
+            minutes: 8,
+            sets: 2,
+            reps: 10,
+            exercise: 'ex-free-throws',
+          ),
+          item(
+            'tpl-s3',
+            2,
+            'Tiro tras bote',
+            minutes: 12,
+            sets: 3,
+            reps: 8,
+            exercise: 'ex-shot-off-the-dribble',
+          ),
         ],
       ),
       plan('tpl-handling', 'Manejo de balón', 'Control con ambas manos', true, [
-        item('tpl-h1', 0, 'Bote con dos balones', minutes: 10),
-        item('tpl-h2', 1, 'Cambios de mano en slalom', minutes: 12, sets: 4),
+        item(
+          'tpl-h1',
+          0,
+          'Bote con dos balones',
+          minutes: 10,
+          exercise: 'ex-two-ball-dribbling',
+        ),
+        item(
+          'tpl-h2',
+          1,
+          'Cambios de mano en slalom',
+          minutes: 12,
+          sets: 4,
+          exercise: 'ex-slalom-crossovers',
+        ),
       ]),
       plan(
         'tpl-conditioning',
@@ -304,9 +474,32 @@ class MockAthleteApi {
         'Resistencia y velocidad por intervalos',
         true,
         [
-          item('tpl-c1', 0, 'Test de Cooper 12 min', minutes: 12),
-          item('tpl-c2', 1, 'Suicidios', minutes: 8, sets: 4),
-          item('tpl-c3', 2, 'Sprints de 20 m', minutes: 6, sets: 6),
+          item(
+            'tpl-c1',
+            0,
+            'Test de Cooper (12 min)',
+            description:
+                'Corre la mayor distancia posible en 12 minutos; anota la '
+                'distancia en metros.',
+            minutes: 12,
+            exercise: 'ex-cooper-test',
+          ),
+          item(
+            'tpl-c2',
+            1,
+            'Suicidios',
+            minutes: 8,
+            sets: 4,
+            exercise: 'ex-suicide-runs',
+          ),
+          item(
+            'tpl-c3',
+            2,
+            'Sprints de 20 m',
+            minutes: 6,
+            sets: 6,
+            exercise: 'ex-sprints-20m',
+          ),
         ],
       ),
       plan(
@@ -498,18 +691,30 @@ class MockAthleteApi {
 
   // ------------------------------------------------------------------ routing
   /// `/api/athlete/**`; null when the path is not served.
+  /// [language] is the call's `Accept-Language` (global exercises follow it).
   MockResult? handle({
     required String method,
     required String path,
     required Map<String, dynamic> query,
     Object? body,
+    String? language,
   }) {
+    _lang = _negotiate(language);
     final result = _route(method, path, query, body);
     final json = result?.json;
     // Optional properties are absent rather than null on the wire; the generated models read both the same way.
     return json == null
         ? result
         : MockResult.json(result!.status, _withoutNulls(json));
+  }
+
+  /// The first of es, en, id in the header's order; English otherwise.
+  static String _negotiate(String? header) {
+    for (final part in (header ?? '').split(',')) {
+      final code = part.split(';').first.trim().split('-').first.toLowerCase();
+      if (const {'es', 'en', 'id'}.contains(code)) return code;
+    }
+    return 'en';
   }
 
   static Object? _withoutNulls(Object? v) => switch (v) {
@@ -541,6 +746,7 @@ class MockAthleteApi {
       'training-sessions' => _sessionsRoute(method, id, rest, q, b),
       'planned-absences' => _absencesRoute(method, id, q, b),
       'training-plans' => _plansRoute(method, id, rest, q, b),
+      'exercises' => _exercisesRoute(method, id, q, b),
       'plan-assignments' => _assignmentsRoute(method, id, rest, q, b),
       'plan-completions' =>
         method == 'GET' ? q.page(_filterCompletions(q)) : null,
@@ -885,24 +1091,62 @@ class MockAthleteApi {
   ) => [
     for (final i in _items(plan))
       if ('${i['title']}'.toLowerCase().contains(text))
-        {'id': i['id'], 'planId': plan['id'], 'title': i['title']},
+        {
+          'id': i['id'],
+          'planId': plan['id'],
+          'title': i['title'],
+          'exerciseId': i['exerciseId'],
+        },
   ];
 
-  /// Copies of the items a quick-add names (fresh ids), or null when a plan
-  /// or item is unknown.
-  List<Map<String, Object?>>? _copiesOf(Map<String, Object?> b) {
+  /// Copies of what a quick-add names (fresh ids, athlete 3.0.0): a catalogue exercise in the call's language or an
+  /// item of a plan, each keeping its exercise reference; or the problem: 400 for a source that is not exactly one
+  /// kind, 404 for an unknown one, 422 `EXERCISE_ARCHIVED`.
+  (List<Map<String, Object?>>, MockResult?) _copiesOf(Map<String, Object?> b) {
     final copies = <Map<String, Object?>>[];
-    for (final ref
+    for (final source
         in (b['items'] as List<Object?>? ?? const [])
             .cast<Map<String, Object?>>()) {
-      final source = _byId(_plans, '${ref['planId']}');
-      final item = source == null
+      final exerciseId = source['exerciseId'];
+      final fromItem = source['planId'] != null && source['itemId'] != null;
+      if ((exerciseId != null) == fromItem ||
+          (exerciseId != null && source['planId'] != null) ||
+          (exerciseId != null && source['itemId'] != null)) {
+        return (const [], mockProblem(400, 'Bad Request'));
+      }
+      if (exerciseId != null) {
+        final exercise = _byId(_exercises, '$exerciseId');
+        if (exercise == null) return (const [], _notFound);
+        if (exercise['archived'] == true) {
+          return (
+            const [],
+            mockProblem(422, 'Unprocessable', code: 'EXERCISE_ARCHIVED'),
+          );
+        }
+        final shown = _exerciseView(exercise);
+        copies.add({
+          'id': _id('item'),
+          for (final k in [
+            'title',
+            'description',
+            'durationMinutes',
+            'sets',
+            'repetitions',
+            'videoUrl',
+          ])
+            k: shown[k],
+          'exerciseId': exercise['id'],
+        });
+        continue;
+      }
+      final plan = _byId(_plans, '${source['planId']}');
+      final item = plan == null
           ? null
-          : _items(source).where((i) => i['id'] == ref['itemId']).firstOrNull;
-      if (item == null) return null;
+          : _items(plan).where((i) => i['id'] == source['itemId']).firstOrNull;
+      if (item == null) return (const [], _notFound);
       copies.add({...item, 'id': _id('item')});
     }
-    return copies;
+    return (copies, null);
   }
 
   /// A session references any plan except another session's own plan.
@@ -922,8 +1166,8 @@ class MockAthleteApi {
     if (!_az.canManageTeam('${s['teamId']}')) return _forbidden;
     if (s['status'] == 'CANCELLED')
       return mockProblem(409, 'Conflict', code: 'SESSION_CANCELLED');
-    final copies = _copiesOf(b);
-    if (copies == null) return _notFound;
+    final (copies, problem) = _copiesOf(b);
+    if (problem != null) return problem;
     final current = _byId(_plans, s['planId'] as String?);
     var own = current != null && current['sessionId'] == s['id']
         ? current
@@ -1063,8 +1307,8 @@ class MockAthleteApi {
       };
     }
     if (rest.length == 1 && rest[0] == 'items:copy' && method == 'POST') {
-      final copies = _copiesOf(b);
-      if (copies == null) return _notFound;
+      final (copies, problem) = _copiesOf(b);
+      if (problem != null) return problem;
       _items(plan).addAll(copies);
       _renumber(plan);
       return MockResult.json(200, _full(plan));
@@ -1116,7 +1360,114 @@ class MockAthleteApi {
     'repetitions': null,
     'videoUrl': null,
     ...input,
+    'exerciseId': null, // set by quick-add and plan copies only
   };
+
+  // ------------------------------------------------------------------ exercise catalogue
+  Map<String, Object?> _newExercise(Map<String, Object?> input) => {
+    'id': _id('ex'),
+    'nameKey': null,
+    'global': false,
+    'archived': false,
+    'description': null,
+    'durationMinutes': null,
+    'sets': null,
+    'repetitions': null,
+    'videoUrl': null,
+    for (final k in [
+      'title',
+      'description',
+      'durationMinutes',
+      'sets',
+      'repetitions',
+      'videoUrl',
+    ])
+      if (input[k] != null) k: input[k],
+  };
+
+  /// A global exercise in the call's language (fallback English); the academy's own as stored.
+  Map<String, Object?> _exerciseView(Map<String, Object?> e) {
+    final texts = (e['texts'] as Map<String, Object?>?)
+        ?.cast<String, Map<String, Object?>>();
+    if (texts == null) return e;
+    final shown = texts[_lang] ?? texts['en']!;
+    return {
+      for (final entry in e.entries)
+        if (entry.key != 'texts') entry.key: entry.value,
+      'title': shown['title'],
+      'description': shown['description'],
+    };
+  }
+
+  MockResult? _exercisesRoute(
+    String method,
+    String? idAndAction,
+    MockQuery q,
+    Map<String, Object?> b,
+  ) {
+    final readOnlyRole = _staffOnly(method);
+    if (readOnlyRole != null) return readOnlyRole;
+    if (idAndAction == null) {
+      if (method == 'GET') {
+        final scope = q.text('scope');
+        final archived = q.text('includeArchived') == 'true';
+        final text = q.text('q')?.toLowerCase();
+        final shown = [
+          for (final e in _exercises)
+            if ((archived || e['archived'] != true) &&
+                (scope == null || (scope == 'GLOBAL') == (e['global'] == true)))
+              _exerciseView(e),
+        ];
+        String title(Map<String, Object?> e) => '${e['title']}'.toLowerCase();
+        return q.page(
+          <Map<String, Object?>>[
+            for (final e in shown)
+              if (text == null || title(e).contains(text)) e,
+          ]..sort((a, b) {
+            final byTitle = title(a).compareTo(title(b));
+            return byTitle != 0
+                ? byTitle
+                : '${a['id']}'.compareTo('${b['id']}');
+          }),
+          defaultSize: 50,
+        );
+      }
+      if (method == 'POST') {
+        if ('${b['title'] ?? ''}'.trim().isEmpty) {
+          return mockProblem(400, 'Bad Request');
+        }
+        final e = _newExercise(b);
+        _exercises.add(e);
+        return MockResult.json(201, e);
+      }
+      return null;
+    }
+    final colon = idAndAction.indexOf(':');
+    final id = colon < 0 ? idAndAction : idAndAction.substring(0, colon);
+    final action = colon < 0 ? null : idAndAction.substring(colon + 1);
+    final e = _byId(_exercises, id);
+    if (e == null) return _notFound;
+    if (method == 'GET' && action == null) {
+      return MockResult.json(200, _exerciseView(e));
+    }
+    if (e['global'] == true) {
+      return mockProblem(403, 'Forbidden', code: 'EXERCISE_IS_GLOBAL');
+    }
+    if (method == 'PATCH' && action == null) {
+      return _patch(e, b, {
+        'description',
+        'durationMinutes',
+        'sets',
+        'repetitions',
+        'videoUrl',
+      });
+    }
+    if (method == 'POST' && (action == 'archive' || action == 'unarchive')) {
+      e['archived'] = action == 'archive';
+      return MockResult.json(200, e);
+    }
+    return null;
+  }
 
   // ------------------------------------------------------------------ assignments & completions
   Map<String, Object?> _assignmentView(Map<String, Object?> a) {
