@@ -53,10 +53,18 @@ class MatchesScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  PageHeader(
-                    title: l.navMatches,
-                    subtitle: zone == null ? null : l.timesShownIn(zone),
-                    actions: [
+                  // The export button shares the title row: as a `PageHeader`
+                  // action a phone would give it a row of its own (+64 px)
+                  // and push the first match under the bottom bar.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: PageHeader(
+                          title: l.navMatches,
+                          subtitle: zone == null ? null : l.timesShownIn(zone),
+                        ),
+                      ),
                       calendarExportMenu(
                         teamId: ref.watch(matchTeamFilterProvider),
                       ),

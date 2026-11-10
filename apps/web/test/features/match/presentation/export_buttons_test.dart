@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoops_app/core/ui/kit.dart';
 import 'package:hoops_app/core/export/ics_writer.dart';
 import 'package:hoops_app/features/match/domain/match_event.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
@@ -391,6 +392,28 @@ void main() {
       expect(text, contains('UID:training-s1@hoops-academy'));
       expect(text, contains('UID:match-$fin@hoops-academy'));
     });
+
+    testWidgets(
+      'on a phone the button sits in the title row and costs the list no height',
+      (tester) async {
+        // The browser smoke taps the first match tile on a phone-sized
+        // window; a button row of its own under the title pushed the tile
+        // under the bottom bar there (CI: court-panel never appeared).
+        await pumpAt(tester, '/matches', athlete: athleteWithSessions());
+        final title = tester.getRect(
+          find.descendant(
+            of: find.byType(PageHeader),
+            matching: find.text('Partidos'),
+          ),
+        );
+        final button = tester.getRect(find.byKey(const Key('export-menu')));
+        expect(
+          button.center.dy,
+          lessThan(title.bottom),
+          reason: 'same row as the title, not a row below it',
+        );
+      },
+    );
 
     testWidgets('a parent can export the calendar they see', (tester) async {
       await pumpAt(
