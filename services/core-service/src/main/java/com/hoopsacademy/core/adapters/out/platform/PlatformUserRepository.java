@@ -55,9 +55,9 @@ class PlatformUserRepository implements PlatformUsers {
         Optional<String> pattern = query.map(PlatformUserRepository::containsPattern);
         String where = pattern.isPresent() ? MATCHES : "";
         Query count = em.createNativeQuery("select count(*) from core.app_user u " + where);
-        Query items = em.createNativeQuery("""
-                with page as (
-                  select u.id, u.email, u.created_at from core.app_user u %s
+        Query items = em.createNativeQuery("with page as (select u.id, u.email, u.created_at from core.app_user u "
+                + where + """
+
                    order by lower(u.email) nulls last, u.id
                   offset :offset limit :limit)
                 select page.id, page.email, page.created_at, p.tenant_id, t.name, t.slug, t.status, p.id,
@@ -66,7 +66,7 @@ class PlatformUserRepository implements PlatformUsers {
                   from page
                   left join core.person p on p.user_id = page.id
                   left join core.tenant t on t.id = p.tenant_id
-                 order by lower(page.email) nulls last, page.id, lower(t.name), t.id""".formatted(where))
+                 order by lower(page.email) nulls last, page.id, lower(t.name), t.id""")
                 .setParameter("offset", page.offset())
                 .setParameter("limit", page.size());
         pattern.ifPresent(q -> {
