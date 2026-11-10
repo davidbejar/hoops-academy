@@ -49,4 +49,28 @@ ADR-0040. Skills: flutter-feature, clean-code, test-driven-development, verifica
   to a later pass.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built (one commit each): `ContentFrame` stretches a narrower section (the two `SizedBox(width: infinity)` workarounds in
+  season stats and player health removed); `SectionCard` provides a transparent `Material`; `AsyncBody` renders
+  `EmptyState` with the action inside it (`EmptyView` deleted); `AppTokens`, `InfoChip`, `ChipTone` deleted (ADR-0040
+  amended); `LandingPalette` reads `HoopsColors` (page, text, accent roles; the band and the two fills the landing tints
+  differently keep their own values, same pixels); `HoopsSize.fabClearance` (88) replaces the roster / match / fitness
+  copies; kit `PickerDialog` + `HoopsSize.pickerWidth`, used by the assign-to-team, reassign and guardian player pickers;
+  `TimezoneNote` has no padding of its own. Indonesian bottom bar: `navMatches` is now "Laga" (a layout fix is not possible:
+  the destination label is a plain string and 12 px "Pertandingan" is wider than the 72 px slot); the test checks the label
+  length of the widest role in es / en / id (the test font has 12 px letters, so a rendered check cannot tell). Audit: labels
+  for `tenant.request_accepted` and also `tenant.events_backfilled` (also missing), in es / en / id; the test now fails when
+  a label equals the enum name or wire name. Precache: only `*_en.png` landing screenshots are precached (4 instead of 12;
+  English is the fallback language; the others are fetched on demand and cached at runtime by the worker).
+- Verified: `flutter analyze` no issues; `dart format --set-exit-if-changed` clean (376 files); `flutter test` fresh, 1091
+  passed, 0 failed; `tool/offline_cold_start.sh` OK (197 files precached; landing and live match render offline).
+- Goldens re-recorded (all because sections now stretch to the column instead of being centred): `home_admin_1024x768`,
+  `home_admin_1024x768_dark`, `home_admin_1280x800`, `temporary_password_1024x768`, `temporary_password_360x780`,
+  `temporary_password_360x780_dark` (the page behind the dialog). No file under `features/training` and no training golden
+  changed. Landing PNGs re-captured (`live_match_id` for "Laga"; `platform_usage_*`, `player_health_*` rendered differently);
+  `training_week_*` and their manifest hashes deliberately kept (WP92 owns training; recapture after it merges:
+  `flutter test test/golden/landing_screens_capture.dart`).
+- Decisions/ADRs: ADR-0040 amendment (kit follow-ups done).
+- Open points: `training/presentation/training_labels.dart` still has its own `fabClearance` (WP92 area; replace by
+  `HoopsSize.fabClearance` later), as does the `AlertDialog` picker in `plan_search.dart`, the team-assign search dialog
+  and the inline timezone note of the training screen. `TimezoneNote` has no user yet. The capture script did not fail on
+  its first run here (not reproduced). `GrowthChart` as `SectionCard` not done (out of the brief).
