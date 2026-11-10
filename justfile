@@ -76,6 +76,15 @@ events-replay SERVICE:
 events-backfill *ARGS:
     infra/compose/events-backfill.sh {{ARGS}}
 
+# Compare core's roster rows with the game and athlete replicas (WP98; read-only; exit 0 equal, 1 drift, 2 could not
+# run): just events-drift (compose) | just events-drift --kind (the CNPG primary)
+events-drift *ARGS:
+    scripts/events-drift.sh {{ARGS}}
+
+# Test the drift check against planted differences (throwaway PostgreSQL via Podman, ~1 min; compose untouched)
+events-drift-test:
+    scripts/tests/events-drift.test.sh
+
 down:
     podman compose --env-file .env -f infra/compose/compose.yaml down
 

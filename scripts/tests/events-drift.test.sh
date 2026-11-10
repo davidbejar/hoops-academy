@@ -184,7 +184,8 @@ check=$!
 sleep 2
 seed_replica game
 wait "$check" || rc=$?
-if [ "$rc" = 0 ] && grep -q 'matched on the retry' "$WORK/out" && ! grep -q '^drift: ' "$WORK/out"; then
+if [ "$rc" = 0 ] && grep -q 'matched on the retry' "$WORK/out" && ! grep -q '^drift: ' "$WORK/out" \
+  && grep -Eq '^team-player +game +1 +1 +0 +0 +0$' "$WORK/out"; then
   ok "a row that catches up during the retry wait is lag, not drift: exit 0"
 else
   bad "lag (exit $rc)"
