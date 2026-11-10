@@ -15,6 +15,10 @@ import '../../support/harness.dart';
 import '../../support/pump_helpers.dart';
 
 const _button = Key('audit-export');
+final _icon = find.descendant(
+  of: find.byKey(_button),
+  matching: find.byType(IconButton),
+);
 
 Future<Harness> _academy(
   WidgetTester tester,
@@ -107,7 +111,7 @@ void main() {
       );
       h.online.add(false);
       await tester.pumpAndSettle();
-      expect(tester.widget<IconButton>(find.byKey(_button)).onPressed, isNull);
+      expect(tester.widget<IconButton>(_icon).onPressed, isNull);
     });
   });
 

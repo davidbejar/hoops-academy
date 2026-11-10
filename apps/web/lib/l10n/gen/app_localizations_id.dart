@@ -1585,6 +1585,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get exportNothing => 'Tidak ada yang dapat diekspor';
 
   @override
+  String get exportRosterTooltip => 'Ekspor daftar pemain (CSV)';
+
+  @override
+  String get exportAuditTooltip => 'Ekspor aktivitas (CSV)';
+
+  @override
+  String get exportNeedsConnection =>
+      'Ekspor butuh koneksi: file dibuat di server.';
+
+  @override
+  String get exportTooLarge =>
+      'Lebih dari 10.000 baris: persempit rentang tanggal atau tindakan lalu coba lagi.';
+
+  @override
   String get exportCalendarNoMatches =>
       'Pertandingan tidak dapat dimuat: file hanya berisi sesi latihan.';
 

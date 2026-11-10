@@ -5,23 +5,9 @@ import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
-import '../../me/domain/current_user.dart';
 import '../application/roster_providers.dart';
+import '../application/roster_rights.dart';
 import 'jersey_dialog.dart' show jerseyPattern;
-
-/// Who writes a player's preferred number: ADMIN, COACH, a linked PARENT and the PLAYER himself (core 3.5.0); an
-/// ASSISTANT_COACH only reads it.
-extension PreferredJerseyRights on Capabilities {
-  bool get _staffWriter =>
-      roles.contains(TenantRole.admin) || roles.contains(TenantRole.coach);
-
-  bool canSetPreferredJersey(String playerId) =>
-      _staffWriter || isLinkedTo(playerId) || isSelf(playerId);
-
-  /// Parents and players word it as a wish: the coach decides.
-  bool isJerseyWish(String playerId) =>
-      !_staffWriter && (isLinkedTo(playerId) || isSelf(playerId));
-}
 
 /// The number a player prefers, with the edit button for those who may set it.
 class PreferredJerseyCard extends ConsumerWidget {

@@ -20,6 +20,10 @@ FakeCore _core() => FakeCore(
 );
 
 const _button = Key('roster-export');
+final _icon = find.descendant(
+  of: find.byKey(_button),
+  matching: find.byType(IconButton),
+);
 
 Future<Harness> _pump(
   WidgetTester tester,
@@ -96,7 +100,10 @@ void main() {
       expect(file.fileName, 'hoops-role-test-roster-mini-a-20261110.csv');
       expect(file.bytes, core.teams.rosterCsv);
       expect(file.mediaType, startsWith('text/csv'));
-      expect(find.textContaining('hoops-role-test-roster-mini-a'), findsOne);
+      expect(
+        find.textContaining('hoops-role-test-roster-mini-a'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('an error Problem is shown like the other screens do', (
@@ -114,7 +121,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(downloader.saved, isEmpty);
-      expect(find.text('No tienes permiso para hacer esto'), findsOneWidget);
+      expect(find.text('No tienes permiso para hacer esto.'), findsOneWidget);
     });
 
     testWidgets('offline the button is disabled and says why', (tester) async {
@@ -128,17 +135,14 @@ void main() {
       h.online.add(false);
       await tester.pumpAndSettle();
 
-      expect(tester.widget<IconButton>(find.byKey(_button)).onPressed, isNull);
+      expect(tester.widget<IconButton>(_icon).onPressed, isNull);
       expect(
-        tester.widget<IconButton>(find.byKey(_button)).tooltip,
+        tester.widget<IconButton>(_icon).tooltip,
         'Exportar necesita conexión: el archivo lo genera el servidor.',
       );
       h.online.add(true);
       await tester.pumpAndSettle();
-      expect(
-        tester.widget<IconButton>(find.byKey(_button)).onPressed,
-        isNotNull,
-      );
+      expect(tester.widget<IconButton>(_icon).onPressed, isNotNull);
     });
   });
 }

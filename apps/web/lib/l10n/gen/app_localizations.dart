@@ -2950,6 +2950,30 @@ abstract class AppLocalizations {
   /// **'No hay nada que exportar'**
   String get exportNothing;
 
+  /// No description provided for @exportRosterTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Exportar la plantilla (CSV)'**
+  String get exportRosterTooltip;
+
+  /// No description provided for @exportAuditTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Exportar la actividad (CSV)'**
+  String get exportAuditTooltip;
+
+  /// No description provided for @exportNeedsConnection.
+  ///
+  /// In es, this message translates to:
+  /// **'Exportar necesita conexión: el archivo lo genera el servidor.'**
+  String get exportNeedsConnection;
+
+  /// No description provided for @exportTooLarge.
+  ///
+  /// In es, this message translates to:
+  /// **'Hay más de 10.000 filas: acota el rango de fechas o las acciones e inténtalo de nuevo.'**
+  String get exportTooLarge;
+
   /// No description provided for @exportCalendarNoMatches.
   ///
   /// In es, this message translates to:

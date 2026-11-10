@@ -546,6 +546,9 @@ class FakeTeamsRepository with Faulty implements TeamsRepository {
     ],
   );
 
+  /// Thrown by `exportRoster` only (a Problem of the server).
+  Object? exportFailure;
+
   /// The team and language of every roster export asked for.
   final List<(String, String)> rosterExports = [];
 
@@ -557,6 +560,8 @@ class FakeTeamsRepository with Faulty implements TeamsRepository {
   @override
   Future<Uint8List> exportRoster(String teamId, {required String language}) =>
       run('exportRoster', () {
+        final failure = exportFailure;
+        if (failure != null) throw failure;
         rosterExports.add((teamId, language));
         return rosterCsv;
       });

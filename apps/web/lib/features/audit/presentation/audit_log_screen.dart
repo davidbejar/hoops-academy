@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/api/api.dart' as api;
+import '../../../core/export/server_csv_export.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
@@ -59,6 +62,23 @@ class AuditLogView extends ConsumerWidget {
   final AuditScope scope;
   final bool showTenant;
 
+  /// The server's CSV of everything the screen's filters select (not just the page on screen).
+  Future<Uint8List> _export(WidgetRef ref, String language) {
+    final query = ref.read(auditQueryProvider(scope));
+    final repo = ref.read(auditRepositoryProvider);
+    return scope.platform
+        ? repo.exportPlatform(
+            query,
+            tenantId: scope.tenantId,
+            language: language,
+          )
+        : repo.exportAcademy(
+            ref.read(api.tenantIdProvider),
+            query,
+            language: language,
+          );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
@@ -110,6 +130,13 @@ class AuditLogView extends ConsumerWidget {
                       );
                       if (picked != null) notifier.setActions(picked);
                     },
+                  ),
+                  ServerCsvExportButton(
+                    key: const Key('audit-export'),
+                    what: 'audit',
+                    slug: scope.platform ? 'platform' : null,
+                    tooltip: l.exportAuditTooltip,
+                    fetch: (language) => _export(ref, language),
                   ),
                 ],
               ),

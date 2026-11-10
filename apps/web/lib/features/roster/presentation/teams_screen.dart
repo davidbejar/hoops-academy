@@ -14,7 +14,9 @@ import '../../health/presentation/player_health_view.dart'
     show AvailabilityBadge;
 import '../../health/application/health_providers.dart'
     show openInjuriesProvider;
+import '../../../core/export/server_csv_export.dart';
 import '../application/roster_providers.dart';
+import '../application/roster_rights.dart';
 import '../application/season_view.dart' show historicTeamsProvider;
 import 'eligibility_widgets.dart';
 import 'jersey_dialog.dart';
@@ -317,6 +319,15 @@ class TeamDetailScreen extends ConsumerWidget {
       title: detail.value?.team.displayLabel ?? l.navTeams,
       parentPath: '/teams',
       actions: [
+        if (caps.canExportRoster(teamId) && detail.hasValue)
+          ServerCsvExportButton(
+            key: const Key('roster-export'),
+            what: 'roster ${detail.value!.team.name}',
+            tooltip: l.exportRosterTooltip,
+            fetch: (language) => ref
+                .read(teamsRepositoryProvider)
+                .exportRoster(teamId, language: language),
+          ),
         if (caps.canManageTeam(teamId) && detail.hasValue)
           IconButton(
             key: const Key('team-edit'),

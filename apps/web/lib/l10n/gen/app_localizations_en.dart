@@ -1579,6 +1579,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportNothing => 'There is nothing to export';
 
   @override
+  String get exportRosterTooltip => 'Export the roster (CSV)';
+
+  @override
+  String get exportAuditTooltip => 'Export the activity (CSV)';
+
+  @override
+  String get exportNeedsConnection =>
+      'Exporting needs a connection: the file is made on the server.';
+
+  @override
+  String get exportTooLarge =>
+      'More than 10,000 rows: narrow the date range or the actions and try again.';
+
+  @override
   String get exportCalendarNoMatches =>
       'The matches could not be loaded: the file has the training sessions only.';
 

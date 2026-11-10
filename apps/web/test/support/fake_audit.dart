@@ -76,6 +76,9 @@ class FakeAuditRepository with Faulty implements AuditRepository {
   /// The query and language of every export asked for (`platform` ones carry the academy filter).
   final List<(String?, AuditQuery, String)> academyExports = [];
   final List<(String?, AuditQuery, String)> platformExports = [];
+
+  /// Thrown by the export calls only.
+  Object? exportFailure;
   Uint8List csv = Uint8List.fromList(utf8.encode('When,Action\r\n'));
 
   @override
@@ -84,6 +87,8 @@ class FakeAuditRepository with Faulty implements AuditRepository {
     AuditQuery query, {
     required String language,
   }) => run('exportAcademy', () {
+    final failure = exportFailure;
+    if (failure != null) throw failure;
     academyExports.add((tenantId, query, language));
     return csv;
   });
@@ -94,6 +99,8 @@ class FakeAuditRepository with Faulty implements AuditRepository {
     String? tenantId,
     required String language,
   }) => run('exportPlatform', () {
+    final failure = exportFailure;
+    if (failure != null) throw failure;
     platformExports.add((tenantId, query, language));
     return csv;
   });
