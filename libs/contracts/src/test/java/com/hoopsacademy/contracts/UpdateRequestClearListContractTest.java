@@ -124,6 +124,7 @@ class UpdateRequestClearListContractTest {
         assertThat(clearEnum(updates, "UpdateAgeCategoryRequest")).containsExactly("maxAge");
         assertThat(clearEnum(updates, "UpdateTeamRequest")).containsExactly("alias");
         assertThat(clearEnum(updates, "UpdateTeamPlayerRequest")).containsExactly("jerseyNumber");
+        assertThat(clearEnum(updates, "UpdatePlayerRequest")).containsExactly("preferredJerseyNumber");
         for (String nothingToClear : List.of("UpdateTenantAdminRequest", "UpdateTenantRequest", "UpdateMeRequest",
                 "UpdateSeasonRequest")) {
             assertThat(updates.get(nothingToClear).getProperties()).as(nothingToClear).doesNotContainKey("clear");
