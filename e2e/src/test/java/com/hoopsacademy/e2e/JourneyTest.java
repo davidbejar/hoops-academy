@@ -241,6 +241,14 @@ class JourneyTest {
         status(parent.get("/api/core/players/" + playerB), 404);
         Response me = status(parent.inTenant(null).get("/api/core/me"), 200);
         assertThat(me.jsonPath().getList("memberships[0].authz.linkedPlayerIds")).containsExactly(playerA.toString());
+        // game and athlete learn about the link from core's events (replica, the default since WP98): the parent acts
+        // on the child there within seconds, so wait until both treat the parent as the child's guardian
+        await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+            assertEquals(200, parent.get("/api/game/players/" + playerA + "/season-stats?seasonId=" + seasonId)
+                    .statusCode(), "game knows the guardian link");
+            assertEquals(200, parent.get("/api/athlete/planned-absences?playerId=" + playerA).statusCode(),
+                    "athlete knows the guardian link");
+        });
     }
 
     // ------------------------------------------------------------------------------------------ matches
