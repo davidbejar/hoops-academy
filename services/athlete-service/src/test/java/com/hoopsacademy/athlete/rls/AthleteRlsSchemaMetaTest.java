@@ -11,7 +11,7 @@ import java.util.Map;
  * Every table of the athlete schema has forced RLS with a tenant policy, is a declared global table, or is a declared
  * shared global+tenant table (owner column {@code owner_tenant_id}, null = global row): those are checked by the
  * common inspector for forced RLS, a tenant policy and one policy per command (no FOR ALL), and their row-level
- * behaviour is proved by TemplateRlsIsolationTest and HealthRlsIsolationTest.
+ * behaviour is proved by TemplateRlsIsolationTest, HealthRlsIsolationTest and ExerciseRlsIsolationTest.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
@@ -35,6 +35,7 @@ class AthleteRlsSchemaMetaTest extends RlsSchemaMetaTest {
                 "athlete.training_plan", OWNER,
                 "athlete.plan_item", OWNER,
                 "athlete.physical_test_type", OWNER,
-                "athlete.physical_test_norm", OWNER);
+                "athlete.physical_test_norm", OWNER,
+                "athlete.exercise", OWNER);
     }
 }
