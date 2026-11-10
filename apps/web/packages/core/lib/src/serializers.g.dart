@@ -71,6 +71,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(PersonRef.serializer)
       ..add(PlatformAuditEvent.serializer)
       ..add(PlatformAuditEventPage.serializer)
+      ..add(PlatformUser.serializer)
+      ..add(PlatformUserMembership.serializer)
+      ..add(PlatformUserPage.serializer)
       ..add(Player.serializer)
       ..add(PlayerBatchRequest.serializer)
       ..add(PlayerBatchResponse.serializer)
@@ -169,6 +172,13 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(PlatformAuditEvent)]),
           () => ListBuilder<PlatformAuditEvent>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(PlatformUser)]),
+          () => ListBuilder<PlatformUser>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(PlatformUserMembership)]),
+          () => ListBuilder<PlatformUserMembership>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Player)]),
           () => ListBuilder<Player>())
       ..addBuilderFactory(
@@ -259,6 +269,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltSet, const [const FullType(String)]),
           () => SetBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltSet, const [const FullType(TenantRole)]),
+          () => SetBuilder<TenantRole>())
       ..addBuilderFactory(
           const FullType(BuiltSet, const [const FullType(TenantRole)]),
           () => SetBuilder<TenantRole>())

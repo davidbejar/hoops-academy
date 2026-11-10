@@ -17,6 +17,7 @@ import 'package:hoops_core_api/src/model/date.dart';
 import 'package:hoops_core_api/src/model/event_backfill.dart';
 import 'package:hoops_core_api/src/model/event_backfill_request.dart';
 import 'package:hoops_core_api/src/model/platform_audit_event_page.dart';
+import 'package:hoops_core_api/src/model/platform_user_page.dart';
 import 'package:hoops_core_api/src/model/problem.dart';
 import 'package:hoops_core_api/src/model/tenant.dart';
 import 'package:hoops_core_api/src/model/tenant_admin.dart';
@@ -816,6 +817,102 @@ class PlatformApi {
     }
 
     return Response<PlatformAuditEventPage>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Every login across academies, with its memberships
+  /// The application admin&#39;s Users area (decision 71): one item per login (&#x60;core.app_user&#x60;), ordered by e-mail (case-insensitive; a login without e-mail last), each with its person in every academy it belongs to (any academy status, active or deactivated), ordered by academy name. A login without memberships (a super admin registered on first sign-in) has an empty list. &#x60;q&#x60; matches, case-insensitively and anywhere in the text, the login&#39;s e-mail or a person&#39;s given name, family name or \&quot;given family\&quot; in any academy; at least 2 characters (400). Whether a login holds the realm role &#x60;super_admin&#x60; is not known to core (Keycloak keeps it) and is not returned. Read-only: an e-mail change or a temporary password stays with the per-academy operations (&#x60;updateMember&#x60;, &#x60;updateTenantAdmin&#x60;, the temporary-password operations). Reads are not recorded in the audit trail (ADR-0029 records administrative changes only). Read through the platform datasource (ADR-0029 amendment, WP91): it sees the id, e-mail and creation time of logins and, of persons with a login, only the name, roles and active flag. Authz: super_admin.
+  ///
+  /// Parameters:
+  /// * [q] - Case-insensitive substring of the e-mail or of a person's name (at least 2 characters).
+  /// * [page] - 0-based page index.
+  /// * [size] - Page size.
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [PlatformUserPage] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<PlatformUserPage>> listPlatformUsers({
+    String? q,
+    int? page = 0,
+    int? size = 50,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/platform/users';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      if (q != null)
+        r'q': encodeQueryParameter(_serializers, q, const FullType(String)),
+      if (page != null)
+        r'page': encodeQueryParameter(_serializers, page, const FullType(int)),
+      if (size != null)
+        r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    PlatformUserPage? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null
+          ? null
+          : _serializers.deserialize(
+              rawResponse,
+              specifiedType: const FullType(PlatformUserPage),
+            ) as PlatformUserPage;
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<PlatformUserPage>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,

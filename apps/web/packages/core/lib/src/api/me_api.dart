@@ -99,8 +99,8 @@ class MeApi {
     );
   }
 
-  /// Update the caller&#39;s preferences
-  ///
+  /// Update the caller&#39;s preferences and own name
+  /// &#x60;locale&#x60; is the login&#39;s language (every academy). &#x60;givenName&#x60; / &#x60;familyName&#x60; (decision 73, core 3.4.0) change the caller&#39;s own person in the academy &#x60;tenantId&#x60;, which the body must then name (and may only name then): 400 for a name without &#x60;tenantId&#x60; or a &#x60;tenantId&#x60; without a name. The same validation and side effects as an administrator&#39;s &#x60;updateMember&#x60; of that person: an audit row &#x60;member.updated&#x60; (the person as actor, the changed fields) and a &#x60;core.person&#x60; event; nothing is written when the name is unchanged. The e-mail is not accepted here (400): it stays with the academy&#39;s administrators. 404 when the caller is not an active member of &#x60;tenantId&#x60; or the academy is not ACTIVE. The name is validated and checked for membership before the locale is stored. Authz: any active member of &#x60;tenantId&#x60; (own person only); &#x60;locale&#x60; alone: any signed-in login.
   ///
   /// Parameters:
   /// * [updateMeRequest]

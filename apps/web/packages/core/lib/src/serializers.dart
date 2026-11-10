@@ -77,6 +77,9 @@ import 'package:hoops_core_api/src/model/page_meta.dart';
 import 'package:hoops_core_api/src/model/person_ref.dart';
 import 'package:hoops_core_api/src/model/platform_audit_event.dart';
 import 'package:hoops_core_api/src/model/platform_audit_event_page.dart';
+import 'package:hoops_core_api/src/model/platform_user.dart';
+import 'package:hoops_core_api/src/model/platform_user_membership.dart';
+import 'package:hoops_core_api/src/model/platform_user_page.dart';
 import 'package:hoops_core_api/src/model/player.dart';
 import 'package:hoops_core_api/src/model/player_batch_request.dart';
 import 'package:hoops_core_api/src/model/player_batch_response.dart';
@@ -202,6 +205,9 @@ part 'serializers.g.dart';
   PersonRef,
   PlatformAuditEvent,
   PlatformAuditEventPage,
+  PlatformUser,
+  PlatformUserMembership,
+  PlatformUserPage,
   Player,
   PlayerBatchRequest,
   PlayerBatchResponse,
@@ -313,6 +319,14 @@ Serializers serializers = (_$serializers.toBuilder()
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(PlatformAuditEvent)]),
         () => ListBuilder<PlatformAuditEvent>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlatformUserMembership)]),
+        () => ListBuilder<PlatformUserMembership>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(PlatformUser)]),
+        () => ListBuilder<PlatformUser>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(UsageReport)]),
