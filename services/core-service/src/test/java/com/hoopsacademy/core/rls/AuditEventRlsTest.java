@@ -75,7 +75,8 @@ class AuditEventRlsTest {
     @Test
     void thePlatformRoleStillReadsNoTenantContent() throws SQLException {
         try (Connection platform = TestDatabases.openAsPlatform()) {
-            assertThat(sqlState(platform, "select count(*) from core.person")).isEqualTo(INSUFFICIENT_PRIVILEGE);
+            // since WP91 it reads the name of persons with a login (PlatformUserReadRlsTest), never the whole row
+            assertThat(sqlState(platform, "select * from core.person")).isEqualTo(INSUFFICIENT_PRIVILEGE);
             assertThat(sqlState(platform, "select count(*) from core.player")).isEqualTo(INSUFFICIENT_PRIVILEGE);
         }
     }
