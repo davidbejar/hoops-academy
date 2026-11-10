@@ -263,6 +263,62 @@ WP85, WP90, WP77, WP88, WP84 (history order; commits in `docs/HANDOVER.md`).
     `--eso` with events, `up.sh --eso --deploy`); a load guard in `ratelimit-check.sh`; the Testcontainers flake;
     a scheduled bump of image digests, chart image tags and kind pins. Optimised Keycloak image not now.
 
+## Plan (2026-11-10, sixth round)
+Decided in the interview of 2026-11-10 (decisions 64–74 below). Same mechanics (`wp-round` skill), with two changes:
+at most four building agents per wave (the 2-CPU Podman VM), and every brief names the model *and* the reasoning
+effort of its agent. Core carries one WP per wave (WP91, then WP96); WP92 carries its own web part because athlete
+3.0.0 is breaking; WP100 is the only kind user; WP103 runs on compose after kind is gone; the docs pass is last.
+Found while planning: the weekly `bump-pins` workflow failed on its first scheduled run (2026-11-09, run
+42629848979, skopeo "Exec format error": an arm64 digest on the amd64 runner) → WP93.
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP91 | Core: `GET /platform/users`, own-name edit in `PATCH /me`, events-off producer switch, `ContainerStarts` in core | Opus · high | Running |
+| 1 | WP92 | Athlete + web: exercise catalogue (athlete 3.0.0), quick-add in the new-session dialog and plan editor | Opus · high | Running |
+| 1 | WP93 | Tooling: bump-pins multi-arch pin, hook false positive with a shell test, Podman machine playbook + doctor | Sonnet · medium | Running |
+| 1 | WP94 | Docs: ER and class diagrams per service, generated and drift-checked | Sonnet · medium | Running |
+| 1 | WP95 | Web leftovers: kit follow-ups, Indonesian bottom nav, audit label, landing screenshots out of the precache | Sonnet · medium | Running |
+| 2 | WP96 | Core: preferred jersey number with carry-over, free numbers; server-side CSV exports (roster, audit log) | Opus · high | After wave 1 |
+| 2 | WP97 | Web: browser-built exports for player stats, box score and team calendar (CSV, deferred XLSX, ICS) | Sonnet · high | After wave 1 |
+| 2 | WP98 | Events flip: `replica` by default in game and athlete, drift check, shared replica code, e2e await | Opus · high | After wave 1 |
+| 2 | WP99 | Web: context switcher, application admin hub, own-name edit | Sonnet · high | After wave 1 |
+| 3 | WP100 | Chart and kind: replica default, core SMTP, Envoy Gateway v1.10.0, pending proofs, chart 0.10.0 | Opus · high | After wave 2 |
+| 3 | WP101 | Web: jersey preference and assignment dialogs, roster and audit export buttons | Sonnet · medium | After wave 2 |
+| 4 | WP103 | Seed a test academy through the real API (`just seed-academy`) | Sonnet · medium | After wave 3 |
+| 5 | WP102 | Docs pass | Opus · medium | Last alone |
+
+### Decisions of 2026-11-10, fifth interview (product owner)
+64. **Scope of the round → WP91–WP103**: the four owner-requested features (super admin hub, jersey numbers,
+    exports, exercise catalogue) and four hygiene threads (tooling fixes, chart and kind, model diagrams, the
+    leftovers bundle) in one round.
+65. **Round size**: at most four building agents per wave; docs-only and script-only agents on top.
+66. **Events flip now, with a drift check → WP98, WP100**: `replica` becomes the default roster source of game and
+    athlete without the shadow period over days of ADR-0037 (the replica is fresher than the 30 s REST cache; the
+    risk is silent divergence, answered by a reconciliation command that compares core's rows with each replica).
+    `rest` stays as the fallback switch.
+67. **Export formats → WP96, WP97, WP101**: CSV (UTF-8 with BOM) for every export; ICS for the team calendar; a
+    real `.xlsx` for the browser-built exports (team calendar, player stats, box score). PDF later.
+68. **Export side, hybrid**: the team roster with guardians and the audit log are produced by core, audited and
+    rate-limited; player stats, box score and the team calendar are built in the browser from JSON already loaded.
+69. **XLSX library on demand only**: loaded when the user asks for an Excel export (Dart deferred import), never in
+    the initial bundle and not precached.
+70. **Jersey preference → WP96, WP101**: ADMIN and COACH set a player's preferred number; PARENT and PLAYER may
+    set it as a wish for their linked or own player; staff decide the real number on assignment.
+71. **Super admin navigation → WP91, WP99**: one context switcher lists each academy of the login (e.g. "Hangtuah",
+    "Dewa United", "Baskonia") plus "Application admin" for a super admin, each with its own menu; the application
+    admin context is a hub (Academies, Users, Pending approvals with a badge, Audit trail, Billing placeholder).
+    WP99 first finds out why `superadmin@hoops-academy.com` lands on the audit trail.
+72. **Exercise catalogue → WP92** (closes decision 54): the seeded global templates' distinct items become
+    localised catalogue exercises (plus the Cooper test) and templates reference them; tenant plan and session items
+    keep their own text and gain an optional exercise reference. Athlete 3.0.0, ADR-0047.
+73. **Own data → WP91, WP99**: a non-admin member edits their own first and last name; the e-mail stays with the
+    admin.
+74. **Test academy seed → WP103** (owner's addition to the plan): "Test Academy" created through the real API with
+    `testadmin1..2`, `testcoach1`, `testparentplayer1..10` each linked to `testplayer1..10` (players with logins),
+    one team with the ten players; every login active with the final shared password `TEST_ACADEMY_PASSWORD` kept
+    in `.env`, where the script also records the usernames (`TEST_ACADEMY_USERS`). Sonnet · medium instead of the
+    Haiku · max first written (accounts, passwords and tenant data need judgement).
+
 ## Open
 
 ### Pending user actions
