@@ -102,8 +102,10 @@ void main() {
       }
     });
 
-    test('precaches the landing page screenshots (WP70)', () {
-      // Flutter serves a pubspec asset `assets/x` at `assets/assets/x`.
+    test('precaches only the English landing screenshots (WP95)', () {
+      // Flutter serves a pubspec asset `assets/x` at `assets/assets/x`. English
+      // is the fallback of every unsupported language; the other languages are
+      // fetched when needed and cached by the worker at runtime.
       final assets = [
         for (final shot in LandingShot.values)
           for (final code in ['es', 'en', 'id']) shot.assetFor(code),
@@ -115,7 +117,9 @@ void main() {
       }
       final files = collectPrecache(build);
       for (final asset in assets) {
-        expect(files, contains('assets/$asset'));
+        asset.endsWith('_en.png')
+            ? expect(files, contains('assets/$asset'))
+            : expect(files, isNot(contains('assets/$asset')), reason: asset);
       }
     });
 

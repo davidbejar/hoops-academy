@@ -24,8 +24,18 @@ const requiredShellFiles = [
 const _buildIdPlaceholder = '__BUILD_ID__';
 const _manifestPlaceholder = '/*__PRECACHE_MANIFEST__*/[]';
 
+/// The landing page's screenshots exist once per language (`*_es.png`,
+/// `*_en.png`, `*_id.png`, twelve in all). English is the fallback of every
+/// other language, so it is precached; the others are fetched on demand and
+/// cached by the worker at runtime.
+bool _otherLanguageLandingShot(String path) =>
+    path.startsWith('assets/assets/landing/') &&
+    path.endsWith('.png') &&
+    !path.endsWith('_en.png');
+
 bool _excluded(String path) =>
     path == 'sw.js' ||
+    _otherLanguageLandingShot(path) ||
     // Flutter 3.47 emits a self-unregistering worker; ours replaces it.
     path == 'flutter_service_worker.js' ||
     path == 'version.json' ||
