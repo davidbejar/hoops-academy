@@ -4,6 +4,7 @@ import 'package:excel_community/excel_community.dart' as xl;
 
 import 'export_table.dart';
 import 'formula_guard.dart';
+import 'xlsx_media_type.dart';
 
 /// XLSX for the Excel export. This is the only file that imports the Excel
 /// package, and it is reached only through the deferred import in
@@ -12,8 +13,7 @@ import 'formula_guard.dart';
 class XlsxWriter {
   const XlsxWriter._();
 
-  static const mediaType =
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  static const mediaType = xlsxMediaType;
   static const extension = 'xlsx';
 
   static Uint8List build(ExportTable table) {
