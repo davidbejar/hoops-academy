@@ -42,7 +42,7 @@ if ! podman machine inspect --format '{{.State}}' 2>/dev/null | grep -q running;
   podman machine start
 fi
 
-echo "==> environment (JDK 21, Podman socket)"
+echo "==> environment (JDK 25, Podman socket)"
 # shellcheck source=scripts/env.sh
 source scripts/env.sh
 

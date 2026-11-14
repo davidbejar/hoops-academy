@@ -40,9 +40,9 @@ class Pin:
 # Gateway API (up.sh) is NOT bumped here: it must match Envoy Gateway's compatibility matrix (ADR-0031), by hand.
 SEMVER = r"^v?(\d+\.\d+\.\d+)$"
 PINS = [
-    Pin("ubi9 openjdk-21-runtime", ["deploy/containers/service.Containerfile"],
-        rf"openjdk-21-runtime:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
-        repo="registry.access.redhat.com/ubi9/openjdk-21-runtime", tag_re=r"^(\d+\.\d+)$"),
+    Pin("ubi9 openjdk-25-runtime", ["deploy/containers/service.Containerfile"],
+        rf"openjdk-25-runtime:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
+        repo="registry.access.redhat.com/ubi9/openjdk-25-runtime", tag_re=r"^(\d+\.\d+)$"),
     Pin("nginx-unprivileged", ["deploy/containers/web.Containerfile"],
         r"nginxinc/nginx-unprivileged:(?P<tag>[\w.\-]+)\n", "image",
         repo="docker.io/nginxinc/nginx-unprivileged", tag_re=r"^(\d+\.\d+)-alpine$", even_minor=True),
