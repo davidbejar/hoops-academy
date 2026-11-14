@@ -168,7 +168,7 @@ resource "alicloud_instance" "k3s" {
 
   system_disk_category  = var.system_disk_category
   system_disk_size      = var.system_disk_size_gib
-  system_disk_encrypted = true
+  system_disk_encrypted = var.system_disk_encrypted
 
   http_endpoint       = "enabled"
   http_tokens         = "required"

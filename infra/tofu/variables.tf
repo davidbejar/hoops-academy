@@ -95,6 +95,12 @@ variable "system_disk_size_gib" {
   }
 }
 
+variable "system_disk_encrypted" {
+  description = "Encrypt the system disk with the default service key. Turn off only if the account cannot use KMS yet (docs/runbooks/cloud.md, troubleshooting)."
+  type        = bool
+  default     = true
+}
+
 variable "eip_bandwidth_mbps" {
   description = "Bandwidth cap of the EIP in Mbit/s (billed by traffic)."
   type        = number
