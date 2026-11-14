@@ -2,7 +2,8 @@
 
 Hoops Academy is a multitenant platform for basketball academies: roster and age-category eligibility, offline-first live
 match statistics, training and attendance, athlete health and fitness. The full plan is `PLAN.md`; decisions are in
-`adr/`. This page is the map. Diagrams are Mermaid (rendered by GitHub and most Markdown viewers).
+`adr/`. This page is the map. Diagrams are Mermaid (rendered by GitHub and most Markdown viewers). The entity and class
+diagrams of each service are on their own pages, listed in [section 10](#10-domain-model).
 
 ## 1. System context
 ```mermaid
@@ -298,11 +299,21 @@ application admin hub shows a placeholder); PDF exports; the purge job. See `roa
 Cross-service reads go through `RosterPort` (REST to core `/internal`, or the service's own replica fed by core's
 events); no service reads another schema. game denormalises
 player names at roster creation so offline sync never depends on core. The exact table lists are authoritative in each
-service's Flyway migrations; the generated ER and class diagrams per service are in
-[`domain/core-model.md`](domain/core-model.md), [`domain/game-model.md`](domain/game-model.md) and
-[`domain/athlete-model.md`](domain/athlete-model.md) (`just diagrams`, drift-checked by `just diagrams-check` in CI).
+service's Flyway migrations; the entity and class diagrams per service are in [section 10](#10-domain-model).
 
-## 10. Testing strategy and current counts
+## 10. Domain model
+The entity-relationship and class diagrams are not on this page: each service has its own model page, generated from
+its Flyway migrations and sources (`just diagrams`; CI fails when one is stale, `just diagrams-check`).
+
+| Service | Model page | What it shows |
+|---|---|---|
+| core-service | [`domain/core-model.md`](domain/core-model.md) | tenancy and identity (academies, people, logins, memberships and roles, guardian links), the roster (seasons, age categories, teams, staff, players, eligibility, approvals), billing seams, audit log, sign-up requests, outbox |
+| game-service | [`domain/game-model.md`](domain/game-model.md) | matches and their rosters, the append-only event log, the projections (box score, scoreboard, season statistics), the roster replicas |
+| athlete-service | [`domain/athlete-model.md`](domain/athlete-model.md) | training schedules, sessions and attendance, training plans and the exercise catalogue, injuries, body measurements, physical tests and norms, the roster replicas |
+
+Each page has three parts: **Tables** (ER diagrams), **Domain classes** (class diagrams) and **Application ports**.
+
+## 11. Testing strategy and current counts
 JVM counts are from the last full verify of the sixth round (WP98 after its rebase, 2026-11-10, `./mvnw -B -ntp -T 1C
 verify`); the Flutter count from `flutter test` on the combined tree at the WP101 merge. They change with every commit.
 
@@ -328,7 +339,7 @@ events on `replica`, events off with a quiet core, producer recovery, core's mai
 limits, a Redis password rotation, `just events-drift --kind`) passed on chart 0.10.0 (`tilt ci` last ran on 0.9.0).
 Statement-by-statement evidence: [`conformance.md`](conformance.md).
 
-## 11. Security posture
+## 12. Security posture
 - Authentication: Keycloak, PKCE for the web client, password policy (12+ characters, a 10,000-entry blocklist), OTP
   optional for every login, brute-force protection (ADR-0038). Tokens must carry `sub` and the receiving service's
   audience (ADR-0034); refresh tokens rotate with reuse detection. Platform role `super_admin` is the only role in
@@ -374,7 +385,7 @@ Documents: [`security/review-2026-11.md`](security/review-2026-11.md) (24 findin
 plus SD-01..SD-08, 0 high), [`security/sast-dast.md`](security/sast-dast.md),
 [`security/threat-model.md`](security/threat-model.md), [`security/asvs-checklist.md`](security/asvs-checklist.md).
 
-## 12. Contexts, exports, jersey numbers and the exercise catalogue (sixth round)
+## 13. Contexts, exports, jersey numbers and the exercise catalogue (sixth round)
 - **Contexts and the application admin (ADR-0049, WP91, WP99).** A context is one academy of the login or, for a super
   admin, "Application admin"; each has its own menu, and a switcher in the shell (bottom sheet on a phone, panel beside
   the rail) moves between them. With one context the app lands in it, with several on the last one used in this browser
