@@ -15,6 +15,7 @@ import '../core/ui/list_row.dart';
 import '../core/ui/notice_banner.dart';
 import '../features/platform/application/academy_request_providers.dart';
 import '../l10n/gen/app_localizations.dart';
+import 'avatar_menu.dart';
 
 /// The destination of [location]: the longest matching path, because the
 /// application admin's hub path (`/app-admin`) is a prefix of its areas.
@@ -96,7 +97,10 @@ class AppShell extends ConsumerWidget {
         titleSpacing: width.gutter - HoopsSpace.sm,
         title: ContextChip(session: session),
         actions: [
-          _ProfileButton(name: session.user.displayName),
+          _ProfileButton(
+            name: session.user.displayName,
+            email: session.user.email,
+          ),
           SizedBox(width: width.gutter - HoopsSpace.sm),
         ],
       ),
@@ -154,11 +158,13 @@ class AppShell extends ConsumerWidget {
   }
 }
 
-/// The signed-in person's initials; opens the profile.
+/// The signed-in person's initials; opens the menu with the profile, the
+/// language and the theme.
 class _ProfileButton extends StatelessWidget {
-  const _ProfileButton({required this.name});
+  const _ProfileButton({required this.name, required this.email});
 
   final String name;
+  final String? email;
 
   @override
   Widget build(BuildContext context) => IconButton(
@@ -166,7 +172,7 @@ class _ProfileButton extends StatelessWidget {
     tooltip: AppLocalizations.of(context).profileTitle,
     padding: EdgeInsets.zero,
     icon: InitialsAvatar(name: name, size: 36, tone: HoopsTone.neutral),
-    onPressed: () => context.go('/profile'),
+    onPressed: () => showAvatarMenu(context, name: name, email: email),
   );
 }
 

@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/locale_controller.dart';
+import '../../../../core/l10n/theme_mode_controller.dart';
+import '../../../../core/l10n/theme_mode_labels.dart';
 import '../../../../l10n/gen/app_localizations.dart';
 import '../../application/external_link.dart';
 import '../landing_theme.dart';
@@ -14,32 +16,41 @@ final landingSourceUrl = Uri.parse(
 class _Brand extends StatelessWidget {
   const _Brand();
 
+  /// Below this width the name would be cut to a few letters: the mark
+  /// stays alone (the header also holds the language and theme switches).
+  static const _minWidthForName = 110.0;
+
   @override
   Widget build(BuildContext context) {
     final p = LandingPalette.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(
-          Icons.sports_basketball,
-          color: LandingPalette.accent,
-          size: 28,
-        ),
-        const SizedBox(width: 10),
-        Flexible(
-          child: Text(
-            AppLocalizations.of(context).appName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-              color: p.text,
+    const mark = Icon(
+      Icons.sports_basketball,
+      color: LandingPalette.accent,
+      size: 28,
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) => constraints.maxWidth < _minWidthForName
+          ? mark
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                mark,
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    AppLocalizations.of(context).appName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                      color: p.text,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -87,6 +98,7 @@ class LandingHeader extends ConsumerWidget {
                   ),
                 ),
                 const _HeaderLanguageMenu(),
+                const _HeaderThemeMenu(),
                 TextButton(
                   key: const Key('landing-header-sign-in'),
                   style: landingLinkButton(context, p.text),
@@ -159,6 +171,45 @@ class _HeaderLanguageMenu extends ConsumerWidget {
             const SizedBox(width: 4),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Theme switch for the header: an icon of the current choice, a menu of
+/// light, dark and system.
+class _HeaderThemeMenu extends ConsumerWidget {
+  const _HeaderThemeMenu();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final p = LandingPalette.of(context);
+    final current = ref.watch(themeModePreferenceProvider);
+    return PopupMenuButton<ThemeMode>(
+      key: const Key('landing-header-theme'),
+      tooltip: l.themeTitle,
+      position: PopupMenuPosition.under,
+      onSelected: ref.read(themeModePreferenceProvider.notifier).set,
+      itemBuilder: (_) => [
+        for (final mode in ThemeMode.values)
+          PopupMenuItem(
+            key: Key('landing-header-theme-${mode.name}'),
+            value: mode,
+            enabled: mode != current,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(mode.icon, size: 18),
+                const SizedBox(width: 12),
+                Text(mode.label(l)),
+              ],
+            ),
+          ),
+      ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48, minWidth: 40),
+        child: Icon(current.icon, size: 20, color: p.muted),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/http/request_context.dart';
 import '../core/l10n/locale_controller.dart';
+import '../core/l10n/theme_mode_controller.dart';
 import '../core/session/session_providers.dart';
 import '../l10n/gen/app_localizations.dart';
 import 'router.dart';
@@ -36,6 +37,7 @@ class HoopsApp extends ConsumerWidget {
       ],
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
+      themeMode: ref.watch(themeModePreferenceProvider),
     );
   }
 }

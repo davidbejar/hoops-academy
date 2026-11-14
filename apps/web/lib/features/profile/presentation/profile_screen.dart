@@ -5,34 +5,17 @@ import 'package:go_router/go_router.dart';
 import '../../../app/sign_out.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/http/mock_api_adapter.dart';
-import '../../../core/l10n/locale_controller.dart';
 import '../../../core/navigation/external_link.dart';
 import '../../../core/mock/mock_reload.dart';
 import '../../../core/session/session.dart';
 import '../../../core/session/session_providers.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
-import '../../me/application/me_providers.dart';
 import '../../me/domain/current_user.dart' show TenantRole;
 import 'profile_name_section.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
-
-  String _languageName(AppLocalizations l, String code) => switch (code) {
-    'en' => l.languageName_en,
-    'id' => l.languageName_id,
-    _ => l.languageName_es,
-  };
-
-  Future<void> _pickLanguage(WidgetRef ref, String code) async {
-    await ref.read(localePreferenceProvider.notifier).set(code);
-    try {
-      await ref.read(meRepositoryProvider).updateLocale(code);
-    } on Object {
-      // The local choice already applies; the server copy catches up later.
-    }
-  }
 
   /// Keycloak's account console of the realm: `<issuer>/account` (password, two-step verification, sessions).
   Uri _accountConsole(Uri issuer) => issuer.replace(
@@ -54,7 +37,6 @@ class ProfileScreen extends ConsumerWidget {
       Ready(:final user) => user,
       _ => null,
     };
-    final current = ref.watch(effectiveLocaleProvider).languageCode;
     // The member record (name, e-mail, phone) is editable by an ADMIN only.
     final ownMemberId = switch (session) {
       Ready(:final roles, :final membership)
@@ -128,23 +110,6 @@ class ProfileScreen extends ConsumerWidget {
                 tenantId: ownAcademyId,
                 displayName: user.displayName,
               ),
-            SectionCard(
-              title: l.language,
-              child: Column(
-                spacing: HoopsSpace.sm,
-                children: [
-                  for (final code in supportedLanguageCodes)
-                    ListRow(
-                      key: Key('lang-$code'),
-                      title: _languageName(l, code),
-                      trailing: code == current
-                          ? Icon(Icons.check_circle, color: c.brand)
-                          : const SizedBox.shrink(),
-                      onTap: () => _pickLanguage(ref, code),
-                    ),
-                ],
-              ),
-            ),
             Align(
               alignment: Alignment.centerLeft,
               child: OutlinedButton.icon(

@@ -610,6 +610,30 @@ abstract class AppLocalizations {
   /// **'Bahasa Indonesia'**
   String get languageName_id;
 
+  /// No description provided for @themeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tema'**
+  String get themeTitle;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In es, this message translates to:
+  /// **'Sistema'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In es, this message translates to:
+  /// **'Claro'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In es, this message translates to:
+  /// **'Oscuro'**
+  String get themeDark;
+
   /// No description provided for @academy.
   ///
   /// In es, this message translates to:

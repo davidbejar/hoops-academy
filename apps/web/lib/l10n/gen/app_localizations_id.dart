@@ -300,6 +300,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get languageName_id => 'Bahasa Indonesia';
 
   @override
+  String get themeTitle => 'Tema';
+
+  @override
+  String get themeSystem => 'Sistem';
+
+  @override
+  String get themeLight => 'Terang';
+
+  @override
+  String get themeDark => 'Gelap';
+
+  @override
   String get academy => 'Akademi';
 
   @override
