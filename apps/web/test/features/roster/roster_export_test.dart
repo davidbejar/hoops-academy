@@ -70,14 +70,25 @@ void main() {
       });
     }
 
-    testWidgets('the former coach of an ended season may export it', (
-      tester,
-    ) async {
+    testWidgets('the former coach of an ended season sees the roster '
+        'without the button (decision 83)', (tester) async {
       await _pump(
         tester,
         _core(),
         FakeFileDownloader(),
         roles: {TenantRole.coach},
+        historicStaffTeamIds: const {'t1'},
+      );
+      expect(find.text('Ana Ruiz'), findsOneWidget);
+      expect(find.byKey(_button), findsNothing);
+    });
+
+    testWidgets('the admin still exports an ended season', (tester) async {
+      await _pump(
+        tester,
+        _core(),
+        FakeFileDownloader(),
+        roles: {TenantRole.admin},
         historicStaffTeamIds: const {'t1'},
       );
       expect(find.byKey(_button), findsOneWidget);

@@ -69,15 +69,20 @@ class FakeMeRepository implements MeRepository {
       givenName: givenName,
       familyName: familyName,
     ));
-    final parts = user.displayName.split(' ');
-    final given = givenName ?? parts.first;
-    final family = familyName ?? parts.skip(1).join(' ');
+    final own = user.membershipFor(tenantId);
+    final given = givenName ?? own?.givenName ?? '';
+    final family = familyName ?? own?.familyName ?? '';
     user = CurrentUser(
       displayName: '$given $family',
       email: user.email,
       localeCode: user.localeCode,
       superAdmin: user.superAdmin,
-      memberships: user.memberships,
+      memberships: [
+        for (final m in user.memberships)
+          m.tenantId == tenantId
+              ? m.withName(givenName: given, familyName: family)
+              : m,
+      ],
     );
   }
 }

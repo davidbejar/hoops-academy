@@ -207,6 +207,21 @@ void main() {
       },
     );
 
+    test('the former coach of an ended season gets 403 (core 3.6.0)', () async {
+      await expectLater(
+        ApiTeamsRepository(
+          clientFor(['COACH']),
+          t,
+        ).exportRoster('team-mini-a-2025', language: 'en'),
+        status(403),
+      );
+      // The admin still exports an ended season.
+      await ApiTeamsRepository(
+        clientFor(['ADMIN']),
+        t,
+      ).exportRoster('team-mini-a-2025', language: 'en');
+    });
+
     test('the academy audit trail is for the admin only', () async {
       final bytes = await ApiAuditRepository(clientFor(['ADMIN']))
           .exportAcademy(t, const AuditQuery(), language: 'en');

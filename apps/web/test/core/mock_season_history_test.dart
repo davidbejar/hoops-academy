@@ -29,6 +29,13 @@ void main() {
     },
   );
 
+  test('`/me` carries the given and family name per academy (core 3.6.0)', () async {
+    final me = (await client(['COACH']).getMeApi().getMe()).data!;
+    for (final m in me.memberships) {
+      expect((m.givenName, m.familyName), ('Casey', 'Coach'));
+    }
+  });
+
   test('`/me` of an admin or a parent has no history', () async {
     for (final role in ['ADMIN', 'PARENT']) {
       final me = (await client([role]).getMeApi().getMe()).data!;

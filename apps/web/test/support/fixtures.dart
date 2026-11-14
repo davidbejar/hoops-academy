@@ -36,8 +36,12 @@ TenantMembership membershipWithRoles(
   String personId = 'person-me',
   String? ownPlayerId,
   String? timezone,
+  String? givenName = 'Casey',
+  String? familyName = 'Coach',
 }) => TenantMembership(
   personId: personId,
+  givenName: givenName,
+  familyName: familyName,
   staffTeamIds: staffTeamIds,
   historicStaffTeamIds: historicStaffTeamIds,
   linkedPlayerIds: linkedPlayerIds,

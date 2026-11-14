@@ -64,25 +64,51 @@ void main() {
       expect(find.byKey(const Key('profile-given-name')), findsNothing);
     });
 
-    testWidgets('a family name of several words stays together', (
-      tester,
-    ) async {
+    testWidgets('the fields come from the membership\'s given and family '
+        'name, not from the display name (decision 84)', (tester) async {
       final user = CurrentUser(
         displayName: 'Ana García López',
         email: 'ana@example.org',
         localeCode: 'es',
         superAdmin: false,
         memberships: [
-          membershipWithRoles({TenantRole.parent}),
+          membershipWithRoles(
+            {TenantRole.parent},
+            givenName: 'Ana María',
+            familyName: 'de la Cruz',
+          ),
         ],
       );
       await _pump(tester, user: user);
       await _scrollTo(tester, 'profile-given-name');
-      expect(_field(tester, 'profile-given-name').controller!.text, 'Ana');
+      expect(
+        _field(tester, 'profile-given-name').controller!.text,
+        'Ana María',
+      );
       expect(
         _field(tester, 'profile-family-name').controller!.text,
-        'García López',
+        'de la Cruz',
       );
+    });
+
+    testWidgets('names the server did not send leave the fields empty, '
+        'the display name is never split', (tester) async {
+      final user = CurrentUser(
+        displayName: 'Ana García López',
+        localeCode: 'es',
+        superAdmin: false,
+        memberships: [
+          membershipWithRoles(
+            {TenantRole.parent},
+            givenName: null,
+            familyName: null,
+          ),
+        ],
+      );
+      await _pump(tester, user: user);
+      await _scrollTo(tester, 'profile-given-name');
+      expect(_field(tester, 'profile-given-name').controller!.text, isEmpty);
+      expect(_field(tester, 'profile-family-name').controller!.text, isEmpty);
     });
   });
 
