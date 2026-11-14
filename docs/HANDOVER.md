@@ -159,6 +159,9 @@ planning folder (`.../Code/Claude/projects/dummy-project2`) is archived and must
   before each check; by hand: `podman machine ssh "sudo date -u -s @$(date +%s)"`.
 
 ## Next candidates without a work package (see FOLLOW-UPS.md for the full list)
+- **Chosen for the next round (owner, 2026-11-14): cloud deployment, first slice**: an OpenTofu module for one cheap
+  cloud VM with k3s, the existing chart installed on it under a test domain. Scope, what stays out and the questions
+  for the interview: FOLLOW-UPS.md, "Infra, CI, e2e". Not started, no brief yet.
 - **Owner decisions first** (Pending 4): former coaches and the roster export, the catalogue for families, the landing
   screenshots.
 - **Users area depth**: e-mail change and a temporary password from the application admin's Users list; `/me` with

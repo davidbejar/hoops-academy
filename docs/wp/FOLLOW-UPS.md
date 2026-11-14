@@ -478,6 +478,23 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
+- **Cloud deployment, first slice: chosen for the next round** (owner, 2026-11-14; no WP number or brief yet, not
+  started). Today only the inside of the cluster is declared (the Helm chart; kind by `deploy/kind/up.sh`); no machine,
+  network, DNS or storage is defined anywhere. Goal of the slice: `tofu apply` gives one cheap cloud VM running k3s, and
+  the existing chart installs on it under a test domain.
+  - In: an OpenTofu module for the outer layer only (server, firewall, DNS record, volume; k3s installed on first
+    boot); a cloud values file for the chart (images from ghcr.io, `global.publicUrl`, gateway hostname); a runbook
+    (apply, install, smoke, destroy); the smoke scripts of `deploy/kind` run against it.
+  - Out, later slices: TLS certificates (cert-manager / Let's Encrypt), real SMTP instead of Mailpit, CloudNativePG
+    backups to object storage, External Secrets against a real store, observability backend, real users.
+  - Not through OpenTofu: the Helm release (the chart and scripts stay the way to install; app secrets stay out of the
+    state).
+  - For the round interview: the provider (proposed: one Hetzner Cloud VM, about 8 GB RAM for the three JVM services,
+    Keycloak, Postgres, Redpanda and Envoy; prices not checked); the test domain and who hosts its DNS; where the
+    OpenTofu state lives (never in git, rule 6; encrypted); whether Envoy Gateway on k3s replaces or sits behind k3s's
+    bundled Traefik; an ADR for the provider and the OpenTofu/Helm split.
+  - Before real academies use a public deployment: minors' health data on the internet brings GDPR obligations that
+    kind does not have.
 - **Tenancy-gate hook, accepted false positives** (WP93, orchestrator ee5f64cc): an unquoted `echo git commit` and a
   heredoc with unbalanced quotes still run the isolation check (unsure cases gate, by choice). The hook that gates a
   session is the one configured at its start.
