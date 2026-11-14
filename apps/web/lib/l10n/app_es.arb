@@ -923,6 +923,7 @@
   "trainingMenuSchedules": "Horarios",
   "trainingMenuAbsences": "Ausencias",
   "trainingMenuAssignments": "Asignaciones",
+  "trainingMenuExercises": "Ejercicios",
   "sessionStatusPlanned": "Prevista",
   "sessionStatusDone": "Realizada",
   "sessionStatusCancelled": "Cancelada",
@@ -1005,6 +1006,8 @@
     }
   },
   "exerciseCatalogueTab": "Ejercicios",
+  "exerciseCatalogueTitle": "Catálogo de ejercicios",
+  "exerciseSearchHint": "Buscar ejercicios",
   "exerciseCatalogueSection": "Catálogo de ejercicios",
   "exercisePlansSection": "En tus planes y plantillas",
   "exerciseScopeAll": "Todos",

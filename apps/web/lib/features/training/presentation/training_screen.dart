@@ -171,6 +171,13 @@ class _TrainingMenu extends ConsumerWidget {
           Icons.assignment_outlined,
           '/training/assignments',
         ),
+      if (!caps.canSeeModule)
+        chip(
+          'menu-exercises',
+          l.trainingMenuExercises,
+          Icons.fitness_center,
+          '/training/exercises',
+        ),
       if (caps.canManageAnyTraining)
         chip(
           'menu-schedules',

@@ -1,3 +1,4 @@
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
@@ -31,11 +32,7 @@ Future<void> _pump(
 );
 
 final _families = {
-  'PARENT': (
-    {TenantRole.parent},
-    const <String>{'p1'},
-    null as String?,
-  ),
+  'PARENT': ({TenantRole.parent}, const <String>{'p1'}, null as String?),
   'PLAYER': ({TenantRole.player}, const <String>{}, 'p1' as String?),
 };
 

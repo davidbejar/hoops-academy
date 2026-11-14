@@ -1757,6 +1757,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get trainingMenuAssignments => 'Asignaciones';
 
   @override
+  String get trainingMenuExercises => 'Ejercicios';
+
+  @override
   String get sessionStatusPlanned => 'Prevista';
 
   @override
@@ -1877,6 +1880,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get exerciseCatalogueTab => 'Ejercicios';
+
+  @override
+  String get exerciseCatalogueTitle => 'Catálogo de ejercicios';
+
+  @override
+  String get exerciseSearchHint => 'Buscar ejercicios';
 
   @override
   String get exerciseCatalogueSection => 'Catálogo de ejercicios';

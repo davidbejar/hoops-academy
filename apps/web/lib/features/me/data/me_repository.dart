@@ -66,6 +66,8 @@ class ApiMeRepository implements MeRepository {
           slug: m.tenant.slug,
           hasLogo: m.tenant.hasLogo,
           personId: m.personId,
+          givenName: m.givenName,
+          familyName: m.familyName,
           staffTeamIds: m.authz.staffTeamIds.toSet(),
           historicStaffTeamIds: m.authz.historicStaffTeamIds.toSet(),
           linkedPlayerIds: m.authz.linkedPlayerIds.toSet(),

@@ -3256,6 +3256,12 @@ abstract class AppLocalizations {
   /// **'Asignaciones'**
   String get trainingMenuAssignments;
 
+  /// No description provided for @trainingMenuExercises.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejercicios'**
+  String get trainingMenuExercises;
+
   /// No description provided for @sessionStatusPlanned.
   ///
   /// In es, this message translates to:
@@ -3471,6 +3477,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Ejercicios'**
   String get exerciseCatalogueTab;
+
+  /// No description provided for @exerciseCatalogueTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Catálogo de ejercicios'**
+  String get exerciseCatalogueTitle;
+
+  /// No description provided for @exerciseSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar ejercicios'**
+  String get exerciseSearchHint;
 
   /// No description provided for @exerciseCatalogueSection.
   ///

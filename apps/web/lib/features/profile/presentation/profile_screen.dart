@@ -47,8 +47,8 @@ class ProfileScreen extends ConsumerWidget {
     final c = HoopsTokens.colorsOf(context);
     // The own name belongs to the person in the active academy; the
     // application admin has none.
-    final ownAcademyId = switch (session) {
-      Ready(:final membership) => membership?.tenantId,
+    final ownMembership = switch (session) {
+      Ready(:final membership) => membership,
       _ => null,
     };
 
@@ -105,10 +105,11 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                 ],
               ),
-            if (user != null && ownAcademyId != null)
+            if (user != null && ownMembership != null)
               ProfileNameSection(
-                tenantId: ownAcademyId,
-                displayName: user.displayName,
+                tenantId: ownMembership.tenantId,
+                givenName: ownMembership.givenName,
+                familyName: ownMembership.familyName,
               ),
             Align(
               alignment: Alignment.centerLeft,

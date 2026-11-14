@@ -570,6 +570,7 @@
   "trainingMenuSchedules": "Schedules",
   "trainingMenuAbsences": "Absences",
   "trainingMenuAssignments": "Assignments",
+  "trainingMenuExercises": "Exercises",
   "sessionStatusPlanned": "Planned",
   "sessionStatusDone": "Done",
   "sessionStatusCancelled": "Cancelled",
@@ -652,6 +653,8 @@
     }
   },
   "exerciseCatalogueTab": "Exercises",
+  "exerciseCatalogueTitle": "Exercise catalogue",
+  "exerciseSearchHint": "Search exercises",
   "exerciseCatalogueSection": "Exercise catalogue",
   "exercisePlansSection": "In your plans and templates",
   "exerciseScopeAll": "All",

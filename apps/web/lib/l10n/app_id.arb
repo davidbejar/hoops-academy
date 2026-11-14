@@ -570,6 +570,7 @@
   "trainingMenuSchedules": "Jadwal",
   "trainingMenuAbsences": "Ketidakhadiran",
   "trainingMenuAssignments": "Tugas",
+  "trainingMenuExercises": "Latihan",
   "sessionStatusPlanned": "Direncanakan",
   "sessionStatusDone": "Selesai",
   "sessionStatusCancelled": "Dibatalkan",
@@ -652,6 +653,8 @@
     }
   },
   "exerciseCatalogueTab": "Latihan",
+  "exerciseCatalogueTitle": "Katalog latihan",
+  "exerciseSearchHint": "Cari latihan",
   "exerciseCatalogueSection": "Katalog latihan",
   "exercisePlansSection": "Di rencana dan templat Anda",
   "exerciseScopeAll": "Semua",

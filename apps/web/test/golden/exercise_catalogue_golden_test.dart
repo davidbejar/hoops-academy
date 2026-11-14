@@ -46,4 +46,19 @@ void main() {
       await expectGolden('exercise_editor_$suffix');
     });
   }
+
+  testWidgets('exercise catalogue, PARENT, read-only, 360x780', (tester) async {
+    await pumpAs(
+      tester,
+      roles: {TenantRole.parent},
+      linkedPlayerIds: {'p1'},
+      core: athleteCore(),
+      athlete: FakeAthlete(
+        exercises: FakeExercisesRepository(exercises: catalogueExercises()),
+      ),
+      size: const Size(360, 780),
+      location: '/training/exercises',
+    );
+    await expectGolden('exercise_catalogue_parent_360x780');
+  });
 }

@@ -54,6 +54,8 @@ import '../features/training/presentation/absences_screen.dart'
     deferred as absences;
 import '../features/training/presentation/assignments_screen.dart'
     deferred as assignments;
+import '../features/training/presentation/exercise_catalogue.dart'
+    deferred as exercises;
 import '../features/training/presentation/plans_screen.dart' deferred as plans;
 import '../features/training/presentation/schedules_screen.dart'
     deferred as schedules;
@@ -182,6 +184,11 @@ final Map<AppDestination, FeatureModule> featureModules = {
         'absences',
         absences.loadLibrary,
         (_) => absences.AbsencesScreen(),
+      ),
+      ModulePage(
+        'exercises',
+        exercises.loadLibrary,
+        (_) => exercises.ExerciseCatalogueScreen(),
       ),
       ModulePage('plans', plans.loadLibrary, (_) => plans.PlanLibraryScreen()),
       ModulePage(

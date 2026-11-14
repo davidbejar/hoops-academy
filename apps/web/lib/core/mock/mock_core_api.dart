@@ -643,10 +643,9 @@ class MockCoreApi {
   MockResult _exportRoster(String teamId) {
     final team = _teams.where((t) => t['id'] == teamId).firstOrNull;
     if (team == null) return _notFound;
+    // Current staff only: a former coach of an ended season gets 403 (core 3.6.0).
     final coachOfTeam =
-        roles.contains('COACH') &&
-        (authz.staffTeamIds.contains(teamId) ||
-            authz.historicStaffTeamIds.contains(teamId));
+        roles.contains('COACH') && authz.staffTeamIds.contains(teamId);
     if (!authz.admin && !coachOfTeam) return _forbidden;
     final header = switch (_lang) {
       'es' => ['Rol', 'Nombre', 'Apellidos', 'Dorsal'],
@@ -1009,6 +1008,15 @@ class MockCoreApi {
   String get selfName =>
       _members.firstWhere((m) => m['personId'] == 'a1')['displayName']!
           as String;
+
+  /// The demo user's own given and family name in this academy (`/me` memberships, core 3.6.0).
+  ({String given, String family}) get selfNames {
+    final me = _members.firstWhere((m) => m['personId'] == 'a1');
+    return (
+      given: me['givenName']! as String,
+      family: me['familyName']! as String,
+    );
+  }
 
   /// `PATCH /api/core/me` with a name (core 3.4.0): the caller's own person gets the new first / last name; the
   /// member list shows it afterwards.

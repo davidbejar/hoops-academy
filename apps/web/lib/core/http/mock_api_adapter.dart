@@ -283,6 +283,8 @@ class MockApiAdapter implements HttpClientAdapter {
       'hasLogo': hasLogo,
     },
     'personId': 'a1',
+    'givenName': _academies[id]!.core.selfNames.given,
+    'familyName': _academies[id]!.core.selfNames.family,
     'roles': roles,
     'authz': {
       'staffTeamIds': _academies[id]!.core.authz.staffTeamIds.toList(),

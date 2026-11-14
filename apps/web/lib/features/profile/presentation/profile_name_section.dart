@@ -14,18 +14,20 @@ const maxPersonNameLength = 80;
 /// The member's own first and last name in the active academy (decision 73,
 /// WP99), for every role: `PATCH /me` with the academy in the body.
 ///
-/// `/me` only carries the display name, so the fields start from it split at
-/// the first space; only the fields the member changed are sent, so a wrong
-/// split can never overwrite the other part.
+/// The fields start from the given and family name `/me` reports for the
+/// academy (core 3.6.0, decision 84); only the fields the member changed are
+/// sent. A server that sends none leaves the fields empty.
 class ProfileNameSection extends ConsumerStatefulWidget {
   const ProfileNameSection({
     super.key,
     required this.tenantId,
-    required this.displayName,
+    required this.givenName,
+    required this.familyName,
   });
 
   final String tenantId;
-  final String displayName;
+  final String? givenName;
+  final String? familyName;
 
   @override
   ConsumerState<ProfileNameSection> createState() => _ProfileNameSectionState();
@@ -42,9 +44,8 @@ class _ProfileNameSectionState extends ConsumerState<ProfileNameSection> {
   @override
   void initState() {
     super.initState();
-    final (given, family) = splitDisplayName(widget.displayName);
-    _initialGiven = given;
-    _initialFamily = family;
+    _initialGiven = widget.givenName ?? '';
+    _initialFamily = widget.familyName ?? '';
     _given = TextEditingController(text: _initialGiven);
     _family = TextEditingController(text: _initialFamily);
   }
@@ -54,10 +55,12 @@ class _ProfileNameSectionState extends ConsumerState<ProfileNameSection> {
     super.didUpdateWidget(old);
     // The name changed elsewhere (a refresh of /me): start from it, unless
     // the member is typing.
-    if (old.displayName != widget.displayName && !_changed) {
-      final (given, family) = splitDisplayName(widget.displayName);
-      _initialGiven = given;
-      _initialFamily = family;
+    final renamed =
+        old.givenName != widget.givenName ||
+        old.familyName != widget.familyName;
+    if (renamed && !_changed) {
+      _initialGiven = widget.givenName ?? '';
+      _initialFamily = widget.familyName ?? '';
       _given.text = _initialGiven;
       _family.text = _initialFamily;
     }
@@ -162,13 +165,4 @@ class _ProfileNameSectionState extends ConsumerState<ProfileNameSection> {
       ),
     );
   }
-}
-
-/// A display name as first word and the rest.
-(String, String) splitDisplayName(String displayName) {
-  final name = displayName.trim();
-  final space = name.indexOf(' ');
-  return space < 0
-      ? (name, '')
-      : (name.substring(0, space), name.substring(space + 1).trim());
 }

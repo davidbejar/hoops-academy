@@ -52,6 +52,41 @@ class ExerciseCatalogue extends ConsumerWidget {
   }
 }
 
+/// The catalogue on a page of its own, read-only for PARENT and PLAYER
+/// (decision 82): the training area's way in for those who have no plan
+/// library. Staff may open it too; the same rights apply as in the library.
+class ExerciseCatalogueScreen extends ConsumerWidget {
+  const ExerciseCatalogueScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    return SubPage(
+      title: l.exerciseCatalogueTitle,
+      parentPath: '/training',
+      child: Column(
+        children: [
+          ContentFrame(
+            child: Padding(
+              padding: const EdgeInsets.only(top: HoopsSpace.md),
+              child: TextField(
+                key: const Key('exercise-search'),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: l.exerciseSearchHint,
+                  isDense: true,
+                ),
+                onChanged: ref.read(exerciseFilterProvider.notifier).search,
+              ),
+            ),
+          ),
+          const Expanded(child: ExerciseCatalogue()),
+        ],
+      ),
+    );
+  }
+}
+
 /// Scope (all / global / the academy's) and, for staff, archived ones too.
 class _Filters extends ConsumerWidget {
   const _Filters();

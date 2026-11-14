@@ -1750,6 +1750,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get trainingMenuAssignments => 'Tugas';
 
   @override
+  String get trainingMenuExercises => 'Latihan';
+
+  @override
   String get sessionStatusPlanned => 'Direncanakan';
 
   @override
@@ -1871,6 +1874,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get exerciseCatalogueTab => 'Latihan';
+
+  @override
+  String get exerciseCatalogueTitle => 'Katalog latihan';
+
+  @override
+  String get exerciseSearchHint => 'Cari latihan';
 
   @override
   String get exerciseCatalogueSection => 'Katalog latihan';

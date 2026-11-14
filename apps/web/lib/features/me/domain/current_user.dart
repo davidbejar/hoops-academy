@@ -10,6 +10,8 @@ class TenantMembership {
     required this.hasLogo,
     required this.roles,
     this.personId,
+    this.givenName,
+    this.familyName,
     this.staffTeamIds = const {},
     this.historicStaffTeamIds = const {},
     this.linkedPlayerIds = const {},
@@ -26,6 +28,10 @@ class TenantMembership {
   /// The caller's person in this academy (null when unknown).
   final String? personId;
 
+  /// The caller's given and family name as this academy stores them (core 3.6.0); null from an older server.
+  final String? givenName;
+  final String? familyName;
+
   /// Teams the caller is staff of (coach / assistant), from `/me.authz`.
   final Set<String> staffTeamIds;
 
@@ -41,6 +47,26 @@ class TenantMembership {
 
   /// IANA zone of the academy, from `/me.authz.timezone` (null: device zone).
   final String? timezone;
+
+  /// The same membership with the caller's name changed.
+  TenantMembership withName({
+    required String givenName,
+    required String familyName,
+  }) => TenantMembership(
+    tenantId: tenantId,
+    tenantName: tenantName,
+    slug: slug,
+    hasLogo: hasLogo,
+    roles: roles,
+    personId: personId,
+    givenName: givenName,
+    familyName: familyName,
+    staffTeamIds: staffTeamIds,
+    historicStaffTeamIds: historicStaffTeamIds,
+    linkedPlayerIds: linkedPlayerIds,
+    ownPlayerId: ownPlayerId,
+    timezone: timezone,
+  );
 }
 
 /// The caller as returned by `GET /api/core/me`, without transport types.

@@ -15,11 +15,10 @@ extension PreferredJerseyRights on Capabilities {
       !_staffWriter && (isLinkedTo(playerId) || isSelf(playerId));
 }
 
-/// The roster export (core 3.5.0): ADMIN and the COACH of the team, also of an ended season (ADR-0042). An
-/// assistant coach, a parent and a player get 403, so the button is not offered.
+/// The roster export (core 3.6.0, decision 83): ADMIN (ended seasons too) and the team's current COACH. A former
+/// coach of an ended season, an assistant coach, a parent and a player get 403, so the button is not offered.
 extension RosterExportRights on Capabilities {
   bool canExportRoster(String teamId) =>
       roles.contains(TenantRole.admin) ||
-      (roles.contains(TenantRole.coach) &&
-          (isStaffOf(teamId) || historicStaffTeamIds.contains(teamId)));
+      (roles.contains(TenantRole.coach) && isStaffOf(teamId));
 }
