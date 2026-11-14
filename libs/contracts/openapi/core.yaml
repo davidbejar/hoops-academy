@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 3.5.0
+  version: 3.6.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -57,6 +57,10 @@ info:
     file `hoops-<academy-slug>-<what>-<yyyyMMdd>.csv`; `Cache-Control: no-store`. More than 10,000 rows: 422
     `EXPORT_TOO_LARGE` (narrow the filter). Every export is recorded in the audit trail (`team.roster_exported`,
     `audit.exported`); the file content is never logged.
+
+    Names in `/me` and the roster export (core 3.6.0, decisions 83 and 84, WP106): each `Membership` carries the
+    caller's `givenName` and `familyName` as that academy stores the person (additive; core always sends them).
+    `exportTeamRoster` is for ADMIN and the team's current COACH only: a former coach of an ended season gets 403.
 
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
@@ -3013,6 +3017,16 @@ components:
       properties:
         tenant: {$ref: '#/components/schemas/TenantSummary'}
         personId: {type: string, format: uuid}
+        givenName:
+          type: string
+          description: |
+            The caller's given name as this academy stores the person (core 3.6.0, decision 84; `PATCH /me` with
+            `tenantId` changes it). Always sent by core; optional in the schema so that a 3.5 response still parses.
+        familyName:
+          type: string
+          description: |
+            The caller's family name as this academy stores the person (core 3.6.0, decision 84). Always sent by core;
+            optional in the schema, as `givenName`.
         roles:
           type: array
           minItems: 1

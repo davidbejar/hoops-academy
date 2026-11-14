@@ -103,18 +103,23 @@ public class MeLookup {
         return memberships.ofSubject(subject);
     }
 
-    /** Runs inside {@code TenantScope.runAs(tenant)}: the caller's membership there, if the tenant is ACTIVE. */
+    /**
+     * Runs inside {@code TenantScope.runAs(tenant)}: the caller's membership there, if the tenant is ACTIVE, with the
+     * own person's name as this academy stores it (decision 84).
+     */
     @Transactional
     public Optional<MeView.Membership> membershipInBoundTenant(String subject) {
         Optional<MemberAuthz> authz = membershipLookup.find(subject).filter(MemberAuthz::tenantActive);
         if (authz.isEmpty()) {
             return Optional.empty();
         }
-        acceptPendingInvitation(subject);
+        Person person = persons.findActiveByLogin(subject).orElseThrow();
+        acceptPendingInvitation(subject, person);
         TenantProfile profile = profiles.findCurrent().orElseThrow();
         MeView.TenantSummary tenant = new MeView.TenantSummary(profile.id(), profile.slug(), profile.name(),
                 profile.status(), profile.defaultLocale(), logos.findEtag().isPresent());
-        return Optional.of(new MeView.Membership(tenant, authz.get().context()));
+        MeView.OwnName name = new MeView.OwnName(person.data().givenName(), person.data().familyName());
+        return Optional.of(new MeView.Membership(tenant, authz.get().context(), name));
     }
 
     /**
@@ -123,15 +128,13 @@ public class MeLookup {
      * means the temporary password has been replaced (Keycloak issues no token before), so nothing is left to expire;
      * the acceptance also starts a background sweep of the others (ADR-0028).
      */
-    private void acceptPendingInvitation(String subject) {
-        persons.findActiveByLogin(subject)
-                .filter(person -> person.invitationStatus() == InvitationStatus.PENDING)
-                .ifPresent(person -> {
-                    persons.update(person.acceptInvitation());
-                    audit.recordAs(person.id(),
-                            AuditEvent.of(AuditAction.MEMBER_INVITATION_ACCEPTED, person.id().value()));
-                    temporaryPasswords.used(subject);
-                    sweeps.request();
-                });
+    private void acceptPendingInvitation(String subject, Person person) {
+        if (person.invitationStatus() != InvitationStatus.PENDING) {
+            return;
+        }
+        persons.update(person.acceptInvitation());
+        audit.recordAs(person.id(), AuditEvent.of(AuditAction.MEMBER_INVITATION_ACCEPTED, person.id().value()));
+        temporaryPasswords.used(subject);
+        sweeps.request();
     }
 }

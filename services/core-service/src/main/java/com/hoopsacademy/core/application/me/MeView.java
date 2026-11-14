@@ -13,7 +13,11 @@ public record MeView(AppUser user, Caller caller, AppLocale locale, List<Members
     public record TenantSummary(TenantId id, String slug, String name, TenantStatus status, AppLocale defaultLocale,
             boolean hasLogo) {}
 
-    public record Membership(TenantSummary tenant, AuthzContext authz) {}
+    /** The caller's person in one academy: what it is, what it may do there, and its name as the academy stores it. */
+    public record Membership(TenantSummary tenant, AuthzContext authz, OwnName name) {}
+
+    /** The caller's given and family name in one academy (decision 84); the rest of the person stays out of /me. */
+    public record OwnName(String givenName, String familyName) {}
 
     public MeView {
         memberships = List.copyOf(memberships);

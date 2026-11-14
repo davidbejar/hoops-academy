@@ -9,7 +9,8 @@ import java.util.UUID;
 public record MeDto(UUID userId, String sub, String email, String displayName, String locale, boolean superAdmin,
         List<MembershipDto> memberships) {
 
-    public record MembershipDto(TenantSummaryDto tenant, UUID personId, List<String> roles, AuthzSummaryDto authz) {}
+    public record MembershipDto(TenantSummaryDto tenant, UUID personId, String givenName, String familyName,
+            List<String> roles, AuthzSummaryDto authz) {}
 
     public record TenantSummaryDto(UUID id, String slug, String name, String status, boolean hasLogo) {}
 
@@ -27,7 +28,8 @@ public record MeDto(UUID userId, String sub, String email, String displayName, S
         return new MembershipDto(
                 new TenantSummaryDto(tenant.id().value(), tenant.slug(), tenant.name(), tenant.status().name(),
                         tenant.hasLogo()),
-                authz.personId(), authz.roles().stream().map(Enum::name).sorted().toList(),
+                authz.personId(), membership.name().givenName(), membership.name().familyName(),
+                authz.roles().stream().map(Enum::name).sorted().toList(),
                 new AuthzSummaryDto(authz.staffTeamIds().stream().sorted().toList(),
                         authz.historicStaffTeamIds().stream().sorted().toList(),
                         authz.linkedPlayerIds().stream().sorted().toList(), authz.ownPlayerId().orElse(null),
