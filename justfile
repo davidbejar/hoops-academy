@@ -132,6 +132,28 @@ kind-down:
 tilt *ARGS="up":
     source scripts/env.sh && tilt {{ARGS}}
 
+# --- WP104: one k3s VM on Alibaba Cloud (Jakarta), OpenTofu + Helm (docs/runbooks/cloud.md, ADR-0050) ---
+
+# Prove infra/tofu without a cloud account: fmt, validate, tests on a mocked provider, trivy config, shellcheck, pins
+tofu-check:
+    infra/tofu/check.sh
+
+# Fetch the k3s kubeconfig of the applied VM into ~/.kube/hoops-cloud.yaml (context hoops-cloud; needs `tofu apply`)
+cloud-kubeconfig:
+    deploy/cloud/kubeconfig.sh
+
+# Operators, Secrets from .env, self-signed TLS and the chart on the cloud VM: just cloud-install <image tag = git sha>
+cloud-install TAG:
+    deploy/cloud/install.sh {{TAG}}
+
+# Dev users from .env in the cloud Keycloak (deploy/kind/seed-users.sh through deploy/cloud/with-cloud.sh)
+cloud-seed-users:
+    deploy/cloud/with-cloud.sh deploy/kind/seed-users.sh
+
+# deploy/kind/smoke.sh against the cloud deployment, e.g. `just cloud-smoke core game athlete`
+cloud-smoke *ARGS:
+    deploy/cloud/with-cloud.sh deploy/kind/smoke.sh {{ARGS}}
+
 # --- WP18: end-to-end journeys (docs/runbooks/e2e.md) ---
 
 # Build + start core/game/athlete on 8081-8083 against the running compose stack (needs `just up`, `just seed-users`)

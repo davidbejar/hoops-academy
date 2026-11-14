@@ -6,38 +6,33 @@ mock_provider "alicloud" {
   mock_data "alicloud_zones" {
     defaults = {
       ids = ["ap-southeast-5a", "ap-southeast-5b"]
-      zones = [
-        {
-          id                          = "ap-southeast-5a"
-          local_name                  = "Jakarta Zone A"
-          available_instance_types    = ["ecs.g7.large"]
-          available_resource_creation = ["VSwitch", "Instance", "Disk"]
-          available_disk_categories   = ["cloud_essd"]
-          multi_zone_ids              = []
-          slb_slave_zone_ids          = []
-        },
-        {
-          id                          = "ap-southeast-5b"
-          local_name                  = "Jakarta Zone B"
-          available_instance_types    = ["ecs.g7.large"]
-          available_resource_creation = ["VSwitch", "Instance", "Disk"]
-          available_disk_categories   = ["cloud_essd"]
-          multi_zone_ids              = []
-          slb_slave_zone_ids          = []
-        },
-      ]
     }
   }
 
+  # Complete objects: OpenTofu requires every attribute of a mocked object.
   mock_data "alicloud_instance_types" {
     defaults = {
       ids = ["ecs.g7.large"]
       instance_types = [
         {
-          id             = "ecs.g7.large"
-          family         = "ecs.g7"
-          cpu_core_count = 2
-          memory_size    = 8
+          availability_zones              = []
+          burstable_instance              = []
+          cpu_core_count                  = 2
+          eni_amount                      = 0
+          eni_ipv6_address_quantity       = 0
+          eni_private_ip_address_quantity = 0
+          eni_quantity                    = 0
+          family                          = "ecs.g7"
+          gpu                             = []
+          id                              = "ecs.g7.large"
+          local_storage                   = []
+          maximum_queue_number_per_eni    = 0
+          memory_size                     = 8
+          nvme_support                    = ""
+          price                           = ""
+          primary_eni_queue_number        = 0
+          secondary_eni_queue_number      = 0
+          total_eni_queue_quantity        = 0
         },
       ]
     }
@@ -46,15 +41,6 @@ mock_provider "alicloud" {
   mock_data "alicloud_images" {
     defaults = {
       ids = ["ubuntu_24_04_x64_20G_alibase_20261016.vhd"]
-      images = [
-        {
-          id           = "ubuntu_24_04_x64_20G_alibase_20261016.vhd"
-          image_id     = "ubuntu_24_04_x64_20G_alibase_20261016.vhd"
-          name         = "ubuntu_24_04_x64_20G_alibase_20261016.vhd"
-          architecture = "x86_64"
-          os_type      = "linux"
-        },
-      ]
     }
   }
 
@@ -281,8 +267,29 @@ run "refuses_an_instance_type_with_less_than_8_gib" {
   override_data {
     target = data.alicloud_instance_types.selected
     values = {
-      ids            = ["ecs.g7.medium"]
-      instance_types = [{ id = "ecs.g7.medium", family = "ecs.g7", cpu_core_count = 1, memory_size = 4 }]
+      ids = ["ecs.g7.medium"]
+      instance_types = [
+        {
+          availability_zones              = []
+          burstable_instance              = []
+          cpu_core_count                  = 1
+          eni_amount                      = 0
+          eni_ipv6_address_quantity       = 0
+          eni_private_ip_address_quantity = 0
+          eni_quantity                    = 0
+          family                          = "ecs.g7"
+          gpu                             = []
+          id                              = "ecs.g7.medium"
+          local_storage                   = []
+          maximum_queue_number_per_eni    = 0
+          memory_size                     = 4
+          nvme_support                    = ""
+          price                           = ""
+          primary_eni_queue_number        = 0
+          secondary_eni_queue_number      = 0
+          total_eni_queue_quantity        = 0
+        },
+      ]
     }
   }
   expect_failures = [data.alicloud_instance_types.selected]

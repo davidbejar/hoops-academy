@@ -10,6 +10,15 @@ values-local.yaml
 *.jks
 *.key
 infra/keycloak/*credentials*
+# OpenTofu (WP104, ADR-0050): state, plans, variable files, the provider cache and crash logs; the lock file is committed
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
 
 # --- java / maven ---
 target/

@@ -1,0 +1,57 @@
+#cloud-config
+# Rendered by infra/tofu (WP104, ADR-0050) into the instance's user data; cloud-init runs it once, on the first boot.
+# Changing this file does not touch a running instance (user_data changes are ignored): `tofu apply -replace` rebuilds it.
+package_update: true
+package_upgrade: true
+ssh_pwauth: false
+write_files:
+  - path: /etc/ssh/sshd_config.d/60-hoops.conf
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin prohibit-password
+      X11Forwarding no
+  # k3s reads this file at start. tls-san: the API certificate is valid for the EIP and the wildcard name, so the
+  # kubeconfig can point at the public address. Traefik off: Envoy Gateway is the only edge (ADR-0031); ServiceLB stays
+  # and binds Envoy's LoadBalancer Service to the node's ports 80 and 443. Secrets are encrypted at rest in the datastore.
+  - path: /etc/rancher/k3s/config.yaml
+    permissions: "0600"
+    content: |
+      write-kubeconfig-mode: "0600"
+      tls-san:
+        - ${public_ip}
+        - ${hostname}
+      node-external-ip: ${public_ip}
+      disable:
+        - traefik
+      secrets-encryption: true
+  - path: /usr/local/sbin/hoops-install-k3s
+    permissions: "0700"
+    content: |
+      #!/bin/sh
+      # Installs the pinned k3s with the config above. The install script (from the release's git tag) and the binary
+      # are checked against SHA-256 sums pinned in infra/tofu/main.tf; nothing unverified runs.
+      set -eu
+      K3S_VERSION='${k3s_version}'
+      INSTALL_SH_SHA256='${install_script_sha256}'
+      K3S_SHA256='${binary_sha256}'
+      tag=$(printf '%s' "$K3S_VERSION" | sed 's/+/%2B/')
+      fetch() { # url file sha256; retries for up to 10 minutes (the EIP is bound shortly after the first boot)
+        i=0
+        until curl -fsSL --connect-timeout 10 -o "$2" "$1"; do
+          i=$((i + 1))
+          [ "$i" -lt 60 ] || { echo "hoops-install-k3s: cannot download $1" >&2; exit 1; }
+          sleep 10
+        done
+        echo "$3  $2" | sha256sum -c -
+      }
+      tmp=$(mktemp -d)
+      fetch "https://raw.githubusercontent.com/k3s-io/k3s/$tag/install.sh" "$tmp/install.sh" "$INSTALL_SH_SHA256"
+      fetch "https://github.com/k3s-io/k3s/releases/download/$tag/k3s" "$tmp/k3s" "$K3S_SHA256"
+      install -m 0755 "$tmp/k3s" /usr/local/bin/k3s
+      INSTALL_K3S_SKIP_DOWNLOAD=true INSTALL_K3S_VERSION="$K3S_VERSION" sh "$tmp/install.sh"
+      rm -rf "$tmp"
+runcmd:
+  - [systemctl, reload, ssh]
+  - [/usr/local/sbin/hoops-install-k3s]

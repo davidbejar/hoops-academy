@@ -18,3 +18,12 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=1024]
       - id: check-merge-conflict
+  # OpenTofu (WP104): formatting of infra/tofu; the full check (validate, tests, scan) is `just tofu-check`
+  - repo: local
+    hooks:
+      - id: tofu-fmt
+        name: tofu fmt -check (infra/tofu)
+        entry: tofu -chdir=infra/tofu fmt -check -recursive -diff
+        language: system
+        files: '^infra/tofu/.*\.(tf|tftest\.hcl|tfvars\.example)$'
+        pass_filenames: false
