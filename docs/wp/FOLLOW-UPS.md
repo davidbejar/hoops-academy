@@ -398,6 +398,19 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 - **Offline end-session** is skipped, not queued (SSO session lives until its 4 h idle timeout) — accepted, ADR-0019.
 
 ### Web app (`apps/web`)
+- **Theme switch: light / dark / system** (owner, 2026-11-14; to do, no WP yet). Today the app only follows the
+  operating system (`MaterialApp` has no `themeMode`), so on a Mac in dark mode nobody sees the light look of the landing
+  screenshots. Wanted: the user chooses the theme where they choose the language (the profile screen;
+  `locale_controller.dart` keeps the language in shared preferences, the same would do for the theme). Open for the
+  interview: whether language and theme stay in the profile or move together to another place (the landing header has
+  a language picker too, and the choice should be reachable before sign-in); whether "system" stays the default.
+- **Demo data in the database that looks like the landing screenshots** (owner, 2026-11-14; to do, no WP yet). Purpose:
+  check the design against a real backend with the screens as pictured. The pictures come from the browser-only mock
+  (`lib/core/mock`: Academia Demo, the injured player Leo Gil, a training week, a live match, platform usage);
+  `just seed-academy` (WP103) only creates logins, one team and ten players. Wanted: a seed through the API, like
+  WP103, that gives the demo users the mock's teams, players, injuries and measurements, training plans and
+  attendance, and a match with events. Open for the interview: extend `seed-academy` or a second academy; which logins
+  ("demo users": the dev users of `seed-users` or the `test*` logins); how a live match is kept "live" on re-seed.
 - **Jersey dialog leftovers** (WP101): after a 409 the holder's name comes from the re-read taken list, not the
   server's Problem text; the new rights live in `roster/application/roster_rights.dart`, not in `Capabilities`.
 - **Possible golden flake** (WP92): the temporary-password golden (360×780 dark) failed once in a full run and passed on
@@ -448,6 +461,14 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
 
 ### Backend
+- **Upgrade to JDK 25** (owner, 2026-11-14; to do, no WP yet). Java 21 is pinned in: `maven.compiler.release` (root
+  `pom.xml`); `scripts/env.sh` (accepts only a JDK whose major version is exactly 21) and `scripts/bootstrap.sh`
+  (`openjdk@21`); `actions/setup-java` in `ci.yml` (4), `e2e.yml`, `mutation.yml` and `codeql.yml`;
+  `deploy/containers/service.Containerfile` (build image `maven:3-eclipse-temurin-21`, runtime
+  `ubi9/openjdk-21-runtime` pinned by digest); the wording in `CLAUDE.md`, `README.md`, `start.sh`, ADR-0003, PLAN and
+  architecture. To check first: that the Quarkus platform in use supports 25, and the tools that read bytecode
+  (JaCoCo, PIT, SpotBugs + find-sec-bugs, ArchUnit, CodeQL). It amends a fixed stack decision, so ADR-0003 gets an
+  amendment.
 - **game on `replica` without its consumer** (WP98): game starts with `GAME_ROSTER_CONSUMER_ENABLED=false` and serves
   a replica that never changes; athlete refuses that combination. Add the guard and give `ReplicaRosterSourceTest` a
   consumer, or keep it documented. The chart never renders that pair (WP100).

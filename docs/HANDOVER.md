@@ -162,6 +162,10 @@ planning folder (`.../Code/Claude/projects/dummy-project2`) is archived and must
 - **Chosen for the next round (owner, 2026-11-14): cloud deployment, first slice**: an OpenTofu module for one cheap
   cloud VM with k3s, the existing chart installed on it under a test domain. Scope, what stays out and the questions
   for the interview: FOLLOW-UPS.md, "Infra, CI, e2e". Not started, no brief yet.
+- **Owner's to-dos of 2026-11-14 (web)**: a light / dark / system theme switch next to the language choice, and demo
+  data in the database that looks like the landing screenshots (a seed through the API). Both in FOLLOW-UPS.md, "Web
+  app". Not started. Also from that day: **upgrade to JDK 25** (FOLLOW-UPS.md, "Backend"; the places that pin 21 are
+  listed there).
 - **Owner decisions first** (Pending 4): former coaches and the roster export, the catalogue for families, the landing
   screenshots.
 - **Users area depth**: e-mail change and a temporary password from the application admin's Users list; `/me` with
