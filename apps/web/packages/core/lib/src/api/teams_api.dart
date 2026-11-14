@@ -35,12 +35,12 @@ class TeamsApi {
   const TeamsApi(this._dio, this._serializers);
 
   /// Assign a player to the team (eligibility-checked)
-  /// Runs the eligibility check; INELIGIBLE → 422 with &#x60;code&#x3D;PLAYER_INELIGIBLE&#x60; and the reasons in &#x60;violations[].code&#x60;. PLAY_UP is allowed within the tenant&#39;s limit. 409 when the player already has an open assignment to this team. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Jersey (core 3.5.0, ADR-0048): a given &#x60;jerseyNumber&#x60; is used as requested (409 &#x60;JERSEY_NUMBER_TAKEN&#x60; when another open assignment of the team has it). Without one, the player&#39;s preferred number is taken when no open assignment of the team has it (&#x60;PREFERRED&#x60;), else the number of the player&#39;s most recent assignment that had a number, when free (&#x60;PREVIOUS&#x60;), else none (&#x60;NONE&#x60;); a number is never taken from another open assignment. &#x60;jerseySource&#x60; in the response says which rule applied. Authz: ADMIN; COACH of this team (a former coach gets the 409). 
+  /// Runs the eligibility check; INELIGIBLE → 422 with &#x60;code&#x3D;PLAYER_INELIGIBLE&#x60; and the reasons in &#x60;violations[].code&#x60;. PLAY_UP is allowed within the tenant&#39;s limit. 409 when the player already has an open assignment to this team. 409 &#x60;SEASON_ENDED&#x60; once the season of the team has ended (ADR-0042). Jersey (core 3.5.0, ADR-0048): a given &#x60;jerseyNumber&#x60; is used as requested (409 &#x60;JERSEY_NUMBER_TAKEN&#x60; when another open assignment of the team has it). Without one, the player&#39;s preferred number is taken when no open assignment of the team has it (&#x60;PREFERRED&#x60;), else the number of the player&#39;s most recent assignment that had a number, when free (&#x60;PREVIOUS&#x60;), else none (&#x60;NONE&#x60;); a number is never taken from another open assignment. &#x60;jerseySource&#x60; in the response says which rule applied. Authz: ADMIN; COACH of this team (a former coach gets the 409).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [assignPlayerRequest] 
+  /// * [teamId]
+  /// * [assignPlayerRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -50,7 +50,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [AssignedTeamPlayer] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<AssignedTeamPlayer>> assignPlayerToTeam({ 
+  Future<Response<AssignedTeamPlayer>> assignPlayerToTeam({
     required String xTenantId,
     required String teamId,
     required AssignPlayerRequest assignPlayerRequest,
@@ -145,8 +145,8 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [playerId] 
+  /// * [teamId]
+  /// * [playerId]
   /// * [asOf] - Evaluation date; defaults to today in the tenant's time zone.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -157,7 +157,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [EligibilityCheck] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<EligibilityCheck>> checkPlayerEligibility({ 
+  Future<Response<EligibilityCheck>> checkPlayerEligibility({
     required String xTenantId,
     required String teamId,
     required String playerId,
@@ -238,7 +238,7 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [createTeamRequest] 
+  /// * [createTeamRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -248,7 +248,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Team] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Team>> createTeam({ 
+  Future<Response<Team>> createTeam({
     required String xTenantId,
     required CreateTeamRequest createTeamRequest,
     CancelToken? cancelToken,
@@ -338,12 +338,12 @@ class TeamsApi {
   }
 
   /// Export the team&#39;s roster with guardians and staff as CSV
-  /// One CSV file (ADR-0048; UTF-8 with BOM, &#x60;,&#x60;, RFC 4180 quoting, CRLF, one header row, the formula guard): one row per player of the team&#39;s open assignments (role, given and family name, birth date, gender, natural age category in the team&#39;s season, eligibility of the assignment and play-up levels, jersey number, joining day, e-mail, phone, then each active guardian&#39;s given name, family name, e-mail and phone in repeated column groups &#x60;Guardian 1 …&#x60;, &#x60;Guardian 2 …&#x60;, as many as the player with the most guardians has, at least one), ordered by family and given name; then the team&#39;s staff as rows of the same columns (role COACH / ASSISTANT_COACH, names, e-mail, phone, &#x60;since&#x60; in the joining column). Header labels and enum labels (role, gender, eligibility) in the language of &#x60;Accept-Language&#x60;. File name &#x60;hoops-&lt;academy-slug&gt;-roster-&lt;team&gt;-&lt;yyyyMMdd&gt;.csv&#x60; (ASCII, the day in the academy&#39;s time zone). More than 10,000 rows: 422 &#x60;EXPORT_TOO_LARGE&#x60;. Every export writes the audit row &#x60;team.roster_exported&#x60; (target the team, metadata &#x60;rows&#x60;; no personal data); the content is never logged. A team of an ended season is history (ADR-0042): its former coach may export it too. Authz: ADMIN; COACH of this team. ASSISTANT_COACH, PARENT and PLAYER 403; non-members 404. 
+  /// One CSV file (ADR-0048; UTF-8 with BOM, &#x60;,&#x60;, RFC 4180 quoting, CRLF, one header row, the formula guard): one row per player of the team&#39;s open assignments (role, given and family name, birth date, gender, natural age category in the team&#39;s season, eligibility of the assignment and play-up levels, jersey number, joining day, e-mail, phone, then each active guardian&#39;s given name, family name, e-mail and phone in repeated column groups &#x60;Guardian 1 …&#x60;, &#x60;Guardian 2 …&#x60;, as many as the player with the most guardians has, at least one), ordered by family and given name; then the team&#39;s staff as rows of the same columns (role COACH / ASSISTANT_COACH, names, e-mail, phone, &#x60;since&#x60; in the joining column). Header labels and enum labels (role, gender, eligibility) in the language of &#x60;Accept-Language&#x60;. File name &#x60;hoops-&lt;academy-slug&gt;-roster-&lt;team&gt;-&lt;yyyyMMdd&gt;.csv&#x60; (ASCII, the day in the academy&#39;s time zone). More than 10,000 rows: 422 &#x60;EXPORT_TOO_LARGE&#x60;. Every export writes the audit row &#x60;team.roster_exported&#x60; (target the team, metadata &#x60;rows&#x60;; no personal data); the content is never logged. The team&#39;s current staff only (decision 83, core 3.6.0): a team of an ended season is history (ADR-0042); its former coach keeps its screens but not the export (403), ADMIN still exports it. Authz: ADMIN; COACH of this team. ASSISTANT_COACH, PARENT and PLAYER 403; non-members 404.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [acceptLanguage] - Language of the export's header and enum labels (RFC 9110 list, e.g. `id, en;q=0.8`): the first of `es`, `en`, `id` in preference order; absent, `*` or unsupported = `en`. Values are not translated. 
+  /// * [teamId]
+  /// * [acceptLanguage] - Language of the export's header and enum labels (RFC 9110 list, e.g. `id, en;q=0.8`): the first of `es`, `en`, `id` in preference order; absent, `*` or unsupported = `en`. Values are not translated.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -353,7 +353,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Uint8List] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Uint8List>> exportTeamRoster({ 
+  Future<Response<Uint8List>> exportTeamRoster({
     required String xTenantId,
     required String teamId,
     String? acceptLanguage,
@@ -427,7 +427,7 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
+  /// * [teamId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -437,7 +437,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Team] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Team>> getTeam({ 
+  Future<Response<Team>> getTeam({
     required String xTenantId,
     required String teamId,
     CancelToken? cancelToken,
@@ -507,11 +507,11 @@ class TeamsApi {
   }
 
   /// The jersey numbers taken on the team
-  /// The numbers of the team&#39;s open assignments, each with its player, ordered by value and then by length (\&quot;0\&quot;, \&quot;00\&quot;, \&quot;7\&quot;, \&quot;07\&quot;, \&quot;8\&quot;); every other number of &#x60;JerseyNumber&#x60; (\&quot;0\&quot;-\&quot;99\&quot; and \&quot;00\&quot;-\&quot;09\&quot;) is free. Feeds the jersey dialog (core 3.5.0, ADR-0048). Authz: any member (as &#x60;listTeamPlayers&#x60;). 
+  /// The numbers of the team&#39;s open assignments, each with its player, ordered by value and then by length (\&quot;0\&quot;, \&quot;00\&quot;, \&quot;7\&quot;, \&quot;07\&quot;, \&quot;8\&quot;); every other number of &#x60;JerseyNumber&#x60; (\&quot;0\&quot;-\&quot;99\&quot; and \&quot;00\&quot;-\&quot;09\&quot;) is free. Feeds the jersey dialog (core 3.5.0, ADR-0048). Authz: any member (as &#x60;listTeamPlayers&#x60;).
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
+  /// * [teamId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -521,7 +521,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<TakenJerseyNumber>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<TakenJerseyNumber>>> listTeamJerseyNumbers({ 
+  Future<Response<BuiltList<TakenJerseyNumber>>> listTeamJerseyNumbers({
     required String xTenantId,
     required String teamId,
     CancelToken? cancelToken,
@@ -595,7 +595,7 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
+  /// * [teamId]
   /// * [includeLeft] - Include assignments that were closed (`leftOn` set).
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -606,7 +606,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<TeamPlayer>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<TeamPlayer>>> listTeamPlayers({ 
+  Future<Response<BuiltList<TeamPlayer>>> listTeamPlayers({
     required String xTenantId,
     required String teamId,
     bool? includeLeft = false,
@@ -686,7 +686,7 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
+  /// * [teamId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -696,7 +696,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BuiltList<TeamStaffMember>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BuiltList<TeamStaffMember>>> listTeamStaff({ 
+  Future<Response<BuiltList<TeamStaffMember>>> listTeamStaff({
     required String xTenantId,
     required String teamId,
     CancelToken? cancelToken,
@@ -766,14 +766,14 @@ class TeamsApi {
   }
 
   /// List teams
-  /// Authz: any member. &#x60;staffedByMe&#x3D;true&#x60; restricts to teams where the caller is team staff of a season that has not ended; with &#x60;includeEnded&#x3D;true&#x60; also the teams of ended seasons the caller was staff of (&#x60;historicStaffTeamIds&#x60;, ADR-0042). Without &#x60;staffedByMe&#x60; every team of every season is listed, as before. 
+  /// Authz: any member. &#x60;staffedByMe&#x3D;true&#x60; restricts to teams where the caller is team staff of a season that has not ended; with &#x60;includeEnded&#x3D;true&#x60; also the teams of ended seasons the caller was staff of (&#x60;historicStaffTeamIds&#x60;, ADR-0042). Without &#x60;staffedByMe&#x60; every team of every season is listed, as before.
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [seasonId] 
-  /// * [ageCategoryId] 
-  /// * [staffedByMe] 
-  /// * [includeEnded] - With `staffedByMe=true`: also list the teams of ended seasons the caller was staff of (read-only history, ADR-0042). No effect otherwise. Default false (today's teams only). 
+  /// * [seasonId]
+  /// * [ageCategoryId]
+  /// * [staffedByMe]
+  /// * [includeEnded] - With `staffedByMe=true`: also list the teams of ended seasons the caller was staff of (read-only history, ADR-0042). No effect otherwise. Default false (today's teams only).
   /// * [page] - 0-based page index.
   /// * [size] - Page size.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
@@ -785,7 +785,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TeamPage] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TeamPage>> listTeams({ 
+  Future<Response<TeamPage>> listTeams({
     required String xTenantId,
     String? seasonId,
     String? ageCategoryId,
@@ -874,9 +874,9 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [personId] 
-  /// * [teamStaffAssignment] 
+  /// * [teamId]
+  /// * [personId]
+  /// * [teamStaffAssignment]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -886,7 +886,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TeamStaffMember] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TeamStaffMember>> putTeamStaffMember({ 
+  Future<Response<TeamStaffMember>> putTeamStaffMember({
     required String xTenantId,
     required String teamId,
     required String personId,
@@ -982,8 +982,8 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [personId] 
+  /// * [teamId]
+  /// * [personId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -993,7 +993,7 @@ class TeamsApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> removeTeamStaffMember({ 
+  Future<Response<void>> removeTeamStaffMember({
     required String xTenantId,
     required String teamId,
     required String personId,
@@ -1040,8 +1040,8 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [playerId] 
+  /// * [teamId]
+  /// * [playerId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1051,7 +1051,7 @@ class TeamsApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> unassignPlayerFromTeam({ 
+  Future<Response<void>> unassignPlayerFromTeam({
     required String xTenantId,
     required String teamId,
     required String playerId,
@@ -1098,8 +1098,8 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [updateTeamRequest] 
+  /// * [teamId]
+  /// * [updateTeamRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1109,7 +1109,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [Team] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<Team>> updateTeam({ 
+  Future<Response<Team>> updateTeam({
     required String xTenantId,
     required String teamId,
     required UpdateTeamRequest updateTeamRequest,
@@ -1204,9 +1204,9 @@ class TeamsApi {
   ///
   /// Parameters:
   /// * [xTenantId] - Tenant (academy) the request acts on; chosen in the tenant switcher fed by `GET /api/core/me`.
-  /// * [teamId] 
-  /// * [playerId] 
-  /// * [updateTeamPlayerRequest] 
+  /// * [teamId]
+  /// * [playerId]
+  /// * [updateTeamPlayerRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1216,7 +1216,7 @@ class TeamsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [TeamPlayer] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<TeamPlayer>> updateTeamPlayer({ 
+  Future<Response<TeamPlayer>> updateTeamPlayer({
     required String xTenantId,
     required String teamId,
     required String playerId,

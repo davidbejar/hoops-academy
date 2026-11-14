@@ -12,6 +12,10 @@ class _$Membership extends Membership {
   @override
   final String personId;
   @override
+  final String? givenName;
+  @override
+  final String? familyName;
+  @override
   final BuiltSet<TenantRole> roles;
   @override
   final AuthzSummary authz;
@@ -22,6 +26,8 @@ class _$Membership extends Membership {
   _$Membership._(
       {required this.tenant,
       required this.personId,
+      this.givenName,
+      this.familyName,
       required this.roles,
       required this.authz})
       : super._();
@@ -38,6 +44,8 @@ class _$Membership extends Membership {
     return other is Membership &&
         tenant == other.tenant &&
         personId == other.personId &&
+        givenName == other.givenName &&
+        familyName == other.familyName &&
         roles == other.roles &&
         authz == other.authz;
   }
@@ -47,6 +55,8 @@ class _$Membership extends Membership {
     var _$hash = 0;
     _$hash = $jc(_$hash, tenant.hashCode);
     _$hash = $jc(_$hash, personId.hashCode);
+    _$hash = $jc(_$hash, givenName.hashCode);
+    _$hash = $jc(_$hash, familyName.hashCode);
     _$hash = $jc(_$hash, roles.hashCode);
     _$hash = $jc(_$hash, authz.hashCode);
     _$hash = $jf(_$hash);
@@ -58,6 +68,8 @@ class _$Membership extends Membership {
     return (newBuiltValueToStringHelper(r'Membership')
           ..add('tenant', tenant)
           ..add('personId', personId)
+          ..add('givenName', givenName)
+          ..add('familyName', familyName)
           ..add('roles', roles)
           ..add('authz', authz))
         .toString();
@@ -74,6 +86,14 @@ class MembershipBuilder implements Builder<Membership, MembershipBuilder> {
   String? _personId;
   String? get personId => _$this._personId;
   set personId(String? personId) => _$this._personId = personId;
+
+  String? _givenName;
+  String? get givenName => _$this._givenName;
+  set givenName(String? givenName) => _$this._givenName = givenName;
+
+  String? _familyName;
+  String? get familyName => _$this._familyName;
+  set familyName(String? familyName) => _$this._familyName = familyName;
 
   SetBuilder<TenantRole>? _roles;
   SetBuilder<TenantRole> get roles =>
@@ -93,6 +113,8 @@ class MembershipBuilder implements Builder<Membership, MembershipBuilder> {
     if ($v != null) {
       _tenant = $v.tenant.toBuilder();
       _personId = $v.personId;
+      _givenName = $v.givenName;
+      _familyName = $v.familyName;
       _roles = $v.roles.toBuilder();
       _authz = $v.authz.toBuilder();
       _$v = null;
@@ -121,6 +143,8 @@ class MembershipBuilder implements Builder<Membership, MembershipBuilder> {
             tenant: tenant.build(),
             personId: BuiltValueNullFieldError.checkNotNull(
                 personId, r'Membership', 'personId'),
+            givenName: givenName,
+            familyName: familyName,
             roles: roles.build(),
             authz: authz.build(),
           );

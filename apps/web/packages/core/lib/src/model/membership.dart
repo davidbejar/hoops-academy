@@ -15,10 +15,12 @@ part 'membership.g.dart';
 /// Membership
 ///
 /// Properties:
-/// * [tenant] 
-/// * [personId] 
-/// * [roles] 
-/// * [authz] 
+/// * [tenant]
+/// * [personId]
+/// * [givenName] - The caller's given name as this academy stores the person (core 3.6.0, decision 84; `PATCH /me` with `tenantId` changes it). Always sent by core; optional in the schema so that a 3.5 response still parses.
+/// * [familyName] - The caller's family name as this academy stores the person (core 3.6.0, decision 84). Always sent by core; optional in the schema, as `givenName`.
+/// * [roles]
+/// * [authz]
 @BuiltValue()
 abstract class Membership implements Built<Membership, MembershipBuilder> {
   @BuiltValueField(wireName: r'tenant')
@@ -26,6 +28,14 @@ abstract class Membership implements Built<Membership, MembershipBuilder> {
 
   @BuiltValueField(wireName: r'personId')
   String get personId;
+
+  /// The caller's given name as this academy stores the person (core 3.6.0, decision 84; `PATCH /me` with `tenantId` changes it). Always sent by core; optional in the schema so that a 3.5 response still parses.
+  @BuiltValueField(wireName: r'givenName')
+  String? get givenName;
+
+  /// The caller's family name as this academy stores the person (core 3.6.0, decision 84). Always sent by core; optional in the schema, as `givenName`.
+  @BuiltValueField(wireName: r'familyName')
+  String? get familyName;
 
   @BuiltValueField(wireName: r'roles')
   BuiltSet<TenantRole> get roles;
@@ -66,6 +76,20 @@ class _$MembershipSerializer implements PrimitiveSerializer<Membership> {
       object.personId,
       specifiedType: const FullType(String),
     );
+    if (object.givenName != null) {
+      yield r'givenName';
+      yield serializers.serialize(
+        object.givenName,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.familyName != null) {
+      yield r'familyName';
+      yield serializers.serialize(
+        object.familyName,
+        specifiedType: const FullType(String),
+      );
+    }
     yield r'roles';
     yield serializers.serialize(
       object.roles,
@@ -113,6 +137,22 @@ class _$MembershipSerializer implements PrimitiveSerializer<Membership> {
           ) as String;
           result.personId = valueDes;
           break;
+        case r'givenName':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.givenName = valueDes;
+          break;
+        case r'familyName':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.familyName = valueDes;
+          break;
         case r'roles':
           final valueDes = serializers.deserialize(
             value,
@@ -155,5 +195,3 @@ class _$MembershipSerializer implements PrimitiveSerializer<Membership> {
     return result.build();
   }
 }
-
-
