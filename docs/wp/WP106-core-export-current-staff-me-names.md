@@ -52,3 +52,41 @@ name" form no longer splits the display name at the first space.
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- **Built** (a red test commit before each change):
+  - **Roster export, current staff only** (decision 83): `ExportTeamRoster` allows ADMIN (any team, ended seasons
+    included) or a COACH with `isStaffOf(team)`; `wasStaffOf` no longer grants it. A former coach of an ended season
+    gets **403** (`AccessDeniedException`, so a `fine_grained` security event, ADR-0043) and no audit row; a coach of
+    another team 403; ASSISTANT_COACH, PARENT, PLAYER 403 (tenant role); a non-member 404. `TeamRosterExportTest`:
+    the role matrix now takes the relation (current staff / former staff / none, 13 rows),
+    `theFormerCoachOfAnEndedSeasonNoLongerExportsItsRosterButTheAdminDoes` (real ended season, security event fields),
+    `aNonMemberGetsNotFoundNeverForbidden`. The authz-matrix row and an ADR-0048 amendment (2026-11-14) say the same;
+    `ExportsContractTest` checks the operation's text.
+  - **`/me` names** (decision 84), **contract core 3.6.0** (minor): `Membership.givenName` and `Membership.familyName`
+    (string, never null) as that academy stores the caller's person, on GET and PATCH `/me`. Optional in the schema
+    (not in `required`) so that a 3.5-shaped response, e.g. the web's demo mock, still parses; core always sends
+    them. `MeView.OwnName`; `MeLookup` reads the person once per academy (also for the invitation acceptance).
+    Tests: `MeNamesContractTest` (new), `MeResourceTest.eachMembershipCarriesTheGivenAndFamilyNameAsThatAcademyStoresThem`,
+    `MeOwnNameTest` (the PATCH response carries the new name in the renamed academy only).
+  - **Dart**: `scripts/gen-api.sh core`; `hoops_core_api` 3.6.0, `Membership.givenName` / `familyName` are `String?`;
+    `pubspec.lock` only the version bump. Commits ran the git pre-commit hooks (gitleaks, whitespace fixers), which
+    trimmed trailing whitespace in the touched generated files (`teams_api.dart`, `membership.dart`, `README.md`):
+    the next regeneration shows whitespace-only diffs there; discard them.
+- **Verified** (fresh, 2026-11-14): `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` BUILD SUCCESS, 3,388
+  tests, 0 failures, 0 errors, 26 skipped, coverage gates met; `flutter analyze` no issues; `flutter test` (just
+  web-test) 1,436 passed; `just mutation core-service` 925/926 killed (99 %, baseline 99; the changed classes are
+  application code outside the PIT scope).
+- **For WP108**:
+  - Export: show the button only for ADMIN or a COACH whose `staffTeamIds` holds the team; a former coach
+    (`historicStaffTeamIds`) now gets **403** Problem (`application/problem+json`, detail "Only ADMIN or the team's
+    current coach may export its roster"). The web mock still allows it: `apps/web/lib/core/mock/mock_core_api.dart`
+    `_exportRoster` must drop `authz.historicStaffTeamIds.contains(teamId)`.
+  - `/me`: each `memberships[]` item now has `"givenName": "Ana María", "familyName": "de la Cruz"` next to
+    `personId` (`api.Membership.givenName` / `.familyName`, nullable in Dart); the "Your name" form reads them instead
+    of splitting `displayName`, falling back only when null. `lib/core/mock/mock_platform_api.dart` should add both to
+    its `/me` memberships.
+  - e2e journey and the WP107 seed: nothing they rely on changed (the journey reads `memberships.tenant.id`, roles
+    and authz; no former-coach export).
+- **Decisions/ADRs**: ADR-0048 amended (decision 83); no new ADR. Names optional in the schema (additive) is recorded
+  in the contract's field descriptions.
+- **Open points**: `docs/domain/audit-events.md` still reads "ADMIN or the team's COACH" for `team.roster_exported`
+  (true; left as is, outside this brief's docs scope). No TODOs added.
