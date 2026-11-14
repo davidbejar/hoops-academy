@@ -1,6 +1,7 @@
 # ADR-0048: Exports: one CSV spec for server and browser, the roster and the audit trails built by core; preferred jersey numbers
 
-- Status: Accepted (WP96, core 3.5.0)
+- Status: Accepted (WP96, core 3.5.0); amended 2026-11-14 (decision 83, WP106, core 3.6.0: the roster export is for
+  the team's current staff only)
 - Date: 2026-11-10
 - Records: decisions 67, 68 and 69 of 2026-11-10 (`docs/wp/FOLLOW-UPS.md`, sixth round); decision 70 for the jersey
   numbers of the same contract version
@@ -59,7 +60,7 @@ the format is specified once, here.
   column; the player columns stay empty. One download keeps the button simple and the spec's "one header row" holds; a
   spreadsheet filter on the role column separates the blocks. Authz: ADMIN, or a COACH who is staff of the team, or
   was staff of a team of an ended season (its history, ADR-0042); ASSISTANT_COACH, PARENT and PLAYER 403; non-members
-  404.
+  404. *Amended 2026-11-14 (decision 83, WP106): a former coach no longer exports; see the amendment below.*
 - **Audit trails** (`exportAuditEvents`, ADMIN; `exportPlatformAuditEvents`, super_admin): the rows the JSON list
   returns for the same `from`, `to`, `action` (and `tenantId`), with the same names and the same actor masking
   (ADR-0029: on the academy path a PLATFORM actor has no login, person or name). Columns: date, time and zone, action
@@ -120,3 +121,18 @@ the format is specified once, here.
 - A spreadsheet that opens a jersey "07" may show 7 unless the column is imported as text; the CSV keeps the digits.
 - A COACH with both staff roles on different teams is treated like the rest of the roster rules (the staff entry's
   role is not checked, only the tenant role and the staff row).
+
+## Amendment 2026-11-14 (decision 83, WP106): the roster export is for the team's current staff only
+
+The roster file carries the guardians' e-mail addresses and phone numbers, which no JSON read gives a coach. Since
+core 3.6.0 `exportTeamRoster` is allowed to **ADMIN** (any team, a team of an ended season included) and to a **COACH
+who is current staff of the team** (`staffTeamIds`, the team's season not ended). A former coach of an ended season
+(`historicStaffTeamIds`, ADR-0042) keeps every read-only screen of that history but gets **403** from the export, as a
+coach of another team does; the refusal is a fine-grained authorization denial and so a security event (ADR-0043,
+`security.kind` = `fine_grained`) and writes no audit row. ASSISTANT_COACH, PARENT and PLAYER stay 403 (tenant role),
+non-members 404. The authz matrix row and `TeamRosterExportTest.roleMatrix` say the same. The web hides the button
+for a team the caller is not current staff of (WP108).
+
+Rejected: keeping the history export (the contact data of families a coach no longer works with outlive the reason
+to hold them), and answering 404 to the former coach (they are a member who reads the team; 404 is for non-members,
+rule 3 of `CLAUDE.md`).

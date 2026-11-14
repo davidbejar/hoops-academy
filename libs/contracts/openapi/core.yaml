@@ -1730,7 +1730,8 @@ paths:
         language of `Accept-Language`. File name `hoops-<academy-slug>-roster-<team>-<yyyyMMdd>.csv` (ASCII, the day
         in the academy's time zone). More than 10,000 rows: 422 `EXPORT_TOO_LARGE`. Every export writes the audit row
         `team.roster_exported` (target the team, metadata `rows`; no personal data); the content is never logged.
-        A team of an ended season is history (ADR-0042): its former coach may export it too.
+        The team's current staff only (decision 83, core 3.6.0): a team of an ended season is history (ADR-0042); its
+        former coach keeps its screens but not the export (403), ADMIN still exports it.
         Authz: ADMIN; COACH of this team. ASSISTANT_COACH, PARENT and PLAYER 403; non-members 404.
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'

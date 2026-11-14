@@ -16,7 +16,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import java.util.UUID;
 
-/** The team roster with guardians and staff as a CSV file (ADMIN and the team's COACH; ADR-0048). Never logged. */
+/** The team roster with guardians and staff as a CSV file (ADMIN and the team's current COACH; ADR-0048). Never logged. */
 @Path("/api/core/teams/{teamId}/roster:export")
 public class TeamRosterExportResource {
 

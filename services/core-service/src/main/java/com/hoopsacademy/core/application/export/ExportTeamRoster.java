@@ -42,7 +42,8 @@ import java.util.stream.Stream;
 /**
  * GET /api/core/teams/{id}/roster:export (decisions 67 and 68, ADR-0048): the team's open assignments with each
  * player's person data, natural category in the team's season and active guardians, then the team's staff. ADMIN, or
- * a COACH who is (or, for an ended season, was) staff of the team; anyone else 403. Every export is audited as
+ * a COACH who is current staff of the team (decision 83: a former coach of an ended season keeps its screens, ADR-0042,
+ * but not its guardians' contact data); any other member 403. Every export is audited as
  * {@code team.roster_exported} with the row count only.
  */
 @ApplicationScoped
@@ -85,9 +86,8 @@ public class ExportTeamRoster {
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
     public RosterSheet export(TeamId teamId) {
         Team team = teams.find(teamId).orElseThrow(() -> new NotFoundException("Team not found"));
-        boolean coach = authz.hasAnyRole(TenantRole.COACH)
-                && (authz.isStaffOf(teamId.value()) || authz.wasStaffOf(teamId.value()));
-        authz.require(authz.isAdmin() || coach, "Only ADMIN or the team's coach may export its roster");
+        boolean currentCoach = authz.hasAnyRole(TenantRole.COACH) && authz.isStaffOf(teamId.value());
+        authz.require(authz.isAdmin() || currentCoach, "Only ADMIN or the team's current coach may export its roster");
         List<TeamPlayer> open = assignments.ofTeam(teamId, false);
         List<TeamStaffMember> members = staff.ofTeam(teamId);
         ExportLimit.requireWithin((long) open.size() + members.size());
