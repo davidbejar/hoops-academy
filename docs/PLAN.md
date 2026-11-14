@@ -51,7 +51,7 @@ preserved.
 |---|---|
 | Repo location | **`~/code/hoops-academy`** (outside OneDrive). The OneDrive folder keeps spec + plan + a README pointer |
 | Repo shape | Single monorepo |
-| Backend | Java 21 LTS, **Quarkus 3.x** (latest, pinned in WP0), Maven multi-module, hexagonal layering per service |
+| Backend | Java 25 LTS (Java 21 until 2026-11-14, ADR-0003 amendment), **Quarkus 3.x** (latest, pinned in WP0), Maven multi-module, hexagonal layering per service |
 | Services (v1) | **3 services**: `core-service`, `game-service`, `athlete-service` (see §1.2) + nginx/ingress, Keycloak, Postgres |
 | Frontend | **Flutter Web (Dart)** mobile-first PWA; no Node anywhere in the toolchain |
 | Auth | **Keycloak** = authentication only (OIDC/PKCE). Tenant roles live in our DB, not in tokens |
@@ -80,7 +80,7 @@ flutter/dart, podman-compose, gitleaks, node (intentionally absent).
 ├── CLAUDE.md                      # conventions, commands, DoD — agents read this first
 ├── .claude/skills/                # clean-code, owasp-security, tdd + project-local skills (§4)
 ├── docs/{adr,domain,wp,runbooks}/ # ADRs, domain rules & authz matrix, WP briefs/handovers
-├── pom.xml                        # parent: Quarkus BOM, Java 21, JaCoCo/PIT/ArchUnit/dependency-check
+├── pom.xml                        # parent: Quarkus BOM, Java 25, JaCoCo/PIT/ArchUnit/dependency-check
 ├── libs/
 │   ├── common-quarkus/            # tenant context, RLS interceptor, authz, Problem+JSON, test fixtures (test-jar)
 │   └── contracts/                 # OpenAPI yaml ×3, JSON Schemas for match events, Dart client gen config

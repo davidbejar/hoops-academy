@@ -122,9 +122,9 @@ With `--set externalSecrets.enabled=true` the render also holds `envoy-gateway-s
 
 ## Images
 `scripts/build-images.sh [--from-host] [--kind-load] [--push] [core-service|game-service|athlete-service|web]`
-- Services: `deploy/containers/service.Containerfile` (build-arg `SERVICE`), stage 1 `maven:3-eclipse-temurin-21`
+- Services: `deploy/containers/service.Containerfile` (build-arg `SERVICE`), stage 1 `maven:3-eclipse-temurin-25`
   with `-pl services/$SERVICE -am package -DskipTests` (Maven cache mount `hoops-m2`), stage 2
-  `ubi9/openjdk-21-runtime`, uid 185, fast-jar in `/deployments`, `-XX:MaxRAMPercentage=75`.
+  `ubi9/openjdk-25-runtime`, uid 185, fast-jar in `/deployments`, `-XX:MaxRAMPercentage=75`.
   `--from-host` uses the `app-host` stage instead (copies `services/$SERVICE/target/quarkus-app`).
 - Web: `deploy/containers/web.Containerfile`; default builds the bundle on the host (`flutter build web`, native
   arm64, seconds) and copies it into `nginx-unprivileged:1.30-alpine` (uid 101, :8080, `/healthz`).

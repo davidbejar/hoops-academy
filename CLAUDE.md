@@ -6,7 +6,7 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
 `docs/conformance.md`, open items `docs/wp/FOLLOW-UPS.md`. The old OneDrive planning folder is archived: never write there.
 
 ## Stack (fixed decisions — see docs/adr)
-- Java 21, Quarkus 3.x, Maven multi-module, hexagonal layering per service. Three services: `core-service`,
+- Java 25, Quarkus 3.x, Maven multi-module, hexagonal layering per service. Three services: `core-service`,
   `game-service`, `athlete-service`. Shared code in `libs/common-quarkus`; API contracts in `libs/contracts`.
 - PostgreSQL 17, one database, schema per service, `tenant_id` + Row-Level Security (RLS). App roles are
   NON-OWNER roles (`core_app`, `game_app`, `athlete_app`); Flyway runs as `*_migrator`.
@@ -17,7 +17,7 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
 
 ## Commands
 ```
-source scripts/env.sh        # JDK 21 + Podman socket for Testcontainers (always do this first)
+source scripts/env.sh        # JDK 25 + Podman socket for Testcontainers (always do this first)
 just doctor                  # toolchain check
 just up / just down          # local stack: Postgres, Keycloak, nginx, MailHog
 just test                    # ./mvnw verify (unit + integration + arch + RLS suites + coverage gates)
