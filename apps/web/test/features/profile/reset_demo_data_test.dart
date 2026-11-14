@@ -4,6 +4,7 @@ import 'package:hoops_app/core/config/app_config.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
+import '../../support/avatar_menu.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 
@@ -40,7 +41,7 @@ Future<Harness> _pump(
     ],
   );
   await h.pump(tester);
-  await tester.tap(find.byKey(const Key('profile-button')));
+  await openProfile(tester);
   await tester.pumpAndSettle();
   return h;
 }

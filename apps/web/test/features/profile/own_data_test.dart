@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/app/router.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
+import '../../support/avatar_menu.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 
@@ -15,7 +16,7 @@ Future<Harness> _pump(WidgetTester tester, Set<TenantRole> roles) async {
     prefs: {'hoops.selectedTenantId': member.tenantId},
   );
   await h.pump(tester);
-  await tester.tap(find.byKey(const Key('profile-button')));
+  await openProfile(tester);
   await tester.pumpAndSettle();
   return h;
 }

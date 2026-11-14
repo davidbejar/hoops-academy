@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
+import '../../support/avatar_menu.dart';
 import '../../support/core_fixtures.dart' show member;
 import '../../support/fake_repos.dart' show FakeCore, FakeMembersRepository;
 import '../../support/fixtures.dart';
@@ -23,7 +24,7 @@ Future<Harness> _pump(
     prefs: {'hoops.selectedTenantId': member.tenantId},
   );
   await h.pump(tester);
-  await tester.tap(find.byKey(const Key('profile-button')));
+  await openProfile(tester);
   await tester.pumpAndSettle();
   return h;
 }
@@ -58,7 +59,7 @@ void main() {
     ) async {
       final h = Harness(me: FakeMeRepository(userWith([], superAdmin: true)));
       await h.pump(tester);
-      await tester.tap(find.byKey(const Key('profile-button')));
+      await openProfile(tester);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('profile-given-name')), findsNothing);
     });

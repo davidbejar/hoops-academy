@@ -496,6 +496,35 @@ void main() {
     });
   });
 
+  group('header theme switch', () {
+    testWidgets('picks light, dark or system, remembers it and applies it', (
+      tester,
+    ) async {
+      final h = await _anonymous(tester, size: _phone);
+      expect(find.byKey(const Key('landing-header-theme')), findsOneWidget);
+
+      Brightness shown() =>
+          Theme.of(tester.element(find.byType(LandingScreen))).brightness;
+
+      await _tap(tester, 'landing-header-theme');
+      await tester.tap(find.byKey(const Key('landing-header-theme-dark')));
+      await tester.pumpAndSettle();
+      expect(shown(), Brightness.dark);
+      expect(h.prefs.getString('hoops.themeMode'), 'dark');
+
+      await _tap(tester, 'landing-header-theme');
+      await tester.tap(find.byKey(const Key('landing-header-theme-light')));
+      await tester.pumpAndSettle();
+      expect(shown(), Brightness.light);
+      expect(h.prefs.getString('hoops.themeMode'), 'light');
+
+      await _tap(tester, 'landing-header-theme');
+      await tester.tap(find.byKey(const Key('landing-header-theme-system')));
+      await tester.pumpAndSettle();
+      expect(h.prefs.getString('hoops.themeMode'), 'system');
+    });
+  });
+
   group('footer', () {
     testWidgets('the language switch re-renders the page and remembers it', (
       tester,

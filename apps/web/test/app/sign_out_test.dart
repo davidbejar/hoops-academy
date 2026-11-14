@@ -8,6 +8,7 @@ import 'package:hoops_app/core/session/session_providers.dart';
 import 'package:hoops_app/core/tenancy/tenant_selection.dart';
 import 'package:hoops_app/features/match/domain/match_event.dart';
 
+import '../support/avatar_menu.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
 
@@ -67,7 +68,7 @@ Future<Harness> _pump(
 }
 
 Future<void> _tapSignOut(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('profile-button')));
+  await openProfile(tester);
   await tester.pumpAndSettle();
   // The profile page is a lazy list: scroll until the button is built.
   await tester.scrollUntilVisible(

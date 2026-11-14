@@ -293,7 +293,9 @@ void main() {
       },
     );
 
-    testWidgets('language picker and sign out stay available', (tester) async {
+    testWidgets('sign out stays; the language moved to the avatar menu', (
+      tester,
+    ) async {
       await pumpAs(
         tester,
         roles: {TenantRole.player},
@@ -302,8 +304,9 @@ void main() {
         location: '/profile',
         size: const Size(360, 1600),
       );
-      for (final k in ['lang-es', 'lang-en', 'lang-id', 'sign-out-button']) {
-        expect(find.byKey(Key(k)), findsOneWidget, reason: k);
+      expect(find.byKey(const Key('sign-out-button')), findsOneWidget);
+      for (final k in ['lang-es', 'lang-en', 'lang-id']) {
+        expect(find.byKey(Key(k)), findsNothing, reason: k);
       }
     });
   });

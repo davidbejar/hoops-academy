@@ -4,6 +4,7 @@ import 'package:hoops_app/core/config/app_config.dart';
 import 'package:hoops_app/core/navigation/external_link.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
+import '../../support/avatar_menu.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 
@@ -32,7 +33,7 @@ Future<List<Uri>> _pump(
     ],
   );
   await h.pump(tester);
-  await tester.tap(find.byKey(const Key('profile-button')));
+  await openProfile(tester);
   await tester.pumpAndSettle();
   return opened;
 }

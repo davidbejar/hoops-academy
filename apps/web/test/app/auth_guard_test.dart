@@ -4,6 +4,7 @@ import 'package:hoops_app/core/session/session.dart';
 import 'package:hoops_app/core/session/session_providers.dart';
 import 'package:hoops_app/features/landing/presentation/landing_screen.dart';
 
+import '../support/avatar_menu.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
 
@@ -56,7 +57,7 @@ void main() {
     final h = Harness(me: FakeMeRepository(userWith([tenantNorth])));
     await h.pump(tester);
 
-    await tester.tap(find.byKey(const Key('profile-button')));
+    await openProfile(tester);
     await tester.pumpAndSettle();
     // The profile page is a lazy list: scroll until the button is built.
     await tester.scrollUntilVisible(
