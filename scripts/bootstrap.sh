@@ -5,8 +5,8 @@ set -euo pipefail
 need_brew() { command -v brew >/dev/null || { echo "Homebrew is required: https://brew.sh"; exit 1; }; }
 need_brew
 
-FORMULAE=(openjdk@21 maven kind helm tilt podman podman-compose gitleaks pre-commit openapi-generator trivy just opentofu)
-CASKS=(flutter)   # openjdk@21 formula needs no sudo (temurin cask does)
+FORMULAE=(openjdk@25 maven kind helm tilt podman podman-compose gitleaks pre-commit openapi-generator trivy just opentofu)
+CASKS=(flutter)   # openjdk@25 formula needs no sudo (temurin cask does)
 
 echo "==> Installing formulae: ${FORMULAE[*]}"
 brew install "${FORMULAE[@]}"

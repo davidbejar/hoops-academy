@@ -62,7 +62,7 @@ gh release download codeql-bundle-v2.27.4 -R github/codeql-action -p 'codeql-bun
 # a copy of the tree, so the traced build does not touch your target/ directories
 rsync -a --exclude target --exclude .git --exclude .dart_tool ./ /tmp/cq-src/
 podman run --rm -m 6500m -v /tmp/cq/codeql:/codeql:ro -v /tmp/cq-src:/src -v "$HOME/.m2:/root/.m2" -w /src \
-  docker.io/library/maven:3-eclipse-temurin-21 bash -c '
+  docker.io/library/maven:3-eclipse-temurin-25 bash -c '
   mkdir -p /src/target &&
   /codeql/codeql database create /src/target/cq-db --language=java --ram 4500 --threads 1 \
     --command "./mvnw -B -ntp -Dmaven.test.skip=true -Djacoco.skip=true -Dspotbugs.skip=true compile" &&

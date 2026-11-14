@@ -1,26 +1,28 @@
 #!/usr/bin/env bash
 # Source this file: `source scripts/env.sh`
-# Sets JAVA_HOME to JDK 21 and points Docker-API clients (Testcontainers, Quarkus Dev Services, Tilt) at Podman.
+# Sets JAVA_HOME to JDK 25 and points Docker-API clients (Testcontainers, Quarkus Dev Services, Tilt) at Podman.
 
-# Pick a JDK whose major version is exactly 21 (java_home -v 21 would also accept newer JDKs). An already-set JAVA_HOME
-# (CI: actions/setup-java) or the java on PATH wins when it is a 21.
-_is_jdk21() { [ -n "$1" ] && [ -x "$1/bin/java" ] && "$1/bin/java" -version 2>&1 | grep -q '"21\.'; }
-_pick_jdk21() {
+# Pick a JDK whose major version is exactly _JDK_MAJOR (java_home -v 25 would also accept newer JDKs). An already-set
+# JAVA_HOME (CI: actions/setup-java) or the java on PATH wins when it has that major. Keep it equal to
+# maven.compiler.release in pom.xml (scripts/tests/test_jdk_pins.py).
+_JDK_MAJOR=25
+_is_jdk() { [ -n "$1" ] && [ -x "$1/bin/java" ] && "$1/bin/java" -version 2>&1 | grep -q "\"${_JDK_MAJOR}\\."; }
+_pick_jdk() {
   local c
-  if _is_jdk21 "${JAVA_HOME:-}"; then echo "$JAVA_HOME"; return 0; fi
+  if _is_jdk "${JAVA_HOME:-}"; then echo "$JAVA_HOME"; return 0; fi
   c=$(command -v java 2>/dev/null) && c=$(cd "$(dirname "$(readlink -f "$c" 2>/dev/null || echo "$c")")/.." && pwd) \
-    && _is_jdk21 "$c" && { echo "$c"; return 0; }
-  for c in /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
-           /usr/local/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
-           "$(/usr/libexec/java_home -v 21 2>/dev/null || true)"; do
-    if _is_jdk21 "$c"; then echo "$c"; return 0; fi
+    && _is_jdk "$c" && { echo "$c"; return 0; }
+  for c in "/opt/homebrew/opt/openjdk@${_JDK_MAJOR}/libexec/openjdk.jdk/Contents/Home" \
+           "/usr/local/opt/openjdk@${_JDK_MAJOR}/libexec/openjdk.jdk/Contents/Home" \
+           "$(/usr/libexec/java_home -v "${_JDK_MAJOR}" 2>/dev/null || true)"; do
+    if _is_jdk "$c"; then echo "$c"; return 0; fi
   done
   return 1
 }
-if JH=$(_pick_jdk21); then
+if JH=$(_pick_jdk); then
   export JAVA_HOME="$JH"
 else
-  echo "warn: JDK 21 not found (run scripts/bootstrap.sh)" >&2
+  echo "warn: JDK ${_JDK_MAJOR} not found (run scripts/bootstrap.sh)" >&2
 fi
 [ -n "${JAVA_HOME:-}" ] && export PATH="$JAVA_HOME/bin:$PATH"
 

@@ -22,15 +22,15 @@ available in Spanish, English and Indonesian.
 Every member edits their own first and last name in Profile; a login in several academies switches between them.
 
 ## Stack
-Java 21, Quarkus 3 (three services: `core`, `game`, `athlete`), PostgreSQL 17 with row-level security (one database, one
+Java 25, Quarkus 3 (three services: `core`, `game`, `athlete`), PostgreSQL 17 with row-level security (one database, one
 schema per service), Keycloak (authentication only), Flutter Web PWA (Riverpod, Drift offline store), OpenAPI contracts
 with generated Dart clients, Podman, kind + Helm + Tilt, CloudNativePG. No Node anywhere.
 
 ## Quick start
 Prerequisites are installed by the bootstrap script (macOS with Homebrew; Podman machine running).
 ```bash
-scripts/bootstrap.sh                 # toolchain (JDK 21, Maven wrapper, Podman, Flutter, just, ...)
-source scripts/env.sh && just doctor # JDK 21 + Podman socket for Testcontainers; toolchain check
+scripts/bootstrap.sh                 # toolchain (JDK 25, Maven wrapper, Podman, Flutter, just, ...)
+source scripts/env.sh && just doctor # JDK 25 + Podman socket for Testcontainers; toolchain check
 cp .env.example .env                 # replace every change-me-* value (git-ignored)
 just up                              # Postgres, Keycloak, MailHog, Redpanda, nginx on http://localhost:8080
 just seed-users                      # e-mail logins <name>@hoops-academy.com: superadmin, admin1, coach1, assistant1, parent1, player1 (DEV_USER_PASSWORD)

@@ -12,10 +12,10 @@
 #   host            - stage `app-host` copies services/$SERVICE/target/quarkus-app built on the host by
 #                     `./mvnw package` (fast inner loop for Tilt; use service-prebuilt.containerignore).
 ARG APP_SOURCE=maven
-ARG MAVEN_IMAGE=docker.io/library/maven:3-eclipse-temurin-21
-# Pinned by digest (trivy DS-0001). Digest = multi-arch index of tag 1.24 (ubi9/openjdk-21-runtime, resolved 2026-11-14);
-# bump tag and digest together.
-ARG RUNTIME_IMAGE=registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24@sha256:9a074c2ff90be60b12521ffd5e531acafd25fe36f1c177180cbe1176dfb36c84
+ARG MAVEN_IMAGE=docker.io/library/maven:3-eclipse-temurin-25
+# Pinned by digest (trivy DS-0001). Digest = multi-arch index (amd64, arm64, ppc64le, s390x) of tag 1.24
+# (ubi9/openjdk-25-runtime, resolved 2026-11-14, = 1.24-3.1794341158); bump tag and digest together.
+ARG RUNTIME_IMAGE=registry.access.redhat.com/ubi9/openjdk-25-runtime:1.24@sha256:7f2eaba33484d04e5331135e8d3e621c5a4740b6b03bc99d25e4d4dc043f6b8c
 
 # ---------- stage 1a: build with Maven ---------------------------------------------------------------------------
 FROM ${MAVEN_IMAGE} AS app-maven
@@ -44,7 +44,7 @@ FROM app-${APP_SOURCE} AS app
 FROM scratch AS sbom
 COPY --from=app-maven /out/sbom/ /
 
-# ---------- stage 2: runtime (non-root UBI9 OpenJDK 21) ----------------------------------------------------------
+# ---------- stage 2: runtime (non-root UBI9 OpenJDK 25) ----------------------------------------------------------
 FROM ${RUNTIME_IMAGE}
 ARG SERVICE
 ARG SERVICE_PORT=8080

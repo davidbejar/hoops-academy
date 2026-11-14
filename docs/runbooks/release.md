@@ -73,7 +73,7 @@ kubectl -n hoops create secret docker-registry ghcr-pull --docker-server=ghcr.io
   --docker-username=<owner> --docker-password=<PAT with read:packages>
 helm upgrade --install hoops deploy/helm/hoops -n hoops --set 'global.imagePullSecrets[0].name=ghcr-pull' ...
 ```
-The `ubi9/openjdk-21-runtime` tag and digest in `deploy/containers/service.Containerfile` are bumped by the weekly
+The `ubi9/openjdk-25-runtime` tag and digest in `deploy/containers/service.Containerfile` are bumped by the weekly
 `bump-pins` PR (section 6).
 
 ### SBOM
@@ -266,7 +266,7 @@ Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned 
 
 | Pin | File | Resolved from |
 |---|---|---|
-| UBI openjdk-21-runtime tag + digest | `deploy/containers/service.Containerfile` | registry (skopeo) |
+| UBI openjdk-25-runtime tag + digest | `deploy/containers/service.Containerfile` | registry (skopeo) |
 | nginx-unprivileged tag (even minors) | `deploy/containers/web.Containerfile` | registry |
 | redis, redpanda (tag + digest), mailpit | `deploy/helm/hoops/values.yaml` | registry |
 | Trivy tag | `ci.yml`, `images.yml`, `scripts/sbom.sh` | Docker Hub |

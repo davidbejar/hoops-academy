@@ -26,7 +26,7 @@ jobs:
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
       - name: Build and verify
         run: ./mvnw -B -ntp verify
@@ -138,7 +138,7 @@ jobs:
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
       # The NVD mirror (~400k records, hours to fetch from scratch) is cached across runs. restore/save are split so the
       # data is saved only when the scan succeeded, so a failed or cancelled run cannot poison the cache (WP64).
@@ -177,7 +177,7 @@ jobs:
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
       # Trivy resolves the Maven dependency tree from the local repository; without it it fetches every POM from Maven
       # Central, which rate-limits the runner (429). Populate ~/.m2 first and mount it read-only into the scanner.
@@ -199,7 +199,7 @@ jobs:
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
       - name: Placeholder .env (CI only; values are the documented change-me placeholders)
         run: cp .env.example .env

@@ -21,10 +21,12 @@ isolation-check:
 db-role-check:
     scripts/hooks/db-role-check.sh
 
-# Offline tests: the tenancy hook's command matcher, the doctor's Podman drop-in step (stubbed) and the pin scripts
+# Offline tests: the tenancy hook's command matcher, the doctor's Podman drop-in step (stubbed), env.sh's JDK choice
+# (stubbed) and the pin scripts
 test-hooks:
     scripts/hooks/tenancy-gate.test.sh
     scripts/tests/doctor-podman-dropin.test.sh
+    scripts/tests/env-jdk.test.sh
     python3 -I -m unittest discover -s scripts/tests
 
 # Fast compile + unit tests only

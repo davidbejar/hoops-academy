@@ -7,7 +7,7 @@ says so in its header ("Supersedes", "Records"), and the earlier one carries an 
 |---|---|
 | [0001](0001-repo-outside-onedrive.md) | Source repository lives outside cloud-synced folders |
 | [0002](0002-monorepo.md) | Single monorepo for services, frontend and infrastructure |
-| [0003](0003-quarkus.md) | Quarkus 3.x on Java 21 for backend services |
+| [0003](0003-quarkus.md) | Quarkus 3.x on Java 21 for backend services (amended 2026-11-14: Java 25, decision 81, WP109) |
 | [0004](0004-flutter-web-pwa.md) | Flutter Web as the mobile-first PWA without a Node toolchain |
 | [0005](0005-keycloak-authentication-only.md) | Keycloak for authentication; tenant roles owned by core-service |
 | [0006](0006-rls-multitenancy.md) | Shared schema multitenancy with Postgres Row-Level Security |

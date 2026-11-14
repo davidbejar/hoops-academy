@@ -37,7 +37,7 @@ ensure_podman_dropin() {
 
 main() {
 echo "Toolchain:"
-check "JDK 21"            "test -n \"\${JAVA_HOME:-}\" && \"\$JAVA_HOME/bin/java\" -version 2>&1 | grep -E '\"21\.' "
+check "JDK 25"            "test -n \"\${JAVA_HOME:-}\" && \"\$JAVA_HOME/bin/java\" -version 2>&1 | grep -E '\"25\.' "
 check "maven"             "mvn -v | head -1"
 check "podman"            "podman --version"
 check "podman machine"    "podman machine inspect --format '{{.State}} rootful={{.Rootful}} cpus={{.Resources.CPUs}} mem={{.Resources.Memory}}MiB' | grep running"
