@@ -13,9 +13,9 @@
 #                     `./mvnw package` (fast inner loop for Tilt; use service-prebuilt.containerignore).
 ARG APP_SOURCE=maven
 ARG MAVEN_IMAGE=docker.io/library/maven:3-eclipse-temurin-21
-# Pinned by digest (trivy DS-0001). Digest = multi-arch index of tag 1.24 (ubi9/openjdk-21-runtime, resolved 2026-11-05);
+# Pinned by digest (trivy DS-0001). Digest = multi-arch index of tag 1.24 (ubi9/openjdk-21-runtime, resolved 2026-11-14);
 # bump tag and digest together.
-ARG RUNTIME_IMAGE=registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24@sha256:cfa544effa28c5c57197a4c9d460812e70efc0965e6f518e1c2e787ff3cb9335
+ARG RUNTIME_IMAGE=registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24@sha256:9a074c2ff90be60b12521ffd5e531acafd25fe36f1c177180cbe1176dfb36c84
 
 # ---------- stage 1a: build with Maven ---------------------------------------------------------------------------
 FROM ${MAVEN_IMAGE} AS app-maven
@@ -62,6 +62,10 @@ COPY --from=app --chown=185:0 /out/quarkus-app/lib/ /deployments/lib/
 COPY --from=app --chown=185:0 /out/quarkus-app/*.jar /deployments/
 COPY --from=app --chown=185:0 /out/quarkus-app/app/ /deployments/app/
 COPY --from=app --chown=185:0 /out/quarkus-app/quarkus/ /deployments/quarkus/
+# OS fixes published after the pinned base image was built (2026-11-14: 27 fixable HIGH in the newest 1.24 digest,
+# 14 left after this step: krb5-libs, whose fix is not in the UBI repositories yet). The digest pin stays the base.
+USER root
+RUN microdnf -y update && microdnf clean all
 USER 185
 EXPOSE ${SERVICE_PORT}
 ENTRYPOINT ["/opt/jboss/container/java/run/run-java.sh"]
