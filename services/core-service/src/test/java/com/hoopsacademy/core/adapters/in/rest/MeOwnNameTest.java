@@ -47,7 +47,10 @@ class MeOwnNameTest {
         UUID elsewhere = CoreDb.person(other, login, "Old", "Name", null, BORN, "FEMALE", role);
 
         rename("{\"givenName\": \"Ada\", \"familyName\": \"Lovelace\", \"tenantId\": \"" + academy + "\"}")
-                .statusCode(200).body("userId", equalTo(login.toString()));
+                .statusCode(200).body("userId", equalTo(login.toString()))
+                .body("memberships.find { it.tenant.id == '" + academy + "' }.givenName", equalTo("Ada"))
+                .body("memberships.find { it.tenant.id == '" + academy + "' }.familyName", equalTo("Lovelace"))
+                .body("memberships.find { it.tenant.id == '" + other + "' }.givenName", equalTo("Old"));
 
         assertThat(name(academy, mine)).isEqualTo("Ada Lovelace");
         assertThat(name(other, elsewhere)).as("the other academy keeps its own record").isEqualTo("Old Name");

@@ -71,6 +71,23 @@ class MeResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "me-names")
+    void eachMembershipCarriesTheGivenAndFamilyNameAsThatAcademyStoresThem() {
+        String a = tenant("ACTIVE");
+        String b = tenant("ACTIVE");
+        UUID login = CoreDb.login("me-names");
+        CoreDb.person(a, login, "Ana María", "de la Cruz", null, null, null, TenantRole.COACH);
+        CoreDb.person(b, login, "Ana", "Cruz", null, null, null, TenantRole.PARENT);
+
+        given().filter(Contract.CORE).get(ME).then().statusCode(200)
+                .body("memberships", hasSize(2))
+                .body("memberships.find { it.tenant.id == '" + a + "' }.givenName", equalTo("Ana María"))
+                .body("memberships.find { it.tenant.id == '" + a + "' }.familyName", equalTo("de la Cruz"))
+                .body("memberships.find { it.tenant.id == '" + b + "' }.givenName", equalTo("Ana"))
+                .body("memberships.find { it.tenant.id == '" + b + "' }.familyName", equalTo("Cruz"));
+    }
+
+    @Test
     @TestSecurity(user = "me-coach")
     void reportsTheTeamsTheCallerIsStaffOf() {
         String t = tenant("ACTIVE");
