@@ -1,0 +1,11 @@
+# Render test of values-cloud.yaml (WP104): what deploy/cloud/install.sh sets from the OpenTofu outputs, with the mocked
+# address of infra/tofu/tests (203.0.113.10, TEST-NET-3) and a fixed 40-hex image tag.
+global:
+  publicUrl: https://203-0-113-10.sslip.io
+  imageTag: 0123456789abcdef0123456789abcdef01234567
+keycloak:
+  publicUrl: https://203-0-113-10.sslip.io
+gateway:
+  hostname: 203-0-113-10.sslip.io
+web:
+  image: {tag: 0123456789abcdef0123456789abcdef01234567}

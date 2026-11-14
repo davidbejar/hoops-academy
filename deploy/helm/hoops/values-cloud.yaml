@@ -1,0 +1,68 @@
+# One k3s VM on Alibaba Cloud, Jakarta (WP104, ADR-0050; infra/tofu, deploy/cloud/install.sh). The address-dependent
+# values below are placeholders: install.sh sets them from the OpenTofu outputs (<host> = <a-b-c-d>.sslip.io):
+#   --set global.publicUrl=https://<host> --set keycloak.publicUrl=https://<host> --set gateway.hostname=<host>
+#   --set global.imageTag=<git sha> --set web.image.tag=<git sha>        (images.yml pushes one tag per main commit)
+# What differs from kind: images from ghcr.io (no kind load); HTTPS with a self-signed certificate and the issuer on the
+# https URL (the realm's sslRequired=external refuses plain HTTP from public addresses, and the browser's Web Crypto and
+# service worker need a secure context); no HSTS (it would lock browsers out of a self-signed host); Envoy's Service a
+# LoadBalancer that k3s's ServiceLB binds to the node's ports 80/443 (no NodePort mapping); k3s's local-path storage
+# class with larger volumes; environment `cloud`. Same as kind: Secrets from .env through deploy/kind/secrets.sh (no ESO),
+# Reloader, Redpanda in developer mode, Mailpit (no real SMTP yet), the in-chart rate limit Redis, the collector with an
+# in-memory Jaeger (port-forward only). The node has 8 GiB: requests and limits stay at the kind sizes.
+global:
+  publicUrl: https://hoops.invalid
+  imageTag: ""                  # set by install.sh; without it the services fall back to `dev` and web to an empty tag,
+                                # which ghcr.io does not have: the pods fail to pull, they never run a wrong image
+  events: {enabled: true}       # = events.enabled below
+  reloader: {enabled: true}     # Reloader from install.sh
+  observability: {enabled: true, tracesSampleRatio: "1.0", environment: cloud}
+gateway:
+  gatewayClass: {create: true}  # Envoy Gateway from install.sh; nothing else provides the class on k3s
+  hostname: hoops.invalid
+  tls:
+    enabled: true
+    certificateRefs: [{name: hoops-gateway-tls}]   # self-signed, created by install.sh (TLS slice: cert-manager)
+    hsts: ""
+  clientIPDetection:
+    numTrustedHops: 0           # no load balancer in front: ServiceLB forwards at layer 4
+  envoyProxy:
+    enabled: true
+    serviceName: hoops-gateway
+    serviceType: LoadBalancer
+    resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 256Mi}}
+events:
+  enabled: true
+  redpanda:
+    memory: 512M
+    developerMode: true         # one small shared node: Redpanda's production checks (memory per core, fsync) do not fit
+    resources: {requests: {cpu: 50m, memory: 512Mi}, limits: {memory: 768Mi}}
+    storage: {size: 2Gi, storageClassName: local-path}
+observability:
+  collector:
+    debugVerbosity: basic
+  jaeger: {enabled: true}
+rateLimit:
+  redis: {enabled: true}
+keycloak:
+  publicUrl: https://hoops.invalid
+  resources:
+    requests: {cpu: 100m, memory: 512Mi}
+    limits: {memory: 1Gi}
+core:
+  image: {repository: ghcr.io/davidbejar/hoops-academy/core-service, tag: ""}
+  resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+game:
+  image: {repository: ghcr.io/davidbejar/hoops-academy/game-service, tag: ""}
+  resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+athlete:
+  image: {repository: ghcr.io/davidbejar/hoops-academy/athlete-service, tag: ""}
+  resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+web:
+  image: {repository: ghcr.io/davidbejar/hoops-academy/web, tag: ""}
+databases:
+  hoopsDb:
+    storage: {size: 5Gi, storageClass: local-path}
+  keycloakDb:
+    storage: {size: 1Gi, storageClass: local-path}
+mailpit:
+  enabled: true

@@ -115,6 +115,19 @@ jobs:
       - name: helm package (no symlinks in the charts)
         run: helm package deploy/helm/hoops -d "$RUNNER_TEMP"
 
+  # OpenTofu module of the cloud VM (WP104, ADR-0050). No cloud credential exists in this repository's CI: init downloads
+  # the provider per the lock file, `tofu test` only plans against a mocked provider, nothing is applied.
+  tofu-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version_file: infra/tofu/.opentofu-version
+          tofu_wrapper: false
+      # fmt, init (lock file read-only), validate, tofu test, trivy config (container), shellcheck, cloud/kind pins
+      - run: infra/tofu/check.sh
+
   # OWASP dependency-check: fails on any unsuppressed CVSS >= 7 (failBuildOnCVSS in the root pom; suppressions only
   # with justification + expiry in .dependency-check-suppressions.xml). NVD API key: repository secret NVD_API_KEY
   # (without it the first NVD download takes hours and is throttled).

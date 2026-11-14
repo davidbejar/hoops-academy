@@ -37,6 +37,7 @@ render service-defaults   svc "$CHART/charts/hoops-service" -n hoops
 render service-all        svc "$CHART/charts/hoops-service" -n hoops -f deploy/helm/tests/values/service-all-features.yaml
 render umbrella-tls       hoops "$CHART" -n hoops -f deploy/helm/tests/values/umbrella-tls.yaml
 render umbrella-eso       hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" -f deploy/helm/tests/values/umbrella-eso.yaml
+render umbrella-cloud     hoops "$CHART" -n hoops -f "$CHART/values-cloud.yaml" -f deploy/helm/tests/values/umbrella-cloud.yaml
 
 echo "== snapshots"
 for f in "$WORK"/*.yaml; do
@@ -591,6 +592,56 @@ echo "$bcfg" | grep -q 'exporters: \[debug, otlp_http/backend\]' && [ "$(echo "$
   && echo "$bd" | grep -q 'secretKeyRef: {name: otel-backend, key: token}' && echo "$bd" | grep -q 'secret.reloader.stakater.com/auto: "true"' \
   && doc otel-collector NetworkPolicy "$WORK/extra/backend.yaml" | grep -q 'port: 443' \
   && ok "backend: extra exporter in both pipelines, its token from a Secret (Reloader rolls it), egress rule added" || bad "collector backend wiring"
+
+echo "== cloud: one k3s VM on Alibaba Cloud (WP104, ADR-0050; umbrella-cloud)"
+# values-cloud.yaml plus what deploy/cloud/install.sh sets from the OpenTofu outputs (tests/values/umbrella-cloud.yaml:
+# the mocked EIP 203.0.113.10 of infra/tofu/tests, a fixed image tag).
+C="$WORK/umbrella-cloud.yaml"; CH=203-0-113-10.sslip.io; CT=0123456789abcdef0123456789abcdef01234567
+if quiet_helm lint --strict "$CHART" -f "$CHART/values-cloud.yaml" >"$WORK/lint-cloud.txt" 2>&1 \
+    && quiet_helm lint --strict "$CHART" -f "$CHART/values-cloud.yaml" -f deploy/helm/tests/values/umbrella-cloud.yaml >>"$WORK/lint-cloud.txt" 2>&1; then
+  ok "helm lint --strict with values-cloud.yaml (alone and with the install values)"
+else bad "helm lint values-cloud.yaml"; cat "$WORK/lint-cloud.txt"; fi
+objects() { awk 'BEGIN{RS="\n---\n"} {k=""; n=""; if (match($0, /\nkind: [A-Za-z]+\n/)) k=substr($0, RSTART+7, RLENGTH-8)
+  if (match($0, /\nmetadata:\n  name: [^\n]+/)) n=substr($0, RSTART+18, RLENGTH-18); if (k != "") print k "/" n}' "$1" | sort; }
+diff <(objects "$R") <(objects "$C") >"$WORK/cloud-objects.diff" \
+  && ok "same objects as umbrella-kind ($(objects "$C" | wc -l | tr -d ' ')): the kind policy assertions above cover the cloud workloads too" \
+  || { bad "umbrella-cloud renders other objects than umbrella-kind"; cat "$WORK/cloud-objects.diff"; }
+for img in core-service game-service athlete-service web; do
+  grep -q "image: \"ghcr.io/davidbejar/hoops-academy/$img:$CT\"" "$C" || bad "image $img not from ghcr.io with tag $CT"
+done
+! grep -q 'image: "localhost/' "$C" && ! grep -q 'image: "[^"]*:dev"' "$C" \
+  && ok "images core, game, athlete, web from ghcr.io/davidbejar/hoops-academy at the commit tag; no localhost/ image, no :dev" \
+  || bad "a localhost/ or :dev image in the cloud render"
+g=$(doc hoops Gateway "$C")
+echo "$g" | grep -q "name: http, protocol: HTTP, port: 80, hostname: \"$CH\"" \
+  && echo "$g" | grep -q "name: https, protocol: HTTPS, port: 443, hostname: \"$CH\", tls: {mode: Terminate, certificateRefs: \[{name: hoops-gateway-tls}\]}" \
+  && ok "Gateway: listeners :80 and :443 for $CH, TLS from Secret hoops-gateway-tls (install.sh, self-signed)" || bad "cloud Gateway listeners"
+! grep -q Strict-Transport-Security "$C" && ok "no HSTS (a self-signed host would lock browsers out)" || bad "HSTS in the cloud render"
+e=$(doc hoops EnvoyProxy "$C")
+echo "$e" | grep -q 'type: LoadBalancer' && ! echo "$e" | grep -q 'nodePort' && echo "$e" | grep -q 'name: hoops-gateway' \
+  && ok "Envoy Service hoops-gateway is a LoadBalancer (k3s ServiceLB binds it to the node's 80/443), no fixed NodePort" || bad "cloud EnvoyProxy"
+! doc hoops-http ClientTrafficPolicy "$C" | grep -q numTrustedHops && ok "client IP from the connection (no proxy in front, no trusted X-Forwarded-For hop)" \
+  || bad "cloud trusts X-Forwarded-For"
+doc keycloak Deployment "$C" | grep -A1 -- '- name: KC_HOSTNAME$' | grep -q "value: \"https://$CH/auth\"" \
+  && [ "$(grep -c "HOOPS_CORS_ORIGINS: \"https://$CH\"" "$C")" = 3 ] && doc core-service-env ConfigMap "$C" | grep -qx "  HOOPS_PUBLIC_URL: \"https://$CH\"" \
+  && ! grep -q 'localhost:8090' "$C" \
+  && ok "issuer https://$CH/auth/realms/academy, CORS and mail links on the https URL, nothing left on localhost:8090" || bad "cloud public URL"
+[ "$(doc hoops-db Cluster "$C" | grep -c 'storageClass: local-path')" = 1 ] && [ "$(doc keycloak-db Cluster "$C" | grep -c 'storageClass: local-path')" = 1 ] \
+  && doc redpanda StatefulSet "$C" | grep -q 'storageClassName: local-path' \
+  && ok "volumes on k3s's local-path storage class (hoops-db, keycloak-db, redpanda)" || bad "cloud storage class"
+! grep -q '^kind: Secret' "$C" && ! grep -q '^kind: ExternalSecret' "$C" \
+  && ok "no Secret, no ExternalSecret (Secrets from .env through deploy/kind/secrets.sh, ADR-0012)" || bad "cloud render holds Secrets"
+[ "$(grep -c 'deployment.environment.name=cloud' "$C")" = 3 ] && [ "$(grep -c 'secret.reloader.stakater.com/auto' "$C")" -ge 6 ] \
+  && ok "observability environment cloud; Reloader annotations on (install.sh installs Reloader)" || bad "cloud observability/reloader"
+V="$CHART/values-cloud.yaml"
+! grep -v '^ *#' "$V" | grep -Eq '[0-9]{1,3}(\.[0-9]{1,3}){3}|[0-9]{1,3}(-[0-9]{1,3}){3}\.(sslip|nip)\.io' \
+  && [ "$(grep -c 'hoops.invalid' "$V")" = 3 ] \
+  && ok "values-cloud.yaml holds no address: publicUrl, keycloak.publicUrl and the hostname are .invalid placeholders" || bad "address in values-cloud.yaml"
+for s in 'global.publicUrl="$url"' 'keycloak.publicUrl="$url"' 'gateway.hostname="$host"' 'global.imageTag="$TAG"' 'web.image.tag="$TAG"'; do
+  grep -qF -- "--set $s" deploy/cloud/install.sh || bad "deploy/cloud/install.sh does not set $s"
+done
+grep -qF -- '-f deploy/helm/hoops/values-cloud.yaml' deploy/cloud/install.sh \
+  && ok "deploy/cloud/install.sh installs with values-cloud.yaml and sets every placeholder from the OpenTofu outputs" || bad "install.sh values"
 
 echo "== gitleaks (rendered manifests)"
 if command -v gitleaks >/dev/null; then

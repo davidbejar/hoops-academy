@@ -6,6 +6,7 @@ misconfigurations:
       - "**/helm/tests/snapshots/umbrella-kind.yaml"
       - "**/helm/tests/snapshots/umbrella-tls.yaml"
       - "**/helm/tests/snapshots/umbrella-eso.yaml"
+      - "**/helm/tests/snapshots/umbrella-cloud.yaml"
     statement: >-
       Keycloak only: `start` (non-optimized) re-augments into /opt/keycloak/lib at boot, so its root FS must be
       writable (WP16). Every other container is read-only, enforced by deploy/helm/tests/run.sh
