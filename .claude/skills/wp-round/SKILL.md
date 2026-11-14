@@ -81,6 +81,9 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
   (WP55 pinned one; the orchestrator's spot-check caught it).
 - Hook under load: with five or more parallel builds the isolation check's Keycloak container can miss its 120 s
   wait and the commit is blocked; retry when a build finishes instead of bypassing.
+- `git commit --no-verify` (Mechanics 3) is refused by the session's permission check since the seventh round:
+  agents commit with plain `git commit` and explicit paths after `gitleaks protect --staged`; the pre-commit hooks
+  run and may trim trailing whitespace in generated Dart files (re-add, commit again). Say so in the agent prompt.
 - Commit trailers: a brief that fixes the `Co-Authored-By` line gets that line from every model (WP38, WP41 noted
   it); drop the line from the brief to have agents name the model that did the work.
 
