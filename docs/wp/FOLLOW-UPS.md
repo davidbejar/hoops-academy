@@ -330,7 +330,7 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP104 | Infra: OpenTofu module for one k3s VM on Alibaba Cloud (Jakarta), cloud values for the chart; code only | Opus · high | Running |
+| 1 | WP104 | Infra: OpenTofu module for one k3s VM on Alibaba Cloud (Jakarta), cloud values for the chart; code only | Opus · high | Done (ADR-0050; `just tofu-check` 25 tests on a mocked provider; nothing applied) |
 | 1 | WP105 | Web: light / dark / system theme; language and theme in the avatar menu | Sonnet · high | Done (web 1454 tests; avatar menu; 4 new + 6 re-recorded goldens) |
 | 1 | WP106 | Core: roster export for current staff only; given and family name in `/me` | Opus · high | Running |
 | 1 | WP107 | Seed: demo data in the Test Academy that looks like the landing screenshots | Sonnet · medium | Done (`just seed-academy` demo phase; idempotent; drift check equal) |
