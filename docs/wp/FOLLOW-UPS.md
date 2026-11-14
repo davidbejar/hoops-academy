@@ -319,6 +319,54 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
     in `.env`, where the script also records the usernames (`TEST_ACADEMY_USERS`). Sonnet · medium instead of the
     Haiku · max first written (accounts, passwords and tenant data need judgement).
 
+## Plan (2026-11-14, seventh round)
+Decided in the interview of 2026-11-14 (decisions 75–85 below). Same mechanics (`wp-round` skill; at most four
+building agents per wave; model and effort in every brief). Nobody uses kind this round: the cloud slice is code
+only. Core carries one WP (WP106); its web part (WP108) waits for the contract and for WP105, which rebuilds the
+place where the profile's settings live. WP107 is script-only and uses the compose stack and the services on
+8081–8083. WP109 works on the branch `jdk-25`, which is pushed as a draft pull request and **not merged**; only its
+handover lands on `main`. Before the round, on `main`: Quarkus platform 3.40.1.2 (c8ae9580) and Flutter 3.50.0 with
+the `material_ui` / `cupertino_ui` migration (51f2dd0c).
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP104 | Infra: OpenTofu module for one k3s VM on Alibaba Cloud (Jakarta), cloud values for the chart; code only | Opus · high | Running |
+| 1 | WP105 | Web: light / dark / system theme; language and theme in the avatar menu | Sonnet · high | Running |
+| 1 | WP106 | Core: roster export for current staff only; given and family name in `/me` | Opus · high | Running |
+| 1 | WP107 | Seed: demo data in the Test Academy that looks like the landing screenshots | Sonnet · medium | Running |
+| 2 | WP108 | Web: exercise catalogue for PARENT and PLAYER; own-name form on given / family name; export button rule | Sonnet · medium | After wave 1 |
+| 2 | WP109 | JDK 25 on the branch `jdk-25` (draft pull request, not merged) | Opus · high | After wave 1 |
+| 3 | WP110 | Docs pass | Opus · medium | Last alone |
+
+### Decisions of 2026-11-14, sixth interview (product owner)
+75. **Scope of the round → WP104–WP110**: the cloud deployment first slice, the theme switch, demo data, JDK 25 and
+    three ride-alongs (decisions 82–84). The observability backend (one Grafana pod instead of the in-memory Jaeger
+    on kind) waits; the landing screenshots are not recaptured this round.
+76. **Cloud provider → WP104**: Alibaba Cloud, Jakarta region (international site, never a mainland region: ICP
+    filing, and ghcr.io / quay.io pulls are slow or blocked there).
+77. **Code only this round → WP104**: no account, no API key, no server. The module is proven with `tofu fmt`,
+    `tofu validate` and `tofu test` against mocked providers, the chart values with a render snapshot. A real
+    `tofu apply` is next round.
+78. **Name of the test deployment → WP104**: no domain yet; a free wildcard DNS name derived from the server's
+    address (sslip.io style). OpenTofu manages no DNS record.
+79. **Theme and language → WP105**: the user chooses light, dark or system (default: system), remembered in the
+    browser like the language. Language and theme move together from the profile screen to the menu behind the
+    avatar, reachable from every screen; the landing header keeps its own pickers (language, and now theme).
+80. **Demo data → WP107**: the existing Test Academy (WP103) is extended, no second academy; its data should look
+    like the landing screenshots so the design can be checked against a real backend.
+81. **JDK 25 → WP109**: done this round on a dedicated branch, pushed as a draft pull request so CI proves it; not
+    merged into `main` until the owner says so.
+82. **Exercise catalogue for families → WP108**: PARENT and PLAYER can browse the catalogue in the web app (the API
+    already allows it). Closes the open decision of WP92.
+83. **Roster export → WP106, WP108**: the roster CSV with the guardians' contact data is for the team's current
+    staff and ADMIN only; a former coach keeps the screens of an ended season (ADR-0042) but not the export.
+    ADR-0048 amendment. Closes the open decision of WP96.
+84. **Given and family name in `/me` → WP106, WP108**: core returns them per membership (core minor); the web's
+    "Your name" form stops splitting the display name.
+85. **Models**: Opus · high for the OpenTofu module, core and JDK 25 (infra, authorisation, the whole build);
+    Sonnet · high for the shell change of WP105 (goldens in two themes); Sonnet · medium for the seed script and the
+    routine web of WP108; Opus · medium for the docs pass.
+
 ## Open
 
 ### Pending user actions
@@ -347,10 +395,10 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   157.0.8103.38; update it when the local Chrome moves.
 
 ### Product / contract decisions
-- **Roster export for a former coach** (WP96, ADR-0048, owner to decide): the roster CSV with the guardians' contact
+- **Roster export for a former coach** (WP96, ADR-0048; **→ WP106**, decision 83: current staff and ADMIN only): the roster CSV with the guardians' contact
   data is allowed for a coach of the team in an ended season through the season-history rule (`wasStaffOf`,
   ADR-0042), as for the screens. Keep, or restrict the export to the team's current staff and ADMIN.
-- **Exercise catalogue for PARENT and PLAYER** (WP92, owner to decide): the API lets every role read the catalogue,
+- **Exercise catalogue for PARENT and PLAYER** (WP92; **→ WP108**, decision 82): the API lets every role read the catalogue,
   but the web shows it only in the plan library, which is staff-only.
 - **Export follow-ups** (WP96, WP97, WP101): PDF where a printable sheet helps (decision 67: later); the audit `team`
   target shows the type without a name (`displayName` null: core should resolve team names); the browser exports do
@@ -362,7 +410,7 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   whether to require it); decided requests (personal data of non-members) are kept until the v2 purge job; a crash
   between claim and onboarding leaves an ACCEPTED request without an academy (runbook `onboard-tenant.md` "Requests",
   Recovery); no retry of a failed decision mail (`notifiedAt` stays empty).
-- **Own name: given and family name in `/me`** (WP99): `/me` carries a display name only, so the web's "Your name"
+- **Own name: given and family name in `/me`** (WP99; **→ WP106, WP108**, decision 84): `/me` carries a display name only, so the web's "Your name"
   form splits it at the first space and sends only the changed field (a family name of several words can show split
   wrongly; nothing is overwritten unless edited). Core minor: `givenName` / `familyName` per membership in `/me`.
 - **Season history details** (WP80, WP76): game's `Match` and athlete's session responses carry no `seasonEnded` flag
@@ -398,13 +446,13 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
 - **Offline end-session** is skipped, not queued (SSO session lives until its 4 h idle timeout) — accepted, ADR-0019.
 
 ### Web app (`apps/web`)
-- **Theme switch: light / dark / system** (owner, 2026-11-14; to do, no WP yet). Today the app only follows the
+- **Theme switch: light / dark / system** (owner, 2026-11-14; **→ WP105**, decision 79). Today the app only follows the
   operating system (`MaterialApp` has no `themeMode`), so on a Mac in dark mode nobody sees the light look of the landing
   screenshots. Wanted: the user chooses the theme where they choose the language (the profile screen;
   `locale_controller.dart` keeps the language in shared preferences, the same would do for the theme). Open for the
   interview: whether language and theme stay in the profile or move together to another place (the landing header has
   a language picker too, and the choice should be reachable before sign-in); whether "system" stays the default.
-- **Demo data in the database that looks like the landing screenshots** (owner, 2026-11-14; to do, no WP yet). Purpose:
+- **Demo data in the database that looks like the landing screenshots** (owner, 2026-11-14; **→ WP107**, decision 80). Purpose:
   check the design against a real backend with the screens as pictured. The pictures come from the browser-only mock
   (`lib/core/mock`: Academia Demo, the injured player Leo Gil, a training week, a live match, platform usage);
   `just seed-academy` (WP103) only creates logins, one team and ten players. Wanted: a seed through the API, like
@@ -461,7 +509,7 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
 
 ### Backend
-- **Upgrade to JDK 25** (owner, 2026-11-14; to do, no WP yet). Java 21 is pinned in: `maven.compiler.release` (root
+- **Upgrade to JDK 25** (owner, 2026-11-14; **→ WP109**, decision 81: branch `jdk-25`, not merged). Java 21 is pinned in: `maven.compiler.release` (root
   `pom.xml`); `scripts/env.sh` (accepts only a JDK whose major version is exactly 21) and `scripts/bootstrap.sh`
   (`openjdk@21`); `actions/setup-java` in `ci.yml` (4), `e2e.yml`, `mutation.yml` and `codeql.yml`;
   `deploy/containers/service.Containerfile` (build image `maven:3-eclipse-temurin-21`, runtime
@@ -499,8 +547,8 @@ Found while planning: the weekly `bump-pins` workflow failed on its first schedu
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
-- **Cloud deployment, first slice: chosen for the next round** (owner, 2026-11-14; no WP number or brief yet, not
-  started). Today only the inside of the cluster is declared (the Helm chart; kind by `deploy/kind/up.sh`); no machine,
+- **Cloud deployment, first slice** (owner, 2026-11-14; **→ WP104**, decisions 76–78: Alibaba Cloud Jakarta, code
+  only). Today only the inside of the cluster is declared (the Helm chart; kind by `deploy/kind/up.sh`); no machine,
   network, DNS or storage is defined anywhere. Goal of the slice: `tofu apply` gives one cheap cloud VM running k3s, and
   the existing chart installs on it under a test domain.
   - In: an OpenTofu module for the outer layer only (server, firewall, DNS record, volume; k3s installed on first
