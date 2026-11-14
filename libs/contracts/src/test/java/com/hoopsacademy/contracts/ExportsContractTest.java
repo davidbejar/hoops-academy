@@ -71,6 +71,8 @@ class ExportsContractTest {
         assertThat(roster.getTags()).containsExactly("Teams");
         assertThat(roster.getDescription()).contains("Authz: ADMIN; COACH of this team", "team.roster_exported",
                 "guardian");
+        assertThat(roster.getDescription()).as("current staff only (decision 83, core 3.6.0)")
+                .contains("former coach", "not the export").doesNotContain("may export it too");
         assertThat(parameterNames(roster)).containsExactlyInAnyOrder("X-Tenant-Id", "teamId", "Accept-Language");
     }
 

@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.SecurityEventCapture;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
@@ -36,7 +37,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * WP96 (decisions 67 and 68, ADR-0048): the team roster with guardians and staff as a CSV file, for ADMIN and the
- * team's COACH only, audited without personal data, never cached and never logged.
+ * team's COACH only, audited without personal data, never cached and never logged. WP106 (decision 83): the team's
+ * CURRENT coach only; a former coach of an ended season keeps its screens (ADR-0042) but not the export.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
@@ -137,24 +139,34 @@ class TeamRosterExportTest {
         }
     }
 
-    /** roles, staff of the team?, expected status (authz matrix row "Team roster export"). */
+    /**
+     * roles, relation to the team (current staff, former staff of an ended season, none), expected status (authz
+     * matrix row "Export the team roster").
+     */
     static Stream<Arguments> callers() {
         return Stream.of(
-                Arguments.of(EnumSet.of(TenantRole.ADMIN), false, 200),
-                Arguments.of(EnumSet.of(TenantRole.COACH), true, 200),
-                Arguments.of(EnumSet.of(TenantRole.COACH), false, 403),
-                Arguments.of(EnumSet.of(TenantRole.ASSISTANT_COACH), true, 403),
-                Arguments.of(EnumSet.of(TenantRole.PARENT), false, 403),
-                Arguments.of(EnumSet.of(TenantRole.PLAYER), false, 403),
-                Arguments.of(EnumSet.of(TenantRole.ADMIN, TenantRole.COACH), false, 200),
-                Arguments.of(EnumSet.of(TenantRole.COACH, TenantRole.PARENT), true, 200),
-                Arguments.of(EnumSet.of(TenantRole.ASSISTANT_COACH, TenantRole.PARENT), true, 403));
+                Arguments.of(EnumSet.of(TenantRole.ADMIN), Relation.NONE, 200),
+                Arguments.of(EnumSet.of(TenantRole.COACH), Relation.STAFF, 200),
+                Arguments.of(EnumSet.of(TenantRole.COACH), Relation.NONE, 403),
+                Arguments.of(EnumSet.of(TenantRole.COACH), Relation.FORMER, 403),
+                Arguments.of(EnumSet.of(TenantRole.ASSISTANT_COACH), Relation.STAFF, 403),
+                Arguments.of(EnumSet.of(TenantRole.ASSISTANT_COACH), Relation.FORMER, 403),
+                Arguments.of(EnumSet.of(TenantRole.PARENT), Relation.NONE, 403),
+                Arguments.of(EnumSet.of(TenantRole.PLAYER), Relation.NONE, 403),
+                Arguments.of(EnumSet.of(TenantRole.ADMIN, TenantRole.COACH), Relation.NONE, 200),
+                Arguments.of(EnumSet.of(TenantRole.ADMIN, TenantRole.COACH), Relation.FORMER, 200),
+                Arguments.of(EnumSet.of(TenantRole.COACH, TenantRole.PARENT), Relation.STAFF, 200),
+                Arguments.of(EnumSet.of(TenantRole.COACH, TenantRole.PARENT), Relation.FORMER, 403),
+                Arguments.of(EnumSet.of(TenantRole.ASSISTANT_COACH, TenantRole.PARENT), Relation.STAFF, 403));
     }
+
+    enum Relation { NONE, STAFF, FORMER }
 
     @ParameterizedTest
     @MethodSource("callers")
-    void roleMatrix(Set<TenantRole> roles, boolean staff, int expected) {
-        Members.signInAs(tenant, coach, roles, staff ? Set.of(lions) : Set.of());
+    void roleMatrix(Set<TenantRole> roles, Relation relation, int expected) {
+        Members.signInAs(tenant, coach, roles, relation == Relation.STAFF ? Set.of(lions) : Set.of(),
+                relation == Relation.FORMER ? Set.of(lions) : Set.of());
 
         export(lions, null).then().statusCode(expected);
 
@@ -163,16 +175,34 @@ class TeamRosterExportTest {
     }
 
     @Test
-    void theFormerCoachOfAnEndedSeasonStillExportsItsHistory() {
+    void theFormerCoachOfAnEndedSeasonNoLongerExportsItsRosterButTheAdminDoes() {
         UUID last = RosterDb.season(tenant, "Last", RosterDb.TODAY.minusDays(400), RosterDb.TODAY.minusDays(100),
                 RosterDb.YEAR - 1);
         UUID oldLions = RosterDb.team(tenant, last, "Old Lions", categories.get("U12"), "MIXED");
         RosterDb.staff(tenant, oldLions, coach, "COACH");
         Members.signInAs(tenant, coach, EnumSet.of(TenantRole.COACH), Set.of(), Set.of(oldLions));
 
+        try (SecurityEventCapture events = SecurityEventCapture.open()) {
+            export(oldLions, null).then().statusCode(403);
+
+            assertThat(events.single())
+                    .containsEntry("security.kind", "fine_grained")
+                    .containsEntry("security.outcome", "403")
+                    .containsEntry("tenantId", tenant)
+                    .containsEntry("security.resource", "GET /api/core/teams/{teamId}/roster:export");
+        }
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("team.roster_exported");
+
+        Members.signIn(tenant, TenantRole.ADMIN);
         export(oldLions, null).then().statusCode(200);
-        Members.signInAs(tenant, coach, EnumSet.of(TenantRole.COACH), Set.of(), Set.of());
-        export(oldLions, null).then().statusCode(403);
+    }
+
+    @Test
+    void aNonMemberGetsNotFoundNeverForbidden() {
+        Members.signIn(Members.newTenant(), TenantRole.ADMIN, TenantRole.COACH);
+
+        export(lions, null).then().statusCode(404);
+        assertThat(CoreDb.auditActions(tenant)).doesNotContain("team.roster_exported");
     }
 
     @Test
