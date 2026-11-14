@@ -14,12 +14,13 @@ available in Spanish, English and Indonesian.
 |---|---|
 | Super admin | an application admin hub: accept or reject academy requests from the landing page, create, suspend, reactivate and withdraw academies; add, edit and remove each academy's administrators; find any login and its academies (Users); see usage per service; export the platform audit trail; switch to an academy the login belongs to |
 | Administrator | academy profile and logo, members and invitations, guardian links, seasons, categories, teams and staff, jersey numbers (preferred number, taken and free numbers), player approvals, eligibility cases, rollover, age rule and play-up limit; roster and audit trail exports |
-| Coach | match setup and live scoring, training calendar, attendance, plans and the exercise catalogue, health and fitness entries, requests to add or withdraw players, players' preferred jersey numbers, exports of their teams' roster, stats and calendar; past seasons of teams they coached, read-only |
+| Coach | match setup and live scoring, training calendar, attendance, plans and the exercise catalogue, health and fitness entries, requests to add or withdraw players, players' preferred jersey numbers, exports of the roster of the teams they coach now, stats and calendar; past seasons of teams they coached, read-only |
 | Assistant coach | the same for matches, training and health; read-only on roster, no player requests |
-| Parent | linked children: stats during matches, absences, plan completion, injuries and measurements, a jersey number wish |
-| Player | own profile, season stats, plans, absences, health history (read-only), a jersey number wish |
+| Parent | linked children: stats during matches, absences, plan completion, injuries and measurements, a jersey number wish; the exercise catalogue, read-only |
+| Player | own profile, season stats, plans, absences, health history (read-only), a jersey number wish; the exercise catalogue, read-only |
 
-Every member edits their own first and last name in Profile; a login in several academies switches between them.
+Every member edits their own first and last name in Profile; a login in several academies switches between them. The
+menu behind the avatar sets the language and the theme (light, dark, or system, the default) on every screen.
 
 ## Stack
 Java 21, Quarkus 3 (three services: `core`, `game`, `athlete`), PostgreSQL 17 with row-level security (one database, one
@@ -34,7 +35,7 @@ source scripts/env.sh && just doctor # JDK 21 + Podman socket for Testcontainers
 cp .env.example .env                 # replace every change-me-* value (git-ignored)
 just up                              # Postgres, Keycloak, MailHog, Redpanda, nginx on http://localhost:8080
 just seed-users                      # e-mail logins <name>@hoops-academy.com: superadmin, admin1, coach1, assistant1, parent1, player1 (DEV_USER_PASSWORD)
-just services-up && just seed-academy  # optional: "Test Academy" with 23 logins through the real API (TEST_ACADEMY_PASSWORD)
+just services-up && just seed-academy  # optional: "Test Academy" with 24 logins and demo data through the real API (TEST_ACADEMY_PASSWORD)
 ```
 `DEV_USER_PASSWORD` in `.env` is the plain login password for all seeded users (Keycloak stores only its hash). To change
 it, edit `.env` (at least 12 characters) and re-run `just seed-users`; it resets every seeded user's password.
@@ -74,7 +75,8 @@ After pulling realm changes, reset Keycloak: `just down && podman volume rm hoop
 Create your first academy as `superadmin@hoops-academy.com`: `docs/runbooks/onboard-tenant.md`.
 
 Common commands: `just test` (backend verify with coverage and RLS gates), `just web-test`, `just e2e`, `just scan`,
-`just web-format`, `just gen-api` (regenerate Dart clients), `just kind-up` and `just tilt` (Kubernetes on kind).
+`just web-format`, `just gen-api` (regenerate Dart clients), `just kind-up` and `just tilt` (Kubernetes on kind),
+`just tofu-check` (the cloud module, no account needed).
 
 ## Layout
 ```
@@ -82,8 +84,8 @@ libs/common-quarkus   tenancy, RLS, authz, Problem+JSON, shared test fixtures
 libs/contracts        OpenAPI specs + event JSON Schemas (source of truth for clients)
 services/*            core-service, game-service, athlete-service (Quarkus)
 apps/web              Flutter Web PWA (generated API clients in apps/web/packages)
-infra/                compose stack, DB init SQL, Keycloak realm
-deploy/               Helm charts, container files, kind scripts; Tiltfile at the root
+infra/                compose stack, DB init SQL, Keycloak realm, OpenTofu module for the cloud VM (infra/tofu)
+deploy/               Helm charts, container files, kind and cloud scripts; Tiltfile at the root
 e2e/                  journey tests against the running stack
 docs/                 guides, runbooks, architecture, ADRs, security, work packages
 ```
@@ -96,20 +98,26 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | Plan, original requirements, conformance | [`docs/PLAN.md`](docs/PLAN.md), [`docs/SPEC.md`](docs/SPEC.md), [`docs/conformance.md`](docs/conformance.md) |
 | Decisions | [`docs/adr/`](docs/adr/README.md) (index) |
 | Domain rules and models | [`docs/domain/`](docs/domain): authz matrix, glossary, norms; generated ER and class diagrams per service: [core](docs/domain/core-model.md), [game](docs/domain/game-model.md), [athlete](docs/domain/athlete-model.md) (`just diagrams`) |
-| Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [e2e](docs/runbooks/e2e.md), [events](docs/runbooks/events.md), [observability](docs/runbooks/observability.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
+| Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [cloud (not yet applied)](docs/runbooks/cloud.md), [e2e](docs/runbooks/e2e.md), [events](docs/runbooks/events.md), [observability](docs/runbooks/observability.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
 | Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md), [SAST/DAST](docs/security/sast-dast.md); mutation testing: [`docs/quality/mutation.md`](docs/quality/mutation.md) |
-| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05, the four rounds of 2026-11-06/07 and the sixth round of 2026-11-10), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
+| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05, the four rounds of 2026-11-06/07, the sixth round of 2026-11-10 and the seventh of 2026-11-14), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP103 are done** (no
-WP79), with handovers in `docs/wp/` (the sixth round, WP91–WP103, merged on 2026-11-10). As of 2026-11-10: backend
-`./mvnw verify` runs **3,347 JVM tests** green (contracts 315, common 403, core 1163, game 467, athlete 999; plus 6 e2e
-unit tests, the 26 journey steps are skipped without a running stack) and `flutter test` **1436 tests**; the 26-step
-e2e journey is green on a compose stack (CI `e2e` workflow, with a browser login round trip and the ZAP API scans).
-Contract versions: core 3.5.0, game 2.3.0, athlete 3.0.0, common 1.1.1; roster event schemas in
+Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP110 are done** (no
+WP79), with handovers in `docs/wp/` (the seventh round, WP104–WP110, on 2026-11-14; WP109's JDK 25 lives on the branch
+`jdk-25`, draft pull request #7, not merged). As of 2026-11-14: backend `./mvnw verify` runs **3,388 tests** green (26 of
+them, the e2e journey steps, skipped without a running stack; WP106) and `flutter test` **1466 tests** (WP108); the
+26-step e2e journey is green on a compose stack (CI `e2e` workflow, with a browser login round trip and the ZAP API
+scans). Contract versions: core 3.6.0, game 2.3.0, athlete 3.0.0, common 1.1.1; roster event schemas in
 `libs/contracts/events`.
 
+- **Seventh round**: light, dark or system theme, chosen with the language in the menu behind the avatar; parents and
+  players browse the exercise catalogue; the roster export (guardians' contact data) is for ADMIN and the team's
+  current coach only (ADR-0048 amendment); `/me` carries the given and family name per academy (core 3.6.0);
+  `just seed-academy` fills the Test Academy with demo data like the landing screenshots; an OpenTofu module for one k3s
+  VM on Alibaba Cloud, Jakarta, with cloud values for the chart (ADR-0050, `docs/runbooks/cloud.md`), **code only,
+  never applied** (proven with `tofu test` against a mocked provider and a render snapshot).
 - **Sixth round**: the super admin works in an application admin hub (Academies, Users, Pending approvals, Audit
   trail, a Billing placeholder) and a login switches between its academies and the hub (ADR-0049); every member edits
   their own name; players carry a preferred jersey number that the team assignment reuses when free; core exports the
@@ -150,7 +158,9 @@ Contract versions: core 3.5.0, game 2.3.0, athlete 3.0.0, common 1.1.1; roster e
   "reference pending" (`docs/domain/norms.md`). The web app is an installable PWA (Lighthouse PWA score 1,
   airplane-mode cold start checked by script) and its demo mode (`HOOPS_MOCK_API=true`) reaches every screen.
 
-The CI workflows `ci`, `e2e`, `images`, `codeql` and `semgrep` are green on `main`. Not built: billing (a placeholder
+The CI workflows `ci`, `e2e`, `codeql` and `semgrep` are green on `main`; `images` is red since 2026-11-14 because
+Trivy finds 14 HIGH `krb5-libs` issues in the Red Hat base image whose fix is not published yet (`docs/HANDOVER.md`).
+No cloud deployment exists yet. Not built: billing (a placeholder
 screen), the purge job, PDF exports. Open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); current state:
 [`docs/HANDOVER.md`](docs/HANDOVER.md); what the system does for each spec statement, with evidence:
 [`docs/conformance.md`](docs/conformance.md).

@@ -20,6 +20,8 @@ akademi tempat Anda menjadi anggota. Setiap konteks punya menunya sendiri.
   samping menu samping (tombol **Ganti konteks**). Setiap baris menampilkan nama dan peran Anda, mis. "Admin aplikasi /
   Super admin" atau "Hangtuah / Administrator". Pilihan diingat di peramban ini dan dilupakan saat Anda keluar.
 - Tautan lama ke halaman `/platform/...` membuka halaman yang sama di dalam Admin aplikasi.
+- Tombol bulat dengan inisial Anda (kanan atas, di setiap konteks) membuka menu: **Profil**, **Bahasa**, dan **Tema**
+  (**Sistem**, **Terang**, **Gelap**; diingat di peramban ini, **Sistem** mengikuti perangkat Anda).
 
 Menu Admin aplikasi berisi **Ringkasan** (hub), **Akademi**, **Pengguna**, **Permintaan** (lencana menghitung
 permintaan akademi yang menunggu) dan **Audit**. Hub menampilkan area yang sama sebagai kartu (**Persetujuan tertunda**,

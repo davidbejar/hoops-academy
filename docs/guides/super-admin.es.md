@@ -21,6 +21,8 @@ academia de la que eres miembro. Cada contexto tiene su propio menú.
   la aplicación / Super administrador" o "Hangtuah / Administrador". La elección se recuerda en este navegador y se
   olvida al cerrar sesión.
 - Un enlace antiguo a una página `/platform/...` abre la misma página dentro de la Administración de la aplicación.
+- El botón redondo con tus iniciales (arriba a la derecha, en todos los contextos) abre un menú: **Perfil**, **Idioma** y
+  **Tema** (**Sistema**, **Claro**, **Oscuro**; se recuerda en este navegador, **Sistema** sigue a tu dispositivo).
 
 El menú de la Administración de la aplicación tiene **Resumen** (el panel central), **Academias**, **Usuarios**,
 **Peticiones** (una insignia cuenta las solicitudes de academia pendientes) y **Auditoría**. El panel muestra las mismas

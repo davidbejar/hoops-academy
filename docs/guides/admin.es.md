@@ -15,8 +15,13 @@ decides sobre las solicitudes de jugadores. Los nombres de menú son los que mue
 - Si tu login pertenece a varias academias, la etiqueta de contexto de la barra superior (**Cambiar de contexto**) te
   lleva de una a otra; la aplicación abre la última que usaste en este navegador.
 - **Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
-  conexión). El correo lo cambia el administrador.
-- **Perfil** (barra superior): **Idioma** (Español, English, Bahasa Indonesia) y **Cerrar sesión**.
+  conexión); empieza con tu nombre y apellidos tal como los guarda esta academia. El correo lo cambia el
+  administrador.
+- El botón redondo con tus iniciales (arriba a la derecha, en todas las pantallas) abre un menú: tu nombre y correo
+  (tócalo para ir a **Perfil**), **Idioma** (Español, English, Bahasa Indonesia) y **Tema** (**Sistema**, **Claro**,
+  **Oscuro**). La elección se aplica al momento y se recuerda en este navegador; **Sistema**, el valor por defecto,
+  sigue a tu dispositivo. **Perfil** contiene **Tu nombre** y **Cerrar sesión**. Antes de entrar, la cabecera de la
+  página de inicio tiene sus propios botones de idioma y tema. La pantalla para elegir academia aún no tiene este menú.
 
 ## 1. Perfil de la academia y logo
 **Admin > Perfil de la academia.**
@@ -135,8 +140,9 @@ administradores. Las entradas nunca se editan ni se borran y se conservan (todav
 Las genera el servidor (necesitan conexión, salen en el idioma de la aplicación y se detienen en 10.000 filas):
 - **Plantilla del equipo**: el icono de descarga en la barra superior de un equipo (**Exportar la plantilla (CSV)**)
   guarda los jugadores del equipo con sus datos, categoría y elegibilidad, los tutores activos de cada jugador con sus
-  datos de contacto, y el cuerpo técnico como segundo bloque. Lo tienen los administradores y el entrenador del equipo
-  (también quien lo entrenó en una temporada terminada). Cada exportación aparece en la actividad como **Plantilla del
+  datos de contacto, y el cuerpo técnico como segundo bloque. Lo tienen los administradores para cualquier equipo, también
+  de temporadas terminadas, y el entrenador para los equipos que entrena ahora; quien lo entrenó en una temporada
+  terminada, no. Cada exportación aparece en la actividad como **Plantilla del
   equipo exportada**.
 - **Actividad**: el icono de descarga en **Actividad** (**Exportar la actividad (CSV)**) guarda todas las entradas que
   seleccionan los filtros actuales, no solo la página en pantalla; si hay más de 10.000 filas, acota las fechas o las

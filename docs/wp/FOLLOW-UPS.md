@@ -3,7 +3,8 @@
 Collected from the WP handovers and the WP20 review (2026-11-02); reconciled with the product interview of 2026-11-05
 (WP26), with the WP26–WP37 handovers on 2026-11-06, with the WP38–WP42 handovers on the evening of 2026-11-06, with
 the WP43–WP51 handovers (third round) later that evening, with the WP52–WP71 handovers (fourth round) that night and
-with the WP72–WP90 handovers (fifth round) on 2026-11-07 and with the WP91–WP103 handovers (sixth round) on 2026-11-10.
+with the WP72–WP90 handovers (fifth round) on 2026-11-07, with the WP91–WP103 handovers (sixth round) on 2026-11-10
+and with the WP104–WP109 handovers (seventh round) on 2026-11-14.
 Grouped by area; **[v2]** marks items that are out of v1 by decision (PLAN §8, roadmap); **→ WPnn** marked an item the plans below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
 closed them. The statement-by-statement status of the spec is in [`../conformance.md`](../conformance.md).
 
@@ -326,7 +327,11 @@ only. Core carries one WP (WP106); its web part (WP108) waits for the contract a
 place where the profile's settings live. WP107 is script-only and uses the compose stack and the services on
 8081–8083. WP109 works on the branch `jdk-25`, which is pushed as a draft pull request and **not merged**; only its
 handover lands on `main`. Before the round, on `main`: Quarkus platform 3.40.1.2 (c8ae9580) and Flutter 3.50.0 with
-the `material_ui` / `cupertino_ui` migration (51f2dd0c).
+the `material_ui` / `cupertino_ui` migration (51f2dd0c). At the start of the round the `images` workflow's Trivy gate
+failed on 31 fixable HIGH findings in the service base image (run 43602719552 on d20faf34); de481062 moved to a newer digest and runs `microdnf -y
+update`, which leaves 14 (`krb5-libs`, fix not yet in the UBI repositories), so `images` stays red (Pending user
+actions). **All done**: WP105, WP107, WP104, WP106, WP108 merged into `main` on 2026-11-14 in that order; WP109 is on
+the branch `jdk-25` (draft pull request #7), only its handover is on `main`.
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
@@ -336,7 +341,7 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
 | 1 | WP107 | Seed: demo data in the Test Academy that looks like the landing screenshots | Sonnet · medium | Done (`just seed-academy` demo phase; idempotent; drift check equal) |
 | 2 | WP108 | Web: exercise catalogue for PARENT and PLAYER; own-name form on given / family name; export button rule | Sonnet · medium | Done (web 1466 tests; `/training/exercises`; 1 new golden) |
 | 2 | WP109 | JDK 25 on the branch `jdk-25` (draft pull request, not merged) | Opus · high | Done on the branch (3388 tests and all mutation baselines on JDK 25; ADR-0003 amendment; not merged) |
-| 3 | WP110 | Docs pass | Opus · medium | Running |
+| 3 | WP110 | Docs pass | Opus · medium | Done (HANDOVER, FOLLOW-UPS, README, conformance, roadmap, architecture, ADR index, guides es/en/id) |
 
 ### Decisions of 2026-11-14, sixth interview (product owner)
 75. **Scope of the round → WP104–WP110**: the cloud deployment first slice, the theme switch, demo data, JDK 25 and
@@ -370,6 +375,21 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
 ## Open
 
 ### Pending user actions
+- **`images` is red on `main`** (de481062, found 2026-11-14): the Trivy gate fails on 14 HIGH findings, all
+  `krb5-libs` in `ubi9/openjdk-21-runtime` (fixed package not yet in the UBI repositories; `microdnf -y update` runs at
+  build). Wait for Red Hat's fix (then re-run `images`), or accept the findings with an expiry (ADR-0045). The JDK 25
+  image of `jdk-25` has the same 14 (WP109). Owner has not decided.
+- **First real `tofu apply` on Alibaba Cloud** (WP104, decision 77; next round's first candidate). The owner prepares,
+  per `docs/runbooks/cloud.md` "Before the first apply": an international account with a payment method; a RAM user
+  `hoops-tofu` with programmatic access and the runbook's regional ECS/VPC policy; its key in `.env`
+  (`ALIBABA_CLOUD_ACCESS_KEY_ID` / `_SECRET`) or an aliyun profile; `TF_VAR_state_passphrase` (16+ characters, backed
+  up); `terraform.tfvars` with their IP as /32 and their public key; a `main` commit whose images are on ghcr.io;
+  strong fresh values everywhere in `.env` (`install.sh` refuses `change-me`).
+- **JDK 25 pull request #7** (WP109, decision 81; branch `jdk-25`, draft, not merged): before merging, read its CI
+  (e2e, CodeQL and `images` were not run locally; `images` will be red for the krb5 findings above), install
+  `openjdk@25` on every machine and worktree (`scripts/bootstrap.sh`; env.sh then refuses a 21), and expect rebase
+  conflicts in the runtime image line of `service.Containerfile` and its `bump_pins.py` pin, the `actions/setup-java`
+  steps and the stack wording lines (WP109 handover). Merging closes "Upgrade to JDK 25" (Backend).
 - **bump-pins PR #6** (WP89, WP93; found 2026-11-10): the workflow runs on GitHub since WP93 (skopeo index pin) and
   f96389a3 (`--skip-workflows`: the Actions token may not push workflow files); run 42796164975 on 2274eb4 opened PR #6
   (mailpit v1.33.1, External Secrets Operator v2.15.0). Close and reopen it so `ci` / `e2e` start (a `GITHUB_TOKEN` PR
@@ -382,8 +402,10 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   checked in the database: a pure super admin) should land on the application admin hub (decision 71; WP99 found no
   code path to the audit trail); the hub and the context switcher against the real stack (WP99's rewritten
   `journey_smoke_test.dart` platform step never ran); a calendar `.ics` imported into a calendar app (only a line
-  validator, no real parser, WP97); the server-side roster and audit exports downloaded from the web (WP101). The
-  compose nginx does not serve the web app: start it locally to sign in.
+  validator, no real parser, WP97); the server-side roster and audit exports downloaded from the web (WP101); the
+  avatar menu with language and theme, and the families' exercise catalogue (WP105, WP108: widget tests and goldens
+  only); the WP107 demo data in the screens it was made to look like. The compose nginx does not serve the web app:
+  start it locally to sign in.
 - **Podman machine re-init path** (WP93): `just doctor`'s real write-and-restart branch for the drop-in ran only
   against stubs, and `podman machine init --playbook infra/podman/machine-playbook.yml` was never run (whether Podman
   runs the playbook as root or `core` is unobserved; the playbook works for both). The drop-in is present today. Try in
@@ -395,11 +417,6 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   157.0.8103.38; update it when the local Chrome moves.
 
 ### Product / contract decisions
-- **Roster export for a former coach** (WP96, ADR-0048; **→ WP106**, decision 83: current staff and ADMIN only): the roster CSV with the guardians' contact
-  data is allowed for a coach of the team in an ended season through the season-history rule (`wasStaffOf`,
-  ADR-0042), as for the screens. Keep, or restrict the export to the team's current staff and ADMIN.
-- **Exercise catalogue for PARENT and PLAYER** (WP92; **→ WP108**, decision 82): the API lets every role read the catalogue,
-  but the web shows it only in the plan library, which is staff-only.
 - **Export follow-ups** (WP96, WP97, WP101): PDF where a printable sheet helps (decision 67: later); the audit `team`
   target shows the type without a name (`displayName` null: core should resolve team names); the browser exports do
   not apply the 10,000-row limit (the data is already loaded); the box score holds the opponent as one score line and
@@ -410,9 +427,9 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   whether to require it); decided requests (personal data of non-members) are kept until the v2 purge job; a crash
   between claim and onboarding leaves an ACCEPTED request without an academy (runbook `onboard-tenant.md` "Requests",
   Recovery); no retry of a failed decision mail (`notifiedAt` stays empty).
-- **Own name: given and family name in `/me`** (WP99; **→ WP106, WP108**, decision 84): `/me` carries a display name only, so the web's "Your name"
-  form splits it at the first space and sends only the changed field (a family name of several words can show split
-  wrongly; nothing is overwritten unless edited). Core minor: `givenName` / `familyName` per membership in `/me`.
+- **Own name without names in `/me`** (WP106, WP108): `givenName` / `familyName` are optional in the core 3.6.0 schema
+  (a 3.5-shaped response still parses); core always sends them, and where none arrive the web form starts empty (no
+  display-name split any more).
 - **Season history details** (WP80, WP76): game's `Match` and athlete's session responses carry no `seasonEnded` flag
   (the web derives it from core's team / season); the matches list without a selected past season still returns
   every season.
@@ -446,19 +463,9 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
 - **Offline end-session** is skipped, not queued (SSO session lives until its 4 h idle timeout) — accepted, ADR-0019.
 
 ### Web app (`apps/web`)
-- **Theme switch: light / dark / system** (owner, 2026-11-14; **→ WP105**, decision 79). Today the app only follows the
-  operating system (`MaterialApp` has no `themeMode`), so on a Mac in dark mode nobody sees the light look of the landing
-  screenshots. Wanted: the user chooses the theme where they choose the language (the profile screen;
-  `locale_controller.dart` keeps the language in shared preferences, the same would do for the theme). Open for the
-  interview: whether language and theme stay in the profile or move together to another place (the landing header has
-  a language picker too, and the choice should be reachable before sign-in); whether "system" stays the default.
-- **Demo data in the database that looks like the landing screenshots** (owner, 2026-11-14; **→ WP107**, decision 80). Purpose:
-  check the design against a real backend with the screens as pictured. The pictures come from the browser-only mock
-  (`lib/core/mock`: Academia Demo, the injured player Leo Gil, a training week, a live match, platform usage);
-  `just seed-academy` (WP103) only creates logins, one team and ten players. Wanted: a seed through the API, like
-  WP103, that gives the demo users the mock's teams, players, injuries and measurements, training plans and
-  attendance, and a match with events. Open for the interview: extend `seed-academy` or a second academy; which logins
-  ("demo users": the dev users of `seed-users` or the `test*` logins); how a live match is kept "live" on re-seed.
+- **No avatar menu on the academy chooser and the profile screen** (WP105): both sit outside the shell, so someone
+  with several academies who has not chosen one cannot change language or theme there (the landing header covers it
+  before sign-in). A small follow-up could add the pickers to the chooser.
 - **Jersey dialog leftovers** (WP101): after a 409 the holder's name comes from the re-read taken list, not the
   server's Problem text; the new rights live in `roster/application/roster_rights.dart`, not in `Capabilities`.
 - **Possible golden flake** (WP92): the temporary-password golden (360×780 dark) failed once in a full run and passed on
@@ -468,8 +475,9 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   on `/splash`, then goes home), so an old `/platform` bookmark opened cold lands on the home, not the page; the wide
   switcher is a dialog panel aligned top-left, not an anchored popup; the user guide's super admin screens are written
   from the code, not a browser walk-through.
-- **Landing screenshots after the sixth round** (WP95, WP97, WP99, WP101, owner to decide): `assets/landing/*` were not
-  recaptured after the export icons, the new shell and the jersey cards (`flutter test
+- **Recapture the landing screenshots** (WP95, WP97, WP99, WP101; owner's wish, not done in the seventh round by
+  decision 75): `assets/landing/*` were not recaptured after the export icons, the new shell, the jersey cards, the
+  avatar menu (WP105) and the families' catalogue chip (WP108) (`flutter test
   test/golden/landing_screens_capture.dart`); the super admin views would need a login with and without academies.
 - **Design-system kit follow-ups** (after WP95): training still has its own `fabClearance` in
   `training_labels.dart`, an `AlertDialog` picker in `plan_search.dart`, the team-assign search dialog and an inline
@@ -509,14 +517,11 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
 
 ### Backend
-- **Upgrade to JDK 25** (owner, 2026-11-14; **→ WP109**, decision 81: branch `jdk-25`, not merged). Java 21 is pinned in: `maven.compiler.release` (root
-  `pom.xml`); `scripts/env.sh` (accepts only a JDK whose major version is exactly 21) and `scripts/bootstrap.sh`
-  (`openjdk@21`); `actions/setup-java` in `ci.yml` (4), `e2e.yml`, `mutation.yml` and `codeql.yml`;
-  `deploy/containers/service.Containerfile` (build image `maven:3-eclipse-temurin-21`, runtime
-  `ubi9/openjdk-21-runtime` pinned by digest); the wording in `CLAUDE.md`, `README.md`, `start.sh`, ADR-0003, PLAN and
-  architecture. To check first: that the Quarkus platform in use supports 25, and the tools that read bytecode
-  (JaCoCo, PIT, SpotBugs + find-sec-bugs, ArchUnit, CodeQL). It amends a fixed stack decision, so ADR-0003 gets an
-  amendment.
+- **Upgrade to JDK 25** (owner, 2026-11-14; **→ WP109**, decision 81): done on the branch `jdk-25`, draft pull request
+  #7, **not merged** until the owner says so (Pending user actions). On JDK 25 the full verify (3388 tests) and every
+  mutation baseline held with no tool bump; ADR-0003 amendment on the branch. The item closes with the merge.
+- **Audit event wording** (WP106): `docs/domain/audit-events.md` still reads "ADMIN or the team's COACH" for
+  `team.roster_exported`; true, but since decision 83 only the team's current coach.
 - **game on `replica` without its consumer** (WP98): game starts with `GAME_ROSTER_CONSUMER_ENABLED=false` and serves
   a replica that never changes; athlete refuses that combination. Add the guard and give `ReplicaRosterSourceTest` a
   consumer, or keep it documented. The chart never renders that pair (WP100).
@@ -547,23 +552,26 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
-- **Cloud deployment, first slice** (owner, 2026-11-14; **→ WP104**, decisions 76–78: Alibaba Cloud Jakarta, code
-  only). Today only the inside of the cluster is declared (the Helm chart; kind by `deploy/kind/up.sh`); no machine,
-  network, DNS or storage is defined anywhere. Goal of the slice: `tofu apply` gives one cheap cloud VM running k3s, and
-  the existing chart installs on it under a test domain.
-  - In: an OpenTofu module for the outer layer only (server, firewall, DNS record, volume; k3s installed on first
-    boot); a cloud values file for the chart (images from ghcr.io, `global.publicUrl`, gateway hostname); a runbook
-    (apply, install, smoke, destroy); the smoke scripts of `deploy/kind` run against it.
-  - Out, later slices: TLS certificates (cert-manager / Let's Encrypt), real SMTP instead of Mailpit, CloudNativePG
-    backups to object storage, External Secrets against a real store, observability backend, real users.
-  - Not through OpenTofu: the Helm release (the chart and scripts stay the way to install; app secrets stay out of the
-    state).
-  - For the round interview: the provider (proposed: one Hetzner Cloud VM, about 8 GB RAM for the three JVM services,
-    Keycloak, Postgres, Redpanda and Envoy; prices not checked); the test domain and who hosts its DNS; where the
-    OpenTofu state lives (never in git, rule 6; encrypted); whether Envoy Gateway on k3s replaces or sits behind k3s's
-    bundled Traefik; an ADR for the provider and the OpenTofu/Helm split.
-  - Before real academies use a public deployment: minors' health data on the internet brings GDPR obligations that
-    kind does not have.
+- **Cloud slice: unproven until the first apply** (WP104, ADR-0050; the apply itself is a Pending user action). Only
+  written, every step marked NOT YET RUN in `docs/runbooks/cloud.md`: plan, apply, cloud-init, the kubeconfig fetch,
+  `install.sh`, seed and smoke through `with-cloud.sh`, destroy; the `docker run` Trivy fallback in CI. To check at the
+  apply: that `ecs.g7.large` is sold in Jakarta, that cloud-init reads user data with IMDSv2 only, that disk encryption
+  needs no extra KMS setup, that ServiceLB keeps the client IP (the per-IP rate limits need it); costs unknown.
+  Afterwards: narrow the deliberately broad RAM policy (`ecs:*` / `vpc:*` in the region) from ActionTrail. Limits of
+  the slice: one node, no HA, no backups; a self-signed certificate (browser warning, no service worker, so no offline
+  mode) and no HTTP-to-HTTPS redirect; SSH and the Kubernetes API open to `admin_cidrs`, SSH host key trusted on first
+  use; dev users and Mailpit on a public host. Smaller: the Envoy Gateway chart and the CNPG manifest pinned by version,
+  not digest (as on kind); `seed-users.sh` and `smoke.sh` read `.env` only, not `ENV_FILE`; Trivy has no Alibaba Cloud
+  checks (the security assertions live in `tofu test`), Checkov is optional and not in CI. Later slices: TLS
+  certificates (cert-manager / Let's Encrypt), real SMTP, CloudNativePG backups to object storage, External Secrets
+  against a real store, real users. Before real academies use a public deployment: minors' health data on the
+  internet brings GDPR obligations that kind does not have.
+- **Observability backend** (owner's wish, 2026-11-14, not in the seventh round by decision 75): one Grafana pod with
+  traces, logs and metrics instead of the in-memory Jaeger on kind (ADR-0046 leaves the backend to the environment).
+- **Test Academy demo data** (WP107): the seeded live match (Tigres) stays LIVE for ever with the first run's start
+  time; measurements and test results are found by "the player has any", so their dates stay those of the first run;
+  the mock's names ("Academia Demo", the pictured players) are not representable on the `test*` logins (jersey
+  mapping in `docs/runbooks/local-stack.md`); a full run takes 1.5–4 minutes (Keycloak logins, gateway rate limit).
 - **Tenancy-gate hook, accepted false positives** (WP93, orchestrator ee5f64cc): an unquoted `echo git commit` and a
   heredoc with unbalanced quotes still run the isolation check (unsure cases gate, by choice). The hook that gates a
   session is the one configured at its start.
@@ -602,7 +610,8 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   text instead of a Jackson 2 tree in `MatchEventJsonSchemaTest`, `MatchEventDecoder`, `EventSchema`; one version in
   the root pom). `MatchEventDecoderTest.schemaViolationMessagesKeepTheirWording` turns red if the wording changes.
   The replica decoders of WP68/WP69 use the same 2.0.8.
-- **Guava pin**: drop it from the root pom once the Quarkus BOM ships ≥ 33.7.2 (WP30).
+- **Guava pin**: drop it from the root pom once the Quarkus BOM ships ≥ 33.7.2 (WP30); the 3.40.1.2 BOM still manages
+  33.6.0-jre (c8ae9580).
 - **Optimised Keycloak image** (read-only root FS; KSV-0014 accepted until 2027-03-31; not now, decision 63).
 
 ### v2 (by decision)
@@ -615,6 +624,25 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+Seventh round (WP104–WP109, 2026-11-14; each line names the open item it closed):
+- WP104 (decisions 76–78): **Cloud deployment, first slice**, as code only: an OpenTofu module for one k3s VM on
+  Alibaba Cloud, Jakarta (VPC, security group, key pair, `ecs.g7.large`, EIP with an sslip.io name, encrypted local
+  state), cloud values for the chart and `deploy/cloud` scripts, `just tofu-check` with 25 `tofu test` runs against a
+  mocked provider, CI job `tofu-check` (ADR-0050). Nothing applied; what stays unproven is under "Infra, CI, e2e".
+- WP105 (decision 79): **Theme switch: light / dark / system** (default system, remembered in the browser); language
+  and theme moved from the profile screen to the menu behind the avatar, the landing header got a theme button.
+- WP106, WP108 (decision 83): **Roster export for a former coach**: the roster CSV is for ADMIN and the team's current
+  coach only; a former coach of an ended season gets 403 and no button (ADR-0048 amendment).
+- WP106, WP108 (decision 84): **Own name: given and family name in `/me`** (core 3.6.0); the "Your name" form no longer
+  splits the display name.
+- WP107 (decision 80): **Demo data in the database that looks like the landing screenshots**: the demo phase of
+  `just seed-academy` (second team, assistant coach, schedules, sessions with attendance, plans, matches finished /
+  live / scheduled, injuries, measurements and tests). Leftovers under "Infra, CI, e2e".
+- WP108 (decision 82): **Exercise catalogue for PARENT and PLAYER**: read-only `/training/exercises` behind an
+  "Exercises" chip in Training.
+- Not closed: **Upgrade to JDK 25** (WP109) is done on the branch `jdk-25` and stays open under "Backend" until the
+  owner merges pull request #7.
+
 Sixth round (WP91–WP103, 2026-11-10; each line names the open item it closed):
 - WP91, WP99 (decisions 71, 73): **Super admin console: a proper admin menu**: an application admin context with a hub
   at `/app-admin` (Academies, Users, Pending approvals with a badge, Audit trail, Billing placeholder), a context

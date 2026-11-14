@@ -4,8 +4,10 @@ Idiomas: Español · [English](player.en.md) · [Bahasa Indonesia](player.id.md)
 
 Inicias sesión con tu dirección de correo electrónico y tu contraseña.
 
-Tienes el rol **Jugador**. Barra inferior: **Partidos**, **Entrenos**, **Yo**. **Perfil** está en la barra superior
-(idioma, cerrar sesión). Si **Yo** dice "Tu cuenta aún no está vinculada a un jugador", pide al administrador de tu
+Tienes el rol **Jugador**. Barra inferior: **Partidos**, **Entrenos**, **Yo**.
+El botón redondo con tus iniciales (arriba a la derecha) abre un menú: **Perfil** (tu nombre, cerrar sesión),
+**Idioma** y **Tema** (**Sistema**, **Claro**, **Oscuro**; se recuerda en este navegador, **Sistema** sigue a tu
+dispositivo). Si **Yo** dice "Tu cuenta aún no está vinculada a un jugador", pide al administrador de tu
 academia que la vincule.
 
 ## Yo (Mi perfil deportivo)
@@ -26,6 +28,8 @@ pídelo a un entrenador o a una familia vinculada. En las estadísticas ves los 
 y plan. En **Yo > Planes** ves los planes que te han asignado con su fecha límite y sus ejercicios (los enlaces de vídeo se
 abren en el navegador). Marca cada plan como **Hecho**, **Parcial** o **No hecho**, con un comentario opcional. Los
 entrenadores ven tus marcas.
+En **Entrenos** la etiqueta **Ejercicios** abre el **Catálogo de ejercicios**, de solo lectura: busca y filtra con
+**Todos**, **Globales** (en tu idioma) y **De la academia** (los ejercicios propios de la academia).
 
 ## Ausencias
 **Entrenos > Ausencias > Nueva ausencia**: **Desde**, **Hasta** y un motivo opcional. Los entrenadores te verán como
@@ -54,7 +58,8 @@ funcionando.
 
 ## Tu nombre
 **Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
-conexión). El correo lo cambia el administrador.
+conexión); empieza con tu nombre y apellidos tal como los guarda esta academia. El correo lo cambia el
+administrador.
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.

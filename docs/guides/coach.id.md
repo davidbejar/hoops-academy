@@ -5,7 +5,9 @@ Bahasa: [Español](coach.es.md) · [English](coach.en.md) · Bahasa Indonesia
 Anda masuk dengan alamat e-mail dan kata sandi Anda.
 
 Anda adalah **Pelatih** atau **Asisten pelatih**. Hak Anda berlaku untuk tim tempat administrator mendaftarkan Anda di
-**Staf**. Bilah bawah: **Tim**, **Pertandingan**, **Latihan**, **Pemain**. **Profil** ada di bilah atas.
+**Staf**. Bilah bawah: **Tim**, **Pertandingan**, **Latihan**, **Pemain**.
+Tombol bulat dengan inisial Anda (kanan atas) membuka menu: **Profil** (nama Anda, keluar), **Bahasa**, dan **Tema**
+(**Sistem**, **Terang**, **Gelap**; diingat di peramban ini, **Sistem** mengikuti perangkat Anda).
 
 ## Perbedaan asisten pelatih
 | Tugas | Pelatih | Asisten pelatih |
@@ -16,7 +18,7 @@ Anda adalah **Pelatih** atau **Asisten pelatih**. Hak Anda berlaku untuk tim tem
 | Menetapkan pemain ke tim, menyelesaikan kasus kelayakan (tim sendiri) | ya | tidak (hanya baca) |
 | Mengajukan pemain baru atau pengunduran (perlu persetujuan administrator) | ya | tidak |
 | Mengubah nomor punggung pilihan pemain | ya | tidak (hanya baca) |
-| Mengekspor daftar tim (CSV) | ya (tim sendiri) | tidak |
+| Mengekspor daftar tim (CSV) | ya (tim yang Anda latih sekarang) | tidak |
 | Katalog latihan: membuat, mengubah, mengarsipkan latihan sendiri | ya | ya |
 
 Layar yang tidak diizinkan menampilkan "Hanya baca: Anda tidak berhak mengubah ini."
@@ -111,7 +113,7 @@ disetujui, pemain hanya terlihat oleh Anda dan administrator. Anda tidak dapat m
   dan **Nomor kosong** (0-99); nomor terpakai ditolak dengan menyebut pemakainya.
 
 ## 9. Ekspor
-- **Daftar tim** (hanya pelatih tim itu, juga tim yang Anda latih di musim yang sudah selesai): ikon unduh di bilah atas
+- **Daftar tim** (hanya pelatih tim itu saat ini; tidak untuk tim yang Anda latih di musim yang sudah selesai): ikon unduh di bilah atas
   tim (**Ekspor daftar pemain (CSV)**) menyimpan pemain dengan datanya, kategori, kelayakan, dan kontak walinya, serta
   staf sebagai blok kedua. Dibuat oleh server: perlu koneksi, memakai bahasa aplikasi, dan tercatat di aktivitas
   akademi. Asisten pelatih tidak punya ekspor ini.
@@ -123,7 +125,8 @@ disetujui, pemain hanya terlihat oleh Anda dan administrator. Anda tidak dapat m
 
 ## 10. Nama Anda
 **Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
-perlu koneksi). Email Anda diubah oleh administrator.
+perlu koneksi); isiannya dimulai dari nama depan dan belakang Anda seperti yang disimpan akademi ini. Email Anda
+diubah oleh administrator.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

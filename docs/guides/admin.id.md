@@ -14,8 +14,13 @@ memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbah
 - Jika login Anda tergabung di beberapa akademi, chip konteks di bilah atas (**Ganti konteks**) berpindah di antara
   akademi itu; aplikasi membuka akademi terakhir yang Anda pakai di peramban ini.
 - **Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
-  perlu koneksi). Email Anda diubah oleh administrator.
-- **Profil** (bilah atas): **Bahasa** (Español, English, Bahasa Indonesia) dan **Keluar**.
+  perlu koneksi); isiannya dimulai dari nama depan dan belakang Anda seperti yang disimpan akademi ini. Email Anda
+  diubah oleh administrator.
+- Tombol bulat dengan inisial Anda (kanan atas, di setiap layar) membuka menu: nama dan email Anda (ketuk untuk
+  **Profil**), **Bahasa** (Español, English, Bahasa Indonesia), dan **Tema** (**Sistem**, **Terang**, **Gelap**).
+  Pilihan langsung berlaku dan diingat di peramban ini; **Sistem**, bawaannya, mengikuti perangkat Anda. **Profil**
+  berisi **Nama Anda** dan **Keluar**. Sebelum masuk, kepala halaman depan punya tombol bahasa dan tema sendiri.
+  Layar untuk memilih akademi belum punya menu ini.
 
 ## 1. Profil akademi dan logo
 **Admin > Profil akademi.**
@@ -134,7 +139,8 @@ diubah atau dihapus, dan disimpan (belum ada pembersihan otomatis).
 Dibuat oleh server (perlu koneksi, dalam bahasa aplikasi, dan berhenti di 10.000 baris):
 - **Daftar tim**: ikon unduh di bilah atas tim (**Ekspor daftar pemain (CSV)**) menyimpan pemain tim dengan datanya,
   kategori dan kelayakan, wali aktif setiap pemain beserta kontaknya, dan staf tim sebagai blok kedua. Tersedia untuk
-  administrator dan pelatih tim (juga pelatih tim itu di musim yang sudah selesai). Setiap ekspor muncul di aktivitas
+  administrator bagi setiap tim, termasuk musim yang sudah selesai, dan bagi pelatih untuk tim yang sedang ia latih;
+  pelatih lama dari musim yang sudah selesai tidak mendapatkannya. Setiap ekspor muncul di aktivitas
   sebagai **Daftar tim diekspor**.
 - **Aktivitas**: ikon unduh di **Aktivitas** (**Ekspor aktivitas (CSV)**) menyimpan semua entri yang dipilih filter
   saat ini, bukan hanya halaman di layar; jika lebih dari 10.000 baris, persempit tanggal atau tindakan. Tercatat

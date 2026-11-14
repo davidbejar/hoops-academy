@@ -89,7 +89,17 @@ with `dart format` (80 columns, generated packages excluded; `just web-format-ch
 built from one design system (ADR-0040): tokens in `lib/core/design/` (`HoopsColors` light and dark, spacing, radii,
 type), a token-mapped Material 3 theme in `lib/app/theme.dart` and the shared kit `lib/core/ui/kit.dart` (`PageBody`,
 `PageHeader`, `SectionCard`, `ListRow`, `StatusChip`, `StatTile`, `EmptyState`, action sheets); the rules and the
-checklist for new screens are in `apps/web/README.md` "Design system".
+checklist for new screens are in `apps/web/README.md` "Design system". The user picks light, dark or system (the
+default) in the menu behind the avatar, next to the language; both are remembered per browser (WP105).
+
+In the cloud (written, **not yet applied**; WP104, ADR-0050): OpenTofu (`infra/tofu`) owns only the outer layer, one
+k3s VM on Alibaba Cloud, Jakarta (VPC, a security group with SSH and the Kubernetes API from `admin_cidrs` only and 80 /
+443 public, a key pair, `ecs.g7.large`, an EIP with an sslip.io wildcard name, local state encrypted from a
+passphrase); cloud-init installs a pinned k3s with Traefik off and ServiceLB on. Everything inside is Helm, as on kind:
+`deploy/cloud/install.sh` installs Reloader, Envoy Gateway, CNPG, a self-signed certificate and the chart with
+`values-cloud.yaml` (images from ghcr.io, HTTPS, Envoy as a `LoadBalancer`, `local-path` storage), so no application
+secret enters the OpenTofu state. Proof so far: `just tofu-check` (`tofu test` against a mocked provider) and a render
+snapshot; the steps are in `runbooks/cloud.md`.
 
 ## 3. Request flow: tenant header and row-level security
 ```mermaid
@@ -282,8 +292,9 @@ request; any requester (admin, coach or parent) becomes the first ADMIN. Details
 | SAST / DAST | SpotBugs, CodeQL, Semgrep, ZAP gates with expiring acceptances | [0045](adr/0045-sast-dast-gates-and-expiring-acceptances.md) |
 | Observability | OpenTelemetry collector for traces and logs, backend of the environment | [0046](adr/0046-opentelemetry-collector-traces-and-logs.md) |
 | Exercise catalogue | global exercises (read-only, es/en/id) and the academy's own in one table; items keep `exerciseId` | [0047](adr/0047-exercise-catalogue-global-and-academy-exercises.md) |
-| Exports, jersey numbers | one CSV spec; roster and audit CSV built by core (audited, rate-limited); other exports built in the browser; preferred number with carry-over | [0048](adr/0048-exports-csv-spec-and-server-side-roster-and-audit-exports.md) |
+| Exports, jersey numbers | one CSV spec; roster and audit CSV built by core (audited, rate-limited; the roster for ADMIN and the team's current coach only, amendment 2026-11-14); other exports built in the browser; preferred number with carry-over | [0048](adr/0048-exports-csv-spec-and-server-side-roster-and-audit-exports.md) |
 | Web contexts | academies of a login plus the application admin, each with its own menu; `/app-admin` hub | [0049](adr/0049-contexts-and-the-application-admin.md) |
+| Cloud, first slice | one k3s VM on Alibaba Cloud (Jakarta); OpenTofu for the outer layer, Helm inside; encrypted local state; code only so far | [0050](adr/0050-alibaba-cloud-jakarta-k3s-opentofu-helm-split.md) |
 
 Not done yet: billing exists as seams (`billing.plan`, `billing.tenant_subscription`, a no-op `EntitlementService`; the
 application admin hub shows a placeholder); PDF exports; the purge job. See `roadmap.md`.
@@ -314,8 +325,9 @@ its Flyway migrations and sources (`just diagrams`; CI fails when one is stale, 
 Each page has three parts: **Tables** (ER diagrams), **Domain classes** (class diagrams) and **Application ports**.
 
 ## 11. Testing strategy and current counts
-JVM counts are from the last full verify of the sixth round (WP98 after its rebase, 2026-11-10, `./mvnw -B -ntp -T 1C
-verify`); the Flutter count from `flutter test` on the combined tree at the WP101 merge. They change with every commit.
+The per-module JVM counts are from the last full verify of the sixth round (WP98 after its rebase, 2026-11-10,
+`./mvnw -B -ntp -T 1C verify`); the seventh round reports only totals (below). The Flutter count is from `flutter test`
+at WP108 (2026-11-14). They change with every commit.
 
 | Layer | Kinds of test | Count |
 |---|---|---|
@@ -324,15 +336,16 @@ verify`); the Flutter count from `flutter test` on the combined tree at the WP10
 | `services/core-service` | domain unit and jqwik property tests (eligibility, sign-up), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, outbox appends per use case, the publisher and its producer recovery on Redpanda, backfill, season history, academy requests with decision mails, token audience and refresh rotation through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile), platform users and own name, jersey carry-over, CSV exports | 1163 |
 | `services/game-service` | domain/projection tests with shared vectors, event admission rules, feed visibility in SQL against `EventVisibility` (ADR-0030), ingest API tests, season close, WireMock peers, RLS suites, contract validation, `RosterPort` and authz contract cases on REST and replica, consumer, replay, removals and retention, the shipped roster source per profile | 467 |
 | `services/athlete-service` | domain, norm seed and band resolver tests, template languages, session plans and quick-add, season history caps, role matrix, RLS suites (incl. nullable-tenant tables), contract validation, `RosterPort` and membership contracts on REST and replica, consumer, replay, removals and retention, the exercise catalogue and its migration | 999 |
-| `apps/web` | `flutter test`: unit, provider, widget per role and state, design-system kit and contrast, goldens (360 px, light and dark), projector vectors, sync worker, sign-out, refresh serialisation, tenant/person-scoped match cache, service worker / CSP / build guards, l10n key parity, landing page and its per-locale screenshots, academy requests, past seasons, demo mock routes, role filtering and persistence, capability matrix, the Dart mutation tool, contexts and the application admin hub, exports (CSV, ICS, deferred XLSX), jersey dialogs, the exercise catalogue | 1436 |
+| `apps/web` | `flutter test`: unit, provider, widget per role and state, design-system kit and contrast, goldens (360 px, light and dark), projector vectors, sync worker, sign-out, refresh serialisation, tenant/person-scoped match cache, service worker / CSP / build guards, l10n key parity, landing page and its per-locale screenshots, academy requests, past seasons, demo mock routes, role filtering and persistence, capability matrix, the Dart mutation tool, contexts and the application admin hub, exports (CSV, ICS, deferred XLSX), jersey dialogs, the exercise catalogue (also read-only for families), theme mode and the avatar menu | 1466 |
 | `e2e` | black-box journey through the gateway with real Keycloak logins: 26 ordered steps, two tenants, every request and response validated against the OpenAPI, token audience and refresh-token reuse, edge headers, the sign-up flow, mail checks against MailHog or Mailpit; `MailSinkTest` unit tests run in every `verify` | 6 unit + 26 steps, green on compose with the replica default (WP98, CI) |
 | Browser | `tool/web_smoke.sh` (mock mode) in the `ci` job `web-browser`; browser login round trip with a temporary password in the `e2e` job; `tool/lighthouse.sh` and `tool/offline_cold_start.sh` locally (WP54) | CI green on `main`; Lighthouse PWA score 1 |
 | Security (CI) | SpotBugs + find-sec-bugs in `verify`; CodeQL `security-extended` and Semgrep (registry + repository rules) with SARIF gates; ZAP API scan per service after the journeys and the ZAP baseline; gate scripts' unit tests (ADR-0045) | 0 SpotBugs findings; every CodeQL/Semgrep/ZAP result fixed or accepted with an expiry |
-| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform (incl. the ExternalSecret schema), Gateway API route and policy assertions, Redpanda and event wiring, Reloader annotations, collector and NetworkPolicies, gitleaks; `deploy/kind/smoke.sh` and `ratelimit-check.sh` (with the load guard) on kind | 182 checks, kubeconform 278/278 (WP100); kind proofs of WP100 |
+| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform (incl. the ExternalSecret schema), Gateway API route and policy assertions, Redpanda and event wiring, Reloader annotations, collector and NetworkPolicies, gitleaks; `deploy/kind/smoke.sh` and `ratelimit-check.sh` (with the load guard) on kind | 182 checks, kubeconform 278/278 (WP100); with the cloud values kubeconform 350/350 (WP104); kind proofs of WP100 |
+| Cloud module | `just tofu-check`: `tofu fmt`, `validate`, `tofu test` (every run a `plan` against a mocked provider: guards on SSH CIDRs, memory, hostname, Traefik, IMDSv2, public IP), trivy config, checkov (local, optional), shellcheck, pins equal to kind's; CI job `tofu-check` | 25 tests (WP104); never applied |
 | Mutation (on demand) | PIT per module (`just mutation [module]`) and the Dart tool for the web rule code (`just web-mutation`), workflow `mutation.yml` manual + monthly; never in `verify`; baselines equal to the scores rounded down; see [`quality/mutation.md`](quality/mutation.md) | common 337/338, core 925/926, game 525/527, athlete 690/690, web 430/430 |
 
-JVM total: **3,347 tests** (0 failures; plus the e2e module's 6 unit tests, the 26 journey steps skipped without a
-stack), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **1436 tests**, analyze and format
+JVM total: **3,388 tests** at WP106 (0 failures, 26 skipped: the journey steps without a stack; the same on JDK 25 on
+the branch `jdk-25`, WP109), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **1466 tests**, analyze and format
 check clean. e2e: **26/26 green on compose** with the replica as the roster source (WP98) and in every CI `e2e` run on
 `main` (with the browser login round trip and the ZAP API scans); on kind the WP100 proofs (fresh install with ESO and
 events on `replica`, events off with a quiet core, producer recovery, core's mail to Mailpit, Envoy Gateway v1.10.0
@@ -385,17 +398,20 @@ Documents: [`security/review-2026-11.md`](security/review-2026-11.md) (24 findin
 plus SD-01..SD-08, 0 high), [`security/sast-dast.md`](security/sast-dast.md),
 [`security/threat-model.md`](security/threat-model.md), [`security/asvs-checklist.md`](security/asvs-checklist.md).
 
-## 13. Contexts, exports, jersey numbers and the exercise catalogue (sixth round)
+## 13. Contexts, exports, jersey numbers and the exercise catalogue (sixth and seventh rounds)
 - **Contexts and the application admin (ADR-0049, WP91, WP99).** A context is one academy of the login or, for a super
   admin, "Application admin"; each has its own menu, and a switcher in the shell (bottom sheet on a phone, panel beside
   the rail) moves between them. With one context the app lands in it, with several on the last one used in this browser
   or on the chooser. Application admin is a hub at `/app-admin` (Academies, Users, Pending approvals with a badge, Audit
   trail, a Billing placeholder); old `/platform/...` web links redirect. Users reads `GET /platform/users` (core 3.4.0;
   logins with their memberships per academy, through `core_platform` and V18 column grants; read-only, not audited).
-  Every member edits their own first and last name through `PATCH /me` with `tenantId` (decision 73).
+  Every member edits their own first and last name through `PATCH /me` with `tenantId` (decision 73); since core 3.6.0
+  `/me` returns `givenName` and `familyName` per membership as that academy stores the person, and the form starts from
+  them (decision 84, WP106, WP108).
 - **Exports (ADR-0048, WP96, WP97, WP101).** One CSV spec (UTF-8 with BOM, RFC 4180, CRLF, a formula guard, labels in
   the user's language, `hoops-<slug>-<what>-<yyyyMMdd>`). Core builds the files with personal data or a trail as
-  `:export` operations: the team roster with staff and guardians (ADMIN and the team's coach), the academy audit trail
+  `:export` operations: the team roster with staff and guardians (ADMIN for any team, a COACH for a team they are on
+  the staff of now; a former coach of an ended season gets 403, decision 83), the academy audit trail
   and the platform audit trail; each writes an audit row (`team.roster_exported`, `audit.exported`), stops at 10,000
   rows (422 `EXPORT_TOO_LARGE`) and is rate-limited at the gateway. The browser builds player stats, the box score and
   the team calendar from data it already holds: CSV, Excel (`.xlsx`, a deferred library loaded on first use and kept out
@@ -407,4 +423,5 @@ plus SD-01..SD-08, 0 high), [`security/sast-dast.md`](security/sast-dast.md),
 - **Exercise catalogue (ADR-0047, WP92, athlete 3.0.0).** Global exercises (the template items plus the Cooper test,
   es / en / id, read-only) and the academy's own (created, edited and archived by plan managers) in one table with a
   nullable owner and per-command RLS; template items reference the catalogue, and quick-add copies an exercise's text
-  into a plan or session item that keeps the `exerciseId`.
+  into a plan or session item that keeps the `exerciseId`. PARENT and PLAYER browse it read-only at
+  `/training/exercises` (decision 82, WP108); staff keep it in the plan library.

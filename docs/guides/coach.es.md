@@ -5,8 +5,10 @@ Idiomas: Español · [English](coach.en.md) · [Bahasa Indonesia](coach.id.md)
 Inicias sesión con tu dirección de correo electrónico y tu contraseña.
 
 Eres **Entrenador** o **Entrenador asistente**. Tus permisos se aplican a los equipos en cuyo **Cuerpo técnico** te ha
-incluido un administrador. Barra inferior: **Equipos**, **Partidos**, **Entrenos**, **Jugadores**. **Perfil** está en la
-barra superior.
+incluido un administrador. Barra inferior: **Equipos**, **Partidos**, **Entrenos**, **Jugadores**.
+El botón redondo con tus iniciales (arriba a la derecha) abre un menú: **Perfil** (tu nombre, cerrar sesión),
+**Idioma** y **Tema** (**Sistema**, **Claro**, **Oscuro**; se recuerda en este navegador, **Sistema** sigue a tu
+dispositivo).
 
 ## Qué puede y qué no puede hacer un asistente
 | Tarea | Entrenador | Asistente |
@@ -17,7 +19,7 @@ barra superior.
 | Asignar jugadores a un equipo, resolver casos de elegibilidad (equipos propios) | sí | no (solo lectura) |
 | Solicitar un jugador nuevo o una baja (requiere aprobación del administrador) | sí | no |
 | Cambiar el dorsal preferido de un jugador | sí | no (solo lectura) |
-| Exportar la plantilla del equipo (CSV) | sí (equipos propios) | no |
+| Exportar la plantilla del equipo (CSV) | sí (equipos que entrenas ahora) | no |
 | Catálogo de ejercicios: crear, editar y archivar los propios | sí | sí |
 
 Las pantallas no permitidas muestran "Solo lectura: no tienes permiso para modificar esto."
@@ -115,7 +117,7 @@ solicitud. Hasta su aprobación, el jugador solo lo ven los administradores y t�
   libres** (0-99); un dorsal ocupado se rechaza nombrando a quien lo tiene.
 
 ## 9. Exportaciones
-- **Plantilla del equipo** (solo entrenadores del equipo, también de un equipo que entrenaste en una temporada
+- **Plantilla del equipo** (solo el entrenador actual del equipo; no para un equipo que entrenaste en una temporada
   terminada): el icono de descarga de la barra superior del equipo (**Exportar la plantilla (CSV)**) guarda los
   jugadores con sus datos, categoría, elegibilidad y el contacto de sus tutores, y el cuerpo técnico como segundo
   bloque. Lo genera el servidor: necesita conexión, usa el idioma de la aplicación y queda registrado en la actividad de
@@ -129,7 +131,8 @@ solicitud. Hasta su aprobación, el jugador solo lo ven los administradores y t�
 
 ## 10. Tu nombre
 **Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
-conexión). El correo lo cambia el administrador.
+conexión); empieza con tu nombre y apellidos tal como los guarda esta academia. El correo lo cambia el
+administrador.
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.
