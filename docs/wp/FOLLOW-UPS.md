@@ -334,7 +334,7 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
 | 1 | WP105 | Web: light / dark / system theme; language and theme in the avatar menu | Sonnet · high | Done (web 1454 tests; avatar menu; 4 new + 6 re-recorded goldens) |
 | 1 | WP106 | Core: roster export for current staff only; given and family name in `/me` | Opus · high | Done (core 3.6.0; ADR-0048 amendment; 3388 tests, core mutation 925/926) |
 | 1 | WP107 | Seed: demo data in the Test Academy that looks like the landing screenshots | Sonnet · medium | Done (`just seed-academy` demo phase; idempotent; drift check equal) |
-| 2 | WP108 | Web: exercise catalogue for PARENT and PLAYER; own-name form on given / family name; export button rule | Sonnet · medium | Running |
+| 2 | WP108 | Web: exercise catalogue for PARENT and PLAYER; own-name form on given / family name; export button rule | Sonnet · medium | Done (web 1466 tests; `/training/exercises`; 1 new golden) |
 | 2 | WP109 | JDK 25 on the branch `jdk-25` (draft pull request, not merged) | Opus · high | Running |
 | 3 | WP110 | Docs pass | Opus · medium | Last alone |
 
