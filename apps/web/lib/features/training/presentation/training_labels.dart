@@ -1,6 +1,6 @@
 import '../../../core/time/tenant_zone.dart';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/design/tokens.dart';

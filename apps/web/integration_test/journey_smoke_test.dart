@@ -16,7 +16,7 @@
 // shown as pending/unsynced, then drained by the sync worker); the true offline/reconnect behaviour is covered by
 // test/features/match/presentation/match_screens_test.dart ('reconnect: the banner retry syncs the queue') and the
 // manual DevTools step in README.md.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/main.dart' as app;
 import 'package:integration_test/integration_test.dart';

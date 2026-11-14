@@ -12,7 +12,7 @@
 //   # and the manual check in README.md.
 //   flutter drive --driver=test_driver/integration_test.dart \
 //     --target=integration_test/login_smoke_test.dart -d chrome --web-port 5173
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/main.dart' as app;
 import 'package:integration_test/integration_test.dart';

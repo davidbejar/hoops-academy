@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Real screenshots of the redesigned app on the demo mock, one set per
 /// language, captured at phone size (360x780 logical, 2x) by `test/golden/landing_screens_capture.dart`.

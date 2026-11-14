@@ -2,7 +2,7 @@
 /// `import 'package:hoops_app/core/design/tokens.dart';`
 library;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'colors.dart';
 

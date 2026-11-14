@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Chart colours from the dataviz reference palette (validated with
 /// `validate_palette.py`: ordinal ramp, one hue, monotone lightness, light end

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Subtle entrance motion: fades [child] in and lifts it by a few pixels the
 /// first time it scrolls into view. With reduced motion (the platform's

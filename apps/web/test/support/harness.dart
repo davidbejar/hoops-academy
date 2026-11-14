@@ -5,7 +5,7 @@ import 'package:hoops_app/features/match/application/match_providers.dart'
 import 'package:hoops_app/features/match/application/sync/sync_worker.dart'
     show SyncScope;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';

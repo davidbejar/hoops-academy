@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Faint half-court markings (baseline, key, free-throw circle, three-point
 /// arc) drawn behind the hero; decoration only.

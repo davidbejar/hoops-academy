@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Read-only field that opens the date picker. [value] null shows [hint].
 class DateField extends StatelessWidget {

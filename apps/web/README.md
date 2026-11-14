@@ -6,7 +6,7 @@ with offline queue, training, health, profile, super-admin console). Decisions: 
 `docs/adr/0005-keycloak-authentication-only.md`, `docs/adr/0018-web-offline-shell-service-worker.md`,
 `docs/adr/0019-web-session-and-sign-out.md`.
 
-Requirements: Flutter 3.47+ (Dart 3.13), Chrome. No Node.
+Requirements: Flutter 3.50+ (Dart 3.14), Chrome. No Node.
 
 ## Run
 

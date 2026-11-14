@@ -1,5 +1,4 @@
 import 'package:fake_async/fake_async.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/match/application/game_clock.dart';
 
@@ -115,7 +114,7 @@ void main() {
       expect(time.pendingTimers, isEmpty);
       time.elapse(const Duration(seconds: 2));
       expect(clock.remaining, 5);
-      expect(() => clock.addListener(() {}), throwsA(isA<FlutterError>()));
+      expect(() => clock.addListener(() {}), throwsStateError);
     });
   });
 }
