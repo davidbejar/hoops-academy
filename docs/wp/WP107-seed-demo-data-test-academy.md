@@ -50,4 +50,35 @@ like the landing screenshots, so the design can be checked against the real back
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built: the demo phase of `infra/keycloak/seed-academy.sh` (same run; `SEED_ACADEMY_DEMO=0` skips, `SEED_ACADEMY_DEMO_ONLY=1`
+  repeats only the demo part), `.env.example` block, runbook subsection "Demo data in the Test Academy" (contents, which
+  login shows which landing screen, what the API cannot hold). New: assistant coach `testassistant1` (staff of Test
+  Team, a login like the others) and a second team "Infantil A" (coach testcoach1, no players) so the training week has two
+  teams like the picture. Seeded through the API as testcoach1 / testadmin1: 3 + 2 schedules; sessions of the last 14 days
+  DONE (created by hand: the API materialises schedule sessions only from today) with attendance on Test Team's; one
+  cancelled and one plan-carrying upcoming session; plans "Calentamiento Mini" (4 catalogue exercises) and
+  "Condicionamiento semanal" (3); one assignment with a completion; a planned absence; matches Lobos (FINISHED 32-25, 99
+  events), Tigres (LIVE 4-9, 11 events, starters players 1,2,4,5,7), Aguilas (SCHEDULED); injuries (player 7 open knee,
+  player 4 recovered ankle); 3 body measurements and 4 test results for each of players 1,2,4,5,7,8,10.
+  Mapping to the pictured names by jersey: Sara 4 = Test Player 1, Iker 5 = 2, Ana 7 = 4, Noa 8 = 5, Leo 10 = 7 (injured),
+  Hugo 11 = 8, Lia 13 = 10; names stay "Test Player N".
+- Verified: runs against the local stack (services built from this worktree, started by me, stopped at the end): demo-only
+  run created 14 things in the last pass, the following full runs reported "nothing to create" (run 3 and run 4, 144 s
+  and 240 s under load). Read back with logins: coach: staff 2, roster 10 (jerseys 4-13), schedules 3 + 2, sessions in
+  -14..+14 days main 13 (6 DONE, 1 CANCELLED, 6 PLANNED incl. one of the owner's) and Infantil 8, plans 4 + 3 items,
+  matches Tigres LIVE 4-9 (events 11, Players 2 and 7 two points each, 10-player roster, starters jerseys 4,5,7,8,10),
+  Lobos FINISHED 32-25 (99 events, player lines sum to 32), season stats of player 4 = 2 games 6 points, injuries 2,
+  player 7 unavailable until the expected return, 3 measurements and 4 test results (all bands MATCHED), absence 1;
+  parent 7 and player 7 read the injury, parent 4 the absence and stats; superadmin reads usage of the academy.
+  `just events-drift`: "the replicas equal core", exit 0. shellcheck clean, gitleaks clean, run logs contain no token or
+  password.
+- Decisions/ADRs: none. Anything found while testing: a first request through the gateway right after the services
+  start can give 502 (stale upstream connection); `api` now retries reads on 502/503/504. Dates: the Spanish locale
+  prints a decimal comma, so the numbers are formatted with `LC_ALL=C`.
+- Open points: (1) the Tigres match stays LIVE for ever (and its start time is that of the first run); (2) measurements
+  and test results are found by "the player has any", so their dates stay those of the first run; (3) one session of the
+  first, hand-made probe was moved to 2026-10-26 (DONE) instead of being left as a duplicate; sessions of the first run have
+  seconds in their start time (harmless, lookups compare to the minute); (4) the owner's own data in the academy (a session
+  "A tomar por saco", a match "Los peores") was left untouched; (5) the mock's names, academy name "Academia Demo" and
+  third team are not representable on the `test*` logins; (6) a full run takes 1.5-4 minutes (Keycloak logins, gateway
+  rate limit).

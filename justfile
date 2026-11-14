@@ -95,7 +95,7 @@ logs *ARGS:
 seed-users:
     infra/keycloak/seed-users.sh
 
-# Seed the local test academy through the API (needs `just up`, `just seed-users`, `just services-up`, TEST_ACADEMY_PASSWORD in .env)
+# Seed the local test academy and its landing-like demo data through the API (needs `just up`, `just seed-users`, `just services-up`, TEST_ACADEMY_PASSWORD in .env)
 seed-academy:
     infra/keycloak/seed-academy.sh
 
