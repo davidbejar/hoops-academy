@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generate the Flutter (dart-dio / built_value) API clients from libs/contracts/openapi/<svc>.yaml.
 #
-# Usage: scripts/gen-api.sh [service ...]        (default: core game athlete; run from anywhere, e.g. `just gen-api`)
+# Usage: scripts/gen-api.sh [service ...]        (default: core game athlete finance; run from anywhere, e.g. `just gen-api`)
 #
 # Environment:
 #   API_OUT_ROOT       output root, one package per service in $API_OUT_ROOT/<svc>   (default: apps/web/packages;
@@ -24,7 +24,7 @@ BUILD="${GEN_API_BUILD:-1}"
 OUT_ROOT="${API_OUT_ROOT:-apps/web/packages}"
 [[ "$OUT_ROOT" = /* ]] || OUT_ROOT="$REPO_ROOT/$OUT_ROOT"
 
-if [[ $# -gt 0 ]]; then SERVICES=("$@"); else SERVICES=(core game athlete); fi
+if [[ $# -gt 0 ]]; then SERVICES=("$@"); else SERVICES=(core game athlete finance); fi
 
 die() { echo "gen-api: $*" >&2; exit 1; }
 

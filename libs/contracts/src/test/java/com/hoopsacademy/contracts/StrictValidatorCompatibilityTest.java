@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class StrictValidatorCompatibilityTest {
 
-    private static final List<String> SPECS = List.of("common", "core", "game", "athlete");
+    private static final List<String> SPECS = List.of("common", "core", "game", "athlete", "finance");
     private static final List<String> SERVICES = OpenApiSpecs.SERVICES;
     private static final String SCHEMA_REF_PREFIX = "#/components/schemas/";
     private static final String EXTENDS = "x-extends";

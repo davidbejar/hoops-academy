@@ -200,7 +200,11 @@ class OpenApiConventionsTest {
     @ParameterizedTest
     @FieldSource("SERVICES")
     void internalOperationsAreTaggedAndHiddenFromClients(String service) {
-        assertThat(operations(service)).filteredOn(op -> op.path().startsWith("/internal/")).isNotEmpty()
+        List<Op> internal = operations(service).stream().filter(op -> op.path().startsWith("/internal/")).toList();
+        if (!service.equals("finance")) { // finance-service has no /internal operation (ADR-0055: nobody calls it)
+            assertThat(internal).as(service + " /internal operations").isNotEmpty();
+        }
+        assertThat(internal)
                 .allSatisfy(op -> {
                     assertThat(op.operation().getTags()).as(op.id()).containsExactly("Internal");
                     assertThat(op.operation().getExtensions()).as(op.id() + " x-internal")

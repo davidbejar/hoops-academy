@@ -17,13 +17,13 @@ class PackagedResourcesTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"/openapi/common.yaml", "/openapi/core.yaml", "/openapi/game.yaml", "/openapi/athlete.yaml",
-            "/events/match-event.schema.json", "/events/examples/match-events.valid.json"})
+            "/openapi/finance.yaml", "/events/match-event.schema.json", "/events/examples/match-events.valid.json"})
     void contractFileIsOnTheClasspath(String resource) {
         assertThat(PackagedResourcesTest.class.getResource(resource)).as(resource).isNotNull();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"core", "game", "athlete"})
+    @ValueSource(strings = {"core", "game", "athlete", "finance"})
     void specParsesFromItsClasspathLocationWithExternalRefsResolved(String service) {
         ParseOptions options = new ParseOptions();
         options.setResolve(true);

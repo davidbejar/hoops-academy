@@ -53,6 +53,8 @@ dependencies:
     path: packages/game
   hoops_athlete_api:
     path: packages/athlete
+  hoops_finance_api:
+    path: packages/finance
   file_selector: ^1.1.0
   built_value: ^8.13.0
   built_collection: ^5.1.2

@@ -12,7 +12,7 @@
   <artifactId>contracts</artifactId>
   <packaging>jar</packaging>
   <name>Hoops Academy :: contracts</name>
-  <description>OpenAPI 3.0.3 specifications (core, game, athlete) and match-event JSON Schema, shipped as classpath resources</description>
+  <description>OpenAPI 3.0.3 specifications (core, game, athlete, pdf, finance) and match-event JSON Schema, shipped as classpath resources</description>
 
   <properties>
     <!-- Contract-test libraries: versions pinned here on purpose (not managed by the parent). -->
@@ -104,6 +104,12 @@
             <phase>verify</phase>
             <goals><goal>validate</goal></goals>
             <configuration><inputSpec>${contracts.openapi.dir}/athlete.yaml</inputSpec></configuration>
+          </execution>
+          <execution>
+            <id>validate-finance</id>
+            <phase>verify</phase>
+            <goals><goal>validate</goal></goals>
+            <configuration><inputSpec>${contracts.openapi.dir}/finance.yaml</inputSpec></configuration>
           </execution>
         </executions>
       </plugin>

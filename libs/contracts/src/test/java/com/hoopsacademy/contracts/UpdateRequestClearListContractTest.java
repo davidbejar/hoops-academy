@@ -29,7 +29,8 @@ class UpdateRequestClearListContractTest {
     private static final List<String> ADOPTED = List.of(
             "athlete",
             "core",
-            "game");
+            "game",
+            "finance");
     private static final String TEST_TYPE = "/api/athlete/physical-test-types/0190b6a0-0000-7000-8000-000000000001";
     private static final String SESSION = "/api/athlete/training-sessions/0190b6a0-0000-7000-8000-000000000002";
     private static final String TENANT = "0190b6a0-0000-7000-8000-0000000000aa";

@@ -10,7 +10,7 @@ import java.util.List;
 /** Parses the service specifications with swagger-parser (the parser used by swagger-request-validator). */
 final class OpenApiSpecs {
 
-    static final List<String> SERVICES = List.of("core", "game", "athlete");
+    static final List<String> SERVICES = List.of("core", "game", "athlete", "finance");
 
     private OpenApiSpecs() {
     }

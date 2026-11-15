@@ -1,0 +1,1306 @@
+openapi: 3.0.3
+info:
+  title: Hoops Academy — finance-service API
+  version: 1.0.0
+  description: |
+    An academy's finance (ADR-0051 §2, ADR-0056): fee plans, the dues they create per player and period, payments
+    recorded by hand, expenses, a season balance and CSV exports. No payment provider; nothing is collected online.
+    Served by finance-service (Go, ADR-0055) under `/api/finance/**`; tokens need the audience `finance-service`.
+
+    Money (decision 94): one ISO 4217 currency per academy (`FinanceSettings`), chosen by ADMIN, fixed once the first
+    due exists. Every amount is an integer in that currency's minor unit (`amountMinor`; EUR cents, IDR sen, JPY yen);
+    `minorDigits` says how many decimals the minor unit has. No conversion.
+
+    Periods (decision 93): each fee plan has a cadence. MONTHLY periods are calendar months (`2026-09`), QUARTERLY
+    periods calendar quarters (`2026-Q3` = July to September), a SEASON plan has one period `SEASON` whose dates are
+    the season's. `firstPeriod` / `lastPeriod` bound a plan's periods (none for SEASON; no `lastPeriod` = to the end of
+    the season); a period outside its season creates no dues.
+
+    Dues (decisions 95, 97, 98): one due per player, plan and period, for every period in which the player is on the
+    roster of the plan's team (or of a team of its age category) on any day, at the plan's full amount (no
+    proration). A daily job creates them for plans with `autoGenerate`; ADMIN can also generate a plan's dues for a
+    period by hand (idempotent, with a preview). States: OPEN → PAID (one payment for the whole amount) or WAIVED
+    (ADMIN, with a reason). While OPEN, ADMIN may change the amount with a reason. A wrong payment is voided with a
+    reason: it is kept as voided and the due is OPEN again. No partial payments, no refunds.
+
+    Expenses (decision 99): a fixed list of categories (`ExpenseCategory`), localised by the web; no management of
+    categories.
+
+    Reasons and notes (privacy P-12): short free text (at most 200 characters) that must hold no health or family
+    details and no salary of a named person; ADMIN reads them, families never see them; they are never written to logs,
+    traces or audit metadata.
+
+    Authorization (decision 96, docs/domain/authz-matrix.md section Finance): ADMIN manages everything. A team's
+    current COACH reads who of the team is up to date (status only: no amounts, no expenses, no balance). A PARENT
+    reads the dues and payments of linked players, a PLAYER their own (`listPlayerDues`). ASSISTANT_COACH has no
+    access. A member without the role gets 403, a non-member of the academy 404.
+
+    Build state of 1.0.0 (WP118): settings and fee plans are served; every other operation answers **501** Problem
+    with `code` = `NOT_IMPLEMENTED` until its work package lands (dues and payments: WP119; expenses, balance and
+    exports: WP123). The contract does not change when they do.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+tags:
+  - name: Settings
+  - name: FeePlans
+  - name: Dues
+  - name: Payments
+  - name: Expenses
+  - name: Balance
+
+paths:
+  /api/finance/settings:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: getFinanceSettings
+      tags: [Settings]
+      summary: The academy's finance settings (its currency)
+      description: |
+        `currency` is null until ADMIN chooses it; fee plans need it. Authz: ADMIN. Other members 403, non-members 404.
+      responses:
+        '200':
+          description: The settings.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FinanceSettings'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    put:
+      operationId: updateFinanceSettings
+      tags: [Settings]
+      summary: Choose or change the academy's currency
+      description: |
+        Any active ISO 4217 currency (422 `UNKNOWN_CURRENCY` for a withdrawn code, a fund, a metal or a test code).
+        Fixed once the first due exists: another currency is then 409 `CURRENCY_LOCKED` (the same one is accepted and
+        changes nothing). Audited `finance.settings_changed` (metadata: the changed field names). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateFinanceSettingsRequest'}
+      responses:
+        '200':
+          description: The settings.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FinanceSettings'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  /api/finance/fee-plans:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listFeePlans
+      tags: [FeePlans]
+      summary: List the academy's fee plans
+      description: |
+        Ordered by name, then id. Archived plans are left out unless `includeArchived` is true. `teamId` matches the
+        plans of that team only (not those of its age category). Authz: ADMIN.
+      parameters:
+        - $ref: './common.yaml#/components/parameters/SeasonIdQuery'
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - name: ageCategoryId
+          in: query
+          required: false
+          schema: {type: string, format: uuid}
+        - name: includeArchived
+          in: query
+          required: false
+          description: true = also archived plans.
+          schema: {type: boolean, default: false}
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of fee plans.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FeePlanPage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createFeePlan
+      tags: [FeePlans]
+      summary: Create a fee plan for a team or an age category of a season
+      description: |
+        Exactly one of `teamId` and `ageCategoryId` (400 `ONE_TARGET_REQUIRED` on `teamId`). MONTHLY and QUARTERLY
+        plans need `firstPeriod` of their cadence and take an optional `lastPeriod` not before it; SEASON plans take
+        neither (400 `NOT_ALLOWED`). The currency must be chosen first (409 `CURRENCY_NOT_SET`). Once the roster
+        replica knows teams (WP119), an unknown team is 422 `UNKNOWN_TEAM` and a team of another season 422
+        `TEAM_NOT_IN_SEASON`. Audited `fee_plan.created`. Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateFeePlanRequest'}
+      responses:
+        '201':
+          description: The created plan.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FeePlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  /api/finance/fee-plans/{feePlanId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/FeePlanId'
+    get:
+      operationId: getFeePlan
+      tags: [FeePlans]
+      summary: Get a fee plan
+      description: 'Another academy''s plan is 404. Authz: ADMIN.'
+      responses:
+        '200':
+          description: The plan.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FeePlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateFeePlan
+      tags: [FeePlans]
+      summary: Change a fee plan's name, amount, periods or automatic generation
+      description: |
+        Season, target and cadence never change (create another plan). A new amount applies to dues generated
+        afterwards; existing dues keep theirs. `firstPeriod` is fixed once the plan has dues (409 `FEE_PLAN_HAS_DUES`);
+        `lastPeriod` may move or be cleared (`clear: [lastPeriod]`). Two concurrent changes: the later one is 409
+        `CONCURRENT_MODIFICATION`. Audited `fee_plan.updated` (metadata: the changed field names). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateFeePlanRequest'}
+      responses:
+        '200':
+          description: The plan.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FeePlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+    delete:
+      operationId: deleteFeePlan
+      tags: [FeePlans]
+      summary: Delete a fee plan that has no dues
+      description: |
+        A plan with dues is 409 `FEE_PLAN_HAS_DUES`: archive it instead. Audited `fee_plan.deleted`. Authz: ADMIN.
+      responses:
+        '204':
+          description: Deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+
+  /api/finance/fee-plans/{feePlanId}:archive:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/FeePlanId'
+    post:
+      operationId: archiveFeePlan
+      tags: [FeePlans]
+      summary: Archive a fee plan (no more dues, by the job or by hand; its dues stay)
+      description: 'Idempotent. Audited `fee_plan.archived` when it changed. Authz: ADMIN.'
+      responses:
+        '200':
+          description: The plan.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FeePlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+  /api/finance/fee-plans/{feePlanId}:unarchive:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/FeePlanId'
+    post:
+      operationId: unarchiveFeePlan
+      tags: [FeePlans]
+      summary: Make an archived fee plan active again
+      description: 'Idempotent. Audited `fee_plan.unarchived` when it changed. Authz: ADMIN.'
+      responses:
+        '200':
+          description: The plan.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FeePlan'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /api/finance/fee-plans/{feePlanId}/dues:generate:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/FeePlanId'
+    post:
+      operationId: generateDues
+      tags: [Dues]
+      summary: Generate (or preview) a plan's dues for one period
+      description: |
+        Creates the missing dues of the period: one per player on the roster of the plan's target on any day of the
+        period (within the season), at the plan's amount. Idempotent: a re-run creates only what is missing and counts
+        the rest in `existing`. With `preview` nothing is written and `dueId` is null. A period of another cadence is
+        400; outside the plan's periods 422 `PERIOD_OUTSIDE_PLAN`, outside its season 422 `PERIOD_OUTSIDE_SEASON`; an
+        archived plan 409 `FEE_PLAN_ARCHIVED`; more than 2,000 dues 422 `TOO_MANY_DUES`. Audited `dues.generated`
+        (metadata: plan, period, count) unless a preview or nothing was created. Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GenerateDuesRequest'}
+      responses:
+        '200':
+          description: What was (or would be) created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DueGeneration'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  /api/finance/dues:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listDues
+      tags: [Dues]
+      summary: List dues with filters
+      description: |
+        Ordered by period start, then player name, then id. `from` / `to` bound the period start. Authz: ADMIN.
+      parameters:
+        - $ref: '#/components/parameters/FeePlanIdQuery'
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - $ref: './common.yaml#/components/parameters/SeasonIdQuery'
+        - $ref: '#/components/parameters/PeriodQuery'
+        - $ref: '#/components/parameters/DueStatusQuery'
+        - $ref: './common.yaml#/components/parameters/FromDate'
+        - $ref: './common.yaml#/components/parameters/ToDate'
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of dues.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DuePage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /api/finance/dues:export:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: exportDues
+      tags: [Dues]
+      summary: Export the dues of the filters as CSV
+      description: |
+        One CSV file (ADR-0048: UTF-8 with BOM, `,`, RFC 4180 quoting, CRLF, one header row, the formula guard): the
+        rows `listDues` returns for the same filters, without paging: period, period start and end, plan, player, team,
+        amount (minor units and the currency in its own column), status, payment day and method. Never reasons or
+        notes. Header and enum labels in the language of `Accept-Language`. File name
+        `hoops-<academy-slug>-dues-<yyyyMMdd>.csv`. More than 10,000 rows: 422 `EXPORT_TOO_LARGE`. Audited
+        `dues.exported` (metadata: rows and the filter); rate-limited at the gateway. Authz: ADMIN.
+      parameters:
+        - $ref: '#/components/parameters/FeePlanIdQuery'
+        - $ref: './common.yaml#/components/parameters/TeamIdQuery'
+        - $ref: './common.yaml#/components/parameters/PlayerIdQuery'
+        - $ref: './common.yaml#/components/parameters/SeasonIdQuery'
+        - $ref: '#/components/parameters/PeriodQuery'
+        - $ref: '#/components/parameters/DueStatusQuery'
+        - $ref: './common.yaml#/components/parameters/FromDate'
+        - $ref: './common.yaml#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The dues file.
+          headers:
+            Content-Disposition: {$ref: '#/components/headers/ContentDisposition'}
+            Cache-Control: {$ref: '#/components/headers/NoStoreExport'}
+          content:
+            text/csv:
+              schema: {$ref: '#/components/schemas/CsvFile'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  /api/finance/dues/{dueId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/DueId'
+    get:
+      operationId: getDue
+      tags: [Dues]
+      summary: Get a due with every payment recorded for it (voided ones included)
+      description: 'Authz: ADMIN.'
+      responses:
+        '200':
+          description: The due.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DueDetail'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /api/finance/dues/{dueId}:change-amount:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/DueId'
+    post:
+      operationId: changeDueAmount
+      tags: [Dues]
+      summary: Change the amount of an open due, with a reason
+      description: |
+        Only an OPEN due (409 `DUE_NOT_OPEN`). Audited `due.amount_changed` (metadata: due, plan, period; never the
+        reason). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChangeDueAmountRequest'}
+      responses:
+        '200':
+          description: The due.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Due'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+
+  /api/finance/dues/{dueId}:waive:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/DueId'
+    post:
+      operationId: waiveDue
+      tags: [Dues]
+      summary: Waive an open due, with a reason
+      description: |
+        Only an OPEN due (409 `DUE_NOT_OPEN`); the due becomes WAIVED for good. Audited `due.waived` (never the reason).
+        Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReasonRequest'}
+      responses:
+        '200':
+          description: The due.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Due'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+
+  /api/finance/dues/{dueId}:pay:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/DueId'
+    post:
+      operationId: payDue
+      tags: [Payments]
+      summary: Record the payment of an open due (the whole amount)
+      description: |
+        Only an OPEN due (409 `DUE_NOT_OPEN`); the payment's amount is the due's. A payment day after today in the
+        academy's time zone is 422 `PAID_ON_IN_FUTURE`. The due becomes PAID. Audited `payment.recorded` (metadata:
+        due, payment, method; never the note). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PayDueRequest'}
+      responses:
+        '200':
+          description: The due, with its payment.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Due'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  /api/finance/payments/{paymentId}:void:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PaymentId'
+    post:
+      operationId: voidPayment
+      tags: [Payments]
+      summary: Void a wrong payment, with a reason (the due is open again)
+      description: |
+        The payment is kept, marked voided (when, by whom, why); its due is OPEN again. A voided payment again is 409
+        `PAYMENT_ALREADY_VOIDED`. Audited `payment.voided` (never the reason). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReasonRequest'}
+      responses:
+        '200':
+          description: The due, open again.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Due'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+
+  /api/finance/teams/{teamId}/due-status:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/TeamId'
+    get:
+      operationId: getTeamDueStatus
+      tags: [Dues]
+      summary: Who of a team is up to date (status only, no amounts)
+      description: |
+        One entry per player on the team's roster today, ordered by name: `upToDate` is false when the player has an
+        OPEN due whose period has started (period start on or before today in the academy's time zone), of any plan.
+        No amounts, plans or reasons (decision 96). Authz: ADMIN; COACH who is current staff of the team. Another
+        coach, ASSISTANT_COACH, PARENT, PLAYER 403; non-members 404.
+      responses:
+        '200':
+          description: The team's status.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TeamDueStatus'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /api/finance/players/{playerId}/dues:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/PlayerId'
+    get:
+      operationId: listPlayerDues
+      tags: [Dues]
+      summary: A player's dues and payments, as the family sees them
+      description: |
+        Newest period first. Amounts, status and the valid payment's day and method; never reasons, notes or voided
+        payments. Authz: ADMIN; PARENT linked to the player; PLAYER (self). Other members 403; non-members 404.
+      parameters:
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of the player's dues.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PlayerDuePage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /api/finance/expenses:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: listExpenses
+      tags: [Expenses]
+      summary: List expenses
+      description: 'Newest first (`spentOn`, then creation). `from` / `to` bound `spentOn`. Authz: ADMIN.'
+      parameters:
+        - $ref: './common.yaml#/components/parameters/FromDate'
+        - $ref: './common.yaml#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/ExpenseCategoryQuery'
+        - $ref: './common.yaml#/components/parameters/Page'
+        - $ref: './common.yaml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of expenses.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ExpensePage'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    post:
+      operationId: createExpense
+      tags: [Expenses]
+      summary: Record an expense
+      description: |
+        The currency must be chosen first (409 `CURRENCY_NOT_SET`). Audited `expense.created` (never the description
+        or the note). Authz: ADMIN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateExpenseRequest'}
+      responses:
+        '201':
+          description: The expense.
+          headers:
+            Location: {$ref: '#/components/headers/Location'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Expense'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+
+  /api/finance/expenses:export:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: exportExpenses
+      tags: [Expenses]
+      summary: Export the expenses of the filters as CSV
+      description: |
+        One CSV file by the spec of ADR-0048 (see `exportDues`): day, category label and code, amount (minor units, the
+        currency in its own column), description; never the note. File name
+        `hoops-<academy-slug>-expenses-<yyyyMMdd>.csv`. More than 10,000 rows: 422 `EXPORT_TOO_LARGE`. Audited
+        `expenses.exported` (metadata: rows and the filter); rate-limited at the gateway. Authz: ADMIN.
+      parameters:
+        - $ref: './common.yaml#/components/parameters/FromDate'
+        - $ref: './common.yaml#/components/parameters/ToDate'
+        - $ref: '#/components/parameters/ExpenseCategoryQuery'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The expenses file.
+          headers:
+            Content-Disposition: {$ref: '#/components/headers/ContentDisposition'}
+            Cache-Control: {$ref: '#/components/headers/NoStoreExport'}
+          content:
+            text/csv:
+              schema: {$ref: '#/components/schemas/CsvFile'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+
+  /api/finance/expenses/{expenseId}:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/ExpenseId'
+    get:
+      operationId: getExpense
+      tags: [Expenses]
+      summary: Get an expense
+      description: 'Authz: ADMIN.'
+      responses:
+        '200':
+          description: The expense.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Expense'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+    patch:
+      operationId: updateExpense
+      tags: [Expenses]
+      summary: Correct an expense
+      description: 'Audited `expense.updated` (metadata: the changed field names). Authz: ADMIN.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateExpenseRequest'}
+      responses:
+        '200':
+          description: The expense.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Expense'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '409': {$ref: './common.yaml#/components/responses/Conflict'}
+    delete:
+      operationId: deleteExpense
+      tags: [Expenses]
+      summary: Delete an expense recorded by mistake
+      description: 'Audited `expense.deleted`. Authz: ADMIN.'
+      responses:
+        '204':
+          description: Deleted.
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+  /api/finance/balance:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+    get:
+      operationId: getSeasonBalance
+      tags: [Balance]
+      summary: A season's balance (dues paid, open and waived; expenses by category)
+      description: |
+        Income: the dues of the season's plans by status (PAID by the amount paid). Expenses: those whose `spentOn`
+        lies within the season's dates, by category (all six categories, zero included). `netMinor` = paid minus
+        expenses. A season the academy does not have: 404. Authz: ADMIN.
+      parameters:
+        - name: seasonId
+          in: query
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: The balance.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SeasonBalance'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak access token (realm `academy`) whose `aud` contains `finance-service` (ADR-0034); another audience is a 401.
+
+  parameters:
+    FeePlanId:
+      name: feePlanId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    DueId:
+      name: dueId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    ExpenseId:
+      name: expenseId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    TeamId:
+      name: teamId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    PlayerId:
+      name: playerId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    FeePlanIdQuery:
+      name: feePlanId
+      in: query
+      required: false
+      schema: {type: string, format: uuid}
+    PeriodQuery:
+      name: period
+      in: query
+      required: false
+      description: A period key (`2026-09`, `2026-Q3` or `SEASON`).
+      schema: {$ref: '#/components/schemas/PeriodKey'}
+    DueStatusQuery:
+      name: status
+      in: query
+      required: false
+      schema: {$ref: '#/components/schemas/DueStatus'}
+    ExpenseCategoryQuery:
+      name: category
+      in: query
+      required: false
+      schema: {$ref: '#/components/schemas/ExpenseCategory'}
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: |
+        Language of the export's header and enum labels (RFC 9110 list, e.g. `id, en;q=0.8`): the first of `es`, `en`,
+        `id` in preference order; absent, `*` or unsupported = `en`. Values are not translated.
+      schema: {type: string, maxLength: 200}
+
+  headers:
+    Location:
+      description: URI of the created resource.
+      schema: {type: string, format: uri-reference}
+    NoStoreExport:
+      description: '`no-store`: an export holds personal data and is never cached (ADR-0048).'
+      schema: {type: string, example: no-store}
+    ContentDisposition:
+      description: '`attachment; filename="hoops-<academy-slug>-<what>-<yyyyMMdd>.csv"` (ASCII, ADR-0048).'
+      schema: {type: string, example: 'attachment; filename="hoops-hangtuah-dues-20261116.csv"'}
+
+  schemas:
+    CurrencyCode:
+      type: string
+      description: Alphabetic ISO 4217 code of the academy's currency.
+      pattern: '^[A-Z]{3}$'
+      example: EUR
+    AmountMinor:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 100000000000
+      description: An amount in the minor unit of the academy's currency (EUR cents, IDR sen, JPY yen).
+      example: 4500
+    PeriodKey:
+      type: string
+      description: A calendar month `YYYY-MM`, a calendar quarter `YYYY-Qn`, or `SEASON` (the plan's cadence decides).
+      pattern: '^([0-9]{4}-(0[1-9]|1[0-2])|[0-9]{4}-Q[1-4]|SEASON)$'
+      example: 2026-09
+    MonthOrQuarterKey:
+      type: string
+      description: A calendar month `YYYY-MM` (MONTHLY plans) or a calendar quarter `YYYY-Qn` (QUARTERLY plans).
+      pattern: '^([0-9]{4}-(0[1-9]|1[0-2])|[0-9]{4}-Q[1-4])$'
+      example: 2026-09
+    Reason:
+      type: string
+      minLength: 1
+      maxLength: 200
+      description: |
+        Why (short). Never health or family details, never a named person's salary (P-12). Read by ADMIN only; never
+        logged or put in audit metadata.
+    FeeCadence:
+      type: string
+      description: MONTHLY = calendar months, QUARTERLY = calendar quarters, SEASON = once per season (decision 93).
+      enum: [MONTHLY, QUARTERLY, SEASON]
+    DueStatus:
+      type: string
+      description: OPEN until paid in full (PAID) or waived (WAIVED); a voided payment makes it OPEN again.
+      enum: [OPEN, PAID, WAIVED]
+    PaymentMethod:
+      type: string
+      enum: [CASH, BANK_TRANSFER, CARD, OTHER]
+    ExpenseCategory:
+      type: string
+      description: The fixed categories of decision 99 (labels are the web's).
+      enum: [COURT_RENTAL, SALARIES, KIT, TOURNAMENT_FEES, TRAVEL, OTHER]
+
+    FinanceSettings:
+      type: object
+      required: [currency, minorDigits, currencyLocked]
+      properties:
+        currency:
+          allOf: [{$ref: '#/components/schemas/CurrencyCode'}]
+          nullable: true
+          description: null until ADMIN chooses it.
+        minorDigits:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3
+          nullable: true
+          description: Decimals of the currency's minor unit (EUR 2, JPY 0, BHD 3); null without a currency.
+        currencyLocked:
+          type: boolean
+          description: true once the first due exists; the currency cannot change any more.
+    UpdateFinanceSettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [currency]
+      properties:
+        currency: {$ref: '#/components/schemas/CurrencyCode'}
+
+    FeePlan:
+      type: object
+      required: [id, name, seasonId, teamId, ageCategoryId, amountMinor, currency, cadence, firstPeriod, lastPeriod,
+                 autoGenerate, archived, hasDues, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 80}
+        seasonId: {type: string, format: uuid}
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The team whose players the plan charges; null for an age-category plan.
+        ageCategoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The age category whose teams' players (of the plan's season) the plan charges; null for a team plan.
+        amountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        currency: {$ref: '#/components/schemas/CurrencyCode'}
+        cadence: {$ref: '#/components/schemas/FeeCadence'}
+        firstPeriod:
+          allOf: [{$ref: '#/components/schemas/MonthOrQuarterKey'}]
+          nullable: true
+          description: First period charged; null for SEASON plans.
+        lastPeriod:
+          allOf: [{$ref: '#/components/schemas/MonthOrQuarterKey'}]
+          nullable: true
+          description: Last period charged; null = to the end of the season (and for SEASON plans).
+        autoGenerate:
+          type: boolean
+          description: The daily job creates this plan's dues (unless archived).
+        archived: {type: boolean}
+        hasDues:
+          type: boolean
+          description: Dues exist (then `firstPeriod` is fixed and the plan cannot be deleted).
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    FeePlanPage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/FeePlan'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreateFeePlanRequest:
+      type: object
+      additionalProperties: false
+      required: [name, seasonId, amountMinor, cadence]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 80}
+        seasonId: {type: string, format: uuid}
+        teamId:
+          type: string
+          format: uuid
+          description: Exactly one of `teamId` and `ageCategoryId`.
+        ageCategoryId: {type: string, format: uuid}
+        amountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        cadence: {$ref: '#/components/schemas/FeeCadence'}
+        firstPeriod: {$ref: '#/components/schemas/MonthOrQuarterKey'}
+        lastPeriod: {$ref: '#/components/schemas/MonthOrQuarterKey'}
+        autoGenerate:
+          type: boolean
+          default: true
+    UpdateFeePlanRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name: {type: string, minLength: 1, maxLength: 80}
+        amountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        firstPeriod: {$ref: '#/components/schemas/MonthOrQuarterKey'}
+        lastPeriod:
+          allOf: [{$ref: '#/components/schemas/MonthOrQuarterKey'}]
+          nullable: true
+        autoGenerate: {type: boolean}
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [lastPeriod]
+
+    GenerateDuesRequest:
+      type: object
+      additionalProperties: false
+      required: [period]
+      properties:
+        period: {$ref: '#/components/schemas/PeriodKey'}
+        preview:
+          type: boolean
+          default: false
+          description: true = compute and return, write nothing.
+    DueGeneration:
+      type: object
+      required: [feePlanId, period, periodStart, periodEnd, preview, created, existing, dues]
+      properties:
+        feePlanId: {type: string, format: uuid}
+        period: {$ref: '#/components/schemas/PeriodKey'}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        preview: {type: boolean}
+        created:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Dues created (in a preview, that would be created).
+        existing:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Dues of the period that already existed and were left as they are.
+        dues:
+          type: array
+          maxItems: 2000
+          description: The dues created (or that would be), ordered by player name.
+          items: {$ref: '#/components/schemas/GeneratedDue'}
+    GeneratedDue:
+      type: object
+      required: [dueId, playerId, playerName, teamId, amountMinor]
+      properties:
+        dueId:
+          type: string
+          format: uuid
+          nullable: true
+          description: null in a preview.
+        playerId: {type: string, format: uuid}
+        playerName: {type: string}
+        teamId: {type: string, format: uuid}
+        amountMinor: {$ref: '#/components/schemas/AmountMinor'}
+
+    Due:
+      type: object
+      required: [id, feePlanId, feePlanName, playerId, playerName, teamId, period, periodStart, periodEnd, amountMinor,
+                 planAmountMinor, currency, status, reason, payment, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        feePlanId: {type: string, format: uuid}
+        feePlanName: {type: string}
+        playerId: {type: string, format: uuid}
+        playerName: {type: string}
+        teamId:
+          type: string
+          format: uuid
+          description: The team through which the player owed it.
+        period: {$ref: '#/components/schemas/PeriodKey'}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+          description: What is owed (the plan's amount when generated, unless ADMIN changed it).
+        planAmountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        currency: {$ref: '#/components/schemas/CurrencyCode'}
+        status: {$ref: '#/components/schemas/DueStatus'}
+        reason:
+          allOf: [{$ref: '#/components/schemas/Reason'}]
+          nullable: true
+          description: Of the last waiver or amount change.
+        payment:
+          allOf: [{$ref: '#/components/schemas/Payment'}]
+          nullable: true
+          description: The valid (not voided) payment of a PAID due.
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    DueDetail:
+      type: object
+      x-extends: [Due]
+      required: [id, feePlanId, feePlanName, playerId, playerName, teamId, period, periodStart, periodEnd, amountMinor,
+                 planAmountMinor, currency, status, reason, payment, createdAt, updatedAt, payments]
+      properties:
+        id: {type: string, format: uuid}
+        feePlanId: {type: string, format: uuid}
+        feePlanName: {type: string}
+        playerId: {type: string, format: uuid}
+        playerName: {type: string}
+        teamId:
+          type: string
+          format: uuid
+          description: The team through which the player owed it.
+        period: {$ref: '#/components/schemas/PeriodKey'}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+          description: What is owed (the plan's amount when generated, unless ADMIN changed it).
+        planAmountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        currency: {$ref: '#/components/schemas/CurrencyCode'}
+        status: {$ref: '#/components/schemas/DueStatus'}
+        reason:
+          allOf: [{$ref: '#/components/schemas/Reason'}]
+          nullable: true
+          description: Of the last waiver or amount change.
+        payment:
+          allOf: [{$ref: '#/components/schemas/Payment'}]
+          nullable: true
+          description: The valid (not voided) payment of a PAID due.
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        payments:
+          type: array
+          maxItems: 100
+          description: Every payment recorded for the due, voided ones included, oldest first.
+          items: {$ref: '#/components/schemas/Payment'}
+    DuePage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Due'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    ChangeDueAmountRequest:
+      type: object
+      additionalProperties: false
+      required: [amountMinor, reason]
+      properties:
+        amountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        reason: {$ref: '#/components/schemas/Reason'}
+    ReasonRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason: {$ref: '#/components/schemas/Reason'}
+
+    Payment:
+      type: object
+      required: [id, dueId, amountMinor, paidOn, method, note, recordedBy, recordedAt, voided, voidedAt, voidReason,
+                 voidedBy]
+      properties:
+        id: {type: string, format: uuid}
+        dueId: {type: string, format: uuid}
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+        paidOn:
+          type: string
+          format: date
+          description: The day the family paid (academy time zone).
+        method: {$ref: '#/components/schemas/PaymentMethod'}
+        note:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Short; never health or family details (P-12). ADMIN only.
+        recordedBy: {$ref: './common.yaml#/components/schemas/PersonRef'}
+        recordedAt: {type: string, format: date-time}
+        voided: {type: boolean}
+        voidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        voidReason:
+          allOf: [{$ref: '#/components/schemas/Reason'}]
+          nullable: true
+        voidedBy:
+          allOf: [{$ref: './common.yaml#/components/schemas/PersonRef'}]
+          nullable: true
+    PayDueRequest:
+      type: object
+      additionalProperties: false
+      required: [paidOn, method]
+      properties:
+        paidOn: {type: string, format: date}
+        method: {$ref: '#/components/schemas/PaymentMethod'}
+        note:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Short; never health or family details (P-12).
+
+    TeamDueStatus:
+      type: object
+      required: [teamId, players]
+      properties:
+        teamId: {type: string, format: uuid}
+        players:
+          type: array
+          maxItems: 200
+          items: {$ref: '#/components/schemas/PlayerDueStatus'}
+    PlayerDueStatus:
+      type: object
+      required: [playerId, playerName, upToDate]
+      properties:
+        playerId: {type: string, format: uuid}
+        playerName: {type: string}
+        upToDate:
+          type: boolean
+          description: false when an OPEN due of a started period exists.
+
+    PlayerDue:
+      type: object
+      description: A due as the family sees it (no reasons, notes or voided payments).
+      required: [id, feePlanName, period, periodStart, periodEnd, amountMinor, currency, status, paidOn, paymentMethod]
+      properties:
+        id: {type: string, format: uuid}
+        feePlanName: {type: string}
+        period: {$ref: '#/components/schemas/PeriodKey'}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100000000000
+        currency: {$ref: '#/components/schemas/CurrencyCode'}
+        status: {$ref: '#/components/schemas/DueStatus'}
+        paidOn:
+          type: string
+          format: date
+          nullable: true
+        paymentMethod:
+          allOf: [{$ref: '#/components/schemas/PaymentMethod'}]
+          nullable: true
+    PlayerDuePage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/PlayerDue'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+
+    Expense:
+      type: object
+      required: [id, spentOn, category, amountMinor, currency, description, note, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        spentOn: {type: string, format: date}
+        category: {$ref: '#/components/schemas/ExpenseCategory'}
+        amountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        currency: {$ref: '#/components/schemas/CurrencyCode'}
+        description: {type: string, minLength: 1, maxLength: 120}
+        note:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Short; never a named person's salary or health details (P-12).
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    ExpensePage:
+      type: object
+      required: [items, page]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Expense'}
+        page: {$ref: './common.yaml#/components/schemas/PageMeta'}
+    CreateExpenseRequest:
+      type: object
+      additionalProperties: false
+      required: [spentOn, category, amountMinor, description]
+      properties:
+        spentOn: {type: string, format: date}
+        category: {$ref: '#/components/schemas/ExpenseCategory'}
+        amountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        description:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: What it was for (e.g. "Court, March"); no names with salaries (P-12).
+        note:
+          type: string
+          minLength: 1
+          maxLength: 200
+    UpdateExpenseRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        spentOn: {type: string, format: date}
+        category: {$ref: '#/components/schemas/ExpenseCategory'}
+        amountMinor: {$ref: '#/components/schemas/AmountMinor'}
+        description: {type: string, minLength: 1, maxLength: 120}
+        note:
+          type: string
+          minLength: 1
+          maxLength: 200
+          nullable: true
+        clear:
+          type: array
+          uniqueItems: true
+          description: Properties to set to null (ADR-0032). An absent or null property stays unchanged; a property named here must not also be given a value (400).
+          items:
+            type: string
+            enum: [note]
+
+    SeasonBalance:
+      type: object
+      required: [seasonId, from, to, currency, income, expenses, netMinor]
+      properties:
+        seasonId: {type: string, format: uuid}
+        from:
+          type: string
+          format: date
+          description: The season's first day.
+        to:
+          type: string
+          format: date
+          description: The season's last day.
+        currency: {$ref: '#/components/schemas/CurrencyCode'}
+        income: {$ref: '#/components/schemas/BalanceIncome'}
+        expenses: {$ref: '#/components/schemas/BalanceExpenses'}
+        netMinor:
+          type: integer
+          format: int64
+          description: Paid dues minus expenses (may be negative).
+    BalanceIncome:
+      type: object
+      required: [paidMinor, openMinor, waivedMinor]
+      properties:
+        paidMinor: {type: integer, format: int64, minimum: 0}
+        openMinor: {type: integer, format: int64, minimum: 0}
+        waivedMinor: {type: integer, format: int64, minimum: 0}
+    BalanceExpenses:
+      type: object
+      required: [totalMinor, byCategory]
+      properties:
+        totalMinor: {type: integer, format: int64, minimum: 0}
+        byCategory:
+          type: array
+          maxItems: 6
+          description: One entry per category, in the enum's order, zero included.
+          items: {$ref: '#/components/schemas/CategoryTotal'}
+    CategoryTotal:
+      type: object
+      required: [category, totalMinor]
+      properties:
+        category: {$ref: '#/components/schemas/ExpenseCategory'}
+        totalMinor: {type: integer, format: int64, minimum: 0}
+
+    CsvFile:
+      type: string
+      format: binary
+      description: |
+        A CSV file (ADR-0048): UTF-8 with BOM, `,` separator, RFC 4180 quoting, CRLF line ends, one header row; a text
+        cell starting with `=`, `+`, `-`, `@`, TAB or CR is prefixed with `'`.
