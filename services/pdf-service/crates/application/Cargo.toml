@@ -11,5 +11,8 @@ publish.workspace = true
 pdf-domain.workspace = true
 chrono.workspace = true
 
+[dev-dependencies]
+chrono-tz.workspace = true
+
 [lints]
 workspace = true
