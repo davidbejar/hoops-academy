@@ -185,6 +185,10 @@ grep -q '"passwordPolicy": "length(12)' "$R" && grep -q '"bruteForceProtected": 
 grep -q '"loginTheme": "hoops"' "$R" && doc keycloak Deployment | grep -q 'mountPath: /opt/keycloak/themes/hoops/login' \
   && doc keycloak-theme ConfigMap | grep -q 'parent=keycloak.v2' \
   && ok "realm login theme hoops mounted from keycloak-theme ConfigMap" || bad "login theme not mounted"
+# ADR-0022 amendment: the script that applies the look chosen in the app must sit where theme.properties names it.
+doc keycloak-theme ConfigMap | grep -q '^  hoops-theme.js: |' && doc keycloak-theme ConfigMap | grep -q 'scripts=js/hoops-theme.js' \
+  && doc keycloak Deployment | grep -q 'key: hoops-theme.js, path: resources/js/hoops-theme.js' \
+  && ok "login theme script mounted at resources/js/hoops-theme.js" || bad "login theme script not mounted"
 doc mailhog Service | grep -q 'port: 1025' && ok "kind: SMTP sink Service mailhog:1025 (realm smtpServer)" || bad "mailhog in kind"
 ! grep -q 'name: mailhog' "$WORK/umbrella-default.yaml" && ok "SMTP sink disabled outside kind" || bad "mailpit enabled by default"
 # WP100: core's decision e-mails (WP90) go to the same SMTP host as Keycloak's; the login link uses the public URL; the
