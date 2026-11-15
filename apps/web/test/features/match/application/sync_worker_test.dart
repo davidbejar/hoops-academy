@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/match/application/sync/backoff.dart';
 import 'package:hoops_app/features/match/application/sync/sync_status.dart';
 import 'package:hoops_app/features/match/application/sync/sync_worker.dart';
+import 'package:hoops_app/features/match/data/events_remote.dart';
 import 'package:hoops_app/features/match/data/local/match_store.dart';
 import 'package:hoops_app/features/match/domain/match_event.dart';
 import 'package:hoops_app/features/match/domain/pending_event.dart';
@@ -420,4 +422,237 @@ void main() {
       expect(worker.serverRevision.value, 0);
     });
   });
+
+  // Found by mutation testing of the worker (2026-11-15): behaviour no test
+  // of this file noticed when it was broken.
+  group('passes and triggers', () {
+    RecordedEvent other(int n) => RecordedEvent(
+      PeriodStart(
+        EventMeta(
+          id: '0190b6a0-0001-7000-8000-0000000000${n.toString().padLeft(2, '0')}',
+          deviceId: 'assistant-phone',
+          clientSeq: n,
+          period: 1,
+          clockSecondsRemaining: 600,
+          recordedAtClient: DateTime.utc(2026, 11, 1, 10),
+        ),
+      ),
+    );
+
+    Future<void> recordOne() => store.record(
+      tenantId: tenant,
+      personId: me,
+      matchId: matchId,
+      period: 1,
+      clockSecondsRemaining: 300,
+      build: (m) => Assist(m, playerId: 'p1'),
+    );
+
+    SyncWorker workerOn(EventsRemote remote) => SyncWorker(
+      store: store,
+      remote: remote,
+      scope: () => const SyncScope(tenantId: tenant, personId: me),
+      backoff: Backoff(random: Random(42)),
+      timers: timers,
+    );
+
+    test('a trigger during a running pass makes it run once more', () async {
+      final gate = _GatedRemote(server);
+      final w = workerOn(gate);
+      addTearDown(w.dispose);
+      await recordOne();
+      final running = w.syncNow();
+      await gate.submitStarted.future;
+      // Recorded while the first batch is on its way.
+      await recordOne();
+      final joined = w.syncNow();
+      gate.release();
+      await Future.wait([running, joined]);
+      expect(server.batchSizes, [1, 1]);
+      expect(w.status.value.pendingCount, 0);
+    });
+
+    test('a batch that reached the server moves serverRevision on even when '
+        'the feed has nothing new', () async {
+      final w = workerOn(_SilentFeed(server));
+      addTearDown(w.dispose);
+      await recordOne();
+      await w.syncNow();
+      expect(server.batchSizes, [1]);
+      expect(w.serverRevision.value, 1);
+    });
+
+    test('after a push the match is pulled without being asked for', () async {
+      await recordOne();
+      await worker.syncNow();
+      expect((await store.syncedEvents(matchId)).length, 1);
+    });
+
+    test(
+      'a match asked for once is not pulled again by later passes',
+      () async {
+        await worker.syncNow(matchId: matchId);
+        final calls = server.feedCalls;
+        await worker.syncNow();
+        expect(server.feedCalls, calls);
+      },
+    );
+
+    test('a page that is not followed by more is read once', () async {
+      server.preload(matchId, [other(1)]);
+      await worker.syncNow(matchId: matchId);
+      expect(server.feedCalls, 1);
+    });
+
+    test('a successful pass cancels the retry of a failed one', () async {
+      server.offline = true;
+      await recordOne();
+      await worker.syncNow();
+      expect(timers.pending, hasLength(1));
+      server.offline = false;
+      await worker.syncNow();
+      expect(timers.pending, isEmpty);
+    });
+  });
+
+  group('watch', () {
+    RecordedEvent other(int n) => RecordedEvent(
+      PeriodStart(
+        EventMeta(
+          id: '0190b6a0-0002-7000-8000-0000000000${n.toString().padLeft(2, '0')}',
+          deviceId: 'assistant-phone',
+          clientSeq: n,
+          period: 1,
+          clockSecondsRemaining: 600,
+          recordedAtClient: DateTime.utc(2026, 11, 1, 10),
+        ),
+      ),
+    );
+
+    test('pulls at once and then every 15 seconds', () async {
+      server.preload(matchId, [other(1)]);
+      worker.watch(matchId);
+      await pumpEventQueue();
+      expect((await store.syncedEvents(matchId)).length, 1);
+      expect(timers.periodic.single.duration, const Duration(seconds: 15));
+    });
+
+    test('watching another match replaces the first timer', () async {
+      worker.watch(matchId);
+      worker.watch('m2');
+      await pumpEventQueue();
+      expect(timers.periodic, hasLength(1));
+    });
+
+    test('the watched match is pulled by every pass, whatever triggered it; '
+        'not any more after unwatch', () async {
+      worker.watch(matchId);
+      await pumpEventQueue();
+      server.preload(matchId, [other(1)]);
+      await worker.onResumed();
+      expect((await store.syncedEvents(matchId)).length, 1);
+
+      worker.unwatch();
+      final calls = server.feedCalls;
+      await worker.onResumed();
+      expect(server.feedCalls, calls);
+    });
+  });
+
+  group('dispose', () {
+    late SyncWorker w;
+    setUp(() {
+      w = SyncWorker(
+        store: store,
+        remote: server,
+        scope: () => const SyncScope(tenantId: tenant, personId: me),
+        backoff: Backoff(random: Random(42)),
+        timers: timers,
+      );
+    });
+
+    test('stops the timers', () async {
+      server.offline = true;
+      await store.record(
+        tenantId: tenant,
+        personId: me,
+        matchId: matchId,
+        period: 1,
+        clockSecondsRemaining: 300,
+        build: (m) => Assist(m, playerId: 'p1'),
+      );
+      w.watch(matchId);
+      await pumpEventQueue();
+      expect(timers.pending, hasLength(1), reason: 'the retry');
+      expect(timers.periodic, hasLength(1), reason: 'the watch');
+
+      w.dispose();
+
+      expect(timers.pending, isEmpty);
+      expect(timers.periodic, isEmpty);
+    });
+
+    test('sends nothing afterwards', () async {
+      await store.record(
+        tenantId: tenant,
+        personId: me,
+        matchId: matchId,
+        period: 1,
+        clockSecondsRemaining: 300,
+        build: (m) => Assist(m, playerId: 'p1'),
+      );
+      w.dispose();
+      await w.syncNow();
+      expect(server.batchSizes, isEmpty);
+    });
+
+    test('releases both notifiers', () {
+      w.dispose();
+      expect(() => w.status.addListener(() {}), throwsStateError);
+      expect(() => w.serverRevision.addListener(() {}), throwsStateError);
+    });
+  });
+}
+
+/// Holds the first `submit` until [release]; everything else goes through.
+class _GatedRemote implements EventsRemote {
+  _GatedRemote(this._inner);
+  final EventsRemote _inner;
+  final submitStarted = Completer<void>();
+  final _gate = Completer<void>();
+
+  void release() => _gate.complete();
+
+  @override
+  Future<BatchOutcome> submit(String matchId, List<MatchEvent> events) async {
+    if (!submitStarted.isCompleted) {
+      submitStarted.complete();
+      await _gate.future;
+    }
+    return _inner.submit(matchId, events);
+  }
+
+  @override
+  Future<FeedPage> feed(
+    String matchId, {
+    required int after,
+    int limit = 500,
+  }) => _inner.feed(matchId, after: after, limit: limit);
+}
+
+/// Stores batches like the server, but its feed never has anything.
+class _SilentFeed implements EventsRemote {
+  _SilentFeed(this._inner);
+  final EventsRemote _inner;
+
+  @override
+  Future<BatchOutcome> submit(String matchId, List<MatchEvent> events) =>
+      _inner.submit(matchId, events);
+
+  @override
+  Future<FeedPage> feed(
+    String matchId, {
+    required int after,
+    int limit = 500,
+  }) async => const FeedPage(events: [], lastServerSeq: 0, hasMore: false);
 }

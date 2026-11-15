@@ -23,6 +23,12 @@
       ]
     },
     {
+      "file": "lib/features/match/application/sync/sync_worker.dart",
+      "tests": [
+        "test/features/match/application/sync_worker_test.dart"
+      ]
+    },
+    {
       "file": "lib/features/match/data/local/match_store.dart",
       "tests": [
         "test/features/match/data/match_store_test.dart",
@@ -190,6 +196,27 @@
       "replacement": ";",
       "reason": "accrueUntil() never runs twice without enter() or resumeAt() in between (a sub-out leaves the court, a period end stops the clock, finish() accrues only while a period runs)",
       "occurrence": 2
+    },
+    {
+      "file": "lib/features/match/application/sync/sync_worker.dart",
+      "operator": "booleanFlip",
+      "line": "bool _again = false;",
+      "replacement": "true",
+      "reason": "_loop sets _again to false before every pass, so its initial value is never read"
+    },
+    {
+      "file": "lib/features/match/application/sync/sync_worker.dart",
+      "operator": "removeStatement",
+      "line": "_periodic = null;",
+      "replacement": ";",
+      "reason": "the timer is already cancelled; cancelling a cancelled timer again does nothing"
+    },
+    {
+      "file": "lib/features/match/application/sync/sync_worker.dart",
+      "operator": "removeStatement",
+      "line": "_retry = null;",
+      "replacement": ";",
+      "reason": "the timer is already cancelled; cancelling a cancelled timer again does nothing"
     }
   ]
 }
