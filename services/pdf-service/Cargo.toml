@@ -41,7 +41,5 @@ codegen-units = 1
 strip = "symbols"
 
 # RSA key generation in the adapters' tests is slow without optimisation.
-[profile.dev.package.num-bigint-dig]
-opt-level = 3
 [profile.dev.package.rsa]
 opt-level = 3

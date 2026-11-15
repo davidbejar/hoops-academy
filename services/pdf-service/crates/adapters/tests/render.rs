@@ -1,4 +1,5 @@
 //! The krilla renderer draws both sheets in es / en / id, readable back as text, deterministic, paginated.
+#![allow(clippy::unwrap_used, clippy::expect_used)] // a test fails loudly
 
 mod common;
 

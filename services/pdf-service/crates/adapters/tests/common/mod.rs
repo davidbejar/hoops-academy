@@ -1,5 +1,5 @@
 //! Shared by the adapters' integration tests: sample sheets, the text of a PDF, the contract.
-#![allow(dead_code)] // each test binary uses a part
+#![allow(dead_code, clippy::unwrap_used, clippy::expect_used)] // each test binary uses a part; tests fail loudly
 
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use pdf_domain::{

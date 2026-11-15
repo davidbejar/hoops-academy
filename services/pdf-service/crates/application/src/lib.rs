@@ -77,11 +77,15 @@ impl PrintSheets {
     }
 
     pub fn match_sheet(&self, sheet: &MatchSheet) -> Result<RenderedPdf, PrintError> {
-        todo!("{sheet:?} {:?}", self.clock.now())
+        sheet.check()?;
+        let now = self.clock.now();
+        self.print(&sheet.document(now), sheet.file_name(now))
     }
 
     pub fn team_roster(&self, roster: &TeamRoster) -> Result<RenderedPdf, PrintError> {
-        todo!("{roster:?}")
+        roster.check()?;
+        let now = self.clock.now();
+        self.print(&roster.document(now), roster.file_name(now))
     }
 
     fn print(&self, document: &PrintDocument, file_name: String) -> Result<RenderedPdf, PrintError> {
