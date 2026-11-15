@@ -1,0 +1,16 @@
+[package]
+name = "pdf-domain"
+description = "Sheets, limits, labels and the print document of pdf-service; no framework crates (ADR-0052)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+chrono.workspace = true
+chrono-tz.workspace = true
+unicode-normalization.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,6 @@
+# Pinned Rust toolchain of pdf-service (ADR-0052). rustup installs it on first use in this directory;
+# scripts/bump-pins.sh does not move it: bump it by hand with the crates (docs/adr/0052-*.md "Pins").
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy", "llvm-tools-preview"]
+profile = "minimal"

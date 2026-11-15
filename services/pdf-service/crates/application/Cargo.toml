@@ -1,0 +1,15 @@
+[package]
+name = "pdf-application"
+description = "Use cases of pdf-service and their ports (renderer, clock); depends on pdf-domain only (ADR-0052)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+pdf-domain.workspace = true
+chrono.workspace = true
+
+[lints]
+workspace = true

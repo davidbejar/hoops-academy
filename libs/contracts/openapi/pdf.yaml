@@ -1,0 +1,328 @@
+openapi: 3.0.3
+info:
+  title: Hoops Academy — pdf-service API
+  version: 1.0.0
+  description: |
+    Printable sheets (ADR-0051 §3, ADR-0052; decisions 89 and 90 of 2026-11-15). pdf-service is a stateless
+    renderer written in Rust: it owns no data, connects to no database and no broker, and fetches nothing while
+    rendering. **The browser never calls it**: there is no gateway route. The service that owns the data (core for
+    the team roster, game for the match sheet) authorises the user, loads what that user may see, sends it here with
+    its own client-credentials token and returns the PDF to the browser.
+
+    Not an open renderer: fixed templates only (no caller markup, fonts, images or URLs), fonts bundled, texts printed
+    as given. Labels and enum values follow `locale` (es / en / id, ADR-0048); dates and times are printed in the
+    academy's time zone (`yyyy-MM-dd`, `HH:mm`). The output is deterministic: the same body on the same day (academy
+    time zone) and minute gives the same bytes.
+
+    Limits: a body over 256 KiB is a 413 `PAYLOAD_TOO_LARGE`; a list longer than its `maxItems` is a 422
+    `TOO_MANY_ROWS` (the `violations[0].field` names the list). Every other contract violation (unknown or missing
+    property, wrong type, blank or too long text, control characters, an unknown time zone) is a 400
+    `VALIDATION_FAILED` whose `violations` name the fields, never their values. Request bodies are never logged nor
+    put on a span.
+
+    Authentication (ADR-0034): a Keycloak access token of realm `academy` whose `aud` contains `pdf-service` and whose
+    realm roles contain `service`. The realm maps that audience on the clients `core-service` and `game-service` only;
+    a token of the web client (or of any other client) is a 401 `INVALID_TOKEN`; a token with the audience but
+    without the role is a 403 `FORBIDDEN`. Each refusal is a `hoops.security` event and counts in
+    `hoops_authz_denied_total{kind}` (ADR-0043).
+servers:
+  - url: http://pdf-service:8084
+    description: In-cluster address (kind / cloud chart); compose and the host use http://localhost:8084.
+security:
+  - bearerAuth: []
+tags:
+  - name: Sheets
+    description: Printable sheets, internal only.
+
+paths:
+  /internal/pdf/match-sheet:
+    post:
+      operationId: renderMatchSheet
+      tags: [Sheets]
+      summary: Render a match sheet (score, score by period, box score) as PDF
+      description: |
+        Caller: game-service, after the box score read of the user it prints for (its visibility rules applied:
+        `players` holds only the lines that user sees). Shapes follow `game.yaml` (`Match`, `BoxScore`, `StatLine`).
+        File name `hoops-<academy>-match-sheet-<team>-<opponent>-<yyyyMMdd>.pdf` (ADR-0048 pattern, today in the
+        academy's zone), in `Content-Disposition`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MatchSheetRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Pdf'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '415': {$ref: '#/components/responses/UnsupportedMediaType'}
+        '422': {$ref: '#/components/responses/TooManyRows'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/AuthUnavailable'}
+  /internal/pdf/team-roster:
+    post:
+      operationId: renderTeamRoster
+      tags: [Sheets]
+      summary: Render a team roster (players with guardians, then staff) as PDF
+      description: |
+        Caller: core-service, with what its roster export holds (ADR-0048) for a user allowed to export it. Players
+        print in the order sent (core sends them by family then given name). File name
+        `hoops-<academy>-roster-<team>-<yyyyMMdd>.pdf`, in `Content-Disposition`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TeamRosterRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Pdf'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '415': {$ref: '#/components/responses/UnsupportedMediaType'}
+        '422': {$ref: '#/components/responses/TooManyRows'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/AuthUnavailable'}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Client-credentials token of core-service or game-service (`aud` contains `pdf-service`, realm role `service`).
+
+  responses:
+    Pdf:
+      description: The sheet. `Content-Disposition` names the file; `Cache-Control` is `no-store`.
+      headers:
+        Content-Disposition:
+          schema: {type: string, example: 'attachment; filename="hoops-garuda-hoops-roster-u12-elang-20261116.pdf"'}
+        Cache-Control:
+          schema: {type: string, example: no-store}
+      content:
+        application/pdf:
+          schema: {type: string, format: binary}
+    BadRequest:
+      description: '`VALIDATION_FAILED`: the body breaks the contract (`violations` name the fields).'
+      content:
+        application/problem+json:
+          schema: {$ref: './common.yaml#/components/schemas/Problem'}
+    Unauthorized:
+      description: '`UNAUTHENTICATED` (no bearer token) or `INVALID_TOKEN` (expired, wrong audience, issuer or signature).'
+      content:
+        application/problem+json:
+          schema: {$ref: './common.yaml#/components/schemas/Problem'}
+    Forbidden:
+      description: '`FORBIDDEN`: a valid token for pdf-service without the realm role `service`.'
+      content:
+        application/problem+json:
+          schema: {$ref: './common.yaml#/components/schemas/Problem'}
+    PayloadTooLarge:
+      description: '`PAYLOAD_TOO_LARGE`: the body is over 256 KiB.'
+      content:
+        application/problem+json:
+          schema: {$ref: './common.yaml#/components/schemas/Problem'}
+    UnsupportedMediaType:
+      description: '`UNSUPPORTED_MEDIA_TYPE`: the body is not `application/json`.'
+      content:
+        application/problem+json:
+          schema: {$ref: './common.yaml#/components/schemas/Problem'}
+    TooManyRows:
+      description: '`TOO_MANY_ROWS`: a list is longer than its `maxItems`; `violations[0].field` names it.'
+      content:
+        application/problem+json:
+          schema: {$ref: './common.yaml#/components/schemas/Problem'}
+    InternalError:
+      description: '`INTERNAL_ERROR`: the sheet could not be rendered (no detail, no stack trace).'
+      content:
+        application/problem+json:
+          schema: {$ref: './common.yaml#/components/schemas/Problem'}
+    AuthUnavailable:
+      description: '`AUTH_UNAVAILABLE`: the realm''s signing keys could not be fetched; retry later.'
+      content:
+        application/problem+json:
+          schema: {$ref: './common.yaml#/components/schemas/Problem'}
+
+  schemas:
+    # ---------------- shared
+    Locale:
+      type: string
+      description: Language of the labels (the user's app language).
+      enum: [es, en, id]
+    Academy:
+      type: object
+      additionalProperties: false
+      required: [name, timeZone]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120, description: Printed above the title of every page.}
+        timeZone:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: IANA zone id of the academy (e.g. `Europe/Madrid`); every date and time is printed in it.
+          example: Asia/Jakarta
+    JerseyNumber:
+      type: string
+      pattern: '^[0-9]{1,2}$'
+      example: '7'
+
+    # ---------------- match sheet (shapes of game.yaml)
+    MatchSheetRequest:
+      type: object
+      additionalProperties: false
+      required: [locale, academy, match, score, periodScores, teamTotals, players]
+      properties:
+        locale: {$ref: '#/components/schemas/Locale'}
+        academy: {$ref: '#/components/schemas/Academy'}
+        match: {$ref: '#/components/schemas/MatchInfo'}
+        score: {$ref: '#/components/schemas/Score'}
+        periodScores:
+          type: array
+          maxItems: 12
+          description: '`BoxScore.periodScores`; printed by period, periods above `periodCount` as overtimes.'
+          items: {$ref: '#/components/schemas/PeriodScore'}
+        teamTotals: {$ref: '#/components/schemas/StatLine'}
+        players:
+          type: array
+          maxItems: 30
+          description: '`BoxScore.players` as the user may see them, in the order to print.'
+          items: {$ref: '#/components/schemas/PlayerLine'}
+    MatchInfo:
+      type: object
+      additionalProperties: false
+      required: [teamName, opponentName, homeAway, scheduledAt, status, periodCount, periodMinutes]
+      properties:
+        teamName: {type: string, minLength: 1, maxLength: 120, description: The academy's team (game's team replica).}
+        opponentName: {type: string, minLength: 1, maxLength: 120}
+        homeAway: {type: string, enum: [HOME, AWAY]}
+        scheduledAt: {type: string, format: date-time}
+        venue: {type: string, maxLength: 200, nullable: true}
+        status: {type: string, enum: [SCHEDULED, LIVE, FINISHED, CANCELLED]}
+        periodCount: {type: integer, format: int32, minimum: 1, maximum: 8}
+        periodMinutes: {type: integer, format: int32, minimum: 1, maximum: 60}
+    Score:
+      type: object
+      additionalProperties: false
+      required: [team, opponent]
+      properties:
+        team: {type: integer, format: int32, minimum: 0}
+        opponent: {type: integer, format: int32, minimum: 0}
+    PeriodScore:
+      type: object
+      additionalProperties: false
+      required: [period, team, opponent]
+      properties:
+        period: {type: integer, format: int32, minimum: 1, maximum: 12}
+        team: {type: integer, format: int32, minimum: 0}
+        opponent: {type: integer, format: int32, minimum: 0}
+    PlayerLine:
+      type: object
+      additionalProperties: false
+      required: [displayName, wasStarter, stats]
+      properties:
+        displayName: {type: string, minLength: 1, maxLength: 120}
+        jerseyNumber:
+          type: string
+          pattern: '^[0-9]{1,2}$'
+          nullable: true
+        wasStarter: {type: boolean}
+        stats: {$ref: '#/components/schemas/StatLine'}
+    StatLine:
+      type: object
+      additionalProperties: false
+      description: As game's `StatLine` (fg1 = free throws).
+      required: [points, fg1Made, fg1Attempted, fg2Made, fg2Attempted, fg3Made, fg3Attempted, assists, offensiveRebounds, defensiveRebounds, turnovers, steals, blocks, personalFouls, technicalFouls, unsportsmanlikeFouls, secondsPlayed]
+      properties:
+        points: {type: integer, format: int32, minimum: 0}
+        fg1Made: {type: integer, format: int32, minimum: 0}
+        fg1Attempted: {type: integer, format: int32, minimum: 0}
+        fg2Made: {type: integer, format: int32, minimum: 0}
+        fg2Attempted: {type: integer, format: int32, minimum: 0}
+        fg3Made: {type: integer, format: int32, minimum: 0}
+        fg3Attempted: {type: integer, format: int32, minimum: 0}
+        assists: {type: integer, format: int32, minimum: 0}
+        offensiveRebounds: {type: integer, format: int32, minimum: 0}
+        defensiveRebounds: {type: integer, format: int32, minimum: 0}
+        turnovers: {type: integer, format: int32, minimum: 0}
+        steals: {type: integer, format: int32, minimum: 0}
+        blocks: {type: integer, format: int32, minimum: 0}
+        personalFouls: {type: integer, format: int32, minimum: 0}
+        technicalFouls: {type: integer, format: int32, minimum: 0}
+        unsportsmanlikeFouls: {type: integer, format: int32, minimum: 0}
+        secondsPlayed: {type: integer, format: int32, minimum: 0}
+
+    # ---------------- team roster (what core's roster export holds, ADR-0048)
+    TeamRosterRequest:
+      type: object
+      additionalProperties: false
+      required: [locale, academy, team, players, staff]
+      properties:
+        locale: {$ref: '#/components/schemas/Locale'}
+        academy: {$ref: '#/components/schemas/Academy'}
+        team: {$ref: '#/components/schemas/RosterTeam'}
+        players:
+          type: array
+          maxItems: 60
+          description: The players of the team's open assignments, in the order to print.
+          items: {$ref: '#/components/schemas/RosterPlayer'}
+        staff:
+          type: array
+          maxItems: 20
+          items: {$ref: '#/components/schemas/RosterStaffMember'}
+    RosterTeam:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        season: {type: string, maxLength: 120, nullable: true, description: The season's name.}
+        category: {type: string, maxLength: 120, nullable: true, description: The team's age category name.}
+    RosterPlayer:
+      type: object
+      additionalProperties: false
+      required: [givenName, familyName, eligibility, playUpLevels, joinedOn, guardians]
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        birthDate: {type: string, format: date, nullable: true}
+        gender: {type: string, enum: [MALE, FEMALE], nullable: true}
+        ageCategory: {type: string, maxLength: 120, nullable: true, description: Natural age category in the team's season.}
+        eligibility:
+          type: string
+          enum: [ELIGIBLE, PLAY_UP, INELIGIBLE]
+          description: The assignment as stored (PLAY_UP when it plays up, INELIGIBLE once invalidated), as the CSV export.
+        playUpLevels: {type: integer, format: int32, minimum: 0, maximum: 20}
+        jerseyNumber:
+          type: string
+          pattern: '^[0-9]{1,2}$'
+          nullable: true
+        joinedOn: {type: string, format: date}
+        email: {type: string, maxLength: 254, nullable: true}
+        phone: {type: string, maxLength: 32, nullable: true}
+        guardians:
+          type: array
+          maxItems: 4
+          description: Active guardians, each printed on a line below the player.
+          items: {$ref: '#/components/schemas/RosterGuardian'}
+    RosterGuardian:
+      type: object
+      additionalProperties: false
+      required: [givenName, familyName]
+      properties:
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        email: {type: string, maxLength: 254, nullable: true}
+        phone: {type: string, maxLength: 32, nullable: true}
+    RosterStaffMember:
+      type: object
+      additionalProperties: false
+      required: [role, givenName, familyName, since]
+      properties:
+        role: {type: string, enum: [COACH, ASSISTANT_COACH]}
+        givenName: {type: string, minLength: 1, maxLength: 80}
+        familyName: {type: string, minLength: 1, maxLength: 80}
+        since: {type: string, format: date}
+        email: {type: string, maxLength: 254, nullable: true}
+        phone: {type: string, maxLength: 32, nullable: true}

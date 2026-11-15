@@ -1,0 +1,47 @@
+# pdf-service (ADR-0051, ADR-0052): a stateless renderer of printable sheets, outside the Maven reactor.
+# Hexagonal layering as workspace crates: a crate can only use what its Cargo.toml lists, so a wrong import is a
+# compile error, and tests/layering.rs (crate pdf-adapters) pins what each layer may list.
+#   pdf-domain       sheets, limits, labels (es / en / id), file names, the print document; no framework crates
+#   pdf-application  the use cases and their ports (renderer, clock); depends on pdf-domain only
+#   pdf-adapters     HTTP in (axum), JWT, Problem+JSON, the PDF renderer out (krilla), telemetry, the binary
+[workspace]
+resolver = "3"
+members = ["crates/domain", "crates/application", "crates/adapters"]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.99"
+license = "UNLICENSED"
+publish = false
+
+[workspace.dependencies]
+pdf-domain = { path = "crates/domain" }
+pdf-application = { path = "crates/application" }
+chrono = { version = "0.4.45", default-features = false, features = ["std", "clock"] }
+chrono-tz = { version = "0.10.4", default-features = false }
+unicode-normalization = { version = "0.1.26", default-features = false, features = ["std"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "warn"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+# RSA key generation in the adapters' tests is slow without optimisation.
+[profile.dev.package.num-bigint-dig]
+opt-level = 3
+[profile.dev.package.rsa]
+opt-level = 3
