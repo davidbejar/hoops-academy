@@ -3,15 +3,18 @@ package com.hoopsacademy.game.adapters.in.rest;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
+import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RosterBrokerResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
+import com.hoopsacademy.game.application.AcademyNames;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
 import com.hoopsacademy.game.support.Contract;
 import com.hoopsacademy.game.support.CoreEvents;
@@ -56,6 +59,7 @@ class ReplicaRosterSourceTest {
     static final String MEMBER_TENANT = "6a0b5c1e-1111-4111-8111-000000000001";
     static final String COACH_TENANT = "6a0b5c1e-1111-4111-8111-000000000002";
     static final String STRANGER_TENANT = "6a0b5c1e-1111-4111-8111-000000000003";
+    static final String NAMED_TENANT = "6a0b5c1e-1111-4111-8111-000000000004";
 
     @InjectCoreWireMock
     WireMockServer core;
@@ -65,6 +69,12 @@ class ReplicaRosterSourceTest {
 
     @Inject
     ReplicateRoster replicate;
+
+    @Inject
+    AcademyNames academyNames;
+
+    @Inject
+    TenantScope tenantScope;
 
     @BeforeEach
     void coreKnowsNothing() {
@@ -112,5 +122,19 @@ class ReplicaRosterSourceTest {
         given().header("X-Tenant-Id", STRANGER_TENANT).get("/api/game/matches").then().statusCode(404);
 
         core.verify(0, anyRequestedFor(urlPathMatching("/internal/.*")));
+    }
+
+    @Test
+    void theAcademysNameIsKeptFromItsTenantEventsLatestFirst() {
+        TenantId tenant = TenantId.parse(NAMED_TENANT);
+        CoreEvents events = CoreEvents.of(tenant);
+        ReplicaFeed.apply(decoder, replicate, events.tenant("ACTIVE", "Asia/Jakarta", "Garuda Hoops"));
+        assertThat(tenantScope.runAs(tenant, () -> academyNames.find(tenant))).contains("Garuda Hoops");
+
+        ReplicaFeed.apply(decoder, replicate, events.tenant("ACTIVE", "Asia/Jakarta", "Garuda Hoops Bali"));
+
+        assertThat(tenantScope.runAs(tenant, () -> academyNames.find(tenant))).contains("Garuda Hoops Bali");
+        assertThat(tenantScope.runAs(TenantId.parse(MEMBER_TENANT), () -> academyNames.find(tenant)))
+                .as("another tenant's row is not visible (RLS)").isEmpty();
     }
 }

@@ -164,10 +164,11 @@ class RosterEventDecoderTest {
     }
 
     @Test
-    void tenantCarriesStatusAndZone() {
+    void tenantCarriesStatusZoneAndName() {
         TenantChanged suspended = (TenantChanged) event("core.tenant", 1);
         assertThat(suspended.status()).isEqualTo(TenantStatus.SUSPENDED);
         assertThat(suspended.timezone()).isEqualTo(ZoneId.of("Asia/Jakarta"));
+        assertThat(suspended.name()).as("printed on the match sheet (WP117)").isEqualTo("Lions Academy");
     }
 
     @Test

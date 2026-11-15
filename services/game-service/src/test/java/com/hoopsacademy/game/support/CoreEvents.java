@@ -52,8 +52,12 @@ public final class CoreEvents {
     }
 
     public Record tenant(String status, String timezone) {
+        return tenant(status, timezone, "Academy");
+    }
+
+    public Record tenant(String status, String timezone, String name) {
         ObjectNode payload = JSON.createObjectNode().put("slug", "academy-" + tenant.toString().substring(0, 8))
-                .put("name", "Academy").put("status", status).put("timezone", timezone).put("defaultLocale", "en");
+                .put("name", name).put("status", status).put("timezone", timezone).put("defaultLocale", "en");
         return record("core.tenant", "tenant.changed", tenant.value(), payload);
     }
 
