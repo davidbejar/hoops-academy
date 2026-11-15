@@ -53,7 +53,12 @@ class ExportsContractTest {
         ApiResponse ok = export.getResponses().get("200");
 
         assertThat(CORE.getPaths().get(path).readOperations()).as("read-only").hasSize(1);
-        assertThat(ok.getContent()).containsOnlyKeys(CSV);
+        if (ROSTER.equals(path)) {
+            assertThat(ok.getContent()).as("the roster also prints (core 3.7.0, RosterPdfContractTest)")
+                    .containsOnlyKeys(CSV, "application/pdf");
+        } else {
+            assertThat(ok.getContent()).containsOnlyKeys(CSV);
+        }
         MediaType csv = ok.getContent().get(CSV);
         assertThat(csv.getSchema().getType()).isEqualTo("string");
         assertThat(csv.getSchema().getFormat()).isEqualTo("binary");
