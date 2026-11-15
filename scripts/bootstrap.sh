@@ -5,9 +5,10 @@ set -euo pipefail
 need_brew() { command -v brew >/dev/null || { echo "Homebrew is required: https://brew.sh"; exit 1; }; }
 need_brew
 
-# rustup, cargo-llvm-cov and cargo-deny: pdf-service (ADR-0052); no Node anywhere
+# rustup, cargo-llvm-cov and cargo-deny: pdf-service (ADR-0052); go and golangci-lint: finance-service (ADR-0055);
+# no Node anywhere
 FORMULAE=(openjdk@25 maven kind helm tilt podman podman-compose gitleaks pre-commit openapi-generator trivy just opentofu
-          rustup cargo-llvm-cov cargo-deny)
+          rustup cargo-llvm-cov cargo-deny go golangci-lint)
 CASKS=(flutter)   # openjdk@25 formula needs no sudo (temurin cask does)
 
 echo "==> Installing formulae: ${FORMULAE[*]}"
@@ -30,6 +31,11 @@ echo "==> Rust toolchain of pdf-service (services/pdf-service/rust-toolchain.tom
 # Homebrew's rustup is keg-only; `rustup toolchain install` without a name installs the pinned toolchain file's
 ( cd "$(dirname "$0")/../services/pdf-service" && PATH="$(brew --prefix rustup)/bin:$PATH" rustup toolchain install )
 echo "    add $(brew --prefix rustup)/bin to PATH (or let scripts/check.sh find it)"
+
+echo "==> Go toolchain of finance-service (services/finance-service/go.mod)"
+# The `toolchain` line of go.mod pins the version; GOTOOLCHAIN=auto (Go's default) fetches it when Homebrew's go is
+# older. govulncheck is a tool dependency of the module (`go tool govulncheck`), pinned by go.sum.
+( cd "$(dirname "$0")/../services/finance-service" && go mod download && go version )
 
 echo "==> pre-commit hooks"
 ( cd "$(dirname "$0")/.." && pre-commit install --install-hooks )

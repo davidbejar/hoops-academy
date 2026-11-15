@@ -9,15 +9,22 @@ default:
 doctor:
     source scripts/env.sh && scripts/doctor.sh
 
-# Build and run all backend tests (unit + integration) with quality gates: Maven, then the Rust gates of pdf-service
+# Build and run all backend tests (unit + integration) with quality gates: Maven, then the Rust gates of pdf-service,
+# then the Go gates of finance-service
 test:
     source scripts/env.sh && ./mvnw -q -T 1C verify
     just test-rust
+    just test-go
 
 # pdf-service (Rust, ADR-0052): rustfmt, clippy -D warnings, tests with coverage (>= 80 % lines, >= 90 % domain),
 # cargo deny (advisories, licences, bans, sources). ARGS: --offline skips the advisory database fetch
 test-rust *ARGS:
     services/pdf-service/scripts/check.sh {{ARGS}}
+
+# finance-service (Go, ADR-0055): gofmt, go mod tidy/verify, golangci-lint, tests with coverage (>= 80 % statements,
+# >= 90 % domain; Postgres by Testcontainers), govulncheck. ARGS: --offline skips the vulnerability database fetch
+test-go *ARGS:
+    source scripts/env.sh && services/finance-service/scripts/check.sh {{ARGS}}
 
 # Gate before Claude's git commit: academy A logs in through real Keycloak and tries to read academy B (API + database)
 isolation-check:

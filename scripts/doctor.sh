@@ -57,6 +57,9 @@ check "rustup"            "PATH=\"$RUSTUP_BIN:\$HOME/.cargo/bin:\$PATH\" rustup 
 check "rust (pinned)"     "cd services/pdf-service && PATH=\"$RUSTUP_BIN:\$HOME/.cargo/bin:\$PATH\" RUSTUP_AUTO_INSTALL=0 rustc --version | grep -F \"\$(sed -n 's/^channel = \"\\(.*\\)\"$/\\1/p' rust-toolchain.toml)\""
 check "cargo-llvm-cov"    "cargo-llvm-cov llvm-cov --version"
 check "cargo-deny"        "cargo-deny --version"
+# finance-service (ADR-0055): the Go of go.mod's toolchain line, golangci-lint v2 (.golangci.yml is version 2)
+check "go (pinned)"       "cd services/finance-service && go version | grep -F \"\$(sed -n 's/^toolchain //p' go.mod) \""
+check "golangci-lint v2"  "golangci-lint --version | grep -E 'version v?2\\.'"
 check "gitleaks"          "gitleaks version"
 check "pre-commit"        "pre-commit --version"
 check "openapi-generator" "openapi-generator --version 2>&1 | head -1"
