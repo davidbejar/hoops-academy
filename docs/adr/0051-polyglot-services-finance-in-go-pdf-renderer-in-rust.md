@@ -1,6 +1,6 @@
 # ADR-0051: Two services outside the JVM: academy finance in Go, a PDF renderer in Rust
 
-- Status: Accepted (decision only: nothing built yet; no work package planned)
+- Status: Accepted; amended 2026-11-16 (WP111, ADR-0052: pdf-service built; §3 and §5 below)
 - Date: 2026-11-15
 - Amends: ADR-0003 (Quarkus stays the stack of core, game and athlete, no longer of every backend service), ADR-0007
   (three services become five deployables once both are built)
@@ -106,3 +106,14 @@ tenant data at risk. `finance-service` second, on that groundwork. Tenant billin
   Java services; they are updated by the work package that lands each service, not by this ADR.
 - If a service is abandoned, it is removed whole (directory, schema, chart, route, audience); nothing in core, game or
   athlete depends on either.
+
+## Amendment 2026-11-16 (WP111, decisions 89 and 90, ADR-0052)
+- **§3, how pdf-service is reached**: not behind the gateway. The service that owns the data calls it and returns the PDF;
+  the browser never calls it (decision 89). Callers: core-service (team roster) and game-service (match sheet), each with
+  its own client-credentials token, whose `aud` must contain `pdf-service` and whose realm roles contain `service`
+  (ADR-0034); a web client token is refused (401). No HTTPRoute and no rate limit at the edge; a NetworkPolicy admits
+  only core and game, and the body limit (256 KiB) and row caps (422 `TOO_MANY_ROWS`) are the service's own.
+- **§3, first sheets** (decision 90): match sheet / box score and team roster, labels in es / en / id.
+- **§5, settled by ADR-0052**: HTTP axum, PDF engine krilla with bundled Roboto fonts, JWT `jsonwebtoken`, toolchain
+  1.99.1 pinned in `rust-toolchain.toml`, layering as workspace crates with a manifest test, coverage with
+  `cargo-llvm-cov`, dependency audit with `cargo-deny`, OTLP over HTTP/protobuf. Mutation testing for Rust: not yet.

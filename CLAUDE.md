@@ -8,6 +8,8 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
 ## Stack (fixed decisions — see docs/adr)
 - Java 25, Quarkus 3.x, Maven multi-module, hexagonal layering per service. Three services: `core-service`,
   `game-service`, `athlete-service`. Shared code in `libs/common-quarkus`; API contracts in `libs/contracts`.
+- `pdf-service` in Rust (ADR-0051, ADR-0052): Cargo workspace `services/pdf-service` outside the reactor (crates =
+  layers), toolchain pinned in `rust-toolchain.toml`; internal only, called by core and game. Skill `rust-service`.
 - PostgreSQL 17, one database, schema per service, `tenant_id` + Row-Level Security (RLS). App roles are
   NON-OWNER roles (`core_app`, `game_app`, `athlete_app`); Flyway runs as `*_migrator`.
 - Keycloak = authentication only (realm `academy`). Tenant roles (`ADMIN`, `COACH`, `ASSISTANT_COACH`,
@@ -20,7 +22,8 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
 source scripts/env.sh        # JDK 25 + Podman socket for Testcontainers (always do this first)
 just doctor                  # toolchain check
 just up / just down          # local stack: Postgres, Keycloak, nginx, MailHog
-just test                    # ./mvnw verify (unit + integration + arch + RLS suites + coverage gates)
+just test                    # ./mvnw verify (unit + integration + arch + RLS suites + coverage gates), then just test-rust
+just test-rust               # pdf-service: rustfmt, clippy -D warnings, tests + coverage gates, cargo deny
 just isolation-check         # academy A logs in (real Keycloak), cannot read academy B; Claude hook runs it before git commit
 just db-role-check           # no service connects as table owner / superuser / BYPASSRLS; Claude hook runs it before git push
 just mutation [module]       # PIT on the rule code, on demand (not in verify); fails below the baseline; docs/quality/mutation.md
