@@ -567,6 +567,14 @@ the branch `jdk-25` (draft pull request #7), only its handover is on `main`.
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
+- **TODO: PMD maintainability gate in `verify`** (owner decision of 2026-11-15; not planned into a round yet): the
+  existing gates cover bugs and security (SpotBugs + find-sec-bugs, CodeQL, Semgrep, ZAP), tests (JaCoCo, PIT) and
+  layering (ArchUnit), but nothing measures maintainability. Add `maven-pmd-plugin` with a small repository ruleset
+  (cyclomatic / cognitive complexity, method and class length, unused code) and CPD for duplicated code; thresholds
+  set from the current code so the first run is green, every exclusion with a reason as in ADR-0045; an ADR for the
+  ruleset and thresholds. SonarQube was considered and not chosen (a server or an external service, findings that
+  duplicate CodeQL and Semgrep, a second coverage gate next to JaCoCo); look again once the Go and Rust services of
+  ADR-0051 exist.
 - **Cloud slice: unproven until the first apply** (WP104, ADR-0050; the apply itself is a Pending user action). Only
   written, every step marked NOT YET RUN in `docs/runbooks/cloud.md`: plan, apply, cloud-init, the kubeconfig fetch,
   `install.sh`, seed and smoke through `with-cloud.sh`, destroy; the `docker run` Trivy fallback in CI. To check at the
