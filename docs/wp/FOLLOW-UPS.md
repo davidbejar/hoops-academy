@@ -454,6 +454,16 @@ the branch `jdk-25` (draft pull request #7), only its handover is on `main`.
   allows it and the server decides.
 
 ### Security (from `docs/security/review-2026-11.md`)
+- **TODO: LINDDUN privacy threat model** (owner decision of 2026-11-15; not planned into a round yet):
+  `docs/security/threat-model.md` is STRIDE per trust boundary, so it covers security, not privacy; no LINDDUN model
+  exists. Write `docs/security/privacy-threat-model.md` over the same data-flow overview and boundaries, one table per
+  boundary with the seven LINDDUN categories (linking, identifying, non-repudiation, detecting, data disclosure,
+  unawareness, non-compliance), each row with the existing mitigation and the residual risk. To cover at least:
+  minors' personal data and guardian links, health and fitness data (GDPR art. 9), the audit trail and security
+  events (what they record about a person), exports (ADR-0048), one login across academies (ADR-0025, ADR-0026),
+  offline device storage, traces and logs (ADR-0046), retention and the missing purge job, data portability and
+  erasure (not designed), and the `finance` data and the request bodies of `pdf-service` once ADR-0051 is built.
+  Findings become items here, as the security review's did. Needed before real academies use a public deployment.
 - **ASVS gaps left**: breached passwords (6.2.12; not now, decision 60), OTP only optional (6.3.3 Partial by decision
   39).
 - **Security logging leftovers** (WP85, WP86): Keycloak's log is not exported over OTLP (Keycloak 26.8
