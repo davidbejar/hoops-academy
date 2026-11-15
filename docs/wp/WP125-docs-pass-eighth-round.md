@@ -16,6 +16,11 @@ Follow the Close-out checklist of `.claude/skills/wp-round/SKILL.md`:
 3. **README, conformance, roadmap, architecture** (five deployables, the finance bounded context, the PDF path),
    the ADR index, the user guides (Finance area per role, PDF buttons).
 4. **CI state** on `main` observed with `gh run list -b main` (run ids in HANDOVER), `images` included.
+5. **Orchestrator fixes of the round** (no work package; put them in HANDOVER and FOLLOW-UPS): 4d10d7cf the compose
+   nginx limit counts only the public POST of `/platform/academy-requests`; 54e7a2da `tenant_timezone_test.dart`
+   failed late on Sundays in UTC; a new dated ZAP acceptance in `.zap/api-core.conf` (40018 on
+   `/platform/academy-requests`, until 2027-05-16: the 429 of the WP115 limit, as WP83's for `events:batch`) goes
+   into "Acceptances with an expiry".
 
 ## Acceptance
 - [ ] Every claim checked against a handover, a commit or a command you ran

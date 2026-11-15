@@ -66,14 +66,6 @@ class AvatarMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final c = HoopsTokens.colorsOf(context);
-    final language = ref.watch(effectiveLocaleProvider).languageCode;
-    final themeMode = ref.watch(themeModePreferenceProvider);
-
-    Widget chosen(bool selected) => selected
-        ? Icon(Icons.check_circle, color: c.brand)
-        : const SizedBox.shrink();
-
     return SingleChildScrollView(
       key: const Key('avatar-menu'),
       padding: const EdgeInsets.fromLTRB(
@@ -94,48 +86,76 @@ class AvatarMenu extends ConsumerWidget {
             subtitle: email ?? l.profileTitle,
             onTap: onOpenProfile,
           ),
-          SectionCard(
-            title: l.language,
-            child: Column(
-              spacing: HoopsSpace.sm,
-              children: [
-                for (final code in supportedLanguageCodes)
-                  ListRow(
-                    key: Key('lang-$code'),
-                    title: _languageName(l, code),
-                    trailing: chosen(code == language),
-                    onTap: () => chooseLanguage(ref, code),
-                  ),
-              ],
-            ),
-          ),
-          SectionCard(
-            title: l.themeTitle,
-            child: Column(
-              spacing: HoopsSpace.sm,
-              children: [
-                for (final mode in ThemeMode.values)
-                  ListRow(
-                    key: Key('theme-${mode.name}'),
-                    leading: IconTile(
-                      mode.icon,
-                      tone: HoopsTone.neutral,
-                      size: HoopsSize.minTapTarget - HoopsSpace.sm,
-                    ),
-                    title: mode.label(l),
-                    trailing: chosen(mode == themeMode),
-                    onTap: () => ref
-                        .read(themeModePreferenceProvider.notifier)
-                        .set(mode),
-                  ),
-              ],
-            ),
-          ),
+          const LanguageSection(),
+          const ThemeSection(),
         ],
       ),
     );
   }
 }
+
+/// The language choice as a card; shared by the avatar menu and the academy
+/// chooser, which sits outside the shell.
+class LanguageSection extends ConsumerWidget {
+  const LanguageSection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final language = ref.watch(effectiveLocaleProvider).languageCode;
+    return SectionCard(
+      title: l.language,
+      child: Column(
+        spacing: HoopsSpace.sm,
+        children: [
+          for (final code in supportedLanguageCodes)
+            ListRow(
+              key: Key('lang-$code'),
+              title: _languageName(l, code),
+              trailing: _chosen(context, code == language),
+              onTap: () => chooseLanguage(ref, code),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The theme choice (system, light, dark) as a card; see [LanguageSection].
+class ThemeSection extends ConsumerWidget {
+  const ThemeSection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final themeMode = ref.watch(themeModePreferenceProvider);
+    return SectionCard(
+      title: l.themeTitle,
+      child: Column(
+        spacing: HoopsSpace.sm,
+        children: [
+          for (final mode in ThemeMode.values)
+            ListRow(
+              key: Key('theme-${mode.name}'),
+              leading: IconTile(
+                mode.icon,
+                tone: HoopsTone.neutral,
+                size: HoopsSize.minTapTarget - HoopsSpace.sm,
+              ),
+              title: mode.label(l),
+              trailing: _chosen(context, mode == themeMode),
+              onTap: () =>
+                  ref.read(themeModePreferenceProvider.notifier).set(mode),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _chosen(BuildContext context, bool selected) => selected
+    ? Icon(Icons.check_circle, color: HoopsTokens.colorsOf(context).brand)
+    : const SizedBox.shrink();
 
 String _languageName(AppLocalizations l, String code) => switch (code) {
   'en' => l.languageName_en,

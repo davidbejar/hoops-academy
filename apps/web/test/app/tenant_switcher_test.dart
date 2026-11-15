@@ -6,6 +6,7 @@ import '../support/fixtures.dart';
 import '../support/harness.dart';
 
 void main() {
+  chooserPickersTests();
   testWidgets('zero memberships shows the no-access screen', (tester) async {
     final h = Harness(me: FakeMeRepository(userWith([])));
     await h.pump(tester);
@@ -119,4 +120,59 @@ void main() {
       expect(find.byType(Image), findsNothing);
     },
   );
+}
+
+/// WP115: the chooser sits outside the shell, so it carries the language and
+/// theme pickers itself.
+void chooserPickersTests() {
+  Future<Harness> pumpChooser(WidgetTester tester) async {
+    final h = Harness(
+      me: FakeMeRepository(userWith([tenantNorth, tenantSouth])),
+    );
+    await h.pump(tester);
+    return h;
+  }
+
+  Future<void> tapKey(WidgetTester tester, String key) async {
+    final f = find.byKey(Key(key));
+    await tester.ensureVisible(f);
+    await tester.pumpAndSettle();
+    await tester.tap(f);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the chooser offers language and theme', (tester) async {
+    await pumpChooser(tester);
+    for (final k in [
+      'lang-es',
+      'lang-en',
+      'lang-id',
+      'theme-system',
+      'theme-light',
+      'theme-dark',
+    ]) {
+      expect(find.byKey(Key(k), skipOffstage: false), findsOneWidget);
+    }
+  });
+
+  testWidgets('choosing a language on the chooser applies and stores it', (
+    tester,
+  ) async {
+    final h = await pumpChooser(tester);
+    await tapKey(tester, 'lang-en');
+
+    expect(h.prefs.getString('hoops.locale'), 'en');
+    expect(find.text('Where do you want to work?'), findsOneWidget);
+    expect(find.byKey(const Key('tenant-list')), findsOneWidget);
+  });
+
+  testWidgets('choosing a theme on the chooser applies and stores it', (
+    tester,
+  ) async {
+    final h = await pumpChooser(tester);
+    await tapKey(tester, 'theme-dark');
+
+    expect(h.prefs.getString('hoops.themeMode'), 'dark');
+    expect(find.byKey(const Key('tenant-list')), findsOneWidget);
+  });
 }

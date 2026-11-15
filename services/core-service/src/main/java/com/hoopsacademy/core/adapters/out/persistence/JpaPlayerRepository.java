@@ -11,7 +11,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
-import com.hoopsacademy.core.domain.roster.TeamId;
 import jakarta.persistence.TypedQuery;
 import java.util.ArrayList;
 import java.time.Clock;

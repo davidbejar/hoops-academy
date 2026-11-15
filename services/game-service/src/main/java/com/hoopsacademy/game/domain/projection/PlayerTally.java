@@ -56,7 +56,7 @@ final class PlayerTally {
     void record(MatchEvent.PlayerStat stat) {
         switch (stat) {
             case MatchEvent.Shot s -> shot(s);
-            case MatchEvent.Assist a -> assists++;
+            case MatchEvent.Assist _ -> assists++;
             case MatchEvent.Rebound r -> {
                 if (r.kind() == MatchEvent.ReboundKind.OFFENSIVE) {
                     offensiveRebounds++;
@@ -64,9 +64,9 @@ final class PlayerTally {
                     defensiveRebounds++;
                 }
             }
-            case MatchEvent.Turnover t -> turnovers++;
-            case MatchEvent.Steal s -> steals++;
-            case MatchEvent.Block b -> blocks++;
+            case MatchEvent.Turnover _ -> turnovers++;
+            case MatchEvent.Steal _ -> steals++;
+            case MatchEvent.Block _ -> blocks++;
             case MatchEvent.Foul f -> foul(f.kind());
         }
     }

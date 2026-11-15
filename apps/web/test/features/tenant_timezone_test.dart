@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
+import 'package:hoops_app/features/training/domain/week.dart';
 import 'package:hoops_athlete_api/hoops_athlete_api.dart' as ath;
 
 import '../support/athlete_scenarios.dart';
@@ -15,7 +16,13 @@ void main() {
   testWidgets(
     'training calendar shows session times in the academy zone, zone named once',
     (tester) async {
-      final day = weekday(1);
+      // The calendar shows the week of "now" in the academy zone: late on a
+      // Sunday in UTC, Jakarta is already in the next week.
+      final jakartaNow = DateTime.now().toUtc().add(const Duration(hours: 7));
+      final monday = startOfWeek(
+        DateTime(jakartaNow.year, jakartaNow.month, jakartaNow.day),
+      );
+      final day = DateTime(monday.year, monday.month, monday.day + 1);
       final noonUtc = DateTime.utc(day.year, day.month, day.day, 12);
       final athlete = FakeAthlete(
         training: FakeTrainingRepository(

@@ -56,6 +56,9 @@ ADR-0055 is reserved for the Go stack and harness, ADR-0056 for the finance doma
 7. **Docs**: ADR-0055, ADR-0056, the authz-matrix section, the skill for agents working on the Go service,
    `CLAUDE.md` lines, the Dart package generated and committed (`apps/web/packages/finance`; add it to the web's
    `pubspec.yaml` so `flutter analyze` and `just web-test` stay green).
+8. **Privacy** (WP112, `docs/security/privacy-threat-model.md` P-10, P-12): the contract and ADR-0056 keep free-text
+   reasons and notes short and say they must not hold health or family details; the roster replica of WP119 will
+   hold no birth date and no gender (say so in ADR-0056).
 
 ## Acceptance
 - [ ] `finance.yaml` 1.0.0 complete and validated; Dart package generated and committed

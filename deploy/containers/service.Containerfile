@@ -13,9 +13,11 @@
 #                     `./mvnw package` (fast inner loop for Tilt; use service-prebuilt.containerignore).
 ARG APP_SOURCE=maven
 ARG MAVEN_IMAGE=docker.io/library/maven:3-eclipse-temurin-25
-# Pinned by digest (trivy DS-0001). Digest = multi-arch index (amd64, arm64, ppc64le, s390x) of tag 1.24
-# (ubi9/openjdk-25-runtime, resolved 2026-11-14, = 1.24-3.1794341158); bump tag and digest together.
-ARG RUNTIME_IMAGE=registry.access.redhat.com/ubi9/openjdk-25-runtime:1.24@sha256:7f2eaba33484d04e5331135e8d3e621c5a4740b6b03bc99d25e4d4dc043f6b8c
+# Distroless Java 25 (ADR-0054): Debian 13, Temurin JRE, user nonroot (65532), no shell, no package manager. Distroless
+# publishes floating tags only, so the pin is the digest (trivy DS-0001) of the multi-arch index (amd64, arm64, s390x,
+# ppc64le, riscv64) of `java25-debian13:nonroot`, resolved 2026-11-15 (Temurin 25.0.5+8). The weekly
+# scripts/bump-pins.sh moves the digest; a new JDK or Debian major changes the name here and in scripts/bump_pins.py.
+ARG RUNTIME_IMAGE=gcr.io/distroless/java25-debian13:nonroot@sha256:1c4ced761d17961c900cba60c33c8c3c46edbdadaa9d5ef9806eb5a6824fd406
 
 # ---------- stage 1a: build with Maven ---------------------------------------------------------------------------
 FROM ${MAVEN_IMAGE} AS app-maven
@@ -44,7 +46,9 @@ FROM app-${APP_SOURCE} AS app
 FROM scratch AS sbom
 COPY --from=app-maven /out/sbom/ /
 
-# ---------- stage 2: runtime (non-root UBI9 OpenJDK 25) ----------------------------------------------------------
+# ---------- stage 2: runtime (distroless Java 25, non-root, no shell) -----------------------------------------------
+# No shell here: no RUN, an exec-form entrypoint, HTTP probes only (the chart's httpGet on /q/health/*). OS fixes come
+# with a new base digest (bump-pins), never from a package manager in this stage. Debugging: ADR-0054.
 FROM ${RUNTIME_IMAGE}
 ARG SERVICE
 ARG SERVICE_PORT=8080
@@ -53,19 +57,17 @@ ARG SOURCE_URL=""
 LABEL org.opencontainers.image.title="hoops-${SERVICE}" \
       org.opencontainers.image.source="${SOURCE_URL}" \
       org.opencontainers.image.description="Hoops Academy ${SERVICE} (Quarkus fast-jar)"
-ENV LANGUAGE='en_US:en' \
-    # container-aware heap: the JVM sizes itself from the cgroup memory limit
-    JAVA_OPTS_APPEND="-XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dquarkus.http.host=0.0.0.0" \
-    JAVA_APP_JAR="/deployments/quarkus-run.jar"
-# Fast-jar layout: lib/ changes least, app/ most -> better layer reuse.
-COPY --from=app --chown=185:0 /out/quarkus-app/lib/ /deployments/lib/
-COPY --from=app --chown=185:0 /out/quarkus-app/*.jar /deployments/
-COPY --from=app --chown=185:0 /out/quarkus-app/app/ /deployments/app/
-COPY --from=app --chown=185:0 /out/quarkus-app/quarkus/ /deployments/quarkus/
-# OS fixes published after the pinned base image was built (2026-11-14: 27 fixable HIGH in the newest 1.24 digest,
-# 14 left after this step: krb5-libs, whose fix is not in the UBI repositories yet). The digest pin stays the base.
-USER root
-RUN microdnf -y update && microdnf clean all
-USER 185
+# Fast-jar layout: lib/ changes least, app/ most -> better layer reuse. Owned by root and read-only for the app user
+# (any uid can read them, so a runAsUser other than 65532 still starts).
+COPY --from=app /out/quarkus-app/lib/ /deployments/lib/
+COPY --from=app /out/quarkus-app/*.jar /deployments/
+COPY --from=app /out/quarkus-app/app/ /deployments/app/
+COPY --from=app /out/quarkus-app/quarkus/ /deployments/quarkus/
+WORKDIR /deployments
+USER 65532:65532
 EXPOSE ${SERVICE_PORT}
-ENTRYPOINT ["/opt/jboss/container/java/run/run-java.sh"]
+# Container-aware heap: the JVM sizes itself from the cgroup memory limit. Extra JVM flags at deploy time go in
+# JDK_JAVA_OPTIONS (read by the java launcher); run-java.sh and JAVA_OPTS_APPEND of the old UBI image are gone.
+ENTRYPOINT ["/usr/bin/java", "-XX:MaxRAMPercentage=75.0", "-XX:+ExitOnOutOfMemoryError", \
+            "-Djava.util.logging.manager=org.jboss.logmanager.LogManager", "-Dquarkus.http.host=0.0.0.0", \
+            "-jar", "/deployments/quarkus-run.jar"]

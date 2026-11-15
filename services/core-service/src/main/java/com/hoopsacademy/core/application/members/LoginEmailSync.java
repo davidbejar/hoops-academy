@@ -16,7 +16,6 @@ import com.hoopsacademy.core.domain.membership.Person;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 

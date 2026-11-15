@@ -9,7 +9,6 @@ import com.hoopsacademy.core.application.port.PlayerRepository.PlayerRow;
 import com.hoopsacademy.core.application.port.PlayerRepository.Visibility;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
-import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.HashSet;
 import java.util.Optional;

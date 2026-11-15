@@ -28,7 +28,7 @@ class Pin:
 
 # Inventory. kind: image (repo + tag_re [+ floating tag, digest only]), release (GitHub releases), chart (OCI helm chart
 # whose appVersion names the image whose digest is also pinned). File | group(s) | resolved by:
-#   service.Containerfile  RUNTIME_IMAGE tag+digest   | skopeo list-tags + inspect
+#   service.Containerfile  RUNTIME_IMAGE digest (distroless :nonroot) | skopeo inspect (floating tag)
 #   web.Containerfile      NGINX_IMAGE tag (even minor)| skopeo list-tags
 #   values.yaml            redis tag, redpanda tag+digest, mailpit tag | skopeo
 #   ci.yml images.yml sbom.sh aquasec/trivy tag       | skopeo list-tags (Docker Hub)
@@ -40,9 +40,9 @@ class Pin:
 # Gateway API (up.sh) is NOT bumped here: it must match Envoy Gateway's compatibility matrix (ADR-0031), by hand.
 SEMVER = r"^v?(\d+\.\d+\.\d+)$"
 PINS = [
-    Pin("ubi9 openjdk-25-runtime", ["deploy/containers/service.Containerfile"],
-        rf"openjdk-25-runtime:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
-        repo="registry.access.redhat.com/ubi9/openjdk-25-runtime", tag_re=r"^(\d+\.\d+)$"),
+    Pin("distroless java25 nonroot", ["deploy/containers/service.Containerfile"],
+        rf"distroless/java25-debian13:nonroot@(?P<digest>{DIGEST})", "image",
+        repo="gcr.io/distroless/java25-debian13", floating="nonroot"),
     Pin("nginx-unprivileged", ["deploy/containers/web.Containerfile"],
         r"nginxinc/nginx-unprivileged:(?P<tag>[\w.\-]+)\n", "image",
         repo="docker.io/nginxinc/nginx-unprivileged", tag_re=r"^(\d+\.\d+)-alpine$", even_minor=True),

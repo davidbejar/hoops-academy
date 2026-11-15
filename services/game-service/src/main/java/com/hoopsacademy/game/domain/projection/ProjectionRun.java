@@ -49,8 +49,8 @@ final class ProjectionRun {
             case MatchEvent.SubOut out -> subOut(out, clock);
             case MatchEvent.PlayerStat stat -> playerStat(stat);
             case MatchEvent.OpponentScore score -> opponentScore(score);
-            case MatchEvent.Timeout timeout -> { }
-            case MatchEvent.Note note -> { }
+            case MatchEvent.Timeout _ -> { }
+            case MatchEvent.Note _ -> { }
             case MatchEvent.Void ignored -> { }
         }
         if (running) {

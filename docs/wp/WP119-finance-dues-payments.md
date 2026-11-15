@@ -29,6 +29,9 @@ manual generation.
    only; a parent of another player gets 404-style no existence leak as the matrix says). Role-matrix tests from the
    matrix; a denial is a security event.
 5. **Docs**: ADR-0056 amendment for anything the model needed, the matrix rows if they changed.
+6. **Privacy** (WP112, `docs/security/privacy-threat-model.md` P-10, P-12): the roster replica stores no birth date
+   and no gender (a test on the decoder proves they are dropped); reasons and notes are never logged or put on a
+   span.
 
 ## Acceptance
 - [ ] Red tests committed before each change; RLS suites green for the new tables

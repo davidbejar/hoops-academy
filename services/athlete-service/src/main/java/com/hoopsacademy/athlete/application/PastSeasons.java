@@ -5,7 +5,6 @@ import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.problem.SeasonEndedException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.util.Optional;
 
 /**
  * Teams whose season has ended (the day after its last day, in the tenant's zone) are read-only history (ADR-0042).

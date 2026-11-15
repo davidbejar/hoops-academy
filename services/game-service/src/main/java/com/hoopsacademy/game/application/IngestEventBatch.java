@@ -100,7 +100,7 @@ public class IngestEventBatch {
         return switch (admission.check(event, ledger)) {
             case EventAdmission.Duplicate duplicate -> Result.stored(id, Status.DUPLICATE, duplicate.serverSeq());
             case EventAdmission.Refused refused -> Result.rejected(id, refused.reason(), refused.message());
-            case EventAdmission.Admitted admitted -> store(match, event, ledger, recorder);
+            case EventAdmission.Admitted _ -> store(match, event, ledger, recorder);
         };
     }
 
