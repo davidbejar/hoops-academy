@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — game-service API
-  version: 2.3.0
+  version: 2.4.0
   description: |
     Match operations and statistics (offline-first, event-sourced).
 
@@ -29,6 +29,10 @@ info:
     `SEASON_ENDED` to the callers who could write it otherwise (a former staff member gets 409, not 403); events
     recorded on the device after the season's last day are REJECTED with `SEASON_ENDED`, events recorded during the
     season still sync.
+
+    Match sheet PDF (game 2.4.0, WP117, decisions 89 and 90, ADR-0048 amendment): `getMatchSheetPdf` prints what
+    `getBoxScore` shows the caller (same readers, same player lines) as a PDF that game has the internal
+    `pdf-service` render; the browser never calls `pdf-service`.
 servers:
   - url: /
     description: Gateway root (tenant API under /api/game, internal API under /internal).
@@ -354,6 +358,52 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
+  /api/game/matches/{matchId}/box-score:pdf:
+    parameters:
+      - $ref: './common.yaml#/components/parameters/TenantIdHeader'
+      - $ref: '#/components/parameters/MatchId'
+    get:
+      operationId: getMatchSheetPdf
+      tags: [Statistics]
+      summary: The match sheet (header, score, score by period, box score) as a PDF
+      description: |
+        The box score of `getBoxScore` printed as a match sheet (decisions 89 and 90, ADR-0048 amendment of WP117):
+        the academy, the team and the opponent, home or away, the day and time in the academy's time zone, the venue
+        and the status, the score, the score by period (overtimes after `periodCount`), the team totals and one line
+        per player **the caller sees in `getBoxScore`** (roster order, jersey, starter, every `StatLine` figure). No
+        projection warnings. Labels in the language of `Accept-Language` (`es`, `en`, `id`; else `en`).
+
+        game loads the match and its box score, sends them to the internal `pdf-service` with its own
+        client-credentials token and returns the file: `Content-Disposition: attachment;
+        filename="hoops-<academy>-match-sheet-<team>-<opponent>-<yyyyMMdd>.pdf"` (ADR-0048 pattern, today in the
+        academy's zone) and `Cache-Control: no-store`. Not audited (the box score it prints is a read every member
+        has; the audit trail is core's and records the roster and audit exports). Online only: when `pdf-service`
+        cannot be reached, is not configured, or fails, 503 Problem `UPSTREAM_UNAVAILABLE` (safe to retry; nothing of
+        the sheet is logged).
+
+        Authz: every member of the academy, as `getBoxScore`: ADMIN and staff of the match's team (also its former
+        staff once the season has ended, ADR-0042) get every player's line; anybody else the lines of their linked
+        players (PARENT) and their own (PLAYER), with the team-level figures; non-members 404.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The match sheet.
+          headers:
+            Content-Disposition:
+              description: '`attachment; filename="hoops-<academy>-match-sheet-<team>-<opponent>-<yyyyMMdd>.pdf"` (ASCII, ADR-0048).'
+              schema: {type: string, example: 'attachment; filename="hoops-lions-academy-match-sheet-u14-tigers-20261116.pdf"'}
+            Cache-Control:
+              description: '`no-store`: the sheet holds players'' names and is never cached.'
+              schema: {type: string, example: no-store}
+          content:
+            application/pdf:
+              schema: {$ref: '#/components/schemas/PdfFile'}
+        '400': {$ref: './common.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './common.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './common.yaml#/components/responses/NotFound'}
+        '503': {$ref: './common.yaml#/components/responses/ServiceUnavailable'}
   /api/game/players/{playerId}/season-stats:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -413,8 +463,21 @@ components:
       in: path
       required: true
       schema: {type: string, format: uuid}
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: |
+        Language of the sheet's labels (RFC 9110 list, e.g. `id, en;q=0.8`): the first of `es`, `en`, `id` in
+        preference order (`in` counts as `id`, `q=0` refuses); absent, `*` or unsupported = `en`. Names are printed as
+        stored.
+      schema: {type: string, maxLength: 200}
 
   schemas:
+    PdfFile:
+      type: string
+      format: binary
+      description: A PDF document (`%PDF-`), rendered by pdf-service from fixed templates (ADR-0051, ADR-0052).
     # ---------------- matches
     MatchStatus:
       type: string
