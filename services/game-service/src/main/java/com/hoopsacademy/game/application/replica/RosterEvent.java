@@ -41,7 +41,9 @@ public sealed interface RosterEvent {
     /** The topic the event came from (kept with the applied event id). */
     String topic();
 
-    record TenantChanged(EventEnvelope envelope, TenantStatus status, ZoneId timezone) implements RosterEvent {
+    /** @param name the academy's name (printed on the match sheet) */
+    record TenantChanged(EventEnvelope envelope, TenantStatus status, ZoneId timezone, String name)
+            implements RosterEvent {
         @Override
         public String topic() {
             return "core.tenant";

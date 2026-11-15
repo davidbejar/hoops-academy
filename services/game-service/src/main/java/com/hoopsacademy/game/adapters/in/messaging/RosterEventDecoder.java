@@ -130,7 +130,8 @@ public class RosterEventDecoder {
         ownTenant(envelope);
         String zone = text(payload, "timezone");
         try {
-            return new RosterEvent.TenantChanged(envelope, TenantStatus.valueOf(text(payload, "status")), ZoneId.of(zone));
+            return new RosterEvent.TenantChanged(envelope, TenantStatus.valueOf(text(payload, "status")), ZoneId.of(zone),
+                    text(payload, "name"));
         } catch (DateTimeException e) {
             throw new InvalidEvent("unknown time zone " + zone);
         }

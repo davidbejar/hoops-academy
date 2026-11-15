@@ -66,7 +66,8 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
     /** A guarded upsert statement; {@code hasId} false for the tenant's own row (keyed by tenant only). */
     private record Upsert(String sql, boolean hasId) {}
 
-    private static final Upsert TENANT_REF = upsert("game.tenant_ref", false, "status", "timezone", "removed");
+    private static final Upsert TENANT_REF =
+            upsert("game.tenant_ref", false, "status", "timezone", "name", "removed");
     private static final Upsert PERSON_REF =
             upsert("game.person_ref", true, "display_name", "subject", "roles", "active", "removed");
     private static final Upsert PLAYER_REF =
@@ -81,7 +82,7 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
             upsert("game.guardian_link_ref", true, "guardian_person_id", "player_id", "removed");
     /** The soft removals of {@link Removed}: only the identity stays, every state column becomes null. */
     private static final Map<Aggregate, Upsert> REMOVALS = Map.of(
-            Aggregate.TENANT, removal("game.tenant_ref", false, "status", "timezone"),
+            Aggregate.TENANT, removal("game.tenant_ref", false, "status", "timezone", "name"),
             Aggregate.PERSON, removal("game.person_ref", true, "display_name", "subject", "roles", "active"),
             Aggregate.PLAYER, removal("game.player_ref", true, "person_id", "display_name", "status", "birth_date",
                     "gender"),
@@ -116,7 +117,7 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
     public boolean save(RosterEvent event) {
         return switch (event) {
             case TenantChanged tenant -> upsertRow(TENANT_REF, tenant.envelope(),
-                    text(tenant.status().name()), text(tenant.timezone().getId()), flag(false));
+                    text(tenant.status().name()), text(tenant.timezone().getId()), text(tenant.name()), flag(false));
             case PersonChanged person -> upsertRow(PERSON_REF, person.envelope(), text(person.displayName()),
                     text(person.subject().orElse(null)), roles(person), flag(person.active()), flag(false));
             case PlayerChanged player -> upsertRow(PLAYER_REF, player.envelope(), object(player.personId()),
@@ -143,10 +144,10 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
 
     @Override
     public Optional<ReplicaTenant> tenant(TenantId tenantId) {
-        return first(query("select status, timezone from game.tenant_ref where tenant_id = ? and not removed",
+        return first(query("select status, timezone, name from game.tenant_ref where tenant_id = ? and not removed",
                 statement -> statement.setObject(1, tenantId.value()),
                 row -> new ReplicaTenant(TenantStatus.valueOf(row.getString("status")),
-                        ZoneId.of(row.getString("timezone")))));
+                        ZoneId.of(row.getString("timezone")), row.getString("name"))));
     }
 
     @Override
