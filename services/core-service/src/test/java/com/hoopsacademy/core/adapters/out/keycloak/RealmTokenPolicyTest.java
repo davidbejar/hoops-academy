@@ -40,8 +40,8 @@ class RealmTokenPolicyTest {
     @ParameterizedTest
     @CsvSource({
         "web, core-service game-service athlete-service",
-        "core-service, game-service athlete-service",
-        "game-service, core-service",
+        "core-service, game-service athlete-service pdf-service",
+        "game-service, core-service pdf-service",
         "athlete-service, core-service"})
     void eachClientsTokensCarryTheAudiencesOfTheServicesItCalls(String clientId, String audiences) {
         assertThat(audiencesOf(clientId)).containsExactlyInAnyOrder(audiences.split(" "));
