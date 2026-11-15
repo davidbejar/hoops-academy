@@ -41,7 +41,7 @@ jsonschema = { version = "0.61.2", default-features = false }
 lopdf = { version = "0.47.0", default-features = false }
 toml = "1.2.1"
 http-body-util = "0.1.5"
-base64 = "0.22"
+base64 = "0.23"
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["std", "fmt", "json", "registry"] }
 
 [lints]

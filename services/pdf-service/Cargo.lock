@@ -1646,7 +1646,7 @@ name = "pdf-adapters"
 version = "1.0.0"
 dependencies = [
  "axum",
- "base64 0.22.1",
+ "base64 0.23.1",
  "chrono",
  "chrono-tz",
  "http-body-util",
