@@ -387,7 +387,7 @@ WP118 (contract first), so the web (WP121) starts one wave later while the Go se
 | 1 | WP112 | Security docs: LINDDUN privacy threat model | Opus · medium | Done (`docs/security/privacy-threat-model.md`; findings P-01..P-13, P-01..P-05 before real academies) |
 | 1 | WP113 | Build: PMD and CPD maintainability gate in `verify` | Opus · medium | Running |
 | 1 | WP114 | Images: Java services on a distroless Java 25 base | Opus · medium | Running |
-| 1 | WP115 | Small fixes: language and theme on the academy chooser, compose nginx limits, audit wording | Sonnet · medium | Running |
+| 1 | WP115 | Small fixes: language and theme on the academy chooser, compose nginx limits, audit wording | Sonnet · medium | Done (web 1507 tests; 4 chooser goldens; nginx 10/min + 2/s on exports and academy requests) |
 | 2 | WP116 | Core: team roster PDF through pdf-service; team name on the audit `team` target | Opus · high | After wave 1 |
 | 2 | WP117 | Game: match sheet PDF through pdf-service; start guard for `replica` without consumer | Opus · high | After wave 1 |
 | 2 | WP118 | finance-service in Go: toolchain, isolation harness, whole contract, settings and fee plans, chart | Opus · high | After wave 1 |
