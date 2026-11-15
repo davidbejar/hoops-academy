@@ -167,6 +167,24 @@ void main() {
       expect(find.byKey(const Key('match-team-filter')), findsOneWidget);
     });
 
+    testWidgets('back from a live match the list shows the score the server '
+        'has after the events recorded there', (tester) async {
+      final game = gameWith();
+      final h = await pumpCoach(tester, game, '/matches');
+      expect(find.text('0 – 0'), findsWidgets);
+
+      await h.go(tester, '/matches/$live');
+      // The server counts what the coach records from here on.
+      game.matches.matches[0] = gameMatch(live, opponent: 'Tigres', team: 3);
+      await tapKey(tester, 'period-start');
+      await tapAction(tester, 'p1', '3pt-made');
+      expect(game.server.stored(live), isNotEmpty, reason: 'synced');
+
+      await h.go(tester, '/matches');
+
+      expect(find.text('3 – 0'), findsOneWidget);
+    });
+
     testWidgets('offline: cached list after a successful load', (tester) async {
       final game = gameWith();
       final h = await pumpCoach(tester, game, '/matches');
