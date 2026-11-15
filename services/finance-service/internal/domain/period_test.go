@@ -6,7 +6,9 @@ import (
 	"time"
 )
 
-func day(year int, month time.Month, d int) time.Time { return time.Date(year, month, d, 0, 0, 0, 0, time.UTC) }
+func day2026(month time.Month, d int) time.Time {
+	return time.Date(2026, month, d, 0, 0, 0, 0, time.UTC)
+}
 
 func TestCadencesAreTheThreeOfDecision93(t *testing.T) {
 	for _, text := range []string{"MONTHLY", "QUARTERLY", "SEASON"} {
@@ -28,7 +30,7 @@ func TestAMonthlyPeriodIsACalendarMonth(t *testing.T) {
 		t.Fatal(err)
 	}
 	start, end, ok := period.Dates()
-	if !ok || start != day(2026, 2, 1) || end != day(2026, 2, 28) || period.Key() != "2026-02" {
+	if !ok || start != day2026(2, 1) || end != day2026(2, 28) || period.Key() != "2026-02" {
 		t.Errorf("got %s %v..%v %v", period.Key(), start, end, ok)
 	}
 	if next := period.Next(); next.Key() != "2026-03" {
@@ -46,7 +48,7 @@ func TestAQuarterlyPeriodIsACalendarQuarter(t *testing.T) {
 		t.Fatal(err)
 	}
 	start, end, ok := period.Dates()
-	if !ok || start != day(2026, 7, 1) || end != day(2026, 9, 30) {
+	if !ok || start != day2026(7, 1) || end != day2026(9, 30) {
 		t.Errorf("got %v..%v %v", start, end, ok)
 	}
 	q4, _ := ParsePeriod(Quarterly, "2026-Q4")
