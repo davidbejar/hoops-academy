@@ -106,6 +106,25 @@ class AuditEventResourceTest {
                 .body("items[0].target.displayName", nullValue());
     }
 
+    /** WP116: a {@code team} target (the roster export) is named after the team while it exists in this academy. */
+    @Test
+    void aTeamTargetIsNamedAfterTheTeamWhileItExistsInThisAcademy() {
+        UUID lions = RosterDb.team(tenant, RosterDb.currentSeason(tenant), "U12 Lions",
+                RosterDb.defaultCategories(tenant).get("U12"), "MIXED");
+        String other = Members.newTenant();
+        UUID theirs = RosterDb.team(other, RosterDb.currentSeason(other), "Their Team",
+                RosterDb.defaultCategories(other).get("U12"), "MIXED");
+        UUID exported = event(T0, "a", admin, "team.roster_exported", "team", lions, "{\"rows\":4}");
+        UUID gone = event(T0.plusSeconds(1), "a", admin, "team.roster_exported", "team", UUID.randomUUID(),
+                "{\"rows\":1}");
+        UUID forged = event(T0.plusSeconds(2), "a", admin, "team.roster_exported", "team", theirs, "{\"rows\":1}");
+
+        list("action", "team.roster_exported").statusCode(200)
+                .body("items.find { it.id == '" + exported + "' }.target.displayName", equalTo("U12 Lions"))
+                .body("items.find { it.id == '" + gone + "' }.target.displayName", nullValue())
+                .body("items.find { it.id == '" + forged + "' }.target.displayName", nullValue());
+    }
+
     @Test
     void theSuperAdminIsMaskedWhileTheSuspensionReasonIsKept() {
         UUID suspended = event(T0, "platform-admin", null, "tenant.suspended", "tenant", tenant,

@@ -81,6 +81,19 @@ class AuditEventExportTest {
         assertThat(String.join("\n", lines)).doesNotContain("platform-admin").doesNotContain(invited.toString());
     }
 
+    /** WP116: the team of a roster export is named in the file as on the screen. */
+    @Test
+    void aTeamTargetCarriesTheTeamsName() {
+        UUID lions = RosterDb.team(tenant, RosterDb.currentSeason(tenant), "U12 Lions",
+                RosterDb.defaultCategories(tenant).get("U12"), "MIXED");
+        event(T0, "admin-sub", admin, "team.roster_exported", "team", lions, "{\"rows\":4}");
+
+        List<String> lines = lines(export("action", "team.roster_exported", "from", T0.toString()));
+
+        assertThat(lines).hasSize(2);
+        assertThat(lines.get(1)).contains(",Team," + lions + ",U12 Lions,rows=4");
+    }
+
     @Test
     void theActionFilterAndTheLanguageApply() {
         event(T0, "admin-sub", admin, "member.invited", "person", coach, "{}");
