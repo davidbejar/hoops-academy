@@ -14,8 +14,13 @@ decide on player requests. Menu names below are the labels shown in the English 
 - If your login belongs to several academies, the context chip in the top bar (**Switch context**) moves between
   them; the app opens the one you used last in this browser.
 - **Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
-  connection). Your e-mail stays with the administrator.
-- **Profile** (top bar) holds **Language** (Español, English, Bahasa Indonesia) and **Sign out**.
+  connection); it starts with your first and last name as this academy stores them. Your e-mail stays with the
+  administrator.
+- The round button with your initials (top right, on every screen) opens a menu: your name and e-mail (tap it
+  for **Profile**), **Language** (Español, English, Bahasa Indonesia) and **Theme** (**System**, **Light**, **Dark**).
+  A choice applies at once and is remembered in this browser; **System**, the default, follows your device.
+  **Profile** holds **Your name** and **Sign out**. Before signing in, the landing page header has its own language
+  and theme buttons. The screen where you choose an academy has no such menu yet.
 
 ## 1. Academy profile and logo
 **Admin > Academy profile.**
@@ -129,7 +134,8 @@ bottom. Only administrators see it. Entries are never edited or deleted, and the
 Made by the server (they need a connection, are written in the app's language and stop at 10,000 rows):
 - **Team roster**: the download icon in a team's top bar (**Export the roster (CSV)**) saves the team's players with
   their data, category and eligibility, each player's active guardians with their contact data, and the team's staff
-  as a second block. Administrators and the team's coach have it (also a coach of the team in an ended season). Each
+  as a second block. Administrators have it for every team, ended seasons included,
+  and a coach for the teams they coach now; a former coach of an ended season does not. Each
   export appears in the activity as **Team roster exported**.
 - **Activity**: the download icon on **Activity** (**Export the activity (CSV)**) saves every entry the current filters
   select, not only the page on screen; if there are more than 10,000 rows, narrow the dates or the actions. Recorded

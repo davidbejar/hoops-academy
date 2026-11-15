@@ -19,6 +19,8 @@ academy you are a member of. Each context has its own menu.
   the side menu (button **Switch context**). Each row shows the name and your role there, e.g. "Application admin /
   Super admin" or "Hangtuah / Administrator". The choice is remembered in this browser and forgotten when you sign out.
 - An old link to a `/platform/...` page opens the same page under Application admin.
+- The round button with your initials (top right, in every context) opens a menu: **Profile**, **Language** and
+  **Theme** (**System**, **Light**, **Dark**; remembered in this browser, **System** follows your device).
 
 The Application admin menu has **Overview** (the hub), **Academies**, **Users**, **Approvals** (a badge counts the
 pending academy requests) and **Audit**. The hub shows the same areas as cards (**Pending approvals**, **Audit trail**)

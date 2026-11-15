@@ -81,6 +81,9 @@ final syncWorkerProvider = Provider<SyncWorker>((ref) {
     scope: () => ref.read(syncScopeProvider),
     timers: ref.watch(syncTimersProvider),
   );
+  // The list keeps the matches it loaded; the score of a live match in it is
+  // the server's, so it is read again once the server has new events.
+  worker.serverRevision.addListener(() => ref.invalidate(matchListProvider));
   ref.onDispose(worker.dispose);
   return worker;
 });

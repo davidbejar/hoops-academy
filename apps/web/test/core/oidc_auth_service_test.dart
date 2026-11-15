@@ -33,6 +33,25 @@ void main() {
     expect(manager.originalUri, current);
   });
 
+  // The sign-in page is Keycloak's, on another origin: it cannot read the
+  // look chosen in the app, so the app hands it over with the request.
+  for (final theme in ['light', 'dark', 'system']) {
+    test('login tells the sign-in page the chosen look: $theme', () async {
+      final manager = _RecordingManager();
+      final service = OidcAuthService(
+        _config,
+        origin: _appBase,
+        location: () => _appBase,
+        loginTheme: () => theme,
+        manager: manager,
+      );
+
+      await service.login();
+
+      expect(manager.extraParameters, {'hoops_theme': theme});
+    });
+  }
+
   test('sign-out returns to the app itself, not to redirect.html (which has no state to resume)', () {
     final service = OidcAuthService(
       _config,
@@ -59,6 +78,7 @@ class _RecordingManager extends OidcUserManager {
 
   int loginCalls = 0;
   Uri? originalUri;
+  Map<String, dynamic>? extraParameters;
 
   @override
   Future<OidcUser?> loginAuthorizationCodeFlow({
@@ -83,6 +103,7 @@ class _RecordingManager extends OidcUserManager {
   }) async {
     loginCalls++;
     this.originalUri = originalUri;
+    this.extraParameters = extraParameters;
     return null;
   }
 }

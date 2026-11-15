@@ -4,8 +4,9 @@ Bahasa: [Español](player.es.md) · [English](player.en.md) · Bahasa Indonesia
 
 Anda masuk dengan alamat e-mail dan kata sandi Anda.
 
-Anda berperan **Pemain**. Bilah bawah: **Pertandingan**, **Latihan**, **Saya**. **Profil** ada di bilah atas (bahasa,
-keluar). Jika **Saya** berisi "Akun Anda belum terhubung ke pemain", minta administrator akademi menghubungkannya.
+Anda berperan **Pemain**. Bilah bawah: **Pertandingan**, **Latihan**, **Saya**.
+Tombol bulat dengan inisial Anda (kanan atas) membuka menu: **Profil** (nama Anda, keluar), **Bahasa**, dan **Tema**
+(**Sistem**, **Terang**, **Gelap**; diingat di peramban ini, **Sistem** mengikuti perangkat Anda). Jika **Saya** berisi "Akun Anda belum terhubung ke pemain", minta administrator akademi menghubungkannya.
 
 ## Saya (Profil olahraga saya)
 - **Statistik musim**: poin, rebound, asis, menit, dan rata-rata per pertandingan. Ganti musim dengan pemilih musim.
@@ -24,6 +25,8 @@ statistik: minta pelatih atau orang tua yang terkait. Statistik pertandingan men
 dan rencana. Di **Saya > Rencana** Anda melihat rencana yang ditugaskan beserta batas waktu dan latihannya (tautan video
 terbuka di peramban). Tandai tiap rencana **Selesai**, **Sebagian**, atau **Belum**, dengan komentar opsional. Pelatih
 melihat tanda Anda.
+Di **Latihan**, chip **Latihan** membuka **Katalog latihan**, hanya baca: cari dan saring dengan **Semua**,
+**Global** (dalam bahasa Anda), dan **Akademi** (latihan milik akademi sendiri).
 
 ## Ketidakhadiran
 **Latihan > Ketidakhadiran > Ketidakhadiran baru**: **Dari**, **Sampai**, dan alasan opsional. Pelatih akan melihat Anda
@@ -51,7 +54,8 @@ dan saat itu perlu koneksi; tanpa koneksi aplikasi memberi tahu dan file CSV tet
 
 ## Nama Anda
 **Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
-perlu koneksi). Email Anda diubah oleh administrator.
+perlu koneksi); isiannya dimulai dari nama depan dan belakang Anda seperti yang disimpan akademi ini. Email Anda
+diubah oleh administrator.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

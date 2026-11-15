@@ -5,7 +5,9 @@ Languages: [Español](coach.es.md) · English · [Bahasa Indonesia](coach.id.md)
 You sign in with your e-mail address and your password.
 
 You are a **Coach** or an **Assistant coach**. Your rights apply to the teams where an administrator listed you under
-**Staff**. Bottom bar: **Teams**, **Matches**, **Training**, **Players**. **Profile** is in the top bar.
+**Staff**. Bottom bar: **Teams**, **Matches**, **Training**, **Players**.
+The round button with your initials (top right) opens a menu: **Profile** (your name, sign out), **Language** and
+**Theme** (**System**, **Light**, **Dark**; remembered in this browser, **System** follows your device).
 
 ## What assistants can and cannot do
 | Task | Coach | Assistant coach |
@@ -16,7 +18,7 @@ You are a **Coach** or an **Assistant coach**. Your rights apply to the teams wh
 | Assign players to a team, resolve eligibility cases (own teams) | yes | no (read only) |
 | Request a new player or a withdrawal (needs administrator approval) | yes | no |
 | Change a player's preferred jersey number | yes | no (read only) |
-| Export the team roster (CSV) | yes (own teams) | no |
+| Export the team roster (CSV) | yes (teams you coach now) | no |
 | Exercise catalogue: create, edit, archive own exercises | yes | yes |
 
 Screens you may not use show "Read-only: you are not allowed to change this".
@@ -108,8 +110,8 @@ to you and the administrators until approved. You cannot approve your own reques
   numbers** (0-99); a taken number is refused with its holder.
 
 ## 9. Exports
-- **Team roster** (coaches of the team only, also for a team you coached in an ended season): the download icon in the
-  team's top bar (**Export the roster (CSV)**) saves the players with their data, category, eligibility and guardians'
+- **Team roster** (the team's current coach only; not for a team you coached in an ended season): the download icon in
+  the team's top bar (**Export the roster (CSV)**) saves the players with their data, category, eligibility and guardians'
   contact data, and the staff as a second block. The server builds it: it needs a connection, uses the app's language
   and is recorded in the academy's activity. Assistant coaches have no roster export.
 - Built on your device from what the screen has already loaded (download icon **Export**): **Season statistics**
@@ -120,7 +122,8 @@ to you and the administrators until approved. You cannot approve your own reques
 
 ## 10. Your name
 **Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
-connection). Your e-mail stays with the administrator.
+connection); it starts with your first and last name as this academy stores them. Your e-mail stays with the
+administrator.
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

@@ -17,10 +17,17 @@
 //  - a new build installs next to the old one but only activates once every tab
 //    of the old build is closed (or the page posts {type: 'SKIP_WAITING'}), so
 //    lazily loaded `main.dart.js_N.part.js` chunks always match the running app.
+//  - unstamped (a debug `flutter run`, or `flutter build web` without the
+//    script: the placeholders are still here): the worker caches nothing and
+//    answers nothing. Its cache name would never change, so cache-first would
+//    keep the first app it ever saw on screen for good. It takes over at once,
+//    deletes every shell cache and reloads the pages an older worker filled.
 'use strict';
 
 const BUILD_ID = '__BUILD_ID__';
 const PRECACHE = /*__PRECACHE_MANIFEST__*/[];
+// A stamped build id is a hash; only the placeholder starts with underscores.
+const STAMPED = !BUILD_ID.startsWith('__');
 
 const CACHE_PREFIX = 'hoops-shell-';
 const CACHE = CACHE_PREFIX + BUILD_ID;
@@ -29,6 +36,10 @@ const SCOPE = new URL(self.registration.scope);
 const absolute = (path) => new URL(path, SCOPE).href;
 
 self.addEventListener('install', (event) => {
+  if (!STAMPED) {
+    self.skipWaiting();
+    return;
+  }
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
       // `reload` bypasses the HTTP cache so a fresh build never precaches stale files.
@@ -45,6 +56,10 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  if (!STAMPED) {
+    event.waitUntil(dropShellCachesAndReload());
+    return;
+  }
   event.waitUntil(
     caches
       .keys()
@@ -53,6 +68,17 @@ self.addEventListener('activate', (event) => {
       ),
   );
 });
+
+// Unstamped worker only. Pages are reloaded only when a cache was deleted, so
+// a profile that never had one does not reload on its first visit.
+async function dropShellCachesAndReload() {
+  const stale = (await caches.keys()).filter((k) => k.startsWith(CACHE_PREFIX));
+  await Promise.all(stale.map((k) => caches.delete(k)));
+  await self.clients.claim();
+  if (stale.length === 0) return;
+  const pages = await self.clients.matchAll({ type: 'window' });
+  await Promise.all(pages.map((client) => client.navigate(client.url).catch(() => null)));
+}
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
@@ -68,6 +94,7 @@ function isNetworkOnly(url) {
 }
 
 self.addEventListener('fetch', (event) => {
+  if (!STAMPED) return;
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);

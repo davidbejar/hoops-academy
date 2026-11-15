@@ -5,7 +5,9 @@ Bahasa: [Español](parent.es.md) · [English](parent.en.md) · Bahasa Indonesia
 Anda masuk dengan alamat e-mail dan kata sandi Anda.
 
 Anda berperan **Orang tua**. Anda hanya melihat dan mengelola pemain yang dikaitkan administrator ke akun Anda. Bilah
-bawah: **Pertandingan**, **Latihan**, **Pemain saya**. **Profil** ada di bilah atas (bahasa, keluar).
+bawah: **Pertandingan**, **Latihan**, **Pemain saya**.
+Tombol bulat dengan inisial Anda (kanan atas) membuka menu: **Profil** (nama Anda, keluar), **Bahasa**, dan **Tema**
+(**Sistem**, **Terang**, **Gelap**; diingat di peramban ini, **Sistem** mengikuti perangkat Anda).
 
 Jika muncul "Akun Anda belum tergabung di akademi mana pun", minta administrator akademi mengundang Anda. Jika **Pemain
 saya** berisi "Anda belum memiliki pemain terhubung", minta administrator mengaitkan anak Anda ke akun Anda.
@@ -43,6 +45,8 @@ melihat anak sebagai "Absen terencana" di lembar kehadiran. Hapus ketidakhadiran
 Di **Pemain saya > Rencana**, pilih rencana yang ditugaskan lalu tandai **Selesai**, **Sebagian**, atau **Belum** (komentar
 opsional). Pelatih melihat tanda yang sama. Rencana itu sendiri hanya baca bagi Anda; tab **Latihan** menampilkan kalender
 tim anak Anda.
+Di **Latihan**, chip **Latihan** membuka **Katalog latihan**, hanya baca: cari dan saring dengan **Semua**,
+**Global** (dalam bahasa Anda), dan **Akademi** (latihan milik akademi sendiri).
 
 ## 5. Cedera dan pengukuran
 Di **Pemain saya** buka **Cedera**: **Catat cedera** (bagian tubuh, tingkat keparahan, tanggal, perkiraan kembali) dan
@@ -67,7 +71,8 @@ dan saat itu perlu koneksi; tanpa koneksi aplikasi memberi tahu dan file CSV tet
 
 ## 8. Nama Anda
 **Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
-perlu koneksi). Email Anda diubah oleh administrator.
+perlu koneksi); isiannya dimulai dari nama depan dan belakang Anda seperti yang disimpan akademi ini. Email Anda
+diubah oleh administrator.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

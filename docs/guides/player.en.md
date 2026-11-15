@@ -4,8 +4,9 @@ Languages: [Español](player.es.md) · English · [Bahasa Indonesia](player.id.m
 
 You sign in with your e-mail address and your password.
 
-You have the **Player** role. Bottom bar: **Matches**, **Training**, **Me**. **Profile** is in the top bar (language,
-sign out). If **Me** says "Your account is not linked to a player yet", ask your academy administrator to link it.
+You have the **Player** role. Bottom bar: **Matches**, **Training**, **Me**.
+The round button with your initials (top right) opens a menu: **Profile** (your name, sign out), **Language** and
+**Theme** (**System**, **Light**, **Dark**; remembered in this browser, **System** follows your device). If **Me** says "Your account is not linked to a player yet", ask your academy administrator to link it.
 
 ## Me (My sports profile)
 - **Season statistics**: points, rebounds, assists, minutes and per-game averages. Choose another season with the season
@@ -24,6 +25,8 @@ The box score shows team totals; your own numbers are under Me > Season statisti
 **Training** shows the week calendar of your teams (previous, next, today). Open a session for place, time and plan.
 In **Me > Plans** you see the plans assigned to you with due dates and exercises (video links open in your browser). Mark
 each plan **Done**, **Partial** or **Not done**, with an optional comment. Coaches see your marks.
+Under **Training** the **Exercises** chip opens the **Exercise catalogue**, read-only: search it and filter with
+**All**, **Global** (shown in your language) and **Academy** (the academy's own exercises).
 
 ## Absences
 **Training > Absences > New absence**: **From**, **To** and an optional reason. Coaches see you as "Planned absence" on the
@@ -51,7 +54,8 @@ connection then; without one the app says so and the CSV file still works.
 
 ## Your name
 **Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
-connection). Your e-mail stays with the administrator.
+connection); it starts with your first and last name as this academy stores them. Your e-mail stays with the
+administrator.
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

@@ -23,3 +23,7 @@ class ThemeModePreference extends Notifier<ThemeMode> {
 
 final themeModePreferenceProvider =
     NotifierProvider<ThemeModePreference, ThemeMode>(ThemeModePreference.new);
+
+/// The name of [mode] for Keycloak's sign-in page (`loginThemeParameter`).
+/// `system` is sent too: the page then forgets an earlier explicit choice.
+String loginThemeOf(ThemeMode mode) => mode.name;

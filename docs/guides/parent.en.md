@@ -5,7 +5,9 @@ Languages: [Español](parent.es.md) · English · [Bahasa Indonesia](parent.id.m
 You sign in with your e-mail address and your password.
 
 You have the **Parent** role (called "Familia" in Spanish). You see and act only on the players an administrator linked
-to you. Bottom bar: **Matches**, **Training**, **My players**. **Profile** is in the top bar (language, sign out).
+to you. Bottom bar: **Matches**, **Training**, **My players**.
+The round button with your initials (top right) opens a menu: **Profile** (your name, sign out), **Language** and
+**Theme** (**System**, **Light**, **Dark**; remembered in this browser, **System** follows your device).
 
 If you see "Your account does not belong to any academy yet", ask the academy administrator to invite you. If **My players**
 says "You have no linked players", ask the administrator to link your child to your account.
@@ -40,6 +42,8 @@ as "Planned absence" on the attendance sheet. Delete an absence from the same li
 In **My players > Plans** pick an assigned plan and mark **Done**, **Partial** or **Not done** (optional comment).
 Coaches see the same marks. Plans themselves are read-only for you; the **Training** tab shows the calendar of your
 child's teams.
+Under **Training** the **Exercises** chip opens the **Exercise catalogue**, read-only: search it and filter with
+**All**, **Global** (shown in your language) and **Academy** (the academy's own exercises).
 
 ## 5. Injuries and measurements
 In **My players** open **Injuries**: **Record injury** (body part, severity, date, expected return) and **Mark recovered**.
@@ -63,7 +67,8 @@ connection then; without one the app says so and the CSV file still works.
 
 ## 8. Your name
 **Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
-connection). Your e-mail stays with the administrator.
+connection); it starts with your first and last name as this academy stores them. Your e-mail stays with the
+administrator.
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

@@ -5,7 +5,10 @@ Idiomas: Español · [English](parent.en.md) · [Bahasa Indonesia](parent.id.md)
 Inicias sesión con tu dirección de correo electrónico y tu contraseña.
 
 Tienes el rol **Familia**. Solo ves y gestionas los jugadores que un administrador ha vinculado a tu cuenta. Barra
-inferior: **Partidos**, **Entrenos**, **Mis jugadores**. **Perfil** está en la barra superior (idioma, cerrar sesión).
+inferior: **Partidos**, **Entrenos**, **Mis jugadores**.
+El botón redondo con tus iniciales (arriba a la derecha) abre un menú: **Perfil** (tu nombre, cerrar sesión),
+**Idioma** y **Tema** (**Sistema**, **Claro**, **Oscuro**; se recuerda en este navegador, **Sistema** sigue a tu
+dispositivo).
 
 Si ves "Tu cuenta aún no pertenece a ninguna academia", pide al administrador de la academia que te invite. Si **Mis
 jugadores** dice "No tienes jugadores vinculados", pide que vinculen a tu hijo o hija con tu cuenta.
@@ -42,6 +45,8 @@ los planes.
 En **Mis jugadores > Planes** elige un plan asignado y marca **Hecho**, **Parcial** o **No hecho** (con comentario
 opcional). Los entrenadores ven las mismas marcas. Los planes en sí son de solo lectura para ti; la pestaña **Entrenos**
 muestra el calendario de los equipos de tu hijo.
+En **Entrenos** la etiqueta **Ejercicios** abre el **Catálogo de ejercicios**, de solo lectura: busca y filtra con
+**Todos**, **Globales** (en tu idioma) y **De la academia** (los ejercicios propios de la academia).
 
 ## 5. Lesiones y medidas
 En **Mis jugadores** abre **Lesiones**: **Registrar lesión** (zona, gravedad, fecha, regreso previsto) y **Marcar
@@ -67,7 +72,8 @@ funcionando.
 
 ## 8. Tu nombre
 **Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
-conexión). El correo lo cambia el administrador.
+conexión); empieza con tu nombre y apellidos tal como los guarda esta academia. El correo lo cambia el
+administrador.
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.

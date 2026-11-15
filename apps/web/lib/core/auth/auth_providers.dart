@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
+import '../l10n/theme_mode_controller.dart';
 import 'auth_service.dart';
 import 'mock_auth_service.dart';
 import 'oidc_auth_service.dart';
@@ -24,7 +25,11 @@ final authServiceProvider = Provider<AuthService>((ref) {
   final config = ref.watch(appConfigProvider);
   return config.mockApi
       ? MockAuthService()
-      : OidcAuthService(config, origin: appBaseUri());
+      : OidcAuthService(
+          config,
+          origin: appBaseUri(),
+          loginTheme: () => loginThemeOf(ref.read(themeModePreferenceProvider)),
+        );
 });
 
 /// Current [AuthStatus]; starts the service (restores session / completes a

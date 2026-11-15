@@ -381,4 +381,43 @@ void main() {
       expect(server.batchSizes, isEmpty);
     },
   );
+
+  // What the server knows about a match (its score in the match list) only
+  // changes when events reach it or arrive from it.
+  group('serverRevision', () {
+    test('moves on when a batch was stored by the server', () async {
+      await recordFiftyEvents(store);
+      final before = worker.serverRevision.value;
+      await worker.syncNow();
+      expect(worker.serverRevision.value, greaterThan(before));
+    });
+
+    test('moves on when the feed brings events of another scorer', () async {
+      final v = loadVectors().first;
+      final s = FakeGameServer(rules: v.rules, roster: v.roster)
+        ..preload(matchId, v.events);
+      final w = SyncWorker(
+        store: store,
+        remote: s,
+        scope: () => const SyncScope(tenantId: tenant, personId: me),
+        timers: timers,
+      );
+      addTearDown(w.dispose);
+      await w.syncNow(matchId: matchId);
+      expect(w.serverRevision.value, greaterThan(0));
+    });
+
+    test('stays when nothing was sent or received', () async {
+      await worker.syncNow(matchId: matchId);
+      await worker.syncNow(matchId: matchId);
+      expect(worker.serverRevision.value, 0);
+    });
+
+    test('stays when the batch never reached the server', () async {
+      server.offline = true;
+      await recordFiftyEvents(store);
+      await worker.syncNow();
+      expect(worker.serverRevision.value, 0);
+    });
+  });
 }

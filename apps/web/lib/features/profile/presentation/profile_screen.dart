@@ -15,7 +15,11 @@ import '../../me/domain/current_user.dart' show TenantRole;
 import 'profile_name_section.dart';
 
 class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.from});
+
+  /// The location the profile was opened from; null when it was opened by
+  /// its address, and then back leads to the session's start screen.
+  final String? from;
 
   /// Keycloak's account console of the realm: `<issuer>/account` (password, two-step verification, sessions).
   Uri _accountConsole(Uri issuer) => issuer.replace(
@@ -53,7 +57,15 @@ class ProfileScreen extends ConsumerWidget {
     };
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.profileTitle)),
+      appBar: AppBar(
+        // Outside the shell there is no menu, and `go` leaves nothing to
+        // pop: without this the only ways out were the browser and sign-out.
+        leading: BackButton(
+          key: const Key('profile-back'),
+          onPressed: () => context.go(from ?? '/'),
+        ),
+        title: Text(l.profileTitle),
+      ),
       body: SafeArea(
         child: PageBody(
           children: [

@@ -14,6 +14,8 @@ PAIRS=(
   "infra/keycloak/themes/hoops/login/theme.properties:deploy/helm/hoops/charts/keycloak/files/theme/theme.properties"
   "infra/keycloak/themes/hoops/login/resources/css/hoops.css:deploy/helm/hoops/charts/keycloak/files/theme/hoops.css"
   "infra/keycloak/themes/hoops/login/resources/img/basketball.svg:deploy/helm/hoops/charts/keycloak/files/theme/basketball.svg"
+  # The look chosen in the app, applied on the sign-in page (ADR-0022 amendment)
+  "infra/keycloak/themes/hoops/login/resources/js/hoops-theme.js:deploy/helm/hoops/charts/keycloak/files/theme/hoops-theme.js"
   # Login messages: an expired temporary password (ADR-0028)
   "infra/keycloak/themes/hoops/login/messages/messages_en.properties:deploy/helm/hoops/charts/keycloak/files/theme/messages_en.properties"
   "infra/keycloak/themes/hoops/login/messages/messages_es.properties:deploy/helm/hoops/charts/keycloak/files/theme/messages_es.properties"

@@ -21,8 +21,10 @@ Future<void> showAvatarMenu(
     name: name,
     email: email,
     onOpenProfile: () {
+      // The profile has no menu: it goes back to where it was opened from.
+      final from = GoRouter.of(context).state.uri.toString();
       Navigator.of(inner).pop();
-      context.go('/profile');
+      context.go('/profile', extra: from);
     },
   );
 

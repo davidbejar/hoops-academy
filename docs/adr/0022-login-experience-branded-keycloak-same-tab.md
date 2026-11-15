@@ -1,6 +1,6 @@
 # ADR-0022: Login experience — branded Keycloak pages in the same tab, back to the app
 
-- Status: Accepted
+- Status: Accepted; amended 2026-11-15 (the sign-in page follows the look chosen in the app: one script in the theme, at the end)
 - Date: 2026-11-02
 - Related: ADR-0005 (Keycloak authentication only), ADR-0018 (web shell), ADR-0019 (web session and sign-out)
 
@@ -49,3 +49,32 @@ by design (discovery document), so point 3 is about trust and look, not confiden
   empty volume).
 - Recreating the Keycloak container (e.g. after `compose.yaml` changes) needs `podman restart hoops-nginx`: nginx keeps
   the old container IP and answers 502 on `/auth` (runbook `troubleshooting.md`).
+
+## Amendment 2026-11-15 (owner decision): the sign-in page follows the look chosen in the app
+**Why.** The theme was CSS only and followed the browser's dark mode, "like the app". Since WP105 the app has its own
+choice (light, dark or system, per browser), so a person who chose light on a dark system got a dark sign-in page. The
+choice lives in the app's storage; Keycloak's pages are another origin locally (:5173 and :8080) and cannot read it.
+
+**Decision.**
+- The app sends the choice with the sign-in request as the extra parameter `hoops_theme` = `light`, `dark` or `system`
+  (`loginThemeParameter`, `OidcAuthService.login`). Keycloak ignores parameters it does not know.
+- The theme gets one script, `resources/js/hoops-theme.js`, named in `theme.properties` (`scripts=`): still no
+  template override, so Keycloak upgrades keep working. It reads the parameter, keeps `light` or `dark` in the tab's
+  `sessionStorage` for the follow-up pages of the same sign-in (their addresses no longer carry the parameter) and
+  puts keycloak.v2's `pf-v5-theme-dark` class on or off `<html>`; a `MutationObserver` holds it against keycloak.v2's
+  own script, which sets the class from the browser's preference. `system`, a missing or an unknown value clears the
+  stored choice and follows the browser, as before.
+- Security: the script is served by Keycloak itself, so the realm's CSP (`script-src 'self'`, ADR-0038) is unchanged.
+  Only the two literal values are compared; nothing read from the address is written into the page, and the value
+  decides a single fixed class. No cookie; nothing is kept after the tab closes.
+- Not chosen: a cookie shared by the app and Keycloak. Simpler, but it only works when both are served from one host.
+
+**Proof.** `apps/web/test/core/oidc_auth_service_test.dart` (the parameter is sent for each choice),
+`test/web/keycloak_login_theme_test.dart` (the script as text: no Node), the chart test "login theme script mounted",
+and headless Chrome against the compose Keycloak: with the browser dark and light, `light`, `dark`, `system`, no
+parameter and a hostile value each gave the expected class on `<html>`.
+
+**Consequences.** The pages reached without the app (the account console, a reset link opened from an e-mail in a new
+tab) still follow the browser. The script depends on keycloak.v2's class name `pf-v5-theme-dark`: a Keycloak upgrade
+that moves to another PatternFly major needs it and `hoops.css` changed together. The chart ships the script in the
+theme ConfigMap (`scripts/sync-chart-files.sh`).
