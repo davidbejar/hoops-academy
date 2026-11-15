@@ -10904,6 +10904,18 @@ data:
                 "id.token.claim": "false",
                 "introspection.token.claim": "true"
               }
+            },
+            {
+              "name": "audience pdf-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "pdf-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
             }
           ]
         },
@@ -10938,6 +10950,18 @@ data:
               "consentRequired": false,
               "config": {
                 "included.client.audience": "core-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
+            },
+            {
+              "name": "audience pdf-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "pdf-service",
                 "access.token.claim": "true",
                 "id.token.claim": "false",
                 "introspection.token.claim": "true"
@@ -12159,7 +12183,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: keycloak-0.6.0
       annotations:
-        checksum/realm: bc721638c571b22aa6e69ca435b3cdefcd684e381e858242404d96b31f9d7752
+        checksum/realm: 6fd4e6928ab5bafc21d62ea0fff89c58d2b0b5a17365922da1bd27fc4dcd51ce
         checksum/theme: d13533450c087ff3307000544abe5aee0eaf91f4a8b2728886b3e9ea1f09929f
         checksum/blocklist: 2593eec96b22bbd67a809b1b9424434cc8d95d1b2526b287c886a37e630032ff
     spec:

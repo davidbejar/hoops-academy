@@ -11,6 +11,12 @@ verification-before-completion. Worktree: `~/code/hoops-wt/wp116-core-roster-pdf
 
 Decision 89 of 2026-11-15 (owner): core loads the roster, calls `pdf-service` and returns the PDF.
 
+Orchestrator note (2026-11-16): the `pdf-service` audience mappers on the clients `core-service` and `game-service`
+are on `main` (realm file, chart copy, snapshots, `RealmTokenPolicyTest`), so the step "WP116 must first add the
+mappers" in the WP111 handover is done; an existing compose realm gets them with `just seed-users`. Start
+`pdf-service` locally with `just pdf-up` (port 8084). The ADR-0034 audience table still lacks the `pdf-service`
+column: WP116 adds that amendment line.
+
 ## Scope
 1. **Roster PDF**: `GET /api/core/teams/{id}/roster:export` gains a PDF form (decide with the contract's existing
    style: an `Accept: application/pdf` or a sibling path; record it in the ADR-0048 amendment). The same rule as the

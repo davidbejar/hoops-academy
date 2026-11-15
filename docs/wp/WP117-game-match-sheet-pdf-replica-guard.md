@@ -11,6 +11,12 @@ verification-before-completion. Worktree: `~/code/hoops-wt/wp117-game-match-pdf`
 
 Decision 89 of 2026-11-15 (owner): game loads the match and its box score, calls `pdf-service` and returns the PDF.
 
+Orchestrator note (2026-11-16): the `pdf-service` audience mappers on the clients `core-service` and `game-service`
+are on `main` (realm file, chart copy, snapshots, `RealmTokenPolicyTest`), so the step "WP116 must first add the
+mappers" in the WP111 handover is done; an existing compose realm gets them with `just seed-users`. Start
+`pdf-service` locally with `just pdf-up` (port 8084). The ADR-0034 audience table still lacks the `pdf-service`
+column: WP116 adds that amendment line.
+
 ## Scope
 1. **Match sheet PDF**: a new endpoint under `/api/game/matches/{id}/...` answering `application/pdf` (match header,
    score, per-player box score as the web's export shows it; ADR-0048). Readers: decide from

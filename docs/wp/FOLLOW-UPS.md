@@ -388,9 +388,9 @@ WP118 (contract first), so the web (WP121) starts one wave later while the Go se
 | 1 | WP113 | Build: PMD and CPD maintainability gate in `verify` | Opus · medium | Done (ADR-0053; PMD 7.29.0 + CPD in `verify`; 3,392 tests; 5 PMD and 1 CPD exclusions) |
 | 1 | WP114 | Images: Java services on a distroless Java 25 base | Opus · medium | Done (ADR-0054; `gcr.io/distroless/java25-debian13:nonroot` by digest; Trivy 0 HIGH locally; kind and amd64 not proven) |
 | 1 | WP115 | Small fixes: language and theme on the academy chooser, compose nginx limits, audit wording | Sonnet · medium | Done (web 1507 tests; 4 chooser goldens; nginx 10/min + 2/s on exports and academy requests) |
-| 2 | WP116 | Core: team roster PDF through pdf-service; team name on the audit `team` target | Opus · high | After wave 1 |
-| 2 | WP117 | Game: match sheet PDF through pdf-service; start guard for `replica` without consumer | Opus · high | After wave 1 |
-| 2 | WP118 | finance-service in Go: toolchain, isolation harness, whole contract, settings and fee plans, chart | Opus · high | After wave 1 |
+| 2 | WP116 | Core: team roster PDF through pdf-service; team name on the audit `team` target | Opus · high | Running |
+| 2 | WP117 | Game: match sheet PDF through pdf-service; start guard for `replica` without consumer | Opus · high | Running |
+| 2 | WP118 | finance-service in Go: toolchain, isolation harness, whole contract, settings and fee plans, chart | Opus · high | Running |
 | 3 | WP119 | Finance: roster replica, dues (manual and job), payments, coach and family reads | Opus · high | After wave 2 |
 | 3 | WP120 | Observability: one Grafana LGTM pod on kind and compose, dashboards | Opus · high | After wave 2 |
 | 3 | WP121 | Web: Finance area for ADMIN (settings, fee plans, dues, payments) | Sonnet · high | After wave 2 |

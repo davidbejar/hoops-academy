@@ -231,6 +231,18 @@
             "id.token.claim": "false",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "audience pdf-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "pdf-service",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
         }
       ]
     },
@@ -265,6 +277,18 @@
           "consentRequired": false,
           "config": {
             "included.client.audience": "core-service",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience pdf-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "pdf-service",
             "access.token.claim": "true",
             "id.token.claim": "false",
             "introspection.token.claim": "true"
