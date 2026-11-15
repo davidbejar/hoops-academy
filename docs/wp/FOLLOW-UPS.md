@@ -372,6 +372,72 @@ the branch `jdk-25` (draft pull request #7), only its handover is on `main`.
     Sonnet · high for the shell change of WP105 (goldens in two themes); Sonnet · medium for the seed script and the
     routine web of WP108; Opus · medium for the docs pass.
 
+## Plan (2026-11-15, eighth round)
+Decided in the interview of 2026-11-15 (decisions 86–103 below). Same mechanics (`wp-round` skill; at most four
+building agents per wave; model and effort in every brief). The round builds both services of ADR-0051: `pdf-service`
+(Rust) first, then `finance-service` (Go) through to its web screens. The chart is touched by one WP per wave, which
+is also that wave's kind user: WP111 (chart 0.11.0), WP118 (0.12.0), WP120 (0.13.0). The PMD gate lands in wave 1,
+before any Java change of the round, so waves 2–4 are written under it. The finance contract is written whole in
+WP118 (contract first), so the web (WP121) starts one wave later while the Go service is still being filled
+(WP119, WP123). No cloud apply this round (decision 88).
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP111 | pdf-service in Rust: match sheet and team roster, toolchain through just, CI, images, chart, Tilt | Opus · high | Running |
+| 1 | WP112 | Security docs: LINDDUN privacy threat model | Opus · medium | Running |
+| 1 | WP113 | Build: PMD and CPD maintainability gate in `verify` | Opus · medium | Running |
+| 1 | WP114 | Images: Java services on a distroless Java 25 base | Opus · medium | Running |
+| 1 | WP115 | Small fixes: language and theme on the academy chooser, compose nginx limits, audit wording | Sonnet · medium | Running |
+| 2 | WP116 | Core: team roster PDF through pdf-service; team name on the audit `team` target | Opus · high | After wave 1 |
+| 2 | WP117 | Game: match sheet PDF through pdf-service; start guard for `replica` without consumer | Opus · high | After wave 1 |
+| 2 | WP118 | finance-service in Go: toolchain, isolation harness, whole contract, settings and fee plans, chart | Opus · high | After wave 1 |
+| 3 | WP119 | Finance: roster replica, dues (manual and job), payments, coach and family reads | Opus · high | After wave 2 |
+| 3 | WP120 | Observability: one Grafana LGTM pod on kind and compose, dashboards | Opus · high | After wave 2 |
+| 3 | WP121 | Web: Finance area for ADMIN (settings, fee plans, dues, payments) | Sonnet · high | After wave 2 |
+| 3 | WP122 | Web: PDF buttons for the match sheet and the team roster | Sonnet · medium | After wave 2 |
+| 4 | WP123 | Finance: expenses, season balance, CSV exports; e2e journey and ZAP for finance and the PDFs; demo data | Opus · high | After wave 3 |
+| 4 | WP124 | Web: finance expenses, balance, exports; coach status view; family dues | Sonnet · high | After wave 3 |
+| 5 | WP125 | Docs pass | Opus · medium | Last alone |
+
+### Decisions of 2026-11-15, seventh interview (product owner)
+86. **Scope of the round → WP111–WP125**: `pdf-service` (Rust), `finance-service` (Go) whole, the PMD gate, the
+    LINDDUN privacy threat model, the observability backend, a new base image and the small fixes. Not this round: the
+    landing screenshots, the Users area depth.
+87. **`images` red → WP114**: neither wait nor accept the 14 `krb5-libs` findings: the three Java services move to a
+    distroless Java 25 base image, pinned by digest. ADR-0054.
+88. **Cloud apply**: the account is not prepared; the first real `tofu apply` stays a pending user action.
+89. **How a PDF is made → WP111, WP116, WP117**: the service that owns the data calls `pdf-service` and returns the
+    PDF (game: match sheet / box score; core: team roster), with the audit record of an export. `pdf-service` gets no
+    gateway route and is never called by the browser. ADR-0051 amendment (§3 and §5).
+90. **PDF scope → WP111, WP116, WP117, WP122**: the service, both sheets in es / en / id, and PDF buttons next to the
+    existing export buttons in the web app.
+91. **Observability → WP120**: one Grafana all-in-one pod (traces, logs, metrics, Grafana) behind the existing
+    collector, replacing the in-memory Jaeger on kind and offered as a compose profile; a few provisioned dashboards.
+    ADR-0046 amendment.
+92. **Finance depth → WP118, WP119, WP121, WP123, WP124**: the whole service and its web screens this round.
+93. **Due periods → WP118, WP119**: each fee plan chooses its cadence: monthly, quarterly or once per season.
+94. **Currency → WP118**: one ISO 4217 currency per academy, set in its finance settings, amounts in minor units, no
+    conversion; fixed once the first due exists.
+95. **Payments → WP119**: a due is paid in full by one hand-recorded payment (no partial payments, no refunds); a
+    wrong payment is voided with a reason and the due is open again.
+96. **Finance roles → WP118, WP119, WP123**: ADMIN manages everything. PARENT reads the dues and payments of linked
+    players, PLAYER their own. A team's current COACH reads who of the team is up to date (status only, no amounts,
+    no expenses, no balance). ASSISTANT_COACH has no access.
+97. **Mid-period joins and leaves → WP119**: a due for every period in which the player is on the roster on any day,
+    at the full amount; ADMIN may waive an open due or change its amount, with a reason. No proration.
+98. **How dues are created → WP119**: both: a daily job creates each period's dues and adds joiners; ADMIN can also
+    generate the dues of a plan and period by hand (idempotent, with a preview).
+99. **Expense categories → WP118, WP123**: a fixed built-in list (court rental, salaries, kit, tournament fees,
+    travel, other), localised in the web; no management endpoints.
+100. **Small fixes → WP115, WP116, WP117**: language and theme on the academy chooser, compose nginx `limit_req` for
+    the exports and the public academy request, the audit-events wording (WP115); the team name on the audit `team`
+    target (WP116); game's start guard for `replica` without its consumer (WP117).
+101. **PMD gate → WP113**: `maven-pmd-plugin` and CPD in `verify`, thresholds from today's code. ADR-0053.
+102. **LINDDUN → WP112**: `docs/security/privacy-threat-model.md`; its findings become items here.
+103. **Models**: Opus · high for the two new services, core, game and the kind work; Opus · medium for PMD, the base
+    image, LINDDUN and the docs pass; Sonnet · high for the finance web; Sonnet · medium for the PDF buttons and the
+    small fixes.
+
 ## Open
 
 ### Pending user actions
