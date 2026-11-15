@@ -562,6 +562,14 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
+- **TODO: PMD maintainability gate in `verify`** (owner decision of 2026-11-15; not planned into a round yet): the
+  existing gates cover bugs and security (SpotBugs + find-sec-bugs, CodeQL, Semgrep, ZAP), tests (JaCoCo, PIT) and
+  layering (ArchUnit), but nothing measures maintainability. Add `maven-pmd-plugin` with a small repository ruleset
+  (cyclomatic / cognitive complexity, method and class length, unused code) and CPD for duplicated code; thresholds
+  set from the current code so the first run is green, every exclusion with a reason as in ADR-0045; an ADR for the
+  ruleset and thresholds. SonarQube was considered and not chosen (a server or an external service, findings that
+  duplicate CodeQL and Semgrep, a second coverage gate next to JaCoCo); look again once the Go and Rust services of
+  ADR-0051 exist.
 - **Cloud deployment, first slice** (owner, 2026-11-14; **→ WP104**, decisions 76–78: Alibaba Cloud Jakarta, code
   only). Today only the inside of the cluster is declared (the Helm chart; kind by `deploy/kind/up.sh`); no machine,
   network, DNS or storage is defined anywhere. Goal of the slice: `tofu apply` gives one cheap cloud VM running k3s, and
