@@ -72,7 +72,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/tenants',
         builder: (_, _) => const TenantSwitcherScreen(),
       ),
-      GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+      GoRoute(
+        path: '/profile',
+        builder: (_, state) => ProfileScreen(
+          from: switch (state.extra) {
+            final String from => from,
+            _ => null,
+          },
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) =>
             AppShell(location: state.uri.path, child: child),
