@@ -9,9 +9,15 @@ default:
 doctor:
     source scripts/env.sh && scripts/doctor.sh
 
-# Build and run all backend tests (unit + integration) with quality gates
+# Build and run all backend tests (unit + integration) with quality gates: Maven, then the Rust gates of pdf-service
 test:
     source scripts/env.sh && ./mvnw -q -T 1C verify
+    just test-rust
+
+# pdf-service (Rust, ADR-0052): rustfmt, clippy -D warnings, tests with coverage (>= 80 % lines, >= 90 % domain),
+# cargo deny (advisories, licences, bans, sources). ARGS: --offline skips the advisory database fetch
+test-rust *ARGS:
+    services/pdf-service/scripts/check.sh {{ARGS}}
 
 # Gate before Claude's git commit: academy A logs in through real Keycloak and tries to read academy B (API + database)
 isolation-check:
@@ -88,7 +94,11 @@ events-drift-test:
     scripts/tests/events-drift.test.sh
 
 down:
-    podman compose --env-file .env -f infra/compose/compose.yaml down
+    podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf down
+
+# pdf-service in compose on :8084 (profile `pdf`, needs `just up`; the first build compiles the Rust image, minutes)
+pdf-up:
+    podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf up -d --build --wait pdf-service
 
 logs *ARGS:
     podman compose --env-file .env -f infra/compose/compose.yaml logs -f {{ARGS}}

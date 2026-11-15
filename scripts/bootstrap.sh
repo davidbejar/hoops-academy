@@ -5,7 +5,9 @@ set -euo pipefail
 need_brew() { command -v brew >/dev/null || { echo "Homebrew is required: https://brew.sh"; exit 1; }; }
 need_brew
 
-FORMULAE=(openjdk@25 maven kind helm tilt podman podman-compose gitleaks pre-commit openapi-generator trivy just opentofu)
+# rustup, cargo-llvm-cov and cargo-deny: pdf-service (ADR-0052); no Node anywhere
+FORMULAE=(openjdk@25 maven kind helm tilt podman podman-compose gitleaks pre-commit openapi-generator trivy just opentofu
+          rustup cargo-llvm-cov cargo-deny)
 CASKS=(flutter)   # openjdk@25 formula needs no sudo (temurin cask does)
 
 echo "==> Installing formulae: ${FORMULAE[*]}"
@@ -23,6 +25,11 @@ echo "==> Testcontainers properties"
 TC=~/.testcontainers.properties
 touch "$TC"
 grep -q '^ryuk.container.privileged' "$TC" || echo 'ryuk.container.privileged=true' >> "$TC"
+
+echo "==> Rust toolchain of pdf-service (services/pdf-service/rust-toolchain.toml)"
+# Homebrew's rustup is keg-only; `rustup toolchain install` without a name installs the pinned toolchain file's
+( cd "$(dirname "$0")/../services/pdf-service" && PATH="$(brew --prefix rustup)/bin:$PATH" rustup toolchain install )
+echo "    add $(brew --prefix rustup)/bin to PATH (or let scripts/check.sh find it)"
 
 echo "==> pre-commit hooks"
 ( cd "$(dirname "$0")/.." && pre-commit install --install-hooks )

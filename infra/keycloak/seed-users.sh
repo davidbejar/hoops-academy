@@ -55,6 +55,20 @@ kc update "realms/$REALM" -s loginTheme=hoops -s registrationEmailAsUsername=tru
 # Token settings of ADR-0034 for a realm imported before them: refresh-token rotation with reuse detection, and the
 # audience mappers of each client, read from the realm file (the source of truth; existing mappers are kept).
 kc update "realms/$REALM" -s revokeRefreshToken=true -s refreshTokenMaxReuse=0 >/dev/null
+# Bearer-only clients added to the realm file after an import (pdf-service, ADR-0052): an audience, no flow, no secret.
+python3 -I - infra/keycloak/realm-academy.json <<'PY' |
+import json, sys
+for client in json.load(open(sys.argv[1]))["clients"]:
+    if client.get("bearerOnly"):
+        print(client["clientId"])
+PY
+while read -r client; do
+  if [ -z "$(kc get clients -r "$REALM" -q "clientId=$client" --fields id --format csv --noquotes | head -n1 | tr -d '\r')" ]; then
+    kc create clients -r "$REALM" -s "clientId=$client" -s bearerOnly=true -s publicClient=false \
+      -s standardFlowEnabled=false -s directAccessGrantsEnabled=false -s serviceAccountsEnabled=false >/dev/null
+    echo "added bearer-only client $client"
+  fi
+done
 python3 -I - infra/keycloak/realm-academy.json <<'PY' |
 import json, sys
 for client in json.load(open(sys.argv[1]))["clients"]:

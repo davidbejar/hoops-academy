@@ -127,6 +127,33 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # pdf-service (Rust, ADR-0051 §3, ADR-0052): profile `pdf`, so `just up` neither builds nor starts it; `just pdf-up`
+  # builds the image (deploy/containers/pdf.Containerfile, minutes the first time) and starts it on 127.0.0.1:8084.
+  # Internal only (decision 89): nginx has no route to it; core and game on the host call PDF_SERVICE_URL
+  # (http://localhost:8084, .env) with their client-credentials token. It reads Keycloak's keys inside the network; the
+  # issuer comes from Keycloak's discovery (http://localhost:8080/auth/realms/academy, KC_HOSTNAME), as in the tokens.
+  pdf-service:
+    profiles: [pdf]
+    image: localhost/hoops/pdf-service:dev
+    build:
+      context: ../../services/pdf-service
+      dockerfile: ../../deploy/containers/pdf.Containerfile
+    container_name: hoops-pdf-service
+    environment:
+      OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
+      PDF_HTTP_PORT: "8084"
+    ports:
+      - "127.0.0.1:8084:8084"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    # distroless: no shell or curl for a healthcheck command; `just pdf-up` waits for the container to run
+    restart: unless-stopped
+
   nginx:
     image: docker.io/library/nginx:1.30-alpine
     container_name: hoops-nginx

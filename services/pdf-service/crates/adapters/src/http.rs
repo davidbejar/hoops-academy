@@ -80,7 +80,7 @@ async fn observe(request: Request, next: Next) -> Response {
     let response = next.run(request).instrument(span.clone()).await;
     let status = response.status().as_u16();
     span.record("http.response.status_code", status);
-    let millis = started.elapsed().as_millis();
+    let millis = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
     span.in_scope(|| {
         tracing::info!(target: "pdf_service::access", method = %method, route = %route, status, duration_ms = millis, "request");
     });

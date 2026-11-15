@@ -51,6 +51,12 @@ check "helm"              "helm version --short" optional
 check "tilt"              "tilt version" optional
 check "kubectl"           "kubectl version --client 2>/dev/null | head -1" optional
 check "flutter"           "flutter --version | head -1"
+# pdf-service (ADR-0052): rustup (Homebrew's is keg-only), the toolchain of rust-toolchain.toml, the gate tools
+RUSTUP_BIN=$(brew --prefix rustup 2>/dev/null)/bin
+check "rustup"            "PATH=\"$RUSTUP_BIN:\$HOME/.cargo/bin:\$PATH\" rustup --version 2>/dev/null | head -1"
+check "rust (pinned)"     "cd services/pdf-service && PATH=\"$RUSTUP_BIN:\$HOME/.cargo/bin:\$PATH\" RUSTUP_AUTO_INSTALL=0 rustc --version | grep -F \"\$(sed -n 's/^channel = \"\\(.*\\)\"$/\\1/p' rust-toolchain.toml)\""
+check "cargo-llvm-cov"    "cargo-llvm-cov llvm-cov --version"
+check "cargo-deny"        "cargo-deny --version"
 check "gitleaks"          "gitleaks version"
 check "pre-commit"        "pre-commit --version"
 check "openapi-generator" "openapi-generator --version 2>&1 | head -1"

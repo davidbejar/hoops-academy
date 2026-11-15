@@ -1,0 +1,5 @@
+# Build context of deploy/containers/pdf.Containerfile (podman reads this file from the context by itself, so
+# compose, Tilt, build-images.sh and CI all leave the cargo target directory out): sources, lock file and fonts only.
+target/
+**/*.profraw
+**/*.profdata
