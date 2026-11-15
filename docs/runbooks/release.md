@@ -73,8 +73,8 @@ kubectl -n hoops create secret docker-registry ghcr-pull --docker-server=ghcr.io
   --docker-username=<owner> --docker-password=<PAT with read:packages>
 helm upgrade --install hoops deploy/helm/hoops -n hoops --set 'global.imagePullSecrets[0].name=ghcr-pull' ...
 ```
-The `ubi9/openjdk-25-runtime` tag and digest in `deploy/containers/service.Containerfile` are bumped by the weekly
-`bump-pins` PR (section 6).
+The digest of the distroless `java25-debian13:nonroot` runtime in `deploy/containers/service.Containerfile` is bumped
+by the weekly `bump-pins` PR (section 6; distroless has floating tags only, ADR-0054).
 
 ### SBOM
 ADR-0043 (WP85). Every image job of `images.yml` writes CycloneDX SBOMs (Maven plugin 1.6, Trivy 1.7), validates each
@@ -266,7 +266,7 @@ Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned 
 
 | Pin | File | Resolved from |
 |---|---|---|
-| UBI openjdk-25-runtime tag + digest | `deploy/containers/service.Containerfile` | registry (skopeo) |
+| distroless java25-debian13:nonroot digest | `deploy/containers/service.Containerfile` | registry (skopeo, floating tag) |
 | nginx-unprivileged tag (even minors) | `deploy/containers/web.Containerfile` | registry |
 | redis, redpanda (tag + digest), mailpit | `deploy/helm/hoops/values.yaml` | registry |
 | Trivy tag | `ci.yml`, `images.yml`, `scripts/sbom.sh` | Docker Hub |

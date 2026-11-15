@@ -43,8 +43,12 @@ jobs:
             --ignorefile deploy/containers/service.containerignore \
             --build-arg SERVICE=${{ matrix.service }} --build-arg SERVICE_PORT=${{ matrix.port }} \
             --build-arg SOURCE_URL=https://github.com/${{ github.repository }} -t "$IMAGE" .
-      - name: Runs as non-root
-        run: test "$(podman run --rm --entrypoint id "$IMAGE" -u)" != 0
+      - name: Runs as non-root, starts the JVM without a shell
+        # distroless (ADR-0054) has no `id` and no shell: read the configured user, then run the image's own java
+        run: |
+          user=$(podman image inspect --format '{{.Config.User}}' "$IMAGE")
+          case "${user%%:*}" in ''|0|root) echo "::error::image user is '$user'"; exit 1 ;; esac
+          podman run --rm --read-only --entrypoint /usr/bin/java "$IMAGE" -version
       - name: Trivy scan (fail on fixable HIGH/CRITICAL)
         run: |
           podman save -o image.tar "$IMAGE"

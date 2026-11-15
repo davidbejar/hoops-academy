@@ -361,10 +361,10 @@ overrides them (a managed Kafka with `events.enabled=false`: set `KAFKA_*`, `COR
 `CORE_OUTBOX_POLL_INTERVAL` in `env`, the
 password through `secretEnv`). Check a release: `kubectl -n hoops get configmap core-service-env -o yaml | grep -E 'KAFKA|OUTBOX'`.
 
-Watch it on kind (`/q/metrics` is not routed; read it inside the pod):
+Watch it on kind (`/q/metrics` is not routed, and the distroless service images have no curl: port-forward, ADR-0054):
 ```bash
 curl -s localhost:8090/api/core/q/health/ready | jq '.checks[] | select(.name == "outbox-publisher")'   # UP, state OK
-m() { kubectl -n hoops exec deploy/$1 -c $1 -- curl -s localhost:$2/q/metrics; }
+m() { kubectl -n hoops port-forward deploy/$1 "1$2:$2" >/dev/null & local pf=$!; sleep 2; curl -s "localhost:1$2/q/metrics"; kill $pf; }
 m core-service 8081 | grep -E '^hoops_outbox_(pending|lag|broker_available|published_total)'
 m game-service 8082 | grep '^hoops_roster_replica'                  # events_total{outcome,topic}, parked_total, lag_seconds
 m athlete-service 8083 | grep '^hoops_roster_replica'
