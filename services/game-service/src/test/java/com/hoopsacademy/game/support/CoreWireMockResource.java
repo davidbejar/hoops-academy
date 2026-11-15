@@ -6,8 +6,9 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import java.util.Map;
 
 /**
- * WireMock standing in for core-service {@code /internal/**} AND for the Keycloak token endpoint, so the real
- * {@code ServiceTokenClientFilter} runs end to end. Points {@code hoops.core.url} and the oidc-client at it.
+ * WireMock standing in for core-service {@code /internal/**}, for pdf-service {@code /internal/pdf/**} (WP117,
+ * {@link PdfServiceStubs}) AND for the Keycloak token endpoint, so the real {@code ServiceTokenClientFilter} runs end to
+ * end. Points {@code hoops.core.url}, {@code hoops.pdf.url} and the oidc-client at it.
  */
 public class CoreWireMockResource implements QuarkusTestResourceLifecycleManager {
 
@@ -21,6 +22,7 @@ public class CoreWireMockResource implements QuarkusTestResourceLifecycleManager
         String base = "http://localhost:" + server.port();
         return Map.of(
                 "hoops.core.url", base,
+                "hoops.pdf.url", base,
                 "quarkus.oidc-client.auth-server-url", base + "/realms/academy");
     }
 
