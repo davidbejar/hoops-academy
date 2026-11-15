@@ -23,13 +23,25 @@ func ParseUUID(text string) (UUID, error) {
 	}
 	hex := strings.ToLower(strings.ReplaceAll(text, "-", ""))
 	for i := range 16 {
-		high, low := strings.IndexByte(hexDigits, hex[2*i]), strings.IndexByte(hexDigits, hex[2*i+1])
-		if high < 0 || low < 0 {
+		high, okHigh := nibble(hex[2*i])
+		low, okLow := nibble(hex[2*i+1])
+		if !okHigh || !okLow {
 			return UUID{}, ErrInvalidUUID
 		}
-		id[i] = byte(high<<4 | low)
+		id[i] = high<<4 | low
 	}
 	return id, nil
+}
+
+func nibble(c byte) (byte, bool) {
+	switch {
+	case c >= '0' && c <= '9':
+		return c - '0', true
+	case c >= 'a' && c <= 'f':
+		return c - 'a' + 10, true
+	default:
+		return 0, false
+	}
 }
 
 // String is the canonical lower-case form.

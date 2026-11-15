@@ -33,35 +33,50 @@ const insufficientPrivilege = "42501"
 // CheckTable runs the suite on one table and returns its violations.
 func (s Isolation) CheckTable(ctx context.Context, table string) ([]string, error) {
 	a, b := newUUID(), newUUID()
-	rowA, err := s.insertAsMigrator(ctx, table, a)
-	if err != nil {
+	if _, err := s.insertAsMigrator(ctx, table, a); err != nil {
 		return nil, err
 	}
 	rowB, err := s.insertAsMigrator(ctx, table, b)
 	if err != nil {
 		return nil, err
 	}
-	_ = rowA
+	reads, err := s.readViolations(ctx, table, a)
+	if err != nil {
+		return nil, err
+	}
+	writes, err := s.writeViolations(ctx, table, a, b, rowB)
+	if err != nil {
+		return nil, err
+	}
+	return append(reads, writes...), nil
+}
+
+func (s Isolation) readViolations(ctx context.Context, table, a string) ([]string, error) {
 	quoted := quote(table)
 	var violations []string
-	report := func(format string, args ...any) {
-		violations = append(violations, table+": "+fmt.Sprintf(format, args...))
-	}
-
 	foreign, err := s.count(ctx, a, "select count(*) from "+quoted+" where tenant_id <> $1", a)
 	if err != nil {
 		return nil, err
 	}
 	if foreign != 0 {
-		report("tenant %s sees %d rows of other tenants", "A", foreign)
+		violations = append(violations, fmt.Sprintf("%s: tenant A sees %d rows of other tenants", table, foreign))
 	}
 	own, err := s.count(ctx, a, "select count(*) from "+quoted+" where tenant_id = $1", a)
 	if err != nil {
 		return nil, err
 	}
 	if own < 1 {
-		report("tenant A does not see its own row")
+		violations = append(violations, table+": tenant A does not see its own row")
 	}
+	if err := s.unboundRead(ctx, quoted); !isInsufficientPrivilege(err) {
+		violations = append(violations, fmt.Sprintf("%s: a read without a bound tenant did not fail with 42501 (got %v)", table, err))
+	}
+	return violations, nil
+}
+
+func (s Isolation) writeViolations(ctx context.Context, table, a, b string, rowB map[string]any) ([]string, error) {
+	quoted := quote(table)
+	var violations []string
 	for _, statement := range []string{
 		"update " + quoted + " set tenant_id = tenant_id where tenant_id = $1",
 		"delete from " + quoted + " where tenant_id = $1",
@@ -71,17 +86,15 @@ func (s Isolation) CheckTable(ctx context.Context, table string) ([]string, erro
 			return nil, err
 		}
 		if touched != 0 {
-			report("tenant A changed %d rows of tenant B with %q", touched, firstWord(statement))
+			violations = append(violations,
+				fmt.Sprintf("%s: tenant A changed %d rows of tenant B with %q", table, touched, firstWord(statement)))
 		}
 	}
 	if _, err := s.exec(ctx, a, "update "+quoted+" set tenant_id = $1 where tenant_id = $2", b, a); !isInsufficientPrivilege(err) {
-		report("moving a row to tenant B did not fail with 42501 (got %v)", err)
+		violations = append(violations, fmt.Sprintf("%s: moving a row to tenant B did not fail with 42501 (got %v)", table, err))
 	}
 	if err := s.insertAsApp(ctx, table, a, b, rowB); !isInsufficientPrivilege(err) {
-		report("inserting a row for tenant B did not fail with 42501 (got %v)", err)
-	}
-	if err := s.unboundRead(ctx, quoted); !isInsufficientPrivilege(err) {
-		report("a read without a bound tenant did not fail with 42501 (got %v)", err)
+		violations = append(violations, fmt.Sprintf("%s: inserting a row for tenant B did not fail with 42501 (got %v)", table, err))
 	}
 	return violations, nil
 }
@@ -111,7 +124,7 @@ func (s Isolation) unboundRead(ctx context.Context, quoted string) error {
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	var n int64
-	return tx.QueryRow(ctx, "select count(*) from "+quoted).Scan(&n) //nolint:wrapcheck // compared by SQLSTATE
+	return tx.QueryRow(ctx, "select count(*) from "+quoted).Scan(&n)
 }
 
 func (s Isolation) insertAsApp(ctx context.Context, table, bound, target string, like map[string]any) error {
@@ -224,7 +237,7 @@ func insert(ctx context.Context, tx pgx.Tx, table string, row map[string]any) er
 	}
 	sql := "insert into " + quote(table) + " (" + strings.Join(names, ", ") + ") values (" + strings.Join(marks, ", ") + ")"
 	_, err := tx.Exec(ctx, sql, values...)
-	return err //nolint:wrapcheck // compared by SQLSTATE
+	return err
 }
 
 type column struct {
@@ -315,7 +328,7 @@ func inTenant(ctx context.Context, pool *pgxpool.Pool, tenant string, fn func(pg
 	if err := fn(tx); err != nil {
 		return err
 	}
-	return tx.Commit(ctx) //nolint:wrapcheck // test support
+	return tx.Commit(ctx)
 }
 
 func isInsufficientPrivilege(err error) bool {

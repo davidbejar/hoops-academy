@@ -89,25 +89,34 @@ func tenantTableViolations(qualified string, table tableInfo) []string {
 		out = append(out, qualified+": no permissive policy on app.current_tenant()")
 	}
 	for _, p := range table.policies {
-		if !p.permissive {
-			continue
-		}
-		check := p.check
-		if check == "" && p.command == "ALL" {
-			check = p.using
-		}
-		if needsUsing(p.command) && !strings.Contains(p.using, tenantFunction) {
-			out = append(out, fmt.Sprintf("%s: policy %s reads without app.current_tenant()", qualified, p.name))
-		}
-		if needsCheck(p.command) && !strings.Contains(check, tenantFunction) {
-			out = append(out, fmt.Sprintf("%s: policy %s writes without app.current_tenant()", qualified, p.name))
-		}
+		out = append(out, policyViolations(qualified, p)...)
+	}
+	return out
+}
+
+// policyViolations: a permissive policy widens access, so each one must restrict to the bound tenant.
+func policyViolations(qualified string, p policy) []string {
+	if !p.permissive {
+		return nil
+	}
+	check := p.check
+	if check == "" && p.command == "ALL" {
+		check = p.using
+	}
+	var out []string
+	if needsUsing(p.command) && !strings.Contains(p.using, tenantFunction) {
+		out = append(out, fmt.Sprintf("%s: policy %s reads without app.current_tenant()", qualified, p.name))
+	}
+	if needsCheck(p.command) && !strings.Contains(check, tenantFunction) {
+		out = append(out, fmt.Sprintf("%s: policy %s writes without app.current_tenant()", qualified, p.name))
 	}
 	return out
 }
 
 func needsUsing(command string) bool { return command != "INSERT" }
-func needsCheck(command string) bool { return command == "ALL" || command == "INSERT" || command == "UPDATE" }
+func needsCheck(command string) bool {
+	return command == "ALL" || command == "INSERT" || command == "UPDATE"
+}
 
 func tablesOf(ctx context.Context, q Querier, schema string) ([]tableInfo, error) {
 	rows, err := q.Query(ctx, `

@@ -15,5 +15,9 @@ type Config struct {
 
 // Defaults is the configuration with no environment at all: what the service ships with.
 func Defaults() Config {
-	return Config{}
+	return Config{Database: Database{
+		URL:          "postgres://localhost:5432/hoops?sslmode=disable",
+		AppUser:      "finance_app",
+		MigratorUser: "finance_migrator",
+	}}
 }

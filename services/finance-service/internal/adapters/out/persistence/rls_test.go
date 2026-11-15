@@ -54,6 +54,7 @@ func TestTheSchemaInspectionFindsPlantedViolations(t *testing.T) {
 		"create table finance.planted_no_rls (tenant_id uuid not null)",
 		"create table finance.planted_not_forced (tenant_id uuid not null)",
 		"alter table finance.planted_not_forced enable row level security",
+		// FOR ALL without WITH CHECK: USING checks the writes too, so only the missing FORCE is a violation
 		"create policy p on finance.planted_not_forced using (tenant_id = app.current_tenant())",
 		"create table finance.planted_open (tenant_id uuid not null)",
 		"select app.enable_tenant_rls('finance.planted_open')",
@@ -78,7 +79,6 @@ func TestTheSchemaInspectionFindsPlantedViolations(t *testing.T) {
 		"finance.planted_no_rls: row level security not forced",
 		"finance.planted_no_rls: no permissive policy on app.current_tenant()",
 		"finance.planted_not_forced: row level security not forced",
-		"finance.planted_not_forced: policy p writes without app.current_tenant()",
 		"finance.planted_nullable: tenant_id must be uuid not null",
 		"finance.planted_open: policy everyone reads without app.current_tenant()",
 		"finance.planted_open: policy everyone writes without app.current_tenant()",
@@ -87,8 +87,8 @@ func TestTheSchemaInspectionFindsPlantedViolations(t *testing.T) {
 			t.Errorf("not reported: %s", want)
 		}
 	}
-	if len(violations) != 9 {
-		t.Errorf("expected exactly the 9 planted violations, got:\n%s", strings.Join(violations, "\n"))
+	if len(violations) != 8 {
+		t.Errorf("expected exactly the 8 planted violations, got:\n%s", strings.Join(violations, "\n"))
 	}
 }
 
