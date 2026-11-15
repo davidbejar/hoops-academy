@@ -18,4 +18,14 @@ alter role game_app         password :'game_app';
 alter role athlete_migrator password :'athlete_migrator';
 alter role athlete_app      password :'athlete_app';
 EOSQL
+
+# finance-service (ADR-0055): set when given, so a compose .env or a test resource from before finance keeps working.
+# Without a password the roles exist but cannot log in; `just finance-up` sets them on an existing compose database.
+if [ -n "${FINANCE_MIGRATOR_PASSWORD:-}" ] && [ -n "${FINANCE_APP_PASSWORD:-}" ]; then
+  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+    -v finance_migrator="$FINANCE_MIGRATOR_PASSWORD" -v finance_app="$FINANCE_APP_PASSWORD" <<'EOSQL'
+alter role finance_migrator password :'finance_migrator';
+alter role finance_app      password :'finance_app';
+EOSQL
+fi
 echo "02_passwords.sh: role passwords set"

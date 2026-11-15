@@ -21,7 +21,8 @@ begin
   foreach r in array array[
     'core_migrator','core_app','core_platform',
     'game_migrator','game_app',
-    'athlete_migrator','athlete_app'] loop
+    'athlete_migrator','athlete_app',
+    'finance_migrator','finance_app'] loop
     if not exists (select 1 from pg_roles where rolname = r) then
       execute format('create role %I login nosuperuser nocreatedb nocreaterole noinherit nobypassrls', r);
     else
@@ -34,6 +35,7 @@ end $$;
 alter role core_app    connection limit 50;
 alter role game_app    connection limit 50;
 alter role athlete_app connection limit 50;
+alter role finance_app connection limit 50;
 alter role core_platform connection limit 10;
 
 -- ---------- lock down public -----------------------------------------------
@@ -41,13 +43,15 @@ revoke create on schema public from public;
 revoke all on database hoops from public;
 grant connect on database hoops to core_migrator, core_app, core_platform,
                                  game_migrator, game_app,
-                                 athlete_migrator, athlete_app;
+                                 athlete_migrator, athlete_app,
+                                 finance_migrator, finance_app;
 
 -- ---------- shared helper schema -------------------------------------------
 create schema if not exists app;
 grant usage on schema app to core_migrator, core_app, core_platform,
                             game_migrator, game_app,
-                            athlete_migrator, athlete_app;
+                            athlete_migrator, athlete_app,
+                            finance_migrator, finance_app;
 
 -- Returns the tenant bound to the current transaction (set via
 --   select set_config('app.tenant_id', '<uuid>', true);
@@ -76,7 +80,8 @@ begin
 end $$;
 
 grant execute on function app.current_tenant() to public;
-grant execute on function app.enable_tenant_rls(regclass) to core_migrator, game_migrator, athlete_migrator;
+grant execute on function app.enable_tenant_rls(regclass) to core_migrator, game_migrator, athlete_migrator,
+                                                            finance_migrator;
 
 -- ---------- service schemas --------------------------------------------------
 -- One block per (schema, migrator, app role). Default privileges make every table/sequence the
@@ -88,7 +93,8 @@ begin
       ('core',    'core_migrator',    'core_app'),
       ('billing', 'core_migrator',    'core_app'),
       ('game',    'game_migrator',    'game_app'),
-      ('athlete', 'athlete_migrator', 'athlete_app')
+      ('athlete', 'athlete_migrator', 'athlete_app'),
+      ('finance', 'finance_migrator', 'finance_app')    -- finance-service (Go, ADR-0051 §2, ADR-0055)
     ) as t(schema_name, migrator, app_role) loop
     execute format('create schema if not exists %I authorization %I', s.schema_name, s.migrator);
     execute format('grant usage on schema %I to %I', s.schema_name, s.app_role);
@@ -115,3 +121,5 @@ alter role game_migrator    set search_path = game, app, public;
 alter role game_app         set search_path = game, app, public;
 alter role athlete_migrator set search_path = athlete, app, public;
 alter role athlete_app      set search_path = athlete, app, public;
+alter role finance_migrator set search_path = finance, app, public;
+alter role finance_app      set search_path = finance, app, public;
