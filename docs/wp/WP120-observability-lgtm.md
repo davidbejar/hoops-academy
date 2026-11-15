@@ -27,6 +27,8 @@ dashboards. ADR-0046 amendment, no new ADR.
    while proving on kind; chart tests and snapshots updated; `tilt ci` on the new chart if the VM load allows (it
    was last run on 0.9.0), otherwise say so.
 5. **Docs**: the ADR-0046 amendment, `docs/runbooks/observability.md`.
+6. **Retention** (WP112, `docs/security/privacy-threat-model.md` P-07): the backend gets an explicit retention limit
+   for logs and traces (short, dev-sized), written in the runbook and the ADR-0046 amendment.
 
 ## Acceptance
 - [ ] Chart tests green (ALL CHART TESTS PASSED), kubeconform clean; `actionlint` clean if a workflow changed

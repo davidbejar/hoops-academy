@@ -384,7 +384,7 @@ WP118 (contract first), so the web (WP121) starts one wave later while the Go se
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
 | 1 | WP111 | pdf-service in Rust: match sheet and team roster, toolchain through just, CI, images, chart, Tilt | Opus · high | Running |
-| 1 | WP112 | Security docs: LINDDUN privacy threat model | Opus · medium | Running |
+| 1 | WP112 | Security docs: LINDDUN privacy threat model | Opus · medium | Done (`docs/security/privacy-threat-model.md`; findings P-01..P-13, P-01..P-05 before real academies) |
 | 1 | WP113 | Build: PMD and CPD maintainability gate in `verify` | Opus · medium | Running |
 | 1 | WP114 | Images: Java services on a distroless Java 25 base | Opus · medium | Running |
 | 1 | WP115 | Small fixes: language and theme on the academy chooser, compose nginx limits, audit wording | Sonnet · medium | Running |
