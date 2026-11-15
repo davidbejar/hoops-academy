@@ -36,6 +36,11 @@ class JpaAuditNameRepository implements AuditNames {
     }
 
     @Override
+    public Map<UUID, String> teams(Set<UUID> ids) {
+        return names("select t.id, t.name from core.team t where t.id in (:ids)", ids);
+    }
+
+    @Override
     public Map<UUID, String> tenants(Set<UUID> ids) {
         return names("select t.id, t.name from core.tenant t where t.id in (:ids)", ids);
     }

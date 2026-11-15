@@ -16,6 +16,9 @@ public interface AuditNames {
     /** Name of the person of these players. */
     Map<UUID, String> players(Set<UUID> ids);
 
+    /** Name of these teams (WP116: the target of {@code team.roster_exported}). */
+    Map<UUID, String> teams(Set<UUID> ids);
+
     /** Name of the academy (only the bound one is visible). */
     Map<UUID, String> tenants(Set<UUID> ids);
 
