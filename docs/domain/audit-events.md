@@ -48,7 +48,7 @@ appearing in all three.
 | `player.rejected` | player | as `player.approved` | ADMIN decision (also an outbox event) |
 | `player.requested` | player | `approvalRequestId`, `action`, `playerId`, `status`, `requestedBy` | COACH request (also an outbox event) |
 | `player.withdrawn` | player | as `player.approved` | ADMIN withdrawal or approved WITHDRAW_PLAYER (also an outbox event) |
-| `team.roster_exported` | team | `rows` (players plus staff in the file) | ADMIN or the team's COACH, `GET /api/core/teams/{teamId}/roster:export` (WP96, ADR-0048; the file holds personal data, the row none) |
+| `team.roster_exported` | team | `rows` (players plus staff in the file) | ADMIN or the team's current coach (decision 83), `GET /api/core/teams/{teamId}/roster:export` (WP96, ADR-0048; the file holds personal data, the row none) |
 | `tenant.created` | tenant | `slug` | super admin, onboarding |
 | `tenant.events_backfilled` | tenant | `force`, `events` (count appended), `topics` (topic names) | super admin, `POST /platform/events/backfill` (WP81) |
 | `tenant.logo_removed` | tenant | – | ADMIN |

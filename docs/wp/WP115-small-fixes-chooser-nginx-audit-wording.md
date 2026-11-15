@@ -45,3 +45,25 @@ Decision 100 of 2026-11-15 (owner): the small fixes bundle.
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - Academy chooser (`app/screens/tenant_switcher_screen.dart`, the screen for `NeedsTenant`): language and theme cards
+    below the list. WP105's two cards were extracted from the avatar menu into `LanguageSection` / `ThemeSection`
+    (`app/avatar_menu.dart`, same keys `lang-*`, `theme-*`, same `chooseLanguage` incl. server `updateLocale`); the avatar
+    menu uses the same widgets, behaviour unchanged. The profile screen still has no picker (not in scope).
+  - Tests: red first (981a0f60): `test/app/tenant_switcher_test.dart` (pickers present, language stored and applied,
+    theme stored), `test/golden/chooser_golden_test.dart`.
+  - Goldens new: `chooser_{360x780,1024x768}_{light,dark}.png`. No other golden changed.
+  - nginx (`infra/compose/nginx.conf`, new `nginx/export-limits.conf`): zones `export_min` 10r/m and `export_sec` 2r/s per
+    IP, applied with `burst=9 nodelay` and `burst=1 nodelay` to `roster:export`, `/api/core|/platform/audit-events:export`
+    and `= /platform/academy-requests`; 429 from `limit_req_status`. nginx decodes `%3A`, so one regex covers both forms.
+  - `docs/domain/audit-events.md`: `team.roster_exported` now "ADMIN or the team's current coach (decision 83)".
+- Verified: `flutter analyze` no issues; `just web-format-check` 0 changed of 456; full `flutter test` (apps/web): 1507 passed, 0 failed.
+  nginx proved on a throwaway container (`nginx:1.30-alpine`, port 18115, backend absent so allowed requests
+  answer 502): `nginx -t` ok; `POST /platform/academy-requests` at one request per 0.6 s: 11 x 502, first 429 at
+  request #12 (10 burst plus one refill at 6 s); the three export paths, incl. `%3A`, answered 429 at once (they share
+  the same per-IP zones); 4 fast requests: 429. The shared `just up` nginx was not reloaded (it mounts the main checkout's
+  files); the change takes effect there after merge and `podman exec hoops-nginx nginx -s reload`.
+- Decisions/ADRs: none. The zones are shared by all four paths per client IP (the gateway counts per route): stricter,
+  accepted for the dev proxy.
+- Open points: the profile screen (outside the shell) still has no language/theme picker; the chooser lives in
+  `app/screens`, outside the brief's `features/tenant` ownership (no other WP touched it).

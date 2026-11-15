@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../avatar_menu.dart';
 import '../../core/navigation/context_switcher.dart';
 import '../../core/session/session.dart';
 import '../../core/session/session_providers.dart';
@@ -50,6 +51,11 @@ class TenantSwitcherScreen extends ConsumerWidget {
                     activeId: activeId,
                     onSelect: (target) => enterContext(context, ref, target),
                   ),
+                  const SizedBox(height: HoopsSpace.lg),
+                  // The chooser sits outside the shell: no avatar menu (WP115).
+                  const LanguageSection(),
+                  const SizedBox(height: HoopsSpace.md),
+                  const ThemeSection(),
                 ],
               ),
             ),
