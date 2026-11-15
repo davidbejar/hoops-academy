@@ -126,8 +126,6 @@ leads: `domain/norms.md`.
   render snapshot. Next: the first real apply, install, seed, smoke and destroy (`runbooks/cloud.md`); then TLS
   certificates (cert-manager / Let's Encrypt), real SMTP, CNPG backups to object storage, External Secrets against a
   real store, and the GDPR work before real academies use it. One node, no HA by design of the slice.
-- **Java 25.** Built and verified on the branch `jdk-25` (WP109, draft pull request #7, ADR-0003 amendment there); not
-  merged until the owner says so.
 - **Gateway (WP36, ADR-0031).** The chart runs on Gateway API with Envoy Gateway; the e2e journey is green on kind.
   Rate limits are global since WP40 (ADR-0033: Envoy Gateway's rate limit service + Redis, shared by every Envoy
   replica, fail open); since WP46 Redis has an ACL (only the rate limit user, only `PING`/`INCRBY`/`EXPIRE`) and every

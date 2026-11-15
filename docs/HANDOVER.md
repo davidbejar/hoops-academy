@@ -31,11 +31,11 @@ and must not be written to.
     package 3.6.0.
   - WP108 (b4a77568) web: the exercise catalogue for PARENT and PLAYER (`/training/exercises`, "Exercises" chip in
     Training), the "Your name" form from the `/me` names, the export button only for ADMIN and the current coach.
-  - WP109 (handover 0027acdf on `main`) JDK 25 on the branch `jdk-25` (83024d44, 36e2abbf, 77fe32fe after its rebase
-    on f59c7f85), draft pull request #7, **not merged** (decision 81).
+  - WP109 (handover 0027acdf) JDK 25 (83024d44, 36e2abbf, 77fe32fe; decision 81), **merged into `main` on 2026-11-15**
+    after `main` was merged into the branch and verified there (see "After the seventh round" below).
   Contract versions now: **core 3.6.0, game 2.3.0, athlete 3.0.0, common 1.1.1**; event schemas unchanged. Helm chart
   **0.10.0** unchanged (`keycloak` 0.6.0, `hoops-service` 0.8.0, `databases` 0.1.0, `web` 0.2.0; WP104 adds the overlay
-  `values-cloud.yaml`, no template change). New ADR-0050; ADR-0048 amended (the ADR-0003 amendment is on `jdk-25` only).
+  `values-cloud.yaml`, no template change). New ADR-0050; ADR-0048 and ADR-0003 amended.
 - Tests, as the handovers report them: `./mvnw -B -ntp -T 1C verify` at WP106 **3,388 tests**, 0 failures, 0 errors,
   26 skipped (the journey steps without `e2e.baseUrl`), coverage gates met; the same 3,388 on JDK 25 on `jdk-25`
   (WP109). `flutter test` **1466 passed** (WP108, the last web WP; WP105: 1454). Mutation: core 925/926 (WP106); on JDK
@@ -53,12 +53,20 @@ and must not be written to.
   **red** (Trivy: 14 HIGH, all `krb5-libs`). Every `images` run of the round is red: d20faf34 (43602719552, 31
   findings before de481062), de481062 (43606468296), a499cad0 (43609166140), 061a6af7 (43612355787), 3822faf2; last
   green b56bab8e (42789825341). Every `ci` run of the round is green, from d20faf34 to f59c7f85.
-- GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0), branch `main`; open pull requests #6 (bump-pins) and #7
-  (`jdk-25`, draft). Repository variable `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`; secrets `NVD_API_KEY`
+- GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0), branch `main`; open pull request #6 (bump-pins); #7 (`jdk-25`) merged
+  on 2026-11-15. Repository variable `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`; secrets `NVD_API_KEY`
   (repository and Dependabot). The four ghcr.io packages are public and carry their SBOMs as OCI referrers. Dependabot:
   weekly grouped updates (Maven, pub, GitHub Actions as SHA + tag) with a 7-day cooldown; the `json-schema-validator`
   major is ignored (WP43). The weekly `bump-pins` PR covers image digests, chart tags and kind pins, but not pins inside
   workflow files (listed in the PR body for a manual bump).
+- **After the seventh round (2026-11-15, with the owner, no work package).** `main`: ADR-0051 (a `pdf-service` in Rust
+  and a `finance-service` in Go, decided and not built), TODOs for a PMD gate and a LINDDUN privacy threat model, four
+  web fixes (stale app in debug runs from the unstamped service worker, back button on the profile, the match list
+  reloading when the server has new events, the Keycloak sign-in page following the look chosen in the app: ADR-0022
+  amendment, one script in the login theme). `jdk-25` took `main`, was verified on JDK 25 (verify 3,388 tests, the 26
+  journey steps on compose, PIT at every baseline, the three ZAP API scans through their gate, `flutter test` 1500)
+  and was merged into `main`. The web mutation manifest now includes `sync_worker.dart` (64/64). The local compose
+  stack holds junk tenants and admins from the ZAP scans.
 
 ## Pending user actions
 1. **`images` is red on `main`**: 14 HIGH findings, all `krb5-libs` in `ubi9/openjdk-21-runtime` (the fixed package is
@@ -70,11 +78,9 @@ and must not be written to.
    (`ALIBABA_CLOUD_ACCESS_KEY_ID` / `_SECRET`) or an aliyun profile; `TF_VAR_state_passphrase` (16+ characters, backed
    up); `terraform.tfvars` with their IP as /32 and their public key; a `main` commit whose images are on ghcr.io; strong
    fresh values everywhere in `.env` (`install.sh` refuses `change-me`).
-3. **JDK 25, pull request #7** (draft, branch `jdk-25`): before merging, look at its CI (e2e, CodeQL and `images` were
-   not run locally; `images` will be red for item 1), install `openjdk@25` on every machine and in every worktree
-   (`scripts/bootstrap.sh`; env.sh then refuses a 21; branches cut before the merge keep selecting 21), and expect
-   rebase conflicts in the runtime image line of `service.Containerfile` and its `bump_pins.py` pin, the
-   `actions/setup-java` steps and the stack wording lines (WP109 handover).
+3. **JDK 25 is on `main`** (merged 2026-11-15): install `openjdk@25` on every machine and in every worktree
+   (`scripts/bootstrap.sh`; `env.sh` refuses a 21). The `images` workflow stays red for item 1 on the JDK 25 image
+   too, and CodeQL on JDK 25 has only run in CI, not locally.
 4. **bump-pins PR #6** (mailpit v1.33.1, External Secrets Operator v2.15.0): close and reopen it so `ci` / `e2e`
    start (a `GITHUB_TOKEN` PR starts no checks); the ESO bump needs a kind proof (`up.sh --eso --deploy --from-host`,
    ExternalSecrets synced) before merging.
@@ -110,7 +116,8 @@ and must not be written to.
   the stable channel, so a new stable can turn `flutter analyze` red without a commit of ours.
 - **OpenTofu and JDK 25 installed with Homebrew** (`opentofu` 1.13.9, `openjdk@25` 25.0.5): `just tofu-check` needs
   OpenTofu; `scripts/bootstrap.sh` installs it, and a `tofu-fmt` pre-commit hook runs on
-  `infra/tofu`. `openjdk@25` serves the `jdk-25` branch; `scripts/env.sh` on `main` still selects 21.
+  `infra/tofu`. `scripts/env.sh` selects exactly JDK 25 since the merge of 2026-11-15 (`openjdk@25`, `scripts/bootstrap.sh`); a
+  branch cut before it still selects 21.
 - **Wait for `ci` before stacking the next web merge**: the browser smoke (`web-browser`) runs only in `ci`; in the
   sixth round the WP97 merge broke it and four later pushes stayed red until 1ae09ed2.
 - **Pass known gate rules to agents in their prompts**: constant SQL / JPQL with bound parameters (CodeQL

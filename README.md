@@ -105,9 +105,9 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 
 ## Project status
 Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP110 are done** (no
-WP79), with handovers in `docs/wp/` (the seventh round, WP104–WP110, on 2026-11-14; WP109's JDK 25 lives on the branch
-`jdk-25`, draft pull request #7, not merged). As of 2026-11-14: backend `./mvnw verify` runs **3,388 tests** green (26 of
-them, the e2e journey steps, skipped without a running stack; WP106) and `flutter test` **1466 tests** (WP108); the
+WP79), with handovers in `docs/wp/` (the seventh round, WP104–WP110, on 2026-11-14; WP109's JDK 25 was merged into
+`main` on 2026-11-15). As of 2026-11-15: backend `./mvnw verify` runs **3,388 tests** green on JDK 25 (26 of
+them, the e2e journey steps, skipped without a running stack) and `flutter test` **1500 tests**; the
 26-step e2e journey is green on a compose stack (CI `e2e` workflow, with a browser login round trip and the ZAP API
 scans). Contract versions: core 3.6.0, game 2.3.0, athlete 3.0.0, common 1.1.1; roster event schemas in
 `libs/contracts/events`.

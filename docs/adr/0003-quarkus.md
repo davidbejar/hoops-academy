@@ -18,6 +18,6 @@ The services build and run on **Java 25 LTS** (`maven.compiler.release` 25, Temu
 supported Java 25 fully since 3.31 (runtime images and native builds); the platform in use (3.40.1.2) is later. Every
 bytecode-reading tool in the build was checked against its release notes first and was already at or beyond its first
 Java 25 release (JaCoCo 0.8.14, PIT 1.19.6 with ASM 9.8, ArchUnit 1.4.1, SpotBugs on ASM 9.11 and BCEL 6.13, CodeQL
-2.23.1); no gate changed. The upgrade lives on the branch `jdk-25` until the owner merges it; the findings with their
+2.23.1); no gate changed. The upgrade was built on the branch `jdk-25` and merged into `main` on 2026-11-15; the findings with their
 sources are in `docs/wp/WP109-jdk-25-branch.md`. `scripts/env.sh` selects exactly the major in `_JDK_MAJOR`, and
 `scripts/tests/test_jdk_pins.py` keeps it, the images and `actions/setup-java` equal to `maven.compiler.release`.

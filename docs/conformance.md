@@ -39,7 +39,7 @@ the taken numbers per team (ADR-0048, WP96, WP101; beyond the spec); CSV exports
 and CSV / Excel / ICS exports of player stats, box score and team calendar built in the browser (ADR-0048, WP96, WP97,
 WP101); the application admin hub with a Users area and a context switcher (ADR-0049, WP91, WP99; S-38); a member
 edits their own name (WP91, WP99); chart 0.10.0 with Envoy Gateway v1.10.0 (WP100; S-04).
-The reconciliation after the seventh round (WP104–WP109, 2026-11-14; WP109 on the unmerged branch `jdk-25`) changed no
+The reconciliation after the seventh round (WP104–WP109, 2026-11-14; WP109's JDK 25 merged into `main` on 2026-11-15) changed no
 status (55 / 7 / 5 / 0 / 2): S-04 stays Partial, since the OpenTofu module for one k3s VM on Alibaba Cloud and the
 chart's cloud values are proven only against a mocked provider and by a render snapshot, never applied (ADR-0050,
 WP104). Also: a light / dark / system theme and the language in the menu behind the avatar (WP105; S-02, U-01); the
@@ -254,8 +254,8 @@ reason; none is a silent gap.
 
 ## Verification baseline
 - **Backend**: seventh round, WP106 (2026-11-14, `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`): **3,388
-  tests**, 0 failures, 0 errors, 26 skipped (the journey steps), coverage gates met; the same total on JDK 25 on the
-  branch `jdk-25` (WP109). Last per-module counts, from the last full verify of the sixth round (WP98 after its rebase, 2026-11-10, `./mvnw -B -ntp -T 1C verify`):
+  tests**, 0 failures, 0 errors, 26 skipped (the journey steps), coverage gates met; the same total on JDK 25 (WP109, and
+  again on 2026-11-15 before its merge into `main`). Last per-module counts, from the last full verify of the sixth round (WP98 after its rebase, 2026-11-10, `./mvnw -B -ntp -T 1C verify`):
   contracts 315, common-quarkus 403, core-service 1163, game-service 467, athlete-service 999 = **3,347 tests**,
   0 failures, every coverage and SpotBugs gate met. The `e2e` module runs 32 in `verify`: 6 `MailSinkTest` tests and the
   26 `JourneyTest` steps reported as skipped (no `e2e.baseUrl`). CI on `main` green at the end of the round; the reds

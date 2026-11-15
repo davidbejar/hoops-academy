@@ -344,8 +344,8 @@ at WP108 (2026-11-14). They change with every commit.
 | Cloud module | `just tofu-check`: `tofu fmt`, `validate`, `tofu test` (every run a `plan` against a mocked provider: guards on SSH CIDRs, memory, hostname, Traefik, IMDSv2, public IP), trivy config, checkov (local, optional), shellcheck, pins equal to kind's; CI job `tofu-check` | 25 tests (WP104); never applied |
 | Mutation (on demand) | PIT per module (`just mutation [module]`) and the Dart tool for the web rule code (`just web-mutation`), workflow `mutation.yml` manual + monthly; never in `verify`; baselines equal to the scores rounded down; see [`quality/mutation.md`](quality/mutation.md) | common 337/338, core 925/926, game 525/527, athlete 690/690, web 430/430 |
 
-JVM total: **3,388 tests** at WP106 (0 failures, 26 skipped: the journey steps without a stack; the same on JDK 25 on
-the branch `jdk-25`, WP109), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **1466 tests**, analyze and format
+JVM total: **3,388 tests** on JDK 25 (2026-11-15, after the merge of WP109; 0 failures, 26 skipped: the journey steps
+without a stack), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **1500 tests**, analyze and format
 check clean. e2e: **26/26 green on compose** with the replica as the roster source (WP98) and in every CI `e2e` run on
 `main` (with the browser login round trip and the ZAP API scans); on kind the WP100 proofs (fresh install with ESO and
 events on `replica`, events off with a quiet core, producer recovery, core's mail to Mailpit, Envoy Gateway v1.10.0

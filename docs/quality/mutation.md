@@ -211,7 +211,7 @@ just web-mutation --list                           # print the mutants (line:col
 
 | Area | Files (`lib/…`) | Tests the mutants run against |
 |---|---|---|
-| offline sync / outbox merge | `features/match/domain/projector/merge.dart`, `features/match/application/sync/backoff.dart`, `…/sync/sync_status.dart` | `sync_worker_test`, `backoff_test`, `sync_status_test` |
+| offline sync / outbox merge | `features/match/domain/projector/merge.dart`, `features/match/application/sync/backoff.dart`, `…/sync/sync_status.dart`, `…/sync/sync_worker.dart` (since 2026-11-15) | `sync_worker_test`, `backoff_test`, `sync_status_test` |
 | cache scoping | `features/match/data/local/match_store.dart` | `match_store_test`, `match_store_scope_test`, `match_store_wipe_test` |
 | match clock and score | `features/match/application/game_clock.dart`, `…/projector/event_ordering.dart`, `…/projector/projector.dart`, `…/projector/team_figures.dart`, `features/match/domain/scoring_rights.dart`, `…/feed_visibility.dart` | `game_clock_test`, `event_ordering_test`, `projector_vectors_test`, `projector_rules_test`, `team_figures_test`, `scoring_rights_test`, `feed_visibility_test` |
 | eligibility views / rights | `core/session/capabilities.dart` | `capabilities_test`, `capabilities_matrix_test` |
@@ -226,12 +226,24 @@ After the new tests (`capabilities_matrix_test`, `event_ordering_test`, `backoff
 killed, 2 timed out), 30 not viable, 617 s with 3 workers** (`just web-mutation`, development Mac shared with other
 work). **Baseline 100.**
 
+2026-11-15 (on JDK 25, before the merge of `jdk-25`): `sync_worker.dart` joined the manifest after a defect in it (the
+match list never learned that the server had new events). Its first run detected 42 of 67 viable mutants (62 %): a
+trigger during a running pass, `watch` / `unwatch`, `dispose`, the cancelled retry and the pull after a push had no
+assertion in `sync_worker_test`. Twelve tests and three equivalents later: 64/64. The full run then showed
+**493/494 (99 %, baseline not met)**: `locale_controller.dart` `state = languageCode` removed survived, because WP105
+had moved the test of a language choice to `avatar_menu_test`, which the manifest does not run for that file; a test
+of the rule is back in `locale_test` and the file is at 1/1. Every file of the manifest is at 100 % (494 viable
+mutants, 39 not viable, 15 equivalents; the last full run took 1,745 s with 3 workers on a busy machine, and the
+`locale_controller.dart` fix was checked with `--target`, not with another full run).
+
 Accepted equivalents (`equivalent` in the manifest, with the full reasons): `backoff.dart` `attempt >= 20` as `> 20`
 or `>= 21` (at attempt 20 both branches give `1 << 20`); `game_clock.dart` `seconds < 0` as `<= 0` or `< 1` (0 maps to
 0 either way) and the `_remaining = 0` after the last tick (it is exactly 0 there); `event_ordering.dart` `radix: 16`
 as 17 (the same for hex digits); `projector.dart` the fold's `?? 0` as `-1`, the `_enteredAt` initial value, `max(0, …)`
 as `max(-1, …)` and the `_enteredAt = clock` after an accrual (the Dart twins of the Java `ProjectionRun` case: the
-value is always set before it is read, and game order never lets the clock go up).
+value is always set before it is read, and game order never lets the clock go up); `sync_worker.dart` the initial
+value of `_again` (`_loop` sets it before every pass) and `_periodic = null` / `_retry = null` after a cancel
+(cancelling a cancelled timer again does nothing).
 
 ## Changing the baseline
 

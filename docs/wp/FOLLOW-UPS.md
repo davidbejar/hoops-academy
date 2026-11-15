@@ -385,11 +385,6 @@ the branch `jdk-25` (draft pull request #7), only its handover is on `main`.
   (`ALIBABA_CLOUD_ACCESS_KEY_ID` / `_SECRET`) or an aliyun profile; `TF_VAR_state_passphrase` (16+ characters, backed
   up); `terraform.tfvars` with their IP as /32 and their public key; a `main` commit whose images are on ghcr.io;
   strong fresh values everywhere in `.env` (`install.sh` refuses `change-me`).
-- **JDK 25 pull request #7** (WP109, decision 81; branch `jdk-25`, draft, not merged): before merging, read its CI
-  (e2e, CodeQL and `images` were not run locally; `images` will be red for the krb5 findings above), install
-  `openjdk@25` on every machine and worktree (`scripts/bootstrap.sh`; env.sh then refuses a 21), and expect rebase
-  conflicts in the runtime image line of `service.Containerfile` and its `bump_pins.py` pin, the `actions/setup-java`
-  steps and the stack wording lines (WP109 handover). Merging closes "Upgrade to JDK 25" (Backend).
 - **bump-pins PR #6** (WP89, WP93; found 2026-11-10): the workflow runs on GitHub since WP93 (skopeo index pin) and
   f96389a3 (`--skip-workflows`: the Actions token may not push workflow files); run 42796164975 on 2274eb4 opened PR #6
   (mailpit v1.33.1, External Secrets Operator v2.15.0). Close and reopen it so `ci` / `e2e` start (a `GITHUB_TOKEN` PR
@@ -542,9 +537,6 @@ the branch `jdk-25` (draft pull request #7), only its handover is on `main`.
   changes host during a local login (production keeps one origin). Optional: proxy the dev server through nginx on :8080.
 
 ### Backend
-- **Upgrade to JDK 25** (owner, 2026-11-14; **→ WP109**, decision 81): done on the branch `jdk-25`, draft pull request
-  #7, **not merged** until the owner says so (Pending user actions). On JDK 25 the full verify (3388 tests) and every
-  mutation baseline held with no tool bump; ADR-0003 amendment on the branch. The item closes with the merge.
 - **Audit event wording** (WP106): `docs/domain/audit-events.md` still reads "ADMIN or the team's COACH" for
   `team.roster_exported`; true, but since decision 83 only the team's current coach.
 - **game on `replica` without its consumer** (WP98): game starts with `GAME_ROSTER_CONSUMER_ENABLED=false` and serves
@@ -658,6 +650,22 @@ the branch `jdk-25` (draft pull request #7), only its handover is on `main`.
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+After the seventh round (2026-11-15, with the owner; no work package):
+- **Upgrade to JDK 25** (WP109, decision 81; pull request #7): `main` merged into `jdk-25` (conflicts in ADR-0003,
+  `conformance.md` and this file only), verified there on JDK 25 and merged into `main`. On the branch before the
+  merge: `./mvnw -B -ntp -T 1C verify` 3,388 tests, 0 failures, 26 skipped, gates met; the 26 journey steps green on
+  compose against the three services running on JDK 25; PIT at every baseline with the survivors of
+  `docs/quality/mutation.md` only (common 337/338, core 925/926, game 525/527, athlete 690/690); the three ZAP API
+  scans pass their gate (game's one High alert is the accepted false positive of `.zap/api-game.conf`); `flutter
+  test` 1500; chart, script, hook and diagram checks green. Not run locally: CodeQL, Semgrep, the `images` workflow.
+- **Web defects found by the owner** (2026-11-15): a debug run showed a weeks-old app (the unstamped service worker
+  cached for good; 5388db1c), the profile had no way back (fd02ff65), the match list kept the score it loaded once
+  (0d3f3a02), the Keycloak sign-in page ignored the look chosen in the app (a94e1605, ADR-0022 amendment).
+- **Web mutation scope**: `sync_worker.dart` added to the manifest; 25 of its 67 mutants survived the first run,
+  twelve new tests and three listed equivalents bring it to 64/64 (7c13ce38). The full run then found the baseline
+  broken since WP105 (493/494: `locale_controller.dart`, the test of a language choice had moved to a file the manifest
+  does not run); a test in `locale_test` restores 100 %. The monthly `mutation` workflow would have caught it.
+
 Seventh round (WP104–WP109, 2026-11-14; each line names the open item it closed):
 - WP104 (decisions 76–78): **Cloud deployment, first slice**, as code only: an OpenTofu module for one k3s VM on
   Alibaba Cloud, Jakarta (VPC, security group, key pair, `ecs.g7.large`, EIP with an sslip.io name, encrypted local
@@ -674,8 +682,8 @@ Seventh round (WP104–WP109, 2026-11-14; each line names the open item it close
   live / scheduled, injuries, measurements and tests). Leftovers under "Infra, CI, e2e".
 - WP108 (decision 82): **Exercise catalogue for PARENT and PLAYER**: read-only `/training/exercises` behind an
   "Exercises" chip in Training.
-- Not closed: **Upgrade to JDK 25** (WP109) is done on the branch `jdk-25` and stays open under "Backend" until the
-  owner merges pull request #7.
+- **Upgrade to JDK 25** (WP109, decision 81): closed on 2026-11-15 with the merge of `jdk-25` into `main`, see
+  "After the seventh round" above.
 
 Sixth round (WP91–WP103, 2026-11-10; each line names the open item it closed):
 - WP91, WP99 (decisions 71, 73): **Super admin console: a proper admin menu**: an application admin context with a hub
