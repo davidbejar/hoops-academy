@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.SecurityEventCapture;
@@ -119,14 +120,16 @@ class TeamRosterExportTest {
     }
 
     @Test
-    void everyExportIsAuditedWithTheRowCountOnly() {
+    void everyExportIsAuditedWithTheRowCountAndTheFormatOnly() throws Exception {
         export(lions, null).then().statusCode(200);
 
         Map<String, String> row = CoreDb.auditRow(tenant, "team.roster_exported");
         assertThat(row.get("targetType")).isEqualTo("team");
         assertThat(row.get("targetId")).isEqualTo(lions.toString());
         assertThat(row.get("actorSub")).isEqualTo(TenantUser.SUBJECT);
-        assertThat(row.get("metadata")).isEqualTo("{\"rows\": 4}");
+        assertThat(new ObjectMapper().readTree(row.get("metadata")))
+                .as("WP116: the format since the roster also prints")
+                .isEqualTo(new ObjectMapper().readTree("{\"rows\": 4, \"format\": \"csv\"}"));
     }
 
     @Test

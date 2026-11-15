@@ -17,6 +17,13 @@ class ExportFileNameTest {
                 .isEqualTo("hoops-dewa-united-roster-u12-lions-20270102.csv");
     }
 
+    /** WP116: the printed roster has the same name with the {@code .pdf} extension. */
+    @Test
+    void aPdfIsNamedAsItsCsv() {
+        assertThat(ExportFileName.pdf("dewa-united", LocalDate.of(2027, 1, 2), "roster", "U12 Lions"))
+                .isEqualTo("hoops-dewa-united-roster-u12-lions-20270102.pdf");
+    }
+
     @Test
     void eachPartIsReducedToLowerCaseAsciiWords() {
         assertThat(ExportFileName.csv("Baskonia", DAY, "roster", "Infantil Ñ – Niñas \"A\"/B"))

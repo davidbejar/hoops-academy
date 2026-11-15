@@ -8,8 +8,9 @@ import java.util.Map;
 
 /**
  * One WireMock server standing in for every HTTP collaborator of core-service in tests: the Keycloak token endpoint
- * and Admin API (paths as served under {@code /auth}), and the {@code /internal/usage} endpoints of game and athlete
- * (under {@code /game} and {@code /athlete}). Default stubs are installed by {@link KeycloakStubs#installDefaults}.
+ * and Admin API (paths as served under {@code /auth}), the {@code /internal/usage} endpoints of game and athlete
+ * (under {@code /game} and {@code /athlete}) and pdf-service (under {@code /pdf}, WP116). Default stubs are installed
+ * by {@link KeycloakStubs#installDefaults}.
  */
 public class WireMockResource implements QuarkusTestResourceLifecycleManager {
 
@@ -25,7 +26,8 @@ public class WireMockResource implements QuarkusTestResourceLifecycleManager {
                 "quarkus.keycloak.admin-client.server-url", base + "/auth",
                 "quarkus.oidc-client.auth-server-url", base + "/auth/realms/academy",
                 "quarkus.rest-client.game-usage.url", base + "/game",
-                "quarkus.rest-client.athlete-usage.url", base + "/athlete");
+                "quarkus.rest-client.athlete-usage.url", base + "/athlete",
+                "hoops.pdf-service.url", base + "/pdf");
     }
 
     @Override
