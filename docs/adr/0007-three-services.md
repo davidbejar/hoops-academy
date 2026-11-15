@@ -1,6 +1,6 @@
 # ADR-0007: Three services for v1: core, game, athlete
 
-- Status: Accepted
+- Status: Accepted (amended by ADR-0051: `finance-service` in Go and `pdf-service` in Rust are decided as further deployables, not built yet)
 - Date: 2026-11-01
 
 ## Context
