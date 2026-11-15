@@ -395,6 +395,21 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
   157.0.8103.38; update it when the local Chrome moves.
 
 ### Product / contract decisions
+- **TODO: PDF renderer in Rust (`pdf-service`)** (owner decision of 2026-11-15, ADR-0051; not planned into a round
+  yet): a stateless service that renders fixed templates (first candidates: match sheet / box score, team roster) from
+  data the caller sends; no database, no broker, own token audience, gateway route with rate and body limits. Goes
+  first: it brings the Rust toolchain through `just`, CI, images, Helm and Tilt with no tenant data at risk. The brief
+  settles the PDF engine, the toolchain pins and how the web reaches it (ADR-0051 §5). Static analysis: **Clippy** with
+  warnings denied and `cargo fmt --check` as gates of `just test` and CI from the first commit. Closes "PDF later" of
+  decision 67.
+- **TODO: Academy finance in Go (`finance-service`)** (owner decision of 2026-11-15, ADR-0051; after `pdf-service`):
+  fee plans per team or category, dues per player and period, payments recorded by hand, expenses by category, season
+  balance, CSV export; no payment provider. Schema `finance` with RLS, roster replica from core's events, new rows in
+  `docs/domain/authz-matrix.md` (ADMIN manages; a parent reads only a linked player's dues). Before the first endpoint:
+  Go counterparts of the RLS suites and of ArchUnit, `just isolation-check` / `just db-role-check` extended, a skill
+  for agents. Static analysis: **golangci-lint** with a committed configuration (complexity, duplication, unused code,
+  error handling) and `gofmt` as gates of `just test` and CI from the first commit. Needs an owner interview on the domain (periods, currency, partial payments, refunds, who besides ADMIN
+  may read or write).
 - **Roster export for a former coach** (WP96, ADR-0048; **→ WP106**, decision 83: current staff and ADMIN only): the roster CSV with the guardians' contact
   data is allowed for a coach of the team in an ended season through the season-history rule (`wasStaffOf`,
   ADR-0042), as for the screens. Keep, or restrict the export to the team's current staff and ADMIN.
@@ -609,7 +624,8 @@ the `material_ui` / `cupertino_ui` migration (51f2dd0c).
 - **[v2] Fail-stop consumer and health** (WP68, ADR-0037 §5): a consumer that exhausts its retries turns liveness and
   readiness DOWN, so a long database outage restarts game/athlete pods also in `rest` mode (the consumer runs in both
   modes); revisit if it bites.
-- **[v2] Billing module** on the existing seams (`billing.*`, `EntitlementService`, outbox events).
+- **[v2] Billing module** on the existing seams (`billing.*`, `EntitlementService`, outbox events); stays in core, in
+  Java (ADR-0051: not one of the Go / Rust services).
 - **[v2] Purge job** for withdrawn tenants after the retention period; also the only clean-up of old
   `core.audit_event` rows (decision 8: no separate retention job) and of decided academy requests (WP90).
 - **[v2]** Push notifications, native images, Pact broker.

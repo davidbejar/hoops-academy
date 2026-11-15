@@ -12,6 +12,12 @@ items below are deliberately not planned.
   PLAYERS|TEAMS)` called from team and player creation with a no-op implementation. Needed: plans and limits, a payment
   provider, subscription lifecycle linked to tenant suspension, an entitlement implementation, an invoice/usage view. Billing
   can subscribe to core's events, which are published to Redpanda since WP67.
+  Stays in core, in Java (ADR-0051).
+- **Academy finance (decided 2026-11-15, ADR-0051; not built).** A new `finance-service` in Go: fee plans, dues per
+  player, payments recorded by hand, expenses, season balance, CSV export; no payment provider. Own schema with RLS and
+  a roster replica from core's events. Comes after the PDF renderer.
+- **PDF renderer (decided 2026-11-15, ADR-0051; not built).** A new stateless `pdf-service` in Rust for printable
+  sheets (match sheet / box score, team roster); the first service outside the JVM.
 - **Tenant purge job.** Withdrawn tenants keep data until `retainUntil` (default 365 days) but nothing deletes it afterwards.
   Needs a platform job, per-schema deletion in FK order, an audit record and a dry-run mode. It is also the only clean-up of
   old audit rows and of decided academy requests (WP90). Also a per-tenant export for data portability (not designed).

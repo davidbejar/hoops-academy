@@ -1,6 +1,6 @@
 # ADR-0003: Quarkus 3.x on Java 21 for backend services
 
-- Status: Accepted; amended 2026-11-14 (decision 81, WP109: Java 25 LTS)
+- Status: Accepted; amended 2026-11-14 (decision 81, WP109: Java 25 LTS); amended by ADR-0051 (new bounded contexts may be written in Go or Rust; core, game and athlete stay on Quarkus)
 - Date: 2026-11-01
 
 ## Context
