@@ -97,18 +97,178 @@ pub struct TeamRoster {
 impl TeamRoster {
     /// The sheet's rules beyond the JSON types: limits (422) first, then field rules (400).
     pub fn check(&self) -> Result<(), SheetError> {
-        todo!()
+        let mut checks = Checks::default();
+        checks.rows("players", self.players.len(), MAX_PLAYERS);
+        checks.rows("staff", self.staff.len(), MAX_STAFF);
+        for (i, player) in self.players.iter().enumerate() {
+            checks.rows(format!("players[{i}].guardians"), player.guardians.len(), MAX_GUARDIANS);
+        }
+        self.academy.check(&mut checks);
+        checks.add(text::required("team.name", &self.team.name, MAX_TEAM_TEXT));
+        checks.add(text::optional("team.season", self.team.season.as_deref(), MAX_TEAM_TEXT));
+        checks.add(text::optional("team.category", self.team.category.as_deref(), MAX_TEAM_TEXT));
+        for (i, player) in self.players.iter().enumerate() {
+            check_player(&mut checks, &format!("players[{i}]"), player);
+        }
+        for (i, member) in self.staff.iter().enumerate() {
+            let at = format!("staff[{i}]");
+            check_person(&mut checks, &at, &member.given_name, &member.family_name);
+            check_contact(&mut checks, &at, member.email.as_deref(), member.phone.as_deref());
+        }
+        checks.finish()
     }
 
     /// The sheet as printed on `printed_at` (the footer's date, in the academy's zone).
     pub fn document(&self, printed_at: DateTime<Utc>) -> PrintDocument {
-        todo!()
+        let t = |label| self.locale.text(label);
+        let mut team = vec![Fact::new(t(Label::Team), self.team.name.clone())];
+        team.extend(self.team.season.iter().map(|season| Fact::new(t(Label::Season), season.clone())));
+        team.extend(self.team.category.iter().map(|category| Fact::new(t(Label::Category), category.clone())));
+        PrintDocument {
+            locale: self.locale,
+            orientation: Orientation::Landscape,
+            academy: self.academy.name.clone(),
+            title: t(Label::TeamRosterTitle).to_owned(),
+            blocks: vec![Block::Facts(team), Block::Table(self.players_table()), Block::Table(self.staff_table())],
+            footer: crate::match_sheet::footer(self.locale, &self.academy, printed_at),
+            page_word: t(Label::Page).to_owned(),
+            of_word: t(Label::PageOf).to_owned(),
+        }
     }
 
     /// `hoops-<academy>-roster-<team>-<yyyyMMdd>.pdf`, today in the academy's zone (as core's CSV, with `.pdf`).
     pub fn file_name(&self, printed_at: DateTime<Utc>) -> String {
-        todo!()
+        file_name::pdf(&self.academy.name, self.academy.day(printed_at), &["roster", &self.team.name])
     }
+
+    fn players_table(&self) -> Table {
+        let t = |label| self.locale.text(label);
+        let columns = vec![
+            Column::right(t(Label::Number), 3),
+            Column::left(t(Label::Name), 12),
+            Column::left(t(Label::BirthDate), 5),
+            Column::left(t(Label::Gender), 5),
+            Column::left(t(Label::AgeCategory), 5),
+            Column::left(t(Label::Eligibility), 8),
+            Column::left(t(Label::JoinedOn), 5),
+            Column::left(t(Label::Email), 10),
+            Column::left(t(Label::Phone), 6),
+        ];
+        let mut rows = Vec::new();
+        for player in &self.players {
+            rows.push(self.player_row(player));
+            rows.extend(player.guardians.iter().map(|guardian| {
+                Row::new(
+                    RowStyle::Detail,
+                    vec![
+                        String::new(),
+                        format!("{}: {}", t(Label::Guardian), full_name(&guardian.given_name, &guardian.family_name)),
+                        String::new(),
+                        String::new(),
+                        String::new(),
+                        String::new(),
+                        String::new(),
+                        guardian.email.clone().unwrap_or_default(),
+                        guardian.phone.clone().unwrap_or_default(),
+                    ],
+                )
+            }));
+        }
+        Table { heading: t(Label::Players).to_owned(), columns, rows, empty: t(Label::NoPlayers).to_owned() }
+    }
+
+    fn player_row(&self, player: &RosterPlayer) -> Row {
+        let t = |label| self.locale.text(label);
+        let gender = player.gender.map(|gender| {
+            t(match gender {
+                Gender::Male => Label::Male,
+                Gender::Female => Label::Female,
+            })
+        });
+        let eligibility = match player.eligibility {
+            Eligibility::Eligible => t(Label::Eligible).to_owned(),
+            Eligibility::PlayUp => format!("{} (+{})", t(Label::PlaysUp), player.play_up_levels),
+            Eligibility::Ineligible => t(Label::NotEligible).to_owned(),
+        };
+        Row::new(
+            RowStyle::Normal,
+            vec![
+                player.jersey_number.clone().unwrap_or_default(),
+                full_name(&player.given_name, &player.family_name),
+                player.birth_date.map(iso).unwrap_or_default(),
+                gender.unwrap_or_default().to_owned(),
+                player.age_category.clone().unwrap_or_default(),
+                eligibility,
+                iso(player.joined_on),
+                player.email.clone().unwrap_or_default(),
+                player.phone.clone().unwrap_or_default(),
+            ],
+        )
+    }
+
+    fn staff_table(&self) -> Table {
+        let t = |label| self.locale.text(label);
+        let columns = vec![
+            Column::left(t(Label::Role), 8),
+            Column::left(t(Label::Name), 12),
+            Column::left(t(Label::Since), 5),
+            Column::left(t(Label::Email), 10),
+            Column::left(t(Label::Phone), 6),
+        ];
+        let rows = self
+            .staff
+            .iter()
+            .map(|member| {
+                let role = t(match member.role {
+                    StaffRole::Coach => Label::Coach,
+                    StaffRole::AssistantCoach => Label::AssistantCoach,
+                });
+                Row::new(
+                    RowStyle::Normal,
+                    vec![
+                        role.to_owned(),
+                        full_name(&member.given_name, &member.family_name),
+                        iso(member.since),
+                        member.email.clone().unwrap_or_default(),
+                        member.phone.clone().unwrap_or_default(),
+                    ],
+                )
+            })
+            .collect();
+        Table { heading: t(Label::Staff).to_owned(), columns, rows, empty: "—".to_owned() }
+    }
+}
+
+fn check_player(checks: &mut Checks, at: &str, player: &RosterPlayer) {
+    check_person(checks, at, &player.given_name, &player.family_name);
+    checks.add(text::optional(&format!("{at}.ageCategory"), player.age_category.as_deref(), MAX_TEAM_TEXT));
+    checks.add(text::jersey(&format!("{at}.jerseyNumber"), player.jersey_number.as_deref()));
+    check_contact(checks, at, player.email.as_deref(), player.phone.as_deref());
+    checks.add(text::within(&format!("{at}.playUpLevels"), player.play_up_levels, 0, 20));
+    for (j, guardian) in player.guardians.iter().enumerate() {
+        let at = format!("{at}.guardians[{j}]");
+        check_person(checks, &at, &guardian.given_name, &guardian.family_name);
+        check_contact(checks, &at, guardian.email.as_deref(), guardian.phone.as_deref());
+    }
+}
+
+fn check_person(checks: &mut Checks, at: &str, given: &str, family: &str) {
+    checks.add(text::required(&format!("{at}.givenName"), given, MAX_PERSON_NAME));
+    checks.add(text::required(&format!("{at}.familyName"), family, MAX_PERSON_NAME));
+}
+
+fn check_contact(checks: &mut Checks, at: &str, email: Option<&str>, phone: Option<&str>) {
+    checks.add(text::optional(&format!("{at}.email"), email, MAX_EMAIL));
+    checks.add(text::optional(&format!("{at}.phone"), phone, MAX_PHONE));
+}
+
+/// "Family, Given": the roster is read by family name.
+fn full_name(given: &str, family: &str) -> String {
+    format!("{family}, {given}")
+}
+
+fn iso(day: NaiveDate) -> String {
+    day.format("%Y-%m-%d").to_string()
 }
 
 #[cfg(test)]
@@ -121,7 +281,12 @@ mod tests {
     }
 
     fn guardian(name: &str) -> Guardian {
-        Guardian { given_name: name.into(), family_name: "Santoso".into(), email: Some("wali@example.test".into()), phone: Some("+62 811 000".into()) }
+        Guardian {
+            given_name: name.into(),
+            family_name: "Santoso".into(),
+            email: Some("wali@example.test".into()),
+            phone: Some("+62 811 000".into()),
+        }
     }
 
     fn player() -> RosterPlayer {
@@ -240,7 +405,11 @@ mod tests {
         assert_eq!(d.orientation, Orientation::Landscape);
         assert_eq!(
             d.blocks[0],
-            Block::Facts(vec![Fact::new("Tim", "U12 Elang"), Fact::new("Musim", "2026/27"), Fact::new("Kategori", "U12")])
+            Block::Facts(vec![
+                Fact::new("Tim", "U12 Elang"),
+                Fact::new("Musim", "2026/27"),
+                Fact::new("Kategori", "U12")
+            ])
         );
         assert_eq!(d.footer, "Dicetak pada 2026-11-16 01:00 (Asia/Jakarta)");
         assert_eq!((d.page_word.as_str(), d.of_word.as_str()), ("Halaman", "dari"));
@@ -262,7 +431,17 @@ mod tests {
         let labels: Vec<_> = players.columns.iter().map(|c| c.label.as_str()).collect();
         assert_eq!(
             labels,
-            ["Nomor", "Nama", "Tanggal lahir", "Jenis kelamin", "Kategori usia", "Kelayakan", "Bergabung", "Email", "Telepon"]
+            [
+                "Nomor",
+                "Nama",
+                "Tanggal lahir",
+                "Jenis kelamin",
+                "Kategori usia",
+                "Kelayakan",
+                "Bergabung",
+                "Email",
+                "Telepon"
+            ]
         );
         assert_eq!(
             players.rows[0],
@@ -317,7 +496,10 @@ mod tests {
         assert_eq!(staff.heading, "Cuerpo técnico");
         let labels: Vec<_> = staff.columns.iter().map(|c| c.label.as_str()).collect();
         assert_eq!(labels, ["Rol", "Nombre", "Desde", "Correo electrónico", "Teléfono"]);
-        assert_eq!(staff.rows[0].cells, ["Entrenador asistente", "Lestari, Dewi", "2026-08-15", "dewi@example.test", ""]);
+        assert_eq!(
+            staff.rows[0].cells,
+            ["Entrenador asistente", "Lestari, Dewi", "2026-08-15", "dewi@example.test", ""]
+        );
         assert_eq!(staff.rows[1].cells[0], "Entrenador");
         assert_eq!(staff.empty, "—");
     }

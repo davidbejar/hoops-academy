@@ -1,0 +1,3 @@
+# Same line length as the Java sources.
+max_width = 120
+use_small_heuristics = "Max"

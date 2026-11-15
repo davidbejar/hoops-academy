@@ -57,7 +57,10 @@ mod tests {
 
     #[test]
     fn the_file_name_follows_the_export_pattern() {
-        assert_eq!(pdf("Academia Sur", day(), &["roster", "U12 Leones"]), "hoops-academia-sur-roster-u12-leones-20261105.pdf");
+        assert_eq!(
+            pdf("Academia Sur", day(), &["roster", "U12 Leones"]),
+            "hoops-academia-sur-roster-u12-leones-20261105.pdf"
+        );
         assert_eq!(pdf("★", day(), &["match-sheet", "", "Rivals"]), "hoops-match-sheet-rivals-20261105.pdf");
     }
 }

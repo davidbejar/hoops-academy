@@ -97,18 +97,181 @@ pub struct MatchSheet {
 impl MatchSheet {
     /// The sheet's rules beyond the JSON types: limits (422) first, then field rules (400).
     pub fn check(&self) -> Result<(), SheetError> {
-        todo!()
+        let mut checks = Checks::default();
+        checks.rows("players", self.players.len(), MAX_PLAYERS);
+        checks.rows("periodScores", self.period_scores.len(), MAX_PERIODS);
+        self.academy.check(&mut checks);
+        checks.add(text::required("match.teamName", &self.team_name, MAX_NAME));
+        checks.add(text::required("match.opponentName", &self.opponent_name, MAX_NAME));
+        checks.add(text::optional("match.venue", self.venue.as_deref(), MAX_VENUE));
+        checks.add(text::within("match.periodCount", self.period_count, 1, 8));
+        checks.add(text::within("match.periodMinutes", self.period_minutes, 1, 60));
+        for (i, period) in self.period_scores.iter().enumerate() {
+            checks.add(text::within(&format!("periodScores[{i}].period"), period.period, 1, 12));
+        }
+        for (i, player) in self.players.iter().enumerate() {
+            checks.add(text::required(&format!("players[{i}].displayName"), &player.display_name, MAX_NAME));
+            checks.add(text::jersey(&format!("players[{i}].jerseyNumber"), player.jersey_number.as_deref()));
+        }
+        checks.finish()
     }
 
     /// The sheet as printed on `printed_at` (the footer's date, in the academy's zone).
     pub fn document(&self, printed_at: DateTime<Utc>) -> PrintDocument {
-        todo!()
+        let t = |label| self.locale.text(label);
+        PrintDocument {
+            locale: self.locale,
+            orientation: Orientation::Landscape,
+            academy: self.academy.name.clone(),
+            title: t(Label::MatchSheetTitle).to_owned(),
+            blocks: vec![
+                Block::Headline(format!(
+                    "{} {} – {} {}",
+                    self.team_name, self.score.team, self.score.opponent, self.opponent_name
+                )),
+                Block::Facts(self.facts()),
+                Block::Table(self.periods()),
+                Block::Table(self.box_score()),
+                Block::Note(t(Label::StarterNote).to_owned()),
+            ],
+            footer: footer(self.locale, &self.academy, printed_at),
+            page_word: t(Label::Page).to_owned(),
+            of_word: t(Label::PageOf).to_owned(),
+        }
     }
 
     /// `hoops-<academy>-match-sheet-<team>-<opponent>-<yyyyMMdd>.pdf`, today in the academy's zone.
     pub fn file_name(&self, printed_at: DateTime<Utc>) -> String {
-        todo!()
+        file_name::pdf(
+            &self.academy.name,
+            self.academy.day(printed_at),
+            &["match-sheet", &self.team_name, &self.opponent_name],
+        )
     }
+
+    fn facts(&self) -> Vec<Fact> {
+        let t = |label| self.locale.text(label);
+        let side = t(match self.home_away {
+            HomeAway::Home => Label::Home,
+            HomeAway::Away => Label::Away,
+        });
+        let status = t(match self.status {
+            MatchStatus::Scheduled => Label::Scheduled,
+            MatchStatus::Live => Label::Live,
+            MatchStatus::Finished => Label::Finished,
+            MatchStatus::Cancelled => Label::Cancelled,
+        });
+        let (date, time) = self.academy.date_and_time(self.scheduled_at);
+        let mut facts = vec![
+            Fact::new(t(Label::Team), format!("{} ({side})", self.team_name)),
+            Fact::new(t(Label::Opponent), self.opponent_name.clone()),
+            Fact::new(t(Label::Date), date),
+            Fact::new(t(Label::Time), time),
+            Fact::new(t(Label::TimeZone), self.academy.time_zone.name()),
+        ];
+        facts.extend(self.venue.iter().map(|venue| Fact::new(t(Label::Venue), venue.clone())));
+        facts.push(Fact::new(t(Label::Status), status));
+        facts.push(Fact::new(t(Label::Periods), format!("{} × {} min", self.period_count, self.period_minutes)));
+        facts
+    }
+
+    fn periods(&self) -> Table {
+        let t = |label| self.locale.text(label);
+        let mut periods = self.period_scores.clone();
+        periods.sort_by_key(|p| p.period);
+        let mut columns = vec![Column::left(t(Label::Team), 6)];
+        columns.extend(periods.iter().map(|p| Column::right(&self.period_label(p.period), 1)));
+        columns.push(Column::right(t(Label::Total), 1));
+        let side = |name: &str, score: fn(&PeriodScore) -> u32, total: u32| {
+            let mut cells = vec![name.to_owned()];
+            cells.extend(periods.iter().map(|p| score(p).to_string()));
+            cells.push(total.to_string());
+            Row::new(RowStyle::Normal, cells)
+        };
+        Table {
+            heading: t(Label::PeriodsHeading).to_owned(),
+            columns,
+            rows: vec![
+                side(&self.team_name, |p| p.team, self.score.team),
+                side(&self.opponent_name, |p| p.opponent, self.score.opponent),
+            ],
+            empty: String::new(),
+        }
+    }
+
+    fn period_label(&self, period: u32) -> String {
+        if period <= self.period_count {
+            period.to_string()
+        } else {
+            format!("{}{}", self.locale.text(Label::OvertimeShort), period - self.period_count)
+        }
+    }
+
+    fn box_score(&self) -> Table {
+        let t = |label| self.locale.text(label);
+        let mut columns = vec![Column::right(t(Label::Number), 2), Column::left(t(Label::Player), 10)];
+        columns.extend(
+            [
+                (Label::Minutes, 3),
+                (Label::Points, 2),
+                (Label::FreeThrows, 3),
+                (Label::TwoPointers, 3),
+                (Label::ThreePointers, 3),
+                (Label::OffensiveRebounds, 2),
+                (Label::DefensiveRebounds, 2),
+                (Label::Rebounds, 2),
+                (Label::Assists, 2),
+                (Label::Steals, 2),
+                (Label::Blocks, 2),
+                (Label::Turnovers, 2),
+                (Label::Fouls, 2),
+            ]
+            .map(|(label, weight)| Column::right(t(label), weight)),
+        );
+        let mut rows: Vec<Row> = self
+            .players
+            .iter()
+            .map(|p| {
+                let name = if p.was_starter { format!("{} *", p.display_name) } else { p.display_name.clone() };
+                stat_row(RowStyle::Normal, p.jersey_number.clone().unwrap_or_default(), name, &p.stats)
+            })
+            .collect();
+        rows.push(stat_row(RowStyle::Strong, String::new(), t(Label::TeamTotals).to_owned(), &self.team_totals));
+        Table { heading: t(Label::BoxScoreHeading).to_owned(), columns, rows, empty: t(Label::NoPlayers).to_owned() }
+    }
+}
+
+fn stat_row(style: RowStyle, number: String, name: String, s: &StatLine) -> Row {
+    let made = |made: u32, attempted: u32| format!("{made}/{attempted}");
+    let mut cells = vec![
+        number,
+        name,
+        format!("{}:{:02}", s.seconds_played / 60, s.seconds_played % 60),
+        s.points.to_string(),
+        made(s.fg1_made, s.fg1_attempted),
+        made(s.fg2_made, s.fg2_attempted),
+        made(s.fg3_made, s.fg3_attempted),
+    ];
+    cells.extend(
+        [
+            s.offensive_rebounds,
+            s.defensive_rebounds,
+            s.offensive_rebounds + s.defensive_rebounds,
+            s.assists,
+            s.steals,
+            s.blocks,
+            s.turnovers,
+            s.personal_fouls,
+        ]
+        .map(|n| n.to_string()),
+    );
+    Row::new(style, cells)
+}
+
+/// "Printed on 2026-11-15 10:30 (Europe/Madrid)" in the document's language.
+pub(crate) fn footer(locale: Locale, academy: &Academy, printed_at: DateTime<Utc>) -> String {
+    let (date, time) = academy.date_and_time(printed_at);
+    format!("{} {date} {time} ({})", locale.text(Label::PrintedOn), academy.time_zone.name())
 }
 
 #[cfg(test)]
@@ -161,8 +324,18 @@ mod tests {
             ],
             team_totals: line(52),
             players: vec![
-                PlayerLine { display_name: "Ana García".into(), jersey_number: Some("7".into()), was_starter: true, stats: line(11) },
-                PlayerLine { display_name: "Budi Santoso".into(), jersey_number: None, was_starter: false, stats: line(4) },
+                PlayerLine {
+                    display_name: "Ana García".into(),
+                    jersey_number: Some("7".into()),
+                    was_starter: true,
+                    stats: line(11),
+                },
+                PlayerLine {
+                    display_name: "Budi Santoso".into(),
+                    jersey_number: None,
+                    was_starter: false,
+                    stats: line(4),
+                },
             ],
         }
     }
