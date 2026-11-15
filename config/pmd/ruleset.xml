@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="hoops-academy-maintainability"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+  <description>
+    Maintainability gate of the Java main code (WP113, ADR-0053, docs/quality/pmd.md). Small and explicit: single
+    rules, never whole categories. Every threshold was set from the code of 2026-11-15 (measured maxima in
+    docs/quality/pmd.md). A rule reports when the value reaches its threshold, so "15" means "at most 14".
+    Exclusions: config/pmd/exclude-pmd.properties, one class and rule per line, each with its reason.
+  </description>
+
+  <!-- complexity of a method: branches (cyclomatic) and nesting-weighted branches (cognitive) -->
+  <rule ref="category/java/design.xml/CyclomaticComplexity">
+    <properties>
+      <property name="methodReportLevel" value="15"/>
+      <property name="classReportLevel" value="65"/>
+    </properties>
+  </rule>
+  <rule ref="category/java/design.xml/CognitiveComplexity">
+    <properties>
+      <property name="reportLevel" value="15"/>
+    </properties>
+  </rule>
+
+  <!-- length of a method and of a class, in non-commenting source statements (NCSS) -->
+  <rule ref="category/java/design.xml/NcssCount">
+    <properties>
+      <property name="methodReportLevel" value="30"/>
+      <property name="classReportLevel" value="150"/>
+    </properties>
+  </rule>
+
+  <!-- parameter count, constructors included -->
+  <rule ref="category/java/design.xml/ExcessiveParameterList">
+    <properties>
+      <property name="minimum" value="12"/>
+    </properties>
+  </rule>
+
+  <!-- unused code -->
+  <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+  <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+  <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+  <rule ref="category/java/codestyle.xml/UnnecessaryImport"/>
+
+  <!-- a swallowed exception; a catch block with a comment that says why is accepted -->
+  <rule ref="category/java/errorprone.xml/EmptyCatchBlock">
+    <properties>
+      <property name="allowCommentedBlocks" value="true"/>
+    </properties>
+  </rule>
+</ruleset>

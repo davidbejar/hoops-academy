@@ -66,6 +66,12 @@
     <!-- SAST in verify (WP83, ADR-0045): SpotBugs + find-sec-bugs fail the build on any finding of rank medium or
          higher that spotbugs-exclude.xml does not accept (each exclusion carries its justification). -->
     <spotbugs.skip>false</spotbugs.skip>
+
+    <!-- maintainability gate in verify (WP113, ADR-0053, docs/quality/pmd.md): PMD with config/pmd/ruleset.xml and CPD
+         fail the build on any finding that config/pmd/exclude-*.properties does not accept (each with its reason). -->
+    <pmd-plugin.version>3.28.0</pmd-plugin.version>
+    <pmd.version>7.29.0</pmd.version>
+    <cpd.minimumTokens>100</cpd.minimumTokens>
   </properties>
 
   <dependencyManagement>
@@ -313,6 +319,69 @@
           </executions>
         </plugin>
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-pmd-plugin</artifactId>
+          <version>${pmd-plugin.version}</version>
+          <!-- the plugin ships PMD 7.17; 7.29 is pinned for the Java 25 grammar fixes since -->
+          <dependencies>
+            <dependency>
+              <groupId>net.sourceforge.pmd</groupId>
+              <artifactId>pmd-core</artifactId>
+              <version>${pmd.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>net.sourceforge.pmd</groupId>
+              <artifactId>pmd-java</artifactId>
+              <version>${pmd.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>net.sourceforge.pmd</groupId>
+              <artifactId>pmd-javascript</artifactId>
+              <version>${pmd.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>net.sourceforge.pmd</groupId>
+              <artifactId>pmd-jsp</artifactId>
+              <version>${pmd.version}</version>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <targetJdk>${maven.compiler.release}</targetJdk>
+            <rulesets>
+              <ruleset>${maven.multiModuleProjectDirectory}/config/pmd/ruleset.xml</ruleset>
+            </rulesets>
+            <!-- main code only; tests are out (ADR-0053) -->
+            <includeTests>false</includeTests>
+            <excludeRoots>
+              <excludeRoot>${project.build.directory}/generated-sources</excludeRoot>
+            </excludeRoots>
+            <minimumTokens>${cpd.minimumTokens}</minimumTokens>
+            <!-- every rule of the ruleset fails the build, whatever its priority -->
+            <failurePriority>5</failurePriority>
+            <printFailingErrors>true</printFailingErrors>
+            <linkXRef>false</linkXRef>
+            <skipPmdError>false</skipPmdError>
+          </configuration>
+          <executions>
+            <execution>
+              <id>pmd-check</id>
+              <phase>verify</phase>
+              <goals><goal>check</goal></goals>
+              <configuration>
+                <excludeFromFailureFile>${maven.multiModuleProjectDirectory}/config/pmd/exclude-pmd.properties</excludeFromFailureFile>
+              </configuration>
+            </execution>
+            <execution>
+              <id>cpd-check</id>
+              <phase>verify</phase>
+              <goals><goal>cpd-check</goal></goals>
+              <configuration>
+                <excludeFromFailureFile>${maven.multiModuleProjectDirectory}/config/pmd/exclude-cpd.properties</excludeFromFailureFile>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
           <groupId>org.cyclonedx</groupId>
           <artifactId>cyclonedx-maven-plugin</artifactId>
           <version>${cyclonedx-plugin.version}</version>
@@ -337,6 +406,11 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
+      </plugin>
+      <!-- bound in every module (main sources only); `-Dpmd.skip -Dcpd.skip` for a quick local loop, never in CI -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

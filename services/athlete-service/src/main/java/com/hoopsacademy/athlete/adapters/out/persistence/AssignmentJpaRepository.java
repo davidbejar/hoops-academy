@@ -16,6 +16,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -71,39 +72,56 @@ class AssignmentJpaRepository implements AssignmentRepository {
 
     @Override
     public PageResult<PlanAssignment> search(AssignmentQuery q) {
+        if (scopedToNoTarget(q)) {
+            return new PageResult<>(List.of(), q.page(), q.size(), 0);
+        }
+        String where = whereClause(q);
+        TypedQuery<AssignmentEntity> select = em.createQuery(
+                "select a from AssignmentEntity a" + where + " order by a.dueOn, a.createdAt, a.id", AssignmentEntity.class);
+        TypedQuery<Long> count = em.createQuery("select count(a) from AssignmentEntity a" + where, Long.class);
+        bind(select, q);
+        bind(count, q);
+        List<PlanAssignment> items = select.setFirstResult(PageOffset.of(q.page(), q.size())).setMaxResults(q.size()).getResultList()
+                .stream().map(AssignmentJpaRepository::toDomain).toList();
+        return new PageResult<>(items, q.page(), q.size(), count.getSingleResult());
+    }
+
+    /** Teams or players were given ({@code null} = unrestricted), but none of either: nothing can match. */
+    private static boolean scopedToNoTarget(AssignmentQuery q) {
+        return (q.teams() != null || q.players() != null) && !hasAny(q.teams()) && !hasAny(q.players());
+    }
+
+    /** The filter of {@link #search}: the given teams or players, then the due window; constant fragments only. */
+    static String whereClause(AssignmentQuery q) {
+        List<String> targets = new ArrayList<>();
+        if (hasAny(q.teams())) {
+            targets.add("a.teamId in :teams");
+        }
+        if (hasAny(q.players())) {
+            targets.add("a.playerId in :players");
+        }
         List<String> conditions = new ArrayList<>();
-        if (q.teams() != null || q.players() != null) {
-            List<String> targets = new ArrayList<>();
-            if (q.teams() != null && !q.teams().isEmpty()) {
-                targets.add("a.teamId in :teams");
-            }
-            if (q.players() != null && !q.players().isEmpty()) {
-                targets.add("a.playerId in :players");
-            }
-            if (targets.isEmpty()) {
-                return new PageResult<>(List.of(), q.page(), q.size(), 0);
-            }
+        if (!targets.isEmpty()) {
             conditions.add("(" + String.join(" or ", targets) + ")");
         }
         q.dueFrom().ifPresent(d -> conditions.add("a.dueOn >= :dueFrom"));
         q.dueTo().ifPresent(d -> conditions.add("a.dueOn <= :dueTo"));
-        String where = conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions);
-        TypedQuery<AssignmentEntity> select = em.createQuery(
-                "select a from AssignmentEntity a" + where + " order by a.dueOn, a.createdAt, a.id", AssignmentEntity.class);
-        TypedQuery<Long> count = em.createQuery("select count(a) from AssignmentEntity a" + where, Long.class);
-        for (TypedQuery<?> query : List.of(select, count)) {
-            if (q.teams() != null && !q.teams().isEmpty()) {
-                query.setParameter("teams", q.teams().stream().map(TeamId::value).toList());
-            }
-            if (q.players() != null && !q.players().isEmpty()) {
-                query.setParameter("players", q.players().stream().map(PlayerId::value).toList());
-            }
-            q.dueFrom().ifPresent(d -> query.setParameter("dueFrom", d));
-            q.dueTo().ifPresent(d -> query.setParameter("dueTo", d));
+        return conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions);
+    }
+
+    private static void bind(TypedQuery<?> query, AssignmentQuery q) {
+        if (hasAny(q.teams())) {
+            query.setParameter("teams", q.teams().stream().map(TeamId::value).toList());
         }
-        List<PlanAssignment> items = select.setFirstResult(PageOffset.of(q.page(), q.size())).setMaxResults(q.size()).getResultList()
-                .stream().map(AssignmentJpaRepository::toDomain).toList();
-        return new PageResult<>(items, q.page(), q.size(), count.getSingleResult());
+        if (hasAny(q.players())) {
+            query.setParameter("players", q.players().stream().map(PlayerId::value).toList());
+        }
+        q.dueFrom().ifPresent(d -> query.setParameter("dueFrom", d));
+        q.dueTo().ifPresent(d -> query.setParameter("dueTo", d));
+    }
+
+    private static boolean hasAny(Collection<?> ids) {
+        return ids != null && !ids.isEmpty();
     }
 
     @Override

@@ -23,9 +23,9 @@ public record EligibilityCheckDto(UUID playerId, UUID teamId, LocalDate asOf, St
     static EligibilityCheckDto of(CheckView view) {
         Eligibility verdict = view.evaluation().eligibility();
         String result = switch (verdict) {
-            case Eligibility.Eligible e -> "ELIGIBLE";
-            case Eligibility.PlayUp p -> "PLAY_UP";
-            case Eligibility.Ineligible i -> "INELIGIBLE";
+            case Eligibility.Eligible _ -> "ELIGIBLE";
+            case Eligibility.PlayUp _ -> "PLAY_UP";
+            case Eligibility.Ineligible _ -> "INELIGIBLE";
         };
         return new EligibilityCheckDto(view.player().value(), view.team().value(), view.asOf(), result,
                 verdict.playUpLevels() > 0 ? verdict.playUpLevels() : null, verdict.reasons(), view.evaluation().age(),
