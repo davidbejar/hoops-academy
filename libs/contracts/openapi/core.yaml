@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — core-service API
-  version: 3.6.0
+  version: 3.7.0
   description: |
     Tenancy, identity & membership, roster & eligibility, approvals and platform statistics.
 
@@ -61,6 +61,11 @@ info:
     Names in `/me` and the roster export (core 3.6.0, decisions 83 and 84, WP106): each `Membership` carries the
     caller's `givenName` and `familyName` as that academy stores the person (additive; core always sends them).
     `exportTeamRoster` is for ADMIN and the team's current COACH only: a former coach of an ended season gets 403.
+
+    Printable roster and team names in the trail (core 3.7.0, decision 89, WP116, ADR-0048 amendment):
+    `exportTeamRoster` answers a PDF sheet when asked with `Accept: application/pdf` (same rules, same audit row with
+    `format`), rendered by the internal pdf-service; 503 `UPSTREAM_UNAVAILABLE` when that service cannot render it.
+    An audit `team` target carries the team's name in `displayName`.
 
     Authorization follows `docs/domain/authz-matrix.md`; the `Authz:` line of each operation summarises it.
 servers:
@@ -1722,7 +1727,7 @@ paths:
     get:
       operationId: exportTeamRoster
       tags: [Teams]
-      summary: Export the team's roster with guardians and staff as CSV
+      summary: Export the team's roster with guardians and staff as CSV or PDF
       description: |
         One CSV file (ADR-0048; UTF-8 with BOM, `,`, RFC 4180 quoting, CRLF, one header row, the formula guard): one row
         per player of the team's open assignments (role, given and family name, birth date, gender, natural age
@@ -1733,26 +1738,46 @@ paths:
         e-mail, phone, `since` in the joining column). Header labels and enum labels (role, gender, eligibility) in the
         language of `Accept-Language`. File name `hoops-<academy-slug>-roster-<team>-<yyyyMMdd>.csv` (ASCII, the day
         in the academy's time zone). More than 10,000 rows: 422 `EXPORT_TOO_LARGE`. Every export writes the audit row
-        `team.roster_exported` (target the team, metadata `rows`; no personal data); the content is never logged.
-        The team's current staff only (decision 83, core 3.6.0): a team of an ended season is history (ADR-0042); its
-        former coach keeps its screens but not the export (403), ADMIN still exports it.
+        `team.roster_exported` (target the team, metadata `rows` and `format`; no personal data); the content is never
+        logged. The team's current staff only (decision 83, core 3.6.0): a team of an ended season is history
+        (ADR-0042); its former coach keeps its screens but not the export (403), ADMIN still exports it.
+
+        **PDF** (core 3.7.0, decision 89, WP116): with `Accept: application/pdf` the same roster comes as a printable
+        sheet (`application/pdf`): the academy and team (season, category) on top, then one line per player in the
+        same order with the same fields, each active guardian on a line below, then the staff; labels and enum
+        labels in the language of `Accept-Language`, dates in the academy's time zone. `Accept` absent, `*/*` or
+        `text/csv` gives the CSV. Core gathers and authorizes the data as for the CSV and has the internal pdf-service
+        render it (ADR-0051 §3; the browser never calls that service). File name
+        `hoops-<academy-slug>-roster-<team>-<yyyyMMdd>.pdf`. A sheet holds at most 60 players, 20 staff and 4 active
+        guardians per player: a larger team is 422 `EXPORT_TOO_LARGE` (the CSV holds it). pdf-service not configured,
+        unreachable, too slow or failing: 503 `UPSTREAM_UNAVAILABLE` (retry later, or take the CSV). The audit row
+        (`format` `pdf`) is written only when the file is returned.
         Authz: ADMIN; COACH of this team. ASSISTANT_COACH, PARENT and PLAYER 403; non-members 404.
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
       responses:
         '200':
-          description: The roster file.
+          description: 'The roster file: CSV, or PDF when asked with `Accept: application/pdf`.'
           headers:
             Content-Disposition: {$ref: '#/components/headers/ContentDisposition'}
             Cache-Control: {$ref: '#/components/headers/NoStoreExport'}
           content:
             text/csv:
               schema: {$ref: '#/components/schemas/CsvFile'}
+            application/pdf:
+              schema: {$ref: '#/components/schemas/PdfFile'}
         '400': {$ref: './common.yaml#/components/responses/BadRequest'}
         '401': {$ref: './common.yaml#/components/responses/Unauthorized'}
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
+        '503':
+          description: |
+            PDF only: pdf-service is not configured, did not answer in time or failed (code `UPSTREAM_UNAVAILABLE`);
+            nothing was audited. Safe to retry; the CSV does not depend on it.
+          content:
+            application/problem+json:
+              schema: {$ref: './common.yaml#/components/schemas/Problem'}
   /api/core/teams/{teamId}/jersey-numbers:
     parameters:
       - $ref: './common.yaml#/components/parameters/TenantIdHeader'
@@ -2410,7 +2435,7 @@ components:
       description: '`no-store`: an export holds personal data and is never cached (ADR-0048).'
       schema: {type: string, example: no-store}
     ContentDisposition:
-      description: '`attachment; filename="hoops-<academy-slug>-<what>-<yyyyMMdd>.csv"` (ASCII, ADR-0048).'
+      description: '`attachment; filename="hoops-<academy-slug>-<what>-<yyyyMMdd>.<csv|pdf>"` (ASCII, ADR-0048).'
       schema: {type: string, example: 'attachment; filename="hoops-hangtuah-audit-20261110.csv"'}
 
   schemas:
@@ -2498,8 +2523,8 @@ components:
           type: string
           nullable: true
           description: |
-            Name of the person, player or academy while it exists; null for other target types and for rows
-            that no longer exist or are not resolved.
+            Name of the person, player, team (core 3.7.0) or academy while it exists; null for other target types
+            and for rows that no longer exist or are not resolved.
     AuditEvent:
       type: object
       required: [id, at, action, actor, target, metadata]
@@ -3149,6 +3174,10 @@ components:
       description: |
         A CSV file (ADR-0048): UTF-8 with BOM, `,` separator, RFC 4180 quoting, CRLF line ends, one header row; a text
         cell starting with `=`, `+`, `-`, `@`, TAB or CR is prefixed with `'`.
+    PdfFile:
+      type: string
+      format: binary
+      description: A PDF document (core 3.7.0, ADR-0048 amendment), rendered by pdf-service from fixed templates.
     LogoBinary:
       type: string
       format: binary
