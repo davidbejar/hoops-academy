@@ -1,0 +1,58 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $np := .Values.networkPolicy }}
+{{- $obs := dig "observability" dict (.Values.global | default dict) }}
+# Decision 89: only core and game (by app.kubernetes.io/name, this namespace) reach pdf-service; no gateway, no other pod.
+# Egress: DNS, Keycloak's port (signing keys) and, with the chart's collector, its OTLP HTTP port; nothing else (an
+# external collector: networkPolicy.egress.extra). The kubelet's probes are not subject to policies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "pdf-service.fullname" . }}
+  labels:
+    {{- include "pdf-service.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "pdf-service.selectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress{{ if $np.egress.enabled }}, Egress{{ end }}]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  {{- range .Values.callers }}
+                  - {{ . }}
+                  {{- end }}
+      ports:
+        - {port: http, protocol: TCP}
+  {{- if $np.egress.enabled }}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $np.egress.keycloak.podLabels | nindent 14 }}
+      ports:
+        - {port: {{ $np.egress.keycloak.port }}, protocol: TCP}
+    {{- if and $obs.enabled (not $obs.otlpEndpoint) }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $np.egress.collector.podLabels | nindent 14 }}
+      ports:
+        - {port: {{ $np.egress.collector.port }}, protocol: TCP}
+    {{- end }}
+    {{- with $np.egress.extra }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end }}

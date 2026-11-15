@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.8.0
+    helm.sh/chart: athlete-0.9.0
 spec:
   podSelector:
     matchLabels:
@@ -43,7 +43,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   podSelector:
     matchLabels:
@@ -105,7 +105,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.8.0
+    helm.sh/chart: game-0.9.0
 spec:
   podSelector:
     matchLabels:
@@ -151,6 +151,62 @@ spec:
         - podSelector: {}
       ports:
         - {port: http, protocol: TCP}
+
+---
+# Source: hoops/charts/pdf/templates/networkpolicy.yaml
+# Decision 89: only core and game (by app.kubernetes.io/name, this namespace) reach pdf-service; no gateway, no other pod.
+# Egress: DNS, Keycloak's port (signing keys) and, with the chart's collector, its OTLP HTTP port; nothing else (an
+# external collector: networkPolicy.egress.extra). The kubelet's probes are not subject to policies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pdf-service
+  labels:
+    app.kubernetes.io/name: pdf-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: pdf-0.1.0
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pdf-service
+      app.kubernetes.io/instance: hoops
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - core-service
+                  - game-service
+      ports:
+        - {port: http, protocol: TCP}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+      ports:
+        - {port: 8080, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
+      ports:
+        - {port: 4318, protocol: TCP}
 
 ---
 # Source: hoops/charts/web/templates/web.yaml
@@ -225,6 +281,7 @@ spec:
                   - core-service
                   - game-service
                   - athlete-service
+                  - pdf-service
       ports:
         - {port: otlp-grpc, protocol: TCP}
         - {port: otlp-http, protocol: TCP}
@@ -363,7 +420,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.8.0
+    helm.sh/chart: athlete-0.9.0
 data:
   QUARKUS_HTTP_PORT: "8083"
   ATHLETE_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -392,7 +449,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 data:
   QUARKUS_HTTP_PORT: "8081"
   ATHLETE_SERVICE_URL: "http://athlete-service:8083"
@@ -406,6 +463,7 @@ data:
   KEYCLOAK_URL: "http://keycloak:8080/auth"
   MAIL_FROM: "Hoops Academy <no-reply@hoops.localhost>"
   OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
+  PDF_SERVICE_URL: "http://pdf-service:8084"
   QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"
   QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"
   QUARKUS_OTEL_SDK_DISABLED: "false"
@@ -562,7 +620,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.8.0
+    helm.sh/chart: game-0.9.0
 data:
   QUARKUS_HTTP_PORT: "8082"
   GAME_DB_URL: "jdbc:postgresql://hoops-db-rw:5432/hoops"
@@ -573,6 +631,7 @@ data:
   KAFKA_SASL_USERNAME: "game-service"
   KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
   KEYCLOAK_URL: "http://keycloak:8080/auth"
+  PDF_SERVICE_URL: "http://pdf-service:8084"
   QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"
   QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"
   QUARKUS_OTEL_SDK_DISABLED: "false"
@@ -10923,6 +10982,21 @@ data:
               }
             }
           ]
+        },
+        {
+          "clientId": "pdf-service",
+          "name": "pdf-service",
+          "description": "Audience of pdf-service (ADR-0052): bearer only, no login flow, no service account, no secret in use. Its tokens come from core-service and game-service (audience mappers, ADR-0034).",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "bearerOnly": true,
+          "publicClient": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "redirectUris": [],
+          "webOrigins": []
         }
       ],
       "users": [
@@ -11193,6 +11267,30 @@ data:
     
 
 ---
+# Source: hoops/charts/pdf/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pdf-service-env
+  labels:
+    app.kubernetes.io/name: pdf-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: pdf-0.1.0
+data:
+  OIDC_AUDIENCE: "pdf-service"
+  OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4318"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=kind,k8s.namespace.name=hoops"
+  OTEL_SDK_DISABLED: "false"
+  OTEL_TRACES_SAMPLER_ARG: "1.0"
+  PDF_HTTP_PORT: "8084"
+  PDF_LOG: "info"
+
+---
 # Source: hoops/templates/observability.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -11458,7 +11556,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.8.0
+    helm.sh/chart: athlete-0.9.0
 spec:
   type: ClusterIP
   selector:
@@ -11483,7 +11581,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   type: ClusterIP
   selector:
@@ -11508,7 +11606,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.8.0
+    helm.sh/chart: game-0.9.0
 spec:
   type: ClusterIP
   selector:
@@ -11540,6 +11638,31 @@ spec:
     app.kubernetes.io/instance: hoops
   ports:
     - {name: http, port: 8080, targetPort: http}
+
+---
+# Source: hoops/charts/pdf/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: pdf-service
+  labels:
+    app.kubernetes.io/name: pdf-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: pdf-0.1.0
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pdf-service
+    app.kubernetes.io/instance: hoops
+  ports:
+    - name: http
+      port: 8084
+      targetPort: http
+      protocol: TCP
 
 ---
 # Source: hoops/charts/web/templates/web.yaml
@@ -11654,7 +11777,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.8.0
+    helm.sh/chart: athlete-0.9.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11674,9 +11797,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: athlete-0.8.0
+        helm.sh/chart: athlete-0.9.0
       annotations:
-        checksum/env: 173184c9782cf39462348b17e6cd2c1a720fcd90d29f5d564d343b8c0fca8c31
+        checksum/env: 60566e7cf005330cfe7effcf2b021758ffb0119209500ee21bada10c84ffe1ab
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8083"
@@ -11684,10 +11807,10 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        fsGroup: 0
-        runAsGroup: 0
+        fsGroup: 65532
+        runAsGroup: 65532
         runAsNonRoot: true
-        runAsUser: 185
+        runAsUser: 65532
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -11770,7 +11893,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11790,9 +11913,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: core-0.8.0
+        helm.sh/chart: core-0.9.0
       annotations:
-        checksum/env: 8cc5053cfbde7bb8d0fa0f26438797694334f34ad41007e3c15a028045754a6d
+        checksum/env: f4bced40d3bf3efcc1d670b467069d1fa8d1267225047a8a746637fbb30917f3
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8081"
@@ -11800,10 +11923,10 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        fsGroup: 0
-        runAsGroup: 0
+        fsGroup: 65532
+        runAsGroup: 65532
         runAsNonRoot: true
-        runAsUser: 185
+        runAsUser: 65532
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -11897,7 +12020,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.8.0
+    helm.sh/chart: game-0.9.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -11917,9 +12040,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: game-0.8.0
+        helm.sh/chart: game-0.9.0
       annotations:
-        checksum/env: 23bdb218c1a49cf075d2761d91abe691ff275146e76e702efce5922f7011266f
+        checksum/env: e261e32da6893295dace9b46ab3f0555e2e75217d221cab5bdbe6135656401d8
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"
@@ -11927,10 +12050,10 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        fsGroup: 0
-        runAsGroup: 0
+        fsGroup: 65532
+        runAsGroup: 65532
         runAsNonRoot: true
-        runAsUser: 185
+        runAsUser: 65532
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -12036,7 +12159,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: keycloak-0.6.0
       annotations:
-        checksum/realm: 676beaf9960fb9ec33dbce6b8e4b65f7d84ffa149851895d8d5d45ca856a3857
+        checksum/realm: 534a3defdcf155a57afbb00de28c8865f6353945dc714ab49658f18ad3c04e9b
         checksum/theme: d13533450c087ff3307000544abe5aee0eaf91f4a8b2728886b3e9ea1f09929f
         checksum/blocklist: 2593eec96b22bbd67a809b1b9424434cc8d95d1b2526b287c886a37e630032ff
     spec:
@@ -12148,6 +12271,90 @@ spec:
             name: keycloak-password-blocklist
         - name: tmp
           emptyDir: {sizeLimit: 128Mi}
+
+---
+# Source: hoops/charts/pdf/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pdf-service
+  labels:
+    app.kubernetes.io/name: pdf-service
+    app.kubernetes.io/instance: hoops
+    app.kubernetes.io/part-of: hoops-academy
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: pdf-0.1.0
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pdf-service
+      app.kubernetes.io/instance: hoops
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pdf-service
+        app.kubernetes.io/instance: hoops
+        app.kubernetes.io/part-of: hoops-academy
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/chart: pdf-0.1.0
+      annotations:
+        checksum/env: e2986aa04166aba3f60240144328e934a6a0d593616a6a7b3b588d96543a0c22
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/q/metrics"
+        prometheus.io/port: "8084"
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: pdf-service
+          image: "localhost/hoops/pdf-service:dev"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8084
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: pdf-service-env
+          startupProbe:
+            httpGet: {path: /q/health/started, port: http}
+            periodSeconds: 2
+            failureThreshold: 30
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet: {path: /q/health/live, port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 2
+          readinessProbe:
+            httpGet: {path: /q/health/ready, port: http}
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 2
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 20m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
 
 ---
 # Source: hoops/charts/web/templates/web.yaml
@@ -12294,7 +12501,7 @@ spec:
         app.kubernetes.io/name: otel-collector
         app.kubernetes.io/part-of: hoops-academy
       annotations:
-        checksum/config: 7bd2a29575750f8ed6286bf2c194653fb4e9a3ad6b4781e90fda60917a1500e4
+        checksum/config: 4706c7f292234dbec7e6b1f2412849929e38253c77b4e680ab7804c02556d679
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -12641,7 +12848,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-academy-requests}
@@ -12686,7 +12893,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-roster-export}
@@ -12731,7 +12938,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-audit-export}
@@ -12776,7 +12983,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: core-service-platform-audit-export}
@@ -12821,7 +13028,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.8.0
+    helm.sh/chart: game-0.9.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: game-service-events-batch}
@@ -13700,7 +13907,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.8.0
+    helm.sh/chart: athlete-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13725,7 +13932,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: athlete-0.8.0
+    helm.sh/chart: athlete-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13780,7 +13987,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13804,7 +14011,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13829,7 +14036,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13886,7 +14093,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13912,7 +14119,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13938,7 +14145,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13964,7 +14171,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: core-0.8.0
+    helm.sh/chart: core-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -13988,7 +14195,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.8.0
+    helm.sh/chart: game-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -14013,7 +14220,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.8.0
+    helm.sh/chart: game-0.9.0
 spec:
   parentRefs:
     - name: hoops
@@ -14070,7 +14277,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: game-0.8.0
+    helm.sh/chart: game-0.9.0
 spec:
   parentRefs:
     - name: hoops

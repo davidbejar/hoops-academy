@@ -57,11 +57,12 @@ resources:
   requests: {cpu: 100m, memory: 256Mi}
   limits: {memory: 512Mi}
 
+# distroless `nonroot` (ADR-0054): the image's user 65532:65532; the fast-jar is root-owned and world-readable.
 podSecurityContext:
   runAsNonRoot: true
-  runAsUser: 185
-  runAsGroup: 0
-  fsGroup: 0
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
   seccompProfile: {type: RuntimeDefault}
 securityContext:
   allowPrivilegeEscalation: false

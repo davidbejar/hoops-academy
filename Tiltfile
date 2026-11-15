@@ -3,6 +3,7 @@
 #   tilt up                       build images with Podman, load them into kind, deploy the umbrella chart
 #   tilt up -- --services=game-service,athlete-service   only build/deploy a subset (others stay disabled)
 #   tilt ci                       same, exits when everything is Ready (or fails)
+#   tilt up -- --no-pdf           without pdf-service (Rust image, ADR-0052)
 #   tilt ci game-service athlete-service -- --services=game-service,athlete-service   subset + their dependencies
 # Images: custom_build -> scripts/build-images.sh (podman build + `kind load image-archive`); no registry, no BuildKit.
 # Secrets: rendered from .env by deploy/kind/secrets.sh into memory and applied as k8s objects; never written to disk.
@@ -14,6 +15,7 @@ config.define_string_list('services', args=False, usage='services to build/deplo
 config.define_bool('from-host', args=False, usage='package with ./mvnw on the host and copy the fast-jar (faster)')
 config.define_bool('skip-flutter', args=False, usage='reuse apps/web/build/web instead of running flutter build web')
 config.define_bool('eso', args=False, usage='Secrets from the External Secrets Operator (cluster from `deploy/kind/up.sh --eso`)')
+config.define_bool('no-pdf', args=False, usage='leave pdf-service (Rust, ADR-0052) out: no image build, pdf.enabled=false')
 cfg = config.parse()
 if cfg.get('to-run'):
     config.set_enabled_resources(cfg.get('to-run'))
@@ -26,6 +28,7 @@ for svc in services:
         fail('unknown service %s (expected one of %s)' % (svc, ALL_SERVICES))
 from_host = cfg.get('from-host', False)
 eso = cfg.get('eso', False)
+pdf = not cfg.get('no-pdf', False)
 
 allow_k8s_contexts('kind-hoops')
 if k8s_context() != 'kind-hoops':
@@ -63,6 +66,19 @@ for svc in services:
         disable_push=True,
     )
 
+# pdf-service (Rust, ADR-0052): cargo runs inside the image build (deploy/containers/pdf.Containerfile), the cargo caches
+# persist in Podman; the first build takes minutes, a source change about one.
+if pdf:
+    custom_build(
+        'localhost/hoops/pdf-service',
+        'scripts/build-images.sh pdf-service --kind-load --tag "$EXPECTED_REF"',
+        deps=['services/pdf-service/crates', 'services/pdf-service/Cargo.toml', 'services/pdf-service/Cargo.lock',
+              'services/pdf-service/rust-toolchain.toml', 'services/pdf-service/fonts', 'deploy/containers/pdf.Containerfile'],
+        ignore=['services/pdf-service/target'],
+        skips_local_docker=True,
+        disable_push=True,
+    )
+
 # Flutter: `flutter build web` on the host (native arm64, uses the local pub cache), then an nginx image.
 local_resource(
     'flutter-build-web',
@@ -88,6 +104,8 @@ for svc in ALL_SERVICES:
         helm_set.append('%s.enabled=false' % svc.replace('-service', ''))
 if eso:
     helm_set.append('externalSecrets.enabled=true')
+if not pdf:
+    helm_set.append('pdf.enabled=false')
 k8s_yaml(helm(
     'deploy/helm/hoops',
     name='hoops',
@@ -161,6 +179,12 @@ for svc in services:
     k8s_resource(svc, objects=['%s-env:configmap' % svc, '%s-health:httproute' % svc] + ROUTES[svc],
                  resource_deps=['keycloak'] + (['redpanda-bootstrap'] if svc == 'core-service' else []),
                  port_forwards=['%d:%d' % (PORTS[svc] + 10000, PORTS[svc])], labels=['services'])
+
+# pdf-service: internal only (no route; the NetworkPolicy admits core and game). Host port 18084 for debugging, which the
+# port-forward reaches without the policy (kubectl's tunnel enters the pod directly).
+if pdf:
+    k8s_resource('pdf-service', objects=['pdf-service-env:configmap', 'pdf-service:networkpolicy'], resource_deps=['keycloak'],
+                 port_forwards=['18084:8084'], labels=['services'])
 
 k8s_resource('web', objects=['web:httproute'], resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])
 # OpenTelemetry (WP86, ADR-0046; global.observability.enabled in values-kind.yaml): the collector receives the services'

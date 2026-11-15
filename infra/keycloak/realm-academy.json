@@ -309,6 +309,21 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "pdf-service",
+      "name": "pdf-service",
+      "description": "Audience of pdf-service (ADR-0052): bearer only, no login flow, no service account, no secret in use. Its tokens come from core-service and game-service (audience mappers, ADR-0034).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [],
+      "webOrigins": []
     }
   ],
   "users": [

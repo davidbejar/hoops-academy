@@ -212,7 +212,7 @@ observability:
     resources: {requests: {cpu: 20m, memory: 64Mi}, limits: {memory: 256Mi}}
     # Workloads allowed to send OTLP (by app.kubernetes.io/name, this namespace). The Envoy proxies (namespace
     # proxyNamespace, labels component=proxy, owning-gateway-name = the Gateway) may send gRPC when the chart renders the EnvoyProxy.
-    clients: [core-service, game-service, athlete-service]
+    clients: [core-service, game-service, athlete-service, pdf-service]
     proxyNamespace: envoy-gateway-system
     # The backend of a real environment (ADR-0046): extra collector exporters (collector config syntax; credentials as
     # ${env:VAR} from secretEnv), added to the pipelines named in pipelineExporters, and the egress rules that reach it, e.g.
@@ -268,6 +268,8 @@ core:
     KEYCLOAK_URL: http://keycloak:8080/auth
     GAME_SERVICE_URL: http://game-service:8082
     ATHLETE_SERVICE_URL: http://athlete-service:8083
+    # pdf-service (ADR-0052, decision 89): core renders the team roster there (WP116); set whether or not pdf.enabled.
+    PDF_SERVICE_URL: http://pdf-service:8084
     # Decision e-mails of the academy requests (WP90, ADR-0044) over SMTP: the same host as the realm's smtpServer (kind:
     # the chart's Mailpit, Service `mailhog`). A real server: set SMTP_HOST/SMTP_PORT, SMTP_START_TLS: REQUIRED,
     # SMTP_USERNAME here and the password in Secret hoops-smtp (key password; secretEnv below). The links in the mails
@@ -311,6 +313,8 @@ game:
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
+    # pdf-service (ADR-0052, decision 89): game renders the match sheet there (WP117); set whether or not pdf.enabled.
+    PDF_SERVICE_URL: http://pdf-service:8084
     GAME_ROSTER_SOURCE: '{{ .Values.rosterSource | default (ternary "replica" "rest" (include "hoops-service.eventsEnabled" . | eq "true")) }}'
   # Where the roster and the authorisation context come from (ADR-0037, WP68): rest = core's /internal API, replica = the
   # local replica fed by core's events (needs events.enabled). Empty (decision 66, WP100): replica with events, rest
@@ -355,6 +359,15 @@ athlete:
 
 web:
   enabled: true
+
+# ---------------------------------------------------------------------------------------------------------------
+# pdf-service (Rust, ADR-0051 §3, ADR-0052; sub-chart charts/pdf-service). Off by default; on in values-kind.yaml.
+# Internal only (decision 89): no HTTPRoute; the NetworkPolicy admits `callers` (core and game) and lets the pod reach
+# only DNS, Keycloak and the collector. core and game find it at PDF_SERVICE_URL (http://pdf-service:8084, above).
+pdf:
+  enabled: false
+  image: {repository: localhost/hoops/pdf-service, tag: dev}
+  callers: [core-service, game-service]
 
 # Local SMTP sink named `mailhog` (the realm's SMTP host). Enabled in values-kind.yaml only.
 mailpit:

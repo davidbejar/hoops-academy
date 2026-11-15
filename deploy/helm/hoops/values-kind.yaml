@@ -48,6 +48,9 @@ game:
   resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
 athlete:
   resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+# pdf-service (ADR-0052): internal renderer, reached by core and game only
+pdf:
+  enabled: true
 databases:
   hoopsDb:
     storage: {size: 2Gi}

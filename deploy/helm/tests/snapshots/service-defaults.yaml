@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.8.0
+    helm.sh/chart: hoops-service-0.9.0
 spec:
   podSelector:
     matchLabels:
@@ -42,7 +42,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.8.0
+    helm.sh/chart: hoops-service-0.9.0
 data:
   QUARKUS_HTTP_PORT: "8080"
   QUARKUS_OTEL_SDK_DISABLED: "true"
@@ -60,7 +60,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.8.0
+    helm.sh/chart: hoops-service-0.9.0
 spec:
   type: ClusterIP
   selector:
@@ -85,7 +85,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "0.1.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: hoops-service-0.8.0
+    helm.sh/chart: hoops-service-0.9.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -102,9 +102,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "0.1.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: hoops-service-0.8.0
+        helm.sh/chart: hoops-service-0.9.0
       annotations:
-        checksum/env: b71ba3e52dbb6d0d399d80282550dd2fa2b99d459a75e76ce6596fe17faa48f6
+        checksum/env: 5855cbfa4ed0e40727729c016934ac23555755f0ddc6f0051adbbcc79dd404e8
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8080"
@@ -112,10 +112,10 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       securityContext:
-        fsGroup: 0
-        runAsGroup: 0
+        fsGroup: 65532
+        runAsGroup: 65532
         runAsNonRoot: true
-        runAsUser: 185
+        runAsUser: 65532
         seccompProfile:
           type: RuntimeDefault
       containers:

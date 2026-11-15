@@ -1,0 +1,6 @@
+apiVersion: v2
+name: pdf-service
+description: Hoops Academy pdf-service (Rust, ADR-0052) - stateless renderer of printable sheets, internal only (no route).
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

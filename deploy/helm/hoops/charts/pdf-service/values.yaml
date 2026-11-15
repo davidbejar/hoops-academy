@@ -1,0 +1,65 @@
+# pdf-service (Rust, ADR-0051 §3, ADR-0052). Internal only (decision 89): no HTTPRoute; core and game call
+# http://pdf-service:<port> with their client-credentials token; the NetworkPolicy admits only them.
+fullnameOverride: pdf-service
+image:
+  repository: localhost/hoops/pdf-service
+  tag: dev
+  pullPolicy: IfNotPresent
+# Pull secrets for a private registry, e.g. [{name: ghcr-pull}]. Falls back to global.imagePullSecrets.
+imagePullSecrets: []
+replicaCount: 1
+port: 8084
+
+# Token verification (ADR-0034): the realm as the pod reaches it (signing keys from <authServerUrl>/protocol/openid-connect/
+# certs); issuer empty = the realm's discovery document (Keycloak's public hostname, the iss of every token).
+oidc:
+  authServerUrl: http://keycloak:8080/auth/realms/academy
+  issuer: ""
+  audience: pdf-service
+# Log filter (PDF_LOG, tracing EnvFilter syntax).
+logFilter: info
+# Extra non-secret environment (ConfigMap); overrides the keys above. The service needs no secret.
+env: {}
+
+# The only workloads (app.kubernetes.io/name, this namespace) the NetworkPolicy admits.
+callers: [core-service, game-service]
+networkPolicy:
+  enabled: true
+  # Egress: DNS, Keycloak (signing keys) and the OTLP collector only; nothing else (no fetch while rendering).
+  egress:
+    enabled: true
+    keycloak: {podLabels: {app.kubernetes.io/name: keycloak}, port: 8080}
+    collector: {podLabels: {app.kubernetes.io/name: otel-collector}, port: 4318}
+    # e.g. a platform collector outside the namespace: [{to: [{ipBlock: {cidr: 10.0.0.0/8}}], ports: [{port: 4318}]}]
+    extra: []
+
+# Prometheus scrape annotations (/q/metrics: hoops_authz_denied_total). The NetworkPolicy admits no scraper: add one to
+# `callers` or a rule of your own when a Prometheus runs in the namespace.
+metrics:
+  enabled: true
+  path: /q/metrics
+
+probes:
+  startup:   {path: /q/health/started, periodSeconds: 2, failureThreshold: 30, timeoutSeconds: 2}
+  liveness:  {path: /q/health/live,    periodSeconds: 10, failureThreshold: 3, timeoutSeconds: 2}
+  readiness: {path: /q/health/ready,   periodSeconds: 5,  failureThreshold: 3, timeoutSeconds: 2}
+
+resources:
+  requests: {cpu: 20m, memory: 32Mi}
+  limits: {memory: 128Mi}
+
+# distroless `nonroot` (65532); the binary writes nothing, so the root file system is read-only and there is no /tmp.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -59,6 +59,9 @@ athlete:
   resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
 web:
   image: {repository: ghcr.io/davidbejar/hoops-academy/web, tag: ""}
+pdf:
+  enabled: true                 # internal renderer (ADR-0052), image from images.yml's `pdf` job
+  image: {repository: ghcr.io/davidbejar/hoops-academy/pdf-service, tag: ""}
 databases:
   hoopsDb:
     storage: {size: 5Gi, storageClass: local-path}
