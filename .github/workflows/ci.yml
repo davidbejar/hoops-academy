@@ -31,6 +31,43 @@ jobs:
       - name: Build and verify
         run: ./mvnw -B -ntp verify
 
+  # pdf-service (Rust, ADR-0052): the gates of `just test-rust`, services/pdf-service/scripts/check.sh: rustfmt, clippy
+  # (warnings denied), the tests under cargo-llvm-cov with the coverage gate (>= 80 % lines, >= 90 % in the domain crate)
+  # and cargo deny (RustSec advisories, licences, bans, sources). The toolchain comes from rust-toolchain.toml through the
+  # runner's rustup; the two cargo tools are release binaries pinned by version and SHA-256.
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/pdf-service
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Toolchain of rust-toolchain.toml
+        run: rustup toolchain install && rustc --version
+      - name: cargo-llvm-cov 0.9.1 and cargo-deny 0.20.2
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -sSLO https://github.com/taiki-e/cargo-llvm-cov/releases/download/v0.9.1/cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz
+          curl -sSLO https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz
+          printf '%s\n' \
+            'b3f68e625481fed9b16444174f3fa5ebcdbde4a1878803a35eabe2dcefcdc41a  cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz' \
+            '9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f  cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz' \
+            | sha256sum -c -
+          tar -xzf cargo-llvm-cov-x86_64-unknown-linux-gnu.tar.gz -C "$HOME/.cargo/bin" cargo-llvm-cov
+          tar -xzf cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz --strip-components=1 -C "$HOME/.cargo/bin" \
+            cargo-deny-0.20.2-x86_64-unknown-linux-musl/cargo-deny
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            services/pdf-service/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('services/pdf-service/Cargo.lock', 'services/pdf-service/rust-toolchain.toml') }}
+          restore-keys: cargo-${{ runner.os }}-
+      - name: Rust gates (fmt, clippy, tests + coverage gate, cargo deny)
+        run: scripts/check.sh
+
   # docs/domain/*-model.md are generated: ER diagrams from a throwaway PostgreSQL (Podman, on the runner) with the
   # Flyway files applied, class diagrams from the Java sources. Fails with a diff when a page is stale: `just diagrams`.
   model-diagrams:

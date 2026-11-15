@@ -48,6 +48,24 @@ updates:
       pub-minor-patch:
         update-types: ["minor", "patch"]
 
+  # pdf-service (Rust, ADR-0052): the workspace's Cargo.lock. The toolchain (rust-toolchain.toml) and the image bases of
+  # deploy/containers/pdf.Containerfile are bumped by hand with it (ADR-0052 "Pins").
+  - package-ecosystem: cargo
+    directory: /services/pdf-service
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(pdf)"
+    groups:
+      cargo-minor-patch:
+        update-types: ["minor", "patch"]
+
   # Actions are pinned to full commit SHAs with the version as a comment (WP50); Dependabot updates both together.
   - package-ecosystem: github-actions
     directory: /

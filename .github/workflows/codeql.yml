@@ -1,7 +1,8 @@
 name: codeql
 
 # SAST with CodeQL (WP83, ADR-0045): Java, query suite security-extended, built from source (main code only: tests
-# are neither compiled nor analysed). The SARIF goes to code scanning. Gate: a High or Critical result
+# are neither compiled nor analysed); Rust (pdf-service, WP111, ADR-0052) without a build (build-mode none: CodeQL reads
+# the workspace and its Cargo.lock dependencies itself). The SARIF goes to code scanning. Gate: a High or Critical result
 # (security-severity >= 7.0) not accepted in .github/codeql/accepted.json fails the job (scripts/sarif-gate.py); an
 # acceptance has a reason and an expiry. How to triage: docs/security/sast-dast.md.
 on:
@@ -27,30 +28,38 @@ jobs:
       contents: read
       security-events: write # upload the SARIF to code scanning
       actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {language: java-kotlin, build-mode: manual}
+          - {language: rust, build-mode: none}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        if: matrix.language == 'java-kotlin'
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
-          languages: java-kotlin
-          build-mode: manual
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
           queries: security-extended
       - name: Build (main code only, traced by CodeQL)
+        if: matrix.language == 'java-kotlin'
         run: ./mvnw -B -ntp -Dmaven.test.skip=true -Djacoco.skip=true -Dspotbugs.skip=true compile
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
-          category: /language:java-kotlin
+          category: /language:${{ matrix.language }}
           output: codeql-out
       - name: Gate (High/Critical not accepted in .github/codeql/accepted.json)
         run: python3 -I scripts/sarif-gate.py --fail-on high --baseline .github/codeql/accepted.json codeql-out/*.sarif | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: codeql-sarif
+          name: codeql-sarif-${{ matrix.language }}
           path: codeql-out/
