@@ -1,4 +1,3 @@
-#![allow(dead_code, unused_imports)] // red: the handlers are not routed yet
 //! The HTTP API (driving adapter, axum): `POST /internal/pdf/match-sheet` and `/internal/pdf/team-roster` of
 //! `pdf.yaml`, behind bearer authentication; `/q/health/*` and `/q/metrics` as the Quarkus services (probes and
 //! scraping; not routed by any gateway). Every error is Problem+JSON. The request body is read, parsed and rendered,
@@ -47,9 +46,21 @@ impl AppState {
 }
 
 pub fn router(state: AppState) -> Router {
-    // red: nothing is routed yet
-    let _ = (&state, MATCH_SHEET, TEAM_ROSTER);
-    Router::new().fallback(|| async { StatusCode::NOT_IMPLEMENTED })
+    let internal = Router::new()
+        .route(MATCH_SHEET, post(match_sheet))
+        .route(TEAM_ROSTER, post(team_roster))
+        .route_layer(middleware::from_fn_with_state(state.clone(), authenticate));
+    Router::new()
+        .merge(internal)
+        .route("/q/health", get(health))
+        .route("/q/health/live", get(health))
+        .route("/q/health/ready", get(health))
+        .route("/q/health/started", get(health))
+        .route("/q/metrics", get(metrics))
+        .fallback(|| async { Problem::not_found().into_response() })
+        .method_not_allowed_fallback(|| async { Problem::method_not_allowed().into_response() })
+        .layer(middleware::from_fn(observe))
+        .with_state(state)
 }
 
 /// One server span and one access-log line per request: method, route template, status, duration. Nothing else.

@@ -247,7 +247,7 @@ async fn health_and_metrics_answer_without_a_token() {
 }
 
 /// None of the personal values of the fixtures appears in `bytes`.
-pub fn assert_no_request_values(bytes: &[u8]) {
+fn assert_no_request_values(bytes: &[u8]) {
     let text = String::from_utf8_lossy(bytes);
     for value in ["Sari", "Wijaya", "Agus", "Lestari", "agus@example.test", "+62 81", "Lucía", "Martínez", "Garuda"] {
         assert!(!text.contains(value), "{value:?} leaked into {text}");
