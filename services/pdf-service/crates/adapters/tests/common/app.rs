@@ -145,3 +145,8 @@ pub fn fixture(name: &str) -> Value {
     let path = format!("{}/tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"));
     serde_json::from_str(&std::fs::read_to_string(path).expect("fixture")).expect("fixture JSON")
 }
+
+/// The realm key's JWKS entry.
+pub fn realm_jwk() -> Value {
+    realm_key().jwk.clone()
+}

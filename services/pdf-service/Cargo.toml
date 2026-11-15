@@ -12,7 +12,7 @@ members = ["crates/domain", "crates/application", "crates/adapters"]
 version = "1.0.0"
 edition = "2024"
 rust-version = "1.99"
-license = "UNLICENSED"
+license = "AGPL-3.0-only"
 publish = false
 
 [workspace.dependencies]
