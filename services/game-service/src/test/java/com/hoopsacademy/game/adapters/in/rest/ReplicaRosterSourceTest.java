@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.RosterBrokerResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
@@ -33,12 +34,15 @@ import org.junit.jupiter.api.Test;
 
 /**
  * {@code hoops.roster.source=replica} (ADR-0037): the tenant filter and the use cases read the local replica, so a
- * request needs no call to core at all; with the production resolver (the test-jar's resolver excluded).
+ * request needs no call to core at all; with the production resolver (the test-jar's resolver excluded). The replica
+ * needs its consumer (game refuses to start without it, WP117), so the class runs the test broker; the tests feed the
+ * replica directly.
  */
 @QuarkusTest
 @TestProfile(ReplicaRosterSourceTest.ReplicaSource.class)
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "game"))
 @WithTestResource(CoreWireMockResource.class)
+@WithTestResource(RosterBrokerResource.class)
 class ReplicaRosterSourceTest {
 
     public static class ReplicaSource implements QuarkusTestProfile {
