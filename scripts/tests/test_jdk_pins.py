@@ -22,7 +22,18 @@ class JdkPinsAgree(unittest.TestCase):
     def test_service_images_use_the_release(self):
         text = (ROOT / "deploy/containers/service.Containerfile").read_text()
         self.assertEqual(re.findall(r"ARG MAVEN_IMAGE=\S+:3-eclipse-temurin-(\d+)\n", text), [release()])
-        self.assertEqual(re.findall(r"ARG RUNTIME_IMAGE=\S+/ubi9/openjdk-(\d+)-runtime:", text), [release()])
+        self.assertEqual(re.findall(r"ARG RUNTIME_IMAGE=gcr\.io/distroless/java(\d+)-debian\d+:nonroot@", text),
+                         [release()])
+
+    def test_the_weekly_bump_follows_the_runtime_image(self):
+        # ADR-0054: distroless publishes floating tags only, so the bump moves the digest of `nonroot`; the pin's repo
+        # must be the one the Containerfile names, or a JDK or Debian change would leave the bump on the old image.
+        text = (ROOT / "deploy/containers/service.Containerfile").read_text()
+        image = re.search(r"ARG RUNTIME_IMAGE=(\S+)\n", text)[1]
+        pins = [p for p in bump_pins.PINS if "deploy/containers/service.Containerfile" in p.files]
+        self.assertEqual(len(pins), 1)
+        digest = bump_pins.read_groups(pins[0], ROOT)["digest"]
+        self.assertEqual(f"{pins[0].opts['repo']}:{pins[0].opts['floating']}@{digest}", image)
 
     def test_every_setup_java_uses_the_release(self):
         for name in WORKFLOWS:
