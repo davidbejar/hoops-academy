@@ -3,6 +3,7 @@
 #   deploy/kind/smoke.sh [service...]        default services: core game athlete
 # core is deployed since WP18: with `core` in the list the script also logs the seeded `superadmin` in (PKCE, no browser)
 # and checks GET /api/core/me (200, superAdmin=true) and GET /platform/tenants (200).
+# pdf-service (when deployed, WP111): no route, a render with core's token from a core-labelled pod, other pods refused.
 # Checks: pods Ready, Gateway programmed, OIDC issuer, /internal -> 403, web /, each service's /q/health/ready via the gateway,
 # the event broker when deployed (health, bootstrap Job, SASL, ACLs on, topics, users; WP66), and with core and the broker
 # the events (WP71: publisher health, a seeded academy drained from core's outbox into both replicas, nothing parked),
@@ -161,11 +162,19 @@ fi
 # Events (WP71, ADR-0036/0037): core's outbox publisher and the game/athlete roster replicas on the broker. A fresh academy
 # whose first admin is the seeded admin1 (an existing login is linked, no temporary password) gets a season, a team and a
 # player; then core's outbox drains, both consumer groups catch up with nothing parked, and game and athlete answer for the
-# new academy (athlete from its replica when ATHLETE_ROSTER_SOURCE=replica). Metrics are read inside the pods (not routed).
+# new academy (athlete from its replica when ATHLETE_ROSTER_SOURCE=replica). Metrics are read through a port-forward (not
+# routed; the distroless images have no curl, ADR-0054).
 if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CTX[@]}" get statefulset redpanda >/dev/null 2>&1; then
   echo "== events (WP71: outbox publisher, roster replicas)"
   port_of() { case "$1" in core-service) echo 8081 ;; game-service) echo 8082 ;; athlete-service) echo 8083 ;; esac; }
-  metrics() { kubectl "${CTX[@]}" exec "deploy/$1" -c "$1" -- curl -s "localhost:$(port_of "$1")/q/metrics" 2>/dev/null || true; }
+  metrics() { # through a port-forward: the distroless images have no curl and no shell (ADR-0054)
+    local port local_port pid out=""
+    port=$(port_of "$1"); local_port=$((port + 20000))
+    kubectl "${CTX[@]}" port-forward "deploy/$1" "$local_port:$port" >/dev/null 2>&1 & pid=$!
+    for _ in $(seq 40); do curl -s -o /dev/null "localhost:$local_port/q/health/live" && break; sleep 0.25; done
+    out=$(curl -s "localhost:$local_port/q/metrics" || true)
+    kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true
+    printf '%s\n' "$out"; }
   # sum of the samples of metric $1, 0 when absent (field 2: the value; an OpenMetrics exemplar may follow it)
   total() { { grep "^$1" || true; } | awk '{s += $2} END {printf "%d", s}'; }
   group_lag() { rp "$as_admin rpk group describe $1" | awk '$1 == "TOTAL-LAG" {print $2}'; }
@@ -230,6 +239,61 @@ if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CT
     [ "$av" = true ] && ok "athlete: the new player's availability (available=true, roster source $(source_of athlete))" \
       || bad "athlete: availability of the new player: '$av'"
   fi
+fi
+
+# pdf-service (WP111, ADR-0052; pdf.enabled): internal only, decision 89. No gateway route; a probe pod labelled like
+# core-service takes core's client-credentials token from Keycloak inside the cluster (the secret from Secret
+# hoops-oidc-core-service, never in the pod spec or on this host's command line) and posts a team roster: a PDF when
+# core's token carries the pdf-service audience (realm mapper on client core-service, ADR-0034), else 401. Pods without a
+# caller's label (unlabelled, athlete-service) are refused by the NetworkPolicy: the connection times out.
+if kubectl "${CTX[@]}" get deployment pdf-service >/dev/null 2>&1; then
+  echo "== pdf-service (internal only: core and game)"
+  PROBE_IMAGE=docker.io/curlimages/curl:8.17.0@sha256:935d9100e9ba842cdb060de42472c7ca90cfe9a7c96e4dacb55e79e560b3ff40
+  c=$(code -X POST "$BASE/internal/pdf/team-roster"); [ "$c" = 403 ] && ok "gateway: /internal/pdf/team-roster -> 403 (no route)" || bad "gateway /internal/pdf -> $c"
+  aud=$(service_token core | cut -d. -f2 | tr '_-' '/+' | { base64 -d 2>/dev/null || true; } | jq -r '(.aud // []) | if type == "array" then join(" ") else . end' 2>/dev/null || true)
+  probe() { # $1 = pod name, $2 = labels JSON, $3 = script; prints the pod's log
+    local overrides
+    overrides=$(jq -n --arg img "$PROBE_IMAGE" --arg script "$3" --argjson labels "$2" \
+      --rawfile body services/pdf-service/crates/adapters/tests/fixtures/team-roster.json '{apiVersion: "v1",
+      metadata: {labels: $labels}, spec: {automountServiceAccountToken: false, containers: [{name: "probe", image: $img,
+      command: ["sh", "-c", $script], env: [{name: "BODY", value: $body},
+        {name: "CS", valueFrom: {secretKeyRef: {name: "hoops-oidc-core-service", key: "client-secret"}}}],
+      securityContext: {runAsNonRoot: true, runAsUser: 100, allowPrivilegeEscalation: false,
+        capabilities: {drop: ["ALL"]}, readOnlyRootFilesystem: true}}]}}')
+    kubectl "${CTX[@]}" run "$1" --restart=Never --image="$PROBE_IMAGE" --overrides="$overrides" >/dev/null
+    kubectl "${CTX[@]}" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/$1" --timeout=120s >/dev/null 2>&1 || true
+    kubectl "${CTX[@]}" logs "$1" 2>&1 || true
+    kubectl "${CTX[@]}" delete pod "$1" --wait=false >/dev/null 2>&1 || true
+  }
+  # shellcheck disable=SC2016 # expanded inside the probe pod
+  render='tok=$(curl -s -X POST http://keycloak:8080/auth/realms/academy/protocol/openid-connect/token \
+      -d grant_type=client_credentials -d client_id=core-service --data-urlencode "client_secret=$CS" |
+    sed -n "s/.*\"access_token\":\"\([^\"]*\)\".*/\1/p")
+  [ -n "$tok" ] || { echo "no token"; exit 0; }
+  post() { curl -s -m 30 -X POST http://pdf-service:8084/internal/pdf/team-roster -H "Authorization: Bearer $tok" \
+    -H "Content-Type: application/json" --data-binary "$BODY" "$@"; }
+  post -o /dev/null -w "status=%{http_code} type=%{content_type} size=%{size_download}\n"
+  echo "magic=$(post | head -c 5)"
+  echo "web=$(curl -s -m 10 -o /dev/null -w "%{http_code}" -X POST http://pdf-service:8084/internal/pdf/team-roster \
+    -H "Content-Type: application/json" --data-binary "$BODY")"'
+  out=$(probe "pdf-probe-core-$$" '{"app.kubernetes.io/name": "core-service"}' "$render")
+  printf '%s\n' "$out" | sed 's/^/  | /'
+  if [[ " $aud " == *" pdf-service "* ]]; then
+    printf '%s\n' "$out" | grep -q '^status=200 type=application/pdf size=[1-9]' && printf '%s\n' "$out" | grep -qx 'magic=%PDF-' \
+      && ok "a pod labelled core-service renders a team roster with core's token (200, application/pdf, %PDF-)" \
+      || bad "pdf-service did not render with core's token"
+  else
+    warn "core-service's token lacks the pdf-service audience (realm mapper not added yet, WP116); its call is refused"
+    printf '%s\n' "$out" | grep -q '^status=401 ' && ok "core's token without the pdf-service audience -> 401" || bad "pdf-service with core's token: $out"
+  fi
+  printf '%s\n' "$out" | grep -qx 'web=401' && ok "a call without a token -> 401" || bad "pdf-service without a token"
+  # shellcheck disable=SC2016 # expanded inside the probe pod
+  reach='curl -s -m 5 -o /dev/null http://pdf-service:8084/q/health/ready; echo "exit=$?"'
+  for labels in '{"run": "pdf-probe"}' '{"app.kubernetes.io/name": "athlete-service"}'; do
+    out=$(probe "pdf-probe-other-$$-$RANDOM" "$labels" "$reach")
+    printf '%s\n' "$out" | grep -qx 'exit=28' && ok "NetworkPolicy: a pod labelled $labels cannot reach pdf-service (timeout)" \
+      || bad "NetworkPolicy: a pod labelled $labels: $out"
+  done
 fi
 
 [ "$fail" = 0 ] && echo "SMOKE PASSED" || { echo "SMOKE FAILED"; exit 1; }
