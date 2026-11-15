@@ -519,15 +519,15 @@ echo "$cfg" | grep -q 'endpoint: jaeger.hoops.svc.cluster.local:4317' && echo "$
   && echo "$cfg" | grep -q 'level: none' && ok "collector: traces to jaeger.hoops:4317, own metrics off" || bad "collector exporters/telemetry"
 n=$(doc otel-collector NetworkPolicy)
 admitted=$(echo "$n" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
-[ "$admitted" = "athlete-service core-service game-service " ] && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' \
+[ "$admitted" = "athlete-service core-service game-service pdf-service " ] && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' \
   && [ "$(echo "$n" | grep -c -- '- from:')" = 2 ] && ! echo "$n" | grep -q 'namespaceSelector: {}' \
   && echo "$n" | awk '/- from:/ {f++} f==1 && /port: otlp-grpc/ {g=1} f==1 && /port: otlp-http/ {h=1} END {exit !(g && h)}' \
   && echo "$n" | awk '/- from:/ {f++} f==2 && /kubernetes.io\/metadata.name: envoy-gateway-system/ {e=1} f==2 && /app.kubernetes.io\/component: proxy/ {p=1} f==2 && /owning-gateway-name: hoops$/ {o=1} f==2 && /managed-by/ {m=1} f==2 && /port: otlp-grpc/ {g=1} f==2 && /port: otlp-http/ {h=1} END {exit !(e && p && o && !m && g && !h)}' \
   && echo "$n" | grep -q 'k8s-app: kube-dns' && [ "$(echo "$n" | grep -c -- '- to:')" = 2 ] \
   && echo "$n" | awk '/- to:/ {t++} t==2 && /app.kubernetes.io\/name: jaeger/ {j=1} t==2 && /port: 4317/ {p=1} END {exit !(j && p)}' \
-  && ok "otel-collector NetworkPolicy: OTLP from the three services + the Gateway's Envoy proxies (gRPC; no managed-by selector, Tilt rewrites it), egress DNS + Jaeger only" \
+  && ok "otel-collector NetworkPolicy: OTLP from the three services and pdf-service + the Gateway's Envoy proxies (gRPC; no managed-by selector, Tilt rewrites it), egress DNS + Jaeger only" \
   || bad "otel-collector NetworkPolicy (admitted: $admitted)"
-for u in core-service game-service athlete-service; do
+for u in core-service game-service athlete-service pdf-service; do
   doc "$u" Deployment | grep -q "app.kubernetes.io/name: $u" || bad "collector client $u has no Deployment with that name label"
 done
 j=$(doc jaeger Deployment)
@@ -597,6 +597,51 @@ echo "$bcfg" | grep -q 'exporters: \[debug, otlp_http/backend\]' && [ "$(echo "$
   && doc otel-collector NetworkPolicy "$WORK/extra/backend.yaml" | grep -q 'port: 443' \
   && ok "backend: extra exporter in both pipelines, its token from a Secret (Reloader rolls it), egress rule added" || bad "collector backend wiring"
 
+echo "== pdf-service (WP111, ADR-0052: Rust renderer, internal only)"
+D="$WORK/umbrella-default.yaml"
+pd=$(doc pdf-service Deployment)
+echo "$pd" | grep -q 'image: "localhost/hoops/pdf-service:dev"' && echo "$pd" | grep -q 'runAsUser: 65532' \
+  && echo "$pd" | grep -q 'readOnlyRootFilesystem: true' && echo "$pd" | grep -q 'automountServiceAccountToken: false' \
+  && ! echo "$pd" | grep -q 'secretKeyRef\|secretRef' && echo "$pd" | grep -q 'httpGet: {path: /q/health/ready, port: http}' \
+  && ok "kind: pdf-service as nonroot 65532, read-only root FS, no Secret, no service account token, HTTP probes" || bad "pdf-service Deployment"
+! grep -h -- '- {name: pdf-service' "$WORK"/*.yaml | grep -q . && ! grep -q 'kind: HTTPRoute' <(doc pdf-service HTTPRoute) \
+  && ok "no HTTPRoute sends anything to pdf-service in any render (decision 89: the browser never calls it)" || bad "pdf-service routed"
+pn=$(doc pdf-service NetworkPolicy)
+padmitted=$(echo "$pn" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
+[ "$padmitted" = "core-service game-service " ] && echo "$pn" | grep -q 'policyTypes: \[Ingress, Egress\]' \
+  && [ "$(echo "$pn" | grep -c -- '- from:')" = 1 ] && ! echo "$pn" | grep -q 'namespaceSelector: {}\|envoy-gateway-system' \
+  && [ "$(echo "$pn" | grep -c -- '- to:')" = 3 ] && echo "$pn" | grep -q 'k8s-app: kube-dns' \
+  && echo "$pn" | awk '/- to:/ {t++} t==2 && /app.kubernetes.io\/name: keycloak/ {k=1} t==2 && /port: 8080/ {p=1} END {exit !(k && p)}' \
+  && echo "$pn" | awk '/- to:/ {t++} t==3 && /app.kubernetes.io\/name: otel-collector/ {c=1} t==3 && /port: 4318/ {p=1} END {exit !(c && p)}' \
+  && ok "pdf-service NetworkPolicy: only core-service and game-service in; out only DNS, Keycloak :8080, collector :4318" \
+  || bad "pdf-service NetworkPolicy (admitted: $padmitted)"
+pc=$(doc pdf-service-env ConfigMap)
+echo "$pc" | grep -qx '  OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"' && echo "$pc" | grep -qx '  OIDC_AUDIENCE: "pdf-service"' \
+  && ! echo "$pc" | grep -q 'OIDC_ISSUER' && echo "$pc" | grep -qx '  PDF_HTTP_PORT: "8084"' \
+  && echo "$pc" | grep -qx '  OTEL_SDK_DISABLED: "false"' \
+  && echo "$pc" | grep -qx '  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4318"' \
+  && echo "$pc" | grep -qx '  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=kind,k8s.namespace.name=hoops"' \
+  && ok "kind: pdf-service verifies against Keycloak (issuer by discovery), OTLP/HTTP to the collector, no tenant attribute" \
+  || bad "pdf-service env"
+for s in core game; do
+  for f in "$R" "$D"; do
+    doc "$s-service-env" ConfigMap "$f" | grep -qx '  PDF_SERVICE_URL: "http://pdf-service:8084"' || bad "$s-service PDF_SERVICE_URL in $(basename "$f")"
+  done
+done
+! doc athlete-service-env ConfigMap | grep -q PDF_SERVICE_URL \
+  && ok "core and game get PDF_SERVICE_URL=http://pdf-service:8084 (default and kind), athlete not" || bad "athlete has PDF_SERVICE_URL"
+! grep -q 'name: pdf-service' "$D" && ok "default: pdf-service off (pdf.enabled false), nothing rendered" || bad "default renders pdf-service"
+pa=$(doc pdf-service-env ConfigMap "$WORK/extra/agent.yaml")
+echo "$pa" | grep -qx '  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-agent.monitoring:4318"' \
+  && [ "$(doc pdf-service NetworkPolicy "$WORK/extra/agent.yaml" | grep -c -- '- to:')" = 2 ] \
+  && ok "external collector: pdf-service exports OTLP/HTTP to the agent's :4318; no collector egress rule (networkPolicy.egress.extra)" \
+  || bad "pdf-service with an external collector"
+nonroot=0
+for s in core game athlete; do
+  doc "$s-service" Deployment | grep -A6 '^      securityContext:' | grep -q 'runAsUser: 65532' && nonroot=$((nonroot + 1))
+done
+[ "$nonroot" = 3 ] && ok "core, game and athlete run as the distroless nonroot user 65532:65532 (ADR-0054)" || bad "services runAsUser"
+
 echo "== cloud: one k3s VM on Alibaba Cloud (WP104, ADR-0050; umbrella-cloud)"
 # values-cloud.yaml plus what deploy/cloud/install.sh sets from the OpenTofu outputs (tests/values/umbrella-cloud.yaml:
 # the mocked EIP 203.0.113.10 of infra/tofu/tests, a fixed image tag).
@@ -635,8 +680,8 @@ doc keycloak Deployment "$C" | grep -A1 -- '- name: KC_HOSTNAME$' | grep -q "val
   && ok "volumes on k3s's local-path storage class (hoops-db, keycloak-db, redpanda)" || bad "cloud storage class"
 ! grep -q '^kind: Secret' "$C" && ! grep -q '^kind: ExternalSecret' "$C" \
   && ok "no Secret, no ExternalSecret (Secrets from .env through deploy/kind/secrets.sh, ADR-0012)" || bad "cloud render holds Secrets"
-[ "$(grep -c 'deployment.environment.name=cloud' "$C")" = 3 ] && [ "$(grep -c 'secret.reloader.stakater.com/auto' "$C")" -ge 6 ] \
-  && ok "observability environment cloud; Reloader annotations on (install.sh installs Reloader)" || bad "cloud observability/reloader"
+[ "$(grep -c 'deployment.environment.name=cloud' "$C")" = 4 ] && [ "$(grep -c 'secret.reloader.stakater.com/auto' "$C")" -ge 6 ] \
+  && ok "observability environment cloud (three services and pdf-service); Reloader annotations on (install.sh installs Reloader)" || bad "cloud observability/reloader"
 V="$CHART/values-cloud.yaml"
 ! grep -v '^ *#' "$V" | grep -Eq '[0-9]{1,3}(\.[0-9]{1,3}){3}|[0-9]{1,3}(-[0-9]{1,3}){3}\.(sslip|nip)\.io' \
   && [ "$(grep -c 'hoops.invalid' "$V")" = 3 ] \
