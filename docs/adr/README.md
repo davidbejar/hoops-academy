@@ -26,7 +26,7 @@ says so in its header ("Supersedes", "Records"), and the earlier one carries an 
 | [0019](0019-web-session-and-sign-out.md) | Web session lifetime and sign-out semantics |
 | [0020](0020-approval-workflow-and-player-lifecycle.md) | Approval workflow and player lifecycle (ADD / WITHDRAW, REJECTED, ORPHAN on creation) |
 | [0021](0021-authorization-refinements-beyond-the-matrix.md) | Authorization refinements beyond the authz matrix |
-| [0022](0022-login-experience-branded-keycloak-same-tab.md) | Login experience: branded Keycloak pages in the same tab, back to the app |
+| [0022](0022-login-experience-branded-keycloak-same-tab.md) | Login experience: branded Keycloak pages in the same tab, back to the app (amended 2026-11-15: the sign-in page follows the look chosen in the app, `hoops_theme` parameter and one theme script) |
 | [0023](0023-super-admin-manages-academy-admins-email-as-login.md) | Super admin manages academy administrators; e-mail as login; shared-login rule |
 | [0024](0024-temporary-password-replaces-setup-email.md) | Temporary password at first sign-in replaces the setup and verification e-mails (amended: guardian logins, WP58; the `resendTenantAdminInvitation` alias removed by ADR-0035; §8 amended by ADR-0044: core sends the sign-up decision e-mails, WP90) |
 | [0025](0025-one-login-many-academies-easy-sign-up.md) | One login, many academies; easy sign-up over account-linking safeguards |

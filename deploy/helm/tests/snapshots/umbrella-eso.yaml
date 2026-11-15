@@ -10978,6 +10978,61 @@ data:
   basketball.svg: |
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><!-- Material Icons "sports_basketball" (Apache-2.0), the app's logo icon --><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM5.23 7.75C6.1 8.62 6.7 9.74 6.91 11H4.07c.17-1.24.6-2.31 1.16-3.25zM4.07 13h2.84c-.21 1.26-.81 2.38-1.68 3.25-.56-.94-.99-2.01-1.16-3.25zM11 19.93c-1.73-.22-3.29-1-4.49-2.14 1.3-1.24 2.19-2.91 2.42-4.79H11v6.93zM11 11H8.93C8.69 9.12 7.81 7.44 6.5 6.2c1.2-1.13 2.76-1.92 4.5-2.13V11zm8.93 0h-2.84c.21-1.26.81-2.38 1.68-3.25.56.94.99 2.01 1.16 3.25zM13 4.07c1.73.22 3.29.99 4.5 2.13-1.31 1.24-2.19 2.92-2.43 4.8H13V4.07zm0 15.86V13h2.07c.24 1.88 1.12 3.55 2.42 4.79-1.2 1.15-2.76 1.92-4.49 2.14zm5.77-3.68c-.87-.86-1.46-1.99-1.68-3.25h2.84c-.17 1.24-.6 2.31-1.16 3.25z"/></svg>
     
+  hoops-theme.js: |
+    // Hoops Academy login theme: the look chosen in the app (ADR-0022 amendment).
+    //
+    // keycloak.v2 follows the browser's dark mode (darkMode=true in theme.properties).
+    // The app has its own choice (light, dark or system), kept in the app's storage on
+    // another origin, so the app sends it with the sign-in request as `hoops_theme`.
+    // This script applies it and keeps it for the follow-up pages of the same sign-in
+    // (wrong password, new password), whose addresses no longer carry the parameter.
+    //
+    // Rules
+    //  - only the two literal values light and dark are ever applied; `system`, a
+    //    missing or any other value follows the browser, as before;
+    //  - nothing read from the address is written into the page: the value only
+    //    decides whether one fixed class is on <html>;
+    //  - sessionStorage of this tab only; no cookie, nothing kept after the tab closes.
+    (function () {
+      'use strict';
+    
+      var PARAMETER = 'hoops_theme';
+      var STORAGE_KEY = 'hoops.loginTheme';
+      var DARK_CLASS = 'pf-v5-theme-dark';
+    
+      function known(value) {
+        return value === 'light' || value === 'dark' ? value : null;
+      }
+    
+      function chosen() {
+        try {
+          var sent = new URLSearchParams(window.location.search).get(PARAMETER);
+          if (sent === null) return known(window.sessionStorage.getItem(STORAGE_KEY));
+          var theme = known(sent);
+          if (theme) window.sessionStorage.setItem(STORAGE_KEY, theme);
+          else window.sessionStorage.removeItem(STORAGE_KEY);
+          return theme;
+        } catch (e) {
+          // Storage blocked: follow the browser.
+          return null;
+        }
+      }
+    
+      var theme = chosen();
+      if (!theme) return;
+    
+      var root = document.documentElement;
+      function apply() {
+        var dark = theme === 'dark';
+        if (root.classList.contains(DARK_CLASS) !== dark) root.classList.toggle(DARK_CLASS, dark);
+      }
+    
+      apply();
+      // keycloak.v2's own script sets the class from the browser's preference, at
+      // load and whenever that preference changes: hold the chosen look against it.
+      new MutationObserver(apply).observe(root, { attributes: true, attributeFilter: ['class'] });
+    })();
+    
   hoops.css: |
     /*
      * Hoops Academy login theme: makes Keycloak's keycloak.v2 pages look like the Flutter app.
@@ -11124,12 +11179,15 @@ data:
     
   theme.properties: |
     # Hoops Academy login theme (ADR-0022): Keycloak's keycloak.v2 login pages, restyled to look like the app.
-    # CSS only (no template overrides) so Keycloak upgrades keep working; follows the browser's dark mode like the app.
+    # CSS and one small script (no template overrides) so Keycloak upgrades keep working; follows the look chosen in the
+    # app, or the browser's dark mode when none was chosen.
     # Mounted at /opt/keycloak/themes/hoops (compose volume; Helm ConfigMap, copy kept in sync by scripts/sync-chart-files.sh).
     parent=keycloak.v2
     import=common/keycloak
     
     styles=css/styles.css css/hoops.css
+    # The look chosen in the app (light / dark), sent with the sign-in request; without it the browser's dark mode applies.
+    scripts=js/hoops-theme.js
     darkMode=true
     locales=es,en,id
     
@@ -11979,7 +12037,7 @@ spec:
         helm.sh/chart: keycloak-0.6.0
       annotations:
         checksum/realm: 676beaf9960fb9ec33dbce6b8e4b65f7d84ffa149851895d8d5d45ca856a3857
-        checksum/theme: 0be0306c32db0fa770d4df059413d8a6ea04b4ad18b1eb555c3e2e65a3f821f4
+        checksum/theme: d13533450c087ff3307000544abe5aee0eaf91f4a8b2728886b3e9ea1f09929f
         checksum/blocklist: 2593eec96b22bbd67a809b1b9424434cc8d95d1b2526b287c886a37e630032ff
     spec:
       automountServiceAccountToken: false
@@ -12080,6 +12138,7 @@ spec:
             items:
               - {key: theme.properties, path: theme.properties}
               - {key: hoops.css, path: resources/css/hoops.css}
+              - {key: hoops-theme.js, path: resources/js/hoops-theme.js}
               - {key: basketball.svg, path: resources/img/basketball.svg}
               - {key: messages_en.properties, path: messages/messages_en.properties}
               - {key: messages_es.properties, path: messages/messages_es.properties}

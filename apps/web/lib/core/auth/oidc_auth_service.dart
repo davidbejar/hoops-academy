@@ -9,6 +9,12 @@ import 'auth_service.dart';
 import 'end_session_redirect.dart';
 import 'serial_refresh.dart';
 
+/// Request parameter that tells Keycloak's sign-in page the look chosen in
+/// the app (`light`, `dark` or `system`). The page is on Keycloak's origin
+/// and cannot read the app's storage; the login theme's `hoops-theme.js`
+/// reads this instead (ADR-0022 amendment). Keycloak itself ignores it.
+const loginThemeParameter = 'hoops_theme';
+
 /// Keycloak (OIDC authorization code + PKCE) via `package:oidc`.
 ///
 /// Web redirects land on `redirect.html` (same origin); the page stores the
@@ -24,9 +30,11 @@ class OidcAuthService implements AuthService {
     AppConfig config, {
     required Uri origin,
     Uri Function()? location,
+    String Function()? loginTheme,
     @visibleForTesting OidcUserManager? manager,
   }) : _clientId = config.clientId,
        _location = location ?? (() => Uri.base),
+       _loginTheme = loginTheme, // ignore: prefer_initializing_formals
        postLogoutRedirectUri = origin,
        _manager = manager ?? _defaultManager(config, origin);
 
@@ -60,6 +68,9 @@ class OidcAuthService implements AuthService {
   static const _revokeTimeout = Duration(seconds: 3);
   final String _clientId;
   final Uri Function() _location;
+
+  /// The look chosen in the app, read when a login starts.
+  final String Function()? _loginTheme;
 
   /// Where Keycloak sends the browser after end-session: the app itself. The
   /// user is already forgotten locally, so it boots to the login screen.
@@ -102,7 +113,11 @@ class OidcAuthService implements AuthService {
   @override
   Future<void> login() async {
     // samePage: redirect.html can only navigate back with an original_uri.
-    await _manager.loginAuthorizationCodeFlow(originalUri: _location());
+    final theme = _loginTheme?.call();
+    await _manager.loginAuthorizationCodeFlow(
+      originalUri: _location(),
+      extraParameters: theme == null ? null : {loginThemeParameter: theme},
+    );
   }
 
   /// Local sign-out first, IdP end-session second (F-03): the stored tokens
