@@ -78,6 +78,11 @@ class SyncWorker {
   final int batchSize;
 
   final ValueNotifier<SyncStatus> status = ValueNotifier(const SyncStatus());
+
+  /// Moves on whenever the server stored a batch or the feed brought events:
+  /// what the server says about a match (its score in the match list) may
+  /// have changed, so anything read from it earlier is stale.
+  final ValueNotifier<int> serverRevision = ValueNotifier(0);
   final Set<String> _pull = {};
   String? _watched;
   SyncTimer? _retry;
@@ -146,6 +151,7 @@ class SyncWorker {
     _retry?.cancel();
     unwatch();
     status.dispose();
+    serverRevision.dispose();
   }
 
   Future<void> _loop() async {
@@ -213,6 +219,7 @@ class SyncWorker {
           rethrow;
         }
         await _store.applyResults(outcome.results);
+        _serverChanged();
         _pull.add(matchId);
         if (batch.length < batchSize) break;
       }
@@ -225,6 +232,7 @@ class SyncWorker {
       final after = await _store.lastServerSeq(matchId);
       final page = await _remote.feed(matchId, after: after);
       await _store.mergeFeed(matchId, page.events);
+      if (page.events.isNotEmpty) _serverChanged();
       hasMore = page.hasMore && page.events.isNotEmpty;
     }
   }
@@ -252,6 +260,10 @@ class SyncWorker {
         nextRetryAt: () => _now().add(delay),
       ),
     );
+  }
+
+  void _serverChanged() {
+    if (!_disposed) serverRevision.value++;
   }
 
   void _set(SyncStatus s) {
