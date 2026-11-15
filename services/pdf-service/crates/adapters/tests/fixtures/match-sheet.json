@@ -1,0 +1,51 @@
+{
+  "locale": "es",
+  "academy": {"name": "Academia Ñandú", "timeZone": "Europe/Madrid"},
+  "match": {
+    "teamName": "U12 Leones",
+    "opponentName": "CB Halcones",
+    "homeAway": "HOME",
+    "scheduledAt": "2026-11-14T09:00:00Z",
+    "venue": "Pabellón Norte",
+    "status": "FINISHED",
+    "periodCount": 4,
+    "periodMinutes": 10
+  },
+  "score": {"team": 52, "opponent": 48},
+  "periodScores": [
+    {"period": 1, "team": 13, "opponent": 12},
+    {"period": 2, "team": 13, "opponent": 12},
+    {"period": 3, "team": 13, "opponent": 12},
+    {"period": 4, "team": 13, "opponent": 12}
+  ],
+  "teamTotals": {
+    "points": 52, "fg1Made": 6, "fg1Attempted": 10, "fg2Made": 20, "fg2Attempted": 41, "fg3Made": 2,
+    "fg3Attempted": 9, "assists": 11, "offensiveRebounds": 8, "defensiveRebounds": 21, "turnovers": 14,
+    "steals": 7, "blocks": 2, "personalFouls": 15, "technicalFouls": 1, "unsportsmanlikeFouls": 0,
+    "secondsPlayed": 12000
+  },
+  "players": [
+    {
+      "displayName": "Lucía Martínez",
+      "jerseyNumber": "7",
+      "wasStarter": true,
+      "stats": {
+        "points": 18, "fg1Made": 2, "fg1Attempted": 3, "fg2Made": 8, "fg2Attempted": 14, "fg3Made": 0,
+        "fg3Attempted": 2, "assists": 4, "offensiveRebounds": 2, "defensiveRebounds": 6, "turnovers": 3,
+        "steals": 2, "blocks": 0, "personalFouls": 3, "technicalFouls": 0, "unsportsmanlikeFouls": 0,
+        "secondsPlayed": 1680
+      }
+    },
+    {
+      "displayName": "Budi Santoso",
+      "jerseyNumber": null,
+      "wasStarter": false,
+      "stats": {
+        "points": 6, "fg1Made": 0, "fg1Attempted": 0, "fg2Made": 3, "fg2Attempted": 6, "fg3Made": 0,
+        "fg3Attempted": 1, "assists": 1, "offensiveRebounds": 0, "defensiveRebounds": 2, "turnovers": 1,
+        "steals": 0, "blocks": 0, "personalFouls": 2, "technicalFouls": 0, "unsportsmanlikeFouls": 0,
+        "secondsPlayed": 900
+      }
+    }
+  ]
+}

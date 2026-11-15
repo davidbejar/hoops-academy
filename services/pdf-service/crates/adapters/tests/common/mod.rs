@@ -98,3 +98,6 @@ pub fn pdf_text(pdf: &[u8]) -> String {
 pub fn page_count(pdf: &[u8]) -> usize {
     lopdf::Document::load_mem(pdf).expect("a readable PDF").get_pages().len()
 }
+
+pub mod app;
+pub mod contract;

@@ -1,0 +1,37 @@
+{
+  "locale": "id",
+  "academy": {"name": "Garuda Hoops", "timeZone": "Asia/Jakarta"},
+  "team": {"name": "U12 Elang", "season": "2026/27", "category": "U12"},
+  "players": [
+    {
+      "givenName": "Sari",
+      "familyName": "Wijaya",
+      "birthDate": "2014-03-09",
+      "gender": "FEMALE",
+      "ageCategory": "U12",
+      "eligibility": "PLAY_UP",
+      "playUpLevels": 1,
+      "jerseyNumber": "10",
+      "joinedOn": "2026-09-01",
+      "email": null,
+      "phone": "+62 812 0000 0001",
+      "guardians": [
+        {"givenName": "Agus", "familyName": "Wijaya", "email": "agus@example.test", "phone": "+62 811 0000 0002"}
+      ]
+    },
+    {
+      "givenName": "Budi",
+      "familyName": "Santoso",
+      "birthDate": null,
+      "gender": null,
+      "ageCategory": null,
+      "eligibility": "ELIGIBLE",
+      "playUpLevels": 0,
+      "joinedOn": "2026-09-08",
+      "guardians": []
+    }
+  ],
+  "staff": [
+    {"role": "COACH", "givenName": "Dewi", "familyName": "Lestari", "since": "2026-08-15", "email": "dewi@example.test", "phone": null}
+  ]
+}

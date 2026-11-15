@@ -14,7 +14,7 @@ path = "src/main.rs"
 [dependencies]
 pdf-domain.workspace = true
 pdf-application.workspace = true
-chrono.workspace = true
+chrono = { workspace = true, features = ["serde"] }
 chrono-tz.workspace = true
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "tokio", "matched-path"] }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "time", "sync"] }
@@ -29,8 +29,8 @@ skrifa = { version = "0.42.1", default-features = false, features = ["std"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["std", "fmt", "json", "env-filter", "registry", "ansi"] }
 opentelemetry = { version = "0.33.1", default-features = false, features = ["trace", "logs"] }
-opentelemetry_sdk = { version = "0.33.1", default-features = false, features = ["trace", "logs", "rt-tokio"] }
-opentelemetry-otlp = { version = "0.33.1", default-features = false, features = ["trace", "logs", "http-proto", "reqwest-client"] }
+opentelemetry_sdk = { version = "0.33.1", default-features = false, features = ["trace", "logs"] }
+opentelemetry-otlp = { version = "0.33.1", default-features = false, features = ["trace", "logs", "http-proto", "reqwest-blocking-client"] }
 tracing-opentelemetry = { version = "0.34.0", default-features = false }
 opentelemetry-appender-tracing = { version = "0.33.1", default-features = false }
 
@@ -41,6 +41,8 @@ jsonschema = { version = "0.61.2", default-features = false }
 lopdf = { version = "0.47.0", default-features = false }
 toml = "1.2.1"
 http-body-util = "0.1.5"
+base64 = "0.22"
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["std", "fmt", "json", "registry"] }
 
 [lints]
 workspace = true
