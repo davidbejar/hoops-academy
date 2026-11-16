@@ -158,6 +158,16 @@ final Map<AppDestination, FeatureModule> featureModules = {
         finance.loadLibrary,
         (p) => finance.DueDetailScreen(dueId: p['dueId']!),
       ),
+      ModulePage(
+        'finance/expenses',
+        finance.loadLibrary,
+        (_) => finance.ExpensesScreen(),
+      ),
+      ModulePage(
+        'finance/balance',
+        finance.loadLibrary,
+        (_) => finance.BalanceScreen(),
+      ),
     ],
   ),
   AppDestination.teams: FeatureModule(

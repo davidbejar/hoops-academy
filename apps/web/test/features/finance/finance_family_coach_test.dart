@@ -225,7 +225,7 @@ void main() {
           .toList();
       expect(rows.first, contains('noviembre de 2026'));
       expect(rows.last, contains('septiembre de 2026'));
-      expect(find.text('45,00 €'), findsWidgets);
+      expect(find.text('45,00 €'), findsWidgets);
     });
 
     testWidgets('state and payment date of a paid due, none of an open one', (

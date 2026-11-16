@@ -391,6 +391,100 @@
   "financeErrorTooManyDues": "Terlalu banyak tagihan sekaligus (maksimal 2000)",
   "financeErrorTeamNotInSeason": "Tim itu bukan dari musim rencana",
   "financeErrorConcurrentModification": "Seseorang mengubah ini pada saat yang sama. Muat ulang dan coba lagi.",
+  "financeExpensesTitle": "Pengeluaran",
+  "financeExpensesEmpty": "Belum ada pengeluaran",
+  "financeExpensesEmptyFiltered": "Tidak ada pengeluaran dengan filter ini",
+  "financeExpensesCount": "{count, plural, one{1 pengeluaran} other{{count} pengeluaran}}",
+  "@financeExpensesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeNoCurrencyExpenseNotice": "Pilih dulu mata uang akademi agar Anda bisa mencatat pengeluaran.",
+  "financeExpenseNew": "Pengeluaran baru",
+  "financeExpenseEdit": "Ubah pengeluaran",
+  "financeExpenseDelete": "Hapus pengeluaran",
+  "financeExpenseDeleteConfirm": "Hapus pengeluaran ini? Lakukan hanya untuk yang tercatat karena salah.",
+  "financeExpenseDeleted": "Pengeluaran dihapus",
+  "financeExpenseSaved": "Pengeluaran disimpan",
+  "financeExpenseDay": "Tanggal pengeluaran",
+  "financeExpenseCategory": "Kategori",
+  "financeExpenseAmount": "Jumlah",
+  "financeExpenseDescription": "Keterangan",
+  "financeExpenseNote": "Catatan (opsional)",
+  "financeExpenseHint": "Singkat. Tanpa nama beserta gajinya dan tanpa data kesehatan.",
+  "financeFilterCategory": "Kategori",
+  "financeFilterFrom": "Dari",
+  "financeFilterTo": "Sampai",
+  "financeCategoryCourtRental": "Sewa lapangan",
+  "financeCategorySalaries": "Gaji",
+  "financeCategoryKit": "Perlengkapan",
+  "financeCategoryTournamentFees": "Biaya turnamen",
+  "financeCategoryTravel": "Perjalanan",
+  "financeCategoryOther": "Lainnya",
+  "financeExportDuesTooltip": "Ekspor tagihan sesuai filter ini (CSV)",
+  "financeExportExpensesTooltip": "Ekspor pengeluaran sesuai filter ini (CSV)",
+  "financeBalanceTitle": "Neraca musim",
+  "financeBalanceSeason": "Musim",
+  "financeBalanceRange": "{from} sampai {to}",
+  "@financeBalanceRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "financeBalanceNoSeasons": "Belum ada musim",
+  "financeBalanceIncome": "Tagihan",
+  "financeBalancePaid": "Terkumpul",
+  "financeBalanceOpen": "Belum tertagih",
+  "financeBalanceWaived": "Dibebaskan",
+  "financeBalanceExpenses": "Pengeluaran",
+  "financeBalanceNet": "Hasil (terkumpul dikurangi pengeluaran)",
+  "financeBalanceChartTitle": "Pengeluaran per kategori",
+  "financeBalanceChartSummary": "Pengeluaran per kategori: diagram batang, total {total}",
+  "@financeBalanceChartSummary": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "financeBalanceNoExpenses": "Tidak ada pengeluaran musim ini",
+  "financeCoachTitle": "Status tagihan",
+  "financeCoachUpToDate": "Lunas",
+  "financeCoachBehind": "Ada tagihan tertunda",
+  "financeCoachEmpty": "Tim belum punya pemain",
+  "financeCoachNote": "Hanya terlihat apakah tiap pemain sudah lunas, tanpa jumlah.",
+  "financeCoachBehindCount": "{count} dari {total} punya tagihan tertunda",
+  "@financeCoachBehindCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "financeFamilyTitle": "Tagihan",
+  "financeFamilyEmpty": "Belum ada tagihan",
+  "financeFamilyPaidOn": "Dibayar pada {date} · {method}",
+  "@financeFamilyPaidOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
   "academyName": "Nama akademi",
   "academyTimezone": "Zona waktu (mis. Asia/Jakarta)",
   "academyAgeRule": "Aturan usia",

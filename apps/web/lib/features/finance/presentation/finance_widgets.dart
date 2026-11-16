@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
@@ -88,6 +89,34 @@ class FinanceBody<T> extends StatelessWidget {
   }
 }
 
+/// "Choose the academy's currency first", with the way to the settings; shown
+/// where an amount is needed (plans, expenses) and no currency exists yet.
+class NoCurrencyNotice extends StatelessWidget {
+  const NoCurrencyNotice({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return SectionCard(
+      key: const Key('finance-no-currency'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: HoopsSpace.gap,
+        children: [
+          Text(message),
+          FilledButton(
+            key: const Key('finance-no-currency-action'),
+            onPressed: () => context.go('/admin/finance/settings'),
+            child: Text(l.financeCurrencyChoose),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The service does not serve this part yet.
 class NotYetServed extends StatelessWidget {
   const NotYetServed({super.key, this.onRetry});
@@ -134,6 +163,32 @@ String financeErrorText(Object error, AppLocalizations l) {
     'CONCURRENT_MODIFICATION' => l.financeErrorConcurrentModification,
     _ => e.message(l),
   };
+}
+
+/// The fixed expense categories (decision 99), in the contract's order and
+/// without the generator's fallback value.
+const expenseCategories = [
+  fin.ExpenseCategory.COURT_RENTAL,
+  fin.ExpenseCategory.SALARIES,
+  fin.ExpenseCategory.KIT,
+  fin.ExpenseCategory.TOURNAMENT_FEES,
+  fin.ExpenseCategory.TRAVEL,
+  fin.ExpenseCategory.OTHER,
+];
+
+extension ExpenseCategoryLabel on fin.ExpenseCategory {
+  String label(AppLocalizations l) {
+    if (this == fin.ExpenseCategory.COURT_RENTAL) {
+      return l.financeCategoryCourtRental;
+    }
+    if (this == fin.ExpenseCategory.SALARIES) return l.financeCategorySalaries;
+    if (this == fin.ExpenseCategory.KIT) return l.financeCategoryKit;
+    if (this == fin.ExpenseCategory.TOURNAMENT_FEES) {
+      return l.financeCategoryTournamentFees;
+    }
+    if (this == fin.ExpenseCategory.TRAVEL) return l.financeCategoryTravel;
+    return l.financeCategoryOther;
+  }
 }
 
 extension FeeCadenceLabel on fin.FeeCadence {

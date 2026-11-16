@@ -415,6 +415,100 @@
   "financeErrorTooManyDues": "Son demasiadas cuotas de una vez (máximo 2000)",
   "financeErrorTeamNotInSeason": "Ese equipo no es de la temporada del plan",
   "financeErrorConcurrentModification": "Alguien cambió esto a la vez. Recarga e inténtalo de nuevo.",
+  "financeExpensesTitle": "Gastos",
+  "financeExpensesEmpty": "Aún no hay gastos",
+  "financeExpensesEmptyFiltered": "No hay gastos con estos filtros",
+  "financeExpensesCount": "{count, plural, one{1 gasto} other{{count} gastos}}",
+  "@financeExpensesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeNoCurrencyExpenseNotice": "Elige primero la moneda de la academia para poder registrar gastos.",
+  "financeExpenseNew": "Nuevo gasto",
+  "financeExpenseEdit": "Editar gasto",
+  "financeExpenseDelete": "Eliminar gasto",
+  "financeExpenseDeleteConfirm": "¿Eliminar este gasto? Hazlo solo con uno registrado por error.",
+  "financeExpenseDeleted": "Gasto eliminado",
+  "financeExpenseSaved": "Gasto guardado",
+  "financeExpenseDay": "Fecha del gasto",
+  "financeExpenseCategory": "Categoría",
+  "financeExpenseAmount": "Importe",
+  "financeExpenseDescription": "Descripción",
+  "financeExpenseNote": "Nota (opcional)",
+  "financeExpenseHint": "Breve. Sin nombres con su sueldo ni datos de salud.",
+  "financeFilterCategory": "Categoría",
+  "financeFilterFrom": "Desde",
+  "financeFilterTo": "Hasta",
+  "financeCategoryCourtRental": "Alquiler de pista",
+  "financeCategorySalaries": "Sueldos",
+  "financeCategoryKit": "Equipación",
+  "financeCategoryTournamentFees": "Cuotas de torneos",
+  "financeCategoryTravel": "Viajes",
+  "financeCategoryOther": "Otros",
+  "financeExportDuesTooltip": "Exportar las cuotas de estos filtros (CSV)",
+  "financeExportExpensesTooltip": "Exportar los gastos de estos filtros (CSV)",
+  "financeBalanceTitle": "Balance de la temporada",
+  "financeBalanceSeason": "Temporada",
+  "financeBalanceRange": "Del {from} al {to}",
+  "@financeBalanceRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "financeBalanceNoSeasons": "Aún no hay temporadas",
+  "financeBalanceIncome": "Cuotas",
+  "financeBalancePaid": "Cobrado",
+  "financeBalanceOpen": "Pendiente de cobro",
+  "financeBalanceWaived": "Condonado",
+  "financeBalanceExpenses": "Gastos",
+  "financeBalanceNet": "Resultado (cobrado menos gastos)",
+  "financeBalanceChartTitle": "Gastos por categoría",
+  "financeBalanceChartSummary": "Gastos por categoría: gráfico de barras, {total} en total",
+  "@financeBalanceChartSummary": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "financeBalanceNoExpenses": "Sin gastos en esta temporada",
+  "financeCoachTitle": "Cuotas al día",
+  "financeCoachUpToDate": "Al día",
+  "financeCoachBehind": "Con cuotas pendientes",
+  "financeCoachEmpty": "El equipo no tiene jugadores",
+  "financeCoachNote": "Solo se ve si cada jugador está al día, sin importes.",
+  "financeCoachBehindCount": "{count} de {total} con cuotas pendientes",
+  "@financeCoachBehindCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "financeFamilyTitle": "Cuotas",
+  "financeFamilyEmpty": "Aún no hay cuotas",
+  "financeFamilyPaidOn": "Pagada el {date} · {method}",
+  "@financeFamilyPaidOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
   "academyName": "Nombre de la academia",
   "academyTimezone": "Zona horaria (p. ej. Europe/Madrid)",
   "academyAgeRule": "Regla de edad",

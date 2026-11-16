@@ -954,6 +954,178 @@ class AppLocalizationsEn extends AppLocalizations {
       'Someone changed this at the same time. Reload and try again.';
 
   @override
+  String get financeExpensesTitle => 'Expenses';
+
+  @override
+  String get financeExpensesEmpty => 'No expenses yet';
+
+  @override
+  String get financeExpensesEmptyFiltered => 'No expenses match these filters';
+
+  @override
+  String financeExpensesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeNoCurrencyExpenseNotice =>
+      'Choose the academy\'s currency first so that you can record expenses.';
+
+  @override
+  String get financeExpenseNew => 'New expense';
+
+  @override
+  String get financeExpenseEdit => 'Edit expense';
+
+  @override
+  String get financeExpenseDelete => 'Delete expense';
+
+  @override
+  String get financeExpenseDeleteConfirm =>
+      'Delete this expense? Only do this for one recorded by mistake.';
+
+  @override
+  String get financeExpenseDeleted => 'Expense deleted';
+
+  @override
+  String get financeExpenseSaved => 'Expense saved';
+
+  @override
+  String get financeExpenseDay => 'Date of the expense';
+
+  @override
+  String get financeExpenseCategory => 'Category';
+
+  @override
+  String get financeExpenseAmount => 'Amount';
+
+  @override
+  String get financeExpenseDescription => 'Description';
+
+  @override
+  String get financeExpenseNote => 'Note (optional)';
+
+  @override
+  String get financeExpenseHint =>
+      'Short. No names with their salary and no health details.';
+
+  @override
+  String get financeFilterCategory => 'Category';
+
+  @override
+  String get financeFilterFrom => 'From';
+
+  @override
+  String get financeFilterTo => 'To';
+
+  @override
+  String get financeCategoryCourtRental => 'Court rental';
+
+  @override
+  String get financeCategorySalaries => 'Salaries';
+
+  @override
+  String get financeCategoryKit => 'Kit';
+
+  @override
+  String get financeCategoryTournamentFees => 'Tournament fees';
+
+  @override
+  String get financeCategoryTravel => 'Travel';
+
+  @override
+  String get financeCategoryOther => 'Other';
+
+  @override
+  String get financeExportDuesTooltip =>
+      'Export the dues of these filters (CSV)';
+
+  @override
+  String get financeExportExpensesTooltip =>
+      'Export the expenses of these filters (CSV)';
+
+  @override
+  String get financeBalanceTitle => 'Season balance';
+
+  @override
+  String get financeBalanceSeason => 'Season';
+
+  @override
+  String financeBalanceRange(String from, String to) {
+    return '$from to $to';
+  }
+
+  @override
+  String get financeBalanceNoSeasons => 'No seasons yet';
+
+  @override
+  String get financeBalanceIncome => 'Dues';
+
+  @override
+  String get financeBalancePaid => 'Collected';
+
+  @override
+  String get financeBalanceOpen => 'Still to collect';
+
+  @override
+  String get financeBalanceWaived => 'Waived';
+
+  @override
+  String get financeBalanceExpenses => 'Expenses';
+
+  @override
+  String get financeBalanceNet => 'Result (collected minus expenses)';
+
+  @override
+  String get financeBalanceChartTitle => 'Expenses by category';
+
+  @override
+  String financeBalanceChartSummary(String total) {
+    return 'Expenses by category: bar chart, $total in total';
+  }
+
+  @override
+  String get financeBalanceNoExpenses => 'No expenses this season';
+
+  @override
+  String get financeCoachTitle => 'Dues up to date';
+
+  @override
+  String get financeCoachUpToDate => 'Up to date';
+
+  @override
+  String get financeCoachBehind => 'Dues outstanding';
+
+  @override
+  String get financeCoachEmpty => 'The team has no players';
+
+  @override
+  String get financeCoachNote =>
+      'You only see whether each player is up to date, no amounts.';
+
+  @override
+  String financeCoachBehindCount(int count, int total) {
+    return '$count of $total with dues outstanding';
+  }
+
+  @override
+  String get financeFamilyTitle => 'Dues';
+
+  @override
+  String get financeFamilyEmpty => 'No dues yet';
+
+  @override
+  String financeFamilyPaidOn(String date, String method) {
+    return 'Paid on $date · $method';
+  }
+
+  @override
   String get academyName => 'Academy name';
 
   @override

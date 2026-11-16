@@ -1750,6 +1750,306 @@ abstract class AppLocalizations {
   /// **'Alguien cambió esto a la vez. Recarga e inténtalo de nuevo.'**
   String get financeErrorConcurrentModification;
 
+  /// No description provided for @financeExpensesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos'**
+  String get financeExpensesTitle;
+
+  /// No description provided for @financeExpensesEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay gastos'**
+  String get financeExpensesEmpty;
+
+  /// No description provided for @financeExpensesEmptyFiltered.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay gastos con estos filtros'**
+  String get financeExpensesEmptyFiltered;
+
+  /// No description provided for @financeExpensesCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{1 gasto} other{{count} gastos}}'**
+  String financeExpensesCount(int count);
+
+  /// No description provided for @financeNoCurrencyExpenseNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige primero la moneda de la academia para poder registrar gastos.'**
+  String get financeNoCurrencyExpenseNotice;
+
+  /// No description provided for @financeExpenseNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo gasto'**
+  String get financeExpenseNew;
+
+  /// No description provided for @financeExpenseEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar gasto'**
+  String get financeExpenseEdit;
+
+  /// No description provided for @financeExpenseDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar gasto'**
+  String get financeExpenseDelete;
+
+  /// No description provided for @financeExpenseDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar este gasto? Hazlo solo con uno registrado por error.'**
+  String get financeExpenseDeleteConfirm;
+
+  /// No description provided for @financeExpenseDeleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Gasto eliminado'**
+  String get financeExpenseDeleted;
+
+  /// No description provided for @financeExpenseSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Gasto guardado'**
+  String get financeExpenseSaved;
+
+  /// No description provided for @financeExpenseDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha del gasto'**
+  String get financeExpenseDay;
+
+  /// No description provided for @financeExpenseCategory.
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría'**
+  String get financeExpenseCategory;
+
+  /// No description provided for @financeExpenseAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'Importe'**
+  String get financeExpenseAmount;
+
+  /// No description provided for @financeExpenseDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Descripción'**
+  String get financeExpenseDescription;
+
+  /// No description provided for @financeExpenseNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota (opcional)'**
+  String get financeExpenseNote;
+
+  /// No description provided for @financeExpenseHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Breve. Sin nombres con su sueldo ni datos de salud.'**
+  String get financeExpenseHint;
+
+  /// No description provided for @financeFilterCategory.
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría'**
+  String get financeFilterCategory;
+
+  /// No description provided for @financeFilterFrom.
+  ///
+  /// In es, this message translates to:
+  /// **'Desde'**
+  String get financeFilterFrom;
+
+  /// No description provided for @financeFilterTo.
+  ///
+  /// In es, this message translates to:
+  /// **'Hasta'**
+  String get financeFilterTo;
+
+  /// No description provided for @financeCategoryCourtRental.
+  ///
+  /// In es, this message translates to:
+  /// **'Alquiler de pista'**
+  String get financeCategoryCourtRental;
+
+  /// No description provided for @financeCategorySalaries.
+  ///
+  /// In es, this message translates to:
+  /// **'Sueldos'**
+  String get financeCategorySalaries;
+
+  /// No description provided for @financeCategoryKit.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipación'**
+  String get financeCategoryKit;
+
+  /// No description provided for @financeCategoryTournamentFees.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuotas de torneos'**
+  String get financeCategoryTournamentFees;
+
+  /// No description provided for @financeCategoryTravel.
+  ///
+  /// In es, this message translates to:
+  /// **'Viajes'**
+  String get financeCategoryTravel;
+
+  /// No description provided for @financeCategoryOther.
+  ///
+  /// In es, this message translates to:
+  /// **'Otros'**
+  String get financeCategoryOther;
+
+  /// No description provided for @financeExportDuesTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Exportar las cuotas de estos filtros (CSV)'**
+  String get financeExportDuesTooltip;
+
+  /// No description provided for @financeExportExpensesTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Exportar los gastos de estos filtros (CSV)'**
+  String get financeExportExpensesTooltip;
+
+  /// No description provided for @financeBalanceTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Balance de la temporada'**
+  String get financeBalanceTitle;
+
+  /// No description provided for @financeBalanceSeason.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporada'**
+  String get financeBalanceSeason;
+
+  /// No description provided for @financeBalanceRange.
+  ///
+  /// In es, this message translates to:
+  /// **'Del {from} al {to}'**
+  String financeBalanceRange(String from, String to);
+
+  /// No description provided for @financeBalanceNoSeasons.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay temporadas'**
+  String get financeBalanceNoSeasons;
+
+  /// No description provided for @financeBalanceIncome.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuotas'**
+  String get financeBalanceIncome;
+
+  /// No description provided for @financeBalancePaid.
+  ///
+  /// In es, this message translates to:
+  /// **'Cobrado'**
+  String get financeBalancePaid;
+
+  /// No description provided for @financeBalanceOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente de cobro'**
+  String get financeBalanceOpen;
+
+  /// No description provided for @financeBalanceWaived.
+  ///
+  /// In es, this message translates to:
+  /// **'Condonado'**
+  String get financeBalanceWaived;
+
+  /// No description provided for @financeBalanceExpenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos'**
+  String get financeBalanceExpenses;
+
+  /// No description provided for @financeBalanceNet.
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado (cobrado menos gastos)'**
+  String get financeBalanceNet;
+
+  /// No description provided for @financeBalanceChartTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos por categoría'**
+  String get financeBalanceChartTitle;
+
+  /// No description provided for @financeBalanceChartSummary.
+  ///
+  /// In es, this message translates to:
+  /// **'Gastos por categoría: gráfico de barras, {total} en total'**
+  String financeBalanceChartSummary(String total);
+
+  /// No description provided for @financeBalanceNoExpenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin gastos en esta temporada'**
+  String get financeBalanceNoExpenses;
+
+  /// No description provided for @financeCoachTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuotas al día'**
+  String get financeCoachTitle;
+
+  /// No description provided for @financeCoachUpToDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Al día'**
+  String get financeCoachUpToDate;
+
+  /// No description provided for @financeCoachBehind.
+  ///
+  /// In es, this message translates to:
+  /// **'Con cuotas pendientes'**
+  String get financeCoachBehind;
+
+  /// No description provided for @financeCoachEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'El equipo no tiene jugadores'**
+  String get financeCoachEmpty;
+
+  /// No description provided for @financeCoachNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo se ve si cada jugador está al día, sin importes.'**
+  String get financeCoachNote;
+
+  /// No description provided for @financeCoachBehindCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} de {total} con cuotas pendientes'**
+  String financeCoachBehindCount(int count, int total);
+
+  /// No description provided for @financeFamilyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuotas'**
+  String get financeFamilyTitle;
+
+  /// No description provided for @financeFamilyEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay cuotas'**
+  String get financeFamilyEmpty;
+
+  /// No description provided for @financeFamilyPaidOn.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagada el {date} · {method}'**
+  String financeFamilyPaidOn(String date, String method);
+
   /// No description provided for @academyName.
   ///
   /// In es, this message translates to:

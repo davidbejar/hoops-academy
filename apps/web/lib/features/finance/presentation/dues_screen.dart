@@ -4,6 +4,7 @@ import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/api/api.dart' as api;
+import '../../../core/export/server_csv_export.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/finance_lookups.dart';
@@ -24,6 +25,17 @@ class DuesScreen extends ConsumerWidget {
     return SubPage(
       title: l.financeDuesTitle,
       parentPath: '/admin/finance',
+      actions: [
+        ServerCsvExportButton(
+          key: const Key('dues-export'),
+          what: 'dues',
+          tooltip: l.financeExportDuesTooltip,
+          errorText: financeErrorText,
+          fetch: (language) => ref
+              .read(financeRepositoryProvider)
+              .exportDues(ref.read(dueQueryProvider), language: language),
+        ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('dues-generate'),
         onPressed: online

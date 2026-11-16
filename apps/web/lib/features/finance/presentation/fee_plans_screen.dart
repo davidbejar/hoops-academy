@@ -1,6 +1,5 @@
 import 'package:built_collection/built_collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 import 'package:material_ui/material_ui.dart';
 
@@ -59,21 +58,7 @@ class FeePlansScreen extends ConsumerWidget {
           children: [
             const FinanceOfflineNote(),
             if (needsCurrency)
-              SectionCard(
-                key: const Key('finance-no-currency'),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: HoopsSpace.gap,
-                  children: [
-                    Text(l.financeNoCurrencyNotice),
-                    FilledButton(
-                      key: const Key('finance-no-currency-action'),
-                      onPressed: () => context.go('/admin/finance/settings'),
-                      child: Text(l.financeCurrencyChoose),
-                    ),
-                  ],
-                ),
-              ),
+              NoCurrencyNotice(message: l.financeNoCurrencyNotice),
             Align(
               alignment: Alignment.centerLeft,
               child: FilterChip(

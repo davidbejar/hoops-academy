@@ -63,10 +63,9 @@ void main() {
     testWidgets('a service that does not answer yet says so (501)', (
       tester,
     ) async {
-      repo.notYetServed();
-      await pump(tester, path);
       // The list itself is served; only the export is not.
-      repo.failOn.removeWhere((k, _) => k != 'exportDues');
+      repo.failOn['exportDues'] = notImplemented;
+      await pump(tester, path);
       await tester.tap(find.byKey(const Key('dues-export')));
       await tester.pumpAndSettle();
       expect(downloader.saved, isEmpty);

@@ -60,14 +60,19 @@ void main() {
     testWidgets('newest first, with category, amount and count', (
       tester,
     ) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(
+        tester,
+        repo: repo,
+        location: path,
+        size: const Size(360, 1800),
+      );
       final expenses = await seed(tester);
       expect(find.text('${expenses.length} gastos'), findsOneWidget);
       final first = expenses.first;
       expect(find.byKey(Key('expense-${first.id}')), findsOneWidget);
       expect(find.text(first.description), findsOneWidget);
       expect(find.textContaining('Alquiler de pista · '), findsWidgets);
-      expect(find.text('90,00 €'), findsWidgets);
+      expect(find.text('90,00 €'), findsWidgets);
       final rows = tester.widgetList<ListRow>(find.byType(ListRow)).toList();
       expect(rows.first.title, first.description);
     });
@@ -85,7 +90,12 @@ void main() {
         kind: AppErrorKind.server,
         status: 500,
       );
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(
+        tester,
+        repo: repo,
+        location: path,
+        size: const Size(360, 1100),
+      );
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
       repo.failOn.clear();
       await tapKey(tester, 'retry-button');
@@ -159,7 +169,7 @@ void main() {
     testWidgets('from a day on', (tester) async {
       await pumpFinance(tester, repo: repo, location: path);
       await tapKey(tester, 'expenses-filter-from');
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.text('ACEPTAR'));
       await tester.pumpAndSettle();
       expect((repo.last['expenses']! as ExpenseQuery).from, isNotNull);
     });
@@ -167,7 +177,7 @@ void main() {
     testWidgets('the days can be cleared again', (tester) async {
       await pumpFinance(tester, repo: repo, location: path);
       await tapKey(tester, 'expenses-filter-to');
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.text('ACEPTAR'));
       await tester.pumpAndSettle();
       expect((repo.last['expenses']! as ExpenseQuery).to, isNotNull);
       await tester.tap(
@@ -315,7 +325,7 @@ void main() {
         tester,
         repo: repo,
         location: path,
-        size: const Size(360, 1100),
+        size: const Size(360, 1800),
       );
       final target = (await seed(tester)).firstWhere((e) => e.note != null);
       await tapKey(tester, 'expense-${target.id}');
@@ -333,7 +343,7 @@ void main() {
       expect(request.spentOn, isNull);
       expect(request.clear, isNull);
       expect(find.text('Gasto guardado'), findsOneWidget);
-      expect(find.text('70,00 €'), findsWidgets);
+      expect(find.text('70,00 €'), findsWidgets);
     });
 
     testWidgets('emptying the note clears it', (tester) async {

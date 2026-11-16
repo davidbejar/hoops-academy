@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/design/tokens.dart';
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/ui/chart_card.dart';
 import '../../../core/ui/chart_tokens.dart';
 import '../../../core/ui/labels.dart' show formatAthDate;
 import '../../../l10n/gen/app_localizations.dart';
@@ -16,7 +17,6 @@ import 'health_labels.dart';
 abstract final class _ChartSize {
   static const axisText = 11.0;
   static const labelText = 12.0;
-  static const plot = 180.0;
   static const swatch = 12.0;
   static const swatchOutline = 1.5;
   static const marker = 5.0;
@@ -152,55 +152,6 @@ class _Line extends StatelessWidget {
   }
 }
 
-class _ChartCard extends StatelessWidget {
-  const _ChartCard({
-    super.key,
-    required this.title,
-    required this.semantics,
-    required this.chart,
-    this.legend,
-    this.table,
-  });
-  final String title;
-  final String semantics;
-  final Widget chart;
-  final Widget? legend;
-  final Widget? table;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = ChartPalette.of(context);
-    return Card(
-      color: p.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(HoopsSpace.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(color: p.ink),
-            ),
-            const SizedBox(height: HoopsSpace.sm),
-            Semantics(
-              label: semantics,
-              child: ExcludeSemantics(
-                child: SizedBox(height: _ChartSize.plot, child: chart),
-              ),
-            ),
-            if (legend != null) ...[
-              const SizedBox(height: HoopsSpace.sm),
-              legend!,
-            ],
-            ?table,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Height or weight over time (single series: the title names it, no legend
 /// box). A table view is available for screen readers and exact values.
 class GrowthChart extends StatefulWidget {
@@ -221,13 +172,13 @@ class _GrowthChartState extends State<GrowthChart> {
     final p = ChartPalette.of(context);
     final pts = widget.points;
     if (pts.isEmpty) {
-      return _ChartCard(
+      return ChartCard(
         title: widget.title,
         semantics: l.chartNoData,
         chart: Center(child: Text(l.chartNoData)),
       );
     }
-    return _ChartCard(
+    return ChartCard(
       title: widget.title,
       semantics: l.chartSummary(pts.length, widget.title, _fmt(pts.last.value)),
       chart: _Line(
@@ -285,7 +236,7 @@ class BandHistoryChart extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final p = ChartPalette.of(context);
     if (points.isEmpty) {
-      return _ChartCard(
+      return ChartCard(
         title: title,
         semantics: l.chartNoData,
         chart: Center(child: Text(l.chartNoData)),
@@ -293,7 +244,7 @@ class BandHistoryChart extends StatelessWidget {
     }
     Color marker(ChartPoint pt) =>
         pt.band == null ? p.surface : p.bands[bandIndex(pt.band!)];
-    return _ChartCard(
+    return ChartCard(
       key: Key('band-chart-$title'),
       title: '$title ($unit)',
       semantics: l.chartSummary(

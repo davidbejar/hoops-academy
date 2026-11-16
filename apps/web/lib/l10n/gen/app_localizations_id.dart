@@ -953,6 +953,179 @@ class AppLocalizationsId extends AppLocalizations {
       'Seseorang mengubah ini pada saat yang sama. Muat ulang dan coba lagi.';
 
   @override
+  String get financeExpensesTitle => 'Pengeluaran';
+
+  @override
+  String get financeExpensesEmpty => 'Belum ada pengeluaran';
+
+  @override
+  String get financeExpensesEmptyFiltered =>
+      'Tidak ada pengeluaran dengan filter ini';
+
+  @override
+  String financeExpensesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pengeluaran',
+      one: '1 pengeluaran',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeNoCurrencyExpenseNotice =>
+      'Pilih dulu mata uang akademi agar Anda bisa mencatat pengeluaran.';
+
+  @override
+  String get financeExpenseNew => 'Pengeluaran baru';
+
+  @override
+  String get financeExpenseEdit => 'Ubah pengeluaran';
+
+  @override
+  String get financeExpenseDelete => 'Hapus pengeluaran';
+
+  @override
+  String get financeExpenseDeleteConfirm =>
+      'Hapus pengeluaran ini? Lakukan hanya untuk yang tercatat karena salah.';
+
+  @override
+  String get financeExpenseDeleted => 'Pengeluaran dihapus';
+
+  @override
+  String get financeExpenseSaved => 'Pengeluaran disimpan';
+
+  @override
+  String get financeExpenseDay => 'Tanggal pengeluaran';
+
+  @override
+  String get financeExpenseCategory => 'Kategori';
+
+  @override
+  String get financeExpenseAmount => 'Jumlah';
+
+  @override
+  String get financeExpenseDescription => 'Keterangan';
+
+  @override
+  String get financeExpenseNote => 'Catatan (opsional)';
+
+  @override
+  String get financeExpenseHint =>
+      'Singkat. Tanpa nama beserta gajinya dan tanpa data kesehatan.';
+
+  @override
+  String get financeFilterCategory => 'Kategori';
+
+  @override
+  String get financeFilterFrom => 'Dari';
+
+  @override
+  String get financeFilterTo => 'Sampai';
+
+  @override
+  String get financeCategoryCourtRental => 'Sewa lapangan';
+
+  @override
+  String get financeCategorySalaries => 'Gaji';
+
+  @override
+  String get financeCategoryKit => 'Perlengkapan';
+
+  @override
+  String get financeCategoryTournamentFees => 'Biaya turnamen';
+
+  @override
+  String get financeCategoryTravel => 'Perjalanan';
+
+  @override
+  String get financeCategoryOther => 'Lainnya';
+
+  @override
+  String get financeExportDuesTooltip =>
+      'Ekspor tagihan sesuai filter ini (CSV)';
+
+  @override
+  String get financeExportExpensesTooltip =>
+      'Ekspor pengeluaran sesuai filter ini (CSV)';
+
+  @override
+  String get financeBalanceTitle => 'Neraca musim';
+
+  @override
+  String get financeBalanceSeason => 'Musim';
+
+  @override
+  String financeBalanceRange(String from, String to) {
+    return '$from sampai $to';
+  }
+
+  @override
+  String get financeBalanceNoSeasons => 'Belum ada musim';
+
+  @override
+  String get financeBalanceIncome => 'Tagihan';
+
+  @override
+  String get financeBalancePaid => 'Terkumpul';
+
+  @override
+  String get financeBalanceOpen => 'Belum tertagih';
+
+  @override
+  String get financeBalanceWaived => 'Dibebaskan';
+
+  @override
+  String get financeBalanceExpenses => 'Pengeluaran';
+
+  @override
+  String get financeBalanceNet => 'Hasil (terkumpul dikurangi pengeluaran)';
+
+  @override
+  String get financeBalanceChartTitle => 'Pengeluaran per kategori';
+
+  @override
+  String financeBalanceChartSummary(String total) {
+    return 'Pengeluaran per kategori: diagram batang, total $total';
+  }
+
+  @override
+  String get financeBalanceNoExpenses => 'Tidak ada pengeluaran musim ini';
+
+  @override
+  String get financeCoachTitle => 'Status tagihan';
+
+  @override
+  String get financeCoachUpToDate => 'Lunas';
+
+  @override
+  String get financeCoachBehind => 'Ada tagihan tertunda';
+
+  @override
+  String get financeCoachEmpty => 'Tim belum punya pemain';
+
+  @override
+  String get financeCoachNote =>
+      'Hanya terlihat apakah tiap pemain sudah lunas, tanpa jumlah.';
+
+  @override
+  String financeCoachBehindCount(int count, int total) {
+    return '$count dari $total punya tagihan tertunda';
+  }
+
+  @override
+  String get financeFamilyTitle => 'Tagihan';
+
+  @override
+  String get financeFamilyEmpty => 'Belum ada tagihan';
+
+  @override
+  String financeFamilyPaidOn(String date, String method) {
+    return 'Dibayar pada $date · $method';
+  }
+
+  @override
   String get academyName => 'Nama akademi';
 
   @override

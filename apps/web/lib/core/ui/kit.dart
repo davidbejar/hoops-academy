@@ -4,6 +4,7 @@ library;
 
 export '../design/tokens.dart';
 export 'action_sheet.dart';
+export 'chart_card.dart';
 export 'empty_state.dart';
 export 'form_dialog.dart';
 export 'icon_tile.dart';

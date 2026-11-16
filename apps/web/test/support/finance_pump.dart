@@ -18,6 +18,19 @@ const financeTestZone = 'Europe/Madrid';
 /// The core data the demo finance seed refers to (Mini A, Mini B, Infantil A).
 FakeCore financeCore({Map<String, List<api.TeamStaffMember>>? staff}) =>
     FakeCore(
+      // The demo mock's two seasons: last season's, ended, and this one.
+      seasons: FakeSeasonsRepository([
+        api.Season(
+          (b) => b
+            ..id = 'season-2025'
+            ..name = '2025/26'
+            ..startsOn = api.Date(2025, 9, 1)
+            ..endsOn = api.Date(2026, 6, 30)
+            ..referenceYear = 2025
+            ..current = false,
+        ),
+        season(seasonId, '2026/27', current: true),
+      ]),
       teams: FakeTeamsRepository(
         teams: [
           team('team-mini-a', 'Mini A', alias: 'Leones', players: 7),

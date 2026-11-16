@@ -7,7 +7,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../support/fake_finance.dart';
 import '../../support/finance_pump.dart';
-import '../../support/pump_helpers.dart';
 
 /// The season balance for ADMIN: the figures and the one chart.
 void main() {

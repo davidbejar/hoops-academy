@@ -391,6 +391,100 @@
   "financeErrorTooManyDues": "That is too many dues at once (2000 at most)",
   "financeErrorTeamNotInSeason": "That team is not in the plan's season",
   "financeErrorConcurrentModification": "Someone changed this at the same time. Reload and try again.",
+  "financeExpensesTitle": "Expenses",
+  "financeExpensesEmpty": "No expenses yet",
+  "financeExpensesEmptyFiltered": "No expenses match these filters",
+  "financeExpensesCount": "{count, plural, one{1 expense} other{{count} expenses}}",
+  "@financeExpensesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeNoCurrencyExpenseNotice": "Choose the academy's currency first so that you can record expenses.",
+  "financeExpenseNew": "New expense",
+  "financeExpenseEdit": "Edit expense",
+  "financeExpenseDelete": "Delete expense",
+  "financeExpenseDeleteConfirm": "Delete this expense? Only do this for one recorded by mistake.",
+  "financeExpenseDeleted": "Expense deleted",
+  "financeExpenseSaved": "Expense saved",
+  "financeExpenseDay": "Date of the expense",
+  "financeExpenseCategory": "Category",
+  "financeExpenseAmount": "Amount",
+  "financeExpenseDescription": "Description",
+  "financeExpenseNote": "Note (optional)",
+  "financeExpenseHint": "Short. No names with their salary and no health details.",
+  "financeFilterCategory": "Category",
+  "financeFilterFrom": "From",
+  "financeFilterTo": "To",
+  "financeCategoryCourtRental": "Court rental",
+  "financeCategorySalaries": "Salaries",
+  "financeCategoryKit": "Kit",
+  "financeCategoryTournamentFees": "Tournament fees",
+  "financeCategoryTravel": "Travel",
+  "financeCategoryOther": "Other",
+  "financeExportDuesTooltip": "Export the dues of these filters (CSV)",
+  "financeExportExpensesTooltip": "Export the expenses of these filters (CSV)",
+  "financeBalanceTitle": "Season balance",
+  "financeBalanceSeason": "Season",
+  "financeBalanceRange": "{from} to {to}",
+  "@financeBalanceRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "financeBalanceNoSeasons": "No seasons yet",
+  "financeBalanceIncome": "Dues",
+  "financeBalancePaid": "Collected",
+  "financeBalanceOpen": "Still to collect",
+  "financeBalanceWaived": "Waived",
+  "financeBalanceExpenses": "Expenses",
+  "financeBalanceNet": "Result (collected minus expenses)",
+  "financeBalanceChartTitle": "Expenses by category",
+  "financeBalanceChartSummary": "Expenses by category: bar chart, {total} in total",
+  "@financeBalanceChartSummary": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "financeBalanceNoExpenses": "No expenses this season",
+  "financeCoachTitle": "Dues up to date",
+  "financeCoachUpToDate": "Up to date",
+  "financeCoachBehind": "Dues outstanding",
+  "financeCoachEmpty": "The team has no players",
+  "financeCoachNote": "You only see whether each player is up to date, no amounts.",
+  "financeCoachBehindCount": "{count} of {total} with dues outstanding",
+  "@financeCoachBehindCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "financeFamilyTitle": "Dues",
+  "financeFamilyEmpty": "No dues yet",
+  "financeFamilyPaidOn": "Paid on {date} · {method}",
+  "@financeFamilyPaidOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "method": {
+        "type": "String"
+      }
+    }
+  },
   "academyName": "Academy name",
   "academyTimezone": "Time zone (e.g. Europe/Madrid)",
   "academyAgeRule": "Age rule",

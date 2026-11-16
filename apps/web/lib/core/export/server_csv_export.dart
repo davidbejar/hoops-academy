@@ -30,6 +30,7 @@ class ServerCsvExportButton extends ConsumerStatefulWidget {
     required this.tooltip,
     required this.fetch,
     this.slug,
+    this.errorText,
   });
 
   /// The middle part of the file name (`roster mini a`, `audit`).
@@ -39,6 +40,11 @@ class ServerCsvExportButton extends ConsumerStatefulWidget {
 
   /// The academy slug of the file name; the active academy's when null.
   final String? slug;
+
+  /// Words a failure the screen's feature knows better than the generic
+  /// message (a service that does not serve the export yet); null gives the
+  /// generic text.
+  final String Function(Object error, AppLocalizations l)? errorText;
 
   @override
   ConsumerState<ServerCsvExportButton> createState() =>
@@ -89,7 +95,9 @@ class _ServerCsvExportButtonState extends ConsumerState<ServerCsvExportButton> {
       final error = AppError.of(e);
       _show(
         messenger,
-        error.code == exportTooLargeCode ? l.exportTooLarge : error.message(l),
+        error.code == exportTooLargeCode
+            ? l.exportTooLarge
+            : widget.errorText?.call(e, l) ?? error.message(l),
       );
     } finally {
       if (mounted) setState(() => _busy = false);

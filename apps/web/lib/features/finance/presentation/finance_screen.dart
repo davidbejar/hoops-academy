@@ -44,6 +44,20 @@ class FinanceScreen extends ConsumerWidget {
               '/admin/finance/dues',
               'finance-dues',
             ),
+            (
+              Icons.shopping_bag_outlined,
+              l.financeExpensesTitle,
+              null,
+              '/admin/finance/expenses',
+              'finance-expenses',
+            ),
+            (
+              Icons.balance_outlined,
+              l.financeBalanceTitle,
+              null,
+              '/admin/finance/balance',
+              'finance-balance',
+            ),
           ];
           return PageBody(
             key: const Key('finance-hub'),
