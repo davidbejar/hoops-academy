@@ -17,9 +17,11 @@ import com.hoopsacademy.e2e.support.KeycloakAdmin;
 import com.hoopsacademy.e2e.support.KeycloakUserTokens;
 import com.hoopsacademy.e2e.support.MailSink;
 import io.restassured.response.Response;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -100,6 +102,9 @@ class JourneyTest {
     private UUID injuryId;
     private UUID season2;
     private UUID caseId;
+    private UUID feePlanId;
+    private UUID dueA; // player A's due of this month, paid
+    private UUID expenseId;
     // tenant B
     private UUID tenantB;
     private Actor adminB;
@@ -341,6 +346,130 @@ class JourneyTest {
         status(parent.get("/api/game/players/" + playerB + "/season-stats?seasonId=" + seasonId), 404);
     }
 
+    // ------------------------------------------------------------------------------------------ PDFs (WP116, WP117)
+
+    /** Core loads the roster, the Rust pdf-service renders it (core's client-credentials token, PDF_SERVICE_URL). */
+    @Test
+    @Order(14)
+    void theAdminPrintsTheTeamRosterAsAPdfWhichAParentMayNot() {
+        String path = "/api/core/teams/" + teamId + "/roster:export";
+        Response pdf = status(exportCall(admin, path, Map.of("Accept", "application/pdf", "Accept-Language", "es")), 200);
+        assertPdf(pdf);
+        assertThat(pdf.header("Content-Disposition")).contains("-roster-").endsWith(".pdf\"");
+        status(exportCall(parent, path, Map.of("Accept", "application/pdf")), 403);
+        Response audit = status(admin.get("/api/core/audit-events?action=team.roster_exported"), 200);
+        assertThat(audit.jsonPath().getList("items.metadata.format")).contains("pdf");
+    }
+
+    /** Game reads the box score, pdf-service renders it (game's token); every member who sees the box score may print. */
+    @Test
+    @Order(15)
+    void theCoachAndTheParentPrintTheMatchSheet() {
+        for (Actor who : List.of(coach, parent)) {
+            Response pdf = status(who.get("/api/game/matches/" + matchId + "/box-score:pdf", Map.of("Accept-Language", "es")), 200);
+            assertPdf(pdf);
+            assertThat(pdf.header("Content-Disposition")).contains("match-sheet").endsWith(".pdf\"");
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------ finance (WP118-WP123)
+
+    @Test
+    @Order(16)
+    void theAdminChoosesTheCurrencyCreatesAPlanGeneratesDuesAndRecordsAndVoidsAPayment() {
+        // finance-service learns the academy, its members and the roster from core's events: wait until it knows them
+        await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofSeconds(1)).untilAsserted(() ->
+                assertEquals(200, admin.get("/api/finance/settings").statusCode(), "finance knows academy A's admin"));
+        Response settings = status(admin.put("/api/finance/settings", of("currency", "EUR")), 200);
+        assertEquals(2, settings.jsonPath().getInt("minorDigits"));
+        String month = YearMonth.now(ZONE).toString();
+        Response plan = status(admin.post("/api/finance/fee-plans", of("name", "Monthly " + run, "seasonId", seasonId,
+                "teamId", teamId, "amountMinor", 4500, "cadence", "MONTHLY", "firstPeriod", month, "autoGenerate", false)), 201);
+        feePlanId = id(plan, "id");
+        String generate = "/api/finance/fee-plans/" + feePlanId + "/dues:generate";
+        await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofSeconds(1)).untilAsserted(() -> assertEquals(2,
+                status(admin.post(generate, of("period", month, "preview", true)), 200).jsonPath().getInt("created"),
+                "the preview sees both players of the team"));
+        Response generated = status(admin.post(generate, of("period", month)), 200);
+        assertEquals(2, generated.jsonPath().getInt("created"));
+        Response again = status(admin.post(generate, of("period", month)), 200);
+        assertEquals(0, again.jsonPath().getInt("created"), "generating again creates nothing");
+        assertEquals(2, again.jsonPath().getInt("existing"));
+
+        Response dues = status(admin.get("/api/finance/dues?feePlanId=" + feePlanId), 200);
+        dueA = UUID.fromString(dues.jsonPath().getString("items.find { it.playerId == '" + playerA + "' }.id"));
+        Response paid = status(admin.post("/api/finance/dues/" + dueA + ":pay", of("paidOn", today.toString(), "method", "CASH")), 200);
+        assertEquals("PAID", paid.jsonPath().getString("status"));
+        UUID payment = id(paid, "payment.id");
+        Response voided = status(admin.post("/api/finance/payments/" + payment + ":void", of("reason", "recorded on the wrong due")), 200);
+        assertEquals("OPEN", voided.jsonPath().getString("status"));
+        status(admin.post("/api/finance/payments/" + payment + ":void", of("reason", "twice")), 409);
+        Response repaid = status(admin.post("/api/finance/dues/" + dueA + ":pay",
+                of("paidOn", today.toString(), "method", "BANK_TRANSFER")), 200);
+        assertEquals("PAID", repaid.jsonPath().getString("status"));
+        Response detail = status(admin.get("/api/finance/dues/" + dueA), 200);
+        assertThat(detail.jsonPath().getList("payments.voided")).containsExactly(true, false);
+    }
+
+    @Test
+    @Order(17)
+    void theParentSeesTheLinkedPlayersDueAndTheCoachOnlyWhoIsUpToDate() {
+        await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofSeconds(1)).untilAsserted(() ->
+                assertEquals(200, parent.get("/api/finance/players/" + playerA + "/dues").statusCode(), "finance knows the link"));
+        Response family = status(parent.get("/api/finance/players/" + playerA + "/dues"), 200);
+        assertThat(family.jsonPath().getList("items.status")).containsExactly("PAID");
+        assertEquals("BANK_TRANSFER", family.jsonPath().getString("items[0].paymentMethod"));
+        assertThat(family.asString()).doesNotContain("wrong due", "reason", "note");
+        status(parent.get("/api/finance/players/" + playerB + "/dues"), 403);
+        status(parent.get("/api/finance/dues/" + dueA), 403);
+
+        await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofSeconds(1)).untilAsserted(() ->
+                assertEquals(200, coach.get("/api/finance/teams/" + teamId + "/due-status").statusCode(), "finance knows the coach"));
+        Response team = status(coach.get("/api/finance/teams/" + teamId + "/due-status"), 200);
+        assertEquals(Boolean.TRUE, team.jsonPath().getBoolean("players.find { it.playerId == '" + playerA + "' }.upToDate"));
+        assertEquals(Boolean.FALSE, team.jsonPath().getBoolean("players.find { it.playerId == '" + playerB + "' }.upToDate"));
+        assertThat(team.asString()).doesNotContain("amountMinor", "4500");
+        status(coach.get("/api/finance/dues"), 403);
+        status(coach.get("/api/finance/expenses"), 403);
+        status(coach.get("/api/finance/balance?seasonId=" + seasonId), 403);
+    }
+
+    @Test
+    @Order(18)
+    void theAdminRecordsExpensesReadsTheSeasonBalanceAndExportsBothFiles() {
+        Response court = status(admin.post("/api/finance/expenses", of("spentOn", today.toString(), "category", "COURT_RENTAL",
+                "amountMinor", 12000, "description", "Court " + run, "note", "invoice 41")), 201);
+        expenseId = id(court, "id");
+        Response kit = status(admin.post("/api/finance/expenses", of("spentOn", today.toString(), "category", "KIT",
+                "amountMinor", 3000, "description", "=1+2 balls")), 201);
+        status(admin.patch("/api/finance/expenses/" + id(kit, "id"), of("amountMinor", 3500)), 200);
+        UUID mistake = id(status(admin.post("/api/finance/expenses", of("spentOn", today.toString(), "category", "TRAVEL",
+                "amountMinor", 900, "description", "typo")), 201), "id");
+        status(admin.delete("/api/finance/expenses/" + mistake), 204);
+        status(admin.get("/api/finance/expenses/" + mistake), 404);
+
+        Response balance = status(admin.get("/api/finance/balance?seasonId=" + seasonId), 200);
+        assertEquals(4500, balance.jsonPath().getLong("income.paidMinor"));
+        assertEquals(4500, balance.jsonPath().getLong("income.openMinor"));
+        assertEquals(0, balance.jsonPath().getLong("income.waivedMinor"));
+        assertEquals(15500, balance.jsonPath().getLong("expenses.totalMinor"));
+        assertEquals(-11000, balance.jsonPath().getLong("netMinor"));
+        assertThat(balance.jsonPath().getList("expenses.byCategory.category")).containsExactly(
+                "COURT_RENTAL", "SALARIES", "KIT", "TOURNAMENT_FEES", "TRAVEL", "OTHER");
+
+        // the exports are rate-limited at the gateway (10 a minute and 2 a second per client): two calls, spaced
+        Response dues = status(exportCall(admin, "/api/finance/dues:export?feePlanId=" + feePlanId, Map.of("Accept-Language", "es")), 200);
+        List<String> dueLines = csvLines(dues);
+        assertThat(dueLines.get(0)).startsWith("Periodo,Inicio del periodo,");
+        assertThat(dueLines).hasSize(3).anyMatch(l -> l.contains(",Pagada," + today + ",Transferencia"));
+        assertThat(dues.header("Content-Disposition")).contains("-dues-").endsWith(".csv\"");
+        Response expenses = status(exportCall(admin, "/api/finance/expenses:export", Map.of("Accept-Language", "en")), 200);
+        List<String> expenseLines = csvLines(expenses);
+        assertThat(expenseLines).hasSize(3).contains(today + ",Kit,KIT,3500,EUR,'=1+2 balls");
+        assertThat(expenses.asString()).doesNotContain("invoice 41");
+        status(parent.get("/api/finance/balance?seasonId=" + seasonId), 403);
+    }
+
     // ------------------------------------------------------------------------------------------ training
 
     @Test
@@ -580,6 +709,29 @@ class JourneyTest {
     }
 
     @Test
+    @Order(55)
+    void secondTenantSeesNoneOfTheFirstTenantsFinance() {
+        // finance-service learns academy B from core's events too: until then every call would be a 404 for the wrong reason
+        await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofSeconds(1)).untilAsserted(() ->
+                assertEquals(200, adminB.get("/api/finance/settings").statusCode(), "finance knows academy B"));
+        status(adminB.get("/api/finance/fee-plans/" + feePlanId), 404);
+        status(adminB.get("/api/finance/dues/" + dueA), 404);
+        status(adminB.post("/api/finance/dues/" + dueA + ":waive", of("reason", "takeover")), 404);
+        status(adminB.get("/api/finance/expenses/" + expenseId), 404);
+        status(adminB.delete("/api/finance/expenses/" + expenseId), 404);
+        status(adminB.get("/api/finance/balance?seasonId=" + seasonId), 404);
+        assertThat(status(adminB.get("/api/finance/dues"), 200).jsonPath().getList("items")).isEmpty();
+        assertThat(status(adminB.get("/api/finance/expenses"), 200).jsonPath().getList("items")).isEmpty();
+        // B's admin naming A's tenant is a non-member
+        Actor intruder = adminB.inTenant(tenantA);
+        status(intruder.get("/api/finance/dues/" + dueA), 404);
+        status(intruder.get("/api/finance/settings"), 404);
+        // A's data is unchanged
+        assertEquals("PAID", status(admin.get("/api/finance/dues/" + dueA), 200).jsonPath().getString("status"));
+        status(admin.get("/api/finance/expenses/" + expenseId), 200);
+    }
+
+    @Test
     @Order(51)
     void internalEndpointsAreBlockedAtTheGateway() {
         String svc = tokens.serviceToken("core-service", "CORE_SERVICE_CLIENT_SECRET");
@@ -653,6 +805,7 @@ class JourneyTest {
             assertEquals(404, admin.get("/api/core/teams").statusCode());
             assertEquals(404, coach.get("/api/game/matches").statusCode());
             assertEquals(404, parent.get("/api/athlete/training-sessions?teamId=" + teamId).statusCode());
+            assertEquals(404, admin.get("/api/finance/settings").statusCode(), "finance reads the status from core's events");
         });
         status(admin.get("/api/core/tenant"), 404);
         Response me = status(admin.inTenant(null).get("/api/core/me"), 200);
@@ -665,6 +818,7 @@ class JourneyTest {
             assertEquals(200, admin.get("/api/core/teams").statusCode());
             assertEquals(200, coach.get("/api/game/matches").statusCode());
             assertEquals(200, parent.get("/api/athlete/training-sessions?teamId=" + teamId).statusCode());
+            assertEquals(200, admin.get("/api/finance/settings").statusCode());
         });
     }
 
@@ -740,6 +894,37 @@ class JourneyTest {
     }
 
     // ------------------------------------------------------------------------------------------ helpers
+
+    /**
+     * A call to a rate-limited export path (the gateway allows 2 a second and 10 a minute per client, ADR-0033): spaced
+     * by more than half a second, so the journey's few exports never meet the limit.
+     */
+    private Response exportCall(Actor who, String path, Map<String, String> headers) {
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+        return who.get(path, headers);
+    }
+
+    /** A rendered PDF: the media type, the magic number, never cached. */
+    private static void assertPdf(Response pdf) {
+        assertThat(pdf.contentType()).startsWith("application/pdf");
+        byte[] body = pdf.asByteArray();
+        assertThat(new String(body, 0, Math.min(5, body.length), StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+        assertEquals("no-store", pdf.header("Cache-Control"));
+    }
+
+    /** The lines of a CSV of the ADR-0048 spec (UTF-8 with BOM, CRLF), checked and without the BOM. */
+    private static List<String> csvLines(Response csv) {
+        assertThat(csv.contentType()).startsWith("text/csv");
+        assertEquals("no-store", csv.header("Cache-Control"));
+        String body = new String(csv.asByteArray(), StandardCharsets.UTF_8);
+        assertThat(body).startsWith("\uFEFF").endsWith("\r\n");
+        return List.of(body.substring(1, body.length() - 2).split("\r\n", -1));
+    }
 
     /** A match event as the API expects it; {@code payload} and {@code player} are optional. */
     private Map<String, Object> event(String device, int seq, String type, int period, int clock, UUID player, Map<String, Object> payload) {

@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.given;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -44,6 +45,19 @@ public final class Actor {
 
     public Response get(String path) {
         return spec(path).get(path);
+    }
+
+    /** A GET with extra headers ({@code Accept}, {@code Accept-Language}): the PDF and CSV downloads. */
+    public Response get(String path, Map<String, String> headers) {
+        RequestSpecification s = spec(path);
+        headers.forEach((name, value) -> {
+            if ("Accept".equalsIgnoreCase(name)) {
+                s.accept(value);
+            } else {
+                s.header(name, value);
+            }
+        });
+        return s.get(path);
     }
 
     public Response post(String path, Object body) {

@@ -26,6 +26,8 @@ public final class Contracts {
             file = "game";
         } else if (path.startsWith("/api/athlete/")) {
             file = "athlete";
+        } else if (path.startsWith("/api/finance/")) {
+            file = "finance";
         } else {
             return null;
         }
