@@ -131,7 +131,7 @@ void main() {
     test('update, archive and delete reload the list', () async {
       await container.read(feePlansProvider.future);
       final notifier = container.read(feePlansProvider.notifier);
-      await notifier.update(
+      await notifier.edit(
         MockFinanceApi.seasonPlanId,
         fin.UpdateFeePlanRequest((b) => b..amountMinor = 13000),
       );
@@ -160,7 +160,7 @@ void main() {
   group('dues', () {
     test('the query decides the page that is read', () async {
       var page = await container.read(duesProvider.future);
-      expect(page.items, hasLength(DueQuery.defaultSize));
+      expect(page.items, hasLength(21)); // fewer than a page
       expect(page.page.totalElements, 21);
 
       container
