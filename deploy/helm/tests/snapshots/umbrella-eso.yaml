@@ -11810,7 +11810,7 @@ data:
     {
       "uid": "hoops-requests",
       "title": "Hoops Academy: requests and errors",
-      "description": "Server spans per service from Tempo's span metrics (every service, the Envoy gateway included; complete only with tracesSampleRatio 1.0, as on kind) and HTTP statuses from Micrometer (core, game, athlete). Errors are server spans with status ERROR (5xx); refusals (4xx) are on the authorisation dashboards.",
+      "description": "Server spans per service from Tempo's span metrics (every service, the Envoy gateway included, without the /q/ probe and scrape requests; complete only with tracesSampleRatio 1.0, as on kind) and HTTP statuses from Micrometer (core, game, athlete). Errors are server spans with status ERROR (5xx); refusals (4xx) are on the authorisation dashboards.",
       "tags": [
         "hoops-academy"
       ],
@@ -11902,7 +11902,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\"}[$__rate_interval]))",
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", span_name!~\".* /q/.*\", service=~\"$service\"}[$__rate_interval]))",
               "legendFormat": "{{service}}"
             }
           ]
@@ -11953,7 +11953,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval]))",
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", span_name!~\".* /q/.*\", service=~\"$service\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval]))",
               "legendFormat": "{{service}}"
             }
           ]
@@ -12004,7 +12004,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval])) / sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\"}[$__rate_interval]))",
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", span_name!~\".* /q/.*\", service=~\"$service\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval])) / sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", span_name!~\".* /q/.*\", service=~\"$service\"}[$__rate_interval]))",
               "legendFormat": "{{service}}"
             }
           ]
@@ -12055,7 +12055,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traces_spanmetrics_latency_bucket{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\"}[$__rate_interval])))",
+              "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traces_spanmetrics_latency_bucket{span_kind=\"SPAN_KIND_SERVER\", span_name!~\".* /q/.*\", service=~\"$service\"}[$__rate_interval])))",
               "legendFormat": "{{service}}"
             }
           ]
@@ -12082,7 +12082,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sort_desc(sum by (service, span_name) (increase(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\"}[$__range])) > 0)",
+              "expr": "sort_desc(sum by (service, span_name) (increase(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", span_name!~\".* /q/.*\", service=~\"$service\"}[$__range])) > 0)",
               "instant": true,
               "range": false,
               "format": "table"
@@ -13700,7 +13700,7 @@ spec:
         app.kubernetes.io/name: lgtm
         app.kubernetes.io/part-of: hoops-academy
       annotations:
-        checksum/config: 3545ceb4acbd62b81734aae73960ce6271bd50b479496f1630b4021bfaf2869c
+        checksum/config: 3bb3df7375e2d3d5c1c139cb3e3060368f7cae7af0d77226ca7ff97c043058f3
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -13736,7 +13736,7 @@ spec:
             exec: {command: [/otel-lgtm/docker/healthcheck.sh]}
             periodSeconds: 5
             timeoutSeconds: 10
-            failureThreshold: 60
+            failureThreshold: 120   # 10 min: Grafana alone took 216 s on a loaded 2-CPU VM
           readinessProbe:
             exec: {command: [/otel-lgtm/docker/healthcheck.sh]}
             periodSeconds: 15

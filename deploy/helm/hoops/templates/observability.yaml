@@ -477,7 +477,7 @@ spec:
             exec: {command: [/otel-lgtm/docker/healthcheck.sh]}
             periodSeconds: 5
             timeoutSeconds: 10
-            failureThreshold: 60
+            failureThreshold: 120   # 10 min: Grafana alone took 216 s on a loaded 2-CPU VM
           readinessProbe:
             exec: {command: [/otel-lgtm/docker/healthcheck.sh]}
             periodSeconds: 15
