@@ -69,13 +69,11 @@ func (w *rosterWorld) player(name string, person domain.UUID) domain.PlayerID {
 }
 
 func (w *rosterWorld) assign(team domain.TeamID, player domain.PlayerID, joined time.Time, left *time.Time,
-	invalid *string) domain.UUID {
-	id := randomUUID()
-	w.apply("core.team-player", "team-player.changed", id, func(e *application.RosterEvent) {
+	invalid *string) {
+	w.apply("core.team-player", "team-player.changed", randomUUID(), func(e *application.RosterEvent) {
 		e.AssignmentData = &application.AssignmentState{Team: team, Player: player, JoinedOn: joined, LeftOn: left,
 			Invalid: invalid}
 	})
-	return id
 }
 
 func (w *rosterWorld) staff(team domain.TeamID, person domain.UUID, role string) domain.UUID {
@@ -86,12 +84,10 @@ func (w *rosterWorld) staff(team domain.TeamID, person domain.UUID, role string)
 	return id
 }
 
-func (w *rosterWorld) link(guardian domain.UUID, player domain.PlayerID) domain.UUID {
-	id := randomUUID()
-	w.apply("core.guardian-link", "guardian-link.changed", id, func(e *application.RosterEvent) {
+func (w *rosterWorld) link(guardian domain.UUID, player domain.PlayerID) {
+	w.apply("core.guardian-link", "guardian-link.changed", randomUUID(), func(e *application.RosterEvent) {
 		e.LinkData = &application.GuardianLinkState{Guardian: domain.PersonID(guardian), Player: player}
 	})
-	return id
 }
 
 func (w *rosterWorld) read(work func(ctx context.Context, store persistence.RosterStore) error) {

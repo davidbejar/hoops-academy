@@ -19,7 +19,9 @@ import (
 )
 
 // Topics are the topics this replica consumes.
-var Topics = []string{"core.tenant", "core.person"}
+var Topics = []string{
+	"core.tenant", "core.person", "core.player", "core.team", "core.team-player", "core.team-staff", "core.guardian-link",
+}
 
 //go:embed schemas/*.json
 var schemaFiles embed.FS
@@ -100,25 +102,127 @@ func decoded(topic string, e envelope) (application.RosterEvent, bool, error) {
 	}
 	event := application.RosterEvent{ID: id, Topic: topic, Type: e.Type, Tenant: tenant, Aggregate: aggregate,
 		OccurredAt: e.OccurredAt.UTC()}
-	var err error
-	switch e.Type {
-	case "tenant.changed":
-		var p struct{ Status, Timezone string }
-		err = json.Unmarshal(e.Payload, &p)
-		event.TenantData = &application.TenantState{Status: p.Status, Timezone: p.Timezone}
-	case "person.changed":
-		var p struct {
-			Subject *string
-			Roles   []string
-			Active  bool
+	if read, ok := payloads[e.Type]; ok {
+		if err := read(e.Payload, &event); err != nil {
+			return application.RosterEvent{}, false, fmt.Errorf("payload of %s: %w", e.Type, err)
 		}
-		err = json.Unmarshal(e.Payload, &p)
-		event.PersonData = &application.PersonState{Subject: p.Subject, Roles: p.Roles, Active: p.Active}
-	}
-	if err != nil {
-		return application.RosterEvent{}, false, fmt.Errorf("payload of %s: %w", e.Type, err)
 	}
 	return event, false, nil
+}
+
+// payloads decode the state of each `.changed` type into the event, keeping only what the replica stores: a player's
+// birth date and gender are never read (P-10), nor names of teams, jersey numbers or a staff entry's start.
+var payloads = map[string]func(raw json.RawMessage, event *application.RosterEvent) error{
+	"tenant.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
+		var p struct{ Status, Timezone string }
+		event.TenantData = &application.TenantState{}
+		err := unmarshal(raw, &p)
+		event.TenantData.Status, event.TenantData.Timezone = p.Status, p.Timezone
+		return err
+	},
+	"person.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
+		var p struct {
+			DisplayName string
+			Subject     *string
+			Roles       []string
+			Active      bool
+		}
+		err := unmarshal(raw, &p)
+		event.PersonData = &application.PersonState{Subject: p.Subject, Roles: p.Roles, Active: p.Active,
+			DisplayName: p.DisplayName}
+		return err
+	},
+	"player.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
+		var p struct {
+			PersonID            uuidText
+			DisplayName, Status string
+		}
+		err := unmarshal(raw, &p)
+		event.PlayerData = &application.PlayerState{Person: domain.PersonID(p.PersonID), DisplayName: p.DisplayName,
+			Status: p.Status}
+		return err
+	},
+	"team.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
+		var p struct {
+			SeasonID                       uuidText
+			SeasonStartDate, SeasonEndDate dateText
+			AgeCategoryID                  uuidText
+		}
+		err := unmarshal(raw, &p)
+		event.TeamData = &application.TeamState{Season: domain.SeasonID(p.SeasonID),
+			SeasonStart: time.Time(p.SeasonStartDate), SeasonEnd: time.Time(p.SeasonEndDate),
+			AgeCategory: domain.AgeCategoryID(p.AgeCategoryID)}
+		return err
+	},
+	"team-player.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
+		var p struct {
+			TeamID, PlayerID uuidText
+			JoinedOn         dateText
+			LeftOn           *dateText
+			InvalidReason    *string
+		}
+		err := unmarshal(raw, &p)
+		event.AssignmentData = &application.AssignmentState{Team: domain.TeamID(p.TeamID),
+			Player: domain.PlayerID(p.PlayerID), JoinedOn: time.Time(p.JoinedOn), Invalid: p.InvalidReason}
+		if p.LeftOn != nil {
+			left := time.Time(*p.LeftOn)
+			event.AssignmentData.LeftOn = &left
+		}
+		return err
+	},
+	"team-staff.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
+		var p struct {
+			TeamID, PersonID uuidText
+			Role             string
+		}
+		err := unmarshal(raw, &p)
+		event.StaffData = &application.StaffState{Team: domain.TeamID(p.TeamID), Person: domain.PersonID(p.PersonID),
+			Role: p.Role}
+		return err
+	},
+	"guardian-link.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
+		var p struct{ GuardianPersonID, PlayerID uuidText }
+		err := unmarshal(raw, &p)
+		event.LinkData = &application.GuardianLinkState{Guardian: domain.PersonID(p.GuardianPersonID),
+			Player: domain.PlayerID(p.PlayerID)}
+		return err
+	},
+}
+
+// uuidText reads a JSON string holding a UUID (the schema validated its form).
+type uuidText domain.UUID
+
+func (u *uuidText) UnmarshalJSON(data []byte) error {
+	var text string
+	if err := unmarshal(data, &text); err != nil {
+		return err
+	}
+	id, err := domain.ParseUUID(text)
+	*u = uuidText(id)
+	return err
+}
+
+// dateText reads a JSON string holding a date (YYYY-MM-DD) as UTC midnight.
+type dateText time.Time
+
+func (d *dateText) UnmarshalJSON(data []byte) error {
+	var text string
+	if err := unmarshal(data, &text); err != nil {
+		return err
+	}
+	day, err := time.Parse(time.DateOnly, text)
+	if err != nil {
+		return fmt.Errorf("date: %w", err)
+	}
+	*d = dateText(day)
+	return nil
+}
+
+func unmarshal(data []byte, into any) error {
+	if err := json.Unmarshal(data, into); err != nil {
+		return fmt.Errorf("json: %w", err)
+	}
+	return nil
 }
 
 // eventIDOf reads the event id of a record that failed validation, if it has one that looks like a UUID.

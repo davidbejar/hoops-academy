@@ -23,11 +23,12 @@ const (
 		on conflict (tenant_id) do update set status = excluded.status, timezone = excluded.timezone,
 			removed = excluded.removed, occurred_at = excluded.occurred_at, event_id = excluded.event_id
 		where finance.tenant_ref.occurred_at <= excluded.occurred_at`
-	upsertPerson = `insert into finance.person_ref (tenant_id, id, subject, roles, active, removed, occurred_at, event_id)
-		values (app.current_tenant(), $1, $2, $3, $4, $5, $6, $7)
+	upsertPerson = `insert into finance.person_ref (tenant_id, id, subject, roles, active, removed, occurred_at, event_id,
+			display_name)
+		values (app.current_tenant(), $1, $2, $3, $4, $5, $6, $7, $8)
 		on conflict (tenant_id, id) do update set subject = excluded.subject, roles = excluded.roles,
 			active = excluded.active, removed = excluded.removed, occurred_at = excluded.occurred_at,
-			event_id = excluded.event_id
+			event_id = excluded.event_id, display_name = excluded.display_name
 		where finance.person_ref.occurred_at <= excluded.occurred_at`
 )
 
@@ -78,14 +79,14 @@ func (ReplicaStore) UpsertPerson(ctx context.Context, e application.RosterEvent,
 	if err != nil {
 		return err
 	}
-	var subject *string
+	var subject, name *string
 	var roles []string
 	var active *bool
 	if state != nil {
-		subject, roles, active = state.Subject, state.Roles, &state.Active
+		subject, roles, active, name = state.Subject, state.Roles, &state.Active, &state.DisplayName
 	}
 	if _, err := q.Exec(ctx, upsertPerson, e.Aggregate.String(), subject, roles, active, state == nil, e.OccurredAt,
-		e.ID.String()); err != nil {
+		e.ID.String(), name); err != nil {
 		return fmt.Errorf("upsert person: %w", err)
 	}
 	return nil

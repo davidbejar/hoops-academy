@@ -80,6 +80,34 @@ type MembershipSource interface {
 	Membership(ctx context.Context, tenant domain.TenantID, subject string) (domain.Membership, bool, error)
 }
 
+// Academy is the bound academy as the replica knows it: whether it is ACTIVE (and not removed) and its time zone
+// (UTC when unknown or not a zone).
+type Academy struct {
+	Active bool
+	Zone   *time.Location
+}
+
+// RosterPlayer is a player of a team's roster with the name the lists show.
+type RosterPlayer struct {
+	Player domain.PlayerID
+	Name   string
+}
+
+// RosterReads answers from the roster replica (ADR-0037 rules: removed rows count as absent) what the dues and the
+// finance access rules need, in the bound tenant.
+type RosterReads interface {
+	Academy(ctx context.Context) (Academy, bool, error)
+	// Relations are person's links on today (the academy's date): teams of seasons not ended that person coaches
+	// (staff role COACH), linked players, the own player.
+	Relations(ctx context.Context, person domain.PersonID, today time.Time) (domain.Relations, error)
+	SeasonDates(ctx context.Context, season domain.SeasonID) (domain.SeasonDates, bool, error)
+	// Candidates are the players on the roster of target's teams of season on any day of window (valid assignments
+	// overlapping it), in the order they joined, then by team and player.
+	Candidates(ctx context.Context, season domain.SeasonID, target domain.Target, window domain.DueWindow) ([]domain.Candidate, error)
+	// TeamRoster is the team's roster today (open, valid assignments), by name; found is false for an unknown team.
+	TeamRoster(ctx context.Context, team domain.TeamID) ([]RosterPlayer, bool, error)
+}
+
 // ErrConcurrentModification is a lost optimistic-locking race (409 CONCURRENT_MODIFICATION).
 var ErrConcurrentModification = domain.Conflict("CONCURRENT_MODIFICATION", "changed by someone else meanwhile; reload")
 
