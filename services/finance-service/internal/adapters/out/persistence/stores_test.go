@@ -12,6 +12,7 @@ import (
 	"hoopsacademy.local/finance/internal/adapters/out/persistence"
 	"hoopsacademy.local/finance/internal/application"
 	"hoopsacademy.local/finance/internal/domain"
+	"hoopsacademy.local/finance/internal/platform/ids"
 	"hoopsacademy.local/finance/internal/testsupport/pgtest"
 )
 
@@ -45,7 +46,7 @@ type stores struct {
 
 func newStores(t *testing.T) stores {
 	database := pgtest.Start(t)
-	return stores{tx: persistence.NewTransactions(database.App)}
+	return stores{tx: persistence.NewTransactions(database.App), audit: persistence.AuditLog{IDs: ids.V7{}}}
 }
 
 func in(t *testing.T, s stores, tenant domain.TenantID, work func(ctx context.Context) error) {
