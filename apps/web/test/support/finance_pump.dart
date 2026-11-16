@@ -1,5 +1,7 @@
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/time/tenant_zone.dart';
 import 'package:hoops_app/core/ui/date_field.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
@@ -14,15 +16,17 @@ import 'pump_helpers.dart';
 const financeTestZone = 'Europe/Madrid';
 
 /// The core data the demo finance seed refers to (Mini A, Mini B, Infantil A).
-FakeCore financeCore() => FakeCore(
-  teams: FakeTeamsRepository(
-    teams: [
-      team('team-mini-a', 'Mini A', alias: 'Leones', players: 7),
-      team('team-mini-b', 'Mini B', players: 1),
-      team('team-inf-a', 'Infantil A', cat: u14),
-    ],
-  ),
-);
+FakeCore financeCore({Map<String, List<api.TeamStaffMember>>? staff}) =>
+    FakeCore(
+      teams: FakeTeamsRepository(
+        teams: [
+          team('team-mini-a', 'Mini A', alias: 'Leones', players: 7),
+          team('team-mini-b', 'Mini B', players: 1),
+          team('team-inf-a', 'Infantil A', cat: u14),
+        ],
+        staff: staff,
+      ),
+    );
 
 /// Today in the academy's zone as `YYYY-MM-DD`, from the same clock the app
 /// uses (never a fixed day or the device's zone).
@@ -39,6 +43,10 @@ Future<Harness> pumpFinance(
   Size size = const Size(360, 780),
   bool settle = true,
   FakeCore? core,
+  Set<String> staffTeamIds = const {},
+  Set<String> linkedPlayerIds = const {},
+  String? ownPlayerId,
+  List<Override> extraOverrides = const [],
 }) => pumpAs(
   tester,
   roles: roles,
@@ -47,7 +55,10 @@ Future<Harness> pumpFinance(
   size: size,
   settle: settle,
   timezone: financeTestZone,
-  overrides: repo.overrides,
+  staffTeamIds: staffTeamIds,
+  linkedPlayerIds: linkedPlayerIds,
+  ownPlayerId: ownPlayerId,
+  overrides: [...repo.overrides, ...extraOverrides],
 );
 
 /// Opens the dropdown with [key] and picks the entry that reads [text].

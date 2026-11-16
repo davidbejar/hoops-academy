@@ -59,6 +59,9 @@ class FakeFinanceRepository implements FinanceRepository {
   /// Thrown by the named operations only (`dues`, `due`, `generateDues`).
   final Map<String, Object> failOn = {};
 
+  /// Answered by `teamDueStatus` instead of the mock's (an empty team).
+  fin.TeamDueStatus? teamStatus;
+
   /// The arguments of the last call of an operation.
   final Map<String, Object?> last = {};
 
@@ -229,8 +232,11 @@ class FakeFinanceRepository implements FinanceRepository {
       _call('balance', () => _inner.balance(seasonId), seasonId);
 
   @override
-  Future<fin.TeamDueStatus> teamDueStatus(String teamId) =>
-      _call('teamDueStatus', () => _inner.teamDueStatus(teamId), teamId);
+  Future<fin.TeamDueStatus> teamDueStatus(String teamId) => _call(
+    'teamDueStatus',
+    () async => teamStatus ?? await _inner.teamDueStatus(teamId),
+    teamId,
+  );
 
   @override
   Future<fin.PlayerDuePage> playerDues(
