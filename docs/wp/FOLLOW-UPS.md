@@ -395,9 +395,9 @@ WP118 (contract first), so the web (WP121) starts one wave later while the Go se
 | 3 | WP120 | Observability: one Grafana LGTM pod on kind and compose, dashboards | Opus · high | Done (ADR-0046 amendment; chart 0.13.0; `grafana/otel-lgtm` 0.41.0 by digest; kind proof incl. core → pdf-service trace; no database spans; `tilt ci` not run) |
 | 3 | WP121 | Web: Finance area for ADMIN (settings, fee plans, dues, payments) | Sonnet · high | Done (web 1687 tests with WP122; Finance under the admin hub; 16 finance goldens; against the mock only) |
 | 3 | WP122 | Web: PDF buttons for the match sheet and the team roster | Sonnet · medium | Done (web 1542 tests; PDF buttons on team detail and live match; 13 goldens re-recorded; no real browser check) |
-| 4 | WP123 | Finance: expenses, season balance, CSV exports; e2e journey and ZAP for finance and the PDFs; demo data | Opus · high | Running |
+| 4 | WP123 | Finance: expenses, season balance, CSV exports; e2e journey and ZAP for finance and the PDFs; demo data | Opus · high | Done (ADR-0056 amendment; no 501 left; migrations V20–V22; 204 Go tests; journey 32 steps green on compose incl. both real PDF calls; finance ZAP scan and seed not run locally) |
 | 4 | WP124 | Web: finance expenses, balance, exports; coach status view; family dues | Sonnet · high | Done (web 1801 tests; expenses, balance, exports; coach status on the team; family dues tab; against the mock only) |
-| 5 | WP125 | Docs pass | Opus · medium | Last alone |
+| 5 | WP125 | Docs pass | Opus · medium | Running |
 
 ### Decisions of 2026-11-15, seventh interview (product owner)
 86. **Scope of the round → WP111–WP125**: `pdf-service` (Rust), `finance-service` (Go) whole, the PMD gate, the

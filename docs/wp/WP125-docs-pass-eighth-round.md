@@ -30,6 +30,13 @@ Follow the Close-out checklist of `.claude/skills/wp-round/SKILL.md`:
    hours (the watchdog resumed the agents); P-07 of the privacy threat model and `release.md`'s Jaeger line are out
    of date since WP120; database spans are missing in every service (WP120 handover); game's academy names need
    `just events-backfill force` (WP117 handover).
+7. **Wave 4 notes** (orchestrator, 2026-11-16): WP123's agent could not run the journey (its worktree `.env` could
+   not sign in to the shared database); the orchestrator ran `just e2e` on compose from the main checkout with WP123
+   merged: 38 tests, 0 failures, `JourneyTest` 32 with none skipped, which is also the first real core → pdf-service
+   and game → pdf-service call on compose. Not run by anyone: the finance ZAP scan outside CI (see the `e2e` run on
+   the WP123 merge), whether its two pre-accepted export lines in `.zap/api-finance.conf` ever match (drop them if
+   not). A usage limit stopped wave 4 once (resumed after the reset). Owner decision still open: IDR is stored with
+   2 minor digits (ISO 4217) and shown without decimals for whole amounts (WP121 handover).
 
 ## Acceptance
 - [ ] Every claim checked against a handover, a commit or a command you ran
