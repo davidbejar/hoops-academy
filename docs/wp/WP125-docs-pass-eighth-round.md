@@ -64,3 +64,43 @@ Follow the Close-out checklist of `.claude/skills/wp-round/SKILL.md`:
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+2026-11-16, Opus · medium. Documentation only.
+
+- **Built.** `docs/HANDOVER.md` rewritten for the eighth round: merge order with commits (WP112 af408107, WP115
+  7c4421eb, WP113 bea1365c, WP114 d56c43eb, orchestrator 4d10d7cf / 54e7a2da / ef6cb697, WP111 2a8172c2 + dd54179d,
+  WP116 c06988b0, WP117 a8ac9890, WP118 a40d3960 + fe0a1e9a / 0c9309aa / a9649e02, WP122 55de9963, WP120 d677c9c9,
+  WP121 3e932f7e, WP119 1edf2029, WP124 94c27d7c, WP123 faa732eb, then 9bb4bdb2 / 031e1155 / 3f964fb2), contract
+  versions, chart 0.13.0 and sub-charts, test totals per language, what kind proved and did not, local stack, CI run
+  ids, Pending, Working conventions (three languages in `just test`, PMD gate, distroless, the hook in the main
+  checkout, worktrees without a usable `.env`, `HOOPS_FINANCE_BIND` on Linux), Next candidates. `docs/wp/FOLLOW-UPS.md`:
+  header, plan intro and WP125 cell; Pending rewritten (`images` gone; `.env` keys, other stacks, IDR decision,
+  Dependabot PRs, browser checks for the PDF buttons and the Finance area); Resolved "Eighth round" (the items the round closed, plus
+  the orchestrator's fixes and the interruptions); new or reworked open items: PDF leftovers, Finance leftovers,
+  P-01..P-13 (P-07, P-10, P-11, P-12 marked partly or fully mitigated), PMD leftovers, Rust / Go tooling gaps, finance
+  replica housekeeping, observability leftovers, the hook-in-worktree item, chart leftovers, e2e / ZAP for the new
+  services, dependency-check NVD flakes, distroless debugging, the profile screen's pickers, new ZAP acceptances.
+  README (features, roles, stack, commands, layout, documentation, status), `docs/conformance.md` (reconciliation,
+  gaps 2 and 9, S-04, S-17, U-01, R-14, Kubernetes deviation, baseline; counts unchanged 55/7/5/0/2),
+  `docs/roadmap.md`, `docs/architecture.md` (five services in sections 1 and 2, decisions 0051–0056, the `finance`
+  schema, counts with Rust and Go, security posture, new section 14 "PDF and finance"), `docs/adr/README.md` (0052
+  moved before 0053, amendments of 0003, 0007, 0034, 0046, 0048, 0051, 0056 noted), ADR-0007's status line ("not built
+  yet" was stale), the PLAN status box, `docs/security/privacy-threat-model.md` ("Status after the eighth round"),
+  `docs/runbooks/release.md` (Jaeger line, metrics pipeline, SBOM table: distroless, pdf, finance). Guides es / en /
+  id: the Finance section for admins, the roster PDF for admins and coaches, the match sheet PDF for every role, the
+  coach's "Dues up to date", the families' "Dues" tab, language and theme on the chooser (admin, super admin).
+- **Verified.** Facts from the WP111–WP124 handovers, the orchestrator's notes (brief items 5–7 and the message about
+  9bb4bdb2, 031e1155, 3f964fb2), `git log` / `git show` on the branch and `main`; versions from `libs/contracts/openapi/*.yaml`
+  and `deploy/helm/hoops/**/Chart.yaml`; labels from `apps/web/lib/l10n/app_{en,es,id}.arb` and the finance screens;
+  finance tables from its migrations; CORS from `common-quarkus` config; `gh run list -b main` and `gh run view` for
+  every run id quoted (3f964fb2: `ci` 43815905569, `e2e` 43815905637 with `JourneyTest` 32 run 0 skipped and the
+  finance ZAP scan, `codeql` 43815905544, `semgrep` 43815905530 green; last `images` 43813211306 on 2f51edb3 green);
+  `gh pr list` for the open PRs. Relative links of every changed page resolve (script). No build or test run: no code
+  changed; the test numbers are the handovers', not re-run.
+- **Decisions/ADRs.** None (ADR-0007's status line corrected).
+- **Contradictions found.** WP124's demo mock answers 409 `CURRENCY_NOT_SET` for the balance without a currency, the
+  service (WP123) answers 404; WP122 expects the PDF name from `Content-Disposition`, but the services expose only
+  `ETag` and `Location` through CORS (matters only cross-origin, unchecked); WP116 counts contracts 323, WP117 322
+  (different branches); WP124 quotes its baseline as 1,652 (WP121) although WP122's tests were on `main` (1,687, plan
+  table); WP121's IDR handling versus the brief ("no decimals"). All are in FOLLOW-UPS.
+- **Open points.** The guides were written from the ARB files and the code, not a browser walk-through. Not
+  re-checked: per-module JVM counts after WP118 (only totals reported). Memory files are the orchestrator's step.

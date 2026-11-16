@@ -20,7 +20,8 @@ decide on player requests. Menu names below are the labels shown in the English 
   for **Profile**), **Language** (Español, English, Bahasa Indonesia) and **Theme** (**System**, **Light**, **Dark**).
   A choice applies at once and is remembered in this browser; **System**, the default, follows your device.
   **Profile** holds **Your name** and **Sign out**. Before signing in, the landing page header has its own language
-  and theme buttons. The screen where you choose an academy has no such menu yet.
+  and theme buttons. The screen where you choose an academy (a login in
+  several academies) shows **Language** and **Theme** below the list.
 
 ## 1. Academy profile and logo
 **Admin > Academy profile.**
@@ -137,9 +138,18 @@ Made by the server (they need a connection, are written in the app's language an
   as a second block. Administrators have it for every team, ended seasons included,
   and a coach for the teams they coach now; a former coach of an ended season does not. Each
   export appears in the activity as **Team roster exported**.
+- **Team roster as PDF**: the PDF icon right after the CSV icon (**Download the roster (PDF)**) prints the same roster
+  as one sheet, for the same people, and is recorded in the activity the same way. A team with more than 60 players,
+  20 staff or 4 guardians for one player does not fit: the app says "The roster is too large for one sheet: use the CSV
+  file.". If the PDF service is down: "The PDF is not available right now. Try again later or use the CSV file.".
 - **Activity**: the download icon on **Activity** (**Export the activity (CSV)**) saves every entry the current filters
   select, not only the page on screen; if there are more than 10,000 rows, narrow the dates or the actions. Recorded
   as **Audit trail exported**.
+
+**Match sheet (PDF)**: on a match's screen, the PDF icon in the top bar (**Download the match sheet (PDF)**) saves
+the match sheet with the score and the box score lines you are allowed to see. The server builds it in the app's
+language; it needs a connection (offline the icon is disabled) and appears once the match has a roster. If it cannot be
+made: "The match sheet is not available right now. Try again later.".
 
 Built on your device from what the screen has already loaded (download icon **Export**): **Season statistics**
 (one row per match plus the totals) and a match's box score as a **CSV file** or an **Excel file**; the matches list and
@@ -148,6 +158,40 @@ the training week as a team calendar (matches and sessions of the selected seaso
 connection then; without one the app says so and the CSV file still works.
 
 File names look like `hoops-<academy>-<what>-<yyyyMMdd>.csv`; the CSV files open directly in Excel.
+
+## 13. Finance
+**Admin > Finance** (administrators only): the academy's own bookkeeping of what families owe, what they paid and what
+the academy spends. There is no online payment: payments are recorded by hand. The hub has **Currency**, **Fee plans**,
+**Dues and payments**, **Expenses** and **Season balance**. Without a connection you can read but not change anything
+("Offline: you can read the finances but not change them.").
+1. **Currency**: **Choose currency** (search by code, e.g. EUR or IDR) and confirm. Every amount of the academy is in
+   this one currency; it is **Fixed** once the first due is generated or the first expense recorded.
+2. **Fee plans > New plan**: **Plan name**, **Season**, **Charged to** (**One team** or **An age category**),
+   **Frequency** (**Monthly**, **Quarterly**, **Once per season**), **Amount per period**, **First period**, **Last
+   period** or **Until the end of the season**, and **Generate the dues automatically** (every day the missing dues of
+   active plans are created). The season, who is charged and the frequency cannot be changed later; a new amount
+   applies to dues generated from then on. Row menu: **Edit plan**, **Generate dues**, **Archive** / **Reactivate**,
+   **Delete** (only while the plan has no dues); **Show archived** lists archived plans too.
+3. **Generate dues** (from a plan's menu or on **Dues and payments**): choose the plan and the **Period**; **Calculate**
+   shows how many dues will be created and how many already exist, then **Generate**. Repeating it never duplicates a
+   due. A player owes the full amount for every period in which they are on the team (or in the category) on any day.
+4. **Dues and payments**: filters **Plan**, **Team**, **Period** and state (**Open**, **Paid**, **Waived**), pages of 25.
+   A due shows its amount, the plan amount if it was changed, the reason and every payment, voided ones included.
+   Actions: **Record payment** (the whole due at once: **Payment date**, not after today, **Payment method** Cash, Bank
+   transfer, Card or Other, an optional **Note**); **Change amount** and **Waive** (with a **Reason**; a waiver is
+   final); **Void payment** (with a reason: the payment is kept, marked **Voided**, and the due is open again). Keep
+   reasons short: "Do not write health or family details."
+5. **Expenses > New expense**: **Date of the expense**, **Category** (Court rental, Salaries, Kit, Tournament fees,
+   Travel, Other), **Amount**, **Description** and an optional **Note** (no names with their salary, no health
+   details). Filter by **Category**, **From** and **To**; open an expense to edit it, or **Delete expense** for one
+   recorded by mistake.
+6. **Season balance**: choose a season: dues **Collected**, **Still to collect** and **Waived**, **Expenses**, the
+   **Result (collected minus expenses)** and a bar chart of the expenses by category.
+7. **CSV exports**: the download icon on **Dues and payments** (**Export the dues of these filters (CSV)**) and on
+   **Expenses** (**Export the expenses of these filters (CSV)**): what the filters select, 10,000 rows at most, in the
+   app's language, without reasons or notes.
+The finance service keeps its own record of every change. A team's coach sees on the team page only whether each
+player is up to date (no amounts); parents and players see their own dues in a **Dues** tab.
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

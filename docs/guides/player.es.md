@@ -49,6 +49,12 @@ sesión ha caducado" significa que debes iniciar sesión otra vez.
 el entrenador asigna el dorsal cuando entras en un equipo y usa este si está libre.
 
 ## Descargar archivos
+**Hoja del partido (PDF)**: en la pantalla de un partido, el icono PDF de la barra superior (**Descargar la hoja del
+partido (PDF)**) guarda la hoja del partido con el marcador y las líneas de estadísticas que puedes ver. La genera el
+servidor en el idioma de la aplicación; necesita conexión (sin ella el icono está desactivado) y aparece cuando el
+partido tiene convocatoria. Si no se puede generar: "La hoja del partido no está disponible ahora. Inténtalo más
+tarde.".
+
 Se generan en tu dispositivo con lo que la pantalla ya cargó (icono de descarga **Exportar**): las **Estadísticas de
 temporada** (una fila por partido más los totales) y las estadísticas de un partido como **Archivo CSV** o **Archivo
 Excel**; la lista de partidos y la semana de entrenos como calendario del equipo (partidos y sesiones de la temporada
@@ -60,6 +66,12 @@ funcionando.
 **Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
 conexión); empieza con tu nombre y apellidos tal como los guarda esta academia. El correo lo cambia el
 administrador.
+
+## Cuotas
+**Yo** tiene una pestaña **Cuotas**: tus cuotas con el plan, el periodo, el estado (**Pendiente**, **Pagada**,
+**Condonada**) y el importe; una pagada muestra también el día y la forma de pago ("Pagada el ... · Efectivo"). Los pagos
+los registra el administrador de la academia: en la aplicación no se paga nada. Los motivos y notas del administrador no
+se muestran.
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.

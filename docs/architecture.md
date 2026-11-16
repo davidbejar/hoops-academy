@@ -16,7 +16,7 @@ flowchart LR
     PA["Parent"]
     PL["Player"]
   end
-  APP["Hoops Academy<br/>Flutter Web PWA + 3 services"]
+  APP["Hoops Academy<br/>Flutter Web PWA + 5 services"]
   KC["Keycloak<br/>authentication only"]
   MAIL["SMTP<br/>MailHog locally"]
   SA & AD & CO & PA & PL -->|"HTTPS, mobile-first"| APP
@@ -25,7 +25,7 @@ flowchart LR
   APP -->|"Admin API: create users, temporary passwords"| KC
   KC -->|"password reset e-mails"| MAIL
   APP -->|"sign-up decision e-mails (core)"| MAIL
-  APP -. "traces and logs, OTLP" .-> OTEL["OpenTelemetry collector<br/>backend of the environment"]
+  APP -. "traces, logs, metrics, OTLP" .-> OTEL["OpenTelemetry collector<br/>Grafana LGTM on kind and compose,<br/>else the environment's backend"]
 ```
 
 ## 2. Containers and services
@@ -37,39 +37,52 @@ flowchart TB
   CORE["core-service :8081<br/>tenancy, identity, roster, eligibility,<br/>approvals, platform, usage, audit"]
   GAME["game-service :8082<br/>matches, event ingest, projections"]
   ATH["athlete-service :8083<br/>training, attendance, plans, health, norms"]
-  PG[("PostgreSQL 17, one database hoops<br/>schemas core, billing, game, athlete")]
+  FIN["finance-service :8085 (Go)<br/>fee plans, dues, payments, expenses, balance"]
+  PDF["pdf-service :8084 (Rust)<br/>stateless: roster and match sheet PDFs"]
+  PG[("PostgreSQL 17, one database hoops<br/>schemas core, billing, game, athlete, finance")]
   KCDB[("database keycloak")]
   RP[("Redpanda<br/>topics core.*")]
   OT["OpenTelemetry collector<br/>(chart, global.observability.enabled)"]
+  LGTM["Grafana LGTM<br/>(kind, compose profile)"]
   B --> N
   N -->|"/auth"| KC
   N -->|"/api/core, /platform"| CORE
   N -->|"/api/game"| GAME
   N -->|"/api/athlete"| ATH
+  N -->|"/api/finance"| FIN
   N -. "/internal blocked: 403" .-> N
   GAME -. "rest fallback: /internal/authz, roster (30 s cache)" .-> CORE
   ATH -. "rest fallback: /internal/authz, roster (30 s cache)" .-> CORE
   CORE -->|"/internal/usage"| GAME
   CORE -->|"/internal/usage"| ATH
+  CORE -->|"/internal/pdf/team-roster"| PDF
+  GAME -->|"/internal/pdf/match-sheet"| PDF
   CORE --> PG
   GAME --> PG
   ATH --> PG
+  FIN --> PG
   KC --> KCDB
   CORE -->|"Admin API"| KC
   CORE -->|"outbox publisher"| RP
   RP -->|"roster events into the replicas (default source)"| GAME
   RP -->|"roster events into the replicas (default source)"| ATH
-  CORE & GAME & ATH -. "OTLP traces, logs" .-> OT
+  RP -->|"tenant, person and roster events into its replica"| FIN
+  CORE & GAME & ATH & FIN & PDF -. "OTLP traces, logs" .-> OT
   N -. "edge spans (Envoy)" .-> OT
+  OT -. "traces, logs, metrics" .-> LGTM
 ```
 Since 2026-11-10 (decision 66, WP98, WP100) game and athlete read the roster and the authorisation context from their
 own replicas, fed by core's events (section 5): `hoops.roster.source=replica` is the default in the services, in compose
 and in the chart wherever `events.enabled` is on. The dotted REST arrows to core's `/internal` are the fallback
 (`GAME_ROSTER_SOURCE` / `ATHLETE_ROSTER_SOURCE=rest`, and the chart without events); `just events-drift` compares core's
 rows with both replicas. Dotted arrows to the collector exist only in the chart with `global.observability.enabled`
-(section 11).
+and in the compose profile `observability` (section 12). pdf-service has no route at the gateway: only core and game
+call it, with their own service tokens (section 14).
 Locally: `podman compose` (Postgres, Keycloak, MailHog, Redpanda on :19092 without auth, nginx on :8080) plus the three
-services on the host. On kind: Helm umbrella chart `hoops` (0.10.0), CloudNativePG clusters, Keycloak, Mailpit (Service
+Quarkus services on the host; pdf-service (:8084, profile `pdf`), finance-service (:8085, profile `finance`) and the
+collector with one Grafana LGTM container (profile `observability`, Grafana on 127.0.0.1:3000) run in compose
+(`just pdf-up`, `just finance-up`, `just observability-up`; `just services-up` starts the first two with the jars). On
+kind: Helm umbrella chart `hoops` (0.13.0, sub-charts `pdf` and `finance` since 0.11.0 / 0.12.0), CloudNativePG clusters, Keycloak, Mailpit (Service
 `mailhog`, also core's SMTP server since chart 0.10.0), Envoy Gateway v1.10.0 (Gateway API, ADR-0031) on :8090 with its rate limit service and the chart's in-memory
 `ratelimit-redis` (global rate limits with per-minute and per-second rules; Redis ACL user `ratelimit`, ADR-0033 and
 its amendment), and one Redpanda node behind `events.enabled` (section 5) (`runbooks/kind.md`). Secrets come from
@@ -77,11 +90,12 @@ its amendment), and one Redpanda node behind `events.enabled` (section 5) (`runb
 (`ExternalSecret`s against a `ClusterSecretStore`; kind: `up.sh --eso` with a Kubernetes-provider store; ADR-0012
 amendment); with `global.reloader.enabled` a Stakater Reloader controller (installed by `up.sh`, namespaced) rolls every
 workload that reads a rotated Secret (ADR-0012 amendment WP87); with `global.observability.enabled` an OpenTelemetry
-collector receives the services' traces and logs and Envoy's edge spans, with Jaeger in memory on kind (ADR-0046). A
-fourth `web` image (nginx-unprivileged) serves the PWA there; its anonymous root is a public landing page (es/en/id,
+collector receives the services' traces and logs and Envoy's edge spans and scrapes their metrics, and sends all three
+to one Grafana LGTM pod on kind (24 h retention, anonymous Viewer; the cloud values keep the in-memory Jaeger; ADR-0046
+and its WP120 amendment). A `web` image (nginx-unprivileged) serves the PWA there; its anonymous root is a public landing page (es/en/id,
 language switch in the header, screenshots per locale) with sign-in and the academy request form (section 7). Without any backend the web app runs in demo mode
-(`--dart-define=HOOPS_MOCK_API=true`): an in-process mock serves `/api/core`, `/api/game`, `/api/athlete` and
-`/platform` through the generated clients, so every screen is reachable (the demo user is a super admin unless
+(`--dart-define=HOOPS_MOCK_API=true`): an in-process mock serves `/api/core`, `/api/game`, `/api/athlete`,
+`/api/finance` and `/platform` through the generated clients (and a tiny PDF for the two PDF operations), so every screen is reachable (the demo user is a super admin unless
 `HOOPS_MOCK_SUPER_ADMIN=false`). The mocks share one roster per academy (the core mock owns teams,
 players and guardian links; the athlete and game mocks read it) and filter by role per the authz matrix
 (`lib/core/mock/mock_authz.dart`; `HOOPS_MOCK_ROLES` switches roles in the demo academy). The web code is formatted
@@ -97,7 +111,8 @@ k3s VM on Alibaba Cloud, Jakarta (VPC, a security group with SSH and the Kuberne
 443 public, a key pair, `ecs.g7.large`, an EIP with an sslip.io wildcard name, local state encrypted from a
 passphrase); cloud-init installs a pinned k3s with Traefik off and ServiceLB on. Everything inside is Helm, as on kind:
 `deploy/cloud/install.sh` installs Reloader, Envoy Gateway, CNPG, a self-signed certificate and the chart with
-`values-cloud.yaml` (images from ghcr.io, HTTPS, Envoy as a `LoadBalancer`, `local-path` storage), so no application
+`values-cloud.yaml` (images from ghcr.io, pdf-service and finance-service on, HTTPS, Envoy as a `LoadBalancer`,
+`local-path` storage), so no application
 secret enters the OpenTofu state. Proof so far: `just tofu-check` (`tofu test` against a mocked provider) and a render
 snapshot; the steps are in `runbooks/cloud.md`.
 
@@ -264,7 +279,7 @@ request; any requester (admin, coach or parent) becomes the first ADMIN. Details
 | Frontend | Flutter Web PWA, no Node; Drift offline queue | [0004](adr/0004-flutter-web-pwa.md) |
 | Identity | Keycloak authenticates; tenant roles live in `core.membership_role` | [0005](adr/0005-keycloak-authentication-only.md) |
 | Isolation | shared schema, `tenant_id` + RLS + Hibernate filter, non-owner app roles | [0006](adr/0006-rls-multitenancy.md), [0011](adr/0011-tenant-binding-in-transactions.md) |
-| Services | three: core, game, athlete | [0007](adr/0007-three-services.md) |
+| Services | three on Quarkus: core, game, athlete; since the eighth round also `pdf-service` (Rust) and `finance-service` (Go) | [0007](adr/0007-three-services.md), [0051](adr/0051-polyglot-services-finance-in-go-pdf-renderer-in-rust.md) |
 | Integration | core outbox publisher (self-recovering producer, removals, backfill), Redpanda and roster replicas (soft removals, retention) behind `RosterPort`, the default since 2026-11-10; synchronous REST to core as the fallback (`hoops.roster.source=rest`); drift check | [0008](adr/0008-sync-rest-then-outbox.md), [0036](adr/0036-redpanda-event-broker.md), [0037](adr/0037-roster-replicas-from-core-events.md) |
 | Logo | stored in Postgres, ETag cached | [0009](adr/0009-tenant-logo-in-postgres.md) |
 | Age rule | `BIRTH_YEAR` default, `BIRTHDAY` optional | [0010](adr/0010-age-rule-birth-year-default.md) |
@@ -290,14 +305,20 @@ request; any requester (admin, coach or parent) becomes the first ADMIN. Details
 | Season history | past seasons read-only for former staff and admins, 409 `SEASON_ENDED` | [0042](adr/0042-season-history-read-only-for-former-staff.md) |
 | Security events, SBOM | Keycloak login events, `hoops.security` denial events, CycloneDX SBOM per image | [0043](adr/0043-security-events-login-events-and-sbom.md) |
 | SAST / DAST | SpotBugs, CodeQL, Semgrep, ZAP gates with expiring acceptances | [0045](adr/0045-sast-dast-gates-and-expiring-acceptances.md) |
-| Observability | OpenTelemetry collector for traces and logs, backend of the environment | [0046](adr/0046-opentelemetry-collector-traces-and-logs.md) |
+| Observability | OpenTelemetry collector for traces, logs and (since WP120) metrics; one Grafana LGTM pod on kind and in compose, 24 h retention; elsewhere the environment's backend | [0046](adr/0046-opentelemetry-collector-traces-and-logs.md) |
 | Exercise catalogue | global exercises (read-only, es/en/id) and the academy's own in one table; items keep `exerciseId` | [0047](adr/0047-exercise-catalogue-global-and-academy-exercises.md) |
-| Exports, jersey numbers | one CSV spec; roster and audit CSV built by core (audited, rate-limited; the roster for ADMIN and the team's current coach only, amendment 2026-11-14); other exports built in the browser; preferred number with carry-over | [0048](adr/0048-exports-csv-spec-and-server-side-roster-and-audit-exports.md) |
+| Exports, jersey numbers | one CSV spec; roster and audit CSV built by core (audited, rate-limited; the roster for ADMIN and the team's current coach only, amendment 2026-11-14); the roster as PDF by `Accept` and the match sheet PDF built by the owning service through pdf-service (amendments 2026-11-16); other exports built in the browser; preferred number with carry-over | [0048](adr/0048-exports-csv-spec-and-server-side-roster-and-audit-exports.md) |
 | Web contexts | academies of a login plus the application admin, each with its own menu; `/app-admin` hub | [0049](adr/0049-contexts-and-the-application-admin.md) |
 | Cloud, first slice | one k3s VM on Alibaba Cloud (Jakarta); OpenTofu for the outer layer, Helm inside; encrypted local state; code only so far | [0050](adr/0050-alibaba-cloud-jakarta-k3s-opentofu-helm-split.md) |
+| PDF renderer | Rust, crates as layers, krilla with bundled Roboto, fixed templates in es/en/id, no route, called by core and game with their service tokens; Clippy pedantic, coverage and `cargo deny` gates | [0052](adr/0052-pdf-service-rust-stack-toolchain-and-gates.md) |
+| Maintainability | PMD and CPD in `verify`, thresholds from the code of 2026-11-15, acceptances per class with a reason | [0053](adr/0053-pmd-and-cpd-maintainability-gate.md) |
+| Java base image | distroless `java25-debian13:nonroot` by digest, no shell, uid 65532 | [0054](adr/0054-distroless-java-25-runtime-image.md) |
+| Finance service | Go (net/http, pgx, franz-go), Flyway-named migrations, the tenancy harness rebuilt in Go, membership and roster from its own replica of core's events; gofmt, golangci-lint, coverage, govulncheck | [0055](adr/0055-finance-service-go-stack-and-tenancy-harness.md) |
+| Finance model | one ISO 4217 currency per academy in minor units, fee plans per team or category with a cadence, one due per plan, player and period, one full payment per due, voids and waivers with a reason, fixed expense categories, season balance, coach status only | [0056](adr/0056-finance-domain-model.md) |
 
 Not done yet: billing exists as seams (`billing.plan`, `billing.tenant_subscription`, a no-op `EntitlementService`; the
-application admin hub shows a placeholder); PDF exports; the purge job. See `roadmap.md`.
+application admin hub shows a placeholder); the purge job; erasure and a per-person export (privacy findings P-01,
+P-02). See `roadmap.md`.
 
 ## 9. Data ownership
 | Schema | Owner service | Main tables | App role / migrator |
@@ -306,9 +327,11 @@ application admin hub shows a placeholder); PDF exports; the purge job. See `roa
 | `billing` | core-service | `plan`, `tenant_subscription` | `core_platform` / `core_migrator` |
 | `game` | game-service | `match`, `match_roster`, `match_event` (append-only), `match_player_stats`, `match_summary` projections; roster replica `*_ref` (soft `removed`), `applied_event`, `parked_event` (global; the app role inserts, and deletes for retention), `replica_tenant` (global, tenants to prune) | `game_app` / `game_migrator` |
 | `athlete` | athlete-service | `training_schedule`, `training_session`, `training_plan` (templates have no tenant; texts in es/en/id), `exercise` (catalogue: global rows without a tenant, es/en/id, plus the academy's own; WP92), `plan_item` (optional `exercise_id`), `plan_assignment`, `plan_completion`, `planned_absence`, `attendance`, `injury`, `body_measurement`, `physical_test_type`, `physical_test_result`, `physical_test_norm`; roster replica `*_ref` (soft `removed`), `applied_event`, `parked_event` (global; the app role inserts, and deletes for retention), `replica_tenant` (global, tenants to prune) | `athlete_app` / `athlete_migrator` |
+| `finance` | finance-service | `settings` (currency), `fee_plan`, `due`, `payment` (voided rows kept), `expense`, `audit_event` (append-only); replica `tenant_ref`, `person_ref`, `player_ref`, `team_ref`, `team_player_ref`, `team_staff_ref`, `guardian_link_ref` (no birth date or gender), `applied_event`, `parked_event`, `replica_tenant` | `finance_app` / `finance_migrator` (its Go migration runner) |
 | database `keycloak` | Keycloak | users, credentials, sessions | role `keycloak` |
 Cross-service reads go through `RosterPort` (REST to core `/internal`, or the service's own replica fed by core's
-events); no service reads another schema. game denormalises
+events); no service reads another schema; finance knows members, teams and guardian links only from its replica, and
+pdf-service has no database. game denormalises
 player names at roster creation so offline sync never depends on core. The exact table lists are authoritative in each
 service's Flyway migrations; the entity and class diagrams per service are in [section 10](#10-domain-model).
 
@@ -321,35 +344,39 @@ its Flyway migrations and sources (`just diagrams`; CI fails when one is stale, 
 | core-service | [`domain/core-model.md`](domain/core-model.md) | tenancy and identity (academies, people, logins, memberships and roles, guardian links), the roster (seasons, age categories, teams, staff, players, eligibility, approvals), billing seams, audit log, sign-up requests, outbox |
 | game-service | [`domain/game-model.md`](domain/game-model.md) | matches and their rosters, the append-only event log, the projections (box score, scoreboard, season statistics), the roster replicas |
 | athlete-service | [`domain/athlete-model.md`](domain/athlete-model.md) | training schedules, sessions and attendance, training plans and the exercise catalogue, injuries, body measurements, physical tests and norms, the roster replicas |
+| finance-service | [ADR-0056](adr/0056-finance-domain-model.md) (not generated: `just diagrams` covers the Java services) | currency, fee plans, dues, payments, expenses, the season balance, the replica |
 
 Each page has three parts: **Tables** (ER diagrams), **Domain classes** (class diagrams) and **Application ports**.
 
 ## 11. Testing strategy and current counts
-The per-module JVM counts are from the last full verify of the sixth round (WP98 after its rebase, 2026-11-10,
-`./mvnw -B -ntp -T 1C verify`); the seventh round reports only totals (below). The Flutter count is from `flutter test`
-at WP108 (2026-11-14). They change with every commit.
+The per-module JVM counts are the last ones the handovers report: common-quarkus and core from WP116, contracts, game
+and athlete from WP117 (2026-11-16); WP118 later added finance contract suites and WP123 six journey steps, which only
+the totals below include. The Rust and Go counts are from WP123's `just test`, the Flutter count from `flutter test` at
+WP124 (2026-11-16). They change with every commit.
 
 | Layer | Kinds of test | Count |
 |---|---|---|
 | `libs/common-quarkus` | unit, `@QuarkusTest` with Testcontainers Postgres as the non-owner role, RLS meta/isolation suites shipped as a test-jar, ArchUnit rules, Problem+JSON (incl. control characters and NUL as 400), paging offsets, security events and token-failure reasons, `ContainerStarts`, the real realm in Keycloak Testcontainers (`TestRealm`), the shared replica retention and roster broker fixture, shipped-config checks | 403 |
-| `libs/contracts` | OpenAPI convention tests (incl. the named public operations), JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation, strict-validator compatibility (no `allOf`, ADR-0027), `clear`-list convention per service (ADR-0032), season history and academy request contracts, the core event schemas incl. `.removed`, platform users, the exercise catalogue, jersey numbers and the CSV exports | 315 |
-| `services/core-service` | domain unit and jqwik property tests (eligibility, sign-up), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, outbox appends per use case, the publisher and its producer recovery on Redpanda, backfill, season history, academy requests with decision mails, token audience and refresh rotation through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile), platform users and own name, jersey carry-over, CSV exports | 1163 |
-| `services/game-service` | domain/projection tests with shared vectors, event admission rules, feed visibility in SQL against `EventVisibility` (ADR-0030), ingest API tests, season close, WireMock peers, RLS suites, contract validation, `RosterPort` and authz contract cases on REST and replica, consumer, replay, removals and retention, the shipped roster source per profile | 467 |
-| `services/athlete-service` | domain, norm seed and band resolver tests, template languages, session plans and quick-add, season history caps, role matrix, RLS suites (incl. nullable-tenant tables), contract validation, `RosterPort` and membership contracts on REST and replica, consumer, replay, removals and retention, the exercise catalogue and its migration | 999 |
-| `apps/web` | `flutter test`: unit, provider, widget per role and state, design-system kit and contrast, goldens (360 px, light and dark), projector vectors, sync worker, sign-out, refresh serialisation, tenant/person-scoped match cache, service worker / CSP / build guards, l10n key parity, landing page and its per-locale screenshots, academy requests, past seasons, demo mock routes, role filtering and persistence, capability matrix, the Dart mutation tool, contexts and the application admin hub, exports (CSV, ICS, deferred XLSX), jersey dialogs, the exercise catalogue (also read-only for families), theme mode and the avatar menu | 1466 |
-| `e2e` | black-box journey through the gateway with real Keycloak logins: 26 ordered steps, two tenants, every request and response validated against the OpenAPI, token audience and refresh-token reuse, edge headers, the sign-up flow, mail checks against MailHog or Mailpit; `MailSinkTest` unit tests run in every `verify` | 6 unit + 26 steps, green on compose with the replica default (WP98, CI) |
+| `libs/contracts` | OpenAPI convention tests (incl. the named public operations), JSON Schema validity and examples, OpenAPI/JSON Schema consistency, strict generator validation, strict-validator compatibility (no `allOf`, ADR-0027), `clear`-list convention per service (ADR-0032), season history and academy request contracts, the core event schemas incl. `.removed`, platform users, the exercise catalogue, jersey numbers and the CSV exports; since the eighth round `pdf.yaml` and `finance.yaml` (conventions, strict validator, the PDF operations of core and game) | 322 (WP117) |
+| `services/core-service` | domain unit and jqwik property tests (eligibility, sign-up), REST role-matrix tests, cross-tenant 404, RLS suites per table, responses and requests validated against `core.yaml`, scheduler tests, outbox appends per use case, the publisher and its producer recovery on Redpanda, backfill, season history, academy requests with decision mails, token audience and refresh rotation through real Keycloak, database role meta test, Keycloak Testcontainers (opt-in profile), platform users and own name, jersey carry-over, CSV exports, the printed roster against a WireMock pdf-service (request validated against `pdf.yaml`, failures as 503, nothing logged), named audit team targets | 1,225 (WP116) |
+| `services/game-service` | domain/projection tests with shared vectors, event admission rules, feed visibility in SQL against `EventVisibility` (ADR-0030), ingest API tests, season close, WireMock peers, RLS suites, contract validation, `RosterPort` and authz contract cases on REST and replica, consumer, replay, removals and retention, the shipped roster source per profile, the match sheet PDF per role against a WireMock pdf-service, the replica start guard | 541 (WP117) |
+| `services/athlete-service` | domain, norm seed and band resolver tests, template languages, session plans and quick-add, season history caps, role matrix, RLS suites (incl. nullable-tenant tables), contract validation, `RosterPort` and membership contracts on REST and replica, consumer, replay, removals and retention, the exercise catalogue and its migration | 1,003 (WP117) |
+| `apps/web` | `flutter test`: unit, provider, widget per role and state, design-system kit and contrast, goldens (360 px, light and dark), projector vectors, sync worker, sign-out, refresh serialisation, tenant/person-scoped match cache, service worker / CSP / build guards, l10n key parity, landing page and its per-locale screenshots, academy requests, past seasons, demo mock routes, role filtering and persistence, capability matrix, the Dart mutation tool, contexts and the application admin hub, exports (CSV, ICS, deferred XLSX), jersey dialogs, the exercise catalogue (also read-only for families), theme mode and the avatar menu, the chooser's language and theme, the PDF buttons, the Finance area (money, periods, the finance mock's contract, providers, screens and goldens per role) | 1,801 (WP124) |
+| `services/pdf-service` (Rust) | `just test-rust`: rustfmt, Clippy all + pedantic with warnings denied, unit and HTTP tests (templates, validation that never echoes a value, the realm's JWKS, the layering manifest test), coverage under cargo-llvm-cov, `cargo deny` | 100; 95.41 % lines, 99.80 % domain (WP111) |
+| `services/finance-service` (Go) | `just test-go`: gofmt, golangci-lint, domain and use-case tests (a balance property test over 2,000 cases), REST against a test realm, every `finance.yaml` operation served, the RLS schema inspection and generic isolation suite per tenant table, the database role check and the layering check (each proven on planted violations), the replica consumer and the dues job, govulncheck | 204 (158 top-level); 89.05 % module, 98.84 % domain (WP123) |
+| `e2e` | black-box journey through the gateway with real Keycloak logins: 32 ordered steps (since WP123 the printed roster, the match sheet and finance), two tenants, every request and response validated against the OpenAPI, token audience and refresh-token reuse, edge headers, the sign-up flow, mail checks against MailHog or Mailpit; `MailSinkTest` unit tests run in every `verify` | 6 unit + 32 steps, green on compose on 2026-11-16 with pdf-service and finance-service (the orchestrator's run after WP123) |
 | Browser | `tool/web_smoke.sh` (mock mode) in the `ci` job `web-browser`; browser login round trip with a temporary password in the `e2e` job; `tool/lighthouse.sh` and `tool/offline_cold_start.sh` locally (WP54) | CI green on `main`; Lighthouse PWA score 1 |
-| Security (CI) | SpotBugs + find-sec-bugs in `verify`; CodeQL `security-extended` and Semgrep (registry + repository rules) with SARIF gates; ZAP API scan per service after the journeys and the ZAP baseline; gate scripts' unit tests (ADR-0045) | 0 SpotBugs findings; every CodeQL/Semgrep/ZAP result fixed or accepted with an expiry |
-| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform (incl. the ExternalSecret schema), Gateway API route and policy assertions, Redpanda and event wiring, Reloader annotations, collector and NetworkPolicies, gitleaks; `deploy/kind/smoke.sh` and `ratelimit-check.sh` (with the load guard) on kind | 182 checks, kubeconform 278/278 (WP100); with the cloud values kubeconform 350/350 (WP104); kind proofs of WP100 |
+| Security (CI) | SpotBugs + find-sec-bugs in `verify`; CodeQL `security-extended` (Java, and since the eighth round Rust and Go) and Semgrep (registry incl. `p/rust` and `p/golang`, plus repository rules) with SARIF gates; ZAP API scan per service after the journeys and the ZAP baseline; gate scripts' unit tests (ADR-0045) | 0 SpotBugs findings; every CodeQL/Semgrep/ZAP result fixed or accepted with an expiry |
+| Chart/infra | `deploy/helm/tests/run.sh`: lint, snapshots, kubeconform (incl. the ExternalSecret schema), Gateway API route and policy assertions, Redpanda and event wiring, Reloader annotations, collector and NetworkPolicies, gitleaks; `deploy/kind/smoke.sh` and `ratelimit-check.sh` (with the load guard) on kind | 231 checks, kubeconform 397 resources (WP120, chart 0.13.0); kind `smoke.sh` proofs of WP111, WP118 and WP120 |
 | Cloud module | `just tofu-check`: `tofu fmt`, `validate`, `tofu test` (every run a `plan` against a mocked provider: guards on SSH CIDRs, memory, hostname, Traefik, IMDSv2, public IP), trivy config, checkov (local, optional), shellcheck, pins equal to kind's; CI job `tofu-check` | 25 tests (WP104); never applied |
-| Mutation (on demand) | PIT per module (`just mutation [module]`) and the Dart tool for the web rule code (`just web-mutation`), workflow `mutation.yml` manual + monthly; never in `verify`; baselines equal to the scores rounded down; see [`quality/mutation.md`](quality/mutation.md) | common 337/338, core 925/926, game 525/527, athlete 690/690, web 430/430 |
+| Mutation (on demand) | PIT per module (`just mutation [module]`) and the Dart tool for the web rule code (`just web-mutation`), workflow `mutation.yml` manual + monthly; never in `verify`; baselines equal to the scores rounded down; see [`quality/mutation.md`](quality/mutation.md) | common 337/338, core 932/933 (WP116), game 555/557 (WP117), athlete 690/690, web every file at 100 % (494 mutants); none for Rust and Go yet |
 
-JVM total: **3,388 tests** on JDK 25 (2026-11-15, after the merge of WP109; 0 failures, 26 skipped: the journey steps
-without a stack), line coverage above the gates (80 % overall, 90 % in `domain`). Flutter: **1500 tests**, analyze and format
-check clean. e2e: **26/26 green on compose** with the replica as the roster source (WP98) and in every CI `e2e` run on
-`main` (with the browser login round trip and the ZAP API scans); on kind the WP100 proofs (fresh install with ESO and
-events on `replica`, events off with a quiet core, producer recovery, core's mail to Mailpit, Envoy Gateway v1.10.0
-limits, a Redis password rotation, `just events-drift --kind`) passed on chart 0.10.0 (`tilt ci` last ran on 0.9.0).
+JVM total: **3,556 tests** (WP123, 2026-11-16; 0 failures, 32 skipped: the journey steps without a stack), line
+coverage above the gates (80 % overall, 90 % in `domain`), PMD / CPD and SpotBugs clean. Rust **100**, Go **204**,
+Flutter **1,801** tests, analyze and format checks clean. e2e: **32 steps green on compose** (2026-11-16, the first
+real PDF calls) and in the CI `e2e` workflow with the ZAP API scans of core, game, athlete and finance. On kind the
+eighth round ran `smoke.sh` on charts 0.11.0, 0.12.0 and 0.13.0 (pdf-service, finance-service, the LGTM pod); the
+journey, `tilt ci` (last on 0.9.0) and the finance code of WP119 / WP123 did not run there.
 Statement-by-statement evidence: [`conformance.md`](conformance.md).
 
 ## 12. Security posture
@@ -363,18 +390,23 @@ Statement-by-statement evidence: [`conformance.md`](conformance.md).
   Keycloak's pages too (realm CSP, residual `script-src 'unsafe-inline'`); Keycloak admin console hidden unless
   explicitly exposed. The broker accepts SASL/SCRAM per service with prefixed ACLs and a NetworkPolicy (ADR-0036).
 - Logging and observability: one structured `hoops.security` event per refused request and
-  `hoops_authz_denied_total{kind}` (never tokens, claims or names; ADR-0043); Keycloak login and admin events
-  (jboss-logging, stored 30 days); with `global.observability.enabled` the services export traces and logs over OTLP
-  to the chart's OpenTelemetry collector, which strips concrete paths and Kafka keys from spans and forwards to the
-  environment's backend (ADR-0046, `runbooks/observability.md`).
-- Data: non-owner DB roles without `BYPASSRLS`; append-only audit trail ([ADR-0017](adr/0017-audit-trail-observability-and-http-hardening.md)); no PII in audit metadata; Problem+JSON without stack traces.
+  `hoops_authz_denied_total{kind}` (never tokens, claims or names; ADR-0043; finance-service emits the same events
+  in Go); Keycloak login and admin events (jboss-logging, stored 30 days); with `global.observability.enabled` the
+  services export traces and logs over OTLP to the chart's OpenTelemetry collector, which strips concrete paths and
+  Kafka keys from spans, scrapes the services' metrics and forwards to the environment's backend; on kind and in
+  compose that is one Grafana LGTM pod with 24 h retention and an anonymous Viewer, whose dashboards never query
+  subject, roles or tenant (ADR-0046 amendment, `runbooks/observability.md`). No database spans yet.
+- Data: non-owner DB roles without `BYPASSRLS` (also `finance_app`, checked by finance's Go role test); append-only
+  audit trails (core; finance has its own) ([ADR-0017](adr/0017-audit-trail-observability-and-http-hardening.md)); no PII in audit metadata; Problem+JSON without stack traces.
   Replica tables are tenant tables; events are applied in the event's tenant; parked records are write-only for the
   app role.
 - Secrets: from `.env` locally and on kind, or from a secret manager through the External Secrets Operator in the
   chart (ADR-0012 amendment), rolled into the pods by Stakater Reloader after a rotation (`global.reloader.enabled`,
   ADR-0012 amendment WP87); never in git (gitleaks).
 - Supply chain: gitleaks (pre-commit and CI), Trivy (filesystem and images), dependency-check (CI, needs an NVD key;
-  cache saved on success only, false positives suppressed with an expiry), non-root images, GitHub Actions pinned to
+  cache saved on success only, false positives suppressed with an expiry; for Rust `cargo deny`, for Go `govulncheck`),
+  non-root distroless images (Java on `java25-debian13:nonroot`, ADR-0054; pdf on `cc-debian13`, finance on `static`),
+  GitHub Actions pinned to
   commit SHAs with the tag as a comment (WP50), Dependabot (weekly grouped updates for Maven, pub and GitHub Actions,
   SHA and comment bumped together; automated security fixes; semver-major updates of `json-schema-validator` ignored
   until the strict OpenAPI validator moves to networknt 3.x, WP43; 7-day cooldown since WP84), a weekly `bump-pins`
@@ -382,6 +414,9 @@ Statement-by-statement evidence: [`conformance.md`](conformance.md).
   referrer (ADR-0043). SAST and DAST gate CI: SpotBugs + find-sec-bugs in `verify`, CodeQL and Semgrep with SARIF
   gates, ZAP API scans per service and the ZAP baseline; every acceptance has a reason and an expiry (ADR-0045,
   `security/sast-dast.md`).
+- Privacy (LINDDUN, WP112, `security/privacy-threat-model.md`): P-01..P-13, P-01..P-05 to be closed before real
+  academies (erasure and export, retention, outbox history, health audit, privacy notice); P-07, P-10 (finance),
+  P-11 and P-12 mitigated in part by the eighth round.
 - Findings (status 2026-11-07, after the fifth round): F-01..F-24: 22 fixed, F-11 and F-22 accepted by design
   (ADR-0025); round 5 SAST/DAST findings SD-01..SD-08: 7 fixed (WP84), SD-03 (Keycloak CORS reflection, no
   credentialed read path) accepted until 2027-05-07. Requests with a C0 control character in the URI or a NUL in a
@@ -425,3 +460,28 @@ plus SD-01..SD-08, 0 high), [`security/sast-dast.md`](security/sast-dast.md),
   nullable owner and per-command RLS; template items reference the catalogue, and quick-add copies an exercise's text
   into a plan or session item that keeps the `exerciseId`. PARENT and PLAYER browse it read-only at
   `/training/exercises` (decision 82, WP108); staff keep it in the plan library.
+
+## 14. PDF and finance (eighth round)
+- **The PDF path (ADR-0051 amendment, ADR-0052, ADR-0048 amendments, decision 89).** The service that owns the data
+  builds the PDF: the browser asks core for `GET /api/core/teams/{id}/roster:export` with `Accept: application/pdf`
+  (ADMIN or the team's current coach, the same rule, audit row and rate limit as the CSV, `format` `pdf`) or game for
+  `GET /api/game/matches/{id}/box-score:pdf` (every member who sees the box score, the same lines; not audited). The
+  service gathers the data, checks the sheet's limits (roster: 60 players, 20 staff, 4 guardians per player, else 422
+  `EXPORT_TOO_LARGE`), and posts it to `pdf-service` (`/internal/pdf/team-roster`, `/internal/pdf/match-sheet`) with
+  its own client-credentials token (audience `pdf-service`, realm role `service`), then returns the bytes with its own
+  file name and `Cache-Control: no-store`; any failure of pdf-service becomes 503 `UPSTREAM_UNAVAILABLE`, and nothing
+  of the body is logged. pdf-service is stateless (no database, no broker), has no gateway route, accepts only core and
+  game through its NetworkPolicy, renders fixed templates in es / en / id with bundled Roboto, and never repeats a
+  request value in a Problem. Game takes the academy's name from its replica (`tenant.changed`, game V7).
+- **The finance bounded context (ADR-0055, ADR-0056, decisions 92–99).** `finance-service` in Go owns schema `finance`
+  with RLS on every tenant table, the role pair `finance_app` / `finance_migrator`, its own append-only audit table and
+  its own replica of core's events (tenant, person, player, team, assignments, staff, guardian links; never birth date
+  or gender); it calls no other service. ADMIN manages the currency (fixed by the first due or expense), fee plans
+  per team or age category with a MONTHLY, QUARTERLY or SEASON cadence, dues (generated by hand with a preview or by a
+  daily job under an advisory lock, each academy on its own date), one full payment per due (voided with a reason,
+  kept), waivers and amount changes with a reason, expenses in six fixed categories, the season balance and two CSV
+  exports (`dues:export`, `expenses:export`, 10,000 rows, audited, rate-limited). A team's current COACH reads only
+  who is up to date; PARENT reads the dues and payments of linked players and PLAYER their own, without reasons or
+  notes; ASSISTANT_COACH has nothing. The web reaches it through the gateway (`/api/finance`, audience
+  `finance-service` on the web client) and shows it in the Finance area of the admin hub, a status section on the team
+  page and a "Dues" tab in the player hub.

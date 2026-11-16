@@ -21,7 +21,8 @@ decides sobre las solicitudes de jugadores. Los nombres de menú son los que mue
   (tócalo para ir a **Perfil**), **Idioma** (Español, English, Bahasa Indonesia) y **Tema** (**Sistema**, **Claro**,
   **Oscuro**). La elección se aplica al momento y se recuerda en este navegador; **Sistema**, el valor por defecto,
   sigue a tu dispositivo. **Perfil** contiene **Tu nombre** y **Cerrar sesión**. Antes de entrar, la cabecera de la
-  página de inicio tiene sus propios botones de idioma y tema. La pantalla para elegir academia aún no tiene este menú.
+  página de inicio tiene sus propios botones de idioma y tema. La pantalla para elegir academia (un acceso en
+  varias academias) muestra **Idioma** y **Tema** debajo de la lista.
 
 ## 1. Perfil de la academia y logo
 **Admin > Perfil de la academia.**
@@ -144,9 +145,20 @@ Las genera el servidor (necesitan conexión, salen en el idioma de la aplicació
   de temporadas terminadas, y el entrenador para los equipos que entrena ahora; quien lo entrenó en una temporada
   terminada, no. Cada exportación aparece en la actividad como **Plantilla del
   equipo exportada**.
+- **Plantilla en PDF**: el icono PDF justo después del icono CSV (**Descargar la plantilla (PDF)**) imprime la misma
+  plantilla en una hoja, para las mismas personas, y queda registrado en la actividad igual. Un equipo con más de 60
+  jugadores, 20 técnicos o 4 tutores de un jugador no cabe: la aplicación dice "La plantilla es demasiado grande para una
+  hoja: usa el archivo CSV.". Si el servicio de PDF no responde: "El PDF no está disponible ahora. Inténtalo más tarde o
+  usa el archivo CSV.".
 - **Actividad**: el icono de descarga en **Actividad** (**Exportar la actividad (CSV)**) guarda todas las entradas que
   seleccionan los filtros actuales, no solo la página en pantalla; si hay más de 10.000 filas, acota las fechas o las
   acciones. Queda registrada como **Registro de auditoría exportado**.
+
+**Hoja del partido (PDF)**: en la pantalla de un partido, el icono PDF de la barra superior (**Descargar la hoja del
+partido (PDF)**) guarda la hoja del partido con el marcador y las líneas de estadísticas que puedes ver. La genera el
+servidor en el idioma de la aplicación; necesita conexión (sin ella el icono está desactivado) y aparece cuando el
+partido tiene convocatoria. Si no se puede generar: "La hoja del partido no está disponible ahora. Inténtalo más
+tarde.".
 
 Se generan en tu dispositivo con lo que la pantalla ya cargó (icono de descarga **Exportar**): las **Estadísticas de
 temporada** (una fila por partido más los totales) y las estadísticas de un partido como **Archivo CSV** o **Archivo
@@ -156,6 +168,41 @@ Excel se carga la primera vez que lo eliges y entonces necesita conexión; sin e
 funcionando.
 
 Los archivos se llaman `hoops-<academia>-<qué>-<aaaammdd>.csv`; los CSV se abren directamente en Excel.
+
+## 13. Finanzas
+**Admin > Finanzas** (solo administradores): la contabilidad propia de la academia, lo que deben las familias, lo que han
+pagado y lo que gasta la academia. No hay pago en línea: los pagos se registran a mano. El centro tiene **Moneda**,
+**Planes de cuota**, **Cuotas y pagos**, **Gastos** y **Balance de la temporada**. Sin conexión puedes consultar pero no
+cambiar nada ("Sin conexión: puedes consultar las finanzas, pero no cambiarlas.").
+1. **Moneda**: **Elegir moneda** (busca por código, p. ej. EUR o IDR) y confirma. Todas las cantidades de la academia van
+   en esa moneda; queda **Fijada** cuando se genera la primera cuota o se registra el primer gasto.
+2. **Planes de cuota > Nuevo plan**: **Nombre del plan**, **Temporada**, **Se cobra a** (**Un equipo** o **Una categoría
+   de edad**), **Frecuencia** (**Mensual**, **Trimestral**, **Una vez por temporada**), **Importe por periodo**,
+   **Primer periodo**, **Último periodo** o **Hasta el final de la temporada**, y **Generar las cuotas automáticamente**
+   (cada día se crean las cuotas que falten de los planes activos). La temporada, a quién se cobra y la frecuencia no se
+   pueden cambiar después; un importe nuevo se aplica a las cuotas que se generen a partir de entonces. Menú de la fila:
+   **Editar plan**, **Generar cuotas**, **Archivar** / **Reactivar**, **Eliminar** (solo mientras el plan no tenga
+   cuotas); **Mostrar archivados** incluye los planes archivados.
+3. **Generar cuotas** (desde el menú de un plan o en **Cuotas y pagos**): elige el plan y el **Periodo**; **Calcular**
+   muestra cuántas cuotas se crearán y cuántas ya existen; luego **Generar**. Repetirlo nunca duplica una cuota. Un
+   jugador debe el importe completo de cada periodo en el que esté en el equipo (o en la categoría) algún día.
+4. **Cuotas y pagos**: filtros **Plan**, **Equipo**, **Periodo** y estado (**Pendiente**, **Pagada**, **Condonada**),
+   páginas de 25. Una cuota muestra su importe, el importe del plan si se cambió, el motivo y todos los pagos, también
+   los anulados. Acciones: **Registrar pago** (la cuota entera de una vez: **Fecha de pago**, no posterior a hoy, **Forma
+   de pago** Efectivo, Transferencia, Tarjeta u Otro, una **Nota** opcional); **Cambiar importe** y **Condonar** (con un
+   **Motivo**; la condonación es definitiva); **Anular pago** (con un motivo: el pago se conserva marcado como
+   **Anulado** y la cuota vuelve a estar pendiente). Motivos breves: "No escribas datos de salud ni de la familia."
+5. **Gastos > Nuevo gasto**: **Fecha del gasto**, **Categoría** (Alquiler de pista, Sueldos, Equipación, Cuotas de
+   torneos, Viajes, Otros), **Importe**, **Descripción** y una **Nota** opcional (sin nombres con su sueldo ni datos de
+   salud). Filtra por **Categoría**, **Desde** y **Hasta**; abre un gasto para editarlo, o **Eliminar gasto** para uno
+   registrado por error.
+6. **Balance de la temporada**: elige una temporada: cuotas **Cobrado**, **Pendiente de cobro** y **Condonado**,
+   **Gastos**, el **Resultado (cobrado menos gastos)** y un gráfico de barras de los gastos por categoría.
+7. **Exportaciones CSV**: el icono de descarga en **Cuotas y pagos** (**Exportar las cuotas de estos filtros (CSV)**) y
+   en **Gastos** (**Exportar los gastos de estos filtros (CSV)**): lo que seleccionan los filtros, 10.000 filas como
+   máximo, en el idioma de la aplicación, sin motivos ni notas.
+El servicio de finanzas guarda su propio registro de cada cambio. El entrenador de un equipo solo ve en la página del
+equipo si cada jugador está al día (sin importes); las familias y los jugadores ven sus cuotas en una pestaña **Cuotas**.
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.

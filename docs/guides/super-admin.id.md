@@ -20,6 +20,7 @@ akademi tempat Anda menjadi anggota. Setiap konteks punya menunya sendiri.
   samping menu samping (tombol **Ganti konteks**). Setiap baris menampilkan nama dan peran Anda, mis. "Admin aplikasi /
   Super admin" atau "Hangtuah / Administrator". Pilihan diingat di peramban ini dan dilupakan saat Anda keluar.
 - Tautan lama ke halaman `/platform/...` membuka halaman yang sama di dalam Admin aplikasi.
+- Daftar untuk memilih konteks menampilkan **Bahasa** dan **Tema** di bawahnya, seperti menu avatar.
 - Tombol bulat dengan inisial Anda (kanan atas, di setiap konteks) membuka menu: **Profil**, **Bahasa**, dan **Tema**
   (**Sistem**, **Terang**, **Gelap**; diingat di peramban ini, **Sistem** mengikuti perangkat Anda).
 

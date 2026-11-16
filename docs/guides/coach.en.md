@@ -114,6 +114,15 @@ to you and the administrators until approved. You cannot approve your own reques
   the team's top bar (**Export the roster (CSV)**) saves the players with their data, category, eligibility and guardians'
   contact data, and the staff as a second block. The server builds it: it needs a connection, uses the app's language
   and is recorded in the academy's activity. Assistant coaches have no roster export.
+- **Team roster as PDF**: the PDF icon right after the CSV icon (**Download the roster (PDF)**) prints the same roster
+  as one sheet, for the same people (the team's current coach), and is recorded in the activity the same way. A team
+  with more than 60 players, 20 staff or 4 guardians for one player does not fit: the app says "The roster is too
+  large for one sheet: use the CSV file.". If the PDF service is down: "The PDF is not available right now. Try again
+  later or use the CSV file.".
+- **Match sheet (PDF)**: on a match's screen, the PDF icon in the top bar (**Download the match sheet (PDF)**) saves
+  the match sheet with the score and the box score lines you are allowed to see. The server builds it in the app's
+  language; it needs a connection (offline the icon is disabled) and appears once the match has a roster. If it cannot
+  be made: "The match sheet is not available right now. Try again later.".
 - Built on your device from what the screen has already loaded (download icon **Export**): **Season statistics**
   (one row per match plus the totals) and a match's box score as a **CSV file** or an **Excel file**; the matches list and
   the training week as a team calendar (matches and sessions of the selected season) as CSV, Excel or **Calendar file
@@ -124,6 +133,12 @@ to you and the administrators until approved. You cannot approve your own reques
 **Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
 connection); it starts with your first and last name as this academy stores them. Your e-mail stays with the
 administrator.
+
+## 11. Dues up to date (coach only)
+On the page of a team you coach now as **Coach**, the section **Dues up to date** shows each player as **Up to date** or
+**Dues outstanding** and how many have dues outstanding (e.g. "2 of 12 with dues outstanding"). "You only see whether
+each player is up to date, no amounts." Assistant coaches, and coaches of other teams, do not see it. The academy's
+administrator records the payments.
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

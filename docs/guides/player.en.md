@@ -46,6 +46,11 @@ has expired" means sign in again.
 the coach gives the number when you join a team and uses this one if it is free.
 
 ## Downloading files
+**Match sheet (PDF)**: on a match's screen, the PDF icon in the top bar (**Download the match sheet (PDF)**) saves
+the match sheet with the score and the box score lines you are allowed to see. The server builds it in the app's
+language; it needs a connection (offline the icon is disabled) and appears once the match has a roster. If it cannot be
+made: "The match sheet is not available right now. Try again later.".
+
 Built on your device from what the screen has already loaded (download icon **Export**): **Season statistics**
 (one row per match plus the totals) and a match's box score as a **CSV file** or an **Excel file**; the matches list and
 the training week as a team calendar (matches and sessions of the selected season) as CSV, Excel or **Calendar file
@@ -56,6 +61,11 @@ connection then; without one the app says so and the CSV file still works.
 **Profile > Your name** changes your own first and last name as this academy sees it (**Save name**; needs a
 connection); it starts with your first and last name as this academy stores them. Your e-mail stays with the
 administrator.
+
+## Dues
+**Me** has a **Dues** tab: your dues with the plan, the period, the state (**Open**, **Paid**, **Waived**) and the
+amount; a paid one also shows the day and the method ("Paid on ... · Cash"). The academy's administrator records the
+payments: there is nothing to pay in the app. Reasons and notes of the administrator are not shown.
 
 ---
 Status: written from the implemented screens and the translation files; not yet checked in a manual browser walk-through.

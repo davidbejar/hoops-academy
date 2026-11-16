@@ -3,8 +3,8 @@
 Sources: `wp/FOLLOW-UPS.md`, the WP handovers, `security/review-2026-11.md`, `PLAN.md`. Items are grouped by theme, not
 ordered by date; there are no committed dates. IDs F-nn refer to the security review. "Seam" means the extension point
 already exists in v1. The plans of 2026-11-05 (`wp/FOLLOW-UPS.md`, WP26–WP37) and of 2026-11-06/07 (WP38–WP42, third
-round WP43–WP51, fourth round WP52–WP71, fifth round WP72–WP90) of 2026-11-10 (sixth round WP91–WP103) and of 2026-11-14 (seventh round WP104–WP110) are done
-(all merged by 2026-11-14, except WP109's JDK 25 branch, which waits for the owner); the items they closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
+round WP43–WP51, fourth round WP52–WP71, fifth round WP72–WP90) of 2026-11-10 (sixth round WP91–WP103), of 2026-11-14 (seventh round WP104–WP110) and of 2026-11-15/16 (eighth round
+WP111–WP125) are done (JDK 25 merged on 2026-11-15); the items they closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
 items below are deliberately not planned.
 
 ## Product and billing
@@ -13,22 +13,29 @@ items below are deliberately not planned.
   provider, subscription lifecycle linked to tenant suspension, an entitlement implementation, an invoice/usage view. Billing
   can subscribe to core's events, which are published to Redpanda since WP67.
   Stays in core, in Java (ADR-0051).
-- **Academy finance (decided 2026-11-15, ADR-0051; not built).** A new `finance-service` in Go: fee plans, dues per
-  player, payments recorded by hand, expenses, season balance, CSV export; no payment provider. Own schema with RLS and
-  a roster replica from core's events. Comes after the PDF renderer.
-- **PDF renderer (decided 2026-11-15, ADR-0051; not built).** A new stateless `pdf-service` in Rust for printable
-  sheets (match sheet / box score, team roster); the first service outside the JVM.
+- **Landed in the eighth round:** academy finance in a Go `finance-service` (currency, fee plans with a cadence, dues
+  by hand and by a daily job, hand-recorded payments, waivers, expenses, season balance, CSV exports; ADR-0055,
+  ADR-0056) with web screens for the administrator, the coach (status only) and families; a stateless Rust
+  `pdf-service` rendering the team roster and the match sheet, called by core and game (ADR-0052, ADR-0048
+  amendments); language and theme on the academy chooser; the audit `team` target named.
+- **Finance, next steps.** The owner's IDR decision (2 minor digits today); retention of finance records (with the
+  purge job); the finance leftovers of `wp/FOLLOW-UPS.md` (the `currencyLocked` wording, the mock's balance answer,
+  paging of the family tab); a payment provider stays out by decision.
 - **Tenant purge job.** Withdrawn tenants keep data until `retainUntil` (default 365 days) but nothing deletes it afterwards.
   Needs a platform job, per-schema deletion in FK order, an audit record and a dry-run mode. It is also the only clean-up of
-  old audit rows and of decided academy requests (WP90). Also a per-tenant export for data portability (not designed).
+  old audit rows and of decided academy requests (WP90), and should cover finance records once their legal period is
+  known. Also a per-tenant export for data portability (not designed).
+- **Privacy before real academies** (LINDDUN, WP112, `security/privacy-threat-model.md`): P-01 erasure and a per-person
+  export across core, game, athlete and finance; P-02 retention (the purge job above); P-03 deleting old published
+  outbox rows; P-04 an audit trail for health writes; P-05 a privacy notice in es / en / id and a DPIA note.
 - **Landed in the sixth round:** the application admin hub (Academies, Users across academies, Pending approvals,
   Audit trail, a Billing placeholder) and a context switcher between a login's academies and the application admin
   (WP91, WP99, ADR-0049); a member edits their own name (WP91, WP99); a preferred jersey number with carry-over on
   assignment and the taken numbers per team (WP96, WP101); CSV exports of the team roster and the audit trails from
   core and CSV / Excel / ICS exports of player stats, box score and team calendar built in the browser (WP96, WP97,
   WP101, ADR-0048); the exercise catalogue with global and academy exercises (WP92, ADR-0047, athlete 3.0.0).
-- **Exports, next steps.** PDF where a printable sheet makes sense (decision 67: later); a name for the audit `team`
-  target (shows the type only); the compose nginx has no `limit_req` for the export paths (the gateway limits them).
+- **Exports, next steps.** A paged PDF for teams over the sheet's limits (today the CSV); period scores and the
+  opponent's lines on the box score; the browser exports' 10,000-row limit.
 - **Users area depth.** E-mail change and a temporary password from the application admin's Users list (not in WP99).
 - **Landed in the seventh round:** a light / dark / system theme next to the language in the menu behind the avatar
   (WP105); the exercise catalogue for parents and players (WP108); the roster export for ADMIN and the team's current
@@ -37,8 +44,7 @@ items below are deliberately not planned.
 - **Landed in the fifth round:** invitation-only sign-up from the landing page with a super admin workbench and
   decision e-mails (WP90, ADR-0044); read-only history of past seasons for former staff and admins (WP80, ADR-0042);
   sessions that reference any plan directly (WP78, ADR-0041); the whole web app on one design system (WP72–WP77,
-  ADR-0040). Sign-up leftovers: a compose `limit_req` for the public path, the purge of decided requests (with the
-  purge job above), mail retry.
+  ADR-0040). Sign-up leftovers: the purge of decided requests (with the purge job above), mail retry.
 - **If it goes commercial (ADR-0025).** F-11 (invite links an existing login without consent and reveals it) and F-22
   (pre-account hijacking) are accepted by design today. Before real users: verify the e-mail before linking an existing
   login into another academy, ask for consent and notify on a link, give invites a uniform response.
@@ -59,8 +65,11 @@ items below are deliberately not planned.
   athlete (services, compose, chart 0.10.0 with events) without the shadow period over days; a drift check
   (`just events-drift [--kind]`) compares core's rows with both replicas; `rest` stays the fallback switch. The shared
   replica code lives in common-quarkus. Core's producer is never created with events off (`CORE_OUTBOX_ENABLED`, WP91).
-- **Still open:** game starts on `replica` with its consumer switched off (athlete refuses that combination); the web
-  can show the old roster for the 1–2 s of replica lag; Redpanda outside kind is unproven.
+- **Eighth round:** finance-service consumes the same topics into its own replica (Go, franz-go; no birth date or
+  gender); game refuses `replica` without its consumer (WP117) and keeps the academy name from `tenant.changed`.
+- **Still open:** the web can show the old roster for the 1–2 s of replica lag; Redpanda outside kind is unproven;
+  `just events-drift` compares neither finance's replica nor game's academy names; finance has no lag metric and no
+  `applied_event` retention yet.
 
 ## Native images
 Quarkus native builds for the three services (ADR-0003 calls it an optional later step): faster start and lower memory per
@@ -84,8 +93,9 @@ service worker exists since WP14b.)
   (attestation); the ZAP API scan runs as the super admin, not as an academy member.
 - **Pins.** Image digests, chart image tags and kind pins are bumped by a weekly PR (WP89); GitHub Actions are pinned to
   commit SHAs and Dependabot waits 7 days for a release (WP50, WP84). Drop the guava pin once the Quarkus BOM ships
-  >= 33.7.2 (3.40.1.2 still manages 33.6.0-jre). The service images fail the Trivy gate since 2026-11-14 on 14
-  `krb5-libs` findings in the Red Hat base image whose fix is not published: wait or accept with an expiry. Envoy Gateway is on v1.10.0 since WP100. The weekly PR cannot carry workflow-file pins (the Actions token
+  >= 33.7.2 (3.40.1.2 still manages 33.6.0-jre). The Java images are on distroless Java 25 since WP114 (ADR-0054),
+  which cleared the `krb5-libs` findings; the pdf and finance base images are not in `bump-pins` yet. Envoy Gateway is
+  on v1.10.0 since WP100. The weekly PR cannot carry workflow-file pins (the Actions token
   may not push workflows): Trivy, Semgrep and the ZAP digest are bumped by hand with `scripts/bump-pins.sh --apply`, or
   a fine-grained token lets the PR include them.
 - **json-schema-validator 3.x** (WP43): blocked until the strict OpenAPI validator (ADR-0027) moves to networknt 3.x;
@@ -99,12 +109,13 @@ service worker exists since WP14b.)
 - **Design system leftovers:** the kit follow-ups and the Indonesian bottom navigation landed in WP95; left are kit
   wishes from WP92 (scrolling empty / error views, replacing snack bars, a business-code message registry, a searchable
   multi-select picker), training's own copies of `fabClearance` and pickers, recapturing the landing screenshots
-  after the shell and screen changes of the sixth and seventh rounds (owner's wish), and the avatar menu on the academy
-  chooser, which has none (WP105).
+  after the shell and screen changes of the sixth to eighth rounds (owner's wish), and language and theme on the
+  profile screen (the chooser has them since WP115).
 - Two tabs on one device can allocate the same `clientSeq` (visible `CLIENT_SEQ_CONFLICT`); add a cross-tab lock if it matters.
 - **Mutation testing** runs on demand and monthly (WP37, `docs/quality/mutation.md`); since WP88 pure rules are
   extracted from use cases and mappers, the baselines equal the scores, and a Dart tool mutates the web rule code.
-  Still outside: athlete's access rules, core's rollover and eligibility engine, the web providers.
+  Still outside: athlete's access rules, core's rollover and eligibility engine, the web providers, and the Rust and Go
+  services (`cargo-mutants`, `gremlins` candidates). Maintainability: PMD / CPD gate the Java code since WP113.
 - List pagination UI and a category filter on `GET /players` (contract).
 - **Demo mock depth (WP47, WP53).** Role-filtered core reads, the demo user on the staff list and persistence across
   reloads are done; members stay ADMIN-only, replay re-stamps timestamps, no suspended-tenant behaviour.
@@ -140,12 +151,15 @@ leads: `domain/norms.md`.
   amendment; proven on kind in WP86). Still open: encryption at rest for Secrets.
 - **Backups.** Implement and rehearse CNPG backups (`runbooks/backup-restore.md` is a design).
 - **Observability.** An OpenTelemetry collector ships the services' traces and logs (and Envoy's spans) when
-  `global.observability.enabled` is set (WP86, ADR-0046; Jaeger in memory on kind); the backend is the environment's.
-  Wanted by the owner: one Grafana pod with traces, logs and metrics instead of the in-memory Jaeger. Still open: dashboards, alerting on audit and authz failures (`hoops_authz_denied_total`, WP85), Keycloak, Envoy
-  access and Redpanda logs to the collector, metrics stay Prometheus.
+  `global.observability.enabled` is set (WP86, ADR-0046); since WP120 it also scrapes metrics and sends all three to one
+  Grafana LGTM pod on kind and in a compose profile (24 h retention, anonymous Viewer, three dashboards); the cloud
+  values keep the in-memory Jaeger, and a real environment brings its own backend. Still open: database spans,
+  request metrics for pdf and finance, alerting on audit and authz failures (`hoops_authz_denied_total`, WP85),
+  Keycloak, Envoy access and Redpanda logs to the collector.
 - **Mail.** Core sends the sign-up decision e-mails (WP90); since chart 0.10.0 (WP100) the chart sets core's SMTP keys
   (Mailpit on kind, an optional `hoops-smtp` Secret for a real server; ESO has no `hoops-smtp` entry by default).
-- **Release.** `ci` and `e2e` are green on GitHub since 2026-11-02 (`images` too until the krb5 findings of 2026-11-14) (NVD key valid, images pushed to ghcr.io per
+- **Release.** `ci` and `e2e` are green on GitHub since 2026-11-02 (`images` too, apart from the krb5 findings of
+  2026-11-14 to WP114; since the eighth round also for pdf-service and finance-service) (NVD key valid, images pushed to ghcr.io per
   commit, each with its SBOM since WP85), `codeql` and `semgrep` since WP83; Dependabot opens weekly grouped update PRs
   (Maven, pub, GitHub Actions pinned to SHAs) and `bump-pins` a weekly PR for base images, chart image tags and kind
   pins (WP89). No release has been cut yet (no git tag): follow `runbooks/release.md`.

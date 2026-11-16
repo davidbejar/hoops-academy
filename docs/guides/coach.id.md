@@ -117,6 +117,15 @@ disetujui, pemain hanya terlihat oleh Anda dan administrator. Anda tidak dapat m
   tim (**Ekspor daftar pemain (CSV)**) menyimpan pemain dengan datanya, kategori, kelayakan, dan kontak walinya, serta
   staf sebagai blok kedua. Dibuat oleh server: perlu koneksi, memakai bahasa aplikasi, dan tercatat di aktivitas
   akademi. Asisten pelatih tidak punya ekspor ini.
+- **Daftar tim sebagai PDF**: ikon PDF tepat setelah ikon CSV (**Unduh daftar pemain (PDF)**) mencetak daftar yang
+  sama dalam satu lembar, untuk orang yang sama (pelatih tim saat ini), dan tercatat di aktivitas dengan cara yang
+  sama. Tim dengan lebih dari 60 pemain, 20 staf, atau 4 wali untuk satu pemain tidak muat: aplikasi menulis "Daftar
+  pemain terlalu besar untuk satu lembar: gunakan file CSV.". Jika layanan PDF tidak tersedia: "PDF belum tersedia
+  saat ini. Coba lagi nanti atau gunakan file CSV.".
+- **Lembar pertandingan (PDF)**: di layar sebuah pertandingan, ikon PDF di bilah atas (**Unduh lembar pertandingan
+  (PDF)**) menyimpan lembar pertandingan dengan skor dan baris statistik yang boleh Anda lihat. Server membuatnya
+  dalam bahasa aplikasi; perlu koneksi (tanpa koneksi ikonnya nonaktif) dan muncul setelah pertandingan punya daftar
+  pemain. Jika tidak bisa dibuat: "Lembar pertandingan belum tersedia saat ini. Coba lagi nanti.".
 - Dibuat di perangkat Anda dari data yang sudah dimuat layar (ikon unduh **Ekspor**): **Statistik musim** (satu baris per
   pertandingan ditambah total) dan statistik sebuah pertandingan sebagai **File CSV** atau **File Excel**; daftar
   pertandingan dan minggu latihan sebagai kalender tim (pertandingan dan sesi musim yang dipilih) dalam CSV, Excel, atau
@@ -127,6 +136,12 @@ disetujui, pemain hanya terlihat oleh Anda dan administrator. Anda tidak dapat m
 **Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
 perlu koneksi); isiannya dimulai dari nama depan dan belakang Anda seperti yang disimpan akademi ini. Email Anda
 diubah oleh administrator.
+
+## 11. Status tagihan (khusus pelatih)
+Di halaman tim yang sedang Anda latih sebagai **Pelatih**, bagian **Status tagihan** menampilkan setiap pemain sebagai
+**Lunas** atau **Ada tagihan tertunda** dan berapa yang punya tagihan tertunda (mis. "2 dari 12 punya tagihan
+tertunda"). "Hanya terlihat apakah tiap pemain sudah lunas, tanpa jumlah." Asisten pelatih, dan pelatih tim lain, tidak
+melihatnya. Pembayaran dicatat oleh administrator akademi.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

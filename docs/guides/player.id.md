@@ -46,6 +46,11 @@ Anda telah berakhir" berarti Anda perlu masuk lagi.
 menghapusnya. Ini hanya keinginan: pelatih memberi nomor saat Anda masuk tim dan memakai nomor ini jika masih kosong.
 
 ## Mengunduh file
+**Lembar pertandingan (PDF)**: di layar sebuah pertandingan, ikon PDF di bilah atas (**Unduh lembar pertandingan
+(PDF)**) menyimpan lembar pertandingan dengan skor dan baris statistik yang boleh Anda lihat. Server membuatnya dalam
+bahasa aplikasi; perlu koneksi (tanpa koneksi ikonnya nonaktif) dan muncul setelah pertandingan punya daftar pemain.
+Jika tidak bisa dibuat: "Lembar pertandingan belum tersedia saat ini. Coba lagi nanti.".
+
 Dibuat di perangkat Anda dari data yang sudah dimuat layar (ikon unduh **Ekspor**): **Statistik musim** (satu baris per
 pertandingan ditambah total) dan statistik sebuah pertandingan sebagai **File CSV** atau **File Excel**; daftar
 pertandingan dan minggu latihan sebagai kalender tim (pertandingan dan sesi musim yang dipilih) dalam CSV, Excel, atau
@@ -56,6 +61,12 @@ dan saat itu perlu koneksi; tanpa koneksi aplikasi memberi tahu dan file CSV tet
 **Profil > Nama Anda** mengubah nama depan dan belakang Anda sendiri seperti yang dilihat akademi ini (**Simpan nama**;
 perlu koneksi); isiannya dimulai dari nama depan dan belakang Anda seperti yang disimpan akademi ini. Email Anda
 diubah oleh administrator.
+
+## Tagihan
+**Saya** punya tab **Tagihan**: tagihan Anda dengan rencana, periode, status (**Belum dibayar**, **Lunas**,
+**Dibebaskan**), dan jumlahnya; yang lunas juga menampilkan tanggal dan metodenya ("Dibayar pada ... · Tunai").
+Pembayaran dicatat oleh administrator akademi: tidak ada yang dibayar di aplikasi. Alasan dan catatan administrator
+tidak ditampilkan.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

@@ -122,6 +122,16 @@ solicitud. Hasta su aprobación, el jugador solo lo ven los administradores y t�
   jugadores con sus datos, categoría, elegibilidad y el contacto de sus tutores, y el cuerpo técnico como segundo
   bloque. Lo genera el servidor: necesita conexión, usa el idioma de la aplicación y queda registrado en la actividad de
   la academia. Los entrenadores asistentes no tienen esta exportación.
+- **Plantilla en PDF**: el icono PDF justo después del icono CSV (**Descargar la plantilla (PDF)**) imprime la misma
+  plantilla en una hoja, para las mismas personas (el entrenador actual del equipo), y queda registrado en la
+  actividad igual. Un equipo con más de 60 jugadores, 20 técnicos o 4 tutores de un jugador no cabe: la aplicación
+  dice "La plantilla es demasiado grande para una hoja: usa el archivo CSV.". Si el servicio de PDF no responde: "El
+  PDF no está disponible ahora. Inténtalo más tarde o usa el archivo CSV.".
+- **Hoja del partido (PDF)**: en la pantalla de un partido, el icono PDF de la barra superior (**Descargar la hoja del
+  partido (PDF)**) guarda la hoja del partido con el marcador y las líneas de estadísticas que puedes ver. La genera
+  el servidor en el idioma de la aplicación; necesita conexión (sin ella el icono está desactivado) y aparece cuando
+  el partido tiene convocatoria. Si no se puede generar: "La hoja del partido no está disponible ahora. Inténtalo más
+  tarde.".
 - Se generan en tu dispositivo con lo que la pantalla ya cargó (icono de descarga **Exportar**): las **Estadísticas de
   temporada** (una fila por partido más los totales) y las estadísticas de un partido como **Archivo CSV** o **Archivo
   Excel**; la lista de partidos y la semana de entrenos como calendario del equipo (partidos y sesiones de la temporada
@@ -133,6 +143,12 @@ solicitud. Hasta su aprobación, el jugador solo lo ven los administradores y t�
 **Perfil > Tu nombre** cambia tu propio nombre y apellidos tal como te ve esta academia (**Guardar nombre**; necesita
 conexión); empieza con tu nombre y apellidos tal como los guarda esta academia. El correo lo cambia el
 administrador.
+
+## 11. Cuotas al día (solo entrenador)
+En la página de un equipo que entrenas ahora como **Entrenador**, la sección **Cuotas al día** muestra a cada jugador
+como **Al día** o **Con cuotas pendientes** y cuántos tienen cuotas pendientes (p. ej. "2 de 12 con cuotas
+pendientes"). "Solo se ve si cada jugador está al día, sin importes." Los entrenadores asistentes, y los entrenadores de
+otros equipos, no la ven. Los pagos los registra el administrador de la academia.
 
 ---
 Estado: redactada a partir de las pantallas implementadas y los ficheros de traducción; aún no contrastada con un recorrido manual en navegador.

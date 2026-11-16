@@ -19,6 +19,7 @@ academy you are a member of. Each context has its own menu.
   the side menu (button **Switch context**). Each row shows the name and your role there, e.g. "Application admin /
   Super admin" or "Hangtuah / Administrator". The choice is remembered in this browser and forgotten when you sign out.
 - An old link to a `/platform/...` page opens the same page under Application admin.
+- The list to choose a context shows **Language** and **Theme** below it, as the avatar menu does.
 - The round button with your initials (top right, in every context) opens a menu: **Profile**, **Language** and
   **Theme** (**System**, **Light**, **Dark**; remembered in this browser, **System** follows your device).
 

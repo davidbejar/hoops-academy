@@ -223,6 +223,20 @@ F-22 an admin of academy A who created a login for someone else's address enters
 invites the address, and reads what that person may read there (a parent's linked children, including health records);
 under F-11 the owner of a login is linked into another academy without being asked.
 
+## Status after the eighth round (2026-11-16, WP125)
+The tables above are kept as written on 2026-11-15; §9 and §10 are no longer planned: pdf-service (WP111, WP116,
+WP117) and finance-service (WP118, WP119, WP123) are built. What the round changed, from the handovers and the code
+(no new review was done):
+
+| ID | Status | Evidence |
+|---|---|---|
+| P-07 | Partly mitigated | WP120 (ADR-0046 amendment): logs and traces expire after 24 h in the LGTM pod on kind and in the compose profile (Loki's minimum; P-07 suggested up to 30 days); Grafana is an anonymous Viewer behind a ClusterIP Service, no admin login; kind's collector is back to `debugVerbosity: basic` (no log bodies); the dashboards' queries drop subject, roles and tenant (chart tests). Still open: `values-cloud.yaml` keeps the in-memory Jaeger, the shipped lines still carry `sub` with each `tenantId`, a real backend's retention is the environment's |
+| P-10 | Mitigated for finance | WP119: finance's roster decoder never reads birth date or gender (`TestAPlayerEventDropsBirthDateAndGender`). Unchanged for game and athlete |
+| P-11 | Mitigated in code; residual by design | WP111: Problems name the field path and a code, never a value (`validation_failures_name_the_field_never_the_value`, `too_many_players_is_422_naming_the_list_never_the_children`, `logs.rs`); WP116 (`TeamRosterPdfTest`) and WP117 (`LogCapture`) find no player, guardian or team name in core's and game's logs on success or failure. The printed roster carries guardians' names, e-mails and phones, as the CSV (decision 83) |
+| P-12 | Partly mitigated | WP119, WP123, ADR-0056: reasons and notes never in audit metadata (ids, period, method, counts, field names), logs or the CSV exports; families see no reasons, notes or voided payments; `dues:export` and `expenses:export` rate-limited at the gateway and in compose nginx (WP118). Open: the coach sees who is behind (by design, decision 96); retention of finance records (P-02) |
+| P-13 | Wider | Since WP119 a guardian link also opens the child's dues and payments |
+| P-01..P-06, P-08, P-09 | Open | Nothing in the round addressed them; P-01's per-person export and P-02's periods now include finance |
+
 ## Verification
 Every mitigation above was looked up in the tree on 2026-11-15 (worktree `wp112-linddun`, base 8eec8325): migrations
 (core V1, V2, V3, V9, V14, V17, V18; game V1, V2, V4; athlete V1, V3, V6, V9), classes (`TenantHeaderFilter`,

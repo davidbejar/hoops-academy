@@ -83,8 +83,10 @@ against the schema of its version (`cyclonedx-cli`, the job fails on an invalid 
 | Image | File | Content |
 |---|---|---|
 | core / game / athlete | `<svc>-maven.cdx.json` | the service's compile + runtime dependencies (`cyclonedx-maven-plugin`, profile `sbom`, run in the image's Maven stage) |
-| core / game / athlete | `<svc>-image.cdx.json` | the whole image: UBI packages, the JDK, every jar (Trivy) |
+| core / game / athlete | `<svc>-image.cdx.json` | the whole image: the distroless Debian packages (ADR-0054, before it UBI), the JDK, every jar (Trivy) |
 | web | `web-image.cdx.json` | the image: Alpine/nginx packages (Trivy; the Flutter bundle carries no package metadata) |
+| pdf-service | `pdf-service-image.cdx.json` | the image: Debian packages of the distroless base and the crates of the `cargo auditable` binary (Trivy; WP111) |
+| finance-service | `finance-service-image.cdx.json` | the image: the static Go binary's modules (Trivy; WP118) |
 
 When the job pushes (main, `IMAGE_REGISTRY` set) it attaches each file to the pushed digest as an OCI referrer (ORAS,
 artifact type `application/vnd.cyclonedx+json`; on ghcr.io via the referrers tag `sha256-<digest>`). Read them back:
@@ -215,9 +217,11 @@ starts with `Watching scoped namespaces: ...` and logs each workload it rolls af
 Observability (chart 0.9.0, WP86, ADR-0046): `global.observability.enabled=true` renders the OpenTelemetry collector
 (`otel-collector`, OTLP gRPC 4317 / HTTP 4318, traces and logs, no metrics) and points the three services at it
 (`global.observability.tracesSampleRatio`, default `0.1`; `global.observability.environment` for
-`deployment.environment.name`); Jaeger (`observability.jaeger.enabled`) is for kind only. For a real environment send
+`deployment.environment.name`). Since chart 0.13.0 (WP120) kind runs one Grafana LGTM pod (`observability.lgtm.enabled`,
+dev only, 24 h retention, metrics through the collector) and the cloud values keep the in-memory Jaeger
+(`observability.jaeger.enabled`); neither is a production backend. For a real environment send
 the collector's output to the platform's backend: `observability.collector.exporters` and `pipelineExporters`
-(`traces`, `logs`), credentials through `observability.collector.secretEnv` (Secrets created first; Reloader rolls the
+(`traces`, `logs`, and `metrics` since 0.13.0), credentials through `observability.collector.secretEnv` (Secrets created first; Reloader rolls the
 collector on a rotation) and the backend's address in `observability.collector.networkPolicy.extraEgress`; or set
 `observability.collector.enabled=false` and `global.observability.otlpEndpoint` to the platform's own collector. The
 edge span needs the `EnvoyProxy` tracing settings of `deploy/kind/up.sh` (by the collector's DNS name, not

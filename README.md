@@ -6,31 +6,38 @@ available in Spanish, English and Indonesian.
 - **Roster and eligibility**: seasons, age categories, teams, players, play-up rules, approvals, season rollover.
 - **Live match statistics**: box-score entry that keeps working offline and syncs later, several scorers per match.
 - **Training**: calendar, attendance, planned absences, plans and completion, an exercise catalogue.
-- **Exports**: CSV of the team roster and the audit trail; CSV, Excel and calendar (ICS) files of stats and schedules.
+- **Exports**: CSV and PDF of the team roster, CSV of the audit trail, a PDF match sheet; CSV, Excel and calendar
+  (ICS) files of stats and schedules.
 - **Athlete health and fitness**: injuries and availability, height/weight growth, physical tests against age norms.
+- **Academy finance**: one currency per academy, fee plans per team or age category (monthly, quarterly or once per
+  season), dues per player and period, payments recorded by hand, waivers, expenses by category, the season balance and
+  CSV exports; no payment provider.
 
 ## Features by role
 | Role | What they do |
 |---|---|
 | Super admin | an application admin hub: accept or reject academy requests from the landing page, create, suspend, reactivate and withdraw academies; add, edit and remove each academy's administrators; find any login and its academies (Users); see usage per service; export the platform audit trail; switch to an academy the login belongs to |
-| Administrator | academy profile and logo, members and invitations, guardian links, seasons, categories, teams and staff, jersey numbers (preferred number, taken and free numbers), player approvals, eligibility cases, rollover, age rule and play-up limit; roster and audit trail exports |
-| Coach | match setup and live scoring, training calendar, attendance, plans and the exercise catalogue, health and fitness entries, requests to add or withdraw players, players' preferred jersey numbers, exports of the roster of the teams they coach now, stats and calendar; past seasons of teams they coached, read-only |
-| Assistant coach | the same for matches, training and health; read-only on roster, no player requests |
-| Parent | linked children: stats during matches, absences, plan completion, injuries and measurements, a jersey number wish; the exercise catalogue, read-only |
-| Player | own profile, season stats, plans, absences, health history (read-only), a jersey number wish; the exercise catalogue, read-only |
+| Administrator | academy profile and logo, members and invitations, guardian links, seasons, categories, teams and staff, jersey numbers (preferred number, taken and free numbers), player approvals, eligibility cases, rollover, age rule and play-up limit; roster (CSV, PDF) and audit trail exports; finance: currency, fee plans, dues, payments, waivers, expenses, season balance, CSV exports |
+| Coach | match setup and live scoring, training calendar, attendance, plans and the exercise catalogue, health and fitness entries, requests to add or withdraw players, players' preferred jersey numbers, exports of the roster (CSV, PDF) of the teams they coach now, stats and calendar; which players of their team are up to date with their dues (no amounts); past seasons of teams they coached, read-only |
+| Assistant coach | the same for matches, training and health; read-only on roster, no player requests, no finance |
+| Parent | linked children: stats during matches, absences, plan completion, injuries and measurements, a jersey number wish, their dues and payments; the exercise catalogue, read-only |
+| Player | own profile, season stats, plans, absences, health history (read-only), a jersey number wish, own dues and payments; the exercise catalogue, read-only |
 
 Every member edits their own first and last name in Profile; a login in several academies switches between them. The
-menu behind the avatar sets the language and the theme (light, dark, or system, the default) on every screen.
+menu behind the avatar sets the language and the theme (light, dark, or system, the default) on every screen, and the
+academy chooser offers both too. Every member who sees a match's box score can download its match sheet as a PDF.
 
 ## Stack
-Java 25, Quarkus 3 (three services: `core`, `game`, `athlete`), PostgreSQL 17 with row-level security (one database, one
-schema per service), Keycloak (authentication only), Flutter Web PWA (Riverpod, Drift offline store), OpenAPI contracts
-with generated Dart clients, Podman, kind + Helm + Tilt, CloudNativePG. No Node anywhere.
+Java 25, Quarkus 3 (three services: `core`, `game`, `athlete`), a `pdf-service` in Rust (stateless, renders printable
+sheets for core and game) and a `finance-service` in Go (ADR-0051), PostgreSQL 17 with row-level security (one
+database, one schema per service), Keycloak (authentication only), Redpanda for core's roster events, Flutter Web PWA
+(Riverpod, Drift offline store), OpenAPI contracts with generated Dart clients, Podman, kind + Helm + Tilt,
+CloudNativePG, an OpenTelemetry collector with a Grafana LGTM pod for local work. No Node anywhere.
 
 ## Quick start
 Prerequisites are installed by the bootstrap script (macOS with Homebrew; Podman machine running).
 ```bash
-scripts/bootstrap.sh                 # toolchain (JDK 25, Maven wrapper, Podman, Flutter, just, ...)
+scripts/bootstrap.sh                 # toolchain (JDK 25, Maven wrapper, Rust, Go, Podman, Flutter, just, ...)
 source scripts/env.sh && just doctor # JDK 25 + Podman socket for Testcontainers; toolchain check
 cp .env.example .env                 # replace every change-me-* value (git-ignored)
 just up                              # Postgres, Keycloak, MailHog, Redpanda, nginx on http://localhost:8080
@@ -63,7 +70,8 @@ set -a; source .env; set +a
 ./mvnw -pl services/core-service    quarkus:dev     # :8081  (one terminal each)
 ./mvnw -pl services/game-service    quarkus:dev     # :8082
 ./mvnw -pl services/athlete-service quarkus:dev     # :8083
-# or: just services-up   (builds jars, starts all three in the background; just services-down to stop)
+# or: just services-up   (builds jars, starts all three in the background, plus pdf-service :8084 and
+#     finance-service :8085 in compose; just services-down to stop)
 ```
 Start the web app against the stack:
 ```bash
@@ -74,7 +82,8 @@ A demo without any backend: `flutter run -d chrome --web-port 5173 --dart-define
 After pulling realm changes, reset Keycloak: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
 Create your first academy as `superadmin@hoops-academy.com`: `docs/runbooks/onboard-tenant.md`.
 
-Common commands: `just test` (backend verify with coverage and RLS gates), `just web-test`, `just e2e`, `just scan`,
+Common commands: `just test` (Maven verify with coverage, RLS and PMD gates, then the Rust and Go gates), `just web-test`,
+`just e2e`, `just observability-up` (Grafana on http://localhost:3000), `just scan`,
 `just web-format`, `just gen-api` (regenerate Dart clients), `just kind-up` and `just tilt` (Kubernetes on kind),
 `just tofu-check` (the cloud module, no account needed).
 
@@ -82,7 +91,7 @@ Common commands: `just test` (backend verify with coverage and RLS gates), `just
 ```
 libs/common-quarkus   tenancy, RLS, authz, Problem+JSON, shared test fixtures
 libs/contracts        OpenAPI specs + event JSON Schemas (source of truth for clients)
-services/*            core-service, game-service, athlete-service (Quarkus)
+services/*            core-service, game-service, athlete-service (Quarkus); pdf-service (Rust); finance-service (Go)
 apps/web              Flutter Web PWA (generated API clients in apps/web/packages)
 infra/                compose stack, DB init SQL, Keycloak realm, OpenTofu module for the cloud VM (infra/tofu)
 deploy/               Helm charts, container files, kind and cloud scripts; Tiltfile at the root
@@ -97,21 +106,34 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | Architecture and diagrams | [`docs/architecture.md`](docs/architecture.md) |
 | Plan, original requirements, conformance | [`docs/PLAN.md`](docs/PLAN.md), [`docs/SPEC.md`](docs/SPEC.md), [`docs/conformance.md`](docs/conformance.md) |
 | Decisions | [`docs/adr/`](docs/adr/README.md) (index) |
-| Domain rules and models | [`docs/domain/`](docs/domain): authz matrix, glossary, norms; generated ER and class diagrams per service: [core](docs/domain/core-model.md), [game](docs/domain/game-model.md), [athlete](docs/domain/athlete-model.md) (`just diagrams`) |
+| Domain rules and models | [`docs/domain/`](docs/domain): authz matrix, glossary, norms; generated ER and class diagrams per service: [core](docs/domain/core-model.md), [game](docs/domain/game-model.md), [athlete](docs/domain/athlete-model.md) (`just diagrams`); the finance model in [ADR-0056](docs/adr/0056-finance-domain-model.md) |
 | Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [cloud (not yet applied)](docs/runbooks/cloud.md), [e2e](docs/runbooks/e2e.md), [events](docs/runbooks/events.md), [observability](docs/runbooks/observability.md), [troubleshooting](docs/runbooks/troubleshooting.md) |
-| Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md), [SAST/DAST](docs/security/sast-dast.md); mutation testing: [`docs/quality/mutation.md`](docs/quality/mutation.md) |
-| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05, the four rounds of 2026-11-06/07, the sixth round of 2026-11-10 and the seventh of 2026-11-14), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
+| Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md), [SAST/DAST](docs/security/sast-dast.md), [privacy threat model (LINDDUN)](docs/security/privacy-threat-model.md); quality: [mutation testing](docs/quality/mutation.md), [PMD / CPD gate](docs/quality/pmd.md) |
+| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05, the four rounds of 2026-11-06/07, the sixth round of 2026-11-10, the seventh of 2026-11-14 and the eighth of 2026-11-15/16), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP110 are done** (no
-WP79), with handovers in `docs/wp/` (the seventh round, WP104–WP110, on 2026-11-14; WP109's JDK 25 was merged into
-`main` on 2026-11-15). As of 2026-11-15: backend `./mvnw verify` runs **3,388 tests** green on JDK 25 (26 of
-them, the e2e journey steps, skipped without a running stack) and `flutter test` **1500 tests**; the
-26-step e2e journey is green on a compose stack (CI `e2e` workflow, with a browser login round trip and the ZAP API
-scans). Contract versions: core 3.6.0, game 2.3.0, athlete 3.0.0, common 1.1.1; roster event schemas in
+Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP125 are done** (no
+WP79), with handovers in `docs/wp/` (the eighth round, WP111–WP125, on 2026-11-15 and 2026-11-16). As the last
+handovers of 2026-11-16 report: `just test` runs **3,556 Maven tests** (32 of them, the e2e journey steps, skipped
+without a running stack), **100 Rust tests** and **204 Go tests**, all green with their coverage gates; `flutter
+test` **1,801 tests**; the 32-step e2e journey was green on a compose stack on 2026-11-16, including the real PDF
+calls; the CI `e2e` workflow runs it on every push, with a browser login round trip and ZAP API scans of core, game,
+athlete and finance. Contract versions:
+core 3.7.0, game 2.4.0, athlete 3.0.0, common 1.1.1, pdf 1.0.0, finance 1.0.0; roster event schemas in
 `libs/contracts/events`.
 
+- **Eighth round**: two services outside the JVM (ADR-0051). `pdf-service` in Rust renders the team roster and the
+  match sheet in es / en / id; core and game call it and return the PDF (audited for the roster), the web has a PDF
+  button next to each export (ADR-0052, ADR-0048 amendments). `finance-service` in Go holds the academy's finance:
+  currency, fee plans, dues by hand and by a daily job, hand-recorded payments, waivers, expenses, the season balance
+  and CSV exports, with its own schema, RLS, roster replica and the tenancy checks rebuilt in Go (ADR-0055, ADR-0056);
+  the web has a Finance area for the administrator, a status view for the team's coach and a dues tab for families.
+  Also: a PMD / CPD maintainability gate in `verify` (ADR-0053); the Java images on a distroless Java 25 base (ADR-0054);
+  one Grafana LGTM pod for traces, logs and metrics on kind and in compose (ADR-0046 amendment); a LINDDUN privacy
+  threat model with 13 findings, five of them to close before real academies (`docs/security/privacy-threat-model.md`);
+  language and theme on the academy chooser; compose nginx rate limits for the exports and the academy request. The
+  Finance area and the PDF buttons were tested against the demo mock and the journey, not yet in a real browser.
 - **Seventh round**: light, dark or system theme, chosen with the language in the menu behind the avatar; parents and
   players browse the exercise catalogue; the roster export (guardians' contact data) is for ADMIN and the team's
   current coach only (ADR-0048 amendment); `/me` carries the given and family name per academy (core 3.6.0);
@@ -146,22 +168,24 @@ scans). Contract versions: core 3.6.0, game 2.3.0, athlete 3.0.0, common 1.1.1; 
 - **Supply chain**: a validated CycloneDX SBOM per image, attached to the pushed image as an OCI referrer (ADR-0043);
   GitHub Actions pinned to commit SHAs, Dependabot with a 7-day cooldown, and a weekly `bump-pins` PR for image
   digests, chart tags and kind pins.
-- **Kubernetes**: the Helm chart (0.10.0) uses Gateway API with Envoy Gateway v1.10.0 (ADR-0031) and global rate limits through
+- **Kubernetes**: the Helm chart (0.13.0, with sub-charts for pdf-service and finance-service) uses Gateway API with Envoy Gateway v1.10.0 (ADR-0031) and global rate limits through
   Redis with an ACL (ADR-0033), renders the broker behind `events.enabled` (with `global.events.enabled`), can take its
   Secrets from the External Secrets Operator and roll the pods on a rotation with Stakater Reloader
   (`global.reloader.enabled`, ADR-0012 amendments), and ships traces and logs through an OpenTelemetry collector
-  (`global.observability.enabled`, ADR-0046); with events on, both services read their replicas; core's mail goes to
-  Mailpit on kind; all proven on kind.
+  (`global.observability.enabled`, ADR-0046) to one Grafana LGTM pod on kind; with events on, game, athlete and
+  finance read their replicas; core's mail goes to Mailpit on kind; proven on kind with `smoke.sh` (the eighth round's
+  services on 0.11.0 to 0.13.0; `tilt ci` last on 0.9.0).
 - **Quality**: mutation testing (PIT and a Dart tool for the web rule code) runs on demand and monthly against
-  baselines equal to the scores (common 337/338, core 925/926, game 525/527, athlete 690/690, web 430/430;
-  `docs/quality/mutation.md`). 475 of 630 fitness norm rows are cited from published tables; the rest are flagged
+  baselines equal to the scores (common 337/338, core 932/933, game 555/557, athlete 690/690, web 100 %;
+  `docs/quality/mutation.md`; not yet for Rust and Go); PMD and CPD gate maintainability in `verify`, Clippy (pedantic)
+  and golangci-lint the two new services. 475 of 630 fitness norm rows are cited from published tables; the rest are flagged
   "reference pending" (`docs/domain/norms.md`). The web app is an installable PWA (Lighthouse PWA score 1,
   airplane-mode cold start checked by script) and its demo mode (`HOOPS_MOCK_API=true`) reaches every screen.
 
-The CI workflows `ci`, `e2e`, `codeql` and `semgrep` are green on `main`; `images` is red since 2026-11-14 because
-Trivy finds 14 HIGH `krb5-libs` issues in the Red Hat base image whose fix is not published yet (`docs/HANDOVER.md`).
-No cloud deployment exists yet. Not built: billing (a placeholder
-screen), the purge job, PDF exports. Open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); current state:
+The CI workflows `ci`, `e2e`, `images`, `codeql` and `semgrep` run on every push to `main`; their latest state and run
+ids are in `docs/HANDOVER.md` (`images` is green again since the distroless base of WP114). No cloud deployment exists
+yet. Not built: billing (a placeholder screen), the purge job, erasure and per-person export (privacy findings P-01,
+P-02). Open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); current state:
 [`docs/HANDOVER.md`](docs/HANDOVER.md); what the system does for each spec statement, with evidence:
 [`docs/conformance.md`](docs/conformance.md).
 

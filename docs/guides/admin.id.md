@@ -20,7 +20,8 @@ memutuskan permintaan pemain. Nama menu di bawah sesuai tampilan aplikasi berbah
   **Profil**), **Bahasa** (Español, English, Bahasa Indonesia), dan **Tema** (**Sistem**, **Terang**, **Gelap**).
   Pilihan langsung berlaku dan diingat di peramban ini; **Sistem**, bawaannya, mengikuti perangkat Anda. **Profil**
   berisi **Nama Anda** dan **Keluar**. Sebelum masuk, kepala halaman depan punya tombol bahasa dan tema sendiri.
-  Layar untuk memilih akademi belum punya menu ini.
+  Layar untuk memilih akademi (satu login di beberapa
+  akademi) menampilkan **Bahasa** dan **Tema** di bawah daftar.
 
 ## 1. Profil akademi dan logo
 **Admin > Profil akademi.**
@@ -142,9 +143,19 @@ Dibuat oleh server (perlu koneksi, dalam bahasa aplikasi, dan berhenti di 10.000
   administrator bagi setiap tim, termasuk musim yang sudah selesai, dan bagi pelatih untuk tim yang sedang ia latih;
   pelatih lama dari musim yang sudah selesai tidak mendapatkannya. Setiap ekspor muncul di aktivitas
   sebagai **Daftar tim diekspor**.
+- **Daftar tim sebagai PDF**: ikon PDF tepat setelah ikon CSV (**Unduh daftar pemain (PDF)**) mencetak daftar yang sama
+  dalam satu lembar, untuk orang yang sama, dan tercatat di aktivitas dengan cara yang sama. Tim dengan lebih dari 60
+  pemain, 20 staf, atau 4 wali untuk satu pemain tidak muat: aplikasi menulis "Daftar pemain terlalu besar untuk satu
+  lembar: gunakan file CSV.". Jika layanan PDF tidak tersedia: "PDF belum tersedia saat ini. Coba lagi nanti atau
+  gunakan file CSV.".
 - **Aktivitas**: ikon unduh di **Aktivitas** (**Ekspor aktivitas (CSV)**) menyimpan semua entri yang dipilih filter
   saat ini, bukan hanya halaman di layar; jika lebih dari 10.000 baris, persempit tanggal atau tindakan. Tercatat
   sebagai **Jejak audit diekspor**.
+
+**Lembar pertandingan (PDF)**: di layar sebuah pertandingan, ikon PDF di bilah atas (**Unduh lembar pertandingan
+(PDF)**) menyimpan lembar pertandingan dengan skor dan baris statistik yang boleh Anda lihat. Server membuatnya dalam
+bahasa aplikasi; perlu koneksi (tanpa koneksi ikonnya nonaktif) dan muncul setelah pertandingan punya daftar pemain.
+Jika tidak bisa dibuat: "Lembar pertandingan belum tersedia saat ini. Coba lagi nanti.".
 
 Dibuat di perangkat Anda dari data yang sudah dimuat layar (ikon unduh **Ekspor**): **Statistik musim** (satu baris per
 pertandingan ditambah total) dan statistik sebuah pertandingan sebagai **File CSV** atau **File Excel**; daftar
@@ -153,6 +164,43 @@ pertandingan dan minggu latihan sebagai kalender tim (pertandingan dan sesi musi
 dan saat itu perlu koneksi; tanpa koneksi aplikasi memberi tahu dan file CSV tetap bisa dipakai.
 
 Nama file seperti `hoops-<akademi>-<apa>-<yyyyMMdd>.csv`; file CSV langsung terbuka di Excel.
+
+## 13. Keuangan
+**Admin > Keuangan** (khusus administrator): pembukuan akademi sendiri tentang tagihan keluarga, pembayarannya, dan
+pengeluaran akademi. Tidak ada pembayaran daring: pembayaran dicatat secara manual. Pusatnya berisi **Mata uang**,
+**Rencana iuran**, **Tagihan dan pembayaran**, **Pengeluaran**, dan **Neraca musim**. Tanpa koneksi Anda dapat melihat
+tetapi tidak dapat mengubah apa pun ("Offline: Anda dapat melihat data keuangan tetapi tidak dapat mengubahnya.").
+1. **Mata uang**: **Pilih mata uang** (cari berdasarkan kode, mis. EUR atau IDR) lalu konfirmasi. Semua jumlah akademi
+   memakai satu mata uang ini; mata uang **Terkunci** setelah tagihan pertama dibuat atau pengeluaran pertama dicatat.
+2. **Rencana iuran > Rencana baru**: **Nama rencana**, **Musim**, **Ditagihkan kepada** (**Satu tim** atau **Satu
+   kategori usia**), **Frekuensi** (**Bulanan**, **Per kuartal**, **Sekali per musim**), **Jumlah per periode**,
+   **Periode pertama**, **Periode terakhir** atau **Sampai akhir musim**, dan **Buat tagihan secara otomatis** (setiap
+   hari tagihan yang belum ada dari rencana aktif dibuat). Musim, siapa yang ditagih, dan frekuensi tidak dapat diubah
+   kemudian; jumlah baru berlaku untuk tagihan yang dibuat sesudahnya. Menu baris: **Ubah rencana**, **Buat tagihan**,
+   **Arsipkan** / **Aktifkan kembali**, **Hapus** (hanya selama rencana belum punya tagihan); **Tampilkan yang
+   diarsipkan** ikut menampilkan rencana yang diarsipkan.
+3. **Buat tagihan** (dari menu rencana atau di **Tagihan dan pembayaran**): pilih rencana dan **Periode**; **Hitung**
+   menunjukkan berapa tagihan akan dibuat dan berapa yang sudah ada, lalu **Buat**. Mengulanginya tidak pernah
+   menggandakan tagihan. Pemain menanggung jumlah penuh untuk setiap periode ketika ia berada di tim (atau kategori)
+   pada hari mana pun.
+4. **Tagihan dan pembayaran**: filter **Rencana**, **Tim**, **Periode**, dan status (**Belum dibayar**, **Lunas**,
+   **Dibebaskan**), halaman berisi 25. Sebuah tagihan menampilkan jumlahnya, jumlah rencana bila diubah, alasannya, dan
+   semua pembayaran, termasuk yang dibatalkan. Tindakan: **Catat pembayaran** (seluruh tagihan sekaligus: **Tanggal
+   pembayaran**, tidak boleh setelah hari ini, **Metode pembayaran** Tunai, Transfer bank, Kartu, atau Lainnya,
+   **Catatan** opsional); **Ubah jumlah** dan **Bebaskan** (dengan **Alasan**; pembebasan bersifat final);
+   **Batalkan pembayaran** (dengan alasan: pembayaran tetap disimpan dan ditandai **Dibatalkan**, dan tagihan kembali
+   belum dibayar). Alasan singkat saja: "Jangan menulis data kesehatan atau keluarga."
+5. **Pengeluaran > Pengeluaran baru**: **Tanggal pengeluaran**, **Kategori** (Sewa lapangan, Gaji, Perlengkapan, Biaya
+   turnamen, Perjalanan, Lainnya), **Jumlah**, **Keterangan**, dan **Catatan** opsional (tanpa nama beserta gajinya dan
+   tanpa data kesehatan). Filter berdasarkan **Kategori**, **Dari**, dan **Sampai**; buka pengeluaran untuk mengubahnya,
+   atau **Hapus pengeluaran** untuk yang tercatat karena salah.
+6. **Neraca musim**: pilih musim: tagihan **Terkumpul**, **Belum tertagih**, dan **Dibebaskan**, **Pengeluaran**,
+   **Hasil (terkumpul dikurangi pengeluaran)**, dan diagram batang pengeluaran per kategori.
+7. **Ekspor CSV**: ikon unduh di **Tagihan dan pembayaran** (**Ekspor tagihan sesuai filter ini (CSV)**) dan di
+   **Pengeluaran** (**Ekspor pengeluaran sesuai filter ini (CSV)**): yang dipilih filter, paling banyak 10.000 baris,
+   dalam bahasa aplikasi, tanpa alasan atau catatan.
+Layanan keuangan menyimpan catatan sendiri atas setiap perubahan. Pelatih tim hanya melihat di halaman tim apakah setiap
+pemain sudah lunas (tanpa jumlah); orang tua dan pemain melihat tagihannya sendiri di tab **Tagihan**.
 
 ---
 Status: disusun dari layar yang sudah diimplementasikan dan berkas terjemahan; belum diperiksa lewat uji manual di peramban.

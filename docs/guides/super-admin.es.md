@@ -21,6 +21,7 @@ academia de la que eres miembro. Cada contexto tiene su propio menú.
   la aplicación / Super administrador" o "Hangtuah / Administrador". La elección se recuerda en este navegador y se
   olvida al cerrar sesión.
 - Un enlace antiguo a una página `/platform/...` abre la misma página dentro de la Administración de la aplicación.
+- La lista para elegir contexto muestra debajo **Idioma** y **Tema**, como el menú del avatar.
 - El botón redondo con tus iniciales (arriba a la derecha, en todos los contextos) abre un menú: **Perfil**, **Idioma** y
   **Tema** (**Sistema**, **Claro**, **Oscuro**; se recuerda en este navegador, **Sistema** sigue a tu dispositivo).
 

@@ -4,6 +4,13 @@
 > (history is not rewritten below this box). What was actually built, statement by statement against `docs/SPEC.md` and
 > §2 of this plan, is in [`conformance.md`](conformance.md); decisions taken during implementation are ADR-0011 to
 > ADR-0021 in [`adr/`](adr/); work-package handovers are in [`wp/`](wp/).
+>
+> **Later rounds (note of 2026-11-16, WP125).** The notes below describe the state at the WP20 review. Since then eight
+> rounds of work packages (WP21–WP125, `wp/FOLLOW-UPS.md`) built, among others, the outbox publisher, Redpanda and the
+> roster replicas (WP19's scope), the PWA browser checks and CI. The eighth round added two deployables outside this
+> plan's three services, a `pdf-service` in Rust and a `finance-service` in Go (ADR-0051, which amends ADR-0003 and
+> ADR-0007); academy finance is not the billing of §8, which is still seams only. Current state:
+> [`HANDOVER.md`](HANDOVER.md).
 
 ### Implementation notes / deviations from this plan
 - **Contracts**: OpenAPI 3.0.3 with absolute paths and `servers: [{url: /}]` (not `servers: /api/<svc>`); contracts are at
