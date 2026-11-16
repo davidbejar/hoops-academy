@@ -25,8 +25,8 @@ calls game's and athlete's `/internal/usage` with its own. No user token is forw
    | client | `aud` of its access tokens |
    |---|---|
    | `web` (public, PKCE) | `core-service`, `game-service`, `athlete-service` |
-   | `core-service` (service account) | `game-service`, `athlete-service` |
-   | `game-service` | `core-service` |
+   | `core-service` (service account) | `game-service`, `athlete-service`, `pdf-service` (amendment 2026-11-16) |
+   | `game-service` | `core-service`, `pdf-service` (amendment 2026-11-16) |
    | `athlete-service` | `core-service` |
 
    A service's token is for the services it calls, never for itself. Mappers sit on the clients, not in realm-level
@@ -72,3 +72,11 @@ calls game's and athlete's `/internal/usage` with its own. No user token is forw
   until either party refreshes; the next presenter of a spent token ends the session for both.
 - Residual (UX): a tab that cannot take part in the lock (a second browser profile is a separate store anyway; an old
   browser without Web Locks with two tabs open) can still race and be signed out; it then signs in again.
+
+## Amendment 2026-11-16 (decisions 89 and 90, WP111, WP116): the `pdf-service` audience
+
+The bearer-only client `pdf-service` (ADR-0051 §3, ADR-0052) accepts a token only when its `aud` contains
+`pdf-service` and its realm roles contain `service`. The realm maps that audience on the clients `core-service` and
+`game-service` (mapper `audience pdf-service`), never on `web`: the browser cannot call pdf-service, and core or game
+call it with their own client-credentials token after authorizing the user (core: the printed team roster, WP116;
+game: the match sheet, WP117). `RealmTokenPolicyTest` lists both audiences.

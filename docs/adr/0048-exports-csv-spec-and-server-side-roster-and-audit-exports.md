@@ -1,7 +1,7 @@
 # ADR-0048: Exports: one CSV spec for server and browser, the roster and the audit trails built by core; preferred jersey numbers
 
 - Status: Accepted (WP96, core 3.5.0); amended 2026-11-14 (decision 83, WP106, core 3.6.0: the roster export is for
-  the team's current staff only)
+  the team's current staff only); amended 2026-11-16 (decision 89, WP116, core 3.7.0: the roster also prints as PDF)
 - Date: 2026-11-10
 - Records: decisions 67, 68 and 69 of 2026-11-10 (`docs/wp/FOLLOW-UPS.md`, sixth round); decision 70 for the jersey
   numbers of the same contract version
@@ -136,3 +136,35 @@ for a team the caller is not current staff of (WP108).
 Rejected: keeping the history export (the contact data of families a coach no longer works with outlive the reason
 to hold them), and answering 404 to the former coach (they are a member who reads the team; 404 is for non-members,
 rule 3 of `CLAUDE.md`).
+
+## Amendment 2026-11-16 (decision 89, WP116, core 3.7.0): the printed roster
+
+Decision 67 left PDF for later; decision 89 has core load the roster, have the Rust pdf-service render it (ADR-0051
+§3, ADR-0052) and return the PDF.
+
+- **How the web asks**: the same operation, `GET /api/core/teams/{teamId}/roster:export`, with `Accept:
+  application/pdf`. `Accept` absent, `*/*`, `text/*` or `text/csv` keeps the CSV, so a 3.6 client is unchanged; the
+  first acceptable type (in the caller's preference order) that is one of the two forms decides
+  (`adapters.in.export.AcceptedFormat`). A content negotiation is right here although the 3.5 decision rejected it for
+  the JSON reads: both forms are binary files of one export (the generated Dart method stays `Response<Uint8List>`,
+  the web passes the header), and one path keeps one authz rule, one audit action and the gateway's rate limit
+  (ADR-0033) without a new route. A sibling path (`roster:print`) was rejected for those three reasons.
+- **Same rules**: `PrintTeamRoster` takes the roster from `ExportTeamRoster.gather` (ADMIN, or the team's current
+  COACH; others 403; non-members 404; the 10,000-row limit) and audits the same `team.roster_exported`, whose
+  metadata now has `rows` and `format` (`csv` / `pdf`) for both forms. File name
+  `hoops-<academy-slug>-roster-<team>-<yyyyMMdd>.pdf` built by core (`ExportFileName.pdf`), not taken from
+  pdf-service's `Content-Disposition` (that one is derived from the academy's name, not its slug); `Cache-Control:
+  no-store`. Labels in the language negotiated from `Accept-Language` (sent as pdf-service's `locale`).
+- **Content**: what the CSV holds (players by family then given name with their active guardians, then the staff by
+  role then name), plus the heading pdf-service prints: the academy's name and time zone, the team's season and age
+  category. Nothing the CSV does not already give the same caller.
+- **The sheet's limits**: at most 60 players, 20 staff and 4 active guardians per player (`pdf.yaml` `maxItems`,
+  pinned by `TeamRosterRequestDtoTest`). Core checks them first (`ExportLimit.requirePrintable`): 422
+  `EXPORT_TOO_LARGE` with a hint to take the CSV, nothing sent.
+- **pdf-service unavailable**: not configured (`PDF_SERVICE_URL` unset), unreachable, slower than the read time-out
+  (connect 1 s, read 5 s: the export's transaction waits for the answer), any error status (400 / 422 = a mapping
+  bug, 401 / 403 = realm misconfiguration, 413, 500, 503) or an empty body: 503 `UPSTREAM_UNAVAILABLE` (the shared
+  Problem; the logged message names the cause and the status only). The audit row is written after the sheet came
+  back in the same transaction, so a failed render audits nothing. The CSV does not depend on pdf-service.
+- **Privacy**: the request body (children's names, guardians' contacts) is never logged nor put on a span; the REST
+  client logs no bodies (`TeamRosterPdfTest` checks the logs on success and on every failure).

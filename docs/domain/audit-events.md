@@ -9,7 +9,8 @@ appearing in all three.
 **Rules**
 - **No personal data in metadata.** It holds ids, role and enum names, and the *names* of changed fields, never
   values, names, e-mails, phone numbers or notes. Names are resolved when the trail is read, from the rows that still
-  exist (a renamed person shows the new name; a row that no longer exists shows its id only). One exception, older than
+  exist (a renamed person shows the new name; a row that no longer exists shows its id only): persons, players, teams
+  (WP116) and the academy on the academy's trail; the platform trail names only academies and their administrators. One exception, older than
   WP34: `tenant.suspended` / `tenant.withdrawn` carry the super admin's free-text `reason` (also in the outbox and on
   the tenant registry).
 - **Only real changes** (WP58). `fields` lists the fields whose stored value changed. An edit whose effective change
@@ -48,7 +49,7 @@ appearing in all three.
 | `player.rejected` | player | as `player.approved` | ADMIN decision (also an outbox event) |
 | `player.requested` | player | `approvalRequestId`, `action`, `playerId`, `status`, `requestedBy` | COACH request (also an outbox event) |
 | `player.withdrawn` | player | as `player.approved` | ADMIN withdrawal or approved WITHDRAW_PLAYER (also an outbox event) |
-| `team.roster_exported` | team | `rows` (players plus staff in the file) | ADMIN or the team's current coach (decision 83), `GET /api/core/teams/{teamId}/roster:export` (WP96, ADR-0048; the file holds personal data, the row none) |
+| `team.roster_exported` | team | `rows` (players plus staff in the file), `format` (`csv` or `pdf`, WP116) | ADMIN or the team's current coach (decision 83), `GET /api/core/teams/{teamId}/roster:export`, the CSV or with `Accept: application/pdf` the printed sheet (WP96, WP116, ADR-0048; the file holds personal data, the row none; a PDF that pdf-service could not render writes no row) |
 | `tenant.created` | tenant | `slug` | super admin, onboarding |
 | `tenant.events_backfilled` | tenant | `force`, `events` (count appended), `topics` (topic names) | super admin, `POST /platform/events/backfill` (WP81) |
 | `tenant.logo_removed` | tenant | – | ADMIN |

@@ -55,6 +55,7 @@ Non-members of a tenant receive **404** for every tenant resource.
 | Export the team roster with guardians and staff as CSV (`GET /api/core/teams/{id}/roster:export`, WP96, ADR-0048; audited `team.roster_exported`, rate-limited; current staff only since WP106, decision 83) | yes (teams of ended seasons too) | own teams as current staff only (a former coach of an ended season: 403, a fine-grained security event; another team: 403) | – (403) | – (403) | – (403) |
 | Export the academy's audit trail as CSV (`GET /api/core/audit-events:export`, WP96, ADR-0048): the list's filters and masking; audited `audit.exported`, rate-limited | yes | – | – | – | – |
 | Export the audit trail of every academy, or of one, as CSV (`GET /platform/audit-events:export`, WP96, ADR-0048) | `super_admin` (platform) only; recorded as `audit.exported` in each exported academy's trail; tenant roles 403, anonymous 401 | | | | |
+| Print the team roster as PDF (`GET /api/core/teams/{id}/roster:export` with `Accept: application/pdf`, WP116, decision 89, ADR-0048 amendment): the CSV's rule and audit row (`format` `pdf`); core calls pdf-service, the browser never does | yes (teams of ended seasons too) | own teams as current staff only (a former coach of an ended season: 403; another team: 403) | – (403) | – (403) | – (403) |
 
 Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of
