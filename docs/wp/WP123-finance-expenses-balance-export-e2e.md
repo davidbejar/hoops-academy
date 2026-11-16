@@ -52,3 +52,54 @@ ADMIN only.
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+
+- Built:
+  - **finance-service, no operation left 501** (`rest/later.go` removed; `TestEveryContractOperationIsServed` calls all 26
+    operations of finance.yaml: never 501/405, non-member 404, anonymous 401). V20 `finance.expense` (fixed categories,
+    RLS suites), V21 `tenant_ref.slug`, V22 `team_ref.name` (decoded from `tenant.changed` / `team.changed`).
+  - **Expenses**: create (409 `CURRENCY_NOT_SET` first), list (newest first; `from`/`to`/`category`, pages), get, correct
+    (`clear: [note]`, row lock, no-change = no audit), delete (hard). Audit `expense.created|updated|deleted` (category /
+    field names only). The first expense locks the currency, like the first due.
+  - **Season balance** (`domain.NewSeasonBalance`, property test over 2,000 random cases): income by status (PAID by the
+    valid payment), expenses within the season by all six categories, net. Unknown season or no currency yet: 404.
+  - **CSV exports** (`adapters/in/export`, pure): BOM, CRLF, RFC 4180, formula guard, `Accept-Language` (es/en/id, `in`,
+    q=0, ties), labels following the ARB texts, `hoops-<slug>-dues|expenses-<yyyyMMdd>.csv`, 10,000 rows else 422
+    `EXPORT_TOO_LARGE` (no audit), audit `dues.exported` / `expenses.exported` (rows + filter). Never reasons or notes.
+  - **e2e**: journey steps 14-18 and 55 (roster PDF + 403 + audit `format=pdf`; match sheet for coach and parent;
+    finance plan/dues/pay/void/pay, family view, coach status, expenses, balance, both CSVs spaced under the export
+    limit; academy B 404s; finance in the suspension step). `services-up.sh` also starts pdf-service and
+    finance-service in compose (finance roles first; `E2E_WITHOUT_PDF_FINANCE=1` skips), `services-down.sh` stops them.
+    `e2e.yml`: ZAP scans core, game, athlete **finance**; pdf/finance logs on failure; timeout 130 min.
+    `scripts/zap-api-scan.sh` takes `finance`; `.zap/api-finance.conf` pre-accepts the rate-limit "SQL Injection" false
+    positive on the two export paths only (`:` and `%3A`), expiring 2027-05-16 (checked against a synthetic report: the
+    list path still blocks).
+  - **Seed** (`seed-academy.sh` demo phase, `ensure_finance`): EUR; "Cuota mensual" (Test Team, 4500, last three months,
+    by hand) and "Matrícula de temporada" (U14 category, 12000, SEASON); payments (players 1-2 up to date, 4 and 7 behind
+    since two months, enrolment of 10 waived "Beca deportiva"); five expenses (court 36000, kit 54000, tournament 15000,
+    travel 22000, other 4500). Idempotent: plans by name, expenses by description, only OPEN dues touched.
+- Contract: **finance.yaml unchanged, 1.0.0**; `apps/web/packages/finance` untouched.
+- For WP124 (web): CSV answers are `text/csv; charset=utf-8` with `Content-Disposition` (CORS exposes only ETag/Location,
+  as core); send `Accept-Language` = app locale. Balance 404 also means "no currency yet". Expense category labels I used
+  in the CSV (the web may pick its own): es Alquiler de pista, Salarios, Equipación, Inscripciones de torneos, Viajes,
+  Otro; id Sewa lapangan, Gaji, Perlengkapan, Biaya turnamen, Perjalanan, Lainnya. `currencyLocked` is now also true
+  after the first expense.
+- Verified (2026-11-16, fresh, this worktree): `just test` exit 0: Maven 3,556 tests, 0 failures, 0 errors, 32 skipped
+  (surefire reports; e2e 38 of which the 32 journey steps skip without a base URL); Rust 100 tests, 95.41 % / domain
+  99.80 %, cargo deny ok; Go 204 tests (158 top-level), coverage 89.05 % module / 98.84 % domain, golangci-lint 0 issues,
+  govulncheck none reachable. `just isolation-check`: 6 Java + 4 Go passed; `just db-role-check`: 13 Java + 2 Go passed;
+  `just test-hooks`: 55/55 + 5/5 + 3/3, Python 43 OK (1 skipped); `actionlint` clean; shellcheck clean on the changed
+  scripts; `./mvnw -pl e2e verify` compiles the journey (38 tests: 6 MailSink pass, 32 skipped).
+- **Not run**: the journey, the real core -> pdf-service and game -> pdf-service calls, the ZAP finance scan and the seed
+  on compose. The worktree `.env` holds `.env.example` values and the shared compose database refuses them
+  (`finance_app` and `core_app` password authentication failed); per instructions I did not take the main checkout's
+  values. CodeQL/Semgrep: CI only.
+- Compose stack: untouched by this WP (no service started from this worktree, nothing listening on 8081-8085; the
+  `finance` schema is as main left it, V20-V22 not applied). After merge: `just finance-up` (migrates to V22), then
+  `just events-backfill force` (slug, team names; game's academy names), then `just e2e` / `just seed-academy`.
+- Decisions/ADRs: ADR-0056 amendment WP123 (hard delete; expense locks the currency; balance 404s; export details;
+  replica slug/name); authz-matrix note; e2e and local-stack runbooks.
+- Open points: (1) run the journey, ZAP finance and the seed on compose with the real `.env` (first real PDF calls);
+  drop the ZAP acceptances if the scan never raises them; (2) the `currencyLocked` description in finance.yaml names
+  only dues (docs-only follow-up, next contract bump); (3) the CI e2e job now builds the Rust and Go images (slower);
+  (4) TDD: `TestAnExpenseFixesTheCurrencyAsADueDoes` and the journey steps were committed with or after their code, not
+  as separate red commits.
