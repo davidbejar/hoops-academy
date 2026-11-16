@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Database is where and as whom the service connects: finance_app for everything it does, finance_migrator only
@@ -53,6 +54,19 @@ type Kafka struct {
 // OTEL_RESOURCE_ATTRIBUTES itself).
 type Telemetry struct{ Enabled bool }
 
+// DuesJob is the daily dues job (decision 98): it ticks every Interval and works on each academy's own date, so a
+// period's dues appear within one interval after midnight in the academy's zone.
+type DuesJob struct {
+	Enabled  bool
+	Interval time.Duration
+}
+
+// The bounds of the dues job's interval: often enough to follow each academy's midnight, rarely enough to stay cheap.
+const (
+	minDuesInterval = time.Minute
+	maxDuesInterval = 24 * time.Hour
+)
+
 // Config is the service's whole configuration.
 type Config struct {
 	HTTPPort    int
@@ -60,6 +74,7 @@ type Config struct {
 	OIDC        OIDC
 	Kafka       Kafka
 	Telemetry   Telemetry
+	DuesJob     DuesJob
 	CORSOrigins []string
 }
 
@@ -71,6 +86,7 @@ func Defaults() Config {
 			MigratorUser: "finance_migrator"},
 		OIDC:        OIDC{AuthServerURL: "http://localhost:8080/auth/realms/academy", Audience: "finance-service"},
 		Kafka:       Kafka{Enabled: true, Brokers: []string{"localhost:19092"}},
+		DuesJob:     DuesJob{Enabled: true, Interval: time.Hour},
 		CORSOrigins: []string{"http://localhost:5173"},
 	}
 }
@@ -117,10 +133,27 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	c.Telemetry.Enabled = getenv("OTEL_SDK_DISABLED") == "false"
 	problems = append(problems, readKafka(getenv, &c.Kafka)...)
+	problems = append(problems, readDuesJob(getenv, &c.DuesJob)...)
 	if len(problems) > 0 {
 		return c, errors.New("configuration: " + strings.Join(problems, "; "))
 	}
 	return c, nil
+}
+
+func readDuesJob(getenv func(string) string, j *DuesJob) []string {
+	if getenv("FINANCE_DUES_JOB_ENABLED") == "false" {
+		j.Enabled = false
+	}
+	v := getenv("FINANCE_DUES_JOB_INTERVAL")
+	if v == "" {
+		return nil
+	}
+	interval, err := time.ParseDuration(v)
+	if err != nil || interval < minDuesInterval || interval > maxDuesInterval {
+		return []string{"FINANCE_DUES_JOB_INTERVAL must be a duration from 1m to 24h"}
+	}
+	j.Interval = interval
+	return nil
 }
 
 func readKafka(getenv func(string) string, k *Kafka) []string {

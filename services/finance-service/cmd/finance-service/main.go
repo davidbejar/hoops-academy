@@ -13,12 +13,14 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+	_ "time/tzdata" // the academies' IANA zones, whatever the image holds (the dues' dates depend on them)
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"hoopsacademy.local/finance/db"
 	"hoopsacademy.local/finance/internal/adapters/in/events"
+	"hoopsacademy.local/finance/internal/adapters/in/job"
 	"hoopsacademy.local/finance/internal/adapters/in/oidc"
 	"hoopsacademy.local/finance/internal/adapters/in/rest"
 	"hoopsacademy.local/finance/internal/adapters/out/persistence"
@@ -70,7 +72,15 @@ func run() error {
 		Clock: clock{}, IDs: ids.V7{}, Transactions: tx, Settings: persistence.SettingsStore{},
 		FeePlans: persistence.FeePlanStore{}, Dues: persistence.DueQueries{},
 		Audit: persistence.AuditLog{IDs: ids.V7{}, Log: log}, Members: persistence.MembershipStore{},
+		Roster: persistence.RosterStore{}, DueStore: persistence.DueStore{}, Payments: persistence.PaymentStore{},
 	})
+	if cfg.DuesJob.Enabled {
+		runner := job.Runner{Interval: cfg.DuesJob.Interval, Log: log, Job: application.NewDuesJob(finance,
+			persistence.TenantDirectory{Pool: pool}, persistence.Exclusive{Pool: pool})}
+		go runner.Run(ctx)
+	} else {
+		log.Warn("dues job off (FINANCE_DUES_JOB_ENABLED=false): automatic plans create no dues")
+	}
 	metrics := events.NewMetrics()
 	live := func() error { return nil }
 	if cfg.Kafka.Enabled {
