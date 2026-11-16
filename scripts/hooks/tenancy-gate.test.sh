@@ -98,5 +98,32 @@ check "passing gate" "$(run_gate 0 'git commit -m x')" "0|tenancy-gate: isolatio
 check "failing gate blocks" "$(run_gate 1 'git commit -m x' | cut -c1-31)" "2|Blocked: the tenant isolation"
 check "unrelated command skips the gate" "$(run_gate 1 'git status')" "0|"
 
+# --- the gates cover every service with tenant data, the Go finance-service too (WP118, ADR-0055)
+covers() { # covers <gate script> <text the script must contain>
+  total=$((total + 1))
+  grep -qF -- "$2" "scripts/hooks/$1" && return 0
+  fail=$((fail + 1))
+  printf 'FAIL %s does not run: %s\n' "$1" "$2"
+}
+covers isolation-check.sh "run_go_tests services/finance-service CrossTenant ./..."
+covers db-role-check.sh "run_go_tests services/finance-service DatabaseRole ./internal/adapters/out/persistence/"
+
+# run_go_tests: quiet on success, fails when a test fails or the -run filter matched nothing (stub go on PATH)
+go_gate() { # go_gate <stub go output> <stub go exit code>; prints "<rc>|<last line>"
+  local dir out rc
+  dir=$(mktemp -d)
+  mkdir -p "$dir/bin" "$dir/repo/services/finance-service"
+  printf '#!/bin/sh\nprintf "%%b" "%s"\nexit %s\n' "$1" "$2" >"$dir/bin/go"
+  chmod +x "$dir/bin/go"
+  out=$(cd "$dir/repo" && PATH="$dir/bin:$PATH" HOOK_LABEL=check bash -c \
+    "source '$PWD/scripts/hooks/_common.sh' --functions-only; run_go_tests services/finance-service X ./..." 2>&1)
+  rc=$?
+  rm -rf "$dir"
+  echo "$rc|$(tail -1 <<<"$out")"
+}
+check "go tests pass" "$(go_gate '--- PASS: TestA (0.1s)\\n--- PASS: TestB (0.1s)\\nok\\n' 0)" "0|✓ check (finance-service): 2 Go tests passed in * s"
+check "go filter matched nothing" "$(go_gate 'ok  x 0.1s [no tests to run]\\n' 0 | cut -c1-40)" "1|✗ check (finance-service) ran no Go te*"
+check "go test fails" "$(go_gate '--- FAIL: TestA (0.1s)\\n' 1 | cut -c1-38)" "1|✗ check (finance-service) FAILED*"
+
 echo "tenancy-gate matcher: $((total - fail))/$total passed"
 [ "$fail" -eq 0 ]
