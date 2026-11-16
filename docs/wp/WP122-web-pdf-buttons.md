@@ -45,4 +45,36 @@ Decision 90 of 2026-11-15 (owner): PDF buttons next to the existing export butto
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built (`apps/web` only, red tests committed first):
+  - **Where the buttons are**: team detail app bar, `roster-export-pdf` (PDF icon) right after the CSV button, same
+    visibility (`canExportRoster`: ADMIN, the team's current COACH; not a former coach, not assistant / parent /
+    player). Live match screen app bar, `match-sheet-pdf`, after the CSV / Excel menu, shown with it (match has a
+    roster) to every role that opens the screen (the server decides what the sheet holds).
+  - `lib/core/export/server_pdf_export.dart` (`ServerPdfExportButton`): app language in `Accept-Language`, online
+    only (offline: disabled, tooltip `exportNeedsConnection`), busy spinner, name from `Content-Disposition`
+    (fallback `exportFileName` .pdf), 503 / `UPSTREAM_UNAVAILABLE` -> try-later message, 422 `EXPORT_TOO_LARGE` ->
+    "use the CSV" (roster), anything else through `AppError`; never an uncaught error.
+  - `lib/core/export/server_file.dart`: `ServerFile` (bytes + name) and `fileNameOfDisposition` (accepts only plain
+    `[A-Za-z0-9._-]` names, no `..`: a header never feeds a path to the `download` attribute).
+  - Repositories: `TeamsRepository.exportRosterPdf` (`exportTeamRoster` with `headers: {'Accept': 'application/pdf'}`),
+    `MatchesRepository.matchSheetPdf` (`getMatchSheetPdf`).
+  - Demo mock: `mockPdf(name)` (a tiny valid PDF, `hoops-demo-<name>-<day>.pdf`) for `roster:export` when `Accept`
+    is `application/pdf` (same 403 / 404 rules as the CSV; `MockRequest.accept` added) and for `box-score:pdf`.
+  - l10n es / en / id, next to `exportTooLarge`: `pdfRosterTooltip`, `pdfSheetTooltip`, `pdfRosterUnavailable`,
+    `pdfSheetUnavailable`, `pdfRosterTooLarge`. Generated `lib/l10n/gen/*` regenerated.
+- Verified (fresh, in the worktree, after the last code change): `flutter analyze` no issues; `dart format
+  --output=none --set-exit-if-changed lib test integration_test tool` 463 files, 0 changed (= `just web-format-check`);
+  `flutter test` (all of apps/web, = `just web-test`) **1542 passed, 0 failed** (1507 on main before; 35 new tests in
+  `server_file_test`, `pdf_exports_data_test`, `mock_pdf_exports_test`, `roster_pdf_export_test`,
+  `match_sheet_pdf_test`). Not run: `tool/offline_cold_start.sh`, a browser, the real stack (`just up`), CI.
+- Goldens re-recorded (the new icon shows): `team_detail_360x780`, `match/live_match_{360x780,360x780_dark,
+  1024x768,1024x768_dark}`, `match/live_match_stat_sheet_360x780{,_dark}`, `match/box_score_360x780{,_dark}`,
+  `assignment_outcome_360x780`, `jersey_dialog_{360x780,360x780_dark,1024x768}` (the last four sit on the
+  team screen). No new goldens.
+- Decisions/ADRs: none (ADR-0048 covers the server side).
+- Open points: (1) nobody checked a real browser download, the real pdf-service, the real `Content-Disposition`
+  through the gateway (CORS must expose it for the web to read the name; if not, the fallback name is used) or a
+  PDF opening; widget tests use a recording downloader. (2) A team over the sheet's limits has no paged PDF: the
+  message sends the person to the CSV. (3) The match sheet button is hidden while a match has no roster (the box
+  score export rule). (4) User guides must mention the two PDF icons (admin / coach: roster; everyone: match sheet),
+  online only.

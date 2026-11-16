@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../export/export_file_name.dart' show asciiSlug;
 import 'mock_authz.dart';
 import 'mock_query.dart';
 
@@ -32,6 +33,37 @@ class MockResult {
   final String contentType;
   final Map<String, String> headers;
 }
+
+/// A one-page PDF with a line of text: the demo mock's answer to the roster
+/// and match sheet PDF calls (`hoops-demo-<name>-<yyyyMMdd>.pdf`, `no-store`).
+MockResult mockPdf(String name) {
+  final day = DateTime.now()
+      .toIso8601String()
+      .substring(0, 10)
+      .replaceAll('-', '');
+  return MockResult.bytes(
+    200,
+    Uint8List.fromList(utf8.encode(_demoPdf)),
+    'application/pdf',
+    headers: {
+      'content-disposition': 'attachment; filename="hoops-demo-$name-$day.pdf"',
+      'cache-control': 'no-store',
+    },
+  );
+}
+
+const _demoPdf =
+    '%PDF-1.4\n'
+    '1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n'
+    '2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n'
+    '3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 100]/Contents 4 0 R'
+    '/Resources<</Font<</F1 5 0 R>>>>>>endobj\n'
+    '4 0 obj<</Length 44>>stream\n'
+    'BT /F1 12 Tf 20 50 Td (Hoops demo) Tj ET\n'
+    'endstream endobj\n'
+    '5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n'
+    'trailer<</Root 1 0 R/Size 6>>\n'
+    '%%EOF\n';
 
 /// In-memory stand-in for the admin / roster half of core-service, behind the
 /// real generated clients (dev mock mode only, `HOOPS_MOCK_API=true`).
@@ -79,6 +111,9 @@ class MockCoreApi {
 
   /// `Accept-Language` of the call being handled (the CSV exports follow it).
   String? _language;
+
+  /// `Accept` of the call being handled (`application/pdf` asks for the printed roster).
+  String? _accept;
 
   static const meId = '00000000-0000-4000-8000-0000000000a1';
   static const ownTeamId = 'team-mini-a';
@@ -647,6 +682,9 @@ class MockCoreApi {
     final coachOfTeam =
         roles.contains('COACH') && authz.staffTeamIds.contains(teamId);
     if (!authz.admin && !coachOfTeam) return _forbidden;
+    if ((_accept ?? '').contains('application/pdf')) {
+      return mockPdf('roster-${asciiSlug(team['name']! as String)}');
+    }
     final header = switch (_lang) {
       'es' => ['Rol', 'Nombre', 'Apellidos', 'Dorsal'],
       'id' => ['Peran', 'Nama depan', 'Nama belakang', 'Nomor'],
@@ -763,8 +801,10 @@ class MockCoreApi {
     Object? body,
     Uint8List? bytes,
     String? language,
+    String? accept,
   }) {
     _language = language;
+    _accept = accept;
     final seg = path
         .split('/')
         .where((s) => s.isNotEmpty)

@@ -15,6 +15,7 @@ import '../../health/presentation/player_health_view.dart'
 import '../../health/application/health_providers.dart'
     show openInjuriesProvider;
 import '../../../core/export/server_csv_export.dart';
+import '../../../core/export/server_pdf_export.dart';
 import '../application/roster_providers.dart';
 import '../application/roster_rights.dart';
 import '../application/season_view.dart' show historicTeamsProvider;
@@ -327,6 +328,17 @@ class TeamDetailScreen extends ConsumerWidget {
             fetch: (language) => ref
                 .read(teamsRepositoryProvider)
                 .exportRoster(teamId, language: language),
+          ),
+        if (caps.canExportRoster(teamId) && detail.hasValue)
+          ServerPdfExportButton(
+            key: const Key('roster-export-pdf'),
+            what: 'roster ${detail.value!.team.name}',
+            tooltip: l.pdfRosterTooltip,
+            unavailableMessage: l.pdfRosterUnavailable,
+            tooLargeMessage: l.pdfRosterTooLarge,
+            fetch: (language) => ref
+                .read(teamsRepositoryProvider)
+                .exportRosterPdf(teamId, language: language),
           ),
         if (caps.canManageTeam(teamId) && detail.hasValue)
           IconButton(

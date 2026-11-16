@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
+import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/features/match/data/matches_repository.dart';
 import 'package:hoops_app/features/roster/data/teams_repository.dart';
@@ -21,7 +22,7 @@ void main() {
     t,
   );
 
-  ApiMatchesRepository matches(List<String> roles) => ApiMatchesRepository(
+  ApiMatchesRepository games(List<String> roles) => ApiMatchesRepository(
     gen.HoopsGameApi(dio: dioFor(roles), interceptors: const []),
     t,
   );
@@ -59,8 +60,8 @@ void main() {
   });
 
   test('the match sheet: a PDF with its file name', () async {
-    final list = await matches(['ADMIN']).list();
-    final file = await matches(['ADMIN'])
+    final list = await games(['ADMIN']).list();
+    final file = await games(['ADMIN'])
         .matchSheetPdf(list.first.id, language: 'en');
     expect(utf8.decode(file.bytes.take(5).toList()), '%PDF-');
     expect(file.fileName, matches(r'^hoops-demo-match-sheet-.*\.pdf$'));
@@ -68,8 +69,8 @@ void main() {
 
   test('the match sheet of an unknown match is 404', () async {
     await expectLater(
-      matches(['ADMIN']).matchSheetPdf('nope', language: 'en'),
-      status(404),
+      games(['ADMIN']).matchSheetPdf('nope', language: 'en'),
+      throwsA(isA<AppError>().having((e) => e.status, 'status', 404)),
     );
   });
 }

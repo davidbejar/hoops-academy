@@ -179,6 +179,7 @@ class MockApiAdapter implements HttpClientAdapter {
         body,
         bytes,
         language: options.headers['Accept-Language'] as String?,
+        accept: options.headers['Accept'] as String?,
       ),
     );
     if (result == null) return _problem(404, 'Not found');
@@ -376,6 +377,7 @@ class _Academy {
         body: r.body,
         bytes: r.bytes,
         language: r.language,
+        accept: r.accept,
       );
     }
     return null;

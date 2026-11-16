@@ -1,3 +1,4 @@
+import '../../../core/export/export_file_name.dart' show asciiSlug;
 import '../../../core/mock/mock_authz.dart';
 import '../../../core/mock/mock_core_api.dart';
 import '../domain/feed_visibility.dart';
@@ -299,6 +300,8 @@ class MockGameApi {
         );
       case 'box-score':
         return MockResult.json(200, _boxScore(m));
+      case 'box-score:pdf':
+        return mockPdf('match-sheet-${asciiSlug('${m['opponentName']}')}');
     }
     return _problem(404, 'Not found');
   }

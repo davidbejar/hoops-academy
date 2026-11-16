@@ -1618,6 +1618,24 @@ class AppLocalizationsEs extends AppLocalizations {
       'Hay más de 10.000 filas: acota el rango de fechas o las acciones e inténtalo de nuevo.';
 
   @override
+  String get pdfRosterTooltip => 'Descargar la plantilla (PDF)';
+
+  @override
+  String get pdfSheetTooltip => 'Descargar la hoja del partido (PDF)';
+
+  @override
+  String get pdfRosterUnavailable =>
+      'El PDF no está disponible ahora. Inténtalo más tarde o usa el archivo CSV.';
+
+  @override
+  String get pdfSheetUnavailable =>
+      'La hoja del partido no está disponible ahora. Inténtalo más tarde.';
+
+  @override
+  String get pdfRosterTooLarge =>
+      'La plantilla es demasiado grande para una hoja: usa el archivo CSV.';
+
+  @override
   String get exportCalendarNoMatches =>
       'No se pudieron cargar los partidos: el archivo solo incluye los entrenamientos.';
 

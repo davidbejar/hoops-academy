@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/clear_list.dart';
+import '../../../core/export/server_file.dart';
 
 /// Teams, staff and rosters (`/api/core/teams*`).
 abstract class TeamsRepository {
@@ -44,6 +45,9 @@ abstract class TeamsRepository {
 
   /// The roster as the server's CSV file (ADMIN, COACH of the team), headers in [language].
   Future<Uint8List> exportRoster(String teamId, {required String language});
+
+  /// The printed roster (core 3.7.0, `Accept: application/pdf`).
+  Future<ServerFile> exportRosterPdf(String teamId, {required String language});
 }
 
 class ApiTeamsRepository implements TeamsRepository {
@@ -188,4 +192,17 @@ class ApiTeamsRepository implements TeamsRepository {
     teamId: teamId,
     acceptLanguage: language,
   )).data!;
+
+  @override
+  Future<ServerFile> exportRosterPdf(
+    String teamId, {
+    required String language,
+  }) async => ServerFile.of(
+    await _api.exportTeamRoster(
+      xTenantId: _t,
+      teamId: teamId,
+      acceptLanguage: language,
+      headers: {'Accept': 'application/pdf'},
+    ),
+  );
 }

@@ -4,6 +4,7 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../core/api/clear_list.dart';
 import '../../../core/errors/app_error.dart';
+import '../../../core/export/server_file.dart';
 import '../domain/projector/projector.dart';
 
 /// One line of the roster the setup screen submits.
@@ -52,6 +53,9 @@ abstract class MatchesRepository {
     List<RosterInput> entries,
   );
   Future<gen.BoxScore> boxScore(String matchId);
+
+  /// The printed match sheet (game 2.4.0), in [language].
+  Future<ServerFile> matchSheetPdf(String matchId, {required String language});
   Future<gen.PlayerSeasonStats> seasonStats(String playerId, String seasonId);
 }
 
@@ -186,6 +190,20 @@ class ApiMatchesRepository implements MatchesRepository {
   Future<gen.BoxScore> boxScore(String matchId) => _guard(
     () async =>
         (await _stats.getBoxScore(xTenantId: _tenant, matchId: matchId)).data!,
+  );
+
+  @override
+  Future<ServerFile> matchSheetPdf(
+    String matchId, {
+    required String language,
+  }) => _guard(
+    () async => ServerFile.of(
+      await _stats.getMatchSheetPdf(
+        xTenantId: _tenant,
+        matchId: matchId,
+        acceptLanguage: language,
+      ),
+    ),
   );
 
   @override

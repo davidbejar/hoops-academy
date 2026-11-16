@@ -1611,6 +1611,24 @@ class AppLocalizationsId extends AppLocalizations {
       'Lebih dari 10.000 baris: persempit rentang tanggal atau tindakan lalu coba lagi.';
 
   @override
+  String get pdfRosterTooltip => 'Unduh daftar pemain (PDF)';
+
+  @override
+  String get pdfSheetTooltip => 'Unduh lembar pertandingan (PDF)';
+
+  @override
+  String get pdfRosterUnavailable =>
+      'PDF belum tersedia saat ini. Coba lagi nanti atau gunakan file CSV.';
+
+  @override
+  String get pdfSheetUnavailable =>
+      'Lembar pertandingan belum tersedia saat ini. Coba lagi nanti.';
+
+  @override
+  String get pdfRosterTooLarge =>
+      'Daftar pemain terlalu besar untuk satu lembar: gunakan file CSV.';
+
+  @override
   String get exportCalendarNoMatches =>
       'Pertandingan tidak dapat dimuat: file hanya berisi sesi latihan.';
 

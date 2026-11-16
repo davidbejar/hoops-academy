@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../core/export/export_menu.dart';
+import '../../../core/export/server_pdf_export.dart';
 import '../../../core/export/export_runner.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
@@ -67,6 +68,16 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
               l,
               await ref.read(liveMatchProvider(widget.matchId).future),
             ),
+          ),
+        if (m != null && m.roster.isNotEmpty)
+          ServerPdfExportButton(
+            key: const Key('match-sheet-pdf'),
+            what: 'match sheet ${m.match.opponentName}',
+            tooltip: l.pdfSheetTooltip,
+            unavailableMessage: l.pdfSheetUnavailable,
+            fetch: (language) => ref
+                .read(matchesRepositoryProvider)
+                .matchSheetPdf(widget.matchId, language: language),
           ),
         if (m != null && m.rights.canRunMatch) _StaffMenu(live: m),
       ],

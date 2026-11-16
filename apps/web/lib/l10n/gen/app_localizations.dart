@@ -2998,6 +2998,36 @@ abstract class AppLocalizations {
   /// **'Hay más de 10.000 filas: acota el rango de fechas o las acciones e inténtalo de nuevo.'**
   String get exportTooLarge;
 
+  /// No description provided for @pdfRosterTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Descargar la plantilla (PDF)'**
+  String get pdfRosterTooltip;
+
+  /// No description provided for @pdfSheetTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Descargar la hoja del partido (PDF)'**
+  String get pdfSheetTooltip;
+
+  /// No description provided for @pdfRosterUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'El PDF no está disponible ahora. Inténtalo más tarde o usa el archivo CSV.'**
+  String get pdfRosterUnavailable;
+
+  /// No description provided for @pdfSheetUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'La hoja del partido no está disponible ahora. Inténtalo más tarde.'**
+  String get pdfSheetUnavailable;
+
+  /// No description provided for @pdfRosterTooLarge.
+  ///
+  /// In es, this message translates to:
+  /// **'La plantilla es demasiado grande para una hoja: usa el archivo CSV.'**
+  String get pdfRosterTooLarge;
+
   /// No description provided for @exportCalendarNoMatches.
   ///
   /// In es, this message translates to:

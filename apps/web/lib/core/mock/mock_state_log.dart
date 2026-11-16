@@ -13,6 +13,7 @@ class MockRequest {
     this.body,
     this.bytes, {
     this.language,
+    this.accept,
   });
 
   final String method;
@@ -23,6 +24,9 @@ class MockRequest {
 
   /// `Accept-Language`: a quick-add copies a global exercise in it (athlete 3.0.0).
   final String? language;
+
+  /// `Accept`: a roster export answers a PDF when it asks for `application/pdf` (core 3.7.0).
+  final String? accept;
 }
 
 /// What the user changed in a demo mock: every call that changed something and succeeded, in order, kept in a

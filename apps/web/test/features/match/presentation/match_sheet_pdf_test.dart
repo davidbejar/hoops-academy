@@ -4,7 +4,6 @@ import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
-import '../../../support/core_fixtures.dart';
 import '../../../support/export_overrides.dart';
 import '../../../support/fake_export.dart';
 import '../../../support/fake_game.dart';

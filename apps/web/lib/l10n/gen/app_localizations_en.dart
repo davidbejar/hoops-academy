@@ -1605,6 +1605,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'More than 10,000 rows: narrow the date range or the actions and try again.';
 
   @override
+  String get pdfRosterTooltip => 'Download the roster (PDF)';
+
+  @override
+  String get pdfSheetTooltip => 'Download the match sheet (PDF)';
+
+  @override
+  String get pdfRosterUnavailable =>
+      'The PDF is not available right now. Try again later or use the CSV file.';
+
+  @override
+  String get pdfSheetUnavailable =>
+      'The match sheet is not available right now. Try again later.';
+
+  @override
+  String get pdfRosterTooLarge =>
+      'The roster is too large for one sheet: use the CSV file.';
+
+  @override
   String get exportCalendarNoMatches =>
       'The matches could not be loaded: the file has the training sessions only.';
 
