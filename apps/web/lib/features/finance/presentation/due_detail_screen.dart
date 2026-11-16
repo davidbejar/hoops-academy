@@ -202,7 +202,9 @@ class _PaymentTile extends ConsumerWidget {
               payment.voidedBy?.displayName ?? '',
               payment.voidedAt == null
                   ? ''
-                  : DateField.format(payment.voidedAt!.toLocal()),
+                  : DateField.format(
+                      ref.watch(tenantZoneProvider).wall(payment.voidedAt!),
+                    ),
             ),
             style: text.bodySmall,
           ),

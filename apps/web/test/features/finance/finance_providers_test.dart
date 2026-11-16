@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/core/l10n/locale_controller.dart';
+import 'package:hoops_app/core/time/tenant_zone.dart';
 import 'package:hoops_app/features/finance/application/finance_providers.dart';
 import 'package:hoops_app/features/finance/data/mock_finance_api.dart';
 import 'package:hoops_app/features/finance/domain/due_query.dart';
@@ -30,8 +31,10 @@ void main() {
     addTearDown(container.dispose);
   });
 
+  /// Today in the demo academy's zone, which is what the mock checks a
+  /// payment day against (never the device's date).
   fin.Date today() {
-    final d = DateTime.now();
+    final d = TenantZone.of('Europe/Madrid').today(DateTime.now());
     return fin.Date(d.year, d.month, d.day);
   }
 

@@ -335,6 +335,23 @@ void main() {
       );
     });
 
+    testWidgets('recording a payment while the service cannot says so', (
+      tester,
+    ) async {
+      final due = await firstDue(tester, fin.DueStatus.OPEN);
+      repo.failOn['payDue'] = notImplemented;
+      await pumpFinance(
+        tester,
+        repo: repo,
+        location: detail(due.id),
+        size: const Size(360, 1000),
+      );
+      await tapKey(tester, 'due-pay');
+      await tapKey(tester, 'form-submit');
+      expect(find.text(notYet), findsOneWidget);
+      expect(find.byKey(const Key('form-submit')), findsOneWidget);
+    });
+
     testWidgets('change the amount with a reason', (tester) async {
       final due = await firstDue(tester, fin.DueStatus.OPEN);
       await pumpFinance(

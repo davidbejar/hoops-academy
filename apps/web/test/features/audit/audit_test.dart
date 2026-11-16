@@ -93,8 +93,7 @@ void main() {
         location: '/admin',
         overrides: FakeAuditRepository().overrides,
       );
-      await tester.tap(find.byKey(const Key('admin-activity')));
-      await tester.pumpAndSettle();
+      await tapKey(tester, 'admin-activity'); // below the fold at 360 px
       expect(find.byKey(const Key('audit-log')), findsOneWidget);
     });
 
