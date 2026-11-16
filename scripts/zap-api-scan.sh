@@ -3,7 +3,7 @@
 # admin (WP83, ADR-0045). Needs the compose stack with seeded users and the services running (`just e2e` leaves the
 # stack up; CI: e2e.yml after the journeys).
 #
-#   scripts/zap-api-scan.sh <core|game|athlete> [base URL, default http://localhost:8080]
+#   scripts/zap-api-scan.sh <core|game|athlete|finance> [base URL, default http://localhost:8080]
 #
 # Env: ZAP_IMAGE (pinned default below), ZAP_ENGINE (podman | docker, default podman), ZAP_WORK_DIR (default
 # target/zap; the reports land in <dir>/api-<service>/), ZAP_MAX_SCAN_MINUTES (active-scan cap, default 15),
@@ -14,9 +14,9 @@
 # is not accepted. The token file is removed by the hook as soon as ZAP has read it, and again here.
 set -euo pipefail
 
-svc="${1:?usage: zap-api-scan.sh <core|game|athlete> [base URL]}"
+svc="${1:?usage: zap-api-scan.sh <core|game|athlete|finance> [base URL]}"
 base="${2:-http://localhost:8080}"
-case "$svc" in core|game|athlete) ;; *) echo "zap-api-scan: unknown service $svc" >&2; exit 2 ;; esac
+case "$svc" in core|game|athlete|finance) ;; *) echo "zap-api-scan: unknown service $svc" >&2; exit 2 ;; esac
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 image="${ZAP_IMAGE:-ghcr.io/zaproxy/zaproxy:stable@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238}"
 engine="${ZAP_ENGINE:-podman}"
