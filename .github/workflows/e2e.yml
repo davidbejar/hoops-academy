@@ -43,6 +43,8 @@ jobs:
           cp .env.example .env
           # the journey uses the master-realm Admin API through nginx to set invited users' passwords
           grep -q '^HOOPS_EXPOSE_KC_ADMIN=' .env && sed -i 's|^HOOPS_EXPOSE_KC_ADMIN=.*|HOOPS_EXPOSE_KC_ADMIN=true|' .env || echo 'HOOPS_EXPOSE_KC_ADMIN=true' >> .env
+          # nginx (a container) reaches finance-service through the host: publish its port on every interface here
+          echo 'HOOPS_FINANCE_BIND=0.0.0.0' >> .env
           while IFS= read -r line; do
             case "$line" in
               *=change-me-*) key="${line%%=*}"; sed -i "s|^${key}=.*|${key}=$(openssl rand -hex 16)|" .env ;;

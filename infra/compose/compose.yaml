@@ -185,7 +185,10 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=compose
     ports:
-      - "127.0.0.1:8085:8085"
+      # loopback by default. nginx reaches the service through the host (host.containers.internal:8085): on Linux
+      # a port published on 127.0.0.1 is not reachable that way, so the e2e workflow sets HOOPS_FINANCE_BIND=0.0.0.0
+      # on its throw-away runner (run 43814612481: 502 on /api/finance). On macOS the default works.
+      - "${HOOPS_FINANCE_BIND:-127.0.0.1}:8085:8085"
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
