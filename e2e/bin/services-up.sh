@@ -35,7 +35,9 @@ if [ "${E2E_WITHOUT_PDF_FINANCE:-}" != 1 ]; then
   # finance's roles on an existing database (idempotent), then both images (built when missing, always unless
   # --no-build) and the containers; compose waits until they run, the loop below until they answer ready
   infra/compose/finance-db.sh
-  flags=(up -d --wait); [ "$build" = 1 ] && flags+=(--build)
+  # --no-deps: the stack is already up (`just up`); without it compose may recreate Postgres, Redpanda and Keycloak
+  # under the running jars and nginx (e2e run 43813211365: login page 502 after such a recreate)
+  flags=(up -d --wait --no-deps); [ "$build" = 1 ] && flags+=(--build)
   podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf --profile finance "${flags[@]}" \
     pdf-service finance-service
   services="$services pdf finance"
