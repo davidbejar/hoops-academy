@@ -213,6 +213,7 @@ erDiagram
         timestamptz occurred_at "not null"
         uuid event_id "not null"
         boolean removed "not null"
+        text name
     }
 ```
 
@@ -520,6 +521,10 @@ classDiagram
 
 ```mermaid
 classDiagram
+    class AcademyNames {
+        <<interface>>
+        +find(TenantId) Optional~String~
+    }
     class MatchEventRepository {
         <<interface>>
         +findByMatch(MatchId) List~StoredEvent~
@@ -594,6 +599,25 @@ classDiagram
         +staffTeams(UUID) Set~TeamId~
         +openValidTeamsOf(Collection~PlayerId~) Set~TeamId~
         +seasonEnds(Collection~TeamId~) Map~TeamId,LocalDate~
+    }
+```
+
+</details>
+
+<details open>
+<summary>application sheet</summary>
+
+```mermaid
+classDiagram
+    class MatchSheetRenderer {
+        <<interface>>
+        +render(MatchSheet) PdfFile
+    }
+    class SheetLanguage {
+        <<enumeration>>
+        ES
+        EN
+        ID
     }
 ```
 

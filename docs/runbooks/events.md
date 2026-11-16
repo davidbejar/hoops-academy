@@ -184,13 +184,18 @@ game keeps a replica of the roster data it reads from core (`game.*_ref`, V4), f
 | Setting | Default | What |
 |---|---|---|
 | `hoops.roster.source` (`GAME_ROSTER_SOURCE`) | `replica` (since WP98; `rest` before) | `replica` = the local replica, no call to core on the request path; `rest` = core `/internal` (cached 30 s), the fallback |
-| `hoops.roster.consumer.enabled` (`GAME_ROSTER_CONSUMER_ENABLED`) | `true` | `false` stops feeding the replica (escape hatch; only with `rest`); drives `mp.messaging.incoming.core-roster.enabled` (the name athlete uses since WP98) |
+| `hoops.roster.consumer.enabled` (`GAME_ROSTER_CONSUMER_ENABLED`) | `true` | `false` stops feeding the replica (escape hatch; only with `rest`: since WP117 game refuses to start with `replica` and the consumer off, as athlete does, log `hoops.roster.source=replica needs hoops.roster.consumer.enabled=true`); drives `mp.messaging.incoming.core-roster.enabled` (the name athlete uses since WP98) |
 | `hoops.roster.replica.apply-attempts` | `3` | attempts per event (1 s, 2 s between) before the consumer stops |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
 | `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `game-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-game-service` Secret (SCRAM-SHA-256) |
 
 Consumer group `game-service.roster` (one channel `core-roster` over the seven topics), `auto.offset.reset=earliest`:
 a new group replays everything.
+
+Academy name (WP117, V7 `game.tenant_ref.name`): printed on the match sheet PDF and read from the replica in both
+sources (core's `/internal` API has none). A tenant whose last `tenant.changed` was applied before V7 has no name until
+core sends the next one (any academy edit), `just events-backfill force`, or a replay; until then the sheet prints
+"Hoops Academy". With `rest` and the consumer off the sheet always prints that fallback.
 
 Watch it:
 ```bash

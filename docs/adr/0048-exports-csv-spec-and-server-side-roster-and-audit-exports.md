@@ -168,3 +168,38 @@ Decision 67 left PDF for later; decision 89 has core load the roster, have the R
   back in the same transaction, so a failed render audits nothing. The CSV does not depend on pdf-service.
 - **Privacy**: the request body (children's names, guardians' contacts) is never logged nor put on a span; the REST
   client logs no bodies (`TeamRosterPdfTest` checks the logs on success and on every failure).
+## Amendment 2026-11-16 (decisions 89 and 90, WP117, game 2.4.0): the match sheet PDF, built by game
+
+The box score stays a browser-built CSV / XLSX export (WP97); its printable form is built by the server, because
+decision 89 puts every PDF in the internal Rust `pdf-service` (ADR-0051 §3, ADR-0052), which the browser never calls.
+
+- **Operation**: `GET /api/game/matches/{matchId}/box-score:pdf` (`getMatchSheetPdf`, tag Statistics), a sibling path
+  that declares only `application/pdf` (`PdfFile`: `string`, `binary`), so the generated Dart client returns
+  `Response<Uint8List>` with `ResponseType.bytes`, as the `:export` operations of core do; no content negotiation on
+  `getBoxScore` (rejected above). `Accept-Language` picks the labels (es / en / id, else en, the negotiation of this
+  ADR).
+- **Readers and content**: exactly those of `getBoxScore` (authz matrix "View match stats" and its history row): every
+  member of the academy, non-members 404. The use case reads the box score through `GetBoxScore`, so the sheet prints
+  the same player lines the caller sees there (`BoxScore.visibleLines`, one method for both), with the team-level
+  figures every member sees (score, score by period, team totals); projection warnings are not printed. Header: the
+  academy's name and zone, core's team name, opponent, home / away, day and time in the academy's zone, venue,
+  status. Nothing more than the box score shows.
+- **The academy's name**: game had none. core's `tenant.changed` always carried it; the roster replica keeps it since
+  WP117 (`game.tenant_ref.name`, V7) and `AcademyNames` reads it there in both roster sources (core's `/internal` API
+  has no name). Unknown (a row older than V7 until the next tenant event or `just events-backfill force`; `rest` with
+  the consumer off): "Hoops Academy". The zone is the caller's context's (core / replica), else UTC.
+- **File**: pdf-service names it `hoops-<academy>-match-sheet-<team>-<opponent>-<yyyyMMdd>.pdf` (this ADR's pattern,
+  today in the academy's zone); game passes the name on only when it is a plain lower-case ASCII `.pdf` name (else
+  `hoops-match-sheet.pdf`), with `Cache-Control: no-store`.
+- **Not audited**: the matrix asks for no audit row; the sheet holds no contact data, only what every reader already
+  reads in the box score, and the audit trail is core's (roster and audit exports). Not logged: the request to
+  pdf-service carries players' names and is never logged, put on a span or quoted in an error
+  (docs/security/privacy-threat-model.md); `MatchSheetPdfResourceTest` and `PdfServiceMatchSheetRendererTest` check
+  the logs.
+- **Failures**: no `PDF_SERVICE_URL`, pdf-service unreachable or slower than the 2 s connect / 10 s read timeouts, any
+  Problem of pdf-service (400 / 422 would be a defect of game's mapping; 401 / 403 a realm misconfiguration; 503
+  `AUTH_UNAVAILABLE`) or an answer that is not a PDF: 503 `UPSTREAM_UNAVAILABLE` (safe to retry, message logged
+  without the body). Everything else of game works without pdf-service.
+
+Rejected: building the PDF in the browser (decision 89: one renderer, fonts bundled once), and asking the web to send
+the academy's name (the printed header would be the caller's input, not the academy's record).
