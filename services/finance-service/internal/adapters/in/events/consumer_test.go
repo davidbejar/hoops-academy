@@ -69,7 +69,7 @@ func TestTheConsumerFillsTheReplicaFromCoresTopics(t *testing.T) {
 	run, stop := context.WithCancel(ctx)
 	done := make(chan error, 1)
 	go func() { done <- consumer.Run(run) }()
-	defer func() { stop(); <-done }()
+	defer func() { stop(); _ = <-done }()
 
 	var envelope struct {
 		TenantID string
