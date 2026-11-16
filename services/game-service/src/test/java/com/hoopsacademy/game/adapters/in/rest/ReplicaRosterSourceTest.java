@@ -157,7 +157,7 @@ class ReplicaRosterSourceTest {
         UUID match = seed.match(SHEET_TENANT, team.toString(), MatchStatus.FINISHED);
         PdfServiceStubs.rendersMatchSheets(core);
 
-        given().filter(Contract.FILTER).header("X-Tenant-Id", SHEET_TENANT)
+        given().filter(Contract.FILTER).urlEncodingEnabled(false).header("X-Tenant-Id", SHEET_TENANT)
                 .get("/api/game/matches/" + match + "/box-score:pdf").then().statusCode(200)
                 .contentType("application/pdf");
 

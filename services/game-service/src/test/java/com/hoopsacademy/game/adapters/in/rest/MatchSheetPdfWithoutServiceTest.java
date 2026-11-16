@@ -43,7 +43,8 @@ class MatchSheetPdfWithoutServiceTest {
     void theSheetIs503AndTheBoxScoreStillWorks() {
         UUID match = seed.match(A, TEAM, MatchStatus.FINISHED);
 
-        given().filter(Contract.FILTER).header("X-Tenant-Id", A).get("/api/game/matches/" + match + "/box-score:pdf")
+        given().filter(Contract.FILTER).urlEncodingEnabled(false).header("X-Tenant-Id", A)
+                .get("/api/game/matches/" + match + "/box-score:pdf")
                 .then().statusCode(503).body("code", equalTo("UPSTREAM_UNAVAILABLE"));
         given().filter(Contract.FILTER).header("X-Tenant-Id", A).get("/api/game/matches/" + match + "/box-score")
                 .then().statusCode(200);

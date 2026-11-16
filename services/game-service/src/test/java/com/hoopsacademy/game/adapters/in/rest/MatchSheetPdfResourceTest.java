@@ -150,7 +150,7 @@ class MatchSheetPdfResourceTest {
     }
 
     private static ValidatableResponse sheet(String tenant, UUID match, String acceptLanguage) {
-        var request = given().filter(Contract.FILTER).header("X-Tenant-Id", tenant);
+        var request = given().filter(Contract.FILTER).urlEncodingEnabled(false).header("X-Tenant-Id", tenant);
         if (acceptLanguage != null) {
             request.header("Accept-Language", acceptLanguage);
         }

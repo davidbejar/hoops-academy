@@ -6,11 +6,16 @@ import com.hoopsacademy.game.domain.MatchRoster;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.PlayerVisibility;
 import com.hoopsacademy.game.domain.RosterEntry;
+import com.hoopsacademy.game.domain.projection.PlayerLine;
 import com.hoopsacademy.game.domain.projection.Projection;
+import com.hoopsacademy.game.domain.projection.ProjectionWarning;
+import com.hoopsacademy.game.domain.projection.StatLine;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -21,7 +26,28 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class GetBoxScore {
 
-    public record BoxScore(Match match, MatchRoster roster, Projection projection, Set<PlayerId> visiblePlayers) {}
+    public record BoxScore(Match match, MatchRoster roster, Projection projection, Set<PlayerId> visiblePlayers) {
+
+        /**
+         * The lines the caller sees, in roster order: a visible roster player's statistics and warnings (zero and none
+         * when the projection has no line for them). The box score and the match sheet print exactly these.
+         */
+        public List<VisibleLine> visibleLines() {
+            Map<PlayerId, PlayerLine> lines = projection.playerStats().stream()
+                    .collect(Collectors.toMap(PlayerLine::playerId, Function.identity()));
+            return roster.entries().stream().filter(entry -> visiblePlayers.contains(entry.playerId()))
+                    .map(entry -> VisibleLine.of(entry, lines.get(entry.playerId()))).toList();
+        }
+    }
+
+    /** One visible roster player's line of the box score. */
+    public record VisibleLine(RosterEntry entry, StatLine stats, List<ProjectionWarning> warnings) {
+
+        static VisibleLine of(RosterEntry entry, PlayerLine line) {
+            return line == null ? new VisibleLine(entry, StatLine.ZERO, List.of())
+                    : new VisibleLine(entry, line.stats(), line.warnings());
+        }
+    }
 
     private final MatchLookup lookup;
     private final MatchRepository matches;

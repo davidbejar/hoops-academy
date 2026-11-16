@@ -2,19 +2,14 @@ package com.hoopsacademy.game.adapters.in.rest;
 
 import com.hoopsacademy.game.application.GetBoxScore;
 import com.hoopsacademy.game.domain.MatchStatus;
-import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.RosterEntry;
-import com.hoopsacademy.game.domain.projection.PlayerLine;
 import com.hoopsacademy.game.domain.projection.ProjectionWarning;
 import com.hoopsacademy.game.domain.projection.SeasonLine;
 import com.hoopsacademy.game.domain.projection.SeasonStats;
 import com.hoopsacademy.game.domain.projection.StatLine;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /** Contract DTOs of the Statistics tag: BoxScore and PlayerSeasonStats. */
 final class StatisticsDtos {
@@ -54,12 +49,7 @@ final class StatisticsDtos {
         static BoxScoreDto from(GetBoxScore.BoxScore box) {
             var projection = box.projection();
             var summary = projection.summary();
-            Map<PlayerId, PlayerLine> lines = projection.playerStats().stream()
-                    .collect(Collectors.toMap(PlayerLine::playerId, Function.identity()));
-            List<PlayerMatchStatsDto> players = box.roster().entries().stream()
-                    .filter(entry -> box.visiblePlayers().contains(entry.playerId()))
-                    .map(entry -> player(entry, lines.get(entry.playerId())))
-                    .toList();
+            List<PlayerMatchStatsDto> players = box.visibleLines().stream().map(BoxScoreDto::player).toList();
             return new BoxScoreDto(box.match().id().value(), box.match().status(),
                     new MatchDto.ScoreDto(summary.teamScore(), summary.opponentScore()),
                     summary.periodScores().stream().map(p -> new PeriodScoreDto(p.period(), p.team(), p.opponent())).toList(),
@@ -67,11 +57,11 @@ final class StatisticsDtos {
                     summary.lastServerSeq());
         }
 
-        private static PlayerMatchStatsDto player(RosterEntry entry, PlayerLine line) {
-            StatLine stats = line == null ? StatLine.ZERO : line.stats();
+        private static PlayerMatchStatsDto player(GetBoxScore.VisibleLine line) {
+            RosterEntry entry = line.entry();
             return new PlayerMatchStatsDto(entry.playerId().value(), entry.displayName(),
                     entry.jerseyNumber() == null ? null : entry.jerseyNumber().value(), entry.starter(),
-                    StatLineDto.from(stats), line == null ? List.of() : WarningDto.from(line.warnings()));
+                    StatLineDto.from(line.stats()), WarningDto.from(line.warnings()));
         }
     }
 
