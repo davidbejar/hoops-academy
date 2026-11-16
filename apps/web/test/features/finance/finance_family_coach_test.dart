@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/errors/app_error.dart';
+import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/core/ui/kit.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
@@ -279,14 +280,19 @@ void main() {
     });
 
     testWidgets('a player without dues gets an empty state', (tester) async {
-      final repo = FakeFinanceRepository(roles: ['PARENT']);
+      // Club Norte has no fee plans: its player has no dues.
+      final repo = FakeFinanceRepository(
+        roles: ['PARENT'],
+        tenant: mockTenantBId,
+      );
       await pumpFamily(
         tester,
         repo,
         roles: {TenantRole.parent},
-        linked: {'p-mia'},
+        linked: {'p-nora'},
       );
       await tapKey(tester, 'hub-tab-dues');
+      expect(repo.last['playerDues'], 'p-nora');
       expect(find.text('Aún no hay cuotas'), findsOneWidget);
     });
 
@@ -302,7 +308,9 @@ void main() {
       );
       await tapKey(tester, 'hub-tab-dues');
       expect(repo.last['playerDues'], 'p-ana');
+      // Another child is another hub: it opens on its first tab.
       await tapKey(tester, 'child-p-mia');
+      await tapKey(tester, 'hub-tab-dues');
       expect(repo.last['playerDues'], 'p-mia');
     });
 

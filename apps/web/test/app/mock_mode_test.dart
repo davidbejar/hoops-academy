@@ -99,8 +99,12 @@ void main() {
     expect(find.text('Mini A (Leones)'), findsOneWidget);
     await tester.tap(find.byKey(const Key('team-team-mini-a')));
     await tester.pumpAndSettle();
-    expect(find.text('Ana Ruiz'), findsOneWidget);
+    expect(find.byKey(const Key('roster-p-ana')), findsOneWidget);
     expect(find.text('Tomás Entrenador'), findsOneWidget);
+    // The demo user coaches Mini A, so the team screen also says who is up to
+    // date (WP124): the same players, through the demo finance service.
+    expect(find.byKey(const Key('due-status')), findsOneWidget);
+    expect(find.byKey(const Key('due-status-p-ana')), findsOneWidget);
 
     // Switch to Club Norte: PARENT, academy default locale is English.
     await tester.tap(find.byKey(const Key('tenant-chip')));

@@ -10,6 +10,7 @@ import '../../../core/ui/labels.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
+import '../../finance/presentation/due_status_section.dart';
 import '../../health/presentation/player_health_view.dart'
     show AvailabilityBadge;
 import '../../health/application/health_providers.dart'
@@ -399,6 +400,7 @@ class TeamDetailScreen extends ConsumerWidget {
                   roster: data.roster,
                   canEdit: canEdit,
                 ),
+                DueStatusSection(teamId: teamId, staff: data.staff),
                 const SizedBox(height: HoopsSize.fabClearance),
               ],
             ),

@@ -7,6 +7,8 @@ import '../../../core/session/capabilities.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
+import '../../finance/application/finance_rights.dart';
+import '../../finance/presentation/family_dues.dart';
 import '../../health/presentation/player_health_view.dart';
 import '../../roster/presentation/preferred_jersey.dart';
 import '../../training/application/training_providers.dart';
@@ -16,7 +18,7 @@ import '../../training/presentation/assignments_screen.dart'
 import '../../training/presentation/player_picker.dart' show playerNameProvider;
 import '../../training/presentation/training_screen.dart' show SessionTile;
 
-enum HubTab { training, plans, health }
+enum HubTab { training, plans, health, dues }
 
 /// Everything about one player for the player themself or a guardian:
 /// season stats link, upcoming trainings, assigned plans with completion
@@ -40,7 +42,14 @@ class _PlayerHubState extends ConsumerState<PlayerHub> {
       HubTab.training: l.meTabTraining,
       HubTab.plans: l.meTabPlans,
       HubTab.health: l.healthTitle,
+      HubTab.dues: l.financeFamilyTitle,
     };
+    final tabs = [
+      for (final t in HubTab.values)
+        if (t != HubTab.dues ||
+            ref.watch(capabilitiesProvider).canSeeFamilyDues(id))
+          t,
+    ];
     return PageBody(
       header: PageHeader(
         title: ref.watch(playerNameProvider(id)) ?? '',
@@ -59,7 +68,7 @@ class _PlayerHubState extends ConsumerState<PlayerHub> {
           spacing: HoopsSpace.sm,
           runSpacing: HoopsSpace.sm,
           children: [
-            for (final t in HubTab.values)
+            for (final t in tabs)
               ChoiceChip(
                 key: Key('hub-tab-${t.name}'),
                 label: Text(labels[t]!),
@@ -72,6 +81,7 @@ class _PlayerHubState extends ConsumerState<PlayerHub> {
           HubTab.training => _Upcoming(playerId: id),
           HubTab.plans => _Plans(playerId: id),
           HubTab.health => PlayerHealthView(playerId: id),
+          HubTab.dues => FamilyDues(playerId: id),
         },
       ],
     );
