@@ -396,7 +396,7 @@ WP118 (contract first), so the web (WP121) starts one wave later while the Go se
 | 3 | WP121 | Web: Finance area for ADMIN (settings, fee plans, dues, payments) | Sonnet · high | Done (web 1687 tests with WP122; Finance under the admin hub; 16 finance goldens; against the mock only) |
 | 3 | WP122 | Web: PDF buttons for the match sheet and the team roster | Sonnet · medium | Done (web 1542 tests; PDF buttons on team detail and live match; 13 goldens re-recorded; no real browser check) |
 | 4 | WP123 | Finance: expenses, season balance, CSV exports; e2e journey and ZAP for finance and the PDFs; demo data | Opus · high | Running |
-| 4 | WP124 | Web: finance expenses, balance, exports; coach status view; family dues | Sonnet · high | Running |
+| 4 | WP124 | Web: finance expenses, balance, exports; coach status view; family dues | Sonnet · high | Done (web 1801 tests; expenses, balance, exports; coach status on the team; family dues tab; against the mock only) |
 | 5 | WP125 | Docs pass | Opus · medium | Last alone |
 
 ### Decisions of 2026-11-15, seventh interview (product owner)
