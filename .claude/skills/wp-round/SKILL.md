@@ -86,6 +86,22 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
   run and may trim trailing whitespace in generated Dart files (re-add, commit again). Say so in the agent prompt.
 - Commit trailers: a brief that fixes the `Co-Authored-By` line gets that line from every model (WP38, WP41 noted
   it); drop the line from the brief to have agents name the model that did the work.
+- The Claude Code hook's isolation check runs in the session's directory (the main checkout), so in a worktree it does
+  not check the agent's branch (eighth round, WP118): tell agents that change tenancy code to run
+  `just isolation-check` and `just db-role-check` by hand in their worktree and report the results.
+- An agent's worktree has no `.env` that signs in to the shared compose database, and agents rightly do not copy the
+  owner's: anything that needs the real stack (the e2e journey, `just seed-academy`, a real call between services)
+  may come back "not run" (WP116, WP117, WP123). The orchestrator runs it from the main checkout after the local
+  ff-merge and before the push; the eighth round's seed and both CI `e2e` failures were found only that way.
+- New keys in `.env.example` (WP118: three finance passwords) are missing in the owner's `.env` after the merge and
+  block kind and the new service: add them at merge time and tell the owner.
+- A first CI run of a new toolchain or image job fails for setup reasons more often than for code (Go installed
+  after CodeQL init, rootless Podman cleanup, a loopback-published port on Linux): read the failed step before
+  suspecting the WP. `dependency-check` fails on NVD 503s: re-run the job.
+- Usage limits and network outages stop every agent at once; the notice says so. Resume each with SendMessage in its
+  own worktree ("check `git status` and the log first, continue, do not start over"); a recurring CronCreate watchdog
+  covers the case where the orchestrator is stopped too. Stop (TaskStop) a finished agent that keeps re-sending its
+  report.
 
 ## Close-out (docs pass)
 - [ ] FOLLOW-UPS: plan table statuses, resolved items moved to Resolved with their WP, new open items from the
