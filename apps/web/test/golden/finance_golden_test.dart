@@ -56,6 +56,7 @@ void main() {
     'plans': ('/admin/finance/plans', null),
     'dues': ('/admin/finance/dues', null),
     'due': ('/admin/finance/dues', 'paid'),
+    'expenses': ('/admin/finance/expenses', null),
   };
 
   for (final MapEntry(key: name, value: (location, seed)) in screens.entries) {
@@ -72,5 +73,20 @@ void main() {
             shoot(tester, name, location, size, brightness, dueSeed: seed),
       );
     }
+  }
+
+  // The balance's chart sits below the figures: a taller phone shows it.
+  for (final (size, brightness) in [
+    (const Size(360, 1400), Brightness.light),
+    (const Size(360, 1400), Brightness.dark),
+    (wide, Brightness.light),
+    (wide, Brightness.dark),
+  ]) {
+    testWidgets(
+      'finance balance, ${size.width.toInt()}x${size.height.toInt()}'
+      '${brightness == Brightness.dark ? ', dark' : ''}',
+      (tester) =>
+          shoot(tester, 'balance', '/admin/finance/balance', size, brightness),
+    );
   }
 }
