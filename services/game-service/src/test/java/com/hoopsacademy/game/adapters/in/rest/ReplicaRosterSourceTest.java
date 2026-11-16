@@ -16,11 +16,14 @@ import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
 import com.hoopsacademy.game.application.AcademyNames;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
+import com.hoopsacademy.game.domain.MatchStatus;
 import com.hoopsacademy.game.support.Contract;
 import com.hoopsacademy.game.support.CoreEvents;
 import com.hoopsacademy.game.support.CoreStubs;
 import com.hoopsacademy.game.support.CoreWireMockResource;
 import com.hoopsacademy.game.support.InjectCoreWireMock;
+import com.hoopsacademy.game.support.MatchSeed;
+import com.hoopsacademy.game.support.PdfServiceStubs;
 import com.hoopsacademy.game.support.ReplicaFeed;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -60,6 +63,7 @@ class ReplicaRosterSourceTest {
     static final String COACH_TENANT = "6a0b5c1e-1111-4111-8111-000000000002";
     static final String STRANGER_TENANT = "6a0b5c1e-1111-4111-8111-000000000003";
     static final String NAMED_TENANT = "6a0b5c1e-1111-4111-8111-000000000004";
+    static final String SHEET_TENANT = "6a0b5c1e-1111-4111-8111-000000000005";
 
     @InjectCoreWireMock
     WireMockServer core;
@@ -75,6 +79,9 @@ class ReplicaRosterSourceTest {
 
     @Inject
     TenantScope tenantScope;
+
+    @Inject
+    MatchSeed seed;
 
     @BeforeEach
     void coreKnowsNothing() {
@@ -136,5 +143,29 @@ class ReplicaRosterSourceTest {
         assertThat(tenantScope.runAs(tenant, () -> academyNames.find(tenant))).contains("Garuda Hoops Bali");
         assertThat(tenantScope.runAs(TenantId.parse(MEMBER_TENANT), () -> academyNames.find(tenant)))
                 .as("another tenant's row is not visible (RLS)").isEmpty();
+    }
+
+    @Test
+    @TenantUser(tenant = SHEET_TENANT)
+    void theMatchSheetPrintsTheAcademyAndTheTeamOfTheReplicaWithoutAskingCore() throws Exception {
+        CoreEvents events = CoreEvents.of(TenantId.parse(SHEET_TENANT));
+        UUID admin = UUID.randomUUID();
+        UUID team = UUID.randomUUID();
+        ReplicaFeed.apply(decoder, replicate, events.tenant("ACTIVE", "Asia/Jakarta", "Garuda Hoops"),
+                events.person(admin, "Ada Admin", TenantUser.SUBJECT, true, TenantRole.ADMIN),
+                events.team(team, UUID.randomUUID(), LocalDate.now().plusMonths(6), "Lions"));
+        UUID match = seed.match(SHEET_TENANT, team.toString(), MatchStatus.FINISHED);
+        PdfServiceStubs.rendersMatchSheets(core);
+
+        given().filter(Contract.FILTER).header("X-Tenant-Id", SHEET_TENANT)
+                .get("/api/game/matches/" + match + "/box-score:pdf").then().statusCode(200)
+                .contentType("application/pdf");
+
+        var sent = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree(PdfServiceStubs.sentMatchSheets(core).getFirst().getBodyAsString());
+        assertThat(sent.at("/academy/name").asText()).isEqualTo("Garuda Hoops");
+        assertThat(sent.at("/academy/timeZone").asText()).isEqualTo("Asia/Jakarta");
+        assertThat(sent.at("/match/teamName").asText()).isEqualTo("Lions");
+        core.verify(0, anyRequestedFor(urlPathMatching("/internal/(authz|teams|players).*")));
     }
 }
