@@ -74,3 +74,5 @@ Rows of `/api/finance/**`. A member without the role gets 403 (a `role` or `fine
 | A team's dues status: who is up to date, no amounts (`GET /api/finance/teams/{id}/due-status`) | read | current coach of the team (another team or a former coach: 403) | – (403) | – (403) | – (403) |
 | A player's dues and valid payments, without reasons or notes (`GET /api/finance/players/{id}/dues`) | read | – (403) | – (403) | linked (another player: 403) | self (another player: 403) |
 | Expenses, season balance, expenses CSV export (`/api/finance/expenses/**`, `/api/finance/balance`) | write | – (403) | – (403) | – (403) | – (403) |
+
+WP119 (finance): "current coach" also needs the `team_staff` row's role to be COACH (an ASSISTANT_COACH row does not count); a COACH of another team or a former coach gets 403 `fine_grained`, a member without COACH or ADMIN 403 `role`. A PARENT or PLAYER asking for an unlinked or unknown player gets 403 `fine_grained` before any lookup (no existence leak); ADMIN gets 404 for an unknown team and an empty page for a player without dues.

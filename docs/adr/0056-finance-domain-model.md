@@ -97,3 +97,46 @@ parallel; the model below is what they share.
   V20-V29. Every new table goes through the Go RLS suites (`fixtureOverrides` for its check constraints).
 - The contract is 1.0.0 for the whole service; operations not built yet answer 501 `NOT_IMPLEMENTED`; changes are additive
   (minor version) and regenerate `apps/web/packages/finance`.
+
+## Amendment 2026-11-16 (WP119): what the dues, payments and reads needed
+- **Roster replica** (V10, ADR-0037 rules): `player_ref` (person, display name, status), `team_ref` (season id and dates,
+  age category; no team name), `team_player_ref` (team, player, `joined_on`, `left_on`, `invalid_reason`; no jersey or
+  play-up levels), `team_staff_ref` (team, person, role), `guardian_link_ref` (guardian person, player); all tenant tables
+  under the RLS suites, soft removals without state. Never a birth date or a gender: the decoder does not read them
+  (`TestAPlayerEventDropsBirthDateAndGender`, P-10). V11 adds a member's `display_name` to `person_ref`, for the
+  `PersonRef` of who recorded or voided a payment (empty until the member's next event or a replay). V12 indexes a due's
+  payments.
+- **Who owes** (**choice**): a valid assignment (`invalid_reason` null) of a player not removed, overlapping the window;
+  `left_on` is the player's last day on the team (inclusive). A season's dates come from its teams in the replica; a
+  season no team of which is known yet answers 422 `PERIOD_OUTSIDE_SEASON` ("the season's dates are not known yet").
+  A due's `periodStart` / `periodEnd` are the window: the period's days within the season.
+- **Generation order**: archived plan 409 `FEE_PLAN_ARCHIVED`, a key of another cadence 400, the season unknown or the
+  period outside it 422, outside the plan 422 `PERIOD_OUTSIDE_PLAN`, more than 2,000 new dues 422 `TOO_MANY_DUES`.
+  `existing` counts every due of the plan and period (also of players no longer on the roster); a due another run stored
+  meanwhile (unique `(plan, player, period)`, `on conflict do nothing`) counts as existing, never twice.
+- **The daily job** (decision 98): every instance ticks hourly (`FINANCE_DUES_JOB_INTERVAL`, 1m-24h; off with
+  `FINANCE_DUES_JOB_ENABLED=false`); a run takes `pg_try_advisory_xact_lock` on `finance.dues-generation` (key: the first 8
+  bytes of the name's SHA-256, as common-quarkus' `ExclusiveLocks`) in a lock transaction that binds no tenant and reads no
+  table, and skips when another instance holds it (`TenantScope.runExclusive`'s pattern). The academies come from
+  `finance.replica_tenant` (global, ids only, ADR-0037 amendment WP82); each is entered in its own transaction bound to it
+  (never an unbound or nil tenant); only ACTIVE academies, on their own date (IANA zone of `tenant_ref`, the tz database
+  embedded in the binary). It creates the dues of **every started period** of each automatic plan (first period up to the
+  one containing today, within the season), so a roster change after a period started is caught by the next run; a re-run
+  creates nothing. A period a rule refuses (`TOO_MANY_DUES`) is skipped and counted; a failing academy is logged and
+  retried at the next tick, the others still run. Audit actor `system` without a person (`actor_person_id` null).
+  Proof: `TestTheDuesJobRunsOnceAcrossInstancesAndIsIdempotent` (two pools, the lock held by one, then both at once),
+  `TestTheJobUsesEachAcademysTimeZone`.
+- **Payments**: the due is locked (`for update`) for every write; a void locks the payment, then its due. Order of answers:
+  400 (input) - 404 - 409 (`DUE_NOT_OPEN`, `PAYMENT_ALREADY_VOIDED`) - 422 (`PAID_ON_IN_FUTURE`, today in the academy's
+  zone).
+- **The coach's status**: the team's roster today is its open, valid assignments of players not removed (ADR-0037 §6);
+  "current coach" needs a `team_staff` row with role COACH (an ASSISTANT_COACH row does not count, even for a member who
+  also holds the COACH role) for a team not removed whose season ends today or later. A COACH of another team gets 403
+  (`fine_grained`) before any lookup, so an unknown team id tells nothing; ADMIN gets 404 for an unknown team.
+- **The family's dues**: PARENT and PLAYER are checked against their relations before anything is read: another or an
+  unknown player is 403 (`fine_grained`), never 404, so no answer tells whether a player exists. ADMIN asking for a
+  player without dues gets an empty page. Reasons, notes and voided payments stay out (the choice above is kept).
+  `playerName` is empty once the player is removed from core's roster (the due stays).
+- **Audit metadata**: `dues.generated` (plan, period, count; target the plan), `due.amount_changed` / `due.waived` (due,
+  plan, period), `payment.recorded` (due, payment, method; target the payment), `payment.voided` (due, payment). Never a
+  reason, note or amount (`TestReasonsAndNotesNeverReachLogsOrAudit`).
