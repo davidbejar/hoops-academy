@@ -60,4 +60,64 @@ manual generation.
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - **Roster replica** (V10): `player_ref`, `team_ref`, `team_player_ref`, `team_staff_ref`, `guardian_link_ref`
+    (ADR-0037 rules: idempotent per event id, `occurred_at` guard, soft removals without state, invalid records parked);
+    the consumer reads all seven `core.*` topics (schemas copied, drift test). V11 `person_ref.display_name` (for
+    `recordedBy` / `voidedBy`), V12 index of a due's payments. No birth date or gender: the decoder never reads them
+    (`TestAPlayerEventDropsBirthDateAndGender`). `RosterStore` answers candidates, a team's roster today, a coach's
+    current teams (staff role COACH, season not ended), linked players, own player, season dates, the academy's zone.
+  - **Domain**: `Due` (change amount / waive with a reason, pay in full, reopen after a void), `Payment` (void with a
+    reason, kept), `DueWindow` (period ∩ season), `StartedWindows` (the job's), `OncePerPlayer`, `Today(zone)`,
+    `SystemActor`.
+  - **Use cases + REST** (9 operations off the 501 list): `generateDues` (preview, idempotent), `listDues` (filters,
+    pages), `getDue` (every payment), `changeDueAmount`, `waiveDue`, `payDue`, `voidPayment`, `getTeamDueStatus`,
+    `listPlayerDues`. Audit `dues.generated`, `due.amount_changed`, `due.waived`, `payment.recorded`, `payment.voided`
+    (ids, period, method, count only).
+  - **Daily job** (`application.DuesJob`, `adapters/in/job.Runner`): every instance ticks hourly
+    (`FINANCE_DUES_JOB_INTERVAL`, `FINANCE_DUES_JOB_ENABLED`), `pg_try_advisory_xact_lock('finance.dues-generation')` in
+    a lock transaction binding no tenant (`persistence.Exclusive`), academies from `finance.replica_tenant`
+    (`TenantDirectory`), each in its own `InTenant` transaction, ACTIVE only, on its own date (tzdata embedded); audit
+    actor `system` with no person.
+- Verified (2026-11-16, fresh, in this worktree):
+  - `just test`: the first run stopped in athlete-service on `RealResolverApiTest` "Port already bound: 8081" (another
+    agent's build; this branch changes no Java). Re-run of the same steps with `./mvnw -q -T 1C verify
+    -Dquarkus.http.test-port=0`: exit 0, 3,550 tests, 0 failures, 0 errors, 26 skipped (surefire reports); `just test-rust`
+    exit 0: 100 tests, coverage 95.41 % / domain 99.80 %, cargo deny ok; `just test-go` exit 0: gofmt clean,
+    golangci-lint 0 issues, 165 Go tests (138 top-level) all passing, coverage 88.27 % module / 98.60 % domain,
+    govulncheck: no vulnerabilities in reachable code.
+  - RLS suites: the schema inspection and the isolation suite cover the five new tables (13 tenant tables).
+  - The job: `TestTheDuesJobRunsOnceAcrossInstancesAndIsIdempotent` (lock held by one instance: the other skips; both at
+    once: 3 dues, 2 audit records; a re-run creates 0), `TestTheJobUsesEachAcademysTimeZone`.
+  - `just isolation-check`: 6 Java + 3 Go tests passed (the new `TestCrossTenantDuesAndPaymentsAreRefused` included);
+    `just db-role-check`: 13 Java + 2 Go passed.
+  - Not run: the service against the shared compose database or kind (see open points), CodeQL / Semgrep (CI), `just e2e`.
+- Decisions/ADRs: ADR-0056 amendment "WP119" (who owes: valid assignments, `left_on` inclusive; generation order; the
+  job; locks; reads; audit metadata); matrix note appended (current coach = staff role COACH; family 403 before lookup).
+  Choices: an unknown or unlinked player is 403 for PARENT / PLAYER (the matrix's oracle; no existence leak since the
+  check comes before any read); ADMIN gets an empty page for a player without dues and 404 for an unknown team; a season
+  whose teams are unknown is 422 `PERIOD_OUTSIDE_SEASON`; the job also fills earlier started periods (late roster
+  changes). Families still see no reasons (ADR-0056 choice kept).
+- **No contract change**: `finance.yaml` stays 1.0.0, `apps/web/packages/finance` untouched; no chart, compose or realm
+  file changed (the consumer needs no new ACL: `core.*` read is granted).
+- Still 501: `exportDues`, `listExpenses`, `createExpense`, `exportExpenses`, `getExpense`, `updateExpense`,
+  `deleteExpense`, `getSeasonBalance` (WP123; `rest/later.go`, `NotImplemented` in `feeplans_test.go`, `built` = 18).
+- For WP123: reuse `application.DueFilter` + `DueStore.List` for the dues export (same filters; ask for the 10,001st row
+  to detect `EXPORT_TOO_LARGE`), `DueRecord` carries plan and player names and the valid payment; the balance can sum
+  `finance.due` by status joined to `fee_plan.season_id` (PAID by the valid payment's amount); `Exclusive` /
+  `TenantDirectory` exist for any job; migrations from V20.
+- For WP124 (web): statuses `OPEN`, `PAID`, `WAIVED`; `upToDate` is false only for an OPEN due whose period has started
+  (a WAIVED or future due never makes a player behind); empty states: a team without players `players: []`, a player
+  without dues `items: []`; `paidOn` / `paymentMethod` null unless PAID (a WAIVED due has none); `playerName` can be ""
+  (player removed in core), `recordedBy.displayName` "" (member without an event since V11, until a replay); a coach of
+  another team and a parent of another player get 403.
+- Open points / follow-ups:
+  - The commit hook ran in the main checkout, not on this branch: the checks above were run here by hand.
+  - Not run against the shared compose database: starting this binary there would migrate `finance` to V12 and the
+    main-branch binary (V1-V9) would then refuse to start (history without files) for the other agents; the Go suites
+    run on their own Testcontainers PostgreSQL. After merge: `just finance-up` migrates compose.
+  - Existing replicas (compose, kind) lack `display_name` and the new aggregates until core's events arrive again: run
+    `just events-backfill` (or reset the group `finance-service.roster`) after deploying, before relying on the dues.
+  - `docs/security/privacy-threat-model.md` P-10 / P-12 can be marked mitigated for finance by the docs pass (WP125).
+  - Not done: lag metric of the replica (from WP118), mutation testing for Go, replica retention job for
+    `applied_event` (ADR-0037 WP82 pattern) — follow-ups.
