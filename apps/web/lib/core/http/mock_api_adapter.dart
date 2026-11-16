@@ -378,6 +378,7 @@ class _Academy {
             path: r.path,
             query: r.query,
             body: r.body,
+            language: r.language,
           ) ??
           const MockResult.json(404, {'title': 'Not found', 'status': 404});
     }

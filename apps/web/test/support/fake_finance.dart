@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -7,10 +8,11 @@ import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/features/finance/application/finance_providers.dart';
 import 'package:hoops_app/features/finance/data/finance_repository.dart';
 import 'package:hoops_app/features/finance/domain/due_query.dart';
+import 'package:hoops_app/features/finance/domain/expense_query.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
 /// What finance-service answers for an operation it does not serve yet
-/// (WP118 handover: dues and payments, until WP119).
+/// (WP118 handover: expenses, the balance and the exports, until WP123).
 const notImplemented = AppError(
   kind: AppErrorKind.server,
   status: 501,
@@ -70,6 +72,15 @@ class FakeFinanceRepository implements FinanceRepository {
       'waiveDue',
       'payDue',
       'voidPayment',
+      'expenses',
+      'createExpense',
+      'updateExpense',
+      'deleteExpense',
+      'balance',
+      'teamDueStatus',
+      'playerDues',
+      'exportDues',
+      'exportExpenses',
     ]) {
       failOn[name] = notImplemented;
     }
@@ -190,6 +201,63 @@ class FakeFinanceRepository implements FinanceRepository {
     'voidPayment',
     () => _inner.voidPayment(paymentId, reason),
     (paymentId, reason),
+  );
+
+  @override
+  Future<fin.ExpensePage> expenses(ExpenseQuery query) =>
+      _call('expenses', () => _inner.expenses(query), query);
+
+  @override
+  Future<fin.Expense> createExpense(fin.CreateExpenseRequest request) =>
+      _call('createExpense', () => _inner.createExpense(request), request);
+
+  @override
+  Future<fin.Expense> updateExpense(
+    String expenseId,
+    fin.UpdateExpenseRequest request,
+  ) => _call('updateExpense', () => _inner.updateExpense(expenseId, request), (
+    expenseId,
+    request,
+  ));
+
+  @override
+  Future<void> deleteExpense(String expenseId) =>
+      _call('deleteExpense', () => _inner.deleteExpense(expenseId), expenseId);
+
+  @override
+  Future<fin.SeasonBalance> balance(String seasonId) =>
+      _call('balance', () => _inner.balance(seasonId), seasonId);
+
+  @override
+  Future<fin.TeamDueStatus> teamDueStatus(String teamId) =>
+      _call('teamDueStatus', () => _inner.teamDueStatus(teamId), teamId);
+
+  @override
+  Future<fin.PlayerDuePage> playerDues(
+    String playerId, {
+    int page = 0,
+    int size = 50,
+  }) => _call(
+    'playerDues',
+    () => _inner.playerDues(playerId, page: page, size: size),
+    playerId,
+  );
+
+  @override
+  Future<Uint8List> exportDues(DueQuery query, {required String language}) =>
+      _call('exportDues', () => _inner.exportDues(query, language: language), (
+        query,
+        language,
+      ));
+
+  @override
+  Future<Uint8List> exportExpenses(
+    ExpenseQuery query, {
+    required String language,
+  }) => _call(
+    'exportExpenses',
+    () => _inner.exportExpenses(query, language: language),
+    (query, language),
   );
 
   List<Override> get overrides => [

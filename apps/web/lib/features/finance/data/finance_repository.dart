@@ -1,8 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
 import '../domain/due_query.dart';
+import '../domain/expense_query.dart';
 
-/// Settings, fee plans, dues and payments (`/api/finance/**`, finance.yaml
+/// Settings, fee plans, dues, payments, expenses, the season balance, the
+/// coach's and the family's reads and the CSV exports (`/api/finance/**`, finance.yaml
 /// 1.0.0). Failures surface as the transport's exceptions; screens map them
 /// with `AppError.of`.
 abstract class FinanceRepository {
@@ -47,6 +51,42 @@ abstract class FinanceRepository {
     String? note,
   });
   Future<fin.Due> voidPayment(String paymentId, String reason);
+
+  // ---------------------------------------------------------------- expenses
+  Future<fin.ExpensePage> expenses(ExpenseQuery query);
+  Future<fin.Expense> createExpense(fin.CreateExpenseRequest request);
+  Future<fin.Expense> updateExpense(
+    String expenseId,
+    fin.UpdateExpenseRequest request,
+  );
+  Future<void> deleteExpense(String expenseId);
+
+  /// The balance of one season: dues by state, expenses by category.
+  Future<fin.SeasonBalance> balance(String seasonId);
+
+  // ------------------------------------------------- coach's and family's reads
+  /// Who of a team is up to date: a flag per player, no amounts (ADMIN and the
+  /// team's current COACH).
+  Future<fin.TeamDueStatus> teamDueStatus(String teamId);
+
+  /// A player's dues as the family sees them (ADMIN, a linked PARENT, the
+  /// PLAYER themself).
+  Future<fin.PlayerDuePage> playerDues(
+    String playerId, {
+    int page = 0,
+    int size = 50,
+  });
+
+  // ----------------------------------------------------------------- exports
+  /// The CSV of the dues the filters of [query] select (no paging), in
+  /// [language] (`es`, `en`, `id`).
+  Future<Uint8List> exportDues(DueQuery query, {required String language});
+
+  /// The CSV of the expenses the filters of [query] select.
+  Future<Uint8List> exportExpenses(
+    ExpenseQuery query, {
+    required String language,
+  });
 }
 
 class ApiFinanceRepository implements FinanceRepository {
@@ -54,12 +94,16 @@ class ApiFinanceRepository implements FinanceRepository {
     : _settings = client.getSettingsApi(),
       _plans = client.getFeePlansApi(),
       _dues = client.getDuesApi(),
-      _payments = client.getPaymentsApi();
+      _payments = client.getPaymentsApi(),
+      _expenses = client.getExpensesApi(),
+      _balance = client.getBalanceApi();
 
   final fin.SettingsApi _settings;
   final fin.FeePlansApi _plans;
   final fin.DuesApi _dues;
   final fin.PaymentsApi _payments;
+  final fin.ExpensesApi _expenses;
+  final fin.BalanceApi _balance;
   final String _tenant;
 
   @override
@@ -202,4 +246,85 @@ class ApiFinanceRepository implements FinanceRepository {
         paymentId: paymentId,
         reasonRequest: fin.ReasonRequest((b) => b.reason = reason),
       )).data!;
+
+  @override
+  Future<fin.ExpensePage> expenses(ExpenseQuery query) async =>
+      (await _expenses.listExpenses(
+        xTenantId: _tenant,
+        from: query.from,
+        to: query.to,
+        category: query.category,
+        page: query.page,
+        size: query.size,
+      )).data!;
+
+  @override
+  Future<fin.Expense> createExpense(fin.CreateExpenseRequest request) async =>
+      (await _expenses.createExpense(
+        xTenantId: _tenant,
+        createExpenseRequest: request,
+      )).data!;
+
+  @override
+  Future<fin.Expense> updateExpense(
+    String expenseId,
+    fin.UpdateExpenseRequest request,
+  ) async => (await _expenses.updateExpense(
+    xTenantId: _tenant,
+    expenseId: expenseId,
+    updateExpenseRequest: request,
+  )).data!;
+
+  @override
+  Future<void> deleteExpense(String expenseId) async {
+    await _expenses.deleteExpense(xTenantId: _tenant, expenseId: expenseId);
+  }
+
+  @override
+  Future<fin.SeasonBalance> balance(String seasonId) async =>
+      (await _balance.getSeasonBalance(
+        xTenantId: _tenant,
+        seasonId: seasonId,
+      )).data!;
+
+  @override
+  Future<fin.TeamDueStatus> teamDueStatus(String teamId) async =>
+      (await _dues.getTeamDueStatus(xTenantId: _tenant, teamId: teamId)).data!;
+
+  @override
+  Future<fin.PlayerDuePage> playerDues(
+    String playerId, {
+    int page = 0,
+    int size = 50,
+  }) async => (await _dues.listPlayerDues(
+    xTenantId: _tenant,
+    playerId: playerId,
+    page: page,
+    size: size,
+  )).data!;
+
+  @override
+  Future<Uint8List> exportDues(
+    DueQuery query, {
+    required String language,
+  }) async => (await _dues.exportDues(
+    xTenantId: _tenant,
+    feePlanId: query.planId,
+    teamId: query.teamId,
+    period: query.period,
+    status: query.status,
+    acceptLanguage: language,
+  )).data!;
+
+  @override
+  Future<Uint8List> exportExpenses(
+    ExpenseQuery query, {
+    required String language,
+  }) async => (await _expenses.exportExpenses(
+    xTenantId: _tenant,
+    from: query.from,
+    to: query.to,
+    category: query.category,
+    acceptLanguage: language,
+  )).data!;
 }

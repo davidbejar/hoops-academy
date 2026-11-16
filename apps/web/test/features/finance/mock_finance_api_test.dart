@@ -568,25 +568,4 @@ void main() {
       );
     });
   });
-
-  group('what the service does not answer yet', () {
-    test('answers 501 like finance-service for the later operations', () async {
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: 'http://mock',
-          headers: {'Authorization': 'Bearer x', 'X-Tenant-Id': demo},
-          validateStatus: (_) => true,
-        ),
-      )..httpClientAdapter = MockApiAdapter(roles: ['ADMIN']);
-      for (final path in [
-        '/api/finance/expenses',
-        '/api/finance/balance',
-        '/api/finance/teams/team-mini-a/due-status',
-      ]) {
-        final r = await dio.get<dynamic>(path);
-        expect(r.statusCode, 501, reason: path);
-        expect((r.data as Map)['code'], 'NOT_IMPLEMENTED');
-      }
-    });
-  });
 }

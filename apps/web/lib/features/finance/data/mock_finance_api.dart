@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
 import '../../../core/mock/mock_core_api.dart';
@@ -7,15 +10,18 @@ import '../domain/currencies.dart';
 import '../domain/money.dart';
 import '../domain/periods.dart';
 
+part 'mock_finance_reads.dart';
+
 /// In-memory finance-service for the demo (`HOOPS_MOCK_API=true`): settings,
 /// fee plans, dues and payments of finance.yaml 1.0.0 with the rules of
 /// ADR-0056, JSON in and out like the real service behind the generated
 /// client. The roster, the teams and the seasons come from [core], so the
 /// demo's dues belong to the demo's players.
 ///
-/// The operations of the coach's and the family's views, expenses, the
-/// balance and the exports answer 501 `NOT_IMPLEMENTED`, as the service does
-/// until they are built.
+/// Expenses, the season balance, the coach's and the family's reads and the
+/// CSV exports are in `mock_finance_reads.dart`. The service answered 501
+/// `NOT_IMPLEMENTED` for them until WP123; the screens still degrade on that
+/// answer (tested with a fake).
 class MockFinanceApi {
   MockFinanceApi({required this.core, DateTime Function()? now})
     : _now = now ?? DateTime.now {
@@ -38,6 +44,7 @@ class MockFinanceApi {
   String? _currency;
   final List<Map<String, Object?>> _plans = [];
   final List<Map<String, Object?>> _dues = [];
+  final List<Map<String, Object?>> _expenses = [];
   var _seq = 0;
 
   // ------------------------------------------------------------------- seed
@@ -102,6 +109,7 @@ class MockFinanceApi {
       }
     }
     _plans.firstWhere((p) => p['id'] == monthlyPlanId)['hasDues'] = true;
+    _seedExpenses();
   }
 
   // ------------------------------------------------------------------ model
@@ -285,16 +293,23 @@ class MockFinanceApi {
     required String path,
     required Map<String, dynamic> query,
     Object? body,
+    String? language,
   }) {
     final seg = path.split('/').where((s) => s.isNotEmpty).toList();
     if (seg.length < 3 || seg[0] != 'api' || seg[1] != 'finance') return null;
-    if (!core.authz.admin) {
-      // Only ADMIN reaches settings, plans, dues and payments; the coach's and
-      // the family's reads come with their own screens.
-      return _later(seg) ? _notImplemented : _problem(403, 'Forbidden');
-    }
-    final b = body is Map ? body.cast<String, Object?>() : <String, Object?>{};
     final q = MockQuery(query);
+    // The two reads of the coach and of the family decide who may ask.
+    if (method == 'GET' && seg.length == 5) {
+      if (seg[2] == 'teams' && seg[4] == 'due-status') {
+        return _teamDueStatus(seg[3]);
+      }
+      if (seg[2] == 'players' && seg[4] == 'dues') {
+        return _playerDues(seg[3], q);
+      }
+    }
+    // Everything else is ADMIN's.
+    if (!core.authz.admin) return _problem(403, 'Forbidden');
+    final b = body is Map ? body.cast<String, Object?>() : <String, Object?>{};
     // A path segment can carry an action: `fee-plans/x:archive`.
     final head = seg[2].split(':');
     final res = head.first;
@@ -327,7 +342,7 @@ class MockFinanceApi {
           return _generate(id, b);
         }
       case 'dues':
-        if (action == 'export') return _notImplemented;
+        if (action == 'export') return _exportDues(q, language);
         if (id == null && method == 'GET') return _listDues(q);
         if (id != null && idAction == null && method == 'GET') {
           return _getDue(id);
@@ -341,22 +356,17 @@ class MockFinanceApi {
         if (id != null && idAction == 'void' && method == 'POST') {
           return _void(id, b);
         }
+      case 'expenses':
+        if (action == 'export') return _exportExpenses(q, language);
+        if (id == null && method == 'GET') return _listExpenses(q);
+        if (id == null && method == 'POST') return _createExpense(b);
+        if (id != null && method == 'PATCH') return _updateExpense(id, b);
+        if (id != null && method == 'DELETE') return _deleteExpense(id);
+      case 'balance':
+        if (method == 'GET') return _balance(q);
     }
-    return _later(seg) ? _notImplemented : null;
+    return null;
   }
-
-  /// Operations of the later work packages (WP119 reads, WP123 expenses and
-  /// balance): the service answers them with 501 for now.
-  bool _later(List<String> seg) =>
-      const {'teams', 'players', 'expenses', 'balance'}.contains(seg[2]) ||
-      seg[2].startsWith('expenses');
-
-  static const _notImplemented = MockResult.json(501, {
-    'type': 'urn:hoops:problem:not-implemented',
-    'title': 'Not implemented',
-    'status': 501,
-    'code': 'NOT_IMPLEMENTED',
-  });
 
   static MockResult _problem(int status, String title, [String? code]) =>
       MockResult.json(status, {
@@ -641,28 +651,27 @@ class MockFinanceApi {
       if (e.key != 'payments') e.key: e.value,
   };
 
-  MockResult _listDues(MockQuery q) {
-    final dues =
-        [
-          for (final d in _dues)
-            if ((q.text('feePlanId') == null ||
-                    d['feePlanId'] == q.text('feePlanId')) &&
-                (q.text('teamId') == null || d['teamId'] == q.text('teamId')) &&
-                (q.text('playerId') == null ||
-                    d['playerId'] == q.text('playerId')) &&
-                (q.text('period') == null || d['period'] == q.text('period')) &&
-                (q.text('status') == null || d['status'] == q.text('status')))
-              d,
-        ]..sort((a, b) {
-          final byStart = '${a['periodStart']}'.compareTo(
-            '${b['periodStart']}',
-          );
-          if (byStart != 0) return byStart;
-          final byName = '${a['playerName']}'.compareTo('${b['playerName']}');
-          return byName != 0 ? byName : '${a['id']}'.compareTo('${b['id']}');
-        });
-    return q.page([for (final d in dues) _view(d)], defaultSize: 50);
-  }
+  MockResult _listDues(MockQuery q) =>
+      q.page([for (final d in _filteredDues(q)) _view(d)], defaultSize: 50);
+
+  /// The dues of the filters, by period then player.
+  List<Map<String, Object?>> _filteredDues(MockQuery q) =>
+      [
+        for (final d in _dues)
+          if ((q.text('feePlanId') == null ||
+                  d['feePlanId'] == q.text('feePlanId')) &&
+              (q.text('teamId') == null || d['teamId'] == q.text('teamId')) &&
+              (q.text('playerId') == null ||
+                  d['playerId'] == q.text('playerId')) &&
+              (q.text('period') == null || d['period'] == q.text('period')) &&
+              (q.text('status') == null || d['status'] == q.text('status')))
+            d,
+      ]..sort((a, b) {
+        final byStart = '${a['periodStart']}'.compareTo('${b['periodStart']}');
+        if (byStart != 0) return byStart;
+        final byName = '${a['playerName']}'.compareTo('${b['playerName']}');
+        return byName != 0 ? byName : '${a['id']}'.compareTo('${b['id']}');
+      });
 
   MockResult _getDue(String id) {
     final due = _dues.where((d) => d['id'] == id).firstOrNull;

@@ -34,7 +34,9 @@ void main() {
     isA<DioException>()
         .having((e) => e.response?.statusCode, 'status', status)
         .having(
-          (e) => (e.response?.data as Map?)?['code'],
+          (e) => e.response?.data is Map
+              ? (e.response!.data as Map)['code']
+              : null,
           'code',
           code ?? anything,
         ),
@@ -384,10 +386,12 @@ void main() {
     test(
       'expenses: BOM, header in the language, one row per expense',
       () async {
-        final es = text(
-          await admin.exportExpenses(const ExpenseQuery(), language: 'es'),
+        final bytes = await admin.exportExpenses(
+          const ExpenseQuery(),
+          language: 'es',
         );
-        expect(es.startsWith('\u{feff}'), isTrue);
+        expect(bytes.take(3), [0xEF, 0xBB, 0xBF]);
+        final es = text(bytes);
         final rows = const LineSplitter().convert(es);
         final count = (await admin.expenses(const ExpenseQuery(size: 200)))
             .page
@@ -421,7 +425,7 @@ void main() {
       );
       final count = (await admin.dues(query)).page.totalElements;
       expect(rows, hasLength(count + 1));
-      expect(rows.skip(1), everyElement(contains('PAID')));
+      expect(rows.skip(1), everyElement(contains(',Paid,')));
     });
 
     test('only an ADMIN exports', () async {
