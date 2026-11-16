@@ -33,12 +33,12 @@ column: WP116 adds that amendment line.
 5. **Docs**: the authz-matrix row, the ADR-0048 amendment, `docs/domain/audit-events.md` if the event's fields change.
 
 ## Acceptance
-- [ ] Core contract 3.7.0 validated; Dart package regenerated and committed (only `packages/core`)
-- [ ] Red tests committed before each change
-- [ ] `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` green (fresh; totals); `flutter analyze` clean;
+- [x] Core contract 3.7.0 validated; Dart package regenerated and committed (only `packages/core`)
+- [x] Red tests committed before each change
+- [x] `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` green (fresh; totals); `flutter analyze` clean;
       `just web-test` green (fresh; totals)
-- [ ] `just mutation core-service` at or above baseline (record the score); `just diagrams` committed if types changed
-- [ ] Handover appended: how the web asks for the PDF (WP122), the statuses it can get, what the e2e journey (WP123)
+- [x] `just mutation core-service` at or above baseline (record the score); `just diagrams` committed if types changed
+- [x] Handover appended: how the web asks for the PDF (WP122), the statuses it can get, what the e2e journey (WP123)
       should call
 
 ## Working rules
@@ -62,3 +62,58 @@ column: WP116 adds that amendment line.
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+
+- Built:
+  - **Printed roster** (decision 89): `GET /api/core/teams/{id}/roster:export` with `Accept: application/pdf`.
+    `PrintTeamRoster` takes the roster from `ExportTeamRoster.gather` (same authz: ADMIN, the team's current COACH;
+    other members 403, non-members 404; the 10,000-row limit), checks the sheet's limits
+    (`ExportLimit.requirePrintable`: 60 players, 20 staff, 4 active guardians per player, = `pdf.yaml` `maxItems`;
+    else 422 `EXPORT_TOO_LARGE`, nothing sent), adds the heading (academy name and zone, season, team category),
+    has the port `RosterPrinter` render it and then audits `team.roster_exported` with `rows` and `format` (`pdf`;
+    the CSV now writes `format` `csv`). File name `hoops-<slug>-roster-<team>-<yyyyMMdd>.pdf` by core
+    (`ExportFileName.pdf`), `Cache-Control: no-store`, labels in the `Accept-Language` language (`locale`).
+    `AcceptedFormat` picks the form; `CsvResponse` became `ExportResponse`; `PlayerLine.standing()` is shared by
+    CSV and PDF.
+  - **Client adapter** `adapters/out/client`: `PdfServiceClient` (REST client built with `QuarkusRestClientBuilder`,
+    `ServiceTokenClientFilter` = core's client-credentials token), `TeamRosterRequestDto` (`pdf.yaml`
+    `TeamRosterRequest`), `PdfServiceRosterPrinter`. Config `hoops.pdf-service.url=${PDF_SERVICE_URL:}`, connect 1 s,
+    read 5 s (2 s in `%test`). Unset, unreachable, slow, any error status or an empty body:
+    `UpstreamUnavailableException` = 503 `UPSTREAM_UNAVAILABLE`; the logged message names cause and status only.
+  - **Audit `team` target**: `AuditNames.teams` (RLS, `core.team`), resolved by `ReadAuditTrail`, so the list and
+    its CSV export name the team. The platform trail keeps team targets by id (ADR-0029: no tenant content there).
+  - Contract core 3.7.0 (`application/pdf` on the 200, a 503, `PdfFile`, `AuditTarget.displayName`); Dart package
+    `apps/web/packages/core` regenerated (3.7.0, plus the `pubspec.lock` bump); model diagrams regenerated.
+- How the web asks (WP122): `TeamsApi.exportTeamRoster(xTenantId, teamId, acceptLanguage: <app locale>,
+  headers: {'Accept': 'application/pdf'})` returns `Response<Uint8List>` (the generated method has no Accept
+  parameter: OpenAPI ignores an `Accept` header parameter). Statuses: 200 `application/pdf` (name in
+  `Content-Disposition`); 403 (not ADMIN / current coach); 404 (non-member, unknown team); 422 `EXPORT_TOO_LARGE`
+  (team too large for a sheet: offer the CSV); 503 `UPSTREAM_UNAVAILABLE` (pdf-service down: retry later or CSV);
+  401. Without that header the CSV is unchanged.
+- For the e2e journey (WP123): `just pdf-up` (or the chart's pdf-service) and `PDF_SERVICE_URL`; as an ADMIN call
+  `GET /api/core/teams/{id}/roster:export` with `Accept: application/pdf`, expect 200, `application/pdf`, a body
+  starting `%PDF-`, the `.pdf` file name, and an audit row `team.roster_exported` with `format` `pdf`; as a PARENT 403.
+- Verified (2026-11-16):
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`, fresh: BUILD SUCCESS, 9:58 min; 3,453 tests (3,392 + 61
+    new), 0 failures, 0 errors, 26 skipped (surefire reports: common 403, contracts 323, core 1,225, game 467,
+    athlete 1,003, e2e 32 / 26 skipped). PMD / CPD, SpotBugs, JaCoCo gates passed.
+  - `TeamRosterPdfTest` (31): WireMock stands in for pdf-service; the received body validates against
+    `classpath:openapi/pdf.yaml` (strict validator), bearer = the service token; role matrix of the CSV; failures
+    500, 503, 401, 400, connection reset and a 3 s delay (> 2 s read time-out) each give 503 with no audit row and
+    neither guardian names / e-mail nor the team name in the logs. Unit: `TeamRosterRequestDtoTest`,
+    `PdfServiceRosterPrinterTest`, `AcceptedFormatTest`, `ExportLimitTest`, `ExportFileNameTest`. Audit:
+    `AuditEventResourceTest` and `AuditEventExportTest` (own team named; deleted or another academy's team null).
+  - `flutter analyze`: no issues; `just web-test`: 1,507 tests, all passed.
+  - `just mutation core-service`: 932/933 (99 %), baseline 99 unchanged (was 925/926). `just diagrams-check`: up to date.
+  - Not run: a real call to pdf-service (copying the main checkout's `.env` into the worktree was refused, so
+    `just pdf-up` could not run here; the stubbed tests stand in), `just isolation-check` separately (the commit
+    hook ran it), kind, CI.
+- Decisions/ADRs: ADR-0048 amendment (Accept negotiation on the same path rather than a sibling path: one authz rule,
+  one audit action, the existing gateway rate limit, the Dart method stays `Uint8List`; limits; 503; file name by
+  core); ADR-0034 amendment (`pdf-service` in the audience table for `core-service` and `game-service`).
+  `docs/domain/authz-matrix.md` row, `docs/domain/audit-events.md` (`format`, team names).
+- Open points / follow-ups:
+  - The remote call happens inside the export's transaction (holds a DB connection up to the 5 s read time-out);
+    acceptable for a rate-limited ADMIN / COACH action, revisit if pdf-service gets slow.
+  - pdf-service's own `Content-Disposition` is ignored (it derives the academy part from the name, core uses the
+    slug).
+  - The web button and its l10n texts are WP122's; a team over the sheet's limits has no paged PDF (CSV only).
