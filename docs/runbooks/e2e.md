@@ -19,7 +19,8 @@ just services-up              # e2e/bin/services-up.sh [--no-build]; logs and pi
 just services-down
 ```
 `services-up.sh` builds the three fast-jars once, then starts them with the secrets of `.env` (never printed) on
-8081/8082/8083 and polls `/q/health/ready` of each. All three services have `quarkus-smallrye-health` since WP17
+8081/8082/8083, then pdf-service (:8084) and finance-service (:8085) in compose (profiles `pdf` and `finance`, finance's
+roles first; `E2E_WITHOUT_PDF_FINANCE=1` skips them), and polls `/q/health/ready` of each. All three services have `quarkus-smallrye-health` since WP17
 (readiness includes the database; game/athlete add an informational `core-service` check). The script waits for HTTP 200 with `"status":"UP"` from each (180 s budget).
 
 Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin@hoops-academy.com` is the
@@ -71,7 +72,15 @@ issuer is `http://localhost:8090/auth/realms/academy`).
    score, session, injury, also with the first tenant's id in `X-Tenant-Id`, and vice versa;
 10. `/internal/**` answers 403 through the gateway, with and without a service token;
 11. suspending the tenant makes every member get 404 on all services (game/athlete need up to 30 s because of
-    their membership cache), `/me` drops the membership; reactivation restores it.
+    their membership cache), `/me` drops the membership; reactivation restores it (finance included).
+12. (WP123) the PDFs: the admin prints the team roster (`roster:export` with `Accept: application/pdf`: a `%PDF-` body,
+    a `.pdf` name, an audit row with `format` `pdf`), a parent gets 403; coach and parent print the match sheet
+    (`box-score:pdf`). Both are real calls core -> pdf-service and game -> pdf-service with their service tokens;
+13. (WP123) finance: the admin chooses EUR, creates a monthly plan, previews and generates the dues (idempotent), pays,
+    voids (a second void 409) and pays again; the parent reads the linked player's due without reasons or notes (the
+    other player 403); the coach reads who is up to date without amounts (dues, expenses, balance 403); expenses
+    (create, correct, delete), the season balance, the dues and expenses CSV files (es / en labels, the formula guard,
+    two calls spaced under the gateway's export limit); academy B gets 404 for A's plan, due, expense and balance.
 
 Steps depend on each other: after the first failure the remaining steps are skipped, so read the first failure.
 All names, slugs and e-mails carry a per-run suffix, so the suite can run repeatedly on the same stack.

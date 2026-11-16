@@ -76,3 +76,5 @@ Rows of `/api/finance/**`. A member without the role gets 403 (a `role` or `fine
 | Expenses, season balance, expenses CSV export (`/api/finance/expenses/**`, `/api/finance/balance`) | write | – (403) | – (403) | – (403) | – (403) |
 
 WP119 (finance): "current coach" also needs the `team_staff` row's role to be COACH (an ASSISTANT_COACH row does not count); a COACH of another team or a former coach gets 403 `fine_grained`, a member without COACH or ADMIN 403 `role`. A PARENT or PLAYER asking for an unlinked or unknown player gets 403 `fine_grained` before any lookup (no existence leak); ADMIN gets 404 for an unknown team and an empty page for a player without dues.
+
+WP123 (finance): expenses, the season balance and both CSV exports (`/api/finance/dues:export` included) are ADMIN only; every other member 403 `role`, a non-member 404 (`TestRoleMatrixOfExpensesBalanceAndExports`).

@@ -140,3 +140,34 @@ parallel; the model below is what they share.
 - **Audit metadata**: `dues.generated` (plan, period, count; target the plan), `due.amount_changed` / `due.waived` (due,
   plan, period), `payment.recorded` (due, payment, method; target the payment), `payment.voided` (due, payment). Never a
   reason, note or amount (`TestReasonsAndNotesNeverReachLogsOrAudit`).
+
+## Amendment 2026-11-16 (WP123): expenses, the season balance and the exports
+- **Expenses** (`finance.expense`, V20; RLS suites): day, one of the six categories (decision 99, a check constraint),
+  amount (1..10^11 minor units), description (1-120, trimmed), optional note (1-200, P-12). List newest first (day,
+  then creation, then id); filters `from` / `to` on the day and `category`. **Delete is hard** (**choice**): an expense
+  is recorded by mistake or not at all, and the audit record `expense.deleted` (id, category) keeps that it existed; no
+  soft-deleted rows for the balance, the list and the export to skip. Corrections (`PATCH`, `clear: [note]`) lock the
+  row (`for update`); a correction without a changed value is no change (no audit, `updatedAt` kept).
+- **The first expense fixes the currency** (**choice**, as the first due does, decision 94): an expense is kept in the
+  academy's currency, so changing it afterwards would re-read every amount. `currencyLocked` is true once a due or an
+  expense exists (the contract's description of `currencyLocked` still names only the due; a docs-only follow-up).
+- **Season balance**: the season's dates come from the team replica (as for the dues); a season the replica does not
+  know is 404. Before a currency is chosen no amount can exist and the answer's `currency` is required, so that is 404
+  too (**choice**; the contract has no 409 on this operation). Income = dues of the season's plans: PAID by the valid
+  payment's amount, OPEN and WAIVED by the due's amount; expenses whose day lies within the season (both ends
+  included), all six categories in the enum's order, zero included; net = paid - expenses (open and waived never count).
+  The arithmetic is a pure domain function with a property test (`TestTheBalanceArithmeticHoldsForAnyAmounts`).
+- **Exports** (ADR-0048): the use cases gather the rows (the same store query as `listDues` / `listExpenses`, first
+  10,000 rows and the total; more is 422 `EXPORT_TOO_LARGE`, nothing sent or audited) and audit `dues.exported` /
+  `expenses.exported` (target `academy`, metadata `rows` and the filter as given: ids, period, status, category, dates);
+  the file is rendered in `adapters/in/export` (pure: CSV writer with the formula guard, `Accept-Language` negotiation,
+  labels es / en / id that follow the web's ARB texts for statuses and methods, file name). Dues columns: period,
+  period start, period end, fee plan, player, team, amount (minor units, a number), currency, status label, paid on,
+  payment method label. Expenses columns: day, category label, category code, amount, currency, description. Never a
+  reason or a note.
+- **Replica additions** for the files (V21, V22): the academy's `slug` (`tenant.changed`) for the file name, a team's
+  `name` (`team.changed`) for the dues' team column; neither is personal data. Existing replicas get them with the
+  next event of the academy / team or `just events-backfill force`; until then the file name leaves the academy part
+  out (`hoops-dues-<day>.csv`) and the team column is empty.
+- **Audit actions** of this work package: `expense.created` (category), `expense.updated` (fields), `expense.deleted`
+  (category), `dues.exported`, `expenses.exported`. Never a description, note or amount.
