@@ -624,7 +624,7 @@ settle() {
     due=$(jq -r --arg p "$(pid "$n")" '.items[] | select(.playerId == $p and .status == "OPEN") | .id' "$WORK/dues.json")
     [ -n "$due" ] || continue
     case "$action" in
-      pay:*) api POST "/api/finance/dues/$due:pay" "$(jq -nc --arg d "$(dayin "-$ago")" --arg m "${action#pay:}" \
+      pay:*) api POST "/api/finance/dues/$due:pay" "$(jq -nc --arg d "$(dayin "$(( -ago ))")" --arg m "${action#pay:}" \
                '{paidOn: $d, method: $m}')" ;;
       waive) api POST "/api/finance/dues/$due:waive" '{"reason":"Beca deportiva"}' ;;
     esac
@@ -634,7 +634,7 @@ settle() {
 
 ensure_expense() { # days-ago category amount description (an expense is found by its description)
   if jq -e --arg d "$4" 'any(.items[]; .description == $d)' "$EXPENSES" >/dev/null; then return 0; fi
-  api POST /api/finance/expenses "$(jq -nc --arg s "$(dayin "-$1")" --arg c "$2" --argjson a "$3" --arg d "$4" \
+  api POST /api/finance/expenses "$(jq -nc --arg s "$(dayin "$(( -$1 ))")" --arg c "$2" --argjson a "$3" --arg d "$4" \
     '{spentOn: $s, category: $c, amountMinor: $a, description: $d}')"
   need 201; CREATED=$((CREATED + 1)); say "recorded expense $4"
 }
