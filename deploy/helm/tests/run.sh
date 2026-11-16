@@ -482,10 +482,11 @@ grep -q "^RELOADER_CHART_VERSION=\"[0-9][0-9.]*\"$" deploy/kind/up.sh && grep -q
   && grep -q "^RELOADER_IMAGE_DIGEST=\"$sha\"$" deploy/kind/up.sh \
   && ok "Reloader pinned in deploy/kind/up.sh (chart version + digest, image digest)" || bad "Reloader not pinned in deploy/kind/up.sh"
 
-echo "== observability (WP86, ADR-0046: OpenTelemetry collector)"
-# global.observability.enabled (on in values-kind.yaml): an OTLP collector `otel-collector` (traces + logs, debug exporter,
-# traces on to an in-memory Jaeger on kind), the services export to it (SDK on, logs on, parent-based ratio sampling,
-# resource attributes without a tenant), the Envoy proxy traces the edge. Off: nothing rendered, the SDK stays off.
+echo "== observability (WP86 / WP120, ADR-0046: OpenTelemetry collector, Grafana LGTM on kind)"
+# global.observability.enabled (on in values-kind.yaml): an OTLP collector `otel-collector` (traces + logs over OTLP, the
+# services' /q/metrics scraped; debug exporter, on kind everything on to one Grafana LGTM pod `lgtm`; the cloud keeps the
+# in-memory Jaeger), the services export to it (SDK on, logs on, parent-based ratio sampling, resource attributes without a
+# tenant), the Envoy proxy traces the edge. Off: nothing rendered, the SDK stays off.
 img_pinned() { # image line of document $1 matches repository $2 with tag and sha256 digest
   echo "$1" | grep -Eq "image: \"$2:[0-9][0-9.]*@sha256:[0-9a-f]{64}\""; }
 hardened() { # document $1: non-root, read-only root FS, no privilege escalation, drop ALL, no token, memory limit
@@ -505,37 +506,121 @@ cfg=$(doc otel-collector-config ConfigMap | awk '/^  config.yaml: \|$/ {c=1; nex
 pipeline() { echo "$cfg" | awk -v p="    $1:" '$0 == p {f=1; next} f && /^      / {print; next} f {exit}'; }
 echo "$cfg" | grep -q '^  otlp:$' && pipeline traces | grep -q 'receivers: \[otlp\]' && pipeline logs | grep -q 'receivers: \[otlp\]' \
   && pipeline traces | grep -q 'processors: \[memory_limiter, attributes/strip-ids, batch\]' && pipeline logs | grep -q 'processors: \[memory_limiter, batch\]' \
-  && pipeline traces | grep -q 'exporters: \[debug, otlp_grpc/jaeger\]' && pipeline logs | grep -q 'exporters: \[debug\]' \
-  && ! echo "$cfg" | grep -q '^    metrics:$' \
-  && ok "collector pipelines: traces (debug + Jaeger) and logs (debug) from OTLP, memory_limiter first, ids stripped from spans, no metrics" \
+  && pipeline traces | grep -q 'exporters: \[debug, otlp_grpc/lgtm\]' && pipeline logs | grep -q 'exporters: \[debug, otlp_grpc/lgtm\]' \
+  && pipeline metrics | grep -q 'receivers: \[otlp, prometheus\]' && pipeline metrics | grep -q 'processors: \[memory_limiter, batch\]' \
+  && pipeline metrics | grep -q 'exporters: \[debug, otlp_grpc/lgtm\]' \
+  && ok "kind collector pipelines: traces, logs (OTLP) and metrics (OTLP + scraped) to debug and LGTM, memory_limiter first, ids stripped from spans" \
   || bad "collector config: $(echo "$cfg" | tr '\n' ' ' | head -c 400)"
+# The services' Prometheus endpoints (hoops_authz_denied_total, Micrometer's http_server_requests) reach the backend through
+# the collector: one scrape job per enabled service, named after it (= service.name of the metric), its Service and port.
+jobs=$(echo "$cfg" | { grep -o 'job_name: [a-z-]*' || true; } | awk '{print $2}' | sort | tr '\n' ' ')
+scrape_ok=1
+for t in core-service:8081 game-service:8082 athlete-service:8083 pdf-service:8084 finance-service:8085; do
+  echo "$cfg" | grep -A3 -- "- job_name: ${t%:*}$" | grep -q "static_configs: \[{targets: \[\"${t%:*}.hoops.svc.cluster.local:${t#*:}\"\]}\]" || scrape_ok=0
+done
+[ "$jobs" = "athlete-service core-service finance-service game-service pdf-service " ] && [ "$scrape_ok" = 1 ] \
+  && [ "$(echo "$cfg" | grep -c 'metrics_path: /q/metrics')" = 5 ] && [ "$(echo "$cfg" | grep -c 'scrape_interval: 30s')" = 5 ] \
+  && ok "collector scrapes /q/metrics of the five services every 30 s (job = service name, target = its Service and port)" \
+  || bad "collector scrape jobs: $jobs"
+! echo "$cfg" | grep -q 'verbosity: normal' \
+  && ok "kind collector debug exporter at basic (counts only: no log body or span in the collector's own log, P-07)" || bad "kind debugVerbosity"
 # Span attributes that carry concrete paths or message keys (tenant and other ids: /internal/usage/<tenant>, /platform/
 # tenants/<id>, Kafka keys <tenant>:<id>) are deleted before any exporter; http.route (the template) and span names stay.
 strip=$(echo "$cfg" | awk '/^  attributes\/strip-ids:$/ {s=1; next} s && /^    / {print; next} s {exit}' | { grep -o 'key: [a-z._]*' || true; } | sort | tr '\n' ' ')
 [ "$strip" = "key: http.target key: http.url key: messaging.kafka.message.key key: url.full key: url.path key: url.query " ] \
   && [ "$(echo "$cfg" | awk '/^  attributes\/strip-ids:$/ {s=1; next} s && /^    / {print; next} s {exit}' | grep -c 'action: delete')" = 6 ] \
   && ok "spans: url.full, url.path, url.query, http.url, http.target and Kafka message keys deleted (no tenant id leaves)" || bad "strip-ids processor: $strip"
-echo "$cfg" | grep -q 'endpoint: jaeger.hoops.svc.cluster.local:4317' && echo "$cfg" | grep -q 'insecure: true' \
-  && echo "$cfg" | grep -q 'level: none' && ok "collector: traces to jaeger.hoops:4317, own metrics off" || bad "collector exporters/telemetry"
+echo "$cfg" | grep -q 'endpoint: lgtm.hoops.svc.cluster.local:4317' && echo "$cfg" | grep -q 'insecure: true' \
+  && ! echo "$cfg" | grep -q 'jaeger' \
+  && echo "$cfg" | grep -q 'level: none' && ok "kind collector: everything to lgtm.hoops:4317, no Jaeger, own metrics off" || bad "collector exporters/telemetry"
 n=$(doc otel-collector NetworkPolicy)
 admitted=$(echo "$n" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
+# egress rules by the pod name they select and their port, e.g. "lgtm:4317 core-service:8081"
+egress=$(echo "$n" | awk '/^  egress:/ {e=1} e && /- to:/ {name=""} e && match($0, /app\.kubernetes\.io\/name: [a-z-]+/) {name=substr($0, RSTART+24, RLENGTH-24)}
+  e && name != "" && match($0, /port: [0-9]+/) {print name ":" substr($0, RSTART+6, RLENGTH-6)}' | sort | tr '\n' ' ')
 [ "$admitted" = "athlete-service core-service finance-service game-service pdf-service " ] && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' \
   && [ "$(echo "$n" | grep -c -- '- from:')" = 2 ] && ! echo "$n" | grep -q 'namespaceSelector: {}' \
   && echo "$n" | awk '/- from:/ {f++} f==1 && /port: otlp-grpc/ {g=1} f==1 && /port: otlp-http/ {h=1} END {exit !(g && h)}' \
   && echo "$n" | awk '/- from:/ {f++} f==2 && /kubernetes.io\/metadata.name: envoy-gateway-system/ {e=1} f==2 && /app.kubernetes.io\/component: proxy/ {p=1} f==2 && /owning-gateway-name: hoops$/ {o=1} f==2 && /managed-by/ {m=1} f==2 && /port: otlp-grpc/ {g=1} f==2 && /port: otlp-http/ {h=1} END {exit !(e && p && o && !m && g && !h)}' \
-  && echo "$n" | grep -q 'k8s-app: kube-dns' && [ "$(echo "$n" | grep -c -- '- to:')" = 2 ] \
-  && echo "$n" | awk '/- to:/ {t++} t==2 && /app.kubernetes.io\/name: jaeger/ {j=1} t==2 && /port: 4317/ {p=1} END {exit !(j && p)}' \
-  && ok "otel-collector NetworkPolicy: OTLP from the three services, pdf-service and finance-service + the Gateway's Envoy proxies (gRPC; no managed-by selector, Tilt rewrites it), egress DNS + Jaeger only" \
-  || bad "otel-collector NetworkPolicy (admitted: $admitted)"
+  && echo "$n" | grep -q 'k8s-app: kube-dns' && [ "$(echo "$n" | grep -c -- '- to:')" = 7 ] \
+  && [ "$egress" = "athlete-service:8083 core-service:8081 finance-service:8085 game-service:8082 lgtm:4317 pdf-service:8084 " ] \
+  && ok "otel-collector NetworkPolicy: OTLP from the five services + the Gateway's Envoy proxies (gRPC; no managed-by selector, Tilt rewrites it); egress DNS, lgtm:4317 and each service's port (scrape) only" \
+  || bad "otel-collector NetworkPolicy (admitted: $admitted; egress: $egress)"
 for u in core-service game-service athlete-service pdf-service finance-service; do
   doc "$u" Deployment | grep -q "app.kubernetes.io/name: $u" || bad "collector client $u has no Deployment with that name label"
 done
-j=$(doc jaeger Deployment)
+# Grafana LGTM (WP120, decision 91): one dev-only pod with Grafana, Loki, Tempo and Prometheus behind the collector. No
+# persistence (emptyDir, capped), an explicit 24 h retention for logs, traces and metrics (P-07), Grafana only through
+# kubectl port-forward as an anonymous Viewer (Explore allowed; no login, no admin), nothing fetched from the internet.
+l=$(doc lgtm Deployment)
+img_pinned "$l" docker.io/grafana/otel-lgtm && hardened "$l" && echo "$l" | grep -q 'type: Recreate' \
+  && echo "$l" | grep -q '{name: data, emptyDir: {sizeLimit: 2Gi}}' && ! echo "$l" | grep -q 'persistentVolumeClaim\|hostPath' \
+  && echo "$l" | grep -q '{name: data, mountPath: /data}' && echo "$l" | grep -q '{name: tmp, mountPath: /tmp}' \
+  && echo "$l" | grep -q '{name: tempo, mountPath: /var/tempo}' \
+  && echo "$l" | grep -q '{name: dashboards, mountPath: /otel-lgtm/hoops-dashboards, readOnly: true}' \
+  && echo "$l" | grep -q '{name: dashboard-provider, mountPath: /otel-lgtm/grafana/conf/provisioning/dashboards, readOnly: true}' \
+  && echo "$l" | grep -q 'exec: {command: \[/otel-lgtm/docker/healthcheck.sh\]}' \
+  && ok "kind: lgtm pinned by digest, non-root, read-only root FS, memory limit, Recreate, no persistence (emptyDir /data capped at 2Gi), health script probes" \
+  || bad "lgtm Deployment"
+lgtm_env() { echo "$1" | sed -n 's/^ *- {name: \([A-Z_]*\), value: \(".*"\)}$/\1=\2/p' | sort; }
+le=$(lgtm_env "$l")
+echo "$le" | grep -qx 'LOKI_EXTRA_ARGS="-compactor.retention-enabled=true -compactor.delete-request-store=filesystem -store.retention=24h"' \
+  && echo "$le" | grep -qx 'TEMPO_EXTRA_ARGS="-backend-worker.compaction.block-retention=24h -backend-scheduler.provider.work.compaction.block-retention=24h"' \
+  && echo "$le" | grep -qx 'PROMETHEUS_EXTRA_ARGS="--storage.tsdb.retention.time=24h"' \
+  && ok "lgtm retention 24 h: Loki (compactor retention), Tempo (block retention, scheduler and worker), Prometheus (TSDB)" \
+  || bad "lgtm retention: $le"
+echo "$le" | grep -qx 'GF_AUTH_ANONYMOUS_ENABLED="true"' && echo "$le" | grep -qx 'GF_AUTH_ANONYMOUS_ORG_ROLE="Viewer"' \
+  && echo "$le" | grep -qx 'GF_USERS_VIEWERS_CAN_EDIT="true"' && echo "$le" | grep -qx 'GF_AUTH_DISABLE_LOGIN_FORM="true"' \
+  && echo "$le" | grep -qx 'GF_AUTH_BASIC_ENABLED="false"' && echo "$le" | grep -qx 'GF_PLUGINS_PREINSTALL_DISABLED="true"' \
+  && echo "$le" | grep -qx 'GF_ANALYTICS_REPORTING_ENABLED="false"' && echo "$le" | grep -qx 'GF_ANALYTICS_CHECK_FOR_UPDATES="false"' \
+  && ! echo "$le" | grep -q 'Admin\|ADMIN_PASSWORD\|ADMIN_USER' \
+  && ok "Grafana: anonymous Viewer (Explore allowed), no login form, no basic auth (admin/admin unusable), no plugin download, no phoning home" \
+  || bad "lgtm Grafana settings: $le"
+s=$(doc lgtm Service)
+echo "$s" | grep -q '{name: otlp-grpc, port: 4317, targetPort: otlp-grpc, appProtocol: grpc}' && echo "$s" | grep -q '{name: grafana, port: 3000, targetPort: grafana}' \
+  && ! echo "$s" | grep -q 'type: \(NodePort\|LoadBalancer\)' && ! grep -h -- '- {name: lgtm' "$WORK"/*.yaml | grep -q . \
+  && ok "lgtm Service: ClusterIP, OTLP gRPC 4317 and Grafana 3000; no HTTPRoute to it in any render (port-forward only)" || bad "lgtm Service"
+n=$(doc lgtm NetworkPolicy)
+echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' && echo "$n" | grep -q 'egress: \[\]' \
+  && [ "$(echo "$n" | grep -c -- '- from:')" = 1 ] && echo "$n" | grep -A3 -- '- from:' | grep -q 'app.kubernetes.io/name: otel-collector' \
+  && echo "$n" | grep -q 'port: otlp-grpc' && ! echo "$n" | grep -q 'port: grafana\|3000' \
+  && ok "lgtm NetworkPolicy: OTLP from the collector only, Grafana by port-forward only, no egress (no plugin, update or phone-home traffic)" \
+  || bad "lgtm NetworkPolicy"
+# Dashboards: provisioned from the chart's files (compose mounts the same directory), read-only, in folder "Hoops Academy".
+dash_dir="$CHART/files/grafana/dashboards"
+dk=$(doc lgtm-dashboards ConfigMap | sed -n 's/^  \([a-z0-9-]*\.json\): .*/\1/p' | sort | tr '\n' ' ')
+[ "$dk" = "$(cd "$dash_dir" && ls -- *.json | sort | tr '\n' ' ')" ] && [ "$dk" = "hoops-authz-denials.json hoops-requests.json hoops-security-events.json " ] \
+  && doc lgtm-dashboard-provider ConfigMap | grep -q 'path: /otel-lgtm/hoops-dashboards' \
+  && doc lgtm-dashboard-provider ConfigMap | grep -q 'allowUiUpdates: false' \
+  && ok "lgtm dashboards: requests and errors, authorisation denials, security events (from the chart's files), provider read-only" \
+  || bad "lgtm dashboards: $dk"
+# No personal data or request content in what the dashboards query (P-07, privacy threat model): no subject, roles, tenant,
+# e-mail, user, address, concrete path or message key; log panels keep only the listed fields and print their own line.
+exprs=$(jq -r '.. | objects | .expr? // empty' "$dash_dir"/*.json)
+dsuids=$(jq -r '.. | objects | .datasource? | objects | .uid' "$dash_dir"/*.json | sort -u | tr '\n' ' ')
+logs_ok=1
+while IFS= read -r q; do
+  kept=$(echo "$q" | sed -n 's/.*| keep \([a-z_, ]*\)|.*/\1/p' | tr -d ' ' | tr ',' '\n' | sort | tr '\n' ' ')
+  [ "$kept" = "security_kind security_outcome security_reason security_resource service_name trace_id " ] && echo "$q" | grep -q '| line_format "' || logs_ok=0
+done < <(jq -r '.panels[] | select(.type == "logs") | .targets[].expr' "$dash_dir"/*.json)
+[ -n "$exprs" ] && ! echo "$exprs" | grep -Eiq 'subject|roles|tenant|e_?mail|user|client_address|peer|url_|http_target|message_key|body|password|token' \
+  && [ "$logs_ok" = 1 ] && [ "$(jq -r '.panels[] | select(.type == "logs") | .id' "$dash_dir"/*.json | wc -l | tr -d ' ')" -ge 1 ] \
+  && [ "$dsuids" = "loki prometheus " ] && jq -e . "$dash_dir"/*.json >/dev/null \
+  && ok "dashboards query no subject, roles, tenant, e-mail, user, address, path, message key or body; log panels keep six fields and the trace id" \
+  || bad "dashboard queries (datasources: $dsuids)"
+# Cloud keeps the in-memory Jaeger (values-cloud.yaml); LGTM is dev-only and off there.
+CR="$WORK/umbrella-cloud.yaml"
+ccfg=$(doc otel-collector-config ConfigMap "$CR" | awk '/^  config.yaml: \|$/ {c=1; next} c && /^    / {sub(/^    /, ""); print; next} c {exit}')
+! grep -q 'name: lgtm' "$CR" && echo "$ccfg" | grep -q 'exporters: \[debug, otlp_grpc/jaeger\]' \
+  && [ "$(echo "$ccfg" | grep -c 'exporters: \[debug\]')" = 2 ] && grep -A4 '^observability:' "$CHART/values-cloud.yaml" | grep -q '^  lgtm: {enabled: false}' \
+  && ok "cloud: no lgtm (off in values-cloud.yaml); traces to Jaeger, logs and metrics to debug only" || bad "cloud observability backend"
+j=$(doc jaeger Deployment "$CR")
 img_pinned "$j" docker.io/jaegertracing/jaeger && hardened "$j" \
-  && ok "kind: jaeger pinned by digest, non-root, read-only root FS, memory limit" || bad "jaeger Deployment"
-doc jaeger-config ConfigMap | grep -q 'max_traces: 5000' && ! doc jaeger-config ConfigMap | grep -q '4318\|9411\|14250\|14268' \
+  && ok "cloud: jaeger pinned by digest, non-root, read-only root FS, memory limit" || bad "jaeger Deployment"
+doc jaeger-config ConfigMap "$CR" | grep -q 'max_traces: 5000' && ! doc jaeger-config ConfigMap "$CR" | grep -q '4318\|9411\|14250\|14268' \
   && ok "jaeger: in-memory store capped (5000 traces), OTLP gRPC receiver only" || bad "jaeger config"
-n=$(doc jaeger NetworkPolicy)
+! grep -q 'name: jaeger' "$R" && ok "kind: no Jaeger (replaced by lgtm)" || bad "kind still renders Jaeger"
+n=$(doc jaeger NetworkPolicy "$CR")
 echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' && echo "$n" | grep -q 'egress: \[\]' \
   && [ "$(echo "$n" | grep -c -- '- from:')" = 1 ] && echo "$n" | grep -A6 -- '- from:' | grep -q 'app.kubernetes.io/name: otel-collector' \
   && echo "$n" | grep -q 'port: otlp-grpc' && ! echo "$n" | grep -q 'port: ui\|16686' \
@@ -562,8 +647,8 @@ echo "$t" | grep -q 'type: OpenTelemetry' && echo "$t" | grep -q 'host: otel-col
   && echo "$t" | grep -q 'samplingFraction: {numerator: 10000, denominator: 10000}' \
   && ok "kind: Envoy proxy traces the edge to otel-collector:4317 by DNS name (W3C traceparent, same ratio; no backendRefs: with those a collector outage un-accepts the Gateway)" || bad "EnvoyProxy tracing"
 for f in umbrella-default umbrella-tls service-defaults; do
-  grep -q 'otel-collector\|jaeger\|tracing:' "$WORK/$f.yaml" && { bad "$f: observability rendered while global.observability.enabled is off"; continue; }
-  ok "$f: no collector, no Jaeger, no edge tracing (global.observability.enabled off)"
+  grep -q 'otel-collector\|jaeger\|lgtm\|tracing:' "$WORK/$f.yaml" && { bad "$f: observability rendered while global.observability.enabled is off"; continue; }
+  ok "$f: no collector, no Jaeger, no LGTM, no edge tracing (global.observability.enabled off)"
 done
 grep -qx '  QUARKUS_OTEL_SDK_DISABLED: "true"' "$WORK/service-defaults.yaml" && ok "service chart alone: OTel SDK off" || bad "service chart default OTel"
 a=$(doc demo-service-env ConfigMap "$WORK/service-all.yaml")
@@ -576,26 +661,62 @@ grep -q '^  observability: {enabled: true' "$CHART/values-kind.yaml" && ok "valu
 # Another environment: the platform's own collector/agent (no chart collector), or the chart's collector forwarding to a
 # backend (extra exporter, its credential from a Secret, an egress rule for it).
 helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set observability.collector.enabled=false \
-  --set observability.jaeger.enabled=false --set global.observability.otlpEndpoint=http://otel-agent.monitoring:4317 > "$WORK/extra/agent.yaml"
-! grep -q 'name: otel-collector\|name: jaeger' "$WORK/extra/agent.yaml" \
+  --set observability.lgtm.enabled=false --set global.observability.otlpEndpoint=http://otel-agent.monitoring:4317 > "$WORK/extra/agent.yaml"
+! grep -q 'name: otel-collector\|name: jaeger\|name: lgtm' "$WORK/extra/agent.yaml" \
   && [ "$(grep -c 'QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-agent.monitoring:4317"' "$WORK/extra/agent.yaml")" = 3 ] \
   && ! grep -q 'tracing:' "$WORK/extra/agent.yaml" \
   && ok "external collector: no chart collector, services and nothing else point at global.observability.otlpEndpoint" || bad "external collector"
 refused 'otlpEndpoint' "${K[@]}" --set observability.collector.enabled=false \
-  && refused 'jaeger' "${K[@]}" --set observability.collector.enabled=false --set global.observability.otlpEndpoint=http://x:4317 \
-  && ok "collector off needs global.observability.otlpEndpoint; Jaeger needs the chart collector" || bad "collector-off guards"
-helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set observability.jaeger.enabled=false \
+  && refused 'jaeger' "${K[@]}" --set observability.collector.enabled=false --set observability.lgtm.enabled=false \
+       --set observability.jaeger.enabled=true --set global.observability.otlpEndpoint=http://x:4317 \
+  && refused 'lgtm' "${K[@]}" --set observability.collector.enabled=false --set global.observability.otlpEndpoint=http://x:4317 \
+  && ok "collector off needs global.observability.otlpEndpoint; Jaeger and LGTM need the chart collector" || bad "collector-off guards"
+helm template hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" --set observability.lgtm.enabled=false \
   --set-json 'observability.collector.exporters={"otlp_http/backend":{"endpoint":"https://otlp.example.test","headers":{"authorization":"Bearer ${env:BACKEND_TOKEN}"}}}' \
-  --set-json 'observability.collector.pipelineExporters={"traces":["otlp_http/backend"],"logs":["otlp_http/backend"]}' \
+  --set-json 'observability.collector.pipelineExporters={"traces":["otlp_http/backend"],"logs":["otlp_http/backend"],"metrics":["otlp_http/backend"]}' \
   --set-json 'observability.collector.secretEnv=[{"name":"BACKEND_TOKEN","secretName":"otel-backend","key":"token"}]' \
   --set-json 'observability.collector.networkPolicy.extraEgress=[{"ports":[{"port":443,"protocol":"TCP"}]}]' > "$WORK/extra/backend.yaml"
 bcfg=$(doc otel-collector-config ConfigMap "$WORK/extra/backend.yaml")
 bd=$(doc otel-collector Deployment "$WORK/extra/backend.yaml")
-echo "$bcfg" | grep -q 'exporters: \[debug, otlp_http/backend\]' && [ "$(echo "$bcfg" | grep -c 'exporters: \[debug, otlp_http/backend\]')" = 2 ] \
-  && echo "$bcfg" | grep -q 'Bearer ${env:BACKEND_TOKEN}' && ! grep -q 'name: jaeger' "$WORK/extra/backend.yaml" \
+echo "$bcfg" | grep -q 'exporters: \[debug, otlp_http/backend\]' && [ "$(echo "$bcfg" | grep -c 'exporters: \[debug, otlp_http/backend\]')" = 3 ] \
+  && echo "$bcfg" | grep -q 'Bearer ${env:BACKEND_TOKEN}' && ! grep -q 'name: jaeger\|name: lgtm' "$WORK/extra/backend.yaml" \
   && echo "$bd" | grep -q 'secretKeyRef: {name: otel-backend, key: token}' && echo "$bd" | grep -q 'secret.reloader.stakater.com/auto: "true"' \
   && doc otel-collector NetworkPolicy "$WORK/extra/backend.yaml" | grep -q 'port: 443' \
-  && ok "backend: extra exporter in both pipelines, its token from a Secret (Reloader rolls it), egress rule added" || bad "collector backend wiring"
+  && ok "backend: extra exporter in the three pipelines, its token from a Secret (Reloader rolls it), egress rule added" || bad "collector backend wiring"
+
+echo "== compose profile observability (WP120): the chart's collector wiring, backend and dashboards"
+CF=infra/compose/compose.yaml; CC=infra/compose/otel-collector.yaml
+svc_block() { awk -v s="  $1:" '$0 == s {f=1; print; next} f && /^  [a-z]/ {exit} f && /^[a-z]/ {exit} f {print}' "$CF"; }
+section() { awk -v s="$1:" '$0 == s {f=1; print; next} f && /^[a-z]/ {exit} f {print}'; }
+cl=$(svc_block lgtm); co=$(svc_block otel-collector)
+li=$(echo "$l" | sed -n 's/^ *image: "\(.*\)"$/\1/p'); oi=$(echo "$oc" | sed -n 's/^ *image: "\(.*\)"$/\1/p')
+[ -n "$li" ] && echo "$cl" | grep -qx "    image: $li" && [ -n "$oi" ] && echo "$co" | grep -qx "    image: $oi" \
+  && echo "$cl" | grep -qx '    profiles: \[observability\]' && echo "$co" | grep -qx '    profiles: \[observability\]' \
+  && ok "compose lgtm and otel-collector: profile observability (off by default), the chart's image pins" || bad "compose observability images/profile"
+ce=$(echo "$cl" | sed -n 's/^      \([A-Z_]*\): \(".*"\)$/\1=\2/p' | sort)
+[ -n "$ce" ] && [ "$ce" = "$le" ] && ok "compose lgtm: the chart's environment (24 h retention, anonymous Viewer, no login, no downloads)" \
+  || bad "compose lgtm environment differs from the chart: $(diff <(echo "$ce") <(echo "$le") | tr '\n' ' ')"
+echo "$cl" | grep -qx '    read_only: true' && echo "$cl" | grep -qx '    cap_drop: \[ALL\]' && echo "$cl" | grep -qx '    user: "10001:10001"' \
+  && [ "$(echo "$cl" | grep -c '^      - "')" = 1 ] && echo "$cl" | grep -qx '      - "127.0.0.1:3000:3000"' \
+  && echo "$cl" | grep -qx '      - /data:size=2g' && echo "$cl" | grep -qx '      - /tmp' && echo "$cl" | grep -qx '      - /var/tempo' \
+  && echo "$cl" | grep -qx '      - ../../deploy/helm/hoops/files/grafana/dashboards:/otel-lgtm/hoops-dashboards:ro' \
+  && echo "$cl" | grep -qx '      - ../../deploy/helm/hoops/files/grafana/provisioning/dashboards:/otel-lgtm/grafana/conf/provisioning/dashboards:ro' \
+  && ok "compose lgtm: read-only, non-root, no capabilities, tmpfs data (2g), Grafana on 127.0.0.1:3000 only, the chart's dashboard files" \
+  || bad "compose lgtm hardening/mounts"
+echo "$co" | grep -qx '    read_only: true' && echo "$co" | grep -qx '    cap_drop: \[ALL\]' \
+  && echo "$co" | grep -qx '      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro' \
+  && [ "$(echo "$co" | grep -c '^      - "127.0.0.1:43')" = 2 ] && ! echo "$co" | grep -q '"0.0.0.0\|- "43' \
+  && ok "compose otel-collector: read-only, no capabilities, OTLP on 127.0.0.1:4317/4318 for the services on the host" \
+  || bad "compose otel-collector"
+diff <(echo "$cfg" | section processors) <(section processors < "$CC") >/dev/null \
+  && diff <(echo "$cfg" | section service) <(section service < "$CC") >/dev/null \
+  && grep -q 'endpoint: lgtm:4317' "$CC" && grep -q 'verbosity: basic' "$CC" \
+  && [ "$(grep -c 'metrics_path: /q/metrics' "$CC")" = 5 ] \
+  && [ "$(grep -o 'host.containers.internal:808[1-5]' "$CC" | sort -u | wc -l | tr -d ' ')" = 5 ] \
+  && ok "compose collector config: the chart's processors (ids stripped) and pipelines, to lgtm:4317, scrapes the five host ports" \
+  || bad "compose collector config differs from the chart's"
+grep -q '^observability-up:' justfile && grep -q -- '--profile observability' justfile \
+  && grep -q 'observability' infra/compose/README.md && ok "just observability-up / down, README line" || bad "just entry or README line"
 
 echo "== pdf-service (WP111, ADR-0052: Rust renderer, internal only)"
 D="$WORK/umbrella-default.yaml"
@@ -609,11 +730,12 @@ echo "$pd" | grep -q 'image: "localhost/hoops/pdf-service:dev"' && echo "$pd" | 
 pn=$(doc pdf-service NetworkPolicy)
 padmitted=$(echo "$pn" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
 [ "$padmitted" = "core-service game-service " ] && echo "$pn" | grep -q 'policyTypes: \[Ingress, Egress\]' \
-  && [ "$(echo "$pn" | grep -c -- '- from:')" = 1 ] && ! echo "$pn" | grep -q 'namespaceSelector: {}\|envoy-gateway-system' \
+  && [ "$(echo "$pn" | grep -c -- '- from:')" = 2 ] && ! echo "$pn" | grep -q 'namespaceSelector: {}\|envoy-gateway-system' \
+  && echo "$pn" | awk '/- from:/ {f++} f==2 && /matchLabels: {app.kubernetes.io\/name: otel-collector}/ {c=1} f==2 && /port: http,/ {p=1} END {exit !(c && p)}' \
   && [ "$(echo "$pn" | grep -c -- '- to:')" = 3 ] && echo "$pn" | grep -q 'k8s-app: kube-dns' \
   && echo "$pn" | awk '/- to:/ {t++} t==2 && /app.kubernetes.io\/name: keycloak/ {k=1} t==2 && /port: 8080/ {p=1} END {exit !(k && p)}' \
   && echo "$pn" | awk '/- to:/ {t++} t==3 && /app.kubernetes.io\/name: otel-collector/ {c=1} t==3 && /port: 4318/ {p=1} END {exit !(c && p)}' \
-  && ok "pdf-service NetworkPolicy: only core-service and game-service in; out only DNS, Keycloak :8080, collector :4318" \
+  && ok "pdf-service NetworkPolicy: only core-service and game-service in (and the collector, /q/metrics); out only DNS, Keycloak :8080, collector :4318" \
   || bad "pdf-service NetworkPolicy (admitted: $padmitted)"
 pc=$(doc pdf-service-env ConfigMap)
 echo "$pc" | grep -qx '  OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"' && echo "$pc" | grep -qx '  OIDC_AUDIENCE: "pdf-service"' \
@@ -658,11 +780,12 @@ doc finance-service-api-finance HTTPRoute | grep -q 'value: "/api/finance"' && d
   && doc finance-service-health HTTPRoute | grep -q 'value: "/api/finance/q/health/ready"' \
   && ok "finance-service routes: /api/finance, health, the CSV exports rate-limited 10/min (P-12)" || bad "finance-service routes"
 fn=$(doc finance-service NetworkPolicy)
-echo "$fn" | grep -q 'policyTypes: \[Ingress, Egress\]' && [ "$(echo "$fn" | grep -c -- '- from:')" = 1 ] \
+echo "$fn" | grep -q 'policyTypes: \[Ingress, Egress\]' && [ "$(echo "$fn" | grep -c -- '- from:')" = 2 ] \
+  && echo "$fn" | awk '/- from:/ {f++} f==2 && /matchLabels: {app.kubernetes.io\/name: otel-collector}/ {c=1} f==2 && /port: http,/ {p=1} END {exit !(c && p)}' \
   && echo "$fn" | grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' && ! echo "$fn" | grep -q 'podSelector: {}' \
   && [ "$(echo "$fn" | grep -c -- '- to:')" = 5 ] && echo "$fn" | grep -q 'cnpg.io/cluster: hoops-db' \
   && echo "$fn" | awk '/app.kubernetes.io\/name: redpanda/ {r=1} r && /port: 9092/ {p=1} END {exit !p}' \
-  && ok "finance-service NetworkPolicy: in only from the gateway; out DNS, Postgres, Keycloak, Redpanda, collector" \
+  && ok "finance-service NetworkPolicy: in only from the gateway (and the collector, /q/metrics); out DNS, Postgres, Keycloak, Redpanda, collector" \
   || bad "finance-service NetworkPolicy"
 doc hoops-db Cluster | grep -q 'name: finance_app' && doc hoops-db Cluster | grep -q 'name: finance_migrator' \
   && ok "CNPG manages finance_migrator and finance_app" || bad "finance roles in hoops-db"
@@ -689,8 +812,10 @@ if quiet_helm lint --strict "$CHART" -f "$CHART/values-cloud.yaml" >"$WORK/lint-
 else bad "helm lint values-cloud.yaml"; cat "$WORK/lint-cloud.txt"; fi
 objects() { awk 'BEGIN{RS="\n---\n"} {k=""; n=""; if (match($0, /\nkind: [A-Za-z]+\n/)) k=substr($0, RSTART+7, RLENGTH-8)
   if (match($0, /\nmetadata:\n  name: [^\n]+/)) n=substr($0, RSTART+18, RLENGTH-18); if (k != "") print k "/" n}' "$1" | sort; }
-diff <(objects "$R") <(objects "$C") >"$WORK/cloud-objects.diff" \
-  && ok "same objects as umbrella-kind ($(objects "$C" | wc -l | tr -d ' ')): the kind policy assertions above cover the cloud workloads too" \
+# The observability backend differs on purpose (kind: the dev-only lgtm pod; cloud: the in-memory Jaeger), the rest is equal.
+diff <(objects "$R" | grep -v '/lgtm') <(objects "$C" | grep -v '/jaeger') >"$WORK/cloud-objects.diff" \
+  && [ "$(objects "$R" | grep -c '/lgtm')" = 5 ] && [ "$(objects "$C" | grep -c '/jaeger')" = 4 ] \
+  && ok "same objects as umbrella-kind but the trace backend ($(objects "$C" | wc -l | tr -d ' ')): the kind policy assertions above cover the cloud workloads too" \
   || { bad "umbrella-cloud renders other objects than umbrella-kind"; cat "$WORK/cloud-objects.diff"; }
 for img in core-service game-service athlete-service web; do
   grep -q "image: \"ghcr.io/davidbejar/hoops-academy/$img:$CT\"" "$C" || bad "image $img not from ghcr.io with tag $CT"
