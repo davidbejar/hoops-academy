@@ -40,6 +40,7 @@ events:
 observability:
   collector:
     debugVerbosity: basic
+  lgtm: {enabled: false}        # dev only (WP120): no Grafana on a public host; the in-memory Jaeger keeps the traces
   jaeger: {enabled: true}
 rateLimit:
   redis: {enabled: true}

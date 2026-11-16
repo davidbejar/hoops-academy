@@ -145,6 +145,10 @@ services:
     environment:
       OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
       PDF_HTTP_PORT: "8084"
+      # traces and logs to the `observability` profile's collector: HOOPS_OTEL_SDK_DISABLED=false just pdf-up (WP120)
+      OTEL_SDK_DISABLED: ${HOOPS_OTEL_SDK_DISABLED:-true}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=compose
     ports:
       - "127.0.0.1:8084:8084"
     read_only: true
@@ -176,6 +180,10 @@ services:
       OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       HOOPS_CORS_ORIGINS: http://localhost:5173,http://localhost:8080
+      # traces and logs to the `observability` profile's collector: HOOPS_OTEL_SDK_DISABLED=false just finance-up (WP120)
+      OTEL_SDK_DISABLED: ${HOOPS_OTEL_SDK_DISABLED:-true}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=compose
     ports:
       - "127.0.0.1:8085:8085"
     read_only: true
@@ -190,6 +198,74 @@ services:
       redpanda:
         condition: service_healthy
     # distroless: no shell or curl for a healthcheck command; `just finance-up` waits for the container to run
+    restart: unless-stopped
+
+  # Observability (WP120, ADR-0046 amendment): profile `observability`, so `just up` starts neither; `just observability-up`
+  # starts the chart's OpenTelemetry collector (otel-collector.yaml; same image pin, processors and pipelines as the chart,
+  # deploy/helm/tests/run.sh compares them) and one Grafana LGTM container behind it, with the chart's dashboards
+  # (deploy/helm/hoops/files/grafana). Grafana: http://localhost:3000, anonymous Viewer (Explore allowed), no login. Dev
+  # only: data in tmpfs (gone with the container), 24 h retention for logs, traces and metrics (P-07), the same environment
+  # as the chart's lgtm Deployment. Quarkus on the host exports with QUARKUS_OTEL_SDK_DISABLED=false (endpoint
+  # localhost:4317 by default); pdf-service / finance-service with HOOPS_OTEL_SDK_DISABLED=false.
+  otel-collector:
+    profiles: [observability]
+    image: docker.io/otel/opentelemetry-collector:0.163.2@sha256:63e5e8eccf4268be02388ba9f2dc36b80b5e47721291293411c0e83152d75bda
+    container_name: hoops-otel-collector
+    command: [--config=/etc/otelcol/config.yaml]
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    # the services' /q/metrics on the host ports (as nginx reaches them); Docker (CI) maps the name to the gateway
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    # distroless: no shell or curl for a healthcheck command
+    restart: unless-stopped
+
+  lgtm:
+    profiles: [observability]
+    image: docker.io/grafana/otel-lgtm:0.41.0@sha256:2e3290657f2f2a256c7a9175f097424a3ac5b54840741ace433e108e109348b6
+    container_name: hoops-lgtm
+    user: "10001:10001"
+    environment:
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_USERS_VIEWERS_CAN_EDIT: "true"
+      LOKI_EXTRA_ARGS: "-compactor.retention-enabled=true -compactor.delete-request-store=filesystem -store.retention=24h"
+      PROMETHEUS_EXTRA_ARGS: "--storage.tsdb.retention.time=24h"
+      TEMPO_EXTRA_ARGS: "-backend-worker.compaction.block-retention=24h -backend-scheduler.provider.work.compaction.block-retention=24h"
+    ports:
+      - "127.0.0.1:3000:3000"
+    # no persistence: everything the components write lives in tmpfs (counted in mem_limit)
+    tmpfs:
+      - /data:size=512m
+      - /tmp
+      - /var/tempo
+    volumes:
+      - ../../deploy/helm/hoops/files/grafana/dashboards:/otel-lgtm/hoops-dashboards:ro
+      - ../../deploy/helm/hoops/files/grafana/provisioning/dashboards:/otel-lgtm/grafana/conf/provisioning/dashboards:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1536m
+    healthcheck:
+      test: ["CMD", "/otel-lgtm/docker/healthcheck.sh"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
     restart: unless-stopped
 
   nginx:

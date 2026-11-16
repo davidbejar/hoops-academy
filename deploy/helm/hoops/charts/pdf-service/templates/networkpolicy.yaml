@@ -1,7 +1,8 @@
 {{- if .Values.networkPolicy.enabled }}
 {{- $np := .Values.networkPolicy }}
 {{- $obs := dig "observability" dict (.Values.global | default dict) }}
-# Decision 89: only core and game (by app.kubernetes.io/name, this namespace) reach pdf-service; no gateway, no other pod.
+# Decision 89: only core and game (by app.kubernetes.io/name, this namespace) reach pdf-service; no gateway, no other pod but
+# the chart's collector, which scrapes /q/metrics (WP120).
 # Egress: DNS, Keycloak's port (signing keys) and, with the chart's collector, its OTLP HTTP port; nothing else (an
 # external collector: networkPolicy.egress.extra). The kubelet's probes are not subject to policies.
 apiVersion: networking.k8s.io/v1
@@ -27,6 +28,15 @@ spec:
                   {{- end }}
       ports:
         - {port: http, protocol: TCP}
+    {{- if and $obs.enabled (not $obs.otlpEndpoint) }}
+    # the umbrella's collector scrapes /q/metrics (WP120); it holds no token, so the API stays closed to it
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $np.egress.collector.podLabels | nindent 14 }}
+      ports:
+        - {port: http, protocol: TCP}
+    {{- end }}
   {{- if $np.egress.enabled }}
   egress:
     - to:

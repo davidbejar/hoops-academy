@@ -94,7 +94,7 @@ spec:
 ---
 # Source: hoops/charts/finance/templates/networkpolicy.yaml
 # finance-service is reached only through the gateway (the Envoy proxies in Envoy Gateway's namespace); no pod of this
-# namespace calls it. Egress: DNS, Postgres, Keycloak's port (signing keys), Redpanda's Kafka port (with events) and the
+# namespace calls it (the chart's collector scrapes /q/metrics, WP120). Egress: DNS, Postgres, Keycloak's port (signing keys), Redpanda's Kafka port (with events) and the
 # collector's OTLP HTTP port (with the chart's collector); nothing else. The kubelet's probes are not subject to policies.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -107,7 +107,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   podSelector:
     matchLabels:
@@ -119,6 +119,13 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - {port: http, protocol: TCP}
+    # the umbrella's collector scrapes /q/metrics (WP120); it holds no token, so the API stays closed to it
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
       ports:
         - {port: http, protocol: TCP}
   egress:
@@ -218,7 +225,8 @@ spec:
 
 ---
 # Source: hoops/charts/pdf/templates/networkpolicy.yaml
-# Decision 89: only core and game (by app.kubernetes.io/name, this namespace) reach pdf-service; no gateway, no other pod.
+# Decision 89: only core and game (by app.kubernetes.io/name, this namespace) reach pdf-service; no gateway, no other pod but
+# the chart's collector, which scrapes /q/metrics (WP120).
 # Egress: DNS, Keycloak's port (signing keys) and, with the chart's collector, its OTLP HTTP port; nothing else (an
 # external collector: networkPolicy.egress.extra). The kubelet's probes are not subject to policies.
 apiVersion: networking.k8s.io/v1
@@ -232,7 +240,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: pdf-0.1.0
+    helm.sh/chart: pdf-0.2.0
 spec:
   podSelector:
     matchLabels:
@@ -248,6 +256,13 @@ spec:
                 values:
                   - core-service
                   - game-service
+      ports:
+        - {port: http, protocol: TCP}
+    # the umbrella's collector scrapes /q/metrics (WP120); it holds no token, so the API stays closed to it
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
       ports:
         - {port: http, protocol: TCP}
   egress:
@@ -322,7 +337,8 @@ spec:
 ---
 # Source: hoops/templates/observability.yaml
 # OTLP in from the services (by name label) and, gRPC only, from the Envoy proxies of Envoy Gateway's namespace (edge spans);
-# out to DNS, Jaeger and the environment's backend rules (observability.collector.networkPolicy.extraEgress) only.
+# out to DNS, LGTM or Jaeger, each scraped service's port and the environment's backend rules
+# (observability.collector.networkPolicy.extraEgress) only.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -373,24 +389,50 @@ spec:
         - {port: 53, protocol: TCP}
     - to:
         - podSelector:
-            matchLabels: {app.kubernetes.io/name: jaeger}
+            matchLabels: {app.kubernetes.io/name: lgtm}
       ports:
         - {port: 4317, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: core-service}
+      ports:
+        - {port: 8081, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: game-service}
+      ports:
+        - {port: 8082, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: athlete-service}
+      ports:
+        - {port: 8083, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: pdf-service}
+      ports:
+        - {port: 8084, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: finance-service}
+      ports:
+        - {port: 8085, protocol: TCP}
 
 ---
 # Source: hoops/templates/observability.yaml
-# OTLP from the collector only; the UI only through kubectl port-forward (not subject to the policy); no egress.
+# OTLP from the collector only; Grafana only through kubectl port-forward (not subject to the policy); no egress (no plugin
+# download, update check or usage report leaves the pod).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: jaeger
+  name: lgtm
   labels:
-    app.kubernetes.io/component: trace-store
-    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: telemetry-backend
+    app.kubernetes.io/name: lgtm
     app.kubernetes.io/part-of: hoops-academy
 spec:
   podSelector:
-    matchLabels: {app.kubernetes.io/name: jaeger}
+    matchLabels: {app.kubernetes.io/name: lgtm}
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
@@ -694,7 +736,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 data:
   FINANCE_DB_URL: "postgres://hoops-db-rw:5432/hoops"
   FINANCE_HTTP_PORT: "8085"
@@ -11432,7 +11474,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: pdf-0.1.0
+    helm.sh/chart: pdf-0.2.0
 data:
   OIDC_AUDIENCE: "pdf-service"
   OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
@@ -11462,6 +11504,30 @@ data:
         protocols:
           grpc: {endpoint: "0.0.0.0:4317"}
           http: {endpoint: "0.0.0.0:4318"}
+      # The services' Prometheus endpoints; the job name becomes the metric's service.name.
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: core-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["core-service.hoops.svc.cluster.local:8081"]}]
+            - job_name: game-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["game-service.hoops.svc.cluster.local:8082"]}]
+            - job_name: athlete-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["athlete-service.hoops.svc.cluster.local:8083"]}]
+            - job_name: pdf-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["pdf-service.hoops.svc.cluster.local:8084"]}]
+            - job_name: finance-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["finance-service.hoops.svc.cluster.local:8085"]}]
     processors:
       # Refuses data above the limit before it queues (the pod's memory limit is the ceiling), then batches.
       memory_limiter: {check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 25}
@@ -11478,9 +11544,9 @@ data:
       batch: {}
     exporters:
       debug:
-        verbosity: normal
-      otlp_grpc/jaeger:
-        endpoint: jaeger.hoops.svc.cluster.local:4317
+        verbosity: basic
+      otlp_grpc/lgtm:
+        endpoint: lgtm.hoops.svc.cluster.local:4317
         tls:
           insecure: true
     service:
@@ -11492,52 +11558,847 @@ data:
         traces:
           receivers: [otlp]
           processors: [memory_limiter, attributes/strip-ids, batch]
-          exporters: [debug, otlp_grpc/jaeger]
+          exporters: [debug, otlp_grpc/lgtm]
         logs:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [debug]
+          exporters: [debug, otlp_grpc/lgtm]
+        metrics:
+          receivers: [otlp, prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [debug, otlp_grpc/lgtm]
 
 ---
 # Source: hoops/templates/observability.yaml
-# Jaeger v2 all-in-one with its in-memory store (kind): traces only, lost on restart, capped at maxTraces.
+# Dashboards of the Hoops Academy folder (files/grafana/dashboards; compose mounts the same directory).
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: jaeger-config
+  name: lgtm-dashboards
   labels:
-    app.kubernetes.io/component: trace-store
-    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: telemetry-backend
+    app.kubernetes.io/name: lgtm
     app.kubernetes.io/part-of: hoops-academy
 data:
-  config.yaml: |
-    extensions:
-      jaeger_storage:
-        backends:
-          memstore:
-            memory: {max_traces: 5000}
-      jaeger_query:
-        storage: {traces: memstore}
-        http: {endpoint: "0.0.0.0:16686"}
-        grpc: {endpoint: "127.0.0.1:16685"}
-      healthcheckv2:
-        use_v2: true
-        http: {endpoint: "0.0.0.0:13133"}
-    receivers:
-      otlp:
-        protocols:
-          grpc: {endpoint: "0.0.0.0:4317"}
-    processors:
-      batch: {}
-    exporters:
-      jaeger_storage_exporter: {trace_storage: memstore}
-    service:
-      extensions: [jaeger_storage, jaeger_query, healthcheckv2]
-      telemetry:
-        logs: {level: info}
-        metrics: {level: none}
-      pipelines:
-        traces: {receivers: [otlp], processors: [batch], exporters: [jaeger_storage_exporter]}
+  hoops-authz-denials.json: |
+    {
+      "uid": "hoops-authz-denials",
+      "title": "Hoops Academy: authorisation denials",
+      "description": "hoops_authz_denied_total{kind} of the five services (ADR-0043), scraped from /q/metrics by the collector. A burst of not_member or invalid_token from one client is probing; many fine_grained after a release is more likely a role-matrix regression (docs/domain/authz-matrix.md). The single events are on the security events dashboard.",
+      "tags": [
+        "hoops-academy"
+      ],
+      "editable": false,
+      "schemaVersion": 41,
+      "version": 1,
+      "timezone": "browser",
+      "refresh": "30s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "graphTooltip": 1,
+      "templating": {
+        "list": []
+      },
+      "annotations": {
+        "list": []
+      },
+      "links": [],
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Denials in the range by kind",
+          "description": "Increase over the selected range.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 4
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (kind) (increase(hoops_authz_denied_total[$__range]))",
+              "instant": true,
+              "range": false,
+              "legendFormat": "{{kind}}"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Denials per minute by kind",
+          "description": "All services.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 4,
+            "w": 12,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (kind) (rate(hoops_authz_denied_total[$__rate_interval])) * 60",
+              "legendFormat": "{{kind}}"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Denials per minute by service",
+          "description": "All kinds.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 4,
+            "w": 12,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (job) (rate(hoops_authz_denied_total[$__rate_interval])) * 60",
+              "legendFormat": "{{job}}"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "table",
+          "title": "By service and kind in the range",
+          "description": "Only rows above zero.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 12,
+            "w": 24,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sort_desc(sum by (job, kind) (increase(hoops_authz_denied_total[$__range])) > 0)",
+              "instant": true,
+              "range": false,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "Value",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  hoops-requests.json: |
+    {
+      "uid": "hoops-requests",
+      "title": "Hoops Academy: requests and errors",
+      "description": "Server spans per service from Tempo's span metrics (every service, the Envoy gateway included; complete only with tracesSampleRatio 1.0, as on kind) and HTTP statuses from Micrometer (core, game, athlete). Errors are server spans with status ERROR (5xx); refusals (4xx) are on the authorisation dashboards.",
+      "tags": [
+        "hoops-academy"
+      ],
+      "editable": false,
+      "schemaVersion": 41,
+      "version": 1,
+      "timezone": "browser",
+      "refresh": "30s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "graphTooltip": 1,
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "label": "Service",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "prometheus"
+            },
+            "query": {
+              "query": "label_values(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\"}, service)",
+              "refId": "service"
+            },
+            "definition": "label_values(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\"}, service)",
+            "includeAll": true,
+            "multi": true,
+            "allValue": ".*",
+            "current": {
+              "text": "All",
+              "value": "$__all"
+            },
+            "refresh": 2,
+            "sort": 1
+          }
+        ]
+      },
+      "annotations": {
+        "list": []
+      },
+      "links": [],
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "Requests per second",
+          "description": "Server spans per second by service.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\"}[$__rate_interval]))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Errors per second (5xx)",
+          "description": "Server spans with status ERROR by service.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval]))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Error ratio",
+          "description": "Errors / requests by service.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 8,
+            "w": 12,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval])) / sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\"}[$__rate_interval]))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Latency p95",
+          "description": "95th percentile of server span duration by service.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 8,
+            "w": 12,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traces_spanmetrics_latency_bucket{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\"}[$__rate_interval])))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "table",
+          "title": "Requests by operation in the range",
+          "description": "Server spans by service and span name (route templates, never a concrete path).",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 16,
+            "w": 24,
+            "h": 9
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sort_desc(sum by (service, span_name) (increase(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\", service=~\"$service\"}[$__range])) > 0)",
+              "instant": true,
+              "range": false,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "Value",
+                "desc": true
+              }
+            ]
+          }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "HTTP responses by status (core, game, athlete)",
+          "description": "Micrometer's http_server_requests by service (job) and status code, scraped by the collector.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 25,
+            "w": 24,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (job, status) (rate(http_server_requests_seconds_count[$__rate_interval]))",
+              "legendFormat": "{{job}} {{status}}"
+            }
+          ]
+        }
+      ]
+    }
+  hoops-security-events.json: |
+    {
+      "uid": "hoops-security-events",
+      "title": "Hoops Academy: security events",
+      "description": "The authz_denied events (logger hoops.security, ADR-0043) of the five services from Loki. The panels show kind, outcome, route template and reason only: never the subject, roles or tenant of an event (P-07); open a line's trace with its trace_id link. Keycloak's login events are not exported (docs/runbooks/observability.md).",
+      "tags": [
+        "hoops-academy"
+      ],
+      "editable": false,
+      "schemaVersion": 41,
+      "version": 1,
+      "timezone": "browser",
+      "refresh": "30s",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "graphTooltip": 1,
+      "templating": {
+        "list": []
+      },
+      "annotations": {
+        "list": []
+      },
+      "links": [],
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "Events by kind",
+          "description": "Count per interval.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "sum by (security_kind) (count_over_time({service_name=~\".+\"} | security_event=\"authz_denied\" [$__auto]))",
+              "legendFormat": "{{security_kind}}"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Events by service",
+          "description": "Count per interval.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "sum by (service_name) (count_over_time({service_name=~\".+\"} | security_event=\"authz_denied\" [$__auto]))",
+              "legendFormat": "{{service_name}}"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "table",
+          "title": "Most refused resources in the range",
+          "description": "Route templates and the status answered.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 8,
+            "w": 24,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "topk(10, sum by (security_resource, security_outcome) (count_over_time({service_name=~\".+\"} | security_event=\"authz_denied\" [$__range])))",
+              "queryType": "instant"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                }
+              }
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "displayName": "Value",
+                "desc": true
+              }
+            ]
+          }
+        },
+        {
+          "id": 4,
+          "type": "logs",
+          "title": "Events (trace id links to Tempo)",
+          "description": "Each refused request: service, kind, status, route template, reason. Expand a line for its trace_id link. Subject, roles and tenant are dropped by the query (keep).",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 16,
+            "w": 24,
+            "h": 12
+          },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "sortOrder": "Descending",
+            "dedupStrategy": "none",
+            "prettifyLogMessage": false
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "queryType": "range",
+              "expr": "{service_name=~\".+\"} | security_event=\"authz_denied\" | keep service_name, security_kind, security_outcome, security_resource, security_reason, trace_id | line_format \"{{.service_name}} {{.security_kind}} {{.security_outcome}} {{.security_resource}} {{.security_reason}}\""
+            }
+          ]
+        }
+      ]
+    }
+
+---
+# Source: hoops/templates/observability.yaml
+# The file provider that loads them (replaces the image's own dashboards, which expect metrics these services do not send).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lgtm-dashboard-provider
+  labels:
+    app.kubernetes.io/component: telemetry-backend
+    app.kubernetes.io/name: lgtm
+    app.kubernetes.io/part-of: hoops-academy
+data:
+  hoops.yaml: |
+    # Grafana dashboard provider (WP120): the Hoops Academy dashboards, read-only, from the directory the chart's ConfigMap
+    # (kind) or compose's bind mount (infra/compose/compose.yaml) puts at /otel-lgtm/hoops-dashboards.
+    apiVersion: 1
+    providers:
+      - name: hoops-academy
+        folder: Hoops Academy
+        type: file
+        disableDeletion: true
+        allowUiUpdates: false
+        updateIntervalSeconds: 30
+        options:
+          path: /otel-lgtm/hoops-dashboards
+          foldersFromFilesStructure: false
 
 ---
 # Source: hoops/templates/redpanda.yaml
@@ -11760,7 +12621,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   type: ClusterIP
   selector:
@@ -11831,7 +12692,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: pdf-0.1.0
+    helm.sh/chart: pdf-0.2.0
 spec:
   type: ClusterIP
   selector:
@@ -11897,16 +12758,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: jaeger
+  name: lgtm
   labels:
-    app.kubernetes.io/component: trace-store
-    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: telemetry-backend
+    app.kubernetes.io/name: lgtm
     app.kubernetes.io/part-of: hoops-academy
 spec:
-  selector: {app.kubernetes.io/name: jaeger}
+  selector: {app.kubernetes.io/name: lgtm}
   ports:
     - {name: otlp-grpc, port: 4317, targetPort: otlp-grpc, appProtocol: grpc}
-    - {name: ui, port: 16686, targetPort: ui}
+    - {name: grafana, port: 3000, targetPort: grafana}
 
 ---
 # Source: hoops/templates/ratelimit-redis.yaml
@@ -12199,7 +13060,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -12219,9 +13080,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "1.0.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: finance-0.1.0
+        helm.sh/chart: finance-0.2.0
       annotations:
-        checksum/env: ad8dd7b3bb1920d1ece57085c04b8fddcaeadc757bc0fb3b9b24fcfe98112a21
+        checksum/env: d2b4b2d7d496219c97782f1425bdd73d5940516cafaf845fe464a00eaed49057
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8085"
@@ -12559,7 +13420,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: pdf-0.1.0
+    helm.sh/chart: pdf-0.2.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -12576,9 +13437,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "1.0.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: pdf-0.1.0
+        helm.sh/chart: pdf-0.2.0
       annotations:
-        checksum/env: e2986aa04166aba3f60240144328e934a6a0d593616a6a7b3b588d96543a0c22
+        checksum/env: 1c42b1be81db470f99fce3c7b5839fbb4e3f0354b6df24825d0d402c2881648d
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8084"
@@ -12775,7 +13636,7 @@ spec:
         app.kubernetes.io/name: otel-collector
         app.kubernetes.io/part-of: hoops-academy
       annotations:
-        checksum/config: 7459090b02beb4dcb246f76fba1dd2202d80cac6a92fc3ad64d73bb9218afc52
+        checksum/config: 71cdb91ad7aa96aa67bf728f62c8d7d1026c0cdd22a42a7ba625f6ba0efa8480
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -12816,27 +13677,30 @@ spec:
 
 ---
 # Source: hoops/templates/observability.yaml
+# Grafana LGTM all-in-one (dev only): Grafana 3000, the image's own collector on 4317 in front of Loki, Tempo (span metrics
+# into Prometheus) and Prometheus, all on loopback inside the pod. Everything lives in emptyDirs: a restart empties it.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jaeger
+  name: lgtm
   labels:
-    app.kubernetes.io/component: trace-store
-    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: telemetry-backend
+    app.kubernetes.io/name: lgtm
     app.kubernetes.io/part-of: hoops-academy
 spec:
   replicas: 1
   revisionHistoryLimit: 3
+  strategy: {type: Recreate}    # never two of these at once on a small node
   selector:
-    matchLabels: {app.kubernetes.io/name: jaeger}
+    matchLabels: {app.kubernetes.io/name: lgtm}
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: trace-store
-        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: telemetry-backend
+        app.kubernetes.io/name: lgtm
         app.kubernetes.io/part-of: hoops-academy
       annotations:
-        checksum/config: 97a7a656bb7e54c4963885511183ff01e5b2bd096dab8bc374f0c96692c131ea
+        checksum/config: 3545ceb4acbd62b81734aae73960ce6271bd50b479496f1630b4021bfaf2869c
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -12844,36 +13708,66 @@ spec:
         runAsNonRoot: true
         runAsUser: 10001
         runAsGroup: 10001
+        fsGroup: 10001
         seccompProfile: {type: RuntimeDefault}
       containers:
-        - name: jaeger
-          image: "docker.io/jaegertracing/jaeger:2.22.0@sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17"
+        - name: lgtm
+          image: "docker.io/grafana/otel-lgtm:0.41.0@sha256:2e3290657f2f2a256c7a9175f097424a3ac5b54840741ace433e108e109348b6"
           imagePullPolicy: IfNotPresent
-          args: [--config=/etc/jaeger/config.yaml]
+          env:
+            - {name: GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES, value: "false"}
+            - {name: GF_ANALYTICS_CHECK_FOR_UPDATES, value: "false"}
+            - {name: GF_ANALYTICS_REPORTING_ENABLED, value: "false"}
+            - {name: GF_AUTH_ANONYMOUS_ENABLED, value: "true"}
+            - {name: GF_AUTH_ANONYMOUS_ORG_ROLE, value: "Viewer"}
+            - {name: GF_AUTH_BASIC_ENABLED, value: "false"}
+            - {name: GF_AUTH_DISABLE_LOGIN_FORM, value: "true"}
+            - {name: GF_NEWS_NEWS_FEED_ENABLED, value: "false"}
+            - {name: GF_PLUGINS_PREINSTALL_DISABLED, value: "true"}
+            - {name: GF_USERS_VIEWERS_CAN_EDIT, value: "true"}
+            - {name: LOKI_EXTRA_ARGS, value: "-compactor.retention-enabled=true -compactor.delete-request-store=filesystem -store.retention=24h"}
+            - {name: PROMETHEUS_EXTRA_ARGS, value: "--storage.tsdb.retention.time=24h"}
+            - {name: TEMPO_EXTRA_ARGS, value: "-backend-worker.compaction.block-retention=24h -backend-scheduler.provider.work.compaction.block-retention=24h"}
           ports:
             - {name: otlp-grpc, containerPort: 4317}
-            - {name: ui, containerPort: 16686}
-            - {name: health, containerPort: 13133}
+            - {name: grafana, containerPort: 3000}
+          # The image's own check: every component answers its ready endpoint (and run-all.sh wrote /tmp/ready).
+          startupProbe:
+            exec: {command: [/otel-lgtm/docker/healthcheck.sh]}
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 60
           readinessProbe:
-            httpGet: {path: /status, port: health}
-            periodSeconds: 10
+            exec: {command: [/otel-lgtm/docker/healthcheck.sh]}
+            periodSeconds: 15
+            timeoutSeconds: 10
           livenessProbe:
-            httpGet: {path: /status, port: health}
-            periodSeconds: 20
+            exec: {command: [/otel-lgtm/docker/healthcheck.sh]}
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 4
           resources:
             limits:
-              memory: 256Mi
+              memory: 1280Mi
             requests:
-              cpu: 10m
-              memory: 64Mi
+              cpu: 100m
+              memory: 512Mi
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: {drop: [ALL]}
           volumeMounts:
-            - {name: config, mountPath: /etc/jaeger, readOnly: true}
+            - {name: data, mountPath: /data}
+            - {name: tmp, mountPath: /tmp}
+            - {name: tempo, mountPath: /var/tempo}
+            - {name: dashboards, mountPath: /otel-lgtm/hoops-dashboards, readOnly: true}
+            - {name: dashboard-provider, mountPath: /otel-lgtm/grafana/conf/provisioning/dashboards, readOnly: true}
       volumes:
-        - {name: config, configMap: {name: jaeger-config}}
+        - {name: data, emptyDir: {sizeLimit: 2Gi}}
+        - {name: tmp, emptyDir: {sizeLimit: 64Mi}}
+        - {name: tempo, emptyDir: {sizeLimit: 1Gi}}     # Tempo's live store and scheduler work files
+        - {name: dashboards, configMap: {name: lgtm-dashboards}}
+        - {name: dashboard-provider, configMap: {name: lgtm-dashboard-provider}}
 
 ---
 # Source: hoops/templates/ratelimit-redis.yaml
@@ -13302,7 +14196,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: finance-service-dues-export}
@@ -13347,7 +14241,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: finance-service-expenses-export}
@@ -14042,7 +14936,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   parentRefs:
     - name: hoops
@@ -14067,7 +14961,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   parentRefs:
     - name: hoops
@@ -14124,7 +15018,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   parentRefs:
     - name: hoops
@@ -14150,7 +15044,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   parentRefs:
     - name: hoops

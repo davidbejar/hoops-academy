@@ -94,7 +94,7 @@ spec:
 ---
 # Source: hoops/charts/finance/templates/networkpolicy.yaml
 # finance-service is reached only through the gateway (the Envoy proxies in Envoy Gateway's namespace); no pod of this
-# namespace calls it. Egress: DNS, Postgres, Keycloak's port (signing keys), Redpanda's Kafka port (with events) and the
+# namespace calls it (the chart's collector scrapes /q/metrics, WP120). Egress: DNS, Postgres, Keycloak's port (signing keys), Redpanda's Kafka port (with events) and the
 # collector's OTLP HTTP port (with the chart's collector); nothing else. The kubelet's probes are not subject to policies.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -107,7 +107,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   podSelector:
     matchLabels:
@@ -119,6 +119,13 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - {port: http, protocol: TCP}
+    # the umbrella's collector scrapes /q/metrics (WP120); it holds no token, so the API stays closed to it
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
       ports:
         - {port: http, protocol: TCP}
   egress:
@@ -218,7 +225,8 @@ spec:
 
 ---
 # Source: hoops/charts/pdf/templates/networkpolicy.yaml
-# Decision 89: only core and game (by app.kubernetes.io/name, this namespace) reach pdf-service; no gateway, no other pod.
+# Decision 89: only core and game (by app.kubernetes.io/name, this namespace) reach pdf-service; no gateway, no other pod but
+# the chart's collector, which scrapes /q/metrics (WP120).
 # Egress: DNS, Keycloak's port (signing keys) and, with the chart's collector, its OTLP HTTP port; nothing else (an
 # external collector: networkPolicy.egress.extra). The kubelet's probes are not subject to policies.
 apiVersion: networking.k8s.io/v1
@@ -232,7 +240,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: pdf-0.1.0
+    helm.sh/chart: pdf-0.2.0
 spec:
   podSelector:
     matchLabels:
@@ -248,6 +256,13 @@ spec:
                 values:
                   - core-service
                   - game-service
+      ports:
+        - {port: http, protocol: TCP}
+    # the umbrella's collector scrapes /q/metrics (WP120); it holds no token, so the API stays closed to it
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
       ports:
         - {port: http, protocol: TCP}
   egress:
@@ -322,7 +337,8 @@ spec:
 ---
 # Source: hoops/templates/observability.yaml
 # OTLP in from the services (by name label) and, gRPC only, from the Envoy proxies of Envoy Gateway's namespace (edge spans);
-# out to DNS, Jaeger and the environment's backend rules (observability.collector.networkPolicy.extraEgress) only.
+# out to DNS, LGTM or Jaeger, each scraped service's port and the environment's backend rules
+# (observability.collector.networkPolicy.extraEgress) only.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -376,6 +392,31 @@ spec:
             matchLabels: {app.kubernetes.io/name: jaeger}
       ports:
         - {port: 4317, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: core-service}
+      ports:
+        - {port: 8081, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: game-service}
+      ports:
+        - {port: 8082, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: athlete-service}
+      ports:
+        - {port: 8083, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: pdf-service}
+      ports:
+        - {port: 8084, protocol: TCP}
+    - to:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/name: finance-service}
+      ports:
+        - {port: 8085, protocol: TCP}
 
 ---
 # Source: hoops/templates/observability.yaml
@@ -694,7 +735,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 data:
   FINANCE_DB_URL: "postgres://hoops-db-rw:5432/hoops"
   FINANCE_HTTP_PORT: "8085"
@@ -11432,7 +11473,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: pdf-0.1.0
+    helm.sh/chart: pdf-0.2.0
 data:
   OIDC_AUDIENCE: "pdf-service"
   OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
@@ -11462,6 +11503,30 @@ data:
         protocols:
           grpc: {endpoint: "0.0.0.0:4317"}
           http: {endpoint: "0.0.0.0:4318"}
+      # The services' Prometheus endpoints; the job name becomes the metric's service.name.
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: core-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["core-service.hoops.svc.cluster.local:8081"]}]
+            - job_name: game-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["game-service.hoops.svc.cluster.local:8082"]}]
+            - job_name: athlete-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["athlete-service.hoops.svc.cluster.local:8083"]}]
+            - job_name: pdf-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["pdf-service.hoops.svc.cluster.local:8084"]}]
+            - job_name: finance-service
+              metrics_path: /q/metrics
+              scrape_interval: 30s
+              static_configs: [{targets: ["finance-service.hoops.svc.cluster.local:8085"]}]
     processors:
       # Refuses data above the limit before it queues (the pod's memory limit is the ceiling), then batches.
       memory_limiter: {check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 25}
@@ -11497,10 +11562,14 @@ data:
           receivers: [otlp]
           processors: [memory_limiter, batch]
           exporters: [debug]
+        metrics:
+          receivers: [otlp, prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [debug]
 
 ---
 # Source: hoops/templates/observability.yaml
-# Jaeger v2 all-in-one with its in-memory store (kind): traces only, lost on restart, capped at maxTraces.
+# Jaeger v2 all-in-one with its in-memory store (cloud): traces only, lost on restart, capped at maxTraces.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11760,7 +11829,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   type: ClusterIP
   selector:
@@ -11831,7 +11900,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: pdf-0.1.0
+    helm.sh/chart: pdf-0.2.0
 spec:
   type: ClusterIP
   selector:
@@ -12199,7 +12268,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
   annotations:
     # Stakater Reloader (WP87, ADR-0012): roll the pods when a Secret they read changes (ESO refresh, secrets.sh).
     secret.reloader.stakater.com/auto: "true"
@@ -12219,9 +12288,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "1.0.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: finance-0.1.0
+        helm.sh/chart: finance-0.2.0
       annotations:
-        checksum/env: a8583c78cc543c2d25e232b41ca66a0446f2aa9f105adb45d9a15ad0adb61858
+        checksum/env: 81e0f8dd7c72acfa33b9995d886477ceb12ae249a89d45c41b9d80743f9d42f1
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8085"
@@ -12559,7 +12628,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: pdf-0.1.0
+    helm.sh/chart: pdf-0.2.0
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -12576,9 +12645,9 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/version: "1.0.0"
         app.kubernetes.io/managed-by: Helm
-        helm.sh/chart: pdf-0.1.0
+        helm.sh/chart: pdf-0.2.0
       annotations:
-        checksum/env: cc8a9111c6f518a7693274b6dbff22e67cf12bbf90f147ebad6172e27908f35c
+        checksum/env: b5eb29541308245104fb9b898f27933ea58327bdc4e17a385471cc0e73ee40a2
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8084"
@@ -12775,7 +12844,7 @@ spec:
         app.kubernetes.io/name: otel-collector
         app.kubernetes.io/part-of: hoops-academy
       annotations:
-        checksum/config: 91667407c5fc59f89ee31728c9042d2388723bbeac4ca313d40e2aec7f8b70ad
+        checksum/config: 4b841f0992dd5126bea317d549fdba55f5fa0e1dd83c42489ee6bb5bf812798f
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -13303,7 +13372,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: finance-service-dues-export}
@@ -13348,7 +13417,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   targetRefs:
     - {group: gateway.networking.k8s.io, kind: HTTPRoute, name: finance-service-expenses-export}
@@ -14037,7 +14106,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   parentRefs:
     - name: hoops
@@ -14062,7 +14131,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   parentRefs:
     - name: hoops
@@ -14119,7 +14188,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   parentRefs:
     - name: hoops
@@ -14145,7 +14214,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: finance-0.1.0
+    helm.sh/chart: finance-0.2.0
 spec:
   parentRefs:
     - name: hoops

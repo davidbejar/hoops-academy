@@ -202,9 +202,10 @@ externalSecrets:
       finance-service: REDPANDA_FINANCE_SERVICE_PASSWORD
 
 # ---------------------------------------------------------------------------------------------------------------
-# Observability (WP86, ADR-0046), rendered with global.observability.enabled. The chart standardises the OTLP egress:
-# the workloads send to `otel-collector` (OTLP gRPC 4317 / HTTP 4318), which prints what it receives (debug exporter, its
-# own log) and sends it on to the environment's backend. kind adds an in-memory Jaeger for the traces.
+# Observability (WP86 / WP120, ADR-0046), rendered with global.observability.enabled. The chart standardises the OTLP
+# egress: the workloads send traces and logs to `otel-collector` (OTLP gRPC 4317 / HTTP 4318), which also scrapes their
+# /q/metrics, prints counts (debug exporter, its own log) and sends everything on to the environment's backend. kind runs
+# one dev-only Grafana LGTM pod as that backend (lgtm); values-cloud.yaml keeps an in-memory Jaeger for the traces.
 observability:
   collector:
     enabled: true               # false: the services export to global.observability.otlpEndpoint (platform collector)
@@ -225,11 +226,31 @@ observability:
     #   secretEnv: [{name: GRAFANA_OTLP_AUTH, secretName: hoops-otel-backend, key: auth}]
     #   networkPolicy: {extraEgress: [{ports: [{port: 443, protocol: TCP}]}]}
     exporters: {}
-    pipelineExporters: {traces: [], logs: []}
+    pipelineExporters: {traces: [], logs: [], metrics: []}
     secretEnv: []
     networkPolicy:
       extraEgress: []
-  # Jaeger v2 all-in-one, in-memory (kind): the traces of the collector, UI by `kubectl port-forward svc/jaeger 16686`.
+    # The services' Prometheus endpoints (hoops_authz_denied_total, Micrometer, the replica consumers' counters) scraped by
+    # the collector into its metrics pipeline: one job per enabled alias, named after its Service (= service.name), target
+    # <fullnameOverride>.<namespace>.svc:<port>/q/metrics. The NetworkPolicies let the collector reach those ports.
+    metrics:
+      scrapeInterval: 30s
+      targets: [core, game, athlete, pdf, finance]
+  # Grafana LGTM (WP120, decision 91; kind and the compose profile `observability`): one pod with Grafana, Loki (logs),
+  # Tempo (traces, span metrics) and Prometheus (metrics) behind the collector, which sends it all three signals. Dev only:
+  # no persistence (emptyDir, lost on restart), `retention` for logs, traces and metrics (P-07; Loki needs a multiple of
+  # 24h), Grafana as an anonymous Viewer through `kubectl port-forward svc/lgtm 3000` only (no route, no login, no admin),
+  # no egress. Dashboards from files/grafana (the same files compose mounts). Off in values-cloud.yaml.
+  lgtm:
+    enabled: false
+    image:
+      repository: docker.io/grafana/otel-lgtm
+      tag: 0.41.0
+      digest: sha256:2e3290657f2f2a256c7a9175f097424a3ac5b54840741ace433e108e109348b6
+    retention: 24h
+    dataSizeLimit: 2Gi          # emptyDir /data (Loki chunks, Tempo blocks, Prometheus TSDB, Grafana's database)
+    resources: {requests: {cpu: 100m, memory: 512Mi}, limits: {memory: 1280Mi}}
+  # Jaeger v2 all-in-one, in-memory (cloud): the traces of the collector, UI by `kubectl port-forward svc/jaeger 16686`.
   jaeger:
     enabled: false
     image:

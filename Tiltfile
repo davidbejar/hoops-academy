@@ -215,9 +215,10 @@ if finance:
                  resource_deps=['keycloak', 'redpanda-bootstrap'], port_forwards=['18085:8085'], labels=['services'])
 
 k8s_resource('web', objects=['web:httproute'], resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])
-# OpenTelemetry (WP86, ADR-0046; global.observability.enabled in values-kind.yaml): the collector receives the services'
-# traces and logs (and the Envoy edge spans) and prints them in its log; Jaeger keeps the traces in memory, UI on :16686.
+# OpenTelemetry (WP86 / WP120, ADR-0046; global.observability.enabled in values-kind.yaml): the collector receives the
+# services' traces and logs (and the Envoy edge spans), scrapes their /q/metrics and sends all of it to one Grafana LGTM pod;
+# Grafana on :3000 (anonymous Viewer, dashboards in folder "Hoops Academy").
 k8s_resource('otel-collector', objects=['otel-collector-config:configmap', 'otel-collector:networkpolicy'],
              labels=['observability'])
-k8s_resource('jaeger', objects=['jaeger-config:configmap', 'jaeger:networkpolicy'], resource_deps=['otel-collector'],
-             port_forwards=['16686:16686'], labels=['observability'])
+k8s_resource('lgtm', objects=['lgtm-dashboards:configmap', 'lgtm-dashboard-provider:configmap', 'lgtm:networkpolicy'],
+             resource_deps=['otel-collector'], port_forwards=['3000:3000'], labels=['observability'])

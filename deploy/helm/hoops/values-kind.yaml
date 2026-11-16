@@ -28,12 +28,12 @@ events:
     developerMode: true
     resources: {requests: {cpu: 50m, memory: 512Mi}, limits: {memory: 768Mi}}
     storage: {size: 1Gi}
-# OpenTelemetry (WP86, ADR-0046): the collector prints every span (trace id) and log record in its log; Jaeger keeps the
-# traces in memory (kubectl -n hoops port-forward svc/jaeger 16686, docs/runbooks/observability.md).
+# OpenTelemetry (WP86 / WP120, ADR-0046): the collector sends traces, logs and the scraped metrics to one Grafana LGTM pod
+# (kubectl -n hoops port-forward svc/lgtm 3000, docs/runbooks/observability.md); its own log only counts (P-07).
 observability:
   collector:
-    debugVerbosity: normal
-  jaeger: {enabled: true}
+    debugVerbosity: basic
+  lgtm: {enabled: true}
 # Counter store of the global rate limits; deploy/kind/up.sh points Envoy Gateway at ratelimit-redis.hoops:6379.
 rateLimit:
   redis: {enabled: true}

@@ -1,0 +1,76 @@
+# OpenTelemetry collector of the compose profile `observability` (WP120, ADR-0046): the chart's collector
+# (deploy/helm/hoops/templates/observability.yaml) for compose. Same processors and pipelines (deploy/helm/tests/run.sh
+# compares them); the Quarkus services on the host export to 127.0.0.1:4317, pdf-service and finance-service (profiles pdf,
+# finance, with HOOPS_OTEL_SDK_DISABLED=false) to otel-collector:4318; the services' /q/metrics are scraped through
+# host.containers.internal (their host ports; a service that is not running is just a failed scrape). Everything goes
+# to the lgtm container; the debug exporter only counts.
+extensions:
+  health_check: {endpoint: "0.0.0.0:13133"}
+receivers:
+  otlp:
+    protocols:
+      grpc: {endpoint: "0.0.0.0:4317"}
+      http: {endpoint: "0.0.0.0:4318"}
+  # The services' Prometheus endpoints; the job name becomes the metric's service.name.
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: core-service
+          metrics_path: /q/metrics
+          scrape_interval: 30s
+          static_configs: [{targets: ["host.containers.internal:8081"]}]
+        - job_name: game-service
+          metrics_path: /q/metrics
+          scrape_interval: 30s
+          static_configs: [{targets: ["host.containers.internal:8082"]}]
+        - job_name: athlete-service
+          metrics_path: /q/metrics
+          scrape_interval: 30s
+          static_configs: [{targets: ["host.containers.internal:8083"]}]
+        - job_name: pdf-service
+          metrics_path: /q/metrics
+          scrape_interval: 30s
+          static_configs: [{targets: ["host.containers.internal:8084"]}]
+        - job_name: finance-service
+          metrics_path: /q/metrics
+          scrape_interval: 30s
+          static_configs: [{targets: ["host.containers.internal:8085"]}]
+processors:
+  # Refuses data above the limit before it queues (the pod's memory limit is the ceiling), then batches.
+  memory_limiter: {check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 25}
+  # No tenant (or other) id leaves in a span (ADR-0046): concrete paths and Kafka message keys (<tenant>:<id>) go;
+  # http.route (the template) and the span names stay.
+  attributes/strip-ids:
+    actions:
+      - {key: url.full, action: delete}
+      - {key: url.path, action: delete}
+      - {key: url.query, action: delete}
+      - {key: http.url, action: delete}
+      - {key: http.target, action: delete}
+      - {key: messaging.kafka.message.key, action: delete}
+  batch: {}
+exporters:
+  debug:
+    verbosity: basic
+  otlp_grpc/lgtm:
+    endpoint: lgtm:4317
+    tls:
+      insecure: true
+service:
+  extensions: [health_check]
+  telemetry:
+    logs: {level: info}
+    metrics: {level: none}
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/strip-ids, batch]
+      exporters: [debug, otlp_grpc/lgtm]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug, otlp_grpc/lgtm]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [debug, otlp_grpc/lgtm]

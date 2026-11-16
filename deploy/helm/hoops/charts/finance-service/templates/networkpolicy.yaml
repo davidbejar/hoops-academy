@@ -2,7 +2,7 @@
 {{- $np := .Values.networkPolicy }}
 {{- $obs := dig "observability" dict (.Values.global | default dict) }}
 # finance-service is reached only through the gateway (the Envoy proxies in Envoy Gateway's namespace); no pod of this
-# namespace calls it. Egress: DNS, Postgres, Keycloak's port (signing keys), Redpanda's Kafka port (with events) and the
+# namespace calls it (the chart's collector scrapes /q/metrics, WP120). Egress: DNS, Postgres, Keycloak's port (signing keys), Redpanda's Kafka port (with events) and the
 # collector's OTLP HTTP port (with the chart's collector); nothing else. The kubelet's probes are not subject to policies.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -22,6 +22,15 @@ spec:
               kubernetes.io/metadata.name: {{ $np.gatewayNamespace }}
       ports:
         - {port: http, protocol: TCP}
+    {{- if and $obs.enabled (not $obs.otlpEndpoint) }}
+    # the umbrella's collector scrapes /q/metrics (WP120); it holds no token, so the API stays closed to it
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $np.egress.collector.podLabels | nindent 14 }}
+      ports:
+        - {port: http, protocol: TCP}
+    {{- end }}
   {{- if $np.egress.enabled }}
   egress:
     - to:

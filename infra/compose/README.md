@@ -16,6 +16,10 @@ just down                             # stop; add `-v` via podman compose to als
 - `nginx.conf` – `/auth/`→Keycloak, `/api/{core,game,athlete}/`→host ports 8081/8082/8083 via
   `host.containers.internal`, `/internal/`→403, `/`→`web-placeholder/` (until the Flutter app, WP11).
 - `redpanda-bootstrap.yaml` – cluster properties at the broker's first start (no topic auto-creation, no metrics reporter).
+- `otel-collector.yaml` – collector of the profile `observability` (WP120, `just observability-up` / `observability-down`):
+  the chart's processors and pipelines, OTLP on `127.0.0.1:4317/4318`, the services' `/q/metrics` scraped through
+  `host.containers.internal`; everything to the `lgtm` container (Grafana LGTM, Grafana on http://localhost:3000 as an
+  anonymous Viewer, the chart's dashboards, 24 h retention, tmpfs only). `docs/runbooks/observability.md`.
 - `redpanda-topics.sh` – the seven event topics (`just events-topics`, run by `just up`; idempotent). ADR-0036,
   `docs/runbooks/events.md`.
 - `postgres-keycloak-init.sh` – compose-only: creates db/role `keycloak` (kept out of `infra/db/init`, which is

@@ -101,7 +101,7 @@ events-drift-test:
     scripts/tests/events-drift.test.sh
 
 down:
-    podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf --profile finance down
+    podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf --profile finance --profile observability down
 
 # pdf-service in compose on :8084 (profile `pdf`, needs `just up`; the first build compiles the Rust image, minutes)
 pdf-up:
@@ -112,6 +112,17 @@ pdf-up:
 finance-up:
     infra/compose/finance-db.sh
     podman compose --env-file .env -f infra/compose/compose.yaml --profile finance up -d --build --wait finance-service
+
+# Observability in compose (WP120, profile `observability`, needs nothing else): the OpenTelemetry collector on
+# 127.0.0.1:4317/4318 and one Grafana LGTM container, Grafana on http://localhost:3000 (anonymous Viewer, dashboards in
+# folder "Hoops Academy"; 24 h retention, nothing persisted). Export: QUARKUS_OTEL_SDK_DISABLED=false for quarkus:dev,
+# HOOPS_OTEL_SDK_DISABLED=false just pdf-up / finance-up. docs/runbooks/observability.md
+observability-up:
+    podman compose --env-file .env -f infra/compose/compose.yaml --profile observability up -d --wait otel-collector lgtm
+
+# Stop and remove only the two observability containers (their data goes with them)
+observability-down:
+    podman compose --env-file .env -f infra/compose/compose.yaml --profile observability rm -sf otel-collector lgtm
 
 logs *ARGS:
     podman compose --env-file .env -f infra/compose/compose.yaml logs -f {{ARGS}}

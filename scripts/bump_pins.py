@@ -31,6 +31,7 @@ class Pin:
 #   service.Containerfile  RUNTIME_IMAGE digest (distroless :nonroot) | skopeo inspect (floating tag)
 #   web.Containerfile      NGINX_IMAGE tag (even minor)| skopeo list-tags
 #   values.yaml            redis tag, redpanda tag+digest, mailpit tag | skopeo
+#   values.yaml compose.yaml  grafana/otel-lgtm tag+digest (one pin over both files) | skopeo
 #   ci.yml images.yml sbom.sh aquasec/trivy tag       | skopeo list-tags (Docker Hub)
 #   sbom.sh                cyclonedx-cli, oras tag+digest | skopeo
 #   semgrep.yml            semgrep tag+digest         | skopeo
@@ -55,6 +56,10 @@ PINS = [
     Pin("mailpit (chart)", ["deploy/helm/hoops/values.yaml"],
         r"repository: docker\.io/axllent/mailpit, tag: (?P<tag>[\w.\-]+)\}", "image",
         repo="docker.io/axllent/mailpit", tag_re=SEMVER),
+    # WP120: the dev-only Grafana LGTM pod (chart) and container (compose profile observability) move together.
+    Pin("grafana otel-lgtm (chart, compose)", ["deploy/helm/hoops/values.yaml", "infra/compose/compose.yaml"],
+        rf"grafana/otel-lgtm(?::|\n\s+tag: )(?P<tag>[\w.\-]+)(?:@|\n\s+digest: )(?P<digest>{DIGEST})", "image",
+        repo="docker.io/grafana/otel-lgtm", tag_re=r"^(\d+\.\d+\.\d+)$"),
     Pin("trivy", [".github/workflows/ci.yml", ".github/workflows/images.yml", "scripts/sbom.sh"],
         r"aquasec/trivy:(?P<tag>[\w.\-]+)", "image", repo="docker.io/aquasec/trivy", tag_re=SEMVER),
     Pin("semgrep", [".github/workflows/semgrep.yml"],

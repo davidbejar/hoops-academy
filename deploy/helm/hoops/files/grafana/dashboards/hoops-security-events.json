@@ -1,0 +1,210 @@
+{
+  "uid": "hoops-security-events",
+  "title": "Hoops Academy: security events",
+  "description": "The authz_denied events (logger hoops.security, ADR-0043) of the five services from Loki. The panels show kind, outcome, route template and reason only: never the subject, roles or tenant of an event (P-07); open a line's trace with its trace_id link. Keycloak's login events are not exported (docs/runbooks/observability.md).",
+  "tags": [
+    "hoops-academy"
+  ],
+  "editable": false,
+  "schemaVersion": 41,
+  "version": 1,
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "graphTooltip": 1,
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Events by kind",
+      "description": "Count per interval.",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (security_kind) (count_over_time({service_name=~\".+\"} | security_event=\"authz_denied\" [$__auto]))",
+          "legendFormat": "{{security_kind}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Events by service",
+      "description": "Count per interval.",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (service_name) (count_over_time({service_name=~\".+\"} | security_event=\"authz_denied\" [$__auto]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Most refused resources in the range",
+      "description": "Route templates and the status answered.",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "topk(10, sum by (security_resource, security_outcome) (count_over_time({service_name=~\".+\"} | security_event=\"authz_denied\" [$__range])))",
+          "queryType": "instant"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            }
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Value",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "type": "logs",
+      "title": "Events (trace id links to Tempo)",
+      "description": "Each refused request: service, kind, status, route template, reason. Expand a line for its trace_id link. Subject, roles and tenant are dropped by the query (keep).",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 12
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "prettifyLogMessage": false
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "queryType": "range",
+          "expr": "{service_name=~\".+\"} | security_event=\"authz_denied\" | keep service_name, security_kind, security_outcome, security_resource, security_reason, trace_id | line_format \"{{.service_name}} {{.security_kind}} {{.security_outcome}} {{.security_resource}} {{.security_reason}}\""
+        }
+      ]
+    }
+  ]
+}

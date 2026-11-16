@@ -698,10 +698,10 @@ ce=$(echo "$cl" | sed -n 's/^      \([A-Z_]*\): \(".*"\)$/\1=\2/p' | sort)
   || bad "compose lgtm environment differs from the chart: $(diff <(echo "$ce") <(echo "$le") | tr '\n' ' ')"
 echo "$cl" | grep -qx '    read_only: true' && echo "$cl" | grep -qx '    cap_drop: \[ALL\]' && echo "$cl" | grep -qx '    user: "10001:10001"' \
   && [ "$(echo "$cl" | grep -c '^      - "')" = 1 ] && echo "$cl" | grep -qx '      - "127.0.0.1:3000:3000"' \
-  && echo "$cl" | grep -qx '      - /data:size=2g' && echo "$cl" | grep -qx '      - /tmp' && echo "$cl" | grep -qx '      - /var/tempo' \
+  && echo "$cl" | grep -qx '      - /data:size=512m' && echo "$cl" | grep -qx '      - /tmp' && echo "$cl" | grep -qx '      - /var/tempo' \
   && echo "$cl" | grep -qx '      - ../../deploy/helm/hoops/files/grafana/dashboards:/otel-lgtm/hoops-dashboards:ro' \
   && echo "$cl" | grep -qx '      - ../../deploy/helm/hoops/files/grafana/provisioning/dashboards:/otel-lgtm/grafana/conf/provisioning/dashboards:ro' \
-  && ok "compose lgtm: read-only, non-root, no capabilities, tmpfs data (2g), Grafana on 127.0.0.1:3000 only, the chart's dashboard files" \
+  && ok "compose lgtm: read-only, non-root, no capabilities, tmpfs data (512m, counted in its memory limit), Grafana on 127.0.0.1:3000 only, the chart's dashboard files" \
   || bad "compose lgtm hardening/mounts"
 echo "$co" | grep -qx '    read_only: true' && echo "$co" | grep -qx '    cap_drop: \[ALL\]' \
   && echo "$co" | grep -qx '      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro' \
@@ -731,7 +731,7 @@ pn=$(doc pdf-service NetworkPolicy)
 padmitted=$(echo "$pn" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
 [ "$padmitted" = "core-service game-service " ] && echo "$pn" | grep -q 'policyTypes: \[Ingress, Egress\]' \
   && [ "$(echo "$pn" | grep -c -- '- from:')" = 2 ] && ! echo "$pn" | grep -q 'namespaceSelector: {}\|envoy-gateway-system' \
-  && echo "$pn" | awk '/- from:/ {f++} f==2 && /matchLabels: {app.kubernetes.io\/name: otel-collector}/ {c=1} f==2 && /port: http,/ {p=1} END {exit !(c && p)}' \
+  && echo "$pn" | awk '/- from:/ {f++} f==2 && /app.kubernetes.io\/name: otel-collector/ {c=1} f==2 && /port: http,/ {p=1} END {exit !(c && p)}' \
   && [ "$(echo "$pn" | grep -c -- '- to:')" = 3 ] && echo "$pn" | grep -q 'k8s-app: kube-dns' \
   && echo "$pn" | awk '/- to:/ {t++} t==2 && /app.kubernetes.io\/name: keycloak/ {k=1} t==2 && /port: 8080/ {p=1} END {exit !(k && p)}' \
   && echo "$pn" | awk '/- to:/ {t++} t==3 && /app.kubernetes.io\/name: otel-collector/ {c=1} t==3 && /port: 4318/ {p=1} END {exit !(c && p)}' \
@@ -781,7 +781,7 @@ doc finance-service-api-finance HTTPRoute | grep -q 'value: "/api/finance"' && d
   && ok "finance-service routes: /api/finance, health, the CSV exports rate-limited 10/min (P-12)" || bad "finance-service routes"
 fn=$(doc finance-service NetworkPolicy)
 echo "$fn" | grep -q 'policyTypes: \[Ingress, Egress\]' && [ "$(echo "$fn" | grep -c -- '- from:')" = 2 ] \
-  && echo "$fn" | awk '/- from:/ {f++} f==2 && /matchLabels: {app.kubernetes.io\/name: otel-collector}/ {c=1} f==2 && /port: http,/ {p=1} END {exit !(c && p)}' \
+  && echo "$fn" | awk '/- from:/ {f++} f==2 && /app.kubernetes.io\/name: otel-collector/ {c=1} f==2 && /port: http,/ {p=1} END {exit !(c && p)}' \
   && echo "$fn" | grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' && ! echo "$fn" | grep -q 'podSelector: {}' \
   && [ "$(echo "$fn" | grep -c -- '- to:')" = 5 ] && echo "$fn" | grep -q 'cnpg.io/cluster: hoops-db' \
   && echo "$fn" | awk '/app.kubernetes.io\/name: redpanda/ {r=1} r && /port: 9092/ {p=1} END {exit !p}' \
@@ -813,8 +813,8 @@ else bad "helm lint values-cloud.yaml"; cat "$WORK/lint-cloud.txt"; fi
 objects() { awk 'BEGIN{RS="\n---\n"} {k=""; n=""; if (match($0, /\nkind: [A-Za-z]+\n/)) k=substr($0, RSTART+7, RLENGTH-8)
   if (match($0, /\nmetadata:\n  name: [^\n]+/)) n=substr($0, RSTART+18, RLENGTH-18); if (k != "") print k "/" n}' "$1" | sort; }
 # The observability backend differs on purpose (kind: the dev-only lgtm pod; cloud: the in-memory Jaeger), the rest is equal.
-diff <(objects "$R" | grep -v '/lgtm') <(objects "$C" | grep -v '/jaeger') >"$WORK/cloud-objects.diff" \
-  && [ "$(objects "$R" | grep -c '/lgtm')" = 5 ] && [ "$(objects "$C" | grep -c '/jaeger')" = 4 ] \
+diff <(objects "$R" | grep -v '/ *lgtm') <(objects "$C" | grep -v '/ *jaeger') >"$WORK/cloud-objects.diff" \
+  && [ "$(objects "$R" | grep -c '/ *lgtm')" = 5 ] && [ "$(objects "$C" | grep -c '/ *jaeger')" = 4 ] \
   && ok "same objects as umbrella-kind but the trace backend ($(objects "$C" | wc -l | tr -d ' ')): the kind policy assertions above cover the cloud workloads too" \
   || { bad "umbrella-cloud renders other objects than umbrella-kind"; cat "$WORK/cloud-objects.diff"; }
 for img in core-service game-service athlete-service web; do

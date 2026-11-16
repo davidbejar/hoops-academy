@@ -1,0 +1,13 @@
+# Grafana dashboard provider (WP120): the Hoops Academy dashboards, read-only, from the directory the chart's ConfigMap
+# (kind) or compose's bind mount (infra/compose/compose.yaml) puts at /otel-lgtm/hoops-dashboards.
+apiVersion: 1
+providers:
+  - name: hoops-academy
+    folder: Hoops Academy
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /otel-lgtm/hoops-dashboards
+      foldersFromFilesStructure: false
