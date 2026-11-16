@@ -1,6 +1,7 @@
 # ADR-0051: Two services outside the JVM: academy finance in Go, a PDF renderer in Rust
 
-- Status: Accepted; amended 2026-11-16 (WP111, ADR-0052: pdf-service built; §3 and §5 below)
+- Status: Accepted; amended 2026-11-16 (WP111, ADR-0052: pdf-service built; §3 and §5 below) and 2026-11-16 (WP118,
+  ADR-0055 / ADR-0056: finance-service's foundation built; §2 and §5 below)
 - Date: 2026-11-15
 - Amends: ADR-0003 (Quarkus stays the stack of core, game and athlete, no longer of every backend service), ADR-0007
   (three services become five deployables once both are built)
@@ -117,3 +118,11 @@ tenant data at risk. `finance-service` second, on that groundwork. Tenant billin
 - **§5, settled by ADR-0052**: HTTP axum, PDF engine krilla with bundled Roboto fonts, JWT `jsonwebtoken`, toolchain
   1.99.1 pinned in `rust-toolchain.toml`, layering as workspace crates with a manifest test, coverage with
   `cargo-llvm-cov`, dependency audit with `cargo-deny`, OTLP over HTTP/protobuf. Mutation testing for Rust: not yet.
+
+## Amendment 2026-11-16 (WP118, ADR-0055, ADR-0056)
+- **§5, settled by ADR-0055**: HTTP from the standard library, pgx, franz-go, golang-jwt, a Flyway-named migration runner of
+  its own, Go 1.27.4 pinned by go.mod's `toolchain` line, golangci-lint v2, govulncheck; mutation testing for Go: not yet
+  (`gremlins` the candidate). **By ADR-0056**: periods are calendar months / quarters or the season; one currency per
+  academy; no partial payments or refunds.
+- **§2, membership**: the tenant filter reads finance's own replica of `core.tenant` and `core.person` (built in WP118);
+  WP119 adds the roster topics. No REST call into core.

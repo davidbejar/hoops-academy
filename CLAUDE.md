@@ -10,8 +10,13 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
   `game-service`, `athlete-service`. Shared code in `libs/common-quarkus`; API contracts in `libs/contracts`.
 - `pdf-service` in Rust (ADR-0051, ADR-0052): Cargo workspace `services/pdf-service` outside the reactor (crates =
   layers), toolchain pinned in `rust-toolchain.toml`; internal only, called by core and game. Skill `rust-service`.
+- `finance-service` in Go (ADR-0051, ADR-0055, ADR-0056): module `services/finance-service` outside the reactor
+  (`internal/domain` → `application` → `adapters`, checked by `internal/archtest`), Go pinned by go.mod's `toolchain`
+  line, schema `finance` (`finance_app` / `finance_migrator`), `/api/finance/**`, contract `finance.yaml`.
+  Skill `go-hexagonal-service`.
 - PostgreSQL 17, one database, schema per service, `tenant_id` + Row-Level Security (RLS). App roles are
-  NON-OWNER roles (`core_app`, `game_app`, `athlete_app`); Flyway runs as `*_migrator`.
+  NON-OWNER roles (`core_app`, `game_app`, `athlete_app`, `finance_app`); Flyway (finance: its Go runner) runs as
+  `*_migrator`.
 - Keycloak = authentication only (realm `academy`). Tenant roles (`ADMIN`, `COACH`, `ASSISTANT_COACH`,
   `PARENT`, `PLAYER`) live in `core.membership_role`. Platform `super_admin` is a Keycloak realm role.
 - Flutter Web PWA in `apps/web` (es / en / id). No Node anywhere.
@@ -22,8 +27,10 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
 source scripts/env.sh        # JDK 25 + Podman socket for Testcontainers (always do this first)
 just doctor                  # toolchain check
 just up / just down          # local stack: Postgres, Keycloak, nginx, MailHog
-just test                    # ./mvnw verify (unit + integration + arch + RLS suites + coverage gates), then just test-rust
+just test                    # ./mvnw verify (unit + integration + arch + RLS suites + coverage gates), then test-rust, test-go
 just test-rust               # pdf-service: rustfmt, clippy -D warnings, tests + coverage gates, cargo deny
+just test-go                 # finance-service: gofmt, golangci-lint, tests (RLS + isolation suites) + coverage gates, govulncheck
+just finance-up              # finance-service in compose on :8085 (needs just up)
 just isolation-check         # academy A logs in (real Keycloak), cannot read academy B; Claude hook runs it before git commit
 just db-role-check           # no service connects as table owner / superuser / BYPASSRLS; Claude hook runs it before git push
 just mutation [module]       # PIT on the rule code, on demand (not in verify); fails below the baseline; docs/quality/mutation.md

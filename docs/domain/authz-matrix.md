@@ -61,3 +61,16 @@ Non-members of a tenant receive **404** for every tenant resource.
 Feed row (ADR-0030): team-level events are `PERIOD_START`, `PERIOD_END`, `OPPONENT_SCORE`, `TIMEOUT` and a `NOTE` without a
 player; substitutions and notes about a player are player events; a `VOID` is visible when the event it voids is. Staff of
 another team read the feed like any other member (linked / own players only), as for the box score.
+
+## Finance (finance-service, decision 96, ADR-0056; WP118 / WP119 / WP123)
+Rows of `/api/finance/**`. A member without the role gets 403 (a `role` or `fine_grained` security event), a non-member
+404. "current coach" = COACH with a `team_staff` row for a team of a season that has not ended (academy time zone).
+
+| Capability | ADMIN | COACH | ASSISTANT_COACH | PARENT | PLAYER |
+|---|---|---|---|---|---|
+| Settings: read and choose the currency (`GET` / `PUT /api/finance/settings`; fixed once a due exists) | write | – (403) | – (403) | – (403) | – (403) |
+| Fee plans: list, read, create, change, archive / unarchive, delete without dues (`/api/finance/fee-plans/**`) | write | – (403) | – (403) | – (403) | – (403) |
+| Dues: list, read, generate (with preview), change the amount or waive with a reason; payments: record, void with a reason; dues CSV export (`/api/finance/dues/**`, `/api/finance/fee-plans/{id}/dues:generate`, `/api/finance/payments/{id}:void`) | write | – (403) | – (403) | – (403) | – (403) |
+| A team's dues status: who is up to date, no amounts (`GET /api/finance/teams/{id}/due-status`) | read | current coach of the team (another team or a former coach: 403) | – (403) | – (403) | – (403) |
+| A player's dues and valid payments, without reasons or notes (`GET /api/finance/players/{id}/dues`) | read | – (403) | – (403) | linked (another player: 403) | self (another player: 403) |
+| Expenses, season balance, expenses CSV export (`/api/finance/expenses/**`, `/api/finance/balance`) | write | – (403) | – (403) | – (403) | – (403) |
