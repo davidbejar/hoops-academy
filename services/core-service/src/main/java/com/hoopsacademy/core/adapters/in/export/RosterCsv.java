@@ -33,7 +33,7 @@ public final class RosterCsv {
     private RosterCsv() {}
 
     public static byte[] render(RosterSheet sheet, ExportLabels labels) {
-        int groups = Math.max(1, sheet.players().stream().mapToInt(line -> line.guardians().size()).max().orElse(0));
+        int groups = Math.max(1, sheet.mostGuardians());
         CsvDocument document = new CsvDocument(header(groups, labels));
         sheet.players().forEach(line -> document.row(player(line, groups, labels)));
         sheet.staff().forEach(line -> document.row(staff(line, groups, labels)));
@@ -55,7 +55,7 @@ public final class RosterCsv {
         List<Cell> cells = new ArrayList<>(List.of(text(labels.role(TenantRole.PLAYER)), text(person.givenName()),
                 text(person.familyName()), date(person.birthDate()), text(labels.gender(person.gender())),
                 text(line.naturalCategory() == null ? null : line.naturalCategory().name()),
-                text(labels.text("eligibility." + standing(assignment))), number(assignment.playUpLevels()),
+                text(labels.text("eligibility." + line.standing())), number(assignment.playUpLevels()),
                 text(assignment.jersey() == null ? null : assignment.jersey().value()), date(assignment.joinedOn()),
                 text(person.email()), text(person.phone())));
         line.guardians().forEach(guardian -> cells.addAll(contact(guardian)));
@@ -77,13 +77,5 @@ public final class RosterCsv {
         PersonalData data = guardian.data();
         return Stream.of(data.givenName(), data.familyName(), data.email(), data.phone()).map(CsvDocument::text)
                 .toList();
-    }
-
-    /** The stored state of the assignment, as the roster screen shows it. */
-    private static String standing(TeamPlayer assignment) {
-        if (!assignment.isValid()) {
-            return "INELIGIBLE";
-        }
-        return assignment.playUpLevels() > 0 ? "PLAY_UP" : "ELIGIBLE";
     }
 }

@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  * player's person data, natural category in the team's season and active guardians, then the team's staff. ADMIN, or
  * a COACH who is current staff of the team (decision 83: a former coach of an ended season keeps its screens, ADR-0042,
  * but not its guardians' contact data); any other member 403. Every export is audited as
- * {@code team.roster_exported} with the row count only.
+ * {@code team.roster_exported} with the row count and the format only (WP116: the PDF form is {@link PrintTeamRoster}).
  */
 @ApplicationScoped
 public class ExportTeamRoster {
@@ -82,9 +82,22 @@ public class ExportTeamRoster {
         this.audit = audit;
     }
 
+    /** The CSV form: the roster, audited with {@code format} {@code csv}. */
     @Transactional
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
     public RosterSheet export(TeamId teamId) {
+        RosterSheet sheet = gather(teamId);
+        audit.record(exported(teamId, sheet, ExportFormat.CSV));
+        return sheet;
+    }
+
+    /**
+     * The roster for a caller allowed to export it, not audited: the caller audits the form it returns
+     * ({@link PrintTeamRoster}).
+     */
+    @Transactional
+    @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
+    public RosterSheet gather(TeamId teamId) {
         Team team = teams.find(teamId).orElseThrow(() -> new NotFoundException("Team not found"));
         boolean currentCoach = authz.hasAnyRole(TenantRole.COACH) && authz.isStaffOf(teamId.value());
         authz.require(authz.isAdmin() || currentCoach, "Only ADMIN or the team's current coach may export its roster");
@@ -92,10 +105,13 @@ public class ExportTeamRoster {
         List<TeamStaffMember> members = staff.ofTeam(teamId);
         ExportLimit.requireWithin((long) open.size() + members.size());
         ExportOrigin origin = origins.current();
-        RosterSheet sheet = new RosterSheet(origin, team.name(), playerLines(team, open, origin),
-                staffLines(members));
-        audit.record(AuditEvent.of(AuditAction.TEAM_ROSTER_EXPORTED, teamId.value(), Map.of("rows", sheet.rows())));
-        return sheet;
+        return new RosterSheet(origin, team.name(), playerLines(team, open, origin), staffLines(members));
+    }
+
+    /** {@code team.roster_exported}: the row count and the format, no personal data (ADR-0048). */
+    static AuditEvent exported(TeamId teamId, RosterSheet sheet, ExportFormat format) {
+        return AuditEvent.of(AuditAction.TEAM_ROSTER_EXPORTED, teamId.value(),
+                Map.of("rows", sheet.rows(), "format", format.code()));
     }
 
     private List<PlayerLine> playerLines(Team team, List<TeamPlayer> open, ExportOrigin origin) {

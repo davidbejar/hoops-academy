@@ -8,8 +8,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * {@code hoops-<academy-slug>-<what>-<yyyyMMdd>.csv} (ADR-0048): each part reduced to lower-case ASCII words joined
- * by {@code -} (accents dropped, anything else a separator, at most 40 characters), a part with nothing left out.
+ * {@code hoops-<academy-slug>-<what>-<yyyyMMdd>.csv} (ADR-0048; {@code .pdf} for a printed sheet, WP116): each part
+ * reduced to lower-case ASCII words joined by {@code -} (accents dropped, anything else a separator, at most 40
+ * characters), a part with nothing left out.
  */
 public final class ExportFileName {
 
@@ -20,9 +21,18 @@ public final class ExportFileName {
 
     /** @param what the kind of export and its qualifiers, e.g. {@code "roster", "U12 Lions"} */
     public static String csv(String academySlug, LocalDate day, String... what) {
+        return file("csv", academySlug, day, what);
+    }
+
+    /** The same name for a printed sheet (WP116). */
+    public static String pdf(String academySlug, LocalDate day, String... what) {
+        return file("pdf", academySlug, day, what);
+    }
+
+    private static String file(String extension, String academySlug, LocalDate day, String... what) {
         String parts = Stream.concat(Stream.of("hoops", academySlug), Stream.of(what)).map(ExportFileName::ascii)
                 .filter(part -> !part.isEmpty()).collect(Collectors.joining("-"));
-        return parts + "-" + DAY.format(day) + ".csv";
+        return parts + "-" + DAY.format(day) + "." + extension;
     }
 
     /** Lower-case ASCII letters and digits, runs of anything else as one {@code -}, trimmed, at most 40 characters. */

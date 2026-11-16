@@ -55,7 +55,7 @@ class TeamRosterRequestDtoTest {
             LocalDate.of(2026, 11, 16));
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules()
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
 
     @Test
     void theRosterIsSentInTheShapesOfThePdfContract() throws Exception {

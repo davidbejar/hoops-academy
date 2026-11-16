@@ -18,6 +18,14 @@ public record RosterSheet(ExportOrigin origin, String teamName, List<PlayerLine>
         public PlayerLine {
             guardians = List.copyOf(guardians);
         }
+
+        /** The stored state of the assignment, as the roster screen shows it: ELIGIBLE, PLAY_UP or INELIGIBLE. */
+        public String standing() {
+            if (!assignment.isValid()) {
+                return "INELIGIBLE";
+            }
+            return assignment.playUpLevels() > 0 ? "PLAY_UP" : "ELIGIBLE";
+        }
     }
 
     /** A staff member and their person. */
@@ -31,5 +39,10 @@ public record RosterSheet(ExportOrigin origin, String teamName, List<PlayerLine>
     /** The rows of the file below its header. */
     public int rows() {
         return players.size() + staff.size();
+    }
+
+    /** The active guardians of the player who has the most. */
+    public int mostGuardians() {
+        return players.stream().mapToInt(line -> line.guardians().size()).max().orElse(0);
     }
 }
