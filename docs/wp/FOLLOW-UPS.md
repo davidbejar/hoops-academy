@@ -394,7 +394,7 @@ WP118 (contract first), so the web (WP121) starts one wave later while the Go se
 | 3 | WP119 | Finance: roster replica, dues (manual and job), payments, coach and family reads | Opus · high | Running |
 | 3 | WP120 | Observability: one Grafana LGTM pod on kind and compose, dashboards | Opus · high | Running |
 | 3 | WP121 | Web: Finance area for ADMIN (settings, fee plans, dues, payments) | Sonnet · high | Running |
-| 3 | WP122 | Web: PDF buttons for the match sheet and the team roster | Sonnet · medium | Running |
+| 3 | WP122 | Web: PDF buttons for the match sheet and the team roster | Sonnet · medium | Done (web 1542 tests; PDF buttons on team detail and live match; 13 goldens re-recorded; no real browser check) |
 | 4 | WP123 | Finance: expenses, season balance, CSV exports; e2e journey and ZAP for finance and the PDFs; demo data | Opus · high | After wave 3 |
 | 4 | WP124 | Web: finance expenses, balance, exports; coach status view; family dues | Sonnet · high | After wave 3 |
 | 5 | WP125 | Docs pass | Opus · medium | Last alone |
