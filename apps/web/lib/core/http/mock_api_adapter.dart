@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/finance/data/mock_finance_api.dart';
 import '../../features/match/data/mock_game_api.dart';
 import '../mock/mock_athlete_api.dart';
 import '../mock/mock_core_api.dart';
@@ -32,7 +33,7 @@ final Provider<MockApiAdapter> mockApiAdapterProvider =
 /// In-memory stand-in for core-service (`--dart-define=HOOPS_MOCK_API=true`).
 ///
 /// Serves `/api/core/**` (me, tenant, admin and roster), `/api/game/**`,
-/// `/api/athlete/**` for both demo academies (each with its own roster, shared by the three mocks, and the demo
+/// `/api/athlete/**`, `/api/finance/**` for both demo academies (each with its own roster, shared by the three mocks, and the demo
 /// user's roles there: [roles] in Academia Demo, PARENT in Club Norte) and `/platform/**` (super admin
 /// only), and enforces the same header contract as the
 /// real service (bearer on everything, `X-Tenant-Id` on tenant paths), so the
@@ -151,6 +152,7 @@ class MockApiAdapter implements HttpClientAdapter {
     final isTenantPath =
         path.startsWith('/api/athlete/') ||
         path.startsWith('/api/game/') ||
+        path.startsWith('/api/finance/') ||
         path.startsWith('/api/core/');
     if (!isTenantPath) return _problem(404, 'Not found');
     final academy = _academies[tenant];
@@ -326,13 +328,15 @@ class MockApiAdapter implements HttpClientAdapter {
 class _Academy {
   _Academy(this.core, this.log)
     : athlete = MockAthleteApi(core: core),
-      game = MockGameApi(core: core) {
+      game = MockGameApi(core: core),
+      finance = MockFinanceApi(core: core) {
     log.replay((e) => handleUnlogged(e));
   }
 
   final MockCoreApi core;
   final MockAthleteApi athlete;
   final MockGameApi game;
+  final MockFinanceApi finance;
   final MockStateLog log;
 
   MockResult? handle(String tenantId, MockRequest r) {
@@ -367,6 +371,15 @@ class _Academy {
         query: r.query,
         body: r.body,
       );
+    }
+    if (r.path.startsWith('/api/finance/')) {
+      return finance.handle(
+            method: r.method,
+            path: r.path,
+            query: r.query,
+            body: r.body,
+          ) ??
+          const MockResult.json(404, {'title': 'Not found', 'status': 404});
     }
     if (r.path.startsWith('/api/core/')) {
       return core.handle(
