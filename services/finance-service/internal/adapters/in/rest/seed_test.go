@@ -82,9 +82,17 @@ func (s *seed) team(category string, ended bool) string {
 	}
 	s.apply("core.team", "team.changed", id, func(e *application.RosterEvent) {
 		e.TeamData = &application.TeamState{Season: domain.SeasonID(parse(season)), SeasonStart: start, SeasonEnd: end,
-			AgeCategory: domain.AgeCategoryID(parse(category))}
+			AgeCategory: domain.AgeCategoryID(parse(category)), Name: "Team " + id[:4]}
 	})
 	return id
+}
+
+// slug sends the academy's tenant.changed with slug (ACTIVE, zone UTC), as core does after an edit.
+func (s *seed) slug(slug string) {
+	s.at = time.Now().UTC() // newer than the row academy() wrote, so the replica takes it
+	s.apply("core.tenant", "tenant.changed", s.id(), func(e *application.RosterEvent) {
+		e.TenantData = &application.TenantState{Status: "ACTIVE", Timezone: "UTC", Slug: slug}
+	})
 }
 
 // player is a player whose person is person ("" = a person without a login).

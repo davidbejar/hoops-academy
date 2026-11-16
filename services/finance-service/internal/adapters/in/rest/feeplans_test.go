@@ -284,55 +284,54 @@ func TestAuthenticationAndTheTenantHeader(t *testing.T) {
 	expect(t, a.do(t, call{method: "GET", path: path, tenant: suspended, subject: admin}), 404)
 }
 
-// The operations of WP123: a member gets 501 NOT_IMPLEMENTED, a non-member 404, nobody 401.
-func TestOperationsOfLaterWorkPackagesAnswer501(t *testing.T) {
+// No operation of finance.yaml answers 501 any more (WP123): every operation, called by ADMIN with a well-formed
+// path and an empty body, gets an answer the contract declares (the call validates it), never 501 or 405; a
+// non-member gets 404 and an anonymous caller 401.
+func TestEveryContractOperationIsServed(t *testing.T) {
 	a := newAPI(t)
 	academy := a.academy(t, roster())
-	id := uuid()
-	for _, op := range NotImplemented(id) {
-		t.Run(op[0]+" "+op[1], func(t *testing.T) {
-			got := expect(t, a.do(t, call{method: op[0], path: op[1], tenant: academy, subject: admin, body: op2body(op)}), 501)
-			if problemCode(t, got) != "NOT_IMPLEMENTED" || got.json(t)["status"] != float64(501) {
-				t.Errorf("501: %s", got.body)
-			}
-			expect(t, a.do(t, call{method: op[0], path: op[1], tenant: academy, subject: stranger, body: op2body(op)}), 404)
-			expect(t, a.do(t, call{method: op[0], path: op[1], tenant: academy}), 401)
-		})
-	}
-}
-
-func op2body(op [2]string) any {
-	if op[0] == "GET" || op[0] == "DELETE" {
-		return nil
-	}
-	return map[string]any{}
-}
-
-// NotImplemented lists the contract's operations finance-service answers 501 since WP119 (method, concrete path):
-// the dues export, expenses and the balance (WP123).
-func NotImplemented(id string) [][2]string {
-	return [][2]string{
-		{"GET", "/api/finance/dues:export"},
-		{"GET", "/api/finance/expenses"},
-		{"POST", "/api/finance/expenses"},
-		{"GET", "/api/finance/expenses:export"},
-		{"GET", "/api/finance/expenses/" + id},
-		{"PATCH", "/api/finance/expenses/" + id},
-		{"DELETE", "/api/finance/expenses/" + id},
-		{"GET", "/api/finance/balance?seasonId=" + id},
-	}
-}
-
-func TestEveryContractOperationIsServedOrAnswers501(t *testing.T) {
 	doc, _ := contract.Document(t)
-	built := 18 // settings and fee plans (WP118); dues, payments and their reads (WP119)
 	operations := 0
-	for _, item := range doc.Paths.Map() {
-		operations += len(item.Operations())
+	for template, item := range doc.Paths.Map() {
+		for method := range item.Operations() {
+			operations++
+			path := concrete(template)
+			var body any
+			if method != "GET" && method != "DELETE" {
+				body = map[string]any{}
+			}
+			t.Run(method+" "+template, func(t *testing.T) {
+				got := a.do(t, call{method: method, path: path, tenant: academy, subject: admin, body: body})
+				if got.status == 501 || got.status == 405 {
+					t.Errorf("%d: %s", got.status, got.body)
+				}
+				expect(t, a.do(t, call{method: method, path: path, tenant: academy, subject: stranger, body: body}), 404)
+				expect(t, a.do(t, call{method: method, path: path, tenant: academy, body: body}), 401)
+			})
+		}
 	}
-	if got := operations; got != built+len(NotImplemented(uuid())) {
-		t.Errorf("finance.yaml has %d operations, the service knows %d + %d", got, built, len(NotImplemented(uuid())))
+	if operations != 26 {
+		t.Errorf("finance.yaml has %d operations, 1.0.0 had 26", operations)
 	}
+}
+
+// concrete fills a contract path template with a fresh uuid per parameter (and the balance's required season).
+func concrete(template string) string {
+	var out strings.Builder
+	for {
+		open := strings.Index(template, "{")
+		if open < 0 {
+			break
+		}
+		closing := strings.Index(template[open:], "}")
+		out.WriteString(template[:open] + uuid())
+		template = template[open+closing+1:]
+	}
+	out.WriteString(template)
+	if out.String() == "/api/finance/balance" {
+		return "/api/finance/balance?seasonId=" + uuid()
+	}
+	return out.String()
 }
 
 func TestHealthMetricsAndHeaders(t *testing.T) {

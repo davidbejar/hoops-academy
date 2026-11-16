@@ -28,6 +28,7 @@ var fixtureOverrides = map[string]map[string]any{
 	"finance.fee_plan": {"cadence": "SEASON", "team_id": "6f1c8a52-0d8e-4f5e-9a51-2a8f0c3b7d11"},
 	"finance.due":      {"status": "OPEN", "period": "SEASON"},
 	"finance.payment":  {"method": "CASH"},
+	"finance.expense":  {"category": "KIT"},
 }
 
 func TestEveryTenantTableIsForcedUnderRowLevelSecurity(t *testing.T) {
@@ -100,13 +101,13 @@ func TestNoTenantReadsOrChangesAnotherTenantsRows(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{"finance.player_ref", "finance.team_ref", "finance.team_player_ref",
-		"finance.team_staff_ref", "finance.guardian_link_ref"} {
+		"finance.team_staff_ref", "finance.guardian_link_ref", "finance.expense"} {
 		if !slices.Contains(tables, want) {
-			t.Errorf("the roster replica of WP119 lacks %s: %v", want, tables)
+			t.Errorf("the tenant tables lack %s (WP119 replica, WP123 expenses): %v", want, tables)
 		}
 	}
-	if len(tables) < 13 {
-		t.Fatalf("expected the tenant tables of V1-V10, found %v", tables)
+	if len(tables) < 14 {
+		t.Fatalf("expected the tenant tables of V1-V20, found %v", tables)
 	}
 	suite := rls.Isolation{Migrator: database.Migrator, App: database.App, Overrides: fixtureOverrides}
 	for _, table := range tables {

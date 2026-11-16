@@ -157,8 +157,13 @@ func TestTheRosterEventsKeepWhatTheFinanceRulesNeed(t *testing.T) {
 	team := decode("core.team").TeamData
 	if team == nil || team.Season.String() != "4d5e6f70-8192-4a34-b5c6-d7e8f90a1b2c" ||
 		team.SeasonStart.Format(time.DateOnly) != "2026-09-01" || team.SeasonEnd.Format(time.DateOnly) != "2027-06-30" ||
-		team.AgeCategory.String() != "5e6f7081-92a3-4b45-86d7-e8f90a1b2c3d" {
+		team.AgeCategory.String() != "5e6f7081-92a3-4b45-86d7-e8f90a1b2c3d" || team.Name != "Lions" {
 		t.Errorf("team %+v", team)
+	}
+	// the export's file name and its team column (WP123): the academy's slug and the team's name, never more
+	if academy := decode("core.tenant").TenantData; academy == nil || academy.Slug != "lions-academy" ||
+		academy.Status == "" || academy.Timezone == "" {
+		t.Errorf("academy %+v", academy)
 	}
 	assignment := decode("core.team-player").AssignmentData
 	if assignment == nil || assignment.Team.String() != "3c4d5e6f-7081-4923-a4b5-c6d7e8f90a1b" ||
