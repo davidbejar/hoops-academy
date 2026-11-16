@@ -154,6 +154,243 @@
   "adminAgeCategories": "Age categories",
   "adminApprovals": "Pending requests",
   "adminCases": "Eligibility cases",
+  "adminFinance": "Finance",
+  "financeTitle": "Finance",
+  "financeOfflineReadOnly": "Offline: you can read the finances but not change them.",
+  "financeNotYetAvailable": "This part of finance is not available on the server yet. Try again later.",
+  "financeSettingsTitle": "Currency",
+  "financeCurrencyNotSet": "Not chosen yet",
+  "financeCurrencyHint": "All of the academy's amounts are in one currency. It is fixed when the first due is generated.",
+  "financeCurrencyLockedNote": "The currency can no longer be changed: dues have been generated.",
+  "financeCurrencyLockedChip": "Fixed",
+  "financeCurrencyChoose": "Choose currency",
+  "financeCurrencyChange": "Change currency",
+  "financeCurrencyPickerTitle": "The academy's currency",
+  "financeCurrencySearch": "Search by code (EUR, IDR…)",
+  "financeCurrencyConfirm": "Use {currency} as the academy's currency? It can no longer be changed once dues have been generated.",
+  "@financeCurrencyConfirm": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "financeCurrencySaved": "Currency saved",
+  "financeNoCurrencyNotice": "Choose the academy's currency first to be able to create fee plans.",
+  "financePlansTitle": "Fee plans",
+  "financePlansEmpty": "No fee plans yet",
+  "financePlanNew": "New plan",
+  "financePlanEdit": "Edit plan",
+  "financePlanName": "Plan name",
+  "financePlanSeason": "Season",
+  "financePlanTargetKind": "Charged to",
+  "financePlanTargetTeam": "One team",
+  "financePlanTargetCategory": "An age category",
+  "financePlanTeam": "Team",
+  "financePlanCategory": "Category",
+  "financePlanCadence": "Frequency",
+  "financeCadenceMonthly": "Monthly",
+  "financeCadenceQuarterly": "Quarterly",
+  "financeCadenceSeason": "Once per season",
+  "financePlanAmount": "Amount per period",
+  "financePlanFirstPeriod": "First period",
+  "financePlanLastPeriod": "Last period",
+  "financePlanToSeasonEnd": "Until the end of the season",
+  "financePlanAutoGenerate": "Generate the dues automatically",
+  "financePlanAutoGenerateHint": "Every day the missing dues of active plans are created.",
+  "financePlanImmutableNote": "The season, who is charged and the frequency cannot be changed: create another plan.",
+  "financePlanFirstPeriodFixed": "The first period can no longer be changed: the plan has dues.",
+  "financePlanNewAmountNote": "The new amount applies to dues generated from now on; existing dues keep theirs.",
+  "financePlanArchived": "Archived",
+  "financePlanHasDues": "Has dues",
+  "financePlanShowArchived": "Show archived",
+  "financePlanGenerate": "Generate dues",
+  "financePlanArchive": "Archive",
+  "financePlanUnarchive": "Reactivate",
+  "financePlanDelete": "Delete",
+  "financePlanArchiveConfirm": "Archive this plan? No more dues are generated; existing ones are kept.",
+  "financePlanDeleteConfirm": "Delete this plan? This is only possible because it has no dues.",
+  "financePlanSaved": "Plan saved",
+  "financePlanDeleted": "Plan deleted",
+  "financePlanArchivedMsg": "Plan archived",
+  "financePlanUnarchivedMsg": "Plan reactivated",
+  "financePlanForTeam": "Team {team}",
+  "@financePlanForTeam": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "financePlanForCategory": "Category {category}",
+  "@financePlanForCategory": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "financeAmountInvalid": "Enter an amount above zero, for example {example}",
+  "@financeAmountInvalid": {
+    "placeholders": {
+      "example": {
+        "type": "String"
+      }
+    }
+  },
+  "financeNoSeasons": "Create a season first",
+  "financeNoTeamsInSeason": "This season has no teams yet",
+  "financePeriodSeason": "Whole season",
+  "financePeriodQuarter": "Q{quarter} {year}",
+  "@financePeriodQuarter": {
+    "placeholders": {
+      "quarter": {
+        "type": "int"
+      },
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "financeDuesTitle": "Dues and payments",
+  "financeDuesEmpty": "No dues match these filters",
+  "financeDuesCount": "{count, plural, one{1 due} other{{count} dues}}",
+  "@financeDuesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeFilterPlan": "Plan",
+  "financeFilterTeam": "Team",
+  "financeFilterPeriod": "Period",
+  "financeStatusOpen": "Open",
+  "financeStatusPaid": "Paid",
+  "financeStatusWaived": "Waived",
+  "financeMethodCash": "Cash",
+  "financeMethodBankTransfer": "Bank transfer",
+  "financeMethodCard": "Card",
+  "financeMethodOther": "Other",
+  "financeDueTitle": "Due",
+  "financeDueAmount": "Amount",
+  "financeDuePlanAmount": "Plan amount: {amount}",
+  "@financeDuePlanAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "financeDueReason": "Reason: {reason}",
+  "@financeDueReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "financeDuePayments": "Payments",
+  "financeDueNoPayments": "No payments yet",
+  "financeActionPay": "Record payment",
+  "financeActionChangeAmount": "Change amount",
+  "financeActionWaive": "Waive",
+  "financeActionVoid": "Void payment",
+  "financePayTitle": "Record payment",
+  "financePayFull": "The whole due is recorded as paid: {amount}.",
+  "@financePayFull": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "financePayDate": "Payment date",
+  "financePayMethod": "Payment method",
+  "financePayNote": "Note (optional)",
+  "financePayRecorded": "Payment recorded",
+  "financeAmountDialogTitle": "Change the amount of the due",
+  "financeAmountChanged": "Amount changed",
+  "financeWaiveTitle": "Waive the due",
+  "financeWaiveHint": "The due is waived for good.",
+  "financeWaived": "Due waived",
+  "financeVoidTitle": "Void the payment",
+  "financeVoidHint": "The payment is kept, marked as voided, and the due is open again.",
+  "financeVoided": "Payment voided",
+  "financeReasonLabel": "Reason",
+  "financeReasonHint": "A short reason. Do not write health or family details.",
+  "financePaymentVoidedLabel": "Voided",
+  "financePaymentRecordedBy": "Recorded by {name}",
+  "@financePaymentRecordedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "financePaymentVoidedBy": "Voided by {name} on {date}",
+  "@financePaymentVoidedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "financePageOf": "Page {page} of {total}",
+  "@financePageOf": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "financePagePrevious": "Previous page",
+  "financePageNext": "Next page",
+  "financeGenerateTitle": "Generate dues",
+  "financeGenerateIntro": "Creates the missing dues of one period for the players of the plan. It can be repeated without duplicating anything.",
+  "financeGeneratePlan": "Plan",
+  "financeGeneratePeriod": "Period",
+  "financeGeneratePreview": "Calculate",
+  "financeGeneratePreviewResult": "{created, plural, =0{There are no new dues} one{1 due will be created} other{{created} dues will be created}}; {existing} already exist.",
+  "@financeGeneratePreviewResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "existing": {
+        "type": "int"
+      }
+    }
+  },
+  "financeGenerate": "Generate",
+  "financeGenerated": "{count, plural, one{1 due created} other{{count} dues created}}",
+  "@financeGenerated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeGenerateNoPlans": "Create an active fee plan first",
+  "financeErrorDueNotOpen": "The due is no longer open. Reload the list.",
+  "financeErrorCurrencyLocked": "The currency cannot be changed: dues have already been generated.",
+  "financeErrorUnknownCurrency": "That currency is not supported",
+  "financeErrorCurrencyNotSet": "Choose the academy's currency first",
+  "financeErrorFeePlanHasDues": "The plan already has dues: archive it instead of deleting it or changing its first period",
+  "financeErrorFeePlanArchived": "The plan is archived: reactivate it to generate dues",
+  "financeErrorPaidOnInFuture": "The payment date cannot be after today",
+  "financeErrorPaymentAlreadyVoided": "That payment was already voided",
+  "financeErrorPeriodOutsidePlan": "That period is outside the plan's periods",
+  "financeErrorPeriodOutsideSeason": "That period is outside the season",
+  "financeErrorTooManyDues": "That is too many dues at once (2000 at most)",
+  "financeErrorTeamNotInSeason": "That team is not in the plan's season",
+  "financeErrorConcurrentModification": "Someone changed this at the same time. Reload and try again.",
   "academyName": "Academy name",
   "academyTimezone": "Time zone (e.g. Europe/Madrid)",
   "academyAgeRule": "Age rule",

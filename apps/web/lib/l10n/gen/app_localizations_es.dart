@@ -505,6 +505,459 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminCases => 'Casos de elegibilidad';
 
   @override
+  String get adminFinance => 'Finanzas';
+
+  @override
+  String get financeTitle => 'Finanzas';
+
+  @override
+  String get financeOfflineReadOnly =>
+      'Sin conexión: puedes consultar las finanzas, pero no cambiarlas.';
+
+  @override
+  String get financeNotYetAvailable =>
+      'Esta parte de las finanzas todavía no está disponible en el servidor. Inténtalo más tarde.';
+
+  @override
+  String get financeSettingsTitle => 'Moneda';
+
+  @override
+  String get financeCurrencyNotSet => 'Sin elegir';
+
+  @override
+  String get financeCurrencyHint =>
+      'Todas las cantidades de la academia están en una sola moneda. Queda fijada cuando se genera la primera cuota.';
+
+  @override
+  String get financeCurrencyLockedNote =>
+      'La moneda ya no se puede cambiar: hay cuotas generadas.';
+
+  @override
+  String get financeCurrencyLockedChip => 'Fijada';
+
+  @override
+  String get financeCurrencyChoose => 'Elegir moneda';
+
+  @override
+  String get financeCurrencyChange => 'Cambiar moneda';
+
+  @override
+  String get financeCurrencyPickerTitle => 'Moneda de la academia';
+
+  @override
+  String get financeCurrencySearch => 'Buscar por código (EUR, IDR…)';
+
+  @override
+  String financeCurrencyConfirm(String currency) {
+    return '¿Usar $currency como moneda de la academia? Ya no se podrá cambiar cuando haya cuotas generadas.';
+  }
+
+  @override
+  String get financeCurrencySaved => 'Moneda guardada';
+
+  @override
+  String get financeNoCurrencyNotice =>
+      'Elige primero la moneda de la academia para poder crear planes de cuota.';
+
+  @override
+  String get financePlansTitle => 'Planes de cuota';
+
+  @override
+  String get financePlansEmpty => 'Aún no hay planes de cuota';
+
+  @override
+  String get financePlanNew => 'Nuevo plan';
+
+  @override
+  String get financePlanEdit => 'Editar plan';
+
+  @override
+  String get financePlanName => 'Nombre del plan';
+
+  @override
+  String get financePlanSeason => 'Temporada';
+
+  @override
+  String get financePlanTargetKind => 'Se cobra a';
+
+  @override
+  String get financePlanTargetTeam => 'Un equipo';
+
+  @override
+  String get financePlanTargetCategory => 'Una categoría de edad';
+
+  @override
+  String get financePlanTeam => 'Equipo';
+
+  @override
+  String get financePlanCategory => 'Categoría';
+
+  @override
+  String get financePlanCadence => 'Frecuencia';
+
+  @override
+  String get financeCadenceMonthly => 'Mensual';
+
+  @override
+  String get financeCadenceQuarterly => 'Trimestral';
+
+  @override
+  String get financeCadenceSeason => 'Una vez por temporada';
+
+  @override
+  String get financePlanAmount => 'Importe por periodo';
+
+  @override
+  String get financePlanFirstPeriod => 'Primer periodo';
+
+  @override
+  String get financePlanLastPeriod => 'Último periodo';
+
+  @override
+  String get financePlanToSeasonEnd => 'Hasta el final de la temporada';
+
+  @override
+  String get financePlanAutoGenerate => 'Generar las cuotas automáticamente';
+
+  @override
+  String get financePlanAutoGenerateHint =>
+      'Cada día se crean las cuotas que falten de los planes activos.';
+
+  @override
+  String get financePlanImmutableNote =>
+      'La temporada, a quién se cobra y la frecuencia no se pueden cambiar: crea otro plan.';
+
+  @override
+  String get financePlanFirstPeriodFixed =>
+      'El primer periodo ya no se puede cambiar: el plan tiene cuotas.';
+
+  @override
+  String get financePlanNewAmountNote =>
+      'El nuevo importe se aplica a las cuotas que se generen a partir de ahora; las que ya existen lo conservan.';
+
+  @override
+  String get financePlanArchived => 'Archivado';
+
+  @override
+  String get financePlanHasDues => 'Con cuotas';
+
+  @override
+  String get financePlanShowArchived => 'Mostrar archivados';
+
+  @override
+  String get financePlanGenerate => 'Generar cuotas';
+
+  @override
+  String get financePlanArchive => 'Archivar';
+
+  @override
+  String get financePlanUnarchive => 'Reactivar';
+
+  @override
+  String get financePlanDelete => 'Eliminar';
+
+  @override
+  String get financePlanArchiveConfirm =>
+      '¿Archivar este plan? No se generarán más cuotas; las que ya existen se conservan.';
+
+  @override
+  String get financePlanDeleteConfirm =>
+      '¿Eliminar este plan? Solo se puede porque no tiene cuotas.';
+
+  @override
+  String get financePlanSaved => 'Plan guardado';
+
+  @override
+  String get financePlanDeleted => 'Plan eliminado';
+
+  @override
+  String get financePlanArchivedMsg => 'Plan archivado';
+
+  @override
+  String get financePlanUnarchivedMsg => 'Plan reactivado';
+
+  @override
+  String financePlanForTeam(String team) {
+    return 'Equipo $team';
+  }
+
+  @override
+  String financePlanForCategory(String category) {
+    return 'Categoría $category';
+  }
+
+  @override
+  String financeAmountInvalid(String example) {
+    return 'Introduce un importe mayor que cero, por ejemplo $example';
+  }
+
+  @override
+  String get financeNoSeasons => 'Crea primero una temporada';
+
+  @override
+  String get financeNoTeamsInSeason => 'Esta temporada aún no tiene equipos';
+
+  @override
+  String get financePeriodSeason => 'Temporada completa';
+
+  @override
+  String financePeriodQuarter(int quarter, int year) {
+    return 'T$quarter $year';
+  }
+
+  @override
+  String get financeDuesTitle => 'Cuotas y pagos';
+
+  @override
+  String get financeDuesEmpty => 'No hay cuotas con estos filtros';
+
+  @override
+  String financeDuesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cuotas',
+      one: '1 cuota',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeFilterPlan => 'Plan';
+
+  @override
+  String get financeFilterTeam => 'Equipo';
+
+  @override
+  String get financeFilterPeriod => 'Periodo';
+
+  @override
+  String get financeStatusOpen => 'Pendiente';
+
+  @override
+  String get financeStatusPaid => 'Pagada';
+
+  @override
+  String get financeStatusWaived => 'Condonada';
+
+  @override
+  String get financeMethodCash => 'Efectivo';
+
+  @override
+  String get financeMethodBankTransfer => 'Transferencia';
+
+  @override
+  String get financeMethodCard => 'Tarjeta';
+
+  @override
+  String get financeMethodOther => 'Otro';
+
+  @override
+  String get financeDueTitle => 'Cuota';
+
+  @override
+  String get financeDueAmount => 'Importe';
+
+  @override
+  String financeDuePlanAmount(String amount) {
+    return 'Importe del plan: $amount';
+  }
+
+  @override
+  String financeDueReason(String reason) {
+    return 'Motivo: $reason';
+  }
+
+  @override
+  String get financeDuePayments => 'Pagos';
+
+  @override
+  String get financeDueNoPayments => 'Todavía no hay pagos';
+
+  @override
+  String get financeActionPay => 'Registrar pago';
+
+  @override
+  String get financeActionChangeAmount => 'Cambiar importe';
+
+  @override
+  String get financeActionWaive => 'Condonar';
+
+  @override
+  String get financeActionVoid => 'Anular pago';
+
+  @override
+  String get financePayTitle => 'Registrar pago';
+
+  @override
+  String financePayFull(String amount) {
+    return 'Se registra el pago completo de la cuota: $amount.';
+  }
+
+  @override
+  String get financePayDate => 'Fecha de pago';
+
+  @override
+  String get financePayMethod => 'Forma de pago';
+
+  @override
+  String get financePayNote => 'Nota (opcional)';
+
+  @override
+  String get financePayRecorded => 'Pago registrado';
+
+  @override
+  String get financeAmountDialogTitle => 'Cambiar el importe de la cuota';
+
+  @override
+  String get financeAmountChanged => 'Importe cambiado';
+
+  @override
+  String get financeWaiveTitle => 'Condonar la cuota';
+
+  @override
+  String get financeWaiveHint => 'La cuota queda condonada para siempre.';
+
+  @override
+  String get financeWaived => 'Cuota condonada';
+
+  @override
+  String get financeVoidTitle => 'Anular el pago';
+
+  @override
+  String get financeVoidHint =>
+      'El pago se conserva marcado como anulado y la cuota vuelve a estar pendiente.';
+
+  @override
+  String get financeVoided => 'Pago anulado';
+
+  @override
+  String get financeReasonLabel => 'Motivo';
+
+  @override
+  String get financeReasonHint =>
+      'Motivo breve. No escribas datos de salud ni de la familia.';
+
+  @override
+  String get financePaymentVoidedLabel => 'Anulado';
+
+  @override
+  String financePaymentRecordedBy(String name) {
+    return 'Registrado por $name';
+  }
+
+  @override
+  String financePaymentVoidedBy(String name, String date) {
+    return 'Anulado por $name el $date';
+  }
+
+  @override
+  String financePageOf(int page, int total) {
+    return 'Página $page de $total';
+  }
+
+  @override
+  String get financePagePrevious => 'Página anterior';
+
+  @override
+  String get financePageNext => 'Página siguiente';
+
+  @override
+  String get financeGenerateTitle => 'Generar cuotas';
+
+  @override
+  String get financeGenerateIntro =>
+      'Crea las cuotas que faltan de un periodo para los jugadores del plan. Se puede repetir sin duplicar nada.';
+
+  @override
+  String get financeGeneratePlan => 'Plan';
+
+  @override
+  String get financeGeneratePeriod => 'Periodo';
+
+  @override
+  String get financeGeneratePreview => 'Calcular';
+
+  @override
+  String financeGeneratePreviewResult(int created, int existing) {
+    String _temp0 = intl.Intl.pluralLogic(
+      created,
+      locale: localeName,
+      other: 'Se crearán $created cuotas',
+      one: 'Se creará 1 cuota',
+      zero: 'No hay cuotas nuevas',
+    );
+    return '$_temp0; ya existen $existing.';
+  }
+
+  @override
+  String get financeGenerate => 'Generar';
+
+  @override
+  String financeGenerated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se han creado $count cuotas',
+      one: 'Se ha creado 1 cuota',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeGenerateNoPlans => 'Crea primero un plan de cuota activo';
+
+  @override
+  String get financeErrorDueNotOpen =>
+      'La cuota ya no está pendiente. Recarga la lista.';
+
+  @override
+  String get financeErrorCurrencyLocked =>
+      'La moneda no se puede cambiar: ya hay cuotas generadas.';
+
+  @override
+  String get financeErrorUnknownCurrency => 'Esa moneda no está admitida';
+
+  @override
+  String get financeErrorCurrencyNotSet =>
+      'Elige primero la moneda de la academia';
+
+  @override
+  String get financeErrorFeePlanHasDues =>
+      'El plan ya tiene cuotas: archívalo en vez de eliminarlo o cambiar su primer periodo';
+
+  @override
+  String get financeErrorFeePlanArchived =>
+      'El plan está archivado: reactívalo para generar cuotas';
+
+  @override
+  String get financeErrorPaidOnInFuture =>
+      'La fecha de pago no puede ser posterior a hoy';
+
+  @override
+  String get financeErrorPaymentAlreadyVoided => 'Ese pago ya estaba anulado';
+
+  @override
+  String get financeErrorPeriodOutsidePlan =>
+      'Ese periodo está fuera de los periodos del plan';
+
+  @override
+  String get financeErrorPeriodOutsideSeason =>
+      'Ese periodo queda fuera de la temporada';
+
+  @override
+  String get financeErrorTooManyDues =>
+      'Son demasiadas cuotas de una vez (máximo 2000)';
+
+  @override
+  String get financeErrorTeamNotInSeason =>
+      'Ese equipo no es de la temporada del plan';
+
+  @override
+  String get financeErrorConcurrentModification =>
+      'Alguien cambió esto a la vez. Recarga e inténtalo de nuevo.';
+
+  @override
   String get academyName => 'Nombre de la academia';
 
   @override

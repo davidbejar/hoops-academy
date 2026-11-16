@@ -501,6 +501,458 @@ class AppLocalizationsId extends AppLocalizations {
   String get adminCases => 'Kasus kelayakan';
 
   @override
+  String get adminFinance => 'Keuangan';
+
+  @override
+  String get financeTitle => 'Keuangan';
+
+  @override
+  String get financeOfflineReadOnly =>
+      'Offline: Anda dapat melihat data keuangan tetapi tidak dapat mengubahnya.';
+
+  @override
+  String get financeNotYetAvailable =>
+      'Bagian keuangan ini belum tersedia di server. Coba lagi nanti.';
+
+  @override
+  String get financeSettingsTitle => 'Mata uang';
+
+  @override
+  String get financeCurrencyNotSet => 'Belum dipilih';
+
+  @override
+  String get financeCurrencyHint =>
+      'Semua jumlah di akademi memakai satu mata uang. Mata uang terkunci saat tagihan pertama dibuat.';
+
+  @override
+  String get financeCurrencyLockedNote =>
+      'Mata uang tidak dapat diubah lagi: sudah ada tagihan yang dibuat.';
+
+  @override
+  String get financeCurrencyLockedChip => 'Terkunci';
+
+  @override
+  String get financeCurrencyChoose => 'Pilih mata uang';
+
+  @override
+  String get financeCurrencyChange => 'Ubah mata uang';
+
+  @override
+  String get financeCurrencyPickerTitle => 'Mata uang akademi';
+
+  @override
+  String get financeCurrencySearch => 'Cari berdasarkan kode (EUR, IDR…)';
+
+  @override
+  String financeCurrencyConfirm(String currency) {
+    return 'Gunakan $currency sebagai mata uang akademi? Mata uang tidak dapat diubah setelah tagihan dibuat.';
+  }
+
+  @override
+  String get financeCurrencySaved => 'Mata uang disimpan';
+
+  @override
+  String get financeNoCurrencyNotice =>
+      'Pilih dulu mata uang akademi agar dapat membuat rencana iuran.';
+
+  @override
+  String get financePlansTitle => 'Rencana iuran';
+
+  @override
+  String get financePlansEmpty => 'Belum ada rencana iuran';
+
+  @override
+  String get financePlanNew => 'Rencana baru';
+
+  @override
+  String get financePlanEdit => 'Ubah rencana';
+
+  @override
+  String get financePlanName => 'Nama rencana';
+
+  @override
+  String get financePlanSeason => 'Musim';
+
+  @override
+  String get financePlanTargetKind => 'Ditagihkan kepada';
+
+  @override
+  String get financePlanTargetTeam => 'Satu tim';
+
+  @override
+  String get financePlanTargetCategory => 'Satu kategori usia';
+
+  @override
+  String get financePlanTeam => 'Tim';
+
+  @override
+  String get financePlanCategory => 'Kategori';
+
+  @override
+  String get financePlanCadence => 'Frekuensi';
+
+  @override
+  String get financeCadenceMonthly => 'Bulanan';
+
+  @override
+  String get financeCadenceQuarterly => 'Per kuartal';
+
+  @override
+  String get financeCadenceSeason => 'Sekali per musim';
+
+  @override
+  String get financePlanAmount => 'Jumlah per periode';
+
+  @override
+  String get financePlanFirstPeriod => 'Periode pertama';
+
+  @override
+  String get financePlanLastPeriod => 'Periode terakhir';
+
+  @override
+  String get financePlanToSeasonEnd => 'Sampai akhir musim';
+
+  @override
+  String get financePlanAutoGenerate => 'Buat tagihan secara otomatis';
+
+  @override
+  String get financePlanAutoGenerateHint =>
+      'Setiap hari tagihan yang belum ada dari rencana aktif dibuat.';
+
+  @override
+  String get financePlanImmutableNote =>
+      'Musim, siapa yang ditagih, dan frekuensi tidak dapat diubah: buat rencana lain.';
+
+  @override
+  String get financePlanFirstPeriodFixed =>
+      'Periode pertama tidak dapat diubah lagi: rencana ini sudah punya tagihan.';
+
+  @override
+  String get financePlanNewAmountNote =>
+      'Jumlah baru berlaku untuk tagihan yang dibuat mulai sekarang; tagihan yang sudah ada tetap.';
+
+  @override
+  String get financePlanArchived => 'Diarsipkan';
+
+  @override
+  String get financePlanHasDues => 'Punya tagihan';
+
+  @override
+  String get financePlanShowArchived => 'Tampilkan yang diarsipkan';
+
+  @override
+  String get financePlanGenerate => 'Buat tagihan';
+
+  @override
+  String get financePlanArchive => 'Arsipkan';
+
+  @override
+  String get financePlanUnarchive => 'Aktifkan kembali';
+
+  @override
+  String get financePlanDelete => 'Hapus';
+
+  @override
+  String get financePlanArchiveConfirm =>
+      'Arsipkan rencana ini? Tidak ada tagihan baru yang dibuat; yang sudah ada tetap disimpan.';
+
+  @override
+  String get financePlanDeleteConfirm =>
+      'Hapus rencana ini? Ini hanya bisa karena belum punya tagihan.';
+
+  @override
+  String get financePlanSaved => 'Rencana disimpan';
+
+  @override
+  String get financePlanDeleted => 'Rencana dihapus';
+
+  @override
+  String get financePlanArchivedMsg => 'Rencana diarsipkan';
+
+  @override
+  String get financePlanUnarchivedMsg => 'Rencana diaktifkan kembali';
+
+  @override
+  String financePlanForTeam(String team) {
+    return 'Tim $team';
+  }
+
+  @override
+  String financePlanForCategory(String category) {
+    return 'Kategori $category';
+  }
+
+  @override
+  String financeAmountInvalid(String example) {
+    return 'Masukkan jumlah di atas nol, misalnya $example';
+  }
+
+  @override
+  String get financeNoSeasons => 'Buat musim terlebih dahulu';
+
+  @override
+  String get financeNoTeamsInSeason => 'Musim ini belum punya tim';
+
+  @override
+  String get financePeriodSeason => 'Seluruh musim';
+
+  @override
+  String financePeriodQuarter(int quarter, int year) {
+    return 'Kuartal $quarter $year';
+  }
+
+  @override
+  String get financeDuesTitle => 'Tagihan dan pembayaran';
+
+  @override
+  String get financeDuesEmpty => 'Tidak ada tagihan dengan filter ini';
+
+  @override
+  String financeDuesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tagihan',
+      one: '1 tagihan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeFilterPlan => 'Rencana';
+
+  @override
+  String get financeFilterTeam => 'Tim';
+
+  @override
+  String get financeFilterPeriod => 'Periode';
+
+  @override
+  String get financeStatusOpen => 'Belum dibayar';
+
+  @override
+  String get financeStatusPaid => 'Lunas';
+
+  @override
+  String get financeStatusWaived => 'Dibebaskan';
+
+  @override
+  String get financeMethodCash => 'Tunai';
+
+  @override
+  String get financeMethodBankTransfer => 'Transfer bank';
+
+  @override
+  String get financeMethodCard => 'Kartu';
+
+  @override
+  String get financeMethodOther => 'Lainnya';
+
+  @override
+  String get financeDueTitle => 'Tagihan';
+
+  @override
+  String get financeDueAmount => 'Jumlah';
+
+  @override
+  String financeDuePlanAmount(String amount) {
+    return 'Jumlah rencana: $amount';
+  }
+
+  @override
+  String financeDueReason(String reason) {
+    return 'Alasan: $reason';
+  }
+
+  @override
+  String get financeDuePayments => 'Pembayaran';
+
+  @override
+  String get financeDueNoPayments => 'Belum ada pembayaran';
+
+  @override
+  String get financeActionPay => 'Catat pembayaran';
+
+  @override
+  String get financeActionChangeAmount => 'Ubah jumlah';
+
+  @override
+  String get financeActionWaive => 'Bebaskan';
+
+  @override
+  String get financeActionVoid => 'Batalkan pembayaran';
+
+  @override
+  String get financePayTitle => 'Catat pembayaran';
+
+  @override
+  String financePayFull(String amount) {
+    return 'Tagihan dicatat lunas seluruhnya: $amount.';
+  }
+
+  @override
+  String get financePayDate => 'Tanggal pembayaran';
+
+  @override
+  String get financePayMethod => 'Metode pembayaran';
+
+  @override
+  String get financePayNote => 'Catatan (opsional)';
+
+  @override
+  String get financePayRecorded => 'Pembayaran dicatat';
+
+  @override
+  String get financeAmountDialogTitle => 'Ubah jumlah tagihan';
+
+  @override
+  String get financeAmountChanged => 'Jumlah diubah';
+
+  @override
+  String get financeWaiveTitle => 'Bebaskan tagihan';
+
+  @override
+  String get financeWaiveHint => 'Tagihan dibebaskan untuk selamanya.';
+
+  @override
+  String get financeWaived => 'Tagihan dibebaskan';
+
+  @override
+  String get financeVoidTitle => 'Batalkan pembayaran';
+
+  @override
+  String get financeVoidHint =>
+      'Pembayaran tetap disimpan dan ditandai batal, dan tagihan kembali belum dibayar.';
+
+  @override
+  String get financeVoided => 'Pembayaran dibatalkan';
+
+  @override
+  String get financeReasonLabel => 'Alasan';
+
+  @override
+  String get financeReasonHint =>
+      'Alasan singkat. Jangan menulis data kesehatan atau keluarga.';
+
+  @override
+  String get financePaymentVoidedLabel => 'Dibatalkan';
+
+  @override
+  String financePaymentRecordedBy(String name) {
+    return 'Dicatat oleh $name';
+  }
+
+  @override
+  String financePaymentVoidedBy(String name, String date) {
+    return 'Dibatalkan oleh $name pada $date';
+  }
+
+  @override
+  String financePageOf(int page, int total) {
+    return 'Halaman $page dari $total';
+  }
+
+  @override
+  String get financePagePrevious => 'Halaman sebelumnya';
+
+  @override
+  String get financePageNext => 'Halaman berikutnya';
+
+  @override
+  String get financeGenerateTitle => 'Buat tagihan';
+
+  @override
+  String get financeGenerateIntro =>
+      'Membuat tagihan yang belum ada untuk satu periode bagi pemain dalam rencana. Dapat diulang tanpa menggandakan.';
+
+  @override
+  String get financeGeneratePlan => 'Rencana';
+
+  @override
+  String get financeGeneratePeriod => 'Periode';
+
+  @override
+  String get financeGeneratePreview => 'Hitung';
+
+  @override
+  String financeGeneratePreviewResult(int created, int existing) {
+    String _temp0 = intl.Intl.pluralLogic(
+      created,
+      locale: localeName,
+      other: '$created tagihan akan dibuat',
+      one: '1 tagihan akan dibuat',
+      zero: 'Tidak ada tagihan baru',
+    );
+    return '$_temp0; $existing sudah ada.';
+  }
+
+  @override
+  String get financeGenerate => 'Buat';
+
+  @override
+  String financeGenerated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tagihan dibuat',
+      one: '1 tagihan dibuat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeGenerateNoPlans =>
+      'Buat rencana iuran aktif terlebih dahulu';
+
+  @override
+  String get financeErrorDueNotOpen =>
+      'Tagihan sudah tidak terbuka. Muat ulang daftar.';
+
+  @override
+  String get financeErrorCurrencyLocked =>
+      'Mata uang tidak dapat diubah: tagihan sudah dibuat.';
+
+  @override
+  String get financeErrorUnknownCurrency => 'Mata uang itu tidak didukung';
+
+  @override
+  String get financeErrorCurrencyNotSet => 'Pilih dulu mata uang akademi';
+
+  @override
+  String get financeErrorFeePlanHasDues =>
+      'Rencana sudah punya tagihan: arsipkan, jangan hapus atau ubah periode pertamanya';
+
+  @override
+  String get financeErrorFeePlanArchived =>
+      'Rencana diarsipkan: aktifkan kembali untuk membuat tagihan';
+
+  @override
+  String get financeErrorPaidOnInFuture =>
+      'Tanggal pembayaran tidak boleh setelah hari ini';
+
+  @override
+  String get financeErrorPaymentAlreadyVoided =>
+      'Pembayaran itu sudah dibatalkan';
+
+  @override
+  String get financeErrorPeriodOutsidePlan =>
+      'Periode itu di luar periode rencana';
+
+  @override
+  String get financeErrorPeriodOutsideSeason => 'Periode itu di luar musim';
+
+  @override
+  String get financeErrorTooManyDues =>
+      'Terlalu banyak tagihan sekaligus (maksimal 2000)';
+
+  @override
+  String get financeErrorTeamNotInSeason => 'Tim itu bukan dari musim rencana';
+
+  @override
+  String get financeErrorConcurrentModification =>
+      'Seseorang mengubah ini pada saat yang sama. Muat ulang dan coba lagi.';
+
+  @override
   String get academyName => 'Nama akademi';
 
   @override

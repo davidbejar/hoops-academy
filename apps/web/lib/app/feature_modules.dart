@@ -15,6 +15,8 @@ import '../features/admin/presentation/members_screen.dart'
 import '../features/admin/presentation/seasons_screen.dart'
     deferred as admin_seasons;
 import '../features/audit/presentation/audit_log_screen.dart' deferred as audit;
+import '../features/finance/presentation/finance_screens.dart'
+    deferred as finance;
 import '../features/match/presentation/live_match_screen.dart'
     deferred as match_live;
 import '../features/match/presentation/match_setup_screen.dart'
@@ -129,6 +131,32 @@ final Map<AppDestination, FeatureModule> featureModules = {
         'activity',
         audit.loadLibrary,
         (_) => audit.AcademyActivityScreen(),
+      ),
+      // The finance area (ADMIN only, like everything under /admin).
+      ModulePage(
+        'finance',
+        finance.loadLibrary,
+        (_) => finance.FinanceScreen(),
+      ),
+      ModulePage(
+        'finance/settings',
+        finance.loadLibrary,
+        (_) => finance.FinanceSettingsScreen(),
+      ),
+      ModulePage(
+        'finance/plans',
+        finance.loadLibrary,
+        (_) => finance.FeePlansScreen(),
+      ),
+      ModulePage(
+        'finance/dues',
+        finance.loadLibrary,
+        (_) => finance.DuesScreen(),
+      ),
+      ModulePage(
+        'finance/dues/:dueId',
+        finance.loadLibrary,
+        (p) => finance.DueDetailScreen(dueId: p['dueId']!),
       ),
     ],
   ),

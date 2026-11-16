@@ -988,6 +988,768 @@ abstract class AppLocalizations {
   /// **'Casos de elegibilidad'**
   String get adminCases;
 
+  /// No description provided for @adminFinance.
+  ///
+  /// In es, this message translates to:
+  /// **'Finanzas'**
+  String get adminFinance;
+
+  /// No description provided for @financeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Finanzas'**
+  String get financeTitle;
+
+  /// No description provided for @financeOfflineReadOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin conexión: puedes consultar las finanzas, pero no cambiarlas.'**
+  String get financeOfflineReadOnly;
+
+  /// No description provided for @financeNotYetAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta parte de las finanzas todavía no está disponible en el servidor. Inténtalo más tarde.'**
+  String get financeNotYetAvailable;
+
+  /// No description provided for @financeSettingsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Moneda'**
+  String get financeSettingsTitle;
+
+  /// No description provided for @financeCurrencyNotSet.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin elegir'**
+  String get financeCurrencyNotSet;
+
+  /// No description provided for @financeCurrencyHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas las cantidades de la academia están en una sola moneda. Queda fijada cuando se genera la primera cuota.'**
+  String get financeCurrencyHint;
+
+  /// No description provided for @financeCurrencyLockedNote.
+  ///
+  /// In es, this message translates to:
+  /// **'La moneda ya no se puede cambiar: hay cuotas generadas.'**
+  String get financeCurrencyLockedNote;
+
+  /// No description provided for @financeCurrencyLockedChip.
+  ///
+  /// In es, this message translates to:
+  /// **'Fijada'**
+  String get financeCurrencyLockedChip;
+
+  /// No description provided for @financeCurrencyChoose.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir moneda'**
+  String get financeCurrencyChoose;
+
+  /// No description provided for @financeCurrencyChange.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar moneda'**
+  String get financeCurrencyChange;
+
+  /// No description provided for @financeCurrencyPickerTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Moneda de la academia'**
+  String get financeCurrencyPickerTitle;
+
+  /// No description provided for @financeCurrencySearch.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por código (EUR, IDR…)'**
+  String get financeCurrencySearch;
+
+  /// No description provided for @financeCurrencyConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Usar {currency} como moneda de la academia? Ya no se podrá cambiar cuando haya cuotas generadas.'**
+  String financeCurrencyConfirm(String currency);
+
+  /// No description provided for @financeCurrencySaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Moneda guardada'**
+  String get financeCurrencySaved;
+
+  /// No description provided for @financeNoCurrencyNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige primero la moneda de la academia para poder crear planes de cuota.'**
+  String get financeNoCurrencyNotice;
+
+  /// No description provided for @financePlansTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Planes de cuota'**
+  String get financePlansTitle;
+
+  /// No description provided for @financePlansEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay planes de cuota'**
+  String get financePlansEmpty;
+
+  /// No description provided for @financePlanNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo plan'**
+  String get financePlanNew;
+
+  /// No description provided for @financePlanEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar plan'**
+  String get financePlanEdit;
+
+  /// No description provided for @financePlanName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre del plan'**
+  String get financePlanName;
+
+  /// No description provided for @financePlanSeason.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporada'**
+  String get financePlanSeason;
+
+  /// No description provided for @financePlanTargetKind.
+  ///
+  /// In es, this message translates to:
+  /// **'Se cobra a'**
+  String get financePlanTargetKind;
+
+  /// No description provided for @financePlanTargetTeam.
+  ///
+  /// In es, this message translates to:
+  /// **'Un equipo'**
+  String get financePlanTargetTeam;
+
+  /// No description provided for @financePlanTargetCategory.
+  ///
+  /// In es, this message translates to:
+  /// **'Una categoría de edad'**
+  String get financePlanTargetCategory;
+
+  /// No description provided for @financePlanTeam.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipo'**
+  String get financePlanTeam;
+
+  /// No description provided for @financePlanCategory.
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría'**
+  String get financePlanCategory;
+
+  /// No description provided for @financePlanCadence.
+  ///
+  /// In es, this message translates to:
+  /// **'Frecuencia'**
+  String get financePlanCadence;
+
+  /// No description provided for @financeCadenceMonthly.
+  ///
+  /// In es, this message translates to:
+  /// **'Mensual'**
+  String get financeCadenceMonthly;
+
+  /// No description provided for @financeCadenceQuarterly.
+  ///
+  /// In es, this message translates to:
+  /// **'Trimestral'**
+  String get financeCadenceQuarterly;
+
+  /// No description provided for @financeCadenceSeason.
+  ///
+  /// In es, this message translates to:
+  /// **'Una vez por temporada'**
+  String get financeCadenceSeason;
+
+  /// No description provided for @financePlanAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'Importe por periodo'**
+  String get financePlanAmount;
+
+  /// No description provided for @financePlanFirstPeriod.
+  ///
+  /// In es, this message translates to:
+  /// **'Primer periodo'**
+  String get financePlanFirstPeriod;
+
+  /// No description provided for @financePlanLastPeriod.
+  ///
+  /// In es, this message translates to:
+  /// **'Último periodo'**
+  String get financePlanLastPeriod;
+
+  /// No description provided for @financePlanToSeasonEnd.
+  ///
+  /// In es, this message translates to:
+  /// **'Hasta el final de la temporada'**
+  String get financePlanToSeasonEnd;
+
+  /// No description provided for @financePlanAutoGenerate.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar las cuotas automáticamente'**
+  String get financePlanAutoGenerate;
+
+  /// No description provided for @financePlanAutoGenerateHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada día se crean las cuotas que falten de los planes activos.'**
+  String get financePlanAutoGenerateHint;
+
+  /// No description provided for @financePlanImmutableNote.
+  ///
+  /// In es, this message translates to:
+  /// **'La temporada, a quién se cobra y la frecuencia no se pueden cambiar: crea otro plan.'**
+  String get financePlanImmutableNote;
+
+  /// No description provided for @financePlanFirstPeriodFixed.
+  ///
+  /// In es, this message translates to:
+  /// **'El primer periodo ya no se puede cambiar: el plan tiene cuotas.'**
+  String get financePlanFirstPeriodFixed;
+
+  /// No description provided for @financePlanNewAmountNote.
+  ///
+  /// In es, this message translates to:
+  /// **'El nuevo importe se aplica a las cuotas que se generen a partir de ahora; las que ya existen lo conservan.'**
+  String get financePlanNewAmountNote;
+
+  /// No description provided for @financePlanArchived.
+  ///
+  /// In es, this message translates to:
+  /// **'Archivado'**
+  String get financePlanArchived;
+
+  /// No description provided for @financePlanHasDues.
+  ///
+  /// In es, this message translates to:
+  /// **'Con cuotas'**
+  String get financePlanHasDues;
+
+  /// No description provided for @financePlanShowArchived.
+  ///
+  /// In es, this message translates to:
+  /// **'Mostrar archivados'**
+  String get financePlanShowArchived;
+
+  /// No description provided for @financePlanGenerate.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar cuotas'**
+  String get financePlanGenerate;
+
+  /// No description provided for @financePlanArchive.
+  ///
+  /// In es, this message translates to:
+  /// **'Archivar'**
+  String get financePlanArchive;
+
+  /// No description provided for @financePlanUnarchive.
+  ///
+  /// In es, this message translates to:
+  /// **'Reactivar'**
+  String get financePlanUnarchive;
+
+  /// No description provided for @financePlanDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get financePlanDelete;
+
+  /// No description provided for @financePlanArchiveConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Archivar este plan? No se generarán más cuotas; las que ya existen se conservan.'**
+  String get financePlanArchiveConfirm;
+
+  /// No description provided for @financePlanDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar este plan? Solo se puede porque no tiene cuotas.'**
+  String get financePlanDeleteConfirm;
+
+  /// No description provided for @financePlanSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan guardado'**
+  String get financePlanSaved;
+
+  /// No description provided for @financePlanDeleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan eliminado'**
+  String get financePlanDeleted;
+
+  /// No description provided for @financePlanArchivedMsg.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan archivado'**
+  String get financePlanArchivedMsg;
+
+  /// No description provided for @financePlanUnarchivedMsg.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan reactivado'**
+  String get financePlanUnarchivedMsg;
+
+  /// No description provided for @financePlanForTeam.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipo {team}'**
+  String financePlanForTeam(String team);
+
+  /// No description provided for @financePlanForCategory.
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría {category}'**
+  String financePlanForCategory(String category);
+
+  /// No description provided for @financeAmountInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce un importe mayor que cero, por ejemplo {example}'**
+  String financeAmountInvalid(String example);
+
+  /// No description provided for @financeNoSeasons.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea primero una temporada'**
+  String get financeNoSeasons;
+
+  /// No description provided for @financeNoTeamsInSeason.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta temporada aún no tiene equipos'**
+  String get financeNoTeamsInSeason;
+
+  /// No description provided for @financePeriodSeason.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporada completa'**
+  String get financePeriodSeason;
+
+  /// No description provided for @financePeriodQuarter.
+  ///
+  /// In es, this message translates to:
+  /// **'T{quarter} {year}'**
+  String financePeriodQuarter(int quarter, int year);
+
+  /// No description provided for @financeDuesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuotas y pagos'**
+  String get financeDuesTitle;
+
+  /// No description provided for @financeDuesEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay cuotas con estos filtros'**
+  String get financeDuesEmpty;
+
+  /// No description provided for @financeDuesCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{1 cuota} other{{count} cuotas}}'**
+  String financeDuesCount(int count);
+
+  /// No description provided for @financeFilterPlan.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan'**
+  String get financeFilterPlan;
+
+  /// No description provided for @financeFilterTeam.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipo'**
+  String get financeFilterTeam;
+
+  /// No description provided for @financeFilterPeriod.
+  ///
+  /// In es, this message translates to:
+  /// **'Periodo'**
+  String get financeFilterPeriod;
+
+  /// No description provided for @financeStatusOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get financeStatusOpen;
+
+  /// No description provided for @financeStatusPaid.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagada'**
+  String get financeStatusPaid;
+
+  /// No description provided for @financeStatusWaived.
+  ///
+  /// In es, this message translates to:
+  /// **'Condonada'**
+  String get financeStatusWaived;
+
+  /// No description provided for @financeMethodCash.
+  ///
+  /// In es, this message translates to:
+  /// **'Efectivo'**
+  String get financeMethodCash;
+
+  /// No description provided for @financeMethodBankTransfer.
+  ///
+  /// In es, this message translates to:
+  /// **'Transferencia'**
+  String get financeMethodBankTransfer;
+
+  /// No description provided for @financeMethodCard.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta'**
+  String get financeMethodCard;
+
+  /// No description provided for @financeMethodOther.
+  ///
+  /// In es, this message translates to:
+  /// **'Otro'**
+  String get financeMethodOther;
+
+  /// No description provided for @financeDueTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuota'**
+  String get financeDueTitle;
+
+  /// No description provided for @financeDueAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'Importe'**
+  String get financeDueAmount;
+
+  /// No description provided for @financeDuePlanAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'Importe del plan: {amount}'**
+  String financeDuePlanAmount(String amount);
+
+  /// No description provided for @financeDueReason.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo: {reason}'**
+  String financeDueReason(String reason);
+
+  /// No description provided for @financeDuePayments.
+  ///
+  /// In es, this message translates to:
+  /// **'Pagos'**
+  String get financeDuePayments;
+
+  /// No description provided for @financeDueNoPayments.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay pagos'**
+  String get financeDueNoPayments;
+
+  /// No description provided for @financeActionPay.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar pago'**
+  String get financeActionPay;
+
+  /// No description provided for @financeActionChangeAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar importe'**
+  String get financeActionChangeAmount;
+
+  /// No description provided for @financeActionWaive.
+  ///
+  /// In es, this message translates to:
+  /// **'Condonar'**
+  String get financeActionWaive;
+
+  /// No description provided for @financeActionVoid.
+  ///
+  /// In es, this message translates to:
+  /// **'Anular pago'**
+  String get financeActionVoid;
+
+  /// No description provided for @financePayTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar pago'**
+  String get financePayTitle;
+
+  /// No description provided for @financePayFull.
+  ///
+  /// In es, this message translates to:
+  /// **'Se registra el pago completo de la cuota: {amount}.'**
+  String financePayFull(String amount);
+
+  /// No description provided for @financePayDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de pago'**
+  String get financePayDate;
+
+  /// No description provided for @financePayMethod.
+  ///
+  /// In es, this message translates to:
+  /// **'Forma de pago'**
+  String get financePayMethod;
+
+  /// No description provided for @financePayNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Nota (opcional)'**
+  String get financePayNote;
+
+  /// No description provided for @financePayRecorded.
+  ///
+  /// In es, this message translates to:
+  /// **'Pago registrado'**
+  String get financePayRecorded;
+
+  /// No description provided for @financeAmountDialogTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar el importe de la cuota'**
+  String get financeAmountDialogTitle;
+
+  /// No description provided for @financeAmountChanged.
+  ///
+  /// In es, this message translates to:
+  /// **'Importe cambiado'**
+  String get financeAmountChanged;
+
+  /// No description provided for @financeWaiveTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Condonar la cuota'**
+  String get financeWaiveTitle;
+
+  /// No description provided for @financeWaiveHint.
+  ///
+  /// In es, this message translates to:
+  /// **'La cuota queda condonada para siempre.'**
+  String get financeWaiveHint;
+
+  /// No description provided for @financeWaived.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuota condonada'**
+  String get financeWaived;
+
+  /// No description provided for @financeVoidTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Anular el pago'**
+  String get financeVoidTitle;
+
+  /// No description provided for @financeVoidHint.
+  ///
+  /// In es, this message translates to:
+  /// **'El pago se conserva marcado como anulado y la cuota vuelve a estar pendiente.'**
+  String get financeVoidHint;
+
+  /// No description provided for @financeVoided.
+  ///
+  /// In es, this message translates to:
+  /// **'Pago anulado'**
+  String get financeVoided;
+
+  /// No description provided for @financeReasonLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo'**
+  String get financeReasonLabel;
+
+  /// No description provided for @financeReasonHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Motivo breve. No escribas datos de salud ni de la familia.'**
+  String get financeReasonHint;
+
+  /// No description provided for @financePaymentVoidedLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Anulado'**
+  String get financePaymentVoidedLabel;
+
+  /// No description provided for @financePaymentRecordedBy.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrado por {name}'**
+  String financePaymentRecordedBy(String name);
+
+  /// No description provided for @financePaymentVoidedBy.
+  ///
+  /// In es, this message translates to:
+  /// **'Anulado por {name} el {date}'**
+  String financePaymentVoidedBy(String name, String date);
+
+  /// No description provided for @financePageOf.
+  ///
+  /// In es, this message translates to:
+  /// **'Página {page} de {total}'**
+  String financePageOf(int page, int total);
+
+  /// No description provided for @financePagePrevious.
+  ///
+  /// In es, this message translates to:
+  /// **'Página anterior'**
+  String get financePagePrevious;
+
+  /// No description provided for @financePageNext.
+  ///
+  /// In es, this message translates to:
+  /// **'Página siguiente'**
+  String get financePageNext;
+
+  /// No description provided for @financeGenerateTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar cuotas'**
+  String get financeGenerateTitle;
+
+  /// No description provided for @financeGenerateIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea las cuotas que faltan de un periodo para los jugadores del plan. Se puede repetir sin duplicar nada.'**
+  String get financeGenerateIntro;
+
+  /// No description provided for @financeGeneratePlan.
+  ///
+  /// In es, this message translates to:
+  /// **'Plan'**
+  String get financeGeneratePlan;
+
+  /// No description provided for @financeGeneratePeriod.
+  ///
+  /// In es, this message translates to:
+  /// **'Periodo'**
+  String get financeGeneratePeriod;
+
+  /// No description provided for @financeGeneratePreview.
+  ///
+  /// In es, this message translates to:
+  /// **'Calcular'**
+  String get financeGeneratePreview;
+
+  /// No description provided for @financeGeneratePreviewResult.
+  ///
+  /// In es, this message translates to:
+  /// **'{created, plural, =0{No hay cuotas nuevas} one{Se creará 1 cuota} other{Se crearán {created} cuotas}}; ya existen {existing}.'**
+  String financeGeneratePreviewResult(int created, int existing);
+
+  /// No description provided for @financeGenerate.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar'**
+  String get financeGenerate;
+
+  /// No description provided for @financeGenerated.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{Se ha creado 1 cuota} other{Se han creado {count} cuotas}}'**
+  String financeGenerated(int count);
+
+  /// No description provided for @financeGenerateNoPlans.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea primero un plan de cuota activo'**
+  String get financeGenerateNoPlans;
+
+  /// No description provided for @financeErrorDueNotOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'La cuota ya no está pendiente. Recarga la lista.'**
+  String get financeErrorDueNotOpen;
+
+  /// No description provided for @financeErrorCurrencyLocked.
+  ///
+  /// In es, this message translates to:
+  /// **'La moneda no se puede cambiar: ya hay cuotas generadas.'**
+  String get financeErrorCurrencyLocked;
+
+  /// No description provided for @financeErrorUnknownCurrency.
+  ///
+  /// In es, this message translates to:
+  /// **'Esa moneda no está admitida'**
+  String get financeErrorUnknownCurrency;
+
+  /// No description provided for @financeErrorCurrencyNotSet.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige primero la moneda de la academia'**
+  String get financeErrorCurrencyNotSet;
+
+  /// No description provided for @financeErrorFeePlanHasDues.
+  ///
+  /// In es, this message translates to:
+  /// **'El plan ya tiene cuotas: archívalo en vez de eliminarlo o cambiar su primer periodo'**
+  String get financeErrorFeePlanHasDues;
+
+  /// No description provided for @financeErrorFeePlanArchived.
+  ///
+  /// In es, this message translates to:
+  /// **'El plan está archivado: reactívalo para generar cuotas'**
+  String get financeErrorFeePlanArchived;
+
+  /// No description provided for @financeErrorPaidOnInFuture.
+  ///
+  /// In es, this message translates to:
+  /// **'La fecha de pago no puede ser posterior a hoy'**
+  String get financeErrorPaidOnInFuture;
+
+  /// No description provided for @financeErrorPaymentAlreadyVoided.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese pago ya estaba anulado'**
+  String get financeErrorPaymentAlreadyVoided;
+
+  /// No description provided for @financeErrorPeriodOutsidePlan.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese periodo está fuera de los periodos del plan'**
+  String get financeErrorPeriodOutsidePlan;
+
+  /// No description provided for @financeErrorPeriodOutsideSeason.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese periodo queda fuera de la temporada'**
+  String get financeErrorPeriodOutsideSeason;
+
+  /// No description provided for @financeErrorTooManyDues.
+  ///
+  /// In es, this message translates to:
+  /// **'Son demasiadas cuotas de una vez (máximo 2000)'**
+  String get financeErrorTooManyDues;
+
+  /// No description provided for @financeErrorTeamNotInSeason.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese equipo no es de la temporada del plan'**
+  String get financeErrorTeamNotInSeason;
+
+  /// No description provided for @financeErrorConcurrentModification.
+  ///
+  /// In es, this message translates to:
+  /// **'Alguien cambió esto a la vez. Recarga e inténtalo de nuevo.'**
+  String get financeErrorConcurrentModification;
+
   /// No description provided for @academyName.
   ///
   /// In es, this message translates to:

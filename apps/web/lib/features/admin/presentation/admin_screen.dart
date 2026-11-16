@@ -39,6 +39,12 @@ class AdminScreen extends StatelessWidget {
         '/teams/cases',
         'admin-cases',
       ),
+      (
+        Icons.payments_outlined,
+        l.adminFinance,
+        '/admin/finance',
+        'admin-finance',
+      ),
       (Icons.history, l.adminActivity, '/admin/activity', 'admin-activity'),
     ];
     return PageBody(

@@ -178,6 +178,243 @@
   "adminAgeCategories": "Categorías de edad",
   "adminApprovals": "Solicitudes pendientes",
   "adminCases": "Casos de elegibilidad",
+  "adminFinance": "Finanzas",
+  "financeTitle": "Finanzas",
+  "financeOfflineReadOnly": "Sin conexión: puedes consultar las finanzas, pero no cambiarlas.",
+  "financeNotYetAvailable": "Esta parte de las finanzas todavía no está disponible en el servidor. Inténtalo más tarde.",
+  "financeSettingsTitle": "Moneda",
+  "financeCurrencyNotSet": "Sin elegir",
+  "financeCurrencyHint": "Todas las cantidades de la academia están en una sola moneda. Queda fijada cuando se genera la primera cuota.",
+  "financeCurrencyLockedNote": "La moneda ya no se puede cambiar: hay cuotas generadas.",
+  "financeCurrencyLockedChip": "Fijada",
+  "financeCurrencyChoose": "Elegir moneda",
+  "financeCurrencyChange": "Cambiar moneda",
+  "financeCurrencyPickerTitle": "Moneda de la academia",
+  "financeCurrencySearch": "Buscar por código (EUR, IDR…)",
+  "financeCurrencyConfirm": "¿Usar {currency} como moneda de la academia? Ya no se podrá cambiar cuando haya cuotas generadas.",
+  "@financeCurrencyConfirm": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "financeCurrencySaved": "Moneda guardada",
+  "financeNoCurrencyNotice": "Elige primero la moneda de la academia para poder crear planes de cuota.",
+  "financePlansTitle": "Planes de cuota",
+  "financePlansEmpty": "Aún no hay planes de cuota",
+  "financePlanNew": "Nuevo plan",
+  "financePlanEdit": "Editar plan",
+  "financePlanName": "Nombre del plan",
+  "financePlanSeason": "Temporada",
+  "financePlanTargetKind": "Se cobra a",
+  "financePlanTargetTeam": "Un equipo",
+  "financePlanTargetCategory": "Una categoría de edad",
+  "financePlanTeam": "Equipo",
+  "financePlanCategory": "Categoría",
+  "financePlanCadence": "Frecuencia",
+  "financeCadenceMonthly": "Mensual",
+  "financeCadenceQuarterly": "Trimestral",
+  "financeCadenceSeason": "Una vez por temporada",
+  "financePlanAmount": "Importe por periodo",
+  "financePlanFirstPeriod": "Primer periodo",
+  "financePlanLastPeriod": "Último periodo",
+  "financePlanToSeasonEnd": "Hasta el final de la temporada",
+  "financePlanAutoGenerate": "Generar las cuotas automáticamente",
+  "financePlanAutoGenerateHint": "Cada día se crean las cuotas que falten de los planes activos.",
+  "financePlanImmutableNote": "La temporada, a quién se cobra y la frecuencia no se pueden cambiar: crea otro plan.",
+  "financePlanFirstPeriodFixed": "El primer periodo ya no se puede cambiar: el plan tiene cuotas.",
+  "financePlanNewAmountNote": "El nuevo importe se aplica a las cuotas que se generen a partir de ahora; las que ya existen lo conservan.",
+  "financePlanArchived": "Archivado",
+  "financePlanHasDues": "Con cuotas",
+  "financePlanShowArchived": "Mostrar archivados",
+  "financePlanGenerate": "Generar cuotas",
+  "financePlanArchive": "Archivar",
+  "financePlanUnarchive": "Reactivar",
+  "financePlanDelete": "Eliminar",
+  "financePlanArchiveConfirm": "¿Archivar este plan? No se generarán más cuotas; las que ya existen se conservan.",
+  "financePlanDeleteConfirm": "¿Eliminar este plan? Solo se puede porque no tiene cuotas.",
+  "financePlanSaved": "Plan guardado",
+  "financePlanDeleted": "Plan eliminado",
+  "financePlanArchivedMsg": "Plan archivado",
+  "financePlanUnarchivedMsg": "Plan reactivado",
+  "financePlanForTeam": "Equipo {team}",
+  "@financePlanForTeam": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "financePlanForCategory": "Categoría {category}",
+  "@financePlanForCategory": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "financeAmountInvalid": "Introduce un importe mayor que cero, por ejemplo {example}",
+  "@financeAmountInvalid": {
+    "placeholders": {
+      "example": {
+        "type": "String"
+      }
+    }
+  },
+  "financeNoSeasons": "Crea primero una temporada",
+  "financeNoTeamsInSeason": "Esta temporada aún no tiene equipos",
+  "financePeriodSeason": "Temporada completa",
+  "financePeriodQuarter": "T{quarter} {year}",
+  "@financePeriodQuarter": {
+    "placeholders": {
+      "quarter": {
+        "type": "int"
+      },
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "financeDuesTitle": "Cuotas y pagos",
+  "financeDuesEmpty": "No hay cuotas con estos filtros",
+  "financeDuesCount": "{count, plural, one{1 cuota} other{{count} cuotas}}",
+  "@financeDuesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeFilterPlan": "Plan",
+  "financeFilterTeam": "Equipo",
+  "financeFilterPeriod": "Periodo",
+  "financeStatusOpen": "Pendiente",
+  "financeStatusPaid": "Pagada",
+  "financeStatusWaived": "Condonada",
+  "financeMethodCash": "Efectivo",
+  "financeMethodBankTransfer": "Transferencia",
+  "financeMethodCard": "Tarjeta",
+  "financeMethodOther": "Otro",
+  "financeDueTitle": "Cuota",
+  "financeDueAmount": "Importe",
+  "financeDuePlanAmount": "Importe del plan: {amount}",
+  "@financeDuePlanAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "financeDueReason": "Motivo: {reason}",
+  "@financeDueReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "financeDuePayments": "Pagos",
+  "financeDueNoPayments": "Todavía no hay pagos",
+  "financeActionPay": "Registrar pago",
+  "financeActionChangeAmount": "Cambiar importe",
+  "financeActionWaive": "Condonar",
+  "financeActionVoid": "Anular pago",
+  "financePayTitle": "Registrar pago",
+  "financePayFull": "Se registra el pago completo de la cuota: {amount}.",
+  "@financePayFull": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "financePayDate": "Fecha de pago",
+  "financePayMethod": "Forma de pago",
+  "financePayNote": "Nota (opcional)",
+  "financePayRecorded": "Pago registrado",
+  "financeAmountDialogTitle": "Cambiar el importe de la cuota",
+  "financeAmountChanged": "Importe cambiado",
+  "financeWaiveTitle": "Condonar la cuota",
+  "financeWaiveHint": "La cuota queda condonada para siempre.",
+  "financeWaived": "Cuota condonada",
+  "financeVoidTitle": "Anular el pago",
+  "financeVoidHint": "El pago se conserva marcado como anulado y la cuota vuelve a estar pendiente.",
+  "financeVoided": "Pago anulado",
+  "financeReasonLabel": "Motivo",
+  "financeReasonHint": "Motivo breve. No escribas datos de salud ni de la familia.",
+  "financePaymentVoidedLabel": "Anulado",
+  "financePaymentRecordedBy": "Registrado por {name}",
+  "@financePaymentRecordedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "financePaymentVoidedBy": "Anulado por {name} el {date}",
+  "@financePaymentVoidedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "financePageOf": "Página {page} de {total}",
+  "@financePageOf": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "financePagePrevious": "Página anterior",
+  "financePageNext": "Página siguiente",
+  "financeGenerateTitle": "Generar cuotas",
+  "financeGenerateIntro": "Crea las cuotas que faltan de un periodo para los jugadores del plan. Se puede repetir sin duplicar nada.",
+  "financeGeneratePlan": "Plan",
+  "financeGeneratePeriod": "Periodo",
+  "financeGeneratePreview": "Calcular",
+  "financeGeneratePreviewResult": "{created, plural, =0{No hay cuotas nuevas} one{Se creará 1 cuota} other{Se crearán {created} cuotas}}; ya existen {existing}.",
+  "@financeGeneratePreviewResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "existing": {
+        "type": "int"
+      }
+    }
+  },
+  "financeGenerate": "Generar",
+  "financeGenerated": "{count, plural, one{Se ha creado 1 cuota} other{Se han creado {count} cuotas}}",
+  "@financeGenerated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeGenerateNoPlans": "Crea primero un plan de cuota activo",
+  "financeErrorDueNotOpen": "La cuota ya no está pendiente. Recarga la lista.",
+  "financeErrorCurrencyLocked": "La moneda no se puede cambiar: ya hay cuotas generadas.",
+  "financeErrorUnknownCurrency": "Esa moneda no está admitida",
+  "financeErrorCurrencyNotSet": "Elige primero la moneda de la academia",
+  "financeErrorFeePlanHasDues": "El plan ya tiene cuotas: archívalo en vez de eliminarlo o cambiar su primer periodo",
+  "financeErrorFeePlanArchived": "El plan está archivado: reactívalo para generar cuotas",
+  "financeErrorPaidOnInFuture": "La fecha de pago no puede ser posterior a hoy",
+  "financeErrorPaymentAlreadyVoided": "Ese pago ya estaba anulado",
+  "financeErrorPeriodOutsidePlan": "Ese periodo está fuera de los periodos del plan",
+  "financeErrorPeriodOutsideSeason": "Ese periodo queda fuera de la temporada",
+  "financeErrorTooManyDues": "Son demasiadas cuotas de una vez (máximo 2000)",
+  "financeErrorTeamNotInSeason": "Ese equipo no es de la temporada del plan",
+  "financeErrorConcurrentModification": "Alguien cambió esto a la vez. Recarga e inténtalo de nuevo.",
   "academyName": "Nombre de la academia",
   "academyTimezone": "Zona horaria (p. ej. Europe/Madrid)",
   "academyAgeRule": "Regla de edad",

@@ -71,6 +71,9 @@ class MoneyFormat {
     return '$whole${_symbols.DECIMAL_SEP}$fraction';
   }
 
+  /// An amount as a form expects it (`45,00`), for the "enter an amount" hint.
+  String get example => inputText(45 * _scale);
+
   NumberSymbols get _symbols => NumberFormat.decimalPattern(locale).symbols;
 
   /// The amount in minor units that [text] says, or null when it is not an

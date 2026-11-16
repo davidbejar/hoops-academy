@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
@@ -164,7 +165,7 @@ void main() {
 
     testWidgets('empty', (tester) async {
       final other = FakeFinanceRepository(tenant: mockTenantBId);
-      await other.chooseCurrency('EUR');
+      await tester.runAsync(() => other.chooseCurrency('EUR'));
       await pumpFinance(tester, repo: other, location: path);
       expect(find.text('Aún no hay planes de cuota'), findsOneWidget);
       expect(find.byKey(const Key('plan-new')), findsOneWidget);
@@ -329,6 +330,7 @@ void main() {
       expect(find.text('Plan archivado'), findsOneWidget);
       expect(find.byKey(const Key('plan-fp-u12-season')), findsNothing);
 
+      await tester.pump(const Duration(seconds: 5)); // the first snack bar goes
       await tapKey(tester, 'plans-show-archived');
       await tapKey(tester, 'plan-menu-fp-u12-season');
       await tester.tap(find.byKey(const Key('sheet-action-unarchive')));
@@ -341,7 +343,7 @@ void main() {
       await pumpFinance(tester, repo: repo, location: path);
       await tapKey(tester, 'plan-menu-fp-mini-a');
       expect(find.byKey(const Key('sheet-action-delete')), findsNothing);
-      await tester.tapAt(const Offset(10, 10)); // dismiss the sheet
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape); // dismiss the sheet
       await tester.pumpAndSettle();
 
       await tapKey(tester, 'plan-menu-fp-u12-season');

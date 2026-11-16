@@ -500,6 +500,460 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminCases => 'Eligibility cases';
 
   @override
+  String get adminFinance => 'Finance';
+
+  @override
+  String get financeTitle => 'Finance';
+
+  @override
+  String get financeOfflineReadOnly =>
+      'Offline: you can read the finances but not change them.';
+
+  @override
+  String get financeNotYetAvailable =>
+      'This part of finance is not available on the server yet. Try again later.';
+
+  @override
+  String get financeSettingsTitle => 'Currency';
+
+  @override
+  String get financeCurrencyNotSet => 'Not chosen yet';
+
+  @override
+  String get financeCurrencyHint =>
+      'All of the academy\'s amounts are in one currency. It is fixed when the first due is generated.';
+
+  @override
+  String get financeCurrencyLockedNote =>
+      'The currency can no longer be changed: dues have been generated.';
+
+  @override
+  String get financeCurrencyLockedChip => 'Fixed';
+
+  @override
+  String get financeCurrencyChoose => 'Choose currency';
+
+  @override
+  String get financeCurrencyChange => 'Change currency';
+
+  @override
+  String get financeCurrencyPickerTitle => 'The academy\'s currency';
+
+  @override
+  String get financeCurrencySearch => 'Search by code (EUR, IDR…)';
+
+  @override
+  String financeCurrencyConfirm(String currency) {
+    return 'Use $currency as the academy\'s currency? It can no longer be changed once dues have been generated.';
+  }
+
+  @override
+  String get financeCurrencySaved => 'Currency saved';
+
+  @override
+  String get financeNoCurrencyNotice =>
+      'Choose the academy\'s currency first to be able to create fee plans.';
+
+  @override
+  String get financePlansTitle => 'Fee plans';
+
+  @override
+  String get financePlansEmpty => 'No fee plans yet';
+
+  @override
+  String get financePlanNew => 'New plan';
+
+  @override
+  String get financePlanEdit => 'Edit plan';
+
+  @override
+  String get financePlanName => 'Plan name';
+
+  @override
+  String get financePlanSeason => 'Season';
+
+  @override
+  String get financePlanTargetKind => 'Charged to';
+
+  @override
+  String get financePlanTargetTeam => 'One team';
+
+  @override
+  String get financePlanTargetCategory => 'An age category';
+
+  @override
+  String get financePlanTeam => 'Team';
+
+  @override
+  String get financePlanCategory => 'Category';
+
+  @override
+  String get financePlanCadence => 'Frequency';
+
+  @override
+  String get financeCadenceMonthly => 'Monthly';
+
+  @override
+  String get financeCadenceQuarterly => 'Quarterly';
+
+  @override
+  String get financeCadenceSeason => 'Once per season';
+
+  @override
+  String get financePlanAmount => 'Amount per period';
+
+  @override
+  String get financePlanFirstPeriod => 'First period';
+
+  @override
+  String get financePlanLastPeriod => 'Last period';
+
+  @override
+  String get financePlanToSeasonEnd => 'Until the end of the season';
+
+  @override
+  String get financePlanAutoGenerate => 'Generate the dues automatically';
+
+  @override
+  String get financePlanAutoGenerateHint =>
+      'Every day the missing dues of active plans are created.';
+
+  @override
+  String get financePlanImmutableNote =>
+      'The season, who is charged and the frequency cannot be changed: create another plan.';
+
+  @override
+  String get financePlanFirstPeriodFixed =>
+      'The first period can no longer be changed: the plan has dues.';
+
+  @override
+  String get financePlanNewAmountNote =>
+      'The new amount applies to dues generated from now on; existing dues keep theirs.';
+
+  @override
+  String get financePlanArchived => 'Archived';
+
+  @override
+  String get financePlanHasDues => 'Has dues';
+
+  @override
+  String get financePlanShowArchived => 'Show archived';
+
+  @override
+  String get financePlanGenerate => 'Generate dues';
+
+  @override
+  String get financePlanArchive => 'Archive';
+
+  @override
+  String get financePlanUnarchive => 'Reactivate';
+
+  @override
+  String get financePlanDelete => 'Delete';
+
+  @override
+  String get financePlanArchiveConfirm =>
+      'Archive this plan? No more dues are generated; existing ones are kept.';
+
+  @override
+  String get financePlanDeleteConfirm =>
+      'Delete this plan? This is only possible because it has no dues.';
+
+  @override
+  String get financePlanSaved => 'Plan saved';
+
+  @override
+  String get financePlanDeleted => 'Plan deleted';
+
+  @override
+  String get financePlanArchivedMsg => 'Plan archived';
+
+  @override
+  String get financePlanUnarchivedMsg => 'Plan reactivated';
+
+  @override
+  String financePlanForTeam(String team) {
+    return 'Team $team';
+  }
+
+  @override
+  String financePlanForCategory(String category) {
+    return 'Category $category';
+  }
+
+  @override
+  String financeAmountInvalid(String example) {
+    return 'Enter an amount above zero, for example $example';
+  }
+
+  @override
+  String get financeNoSeasons => 'Create a season first';
+
+  @override
+  String get financeNoTeamsInSeason => 'This season has no teams yet';
+
+  @override
+  String get financePeriodSeason => 'Whole season';
+
+  @override
+  String financePeriodQuarter(int quarter, int year) {
+    return 'Q$quarter $year';
+  }
+
+  @override
+  String get financeDuesTitle => 'Dues and payments';
+
+  @override
+  String get financeDuesEmpty => 'No dues match these filters';
+
+  @override
+  String financeDuesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dues',
+      one: '1 due',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeFilterPlan => 'Plan';
+
+  @override
+  String get financeFilterTeam => 'Team';
+
+  @override
+  String get financeFilterPeriod => 'Period';
+
+  @override
+  String get financeStatusOpen => 'Open';
+
+  @override
+  String get financeStatusPaid => 'Paid';
+
+  @override
+  String get financeStatusWaived => 'Waived';
+
+  @override
+  String get financeMethodCash => 'Cash';
+
+  @override
+  String get financeMethodBankTransfer => 'Bank transfer';
+
+  @override
+  String get financeMethodCard => 'Card';
+
+  @override
+  String get financeMethodOther => 'Other';
+
+  @override
+  String get financeDueTitle => 'Due';
+
+  @override
+  String get financeDueAmount => 'Amount';
+
+  @override
+  String financeDuePlanAmount(String amount) {
+    return 'Plan amount: $amount';
+  }
+
+  @override
+  String financeDueReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get financeDuePayments => 'Payments';
+
+  @override
+  String get financeDueNoPayments => 'No payments yet';
+
+  @override
+  String get financeActionPay => 'Record payment';
+
+  @override
+  String get financeActionChangeAmount => 'Change amount';
+
+  @override
+  String get financeActionWaive => 'Waive';
+
+  @override
+  String get financeActionVoid => 'Void payment';
+
+  @override
+  String get financePayTitle => 'Record payment';
+
+  @override
+  String financePayFull(String amount) {
+    return 'The whole due is recorded as paid: $amount.';
+  }
+
+  @override
+  String get financePayDate => 'Payment date';
+
+  @override
+  String get financePayMethod => 'Payment method';
+
+  @override
+  String get financePayNote => 'Note (optional)';
+
+  @override
+  String get financePayRecorded => 'Payment recorded';
+
+  @override
+  String get financeAmountDialogTitle => 'Change the amount of the due';
+
+  @override
+  String get financeAmountChanged => 'Amount changed';
+
+  @override
+  String get financeWaiveTitle => 'Waive the due';
+
+  @override
+  String get financeWaiveHint => 'The due is waived for good.';
+
+  @override
+  String get financeWaived => 'Due waived';
+
+  @override
+  String get financeVoidTitle => 'Void the payment';
+
+  @override
+  String get financeVoidHint =>
+      'The payment is kept, marked as voided, and the due is open again.';
+
+  @override
+  String get financeVoided => 'Payment voided';
+
+  @override
+  String get financeReasonLabel => 'Reason';
+
+  @override
+  String get financeReasonHint =>
+      'A short reason. Do not write health or family details.';
+
+  @override
+  String get financePaymentVoidedLabel => 'Voided';
+
+  @override
+  String financePaymentRecordedBy(String name) {
+    return 'Recorded by $name';
+  }
+
+  @override
+  String financePaymentVoidedBy(String name, String date) {
+    return 'Voided by $name on $date';
+  }
+
+  @override
+  String financePageOf(int page, int total) {
+    return 'Page $page of $total';
+  }
+
+  @override
+  String get financePagePrevious => 'Previous page';
+
+  @override
+  String get financePageNext => 'Next page';
+
+  @override
+  String get financeGenerateTitle => 'Generate dues';
+
+  @override
+  String get financeGenerateIntro =>
+      'Creates the missing dues of one period for the players of the plan. It can be repeated without duplicating anything.';
+
+  @override
+  String get financeGeneratePlan => 'Plan';
+
+  @override
+  String get financeGeneratePeriod => 'Period';
+
+  @override
+  String get financeGeneratePreview => 'Calculate';
+
+  @override
+  String financeGeneratePreviewResult(int created, int existing) {
+    String _temp0 = intl.Intl.pluralLogic(
+      created,
+      locale: localeName,
+      other: '$created dues will be created',
+      one: '1 due will be created',
+      zero: 'There are no new dues',
+    );
+    return '$_temp0; $existing already exist.';
+  }
+
+  @override
+  String get financeGenerate => 'Generate';
+
+  @override
+  String financeGenerated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dues created',
+      one: '1 due created',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get financeGenerateNoPlans => 'Create an active fee plan first';
+
+  @override
+  String get financeErrorDueNotOpen =>
+      'The due is no longer open. Reload the list.';
+
+  @override
+  String get financeErrorCurrencyLocked =>
+      'The currency cannot be changed: dues have already been generated.';
+
+  @override
+  String get financeErrorUnknownCurrency => 'That currency is not supported';
+
+  @override
+  String get financeErrorCurrencyNotSet =>
+      'Choose the academy\'s currency first';
+
+  @override
+  String get financeErrorFeePlanHasDues =>
+      'The plan already has dues: archive it instead of deleting it or changing its first period';
+
+  @override
+  String get financeErrorFeePlanArchived =>
+      'The plan is archived: reactivate it to generate dues';
+
+  @override
+  String get financeErrorPaidOnInFuture =>
+      'The payment date cannot be after today';
+
+  @override
+  String get financeErrorPaymentAlreadyVoided =>
+      'That payment was already voided';
+
+  @override
+  String get financeErrorPeriodOutsidePlan =>
+      'That period is outside the plan\'s periods';
+
+  @override
+  String get financeErrorPeriodOutsideSeason =>
+      'That period is outside the season';
+
+  @override
+  String get financeErrorTooManyDues =>
+      'That is too many dues at once (2000 at most)';
+
+  @override
+  String get financeErrorTeamNotInSeason =>
+      'That team is not in the plan\'s season';
+
+  @override
+  String get financeErrorConcurrentModification =>
+      'Someone changed this at the same time. Reload and try again.';
+
+  @override
   String get academyName => 'Academy name';
 
   @override

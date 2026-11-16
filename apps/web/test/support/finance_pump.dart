@@ -60,3 +60,10 @@ Future<void> pickDropdown(WidgetTester tester, String key, String text) async {
   await tester.tap(find.text(text).last);
   await tester.pumpAndSettle();
 }
+
+/// Lets the demo mock answer: it takes 150 ms of the test's clock, and a
+/// reload that keeps the previous page on screen schedules no frame meanwhile.
+Future<void> settleMock(WidgetTester tester) async {
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pumpAndSettle();
+}

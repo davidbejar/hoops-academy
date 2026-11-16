@@ -72,6 +72,16 @@ void main() {
     });
   });
 
+  group('example', () {
+    test('is an amount written as the field expects it', () {
+      expect(money('EUR', 2, 'es').example, '45,00');
+      expect(money('EUR', 2, 'en').example, '45.00');
+      expect(money('IDR', 2, 'id').example, '45');
+      expect(money('JPY', 0, 'en').example, '45');
+      expect(money('BHD', 3, 'en').example, '45.000');
+    });
+  });
+
   group('parse', () {
     test('reads the locale decimal separator', () {
       expect(money('EUR', 2, 'es').parse('45,50'), 4550);

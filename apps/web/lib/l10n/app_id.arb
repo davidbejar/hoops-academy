@@ -154,6 +154,243 @@
   "adminAgeCategories": "Kategori usia",
   "adminApprovals": "Permintaan tertunda",
   "adminCases": "Kasus kelayakan",
+  "adminFinance": "Keuangan",
+  "financeTitle": "Keuangan",
+  "financeOfflineReadOnly": "Offline: Anda dapat melihat data keuangan tetapi tidak dapat mengubahnya.",
+  "financeNotYetAvailable": "Bagian keuangan ini belum tersedia di server. Coba lagi nanti.",
+  "financeSettingsTitle": "Mata uang",
+  "financeCurrencyNotSet": "Belum dipilih",
+  "financeCurrencyHint": "Semua jumlah di akademi memakai satu mata uang. Mata uang terkunci saat tagihan pertama dibuat.",
+  "financeCurrencyLockedNote": "Mata uang tidak dapat diubah lagi: sudah ada tagihan yang dibuat.",
+  "financeCurrencyLockedChip": "Terkunci",
+  "financeCurrencyChoose": "Pilih mata uang",
+  "financeCurrencyChange": "Ubah mata uang",
+  "financeCurrencyPickerTitle": "Mata uang akademi",
+  "financeCurrencySearch": "Cari berdasarkan kode (EUR, IDR…)",
+  "financeCurrencyConfirm": "Gunakan {currency} sebagai mata uang akademi? Mata uang tidak dapat diubah setelah tagihan dibuat.",
+  "@financeCurrencyConfirm": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "financeCurrencySaved": "Mata uang disimpan",
+  "financeNoCurrencyNotice": "Pilih dulu mata uang akademi agar dapat membuat rencana iuran.",
+  "financePlansTitle": "Rencana iuran",
+  "financePlansEmpty": "Belum ada rencana iuran",
+  "financePlanNew": "Rencana baru",
+  "financePlanEdit": "Ubah rencana",
+  "financePlanName": "Nama rencana",
+  "financePlanSeason": "Musim",
+  "financePlanTargetKind": "Ditagihkan kepada",
+  "financePlanTargetTeam": "Satu tim",
+  "financePlanTargetCategory": "Satu kategori usia",
+  "financePlanTeam": "Tim",
+  "financePlanCategory": "Kategori",
+  "financePlanCadence": "Frekuensi",
+  "financeCadenceMonthly": "Bulanan",
+  "financeCadenceQuarterly": "Per kuartal",
+  "financeCadenceSeason": "Sekali per musim",
+  "financePlanAmount": "Jumlah per periode",
+  "financePlanFirstPeriod": "Periode pertama",
+  "financePlanLastPeriod": "Periode terakhir",
+  "financePlanToSeasonEnd": "Sampai akhir musim",
+  "financePlanAutoGenerate": "Buat tagihan secara otomatis",
+  "financePlanAutoGenerateHint": "Setiap hari tagihan yang belum ada dari rencana aktif dibuat.",
+  "financePlanImmutableNote": "Musim, siapa yang ditagih, dan frekuensi tidak dapat diubah: buat rencana lain.",
+  "financePlanFirstPeriodFixed": "Periode pertama tidak dapat diubah lagi: rencana ini sudah punya tagihan.",
+  "financePlanNewAmountNote": "Jumlah baru berlaku untuk tagihan yang dibuat mulai sekarang; tagihan yang sudah ada tetap.",
+  "financePlanArchived": "Diarsipkan",
+  "financePlanHasDues": "Punya tagihan",
+  "financePlanShowArchived": "Tampilkan yang diarsipkan",
+  "financePlanGenerate": "Buat tagihan",
+  "financePlanArchive": "Arsipkan",
+  "financePlanUnarchive": "Aktifkan kembali",
+  "financePlanDelete": "Hapus",
+  "financePlanArchiveConfirm": "Arsipkan rencana ini? Tidak ada tagihan baru yang dibuat; yang sudah ada tetap disimpan.",
+  "financePlanDeleteConfirm": "Hapus rencana ini? Ini hanya bisa karena belum punya tagihan.",
+  "financePlanSaved": "Rencana disimpan",
+  "financePlanDeleted": "Rencana dihapus",
+  "financePlanArchivedMsg": "Rencana diarsipkan",
+  "financePlanUnarchivedMsg": "Rencana diaktifkan kembali",
+  "financePlanForTeam": "Tim {team}",
+  "@financePlanForTeam": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "financePlanForCategory": "Kategori {category}",
+  "@financePlanForCategory": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "financeAmountInvalid": "Masukkan jumlah di atas nol, misalnya {example}",
+  "@financeAmountInvalid": {
+    "placeholders": {
+      "example": {
+        "type": "String"
+      }
+    }
+  },
+  "financeNoSeasons": "Buat musim terlebih dahulu",
+  "financeNoTeamsInSeason": "Musim ini belum punya tim",
+  "financePeriodSeason": "Seluruh musim",
+  "financePeriodQuarter": "Kuartal {quarter} {year}",
+  "@financePeriodQuarter": {
+    "placeholders": {
+      "quarter": {
+        "type": "int"
+      },
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "financeDuesTitle": "Tagihan dan pembayaran",
+  "financeDuesEmpty": "Tidak ada tagihan dengan filter ini",
+  "financeDuesCount": "{count, plural, one{1 tagihan} other{{count} tagihan}}",
+  "@financeDuesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeFilterPlan": "Rencana",
+  "financeFilterTeam": "Tim",
+  "financeFilterPeriod": "Periode",
+  "financeStatusOpen": "Belum dibayar",
+  "financeStatusPaid": "Lunas",
+  "financeStatusWaived": "Dibebaskan",
+  "financeMethodCash": "Tunai",
+  "financeMethodBankTransfer": "Transfer bank",
+  "financeMethodCard": "Kartu",
+  "financeMethodOther": "Lainnya",
+  "financeDueTitle": "Tagihan",
+  "financeDueAmount": "Jumlah",
+  "financeDuePlanAmount": "Jumlah rencana: {amount}",
+  "@financeDuePlanAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "financeDueReason": "Alasan: {reason}",
+  "@financeDueReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "financeDuePayments": "Pembayaran",
+  "financeDueNoPayments": "Belum ada pembayaran",
+  "financeActionPay": "Catat pembayaran",
+  "financeActionChangeAmount": "Ubah jumlah",
+  "financeActionWaive": "Bebaskan",
+  "financeActionVoid": "Batalkan pembayaran",
+  "financePayTitle": "Catat pembayaran",
+  "financePayFull": "Tagihan dicatat lunas seluruhnya: {amount}.",
+  "@financePayFull": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "financePayDate": "Tanggal pembayaran",
+  "financePayMethod": "Metode pembayaran",
+  "financePayNote": "Catatan (opsional)",
+  "financePayRecorded": "Pembayaran dicatat",
+  "financeAmountDialogTitle": "Ubah jumlah tagihan",
+  "financeAmountChanged": "Jumlah diubah",
+  "financeWaiveTitle": "Bebaskan tagihan",
+  "financeWaiveHint": "Tagihan dibebaskan untuk selamanya.",
+  "financeWaived": "Tagihan dibebaskan",
+  "financeVoidTitle": "Batalkan pembayaran",
+  "financeVoidHint": "Pembayaran tetap disimpan dan ditandai batal, dan tagihan kembali belum dibayar.",
+  "financeVoided": "Pembayaran dibatalkan",
+  "financeReasonLabel": "Alasan",
+  "financeReasonHint": "Alasan singkat. Jangan menulis data kesehatan atau keluarga.",
+  "financePaymentVoidedLabel": "Dibatalkan",
+  "financePaymentRecordedBy": "Dicatat oleh {name}",
+  "@financePaymentRecordedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "financePaymentVoidedBy": "Dibatalkan oleh {name} pada {date}",
+  "@financePaymentVoidedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "financePageOf": "Halaman {page} dari {total}",
+  "@financePageOf": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "financePagePrevious": "Halaman sebelumnya",
+  "financePageNext": "Halaman berikutnya",
+  "financeGenerateTitle": "Buat tagihan",
+  "financeGenerateIntro": "Membuat tagihan yang belum ada untuk satu periode bagi pemain dalam rencana. Dapat diulang tanpa menggandakan.",
+  "financeGeneratePlan": "Rencana",
+  "financeGeneratePeriod": "Periode",
+  "financeGeneratePreview": "Hitung",
+  "financeGeneratePreviewResult": "{created, plural, =0{Tidak ada tagihan baru} one{1 tagihan akan dibuat} other{{created} tagihan akan dibuat}}; {existing} sudah ada.",
+  "@financeGeneratePreviewResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "existing": {
+        "type": "int"
+      }
+    }
+  },
+  "financeGenerate": "Buat",
+  "financeGenerated": "{count, plural, one{1 tagihan dibuat} other{{count} tagihan dibuat}}",
+  "@financeGenerated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "financeGenerateNoPlans": "Buat rencana iuran aktif terlebih dahulu",
+  "financeErrorDueNotOpen": "Tagihan sudah tidak terbuka. Muat ulang daftar.",
+  "financeErrorCurrencyLocked": "Mata uang tidak dapat diubah: tagihan sudah dibuat.",
+  "financeErrorUnknownCurrency": "Mata uang itu tidak didukung",
+  "financeErrorCurrencyNotSet": "Pilih dulu mata uang akademi",
+  "financeErrorFeePlanHasDues": "Rencana sudah punya tagihan: arsipkan, jangan hapus atau ubah periode pertamanya",
+  "financeErrorFeePlanArchived": "Rencana diarsipkan: aktifkan kembali untuk membuat tagihan",
+  "financeErrorPaidOnInFuture": "Tanggal pembayaran tidak boleh setelah hari ini",
+  "financeErrorPaymentAlreadyVoided": "Pembayaran itu sudah dibatalkan",
+  "financeErrorPeriodOutsidePlan": "Periode itu di luar periode rencana",
+  "financeErrorPeriodOutsideSeason": "Periode itu di luar musim",
+  "financeErrorTooManyDues": "Terlalu banyak tagihan sekaligus (maksimal 2000)",
+  "financeErrorTeamNotInSeason": "Tim itu bukan dari musim rencana",
+  "financeErrorConcurrentModification": "Seseorang mengubah ini pada saat yang sama. Muat ulang dan coba lagi.",
   "academyName": "Nama akademi",
   "academyTimezone": "Zona waktu (mis. Asia/Jakarta)",
   "academyAgeRule": "Aturan usia",
