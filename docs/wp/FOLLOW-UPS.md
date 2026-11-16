@@ -390,11 +390,11 @@ WP118 (contract first), so the web (WP121) starts one wave later while the Go se
 | 1 | WP115 | Small fixes: language and theme on the academy chooser, compose nginx limits, audit wording | Sonnet · medium | Done (web 1507 tests; 4 chooser goldens; nginx 10/min + 2/s on exports and academy requests) |
 | 2 | WP116 | Core: team roster PDF through pdf-service; team name on the audit `team` target | Opus · high | Done (core 3.7.0; ADR-0048 and ADR-0034 amendments; 3,453 tests, core mutation 932/933; real pdf-service call not run) |
 | 2 | WP117 | Game: match sheet PDF through pdf-service; start guard for `replica` without consumer | Opus · high | Done (game 2.4.0; ADR-0048 amendment; migration V7 academy name; 3,526 tests, game mutation 555/557; real pdf-service call not run) |
-| 2 | WP118 | finance-service in Go: toolchain, isolation harness, whole contract, settings and fee plans, chart | Opus · high | Running |
-| 3 | WP119 | Finance: roster replica, dues (manual and job), payments, coach and family reads | Opus · high | After wave 2 |
-| 3 | WP120 | Observability: one Grafana LGTM pod on kind and compose, dashboards | Opus · high | After wave 2 |
-| 3 | WP121 | Web: Finance area for ADMIN (settings, fee plans, dues, payments) | Sonnet · high | After wave 2 |
-| 3 | WP122 | Web: PDF buttons for the match sheet and the team roster | Sonnet · medium | After wave 2 |
+| 2 | WP118 | finance-service in Go: toolchain, isolation harness, whole contract, settings and fee plans, chart | Opus · high | Done (ADR-0055, ADR-0056; `finance.yaml` 1.0.0; chart 0.12.0; 133 Go tests; kind proof; 17 operations still 501 for WP119 / WP123) |
+| 3 | WP119 | Finance: roster replica, dues (manual and job), payments, coach and family reads | Opus · high | Running |
+| 3 | WP120 | Observability: one Grafana LGTM pod on kind and compose, dashboards | Opus · high | Running |
+| 3 | WP121 | Web: Finance area for ADMIN (settings, fee plans, dues, payments) | Sonnet · high | Running |
+| 3 | WP122 | Web: PDF buttons for the match sheet and the team roster | Sonnet · medium | Running |
 | 4 | WP123 | Finance: expenses, season balance, CSV exports; e2e journey and ZAP for finance and the PDFs; demo data | Opus · high | After wave 3 |
 | 4 | WP124 | Web: finance expenses, balance, exports; coach status view; family dues | Sonnet · high | After wave 3 |
 | 5 | WP125 | Docs pass | Opus · medium | Last alone |
