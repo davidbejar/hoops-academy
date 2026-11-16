@@ -4,6 +4,8 @@
 # core is deployed since WP18: with `core` in the list the script also logs the seeded `superadmin` in (PKCE, no browser)
 # and checks GET /api/core/me (200, superAdmin=true) and GET /platform/tenants (200).
 # pdf-service (when deployed, WP111): no route, a render with core's token from a core-labelled pod, other pods refused.
+# finance-service (when deployed, WP118): with core and the broker, its replica catches up, admin1 creates a fee plan through
+# the gateway, a second academy's admin reads nothing of it, and its pods connect as finance_app (not owner, no BYPASSRLS).
 # Checks: pods Ready, Gateway programmed, OIDC issuer, /internal -> 403, web /, each service's /q/health/ready via the gateway,
 # the event broker when deployed (health, bootstrap Job, SASL, ACLs on, topics, users; WP66), and with core and the broker
 # the events (WP71: publisher health, a seeded academy drained from core's outbox into both replicas, nothing parked),
@@ -94,7 +96,7 @@ if kubectl "${CTX[@]}" get statefulset redpanda >/dev/null 2>&1; then
   [ "$topics" = "core.guardian-link core.person core.player core.team core.team-player core.team-staff core.tenant " ] \
     && ok "7 topics, 1 partition each: $topics" || bad "topics: '$topics'"
   users=$(rp "$as_admin rpk security user list" | awk 'NR > 1 {print $1}' | sort | tr '\n' ' ')
-  [ "$users" = "admin athlete-service core-service game-service " ] && ok "SCRAM users: $users" || bad "users: '$users'"
+  [ "$users" = "admin athlete-service core-service finance-service game-service " ] && ok "SCRAM users: $users" || bad "users: '$users'"
 fi
 
 echo "== tokens (client credentials, realm role 'service'; audiences per ADR-0034)"
@@ -112,6 +114,14 @@ service_token() {  # $1 = core|game|athlete -> access token of client <$1>-servi
       -H 'Content-Type: application/x-www-form-urlencoded' --data-binary @- | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
 }
 for s in "${SERVICES[@]}"; do
+  if [ "$s" = finance ]; then # no service calls finance (no client of its own): every service token is the wrong audience
+    token=$(service_token core)
+    anon=$(code "$BASE/api/finance/settings"); wrong=$(code -H "Authorization: Bearer $token" "$BASE/api/finance/settings")
+    [ -n "$token" ] && [ "$anon" = 401 ] && [ "$wrong" = 401 ] \
+      && ok "/api/finance/settings anonymous 401, core-service token 401 (not its audience)" \
+      || bad "/api/finance/settings anonymous $anon, core-service token $wrong (want 401 / 401)"
+    continue
+  fi
   caller=$(caller_of "$s")
   token=$(service_token "$caller")
   own=$(service_token "$s")
@@ -166,7 +176,7 @@ fi
 # routed; the distroless images have no curl, ADR-0054).
 if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CTX[@]}" get statefulset redpanda >/dev/null 2>&1; then
   echo "== events (WP71: outbox publisher, roster replicas)"
-  port_of() { case "$1" in core-service) echo 8081 ;; game-service) echo 8082 ;; athlete-service) echo 8083 ;; esac; }
+  port_of() { case "$1" in core-service) echo 8081 ;; game-service) echo 8082 ;; athlete-service) echo 8083 ;; finance-service) echo 8085 ;; esac; }
   metrics() { # through a port-forward: the distroless images have no curl and no shell (ADR-0054)
     local port local_port pid out=""
     port=$(port_of "$1"); local_port=$((port + 20000))
@@ -238,6 +248,51 @@ if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CT
     av=$(api GET "/api/athlete/players/$player/availability" | jq -r '.available // empty')
     [ "$av" = true ] && ok "athlete: the new player's availability (available=true, roster source $(source_of athlete))" \
       || bad "athlete: availability of the new player: '$av'"
+    # finance-service (WP118, ADR-0055; finance.enabled): its replica of core.tenant / core.person makes admin1 the ADMIN of
+    # the new academy; a fee plan through the gateway; a second academy whose first admin is coach1 never reads it.
+    if kubectl "${CTX[@]}" get deployment finance-service >/dev/null 2>&1; then
+      echo "== finance-service (membership replica, fee plan through the gateway, another academy)"
+      eventually caught_up finance && ok "finance-service.roster: group lag 0" \
+        || bad "finance-service.roster: group lag $(group_lag finance-service.roster)"
+      fin() { # METHOD path token tenant [json] -> "status body"
+        local data=(); [ $# -lt 5 ] || data=(-H 'Content-Type: application/json' --data-binary "$5")
+        curl -s -w '\n%{http_code}' -X "$1" "$BASE$2" -H "Authorization: Bearer $3" -H "X-Tenant-Id: $4" ${data[@]+"${data[@]}"}; }
+      status() { tail -1 <<<"$1"; }
+      cur=$(fin PUT /api/finance/settings "$atok" "$tenant" '{"currency":"EUR"}')
+      plan=$(fin POST /api/finance/fee-plans "$atok" "$tenant" "$(jq -n --arg s "$season" --arg t "$team" \
+        '{name: "Smoke monthly", seasonId: $s, teamId: $t, amountMinor: 4500, cadence: "MONTHLY", firstPeriod: "2026-09"}')")
+      plan_id=$(sed '$d' <<<"$plan" | jq -r '.id // empty')
+      [ "$(status "$cur")" = 200 ] && [ "$(status "$plan")" = 201 ] && [ -n "$plan_id" ] \
+        && ok "finance: admin1 chose EUR and created fee plan $plan_id through the gateway (200, 201)" \
+        || bad "finance: currency $(status "$cur"), fee plan $(status "$plan"): $(head -c 300 <<<"$plan")"
+      c=$(status "$(fin GET "/api/finance/fee-plans/$plan_id" "$atok" "$tenant")")
+      [ "$c" = 200 ] && ok "finance: admin1 reads the plan (200)" || bad "finance: admin1 reads the plan -> $c"
+      slug_b="smoke-b-$(date +%s)"
+      tenant_b=$(jq -n --arg s "$slug_b" '{slug: $s, name: ("Smoke " + $s), timezone: "Asia/Jakarta", defaultLocale: "id",
+          firstAdmin: {email: "coach1@hoops-academy.com", givenName: "Casey", familyName: "Coach"}}' |
+        curl -s -X POST "$BASE/platform/tenants" -H "Authorization: Bearer $utok" -H 'Content-Type: application/json' \
+          --data-binary @- | jq -r '.id // empty')
+      btok=$([ -n "$tenant_b" ] && user_token coach1@hoops-academy.com || true)
+      eventually caught_up finance || true
+      in_b=$(status "$(fin GET /api/finance/fee-plans "$btok" "$tenant_b")")
+      by_id=$(status "$(fin GET "/api/finance/fee-plans/$plan_id" "$btok" "$tenant_b")")
+      foreign=$(status "$(fin GET "/api/finance/fee-plans/$plan_id" "$btok" "$tenant")")
+      list_b=$(fin GET /api/finance/fee-plans "$btok" "$tenant_b" | sed '$d' | jq -r '.items | length')
+      [ -n "$tenant_b" ] && [ "$in_b" = 200 ] && [ "$list_b" = 0 ] && [ "$by_id" = 404 ] && [ "$foreign" = 404 ] \
+        && ok "finance: academy B's admin lists nothing of A (200, 0 plans), A's plan by id 404, naming A's tenant 404" \
+        || bad "finance: academy B (tenant '$tenant_b'): list $in_b ($list_b), by id $by_id, A's tenant $foreign"
+      c=$(code "$BASE/api/finance/settings" -H "X-Tenant-Id: $tenant"); [ "$c" = 401 ] && ok "finance: anonymous -> 401" \
+        || bad "finance: anonymous -> $c"
+      role=$(kubectl "${CTX[@]}" exec hoops-db-1 -c postgres -- psql -tA -U postgres -d hoops -c "select r.rolsuper, r.rolbypassrls,
+          (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'finance'
+             and pg_has_role('finance_app', c.relowner, 'MEMBER')),
+          has_schema_privilege('finance_app', 'finance', 'CREATE'),
+          (select count(*) from pg_stat_activity where usename = 'finance_app')
+          from pg_roles r where r.rolname = 'finance_app'" 2>/dev/null | tr '|' ' ')
+      [ "$(cut -d' ' -f1-4 <<<"$role")" = "f f 0 f" ] && [ "$(cut -d' ' -f5 <<<"$role")" -ge 1 ] \
+        && ok "finance: the pods connect as finance_app ($(cut -d' ' -f5 <<<"$role") sessions): no superuser, no BYPASSRLS, owns nothing in finance, no CREATE" \
+        || bad "finance: database role finance_app: '$role'"
+    fi
   fi
 fi
 
