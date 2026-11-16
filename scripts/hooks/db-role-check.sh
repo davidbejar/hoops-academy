@@ -3,7 +3,8 @@
 # Every service connects to Postgres as a role that row-level security binds: not a superuser, not BYPASSRLS, not a
 # table owner, no CREATE on any schema. Checks the users the services SHIP with (application.properties, prod
 # profile) and those roles as infra/db/init creates them.
-# Tests: <Service>DatabaseRoleTest (DatabaseRoleMetaTest) + the library's DatabaseRoleCheckTest/ShippedDatasourcesTest.
+# Tests: <Service>DatabaseRoleTest (DatabaseRoleMetaTest) + the library's DatabaseRoleCheckTest/ShippedDatasourcesTest;
+# finance-service (Go): TestTheShippedDatabaseRoleIsBoundByRowLevelSecurity and the check's planted owner/superuser.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 HOOK_LABEL="database role check (app is not owner/superuser)"
@@ -14,3 +15,4 @@ require_podman
 run_maven -pl services/core-service,services/game-service,services/athlete-service -am test \
   -Dtest='*DatabaseRoleTest,DatabaseRoleCheckTest,ShippedDatasourcesTest' \
   -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true
+run_go_tests services/finance-service DatabaseRole ./internal/adapters/out/persistence/

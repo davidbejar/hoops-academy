@@ -2,8 +2,11 @@
 # Shared by the tenancy checks that the Claude Code hook .claude/hooks/tenancy-gate.sh runs before Claude's
 # git commit / git push (and by `just isolation-check` / `just db-role-check`). Source it from the repo root.
 
-# shellcheck source=../env.sh
-source scripts/env.sh >/dev/null
+# `--functions-only` (scripts/hooks/tenancy-gate.test.sh): define the functions without sourcing env.sh.
+if [ "${1:-}" != "--functions-only" ]; then
+  # shellcheck source=../env.sh
+  source scripts/env.sh >/dev/null
+fi
 
 # The tests need real Postgres (and Keycloak) containers. Fail loudly instead of skipping: a gate that quietly
 # passes when Podman is down would let a broken isolation through.
@@ -57,6 +60,28 @@ run_maven() {
     grep -A3 -E '<<< (FAIL|ERROR)|Tests run:.*(Failures: [1-9]|Errors: [1-9])|Expect|expected|but was|violations|\[ERROR\] .*(COMPILATION|cannot find)' "$log" \
       | grep -vE '^\[ERROR\] *$' | head -60 >&2 || true
     echo "✗ $HOOK_LABEL FAILED after $((SECONDS - start))s. Full log: $log" >&2
+    exit 1
+  fi
+}
+
+# run_go_tests <module dir> <-run pattern> <packages…>: the Go counterpart of run_maven for finance-service (ADR-0055).
+# Quiet on success; the failing tests on failure. No "--- PASS" line means the pattern matched nothing (a renamed
+# test): that must not count as a pass either.
+run_go_tests() {
+  local dir=$1 pattern=$2 log start=$SECONDS ran
+  shift 2
+  log=$(mktemp -t hoops-hook-go.XXXXXX)
+  if (cd "$dir" && go test -count=1 -v -run "$pattern" "$@") >"$log" 2>&1; then
+    ran=$(grep -cE '^\s*--- PASS' "$log" || true)
+    if [ "$ran" -eq 0 ]; then
+      echo "✗ $HOOK_LABEL (finance-service) ran no Go tests: -run $pattern matched nothing. Full log: $log" >&2
+      exit 1
+    fi
+    echo "✓ $HOOK_LABEL (finance-service): $ran Go tests passed in $((SECONDS - start)) s"
+    rm -f "$log"
+  else
+    grep -B2 -A8 -E -- '--- FAIL|panic:|cannot|undefined' "$log" | head -60 >&2 || true
+    echo "✗ $HOOK_LABEL (finance-service) FAILED after $((SECONDS - start)) s. Full log: $log" >&2
     exit 1
   fi
 }

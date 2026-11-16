@@ -110,13 +110,13 @@ covers db-role-check.sh "run_go_tests services/finance-service DatabaseRole ./in
 
 # run_go_tests: quiet on success, fails when a test fails or the -run filter matched nothing (stub go on PATH)
 go_gate() { # go_gate <stub go output> <stub go exit code>; prints "<rc>|<last line>"
-  local dir out rc
+  local dir out rc root=$PWD
   dir=$(mktemp -d)
   mkdir -p "$dir/bin" "$dir/repo/services/finance-service"
   printf '#!/bin/sh\nprintf "%%b" "%s"\nexit %s\n' "$1" "$2" >"$dir/bin/go"
   chmod +x "$dir/bin/go"
   out=$(cd "$dir/repo" && PATH="$dir/bin:$PATH" HOOK_LABEL=check bash -c \
-    "source '$PWD/scripts/hooks/_common.sh' --functions-only; run_go_tests services/finance-service X ./..." 2>&1)
+    "source '$root/scripts/hooks/_common.sh' --functions-only; run_go_tests services/finance-service X ./..." 2>&1)
   rc=$?
   rm -rf "$dir"
   echo "$rc|$(tail -1 <<<"$out")"
