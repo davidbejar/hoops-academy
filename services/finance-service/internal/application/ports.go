@@ -51,6 +51,8 @@ type FeePlanStore interface {
 	Delete(ctx context.Context, id domain.FeePlanID) error
 	// List orders by name, then id.
 	List(ctx context.Context, filter FeePlanFilter, page Page) ([]domain.FeePlan, int64, error)
+	// Generating reads the plans the daily job generates (automatic, not archived), by name.
+	Generating(ctx context.Context) ([]domain.FeePlan, error)
 }
 
 // DueQueries answers what the settings and plan rules need to know about dues.
@@ -106,6 +108,81 @@ type RosterReads interface {
 	Candidates(ctx context.Context, season domain.SeasonID, target domain.Target, window domain.DueWindow) ([]domain.Candidate, error)
 	// TeamRoster is the team's roster today (open, valid assignments), by name; found is false for an unknown team.
 	TeamRoster(ctx context.Context, team domain.TeamID) ([]RosterPlayer, bool, error)
+}
+
+// DueFilter narrows the due list; nil fields do not filter. From and To bound the period start (dates).
+type DueFilter struct {
+	Plan     *domain.FeePlanID
+	Team     *domain.TeamID
+	Player   *domain.PlayerID
+	Season   *domain.SeasonID
+	Period   *string
+	Status   *domain.DueStatus
+	From, To *time.Time
+}
+
+// PersonRef names a member (who recorded or voided a payment); Name is empty when the replica has none.
+type PersonRef struct {
+	Person domain.PersonID
+	Name   string
+}
+
+// PaymentRecord is a payment with the names of who recorded and who voided it.
+type PaymentRecord struct {
+	Payment    domain.Payment
+	RecordedBy PersonRef
+	VoidedBy   *PersonRef
+}
+
+// DueRecord is a due as read: with its plan's and player's names and its valid payment (none unless PAID). The
+// player's name is empty once the player is removed from the roster.
+type DueRecord struct {
+	Due        domain.Due
+	PlanName   string
+	PlayerName string
+	Payment    *PaymentRecord
+}
+
+// DueStore keeps the bound tenant's dues.
+type DueStore interface {
+	// Existing reports the players who have a due of plan and period.
+	Existing(ctx context.Context, plan domain.FeePlanID, period string) (map[domain.PlayerID]bool, error)
+	// Insert stores new dues, leaving out any whose (plan, player, period) exists meanwhile; it returns the stored ones.
+	Insert(ctx context.Context, dues []domain.Due) ([]domain.DueID, error)
+	// Lock reads a due and locks it until the transaction ends.
+	Lock(ctx context.Context, id domain.DueID) (domain.Due, bool, error)
+	// Update writes due if its Version is still the stored one (else ErrConcurrentModification).
+	Update(ctx context.Context, due domain.Due) error
+	Record(ctx context.Context, id domain.DueID) (DueRecord, bool, error)
+	// List orders by period start, then player name, then id.
+	List(ctx context.Context, filter DueFilter, page Page) ([]DueRecord, int64, error)
+	// OfPlayer orders by period start descending (newest first), then plan name, then id.
+	OfPlayer(ctx context.Context, player domain.PlayerID, page Page) ([]DueRecord, int64, error)
+	// Behind reports which of players have an OPEN due of a period started on or before today.
+	Behind(ctx context.Context, players []domain.PlayerID, today time.Time) (map[domain.PlayerID]bool, error)
+}
+
+// PaymentStore keeps the bound tenant's payments.
+type PaymentStore interface {
+	Insert(ctx context.Context, payment domain.Payment) error
+	// Lock reads a payment and locks it until the transaction ends.
+	Lock(ctx context.Context, id domain.PaymentID) (domain.Payment, bool, error)
+	// Void writes a payment's void (when, why, by whom).
+	Void(ctx context.Context, payment domain.Payment) error
+	// OfDue reads every payment of a due, oldest first.
+	OfDue(ctx context.Context, due domain.DueID) ([]PaymentRecord, error)
+}
+
+// TenantDirectory lists the academies the replica holds rows of (finance.replica_tenant: ids only), so a job can
+// enter each one; it reads no tenant data.
+type TenantDirectory interface {
+	Tenants(ctx context.Context) ([]domain.TenantID, error)
+}
+
+// Exclusive runs work only while this instance holds the cluster-wide lock (a database advisory lock); false when
+// another instance holds it (the run is skipped, never waited for).
+type Exclusive interface {
+	Run(ctx context.Context, lock string, work func(ctx context.Context) error) (bool, error)
 }
 
 // ErrConcurrentModification is a lost optimistic-locking race (409 CONCURRENT_MODIFICATION).

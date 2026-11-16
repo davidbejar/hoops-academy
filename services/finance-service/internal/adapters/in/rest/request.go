@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"hoopsacademy.local/finance/internal/application"
 	"hoopsacademy.local/finance/internal/domain"
@@ -105,6 +106,20 @@ func (q *query) uuid(name string) *domain.UUID {
 		return nil
 	}
 	return &id
+}
+
+// date reads a calendar date (YYYY-MM-DD) as UTC midnight.
+func (q *query) date(name string) *time.Time {
+	raw := q.values.Get(name)
+	if raw == "" {
+		return nil
+	}
+	day, err := time.Parse(time.DateOnly, raw)
+	if err != nil {
+		q.invalid(name)
+		return nil
+	}
+	return &day
 }
 
 func (q *query) boolean(name string) bool {

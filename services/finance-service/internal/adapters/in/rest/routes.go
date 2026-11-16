@@ -20,25 +20,39 @@ func (h *handler) routes(mux *http.ServeMux) {
 	mux.HandleFunc("PATCH "+plans+"/{id}", h.api(plans+"/{feePlanId}", h.withPlan(h.patchPlan)))
 	mux.HandleFunc("DELETE "+plans+"/{id}", h.api(plans+"/{feePlanId}", h.withPlan(h.deletePlan)))
 	// custom methods "<id>:archive" / "<id>:unarchive" are one path segment
-	mux.HandleFunc("POST "+plans+"/{target}", h.customMethod(plans, "feePlanId", map[string]planHandler{
-		"archive": h.archivePlan, "unarchive": h.unarchivePlan,
+	mux.HandleFunc("POST "+plans+"/{target}", h.customMethod(plans, "feePlanId", map[string]idHandler{
+		"archive": asPlan(h.archivePlan), "unarchive": asPlan(h.unarchivePlan),
 	}))
+	h.dueRoutes(mux)
 	h.notImplementedRoutes(mux)
 }
 
 type planHandler func(w http.ResponseWriter, r *http.Request, caller domain.Membership, id domain.FeePlanID)
 
+// idHandler serves an operation on the resource of a uuid path parameter.
+type idHandler func(w http.ResponseWriter, r *http.Request, caller domain.Membership, id domain.UUID)
+
+func asPlan(serve planHandler) idHandler {
+	return func(w http.ResponseWriter, r *http.Request, caller domain.Membership, id domain.UUID) {
+		serve(w, r, caller, domain.FeePlanID(id))
+	}
+}
+
 func (h *handler) withPlan(serve planHandler) memberHandler {
+	return withID("feePlanId", asPlan(serve))
+}
+
+// withID reads the path parameter {id} (named param in the contract; 400 when not a uuid).
+func withID(param string, serve idHandler) memberHandler {
 	return func(w http.ResponseWriter, r *http.Request, caller domain.Membership) {
-		id, ok := pathID(w, r, r.PathValue("id"), "feePlanId")
-		if ok {
-			serve(w, withCaller(r, caller), caller, domain.FeePlanID(id))
+		if id, ok := pathID(w, r, r.PathValue("id"), param); ok {
+			serve(w, withCaller(r, caller), caller, id)
 		}
 	}
 }
 
 // customMethod routes "<uuid>:<verb>" of a POST to the verb's handler; an unknown verb is 404.
-func (h *handler) customMethod(base, param string, verbs map[string]planHandler) http.HandlerFunc {
+func (h *handler) customMethod(base, param string, verbs map[string]idHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		raw, verb, found := strings.Cut(r.PathValue("target"), ":")
 		serve, known := verbs[verb]
@@ -48,7 +62,7 @@ func (h *handler) customMethod(base, param string, verbs map[string]planHandler)
 		}
 		h.api(base+"/{"+param+"}:"+verb, func(w http.ResponseWriter, r *http.Request, caller domain.Membership) {
 			if id, ok := pathID(w, r, raw, param); ok {
-				serve(w, withCaller(r, caller), caller, domain.FeePlanID(id))
+				serve(w, withCaller(r, caller), caller, id)
 			}
 		})(w, r)
 	}

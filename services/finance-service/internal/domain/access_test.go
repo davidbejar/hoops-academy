@@ -94,3 +94,15 @@ func TestAMembershipKnowsItsTenantSubjectAndRoles(t *testing.T) {
 		t.Error("Has")
 	}
 }
+
+func TestTheSystemActorAuthorisesNothing(t *testing.T) {
+	system := SystemActor(tenantA)
+
+	if !system.IsSystem() || system.Subject() != "system" || system.Tenant() != tenantA || len(system.RoleNames()) != 0 ||
+		CanManageFinance(system) || CanReadTeamStatus(system, otherTeam) || CanReadPlayerDues(system, playerID) {
+		t.Errorf("system %+v", system)
+	}
+	if member(Admin).IsSystem() || NewMembership("system", person, tenantA, nil).IsSystem() {
+		t.Error("a member is never the system actor")
+	}
+}

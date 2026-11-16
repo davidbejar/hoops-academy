@@ -109,10 +109,17 @@ func newAcademy(t *testing.T, pool *pgxpool.Pool, status, zone string, autoGener
 // count reads a number as finance_app bound to the academy.
 func (a academy) count(t *testing.T, pool *pgxpool.Pool, sql string) int {
 	t.Helper()
+	ctx := context.Background()
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, "select set_config('app.tenant_id', $1, true)", a.tenant.String()); err != nil {
+		t.Fatal(err)
+	}
 	var n int
-	if err := persistence.NewTransactions(pool).InTenant(context.Background(), a.tenant, func(ctx context.Context) error {
-		return persistence.QueryRowForTest(ctx, sql, &n)
-	}); err != nil {
+	if err := tx.QueryRow(ctx, sql).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	return n

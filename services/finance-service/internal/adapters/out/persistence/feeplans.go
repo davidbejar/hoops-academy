@@ -31,9 +31,28 @@ const (
 	feePlanFilter = ` from finance.fee_plan where tenant_id = app.current_tenant()
 		and ($1::uuid is null or season_id = $1) and ($2::uuid is null or team_id = $2)
 		and ($3::uuid is null or age_category_id = $3) and ($4 or not archived)`
-	listFeePlans  = "select " + feePlanColumns + feePlanFilter + " order by name, id limit $5 offset $6"
-	countFeePlans = "select count(*)" + feePlanFilter
+	listFeePlans    = "select " + feePlanColumns + feePlanFilter + " order by name, id limit $5 offset $6"
+	countFeePlans   = "select count(*)" + feePlanFilter
+	generatingPlans = "select " + feePlanColumns + ` from finance.fee_plan
+		where tenant_id = app.current_tenant() and auto_generate and not archived order by name, id`
 )
+
+// Generating reads the bound tenant's automatic, active plans (the daily job's).
+func (FeePlanStore) Generating(ctx context.Context) ([]domain.FeePlan, error) {
+	q, err := txOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.Query(ctx, generatingPlans)
+	if err != nil {
+		return nil, fmt.Errorf("generating fee plans: %w", err)
+	}
+	plans, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (domain.FeePlan, error) { return scanFeePlan(row) })
+	if err != nil {
+		return nil, fmt.Errorf("generating fee plans: %w", err)
+	}
+	return plans, nil
+}
 
 // Get reads a plan of the bound tenant.
 func (FeePlanStore) Get(ctx context.Context, id domain.FeePlanID) (domain.FeePlan, bool, error) {

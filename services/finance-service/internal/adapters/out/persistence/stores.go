@@ -143,7 +143,12 @@ func (a AuditLog) Record(ctx context.Context, event application.AuditEvent) erro
 	}
 	id := a.IDs.New()
 	actor := event.Actor
-	if _, err := q.Exec(ctx, insertAudit, id.String(), actor.Subject(), actor.Person().String(), event.Action,
+	var person *string // none for the service's own actor (the daily job)
+	if !actor.IsSystem() {
+		text := actor.Person().String()
+		person = &text
+	}
+	if _, err := q.Exec(ctx, insertAudit, id.String(), actor.Subject(), person, event.Action,
 		event.TargetType, event.TargetID, string(metadata)); err != nil {
 		return fmt.Errorf("record audit event: %w", err)
 	}

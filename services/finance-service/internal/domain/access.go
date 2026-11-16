@@ -58,6 +58,18 @@ func NewMembership(subject string, person PersonID, tenant TenantID, roles []Rol
 	return Membership{subject: subject, person: person, tenant: tenant, roles: slices.Compact(unique)}
 }
 
+// SystemSubject is the actor of the service's own work (the daily dues job), as `system` in core's audit trail.
+const SystemSubject = "system"
+
+// SystemActor is the service acting in tenant without a caller: no person, no roles. It authorises nothing; it only
+// names the actor of the audit records of a job.
+func SystemActor(tenant TenantID) Membership {
+	return Membership{subject: SystemSubject, tenant: tenant}
+}
+
+// IsSystem reports the service's own actor.
+func (m Membership) IsSystem() bool { return m.subject == SystemSubject && UUID(m.person).IsZero() }
+
 // WithRelations is the same membership with relations.
 func (m Membership) WithRelations(relations Relations) Membership {
 	m.relations = relations

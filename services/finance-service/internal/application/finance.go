@@ -19,9 +19,12 @@ type Ports struct {
 	Dues         DueQueries
 	Audit        AuditLog
 	Members      MembershipSource
+	Roster       RosterReads
+	DueStore     DueStore
+	Payments     PaymentStore
 }
 
-// Finance holds the use cases of settings and fee plans.
+// Finance holds the use cases of settings, fee plans, dues and payments.
 type Finance struct{ p Ports }
 
 // NewFinance wires the use cases.

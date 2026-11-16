@@ -191,7 +191,8 @@ func TestAnOpenDuesAmountChangesAndAWaiverIsFinal(t *testing.T) {
 			t.Errorf("%s of a waived due: %s", verb, got.body)
 		}
 	}
-	expect(t, l.post(path+":refund", map[string]any{}), 404)
+	expect(t, a.do(t, call{method: "POST", path: path + ":refund", tenant: l.id(), subject: admin, body: map[string]any{},
+		outside: true}), 404) // no refunds (decision 95): not an operation
 	expect(t, l.post("/api/finance/dues/nope:waive", map[string]any{"reason": "x"}), 400)
 	if got := a.auditActions(t, l.id()); !slices.Contains(got, "due.amount_changed") || !slices.Contains(got, "due.waived") {
 		t.Errorf("audit %v", got)
