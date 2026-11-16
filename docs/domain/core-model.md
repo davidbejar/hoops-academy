@@ -440,6 +440,7 @@ classDiagram
 classDiagram
     class ExportLimit {
         +requireWithin(long) void
+        +requirePrintable(int,int,int) void
     }
 ```
 
@@ -969,6 +970,20 @@ classDiagram
 </details>
 
 <details open>
+<summary>application export</summary>
+
+```mermaid
+classDiagram
+    class ExportFormat {
+        <<enumeration>>
+        CSV
+        PDF
+    }
+```
+
+</details>
+
+<details open>
 <summary>application port (1/4)</summary>
 
 ```mermaid
@@ -1036,6 +1051,7 @@ classDiagram
         <<interface>>
         +persons(Set~UUID~) Map~UUID,String~
         +players(Set~UUID~) Map~UUID,String~
+        +teams(Set~UUID~) Map~UUID,String~
         +tenants(Set~UUID~) Map~UUID,String~
         +activeAdmins(Set~UUID~) Map~UUID,String~
     }
@@ -1194,6 +1210,10 @@ classDiagram
         +withEvents(EventTopic,long) Set~String~
         +lastSeq() long
     }
+    class RosterPrinter {
+        <<interface>>
+        +print(RosterPrint) byte[]
+    }
     class RosterStates {
         <<interface>>
         +person(PersonId) Optional~PersonState~
@@ -1241,6 +1261,15 @@ classDiagram
         +jerseyTaken(TeamId,JerseyNumber,Optional~TeamPlayerId~) boolean
         +countOpenValid(Collection~TeamId~) Map~TeamId,Long~
     }
+```
+
+</details>
+
+<details open>
+<summary>application port (4/4)</summary>
+
+```mermaid
+classDiagram
     class TeamRepository {
         <<interface>>
         +insert(Team) void
@@ -1254,15 +1283,6 @@ classDiagram
         +usesCategory(AgeCategoryId) boolean
         +count() long
     }
-```
-
-</details>
-
-<details open>
-<summary>application port (4/4)</summary>
-
-```mermaid
-classDiagram
     class TeamStaffRepository {
         <<interface>>
         +ofTeam(TeamId) List~TeamStaffMember~
