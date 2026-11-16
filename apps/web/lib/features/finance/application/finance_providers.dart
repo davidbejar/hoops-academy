@@ -7,6 +7,7 @@ import '../../../core/l10n/locale_controller.dart';
 import '../data/finance_api.dart';
 import '../data/finance_repository.dart';
 import '../domain/due_query.dart';
+import '../domain/expense_query.dart';
 import '../domain/money.dart';
 
 // ---------------------------------------------------------------- repository
@@ -227,4 +228,86 @@ final duesProvider = AsyncNotifierProvider<DuesNotifier, fin.DuePage>(
 /// One due with every payment it has had (voided ones included).
 final dueDetailProvider = FutureProvider.family<fin.DueDetail, String>(
   (ref, dueId) => ref.watch(financeRepositoryProvider).due(dueId),
+);
+
+// ----------------------------------------------------------------- expenses
+
+class ExpenseQueryNotifier extends Notifier<ExpenseQuery> {
+  @override
+  ExpenseQuery build() => const ExpenseQuery();
+
+  /// Changes the filters given (pass `null` to clear one) and goes back to the
+  /// first page.
+  void filter({
+    Object? from = _keep,
+    Object? to = _keep,
+    Object? category = _keep,
+  }) => state = state.copyWith(from: from, to: to, category: category);
+
+  void goToPage(int page) => state = state.copyWith(page: page);
+}
+
+final expenseQueryProvider =
+    NotifierProvider<ExpenseQueryNotifier, ExpenseQuery>(
+      ExpenseQueryNotifier.new,
+    );
+
+class ExpensesNotifier extends AsyncNotifier<fin.ExpensePage> {
+  @override
+  Future<fin.ExpensePage> build() => ref
+      .watch(financeRepositoryProvider)
+      .expenses(ref.watch(expenseQueryProvider));
+
+  FinanceRepository get _repo => ref.read(financeRepositoryProvider);
+
+  /// An expense changes the balance of its season.
+  Future<void> _reload() async {
+    ref.invalidate(seasonBalanceProvider);
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<fin.Expense> create(fin.CreateExpenseRequest request) async {
+    final expense = await _repo.createExpense(request);
+    await _reload();
+    return expense;
+  }
+
+  Future<fin.Expense> edit(
+    String expenseId,
+    fin.UpdateExpenseRequest request,
+  ) async {
+    final expense = await _repo.updateExpense(expenseId, request);
+    await _reload();
+    return expense;
+  }
+
+  Future<void> delete(String expenseId) async {
+    await _repo.deleteExpense(expenseId);
+    await _reload();
+  }
+}
+
+final expensesProvider =
+    AsyncNotifierProvider<ExpensesNotifier, fin.ExpensePage>(
+      ExpensesNotifier.new,
+    );
+
+// ------------------------------------------------------------------ balance
+
+/// The balance of one season: dues by state, expenses by category.
+final seasonBalanceProvider = FutureProvider.family<fin.SeasonBalance, String>(
+  (ref, seasonId) => ref.watch(financeRepositoryProvider).balance(seasonId),
+);
+
+// ------------------------------------------- the coach's and the family's reads
+
+/// Who of a team is up to date (a flag per player, no amounts).
+final teamDueStatusProvider = FutureProvider.family<fin.TeamDueStatus, String>(
+  (ref, teamId) => ref.watch(financeRepositoryProvider).teamDueStatus(teamId),
+);
+
+/// A player's dues as the family sees them.
+final playerDuesProvider = FutureProvider.family<fin.PlayerDuePage, String>(
+  (ref, playerId) => ref.watch(financeRepositoryProvider).playerDues(playerId),
 );
