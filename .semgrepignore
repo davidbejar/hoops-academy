@@ -15,6 +15,9 @@ apps/web/integration_test/
 apps/web/test_driver/
 e2e/
 services/pdf-service/crates/*/tests/
+services/finance-service/**/*_test.go
+services/finance-service/internal/testsupport/
+services/finance-service/internal/archtest/testdata/
 .semgrep/tests/
 # Helm templates are Go templates, not YAML (rendered charts are checked by deploy/helm/tests and trivy config)
 deploy/helm/**/templates/

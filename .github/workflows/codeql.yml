@@ -34,6 +34,7 @@ jobs:
         include:
           - {language: java-kotlin, build-mode: manual}
           - {language: rust, build-mode: none}
+          - {language: go, build-mode: manual}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -52,6 +53,21 @@ jobs:
       - name: Build (main code only, traced by CodeQL)
         if: matrix.language == 'java-kotlin'
         run: ./mvnw -B -ntp -Dmaven.test.skip=true -Djacoco.skip=true -Dspotbugs.skip=true compile
+      - name: Go 1.27.4 (finance-service, ADR-0055), checked against its SHA-256
+        if: matrix.language == 'go'
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -sSLO https://go.dev/dl/go1.27.4.linux-amd64.tar.gz
+          echo '7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840  go1.27.4.linux-amd64.tar.gz' | sha256sum -c -
+          tar -xzf go1.27.4.linux-amd64.tar.gz
+          echo "$RUNNER_TEMP/go/bin" >> "$GITHUB_PATH"
+      - name: Build finance-service (traced by CodeQL)
+        if: matrix.language == 'go'
+        working-directory: services/finance-service
+        env:
+          GOTOOLCHAIN: local
+        run: go build ./...
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: /language:${{ matrix.language }}

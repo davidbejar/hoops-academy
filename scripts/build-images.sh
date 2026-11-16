@@ -3,6 +3,7 @@
 #
 #   scripts/build-images.sh [options] [image...]      image = core-service | game-service | athlete-service | web
 #                                                      | pdf-service (Rust; context services/pdf-service)
+#                                                      | finance-service (Go; context services/finance-service)
 #
 # Options:
 #   --tag REF         full image ref for a single image (Tilt passes $EXPECTED_REF); default localhost/hoops/<img>:dev
@@ -16,7 +17,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-ALL=(core-service game-service athlete-service web pdf-service)
+ALL=(core-service game-service athlete-service web pdf-service finance-service)
 TAG_OVERRIDE="" FROM_HOST=0 NO_PACKAGE=0 WEB_IN_CONTAINER=0 SKIP_WEB_BUILD=0 KIND_LOAD=0 PUSH=0
 IMAGES=()
 while [ $# -gt 0 ]; do
@@ -29,7 +30,7 @@ while [ $# -gt 0 ]; do
     --kind-load) KIND_LOAD=1; shift ;;
     --push) PUSH=1; shift ;;
     -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
-    core-service|game-service|athlete-service|web|pdf-service) IMAGES+=("$1"); shift ;;
+    core-service|game-service|athlete-service|web|pdf-service|finance-service) IMAGES+=("$1"); shift ;;
     *) echo "build-images: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -84,6 +85,13 @@ build_pdf() { # Rust (ADR-0052): cargo runs inside the container; the cargo regi
     --build-arg SOURCE_URL="$SOURCE_URL" -t "$ref" services/pdf-service
 }
 
+build_finance() { # Go (ADR-0055): go runs inside the container; the module and build caches persist across builds
+  local ref; ref=$(ref_for finance-service)
+  echo "==> $ref"
+  podman build -f deploy/containers/finance.Containerfile \
+    --build-arg SOURCE_URL="$SOURCE_URL" -t "$ref" services/finance-service
+}
+
 kind_load() { # podman save | kind load image-archive (kind cannot read Podman's image store directly)
   local ref="$1" archive
   archive=$(mktemp "${TMPDIR:-/tmp}/hoops-image.XXXXXX")
@@ -94,7 +102,7 @@ kind_load() { # podman save | kind load image-archive (kind cannot read Podman's
 }
 
 for img in "${IMAGES[@]}"; do
-  case "$img" in web) build_web ;; pdf-service) build_pdf ;; *) build_service "$img" ;; esac
+  case "$img" in web) build_web ;; pdf-service) build_pdf ;; finance-service) build_finance ;; *) build_service "$img" ;; esac
   [ "$KIND_LOAD" = 0 ] || kind_load "$(ref_for "$img")"
   [ "$PUSH" = 0 ] || podman push "$(ref_for "$img")"
 done

@@ -13,7 +13,7 @@ name: images
 on:
   push:
     branches: [main]
-    paths: ['services/**', 'libs/**', 'apps/web/**', 'deploy/containers/**', 'pom.xml', 'scripts/sbom.sh', '.github/workflows/images.yml']
+    paths: ['services/**', 'libs/**', 'apps/web/**', 'deploy/containers/**', 'infra/db/**', 'pom.xml', 'scripts/sbom.sh', '.github/workflows/images.yml']
   workflow_dispatch:
 
 permissions:
@@ -201,6 +201,78 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NAME: pdf-service
+          REGISTRY_AUTH_FILE: ${{ runner.temp }}/registry-auth.json
+        run: |
+          set -euo pipefail
+          registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
+          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then user="$REGISTRY_USERNAME"; pass="$REGISTRY_PASSWORD"
+          elif [ -z "$REGISTRY_USERNAME" ] && [ -z "$REGISTRY_PASSWORD" ]; then user="${{ github.actor }}"; pass="$GITHUB_TOKEN"
+          else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
+          echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
+          podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
+          podman push --digestfile digest.txt "$registry/$NAME:${{ github.sha }}"
+          scripts/sbom.sh attach "$registry/$NAME@$(cat digest.txt)" sbom "$REGISTRY_AUTH_FILE"
+
+  # finance-service (Go, ADR-0055): context services/finance-service, distroless static base, a static binary whose
+  # module list Trivy reads. The start check needs a database: a throwaway Postgres with infra/db/init, then the image
+  # read-only, migrating as finance_migrator and serving as finance_app, without the broker (consumer off).
+  finance:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: localhost/hoops/finance-service:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build (multi-stage, go inside the container)
+        run: |
+          podman build -f deploy/containers/finance.Containerfile \
+            --build-arg SOURCE_URL=https://github.com/${{ github.repository }} -t "$IMAGE" services/finance-service
+      - name: Runs as non-root on a read-only root file system against a real database
+        run: |
+          set -euo pipefail
+          user=$(podman image inspect --format '{{.Config.User}}' "$IMAGE")
+          case "${user%%:*}" in ''|0|root) echo "::error::image user is '$user'"; exit 1 ;; esac
+          pw() { head -c 18 /dev/urandom | base64 | tr -dc 'A-Za-z0-9'; }
+          app=$(pw); migrator=$(pw)
+          args=(); for v in CORE_MIGRATOR CORE_APP CORE_PLATFORM GAME_MIGRATOR GAME_APP ATHLETE_MIGRATOR ATHLETE_APP; do
+            args+=(-e "${v}_PASSWORD=$(pw)"); done
+          podman network create finance-check
+          podman run -d --name db --network finance-check -e POSTGRES_PASSWORD="$(pw)" -e POSTGRES_DB=hoops "${args[@]}" \
+            -e FINANCE_APP_PASSWORD="$app" -e FINANCE_MIGRATOR_PASSWORD="$migrator" \
+            -v "$PWD/infra/db/init:/docker-entrypoint-initdb.d:ro,Z" docker.io/library/postgres:17
+          for _ in $(seq 1 60); do podman exec db pg_isready -U postgres -d hoops >/dev/null 2>&1 && break; sleep 1; done
+          sleep 3
+          podman run -d --name finance --network finance-check --read-only --cap-drop=ALL -p 127.0.0.1:8085:8085 \
+            -e FINANCE_DB_URL=postgres://db:5432/hoops -e FINANCE_APP_PASSWORD="$app" \
+            -e FINANCE_MIGRATOR_PASSWORD="$migrator" -e FINANCE_ROSTER_CONSUMER_ENABLED=false "$IMAGE"
+          for _ in $(seq 1 30); do curl -fs http://127.0.0.1:8085/q/health/ready && break; sleep 1; done
+          curl -fs http://127.0.0.1:8085/q/health/ready
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8085/api/finance/settings)" = 401
+          podman rm -f finance db
+      - name: Trivy scan (fail on fixable HIGH/CRITICAL)
+        run: |
+          podman save -o image.tar "$IMAGE"
+          docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
+      - name: SBOM (CycloneDX of the image, Go modules included, validated)
+        run: scripts/sbom.sh generate finance-service "$IMAGE" sbom
+      - name: Keep the SBOM
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-finance-service
+          path: sbom/*.cdx.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Push
+        if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
+        env:
+          REGISTRY: ${{ vars.IMAGE_REGISTRY }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NAME: finance-service
           REGISTRY_AUTH_FILE: ${{ runner.temp }}/registry-auth.json
         run: |
           set -euo pipefail

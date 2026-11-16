@@ -1,0 +1,5 @@
+# Build context of deploy/containers/finance.Containerfile (podman reads this file from the context by itself, so
+# compose, Tilt, build-images.sh and CI all leave local build output out): the module's sources only.
+target/
+scripts/
+**/testdata/
