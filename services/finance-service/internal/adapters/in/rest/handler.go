@@ -8,6 +8,9 @@ import (
 	"slices"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
 	"hoopsacademy.local/finance/internal/adapters/in/oidc"
 	"hoopsacademy.local/finance/internal/application"
 	"hoopsacademy.local/finance/internal/domain"
@@ -28,6 +31,8 @@ type Deps struct {
 	CORSOrigins []string
 	// Ready reports the readiness checks (database); nil = always ready.
 	Ready func(ctx context.Context) error
+	// Live reports the liveness checks (the roster consumer runs); nil = always live.
+	Live func() error
 	// Metrics adds more Prometheus text to /q/metrics (e.g. the replica consumer's); nil = none.
 	Metrics func(w http.ResponseWriter)
 }
@@ -56,7 +61,11 @@ type memberHandler func(w http.ResponseWriter, r *http.Request, caller domain.Me
 // (404, never 403), then the operation. route is the contract's path template (security events, logs).
 func (h *handler) api(route string, serve memberHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// the server span (otelhttp) is named after the contract's route template, never the concrete path
+		span := trace.SpanFromContext(r.Context())
 		r = r.WithContext(context.WithValue(r.Context(), routeKey{}, r.Method+" "+route))
+		span.SetName(r.Method + " " + route)
+		span.SetAttributes(attribute.String("http.route", route))
 		subject, ok := h.authenticate(w, r)
 		if !ok {
 			return

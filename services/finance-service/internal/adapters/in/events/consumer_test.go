@@ -69,7 +69,12 @@ func TestTheConsumerFillsTheReplicaFromCoresTopics(t *testing.T) {
 	run, stop := context.WithCancel(ctx)
 	done := make(chan error, 1)
 	go func() { done <- consumer.Run(run) }()
-	defer func() { stop(); _ = <-done }()
+	defer func() {
+		stop()
+		if err := <-done; err != nil {
+			t.Errorf("the consumer stopped with %v", err)
+		}
+	}()
 
 	var envelope struct {
 		TenantID string

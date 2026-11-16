@@ -1,10 +1,15 @@
 package rest_test
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"log/slog"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"hoopsacademy.local/finance/internal/adapters/in/rest"
 	"hoopsacademy.local/finance/internal/platform/security"
 	"hoopsacademy.local/finance/internal/testsupport/contract"
 )
@@ -376,5 +381,19 @@ func TestHealthMetricsAndHeaders(t *testing.T) {
 	unknown := expect(t, a.do(t, call{method: "GET", path: "/api/finance/nothing-here", tenant: academy, subject: admin, outside: true}), 404)
 	if !strings.HasPrefix(fmt.Sprint(unknown.json(t)["type"]), "urn:hoops:problem:") {
 		t.Errorf("unknown route: %s", unknown.body)
+	}
+}
+
+func TestAStoppedConsumerOrAnUnreachableDatabaseTakesThePodOut(t *testing.T) {
+	failing := func() error { return errors.New("stopped") }
+	handler := rest.NewHandler(rest.Deps{Security: security.NewEvents(slog.New(slog.DiscardHandler)),
+		Log: slog.New(slog.DiscardHandler), Live: failing,
+		Ready: func(context.Context) error { return errors.New("database down") }})
+	for _, path := range []string{"/q/health/live", "/q/health/ready"} {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequestWithContext(context.Background(), "GET", path, nil))
+		if recorder.Code != 503 || !strings.Contains(recorder.Body.String(), `"DOWN"`) {
+			t.Errorf("%s: %d %s", path, recorder.Code, recorder.Body)
+		}
 	}
 }

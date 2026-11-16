@@ -20,6 +20,13 @@ type healthDTO struct {
 // routed by the gateway; no tenant data.
 func (h *handler) health(mux *http.ServeMux) {
 	live := func(w http.ResponseWriter, _ *http.Request) {
+		if h.Live != nil {
+			if err := h.Live(); err != nil {
+				writeJSON(w, http.StatusServiceUnavailable,
+					healthDTO{Status: "DOWN", Checks: []check{{Name: "roster-consumer", Status: "DOWN"}}})
+				return
+			}
+		}
 		writeJSON(w, http.StatusOK, healthDTO{Status: "UP", Checks: []check{}})
 	}
 	ready := func(w http.ResponseWriter, r *http.Request) {

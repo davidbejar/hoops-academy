@@ -2,7 +2,7 @@
 // ArchUnit rules:
 //   - internal/domain imports only the standard packages of domainStd (no framework, no I/O) and itself;
 //   - internal/application imports the domain, itself and the standard packages of applicationStd;
-//   - nothing but a _test.go file imports internal/testsupport;
+//   - nothing but a _test.go file (or the test support itself) imports internal/testsupport;
 //   - adapters, platform and cmd may import anything else.
 package archtest
 
@@ -91,7 +91,8 @@ func checkFile(path, rel, module string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("import path in %s: %w", rel, err)
 		}
-		if !allowed(layerOf(filepath.Dir(rel)+"/"), imported, module, isTest) {
+		support := strings.HasPrefix(rel, "internal/testsupport/") // test support builds on test support
+		if !allowed(layerOf(filepath.Dir(rel)+"/"), imported, module, isTest || support) {
 			violations = append(violations, rel+" imports "+imported)
 		}
 	}
