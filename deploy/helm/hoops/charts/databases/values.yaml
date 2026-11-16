@@ -21,6 +21,8 @@ hoopsDb:
     - {name: game_app,         secret: hoops-db-game-app,         connectionLimit: 50}
     - {name: athlete_migrator, secret: hoops-db-athlete-migrator, connectionLimit: -1}
     - {name: athlete_app,      secret: hoops-db-athlete-app,      connectionLimit: 50}
+    - {name: finance_migrator, secret: hoops-db-finance-migrator, connectionLimit: -1}
+    - {name: finance_app,      secret: hoops-db-finance-app,      connectionLimit: 50}
 keycloakDb:
   enabled: true
   name: keycloak-db

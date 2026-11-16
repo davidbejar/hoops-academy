@@ -135,6 +135,7 @@ events:
     - {name: core-service,    passwordSecret: hoops-redpanda-core-service,    produce: [core.]}
     - {name: game-service,    passwordSecret: hoops-redpanda-game-service,    consume: [core.], groups: [game-service.]}
     - {name: athlete-service, passwordSecret: hoops-redpanda-athlete-service, consume: [core.], groups: [athlete-service.]}
+    - {name: finance-service, passwordSecret: hoops-redpanda-finance-service, consume: [core.], groups: [finance-service.]}
   # Topics `<producer>.<aggregate>` (WP19 brief), keyed by `<tenant id>:<aggregate id>`. Compacted: the latest event per
   # key stays, so a replica is rebuilt by replaying from the start; tombstones (deletes) stay 7 days. Same list and settings
   # as infra/compose/redpanda-topics.sh (run.sh checks it).
@@ -175,6 +176,8 @@ externalSecrets:
     - {name: hoops-db-game-app,         type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: game_app},         data: {password: GAME_APP_PASSWORD}}
     - {name: hoops-db-athlete-migrator, type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: athlete_migrator}, data: {password: ATHLETE_MIGRATOR_PASSWORD}}
     - {name: hoops-db-athlete-app,      type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: athlete_app},      data: {password: ATHLETE_APP_PASSWORD}}
+    - {name: hoops-db-finance-migrator, type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: finance_migrator}, data: {password: FINANCE_MIGRATOR_PASSWORD}}
+    - {name: hoops-db-finance-app,      type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: finance_app},      data: {password: FINANCE_APP_PASSWORD}}
     - {name: keycloak-db-app,           type: kubernetes.io/basic-auth, labels: {cnpg.io/reload: "true"}, literals: {username: keycloak},         data: {password: KC_DB_PASSWORD}}
     - {name: keycloak-admin,             data: {username: KEYCLOAK_ADMIN, password: KEYCLOAK_ADMIN_PASSWORD}}
     - {name: hoops-oidc-core-service,    data: {client-secret: CORE_SERVICE_CLIENT_SECRET}}
@@ -196,6 +199,7 @@ externalSecrets:
       core-service: REDPANDA_CORE_SERVICE_PASSWORD
       game-service: REDPANDA_GAME_SERVICE_PASSWORD
       athlete-service: REDPANDA_ATHLETE_SERVICE_PASSWORD
+      finance-service: REDPANDA_FINANCE_SERVICE_PASSWORD
 
 # ---------------------------------------------------------------------------------------------------------------
 # Observability (WP86, ADR-0046), rendered with global.observability.enabled. The chart standardises the OTLP egress:
@@ -212,7 +216,7 @@ observability:
     resources: {requests: {cpu: 20m, memory: 64Mi}, limits: {memory: 256Mi}}
     # Workloads allowed to send OTLP (by app.kubernetes.io/name, this namespace). The Envoy proxies (namespace
     # proxyNamespace, labels component=proxy, owning-gateway-name = the Gateway) may send gRPC when the chart renders the EnvoyProxy.
-    clients: [core-service, game-service, athlete-service, pdf-service]
+    clients: [core-service, game-service, athlete-service, pdf-service, finance-service]
     proxyNamespace: envoy-gateway-system
     # The backend of a real environment (ADR-0046): extra collector exporters (collector config syntax; credentials as
     # ${env:VAR} from secretEnv), added to the pipelines named in pipelineExporters, and the egress rules that reach it, e.g.
@@ -368,6 +372,15 @@ pdf:
   enabled: false
   image: {repository: localhost/hoops/pdf-service, tag: dev}
   callers: [core-service, game-service]
+
+# ---------------------------------------------------------------------------------------------------------------
+# finance-service (Go, ADR-0051 §2, ADR-0055; sub-chart charts/finance-service). Off by default; on in values-kind.yaml
+# and values-cloud.yaml. /api/finance behind the gateway with rate limits on the CSV exports; schema finance as
+# finance_migrator / finance_app (Secrets hoops-db-finance-*, databases.hoopsDb.roles); with events.enabled the roster
+# consumer logs in as `finance-service` (events.users, Secret hoops-redpanda-finance-service).
+finance:
+  enabled: false
+  image: {repository: localhost/hoops/finance-service, tag: dev}
 
 # Local SMTP sink named `mailhog` (the realm's SMTP host). Enabled in values-kind.yaml only.
 mailpit:

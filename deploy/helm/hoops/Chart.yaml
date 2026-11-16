@@ -1,8 +1,8 @@
 apiVersion: v2
 name: hoops
-description: Hoops Academy umbrella chart - core/game/athlete services, pdf-service, web, Keycloak, CloudNativePG databases.
+description: Hoops Academy umbrella chart - core/game/athlete services, pdf-service, finance-service, web, Keycloak, CloudNativePG databases.
 type: application
-version: 0.11.0
+version: 0.12.0
 appVersion: "0.1.0"
 # Subcharts are vendored (unpacked) under charts/; `hoops-service` is instantiated three times via aliases.
 dependencies:
@@ -32,3 +32,8 @@ dependencies:
     alias: pdf
     version: 0.1.0
     condition: pdf.enabled
+  # Go (ADR-0055): /api/finance behind the gateway, its own schema and roles, the roster consumer. Off by default.
+  - name: finance-service
+    alias: finance
+    version: 0.1.0
+    condition: finance.enabled

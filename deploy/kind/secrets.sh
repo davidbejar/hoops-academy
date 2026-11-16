@@ -28,6 +28,8 @@ db_role hoops-db-game-migrator   game_migrator    GAME_MIGRATOR_PASSWORD
 db_role hoops-db-game-app        game_app         GAME_APP_PASSWORD
 db_role hoops-db-athlete-migrator athlete_migrator ATHLETE_MIGRATOR_PASSWORD
 db_role hoops-db-athlete-app     athlete_app      ATHLETE_APP_PASSWORD
+db_role hoops-db-finance-migrator finance_migrator FINANCE_MIGRATOR_PASSWORD
+db_role hoops-db-finance-app     finance_app      FINANCE_APP_PASSWORD
 db_role keycloak-db-app          keycloak         KC_DB_PASSWORD
 emit keycloak-admin --from-file=username=<(printf '%s' "$KEYCLOAK_ADMIN") --from-file=password=<(printf '%s' "$KEYCLOAK_ADMIN_PASSWORD")
 emit hoops-oidc-core-service    --from-file=client-secret=<(printf '%s' "$CORE_SERVICE_CLIENT_SECRET")
@@ -45,6 +47,7 @@ basic_auth hoops-redpanda-admin           admin           REDPANDA_ADMIN_PASSWOR
 basic_auth hoops-redpanda-core-service    core-service    REDPANDA_CORE_SERVICE_PASSWORD
 basic_auth hoops-redpanda-game-service    game-service    REDPANDA_GAME_SERVICE_PASSWORD
 basic_auth hoops-redpanda-athlete-service athlete-service REDPANDA_ATHLETE_SERVICE_PASSWORD
+basic_auth hoops-redpanda-finance-service finance-service REDPANDA_FINANCE_SERVICE_PASSWORD
 # core's SMTP login (WP100): only for a real server, so only when .env sets SMTP_PASSWORD; core reads Secret hoops-smtp as
 # optional (kind's Mailpit needs none, and the Secret is then not written).
 [ -z "${SMTP_PASSWORD:-}" ] || emit hoops-smtp --from-file=password=<(printf '%s' "$SMTP_PASSWORD")

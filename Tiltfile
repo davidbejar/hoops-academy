@@ -16,6 +16,7 @@ config.define_bool('from-host', args=False, usage='package with ./mvnw on the ho
 config.define_bool('skip-flutter', args=False, usage='reuse apps/web/build/web instead of running flutter build web')
 config.define_bool('eso', args=False, usage='Secrets from the External Secrets Operator (cluster from `deploy/kind/up.sh --eso`)')
 config.define_bool('no-pdf', args=False, usage='leave pdf-service (Rust, ADR-0052) out: no image build, pdf.enabled=false')
+config.define_bool('no-finance', args=False, usage='leave finance-service (Go, ADR-0055) out: no image build, finance.enabled=false')
 cfg = config.parse()
 if cfg.get('to-run'):
     config.set_enabled_resources(cfg.get('to-run'))
@@ -29,6 +30,7 @@ for svc in services:
 from_host = cfg.get('from-host', False)
 eso = cfg.get('eso', False)
 pdf = not cfg.get('no-pdf', False)
+finance = not cfg.get('no-finance', False)
 
 allow_k8s_contexts('kind-hoops')
 if k8s_context() != 'kind-hoops':
@@ -79,6 +81,19 @@ if pdf:
         disable_push=True,
     )
 
+# finance-service (Go, ADR-0055): go builds inside the image (deploy/containers/finance.Containerfile), the module and
+# build caches persist in Podman; a source change takes under a minute.
+if finance:
+    custom_build(
+        'localhost/hoops/finance-service',
+        'scripts/build-images.sh finance-service --kind-load --tag "$EXPECTED_REF"',
+        deps=['services/finance-service/cmd', 'services/finance-service/internal', 'services/finance-service/db',
+              'services/finance-service/go.mod', 'services/finance-service/go.sum', 'deploy/containers/finance.Containerfile'],
+        ignore=['services/finance-service/target', 'services/finance-service/**/*_test.go'],
+        skips_local_docker=True,
+        disable_push=True,
+    )
+
 # Flutter: `flutter build web` on the host (native arm64, uses the local pub cache), then an nginx image.
 local_resource(
     'flutter-build-web',
@@ -106,6 +121,8 @@ if eso:
     helm_set.append('externalSecrets.enabled=true')
 if not pdf:
     helm_set.append('pdf.enabled=false')
+if not finance:
+    helm_set.append('finance.enabled=false')
 k8s_yaml(helm(
     'deploy/helm/hoops',
     name='hoops',
@@ -126,7 +143,9 @@ SECRET_NAMES = ['hoops-db-core-migrator', 'hoops-db-core-app', 'hoops-db-core-pl
                 'hoops-oidc-athlete-service', 'hoops-ratelimit-redis',
                 # event broker logins (WP66, ADR-0036)
                 'hoops-redpanda-admin', 'hoops-redpanda-core-service', 'hoops-redpanda-game-service',
-                'hoops-redpanda-athlete-service']
+                'hoops-redpanda-athlete-service'] + ([
+                # finance-service (ADR-0055): its database roles and broker login
+                'hoops-db-finance-migrator', 'hoops-db-finance-app', 'hoops-redpanda-finance-service'] if finance else [])
 # --eso: the ExternalSecrets (same names; ESO creates the Secrets, which Tilt does not track); hoops-dev-users is only
 # rendered by secrets.sh. envoy-ratelimit-redis-auth is the REDIS_AUTH of the rate limit pods (WP46).
 SECRET_KIND = 'externalsecret' if eso else 'secret'
@@ -185,6 +204,15 @@ for svc in services:
 if pdf:
     k8s_resource('pdf-service', objects=['pdf-service-env:configmap', 'pdf-service:networkpolicy'], resource_deps=['keycloak'],
                  port_forwards=['18084:8084'], labels=['services'])
+
+# finance-service: /api/finance through the gateway (rate-limited CSV exports), host port 18085 for debugging.
+if finance:
+    k8s_resource('finance-service', objects=['finance-service-env:configmap', 'finance-service:networkpolicy',
+                                             'finance-service-api-finance:httproute', 'finance-service-health:httproute',
+                                             'finance-service-dues-export:httproute', 'finance-service-dues-export:backendtrafficpolicy',
+                                             'finance-service-expenses-export:httproute',
+                                             'finance-service-expenses-export:backendtrafficpolicy'],
+                 resource_deps=['keycloak', 'redpanda-bootstrap'], port_forwards=['18085:8085'], labels=['services'])
 
 k8s_resource('web', objects=['web:httproute'], resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])
 # OpenTelemetry (WP86, ADR-0046; global.observability.enabled in values-kind.yaml): the collector receives the services'

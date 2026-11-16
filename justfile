@@ -101,11 +101,17 @@ events-drift-test:
     scripts/tests/events-drift.test.sh
 
 down:
-    podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf down
+    podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf --profile finance down
 
 # pdf-service in compose on :8084 (profile `pdf`, needs `just up`; the first build compiles the Rust image, minutes)
 pdf-up:
     podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf up -d --build --wait pdf-service
+
+# finance-service in compose on :8085 (profile `finance`, needs `just up`): its roles on an existing database, then the
+# image build (Go inside the container, about a minute the first time) and the start
+finance-up:
+    infra/compose/finance-db.sh
+    podman compose --env-file .env -f infra/compose/compose.yaml --profile finance up -d --build --wait finance-service
 
 logs *ARGS:
     podman compose --env-file .env -f infra/compose/compose.yaml logs -f {{ARGS}}

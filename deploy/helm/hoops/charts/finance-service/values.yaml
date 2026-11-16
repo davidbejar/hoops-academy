@@ -1,0 +1,88 @@
+# finance-service (Go, ADR-0051 §2, ADR-0055). Behind the gateway at /api/finance (HTTPRoutes of this chart); migrates
+# its schema as finance_migrator at start and serves as finance_app; consumes core's roster topics into its replica.
+fullnameOverride: finance-service
+image:
+  repository: localhost/hoops/finance-service
+  tag: dev
+  pullPolicy: IfNotPresent
+# Pull secrets for a private registry, e.g. [{name: ghcr-pull}]. Falls back to global.imagePullSecrets.
+imagePullSecrets: []
+replicaCount: 1
+port: 8085
+
+# Database (the umbrella's CNPG cluster hoops-db). Passwords from kubernetes.io/basic-auth Secrets (ADR-0012), the same
+# ones CNPG manages the roles from (databases.hoopsDb.roles).
+database:
+  url: postgres://hoops-db-rw:5432/hoops
+  appSecret: hoops-db-finance-app
+  migratorSecret: hoops-db-finance-migrator
+# Token verification (ADR-0034): the realm as the pod reaches it; issuer empty = the realm's discovery document.
+oidc:
+  authServerUrl: http://keycloak:8080/auth/realms/academy
+  issuer: ""
+  audience: finance-service
+# Browser origins of the CORS allow-list (templated; same-origin through the gateway needs none).
+corsOrigins: '{{ .Values.global.publicUrl }}'
+# Roster consumer (ADR-0037, WP118 tenants and persons, WP119 the rest): with global.events.enabled it connects to the
+# umbrella's Redpanda as SCRAM user `finance-service` (password from Secret hoops-redpanda-finance-service, key password;
+# ACLs: read core.*, consumer groups finance-service.*); without events it is off and the membership replica stays as it
+# is (FINANCE_ROSTER_CONSUMER_ENABLED=false).
+events:
+  user: finance-service
+  passwordSecret: hoops-redpanda-finance-service
+# Extra non-secret environment (ConfigMap); overrides the keys the chart sets.
+env: {}
+
+# Gateway API routes (ADR-0031) on the umbrella's Gateway (global.gateway). rateLimits as the hoops-service chart's: the
+# CSV exports (ADR-0048, P-12) at the numbers of core's exports.
+route:
+  enabled: true
+  hostnames: []
+  paths: [/api/finance]
+  health: {enabled: true, prefix: /api/finance}
+  rateLimits:
+    - {name: dues-export, path: "/api/finance/dues(:|%3[Aa])export", rpm: 10, rps: 2}
+    - {name: expenses-export, path: "/api/finance/expenses(:|%3[Aa])export", rpm: 10, rps: 2}
+
+networkPolicy:
+  enabled: true
+  # Ingress only from the Envoy proxies (Envoy Gateway's namespace); no other pod calls finance-service.
+  gatewayNamespace: envoy-gateway-system
+  # Egress: DNS, Postgres, Keycloak (signing keys), Redpanda (with events) and the collector (with observability).
+  egress:
+    enabled: true
+    database: {podLabels: {cnpg.io/cluster: hoops-db}, port: 5432}
+    keycloak: {podLabels: {app.kubernetes.io/name: keycloak}, port: 8080}
+    broker: {podLabels: {app.kubernetes.io/name: redpanda}, port: 9092}
+    collector: {podLabels: {app.kubernetes.io/name: otel-collector}, port: 4318}
+    extra: []
+
+# Prometheus scrape annotations (/q/metrics: hoops_authz_denied_total, hoops_roster_replica_*; never routed).
+metrics:
+  enabled: true
+  path: /q/metrics
+
+probes:
+  startup:   {path: /q/health/started, periodSeconds: 2, failureThreshold: 60, timeoutSeconds: 2}
+  liveness:  {path: /q/health/live,    periodSeconds: 10, failureThreshold: 3, timeoutSeconds: 2}
+  readiness: {path: /q/health/ready,   periodSeconds: 5,  failureThreshold: 3, timeoutSeconds: 2}
+
+resources:
+  requests: {cpu: 20m, memory: 48Mi}
+  limits: {memory: 192Mi}
+
+# distroless static `nonroot` (65532); the binary writes nothing, so the root file system is read-only and there is no /tmp.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

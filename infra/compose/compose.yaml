@@ -17,6 +17,9 @@ services:
       GAME_APP_PASSWORD: ${GAME_APP_PASSWORD:?set in .env}
       ATHLETE_MIGRATOR_PASSWORD: ${ATHLETE_MIGRATOR_PASSWORD:?set in .env}
       ATHLETE_APP_PASSWORD: ${ATHLETE_APP_PASSWORD:?set in .env}
+      # finance-service (ADR-0055): optional here, so an older .env still starts the stack; `just finance-up` needs them
+      FINANCE_MIGRATOR_PASSWORD: ${FINANCE_MIGRATOR_PASSWORD:-}
+      FINANCE_APP_PASSWORD: ${FINANCE_APP_PASSWORD:-}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD:?set in .env}
     ports:
       - "127.0.0.1:5432:5432"
@@ -152,6 +155,41 @@ services:
       keycloak:
         condition: service_healthy
     # distroless: no shell or curl for a healthcheck command; `just pdf-up` waits for the container to run
+    restart: unless-stopped
+
+  # finance-service (Go, ADR-0051 §2, ADR-0055): profile `finance`, so `just up` neither builds nor starts it; `just
+  # finance-up` creates its roles on an existing database (infra/compose/finance-db.sh), builds the image and starts it on
+  # 127.0.0.1:8085. nginx routes /api/finance to host.containers.internal:8085 (this container or `go run` on the host).
+  # It reads Keycloak's keys inside the network (issuer by discovery) and core's topics from redpanda:9092 (no auth here).
+  finance-service:
+    profiles: [finance]
+    image: localhost/hoops/finance-service:dev
+    build:
+      context: ../../services/finance-service
+      dockerfile: ../../deploy/containers/finance.Containerfile
+    container_name: hoops-finance-service
+    environment:
+      FINANCE_HTTP_PORT: "8085"
+      FINANCE_DB_URL: postgres://postgres:5432/hoops
+      FINANCE_MIGRATOR_PASSWORD: ${FINANCE_MIGRATOR_PASSWORD:?set in .env}
+      FINANCE_APP_PASSWORD: ${FINANCE_APP_PASSWORD:?set in .env}
+      OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      HOOPS_CORS_ORIGINS: http://localhost:5173,http://localhost:8080
+    ports:
+      - "127.0.0.1:8085:8085"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    # distroless: no shell or curl for a healthcheck command; `just finance-up` waits for the container to run
     restart: unless-stopped
 
   nginx:

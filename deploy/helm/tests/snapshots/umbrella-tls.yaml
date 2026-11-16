@@ -275,7 +275,8 @@ data:
       foreach r in array array[
         'core_migrator','core_app','core_platform',
         'game_migrator','game_app',
-        'athlete_migrator','athlete_app'] loop
+        'athlete_migrator','athlete_app',
+        'finance_migrator','finance_app'] loop
         if not exists (select 1 from pg_roles where rolname = r) then
           execute format('create role %I login nosuperuser nocreatedb nocreaterole noinherit nobypassrls', r);
         else
@@ -288,6 +289,7 @@ data:
     alter role core_app    connection limit 50;
     alter role game_app    connection limit 50;
     alter role athlete_app connection limit 50;
+    alter role finance_app connection limit 50;
     alter role core_platform connection limit 10;
     
     -- ---------- lock down public -----------------------------------------------
@@ -295,13 +297,15 @@ data:
     revoke all on database hoops from public;
     grant connect on database hoops to core_migrator, core_app, core_platform,
                                      game_migrator, game_app,
-                                     athlete_migrator, athlete_app;
+                                     athlete_migrator, athlete_app,
+                                     finance_migrator, finance_app;
     
     -- ---------- shared helper schema -------------------------------------------
     create schema if not exists app;
     grant usage on schema app to core_migrator, core_app, core_platform,
                                 game_migrator, game_app,
-                                athlete_migrator, athlete_app;
+                                athlete_migrator, athlete_app,
+                                finance_migrator, finance_app;
     
     -- Returns the tenant bound to the current transaction (set via
     --   select set_config('app.tenant_id', '<uuid>', true);
@@ -330,7 +334,8 @@ data:
     end $$;
     
     grant execute on function app.current_tenant() to public;
-    grant execute on function app.enable_tenant_rls(regclass) to core_migrator, game_migrator, athlete_migrator;
+    grant execute on function app.enable_tenant_rls(regclass) to core_migrator, game_migrator, athlete_migrator,
+                                                                finance_migrator;
     
     -- ---------- service schemas --------------------------------------------------
     -- One block per (schema, migrator, app role). Default privileges make every table/sequence the
@@ -342,7 +347,8 @@ data:
           ('core',    'core_migrator',    'core_app'),
           ('billing', 'core_migrator',    'core_app'),
           ('game',    'game_migrator',    'game_app'),
-          ('athlete', 'athlete_migrator', 'athlete_app')
+          ('athlete', 'athlete_migrator', 'athlete_app'),
+          ('finance', 'finance_migrator', 'finance_app')    -- finance-service (Go, ADR-0051 §2, ADR-0055)
         ) as t(schema_name, migrator, app_role) loop
         execute format('create schema if not exists %I authorization %I', s.schema_name, s.migrator);
         execute format('grant usage on schema %I to %I', s.schema_name, s.app_role);
@@ -369,6 +375,8 @@ data:
     alter role game_app         set search_path = game, app, public;
     alter role athlete_migrator set search_path = athlete, app, public;
     alter role athlete_app      set search_path = athlete, app, public;
+    alter role finance_migrator set search_path = finance, app, public;
+    alter role finance_app      set search_path = finance, app, public;
     
 
 ---
@@ -10613,6 +10621,18 @@ data:
                 "id.token.claim": "false",
                 "introspection.token.claim": "true"
               }
+            },
+            {
+              "name": "audience finance-service",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "finance-service",
+                "access.token.claim": "true",
+                "id.token.claim": "false",
+                "introspection.token.claim": "true"
+              }
             }
           ]
         },
@@ -10770,6 +10790,21 @@ data:
           "clientId": "pdf-service",
           "name": "pdf-service",
           "description": "Audience of pdf-service (ADR-0052): bearer only, no login flow, no service account, no secret in use. Its tokens come from core-service and game-service (audience mappers, ADR-0034).",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "bearerOnly": true,
+          "publicClient": false,
+          "standardFlowEnabled": false,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "redirectUris": [],
+          "webOrigins": []
+        },
+        {
+          "clientId": "finance-service",
+          "name": "finance-service",
+          "description": "Audience of finance-service (ADR-0055): bearer only, no login flow, no service account, no secret in use. The web client's tokens carry it (audience mapper on web, ADR-0034); finance-service calls no other service.",
           "enabled": true,
           "protocol": "openid-connect",
           "bearerOnly": true,
@@ -11533,7 +11568,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: keycloak-0.6.0
       annotations:
-        checksum/realm: 40a5781a1a40c47463912692ee746e0065f0bbb01f842bc5819a10770a13b694
+        checksum/realm: 3e4743a2ebf8e2b778df44eb7809930c8e34758962d0392dd4da93fadc21da20
         checksum/theme: d13533450c087ff3307000544abe5aee0eaf91f4a8b2728886b3e9ea1f09929f
         checksum/blocklist: 2593eec96b22bbd67a809b1b9424434cc8d95d1b2526b287c886a37e630032ff
     spec:
@@ -12146,6 +12181,30 @@ spec:
         connectionLimit: 50
         passwordSecret:
           name: hoops-db-athlete-app
+      - name: finance_migrator
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: -1
+        passwordSecret:
+          name: hoops-db-finance-migrator
+      - name: finance_app
+        ensure: present
+        login: true
+        inherit: false
+        superuser: false
+        createdb: false
+        createrole: false
+        bypassrls: false
+        replication: false
+        connectionLimit: 50
+        passwordSecret:
+          name: hoops-db-finance-app
 
 ---
 # Source: hoops/charts/databases/templates/keycloak-db.yaml

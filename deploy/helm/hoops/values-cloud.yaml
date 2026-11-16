@@ -62,6 +62,9 @@ web:
 pdf:
   enabled: true                 # internal renderer (ADR-0052), image from images.yml's `pdf` job
   image: {repository: ghcr.io/davidbejar/hoops-academy/pdf-service, tag: ""}
+finance:
+  enabled: true                 # finance (ADR-0055), image from images.yml's `finance` job
+  image: {repository: ghcr.io/davidbejar/hoops-academy/finance-service, tag: ""}
 databases:
   hoopsDb:
     storage: {size: 5Gi, storageClass: local-path}

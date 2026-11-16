@@ -277,35 +277,35 @@ echo "$s" | grep -A2 'name: RP_ADMIN_PASSWORD$' | grep -q 'secretKeyRef: {name: 
   && ok "superuser admin created at bootstrap from Secret hoops-redpanda-admin (no value in the spec)" || bad "superuser bootstrap"
 n=$(doc redpanda NetworkPolicy)
 admitted=$(echo "$n" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
-[ "$admitted" = "athlete-service core-service game-service redpanda-bootstrap " ] \
+[ "$admitted" = "athlete-service core-service finance-service game-service redpanda-bootstrap " ] \
   && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' && [ "$(echo "$n" | grep -c -- '- from:')" = 2 ] \
   && echo "$n" | awk '/- from:/ {f++} f==1 && /port: kafka/ {k=1} f==1 && /port: admin/ {a=1} END {exit !(k && !a)}' \
   && echo "$n" | awk '/- from:/ {f++} f==2 && /redpanda-bootstrap/ {b=1} f==2 && /port: admin/ {a=1} f==2 && /port: kafka/ {k=1} END {exit !(b && a && !k)}' \
   && ! echo "$n" | grep -q 'namespaceSelector: {}' && echo "$n" | grep -q 'k8s-app: kube-dns' && [ "$(echo "$n" | grep -c -- '- to:')" = 1 ] \
-  && ok "redpanda NetworkPolicy: Kafka from the three services + bootstrap Job, admin API from the Job only, egress DNS only" \
+  && ok "redpanda NetworkPolicy: Kafka from the four consuming/producing services + bootstrap Job, admin API from the Job only, egress DNS only" \
   || bad "redpanda NetworkPolicy (admitted: $admitted)"
-for u in core-service game-service athlete-service; do
+for u in core-service game-service athlete-service finance-service; do
   doc "$u" Deployment | grep -q "app.kubernetes.io/name: $u" || bad "events user $u has no Deployment with that name label"
 done
 j=$(doc redpanda-bootstrap Job)
 echo "$j" | grep -q 'helm.sh/hook: post-install,post-upgrade' && echo "$j" | grep -q 'helm.sh/hook-delete-policy: before-hook-creation' \
   && echo "$j" | grep -q 'readOnlyRootFilesystem: true' && echo "$j" | grep -q 'automountServiceAccountToken: false' \
-  && all_of() { local x; for x in admin core-service game-service athlete-service; do "$@" "$x" || return 1; done; } \
+  && all_of() { local x; for x in admin core-service game-service athlete-service finance-service; do "$@" "$x" || return 1; done; } \
   && job_reads() { echo "$j" | grep -q "secretKeyRef: {name: hoops-redpanda-$1, key: password}"; } && all_of job_reads \
-  && ok "bootstrap Job: post-install/upgrade hook, passwords from the four Secrets, read-only root FS" || bad "bootstrap Job"
+  && ok "bootstrap Job: post-install/upgrade hook, passwords from the five Secrets, read-only root FS" || bad "bootstrap Job"
 script=deploy/helm/hoops/files/redpanda-bootstrap.sh
 ! grep -v '^ *#' "$script" | grep -q -- '--password\|--new-password\|-X pass\|-u "\|--user ' && grep -q 'kafka_enable_authorization\|cluster-config' "$script" \
   && ok "bootstrap script puts no password on a command line (RPK_PASS env, curl netrc fd + stdin)" || bad "bootstrap script command lines"
 users=$(doc redpanda-bootstrap ConfigMap | awk '/^  users: \|$/ {c=1; next} c && /^    / {sub(/^    /, ""); print; next} c {exit}')
-[ "$users" = "$(printf '0 core-service core. - -\n1 game-service - core. game-service.\n2 athlete-service - core. athlete-service.')" ] \
-  && ok "ACLs: core-service writes core.*, game/athlete-service read core.* with groups <service>.*" || bad "events users/ACLs: $users"
+[ "$users" = "$(printf '0 core-service core. - -\n1 game-service - core. game-service.\n2 athlete-service - core. athlete-service.\n3 finance-service - core. finance-service.')" ] \
+  && ok "ACLs: core-service writes core.*, game/athlete/finance-service read core.* with groups <service>.*" || bad "events users/ACLs: $users"
 ! grep -q 'redpanda' "$WORK/umbrella-default.yaml" && ok "default: no event broker (events.enabled off)" || bad "redpanda rendered by default"
 e=$(awk 'BEGIN{RS="\n---\n"} /\nkind: ExternalSecret\n/ && /name: hoops-redpanda-/' "$WORK/umbrella-eso.yaml")
-[ "$(echo "$e" | grep -c '^kind: ExternalSecret')" = 4 ] && [ "$(echo "$e" | grep -c 'type: kubernetes.io/basic-auth')" = 4 ] \
+[ "$(echo "$e" | grep -c '^kind: ExternalSecret')" = 5 ] && [ "$(echo "$e" | grep -c 'type: kubernetes.io/basic-auth')" = 5 ] \
   && es_login() { local d; d=$(doc "hoops-redpanda-$1" ExternalSecret "$WORK/umbrella-eso.yaml")
        echo "$d" | grep -qx "        username: $1" && echo "$d" | grep -q "property: REDPANDA_$(echo "${1%-service}" | tr '[:lower:]' '[:upper:]')$([ "$1" = admin ] || echo _SERVICE)_PASSWORD}"; } \
   && all_of es_login \
-  && ok "ESO: four broker logins (basic-auth, username = user, REDPANDA_*_PASSWORD)" || bad "ESO broker logins"
+  && ok "ESO: five broker logins (basic-auth, username = user, REDPANDA_*_PASSWORD)" || bad "ESO broker logins"
 
 echo "== services on the event broker (WP71, ADR-0036/0037)"
 # events.enabled (umbrella) is mirrored in global.events.enabled, the only value the service subcharts see; the subchart
@@ -519,15 +519,15 @@ echo "$cfg" | grep -q 'endpoint: jaeger.hoops.svc.cluster.local:4317' && echo "$
   && echo "$cfg" | grep -q 'level: none' && ok "collector: traces to jaeger.hoops:4317, own metrics off" || bad "collector exporters/telemetry"
 n=$(doc otel-collector NetworkPolicy)
 admitted=$(echo "$n" | awk '/operator: In/ {i=1; next} i && /^ *values:$/ {next} i && /^ *- [a-z-]+$/ {print $2; next} i {exit}' | sort | tr '\n' ' ')
-[ "$admitted" = "athlete-service core-service game-service pdf-service " ] && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' \
+[ "$admitted" = "athlete-service core-service finance-service game-service pdf-service " ] && echo "$n" | grep -q 'policyTypes: \[Ingress, Egress\]' \
   && [ "$(echo "$n" | grep -c -- '- from:')" = 2 ] && ! echo "$n" | grep -q 'namespaceSelector: {}' \
   && echo "$n" | awk '/- from:/ {f++} f==1 && /port: otlp-grpc/ {g=1} f==1 && /port: otlp-http/ {h=1} END {exit !(g && h)}' \
   && echo "$n" | awk '/- from:/ {f++} f==2 && /kubernetes.io\/metadata.name: envoy-gateway-system/ {e=1} f==2 && /app.kubernetes.io\/component: proxy/ {p=1} f==2 && /owning-gateway-name: hoops$/ {o=1} f==2 && /managed-by/ {m=1} f==2 && /port: otlp-grpc/ {g=1} f==2 && /port: otlp-http/ {h=1} END {exit !(e && p && o && !m && g && !h)}' \
   && echo "$n" | grep -q 'k8s-app: kube-dns' && [ "$(echo "$n" | grep -c -- '- to:')" = 2 ] \
   && echo "$n" | awk '/- to:/ {t++} t==2 && /app.kubernetes.io\/name: jaeger/ {j=1} t==2 && /port: 4317/ {p=1} END {exit !(j && p)}' \
-  && ok "otel-collector NetworkPolicy: OTLP from the three services and pdf-service + the Gateway's Envoy proxies (gRPC; no managed-by selector, Tilt rewrites it), egress DNS + Jaeger only" \
+  && ok "otel-collector NetworkPolicy: OTLP from the three services, pdf-service and finance-service + the Gateway's Envoy proxies (gRPC; no managed-by selector, Tilt rewrites it), egress DNS + Jaeger only" \
   || bad "otel-collector NetworkPolicy (admitted: $admitted)"
-for u in core-service game-service athlete-service pdf-service; do
+for u in core-service game-service athlete-service pdf-service finance-service; do
   doc "$u" Deployment | grep -q "app.kubernetes.io/name: $u" || bad "collector client $u has no Deployment with that name label"
 done
 j=$(doc jaeger Deployment)
@@ -636,6 +636,43 @@ echo "$pa" | grep -qx '  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-agent.monitor
   && [ "$(doc pdf-service NetworkPolicy "$WORK/extra/agent.yaml" | grep -c -- '- to:')" = 2 ] \
   && ok "external collector: pdf-service exports OTLP/HTTP to the agent's :4318; no collector egress rule (networkPolicy.egress.extra)" \
   || bad "pdf-service with an external collector"
+echo "== finance-service (WP118, ADR-0055: Go, /api/finance behind the gateway)"
+fd=$(doc finance-service Deployment)
+echo "$fd" | grep -q 'image: "localhost/hoops/finance-service:dev"' && echo "$fd" | grep -q 'runAsUser: 65532' \
+  && echo "$fd" | grep -q 'readOnlyRootFilesystem: true' && echo "$fd" | grep -q 'automountServiceAccountToken: false' \
+  && echo "$fd" | grep -q 'secretKeyRef: {name: hoops-db-finance-app, key: password}' \
+  && echo "$fd" | grep -q 'secretKeyRef: {name: hoops-db-finance-migrator, key: password}' \
+  && echo "$fd" | grep -q 'secretKeyRef: {name: hoops-redpanda-finance-service, key: password}' \
+  && echo "$fd" | grep -q 'httpGet: {path: /q/health/ready, port: http}' && echo "$fd" | grep -q 'secret.reloader.stakater.com/auto' \
+  && ok "kind: finance-service as nonroot 65532, read-only root FS, database and broker passwords from Secrets, HTTP probes" \
+  || bad "finance-service Deployment"
+fc=$(doc finance-service-env ConfigMap)
+echo "$fc" | grep -qx '  OIDC_AUDIENCE: "finance-service"' && echo "$fc" | grep -qx '  FINANCE_HTTP_PORT: "8085"' \
+  && echo "$fc" | grep -qx '  FINANCE_DB_URL: "postgres://hoops-db-rw:5432/hoops"' \
+  && echo "$fc" | grep -qx '  KAFKA_SASL_USERNAME: "finance-service"' && echo "$fc" | grep -qx '  KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"' \
+  && echo "$fc" | grep -qx '  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4318"' \
+  && ! echo "$fc" | grep -q 'PASSWORD\|FINANCE_ROSTER_CONSUMER_ENABLED' \
+  && ok "kind: finance-service env (audience, database URL, broker user, OTLP/HTTP), no secret in the ConfigMap" || bad "finance-service env"
+doc finance-service-api-finance HTTPRoute | grep -q 'value: "/api/finance"' && doc finance-service-dues-export BackendTrafficPolicy | grep -q 'requests: 10, unit: Minute' \
+  && doc finance-service-expenses-export HTTPRoute | grep -q 'expenses(:|%3\[Aa\])export' \
+  && doc finance-service-health HTTPRoute | grep -q 'value: "/api/finance/q/health/ready"' \
+  && ok "finance-service routes: /api/finance, health, the CSV exports rate-limited 10/min (P-12)" || bad "finance-service routes"
+fn=$(doc finance-service NetworkPolicy)
+echo "$fn" | grep -q 'policyTypes: \[Ingress, Egress\]' && [ "$(echo "$fn" | grep -c -- '- from:')" = 1 ] \
+  && echo "$fn" | grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' && ! echo "$fn" | grep -q 'podSelector: {}' \
+  && [ "$(echo "$fn" | grep -c -- '- to:')" = 5 ] && echo "$fn" | grep -q 'cnpg.io/cluster: hoops-db' \
+  && echo "$fn" | awk '/app.kubernetes.io\/name: redpanda/ {r=1} r && /port: 9092/ {p=1} END {exit !p}' \
+  && ok "finance-service NetworkPolicy: in only from the gateway; out DNS, Postgres, Keycloak, Redpanda, collector" \
+  || bad "finance-service NetworkPolicy"
+doc hoops-db Cluster | grep -q 'name: finance_app' && doc hoops-db Cluster | grep -q 'name: finance_migrator' \
+  && ok "CNPG manages finance_migrator and finance_app" || bad "finance roles in hoops-db"
+! grep -q 'name: finance-service' "$D" && ok "default: finance-service off (finance.enabled false), nothing rendered" || bad "default renders finance-service"
+fo=$(doc finance-service-env ConfigMap "$WORK/umbrella-default.yaml" 2>/dev/null || true)
+[ -z "$fo" ] || bad "finance-service rendered without finance.enabled"
+noev=$(helm template hoops "$CHART" -n hoops --set finance.enabled=true 2>&1)
+grep -qx '  FINANCE_ROSTER_CONSUMER_ENABLED: "false"' <<<"$noev" && ! grep -q 'hoops-redpanda-finance-service' <<<"$noev" \
+  && ok "without events: the roster consumer off, no broker Secret read" || bad "finance-service without events"
+
 nonroot=0
 for s in core game athlete; do
   doc "$s-service" Deployment | grep -A6 '^      securityContext:' | grep -q 'runAsUser: 65532' && nonroot=$((nonroot + 1))
@@ -672,7 +709,7 @@ echo "$e" | grep -q 'type: LoadBalancer' && ! echo "$e" | grep -q 'nodePort' && 
 ! doc hoops-http ClientTrafficPolicy "$C" | grep -q numTrustedHops && ok "client IP from the connection (no proxy in front, no trusted X-Forwarded-For hop)" \
   || bad "cloud trusts X-Forwarded-For"
 doc keycloak Deployment "$C" | grep -A1 -- '- name: KC_HOSTNAME$' | grep -q "value: \"https://$CH/auth\"" \
-  && [ "$(grep -c "HOOPS_CORS_ORIGINS: \"https://$CH\"" "$C")" = 3 ] && doc core-service-env ConfigMap "$C" | grep -qx "  HOOPS_PUBLIC_URL: \"https://$CH\"" \
+  && [ "$(grep -c "HOOPS_CORS_ORIGINS: \"https://$CH\"" "$C")" = 4 ] && doc core-service-env ConfigMap "$C" | grep -qx "  HOOPS_PUBLIC_URL: \"https://$CH\"" \
   && ! grep -q 'localhost:8090' "$C" \
   && ok "issuer https://$CH/auth/realms/academy, CORS and mail links on the https URL, nothing left on localhost:8090" || bad "cloud public URL"
 [ "$(doc hoops-db Cluster "$C" | grep -c 'storageClass: local-path')" = 1 ] && [ "$(doc keycloak-db Cluster "$C" | grep -c 'storageClass: local-path')" = 1 ] \
@@ -680,8 +717,8 @@ doc keycloak Deployment "$C" | grep -A1 -- '- name: KC_HOSTNAME$' | grep -q "val
   && ok "volumes on k3s's local-path storage class (hoops-db, keycloak-db, redpanda)" || bad "cloud storage class"
 ! grep -q '^kind: Secret' "$C" && ! grep -q '^kind: ExternalSecret' "$C" \
   && ok "no Secret, no ExternalSecret (Secrets from .env through deploy/kind/secrets.sh, ADR-0012)" || bad "cloud render holds Secrets"
-[ "$(grep -c 'deployment.environment.name=cloud' "$C")" = 4 ] && [ "$(grep -c 'secret.reloader.stakater.com/auto' "$C")" -ge 6 ] \
-  && ok "observability environment cloud (three services and pdf-service); Reloader annotations on (install.sh installs Reloader)" || bad "cloud observability/reloader"
+[ "$(grep -c 'deployment.environment.name=cloud' "$C")" = 5 ] && [ "$(grep -c 'secret.reloader.stakater.com/auto' "$C")" -ge 6 ] \
+  && ok "observability environment cloud (three services, pdf-service and finance-service); Reloader annotations on (install.sh installs Reloader)" || bad "cloud observability/reloader"
 V="$CHART/values-cloud.yaml"
 ! grep -v '^ *#' "$V" | grep -Eq '[0-9]{1,3}(\.[0-9]{1,3}){3}|[0-9]{1,3}(-[0-9]{1,3}){3}\.(sslip|nip)\.io' \
   && [ "$(grep -c 'hoops.invalid' "$V")" = 3 ] \

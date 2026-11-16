@@ -181,6 +181,18 @@
             "id.token.claim": "false",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "audience finance-service",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "finance-service",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
         }
       ]
     },
@@ -338,6 +350,21 @@
       "clientId": "pdf-service",
       "name": "pdf-service",
       "description": "Audience of pdf-service (ADR-0052): bearer only, no login flow, no service account, no secret in use. Its tokens come from core-service and game-service (audience mappers, ADR-0034).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [],
+      "webOrigins": []
+    },
+    {
+      "clientId": "finance-service",
+      "name": "finance-service",
+      "description": "Audience of finance-service (ADR-0055): bearer only, no login flow, no service account, no secret in use. The web client's tokens carry it (audience mapper on web, ADR-0034); finance-service calls no other service.",
       "enabled": true,
       "protocol": "openid-connect",
       "bearerOnly": true,

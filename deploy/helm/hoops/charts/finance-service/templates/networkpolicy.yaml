@@ -1,0 +1,63 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $np := .Values.networkPolicy }}
+{{- $obs := dig "observability" dict (.Values.global | default dict) }}
+# finance-service is reached only through the gateway (the Envoy proxies in Envoy Gateway's namespace); no pod of this
+# namespace calls it. Egress: DNS, Postgres, Keycloak's port (signing keys), Redpanda's Kafka port (with events) and the
+# collector's OTLP HTTP port (with the chart's collector); nothing else. The kubelet's probes are not subject to policies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "finance-service.fullname" . }}
+  labels:
+    {{- include "finance-service.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "finance-service.selectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress{{ if $np.egress.enabled }}, Egress{{ end }}]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $np.gatewayNamespace }}
+      ports:
+        - {port: http, protocol: TCP}
+  {{- if $np.egress.enabled }}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+    {{- range $target := list $np.egress.database $np.egress.keycloak }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $target.podLabels | nindent 14 }}
+      ports:
+        - {port: {{ $target.port }}, protocol: TCP}
+    {{- end }}
+    {{- if include "finance-service.eventsEnabled" . }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $np.egress.broker.podLabels | nindent 14 }}
+      ports:
+        - {port: {{ $np.egress.broker.port }}, protocol: TCP}
+    {{- end }}
+    {{- if and $obs.enabled (not $obs.otlpEndpoint) }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $np.egress.collector.podLabels | nindent 14 }}
+      ports:
+        - {port: {{ $np.egress.collector.port }}, protocol: TCP}
+    {{- end }}
+    {{- with $np.egress.extra }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end }}
