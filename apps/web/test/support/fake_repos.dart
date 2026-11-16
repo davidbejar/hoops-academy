@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
+import 'package:hoops_app/core/export/server_file.dart';
 import 'package:hoops_app/features/admin/data/academy_repository.dart';
 import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
 import 'package:hoops_app/features/admin/data/members_repository.dart';
@@ -565,6 +566,26 @@ class FakeTeamsRepository with Faulty implements TeamsRepository {
         rosterExports.add((teamId, language));
         return rosterCsv;
       });
+
+  /// The team and language of every roster PDF asked for.
+  final List<(String, String)> rosterPdfs = [];
+
+  /// What `exportRosterPdf` answers; its file name is the server's.
+  ServerFile rosterPdf = ServerFile(
+    Uint8List.fromList(utf8.encode('%PDF-1.7 roster')),
+    fileName: 'hoops-role-test-roster-mini-a-20261116.pdf',
+  );
+
+  @override
+  Future<ServerFile> exportRosterPdf(
+    String teamId, {
+    required String language,
+  }) => run('exportRosterPdf', () {
+    final failure = exportFailure;
+    if (failure != null) throw failure;
+    rosterPdfs.add((teamId, language));
+    return rosterPdf;
+  });
 }
 
 class FakePlayersRepository with Faulty implements PlayersRepository {

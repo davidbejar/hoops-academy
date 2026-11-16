@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:hoops_app/core/export/server_file.dart';
 import 'package:hoops_app/features/match/application/match_providers.dart';
 import 'package:hoops_app/features/match/data/local/match_database.dart';
 import 'package:hoops_app/features/match/data/local/match_store.dart';
@@ -218,6 +222,29 @@ class FakeMatchesRepository with Faulty implements MatchesRepository {
   @override
   Future<gen.BoxScore> boxScore(String matchId) =>
       run('boxScore', () => boxScoreOf!(matchId));
+
+  /// Thrown by `matchSheetPdf` only.
+  Object? sheetFailure;
+
+  /// The match and language of every match sheet asked for.
+  final List<(String, String)> sheets = [];
+
+  /// What `matchSheetPdf` answers; its file name is the server's.
+  ServerFile sheet = ServerFile(
+    Uint8List.fromList(utf8.encode('%PDF-1.7 sheet')),
+    fileName: 'hoops-role-test-match-sheet-mini-a-lobos-20261116.pdf',
+  );
+
+  @override
+  Future<ServerFile> matchSheetPdf(
+    String matchId, {
+    required String language,
+  }) => run('matchSheetPdf', () {
+    final failure = sheetFailure;
+    if (failure != null) throw failure;
+    sheets.add((matchId, language));
+    return sheet;
+  });
   @override
   Future<gen.PlayerSeasonStats> seasonStats(String playerId, String seasonId) =>
       run('seasonStats', () {

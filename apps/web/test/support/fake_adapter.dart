@@ -30,6 +30,7 @@ class FakeAdapter implements HttpClientAdapter {
       r.status,
       headers: {
         Headers.contentTypeHeader: [r.contentType],
+        for (final e in r.headers.entries) e.key: [e.value],
       },
     );
   }
@@ -44,12 +45,14 @@ class FakeResponse {
     this.body, {
     this.contentType = 'application/json',
     this.networkError = false,
+    this.headers = const {},
   });
 
   const FakeResponse.network()
     : status = 0,
       body = '',
       contentType = '',
+      headers = const {},
       networkError = true;
 
   factory FakeResponse.problem(int status, Map<String, Object?> json) =>
@@ -63,4 +66,7 @@ class FakeResponse {
   final String body;
   final String contentType;
   final bool networkError;
+
+  /// Extra response headers (`content-disposition` of a download).
+  final Map<String, String> headers;
 }
