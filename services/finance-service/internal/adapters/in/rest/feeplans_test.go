@@ -1,7 +1,6 @@
 package rest_test
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -45,7 +44,7 @@ func TestCrossTenantAccessThroughTheAPIIsRefused(t *testing.T) {
 func TestRoleMatrixOfSettingsAndFeePlans(t *testing.T) {
 	a := newAPI(t)
 	academy := a.academy(t, roster())
-	a.withCurrency(t, academy, "EUR")
+	a.withEuro(t, academy)
 	type operation struct {
 		name, method, path string
 		body               any
@@ -140,7 +139,7 @@ func TestTheCurrencyIsChosenOnceAndLockedByTheFirstDue(t *testing.T) {
 func TestAFeePlanIsCreatedReadChangedArchivedAndDeleted(t *testing.T) {
 	a := newAPI(t)
 	academy := a.academy(t, roster())
-	a.withCurrency(t, academy, "EUR")
+	a.withEuro(t, academy)
 
 	response := expect(t, a.do(t, call{method: "POST", path: "/api/finance/fee-plans", tenant: academy, subject: admin,
 		body: monthlyPlan()}), 201)
@@ -179,7 +178,7 @@ func TestAFeePlanIsCreatedReadChangedArchivedAndDeleted(t *testing.T) {
 func TestFeePlansAreListedWithFiltersAndPages(t *testing.T) {
 	a := newAPI(t)
 	academy := a.academy(t, roster())
-	a.withCurrency(t, academy, "EUR")
+	a.withEuro(t, academy)
 	season := uuid()
 	for _, name := range []string{"C", "A", "B"} {
 		body := monthlyPlan()
@@ -203,7 +202,7 @@ func TestFeePlansAreListedWithFiltersAndPages(t *testing.T) {
 func TestInvalidRequestsAreProblemsNamingFieldsNeverValues(t *testing.T) {
 	a := newAPI(t)
 	academy := a.academy(t, roster())
-	a.withCurrency(t, academy, "EUR")
+	a.withEuro(t, academy)
 	secret := "Ana-Lopez-hardship"
 	bad := monthlyPlan()
 	bad["name"], bad["cadence"], bad["ageCategoryId"] = "", "WEEKLY", uuid()
@@ -364,17 +363,17 @@ func TestHealthMetricsAndHeaders(t *testing.T) {
 	}
 	preflight := a.do(t, call{method: "OPTIONS", path: "/api/finance/settings", header: map[string]string{
 		"Origin": "http://localhost:5173", "Access-Control-Request-Method": "PUT",
-		"Access-Control-Request-Headers": "authorization,content-type,x-tenant-id"}})
+		"Access-Control-Request-Headers": "authorization,content-type,x-tenant-id"}, outside: true})
 	if preflight.status != 204 || preflight.header.Get("Access-Control-Allow-Origin") != "http://localhost:5173" ||
 		!strings.Contains(preflight.header.Get("Access-Control-Allow-Headers"), "X-Tenant-Id") {
 		t.Errorf("preflight %d %v", preflight.status, preflight.header)
 	}
 	foreign := a.do(t, call{method: "OPTIONS", path: "/api/finance/settings", header: map[string]string{
-		"Origin": "https://evil.example", "Access-Control-Request-Method": "PUT"}})
+		"Origin": "https://evil.example", "Access-Control-Request-Method": "PUT"}, outside: true})
 	if foreign.header.Get("Access-Control-Allow-Origin") != "" {
 		t.Error("a foreign origin was allowed")
 	}
-	unknown := expect(t, a.do(t, call{method: "GET", path: "/api/finance/nothing-here", tenant: academy, subject: admin}), 404)
+	unknown := expect(t, a.do(t, call{method: "GET", path: "/api/finance/nothing-here", tenant: academy, subject: admin, outside: true}), 404)
 	if !strings.HasPrefix(fmt.Sprint(unknown.json(t)["type"]), "urn:hoops:problem:") {
 		t.Errorf("unknown route: %s", unknown.body)
 	}

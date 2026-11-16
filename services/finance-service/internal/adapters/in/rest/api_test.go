@@ -155,6 +155,8 @@ type call struct {
 	token        string // a raw token instead
 	body         any
 	header       map[string]string
+	// outside: not an operation of finance.yaml (CORS preflight, unknown route): the answer is not validated
+	outside bool
 }
 
 // do sends c, validates the answer against finance.yaml (and the request too when the service accepted it).
@@ -195,7 +197,7 @@ func (a *api) do(t *testing.T, c call) answer {
 	defer func() { _ = response.Body.Close() }()
 	body, _ := io.ReadAll(response.Body)
 	exchange := contract.Exchange{Request: request, RequestBody: payload, Response: response, ResponseBody: body}
-	if strings.HasPrefix(c.path, "/api/finance/") && response.StatusCode != http.StatusNotImplemented {
+	if strings.HasPrefix(c.path, "/api/finance/") && !c.outside && response.StatusCode != http.StatusNotImplemented {
 		contract.CheckResponse(t, exchange)
 		if response.StatusCode < 300 {
 			contract.CheckRequest(t, exchange)
@@ -238,10 +240,10 @@ func monthlyPlan() map[string]any {
 	}
 }
 
-func (a *api) withCurrency(t *testing.T, tenant, code string) {
+func (a *api) withEuro(t *testing.T, tenant string) {
 	t.Helper()
 	expect(t, a.do(t, call{method: "PUT", path: "/api/finance/settings", tenant: tenant, subject: admin,
-		body: map[string]any{"currency": code}}), 200)
+		body: map[string]any{"currency": "EUR"}}), 200)
 }
 
 func (a *api) createPlan(t *testing.T, tenant string, body map[string]any) map[string]any {
