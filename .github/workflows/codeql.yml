@@ -45,14 +45,8 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-          queries: security-extended
-      - name: Build (main code only, traced by CodeQL)
-        if: matrix.language == 'java-kotlin'
-        run: ./mvnw -B -ntp -Dmaven.test.skip=true -Djacoco.skip=true -Dspotbugs.skip=true compile
+      # Go must be on the PATH before init: the Go toolchain is statically linked, so CodeQL traces it through a
+      # wrapper it sets up at init around the `go` it finds then (run 43792899979 built nothing it could see).
       - name: Go 1.27.4 (finance-service, ADR-0055), checked against its SHA-256
         if: matrix.language == 'go'
         run: |
@@ -62,6 +56,14 @@ jobs:
           echo '7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840  go1.27.4.linux-amd64.tar.gz' | sha256sum -c -
           tar -xzf go1.27.4.linux-amd64.tar.gz
           echo "$RUNNER_TEMP/go/bin" >> "$GITHUB_PATH"
+      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+      - name: Build (main code only, traced by CodeQL)
+        if: matrix.language == 'java-kotlin'
+        run: ./mvnw -B -ntp -Dmaven.test.skip=true -Djacoco.skip=true -Dspotbugs.skip=true compile
       - name: Build finance-service (traced by CodeQL)
         if: matrix.language == 'go'
         working-directory: services/finance-service
