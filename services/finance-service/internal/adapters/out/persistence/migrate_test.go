@@ -19,8 +19,8 @@ func TestTheMigrationsAreNumberedOneConcernPerFile(t *testing.T) {
 		t.Fatalf("expected V1..V5 at least, got %+v", migrations)
 	}
 	for i, m := range migrations {
-		if m.Version > 9 {
-			t.Errorf("V%d: WP118 owns V1-V9 only (V10-V19 WP119, V20-V29 WP123)", m.Version)
+		if m.Version > 19 {
+			t.Errorf("V%d: WP118 and WP119 own V1-V19 only (V20-V29 WP123)", m.Version)
 		}
 		if i > 0 && m.Version <= migrations[i-1].Version {
 			t.Errorf("not in order: %s after %s", m.Name, migrations[i-1].Name)

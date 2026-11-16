@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"hoopsacademy.local/finance/internal/application"
 	"hoopsacademy.local/finance/internal/testsupport/pgtest"
 )
 
@@ -110,4 +112,74 @@ func asInvalid(err error, target **Invalid) bool {
 		return true
 	}
 	return false
+}
+
+// Privacy P-10: the finance replica keeps no birth date and no gender. The decoded event carries neither the fields
+// nor their values; the player keeps its person, display name and status only.
+func TestAPlayerEventDropsBirthDateAndGender(t *testing.T) {
+	for _, value := range examples(t, "core.player") {
+		event, _, err := NewDecoder().Decode("core.player", keyOf(t, value), value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var source struct {
+			Payload struct{ BirthDate, Gender *string }
+		}
+		_ = json.Unmarshal(value, &source)
+		decoded, _ := json.Marshal(event)
+		text := strings.ToLower(string(decoded))
+		for _, forbidden := range []string{"birth", "gender", "female", `"male"`} {
+			if strings.Contains(text, forbidden) {
+				t.Errorf("the decoded player holds %q: %s", forbidden, decoded)
+			}
+		}
+		if source.Payload.BirthDate != nil && strings.Contains(string(decoded), *source.Payload.BirthDate) {
+			t.Errorf("the decoded player holds the birth date: %s", decoded)
+		}
+		if event.Type == "player.changed" && (event.PlayerData == nil || event.PlayerData.DisplayName == "" ||
+			event.PlayerData.Status == "" || event.PlayerData.Person.String() == "00000000-0000-0000-0000-000000000000") {
+			t.Errorf("player %+v", event.PlayerData)
+		}
+	}
+}
+
+func TestTheRosterEventsKeepWhatTheFinanceRulesNeed(t *testing.T) {
+	decoder := NewDecoder()
+	decode := func(topic string) application.RosterEvent {
+		value := examples(t, topic)[0]
+		event, _, err := decoder.Decode(topic, keyOf(t, value), value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return event
+	}
+
+	team := decode("core.team").TeamData
+	if team == nil || team.Season.String() != "4d5e6f70-8192-4a34-b5c6-d7e8f90a1b2c" ||
+		team.SeasonStart.Format(time.DateOnly) != "2026-09-01" || team.SeasonEnd.Format(time.DateOnly) != "2027-06-30" ||
+		team.AgeCategory.String() != "5e6f7081-92a3-4b45-86d7-e8f90a1b2c3d" {
+		t.Errorf("team %+v", team)
+	}
+	assignment := decode("core.team-player").AssignmentData
+	if assignment == nil || assignment.Team.String() != "3c4d5e6f-7081-4923-a4b5-c6d7e8f90a1b" ||
+		assignment.Player.String() != "7e6d5c4b-3a29-4180-8f7e-6d5c4b3a2918" ||
+		assignment.JoinedOn.Format(time.DateOnly) != "2026-09-15" || assignment.LeftOn != nil || assignment.Invalid != nil {
+		t.Errorf("assignment %+v", assignment)
+	}
+	staff := decode("core.team-staff").StaffData
+	if staff == nil || staff.Team.String() != "3c4d5e6f-7081-4923-a4b5-c6d7e8f90a1b" ||
+		staff.Person.String() != "9f0e1d2c-3b4a-4596-8877-665544332211" || staff.Role != "COACH" {
+		t.Errorf("staff %+v", staff)
+	}
+	link := decode("core.guardian-link").LinkData
+	if link == nil || link.Guardian.String() != "b4c5d6e7-f809-41a2-b3c4-d5e6f7081920" ||
+		link.Player.String() != "7e6d5c4b-3a29-4180-8f7e-6d5c4b3a2918" {
+		t.Errorf("link %+v", link)
+	}
+	if person := decode("core.person").PersonData; person == nil || person.DisplayName == "" {
+		t.Errorf("person %+v", person)
+	}
+	if len(Topics) != 7 {
+		t.Errorf("topics %v", Topics)
+	}
 }

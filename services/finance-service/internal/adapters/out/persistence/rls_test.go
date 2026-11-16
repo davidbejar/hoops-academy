@@ -99,8 +99,14 @@ func TestNoTenantReadsOrChangesAnotherTenantsRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tables) < 8 {
-		t.Fatalf("expected the tenant tables of V1-V5, found %v", tables)
+	for _, want := range []string{"finance.player_ref", "finance.team_ref", "finance.team_player_ref",
+		"finance.team_staff_ref", "finance.guardian_link_ref"} {
+		if !slices.Contains(tables, want) {
+			t.Errorf("the roster replica of WP119 lacks %s: %v", want, tables)
+		}
+	}
+	if len(tables) < 13 {
+		t.Fatalf("expected the tenant tables of V1-V10, found %v", tables)
 	}
 	suite := rls.Isolation{Migrator: database.Migrator, App: database.App, Overrides: fixtureOverrides}
 	for _, table := range tables {
