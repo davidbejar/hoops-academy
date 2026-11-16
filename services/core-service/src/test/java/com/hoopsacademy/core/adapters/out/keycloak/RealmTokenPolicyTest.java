@@ -39,7 +39,7 @@ class RealmTokenPolicyTest {
 
     @ParameterizedTest
     @CsvSource({
-        "web, core-service game-service athlete-service",
+        "web, core-service game-service athlete-service finance-service",
         "core-service, game-service athlete-service pdf-service",
         "game-service, core-service pdf-service",
         "athlete-service, core-service"})
