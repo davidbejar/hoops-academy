@@ -49,6 +49,7 @@ func newAPI(t *testing.T) *api {
 		Clock: systemClock{}, IDs: ids.V7{}, Transactions: tx, Settings: persistence.SettingsStore{},
 		FeePlans: persistence.FeePlanStore{}, Dues: persistence.DueQueries{},
 		Audit: persistence.AuditLog{IDs: ids.V7{}, Log: log}, Members: persistence.MembershipStore{},
+		Roster: persistence.RosterStore{}, DueStore: persistence.DueStore{}, Payments: persistence.PaymentStore{},
 	})
 	handler := rest.NewHandler(rest.Deps{
 		Finance: finance, Verifier: oidc.NewVerifier(oidc.Config{AuthServerURL: r.URL(), Audience: realm.Audience}),

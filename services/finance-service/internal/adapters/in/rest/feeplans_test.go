@@ -284,7 +284,7 @@ func TestAuthenticationAndTheTenantHeader(t *testing.T) {
 	expect(t, a.do(t, call{method: "GET", path: path, tenant: suspended, subject: admin}), 404)
 }
 
-// The operations of WP119 and WP123: a member gets 501 NOT_IMPLEMENTED, a non-member 404, nobody 401.
+// The operations of WP123: a member gets 501 NOT_IMPLEMENTED, a non-member 404, nobody 401.
 func TestOperationsOfLaterWorkPackagesAnswer501(t *testing.T) {
 	a := newAPI(t)
 	academy := a.academy(t, roster())
@@ -308,19 +308,11 @@ func op2body(op [2]string) any {
 	return map[string]any{}
 }
 
-// NotImplemented lists the contract's operations finance-service answers 501 in WP118 (method, concrete path).
+// NotImplemented lists the contract's operations finance-service answers 501 since WP119 (method, concrete path):
+// the dues export, expenses and the balance (WP123).
 func NotImplemented(id string) [][2]string {
 	return [][2]string{
-		{"POST", "/api/finance/fee-plans/" + id + "/dues:generate"},
-		{"GET", "/api/finance/dues"},
 		{"GET", "/api/finance/dues:export"},
-		{"GET", "/api/finance/dues/" + id},
-		{"POST", "/api/finance/dues/" + id + ":change-amount"},
-		{"POST", "/api/finance/dues/" + id + ":waive"},
-		{"POST", "/api/finance/dues/" + id + ":pay"},
-		{"POST", "/api/finance/payments/" + id + ":void"},
-		{"GET", "/api/finance/teams/" + id + "/due-status"},
-		{"GET", "/api/finance/players/" + id + "/dues"},
 		{"GET", "/api/finance/expenses"},
 		{"POST", "/api/finance/expenses"},
 		{"GET", "/api/finance/expenses:export"},
@@ -333,7 +325,7 @@ func NotImplemented(id string) [][2]string {
 
 func TestEveryContractOperationIsServedOrAnswers501(t *testing.T) {
 	doc, _ := contract.Document(t)
-	built := 9
+	built := 18 // settings and fee plans (WP118); dues, payments and their reads (WP119)
 	operations := 0
 	for _, item := range doc.Paths.Map() {
 		operations += len(item.Operations())

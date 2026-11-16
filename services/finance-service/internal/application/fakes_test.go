@@ -88,6 +88,16 @@ func (f *fakePlans) Delete(_ context.Context, id domain.FeePlanID) error {
 	return nil
 }
 
+func (f *fakePlans) Generating(context.Context) ([]domain.FeePlan, error) {
+	var out []domain.FeePlan
+	for _, p := range f.plans {
+		if p.GeneratesAutomatically() {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
 func (f *fakePlans) List(_ context.Context, filter FeePlanFilter, page Page) ([]domain.FeePlan, int64, error) {
 	f.lastList = filter
 	var all []domain.FeePlan
