@@ -392,7 +392,7 @@ WP118 (contract first), so the web (WP121) starts one wave later while the Go se
 | 2 | WP117 | Game: match sheet PDF through pdf-service; start guard for `replica` without consumer | Opus · high | Done (game 2.4.0; ADR-0048 amendment; migration V7 academy name; 3,526 tests, game mutation 555/557; real pdf-service call not run) |
 | 2 | WP118 | finance-service in Go: toolchain, isolation harness, whole contract, settings and fee plans, chart | Opus · high | Done (ADR-0055, ADR-0056; `finance.yaml` 1.0.0; chart 0.12.0; 133 Go tests; kind proof; 17 operations still 501 for WP119 / WP123) |
 | 3 | WP119 | Finance: roster replica, dues (manual and job), payments, coach and family reads | Opus · high | Running |
-| 3 | WP120 | Observability: one Grafana LGTM pod on kind and compose, dashboards | Opus · high | Running |
+| 3 | WP120 | Observability: one Grafana LGTM pod on kind and compose, dashboards | Opus · high | Done (ADR-0046 amendment; chart 0.13.0; `grafana/otel-lgtm` 0.41.0 by digest; kind proof incl. core → pdf-service trace; no database spans; `tilt ci` not run) |
 | 3 | WP121 | Web: Finance area for ADMIN (settings, fee plans, dues, payments) | Sonnet · high | Running |
 | 3 | WP122 | Web: PDF buttons for the match sheet and the team roster | Sonnet · medium | Done (web 1542 tests; PDF buttons on team detail and live match; 13 goldens re-recorded; no real browser check) |
 | 4 | WP123 | Finance: expenses, season balance, CSV exports; e2e journey and ZAP for finance and the PDFs; demo data | Opus · high | After wave 3 |

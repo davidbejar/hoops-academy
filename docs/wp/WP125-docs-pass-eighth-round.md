@@ -21,6 +21,15 @@ Follow the Close-out checklist of `.claude/skills/wp-round/SKILL.md`:
    failed late on Sundays in UTC; a new dated ZAP acceptance in `.zap/api-core.conf` (40018 on
    `/platform/academy-requests`, until 2027-05-16: the 429 of the WP115 limit, as WP83's for `events:batch`) goes
    into "Acceptances with an expiry".
+6. **More orchestrator notes** (2026-11-16): the realm audience mappers for `pdf-service` (dd54179d) and the web's
+   `finance-service` audience line in `RealmTokenPolicyTest` were added at merge time; 0c9309aa (finance image
+   check's cleanup) and a9649e02 (Go before CodeQL init) fixed the workflows; the commit hook's isolation check runs
+   in the session's directory (the main checkout), so in a worktree it never checks the branch (open item: make it
+   follow the commit's worktree); the owner's `.env` got `FINANCE_MIGRATOR_PASSWORD`, `FINANCE_APP_PASSWORD` and
+   `REDPANDA_FINANCE_SERVICE_PASSWORD` copied from WP118's worktree; a network outage stopped wave 2 for about five
+   hours (the watchdog resumed the agents); P-07 of the privacy threat model and `release.md`'s Jaeger line are out
+   of date since WP120; database spans are missing in every service (WP120 handover); game's academy names need
+   `just events-backfill force` (WP117 handover).
 
 ## Acceptance
 - [ ] Every claim checked against a handover, a commit or a command you ran
