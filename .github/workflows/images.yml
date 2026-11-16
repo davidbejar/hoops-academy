@@ -250,7 +250,9 @@ jobs:
           for _ in $(seq 1 30); do curl -fs http://127.0.0.1:8085/q/health/ready && break; sleep 1; done
           curl -fs http://127.0.0.1:8085/q/health/ready
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8085/api/finance/settings)" = 401
-          podman rm -f finance db
+          # the checks above decide; on the runner, rootless Podman can fail to tear down the network namespace
+          # ("rootless netns: kill network process: permission denied", exit 125, run 43792899975)
+          podman rm -f finance db || true
       - name: Trivy scan (fail on fixable HIGH/CRITICAL)
         run: |
           podman save -o image.tar "$IMAGE"
