@@ -20,13 +20,15 @@ type DueStore struct{}
 const (
 	dueColumns = `d.id, d.fee_plan_id, d.player_id, d.team_id, d.period, d.period_start, d.period_end, d.amount_minor,
 		d.plan_amount_minor, d.status, d.reason, d.created_at, d.updated_at, d.version`
-	// A due as read: its plan's name, its player's name (none once removed), its valid payment and who recorded it.
-	dueRecord = `select ` + dueColumns + `, f.name, coalesce(p.display_name, '') as player_name,
+	// A due as read: its plan's name, its player's name (none once removed), its team's name (none until known), its
+	// valid payment and who recorded it.
+	dueRecord = `select ` + dueColumns + `, f.name, coalesce(p.display_name, '') as player_name, coalesce(t.name, ''),
 			pay.id, pay.amount_minor, pay.paid_on, pay.method, pay.note, pay.recorded_by, pay.recorded_at,
 			coalesce(rb.display_name, '')
 		from finance.due d
 		join finance.fee_plan f on f.tenant_id = d.tenant_id and f.id = d.fee_plan_id
 		left join finance.player_ref p on p.tenant_id = d.tenant_id and p.id = d.player_id and not p.removed
+		left join finance.team_ref t on t.tenant_id = d.tenant_id and t.id = d.team_id and not t.removed
 		left join finance.payment pay on pay.tenant_id = d.tenant_id and pay.due_id = d.id and pay.voided_at is null
 		left join finance.person_ref rb on rb.tenant_id = d.tenant_id and rb.id = pay.recorded_by
 		where d.tenant_id = app.current_tenant()`
@@ -59,6 +61,15 @@ const (
 		where tenant_id = app.current_tenant() and id = $1 and version = $6`
 	behindPlayers = `select distinct player_id from finance.due
 		where tenant_id = app.current_tenant() and player_id = any($1::uuid[]) and status = 'OPEN' and period_start <= $2`
+	// The season's income: PAID by the valid payment's amount, OPEN and WAIVED by the due's amount.
+	seasonIncome = `select
+			coalesce(sum(pay.amount_minor) filter (where d.status = 'PAID'), 0)::bigint,
+			coalesce(sum(d.amount_minor) filter (where d.status = 'OPEN'), 0)::bigint,
+			coalesce(sum(d.amount_minor) filter (where d.status = 'WAIVED'), 0)::bigint
+		from finance.due d
+		join finance.fee_plan f on f.tenant_id = d.tenant_id and f.id = d.fee_plan_id
+		left join finance.payment pay on pay.tenant_id = d.tenant_id and pay.due_id = d.id and pay.voided_at is null
+		where d.tenant_id = app.current_tenant() and f.season_id = $1`
 )
 
 // Existing reads the players with a due of plan and period.
@@ -271,8 +282,8 @@ func dueRecords(ctx context.Context, q querier, sql string, args ...any) ([]appl
 		var d dueRow
 		var p validPayment
 		var record application.DueRecord
-		dests := append(d.dests(), &record.PlanName, &record.PlayerName, &p.id, &p.amount, &p.paidOn, &p.method, &p.note,
-			&p.recordedBy, &p.recordedAt, &p.recordedByName)
+		dests := append(d.dests(), &record.PlanName, &record.PlayerName, &record.TeamName, &p.id, &p.amount, &p.paidOn,
+			&p.method, &p.note, &p.recordedBy, &p.recordedAt, &p.recordedByName)
 		if err := scan(row, dests...); err != nil {
 			return record, err
 		}
@@ -466,4 +477,18 @@ func optional[T interface{ String() string }](id *T) *string {
 	}
 	text := (*id).String()
 	return &text
+}
+
+// Income sums the dues of a season's plans by status.
+func (DueStore) Income(ctx context.Context, season domain.SeasonID) (domain.IncomeTotals, error) {
+	q, err := txOf(ctx)
+	if err != nil {
+		return domain.IncomeTotals{}, err
+	}
+	var income domain.IncomeTotals
+	if err := q.QueryRow(ctx, seasonIncome, season.String()).Scan(&income.PaidMinor, &income.OpenMinor,
+		&income.WaivedMinor); err != nil {
+		return domain.IncomeTotals{}, fmt.Errorf("season income: %w", err)
+	}
+	return income, nil
 }

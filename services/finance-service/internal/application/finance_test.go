@@ -25,17 +25,18 @@ type fixture struct {
 	settings *fakeSettings
 	plans    *fakePlans
 	dues     *fakeDues
+	expenses *fakeExpenses
 	audit    *fakeAudit
 }
 
 func newFixture() fixture {
 	f := fixture{
 		tx: &fakeTransactions{}, settings: &fakeSettings{}, plans: newFakePlans(),
-		dues: &fakeDues{plans: map[domain.FeePlanID]bool{}}, audit: &fakeAudit{},
+		dues: &fakeDues{plans: map[domain.FeePlanID]bool{}}, audit: &fakeAudit{}, expenses: &fakeExpenses{},
 	}
 	f.finance = NewFinance(Ports{
 		Clock: fixedClock{now}, IDs: &sequenceIDs{}, Transactions: f.tx, Settings: f.settings, FeePlans: f.plans,
-		Dues: f.dues, Audit: f.audit,
+		Dues: f.dues, Audit: f.audit, Expenses: f.expenses,
 		Members: &fakeMembers{members: map[string]domain.Membership{"admin": caller(domain.Admin)}},
 	})
 	return f
@@ -343,3 +344,19 @@ func TestTheTenantFilterResolvesMembershipsInsideTheTenant(t *testing.T) {
 }
 
 func errOf[T any](_ T, err error) error { return err }
+
+// ADR-0056 amendment WP123: an expense is kept in the academy's currency, so it fixes the currency as a due does.
+func TestAnExpenseFixesTheCurrencyAsADueDoes(t *testing.T) {
+	f := newFixture()
+	withEuro(f)
+	f.expenses.any = true
+
+	_, err := f.finance.UpdateSettings(ctx, admin, "USD")
+	requireKind(t, err, domain.KindConflict, "CURRENCY_LOCKED")
+	if view, err := f.finance.Settings(ctx, admin); err != nil || !view.Locked {
+		t.Errorf("settings %+v %v", view, err)
+	}
+	if _, err := f.finance.UpdateSettings(ctx, admin, "EUR"); err != nil {
+		t.Errorf("the same currency again is no change: %v", err)
+	}
+}

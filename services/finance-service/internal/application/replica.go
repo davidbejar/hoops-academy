@@ -26,8 +26,8 @@ type RosterEvent struct {
 	LinkData       *GuardianLinkState // guardian-link.changed
 }
 
-// TenantState is an academy as the replica keeps it.
-type TenantState struct{ Status, Timezone string }
+// TenantState is an academy as the replica keeps it (the slug names the export files).
+type TenantState struct{ Status, Timezone, Slug string }
 
 // PersonState is a member as the replica keeps it.
 type PersonState struct {
@@ -44,11 +44,12 @@ type PlayerState struct {
 	Status      string
 }
 
-// TeamState is a team as the replica keeps it: its season's dates and its age category.
+// TeamState is a team as the replica keeps it: its season's dates, its age category and its name (the dues export).
 type TeamState struct {
 	Season                 domain.SeasonID
 	SeasonStart, SeasonEnd time.Time
 	AgeCategory            domain.AgeCategoryID
+	Name                   string
 }
 
 // AssignmentState is a player's assignment to a team (core.team_player); LeftOn is the last day on the team.

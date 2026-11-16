@@ -73,6 +73,7 @@ func run() error {
 		FeePlans: persistence.FeePlanStore{}, Dues: persistence.DueQueries{},
 		Audit: persistence.AuditLog{IDs: ids.V7{}, Log: log}, Members: persistence.MembershipStore{},
 		Roster: persistence.RosterStore{}, DueStore: persistence.DueStore{}, Payments: persistence.PaymentStore{},
+		Expenses: persistence.ExpenseStore{},
 	})
 	if cfg.DuesJob.Enabled {
 		runner := job.Runner{Interval: cfg.DuesJob.Interval, Log: log, Job: application.NewDuesJob(finance,

@@ -22,15 +22,17 @@ type Ports struct {
 	Roster       RosterReads
 	DueStore     DueStore
 	Payments     PaymentStore
+	Expenses     ExpenseStore
 }
 
-// Finance holds the use cases of settings, fee plans, dues and payments.
+// Finance holds the use cases of settings, fee plans, dues, payments, expenses, the balance and the exports.
 type Finance struct{ p Ports }
 
 // NewFinance wires the use cases.
 func NewFinance(ports Ports) *Finance { return &Finance{p: ports} }
 
-// SettingsView is the settings as answered: no currency before ADMIN chose one; Locked once a due exists.
+// SettingsView is the settings as answered: no currency before ADMIN chose one; Locked once a due or an expense
+// exists.
 type SettingsView struct {
 	Currency *domain.Currency
 	Locked   bool
@@ -88,7 +90,7 @@ func (f *Finance) settingsView(ctx context.Context) (SettingsView, error) {
 	if err != nil {
 		return SettingsView{}, err
 	}
-	locked, err := f.p.Dues.AnyDue(ctx)
+	locked, err := f.currencyInUse(ctx)
 	if err != nil {
 		return SettingsView{}, err
 	}
@@ -111,7 +113,7 @@ func (f *Finance) UpdateSettings(ctx context.Context, caller domain.Membership, 
 		if err != nil {
 			return err
 		}
-		locked, err := f.p.Dues.AnyDue(ctx)
+		locked, err := f.currencyInUse(ctx)
 		if err != nil {
 			return err
 		}
@@ -153,4 +155,48 @@ func (f *Finance) currency(ctx context.Context) (domain.Currency, error) {
 		return domain.Currency{}, domain.Conflict("CURRENCY_NOT_SET", "choose the academy's currency first")
 	}
 	return settings.Currency, nil
+}
+
+// currencyInUse reports whether amounts in the currency exist: a due or an expense (ADR-0056 amendment WP123: an
+// expense is kept in the academy's currency, so it fixes the currency as the first due does).
+func (f *Finance) currencyInUse(ctx context.Context) (bool, error) {
+	dues, err := f.p.Dues.AnyDue(ctx)
+	if err != nil || dues {
+		return dues, err
+	}
+	return f.p.Expenses.Any(ctx)
+}
+
+// currencyOfPage is the academy's currency for a page of count items: nil for an empty page (no currency may have
+// been chosen yet); with items the currency exists, since nothing with an amount is stored without it.
+func (f *Finance) currencyOfPage(ctx context.Context, count int) (*domain.Currency, error) {
+	if count == 0 {
+		return nil, nil //nolint:nilnil // an empty page needs no currency
+	}
+	currency, err := f.currency(ctx)
+	return &currency, err
+}
+
+// Paged is one page of items in the academy's currency (nil only while the page is empty and no currency was chosen)
+// and the total.
+type Paged[T any] struct {
+	Items    []T
+	Currency *domain.Currency
+	Total    int64
+}
+
+// adminPage reads a page as ADMIN in the bound tenant, with the currency when the page holds items.
+func adminPage[T any](ctx context.Context, f *Finance, caller domain.Membership,
+	read func(ctx context.Context) ([]T, int64, error)) (Paged[T], error) {
+	var result Paged[T]
+	err := f.asAdmin(ctx, caller, func(ctx context.Context) error {
+		items, total, err := read(ctx)
+		if err != nil {
+			return err
+		}
+		result = Paged[T]{Items: items, Total: total}
+		result.Currency, err = f.currencyOfPage(ctx, len(items))
+		return err
+	})
+	return result, err
 }

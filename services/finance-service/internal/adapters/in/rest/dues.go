@@ -192,8 +192,8 @@ func (h *handler) generateDues(w http.ResponseWriter, r *http.Request, caller do
 
 var periodKey = regexp.MustCompile(`^([0-9]{4}-(0[1-9]|1[0-2])|[0-9]{4}-Q[1-4]|SEASON)$`)
 
-func (h *handler) listDues(w http.ResponseWriter, r *http.Request, caller domain.Membership) {
-	q := newQuery(r)
+// dueFilterOf reads the filters of listDues and exportDues.
+func dueFilterOf(q *query) application.DueFilter {
 	filter := application.DueFilter{
 		Plan: typed[domain.FeePlanID](q.uuid("feePlanId")), Team: typed[domain.TeamID](q.uuid("teamId")),
 		Player: typed[domain.PlayerID](q.uuid("playerId")), Season: typed[domain.SeasonID](q.uuid("seasonId")),
@@ -212,7 +212,12 @@ func (h *handler) listDues(w http.ResponseWriter, r *http.Request, caller domain
 			filter.Status = &status
 		}
 	}
-	page := q.page()
+	return filter
+}
+
+func (h *handler) listDues(w http.ResponseWriter, r *http.Request, caller domain.Membership) {
+	q := newQuery(r)
+	filter, page := dueFilterOf(q), q.page()
 	if q.failed(w, r) {
 		return
 	}
@@ -221,11 +226,7 @@ func (h *handler) listDues(w http.ResponseWriter, r *http.Request, caller domain
 		h.writeError(w, withCaller(r, caller), err)
 		return
 	}
-	items := make([]dueDTO, len(result.Items))
-	for i, record := range result.Items {
-		items[i] = dueOf(record, *result.Currency)
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items, "page": pageOf(page, result.Total)})
+	writePage(w, page, result.Total, result.Items, result.Currency, dueOf)
 }
 
 // typed converts an optional uuid to an id type.
@@ -279,11 +280,7 @@ func (h *handler) playerDues(w http.ResponseWriter, r *http.Request, caller doma
 		h.writeError(w, r, err)
 		return
 	}
-	items := make([]playerDueDTO, len(result.Items))
-	for i, record := range result.Items {
-		items[i] = playerDueOf(record, *result.Currency)
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items, "page": pageOf(page, result.Total)})
+	writePage(w, page, result.Total, result.Items, result.Currency, playerDueOf)
 }
 
 // --- writes

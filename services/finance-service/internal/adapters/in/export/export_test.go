@@ -32,7 +32,7 @@ func TestTheFormulaGuardPrefixesDangerousTextButNotNumbers(t *testing.T) {
 	}
 	doc.Row(Number(-7))
 	rows := strings.Split(strings.TrimPrefix(string(doc.Bytes()), "\uFEFF"), "\r\n")
-	want := []string{"h", `"'=cmd|' /C calc'!A0"`, "'+SUM(A1)", "'-2", "'@x", "'\tx", "\"'\rx\"", "a=b", "'quoted", "-7", ""}
+	want := []string{"h", "'=cmd|' /C calc'!A0", "'+SUM(A1)", "'-2", "'@x", "'\tx", "\"'\rx\"", "a=b", "'quoted", "-7", ""}
 	if len(rows) != len(want) {
 		t.Fatalf("rows %q", rows)
 	}
@@ -106,12 +106,12 @@ func TestTheLabelsExistInEveryLanguageForEveryColumnAndValue(t *testing.T) {
 func TestTheFileNameIsAsciiWithTheAcademysSlugAndDay(t *testing.T) {
 	day := time.Date(2026, 11, 16, 0, 0, 0, 0, time.UTC)
 	for slug, want := range map[string]string{
-		"hang-tuah":                 "hoops-hang-tuah-dues-20261116.csv",
-		"Ñandú Básquet  Club":       "hoops-nandu-basquet-club-dues-20261116.csv",
-		"":                          "hoops-dues-20261116.csv",
-		"---":                       "hoops-dues-20261116.csv",
+		"hang-tuah":                  "hoops-hang-tuah-dues-20261116.csv",
+		"Ñandú Básquet  Club":        "hoops-nandu-basquet-club-dues-20261116.csv",
+		"":                           "hoops-dues-20261116.csv",
+		"---":                        "hoops-dues-20261116.csv",
 		strings.Repeat("abcde-", 10): "hoops-abcde-abcde-abcde-abcde-abcde-abcde-abcd-dues-20261116.csv",
-		"a\"b;c\r\nd":               "hoops-a-b-c-d-dues-20261116.csv",
+		"a\"b;c\r\nd":                "hoops-a-b-c-d-dues-20261116.csv",
 	} {
 		if got := FileName(slug, "dues", day); got != want {
 			t.Errorf("%q: %q, want %q", slug, got, want)

@@ -55,14 +55,6 @@ func readClear(raw jsonRaw, changes *domain.FeePlanChanges, add func(field, code
 	if err := json.Unmarshal(raw, &names); err != nil {
 		return err //nolint:wrapcheck // reported as INVALID_TYPE of clear
 	}
-	seen := map[string]bool{}
-	for _, name := range names {
-		if !clearable[name] || seen[name] {
-			add("clear", "INVALID")
-			continue
-		}
-		seen[name] = true
-	}
-	changes.ClearLastPeriod = seen["lastPeriod"]
+	changes.ClearLastPeriod = readClearList(names, clearable, add)["lastPeriod"]
 	return nil
 }

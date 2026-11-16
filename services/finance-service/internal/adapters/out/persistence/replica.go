@@ -18,9 +18,9 @@ const (
 	markApplied = `insert into finance.applied_event (tenant_id, event_id, topic) values (app.current_tenant(), $1, $2)
 		on conflict do nothing`
 	noteTenant   = "insert into finance.replica_tenant (id) values (app.current_tenant()) on conflict do nothing"
-	upsertTenant = `insert into finance.tenant_ref (tenant_id, status, timezone, removed, occurred_at, event_id)
-		values (app.current_tenant(), $1, $2, $3, $4, $5)
-		on conflict (tenant_id) do update set status = excluded.status, timezone = excluded.timezone,
+	upsertTenant = `insert into finance.tenant_ref (tenant_id, status, timezone, removed, occurred_at, event_id, slug)
+		values (app.current_tenant(), $1, $2, $3, $4, $5, $6)
+		on conflict (tenant_id) do update set status = excluded.status, timezone = excluded.timezone, slug = excluded.slug,
 			removed = excluded.removed, occurred_at = excluded.occurred_at, event_id = excluded.event_id
 		where finance.tenant_ref.occurred_at <= excluded.occurred_at`
 	upsertPerson = `insert into finance.person_ref (tenant_id, id, subject, roles, active, removed, occurred_at, event_id,
@@ -63,11 +63,11 @@ func (ReplicaStore) UpsertTenant(ctx context.Context, e application.RosterEvent,
 	if err != nil {
 		return err
 	}
-	var status, zone *string
+	var status, zone, slug *string
 	if state != nil {
-		status, zone = &state.Status, &state.Timezone
+		status, zone, slug = &state.Status, &state.Timezone, &state.Slug
 	}
-	if _, err := q.Exec(ctx, upsertTenant, status, zone, state == nil, e.OccurredAt, e.ID.String()); err != nil {
+	if _, err := q.Exec(ctx, upsertTenant, status, zone, state == nil, e.OccurredAt, e.ID.String(), slug); err != nil {
 		return fmt.Errorf("upsert tenant: %w", err)
 	}
 	return nil

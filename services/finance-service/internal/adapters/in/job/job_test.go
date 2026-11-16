@@ -46,6 +46,7 @@ func financeOn(pool *pgxpool.Pool) *application.Finance {
 		Settings: persistence.SettingsStore{}, FeePlans: persistence.FeePlanStore{}, Dues: persistence.DueQueries{},
 		Audit: persistence.AuditLog{IDs: ids.V7{}}, Members: persistence.MembershipStore{},
 		Roster: persistence.RosterStore{}, DueStore: persistence.DueStore{}, Payments: persistence.PaymentStore{},
+		Expenses: persistence.ExpenseStore{},
 	})
 }
 
@@ -207,6 +208,7 @@ func TestTheJobUsesEachAcademysTimeZone(t *testing.T) {
 		Settings: persistence.SettingsStore{}, FeePlans: persistence.FeePlanStore{}, Dues: persistence.DueQueries{},
 		Audit: persistence.AuditLog{IDs: ids.V7{}}, Members: persistence.MembershipStore{},
 		Roster: persistence.RosterStore{}, DueStore: persistence.DueStore{}, Payments: persistence.PaymentStore{},
+		Expenses: persistence.ExpenseStore{},
 	}), persistence.TenantDirectory{Pool: database.App}, persistence.Exclusive{Pool: database.App})
 
 	if _, _, err := job.Run(context.Background()); err != nil {

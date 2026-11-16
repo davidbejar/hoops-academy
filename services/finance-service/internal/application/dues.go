@@ -41,11 +41,7 @@ type DueDetail struct {
 }
 
 // DuePage is one page of dues and the total.
-type DuePage struct {
-	Items    []DueRecord
-	Currency *domain.Currency // nil only while the page is empty and no currency was chosen
-	Total    int64
-}
+type DuePage = Paged[DueRecord]
 
 // PlayerStatus is whether a player of a team is up to date: no OPEN due of a started period (decision 96).
 type PlayerStatus struct {
@@ -152,21 +148,9 @@ func (f *Finance) store(ctx context.Context, actor domain.Membership, generation
 
 // ListDues reads a page of dues.
 func (f *Finance) ListDues(ctx context.Context, caller domain.Membership, filter DueFilter, page Page) (DuePage, error) {
-	var result DuePage
-	err := f.asAdmin(ctx, caller, func(ctx context.Context) error {
-		items, total, err := f.p.DueStore.List(ctx, filter, page)
-		if err != nil {
-			return err
-		}
-		result = DuePage{Items: items, Total: total}
-		if len(items) > 0 {
-			currency, err := f.currency(ctx)
-			result.Currency = &currency
-			return err
-		}
-		return nil
+	return adminPage(ctx, f, caller, func(ctx context.Context) ([]DueRecord, int64, error) {
+		return f.p.DueStore.List(ctx, filter, page)
 	})
-	return result, err
 }
 
 // Due reads a due with every payment recorded for it.
@@ -400,12 +384,8 @@ func (f *Finance) PlayerDues(ctx context.Context, caller domain.Membership, play
 			return err
 		}
 		result = DuePage{Items: items, Total: total}
-		if len(items) > 0 {
-			currency, err := f.currency(ctx)
-			result.Currency = &currency
-			return err
-		}
-		return nil
+		result.Currency, err = f.currencyOfPage(ctx, len(items))
+		return err
 	})
 	return result, err
 }

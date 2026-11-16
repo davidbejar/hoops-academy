@@ -24,7 +24,7 @@ func (h *handler) routes(mux *http.ServeMux) {
 		"archive": asPlan(h.archivePlan), "unarchive": asPlan(h.unarchivePlan),
 	}))
 	h.dueRoutes(mux)
-	h.notImplementedRoutes(mux)
+	h.expenseRoutes(mux)
 }
 
 type planHandler func(w http.ResponseWriter, r *http.Request, caller domain.Membership, id domain.FeePlanID)
@@ -171,6 +171,16 @@ type pageDTO struct {
 func pageOf(page application.Page, total int64) pageDTO {
 	size := int64(page.Size)
 	return pageDTO{Page: page.Index, Size: page.Size, TotalElements: total, TotalPages: (total + size - 1) / size}
+}
+
+// writePage answers a page of items in the academy's currency (nil only for an empty page) as {items, page}.
+func writePage[T, D any](w http.ResponseWriter, page application.Page, total int64, items []T,
+	currency *domain.Currency, dto func(T, domain.Currency) D) {
+	out := make([]D, len(items))
+	for i, item := range items {
+		out[i] = dto(item, *currency)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": out, "page": pageOf(page, total)})
 }
 
 func (h *handler) listPlans(w http.ResponseWriter, r *http.Request, caller domain.Membership) {

@@ -111,13 +111,13 @@ func decoded(topic string, e envelope) (application.RosterEvent, bool, error) {
 }
 
 // payloads decode the state of each `.changed` type into the event, keeping only what the replica stores: a player's
-// birth date and gender are never read (P-10), nor names of teams, jersey numbers or a staff entry's start.
+// birth date and gender are never read (P-10), nor jersey numbers or a staff entry's start; an academy keeps its slug and
+// a team its name (the export file name and its team column, WP123).
 var payloads = map[string]func(raw json.RawMessage, event *application.RosterEvent) error{
 	"tenant.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
-		var p struct{ Status, Timezone string }
-		event.TenantData = &application.TenantState{}
+		var p struct{ Status, Timezone, Slug string }
 		err := unmarshal(raw, &p)
-		event.TenantData.Status, event.TenantData.Timezone = p.Status, p.Timezone
+		event.TenantData = &application.TenantState{Status: p.Status, Timezone: p.Timezone, Slug: p.Slug}
 		return err
 	},
 	"person.changed": func(raw json.RawMessage, event *application.RosterEvent) error {
@@ -147,11 +147,12 @@ var payloads = map[string]func(raw json.RawMessage, event *application.RosterEve
 			SeasonID                       uuidText
 			SeasonStartDate, SeasonEndDate dateText
 			AgeCategoryID                  uuidText
+			Name                           string
 		}
 		err := unmarshal(raw, &p)
 		event.TeamData = &application.TeamState{Season: domain.SeasonID(p.SeasonID),
 			SeasonStart: time.Time(p.SeasonStartDate), SeasonEnd: time.Time(p.SeasonEndDate),
-			AgeCategory: domain.AgeCategoryID(p.AgeCategoryID)}
+			AgeCategory: domain.AgeCategoryID(p.AgeCategoryID), Name: p.Name}
 		return err
 	},
 	"team-player.changed": func(raw json.RawMessage, event *application.RosterEvent) error {

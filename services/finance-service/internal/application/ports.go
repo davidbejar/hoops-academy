@@ -82,11 +82,12 @@ type MembershipSource interface {
 	Membership(ctx context.Context, tenant domain.TenantID, subject string) (domain.Membership, bool, error)
 }
 
-// Academy is the bound academy as the replica knows it: whether it is ACTIVE (and not removed) and its time zone
-// (UTC when unknown or not a zone).
+// Academy is the bound academy as the replica knows it: whether it is ACTIVE (and not removed), its time zone (UTC
+// when unknown or not a zone) and its slug (empty until the replica knows it; export file names).
 type Academy struct {
 	Active bool
 	Zone   *time.Location
+	Slug   string
 }
 
 // RosterPlayer is a player of a team's roster with the name the lists show.
@@ -134,12 +135,13 @@ type PaymentRecord struct {
 	VoidedBy   *PersonRef
 }
 
-// DueRecord is a due as read: with its plan's and player's names and its valid payment (none unless PAID). The
-// player's name is empty once the player is removed from the roster.
+// DueRecord is a due as read: with its plan's, player's and team's names and its valid payment (none unless PAID).
+// The player's name is empty once the player is removed from the roster, the team's until the replica knows it.
 type DueRecord struct {
 	Due        domain.Due
 	PlanName   string
 	PlayerName string
+	TeamName   string
 	Payment    *PaymentRecord
 }
 
@@ -160,6 +162,33 @@ type DueStore interface {
 	OfPlayer(ctx context.Context, player domain.PlayerID, page Page) ([]DueRecord, int64, error)
 	// Behind reports which of players have an OPEN due of a period started on or before today.
 	Behind(ctx context.Context, players []domain.PlayerID, today time.Time) (map[domain.PlayerID]bool, error)
+	// Income sums the dues of season's plans by status: PAID by the valid payment's amount, OPEN and WAIVED by the
+	// due's amount.
+	Income(ctx context.Context, season domain.SeasonID) (domain.IncomeTotals, error)
+}
+
+// ExpenseFilter narrows the expense list; nil fields do not filter. From and To bound the day (dates, inclusive).
+type ExpenseFilter struct {
+	From, To *time.Time
+	Category *domain.ExpenseCategory
+}
+
+// ExpenseStore keeps the bound tenant's expenses.
+type ExpenseStore interface {
+	Insert(ctx context.Context, expense domain.Expense) error
+	Get(ctx context.Context, id domain.ExpenseID) (domain.Expense, bool, error)
+	// Lock reads an expense and locks it until the transaction ends.
+	Lock(ctx context.Context, id domain.ExpenseID) (domain.Expense, bool, error)
+	// Update writes expense if its Version is still the stored one (else ErrConcurrentModification) and returns it
+	// with the next Version.
+	Update(ctx context.Context, expense domain.Expense) (domain.Expense, error)
+	Delete(ctx context.Context, id domain.ExpenseID) error
+	// List orders newest first: by day, then creation, then id, all descending.
+	List(ctx context.Context, filter ExpenseFilter, page Page) ([]domain.Expense, int64, error)
+	// Any reports whether the academy recorded an expense (it fixes the currency, as a due does).
+	Any(ctx context.Context) (bool, error)
+	// Spent sums the expenses of the days from..to (inclusive) by category; categories without any are absent.
+	Spent(ctx context.Context, from, to time.Time) (map[domain.ExpenseCategory]int64, error)
 }
 
 // PaymentStore keeps the bound tenant's payments.

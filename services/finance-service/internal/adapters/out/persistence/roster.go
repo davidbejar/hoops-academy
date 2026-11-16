@@ -23,11 +23,11 @@ const (
 			status = excluded.status
 		where finance.player_ref.occurred_at <= excluded.occurred_at`
 	upsertTeam = `insert into finance.team_ref (tenant_id, id, removed, occurred_at, event_id, season_id, season_start,
-			season_end, age_category_id)
-		values (app.current_tenant(), $1, $2, $3, $4, $5, $6, $7, $8)
+			season_end, age_category_id, name)
+		values (app.current_tenant(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
 		on conflict (tenant_id, id) do update set removed = excluded.removed, occurred_at = excluded.occurred_at,
 			event_id = excluded.event_id, season_id = excluded.season_id, season_start = excluded.season_start,
-			season_end = excluded.season_end, age_category_id = excluded.age_category_id
+			season_end = excluded.season_end, age_category_id = excluded.age_category_id, name = excluded.name
 		where finance.team_ref.occurred_at <= excluded.occurred_at`
 	upsertAssignment = `insert into finance.team_player_ref (tenant_id, id, removed, occurred_at, event_id, team_id,
 			player_id, joined_on, left_on, invalid_reason)
@@ -73,13 +73,13 @@ func (ReplicaStore) UpsertPlayer(ctx context.Context, e application.RosterEvent,
 	return upsert(ctx, "player", upsertPlayer, e, false, s.Person.String(), s.DisplayName, s.Status)
 }
 
-// UpsertTeam writes a team: its season's dates and its age category.
+// UpsertTeam writes a team: its season's dates, its age category and its name.
 func (ReplicaStore) UpsertTeam(ctx context.Context, e application.RosterEvent, s *application.TeamState) error {
 	if s == nil {
-		return upsert(ctx, "team", upsertTeam, e, true, nil, nil, nil, nil)
+		return upsert(ctx, "team", upsertTeam, e, true, nil, nil, nil, nil, nil)
 	}
 	return upsert(ctx, "team", upsertTeam, e, false, s.Season.String(), s.SeasonStart, s.SeasonEnd,
-		s.AgeCategory.String())
+		s.AgeCategory.String(), s.Name)
 }
 
 // UpsertAssignment writes a player's assignment to a team.
@@ -111,7 +111,8 @@ func (ReplicaStore) UpsertGuardianLink(ctx context.Context, e application.Roster
 type RosterStore struct{}
 
 const (
-	selectAcademy    = `select status, timezone, removed from finance.tenant_ref where tenant_id = app.current_tenant()`
+	selectAcademy = `select status, timezone, removed, coalesce(slug, '') from finance.tenant_ref
+		where tenant_id = app.current_tenant()`
 	selectStaffTeams = `select distinct s.team_id from finance.team_staff_ref s
 		join finance.team_ref t on t.tenant_id = s.tenant_id and t.id = s.team_id
 		where s.tenant_id = app.current_tenant() and s.person_id = $1 and s.role = 'COACH' and not s.removed
@@ -145,7 +146,7 @@ const (
 		order by name, p.id`
 )
 
-// Academy reads the bound academy's status and time zone.
+// Academy reads the bound academy's status, time zone and slug.
 func (RosterStore) Academy(ctx context.Context) (application.Academy, bool, error) {
 	q, err := txOf(ctx)
 	if err != nil {
@@ -153,7 +154,8 @@ func (RosterStore) Academy(ctx context.Context) (application.Academy, bool, erro
 	}
 	var status, zone *string
 	var removed bool
-	if err := q.QueryRow(ctx, selectAcademy).Scan(&status, &zone, &removed); errors.Is(err, pgx.ErrNoRows) {
+	var slug string
+	if err := q.QueryRow(ctx, selectAcademy).Scan(&status, &zone, &removed, &slug); errors.Is(err, pgx.ErrNoRows) {
 		return application.Academy{}, false, nil
 	} else if err != nil {
 		return application.Academy{}, false, fmt.Errorf("academy: %w", err)
@@ -165,7 +167,7 @@ func (RosterStore) Academy(ctx context.Context) (application.Academy, bool, erro
 		}
 	}
 	active := !removed && status != nil && *status == "ACTIVE"
-	return application.Academy{Active: active, Zone: location}, true, nil
+	return application.Academy{Active: active, Zone: location, Slug: slug}, true, nil
 }
 
 // Relations reads person's coached teams of seasons not ended on today, linked players and own player.

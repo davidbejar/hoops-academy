@@ -30,7 +30,6 @@ var (
 	unsupportedMedia = problemType{415, "Unsupported Media Type", "unsupported-media-type"}
 	ruleViolation    = problemType{422, "Domain Rule Violation", "domain-rule-violation"}
 	internalError    = problemType{500, "Internal Server Error", "internal-error"}
-	notImplemented   = problemType{501, "Not Implemented", "not-implemented"}
 	unavailable      = problemType{503, "Service Unavailable", "upstream-unavailable"}
 )
 

@@ -142,3 +142,12 @@ func (f *fakeMembers) Membership(_ context.Context, _ domain.TenantID, subject s
 	m, ok := f.members[subject]
 	return m, ok, nil
 }
+
+// fakeExpenses only answers whether an expense exists (it fixes the currency); the store itself is tested through
+// the API with Postgres.
+type fakeExpenses struct {
+	ExpenseStore
+	any bool
+}
+
+func (f *fakeExpenses) Any(context.Context) (bool, error) { return f.any, nil }

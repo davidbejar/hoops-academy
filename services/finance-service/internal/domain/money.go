@@ -54,14 +54,15 @@ type Settings struct {
 	Version  int
 }
 
-// ChangeCurrency sets the academy's currency (current is nil before the first choice). Once a due exists the
-// currency is fixed (decision 94): another one is refused with 409 CURRENCY_LOCKED; the same one is no change.
-func ChangeCurrency(current *Settings, currency Currency, duesExist bool) (Settings, error) {
+// ChangeCurrency sets the academy's currency (current is nil before the first choice). Once amounts in it exist (a
+// due, decision 94, or an expense, ADR-0056 amendment WP123) the currency is fixed: another one is refused with 409
+// CURRENCY_LOCKED; the same one is no change.
+func ChangeCurrency(current *Settings, currency Currency, inUse bool) (Settings, error) {
 	if current == nil {
 		return Settings{Currency: currency}, nil
 	}
-	if current.Currency != currency && duesExist {
-		return *current, Conflict("CURRENCY_LOCKED", "the currency is fixed once the first due exists")
+	if current.Currency != currency && inUse {
+		return *current, Conflict("CURRENCY_LOCKED", "the currency is fixed once the first due or expense exists")
 	}
 	changed := *current
 	changed.Currency = currency
