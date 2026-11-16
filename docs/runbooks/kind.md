@@ -13,7 +13,7 @@ event broker (ADR-0036). The compose stack
 - Capacity: the full stack requests ~1.5 CPU / ~2.5 GiB inside the kind node (Keycloak 512 Mi–1 Gi, three
   services 192–448 Mi, two Postgres 192–512 Mi, Envoy Gateway controller 256 Mi + one Envoy proxy 64–256 Mi, its
   rate limit service `envoy-ratelimit` 32–128 Mi + `ratelimit-redis` 16–64 Mi, `redpanda` 512–768 Mi with a 1 Gi volume,
-  `otel-collector` 64–256 Mi + `jaeger` 64–256 Mi (WP86), CNPG operator, control plane ~1 GiB).
+  `otel-collector` 64–256 Mi (WP86) + `lgtm` 512 Mi–1.25 Gi (Grafana LGTM, WP120), CNPG operator, control plane ~1 GiB).
 
 ### Rootless vs rootful Podman
 kind's Podman provider works best on a **rootful** machine. Rootless needs cgroup v2 with the
@@ -57,8 +57,8 @@ the container), `--skip-flutter` (reuse `apps/web/build/web`).
 | `http://localhost:8090/api/<svc>/q/health[/live\|ready\|started]` | rewritten to `/q/health…` of the service (nothing else under `/q`) |
 | `http://localhost:8090/internal/**` | **403** (routed to the web nginx `location /internal`) |
 | (not routed) `redpanda.hoops.svc.cluster.local:9092` | Redpanda `redpanda-0` (Kafka API, SASL/SCRAM; only from the services' pods) |
-| Tilt port-forwards | Keycloak `:18080`, core `:18081`, game `:18082`, athlete `:18083`, Jaeger UI `:16686` |
-| (not routed) `otel-collector.hoops.svc.cluster.local:4317/4318` | OpenTelemetry collector (WP86): the services' traces and logs and the Envoy edge spans; `kubectl -n hoops logs deploy/otel-collector`, traces in `jaeger` (`docs/runbooks/observability.md`) |
+| Tilt port-forwards | Keycloak `:18080`, core `:18081`, game `:18082`, athlete `:18083`, Grafana (`lgtm`) `:3000` |
+| (not routed) `otel-collector.hoops.svc.cluster.local:4317/4318` | OpenTelemetry collector (WP86, WP120): the services' traces and logs, the Envoy edge spans and the scraped `/q/metrics`, all to `lgtm` (Grafana by `kubectl -n hoops port-forward svc/lgtm 3000`, `docs/runbooks/observability.md`) |
 
 How the gateway is wired: the chart renders GatewayClass `envoy-gateway` (kind only, `gateway.gatewayClass.create`),
 Gateway `hoops` (listeners `http` :80, `https` :443 with `hoops-gateway-tls`), one HTTPRoute per prefix, the exact

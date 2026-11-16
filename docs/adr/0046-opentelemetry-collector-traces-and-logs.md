@@ -74,3 +74,56 @@ of the log statements (no names, e-mails, tokens).
 - The debug exporter prints log bodies into the collector's own log; in a real environment set `debugVerbosity: basic`
   (default) so it only counts.
 - Chart 0.9.0 (`hoops-service` 0.7.0); images must be rebuilt for the two build-time keys.
+
+## Amendment 2026-11-16 (decision 91, WP120): one Grafana LGTM pod on kind and in compose, metrics through the collector
+**Backend on kind: Grafana's all-in-one `grafana/otel-lgtm`** (`observability.lgtm.enabled`, on in `values-kind.yaml`, off
+in `values-cloud.yaml`), replacing the in-memory Jaeger on kind. One pod runs Grafana, Loki (logs), Tempo (traces and its
+span metrics) and Prometheus (metrics) behind the image's own collector on 4317; the chart collector exports all three
+signals to it (`otlp_grpc/lgtm`). One pod instead of four charts because kind shares a 2-CPU / 8 GiB VM with compose and
+this is a learning project: one image pinned by tag and index digest (in `scripts/bump_pins.py`, one entry over the chart
+and compose), one Deployment, one Service, one NetworkPolicy. The cloud render keeps Jaeger (traces only, in memory) until
+the cloud environment chooses a backend; a real environment still plugs in its own (the paragraph above stands).
+
+**Metrics through the collector.** The collector gains a `metrics` pipeline: OTLP plus a `prometheus` receiver that scrapes
+`/q/metrics` of every enabled service in `observability.collector.metrics.targets` (job = Service name, so `job` /
+`service_name` name the service; every 30 s). So `hoops_authz_denied_total{kind}`, Micrometer's `http_server_requests` and
+the replica counters reach the backend without a Prometheus Operator; the NetworkPolicies let the collector reach the five
+ports (pdf-service and finance-service admit it explicitly). Requests and errors of all five services (and the Envoy
+gateway) come from Tempo's span metrics (`traces_spanmetrics_*`), complete only while `tracesSampleRatio` is 1.0 (kind).
+
+**Dev only, and private by default** (P-07 of the privacy threat model):
+- **Retention 24 h** (`observability.lgtm.retention`) for logs (Loki compactor retention), traces (Tempo block retention in
+  the backend scheduler and worker) and metrics (Prometheus TSDB), set by the image's `*_EXTRA_ARGS` flags, no config file
+  copied. 24 h is Loki's minimum (its index period); P-07 proposed up to 30 days, shorter is the dev choice. No persistence:
+  `/data` is an emptyDir (capped at `dataSizeLimit`, 2 Gi) and compose uses tmpfs, so a restart empties the store.
+- **Grafana for operators only**: no route; reached with `kubectl port-forward` (kind) or `127.0.0.1:3000` (compose). The
+  viewer is anonymous with role Viewer (`viewers_can_edit` for Explore); the login form and basic auth are off, so the
+  image's default `admin/admin` cannot be used and nobody can change data sources or install plugins. Plugin preinstall,
+  update checks, usage reporting and the news feed are off, and the NetworkPolicy has no egress.
+- **What is stored**: the log records keep their MDC (the tenant id and the security events' subject, as decided above),
+  so Explore shows them to whoever holds the port-forward; the provisioned dashboards never query them: they aggregate by
+  kind, service, outcome and route template, and the security events' log panel `keep`s six fields and the trace id
+  (`deploy/helm/tests/run.sh` checks the dashboards' queries). Span attributes are stripped as before.
+- kind's debug exporter is back at `basic` (counts only): log bodies are no longer copied into the collector's own log.
+
+**Hardening of an image built to run as root**: uid 10001, read-only root FS, all capabilities dropped, emptyDirs for
+`/data`, `/tmp` and `/var/tempo` (Tempo's live store), `Recreate` (never two at once), the image's own health script as
+startup, readiness and liveness probe. Dashboards (requests and errors, authorisation denials, security events) live in
+`deploy/helm/hoops/files/grafana`; the chart mounts them from a ConfigMap and replaces the image's dashboard provider
+(its RED/JVM dashboards expect OTLP metrics these services do not send); compose mounts the same files.
+
+**Compose profile `observability`** (`just observability-up` / `observability-down`): the same collector image, processors
+and pipelines (`infra/compose/otel-collector.yaml`, compared by the chart test), the same LGTM image and environment;
+OTLP on `127.0.0.1:4317/4318` for the services on the host (`QUARKUS_OTEL_SDK_DISABLED=false`), pdf-service and
+finance-service with `HOOPS_OTEL_SDK_DISABLED=false`, metrics scraped through `host.containers.internal`.
+
+**Sizing** (measured on kind with the five services, WP120): working set 530-680 Mi (anon ~510 Mi) plus ~640 Mi of
+reclaimable page cache, ~0.13 core idle; request 512 Mi, limit 1280 Mi. The whole kind stack with LGTM used ~3.4 GiB of
+working set and 4.6 of the VM's 7.9 GB with compose stopped: it fits; compose and kind together still do not (as before).
+
+**Not exported** (unchanged): Keycloak's log and events (incl. `org.keycloak.events`), Envoy's access log and metrics,
+Redpanda's and the databases' logs, the Envoy Gateway and operator logs: read with `kubectl logs` / `podman logs`.
+
+Consequences: chart 0.13.0 (`pdf-service` and `finance-service` 0.2.0); the LGTM image is 2.7 GB (a first `up.sh` pulls it
+inside the node); dashboards are files under review like code; when a real environment gets Grafana, the 24 h retention,
+the anonymous Viewer and the no-egress policy are dev choices to revisit, not defaults to copy.
