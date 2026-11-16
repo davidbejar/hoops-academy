@@ -148,7 +148,12 @@ class _PlanRow extends ConsumerWidget {
       details: Wrap(
         spacing: HoopsSpace.sm,
         runSpacing: HoopsSpace.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          Text(
+            money?.format(plan.amountMinor) ?? '${plan.amountMinor}',
+            style: text.titleMedium,
+          ),
           StatusChip(plan.cadence.label(l), tone: HoopsTone.info),
           if (plan.archived)
             StatusChip(l.financePlanArchived, tone: HoopsTone.neutral),
@@ -156,20 +161,11 @@ class _PlanRow extends ConsumerWidget {
             StatusChip(l.financePlanHasDues, tone: HoopsTone.accent),
         ],
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            money?.format(plan.amountMinor) ?? '${plan.amountMinor}',
-            style: text.titleMedium,
-          ),
-          IconButton(
-            key: Key('plan-menu-${plan.id}'),
-            tooltip: l.moreActions,
-            icon: const Icon(Icons.more_vert),
-            onPressed: online ? () => _menu(context, ref) : null,
-          ),
-        ],
+      trailing: IconButton(
+        key: Key('plan-menu-${plan.id}'),
+        tooltip: l.moreActions,
+        icon: const Icon(Icons.more_vert),
+        onPressed: online ? () => _menu(context, ref) : null,
       ),
     );
   }

@@ -69,7 +69,6 @@ class _Filters extends ConsumerWidget {
     final lookups = ref.watch(financeLookupsProvider).value;
     final locale = localeOf(context);
     final compact = WidthClass.of(context).isCompact;
-    final width = compact ? double.infinity : 240.0;
 
     // The periods to pick from: those of the chosen plan, else of every plan.
     final periodKeys = <String>{};
@@ -93,92 +92,108 @@ class _Filters extends ConsumerWidget {
     DropdownMenuItem<String?> all() =>
         DropdownMenuItem<String?>(value: null, child: Text(l.all));
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: HoopsSpace.gap,
-      children: [
-        Wrap(
-          spacing: HoopsSpace.gap,
-          runSpacing: HoopsSpace.gap,
-          children: [
-            SizedBox(
-              width: width,
-              child: DropdownButtonFormField<String?>(
-                key: const Key('dues-filter-plan'),
-                initialValue: query.planId,
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l.financeFilterPlan),
-                items: [
-                  all(),
-                  for (final p in plans)
-                    DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
-                ],
-                onChanged: (v) => notifier.filter(planId: v, period: null),
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: DropdownButtonFormField<String?>(
-                key: const Key('dues-filter-team'),
-                initialValue: query.teamId,
-                isExpanded: true,
-                decoration: InputDecoration(labelText: l.financeFilterTeam),
-                items: [
-                  all(),
-                  for (final t in lookups?.teams ?? const <api.Team>[])
-                    DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
-                ],
-                onChanged: (v) => notifier.filter(teamId: v),
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: KeyedSubtree(
-                key: ValueKey('period-of-${query.planId}'),
-                child: DropdownButtonFormField<String?>(
-                  key: const Key('dues-filter-period'),
-                  initialValue: query.period,
-                  isExpanded: true,
-                  decoration: InputDecoration(labelText: l.financeFilterPeriod),
-                  items: [
-                    all(),
-                    for (final key in periods)
-                      DropdownMenuItem<String?>(
-                        value: key,
-                        child: Text(periodLabel(key, l, locale)),
-                      ),
-                  ],
-                  onChanged: (v) => notifier.filter(period: v),
-                ),
-              ),
-            ),
-          ],
-        ),
-        Wrap(
-          spacing: HoopsSpace.sm,
-          runSpacing: HoopsSpace.sm,
-          children: [
-            ChoiceChip(
-              key: const Key('dues-status-ALL'),
-              label: Text(l.all),
-              selected: query.status == null,
-              onSelected: (_) => notifier.filter(status: null),
-            ),
-            for (final status in const [
-              fin.DueStatus.OPEN,
-              fin.DueStatus.PAID,
-              fin.DueStatus.WAIVED,
-            ])
-              ChoiceChip(
-                key: Key('dues-status-${status.name}'),
-                label: Text(status.label(l)),
-                selected: query.status == status,
-                onSelected: (_) => notifier.filter(status: status),
-              ),
-          ],
-        ),
+    final planField = DropdownButtonFormField<String?>(
+      key: const Key('dues-filter-plan'),
+      initialValue: query.planId,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l.financeFilterPlan),
+      items: [
+        all(),
+        for (final p in plans)
+          DropdownMenuItem<String?>(value: p.id, child: Text(p.name)),
       ],
+      onChanged: (v) => notifier.filter(planId: v, period: null),
     );
+    final teamField = DropdownButtonFormField<String?>(
+      key: const Key('dues-filter-team'),
+      initialValue: query.teamId,
+      isExpanded: true,
+      decoration: InputDecoration(labelText: l.financeFilterTeam),
+      items: [
+        all(),
+        for (final t in lookups?.teams ?? const <api.Team>[])
+          DropdownMenuItem<String?>(value: t.id, child: Text(t.name)),
+      ],
+      onChanged: (v) => notifier.filter(teamId: v),
+    );
+    final periodField = KeyedSubtree(
+      key: ValueKey('period-of-${query.planId}'),
+      child: DropdownButtonFormField<String?>(
+        key: const Key('dues-filter-period'),
+        initialValue: query.period,
+        isExpanded: true,
+        decoration: InputDecoration(labelText: l.financeFilterPeriod),
+        items: [
+          all(),
+          for (final key in periods)
+            DropdownMenuItem<String?>(
+              value: key,
+              child: Text(periodLabel(key, l, locale)),
+            ),
+        ],
+        onChanged: (v) => notifier.filter(period: v),
+      ),
+    );
+    final chips = [
+      ChoiceChip(
+        key: const Key('dues-status-ALL'),
+        label: Text(l.all),
+        selected: query.status == null,
+        onSelected: (_) => notifier.filter(status: null),
+      ),
+      for (final status in const [
+        fin.DueStatus.OPEN,
+        fin.DueStatus.PAID,
+        fin.DueStatus.WAIVED,
+      ])
+        ChoiceChip(
+          key: Key('dues-status-${status.name}'),
+          label: Text(status.label(l)),
+          selected: query.status == status,
+          onSelected: (_) => notifier.filter(status: status),
+        ),
+    ];
+    // On a phone the filters stay short so the list starts on the first screen:
+    // the plan, then team and period side by side, the states in one row.
+    return compact
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: HoopsSpace.sm,
+            children: [
+              planField,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: HoopsSpace.sm,
+                children: [
+                  Expanded(child: teamField),
+                  Expanded(child: periodField),
+                ],
+              ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(spacing: HoopsSpace.sm, children: chips),
+              ),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: HoopsSpace.gap,
+            children: [
+              Wrap(
+                spacing: HoopsSpace.gap,
+                runSpacing: HoopsSpace.gap,
+                children: [
+                  for (final field in [planField, teamField, periodField])
+                    SizedBox(width: 240, child: field),
+                ],
+              ),
+              Wrap(
+                spacing: HoopsSpace.sm,
+                runSpacing: HoopsSpace.sm,
+                children: chips,
+              ),
+            ],
+          );
   }
 }
 
