@@ -90,4 +90,81 @@ ADR-0055 is reserved for the Go stack and harness, ADR-0056 for the finance doma
 - Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - `services/finance-service` (Go 1.27.4 pinned by go.mod's `toolchain` line; module `hoopsacademy.local/finance`):
+    `internal/domain` (ids, ISO 4217 currency + minor units, cadences and period keys, fee plans, membership and the finance
+    access rules), `internal/application` (settings and fee-plan use cases, ADMIN only, one tenant transaction per call,
+    audit; the replica apply), adapters `in/rest` (net/http, every operation of finance.yaml), `in/oidc` (realm JWKS,
+    audience `finance-service`), `in/events` (franz-go consumer of `core.tenant` / `core.person`), `out/persistence` (pgx
+    stores, `Transactions` = `set_config` per transaction, Flyway-named migration runner), `platform` (config, UUIDv7,
+    security events + `hoops_authz_denied_total`, OTLP/HTTP traces and logs). `cmd/finance-service` wiring.
+  - Migrations V1-V5: `settings`, `fee_plan`, `due` + `payment` (the model WP119 fills), `audit_event` (append-only),
+    membership replica (`tenant_ref`, `person_ref`, `applied_event`, `parked_event`, `replica_tenant`). V6-V9 unused (WP118
+    reserve); V10-V19 WP119, V20-V29 WP123 (`LoadMigrations` test refuses > V9 in this WP; WP119 relaxes it).
+  - Tenancy harness (`internal/testsupport/rls`, tests in `persistence/rls_test.go`): schema inspection, generic isolation
+    suite per tenant table (FK parents inserted), database role check, each proven on planted violations; layering check
+    (`internal/archtest`) proven on planted files. Roles `finance_migrator` / `finance_app` in `infra/db/init` (+ chart copy,
+    CNPG roles). Hooks: `run_go_tests` in `scripts/hooks/_common.sh`; isolation-check adds `TestCrossTenant*` (API with a test
+    realm + own pool), db-role-check the Go role tests; `tenancy-gate.test.sh` cases first (red 9b72afad).
+  - Contract `libs/contracts/openapi/finance.yaml` 1.0.0 (26 operations) + Java contract suites extended (OpenApiSpecs,
+    strict validator, clear lists, packaging, generator validation); Dart package `apps/web/packages/finance`
+    (`hoops_finance_api` 1.0.0) generated and in `apps/web/pubspec.yaml`; `scripts/gen-api.sh` default includes finance.
+  - Delivery: `deploy/containers/finance.Containerfile` (distroless static, 28.7 MB, uid 65532), `build-images.sh
+    finance-service`, compose profile `finance` (:8085, `just finance-up`, `infra/compose/finance-db.sh`), nginx `/api/finance`
+    with the export brake, realm client `finance-service` + audience mapper on `web`, chart 0.12.0 with sub-chart
+    `finance-service` 0.1.0 (alias `finance`; on in kind and cloud), broker user `finance-service` (read `core.*`, groups
+    `finance-service.*`), ESO entries, kind secrets, Tilt resource, `smoke.sh` finance checks; CI job `go`, images job
+    `finance`, CodeQL `go`, Semgrep `p/golang`, Dependabot `gomod`; `just test-go` in `just test`; doctor / bootstrap.
+- Verified (2026-11-16, fresh):
+  - `just test` with the pending `RealmTokenPolicyTest` line applied locally (then reverted): exit 0 in 7 min 22 s. Maven
+    3,417 tests, 0 failures, 0 errors, 26 skipped (surefire reports); Rust 100 tests, coverage 95.41 % / domain 99.80 %,
+    cargo deny ok; Go 133 tests (102 top-level), coverage 88.53 % module / 97.93 % domain, golangci-lint 0 issues,
+    govulncheck no vulnerabilities. **Without that line `just test` is red on exactly one test**: core
+    `RealmTokenPolicyTest.eachClientsTokensCarryTheAudiencesOfTheServicesItCalls[1]` (web gains `finance-service`).
+  - `just isolation-check`: 6 Java + 2 Go tests passed; `just db-role-check`: 13 Java + 2 Go; `just test-hooks`: 55/55
+    matcher cases, 39 Python tests OK (1 skipped); `actionlint` clean; `deploy/helm/tests/run.sh`: ALL CHART TESTS PASSED
+    (snapshots re-recorded); `./mvnw -pl libs/contracts verify` green; `flutter analyze` no issues; `just web-test` all 1,507
+    passed.
+  - Trivy 0.76.1 on the finance image (`--severity HIGH,CRITICAL --ignore-unfixed --exit-code 1`): exit 0 after bumping
+    golang.org/x/net to 0.62.0 (it had found CVE-2026-78661 in 0.61.0); SBOM CycloneDX 1.7 valid, 48 components.
+    Semgrep 1.183.0 `p/golang` + `p/owasp-top-ten` + repo rules on the service: 0 findings. CodeQL Go: CI only.
+  - Kind proof (fresh cluster `deploy/kind/up.sh`, images `--from-host`, chart 0.12.0 with values-kind; compose stopped
+    08:55-09:04 WIB, then `just up` + `just seed-users` from the main checkout): all pods Ready, finance migrated V1-V5;
+    `smoke.sh core game athlete finance` SMOKE PASSED (61 ok): finance consumer group lag 0, admin1 chose EUR and created a
+    fee plan through the gateway (200, 201), read it (200), academy B (first admin coach1) listed 0 plans, A's plan by id 404,
+    with A's tenant 404, anonymous and core-service token 401, pods connected as `finance_app` (not superuser, not BYPASSRLS,
+    owns nothing in `finance`, no CREATE). A pod labelled core-service could not reach finance-service:8085 (NetworkPolicy,
+    curl exit 28). 112 collector log lines from `finance-service` (OTLP). The kind cluster was deleted afterwards.
+- Decisions/ADRs: ADR-0055 (Go stack, harness, gates, delivery), ADR-0056 (finance model), ADR-0051 amended (§2, §5).
+  Choices not settled by decisions 93-99 (in ADR-0056 as **choice**): calendar quarters; a waived due is final; the family
+  view shows no reasons, notes or voided payments; `paidOn` not in the future (422); a new plan amount applies to later dues
+  only; currency list without fund codes. Membership comes from finance's own replica of `core.tenant` / `core.person`
+  (built here, because the tenant filter needs it; no REST into core).
+- 501 `NOT_IMPLEMENTED` (after auth and the tenant filter; non-members 404): `generateDues`, `listDues`, `exportDues`,
+  `getDue`, `changeDueAmount`, `waiveDue`, `payDue`, `voidPayment`, `getTeamDueStatus`, `listPlayerDues` (WP119);
+  `listExpenses`, `createExpense`, `exportExpenses`, `getExpense`, `updateExpense`, `deleteExpense`, `getSeasonBalance`
+  (WP123). The list lives in `rest/later.go` and `NotImplemented` in `rest/feeplans_test.go`; built: the 9 settings and
+  fee-plan operations.
+- For WP119: tables `finance.due` / `finance.payment` exist (V3; add columns in V10+); replica: add topics to
+  `events.Topics` with schema copies, keep `TestCrossTenant*` and `*DatabaseRole*` names; `domain.Relations` (staff teams,
+  linked players, own player) and `CanReadTeamStatus` / `CanReadPlayerDues` are ready for the replica to fill; test
+  helpers `pgtest`, `rls.Isolation` (`fixtureOverrides`), `realm`, `contract`, `api.do` / `api.academy`. Broker user, ACLs,
+  KAFKA_* env and the NetworkPolicy egress to Redpanda are already in the chart; nothing there needs changing.
+- For WP121: package `hoops_finance_api` (`apps/web/packages/finance`), audience `finance-service` (on `web` tokens),
+  routes `/api/finance/**` through the gateway (kind) and nginx (compose :8080 -> :8085), `X-Tenant-Id` as the other
+  services; settings and fee plans work now, dues answer 501 until WP119.
+- For WP123: V20-V29, the export rate limits are already in chart and nginx (`dues:export`, `expenses:export`).
+- Chart version 0.12.0 (sub-charts: hoops-service 0.9.0, pdf-service 0.1.0, finance-service 0.1.0).
+- Open points / follow-ups:
+  - **Needs the orchestrator / WP116**: in `services/core-service/.../RealmTokenPolicyTest.java` change the CsvSource row to
+    `"web, core-service game-service athlete-service finance-service",` (no other row; finance-service has no mapper).
+  - **Pending user action**: add `FINANCE_MIGRATOR_PASSWORD`, `FINANCE_APP_PASSWORD`, `REDPANDA_FINANCE_SERVICE_PASSWORD`
+    to `.env` (see `.env.example`); kind's `env-keys.sh` now requires them. An existing compose database gets the roles with
+    `just finance-up`.
+  - The commit hook runs in the session's working directory (the main checkout), so in this worktree it checked main's tree,
+    not this branch; the gates were run here by hand instead (results above).
+  - Mutation testing for Go not set up (`gremlins` candidate, ADR-0055). Lag metric of the replica
+    (`hoops_roster_replica_lag_seconds`) not built; `smoke.sh` uses the group lag.
+  - TDD order kept per slice with red commits, except the migration SQL, `ids.go`, the oidc verifier and the
+    config/telemetry code, which were written alongside their tests rather than strictly after a red commit.
+  - Not run: CodeQL Go (CI only), ZAP for finance (WP123), `just e2e` (no journey uses finance yet).
