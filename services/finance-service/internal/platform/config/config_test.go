@@ -70,3 +70,26 @@ func TestMissingSecretsAndBadValuesStopTheStart(t *testing.T) {
 		t.Error("an error repeats a password")
 	}
 }
+
+// The dues job (decision 98) runs every hour by default; it can be switched off or run more or less often (at least
+// every minute, at most every day: the academies' dates must be checked daily).
+func TestTheDuesJobRunsHourlyUnlessConfigured(t *testing.T) {
+	c, err := Load(env(secrets))
+	if err != nil || !c.DuesJob.Enabled || c.DuesJob.Interval.String() != "1h0m0s" {
+		t.Errorf("default %+v %v", c.DuesJob, err)
+	}
+	values := map[string]string{"FINANCE_DUES_JOB_ENABLED": "false", "FINANCE_DUES_JOB_INTERVAL": "15m"}
+	for k, v := range secrets {
+		values[k] = v
+	}
+	c, err = Load(env(values))
+	if err != nil || c.DuesJob.Enabled || c.DuesJob.Interval.String() != "15m0s" {
+		t.Errorf("configured %+v %v", c.DuesJob, err)
+	}
+	for _, bad := range []string{"soon", "30s", "25h"} {
+		values["FINANCE_DUES_JOB_INTERVAL"] = bad
+		if _, err := Load(env(values)); err == nil || !strings.Contains(err.Error(), "FINANCE_DUES_JOB_INTERVAL") {
+			t.Errorf("%s: %v", bad, err)
+		}
+	}
+}
