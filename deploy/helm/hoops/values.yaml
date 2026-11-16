@@ -108,8 +108,8 @@ events:
     # Same pin as infra/compose/compose.yaml and the Quarkus Dev Services (libs/common-quarkus); run.sh checks it.
     image:
       repository: docker.io/redpandadata/redpanda
-      tag: v26.2.6
-      digest: sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce
+      tag: v26.2.7
+      digest: sha256:43545ee03966431f5451e0b3c1e651b39fbe3eb383360220311021f50133b649
     runAsUser: 101              # user `redpanda` of the image
     runAsGroup: 101
     smp: 1                      # Seastar shards (cores); one is plenty for seven one-partition topics
@@ -406,4 +406,4 @@ finance:
 # Local SMTP sink named `mailhog` (the realm's SMTP host). Enabled in values-kind.yaml only.
 mailpit:
   enabled: false
-  image: {repository: docker.io/axllent/mailpit, tag: v1.32.0}
+  image: {repository: docker.io/axllent/mailpit, tag: v1.33.1}

@@ -25,16 +25,16 @@ CNPG_VERSION="1.30.1"
 CNPG_BRANCH="release-${CNPG_VERSION%.*}"
 # External Secrets Operator (--eso): API external-secrets.io/v1. The chart tests validate the ExternalSecrets against this
 # version's CRD (deploy/helm/tests/schemas, regenerate with update-eso.sh when bumping).
-ESO_VERSION="v2.14.0"
+ESO_VERSION="v2.15.0"
 # Stakater Reloader (WP87, ADR-0012 amendment): rolls every Deployment/StatefulSet annotated with
 # secret.reloader.stakater.com/auto (the chart with global.reloader.enabled, on in values-kind.yaml; envoy-ratelimit through
 # EG_VALUES) when a Secret it reads changes, whether ESO refreshed it or secrets.sh re-applied it. Pinned by chart version +
-# digest and image digest (v1.4.23). Least privilege: namespaced Roles in $NS and envoy-gateway-system only (no
+# digest and image digest (v1.4.24). Least privilege: namespaced Roles in $NS and envoy-gateway-system only (no
 # ClusterRole), Secrets only (ConfigMap changes already roll through the chart's checksum annotations), no Jobs/CronJobs,
 # reload strategy `annotations` (a pod-template annotation, not an injected env var).
-RELOADER_CHART_VERSION="2.2.19"
-RELOADER_CHART_DIGEST="sha256:dfa9fd167fc7ea3a2542de23f8d23c961d79407929f38c985d5cecfa74316142"
-RELOADER_IMAGE_DIGEST="sha256:82c80a15fdba22f738642553159f9fb37baf9e4d1edfeb798e8c48d87767f410"
+RELOADER_CHART_VERSION="2.2.20"
+RELOADER_CHART_DIGEST="sha256:065ab124e7e704a43465fad9b71363563157312e8ee410db30c4da83c5ac131b"
+RELOADER_IMAGE_DIGEST="sha256:3ab43d3eb96c59798644bf826b0444a846c0197d22ab4b6c101c4da3e1d6ef23"
 # Global rate limiting (WP40, ADR-0033): Envoy Gateway deploys its rate limit service (Deployment envoy-ratelimit) with
 # a Redis backend; values-kind.yaml deploys that Redis in namespace $NS (rateLimit.redis.enabled). failClosed=false:
 # when the rate limit service or Redis does not answer within the timeout, requests pass (fail open). Other clusters
