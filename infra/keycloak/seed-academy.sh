@@ -7,9 +7,10 @@
 # Then demo data (WP107, decision 80) that looks like the landing screenshots, through the API as the roles that may do it:
 # an assistant coach on the team, a training week (schedules, done sessions with attendance, a cancelled session, plans built
 # from the exercise catalogue, an assignment, a planned absence), a finished match (Lobos) and a live one (Tigres) with event
-# logs, an open and a recovered injury, body measurements and physical tests. Skip it with SEED_ACADEMY_DEMO=0; re-run only
-# the demo part (no 23 sign-ins) with SEED_ACADEMY_DEMO_ONLY=1.
-# Needs: stack up (`just up`, `just seed-users`), services up (`just services-up`), .env with KEYCLOAK_ADMIN,
+# logs, an open and a recovered injury, body measurements and physical tests, and finance (WP123: the currency EUR, a
+# monthly fee plan of the team and a season enrolment of its age category, their dues, payments, a waiver, five expenses).
+# Skip it with SEED_ACADEMY_DEMO=0; re-run only the demo part (no 23 sign-ins) with SEED_ACADEMY_DEMO_ONLY=1.
+# Needs: stack up (`just up`, `just seed-users`), services up (`just services-up`: the jars, pdf and finance), .env with KEYCLOAK_ADMIN,
 # KEYCLOAK_ADMIN_PASSWORD, DEV_USER_PASSWORD (super admin) and TEST_ACADEMY_PASSWORD (>= 12 characters).
 # Local only: refuses a base URL other than localhost / 127.0.0.1 unless SEED_ACADEMY_ALLOW_REMOTE=1.
 # Never prints a password or token; response bodies are never printed (they can carry temporary passwords).
@@ -592,6 +593,96 @@ ensure_tests() { # player number
   CREATED=$((CREATED + 1)); say "recorded 4 physical test results of player $n"
 }
 
+# ---- finance (WP123): the currency, two fee plans with their dues, payments, a waiver and expenses (as testadmin1)
+monthkey() { # offset in months from this month -> YYYY-MM
+  local first; first=$(date +%Y-%m-01)
+  if [ "$1" -ge 0 ]; then date -j -v"+$1m" -f %Y-%m-%d "$first" +%Y-%m 2>/dev/null || date -d "$first $1 months" +%Y-%m
+  else date -j -v"$1m" -f %Y-%m-%d "$first" +%Y-%m 2>/dev/null || date -d "$first $1 months" +%Y-%m; fi
+}
+
+ensure_fee_plan() { # name body -> PLAN_ID (a plan is found by its name in the season)
+  api GET "/api/finance/fee-plans?seasonId=$SEASON&includeArchived=true&size=200"; need 200
+  PLAN_ID=$(jq -r --arg n "$1" '[.items[] | select(.name == $n)] | (first // {}) | .id // empty' "$RESP")
+  [ -z "$PLAN_ID" ] || return 0
+  api POST /api/finance/fee-plans "$2"; need 201
+  PLAN_ID=$(j .id); CREATED=$((CREATED + 1)); say "created fee plan $1"
+}
+
+generate_dues() { # plan period (idempotent: a second run creates nothing)
+  api POST "/api/finance/fee-plans/$1/dues:generate" "$(jq -nc --arg p "$2" '{period: $p}')"; need 200
+  local n; n=$(j .created)
+  [ "$n" = 0 ] || { CREATED=$((CREATED + 1)); say "generated $n dues of period $2"; }
+}
+
+# settle plan period pay:<METHOD>|waive days-ago player-numbers...: pays (on the day days-ago) or waives the players'
+# dues of the period; only OPEN dues are touched, so a re-run changes nothing.
+settle() {
+  local plan="$1" period="$2" action="$3" ago="$4" n due; shift 4
+  api GET "/api/finance/dues?feePlanId=$plan&period=$period&size=200"; need 200
+  cp "$RESP" "$WORK/dues.json"
+  for n in "$@"; do
+    due=$(jq -r --arg p "$(pid "$n")" '.items[] | select(.playerId == $p and .status == "OPEN") | .id' "$WORK/dues.json")
+    [ -n "$due" ] || continue
+    case "$action" in
+      pay:*) api POST "/api/finance/dues/$due:pay" "$(jq -nc --arg d "$(dayin "-$ago")" --arg m "${action#pay:}" \
+               '{paidOn: $d, method: $m}')" ;;
+      waive) api POST "/api/finance/dues/$due:waive" '{"reason":"Beca deportiva"}' ;;
+    esac
+    need 200; CREATED=$((CREATED + 1))
+  done
+}
+
+ensure_expense() { # days-ago category amount description (an expense is found by its description)
+  if jq -e --arg d "$4" 'any(.items[]; .description == $d)' "$EXPENSES" >/dev/null; then return 0; fi
+  api POST /api/finance/expenses "$(jq -nc --arg s "$(dayin "-$1")" --arg c "$2" --argjson a "$3" --arg d "$4" \
+    '{spentOn: $s, category: $c, amountMinor: $a, description: $d}')"
+  need 201; CREATED=$((CREATED + 1)); say "recorded expense $4"
+}
+
+ensure_finance() {
+  login "$(email testadmin1)" TEST_ACADEMY_PASSWORD || die "testadmin1 cannot sign in with the shared password"
+  # finance-service learns the academy and its members from core's events: wait (deadline) until it answers the admin
+  local deadline=$((SECONDS + 60))
+  while :; do
+    api GET /api/finance/settings; [ "$CODE" = 200 ] && break
+    [ "$SECONDS" -lt "$deadline" ] || die "finance-service does not answer testadmin1 within 60 s (HTTP $CODE): just finance-up, just events-backfill"
+    sleep 1
+  done
+  if [ -z "$(j '.currency // empty')" ]; then
+    api PUT /api/finance/settings '{"currency":"EUR"}'; need 200; CREATED=$((CREATED + 1)); say "chose the currency EUR"
+  fi
+  local m2 m1 m0 monthly enrolment
+  m2=$(monthkey -2); m1=$(monthkey -1); m0=$(monthkey 0)
+  ensure_fee_plan "Cuota mensual" "$(jq -nc --arg s "$SEASON" --arg t "$TEAM" --arg f "$m2" \
+    '{name: "Cuota mensual", seasonId: $s, teamId: $t, amountMinor: 4500, cadence: "MONTHLY", firstPeriod: $f, autoGenerate: false}')"
+  monthly=$PLAN_ID
+  ensure_fee_plan "Matrícula de temporada" "$(jq -nc --arg s "$SEASON" --arg c "$CATEGORY" \
+    '{name: "Matrícula de temporada", seasonId: $s, ageCategoryId: $c, amountMinor: 12000, cadence: "SEASON", autoGenerate: false}')"
+  enrolment=$PLAN_ID
+  # the roster reaches finance-service by events too: wait (deadline) until a preview sees the ten players
+  deadline=$((SECONDS + 60))
+  while :; do
+    api POST "/api/finance/fee-plans/$monthly/dues:generate" "$(jq -nc --arg p "$m0" '{period: $p, preview: true}')"; need 200
+    [ $(( $(j .created) + $(j .existing) )) -ge "$PLAYERS" ] && break
+    [ "$SECONDS" -lt "$deadline" ] || die "finance-service does not know the players of $TEAM_NAME within 60 s: just events-backfill"
+    sleep 1
+  done
+  for period in "$m2" "$m1" "$m0"; do generate_dues "$monthly" "$period"; done
+  generate_dues "$enrolment" SEASON
+  # players 1 and 2 are up to date; 4 and 7 owe since two months ago; player 10 has a scholarship for the enrolment
+  settle "$enrolment" SEASON pay:BANK_TRANSFER 95 1 2 3 4 5 6 7 8
+  settle "$enrolment" SEASON waive 0 10
+  settle "$monthly" "$m2" pay:CASH 50 1 2 3 5 6 8 9 10
+  settle "$monthly" "$m1" pay:BANK_TRANSFER 20 1 2 5 8 10
+  settle "$monthly" "$m0" pay:CARD 0 1 2
+  api GET "/api/finance/expenses?size=200"; need 200; EXPENSES="$WORK/expenses.json"; cp "$RESP" "$EXPENSES"
+  ensure_expense 60 COURT_RENTAL 36000 "Alquiler Pabellón Norte"
+  ensure_expense 45 KIT 54000 "Equipaciones nuevas"
+  ensure_expense 20 TOURNAMENT_FEES 15000 "Inscripción Torneo de Navidad"
+  ensure_expense 7 TRAVEL 22000 "Autobús a Lobos"
+  ensure_expense 3 OTHER 4500 "Material de botiquín"
+}
+
 seed_demo_data() {
   say "demo data"
   login "$(email testadmin1)" TEST_ACADEMY_PASSWORD || die "testadmin1 cannot sign in with the shared password"
@@ -619,6 +710,7 @@ seed_demo_data() {
   ensure_injury 7 "rodilla izquierda" MODERATE "Golpe en un entrenamiento" -6 12 -
   ensure_injury 4 "tobillo derecho" MINOR "" -60 -50 -52
   for n in 1 2 4 5 7 8 10; do ensure_measurements "$n"; ensure_tests "$n"; done
+  ensure_finance
 }
 [ "${SEED_ACADEMY_DEMO:-1}" = 0 ] || seed_demo_data
 
