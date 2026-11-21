@@ -128,8 +128,8 @@ is archived and must not be written to. Hoops Academy is a learning project, not
   compose, chart, `TestRealm`), and `just doctor` now requires JDK >= 25.0.5.1 (`brew upgrade openjdk@25`). CI takes
   the newest Temurin 25 on each run. Nothing was deployed anywhere, so there was no exposed instance.
 - **Keycloak 26.8.2 needs the `kc-admin-api` client scope** on `core-service` (Admin API audience check). The realm
-  file has it; a local stack whose realm was imported earlier needs the re-import or the manual step of
-  `docs/runbooks/troubleshooting.md` ("core-service gets 401 from the Keycloak Admin API").
+  file has it, and `just seed-users` adds it to a realm imported earlier without touching its data
+  (`docs/runbooks/troubleshooting.md`, "core-service gets 401 from the Keycloak Admin API").
 - **Documentation site** (ADR-0057): `docs/` built by Zensical, strict build in `ci` (`docs-site`), published to
   GitHub Pages by `pages.yml`. `just docs-serve` / `just docs-build`; `docs/runbooks/docs-site.md`.
 

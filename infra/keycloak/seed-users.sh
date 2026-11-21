@@ -88,6 +88,26 @@ while IFS=$'\t' read -r client mapper audience; do
     echo "added $mapper to client $client"
   fi
 done
+# Keycloak 26.8.2 and later: the Admin REST API only accepts tokens issued for it, which the built-in client scope
+# kc-admin-api provides. A realm imported before the realm file had it on core-service gets it here (clients read from
+# the realm file); without it every admin call of the service account returns 401.
+python3 -I - infra/keycloak/realm-academy.json <<'PY' |
+import json, sys
+for client in json.load(open(sys.argv[1]))["clients"]:
+    if "kc-admin-api" in client.get("defaultClientScopes", []):
+        print(client["clientId"])
+PY
+while read -r client; do
+  sid=$(kc get client-scopes -r "$REALM" --fields id,name --format csv --noquotes | tr -d '\r' | awk -F, '$2 == "kc-admin-api" {print $1}')
+  [ -n "$sid" ] || { echo "seed-users: realm has no client scope kc-admin-api (Keycloak older than 26.8.2?)" >&2; exit 1; }
+  cid=$(kc get clients -r "$REALM" -q "clientId=$client" --fields id --format csv --noquotes | head -n1 | tr -d '\r')
+  [ -n "$cid" ] || { echo "seed-users: realm has no client $client" >&2; exit 1; }
+  if ! kc get "clients/$cid/default-client-scopes" -r "$REALM" --fields name --format csv --noquotes | tr -d '\r' \
+      | grep -qxF kc-admin-api; then
+    kc update "clients/$cid/default-client-scopes/$sid" -r "$REALM" >/dev/null
+    echo "added client scope kc-admin-api to client $client"
+  fi
+done
 # Login hardening of ADR-0038 for a realm imported before it: security headers (CSP), the password policy with its
 # blocklist and the OTP policy, read from the realm file. Keycloak's built-in browser flow already asks for the OTP only
 # when a login set one up, so no flow changes. Security events of ADR-0043 the same way: user events stored for 30 days
@@ -101,4 +121,4 @@ keys += ["eventsEnabled", "eventsExpiration", "eventsListeners", "enabledEventTy
 print(json.dumps({k: realm[k] for k in keys}))
 PY
   podman exec -i "$C" bash -c 'f=$(mktemp) && cat > "$f" && /opt/keycloak/bin/kcadm.sh update "realms/$0" -f "$f"; rc=$?; rm -f "$f"; exit $rc' "$REALM"
-echo "seed-users: done (superadmin has super_admin; login theme hoops; e-mail as username; token audiences, rotation; CSP, password blocklist, OTP policy; security events)"
+echo "seed-users: done (superadmin has super_admin; login theme hoops; e-mail as username; token audiences, rotation; kc-admin-api scope; CSP, password blocklist, OTP policy; security events)"

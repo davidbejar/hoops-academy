@@ -34,8 +34,10 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
 - **Cause:** since 26.8.2 the Admin REST API only accepts tokens issued for it. The built-in client scope
   `kc-admin-api` adds that audience; Keycloak assigns it to `admin-cli` and the admin console only. The realm file
   has it on `core-service` since 2026-11-21, but a realm imported before that does not.
-- **Fix:** re-import the realm (entry above), or keep the data and add the scope by hand: Keycloak admin console >
-  realm `academy` > Clients > `core-service` > Client scopes > Add client scope > `kc-admin-api` as Default.
+- **Fix:** `just seed-users` (keeps all data): it adds the scope to the clients that have it in the realm file and
+  says `added client scope kc-admin-api to client core-service`. A fresh import needs nothing.
+- **Related:** after `just up` replaces the Keycloak container (a new image version), nginx may answer 502 on `/auth`
+  because it still holds the old container's address: `podman restart hoops-nginx`.
 
 ## 401 on `/api/**`, or 404 "User is not provisioned", for a real user (token without `sub`)
 - **Symptom:** every call of a signed-in user returns 401 Problem, or `GET /api/core/me` returns 404 although the person was
