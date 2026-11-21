@@ -1,0 +1,50 @@
+name: pages
+
+# Publishes the documentation site (mkdocs.yml, ADR-0057) to GitHub Pages: https://davidbejar.github.io/hoops-academy/
+# A strict Zensical build of docs/ on every push to main that touches the site; the same build runs on pull requests
+# as the `docs-site` job of `ci`, without publishing. Repository setting needed once: Pages > Source "GitHub Actions".
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'config/docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Install Zensical (pinned)
+        run: |
+          python3 -m venv .venv-docs
+          .venv-docs/bin/pip install --quiet --disable-pip-version-check -r config/docs/requirements.txt
+      - name: Strict build
+        run: .venv-docs/bin/zensical build --clean --strict
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: target/docs-site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

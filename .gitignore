@@ -49,6 +49,8 @@ apps/web/coverage/
 tilt_modules/
 .pre-commit-cache/
 *.swp
+# virtualenv of the documentation site (just docs-serve / docs-build)
+.venv-docs/
 /tmp/
 # per-machine Claude Code permissions
 .claude/settings.local.json

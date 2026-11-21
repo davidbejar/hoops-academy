@@ -14,7 +14,8 @@ repos:
         exclude: '(\.md$|^deploy/helm/tests/snapshots/)'
       - id: check-yaml
         args: [--allow-multiple-documents]
-        exclude: '^deploy/helm/.*/templates/'
+        # mkdocs.yml carries a !!python/name tag (Mermaid fences) that safe YAML cannot load; `just docs-build` checks it
+        exclude: '(^deploy/helm/.*/templates/|^mkdocs\.yml$)'
       - id: check-added-large-files
         args: [--maxkb=1024]
       - id: check-merge-conflict

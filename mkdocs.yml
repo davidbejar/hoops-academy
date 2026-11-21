@@ -1,0 +1,66 @@
+# Documentation site of Hoops Academy (ADR-0057): the Markdown under docs/ rendered by Zensical, the successor of
+# Material for MkDocs by the same authors, which reads this MkDocs-format file as it is.
+# `just docs-serve` previews it on http://localhost:8000, `just docs-build` builds it strictly (CI runs that), and
+# .github/workflows/pages.yml publishes it to GitHub Pages from main.
+# The section order and titles are in docs/.nav.yml; pages are picked up by folder, so a new ADR or work package
+# needs no change here. Tool versions are pinned in config/docs/requirements.txt.
+site_name: Hoops Academy
+site_url: https://davidbejar.github.io/hoops-academy/
+site_description: Multitenant platform for basketball academies
+repo_url: https://github.com/davidbejar/hoops-academy
+repo_name: davidbejar/hoops-academy
+edit_uri: edit/main/docs/
+docs_dir: docs
+site_dir: target/docs-site
+
+theme:
+  name: material
+  language: en
+  font: false # system fonts: the site makes no request to Google Fonts
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+plugins:
+  - search
+  - awesome-nav
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+# A broken link or anchor between pages fails the strict build.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn

@@ -37,6 +37,7 @@ just mutation [module]       # PIT on the rule code, on demand (not in verify); 
 ./mvnw -pl services/core-service quarkus:dev
 just web-test                # flutter test
 just web-format              # dart format apps/web (80 columns); CI runs web-format-check
+just docs-serve / docs-build # documentation site of docs/ (Zensical, ADR-0057): preview on :8000 / strict build; main is published to GitHub Pages
 just scan                    # gitleaks + dependency-check
 ```
 

@@ -1,0 +1,7 @@
+# WP2 before WP10: natural order instead of alphabetical; the index and the backlog first.
+sort:
+  type: natural
+nav:
+  - README.md
+  - FOLLOW-UPS.md
+  - "*"

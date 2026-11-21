@@ -3,7 +3,7 @@
 > **Status of this document (added in the WP20 review, 2026-11-02).** This is the *original* build plan, kept as written
 > (history is not rewritten below this box). What was actually built, statement by statement against `docs/SPEC.md` and
 > §2 of this plan, is in [`conformance.md`](conformance.md); decisions taken during implementation are ADR-0011 to
-> ADR-0021 in [`adr/`](adr/); work-package handovers are in [`wp/`](wp/).
+> ADR-0021 in [`adr/`](adr/README.md); work-package handovers are in [`wp/`](wp/README.md).
 >
 > **Later rounds (note of 2026-11-16, WP125).** The notes below describe the state at the WP20 review. Since then eight
 > rounds of work packages (WP21–WP125, `wp/FOLLOW-UPS.md`) built, among others, the outbox publisher, Redpanda and the

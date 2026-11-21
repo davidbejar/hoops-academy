@@ -1,0 +1,23 @@
+# Navigation of the documentation site (mkdocs-awesome-nav). Folders are listed whole, so new pages appear on
+# their own; only a new top-level folder or page needs a line here.
+nav:
+  - Home:
+      - index.md
+      - HANDOVER.md
+      - roadmap.md
+      - conformance.md
+      - PLAN.md
+      - SPEC.md
+  - Architecture:
+      - architecture.md
+      - Domain: domain
+      - Decisions (ADR): adr
+  - User guides: guides
+  - Runbooks: runbooks
+  - Security and quality:
+      - Security: security
+      - Quality: quality
+  - Work packages: wp
+  - More:
+      - Upstream reports: upstream
+      - Marketing: marketing
