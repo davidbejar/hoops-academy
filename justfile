@@ -74,6 +74,26 @@ diagrams:
 diagrams-check:
     scripts/model-diagrams.sh --check
 
+# Virtualenv of the documentation site (.venv-docs, pinned by config/docs/requirements.txt); rebuilt when the pins change
+[private]
+docs-venv:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ ! -x .venv-docs/bin/zensical ] || [ config/docs/requirements.txt -nt .venv-docs/.installed ]; then
+      rm -rf .venv-docs
+      python3 -m venv .venv-docs
+      .venv-docs/bin/pip install --quiet --disable-pip-version-check -r config/docs/requirements.txt
+      touch .venv-docs/.installed
+    fi
+
+# Preview the documentation site (docs/ rendered by Zensical, ADR-0057) on http://localhost:8000, reloading on save
+docs-serve *ARGS: docs-venv
+    .venv-docs/bin/zensical serve {{ARGS}}
+
+# Build the documentation site into target/docs-site; fails on a broken link or anchor between pages (CI runs this)
+docs-build: docs-venv
+    .venv-docs/bin/zensical build --clean --strict
+
 # Start the local stack (Postgres, Keycloak, proxy, mail, Redpanda + its topics)
 up:
     podman compose --env-file .env -f infra/compose/compose.yaml up -d --wait

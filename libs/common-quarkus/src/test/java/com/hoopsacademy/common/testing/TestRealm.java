@@ -26,7 +26,7 @@ public final class TestRealm {
 
     public static final String REALM = "academy";
     /** Keycloak image of {@code infra/compose}. */
-    public static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.8.1";
+    public static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.8.2";
     /** Client secret of every confidential client of the test realm. */
     public static final String SECRET = "kc-it-secret";
     public static final String WEB_DIRECT_GRANT = "kc-it-web";

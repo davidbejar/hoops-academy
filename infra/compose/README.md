@@ -1,6 +1,6 @@
 # Local stack (compose)
 
-Services: `postgres` (17, db `hoops` + db `keycloak`), `keycloak` (26.8.1, `start-dev --import-realm`),
+Services: `postgres` (17, db `hoops` + db `keycloak`), `keycloak` (26.8.2, `start-dev --import-realm`),
 `mailhog` (SMTP 1025, UI 8025), `nginx` (:8080, the only public entry point), `redpanda` (event broker, WP66, Kafka API
 `localhost:19092`, admin API `localhost:19644`, no auth). Container names: `hoops-<service>`.
 

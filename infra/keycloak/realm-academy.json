@@ -216,7 +216,8 @@
         "acr",
         "profile",
         "roles",
-        "email"
+        "email",
+        "kc-admin-api"
       ],
       "optionalClientScopes": [],
       "protocolMappers": [

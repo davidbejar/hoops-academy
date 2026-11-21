@@ -15,9 +15,9 @@ ARG APP_SOURCE=maven
 ARG MAVEN_IMAGE=docker.io/library/maven:3-eclipse-temurin-25
 # Distroless Java 25 (ADR-0054): Debian 13, Temurin JRE, user nonroot (65532), no shell, no package manager. Distroless
 # publishes floating tags only, so the pin is the digest (trivy DS-0001) of the multi-arch index (amd64, arm64, s390x,
-# ppc64le, riscv64) of `java25-debian13:nonroot`, resolved 2026-11-15 (Temurin 25.0.5+8). The weekly
+# ppc64le, riscv64) of `java25-debian13:nonroot`, resolved 2026-11-21 (Temurin 25.0.5.1+2, the first build with the fix of CVE-2026-114938 "Java4Shell"). The weekly
 # scripts/bump-pins.sh moves the digest; a new JDK or Debian major changes the name here and in scripts/bump_pins.py.
-ARG RUNTIME_IMAGE=gcr.io/distroless/java25-debian13:nonroot@sha256:1c4ced761d17961c900cba60c33c8c3c46edbdadaa9d5ef9806eb5a6824fd406
+ARG RUNTIME_IMAGE=gcr.io/distroless/java25-debian13:nonroot@sha256:b0a31b9a063a6fb8132ec93da4cfd8515421ad35e40d7ac79fbebbaaae98227f
 
 # ---------- stage 1a: build with Maven ---------------------------------------------------------------------------
 FROM ${MAVEN_IMAGE} AS app-maven

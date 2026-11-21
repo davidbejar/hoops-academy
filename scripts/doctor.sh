@@ -38,6 +38,8 @@ ensure_podman_dropin() {
 main() {
 echo "Toolchain:"
 check "JDK 25"            "test -n \"\${JAVA_HOME:-}\" && \"\$JAVA_HOME/bin/java\" -version 2>&1 | grep -E '\"25\.' "
+# CVE-2026-114938 ("Java4Shell", Base64 decoder): fixed in 25.0.5.1; `brew upgrade openjdk@25` brings it
+check "JDK >= 25.0.5.1"   "v=\$(\"\$JAVA_HOME/bin/java\" -version 2>&1 | sed -n 's/.*version \"\([0-9.]*\)\".*/\1/p'); echo \"\$v\"; test \"\$(printf '%s\\n' 25.0.5.1 \"\$v\" | sort -V | head -1)\" = 25.0.5.1"
 check "maven"             "mvn -v | head -1"
 check "podman"            "podman --version"
 check "podman machine"    "podman machine inspect --format '{{.State}} rootful={{.Rootful}} cpus={{.Resources.CPUs}} mem={{.Resources.Memory}}MiB' | grep running"

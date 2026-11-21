@@ -121,6 +121,18 @@ is archived and must not be written to. Hoops Academy is a learning project, not
   cooldown; the `json-schema-validator` major is ignored (WP43). The weekly `bump-pins` PR covers the Java runtime
   digest and the LGTM pin, not the pdf / finance base images nor pins inside workflow files.
 
+## 2026-11-21: Java4Shell patch and documentation site
+- **CVE-2026-114938 ("Java4Shell")**, memory corruption in the JDK's hardware-accelerated Base64 decoder (x86-64 with
+  AVX-512 VBMI only), fixed in JDK 25.0.5.1 and 21.0.13.1. Patched here: the runtime image digest of
+  `deploy/containers/service.Containerfile` (Temurin 25.0.5.1+2), Keycloak 26.8.1 -> 26.8.2 (Red Hat JDK 21.0.13.1;
+  compose, chart, `TestRealm`), and `just doctor` now requires JDK >= 25.0.5.1 (`brew upgrade openjdk@25`). CI takes
+  the newest Temurin 25 on each run. Nothing was deployed anywhere, so there was no exposed instance.
+- **Keycloak 26.8.2 needs the `kc-admin-api` client scope** on `core-service` (Admin API audience check). The realm
+  file has it; a local stack whose realm was imported earlier needs the re-import or the manual step of
+  `docs/runbooks/troubleshooting.md` ("core-service gets 401 from the Keycloak Admin API").
+- **Documentation site** (ADR-0057): `docs/` built by Zensical, strict build in `ci` (`docs-site`), published to
+  GitHub Pages by `pages.yml`. `just docs-serve` / `just docs-build`; `docs/runbooks/docs-site.md`.
+
 ## Pending user actions
 1. **First real `tofu apply`** (still the first candidate; WP104 handover, `docs/runbooks/cloud.md` "Before the
    first apply"). The owner prepares: an Alibaba Cloud international account with a payment method; a RAM user

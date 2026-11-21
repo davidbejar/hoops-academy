@@ -28,6 +28,15 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
   Same for changed DB init scripts or role passwords. **kind:** `kubectl -n hoops delete cluster keycloak-db` and let
   Helm/Tilt recreate it; run `scripts/sync-chart-files.sh` first so the chart carries the new realm.
 
+## core-service gets 401 from the Keycloak Admin API (Keycloak 26.8.2 or later)
+- **Symptom:** creating an academy, an administrator or any user fails; core-service logs a 401 from
+  `/admin/realms/academy/...` although its client-credentials login succeeded.
+- **Cause:** since 26.8.2 the Admin REST API only accepts tokens issued for it. The built-in client scope
+  `kc-admin-api` adds that audience; Keycloak assigns it to `admin-cli` and the admin console only. The realm file
+  has it on `core-service` since 2026-11-21, but a realm imported before that does not.
+- **Fix:** re-import the realm (entry above), or keep the data and add the scope by hand: Keycloak admin console >
+  realm `academy` > Clients > `core-service` > Client scopes > Add client scope > `kc-admin-api` as Default.
+
 ## 401 on `/api/**`, or 404 "User is not provisioned", for a real user (token without `sub`)
 - **Symptom:** every call of a signed-in user returns 401 Problem, or `GET /api/core/me` returns 404 although the person was
   invited. Decoding the access token shows no `sub`.

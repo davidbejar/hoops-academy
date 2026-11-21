@@ -115,6 +115,19 @@ jobs:
       - name: Pages are up to date
         run: scripts/model-diagrams.sh --check
 
+  # The documentation site (mkdocs.yml, ADR-0057, docs/runbooks/docs-site.md): a strict Zensical build of docs/, so a
+  # broken link or anchor between pages, or a page that no longer parses, fails the pipeline. Publishing is pages.yml.
+  docs-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Zensical (pinned)
+        run: |
+          python3 -m venv .venv-docs
+          .venv-docs/bin/pip install --quiet --disable-pip-version-check -r config/docs/requirements.txt
+      - name: Strict build
+        run: .venv-docs/bin/zensical build --clean --strict
+
   flutter:
     runs-on: ubuntu-latest
     steps:

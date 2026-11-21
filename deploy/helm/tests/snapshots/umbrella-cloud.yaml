@@ -205,7 +205,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 spec:
@@ -791,7 +791,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 data:
@@ -10809,7 +10809,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 data:
@@ -11032,7 +11032,8 @@ data:
             "acr",
             "profile",
             "roles",
-            "email"
+            "email",
+            "kc-admin-api"
           ],
           "optionalClientScopes": [],
           "protocolMappers": [
@@ -11239,7 +11240,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 data:
@@ -11877,7 +11878,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 spec:
@@ -12477,7 +12478,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
   annotations:
@@ -12498,13 +12499,13 @@ spec:
         app.kubernetes.io/instance: hoops
         app.kubernetes.io/part-of: hoops-academy
         app.kubernetes.io/component: identity
-        app.kubernetes.io/version: "26.8.1"
+        app.kubernetes.io/version: "26.8.2"
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: keycloak-0.6.0
       annotations:
-        checksum/realm: 82bd74375f761542ad380966decdfb6aea9b9f507fccb7ff91b05dcba72cf411
-        checksum/theme: d13533450c087ff3307000544abe5aee0eaf91f4a8b2728886b3e9ea1f09929f
-        checksum/blocklist: 2593eec96b22bbd67a809b1b9424434cc8d95d1b2526b287c886a37e630032ff
+        checksum/realm: 9cc23a40ca8d59028e6f431ae9636c3a04f0efd1c3535036768590c735d4f06f
+        checksum/theme: 234dbb1152427dd6841b0afcf2214e385023c0b143c0acdee14a3f56236bf97b
+        checksum/blocklist: 378b87a315d049e319c435567e532dc036cc495d87ebc51adbd3d3b14403cd81
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -12517,7 +12518,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: keycloak
-          image: "quay.io/keycloak/keycloak:26.8.1"
+          image: "quay.io/keycloak/keycloak:26.8.2"
           imagePullPolicy: IfNotPresent
           # Production mode. Realm import is skipped when the realm already exists (IGNORE_EXISTING).
           args: ["start", "--import-realm"]
@@ -13505,7 +13506,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 spec:
@@ -14344,7 +14345,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 spec:
@@ -14381,7 +14382,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 spec:
@@ -14432,7 +14433,7 @@ metadata:
     app.kubernetes.io/instance: hoops
     app.kubernetes.io/part-of: hoops-academy
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "26.8.1"
+    app.kubernetes.io/version: "26.8.2"
     app.kubernetes.io/managed-by: Helm
     helm.sh/chart: keycloak-0.6.0
 spec:
