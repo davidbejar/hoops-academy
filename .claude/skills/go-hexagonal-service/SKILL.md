@@ -1,6 +1,6 @@
 ---
 name: go-hexagonal-service
-description: How to change the Go finance-service of Hoops Academy (services/finance-service): the layering, contract-first changes to finance.yaml, a use case, a store, a migration, the tenant-isolation harness, the replica consumer, the gates of just test-go, and the image, compose, chart and kind wiring. Use whenever changing anything under services/finance-service, finance.yaml, finance.Containerfile or the chart's finance-service sub-chart.
+description: "How to change the Go finance-service of Hoops Academy (services/finance-service): the layering, contract-first changes to finance.yaml, a use case, a store, a migration, the tenant-isolation harness, the replica consumer, the gates of just test-go, and the image, compose, chart and kind wiring. Use whenever changing anything under services/finance-service, finance.yaml, finance.Containerfile or the chart's finance-service sub-chart."
 ---
 
 # Working on finance-service (Go)

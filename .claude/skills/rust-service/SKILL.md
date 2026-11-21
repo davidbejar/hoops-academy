@@ -1,6 +1,6 @@
 ---
 name: rust-service
-description: How to change the Rust pdf-service of Hoops Academy (services/pdf-service): the crate layering, contract-first changes to pdf.yaml, adding a sheet or a label, the security and privacy rules, the gates of just test-rust, and the image, compose, chart and kind wiring. Use whenever changing anything under services/pdf-service, pdf.yaml, pdf.Containerfile or the chart's pdf-service sub-chart.
+description: "How to change the Rust pdf-service of Hoops Academy (services/pdf-service): the crate layering, contract-first changes to pdf.yaml, adding a sheet or a label, the security and privacy rules, the gates of just test-rust, and the image, compose, chart and kind wiring. Use whenever changing anything under services/pdf-service, pdf.yaml, pdf.Containerfile or the chart's pdf-service sub-chart."
 ---
 
 # Working on pdf-service (Rust)
