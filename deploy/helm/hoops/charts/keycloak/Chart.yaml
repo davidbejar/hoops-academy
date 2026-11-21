@@ -3,4 +3,4 @@ name: keycloak
 description: Keycloak (official image, production `start`) for realm academy; realm imported from infra/keycloak.
 type: application
 version: 0.6.0
-appVersion: "26.8.1"
+appVersion: "26.8.2"

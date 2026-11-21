@@ -60,7 +60,7 @@ source scripts/env.sh
 - Every REST-assured exchange is validated against `core.yaml` (`Contract.CORE`, the validator's default strict
   configuration, ADR-0027); negative tests that send bodies the contract forbids use `Contract.RESPONSES_ONLY`, the
   fault-injection tests that provoke an undeclared 500 use `Contract.UNEXPECTED_FAILURE` (declared 502s use `CORE`).
-- `@Tag("keycloak")` tests import `infra/keycloak/realm-academy.json` into `quay.io/keycloak/keycloak:26.8.1`; they are
+- `@Tag("keycloak")` tests import `infra/keycloak/realm-academy.json` into `quay.io/keycloak/keycloak:26.8.2`; they are
   excluded from the default surefire run (`surefire.excludedGroups=keycloak`) and meant for CI.
 
 ## Approvals and usage (WP5, WP15)

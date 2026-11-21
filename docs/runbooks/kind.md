@@ -1,7 +1,7 @@
 # Runbook — Hoops Academy on kind (Podman) with Helm and Tilt
 
 WP16. Local Kubernetes that mirrors production packaging: container images, the `hoops` umbrella chart,
-CloudNativePG for PostgreSQL 17, Keycloak 26.8.1 in production mode, Envoy Gateway (Gateway API, ADR-0031), Redpanda as the
+CloudNativePG for PostgreSQL 17, Keycloak 26.8.2 in production mode, Envoy Gateway (Gateway API, ADR-0031), Redpanda as the
 event broker (ADR-0036). The compose stack
 (`just up`, :8080) keeps working side by side; kind uses **:8090** (http) and **:8453** (https).
 
