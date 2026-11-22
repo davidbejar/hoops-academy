@@ -18,14 +18,14 @@ fn set(names: &[&str]) -> BTreeSet<String> {
 
 #[test]
 fn the_domain_uses_no_framework_and_no_other_layer() {
-    assert_eq!(dependencies("domain", "dependencies"), set(&["chrono", "chrono-tz", "unicode-normalization"]));
+    assert_eq!(dependencies("domain", "dependencies"), set(&["jiff", "unicode-normalization"]));
     assert!(dependencies("domain", "dev-dependencies").is_empty());
 }
 
 #[test]
 fn the_application_depends_on_the_domain_only() {
-    assert_eq!(dependencies("application", "dependencies"), set(&["chrono", "pdf-domain"]));
-    assert_eq!(dependencies("application", "dev-dependencies"), set(&["chrono-tz"]));
+    assert_eq!(dependencies("application", "dependencies"), set(&["jiff", "pdf-domain"]));
+    assert!(dependencies("application", "dev-dependencies").is_empty());
 }
 
 #[test]
