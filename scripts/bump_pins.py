@@ -30,16 +30,22 @@ class Pin:
 # whose appVersion names the image whose digest is also pinned). File | group(s) | resolved by:
 #   service.Containerfile  RUNTIME_IMAGE digest (distroless :nonroot) | skopeo inspect (floating tag)
 #   web.Containerfile      NGINX_IMAGE tag (even minor)| skopeo list-tags
-#   values.yaml            redis tag, redpanda tag+digest, mailpit tag | skopeo
+#   values.yaml            redis tag, mailpit tag     | skopeo
+#   values.yaml compose.yaml consumer_test.go (finance)  redpanda tag+digest (one pin over the three files) | skopeo
+#   microprofile-config.properties (common-quarkus)  redpanda tag of the Dev Services | skopeo
 #   values.yaml compose.yaml  grafana/otel-lgtm tag+digest (one pin over both files) | skopeo
 #   ci.yml images.yml sbom.sh aquasec/trivy tag       | skopeo list-tags (Docker Hub)
 #   sbom.sh                cyclonedx-cli, oras tag+digest | skopeo
 #   semgrep.yml            semgrep tag+digest         | skopeo
 #   ci.yml zap-api-scan.sh zaproxy:stable digest      | skopeo inspect (floating tag)
-#   kind/up.sh             Envoy Gateway, CNPG, ESO   | GitHub releases API
-#   kind/up.sh             Reloader chart+digest+image digest | skopeo (OCI chart, appVersion)
+#   kind/up.sh cloud/install.sh  Envoy Gateway, CNPG  | GitHub releases API (one pin over both scripts)
+#   kind/up.sh             ESO                        | GitHub releases API
+#   kind/up.sh cloud/install.sh  Reloader chart+digest+image digest | skopeo (OCI chart, appVersion)
+# Recorded from the pins, not pins themselves: the chart snapshots (deploy/helm/tests/run.sh --update) and the
+# ExternalSecret schema of the ESO version (deploy/helm/tests/schemas/update-eso.sh). bump-pins.yml re-records both.
 # Gateway API (up.sh) is NOT bumped here: it must match Envoy Gateway's compatibility matrix (ADR-0031), by hand.
 SEMVER = r"^v?(\d+\.\d+\.\d+)$"
+KIND_AND_CLOUD = ["deploy/kind/up.sh", "deploy/cloud/install.sh"]
 PINS = [
     Pin("distroless java25 nonroot", ["deploy/containers/service.Containerfile"],
         rf"distroless/java25-debian13:nonroot@(?P<digest>{DIGEST})", "image",
@@ -50,9 +56,15 @@ PINS = [
     Pin("redis (chart)", ["deploy/helm/hoops/values.yaml"],
         r"repository: docker\.io/library/redis, tag: (?P<tag>[\w.\-]+),", "image",
         repo="docker.io/library/redis", tag_re=r"^(\d+\.\d+\.\d+)-alpine$"),
-    Pin("redpanda (chart)", ["deploy/helm/hoops/values.yaml"],
-        rf"repository: docker\.io/redpandadata/redpanda\n\s+tag: (?P<tag>[\w.\-]+)\n\s+digest: (?P<digest>{DIGEST})",
+    # One Redpanda for the chart, compose and finance-service's Testcontainers broker (deploy/helm/tests/run.sh compares
+    # them); the Quarkus Dev Services name the same tag without a digest, hence the second entry.
+    Pin("redpanda (chart, compose, finance tests)",
+        ["deploy/helm/hoops/values.yaml", "infra/compose/compose.yaml",
+         "services/finance-service/internal/adapters/in/events/consumer_test.go"],
+        rf"redpandadata/redpanda(?::|\n\s+tag: )(?P<tag>[\w.\-]+)(?:@|\n\s+digest: )(?P<digest>{DIGEST})",
         "image", repo="docker.io/redpandadata/redpanda", tag_re=SEMVER),
+    Pin("redpanda (Dev Services)", ["libs/common-quarkus/src/main/resources/META-INF/microprofile-config.properties"],
+        r"redpandadata/redpanda:(?P<tag>[\w.\-]+)$", "image", repo="docker.io/redpandadata/redpanda", tag_re=SEMVER),
     Pin("mailpit (chart)", ["deploy/helm/hoops/values.yaml"],
         r"repository: docker\.io/axllent/mailpit, tag: (?P<tag>[\w.\-]+)\}", "image",
         repo="docker.io/axllent/mailpit", tag_re=SEMVER),
@@ -74,13 +86,14 @@ PINS = [
     Pin("zaproxy stable", [".github/workflows/ci.yml", "scripts/zap-api-scan.sh"],
         rf"zaproxy/zaproxy:stable@(?P<digest>{DIGEST})", "image",
         repo="ghcr.io/zaproxy/zaproxy", floating="stable"),
-    Pin("Envoy Gateway", ["deploy/kind/up.sh"], r'^ENVOY_GATEWAY_VERSION="(?P<tag>[^"]+)"', "release",
+    # kind and the cloud VM install the same operators (infra/tofu/check.sh compares the two scripts): one pin over both.
+    Pin("Envoy Gateway", KIND_AND_CLOUD, r'^ENVOY_GATEWAY_VERSION="(?P<tag>[^"]+)"', "release",
         gh="envoyproxy/gateway"),
-    Pin("CloudNativePG", ["deploy/kind/up.sh"], r'^CNPG_VERSION="(?P<tag>[^"]+)"', "release",
+    Pin("CloudNativePG", KIND_AND_CLOUD, r'^CNPG_VERSION="(?P<tag>[^"]+)"', "release",
         gh="cloudnative-pg/cloudnative-pg"),
     Pin("External Secrets Operator", ["deploy/kind/up.sh"], r'^ESO_VERSION="(?P<tag>[^"]+)"', "release",
         gh="external-secrets/external-secrets"),
-    Pin("Stakater Reloader", ["deploy/kind/up.sh"],
+    Pin("Stakater Reloader", KIND_AND_CLOUD,
         rf'image digest \((?P<app>v[\d.]+)\)\..*?^RELOADER_CHART_VERSION="(?P<tag>[^"]+)"\n'
         rf'RELOADER_CHART_DIGEST="(?P<digest>{DIGEST})"\nRELOADER_IMAGE_DIGEST="(?P<image_digest>{DIGEST})"',
         "chart", chart="ghcr.io/stakater/charts/reloader", image="ghcr.io/stakater/reloader",

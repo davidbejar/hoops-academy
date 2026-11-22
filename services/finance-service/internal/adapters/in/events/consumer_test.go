@@ -22,7 +22,7 @@ import (
 func TestMain(m *testing.M) { os.Exit(pgtest.Run(m)) }
 
 // The same Redpanda as compose and the chart (events.redpanda.image).
-const redpandaImage = "docker.io/redpandadata/redpanda:v26.2.6@sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce"
+const redpandaImage = "docker.io/redpandadata/redpanda:v26.2.7@sha256:43545ee03966431f5451e0b3c1e651b39fbe3eb383360220311021f50133b649"
 
 // core's events reach the replica through a real broker: the academy and its admin resolve afterwards, an invalid
 // record is parked and does not block the ones after it, and the consumer's offsets are committed.

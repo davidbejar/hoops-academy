@@ -165,7 +165,7 @@ reports `Accepted=True` in `kubectl -n hoops get backendtrafficpolicy -o jsonpat
 `kubectl -n envoy-gateway-system rollout status deploy/envoy-ratelimit` succeeds.
 
 Secrets from a secret manager (chart 0.5.0, WP65, ADR-0012 amendment): with the External Secrets Operator in the
-cluster (`external-secrets.io/v1`; kind pins v2.14.0) and a store for the platform's secret manager, set
+cluster (`external-secrets.io/v1`; kind pins v2.15.0) and a store for the platform's secret manager, set
 `externalSecrets.enabled=true`, `externalSecrets.storeRef` (default `ClusterSecretStore/hoops`) and, if the remote
 secret is not called `hoops`, `externalSecrets.remoteKey`. The remote secret holds one property per value, named like the
 `.env` keys (inventory in `rotate-secrets.md`); the chart then renders one `ExternalSecret` per Secret (also
@@ -272,13 +272,21 @@ Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned 
 |---|---|---|
 | distroless java25-debian13:nonroot digest | `deploy/containers/service.Containerfile` | registry (skopeo, floating tag) |
 | nginx-unprivileged tag (even minors) | `deploy/containers/web.Containerfile` | registry |
-| redis, redpanda (tag + digest), mailpit | `deploy/helm/hoops/values.yaml` | registry |
+| redis, mailpit | `deploy/helm/hoops/values.yaml` | registry |
+| redpanda tag + digest (one pin) | `values.yaml`, `infra/compose/compose.yaml`, finance-service's `consumer_test.go` | registry |
+| redpanda tag of the Dev Services | common-quarkus `microprofile-config.properties` | registry |
 | Trivy tag | `ci.yml`, `images.yml`, `scripts/sbom.sh` | Docker Hub |
 | cyclonedx-cli, ORAS tag + digest | `scripts/sbom.sh` | registry |
 | Semgrep tag + digest | `semgrep.yml` | Docker Hub |
 | ZAP `stable` digest | `ci.yml`, `scripts/zap-api-scan.sh` | ghcr.io |
-| Envoy Gateway, CloudNativePG, External Secrets | `deploy/kind/up.sh` | GitHub releases |
-| Reloader chart version + digest + image digest | `deploy/kind/up.sh` | ghcr.io (chart appVersion names the image) |
+| Envoy Gateway, CloudNativePG | `deploy/kind/up.sh`, `deploy/cloud/install.sh` | GitHub releases |
+| External Secrets | `deploy/kind/up.sh` | GitHub releases |
+| Reloader chart version + digest + image digest | `deploy/kind/up.sh`, `deploy/cloud/install.sh` | ghcr.io (chart appVersion names the image) |
+
+A pin repeated in several files is one inventory entry over all of them (`scripts/tests/test_mirrored_pins.py`), so the
+copies that `deploy/helm/tests/run.sh` and `just tofu-check` compare move together. What is recorded from the pins, the
+chart snapshots and the ExternalSecret schema, is re-recorded by the workflow in the same PR; after a local `--apply` run
+`deploy/helm/tests/schemas/update-eso.sh` and `deploy/helm/tests/run.sh --update` yourself.
 
 Not bumped: floating tags without a digest (Maven, Flutter), the Gateway API version (it must match the Envoy Gateway
 compatibility matrix, ADR-0031: change it by hand together with Envoy Gateway), Lighthouse (not pinned in this repository).
@@ -293,6 +301,8 @@ Try `--apply` on a copy with `--root <dir>`. The scripts fail (exit 2) when a pi
 keep the `NAME="value"` / `tag: x` shapes, or update the pattern in `scripts/bump_pins.py`.
 
 Before merging a bump PR: `ci` and `e2e` green (a PR opened with GITHUB_TOKEN does not start them: close and reopen it).
+Never merge it on a red `helm-chart-tests` or `tofu-check`: on 2026-11-22 PR #6 was, and main stayed red until the copies
+were aligned by hand.
 A bump of Envoy Gateway, CloudNativePG or External Secrets also needs the chart and kind proofs: `deploy/helm/tests/run.sh`
 (for ESO regenerate the CRD schemas with `deploy/helm/tests/schemas/update-eso.sh`), then `just kind-up` and the isolation check on
 the new cluster. A Reloader bump needs `deploy/helm/tests/run.sh` (it asserts the digest pins in `up.sh`) and a kind run.
