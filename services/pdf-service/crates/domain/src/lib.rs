@@ -1,6 +1,6 @@
 //! The domain of pdf-service (ADR-0051 §3, ADR-0052): the two printable sheets, their limits, the labels of the
 //! three languages, the file names, and the print document a renderer draws. No framework crates: only the
-//! standard library, `chrono` / `chrono-tz` (dates in the academy's time zone) and `unicode-normalization` (file names).
+//! standard library, `jiff` (dates in the academy's time zone) and `unicode-normalization` (file names).
 
 pub mod academy;
 pub mod document;

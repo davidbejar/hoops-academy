@@ -53,7 +53,7 @@ fn the_team_roster_reads_back_in_every_language() {
 fn the_same_sheet_at_the_same_minute_gives_the_same_bytes() {
     let document = match_sheet(Locale::Es).document(printed_at());
     assert_eq!(render(&document), render(&document));
-    let later = match_sheet(Locale::Es).document(printed_at() + chrono::Duration::minutes(1));
+    let later = match_sheet(Locale::Es).document(printed_at() + jiff::SignedDuration::from_mins(1));
     assert_ne!(render(&document), render(&later));
 }
 

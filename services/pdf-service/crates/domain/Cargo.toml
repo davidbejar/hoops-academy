@@ -8,8 +8,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-chrono.workspace = true
-chrono-tz.workspace = true
+jiff.workspace = true
 unicode-normalization.workspace = true
 
 [lints]

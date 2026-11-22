@@ -94,9 +94,9 @@ async fn a_web_client_token_is_refused() {
 #[tokio::test]
 async fn tokens_that_fail_verification_are_401() {
     let mut expired = core_service_claims();
-    expired["exp"] = json!(chrono::Utc::now().timestamp() - 120);
+    expired["exp"] = json!(jiff::Timestamp::now().as_second() - 120);
     let mut early = core_service_claims();
-    early["nbf"] = json!(chrono::Utc::now().timestamp() + 600);
+    early["nbf"] = json!(jiff::Timestamp::now().as_second() + 600);
     let mut other_issuer = core_service_claims();
     other_issuer["iss"] = json!("http://evil.example/realms/academy");
     let mut no_sub = core_service_claims();

@@ -2,7 +2,8 @@
 //! `additionalProperties: false`) and their mapping to the domain. A body that does not parse is a 400 whose
 //! violations name the path of the offending property, never its value (P-11).
 
-use chrono::{DateTime, NaiveDate, Utc};
+use jiff::Timestamp;
+use jiff::civil::Date;
 use pdf_domain::{
     Academy, Eligibility, Gender, Guardian, HomeAway, Locale, MatchSheet, MatchStatus, PeriodScore, PlayerLine,
     RosterPlayer, Score, StaffMember, StaffRole, StatLine, TeamInfo, TeamRoster, Violation,
@@ -98,7 +99,8 @@ struct MatchInfoDto {
     team_name: String,
     opponent_name: String,
     home_away: HomeAwayDto,
-    scheduled_at: DateTime<Utc>,
+    #[serde(deserialize_with = "wire::instant")]
+    scheduled_at: Timestamp,
     #[serde(default)]
     venue: Option<String>,
     status: MatchStatusDto,
@@ -285,8 +287,8 @@ enum StaffRoleDto {
 struct RosterPlayerDto {
     given_name: String,
     family_name: String,
-    #[serde(default)]
-    birth_date: Option<NaiveDate>,
+    #[serde(default, deserialize_with = "wire::optional_day")]
+    birth_date: Option<Date>,
     #[serde(default)]
     gender: Option<GenderDto>,
     #[serde(default)]
@@ -295,7 +297,8 @@ struct RosterPlayerDto {
     play_up_levels: u32,
     #[serde(default)]
     jersey_number: Option<String>,
-    joined_on: NaiveDate,
+    #[serde(deserialize_with = "wire::day")]
+    joined_on: Date,
     #[serde(default)]
     email: Option<String>,
     #[serde(default)]
@@ -320,7 +323,8 @@ struct StaffMemberDto {
     role: StaffRoleDto,
     given_name: String,
     family_name: String,
-    since: NaiveDate,
+    #[serde(deserialize_with = "wire::day")]
+    since: Date,
     #[serde(default)]
     email: Option<String>,
     #[serde(default)]
@@ -388,9 +392,88 @@ impl RosterPlayerDto {
     }
 }
 
+/// Instants and days as the contract writes them (`format: date-time`, `format: date`) and nothing else: jiff alone
+/// would also read `2026-11-14T10:00+01:00[Europe/Madrid]`, a missing seconds field or a week date. The error text is
+/// fixed, so no request value reaches a Problem (P-11).
+mod wire {
+    use jiff::Timestamp;
+    use jiff::civil::Date;
+    use serde::de::Error;
+    use serde::{Deserialize, Deserializer};
+
+    pub(super) fn instant<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Timestamp, D::Error> {
+        let text = String::deserialize(deserializer)?;
+        parse_instant(&text).ok_or_else(|| D::Error::custom("not an RFC 3339 date-time"))
+    }
+
+    pub(super) fn day<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Date, D::Error> {
+        let text = String::deserialize(deserializer)?;
+        parse_day(&text).ok_or_else(|| D::Error::custom("not a yyyy-MM-dd date"))
+    }
+
+    pub(super) fn optional_day<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Date>, D::Error> {
+        match Option::<String>::deserialize(deserializer)? {
+            None => Ok(None),
+            Some(text) => parse_day(&text).map(Some).ok_or_else(|| D::Error::custom("not a yyyy-MM-dd date")),
+        }
+    }
+
+    /// `d` is a digit, any other pattern byte stands for itself.
+    fn shaped(text: &[u8], pattern: &[u8]) -> bool {
+        text.len() == pattern.len()
+            && text
+                .iter()
+                .zip(pattern)
+                .all(|(byte, shape)| if *shape == b'd' { byte.is_ascii_digit() } else { byte == shape })
+    }
+
+    /// `yyyy-MM-ddTHH:mm:ss`, an optional fraction of one to nine digits, then `Z` or `+HH:mm` / `-HH:mm`.
+    pub(super) fn parse_instant(text: &str) -> Option<Timestamp> {
+        let bytes = text.as_bytes();
+        let (clock, rest) = bytes.split_at_checked(19)?;
+        let digits =
+            rest.strip_prefix(b".").map_or(0, |fraction| fraction.iter().take_while(|b| b.is_ascii_digit()).count());
+        let offset = if rest.first() == Some(&b'.') { rest.get(1 + digits..)? } else { rest };
+        let fraction_fits = rest.first() != Some(&b'.') || (1..=9).contains(&digits);
+        let offset_fits = offset == b"Z" || shaped(offset, b"+dd:dd") || shaped(offset, b"-dd:dd");
+        if shaped(clock, b"dddd-dd-ddTdd:dd:dd") && fraction_fits && offset_fits { text.parse().ok() } else { None }
+    }
+
+    pub(super) fn parse_day(text: &str) -> Option<Date> {
+        if shaped(text.as_bytes(), b"dddd-dd-dd") { text.parse().ok() } else { None }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_instant_is_rfc_3339_with_an_offset_and_at_most_nine_fraction_digits() {
+        let nine = wire::parse_instant("2026-11-14T09:00:00.123456789Z").unwrap();
+        assert_eq!(nine.to_string(), "2026-11-14T09:00:00.123456789Z");
+        assert_eq!(wire::parse_instant("2026-11-14T10:00:00+01:00"), wire::parse_instant("2026-11-14T09:00:00Z"));
+        for refused in [
+            "2026-11-14T09:00:00.Z",
+            "2026-11-14T09:00:00.1234567890Z",
+            "2026-11-14T09:00:00.5",
+            "2026-11-14T09:00:00+0100",
+            "2026-11-14t09:00:00z",
+            "2026-13-14T09:00:00Z",
+            "2026-11-14T09:00:00Z ",
+            "",
+        ] {
+            assert_eq!(wire::parse_instant(refused), None, "{refused}");
+        }
+    }
+
+    #[test]
+    fn a_day_is_a_calendar_date_in_iso_form() {
+        assert_eq!(wire::parse_day("2024-02-29"), Some(jiff::civil::date(2024, 2, 29)));
+        for refused in ["2026-02-29", "2026-2-9", "2026-11-14Z", " 2026-11-14", ""] {
+            assert_eq!(wire::parse_day(refused), None, "{refused}");
+        }
+    }
 
     fn violation_of(body: &str) -> ProblemViolation {
         parse::<TeamRosterRequest>(body.as_bytes()).unwrap_err().violations.remove(0)

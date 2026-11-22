@@ -23,7 +23,7 @@ and is called only by core-service and game-service (decision 89); the browser n
 ## Layering (crates = layers; a wrong import does not compile)
 ```
 crates/domain       pdf-domain        sheets (MatchSheet, TeamRoster), limits, field checks, labels es/en/id,
-                                      file names, PrintDocument (what a page shows). chrono, chrono-tz,
+                                      file names, PrintDocument (what a page shows). jiff and
                                       unicode-normalization only.
 crates/application  pdf-application   PrintSheets (check -> document for "now" -> render -> file name), ports
                                       PdfRenderer and Clock. Depends on pdf-domain only.

@@ -14,8 +14,7 @@ path = "src/main.rs"
 [dependencies]
 pdf-domain.workspace = true
 pdf-application.workspace = true
-chrono = { workspace = true, features = ["serde"] }
-chrono-tz.workspace = true
+jiff.workspace = true
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "tokio", "matched-path"] }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "time", "sync"] }
 tower = { version = "0.5.3", default-features = false, features = ["util"] }

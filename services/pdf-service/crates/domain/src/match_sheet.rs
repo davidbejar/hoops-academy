@@ -1,7 +1,7 @@
 //! The match sheet / box score (decision 90): what game-service holds for a match (`Match`, `BoxScore` of
 //! `game.yaml`) as the caller has already filtered it for the user, printed with the academy's name and zone.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 
 use crate::academy::Academy;
 use crate::document::{Block, Column, Fact, Orientation, PrintDocument, Row, RowStyle, Table};
@@ -83,7 +83,7 @@ pub struct MatchSheet {
     pub team_name: String,
     pub opponent_name: String,
     pub home_away: HomeAway,
-    pub scheduled_at: DateTime<Utc>,
+    pub scheduled_at: Timestamp,
     pub venue: Option<String>,
     pub status: MatchStatus,
     pub period_count: u32,
@@ -117,7 +117,7 @@ impl MatchSheet {
     }
 
     /// The sheet as printed on `printed_at` (the footer's date, in the academy's zone).
-    pub fn document(&self, printed_at: DateTime<Utc>) -> PrintDocument {
+    pub fn document(&self, printed_at: Timestamp) -> PrintDocument {
         let t = |label| self.locale.text(label);
         PrintDocument {
             locale: self.locale,
@@ -141,7 +141,7 @@ impl MatchSheet {
     }
 
     /// `hoops-<academy>-match-sheet-<team>-<opponent>-<yyyyMMdd>.pdf`, today in the academy's zone.
-    pub fn file_name(&self, printed_at: DateTime<Utc>) -> String {
+    pub fn file_name(&self, printed_at: Timestamp) -> String {
         file_name::pdf(
             &self.academy.name,
             self.academy.day(printed_at),
@@ -167,7 +167,7 @@ impl MatchSheet {
             Fact::new(t(Label::Opponent), self.opponent_name.clone()),
             Fact::new(t(Label::Date), date),
             Fact::new(t(Label::Time), time),
-            Fact::new(t(Label::TimeZone), self.academy.time_zone.name()),
+            Fact::new(t(Label::TimeZone), self.academy.zone_id()),
         ];
         facts.extend(self.venue.iter().map(|venue| Fact::new(t(Label::Venue), venue.clone())));
         facts.push(Fact::new(t(Label::Status), status));
@@ -269,16 +269,16 @@ fn stat_row(style: RowStyle, number: String, name: String, s: &StatLine) -> Row 
 }
 
 /// "Printed on 2026-11-15 10:30 (Europe/Madrid)" in the document's language.
-pub(crate) fn footer(locale: Locale, academy: &Academy, printed_at: DateTime<Utc>) -> String {
+pub(crate) fn footer(locale: Locale, academy: &Academy, printed_at: Timestamp) -> String {
     let (date, time) = academy.date_and_time(printed_at);
-    format!("{} {date} {time} ({})", locale.text(Label::PrintedOn), academy.time_zone.name())
+    format!("{} {date} {time} ({})", locale.text(Label::PrintedOn), academy.zone_id())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::document::Align;
-    use chrono::TimeZone;
+    use jiff::tz::TimeZone;
 
     fn line(points: u32) -> StatLine {
         StatLine {
@@ -305,11 +305,11 @@ mod tests {
     pub(crate) fn sheet() -> MatchSheet {
         MatchSheet {
             locale: Locale::En,
-            academy: Academy { name: "Hoops Sur".into(), time_zone: chrono_tz::Europe::Madrid },
+            academy: Academy { name: "Hoops Sur".into(), time_zone: TimeZone::get("Europe/Madrid").unwrap() },
             team_name: "U12 Lions".into(),
             opponent_name: "Riverside".into(),
             home_away: HomeAway::Home,
-            scheduled_at: Utc.with_ymd_and_hms(2026, 11, 14, 9, 0, 0).unwrap(),
+            scheduled_at: "2026-11-14T09:00:00Z".parse::<Timestamp>().unwrap(),
             venue: Some("Pabellón Norte".into()),
             status: MatchStatus::Finished,
             period_count: 4,
@@ -340,8 +340,8 @@ mod tests {
         }
     }
 
-    fn printed() -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(2026, 11, 15, 23, 30, 0).unwrap()
+    fn printed() -> Timestamp {
+        "2026-11-15T23:30:00Z".parse::<Timestamp>().unwrap()
     }
 
     fn table(document: &PrintDocument, index: usize) -> &Table {
