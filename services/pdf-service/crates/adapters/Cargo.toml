@@ -25,7 +25,7 @@ serde_path_to_error = "0.1.20"
 jsonwebtoken = { version = "12.0.0", default-features = false, features = ["rust_crypto"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["json"] }
 krilla = { version = "0.8.2", default-features = false, features = ["simple-text"] }
-skrifa = { version = "0.42.1", default-features = false, features = ["std"] }
+skrifa = { version = "0.50.0", default-features = false, features = ["std"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["std", "fmt", "json", "env-filter", "registry", "ansi"] }
 opentelemetry = { version = "0.33.1", default-features = false, features = ["trace", "logs"] }
