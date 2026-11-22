@@ -10,8 +10,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-SQLITE3_WASM_VERSION="3.8.0"
-SQLITE3_WASM_SHA256="efd308be92a34f3aa15f289a37f213b0230fd80888a1364326ee29579d892d37"
+SQLITE3_WASM_VERSION="3.9.1"
+SQLITE3_WASM_SHA256="e7451780e78c56ff864fe9317a0fbcd6aeb2e8de3beba7f5efd963202f7ec3d9"
 
 version=$(awk '/^  sqlite3:/{f=1} f&&/version:/{gsub(/"/,"",$2); print $2; exit}' pubspec.lock)
 if [ "$version" != "$SQLITE3_WASM_VERSION" ]; then
