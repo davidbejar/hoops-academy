@@ -18,6 +18,8 @@ public class ProblemProbeResource {
 
     public record WidgetRequest(@NotBlank String name) {}
 
+    public record CountRequest(int count, List<Integer> sizes) {}
+
     @GET
     @Path("/not-found")
     public String notFound() {
@@ -72,6 +74,20 @@ public class ProblemProbeResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public String validationBody(@Valid WidgetRequest request) {
         return "ok";
+    }
+
+    @POST
+    @Path("/count")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String count(CountRequest request) {
+        return "ok";
+    }
+
+    @GET
+    @Path("/invalid-request")
+    public String invalidRequest() {
+        throw new InvalidRequestException(List.of(new Problem.Violation("from", "INVALID_DATE", "Not a date"),
+                new Problem.Violation("to", "INVALID_RANGE", "to must not be before from")));
     }
 
     @GET

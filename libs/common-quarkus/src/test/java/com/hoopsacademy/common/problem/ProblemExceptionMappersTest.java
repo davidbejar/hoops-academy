@@ -77,7 +77,31 @@ class ProblemExceptionMappersTest {
     @Test
     void malformedJsonIsBadRequestProblem() {
         assertProblem(given().contentType("application/json").body("{\"name\":").post(BASE + "validation"),
-                400, "about:blank");
+                400, "urn:hoops:problem:bad-request")
+                .body("detail", equalTo("Malformed JSON body"));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+        "{\"count\":\"many\"}         | count",
+        "{\"sizes\":[1,\"big\"]}      | sizes[1]",
+        "[1]                         | body"
+    })
+    void aValueOfTheWrongTypeIsAValidationProblemNamingTheFieldNotTheValue(String body, String field) {
+        assertProblem(given().contentType("application/json").body(body).post(BASE + "count"),
+                400, "urn:hoops:problem:validation")
+                .body("violations[0].field", equalTo(field))
+                .body("violations[0].code", equalTo("INVALID_VALUE"))
+                .body(not(containsString("many")))
+                .body(not(containsString("big")));
+    }
+
+    @Test
+    void anInvalidRequestIsAValidationProblemWithEveryViolation() {
+        assertProblem(given().get(BASE + "invalid-request"), 400, "urn:hoops:problem:validation")
+                .body("detail", equalTo("Request validation failed"))
+                .body("violations.field", org.hamcrest.Matchers.contains("from", "to"))
+                .body("violations.code", org.hamcrest.Matchers.contains("INVALID_DATE", "INVALID_RANGE"));
     }
 
     @Test

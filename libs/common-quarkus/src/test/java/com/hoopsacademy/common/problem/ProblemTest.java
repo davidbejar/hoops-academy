@@ -41,6 +41,29 @@ class ProblemTest {
     }
 
     @Test
+    void unsupportedMediaTypeAndTheIdentityProviderHaveTheirTypes() {
+        // the 502 slug is the one core.yaml declares for its Keycloak failures
+        assertThat(Problem.of(ProblemType.UNSUPPORTED_MEDIA_TYPE, null, "/x"))
+                .extracting(Problem::type, Problem::title, Problem::status)
+                .containsExactly("urn:hoops:problem:unsupported-media-type", "Unsupported Media Type", 415);
+        assertThat(Problem.of(ProblemType.IDENTITY_PROVIDER_UNAVAILABLE, null, "/x"))
+                .extracting(Problem::type, Problem::title, Problem::status)
+                .containsExactly("urn:hoops:problem:identity-provider-unavailable", "Bad Gateway", 502);
+    }
+
+    @Test
+    void anInvalidRequestCarriesItsViolations() {
+        var single = InvalidRequestException.of("to", "INVALID_RANGE", "to must not be before from");
+        var uncoded = InvalidRequestException.of("status", "Unknown status");
+
+        assertThat(single.violations()).containsExactly(
+                new Problem.Violation("to", "INVALID_RANGE", "to must not be before from"));
+        assertThat(uncoded.violations()).containsExactly(new Problem.Violation("status", "Unknown status"));
+        assertThat(new InvalidRequestException(List.of(single.violations().get(0), uncoded.violations().get(0)))
+                .violations()).hasSize(2);
+    }
+
+    @Test
     void omitsAbsentViolationMembers() throws Exception {
         String json = new ObjectMapper().writeValueAsString(new Problem.Violation("name", "must not be blank"));
 
