@@ -58,4 +58,46 @@ Not yours: Problem / paging / language plumbing is WP137.
   not |` with one row per finding ID of your scope. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+- **Built** (commits `e80eab7f`..`e1e4d665`; every behaviour change after its red test):
+  - **Characterised first** (`e80eab7f`): `MembershipRuleContract` + `MembershipWorld` in common's test-jar, 17 cases
+    from the authz matrix and ADR-0042 (Asia/Jakarta at 20:00 UTC, so "today" differs from UTC), run against core's
+    `MembershipLookup` (through `CoreAuthzContextResolver`), game's and athlete's `ReplicaAuthzResolver` over in-memory
+    ports. All three green; core's one difference recorded in its subclass. Five differences in all (ADR-0066 table).
+  - **Library** (red `3e82997b`, green `3f6996c8`): `com.hoopsacademy.common.authz.MembershipRule` (pure;
+    `resolve` for the replicas, `contextOf` for core), ports `MemberRelations` and `MembershipReads` (+ `TenantState`),
+    record `Member`. No state, no cache: every read goes through the caller's port in its transaction (RLS).
+    `MembershipRuleTest` runs the table and pins what the reads cost.
+  - **core** (red `b9c4a5bd`, green `9e987e49`): `MembershipLookup` calls `MembershipRule.contextOf` over
+    `CoreMemberRelations`; `TeamRepository.seasonEnds` replaces `seasonNotEnded` (`TeamSeasonEndsTest`). The tenant
+    status stays beside the context (`/internal/authz`, `/me`).
+  - **game** (red `46002ae2`, green `9c95dc03`): `JdbcMembershipReads` implements `MembershipReads` (six queries out of
+    `JdbcRosterReplicaRepository` / `RosterReplicaQueries`); rows without a season end are left out (was a
+    `NullPointerException`, `AuthzContextContractTest.aReplicaTeamWithoutASeasonEndCountsForNothing`). `ReplicaPerson`,
+    `ReplicaAuthzResolverTest` and the PIT entries for the removed copy are gone.
+  - **athlete** (`e87443d5`, a move: the existing tests prove it): `ReplicaMembershipRepository` implements
+    `MembershipReads`; `ReplicaMembershipReads` is gone.
+  - Docs (`e1e4d665`): ADR-0066, ADR-0053 amendment, model pages regenerated, `mutation.md` scope rows, privacy threat
+    model, both service READMEs.
+- **Verified** (2026-11-24, on `e1e4d665`)
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`: BUILD SUCCESS, 1674 s, all coverage, SpotBugs, PMD and CPD
+    gates met. Tests: contracts 346, common-quarkus 492 (+23), core 1276 (+19), game 552 (-5 resolver unit tests, +1),
+    athlete 1025, e2e 38 (32 skipped); 0 failures, 0 errors.
+  - `just mutation`: common-quarkus 443/444 (99.8 %, threshold 99; all 29 `authz` mutants killed; the survivor is the
+    old `CoreRosterClient.zoneOf`), core 941/942 (99.9 %), game 527/529 (99.6 %; survivors outside the replica),
+    athlete 644/644 (100 %).
+  - The role-matrix tests of the three services are unchanged and green (part of the full run).
+  - `just isolation-check` (by hand, worktree): 6 tests + 4 finance Go tests passed. `just db-role-check`: 13 tests + 2
+    finance Go tests passed.
+  - `scripts/model-diagrams.sh --check`: up to date; `just docs-build` (strict): no issues.
+- **Decisions/ADRs**: ADR-0066 (amends ADR-0053, amendment appended there), indexed in `docs/adr/README.md`.
+- **Open points / follow-ups**
+  - `docs/quality/mutation.md`: the history lines are not extended (merge clash); the scores are above.
+  - The Go copy in finance-service stays (ADR-0055); ADR-0066 asks that a change of the rule names it in the same PR.
+  - Not done: running the table against each replica store on Postgres (the audit's "abstract rules test in the
+    test-jar"): game's `AuthzContextContractTest` and athlete's `MembershipContract` already run the cases through
+    events on both sources (ADR-0066, alternatives).
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| X-02 | Done | One `MembershipRule` in common over ports each service implements on its own tables; table test run on the three copies first; five differences resolved in ADR-0066; PIT once in common, the services' entries gone |
+| ATH-04 | Done (WP127) | One `seasonEnds` read was already done in WP127; kept in the library rule (one season read for both team sets, none without teams) |
