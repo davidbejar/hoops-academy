@@ -123,13 +123,14 @@ if not pdf:
     helm_set.append('pdf.enabled=false')
 if not finance:
     helm_set.append('finance.enabled=false')
-k8s_yaml(helm(
+chart_yaml = helm(
     'deploy/helm/hoops',
     name='hoops',
     namespace='hoops',
     values=['deploy/helm/hoops/values-kind.yaml'] + (['deploy/helm/hoops/values-local.yaml'] if os.path.exists('deploy/helm/hoops/values-local.yaml') else []),
     set=helm_set,
-))
+)
+k8s_yaml(chart_yaml)
 watch_file('deploy/helm/hoops')
 watch_file('infra/keycloak/realm-academy.json')
 watch_file('infra/db/init/01_roles_schemas.sql')
@@ -137,22 +138,27 @@ watch_file('infra/db/init/01_roles_schemas.sql')
 # ---------------------------------------------------------------------------------------------------- resources
 # Ordering: secrets -> databases -> keycloak -> services | web (services and web do not wait on each other, so a
 # broken service image never blocks the rest).
-SECRET_NAMES = ['hoops-db-core-migrator', 'hoops-db-core-app', 'hoops-db-core-platform',
-                'hoops-db-game-migrator', 'hoops-db-game-app', 'hoops-db-athlete-migrator', 'hoops-db-athlete-app',
-                'keycloak-db-app', 'keycloak-admin', 'hoops-oidc-core-service', 'hoops-oidc-game-service',
-                'hoops-oidc-athlete-service', 'hoops-ratelimit-redis',
-                # event broker logins (WP66, ADR-0036)
-                'hoops-redpanda-admin', 'hoops-redpanda-core-service', 'hoops-redpanda-game-service',
-                'hoops-redpanda-athlete-service'] + ([
-                # finance-service (ADR-0055): its database roles and broker login
-                'hoops-db-finance-migrator', 'hoops-db-finance-app', 'hoops-redpanda-finance-service'] if finance else [])
-# --eso: the ExternalSecrets (same names; ESO creates the Secrets, which Tilt does not track); hoops-dev-users is only
-# rendered by secrets.sh. envoy-ratelimit-redis-auth is the REDIS_AUTH of the rate limit pods (WP46).
-SECRET_KIND = 'externalsecret' if eso else 'secret'
+# The objects below are read from what is deployed (DEP-08): the Secrets from secrets.sh's output (--eso: the chart's
+# ExternalSecrets; ESO creates the Secrets, which Tilt does not track), the routes and rate-limit policies of a workload
+# from the chart by its app.kubernetes.io/name label. A new Secret or route needs no edit here.
+def selector(obj):
+    meta = obj['metadata']
+    ns = meta.get('namespace', '')
+    return '%s:%s' % (meta['name'], obj['kind'].lower()) + (':' + ns if ns and ns != 'hoops' else '')
+
+CHART_OBJECTS = decode_yaml_stream(chart_yaml)
+
+def routes_of(name):
+    return [selector(o) for o in CHART_OBJECTS if o and o['kind'] in ('HTTPRoute', 'BackendTrafficPolicy')
+            and o['metadata'].get('labels', {}).get('app.kubernetes.io/name') == name]
+
+if eso:
+    secret_objects = [selector(o) for o in CHART_OBJECTS if o and o['kind'] == 'ExternalSecret']
+else:
+    secret_objects = [selector(o) for o in decode_yaml_stream(secrets_yaml) if o]
 k8s_resource(
     new_name='secrets',
-    objects=['%s:%s' % (n, SECRET_KIND) for n in SECRET_NAMES + ([] if eso else ['hoops-dev-users'])] +
-        ['envoy-ratelimit-redis-auth:%s:envoy-gateway-system' % SECRET_KIND],
+    objects=secret_objects,
     labels=['infra'],
 )
 k8s_resource(
@@ -181,21 +187,14 @@ k8s_resource('ratelimit-redis', objects=['ratelimit-redis:networkpolicy'], resou
 k8s_resource('redpanda', objects=['redpanda-config:configmap', 'redpanda:networkpolicy'],
              resource_deps=['secrets'], labels=['infra'])
 k8s_resource('redpanda-bootstrap', objects=['redpanda-bootstrap:configmap'], resource_deps=['redpanda'], labels=['infra'])
-k8s_resource('keycloak', objects=['keycloak-realm:configmap', 'keycloak:httproute', 'keycloak-ratelimited:httproute',
-                                  'keycloak-ratelimited:backendtrafficpolicy', 'keycloak-admin-deny:httproute'],
+k8s_resource('keycloak', objects=['keycloak-realm:configmap'] + routes_of('keycloak'),
              resource_deps=['databases'],
              port_forwards=['18080:8080'], labels=['infra'])  # direct Keycloak (no gateway) for debugging
 
 # Host ports 1808x so they never clash with services started with `quarkus:dev` (8081-8083) or compose (8080).
 PORTS = {'core-service': 8081, 'game-service': 8082, 'athlete-service': 8083}
-ROUTES = {
-    'core-service': ['core-service-api-core:httproute', 'core-service-platform:httproute'],
-    'game-service': ['game-service-api-game:httproute', 'game-service-events-batch:httproute',
-                     'game-service-events-batch:backendtrafficpolicy'],
-    'athlete-service': ['athlete-service-api-athlete:httproute'],
-}
 for svc in services:
-    k8s_resource(svc, objects=['%s-env:configmap' % svc, '%s-health:httproute' % svc] + ROUTES[svc],
+    k8s_resource(svc, objects=['%s-env:configmap' % svc] + routes_of(svc),
                  resource_deps=['keycloak'] + (['redpanda-bootstrap'] if svc == 'core-service' else []),
                  port_forwards=['%d:%d' % (PORTS[svc] + 10000, PORTS[svc])], labels=['services'])
 
@@ -207,14 +206,11 @@ if pdf:
 
 # finance-service: /api/finance through the gateway (rate-limited CSV exports), host port 18085 for debugging.
 if finance:
-    k8s_resource('finance-service', objects=['finance-service-env:configmap', 'finance-service:networkpolicy',
-                                             'finance-service-api-finance:httproute', 'finance-service-health:httproute',
-                                             'finance-service-dues-export:httproute', 'finance-service-dues-export:backendtrafficpolicy',
-                                             'finance-service-expenses-export:httproute',
-                                             'finance-service-expenses-export:backendtrafficpolicy'],
+    k8s_resource('finance-service', objects=['finance-service-env:configmap', 'finance-service:networkpolicy']
+                 + routes_of('finance-service'),
                  resource_deps=['keycloak', 'redpanda-bootstrap'], port_forwards=['18085:8085'], labels=['services'])
 
-k8s_resource('web', objects=['web:httproute'], resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])
+k8s_resource('web', objects=routes_of('web'), resource_deps=['flutter-build-web', 'keycloak'], labels=['web'])
 # OpenTelemetry (WP86 / WP120, ADR-0046; global.observability.enabled in values-kind.yaml): the collector receives the
 # services' traces and logs (and the Envoy edge spans), scrapes their /q/metrics and sends all of it to one Grafana LGTM pod;
 # Grafana on :3000 (anonymous Viewer, dashboards in folder "Hoops Academy").
