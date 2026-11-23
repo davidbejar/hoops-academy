@@ -434,6 +434,10 @@ class MockPlatformApi {
     return byEmail.values.toList();
   }
 
+  /// Whether [email] already signs in (an administrator or member somewhere): such a login is linked, not created,
+  /// and gets no temporary password (core: createTenant, addTenantAdmin).
+  bool _hasLogin(String email) => _users().any((u) => u['email'] == email);
+
   MockResult _userList(MockQuery q) {
     final text = q.text('q')?.trim();
     if (text != null && (text.length < 2 || text.length > 100)) {
@@ -716,6 +720,7 @@ class MockPlatformApi {
       'withdrawnAt': null,
       'retainUntil': null,
     };
+    final linked = _hasLogin('${first['email']}');
     _tenants.add(tenant);
     _admins[id] = [
       _admin(
@@ -723,13 +728,16 @@ class MockPlatformApi {
         '${first['givenName']}',
         '${first['familyName']}',
         '${first['email']}',
-        'PENDING',
-        'ACTIVE',
+        linked ? 'ACCEPTED' : 'PENDING',
+        linked ? 'NONE' : 'ACTIVE',
         [],
       ),
     ];
     _record('tenant.created', tenant, _tenantTarget(tenant));
-    return MockResult.json(201, {...tenant, 'temporaryPassword': _password()});
+    return MockResult.json(201, {
+      ...tenant,
+      'temporaryPassword': linked ? null : _password(),
+    });
   }
 
   MockResult _update(Map<String, Object?> tenant, Map<String, Object?> b) {
@@ -779,13 +787,14 @@ class MockPlatformApi {
         final email = '${b['email']}';
         if (admins.any((a) => a['email'] == email))
           return mockProblem(409, 'Conflict', code: 'ALREADY_ADMIN');
+        final linked = _hasLogin(email);
         final a = _admin(
           _id('adm'),
           '${b['givenName']}',
           '${b['familyName']}',
           email,
-          'PENDING',
-          'ACTIVE',
+          linked ? 'ACCEPTED' : 'PENDING',
+          linked ? 'NONE' : 'ACTIVE',
           [],
         );
         admins.add(a);
@@ -794,7 +803,10 @@ class MockPlatformApi {
           'id': a['personId'],
           'displayName': '${a['givenName']} ${a['familyName']}',
         });
-        return MockResult.json(201, {...a, 'temporaryPassword': _password()});
+        return MockResult.json(201, {
+          ...a,
+          'temporaryPassword': linked ? null : _password(),
+        });
       }
       return null;
     }
@@ -814,6 +826,9 @@ class MockPlatformApi {
         return MockResult.json(200, admin);
       }
       if (method == 'DELETE') {
+        if (admins.length == 1) {
+          return mockProblem(409, 'Conflict', code: 'LAST_ADMIN');
+        }
         admins.remove(admin);
         _record('admin.removed', tenant, target);
         return const MockResult.empty(204);
