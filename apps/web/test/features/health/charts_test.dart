@@ -81,6 +81,27 @@ void main() {
       ]);
     });
 
+    testWidgets(
+      'the table shows a value with the same text as the lists and the edit field',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(
+            GrowthChart(
+              title: 'Peso (kg)',
+              points: [
+                ChartPoint(DateTime.utc(2026, 1, 10), 37.55),
+                ChartPoint(DateTime.utc(2026, 6, 10), 38.5),
+              ],
+            ),
+          ),
+        );
+        await tester.tap(find.text('Ver tabla'));
+        await tester.pumpAndSettle();
+        expect(find.text('37.55'), findsOneWidget);
+        expect(find.text('38.5'), findsWidgets);
+      },
+    );
+
     testWidgets('a single point and an empty series do not throw', (
       tester,
     ) async {
