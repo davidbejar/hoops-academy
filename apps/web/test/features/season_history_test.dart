@@ -195,6 +195,29 @@ void main() {
       expect(find.byKey(const Key('match-new')), findsNothing);
     });
 
+    testWidgets(
+      'the teams selector keeps "no selection" for the current season, like the bar',
+      (tester) async {
+        final h = await pumpAs(
+          tester,
+          roles: {TenantRole.admin},
+          core: _core(),
+          location: '/teams',
+          size: const Size(360, 1400),
+        );
+        Future<void> choose(String season) async {
+          await tapKey(tester, 'season-select');
+          await tester.tap(find.text(season).last);
+          await tester.pumpAndSettle();
+        }
+
+        await choose('2025/26');
+        expect(h.container.read(selectedSeasonIdProvider), _past);
+        await choose('2026/27');
+        expect(h.container.read(selectedSeasonIdProvider), isNull);
+      },
+    );
+
     testWidgets('a coach with no history has no selector', (tester) async {
       await pumpAs(
         tester,
