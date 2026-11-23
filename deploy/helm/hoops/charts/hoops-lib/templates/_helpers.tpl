@@ -1,0 +1,59 @@
+{{- /*
+Library chart (ADR-0068): what the service sub-charts share. Every define takes the calling chart's root context (or a dict
+with it as ctx), so .Chart and .Values are the caller's: labels name the calling chart, values come from its values.yaml.
+*/ -}}
+{{- define "hoops-lib.fullname" -}}
+{{- default .Chart.Name .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "hoops-lib.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "hoops-lib.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
+{{- define "hoops-lib.labels" -}}
+{{ include "hoops-lib.selectorLabels" . }}
+app.kubernetes.io/part-of: hoops-academy
+app.kubernetes.io/component: backend
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
+{{- end -}}
+
+{{- define "hoops-lib.image" -}}
+{{- $g := .Values.global | default dict -}}
+{{- printf "%s:%s" .Values.image.repository (toString (.Values.image.tag | default $g.imageTag | default "dev")) -}}
+{{- end -}}
+
+{{/* Gateway API parentRefs: the umbrella's Gateway (global.gateway; standalone default: Gateway "hoops"). */}}
+{{- define "hoops-lib.parentRefs" -}}
+{{- $g := (.Values.global | default dict).gateway | default dict -}}
+parentRefs:
+  - name: {{ $g.name | default "hoops" }}
+    {{- with $g.namespace }}
+    namespace: {{ . }}
+    {{- end }}
+{{- end -}}
+
+{{/* Per-rule request timeout (global.gateway.requestTimeout; ingress-nginx used 60 s proxy timeouts, Envoy 15 s). */}}
+{{- define "hoops-lib.ruleTimeouts" -}}
+{{- $g := (.Values.global | default dict).gateway | default dict -}}
+{{- with ($g.requestTimeout | default "60s") -}}
+timeouts: {request: {{ . }}}
+{{- end }}
+{{- end -}}
+
+{{- define "hoops-lib.hostnames" -}}
+{{- with .Values.route.hostnames -}}
+hostnames:
+  {{- range . }}
+  - {{ . | quote }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/* Event broker client (WP71, ADR-0036): on when the umbrella's events.enabled is on, which reaches the subchart as its
+mirror global.events.enabled (a subchart sees only its own values and global). "true" or empty. */}}
+{{- define "hoops-lib.eventsEnabled" -}}
+{{- if (((.Values.global | default dict).events | default dict).enabled) }}true{{ end -}}
+{{- end -}}

@@ -340,7 +340,7 @@ game:
     HOOPS_CORE_URL: http://core-service:8081
     # pdf-service (ADR-0052, decision 89): game renders the match sheet there (WP117); set whether or not pdf.enabled.
     PDF_SERVICE_URL: http://pdf-service:8084
-    GAME_ROSTER_SOURCE: '{{ .Values.rosterSource | default (ternary "replica" "rest" (include "hoops-service.eventsEnabled" . | eq "true")) }}'
+    GAME_ROSTER_SOURCE: '{{ .Values.rosterSource | default (ternary "replica" "rest" (include "hoops-lib.eventsEnabled" . | eq "true")) }}'
   # Where the roster and the authorisation context come from (ADR-0037, WP68): rest = core's /internal API, replica = the
   # local replica fed by core's events (needs events.enabled). Empty (decision 66, WP100): replica with events, rest
   # without; always rendered, so the service's own default (replica) never meets a release without a broker. Rollback:
@@ -369,7 +369,7 @@ athlete:
     HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
     KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
-    ATHLETE_ROSTER_SOURCE: '{{ .Values.rosterSource | default (ternary "replica" "rest" (include "hoops-service.eventsEnabled" . | eq "true")) }}'
+    ATHLETE_ROSTER_SOURCE: '{{ .Values.rosterSource | default (ternary "replica" "rest" (include "hoops-lib.eventsEnabled" . | eq "true")) }}'
   # Where the roster and the authorisation context come from (ADR-0037, WP69): rest = core's /internal API, replica = the
   # local replica fed by core's events (needs events.enabled). Empty (decision 66, WP100): replica with events, rest
   # without (athlete refuses replica without its consumer). Rollback: --set athlete.rosterSource=rest.

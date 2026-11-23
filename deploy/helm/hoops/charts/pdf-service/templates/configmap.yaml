@@ -5,26 +5,16 @@ swapped for 4318; resource attributes without a tenant. Off: SDK off. env overri
 */}}
 {{- $env := dict "PDF_HTTP_PORT" (toString .Values.port) "OIDC_AUTH_SERVER_URL" .Values.oidc.authServerUrl "OIDC_AUDIENCE" .Values.oidc.audience "PDF_LOG" .Values.logFilter }}
 {{- with .Values.oidc.issuer }}{{ $_ := set $env "OIDC_ISSUER" . }}{{ end }}
-{{- $obs := dig "observability" dict (.Values.global | default dict) }}
-{{- if $obs.enabled }}
-{{- $endpoint := printf "http://otel-collector.%s.svc.cluster.local:4318" .Release.Namespace }}
-{{- with $obs.otlpEndpoint }}{{ $endpoint = replace ":4317" ":4318" . }}{{ end }}
-{{- $_ := set $env "OTEL_SDK_DISABLED" "false" }}
-{{- $_ := set $env "OTEL_EXPORTER_OTLP_ENDPOINT" $endpoint }}
-{{- $_ := set $env "OTEL_TRACES_SAMPLER_ARG" (toString ($obs.tracesSampleRatio | default "0.1")) }}
-{{- $_ := set $env "OTEL_RESOURCE_ATTRIBUTES" (printf "deployment.environment.name=%s,k8s.namespace.name=%s" ($obs.environment | default .Release.Namespace) .Release.Namespace) }}
-{{- else }}
-{{- $_ := set $env "OTEL_SDK_DISABLED" "true" }}
-{{- end }}
+{{- include "hoops-lib.otlpHttpEnv" (dict "env" $env "ctx" .) }}
 {{- range $k, $v := .Values.env }}
 {{- $_ := set $env $k (tpl (toString $v) $) }}
 {{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "pdf-service.fullname" . }}-env
+  name: {{ include "hoops-lib.fullname" . }}-env
   labels:
-    {{- include "pdf-service.labels" . | nindent 4 }}
+    {{- include "hoops-lib.labels" . | nindent 4 }}
 data:
   {{- range $k, $v := $env }}
   {{ $k }}: {{ $v | quote }}

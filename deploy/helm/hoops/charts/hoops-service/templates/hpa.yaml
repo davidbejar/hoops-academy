@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "hoops-service.fullname" . }}
+  name: {{ include "hoops-lib.fullname" . }}
   labels:
-    {{- include "hoops-service.labels" . | nindent 4 }}
+    {{- include "hoops-lib.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "hoops-service.fullname" . }}
+    name: {{ include "hoops-lib.fullname" . }}
   minReplicas: {{ .Values.hpa.minReplicas }}
   maxReplicas: {{ .Values.hpa.maxReplicas }}
   metrics:

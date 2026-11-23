@@ -1,55 +1,27 @@
-{{- define "hoops-service.fullname" -}}
-{{- default .Chart.Name .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
+{{- /* The shared helpers and templates are in the library chart hoops-lib (ADR-0068). */ -}}
 
-{{- define "hoops-service.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "hoops-service.fullname" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end -}}
-
-{{- define "hoops-service.labels" -}}
-{{ include "hoops-service.selectorLabels" . }}
-app.kubernetes.io/part-of: hoops-academy
-app.kubernetes.io/component: backend
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
-{{- end -}}
-
-{{- define "hoops-service.image" -}}
-{{- $g := .Values.global | default dict -}}
-{{- printf "%s:%s" .Values.image.repository (toString (.Values.image.tag | default $g.imageTag | default "dev")) -}}
-{{- end -}}
-
-{{/* Gateway API parentRefs: the umbrella's Gateway (global.gateway; standalone default: Gateway "hoops"). */}}
-{{- define "hoops-service.parentRefs" -}}
-{{- $g := (.Values.global | default dict).gateway | default dict -}}
-parentRefs:
-  - name: {{ $g.name | default "hoops" }}
-    {{- with $g.namespace }}
-    namespace: {{ . }}
-    {{- end }}
-{{- end -}}
-
-{{/* Per-rule request timeout (global.gateway.requestTimeout; ingress-nginx used 60 s proxy timeouts, Envoy 15 s). */}}
-{{- define "hoops-service.ruleTimeouts" -}}
-{{- $g := (.Values.global | default dict).gateway | default dict -}}
-{{- with ($g.requestTimeout | default "60s") -}}
-timeouts: {request: {{ . }}}
+{{/* The container's secret environment: secretEnv plus, with events on, the broker password of this service's SCRAM user
+(WP71): Secret hoops-redpanda-<name>, created before the install. KAFKA_* stays the chart's while events are on. */}}
+{{- define "hoops-service.env" -}}
+{{- $fullname := include "hoops-lib.fullname" . }}
+{{- $secretEnv := .Values.secretEnv }}
+{{- if include "hoops-lib.eventsEnabled" . }}
+{{- range $secretEnv }}
+{{- if hasPrefix "KAFKA_" .name }}{{ fail (printf "%s: secretEnv %s is set by the chart while events are on (global.events.enabled)" $fullname .name) }}{{ end }}
 {{- end }}
-{{- end -}}
-
-{{- define "hoops-service.hostnames" -}}
-{{- with .Values.route.hostnames -}}
-hostnames:
+{{- $secretEnv = append $secretEnv (dict "name" "KAFKA_SASL_PASSWORD" "secretName" (printf "hoops-redpanda-%s" $fullname) "key" "password") }}
+{{- end }}
+{{- with $secretEnv }}
+env:
   {{- range . }}
-  - {{ . | quote }}
+  - name: {{ .name }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .secretName }}
+        key: {{ .key }}
+        {{- if .optional }}
+        optional: true
+        {{- end }}
   {{- end }}
 {{- end }}
-{{- end -}}
-
-{{/* Event broker client (WP71, ADR-0036): on when the umbrella's events.enabled is on, which reaches the subchart as its
-mirror global.events.enabled (a subchart sees only its own values and global). "true" or empty. */}}
-{{- define "hoops-service.eventsEnabled" -}}
-{{- if (((.Values.global | default dict).events | default dict).enabled) }}true{{ end -}}
 {{- end -}}

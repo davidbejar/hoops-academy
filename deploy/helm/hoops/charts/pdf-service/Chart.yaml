@@ -4,3 +4,9 @@ description: Hoops Academy pdf-service (Rust, ADR-0052) - stateless renderer of 
 type: application
 version: 0.2.0
 appVersion: "1.0.0"
+# Shared helpers and templates (ADR-0068). Inside the umbrella the copy under its charts/ serves; rendered alone, run
+# `helm dependency update --skip-refresh` first (deploy/helm/tests/run.sh does it on a copy).
+dependencies:
+  - name: hoops-lib
+    version: 0.1.0
+    repository: file://../hoops-lib

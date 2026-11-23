@@ -36,9 +36,15 @@ for f in "${SERVICE_CHARTS[@]/%//templates/service.yaml}" hoops-service/template
   [ "$(grep -cv '^ *$' "$CHART/charts/$f")" = 1 ] && grep -q 'include "hoops-lib\.' "$CHART/charts/$f" || bad "$f is not one include of hoops-lib"
 done
 ok "service.yaml and httproute.yaml of the service sub-charts are one include of hoops-lib each (unless a FAIL above)"
+standalone() { # a service sub-chart rendered alone: a copy with hoops-lib resolved (nothing written into the repository)
+  local d="$WORK/standalone"
+  [ -d "$d/hoops-lib" ] || { mkdir -p "$d"; cp -R "$LIB" "$d/"; }
+  [ -d "$d/$1" ] || { cp -R "$CHART/charts/$1" "$d/"; helm dependency update --skip-refresh "$d/$1" >/dev/null; }
+  echo "$d/$1"; }
 
 echo "== helm lint"
 for c in "$CHART" "$CHART"/charts/*/; do
+  case " ${SERVICE_CHARTS[*]} " in *" $(basename "$c") "*) c=$(standalone "$(basename "$c")") ;; esac
   if quiet_helm lint --strict "$c" -f "$CHART/values-kind.yaml" >"$WORK/lint.txt" 2>&1 || quiet_helm lint --strict "$c" >"$WORK/lint.txt" 2>&1; then
     ok "lint $c"
   else bad "lint $c"; cat "$WORK/lint.txt"; fi
@@ -51,8 +57,8 @@ render() { # name args...
 }
 render umbrella-default   hoops "$CHART" -n hoops
 render umbrella-kind      hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml"
-render service-defaults   svc "$CHART/charts/hoops-service" -n hoops
-render service-all        svc "$CHART/charts/hoops-service" -n hoops -f deploy/helm/tests/values/service-all-features.yaml
+render service-defaults   svc "$(standalone hoops-service)" -n hoops
+render service-all        svc "$(standalone hoops-service)" -n hoops -f deploy/helm/tests/values/service-all-features.yaml
 render umbrella-tls       hoops "$CHART" -n hoops -f deploy/helm/tests/values/umbrella-tls.yaml
 render umbrella-eso       hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" -f deploy/helm/tests/values/umbrella-eso.yaml
 render umbrella-cloud     hoops "$CHART" -n hoops -f "$CHART/values-cloud.yaml" -f deploy/helm/tests/values/umbrella-cloud.yaml

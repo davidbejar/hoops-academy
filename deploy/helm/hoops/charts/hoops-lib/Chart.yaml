@@ -1,0 +1,5 @@
+apiVersion: v2
+name: hoops-lib
+description: Helpers and templates the service sub-charts (hoops-service, pdf-service, finance-service) share (ADR-0068).
+type: library
+version: 0.1.0

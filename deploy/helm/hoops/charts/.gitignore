@@ -1,0 +1,3 @@
+# `helm dependency update` on a service sub-chart (rendering it alone, ADR-0068) writes these; the umbrella does not need them.
+*/charts/
+*/Chart.lock
