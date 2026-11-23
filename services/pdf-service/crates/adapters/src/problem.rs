@@ -186,6 +186,59 @@ mod tests {
         );
     }
 
+    /// `(slug, status)` of every `ProblemType` of common-quarkus (the vocabulary `common.yaml`'s `Problem` refers to).
+    fn shared_vocabulary() -> Vec<(String, u16)> {
+        let path = format!(
+            "{}/../../../../libs/common-quarkus/src/main/java/com/hoopsacademy/common/problem/ProblemType.java",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let source = std::fs::read_to_string(path).expect("ProblemType.java");
+        source
+            .lines()
+            .filter_map(|line| {
+                let arguments = line
+                    .trim()
+                    .split_once('(')?
+                    .1
+                    .strip_suffix("),")
+                    .or_else(|| line.trim().split_once('(')?.1.strip_suffix(");"))?;
+                let mut parts = arguments.split(", ");
+                let status = parts.next()?.parse().ok()?;
+                let slug = parts.nth(1)?.trim_matches('"');
+                Some((slug.to_owned(), status))
+            })
+            .collect()
+    }
+
+    /// Slugs the Java vocabulary lacks; Go's finance-service has `unsupported-media-type` too (X-11).
+    const OWN_SLUGS: [&str; 2] = ["unsupported-media-type", "method-not-allowed"];
+
+    #[test]
+    fn problem_types_are_the_shared_vocabulary() {
+        let vocabulary = shared_vocabulary();
+        assert!(vocabulary.len() >= 10, "ProblemType.java parsed: {vocabulary:?}");
+        let problems = [
+            Problem::from_sheet(&SheetError::Invalid(vec![])),
+            Problem::from_sheet(&SheetError::TooManyRows { field: "players".into(), max: 1 }),
+            Problem::unauthenticated(),
+            Problem::invalid_token(),
+            Problem::forbidden(),
+            Problem::auth_unavailable(),
+            Problem::too_large(1024),
+            Problem::unsupported_media_type(),
+            Problem::internal(),
+            Problem::not_found(),
+            Problem::method_not_allowed(),
+        ];
+        for problem in problems {
+            let slug = problem.kind.strip_prefix("urn:hoops:problem:").expect("a urn");
+            match vocabulary.iter().find(|(name, _)| name == slug) {
+                Some((_, status)) => assert_eq!(*status, problem.status, "{slug}"),
+                None => assert!(OWN_SLUGS.contains(&slug), "{slug} is not in common-quarkus' ProblemType"),
+            }
+        }
+    }
+
     #[test]
     fn every_problem_has_its_status_and_code() {
         let pairs: Vec<_> = [

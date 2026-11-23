@@ -120,6 +120,16 @@ async fn tokens_that_fail_verification_are_401() {
 }
 
 #[tokio::test]
+async fn a_token_that_expired_a_moment_ago_is_refused() {
+    // no clock leeway, like the Java services (Quarkus OIDC without lifespan-grace): ADR-0064
+    let mut claims = core_service_claims();
+    claims["exp"] = json!(jiff::Timestamp::now().as_second() - 2);
+    let (answer, service) = post_with_token(TEAM_ROSTER, Some(&token(&claims)), &fixture("team-roster.json")).await;
+    assert_eq!(answer.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(service.events.count(DenialKind::InvalidToken), 1);
+}
+
+#[tokio::test]
 async fn a_token_for_pdf_service_without_the_service_role_is_403() {
     let mut claims = core_service_claims();
     claims["realm_access"] = json!({"roles": ["default-roles-academy"]});
