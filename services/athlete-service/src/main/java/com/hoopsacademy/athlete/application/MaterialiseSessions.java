@@ -84,7 +84,7 @@ public class MaterialiseSessions {
                 .filter(slot -> !taken.contains(new Key(slot.scheduleId(), slot.startsAt())))
                 .map(TrainingSession::materialised)
                 .toList();
-        sessions.saveAll(created);
+        sessions.insertAll(created);
         return created.size();
     }
 

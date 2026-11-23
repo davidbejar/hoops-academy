@@ -35,6 +35,24 @@ class SessionJpaRepository implements SessionRepository {
             entity.id = session.id().value();
             created = true;
         }
+        copy(session, entity);
+        if (created) {
+            em.persist(entity);
+        }
+    }
+
+    /** New sessions only (their ids were just generated): persisted without looking each one up first. */
+    @Override
+    public void insertAll(Collection<TrainingSession> sessions) {
+        for (TrainingSession session : sessions) {
+            SessionEntity entity = new SessionEntity();
+            entity.id = session.id().value();
+            copy(session, entity);
+            em.persist(entity);
+        }
+    }
+
+    private static void copy(TrainingSession session, SessionEntity entity) {
         entity.teamId = session.teamId().value();
         entity.scheduleId = session.schedule().map(ScheduleId::value).orElse(null);
         entity.startsAt = session.startsAt();
@@ -45,14 +63,6 @@ class SessionJpaRepository implements SessionRepository {
         entity.notes = session.notes();
         entity.cancelReason = session.cancelReason();
         entity.manuallyEdited = session.manuallyEdited();
-        if (created) {
-            em.persist(entity);
-        }
-    }
-
-    @Override
-    public void saveAll(Collection<TrainingSession> sessions) {
-        sessions.forEach(this::save);
     }
 
     @Override

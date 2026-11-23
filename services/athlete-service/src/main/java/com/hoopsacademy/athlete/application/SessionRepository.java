@@ -12,7 +12,8 @@ public interface SessionRepository {
 
     void save(TrainingSession session);
 
-    void saveAll(Collection<TrainingSession> sessions);
+    /** Adds sessions that do not exist yet (freshly materialised ones). */
+    void insertAll(Collection<TrainingSession> sessions);
 
     Optional<TrainingSession> find(SessionId id);
 
