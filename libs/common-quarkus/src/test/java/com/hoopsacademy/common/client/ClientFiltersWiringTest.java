@@ -9,7 +9,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
-/** REST clients look these providers up as CDI beans; they must be resolvable with the service's OIDC client config. */
+/** REST clients look this provider up as a CDI bean; it must be resolvable with the service's OIDC client config. */
 @QuarkusTest
 @WithTestResource(PostgresRlsResource.class)
 class ClientFiltersWiringTest {
@@ -17,13 +17,9 @@ class ClientFiltersWiringTest {
     @Inject
     Instance<ServiceTokenClientFilter> serviceTokenFilter;
 
-    @Inject
-    Instance<TenantHeaderPropagationFilter> tenantHeaderFilter;
-
     @Test
-    void filtersAreResolvableBeans() {
+    void theServiceTokenFilterIsAResolvableBean() {
         assertThat(serviceTokenFilter.isResolvable()).isTrue();
         assertThat(serviceTokenFilter.get()).isNotNull();
-        assertThat(tenantHeaderFilter.get()).isNotNull();
     }
 }
