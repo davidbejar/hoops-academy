@@ -34,6 +34,10 @@ class TeamsScreen extends ConsumerWidget {
     final caps = ref.watch(capabilitiesProvider);
     final teams = ref.watch(teamsProvider);
     final seasons = ref.watch(seasonsProvider);
+    final currentSeasonId = seasons.value
+        ?.where((s) => s.current)
+        .firstOrNull
+        ?.id;
     final season = ref.watch(activeSeasonProvider).value;
     return Scaffold(
       floatingActionButton:
@@ -66,8 +70,10 @@ class TeamsScreen extends ConsumerWidget {
                         for (final s in seasons.value ?? const <api.Season>[])
                           DropdownMenuItem(value: s.id, child: Text(s.name)),
                       ],
-                      onChanged: (v) =>
-                          ref.read(selectedSeasonIdProvider.notifier).select(v),
+                      // The current season is "no selection", like the SeasonBar.
+                      onChanged: (v) => ref
+                          .read(selectedSeasonIdProvider.notifier)
+                          .select(v == currentSeasonId ? null : v),
                     ),
                   ),
                   if (caps.canSeeApprovals || caps.canSeeModule)
