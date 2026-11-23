@@ -118,14 +118,10 @@ extension _MockFinanceReads on MockFinanceApi {
         !MockFinanceApi._validAmount(b['amountMinor']) ||
         !_validText(b['description'], 120) ||
         (note != null && !_validText(note, 200))) {
-      return MockFinanceApi._problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     if (_currency == null) {
-      return MockFinanceApi._problem(
-        409,
-        'Currency not set',
-        'CURRENCY_NOT_SET',
-      );
+      return mockProblem(409, 'Currency not set', code: 'CURRENCY_NOT_SET');
     }
     final expense = _newExpense(
       spentOn,
@@ -140,7 +136,7 @@ extension _MockFinanceReads on MockFinanceApi {
 
   MockResult _updateExpense(String id, Map<String, Object?> b) {
     final expense = _expenses.where((e) => e['id'] == id).firstOrNull;
-    if (expense == null) return MockFinanceApi._problem(404, 'Not found');
+    if (expense == null) return mockProblem(404, 'Not found');
     final clear = (b['clear'] as List?)?.cast<String>() ?? const <String>[];
     final given = {
       for (final key in const [
@@ -152,11 +148,10 @@ extension _MockFinanceReads on MockFinanceApi {
       ])
         if (b[key] != null) key,
     };
-    if (given.isEmpty && clear.isEmpty)
-      return MockFinanceApi._problem(400, 'Bad Request');
+    if (given.isEmpty && clear.isEmpty) return mockProblem(400, 'Bad Request');
     if ((clear.contains('note') && b['note'] != null) ||
         clear.any((c) => c != 'note')) {
-      return MockFinanceApi._problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     if ((given.contains('spentOn') &&
             !(b['spentOn'] is String &&
@@ -166,7 +161,7 @@ extension _MockFinanceReads on MockFinanceApi {
             !MockFinanceApi._validAmount(b['amountMinor'])) ||
         (given.contains('description') && !_validText(b['description'], 120)) ||
         (given.contains('note') && !_validText(b['note'], 200))) {
-      return MockFinanceApi._problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     for (final key in given) {
       expense[key] = key == 'description' ? '${b[key]}'.trim() : b[key];
@@ -178,7 +173,7 @@ extension _MockFinanceReads on MockFinanceApi {
 
   MockResult _deleteExpense(String id) {
     final expense = _expenses.where((e) => e['id'] == id).firstOrNull;
-    if (expense == null) return MockFinanceApi._problem(404, 'Not found');
+    if (expense == null) return mockProblem(404, 'Not found');
     _expenses.remove(expense);
     return const MockResult.empty(204);
   }
@@ -186,7 +181,7 @@ extension _MockFinanceReads on MockFinanceApi {
   // ----------------------------------------------------------------- balance
   MockResult _balance(MockQuery q) {
     final id = q.text('seasonId');
-    if (id == null) return MockFinanceApi._problem(400, 'Bad Request');
+    if (id == null) return mockProblem(400, 'Bad Request');
     final season =
         core
                 .handle(
@@ -201,13 +196,9 @@ extension _MockFinanceReads on MockFinanceApi {
         .cast<Map<String, Object?>>()
         .where((s) => s['id'] == id)
         .firstOrNull;
-    if (found == null) return MockFinanceApi._problem(404, 'Not found');
+    if (found == null) return mockProblem(404, 'Not found');
     if (_currency == null) {
-      return MockFinanceApi._problem(
-        409,
-        'Currency not set',
-        'CURRENCY_NOT_SET',
-      );
+      return mockProblem(409, 'Currency not set', code: 'CURRENCY_NOT_SET');
     }
     final plans = {
       for (final p in _plans)
@@ -261,9 +252,9 @@ extension _MockFinanceReads on MockFinanceApi {
     final a = core.authz;
     final coach =
         core.roles.contains('COACH') && a.staffTeamIds.contains(teamId);
-    if (!a.admin && !coach) return MockFinanceApi._problem(403, 'Forbidden');
+    if (!a.admin && !coach) return mockProblem(403, 'Forbidden');
     final known = _teamsInSeasons().any((t) => t['id'] == teamId);
-    if (!known) return MockFinanceApi._problem(404, 'Not found');
+    if (!known) return mockProblem(404, 'Not found');
     final today = _today();
     final behind = {
       for (final d in _dues)
@@ -298,7 +289,7 @@ extension _MockFinanceReads on MockFinanceApi {
         a.admin ||
         a.linkedPlayerIds.contains(playerId) ||
         a.selfPlayerIds.contains(playerId);
-    if (!allowed) return MockFinanceApi._problem(403, 'Forbidden');
+    if (!allowed) return mockProblem(403, 'Forbidden');
     final dues = [
       for (final d in _dues)
         if (d['playerId'] == playerId) d,

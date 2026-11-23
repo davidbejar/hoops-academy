@@ -250,27 +250,27 @@ class MockGameApi {
     }
     final m = seg.length > 3 ? _find(seg[3]) : null;
     if (m == null || !_authz.canSeeTeam('${m['teamId']}'))
-      return _problem(404, 'Not found');
+      return mockProblem(404, 'Not found');
     final id = m['id']! as String;
     if (seg.length == 4 && method == 'GET') return MockResult.json(200, m);
     if (seg.length == 4 && method == 'PATCH') return _patch(m, b);
     switch (seg[4]) {
       case 'start':
-        if (!_manages(m)) return _problem(403, 'Forbidden');
+        if (!_manages(m)) return mockProblem(403, 'Forbidden');
         if ((_rosters[id] ?? []).every((e) => e['isStarter'] != true))
-          return _problem(422, 'Roster needs a starter');
+          return mockProblem(422, 'Roster needs a starter');
         m['status'] = 'LIVE';
         m['startedAt'] ??= DateTime.now().toUtc().toIso8601String();
         return MockResult.json(200, m);
       case 'finish':
-        if (!_manages(m)) return _problem(403, 'Forbidden');
-        if (m['status'] != 'LIVE') return _problem(409, 'Not live');
+        if (!_manages(m)) return mockProblem(403, 'Forbidden');
+        if (m['status'] != 'LIVE') return mockProblem(409, 'Not live');
         m['status'] = 'FINISHED';
         m['finishedAt'] = DateTime.now().toUtc().toIso8601String();
         return MockResult.json(200, m);
       case 'roster':
         if (method == 'PUT') {
-          if (!_manages(m)) return _problem(403, 'Forbidden');
+          if (!_manages(m)) return mockProblem(403, 'Forbidden');
           _rosters[id] = [
             for (final e
                 in (b['entries'] as List? ?? const [])
@@ -304,7 +304,7 @@ class MockGameApi {
       case 'box-score:pdf':
         return mockPdf('match-sheet-${asciiSlug('${m['opponentName']}')}');
     }
-    return _problem(404, 'Not found');
+    return mockProblem(404, 'Not found');
   }
 
   Map<String, Object?>? _find(String id) {
@@ -334,29 +334,14 @@ class MockGameApi {
 
   /// ADR-0032: null or absent is unchanged, `clear` empties the venue, a value that is also in `clear` is a 400.
   MockResult _patch(Map<String, Object?> m, Map<String, Object?> b) {
-    if (!_manages(m)) return _problem(403, 'Forbidden');
-    final clear = (b['clear'] as List? ?? const []).cast<String>();
-    if (clear.any((n) => n != 'venue') ||
-        (clear.contains('venue') && b['venue'] != null)) {
-      return _problem(400, 'Bad clear list');
-    }
-    for (final key in const [
-      'opponentName',
-      'homeAway',
-      'scheduledAt',
-      'venue',
-      'periodCount',
-      'periodMinutes',
-    ]) {
-      if (b[key] != null) m[key] = b[key];
-    }
-    if (clear.contains('venue')) m['venue'] = null;
-    return MockResult.json(200, m);
+    if (!_manages(m)) return mockProblem(403, 'Forbidden');
+    final bad = mockApplyUpdate(m, b, clearable: const {'venue'});
+    return bad ?? MockResult.json(200, m);
   }
 
   MockResult _create(Map<String, Object?> b) {
     if (!_authz.canManageTeam('${b['teamId']}'))
-      return _problem(403, 'Forbidden');
+      return mockProblem(403, 'Forbidden');
     final m = <String, Object?>{
       'id': _newId(),
       'teamId': b['teamId'],
@@ -391,7 +376,7 @@ class MockGameApi {
 
   MockResult _batch(Map<String, Object?> m, List<Map<String, Object?>> events) {
     if (events.isEmpty || events.length > 500)
-      return _problem(400, 'Bad batch');
+      return mockProblem(400, 'Bad batch');
     final id = m['id']! as String;
     final stored = _events.putIfAbsent(id, () => []);
     final mine = <String>{
@@ -563,7 +548,7 @@ class MockGameApi {
 
   MockResult _seasonStats(String playerId, String? seasonId) {
     if (!_authz.canSeePlayer(playerId) && !_own.contains(playerId))
-      return _problem(404, 'Not found');
+      return mockProblem(404, 'Not found');
     var totals = StatLine.zero;
     var played = 0, started = 0;
     final lines = <Map<String, Object?>>[];
@@ -636,11 +621,6 @@ class MockGameApi {
     'playerId': w.playerId,
     'message': w.code,
   };
-
-  static MockResult _problem(int status, String title) => MockResult.json(
-    status,
-    {'type': 'urn:hoops:problem:mock', 'title': title, 'status': status},
-  );
 }
 
 class _Stored {

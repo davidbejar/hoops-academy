@@ -307,7 +307,7 @@ class MockFinanceApi {
       }
     }
     // Everything else is ADMIN's.
-    if (!core.authz.admin) return _problem(403, 'Forbidden');
+    if (!core.authz.admin) return mockProblem(403, 'Forbidden');
     final b = body is Map ? body.cast<String, Object?>() : <String, Object?>{};
     // A path segment can carry an action: `fee-plans/x:archive`.
     final head = seg[2].split(':');
@@ -367,14 +367,6 @@ class MockFinanceApi {
     return null;
   }
 
-  static MockResult _problem(int status, String title, [String? code]) =>
-      MockResult.json(status, {
-        'type': 'urn:hoops:problem:mock',
-        'title': title,
-        'status': status,
-        'code': ?code,
-      });
-
   // --------------------------------------------------------------- settings
   MockResult _settingsJson() => MockResult.json(200, {
     'currency': _currency,
@@ -385,13 +377,13 @@ class MockFinanceApi {
   MockResult _chooseCurrency(Map<String, Object?> b) {
     final code = b['currency'];
     if (code is! String || !RegExp(r'^[A-Z]{3}$').hasMatch(code)) {
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     if (!financeCurrencies.containsKey(code)) {
-      return _problem(422, 'Unknown currency', 'UNKNOWN_CURRENCY');
+      return mockProblem(422, 'Unknown currency', code: 'UNKNOWN_CURRENCY');
     }
     if (_dues.isNotEmpty && code != _currency) {
-      return _problem(409, 'Currency is locked', 'CURRENCY_LOCKED');
+      return mockProblem(409, 'Currency is locked', code: 'CURRENCY_LOCKED');
     }
     _currency = code;
     for (final p in _plans) {
@@ -415,7 +407,7 @@ class MockFinanceApi {
   MockResult _getPlan(String id) {
     final plan = _plans.where((p) => p['id'] == id).firstOrNull;
     return plan == null
-        ? _problem(404, 'Not found')
+        ? mockProblem(404, 'Not found')
         : MockResult.json(200, plan);
   }
 
@@ -428,30 +420,39 @@ class MockFinanceApi {
     final first = b['firstPeriod'] as String?;
     final last = b['lastPeriod'] as String?;
     if (name is! String || name.trim().isEmpty || name.length > 80) {
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
-    if (!_validAmount(amount)) return _problem(400, 'Bad Request');
+    if (!_validAmount(amount)) return mockProblem(400, 'Bad Request');
     if (cadence is! String ||
         !const {'MONTHLY', 'QUARTERLY', 'SEASON'}.contains(cadence)) {
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     if ((teamId == null) == (categoryId == null)) {
-      return _problem(400, 'Exactly one target', 'ONE_TARGET_REQUIRED');
+      return mockProblem(
+        400,
+        'Exactly one target',
+        code: 'ONE_TARGET_REQUIRED',
+      );
     }
     final periodsOk = _validPeriods(cadence, first, last);
     if (periodsOk != null) return periodsOk;
     if (_currency == null) {
-      return _problem(409, 'Currency not set', 'CURRENCY_NOT_SET');
+      return mockProblem(409, 'Currency not set', code: 'CURRENCY_NOT_SET');
     }
     final seasonId = b['seasonId'] as String?;
-    if (seasonId == null) return _problem(400, 'Bad Request');
+    if (seasonId == null) return mockProblem(400, 'Bad Request');
     if (teamId != null) {
       final team = _teamsInSeasons()
           .where((t) => t['id'] == teamId)
           .firstOrNull;
-      if (team == null) return _problem(422, 'Unknown team', 'UNKNOWN_TEAM');
+      if (team == null)
+        return mockProblem(422, 'Unknown team', code: 'UNKNOWN_TEAM');
       if (team['seasonId'] != seasonId) {
-        return _problem(422, 'Team not in season', 'TEAM_NOT_IN_SEASON');
+        return mockProblem(
+          422,
+          'Team not in season',
+          code: 'TEAM_NOT_IN_SEASON',
+        );
       }
     }
     final plan = _newPlan(
@@ -489,16 +490,16 @@ class MockFinanceApi {
   MockResult? _validPeriods(String cadence, String? first, String? last) {
     if (cadence == 'SEASON') {
       return first != null || last != null
-          ? _problem(400, 'Not allowed', 'NOT_ALLOWED')
+          ? mockProblem(400, 'Not allowed', code: 'NOT_ALLOWED')
           : null;
     }
     final kind = cadence == 'MONTHLY' ? PeriodKind.month : PeriodKind.quarter;
     final a = first == null ? null : Period.tryParse(first);
-    if (a == null || a.kind != kind) return _problem(400, 'Bad Request');
+    if (a == null || a.kind != kind) return mockProblem(400, 'Bad Request');
     if (last != null) {
       final z = Period.tryParse(last);
       if (z == null || z.kind != kind || z.compareTo(a) < 0) {
-        return _problem(400, 'Bad Request');
+        return mockProblem(400, 'Bad Request');
       }
     }
     return null;
@@ -506,23 +507,23 @@ class MockFinanceApi {
 
   MockResult _updatePlan(String id, Map<String, Object?> b) {
     final plan = _plans.where((p) => p['id'] == id).firstOrNull;
-    if (plan == null) return _problem(404, 'Not found');
+    if (plan == null) return mockProblem(404, 'Not found');
     final clear = (b['clear'] as List?)?.cast<String>() ?? const <String>[];
-    if (b.isEmpty) return _problem(400, 'Bad Request');
+    if (b.isEmpty) return mockProblem(400, 'Bad Request');
     if (b.containsKey('amountMinor') && !_validAmount(b['amountMinor'])) {
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     final name = b['name'];
     if (name != null && (name is! String || name.trim().isEmpty)) {
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     if (clear.contains('lastPeriod') && b['lastPeriod'] != null) {
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     final first = (b['firstPeriod'] as String?) ?? '${plan['firstPeriod']}';
     if (b['firstPeriod'] != null && b['firstPeriod'] != plan['firstPeriod']) {
       if (plan['hasDues'] == true) {
-        return _problem(409, 'The plan has dues', 'FEE_PLAN_HAS_DUES');
+        return mockProblem(409, 'The plan has dues', code: 'FEE_PLAN_HAS_DUES');
       }
     }
     final last = clear.contains('lastPeriod')
@@ -547,7 +548,7 @@ class MockFinanceApi {
 
   MockResult _setArchived(String id, bool archived) {
     final plan = _plans.where((p) => p['id'] == id).firstOrNull;
-    if (plan == null) return _problem(404, 'Not found');
+    if (plan == null) return mockProblem(404, 'Not found');
     plan['archived'] = archived;
     plan['updatedAt'] = _stamp();
     return MockResult.json(200, plan);
@@ -555,9 +556,9 @@ class MockFinanceApi {
 
   MockResult _deletePlan(String id) {
     final plan = _plans.where((p) => p['id'] == id).firstOrNull;
-    if (plan == null) return _problem(404, 'Not found');
+    if (plan == null) return mockProblem(404, 'Not found');
     if (plan['hasDues'] == true) {
-      return _problem(409, 'The plan has dues', 'FEE_PLAN_HAS_DUES');
+      return mockProblem(409, 'The plan has dues', code: 'FEE_PLAN_HAS_DUES');
     }
     _plans.remove(plan);
     return const MockResult.empty(204);
@@ -566,7 +567,7 @@ class MockFinanceApi {
   // ------------------------------------------------------------------- dues
   MockResult _generate(String id, Map<String, Object?> b) {
     final plan = _plans.where((p) => p['id'] == id).firstOrNull;
-    if (plan == null) return _problem(404, 'Not found');
+    if (plan == null) return mockProblem(404, 'Not found');
     final key = b['period'];
     final period = key is String ? Period.tryParse(key) : null;
     final cadence = '${plan['cadence']}';
@@ -576,9 +577,13 @@ class MockFinanceApi {
       _ => PeriodKind.season,
     };
     if (period == null || period.kind != kind)
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     if (plan['archived'] == true) {
-      return _problem(409, 'The plan is archived', 'FEE_PLAN_ARCHIVED');
+      return mockProblem(
+        409,
+        'The plan is archived',
+        code: 'FEE_PLAN_ARCHIVED',
+      );
     }
     final season = _season('${plan['seasonId']}');
     if (kind != PeriodKind.season) {
@@ -591,7 +596,11 @@ class MockFinanceApi {
           : Period.tryParse('${plan['lastPeriod']}');
       if ((first != null && period.compareTo(first) < 0) ||
           (last != null && period.compareTo(last) > 0)) {
-        return _problem(422, 'Period outside the plan', 'PERIOD_OUTSIDE_PLAN');
+        return mockProblem(
+          422,
+          'Period outside the plan',
+          code: 'PERIOD_OUTSIDE_PLAN',
+        );
       }
       final inSeason = periodKeysIn(
         feeCadence,
@@ -599,10 +608,10 @@ class MockFinanceApi {
         _date('${season['endsOn']}'),
       );
       if (!inSeason.contains(period.key)) {
-        return _problem(
+        return mockProblem(
           422,
           'Period outside the season',
-          'PERIOD_OUTSIDE_SEASON',
+          code: 'PERIOD_OUTSIDE_SEASON',
         );
       }
     }
@@ -675,7 +684,7 @@ class MockFinanceApi {
   MockResult _getDue(String id) {
     final due = _dues.where((d) => d['id'] == id).firstOrNull;
     return due == null
-        ? _problem(404, 'Not found')
+        ? mockProblem(404, 'Not found')
         : MockResult.json(200, {
             ..._view(due),
             'payments': [
@@ -687,11 +696,11 @@ class MockFinanceApi {
   /// The open due, or the problem to answer.
   ({Map<String, Object?>? due, MockResult? problem}) _open(String id) {
     final due = _dues.where((d) => d['id'] == id).firstOrNull;
-    if (due == null) return (due: null, problem: _problem(404, 'Not found'));
+    if (due == null) return (due: null, problem: mockProblem(404, 'Not found'));
     if (due['status'] != 'OPEN') {
       return (
         due: null,
-        problem: _problem(409, 'The due is not open', 'DUE_NOT_OPEN'),
+        problem: mockProblem(409, 'The due is not open', code: 'DUE_NOT_OPEN'),
       );
     }
     return (due: due, problem: null);
@@ -702,7 +711,7 @@ class MockFinanceApi {
 
   MockResult _changeAmount(String id, Map<String, Object?> b) {
     if (!_validAmount(b['amountMinor']) || !_validReason(b['reason'])) {
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     final r = _open(id);
     if (r.problem != null) return r.problem!;
@@ -713,7 +722,7 @@ class MockFinanceApi {
   }
 
   MockResult _waive(String id, Map<String, Object?> b) {
-    if (!_validReason(b['reason'])) return _problem(400, 'Bad Request');
+    if (!_validReason(b['reason'])) return mockProblem(400, 'Bad Request');
     final r = _open(id);
     if (r.problem != null) return r.problem!;
     r.due!['status'] = 'WAIVED';
@@ -732,12 +741,16 @@ class MockFinanceApi {
         !const {'CASH', 'BANK_TRANSFER', 'CARD', 'OTHER'}.contains(method) ||
         (note != null &&
             (note is! String || note.isEmpty || note.length > 200))) {
-      return _problem(400, 'Bad Request');
+      return mockProblem(400, 'Bad Request');
     }
     final r = _open(id);
     if (r.problem != null) return r.problem!;
     if (paidOn.compareTo(_today()) > 0) {
-      return _problem(422, 'Payment day in the future', 'PAID_ON_IN_FUTURE');
+      return mockProblem(
+        422,
+        'Payment day in the future',
+        code: 'PAID_ON_IN_FUTURE',
+      );
     }
     _addPayment(r.due!, paidOn: paidOn, method: method, note: note as String?);
     r.due!['updatedAt'] = _stamp();
@@ -745,12 +758,16 @@ class MockFinanceApi {
   }
 
   MockResult _void(String paymentId, Map<String, Object?> b) {
-    if (!_validReason(b['reason'])) return _problem(400, 'Bad Request');
+    if (!_validReason(b['reason'])) return mockProblem(400, 'Bad Request');
     for (final due in _dues) {
       for (final p in due['payments']! as List<Map<String, Object?>>) {
         if (p['id'] != paymentId) continue;
         if (p['voided'] == true) {
-          return _problem(409, 'Already voided', 'PAYMENT_ALREADY_VOIDED');
+          return mockProblem(
+            409,
+            'Already voided',
+            code: 'PAYMENT_ALREADY_VOIDED',
+          );
         }
         p['voided'] = true;
         p['voidedAt'] = _stamp();
@@ -762,6 +779,6 @@ class MockFinanceApi {
         return MockResult.json(200, _view(due));
       }
     }
-    return _problem(404, 'Not found');
+    return mockProblem(404, 'Not found');
   }
 }
