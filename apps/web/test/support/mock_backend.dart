@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/http/dio_provider.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/core/mock/mock_core_api.dart';
@@ -122,8 +124,49 @@ class MockBackend extends MockApiAdapter {
         },
       );
     }
-    return super.fetch(options, requestStream, cancelFuture);
+    final answer = await super.fetch(options, requestStream, cancelFuture);
+    final type = answer.headers[Headers.contentTypeHeader]?.firstOrNull ?? '';
+    if (!type.contains('json')) return answer;
+    final bytes = await answer.stream.fold<List<int>>(
+      [],
+      (a, b) => a..addAll(b),
+    );
+    _answers.add((
+      request: options,
+      status: answer.statusCode,
+      json: bytes.isEmpty ? null : jsonDecode(utf8.decode(bytes)),
+    ));
+    return ResponseBody.fromBytes(
+      Uint8List.fromList(bytes),
+      answer.statusCode,
+      headers: answer.headers,
+    );
   }
+
+  final List<({RequestOptions request, int status, Object? json})> _answers =
+      [];
+
+  /// The JSON the mock answered the last request to [path] with (a map: an
+  /// object; a list: an array).
+  Object? lastAnswer(Pattern path, {String? method = 'GET'}) => _answers
+      .where(
+        (a) =>
+            _matches(path, a.request.path) &&
+            (method == null || a.request.method.toUpperCase() == method),
+      )
+      .last
+      .json;
+
+  /// The JSON body of [request] as the app sent it.
+  static Map<String, Object?> bodyOf(RequestOptions request) {
+    final data = request.data;
+    final decoded = data is String ? jsonDecode(data) : data;
+    return (decoded! as Map).cast<String, Object?>();
+  }
+
+  /// The JSON body of the last request to [path] with [method].
+  Map<String, Object?> lastBody(Pattern path, {String method = 'POST'}) =>
+      bodyOf(requestsTo(path, method: method).last);
 
   static bool _matches(Pattern pattern, String path) =>
       pattern is String ? pattern == path : pattern.allMatches(path).isNotEmpty;
@@ -155,3 +198,9 @@ class _Fault {
   final bool hang;
   final bool network;
 }
+
+/// [value] (a core model) as the service sends it, for seeding the mock.
+Map<String, Object?> coreJson<T>(T value) =>
+    (api.standardSerializers.serialize(value, specifiedType: FullType(T))!
+            as Map)
+        .cast<String, Object?>();

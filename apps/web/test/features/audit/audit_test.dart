@@ -11,12 +11,26 @@ import 'package:hoops_app/features/audit/presentation/audit_log_screen.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 
-import '../../support/fake_audit.dart';
+import '../../support/audit_seed.dart';
 import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
+import '../../support/mock_backend.dart';
 import '../../support/pump_helpers.dart';
+
+const _academyTrail = '/api/core/audit-events';
+const _platformTrail = '/platform/audit-events';
+
+/// The backend with [entries] as the academy's trail.
+MockBackend _academyWith([List<AuditEntry> entries = const []]) =>
+    MockBackend()..seedAcademyTrail(entries);
+
+/// The backend with Club Norte (`t-a`) and [entries] as the platform trail.
+MockBackend _platformWith([List<AuditEntry> entries = const []]) =>
+    MockBackend()
+      ..platform.tenants.add(coreJson(tenantOf('t-a', 'Club Norte')))
+      ..seedPlatformTrail(entries);
 
 List<AuditEntry> _trail() => [
   auditEntry(
@@ -50,7 +64,7 @@ List<AuditEntry> _trail() => [
 
 Future<Harness> _pumpAcademy(
   WidgetTester tester,
-  FakeAuditRepository repo, {
+  MockBackend backend, {
   Set<TenantRole> roles = const {TenantRole.admin},
   bool settle = true,
   Size size = const Size(360, 780),
@@ -61,12 +75,12 @@ Future<Harness> _pumpAcademy(
   location: '/admin/activity',
   settle: settle,
   size: size,
-  overrides: repo.overrides,
+  backend: backend,
 );
 
 Future<Harness> _pumpPlatform(
   WidgetTester tester,
-  FakeAuditRepository repo,
+  MockBackend backend,
   String location, {
   bool superAdmin = true,
 }) async {
@@ -76,7 +90,7 @@ Future<Harness> _pumpPlatform(
     platform: FakePlatform(
       repo: FakePlatformRepository(tenants: [tenantOf('t-a', 'Club Norte')]),
     ),
-    extraOverrides: repo.overrides,
+    backend: backend,
   );
   await h.pump(tester, size: const Size(1024, 900));
   await h.go(tester, location);
@@ -91,7 +105,6 @@ void main() {
         roles: {TenantRole.admin},
         core: FakeCore(),
         location: '/admin',
-        overrides: FakeAuditRepository().overrides,
       );
       await tapKey(tester, 'admin-activity'); // below the fold at 360 px
       expect(find.byKey(const Key('audit-log')), findsOneWidget);
@@ -100,32 +113,32 @@ void main() {
     testWidgets('loading', (tester) async {
       await _pumpAcademy(
         tester,
-        FakeAuditRepository()..hang = true,
+        MockBackend()..hang(_academyTrail),
         settle: false,
       );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('error with retry', (tester) async {
-      final repo = FakeAuditRepository(_trail())..failWith = StateError('x');
-      await _pumpAcademy(tester, repo);
+      final backend = _academyWith(_trail())..fail(_academyTrail);
+      await _pumpAcademy(tester, backend);
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
-      repo.failWith = null;
+      backend.heal();
       await tester.tap(find.byKey(const Key('retry-button')));
       await tester.pumpAndSettle();
       expect(find.text('Miembro invitado'), findsOneWidget);
     });
 
     testWidgets('empty', (tester) async {
-      await _pumpAcademy(tester, FakeAuditRepository());
+      await _pumpAcademy(tester, _academyWith());
       expect(find.text('No hay actividad con este filtro'), findsOneWidget);
     });
 
     testWidgets(
       'populated: localized action, target, actor (names, system, platform) and time',
       (tester) async {
-        final repo = FakeAuditRepository(_trail());
-        await _pumpAcademy(tester, repo, size: const Size(360, 1200));
+        final backend = _academyWith(_trail());
+        await _pumpAcademy(tester, backend, size: const Size(360, 1200));
         Finder inTile(String id, String text) => find.descendant(
           of: find.byKey(Key('audit-$id')),
           matching: find.textContaining(text),
@@ -146,8 +159,8 @@ void main() {
         );
         expect(inTile('e4', 'Club Norte'), findsOneWidget);
         expect(
-          repo.academyQueries.single.$1,
-          isNotNull,
+          backend.requestsTo(_academyTrail).single.headers['X-Tenant-Id'],
+          MockBackend.testTenantId,
           reason: 'scoped to the active academy',
         );
       },
@@ -156,8 +169,8 @@ void main() {
     testWidgets(
       'filtering by actions asks the server and resets to the first page',
       (tester) async {
-        final repo = FakeAuditRepository(_trail());
-        await _pumpAcademy(tester, repo, size: const Size(360, 1200));
+        final backend = _academyWith(_trail());
+        await _pumpAcademy(tester, backend, size: const Size(360, 1200));
         await tester.tap(find.byKey(const Key('audit-actions')));
         await tester.pumpAndSettle();
         for (final wire in ['member.invited', 'tenant.profile_changed']) {
@@ -167,9 +180,9 @@ void main() {
         }
         await tester.tap(find.byKey(const Key('audit-actions-apply')));
         await tester.pumpAndSettle();
-        expect(repo.academyQueries.last.$2.actions, {
-          api.AuditAction.memberPeriodInvited,
-          api.AuditAction.tenantPeriodProfileChanged,
+        expect(backend.lastQuery(_academyTrail).set('action'), {
+          'member.invited',
+          'tenant.profile_changed',
         });
         expect(find.byKey(const Key('audit-e1')), findsOneWidget);
         expect(find.byKey(const Key('audit-e2')), findsNothing);
@@ -179,7 +192,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('audit-actions-clear')));
         await tester.pumpAndSettle();
-        expect(repo.academyQueries.last.$2.actions, isEmpty);
+        expect(backend.lastQuery(_academyTrail).set('action'), isEmpty);
         expect(find.text('Todas las acciones'), findsOneWidget);
       },
     );
@@ -189,8 +202,8 @@ void main() {
         for (var i = 0; i < AuditQuery.pageSize + 3; i++)
           auditEntry('m$i', api.AuditAction.memberPeriodUpdated),
       ];
-      final repo = FakeAuditRepository(many);
-      await _pumpAcademy(tester, repo);
+      final backend = _academyWith(many);
+      await _pumpAcademy(tester, backend);
       expect(find.text('Página 1 de 2'), findsOneWidget);
       expect(
         tester
@@ -200,7 +213,7 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('audit-next')));
       await tester.pumpAndSettle();
-      expect(repo.academyQueries.last.$2.page, 1);
+      expect(backend.lastQuery(_academyTrail).integer('page', 0), 1);
       expect(find.text('Página 2 de 2'), findsOneWidget);
       expect(find.byKey(Key('audit-m${AuditQuery.pageSize}')), findsOneWidget);
       expect(
@@ -211,33 +224,36 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('audit-previous')));
       await tester.pumpAndSettle();
-      expect(repo.academyQueries.last.$2.page, 0);
+      expect(backend.lastQuery(_academyTrail).integer('page', -1), 0);
     });
 
     testWidgets(
       'a date range is sent as UTC instants of local day starts, to exclusive',
       (tester) async {
-        final repo = FakeAuditRepository(_trail());
-        final h = await _pumpAcademy(tester, repo);
+        final backend = _academyWith(_trail());
+        final h = await _pumpAcademy(tester, backend);
         h.container
             .read(auditQueryProvider(const AuditScope.academy()).notifier)
             .setRange(DateTime(2026, 11, 1), DateTime(2026, 11, 3));
         await tester.pumpAndSettle();
-        final q = repo.academyQueries.last.$2;
-        expect(q.fromInstant, DateTime(2026, 11, 1).toUtc());
-        expect(q.toInstant, DateTime(2026, 11, 4).toUtc());
-        expect(q.fromInstant!.isUtc, isTrue);
+        final q = backend.lastQuery(_academyTrail);
+        expect(q.instant('from'), DateTime(2026, 11, 1).toUtc());
+        expect(q.instant('to'), DateTime(2026, 11, 4).toUtc());
+        expect(q.instant('from')!.isUtc, isTrue);
         expect(find.byKey(const Key('audit-range-clear')), findsOneWidget);
         await tester.tap(find.byKey(const Key('audit-range-clear')));
         await tester.pumpAndSettle();
-        expect(repo.academyQueries.last.$2.fromInstant, isNull);
+        expect(backend.lastQuery(_academyTrail).instant('from'), isNull);
       },
     );
 
     testWidgets('the date button opens the range picker', (tester) async {
-      final repo = FakeAuditRepository(_trail());
       // Wide: the picker's own header overflows with the square test font at phone width.
-      await _pumpAcademy(tester, repo, size: const Size(1024, 900));
+      await _pumpAcademy(
+        tester,
+        _academyWith(_trail()),
+        size: const Size(1024, 900),
+      );
       await tester.tap(find.byKey(const Key('audit-range')));
       await tester.pumpAndSettle();
       expect(find.byType(DateRangePickerDialog), findsOneWidget);
@@ -249,7 +265,6 @@ void main() {
         roles: {TenantRole.coach},
         core: FakeCore(),
         location: '/admin',
-        overrides: FakeAuditRepository().overrides,
       );
       expect(find.byKey(const Key('admin-activity')), findsNothing);
     });
@@ -259,7 +274,7 @@ void main() {
     testWidgets(
       'lists every academy with its name and opens from the console',
       (tester) async {
-        final repo = FakeAuditRepository([
+        final backend = _platformWith([
           auditEntry(
             'p1',
             api.AuditAction.tenantPeriodSuspended,
@@ -277,10 +292,10 @@ void main() {
             tenantName: 'Academia Sur',
           ),
         ]);
-        await _pumpPlatform(tester, repo, '/app-admin');
+        await _pumpPlatform(tester, backend, '/app-admin');
         await tester.tap(find.byKey(const Key('app-admin-activity')));
         await tester.pumpAndSettle();
-        expect(repo.platformQueries.last.$1, isNull);
+        expect(backend.lastQuery(_platformTrail).text('tenantId'), isNull);
         expect(
           find.descendant(
             of: find.byKey(const Key('audit-p2')),
@@ -299,7 +314,7 @@ void main() {
     );
 
     testWidgets('one academy from its detail page', (tester) async {
-      final repo = FakeAuditRepository([
+      final backend = _platformWith([
         auditEntry(
           'p1',
           api.AuditAction.adminPeriodAdded,
@@ -307,23 +322,23 @@ void main() {
           tenantName: 'Club Norte',
         ),
       ]);
-      await _pumpPlatform(tester, repo, '/platform/t-a');
+      await _pumpPlatform(tester, backend, '/platform/t-a');
       await tester.tap(find.byKey(const Key('tenant-activity')));
       await tester.pumpAndSettle();
-      expect(repo.platformQueries.last.$1, 't-a');
+      expect(backend.lastQuery(_platformTrail).text('tenantId'), 't-a');
       expect(find.byKey(const Key('audit-p1')), findsOneWidget);
     });
 
     testWidgets('is forbidden without super_admin', (tester) async {
-      final repo = FakeAuditRepository();
+      final backend = _platformWith();
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         '/platform/activity',
         superAdmin: false,
       );
       expect(find.byKey(const Key('audit-log')), findsNothing);
-      expect(repo.platformQueries, isEmpty);
+      expect(backend.requestsTo(_platformTrail), isEmpty);
     });
   });
 

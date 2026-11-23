@@ -3,13 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
-import '../support/fake_audit.dart';
+import '../support/audit_seed.dart';
 import '../support/fake_repos.dart';
+import '../support/mock_backend.dart';
 import '../support/pump_helpers.dart';
 
 /// Regenerate with `flutter test --update-goldens test/golden/audit_golden_test.dart`.
 void main() {
-  final trail = FakeAuditRepository([
+  final trail = [
     auditEntry(
       'g1',
       api.AuditAction.memberPeriodInvited,
@@ -55,7 +56,7 @@ void main() {
       targetType: api.AuditTargetType.tenant,
       targetName: 'Club Norte',
     ),
-  ]);
+  ];
 
   Future<void> pump(
     WidgetTester tester,
@@ -70,7 +71,7 @@ void main() {
       core: FakeCore(),
       location: '/admin/activity',
       size: size,
-      overrides: trail.overrides,
+      backend: MockBackend()..seedAcademyTrail(trail),
     );
   }
 
