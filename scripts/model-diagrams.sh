@@ -16,26 +16,17 @@ case "${1:-}" in
   *) echo "usage: $0 [--check]" >&2; exit 2 ;;
 esac
 
-IMAGE="$(sed -n 's/^[[:space:]]*image:[[:space:]]*\(docker.io\/library\/postgres:[^[:space:]]*\).*/\1/p' infra/compose/compose.yaml | head -1)"
-[ -n "$IMAGE" ] || { echo "model-diagrams: no postgres image in infra/compose/compose.yaml" >&2; exit 1; }
-CONTAINER="hoops-diagrams-pg-$$-$RANDOM"
+TPG_NAME=model-diagrams
+# shellcheck source=scripts/lib/throwaway-pg.sh
+. scripts/lib/throwaway-pg.sh
 WORK="$(mktemp -d)"
 cleanup() {
-  podman rm -f "$CONTAINER" >/dev/null 2>&1 || true
+  throwaway_pg_stop
   rm -rf "$WORK"
 }
 trap cleanup EXIT
 
-psql_in() { podman exec -i -e PGOPTIONS="-c client_min_messages=warning" "$CONTAINER" psql -X -q -v ON_ERROR_STOP=1 -U "$1" -d hoops "${@:2}"; }
-
-podman run -d --name "$CONTAINER" -e POSTGRES_PASSWORD=diagrams -e POSTGRES_DB=hoops "$IMAGE" >/dev/null
-# The image's init server listens on the unix socket only; the real server also answers on TCP.
-for _ in $(seq 1 90); do
-  podman exec "$CONTAINER" pg_isready -q -h 127.0.0.1 -U postgres -d hoops && break
-  sleep 1
-done
-podman exec "$CONTAINER" pg_isready -q -h 127.0.0.1 -U postgres -d hoops || { echo "model-diagrams: PostgreSQL did not start" >&2; exit 1; }
-psql_in postgres < infra/db/init/01_roles_schemas.sql >/dev/null
+throwaway_pg_start diagrams
 
 # schemas per service; the one named like the service is shown unprefixed, others as <schema>_<table>
 # (no associative arrays: macOS ships bash 3.2)
@@ -66,16 +57,6 @@ select json_build_object(
 );
 SQL
 )
-
-# Flyway order: versioned files by numeric version, then repeatable (R__) files by name.
-apply_migrations() {
-  local dir="$1" role="$2" f
-  while IFS= read -r f; do
-    psql_in "$role" < "$f" >/dev/null || { echo "model-diagrams: $f failed" >&2; return 1; }
-  done < <(
-    { ls "$dir" | grep -E '^V[0-9]+__' | sort -t_ -k1.2 -n; ls "$dir" | grep -E '^R__' | sort; } | sed "s|^|$dir/|"
-  )
-}
 
 OUT="$WORK/out"
 mkdir -p "$OUT"

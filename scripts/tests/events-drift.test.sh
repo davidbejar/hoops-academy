@@ -9,36 +9,20 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
-IMAGE="$(sed -n 's/^[[:space:]]*image:[[:space:]]*\(docker.io\/library\/postgres:[^[:space:]]*\).*/\1/p' infra/compose/compose.yaml | head -1)"
-[ -n "$IMAGE" ] || { echo "events-drift.test: no postgres image in infra/compose/compose.yaml" >&2; exit 1; }
-CONTAINER="hoops-drift-test-pg-$$-$RANDOM"
+TPG_NAME=events-drift.test
+# shellcheck source=scripts/lib/throwaway-pg.sh
+. scripts/lib/throwaway-pg.sh
 WORK="$(mktemp -d)"
 cleanup() {
-  podman rm -f "$CONTAINER" >/dev/null 2>&1 || true
+  throwaway_pg_stop
   rm -rf "$WORK"
 }
 trap cleanup EXIT
 
-psql_in() { podman exec -i -e PGOPTIONS="-c client_min_messages=warning" "$CONTAINER" psql -X -q -v ON_ERROR_STOP=1 -U "$1" -d hoops "${@:2}"; }
 sql() { printf '%s\n' "$1" | psql_in postgres >/dev/null; }
 
-podman run -d --name "$CONTAINER" -e POSTGRES_PASSWORD=drift-test -e POSTGRES_DB=hoops "$IMAGE" >/dev/null
-for _ in $(seq 1 90); do
-  podman exec "$CONTAINER" pg_isready -q -h 127.0.0.1 -U postgres -d hoops && break
-  sleep 1
-done
-podman exec "$CONTAINER" pg_isready -q -h 127.0.0.1 -U postgres -d hoops || { echo "events-drift.test: PostgreSQL did not start" >&2; exit 1; }
-psql_in postgres < infra/db/init/01_roles_schemas.sql >/dev/null
+throwaway_pg_start drift-test
 
-# Flyway order: versioned files by numeric version, then repeatable (R__) files by name (as scripts/model-diagrams.sh).
-apply_migrations() {
-  local dir="$1" role="$2" f
-  while IFS= read -r f; do
-    psql_in "$role" < "$dir/$f" >/dev/null || { echo "events-drift.test: $f failed" >&2; return 1; }
-  done < <(
-    cd "$dir" && { printf '%s\n' V*__*.sql | sort -t_ -k1.2 -n; for r in R__*.sql; do [ -e "$r" ] && echo "$r"; done; }
-  )
-}
 for svc in core game athlete; do
   apply_migrations "services/$svc-service/src/main/resources/db/migration" "${svc}_migrator"
 done
