@@ -1,8 +1,8 @@
 // Package events consumes core's roster topics into finance-service's replica (ADR-0036, ADR-0037): each record is
 // validated against its topic's JSON Schema (copies of libs/contracts/events, kept equal by a test) and its key,
 // applied idempotently in a transaction bound to the event's tenant, or parked when invalid; offsets are committed
-// after processing. WP118 consumes core.tenant and core.person (the tenant filter's membership); WP119 adds the
-// topics of players, teams, assignments, staff and guardian links.
+// after processing. Topics lists the seven topics: academies and members (the tenant filter's membership), players,
+// teams, assignments, staff and guardian links.
 package events
 
 import (
