@@ -21,6 +21,7 @@ import com.hoopsacademy.game.support.CoreEvents.Record;
 import com.hoopsacademy.game.support.CoreStubs;
 import com.hoopsacademy.game.support.CoreWireMockResource;
 import com.hoopsacademy.game.support.InjectCoreWireMock;
+import com.hoopsacademy.game.support.ReplicaDb;
 import com.hoopsacademy.game.support.ReplicaFeed;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -275,6 +277,21 @@ class AuthzContextContractTest {
         coreAnswers(source, () -> CoreAnswers.notAMember(core, unreported, "sub-sam"));
 
         assertThat(tenantScope.runAs(unreported, () -> resolver(source).resolve("sub-sam", unreported))).isEmpty();
+    }
+
+    /**
+     * ADR-0066: a team row without a season end (only a removed row has none, ADR-0037) is no known team, as in
+     * athlete's replica: it counts neither as current nor as historic, and the resolver does not fail on it.
+     */
+    @Test
+    void aReplicaTeamWithoutASeasonEndCountsForNothing() {
+        given(Source.REPLICA, member(TenantRole.COACH), events.staff(current, person, "COACH"),
+                events.staff(ended, person, "COACH"));
+        ReplicaDb.execute(tenant, "update game.team_ref set season_end_date = null where id = '" + ended + "'");
+        AuthzContext expected = context(Set.of(TenantRole.COACH), Set.of(current), Set.of(), Optional.empty(),
+                Set.of());
+
+        assertThat(inTenant(() -> replica.resolve(subject, tenant))).contains(expected);
     }
 
     private Record member(TenantRole... roles) {
