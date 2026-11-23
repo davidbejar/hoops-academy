@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,13 +29,33 @@ type Realm struct {
 	CertsCalls int
 }
 
-// Start serves <url>/.well-known/openid-configuration and <url>/protocol/openid-connect/certs until the test ends.
+// sharedKey is generated once per test binary: RSA-2048 generation is slow and random in length, and no test needs
+// its own key except the one that proves a foreign key is refused (StartWithOwnKey).
+var sharedKey = sync.OnceValues(func() (*rsa.PrivateKey, error) { return rsa.GenerateKey(rand.Reader, 2048) })
+
+// Start serves <url>/.well-known/openid-configuration and <url>/protocol/openid-connect/certs until the test ends,
+// signing with the test binary's shared key.
 func Start(t testing.TB) *Realm {
+	t.Helper()
+	key, err := sharedKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return serve(t, key)
+}
+
+// StartWithOwnKey is Start with a key of its own (same kid "test-key"): its tokens do not verify against another realm.
+func StartWithOwnKey(t testing.TB) *Realm {
 	t.Helper()
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
 	}
+	return serve(t, key)
+}
+
+func serve(t testing.TB, key *rsa.PrivateKey) *Realm {
+	t.Helper()
 	r := &Realm{key: key, kid: "test-key"}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {

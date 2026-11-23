@@ -70,7 +70,7 @@ func TestTokensAreRefusedWithTheirReason(t *testing.T) {
 	if got := reason(t, errOf(v.Verify(context.Background(), none))); got != "signature" {
 		t.Errorf("alg none: %s", got)
 	}
-	other := realm.Start(t)
+	other := realm.StartWithOwnKey(t)
 	if got := reason(t, errOf(v.Verify(context.Background(), other.Sign(t, valid())))); got != "signature" {
 		t.Errorf("another key with the same kid: %s", got)
 	}
