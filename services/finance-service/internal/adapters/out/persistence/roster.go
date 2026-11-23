@@ -255,8 +255,8 @@ func (RosterStore) Candidates(ctx context.Context, season domain.SeasonID, targe
 	if err != nil {
 		return nil, err
 	}
-	rows, err := q.Query(ctx, selectCandidates, season.String(), optionalTeam(target.Team),
-		optionalCategory(target.AgeCategory), window.Start, window.End)
+	rows, err := q.Query(ctx, selectCandidates, season.String(), optional(target.Team),
+		optional(target.AgeCategory), window.Start, window.End)
 	if err != nil {
 		return nil, fmt.Errorf("candidates: %w", err)
 	}

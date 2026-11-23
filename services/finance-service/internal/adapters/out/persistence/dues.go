@@ -173,13 +173,8 @@ func (DueStore) List(ctx context.Context, f application.DueFilter, page applicat
 	if err != nil {
 		return nil, 0, err
 	}
-	var status *string
-	if f.Status != nil {
-		text := string(*f.Status)
-		status = &text
-	}
-	args := []any{optional(f.Plan), optional(f.Team), optional(f.Player), optional(f.Season), f.Period, status, f.From,
-		f.To}
+	args := []any{optional(f.Plan), optional(f.Team), optional(f.Player), optional(f.Season), f.Period,
+		optionalText(f.Status), f.From, f.To}
 	var total int64
 	if err := q.QueryRow(ctx, countDues, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count dues: %w", err)
@@ -212,11 +207,7 @@ func (DueStore) Behind(ctx context.Context, players []domain.PlayerID, today tim
 	if err != nil {
 		return nil, err
 	}
-	texts := make([]string, len(players))
-	for i, p := range players {
-		texts[i] = p.String()
-	}
-	behind, err := ids(ctx, q, "players behind", behindPlayers, texts, today)
+	behind, err := ids(ctx, q, "players behind", behindPlayers, idTexts(players), today)
 	if err != nil {
 		return nil, err
 	}
@@ -356,12 +347,7 @@ func (PaymentStore) Void(ctx context.Context, p domain.Payment) error {
 	if err != nil {
 		return err
 	}
-	var by *string
-	if p.VoidedBy != nil {
-		text := p.VoidedBy.String()
-		by = &text
-	}
-	tag, err := q.Exec(ctx, voidPayment, p.ID.String(), p.VoidedAt, p.VoidReason, by)
+	tag, err := q.Exec(ctx, voidPayment, p.ID.String(), p.VoidedAt, p.VoidReason, optional(p.VoidedBy))
 	if err != nil {
 		return fmt.Errorf("void payment: %w", err)
 	}
@@ -463,32 +449,20 @@ func (DueStore) AnyDue(ctx context.Context) (bool, error) {
 }
 
 // PlansWithDues reports which of ids have dues.
-func (DueStore) PlansWithDues(ctx context.Context, ids []domain.FeePlanID) (map[domain.FeePlanID]bool, error) {
+func (DueStore) PlansWithDues(ctx context.Context, plans []domain.FeePlanID) (map[domain.FeePlanID]bool, error) {
 	out := map[domain.FeePlanID]bool{}
-	if len(ids) == 0 {
+	if len(plans) == 0 {
 		return out, nil
 	}
 	q, err := txOf(ctx)
 	if err != nil {
 		return nil, err
 	}
-	texts := make([]string, len(ids))
-	for i, id := range ids {
-		texts[i] = id.String()
-	}
-	rows, err := q.Query(ctx, plansWithDues, texts)
+	found, err := ids(ctx, q, "plans with dues", plansWithDues, idTexts(plans))
 	if err != nil {
-		return nil, fmt.Errorf("plans with dues: %w", err)
+		return nil, err
 	}
-	found, err := pgx.CollectRows(rows, pgx.RowTo[string])
-	if err != nil {
-		return nil, fmt.Errorf("plans with dues: %w", err)
-	}
-	for _, text := range found {
-		id, err := domain.ParseUUID(text)
-		if err != nil {
-			return nil, fmt.Errorf("plan id %q: %w", text, err)
-		}
+	for _, id := range found {
 		out[domain.FeePlanID(id)] = true
 	}
 	return out, nil
@@ -519,15 +493,6 @@ func (d TenantDirectory) Tenants(ctx context.Context) ([]domain.TenantID, error)
 		tenants = append(tenants, tenant)
 	}
 	return tenants, nil
-}
-
-// optional is an id's text, or nil (no filter).
-func optional[T interface{ String() string }](id *T) *string {
-	if id == nil {
-		return nil
-	}
-	text := (*id).String()
-	return &text
 }
 
 // Income sums the dues of a season's plans by status.

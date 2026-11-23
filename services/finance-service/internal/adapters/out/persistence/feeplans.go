@@ -76,8 +76,8 @@ func (FeePlanStore) Insert(ctx context.Context, p domain.FeePlan) error {
 	if err != nil {
 		return err
 	}
-	if _, err := q.Exec(ctx, insertFeePlan, p.ID.String(), p.Name, p.Season.String(), optionalTeam(p.Target.Team),
-		optionalCategory(p.Target.AgeCategory), p.Amount.Minor(), string(p.Cadence), periodKey(p.First),
+	if _, err := q.Exec(ctx, insertFeePlan, p.ID.String(), p.Name, p.Season.String(), optional(p.Target.Team),
+		optional(p.Target.AgeCategory), p.Amount.Minor(), string(p.Cadence), periodKey(p.First),
 		periodKey(p.Last), p.AutoGenerate, p.Archived, p.CreatedAt, p.UpdatedAt); err != nil {
 		return fmt.Errorf("insert fee plan: %w", err)
 	}
@@ -120,7 +120,7 @@ func (FeePlanStore) List(ctx context.Context, f application.FeePlanFilter, page 
 	if err != nil {
 		return nil, 0, err
 	}
-	args := []any{optionalSeason(f.Season), optionalTeam(f.Team), optionalCategory(f.AgeCategory), f.IncludeArchived}
+	args := []any{optional(f.Season), optional(f.Team), optional(f.AgeCategory), f.IncludeArchived}
 	var total int64
 	if err := q.QueryRow(ctx, countFeePlans, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count fee plans: %w", err)
@@ -205,28 +205,4 @@ func periodKey(p *domain.Period) *string {
 	}
 	key := p.Key()
 	return &key
-}
-
-func optionalTeam(id *domain.TeamID) *string {
-	if id == nil {
-		return nil
-	}
-	s := id.String()
-	return &s
-}
-
-func optionalCategory(id *domain.AgeCategoryID) *string {
-	if id == nil {
-		return nil
-	}
-	s := id.String()
-	return &s
-}
-
-func optionalSeason(id *domain.SeasonID) *string {
-	if id == nil {
-		return nil
-	}
-	s := id.String()
-	return &s
 }

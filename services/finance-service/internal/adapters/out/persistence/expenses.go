@@ -112,12 +112,7 @@ func (ExpenseStore) List(ctx context.Context, f application.ExpenseFilter, page 
 	if err != nil {
 		return nil, 0, err
 	}
-	var category *string
-	if f.Category != nil {
-		text := string(*f.Category)
-		category = &text
-	}
-	args := []any{f.From, f.To, category}
+	args := []any{f.From, f.To, optionalText(f.Category)}
 	var total int64
 	if err := q.QueryRow(ctx, countExpenses, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count expenses: %w", err)
