@@ -1,6 +1,6 @@
 # pdf-service (ADR-0051, ADR-0052): a stateless renderer of printable sheets, outside the Maven reactor.
 # Hexagonal layering as workspace crates: a crate can only use what its Cargo.toml lists, so a wrong import is a
-# compile error, and tests/layering.rs (crate pdf-adapters) pins what each layer may list.
+# compile error, and tests/api/layering.rs (crate pdf-adapters) pins what each layer may list.
 #   pdf-domain       sheets, limits, labels (es / en / id), file names, the print document; no framework crates
 #   pdf-application  the use cases and their ports (renderer, clock); depends on pdf-domain only
 #   pdf-adapters     HTTP in (axum), JWT, Problem+JSON, the PDF renderer out (krilla), telemetry, the binary

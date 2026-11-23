@@ -54,12 +54,6 @@ pub fn realm_key() -> &'static RealmKey {
     KEY.get_or_init(|| make_key(KID))
 }
 
-/// A key the realm does not publish, under the realm's key id.
-pub fn foreign_key() -> &'static RealmKey {
-    static KEY: OnceLock<RealmKey> = OnceLock::new();
-    KEY.get_or_init(|| make_key(KID))
-}
-
 pub struct Service {
     pub router: Router,
     pub events: Arc<SecurityEvents>,
@@ -106,6 +100,15 @@ pub fn core_token() -> String {
     token(&core_service_claims())
 }
 
+/// `token` with its signature changed: what a key the realm does not publish would produce.
+pub fn tampered(token: &str) -> String {
+    let (signed, signature) = token.rsplit_once('.').expect("a JWT");
+    let mut signature = signature.to_owned();
+    let first = if signature.starts_with('A') { 'B' } else { 'A' };
+    signature.replace_range(..1, &first.to_string());
+    format!("{signed}.{signature}")
+}
+
 pub struct Answer {
     pub status: StatusCode,
     pub headers: HeaderMap,
@@ -134,11 +137,24 @@ pub async fn call(router: &Router, method: Method, path: &str, headers: &[(&str,
     Answer { status, headers, body }
 }
 
+/// A POST of `body` as `content_type`, with a bearer token when there is one.
+pub async fn post_raw(router: &Router, path: &str, token: Option<&str>, content_type: &str, body: Vec<u8>) -> Answer {
+    let authorization = token.map(|token| format!("Bearer {token}"));
+    let mut headers = vec![("content-type", content_type)];
+    if let Some(value) = authorization.as_deref() {
+        headers.push(("authorization", value));
+    }
+    call(router, Method::POST, path, &headers, body).await
+}
+
+/// A POST with a JSON body and a bearer token when there is one.
+pub async fn post_json(router: &Router, path: &str, token: Option<&str>, body: &Value) -> Answer {
+    post_raw(router, path, token, "application/json", serde_json::to_vec(body).expect("JSON")).await
+}
+
 /// A POST with a JSON body and core-service's token.
 pub async fn post(router: &Router, path: &str, body: &Value) -> Answer {
-    let bearer = format!("Bearer {}", core_token());
-    let headers = [("authorization", bearer.as_str()), ("content-type", "application/json")];
-    call(router, Method::POST, path, &headers, serde_json::to_vec(body).expect("JSON")).await
+    post_json(router, path, Some(&core_token()), body).await
 }
 
 pub fn fixture(name: &str) -> Value {

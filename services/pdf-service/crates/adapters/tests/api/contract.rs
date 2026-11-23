@@ -1,18 +1,15 @@
 //! `pdf.yaml` is the source of truth (contract first): the requests the tests send are validated against it, every
 //! answer is one the contract declares (status, media type, `Problem` body, headers), and the service refuses exactly
 //! the bodies the contract refuses.
-#![allow(clippy::unwrap_used, clippy::expect_used)] // a test fails loudly
 
-mod common;
+use crate::common;
 
 use axum::http::{Method, StatusCode};
 use common::app::{Answer, call, fixture, post, service};
 use common::contract::{declared_response, errors, operation, yaml};
+use common::{MATCH_SHEET, TEAM_ROSTER, with, without};
 use pdf_domain::{academy, match_sheet as m, team_roster as r};
 use serde_json::{Value, json};
-
-const MATCH_SHEET: &str = "/internal/pdf/match-sheet";
-const TEAM_ROSTER: &str = "/internal/pdf/team-roster";
 
 fn request_schema(path: &str) -> &'static str {
     if path == MATCH_SHEET { "MatchSheetRequest" } else { "TeamRosterRequest" }
@@ -60,53 +57,53 @@ async fn every_operation_of_the_contract_is_served() {
 async fn the_service_refuses_exactly_what_the_contract_refuses() {
     let service = service();
     let cases: Vec<(&str, Value)> = vec![
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/1/email", json!(null))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/team/season", json!(null))),
-        (TEAM_ROSTER, remove(fixture("team-roster.json"), "/team/category")),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/staff", json!([]))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/locale", json!("de"))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/0/eligibility", json!("MAYBE"))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/0/playUpLevels", json!(-1))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/0/playUpLevels", json!(21))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/0/familyName", json!(""))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/0/givenName", json!("x".repeat(81)))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/0/jerseyNumber", json!("100"))),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/0/extra", json!(1))),
-        (TEAM_ROSTER, remove(fixture("team-roster.json"), "/staff")),
-        (TEAM_ROSTER, set(fixture("team-roster.json"), "/players/0/guardians", json!(vec![guardian(); 5]))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/1/email", json!(null))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/team/season", json!(null))),
+        (TEAM_ROSTER, without(&fixture("team-roster.json"), "/team/category")),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/staff", json!([]))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/locale", json!("de"))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/0/eligibility", json!("MAYBE"))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/0/playUpLevels", json!(-1))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/0/playUpLevels", json!(21))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/0/familyName", json!(""))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/0/givenName", json!("x".repeat(81)))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/0/jerseyNumber", json!("100"))),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/0/extra", json!(1))),
+        (TEAM_ROSTER, without(&fixture("team-roster.json"), "/staff")),
+        (TEAM_ROSTER, with(&fixture("team-roster.json"), "/players/0/guardians", json!(vec![guardian(); 5]))),
         (
             TEAM_ROSTER,
-            set(
-                fixture("team-roster.json"),
+            with(
+                &fixture("team-roster.json"),
                 "/staff",
                 json!(vec![fixture("team-roster.json")["staff"][0].clone(); 21]),
             ),
         ),
-        (MATCH_SHEET, set(fixture("match-sheet.json"), "/match/venue", json!(null))),
-        (MATCH_SHEET, set(fixture("match-sheet.json"), "/players", json!([]))),
-        (MATCH_SHEET, set(fixture("match-sheet.json"), "/match/homeAway", json!("NEUTRAL"))),
-        (MATCH_SHEET, set(fixture("match-sheet.json"), "/match/periodCount", json!(9))),
-        (MATCH_SHEET, set(fixture("match-sheet.json"), "/match/periodMinutes", json!(0))),
-        (MATCH_SHEET, set(fixture("match-sheet.json"), "/match/scheduledAt", json!("yesterday"))),
-        (MATCH_SHEET, set(fixture("match-sheet.json"), "/periodScores/0/period", json!(13))),
-        (MATCH_SHEET, set(fixture("match-sheet.json"), "/match/opponentName", json!("y".repeat(121)))),
+        (MATCH_SHEET, with(&fixture("match-sheet.json"), "/match/venue", json!(null))),
+        (MATCH_SHEET, with(&fixture("match-sheet.json"), "/players", json!([]))),
+        (MATCH_SHEET, with(&fixture("match-sheet.json"), "/match/homeAway", json!("NEUTRAL"))),
+        (MATCH_SHEET, with(&fixture("match-sheet.json"), "/match/periodCount", json!(9))),
+        (MATCH_SHEET, with(&fixture("match-sheet.json"), "/match/periodMinutes", json!(0))),
+        (MATCH_SHEET, with(&fixture("match-sheet.json"), "/match/scheduledAt", json!("yesterday"))),
+        (MATCH_SHEET, with(&fixture("match-sheet.json"), "/periodScores/0/period", json!(13))),
+        (MATCH_SHEET, with(&fixture("match-sheet.json"), "/match/opponentName", json!("y".repeat(121)))),
         (
             MATCH_SHEET,
-            set(
-                fixture("match-sheet.json"),
+            with(
+                &fixture("match-sheet.json"),
                 "/players",
                 json!(vec![fixture("match-sheet.json")["players"][0].clone(); 31]),
             ),
         ),
         (
             MATCH_SHEET,
-            set(
-                fixture("match-sheet.json"),
+            with(
+                &fixture("match-sheet.json"),
                 "/periodScores",
                 json!(vec![json!({"period": 1, "team": 0, "opponent": 0}); 13]),
             ),
         ),
-        (MATCH_SHEET, remove(fixture("match-sheet.json"), "/teamTotals")),
+        (MATCH_SHEET, without(&fixture("match-sheet.json"), "/teamTotals")),
     ];
     for (path, body) in cases {
         let refused_by_contract = !errors("pdf.yaml", request_schema(path), &body).is_empty();
@@ -152,16 +149,4 @@ fn the_contracts_limits_are_the_domains() {
 
 fn guardian() -> Value {
     json!({"givenName": "G", "familyName": "H"})
-}
-
-fn set(mut body: Value, pointer: &str, value: Value) -> Value {
-    let (parent, key) = pointer.rsplit_once('/').unwrap();
-    body.pointer_mut(parent).unwrap().as_object_mut().unwrap().insert(key.to_owned(), value);
-    body
-}
-
-fn remove(mut body: Value, pointer: &str) -> Value {
-    let (parent, key) = pointer.rsplit_once('/').unwrap();
-    body.pointer_mut(parent).unwrap().as_object_mut().unwrap().remove(key);
-    body
 }

@@ -2,7 +2,6 @@
 //! use the crates its manifest lists and a wrong import does not compile. This test pins those lists: the domain uses
 //! no framework (no HTTP, serde, async runtime, PDF engine or logging crate) and depends on no other layer; the
 //! application depends on the domain only; nothing depends on the adapters.
-#![allow(clippy::unwrap_used, clippy::expect_used)] // a test fails loudly
 
 use std::collections::BTreeSet;
 

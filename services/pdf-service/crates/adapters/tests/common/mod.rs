@@ -9,6 +9,8 @@ use pdf_domain::{
     RosterPlayer, Score, StaffMember, StaffRole, StatLine, TeamInfo, TeamRoster,
 };
 
+pub use pdf_adapters::http::{MATCH_SHEET, TEAM_ROSTER};
+
 pub fn printed_at() -> Timestamp {
     "2026-11-15T09:41:00Z".parse::<Timestamp>().unwrap()
 }
@@ -103,3 +105,50 @@ pub fn page_count(pdf: &[u8]) -> usize {
 
 pub mod app;
 pub mod contract;
+
+/// `body` with `value` at the JSON pointer (the last key is inserted or replaced).
+pub fn with(body: &serde_json::Value, pointer: &str, value: serde_json::Value) -> serde_json::Value {
+    let mut body = body.clone();
+    let (parent, key) = pointer.rsplit_once('/').unwrap();
+    body.pointer_mut(parent).unwrap().as_object_mut().unwrap().insert(key.to_owned(), value);
+    body
+}
+
+/// `body` without the member at the JSON pointer.
+pub fn without(body: &serde_json::Value, pointer: &str) -> serde_json::Value {
+    let mut body = body.clone();
+    let (parent, key) = pointer.rsplit_once('/').unwrap();
+    body.pointer_mut(parent).unwrap().as_object_mut().unwrap().remove(key);
+    body
+}
+
+/// Members of the fixtures that name a person, a contact or an academy (the values of the privacy guard, P-11).
+const PERSONAL: [&str; 6] = ["givenName", "familyName", "displayName", "email", "phone", "name"];
+
+fn personal_values(value: &serde_json::Value, key: &str, out: &mut Vec<String>) {
+    match value {
+        serde_json::Value::String(text) if PERSONAL.contains(&key) => {
+            out.push(text.clone());
+            out.extend(text.split_whitespace().filter(|word| word.chars().count() >= 4).map(str::to_owned));
+        }
+        serde_json::Value::Array(items) => items.iter().for_each(|item| personal_values(item, key, out)),
+        serde_json::Value::Object(members) => {
+            members.iter().for_each(|(name, member)| personal_values(member, name, out));
+        }
+        _ => {}
+    }
+}
+
+/// None of the personal values of the fixtures (names, contacts, academy names; read from the fixtures themselves)
+/// appears in `bytes`; `what` names where they were looked for.
+pub fn assert_no_request_values(bytes: &[u8], what: &str) {
+    let mut values = Vec::new();
+    for name in ["match-sheet.json", "team-roster.json"] {
+        personal_values(&app::fixture(name), "", &mut values);
+    }
+    assert!(values.len() > 20, "the fixtures name people: {values:?}");
+    let text = String::from_utf8_lossy(bytes);
+    for value in values {
+        assert!(!text.contains(&value), "{value:?} leaked into {what}: {text}");
+    }
+}

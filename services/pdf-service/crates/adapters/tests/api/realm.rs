@@ -1,18 +1,17 @@
 //! The verifier against a realm over HTTP (a local stand-in for Keycloak's discovery document and JWKS): the issuer
 //! comes from discovery, the keys are read once and again only for an unknown key id, and an unreachable realm is a
 //! 503 `AUTH_UNAVAILABLE`, never a 401.
-#![allow(clippy::unwrap_used, clippy::expect_used)] // a test fails loudly
 
-mod common;
+use crate::common;
 
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use axum::Router;
-use axum::http::{HeaderValue, Method, StatusCode};
+use axum::http::{HeaderValue, StatusCode};
 use axum::routing::get;
-use common::app::{ISSUER, call, core_service_claims, core_token, realm_key, token_with};
+use common::app::{ISSUER, core_service_claims, core_token, post_raw, realm_key, token_with};
 use pdf_adapters::SystemClock;
 use pdf_adapters::auth::{AuthFailure, TokenVerifier};
 use pdf_adapters::config::Config;
@@ -107,9 +106,8 @@ async fn an_unreachable_realm_is_503() {
         Arc::new(SecurityEvents::default()),
         1,
     );
-    let bearer = format!("Bearer {}", core_token());
-    let headers = [("authorization", bearer.as_str()), ("content-type", "application/json")];
-    let answer = call(&router(state), Method::POST, "/internal/pdf/team-roster", &headers, b"{}".to_vec()).await;
+    let answer =
+        post_raw(&router(state), common::TEAM_ROSTER, Some(&core_token()), "application/json", b"{}".to_vec()).await;
     assert_eq!(answer.status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(answer.json()["code"], "AUTH_UNAVAILABLE");
 }

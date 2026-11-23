@@ -1,19 +1,16 @@
 //! The HTTP API end to end in process: authentication (ADR-0034), security events (ADR-0043), limits, Problem+JSON
 //! that never repeats a request value (P-11) and the PDF answer. Logs and spans: `logs.rs`.
-#![allow(clippy::unwrap_used, clippy::expect_used)] // a test fails loudly
 
-mod common;
+use crate::common;
 
 use axum::http::{Method, StatusCode};
 use common::app::{
-    Answer, call, core_service_claims, core_token, fixture, foreign_key, post, service, token, token_with, web_claims,
+    Answer, call, core_service_claims, core_token, fixture, post, post_json, post_raw, service, tampered, token,
+    token_with, web_claims,
 };
-use common::pdf_text;
+use common::{MATCH_SHEET, TEAM_ROSTER, assert_no_request_values, pdf_text, with, without};
 use pdf_adapters::security::DenialKind;
 use serde_json::{Value, json};
-
-const MATCH_SHEET: &str = "/internal/pdf/match-sheet";
-const TEAM_ROSTER: &str = "/internal/pdf/team-roster";
 
 fn problem(answer: &Answer) -> Value {
     assert_eq!(answer.header("content-type"), "application/problem+json", "{}", String::from_utf8_lossy(&answer.body));
@@ -22,12 +19,7 @@ fn problem(answer: &Answer) -> Value {
 
 async fn post_with_token(path: &str, bearer: Option<&str>, body: &Value) -> (Answer, common::app::Service) {
     let service = service();
-    let authorization = bearer.map(|token| format!("Bearer {token}"));
-    let mut headers = vec![("content-type", "application/json")];
-    if let Some(value) = authorization.as_deref() {
-        headers.push(("authorization", value));
-    }
-    let answer = call(&service.router, Method::POST, path, &headers, serde_json::to_vec(body).unwrap()).await;
+    let answer = post_json(&service.router, path, bearer, body).await;
     (answer, service)
 }
 
@@ -106,7 +98,7 @@ async fn tokens_that_fail_verification_are_401() {
         token(&early),
         token(&other_issuer),
         token(&no_sub),
-        token_with(foreign_key(), Some(common::app::KID), &core_service_claims()),
+        tampered(&core_token()),
         token_with(common::app::realm_key(), Some("unknown-kid"), &core_service_claims()),
         token_with(common::app::realm_key(), None, &core_service_claims()),
         "not.a.jwt".to_owned(),
@@ -152,9 +144,7 @@ async fn a_body_over_256_kib_is_413() {
 #[tokio::test]
 async fn a_body_that_is_not_json_is_415() {
     let service = service();
-    let bearer = format!("Bearer {}", core_token());
-    let headers = [("authorization", bearer.as_str()), ("content-type", "text/html")];
-    let answer = call(&service.router, Method::POST, MATCH_SHEET, &headers, b"<p>hi</p>".to_vec()).await;
+    let answer = post_raw(&service.router, MATCH_SHEET, Some(&core_token()), "text/html", b"<p>hi</p>".to_vec()).await;
     assert_eq!(answer.status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
     assert_eq!(problem(&answer)["code"], "UNSUPPORTED_MEDIA_TYPE");
 }
@@ -170,7 +160,7 @@ async fn too_many_players_is_422_naming_the_list_never_the_children() {
     let problem = problem(&answer);
     assert_eq!(problem["code"], "TOO_MANY_ROWS");
     assert_eq!(problem["violations"][0]["field"], "players");
-    assert_no_request_values(&answer.body);
+    assert_no_request_values(&answer.body, "the answer");
 }
 
 #[tokio::test]
@@ -210,7 +200,7 @@ async fn validation_failures_name_the_field_never_the_value() {
             (problem["violations"][0]["field"].as_str(), problem["violations"][0]["code"].as_str()),
             (Some(field), Some(code))
         );
-        assert_no_request_values(&answer.body);
+        assert_no_request_values(&answer.body, "the answer");
     }
     let answer =
         post(&service.router, MATCH_SHEET, &with(&fixture("match-sheet.json"), "/players/0/stats/points", json!(-3)))
@@ -269,12 +259,12 @@ async fn instants_days_and_zone_ids_are_strict() {
 #[tokio::test]
 async fn malformed_json_is_400() {
     let service = service();
-    let bearer = format!("Bearer {}", core_token());
-    let headers = [("authorization", bearer.as_str()), ("content-type", "application/json; charset=utf-8")];
-    let answer = call(&service.router, Method::POST, MATCH_SHEET, &headers, b"{\"locale\": \"Sari".to_vec()).await;
+    let malformed = b"{\"locale\": \"Sari".to_vec();
+    let answer =
+        post_raw(&service.router, MATCH_SHEET, Some(&core_token()), "application/json; charset=utf-8", malformed).await;
     assert_eq!(answer.status, StatusCode::BAD_REQUEST);
     assert_eq!(problem(&answer)["violations"][0]["code"], "MALFORMED_JSON");
-    assert_no_request_values(&answer.body);
+    assert_no_request_values(&answer.body, "the answer");
 }
 
 #[tokio::test]
@@ -301,31 +291,4 @@ async fn health_and_metrics_answer_without_a_token() {
     let text = String::from_utf8(metrics.body).unwrap();
     assert!(text.contains("hoops_authz_denied_total{kind=\"unauthenticated\"} 1"), "{text}");
     assert!(text.contains("hoops_authz_denied_total{kind=\"realm_role\"} 0"), "{text}");
-}
-
-/// None of the personal values of the fixtures appears in `bytes`.
-fn assert_no_request_values(bytes: &[u8]) {
-    let text = String::from_utf8_lossy(bytes);
-    for value in ["Sari", "Wijaya", "Agus", "Lestari", "agus@example.test", "+62 81", "Lucía", "Martínez", "Garuda"] {
-        assert!(!text.contains(value), "{value:?} leaked into {text}");
-    }
-}
-
-fn pointer_parent<'a>(body: &'a mut Value, pointer: &str) -> (&'a mut Value, String) {
-    let (parent, key) = pointer.rsplit_once('/').unwrap();
-    (body.pointer_mut(parent).unwrap(), key.to_owned())
-}
-
-fn with(body: &Value, pointer: &str, value: Value) -> Value {
-    let mut body = body.clone();
-    let (parent, key) = pointer_parent(&mut body, pointer);
-    parent.as_object_mut().unwrap().insert(key, value);
-    body
-}
-
-fn without(body: &Value, pointer: &str) -> Value {
-    let mut body = body.clone();
-    let (parent, key) = pointer_parent(&mut body, pointer);
-    parent.as_object_mut().unwrap().remove(&key);
-    body
 }

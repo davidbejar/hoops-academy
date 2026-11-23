@@ -1,7 +1,6 @@
 //! The krilla renderer draws both sheets in es / en / id, readable back as text, deterministic, paginated.
-#![allow(clippy::unwrap_used, clippy::expect_used)] // a test fails loudly
 
-mod common;
+use crate::common;
 
 use common::{match_sheet, page_count, pdf_text, player, printed_at, team_roster};
 use pdf_adapters::render::KrillaRenderer;

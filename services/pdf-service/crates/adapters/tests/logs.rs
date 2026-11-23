@@ -8,8 +8,9 @@ mod common;
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 
-use axum::http::{Method, StatusCode};
-use common::app::{call, core_token, fixture, post, service, token, web_claims};
+use axum::http::StatusCode;
+use common::app::{core_token, fixture, post, post_json, service, token, web_claims};
+use common::{MATCH_SHEET, TEAM_ROSTER, assert_no_request_values};
 use serde_json::json;
 
 /// Captures everything the service writes through tracing (events and closed spans with their fields).
@@ -48,16 +49,14 @@ async fn nothing_of_the_body_reaches_a_log_line_or_a_span() {
         .finish();
     let _guard = tracing::subscriber::set_default(subscriber);
     let service = service();
-    let ok = post(&service.router, "/internal/pdf/team-roster", &fixture("team-roster.json")).await;
+    let ok = post(&service.router, TEAM_ROSTER, &fixture("team-roster.json")).await;
     assert_eq!(ok.status, StatusCode::OK);
     let mut bad = fixture("team-roster.json");
     bad["players"][0]["jerseyNumber"] = json!("Sari Wijaya");
-    let refused = post(&service.router, "/internal/pdf/team-roster", &bad).await;
+    let refused = post(&service.router, TEAM_ROSTER, &bad).await;
     assert_eq!(refused.status, StatusCode::BAD_REQUEST);
-    let web = format!("Bearer {}", token(&web_claims()));
-    let headers = [("authorization", web.as_str()), ("content-type", "application/json")];
-    let body = serde_json::to_vec(&fixture("match-sheet.json")).unwrap();
-    let denied = call(&service.router, Method::POST, "/internal/pdf/match-sheet", &headers, body).await;
+    let denied =
+        post_json(&service.router, MATCH_SHEET, Some(&token(&web_claims())), &fixture("match-sheet.json")).await;
     assert_eq!(denied.status, StatusCode::UNAUTHORIZED);
 
     let log = String::from_utf8(captured.0.lock().unwrap().clone()).unwrap();
@@ -67,13 +66,6 @@ async fn nothing_of_the_body_reaches_a_log_line_or_a_span() {
         "{log}"
     );
     assert!(log.contains("hoops.security"), "{log}");
-    assert_no_request_values(log.as_bytes());
+    assert_no_request_values(log.as_bytes(), "the log");
     assert!(!log.contains(&core_token()[..20]), "no token in the log");
-}
-
-fn assert_no_request_values(bytes: &[u8]) {
-    let text = String::from_utf8_lossy(bytes);
-    for value in ["Sari", "Wijaya", "Agus", "Lestari", "agus@example.test", "+62 81", "Lucía", "Martínez", "Garuda"] {
-        assert!(!text.contains(value), "{value:?} leaked into the log");
-    }
 }
