@@ -6,6 +6,7 @@ import static com.hoopsacademy.athlete.support.ApiSupport.member;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -22,6 +23,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -214,6 +216,22 @@ class TrainingPlanApiTest {
         api(TENANT).queryParam("q", "passing 2").get(PLANS).then().body("items", hasSize(1));
         api(TENANT).delete(PLANS + "/" + id).then().statusCode(204);
         api(TENANT).get(PLANS + "/" + id).then().statusCode(404);
+    }
+
+    /** The search term is lower-cased by the root locale: on a JVM whose default is Turkish, "I" still matches "i". */
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.COACH, staffTeams = TEAM)
+    void theSearchDoesNotDependOnTheJvmsDefaultLocale() {
+        String name = "Inside drills " + UUID.randomUUID();
+        createPlan(name, item("Pivot", 5));
+        Locale before = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr"));
+        try {
+            api(TENANT).queryParam("q", "INSIDE DRILLS").get(PLANS).then().statusCode(200)
+                    .body("items.name", hasItem(name));
+        } finally {
+            Locale.setDefault(before);
+        }
     }
 
     @Test
