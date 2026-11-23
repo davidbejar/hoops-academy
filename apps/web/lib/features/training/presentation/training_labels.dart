@@ -5,8 +5,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/design/tokens.dart';
-import '../../../core/errors/app_error.dart';
-import '../../../core/ui/actions.dart' show AppErrorText;
 import '../../../l10n/gen/app_localizations.dart';
 
 const weekdays = [
@@ -111,12 +109,3 @@ String? exerciseFacts(
   ];
   return facts.isEmpty ? null : facts.join(' · ');
 }
-
-/// The exercise catalogue's business codes (ADR-0047) in words; any other
-/// failure gets the generic message of its kind.
-String exerciseErrorText(Object error, AppLocalizations l) =>
-    switch (AppError.of(error).code) {
-      'EXERCISE_ARCHIVED' => l.exerciseArchivedError,
-      'EXERCISE_IS_GLOBAL' => l.exerciseIsGlobal,
-      _ => AppErrorText.of(error, l),
-    };

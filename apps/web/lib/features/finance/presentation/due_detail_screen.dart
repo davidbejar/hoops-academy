@@ -284,7 +284,6 @@ class _ReasonDialogState extends State<ReasonDialog> {
         context,
         () => widget.action(_reason.text.trim()),
         success: widget.success,
-        errorText: financeErrorText,
       ),
       children: [Text(widget.hint), formGap, _reasonField(_reason, l)],
     );
@@ -349,7 +348,6 @@ class _ChangeAmountDialogState extends ConsumerState<ChangeAmountDialog> {
               reason: _reason.text.trim(),
             ),
         success: l.financeAmountChanged,
-        errorText: financeErrorText,
       ),
       children: [
         moneyField(
@@ -413,7 +411,6 @@ class _PayDueDialogState extends ConsumerState<PayDueDialog> {
                 note: blankToNull(note),
               ),
           success: l.financePayRecorded,
-          errorText: financeErrorText,
         );
       },
       children: [

@@ -105,7 +105,6 @@ class FinanceSettingsScreen extends ConsumerWidget {
       context,
       () => ref.read(financeSettingsProvider.notifier).chooseCurrency(code),
       success: l.financeCurrencySaved,
-      errorText: financeErrorText,
     );
   }
 }

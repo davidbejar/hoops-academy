@@ -10,7 +10,7 @@ import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/labels.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/admin_providers.dart';
-import 'members_screen.dart' show memberErrorText;
+import 'member_error_text.dart';
 
 /// Edits the personal data of a member (`UpdateMemberRequest`). E-mail, phone, birth date and gender can be emptied
 /// (sent in `clear`). A member with a login (`userId`) cannot lose the e-mail (ADR-0023): the field is validated before

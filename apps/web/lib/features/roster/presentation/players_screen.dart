@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/ui/app_error_view.dart';
+import '../../../core/errors/app_error.dart';
 import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
@@ -480,7 +482,7 @@ class _PlayerDetailBody extends ConsumerWidget {
                             ),
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Text(AppErrorText.of(e, l)),
+                      error: (e, _) => Text(AppError.of(e).message(l)),
                     ),
               ),
             if (canWithdraw)

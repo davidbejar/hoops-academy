@@ -37,7 +37,6 @@ class ExpensesScreen extends ConsumerWidget {
           key: const Key('expenses-export'),
           what: 'expenses',
           tooltip: l.financeExportExpensesTooltip,
-          errorText: financeErrorText,
           fetch: (language) => ref
               .read(financeRepositoryProvider)
               .exportExpenses(
@@ -245,7 +244,6 @@ class _ExpenseList extends ConsumerWidget {
       context,
       () => ref.read(expensesProvider.notifier).delete(expense.id),
       success: l.financeExpenseDeleted,
-      errorText: financeErrorText,
     );
   }
 }
@@ -295,44 +293,39 @@ class _ExpenseDialogState extends ConsumerState<ExpenseDialog> {
     final description = _description.text.trim();
     final note = _note.text.trim();
     final amount = widget.money.parse(_amount.text)!;
-    return runAction(
-      context,
-      () async {
-        if (original == null) {
-          await notifier.create(
-            fin.CreateExpenseRequest(
-              (b) => b
-                ..spentOn = _spentOn
-                ..category = _category
-                ..amountMinor = amount
-                ..description = description
-                ..note = blankToNull(note),
-            ),
-          );
-          return;
-        }
-        final clearNote = note.isEmpty && original.note != null;
-        final request = fin.UpdateExpenseRequest(
-          (b) => b
-            ..spentOn = _spentOn == original.spentOn ? null : _spentOn
-            ..category = _category == original.category ? null : _category
-            ..amountMinor = amount == original.amountMinor ? null : amount
-            ..description = description == original.description
-                ? null
-                : description
-            ..note = note.isEmpty || note == original.note ? null : note
-            ..clear = clearNote
-                ? SetBuilder<fin.UpdateExpenseRequestClearEnum>([
-                    fin.UpdateExpenseRequestClearEnum.note,
-                  ])
-                : null,
+    return runAction(context, () async {
+      if (original == null) {
+        await notifier.create(
+          fin.CreateExpenseRequest(
+            (b) => b
+              ..spentOn = _spentOn
+              ..category = _category
+              ..amountMinor = amount
+              ..description = description
+              ..note = blankToNull(note),
+          ),
         );
-        if (_isEmpty(request)) return;
-        await notifier.edit(original.id, request);
-      },
-      success: l.financeExpenseSaved,
-      errorText: financeErrorText,
-    );
+        return;
+      }
+      final clearNote = note.isEmpty && original.note != null;
+      final request = fin.UpdateExpenseRequest(
+        (b) => b
+          ..spentOn = _spentOn == original.spentOn ? null : _spentOn
+          ..category = _category == original.category ? null : _category
+          ..amountMinor = amount == original.amountMinor ? null : amount
+          ..description = description == original.description
+              ? null
+              : description
+          ..note = note.isEmpty || note == original.note ? null : note
+          ..clear = clearNote
+              ? SetBuilder<fin.UpdateExpenseRequestClearEnum>([
+                  fin.UpdateExpenseRequestClearEnum.note,
+                ])
+              : null,
+      );
+      if (_isEmpty(request)) return;
+      await notifier.edit(original.id, request);
+    }, success: l.financeExpenseSaved);
   }
 
   static bool _isEmpty(fin.UpdateExpenseRequest r) =>

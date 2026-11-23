@@ -7,7 +7,7 @@ import '../../../core/ui/kit.dart';
 import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../admin/application/admin_providers.dart';
-import '../../admin/presentation/members_screen.dart' show memberErrorText;
+import '../../admin/presentation/member_error_text.dart';
 import '../data/guardians_repository.dart';
 
 /// The academy's active PARENT members by person id: whether a guardian has a login decides the login action.

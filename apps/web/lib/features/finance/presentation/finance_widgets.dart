@@ -142,29 +142,6 @@ class NotYetServed extends StatelessWidget {
   }
 }
 
-/// The message for a failed finance call: the service's business codes in the
-/// user's words, 501 as "not available yet", anything else the generic text.
-String financeErrorText(Object error, AppLocalizations l) {
-  final e = AppError.of(error);
-  if (e.status == 501) return l.financeNotYetAvailable;
-  return switch (e.code) {
-    'DUE_NOT_OPEN' => l.financeErrorDueNotOpen,
-    'CURRENCY_LOCKED' => l.financeErrorCurrencyLocked,
-    'UNKNOWN_CURRENCY' => l.financeErrorUnknownCurrency,
-    'CURRENCY_NOT_SET' => l.financeErrorCurrencyNotSet,
-    'FEE_PLAN_HAS_DUES' => l.financeErrorFeePlanHasDues,
-    'FEE_PLAN_ARCHIVED' => l.financeErrorFeePlanArchived,
-    'PAID_ON_IN_FUTURE' => l.financeErrorPaidOnInFuture,
-    'PAYMENT_ALREADY_VOIDED' => l.financeErrorPaymentAlreadyVoided,
-    'PERIOD_OUTSIDE_PLAN' => l.financeErrorPeriodOutsidePlan,
-    'PERIOD_OUTSIDE_SEASON' => l.financeErrorPeriodOutsideSeason,
-    'TOO_MANY_DUES' => l.financeErrorTooManyDues,
-    'TEAM_NOT_IN_SEASON' => l.financeErrorTeamNotInSeason,
-    'CONCURRENT_MODIFICATION' => l.financeErrorConcurrentModification,
-    _ => e.message(l),
-  };
-}
-
 /// The fixed expense categories (decision 99), in the contract's order and
 /// without the generator's fallback value.
 const expenseCategories = [

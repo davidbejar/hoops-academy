@@ -30,7 +30,6 @@ class DuesScreen extends ConsumerWidget {
           key: const Key('dues-export'),
           what: 'dues',
           tooltip: l.financeExportDuesTooltip,
-          errorText: financeErrorText,
           fetch: (language) => ref
               .read(financeRepositoryProvider)
               .exportDues(ref.read(dueQueryProvider), language: language),

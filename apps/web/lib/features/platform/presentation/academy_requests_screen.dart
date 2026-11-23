@@ -4,9 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
-import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
-import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
 import '../../../core/ui/temporary_password_dialog.dart';
@@ -101,18 +99,6 @@ extension AcademyRequestRoleLabel on api.AcademyRequestRole {
     api.AcademyRequestRole.ADMIN => l.landingJoinRoleAdmin,
     api.AcademyRequestRole.COACH => l.landingJoinRoleCoach,
     _ => l.landingJoinRoleParent,
-  };
-}
-
-/// Localised text for a failed decision, by the server's error code (never its English detail).
-String academyRequestErrorText(Object error, AppLocalizations l) {
-  final e = AppError.of(error);
-  return switch (e.code) {
-    'REQUEST_NOT_PENDING' => l.academyRequestErrorNotPending,
-    'ACADEMY_NAME_TAKEN' => l.academyRequestErrorNameTaken,
-    'SLUG_TAKEN' => l.academyRequestErrorSlugTaken,
-    'IDENTITY_PROVIDER_UNAVAILABLE' => l.adminErrorIdentityProvider,
-    _ => e.message(l),
   };
 }
 
@@ -275,7 +261,6 @@ class _AcceptRequestDialogState extends ConsumerState<AcceptRequestDialog> {
                 ),
             ),
           ),
-      errorText: academyRequestErrorText,
     );
     if (ok) {
       _announce = () => announceLogin(
@@ -394,7 +379,6 @@ class _RejectRequestDialogState extends ConsumerState<RejectRequestDialog> {
           .read(academyRequestsProvider(widget.request.status).notifier)
           .reject(widget.request.id, _reason.text.trim()),
       success: l.academyRequestRejected,
-      errorText: academyRequestErrorText,
     );
   }
 

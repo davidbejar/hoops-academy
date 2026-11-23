@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/ui/app_error_view.dart';
+import '../../../core/errors/app_error.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/kit.dart';
@@ -87,7 +89,9 @@ class _PlanPickerDialogState extends ConsumerState<PlanPickerDialog> {
                     if (value.isEmpty) _Hint(l.sessionPlanNoResults),
                   ],
                 ),
-                AsyncError(:final error) => _Hint(AppErrorText.of(error, l)),
+                AsyncError(:final error) => _Hint(
+                  AppError.of(error).message(l),
+                ),
                 _ => const LinearProgressIndicator(),
               },
             ),
@@ -138,7 +142,6 @@ class _ExerciseSearchDialogState extends ConsumerState<ExerciseSearchDialog> {
       context,
       () => onAdd([for (final p in picks) p.source]),
       success: l.sessionExercisesAdded(picks.length),
-      errorText: exerciseErrorText,
     );
     if (ok && mounted) Navigator.pop(context);
   }
@@ -199,7 +202,7 @@ class _ExerciseSearchDialogState extends ConsumerState<ExerciseSearchDialog> {
       AsyncData(:final value) => Column(
         children: [for (final e in value) _exerciseTile(l, e)],
       ),
-      AsyncError(:final error) => _Hint(AppErrorText.of(error, l)),
+      AsyncError(:final error) => _Hint(AppError.of(error).message(l)),
       _ => const LinearProgressIndicator(),
     },
   ];
@@ -229,7 +232,7 @@ class _ExerciseSearchDialogState extends ConsumerState<ExerciseSearchDialog> {
     if (_query.trim().isEmpty) return [_Hint(l.sessionExerciseSearchEmpty)];
     final results = ref.watch(planSearchResultsProvider(_query));
     if (results case AsyncError(:final error)) {
-      return [_Hint(AppErrorText.of(error, l))];
+      return [_Hint(AppError.of(error).message(l))];
     }
     final plans = results.value;
     if (plans == null) return const [LinearProgressIndicator()];

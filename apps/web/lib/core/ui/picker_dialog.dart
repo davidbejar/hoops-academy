@@ -1,8 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'app_error_view.dart';
+import '../errors/app_error.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../design/tokens.dart';
-import 'actions.dart';
 
 /// A dialog that lists the options a [future] loads and closes on a tap in
 /// one of them ("assign to a team", "pick a player"): a spinner while it
@@ -54,7 +55,7 @@ class PickerDialog<T> extends StatelessWidget {
                 future: future,
                 builder: (context, snap) {
                   if (snap.hasError) {
-                    return Text(AppErrorText.of(snap.error!, l));
+                    return Text(AppError.of(snap.error!).message(l));
                   }
                   final items = snap.data;
                   if (items == null) {

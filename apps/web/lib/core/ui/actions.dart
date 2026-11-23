@@ -141,9 +141,3 @@ class _NoteDialogState extends State<_NoteDialog> {
     );
   }
 }
-
-/// Localised message for anything thrown by the data layer.
-abstract final class AppErrorText {
-  static String of(Object error, AppLocalizations l) =>
-      AppError.of(error).message(l);
-}

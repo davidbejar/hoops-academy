@@ -218,14 +218,12 @@ class _PlanRow extends ConsumerWidget {
           context,
           () => notifier.setArchived(plan.id, true),
           success: l.financePlanArchivedMsg,
-          errorText: financeErrorText,
         );
       case 'unarchive':
         await runAction(
           context,
           () => notifier.setArchived(plan.id, false),
           success: l.financePlanUnarchivedMsg,
-          errorText: financeErrorText,
         );
       case 'delete':
         if (!await confirmDialog(
@@ -239,7 +237,6 @@ class _PlanRow extends ConsumerWidget {
           context,
           () => notifier.delete(plan.id),
           success: l.financePlanDeleted,
-          errorText: financeErrorText,
         );
     }
   }
@@ -564,7 +561,6 @@ class _FeePlanDialogState extends ConsumerState<FeePlanDialog> {
         context,
         () => notifier.create(request),
         success: l.financePlanSaved,
-        errorText: financeErrorText,
       );
     }
     final name = _name.text.trim();
@@ -598,7 +594,6 @@ class _FeePlanDialogState extends ConsumerState<FeePlanDialog> {
       context,
       () => notifier.edit(plan.id, request),
       success: l.financePlanSaved,
-      errorText: financeErrorText,
     );
   }
 }

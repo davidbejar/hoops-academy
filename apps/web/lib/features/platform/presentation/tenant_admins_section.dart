@@ -137,7 +137,6 @@ class _AdminTile extends ConsumerWidget {
         context,
         () => notifier.remove(id),
         success: l.adminRemoved,
-        errorText: adminErrorText,
       );
     }
 
@@ -146,7 +145,6 @@ class _AdminTile extends ConsumerWidget {
       final ok = await runAction(
         context,
         () async => issued = await notifier.issueTemporaryPassword(id),
-        errorText: adminErrorText,
       );
       if (!ok || !nav.mounted) return;
       await announceLogin(
@@ -388,7 +386,6 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
           familyName: family,
           locale: widget.locale ?? api.ApiLocale.es,
         ),
-        errorText: adminErrorText,
       );
       if (ok) {
         _announce = () => announceLogin(
@@ -417,7 +414,6 @@ class _AdminFormDialogState extends ConsumerState<AdminFormDialog> {
         email: newEmail,
       ),
       success: l.adminUpdated,
-      errorText: adminErrorText,
     );
   }
 

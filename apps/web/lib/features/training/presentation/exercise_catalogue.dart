@@ -183,14 +183,12 @@ class _ExerciseRow extends ConsumerWidget {
           context,
           () => catalogue.archive(e.id),
           success: l.exerciseArchivedDone,
-          errorText: exerciseErrorText,
         );
       case 'unarchive':
         await runAction(
           context,
           () => catalogue.unarchive(e.id),
           success: l.exerciseUnarchivedDone,
-          errorText: exerciseErrorText,
         );
     }
   }
@@ -329,7 +327,6 @@ class _ExerciseDialogState extends ConsumerState<ExerciseDialog> {
         context,
         _save,
         success: creating ? l.exerciseCreated : l.exerciseSaved,
-        errorText: exerciseErrorText,
       ),
       children: _fields.build(l, keyPrefix: 'exercise'),
     );

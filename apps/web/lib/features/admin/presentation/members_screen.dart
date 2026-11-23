@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/api.dart' as api;
-import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
-import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
 import '../../../core/ui/labels.dart';
@@ -14,19 +12,7 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../roster/application/roster_providers.dart';
 import '../application/admin_providers.dart';
 import 'member_edit_dialog.dart';
-
-/// Localised text for a failed member action, chosen by the server's error code (never its English detail).
-String memberErrorText(Object error, AppLocalizations l) {
-  final e = AppError.of(error);
-  return switch (e.code) {
-    'INVITATION_NOT_PENDING' => l.memberErrorNotPending,
-    'LOGIN_SHARED' => l.memberErrorLoginShared,
-    'LOGIN_REQUIRES_EMAIL' => l.memberErrorLoginRequiresEmail,
-    'EMAIL_TAKEN' => l.memberErrorEmailTaken,
-    'IDENTITY_PROVIDER_UNAVAILABLE' => l.adminErrorIdentityProvider,
-    _ => e.message(l),
-  };
-}
+import 'member_error_text.dart';
 
 class MembersScreen extends ConsumerWidget {
   const MembersScreen({super.key});

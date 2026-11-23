@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/ui/app_error_view.dart';
+import '../../../core/errors/app_error.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
@@ -803,7 +805,7 @@ class _AssignPlayerDialogState extends ConsumerState<AssignPlayerDialog> {
                     builder: (context, snap) {
                       if (snap.hasError) {
                         return Text(
-                          AppErrorText.of(snap.error!, l),
+                          AppError.of(snap.error!).message(l),
                           key: const Key('check-error'),
                         );
                       }

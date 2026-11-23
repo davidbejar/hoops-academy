@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/ui/app_error_view.dart';
+import '../../../core/errors/app_error.dart';
 import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
@@ -471,7 +473,7 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
   }
 
   String _errorText(Object error, AppLocalizations l) {
-    final reason = exerciseErrorText(error, l);
+    final reason = AppError.of(error).message(l);
     return _created == null ? reason : l.sessionCreatedExercisesFailed(reason);
   }
 

@@ -65,7 +65,7 @@ class _GenerateDuesDialogState extends ConsumerState<GenerateDuesDialog> {
           .previewGeneration(planId, period);
       if (!mounted) return;
       setState(() => _preview = preview);
-    }, errorText: financeErrorText);
+    });
     if (!ok && mounted) setState(() => _preview = null);
   }
 
@@ -126,7 +126,7 @@ class _GenerateDuesDialogState extends ConsumerState<GenerateDuesDialog> {
         var created = 0;
         return runAction(context, () async {
           created = (await notifier.generate(plan.id, _period!)).created;
-        }, errorText: financeErrorText).then((ok) {
+        }).then((ok) {
           if (ok && context.mounted) {
             ScaffoldMessenger.maybeOf(context)?.showSnackBar(
               SnackBar(content: Text(l.financeGenerated(created))),
