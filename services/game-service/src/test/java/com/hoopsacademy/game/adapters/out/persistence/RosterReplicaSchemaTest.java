@@ -3,10 +3,10 @@ package com.hoopsacademy.game.adapters.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hoopsacademy.common.replica.ParkedEvent;
+import com.hoopsacademy.common.replica.ParkedEvents;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
-import com.hoopsacademy.game.application.replica.ParkedRecord;
-import com.hoopsacademy.game.application.replica.ReplicateRoster;
 import com.hoopsacademy.game.support.CoreWireMockResource;
 import com.hoopsacademy.game.support.ReplicaDb;
 import io.quarkus.test.common.ResourceArg;
@@ -36,7 +36,7 @@ class RosterReplicaSchemaTest {
             "player_ref", "team_player_ref", "team_ref", "team_staff_ref", "tenant_ref");
 
     @Inject
-    ReplicateRoster replicate;
+    ParkedEvents parked;
 
     @Test
     void replicaTablesAreTenantTables() throws SQLException {
@@ -58,11 +58,11 @@ class RosterReplicaSchemaTest {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
             try (PreparedStatement insert = app.prepareStatement("""
-                    insert into game.parked_event (topic, kafka_partition, kafka_offset, record_key, reason)
+                    insert into game.parked_event (topic, partition, kafka_offset, record_key, reason)
                     values ('core.team', 0, 42, 'k', 'schema violation')""")) {
                 assertThat(insert.executeUpdate()).isOne();
             }
-            app.createStatement().execute("select id, topic, kafka_partition, kafka_offset, parked_at, inspected_at "
+            app.createStatement().execute("select topic, partition, kafka_offset, parked_at, inspected_at "
                     + "from game.parked_event");
             app.createStatement().execute("delete from game.parked_event where inspected_at < now()");
             for (String sql : List.of("select record_key from game.parked_event",
@@ -81,19 +81,24 @@ class RosterReplicaSchemaTest {
 
     /**
      * X-01 (WP126): a replay (reset offsets, events-backfill) parks the same record again; its position in the topic is
-     * unique, so the second park is a no-op, as in athlete.
+     * the key, so the second park is a no-op, as in athlete. The row keeps the coordinates, key, event id and reason,
+     * never the value (common's JdbcParkedEvents on schema game since WP130).
      */
     @Test
-    void aReplayedRecordIsParkedOnce() {
+    void aReplayedRecordIsParkedOnceWithoutItsValue() {
         long offset = Math.abs(UUID.randomUUID().getMostSignificantBits() % 1_000_000_000L);
-        ParkedRecord record = new ParkedRecord("core.team", 3, offset, "k", Optional.empty(), "schema violation");
+        UUID eventId = UUID.randomUUID();
+        ParkedEvent record = new ParkedEvent("core.team", 3, offset, Optional.of("k"), Optional.of(eventId),
+                "schema violation");
 
-        replicate.park(record);
-        replicate.park(record);
+        parked.park(record);
+        parked.park(record);
 
         assertThat(ReplicaDb.parked()).filteredOn(row -> "core.team".equals(row.get("topic"))
-                && Integer.valueOf(3).equals(row.get("kafka_partition")) && Long.valueOf(offset).equals(row.get("kafka_offset")))
-                .hasSize(1);
+                && Integer.valueOf(3).equals(row.get("partition")) && Long.valueOf(offset).equals(row.get("kafka_offset")))
+                .singleElement().satisfies(row -> assertThat(row).containsEntry("record_key", "k")
+                        .containsEntry("event_id", eventId).containsEntry("reason", "schema violation")
+                        .doesNotContainKey("value"));
     }
 
     /**

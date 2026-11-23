@@ -52,7 +52,7 @@ class RosterConsumerFailureTest {
     public static class TwoAttempts implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
-            return Map.of("hoops.roster.replica.apply-attempts", "2");
+            return Map.of("hoops.roster.replica.max-attempts", "2", "hoops.roster.replica.first-backoff", "PT0.1S");
         }
     }
 

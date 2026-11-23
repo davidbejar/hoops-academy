@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hoopsacademy.common.client.CoreMembership.TenantStatus;
 import com.hoopsacademy.common.replica.CoreEventDecoder;
+import com.hoopsacademy.common.replica.DecodedEvent;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder.Decoded;
 import com.hoopsacademy.game.application.replica.RosterEvent;
 import com.hoopsacademy.game.application.replica.RosterEvent.GuardianLinkChanged;
 import com.hoopsacademy.game.application.replica.RosterEvent.GuardianLinkRemoved;
@@ -39,23 +39,24 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Records of the core.* topics become typed roster events only when they match the topic's contract
- * (libs/contracts/events, read from the contracts jar) and their key is {@code <tenantId>:<aggregateId>}; anything
- * else is a rejection with a reason (the consumer parks it).
+ * Records of the core.* topics become game's typed roster events ({@link RosterEventMapper}) only when they match the
+ * topic's contract (libs/contracts/events, read from the contracts jar by common's {@link CoreEventDecoder}, WP130)
+ * and their key is {@code <tenantId>:<aggregateId>}; anything else is a rejection with a reason (the consumer parks
+ * it). The envelope rules themselves are common's (CoreEventDecoderTest); here they are checked through game's mapper.
  */
-class RosterEventDecoderTest {
+class RosterEventMapperTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final TenantId TENANT = TenantId.parse("2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10");
 
-    private final RosterEventDecoder decoder = new RosterEventDecoder();
+    private final CoreEventDecoder<RosterEvent> decoder = new CoreEventDecoder<>(JSON, new RosterEventMapper());
 
     @Test
     void everyContractExampleDecodes() {
         for (String topic : List.of("core.person", "core.player", "core.team", "core.team-player", "core.team-staff",
                 "core.guardian-link", "core.tenant")) {
             for (JsonNode example : examples(topic)) {
-                assertThat(decode(topic, example)).as(topic + " " + example).isNotInstanceOf(Decoded.Invalid.class);
+                assertThat(decode(topic, example)).as(topic + " " + example).isNotInstanceOf(DecodedEvent.Invalid.class);
             }
         }
     }
@@ -70,9 +71,9 @@ class RosterEventDecoderTest {
             JsonNode removal = examples(topic).stream().filter(e -> e.get("type").asText().endsWith(".removed"))
                     .findFirst().orElseThrow();
 
-            Decoded decoded = decode(topic, removal);
+            DecodedEvent<RosterEvent> decoded = decode(topic, removal);
 
-            assertThat(decoded).as(topic).isInstanceOfSatisfying(Decoded.Valid.class, valid ->
+            assertThat(decoded).as(topic).isInstanceOfSatisfying(DecodedEvent.Valid.class, valid ->
                     assertThat(valid.event()).isInstanceOfSatisfying(Removed.class, removed -> {
                         assertThat(removed.aggregate()).isEqualTo(aggregate);
                         assertThat(removed.topic()).isEqualTo(topic);
@@ -91,10 +92,10 @@ class RosterEventDecoderTest {
         String other = UUID.randomUUID().toString();
         removal.put("aggregateId", other);
 
-        Decoded decoded = decoder.decode("core.tenant", TENANT + ":" + other, removal.toString());
+        DecodedEvent<RosterEvent> decoded = decoder.decode("core.tenant", TENANT + ":" + other, removal.toString());
 
-        assertThat(decoded).isInstanceOfSatisfying(Decoded.Invalid.class,
-                invalid -> assertThat(invalid.reason()).contains("own tenant"));
+        assertThat(decoded).isInstanceOfSatisfying(DecodedEvent.Invalid.class,
+                invalid -> assertThat(invalid.reason()).contains("not its tenantId"));
     }
 
     @Test
@@ -177,10 +178,10 @@ class RosterEventDecoderTest {
         ObjectNode broken = examples("core.team").getFirst().deepCopy();
         ((ObjectNode) broken.get("payload")).remove("name");
 
-        Decoded.Invalid invalid = (Decoded.Invalid) decode("core.team", broken);
+        DecodedEvent.Invalid<RosterEvent> invalid = (DecodedEvent.Invalid<RosterEvent>) decode("core.team", broken);
 
         assertThat(invalid.eventId()).contains(UUID.fromString("0190b6a1-0000-7000-8000-000000000021"));
-        assertThat(invalid.reason()).contains("schema").contains("name");
+        assertThat(invalid.reason()).contains("payload").contains("name");
     }
 
     @Test
@@ -188,12 +189,12 @@ class RosterEventDecoderTest {
         ObjectNode extra = examples("core.person").getFirst().deepCopy();
         ((ObjectNode) extra.get("payload")).put("email", "cora@example.org");
 
-        assertThat(decode("core.person", extra)).isInstanceOf(Decoded.Invalid.class);
+        assertThat(decode("core.person", extra)).isInstanceOf(DecodedEvent.Invalid.class);
     }
 
     @Test
     void anEventOfAnotherTopicsContractIsRejected() {
-        assertThat(decode("core.person", examples("core.team").getFirst())).isInstanceOf(Decoded.Invalid.class);
+        assertThat(decode("core.person", examples("core.team").getFirst())).isInstanceOf(DecodedEvent.Invalid.class);
     }
 
     @Test
@@ -202,13 +203,13 @@ class RosterEventDecoderTest {
         String value = team.toString();
         String aggregate = team.get("aggregateId").asText();
 
-        assertThat(decoder.decode("core.team", aggregate, value)).isInstanceOfSatisfying(Decoded.Invalid.class,
+        assertThat(decoder.decode("core.team", aggregate, value)).isInstanceOfSatisfying(DecodedEvent.Invalid.class,
                 invalid -> assertThat(invalid.reason()).contains("key").as("no record value in a reason (ADR-0062)")
                         .doesNotContain(aggregate));
         assertThat(decoder.decode("core.team", TenantId.random() + ":" + aggregate, value))
-                .isInstanceOf(Decoded.Invalid.class);
-        assertThat(decoder.decode("core.team", null, value)).isInstanceOf(Decoded.Invalid.class);
-        assertThat(decoder.decode("core.team", TENANT + ":" + aggregate, value)).isInstanceOf(Decoded.Valid.class);
+                .isInstanceOf(DecodedEvent.Invalid.class);
+        assertThat(decoder.decode("core.team", null, value)).isInstanceOf(DecodedEvent.Invalid.class);
+        assertThat(decoder.decode("core.team", TENANT + ":" + aggregate, value)).isInstanceOf(DecodedEvent.Valid.class);
     }
 
     @Test
@@ -217,9 +218,9 @@ class RosterEventDecoderTest {
         String otherTenant = UUID.randomUUID().toString();
         other.put("aggregateId", otherTenant);
 
-        Decoded decoded = decoder.decode("core.tenant", TENANT + ":" + otherTenant, other.toString());
+        DecodedEvent<RosterEvent> decoded = decoder.decode("core.tenant", TENANT + ":" + otherTenant, other.toString());
 
-        assertThat(decoded).isInstanceOfSatisfying(Decoded.Invalid.class,
+        assertThat(decoded).isInstanceOfSatisfying(DecodedEvent.Invalid.class,
                 invalid -> assertThat(invalid.reason()).contains("tenant"));
     }
 
@@ -228,17 +229,17 @@ class RosterEventDecoderTest {
         ObjectNode tenant = examples("core.tenant").getFirst().deepCopy();
         ((ObjectNode) tenant.get("payload")).put("timezone", "Mars/Olympus_Mons");
 
-        assertThat(decode("core.tenant", tenant)).isInstanceOfSatisfying(Decoded.Invalid.class,
+        assertThat(decode("core.tenant", tenant)).isInstanceOfSatisfying(DecodedEvent.Invalid.class,
                 invalid -> assertThat(invalid.reason()).startsWith("value outside the contract").doesNotContain("Mars"));
     }
 
     @Test
     void notJsonAndUnknownTopicsAreRejected() {
-        assertThat(decoder.decode("core.team", TENANT + ":x", "{not json")).isInstanceOfSatisfying(Decoded.Invalid.class,
+        assertThat(decoder.decode("core.team", TENANT + ":x", "{not json")).isInstanceOfSatisfying(DecodedEvent.Invalid.class,
                 invalid -> assertThat(invalid.eventId()).isEmpty());
-        assertThat(decoder.decode("core.team", TENANT + ":x", "[]")).isInstanceOf(Decoded.Invalid.class);
+        assertThat(decoder.decode("core.team", TENANT + ":x", "[]")).isInstanceOf(DecodedEvent.Invalid.class);
         assertThat(decoder.decode("core.season", TENANT + ":x", examples("core.team").getFirst().toString()))
-                .isInstanceOfSatisfying(Decoded.Invalid.class, invalid -> assertThat(invalid.reason()).contains("topic"));
+                .isInstanceOfSatisfying(DecodedEvent.Invalid.class, invalid -> assertThat(invalid.reason()).contains("topic"));
     }
 
     /** ADR-0062: one reason policy for game and athlete: at most five schema errors, 500 characters, no values. */
@@ -248,20 +249,20 @@ class RosterEventDecoderTest {
         String everythingWrong = "{\"" + "a".repeat(300) + "\":1,\"" + "b".repeat(300) + "\":2,\"c\":3,\"d\":4,\"e\":5,"
                 + "\"f\":6}";
 
-        assertThat(decoder.decode(topic, TENANT + ":x", "{}")).isInstanceOfSatisfying(Decoded.Invalid.class,
+        assertThat(decoder.decode(topic, TENANT + ":x", "{}")).isInstanceOfSatisfying(DecodedEvent.Invalid.class,
                 invalid -> assertThat(invalid.reason()).isEqualTo("not a roster topic"));
         assertThat(decoder.decode("core.team", TENANT + ":x", everythingWrong)).isInstanceOfSatisfying(
-                Decoded.Invalid.class, invalid -> assertThat(invalid.reason())
+                DecodedEvent.Invalid.class, invalid -> assertThat(invalid.reason())
                         .hasSize(CoreEventDecoder.MAX_REASON_LENGTH));
     }
 
     private RosterEvent event(String topic, int index) {
-        Decoded decoded = decode(topic, examples(topic).get(index));
-        assertThat(decoded).isInstanceOf(Decoded.Valid.class);
-        return ((Decoded.Valid) decoded).event();
+        DecodedEvent<RosterEvent> decoded = decode(topic, examples(topic).get(index));
+        assertThat(decoded).isInstanceOf(DecodedEvent.Valid.class);
+        return ((DecodedEvent.Valid<RosterEvent>) decoded).event();
     }
 
-    private Decoded decode(String topic, JsonNode event) {
+    private DecodedEvent<RosterEvent> decode(String topic, JsonNode event) {
         return decoder.decode(topic, event.get("tenantId").asText() + ":" + event.get("aggregateId").asText(),
                 event.toString());
     }
@@ -272,7 +273,7 @@ class RosterEventDecoderTest {
     }
 
     static List<JsonNode> examples(String topic) {
-        try (InputStream in = RosterEventDecoderTest.class.getResourceAsStream("/events/examples/" + topic + ".valid.json")) {
+        try (InputStream in = RosterEventMapperTest.class.getResourceAsStream("/events/examples/" + topic + ".valid.json")) {
             List<JsonNode> examples = new ArrayList<>();
             JSON.readTree(in).forEach(examples::add);
             return examples;

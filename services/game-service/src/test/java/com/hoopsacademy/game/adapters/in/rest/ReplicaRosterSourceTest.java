@@ -7,15 +7,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RosterBrokerResource;
 import com.hoopsacademy.common.testing.TenantUser;
-import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
 import com.hoopsacademy.game.application.AcademyNames;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
+import com.hoopsacademy.game.application.replica.RosterEvent;
 import com.hoopsacademy.game.domain.MatchStatus;
 import com.hoopsacademy.game.support.Contract;
 import com.hoopsacademy.game.support.CoreEvents;
@@ -69,7 +70,7 @@ class ReplicaRosterSourceTest {
     WireMockServer core;
 
     @Inject
-    RosterEventDecoder decoder;
+    CoreEventDecoder<RosterEvent> decoder;
 
     @Inject
     ReplicateRoster replicate;

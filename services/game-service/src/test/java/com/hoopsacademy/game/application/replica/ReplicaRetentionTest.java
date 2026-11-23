@@ -3,15 +3,16 @@ package com.hoopsacademy.game.application.replica;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hoopsacademy.common.replica.CoreEventDecoder;
+import com.hoopsacademy.common.replica.DecodedEvent;
 import com.hoopsacademy.common.replica.ParkedPosition;
 import com.hoopsacademy.common.replica.ReplicaHistory;
+import com.hoopsacademy.common.replica.ReplicaOutcome;
 import com.hoopsacademy.common.replica.ReplicaRetention;
 import com.hoopsacademy.common.replica.ReplicaRetention.Report;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
-import com.hoopsacademy.game.application.replica.ReplicateRoster.Outcome;
 import com.hoopsacademy.game.support.CoreEvents;
 import com.hoopsacademy.game.support.CoreEvents.Record;
 import com.hoopsacademy.game.support.CoreWireMockResource;
@@ -54,7 +55,7 @@ class ReplicaRetentionTest {
     TenantScope tenantScope;
 
     @Inject
-    RosterEventDecoder decoder;
+    CoreEventDecoder<RosterEvent> decoder;
 
     @Inject
     ReplicateRoster replicate;
@@ -102,7 +103,7 @@ class ReplicaRetentionTest {
         retention(WEEK, MONTH, 100).prune();
 
         assertThat(appliedIds(tenant)).containsExactly(bigLions.eventId());
-        assertThat(apply(lions)).as("a redelivery after the retention is stale, not applied").isEqualTo(Outcome.STALE);
+        assertThat(apply(lions)).as("a redelivery after the retention is stale, not applied").isEqualTo(ReplicaOutcome.STALE);
         assertThat(ReplicaDb.value(tenant, "select name from game.team_ref")).isEqualTo("Big Lions");
     }
 
@@ -142,8 +143,8 @@ class ReplicaRetentionTest {
         return core.team(UUID.randomUUID(), UUID.randomUUID(), SEASON_END, name);
     }
 
-    private Outcome apply(Record record) {
-        return replicate.apply(((RosterEventDecoder.Decoded.Valid) decoder.decode(record.topic(), record.key(),
+    private ReplicaOutcome apply(Record record) {
+        return replicate.apply(((DecodedEvent.Valid<RosterEvent>) decoder.decode(record.topic(), record.key(),
                 record.value())).event());
     }
 
@@ -159,7 +160,7 @@ class ReplicaRetentionTest {
     }
 
     private static void park(long offset, String inspectedAt) {
-        ReplicaDb.executeAsOwner("insert into game.parked_event (topic, kafka_partition, kafka_offset, reason, inspected_at)"
+        ReplicaDb.executeAsOwner("insert into game.parked_event (topic, partition, kafka_offset, reason, inspected_at)"
                 + " values ('core.team', 7, " + offset + ", 'schema violation', " + inspectedAt + ")");
     }
 }

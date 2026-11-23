@@ -1,5 +1,7 @@
 package com.hoopsacademy.game.application.replica;
 
+import com.hoopsacademy.common.replica.EventEnvelope;
+
 /**
  * game's replica of core's roster (ADR-0037), in the tenant bound to the current transaction (RLS). Writes are
  * idempotent and order-safe; the replica holds one row per aggregate.

@@ -5,13 +5,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.problem.NotFoundException;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
 import com.hoopsacademy.game.adapters.out.client.RestRosterPort;
 import com.hoopsacademy.game.application.replica.ReplicaRosterPort;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
+import com.hoopsacademy.game.application.replica.RosterEvent;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.SeasonId;
 import com.hoopsacademy.game.domain.TeamId;
@@ -62,7 +63,7 @@ class RosterPortContractTest {
     ReplicaRosterPort replica;
 
     @Inject
-    RosterEventDecoder decoder;
+    CoreEventDecoder<RosterEvent> decoder;
 
     @Inject
     ReplicateRoster replicate;

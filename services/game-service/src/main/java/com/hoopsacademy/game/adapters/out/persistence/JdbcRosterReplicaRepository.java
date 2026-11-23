@@ -1,9 +1,9 @@
 package com.hoopsacademy.game.adapters.out.persistence;
 
 import com.hoopsacademy.common.client.CoreMembership.TenantStatus;
+import com.hoopsacademy.common.replica.EventEnvelope;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.game.application.replica.EventEnvelope;
 import com.hoopsacademy.game.application.replica.ReplicaPerson;
 import com.hoopsacademy.game.application.replica.ReplicaPlayer;
 import com.hoopsacademy.game.application.replica.ReplicaTeam;

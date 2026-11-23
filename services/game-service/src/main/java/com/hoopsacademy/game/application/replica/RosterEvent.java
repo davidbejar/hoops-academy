@@ -1,6 +1,7 @@
 package com.hoopsacademy.game.application.replica;
 
 import com.hoopsacademy.common.client.CoreMembership.TenantStatus;
+import com.hoopsacademy.common.replica.EventEnvelope;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.SeasonId;

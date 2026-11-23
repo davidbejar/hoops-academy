@@ -2,13 +2,13 @@ package com.hoopsacademy.game.application.replica;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hoopsacademy.common.replica.CoreEventDecoder;
+import com.hoopsacademy.common.replica.DecodedEvent;
+import com.hoopsacademy.common.replica.ReplicaOutcome;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
-import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder.Decoded;
-import com.hoopsacademy.game.application.replica.ReplicateRoster.Outcome;
 import com.hoopsacademy.game.support.CoreEvents;
 import com.hoopsacademy.game.support.CoreEvents.Record;
 import com.hoopsacademy.game.support.CoreWireMockResource;
@@ -46,7 +46,7 @@ class ReplicateRosterTest {
     ReplicateRoster replicate;
 
     @Inject
-    RosterEventDecoder decoder;
+    CoreEventDecoder<RosterEvent> decoder;
 
     @Inject
     TenantScope tenantScope;
@@ -66,9 +66,9 @@ class ReplicateRosterTest {
         Record lions = core.team(team, UUID.randomUUID(), SEASON_END, "Lions");
         Record tigersWithTheSameId = new Record(lions.topic(), lions.key(), lions.value().replace("Lions", "Tigers"));
 
-        assertThat(apply(lions)).isEqualTo(Outcome.APPLIED);
-        assertThat(apply(lions)).isEqualTo(Outcome.DUPLICATE);
-        assertThat(apply(tigersWithTheSameId)).isEqualTo(Outcome.DUPLICATE);
+        assertThat(apply(lions)).isEqualTo(ReplicaOutcome.APPLIED);
+        assertThat(apply(lions)).isEqualTo(ReplicaOutcome.DUPLICATE);
+        assertThat(apply(tigersWithTheSameId)).isEqualTo(ReplicaOutcome.DUPLICATE);
 
         assertThat(teamName(team)).isEqualTo("Lions");
         assertThat(ReplicaDb.value(tenant, "select count(*) from game.applied_event")).isEqualTo(1L);
@@ -81,11 +81,11 @@ class ReplicateRosterTest {
         Record newer = core.at(T2).team(team, season, SEASON_END, "Big Lions");
         Record older = core.at(T1).team(team, season, SEASON_END, "Lions");
 
-        assertThat(apply(newer)).isEqualTo(Outcome.APPLIED);
-        assertThat(apply(older)).isEqualTo(Outcome.STALE);
+        assertThat(apply(newer)).isEqualTo(ReplicaOutcome.APPLIED);
+        assertThat(apply(older)).isEqualTo(ReplicaOutcome.STALE);
 
         assertThat(teamName(team)).isEqualTo("Big Lions");
-        assertThat(apply(older)).as("a stale event is still a known event").isEqualTo(Outcome.DUPLICATE);
+        assertThat(apply(older)).as("a stale event is still a known event").isEqualTo(ReplicaOutcome.DUPLICATE);
     }
 
     @Test
@@ -97,7 +97,7 @@ class ReplicateRosterTest {
 
         apply(first);
 
-        assertThat(apply(second)).isEqualTo(Outcome.APPLIED);
+        assertThat(apply(second)).isEqualTo(ReplicaOutcome.APPLIED);
         assertThat(teamName(team)).isEqualTo("Big Lions");
     }
 
@@ -108,8 +108,8 @@ class ReplicateRosterTest {
         Record attached = core.at(T1).staff(team, coach, "COACH");
         Record detached = core.at(T2).staffRemoved(team, coach);
 
-        assertThat(apply(detached)).isEqualTo(Outcome.APPLIED);
-        assertThat(apply(attached)).isEqualTo(Outcome.STALE);
+        assertThat(apply(detached)).isEqualTo(ReplicaOutcome.APPLIED);
+        assertThat(apply(attached)).isEqualTo(ReplicaOutcome.STALE);
 
         assertThat(ReplicaDb.rows(tenant, "select team_id, person_id, removed from game.team_staff_ref"))
                 .containsExactly(Map.of("team_id", team, "person_id", coach, "removed", true));
@@ -159,10 +159,10 @@ class ReplicateRosterTest {
 
         for (Record removal : List.of(core.removed("person", person), core.removed("player", player),
                 core.removed("team", team), core.removed("team-player", assignment), core.tenantRemoved())) {
-            assertThat(apply(removal)).as(removal.topic()).isEqualTo(Outcome.APPLIED);
+            assertThat(apply(removal)).as(removal.topic()).isEqualTo(ReplicaOutcome.APPLIED);
         }
         for (Record late : List.of(tenantChanged, personChanged, playerChanged, teamChanged, assignmentChanged)) {
-            assertThat(apply(late)).as(late.topic()).isEqualTo(Outcome.STALE);
+            assertThat(apply(late)).as(late.topic()).isEqualTo(ReplicaOutcome.STALE);
         }
 
         assertThat(ReplicaDb.rows(tenant, "select removed, status, timezone from game.tenant_ref")).containsExactly(
@@ -186,7 +186,7 @@ class ReplicateRosterTest {
 
         apply(core.team(team, season, SEASON_END, "Lions"));
         apply(core.removed("team", team));
-        assertThat(apply(core.team(team, season, SEASON_END, "New Lions"))).isEqualTo(Outcome.APPLIED);
+        assertThat(apply(core.team(team, season, SEASON_END, "New Lions"))).isEqualTo(ReplicaOutcome.APPLIED);
 
         assertThat(ReplicaDb.rows(tenant, "select removed, name from game.team_ref"))
                 .containsExactly(Map.of("removed", false, "name", "New Lions"));
@@ -262,19 +262,6 @@ class ReplicateRosterTest {
         assertThat(ReplicaDb.value(other, "select name from game.team_ref where id = '" + team + "'")).isEqualTo("Tigers");
     }
 
-    @Test
-    void aRejectedRecordIsParkedWithoutItsValue() {
-        replicate.park(new ParkedRecord("core.team", 0, 42L, "k", Optional.of(UUID.randomUUID()), "schema violation: x"));
-
-        List<Map<String, Object>> parked = ReplicaDb.parked();
-        assertThat(parked).last().satisfies(row -> {
-            assertThat(row).containsEntry("topic", "core.team").containsEntry("kafka_partition", 0)
-                    .containsEntry("kafka_offset", 42L).containsEntry("record_key", "k")
-                    .containsEntry("reason", "schema violation: x");
-            assertThat(row.get("event_id")).isNotNull();
-        });
-    }
-
     /** A row with {@code flag} = {@code value} and every other column null. */
     private static Map<String, Object> nulls(String flag, Object value, String... columns) {
         Map<String, Object> row = new LinkedHashMap<>();
@@ -285,10 +272,10 @@ class ReplicateRosterTest {
         return row;
     }
 
-    private Outcome apply(Record record) {
-        Decoded decoded = decoder.decode(record.topic(), record.key(), record.value());
-        assertThat(decoded).as("fixture records follow the contracts").isInstanceOf(Decoded.Valid.class);
-        return replicate.apply(((Decoded.Valid) decoded).event());
+    private ReplicaOutcome apply(Record record) {
+        DecodedEvent<RosterEvent> decoded = decoder.decode(record.topic(), record.key(), record.value());
+        assertThat(decoded).as("fixture records follow the contracts").isInstanceOf(DecodedEvent.Valid.class);
+        return replicate.apply(((DecodedEvent.Valid<RosterEvent>) decoded).event());
     }
 
     private Object teamName(UUID team) {

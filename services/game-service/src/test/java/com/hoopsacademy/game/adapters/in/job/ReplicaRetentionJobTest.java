@@ -2,10 +2,11 @@ package com.hoopsacademy.game.adapters.in.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
+import com.hoopsacademy.game.application.replica.RosterEvent;
 import com.hoopsacademy.game.support.CoreEvents;
 import com.hoopsacademy.game.support.CoreEvents.Record;
 import com.hoopsacademy.game.support.CoreWireMockResource;
@@ -39,7 +40,7 @@ class ReplicaRetentionJobTest {
     MeterRegistry metrics;
 
     @Inject
-    RosterEventDecoder decoder;
+    CoreEventDecoder<RosterEvent> decoder;
 
     @Inject
     ReplicateRoster replicate;
@@ -53,7 +54,7 @@ class ReplicaRetentionJobTest {
         ReplicaDb.execute(tenant, "update game.applied_event set applied_at = '"
                 + Instant.now().minus(8, ChronoUnit.DAYS) + "'");
         long offset = Math.abs(UUID.randomUUID().getMostSignificantBits() % 1_000_000_000L);
-        ReplicaDb.executeAsOwner("insert into game.parked_event (topic, kafka_partition, kafka_offset, reason, "
+        ReplicaDb.executeAsOwner("insert into game.parked_event (topic, partition, kafka_offset, reason, "
                 + "inspected_at) values ('core.person', 0, " + offset + ", 'schema violation', '"
                 + Instant.now().minus(31, ChronoUnit.DAYS) + "')");
         double applied = pruned("applied_event");

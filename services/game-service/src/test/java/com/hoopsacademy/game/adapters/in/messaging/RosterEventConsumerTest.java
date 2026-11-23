@@ -163,7 +163,7 @@ class RosterEventConsumerTest {
         assertThat(ReplicaDb.parked()).filteredOn(row -> broken.eventId().equals(String.valueOf(row.get("event_id"))))
                 .singleElement().satisfies(row -> {
                     assertThat(row).containsEntry("topic", "core.team").containsEntry("record_key", broken.key());
-                    assertThat((String) row.get("reason")).contains("schema");
+                    assertThat((String) row.get("reason")).contains("/payload").contains("name");
                     assertThat((Long) row.get("kafka_offset")).isNotNegative();
                 });
         assertThat(ReplicaDb.parked()).filteredOn(row -> "not-the-key".equals(row.get("record_key"))).hasSize(1);

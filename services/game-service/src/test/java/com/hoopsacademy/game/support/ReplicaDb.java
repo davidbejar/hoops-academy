@@ -76,7 +76,7 @@ public final class ReplicaDb {
     /** Rows of the parking table (readable only by the owner). */
     public static List<Map<String, Object>> parked() {
         try (Connection migrator = RlsTestDatabase.fromConfig().openAsMigrator();
-                PreparedStatement statement = migrator.prepareStatement("select * from game.parked_event order by id");
+                PreparedStatement statement = migrator.prepareStatement("select * from game.parked_event order by parked_at, topic, partition, kafka_offset");
                 ResultSet rs = statement.executeQuery()) {
             return read(rs);
         } catch (SQLException e) {

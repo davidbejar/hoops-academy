@@ -5,15 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.client.CoreRosterClient;
 import com.hoopsacademy.common.client.RosterAuthzResolver;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.AuthzContextResolver;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder;
 import com.hoopsacademy.game.application.replica.ReplicaAuthzResolver;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
+import com.hoopsacademy.game.application.replica.RosterEvent;
 import com.hoopsacademy.game.support.CoreAnswers;
 import com.hoopsacademy.game.support.CoreEvents;
 import com.hoopsacademy.game.support.CoreEvents.Record;
@@ -67,7 +68,7 @@ class AuthzContextContractTest {
     ReplicaAuthzResolver replica;
 
     @Inject
-    RosterEventDecoder decoder;
+    CoreEventDecoder<RosterEvent> decoder;
 
     @Inject
     ReplicateRoster replicate;
