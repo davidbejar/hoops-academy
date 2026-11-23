@@ -24,8 +24,8 @@ NS="${HOOPS_NAMESPACE:-hoops}"
 EG_NS=envoy-gateway-system
 WHAT="${1:-all}"
 fail=0
-ok()  { printf '  ok   %s\n' "$*"; }
-bad() { printf '  FAIL %s\n' "$*"; fail=1; }
+# shellcheck source=deploy/lib/common.sh
+. "$(dirname "$0")/../lib/common.sh"
 # shellcheck source=deploy/kind/load-guard.sh
 . "$(dirname "$0")/load-guard.sh"
 

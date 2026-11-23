@@ -20,9 +20,8 @@ BASE="${HOOPS_BASE_URL:-http://localhost:8090}"
 SERVICES=("$@"); [ ${#SERVICES[@]} -gt 0 ] || SERVICES=(core game athlete)
 CTX=(--context "kind-${KIND_CLUSTER:-hoops}" -n "${HOOPS_NAMESPACE:-hoops}")
 fail=0
-ok()  { printf '  ok   %s\n' "$*"; }
-bad() { printf '  FAIL %s\n' "$*"; fail=1; }
-warn() { printf '  WARN %s\n' "$*"; }
+# shellcheck source=deploy/lib/common.sh
+. deploy/lib/common.sh
 code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 # shellcheck source=deploy/kind/load-guard.sh
 . deploy/kind/load-guard.sh

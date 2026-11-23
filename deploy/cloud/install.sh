@@ -19,7 +19,6 @@ ENV_FILE="${ENV_FILE:-.env}"
 # The same operator pins and installs as deploy/kind/up.sh.
 # shellcheck source=deploy/lib/platform.sh
 . deploy/lib/platform.sh
-step() { printf '\n==> %s\n' "$*"; }
 
 [ -f "$ENV_FILE" ] || { echo "install.sh: $ENV_FILE missing (cp .env.example .env, set strong values)" >&2; exit 1; }
 # A public deployment never runs on the example placeholders.

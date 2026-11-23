@@ -10,10 +10,8 @@ CLOUD_CONTEXT=hoops-cloud
 # shellcheck disable=SC2034
 CLOUD_CERT="${XDG_CONFIG_HOME:-$HOME/.config}/hoops-cloud/gateway.crt"
 
-need() { # tools...
-  local t
-  for t in "$@"; do command -v "$t" >/dev/null || { echo "$(basename "$0"): $t not found" >&2; exit 1; }; done
-}
+# shellcheck source=deploy/lib/common.sh
+. deploy/lib/common.sh   # step, ok, bad, warn, need
 
 tofu_output() { # name
   [ -n "${TF_VAR_state_passphrase:-}" ] \

@@ -13,9 +13,8 @@ SNAP=deploy/helm/tests/snapshots
 UPDATE=0; [ "${1:-}" = "--update" ] && UPDATE=1
 WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
 fail=0
-ok()  { printf '  ok   %s\n' "$*"; }
-bad() { printf '  FAIL %s\n' "$*"; fail=1; }
-quiet_helm() { helm "$@"; }
+# shellcheck source=deploy/lib/common.sh
+. deploy/lib/common.sh
 
 echo "== chart file copies (no symlinks, identical to their sources)"
 if scripts/sync-chart-files.sh --check; then ok "realm JSON, init SQL and login theme copies in sync"
@@ -47,7 +46,7 @@ standalone() { # a service sub-chart rendered alone: a copy with hoops-lib resol
 echo "== helm lint"
 for c in "$CHART" "$CHART"/charts/*/; do
   case " ${SERVICE_CHARTS[*]} " in *" $(basename "$c") "*) c=$(standalone "$(basename "$c")") ;; esac
-  if quiet_helm lint --strict "$c" -f "$CHART/values-kind.yaml" >"$WORK/lint.txt" 2>&1 || quiet_helm lint --strict "$c" >"$WORK/lint.txt" 2>&1; then
+  if helm lint --strict "$c" -f "$CHART/values-kind.yaml" >"$WORK/lint.txt" 2>&1 || helm lint --strict "$c" >"$WORK/lint.txt" 2>&1; then
     ok "lint $c"
   else bad "lint $c"; cat "$WORK/lint.txt"; fi
 done
@@ -55,7 +54,7 @@ done
 echo "== render"
 render() { # name args...
   local name="$1"; shift
-  quiet_helm template "$@" > "$WORK/$name.yaml"
+  helm template "$@" > "$WORK/$name.yaml"
 }
 render umbrella-default   hoops "$CHART" -n hoops
 render umbrella-kind      hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml"
@@ -872,8 +871,8 @@ echo "== cloud: one k3s VM on Alibaba Cloud (WP104, ADR-0050; umbrella-cloud)"
 # values-cloud.yaml plus what deploy/cloud/install.sh sets from the OpenTofu outputs (tests/values/umbrella-cloud.yaml:
 # the mocked EIP 203.0.113.10 of infra/tofu/tests, a fixed image tag).
 C="$WORK/umbrella-cloud.yaml"; CH=203-0-113-10.sslip.io; CT=0123456789abcdef0123456789abcdef01234567
-if quiet_helm lint --strict "$CHART" -f "$CHART/values-cloud.yaml" >"$WORK/lint-cloud.txt" 2>&1 \
-    && quiet_helm lint --strict "$CHART" -f "$CHART/values-cloud.yaml" -f deploy/helm/tests/values/umbrella-cloud.yaml >>"$WORK/lint-cloud.txt" 2>&1; then
+if helm lint --strict "$CHART" -f "$CHART/values-cloud.yaml" >"$WORK/lint-cloud.txt" 2>&1 \
+    && helm lint --strict "$CHART" -f "$CHART/values-cloud.yaml" -f deploy/helm/tests/values/umbrella-cloud.yaml >>"$WORK/lint-cloud.txt" 2>&1; then
   ok "helm lint --strict with values-cloud.yaml (alone and with the install values)"
 else bad "helm lint values-cloud.yaml"; cat "$WORK/lint-cloud.txt"; fi
 objects() { awk 'BEGIN{RS="\n---\n"} {k=""; n=""; if (match($0, /\nkind: [A-Za-z]+\n/)) k=substr($0, RSTART+7, RLENGTH-8)

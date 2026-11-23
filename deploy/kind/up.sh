@@ -32,13 +32,14 @@ for a in "$@"; do
   esac
 done
 
-for t in podman kind kubectl helm openssl jq; do command -v "$t" >/dev/null || { echo "up.sh: $t not found" >&2; exit 1; }; done
+# shellcheck source=deploy/lib/common.sh
+. deploy/lib/common.sh
+need podman kind kubectl helm openssl jq
 [ -f .env ] || { echo "up.sh: .env missing (cp .env.example .env and set values)" >&2; exit 1; }
 # shellcheck disable=SC1091
 source scripts/env.sh >/dev/null
 export KIND_EXPERIMENTAL_PROVIDER=podman
 
-step() { printf '\n==> %s\n' "$*"; }
 
 step "kind cluster '$CLUSTER'"
 if kind get clusters 2>/dev/null | grep -qx "$CLUSTER"; then
