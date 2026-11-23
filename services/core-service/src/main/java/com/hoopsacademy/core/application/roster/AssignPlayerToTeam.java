@@ -69,7 +69,7 @@ public class AssignPlayerToTeam {
     @Transactional
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
     public Assigned assign(Assignment request) {
-        Team team = teams.find(request.team()).orElseThrow(() -> new NotFoundException("Team not found"));
+        Team team = teams.require(request.team());
         pastSeasons.requireOpenForCoach(team);
         PlayerSummary player = players.summary(request.player())
                 .orElseThrow(() -> new NotFoundException("Player not found"));

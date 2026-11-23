@@ -86,7 +86,7 @@ public class TeamService {
     public TeamView create(NewTeam input) {
         Team team = new Team(TeamId.random(), input.season(), input.name(), input.alias(), input.category(),
                 input.genderPolicy());
-        seasons.find(team.season()).orElseThrow(() -> new NotFoundException("Season not found"));
+        seasons.require(team.season());
         requireCategory(team.category());
         requireUniqueName(team);
         entitlements.check(tenantContext.requireTenantId(), EntitlementService.Limit.TEAMS);
@@ -122,7 +122,7 @@ public class TeamService {
     }
 
     Team find(TeamId id) {
-        return teams.find(id).orElseThrow(() -> new NotFoundException("Team not found"));
+        return teams.require(id);
     }
 
     private void requireCategory(AgeCategoryId category) {

@@ -97,7 +97,7 @@ public class TeamPlayerService {
     }
 
     private Team requireTeam(TeamId team) {
-        return teams.find(team).orElseThrow(() -> new NotFoundException("Team not found"));
+        return teams.require(team);
     }
 
     private static TeamPlayerView view(TeamPlayer assignment, PlayerSummary player) {

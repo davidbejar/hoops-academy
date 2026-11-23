@@ -1,6 +1,5 @@
 package com.hoopsacademy.core.application.roster;
 
-import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.application.port.AgeCategoryRepository;
 import com.hoopsacademy.core.application.port.EligibilityCaseRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
@@ -132,10 +131,10 @@ public class EligibilityEngine {
     }
 
     private TenantSettings currentSettings() {
-        return settings.findCurrent().orElseThrow(() -> new NotFoundException("Tenant settings not found"));
+        return settings.requireCurrent();
     }
 
     private Season season(SeasonId id) {
-        return seasons.find(id).orElseThrow(() -> new NotFoundException("Season not found"));
+        return seasons.require(id);
     }
 }

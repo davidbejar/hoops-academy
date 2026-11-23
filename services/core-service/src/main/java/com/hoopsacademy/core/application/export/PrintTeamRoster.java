@@ -62,7 +62,7 @@ public class PrintTeamRoster {
     }
 
     private RosterPrint heading(TeamId teamId, RosterSheet sheet, AppLocale language) {
-        Team team = teams.find(teamId).orElseThrow(() -> new NotFoundException("Team not found"));
+        Team team = teams.require(teamId);
         String season = seasons.find(team.season()).orElseThrow().name();
         String category = categories.find(team.category()).map(AgeCategory::name).orElse(null);
         TenantProfile academy = profiles.findCurrent().orElseThrow(() -> new NotFoundException("Tenant not found"));

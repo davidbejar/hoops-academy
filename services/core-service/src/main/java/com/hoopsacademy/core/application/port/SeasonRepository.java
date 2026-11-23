@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.application.port;
 
+import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.domain.roster.Season;
 import com.hoopsacademy.core.domain.roster.SeasonId;
 import java.time.LocalDate;
@@ -16,6 +17,11 @@ public interface SeasonRepository {
     void update(Season season);
 
     Optional<Season> find(SeasonId id);
+
+    /** @throws NotFoundException "Season not found" (404) */
+    default Season require(SeasonId id) {
+        return find(id).orElseThrow(() -> new NotFoundException("Season not found"));
+    }
 
     List<Season> listNewestFirst();
 

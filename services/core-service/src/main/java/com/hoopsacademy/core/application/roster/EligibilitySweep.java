@@ -1,6 +1,5 @@
 package com.hoopsacademy.core.application.roster;
 
-import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.core.application.platform.ActiveTenants;
@@ -44,7 +43,7 @@ public class EligibilitySweep {
         for (TenantId tenant : activeTenants.list()) {
             try {
                 opened += tenantScope.runAs(tenant, () -> engine.reevaluateTenant(calendar.at(now),
-                        settings.findCurrent().orElseThrow(() -> new NotFoundException("Tenant settings not found")))
+                        settings.requireCurrent())
                         .size());
                 swept++;
             } catch (RuntimeException e) {

@@ -2,7 +2,6 @@ package com.hoopsacademy.core.application.export;
 
 import com.hoopsacademy.common.authz.Authz;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
-import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.export.RosterSheet.PlayerLine;
 import com.hoopsacademy.core.application.export.RosterSheet.StaffLine;
@@ -98,7 +97,7 @@ public class ExportTeamRoster {
     @Transactional
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
     public RosterSheet gather(TeamId teamId) {
-        Team team = teams.find(teamId).orElseThrow(() -> new NotFoundException("Team not found"));
+        Team team = teams.require(teamId);
         boolean currentCoach = authz.hasAnyRole(TenantRole.COACH) && authz.isStaffOf(teamId.value());
         authz.require(authz.isAdmin() || currentCoach, "Only ADMIN or the team's current coach may export its roster");
         List<TeamPlayer> open = assignments.ofTeam(teamId, false);

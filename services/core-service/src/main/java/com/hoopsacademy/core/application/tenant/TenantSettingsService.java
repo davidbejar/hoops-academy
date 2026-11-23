@@ -5,7 +5,6 @@ import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.port.AuditLog;
 import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
-import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.application.port.TenantSettingsRepository;
 import com.hoopsacademy.core.domain.tenant.TenantSettings;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,7 +30,7 @@ public class TenantSettingsService {
 
     @Transactional
     public TenantSettings get() {
-        return settings.findCurrent().orElseThrow(() -> new NotFoundException("Tenant settings not found"));
+        return settings.requireCurrent();
     }
 
     @Transactional

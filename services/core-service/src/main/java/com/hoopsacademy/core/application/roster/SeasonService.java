@@ -2,7 +2,6 @@ package com.hoopsacademy.core.application.roster;
 
 import com.hoopsacademy.common.authz.RequiresTenantRole;
 import com.hoopsacademy.common.problem.ConflictException;
-import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.port.SeasonRepository;
 import com.hoopsacademy.core.domain.roster.Season;
@@ -74,7 +73,7 @@ public class SeasonService {
     }
 
     Season find(SeasonId id) {
-        return seasons.find(id).orElseThrow(() -> new NotFoundException("Season not found"));
+        return seasons.require(id);
     }
 
     private void requireNoOverlap(Season season) {

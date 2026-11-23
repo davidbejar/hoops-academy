@@ -3,7 +3,6 @@ package com.hoopsacademy.core.application.roster;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.problem.DomainRuleViolation;
-import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.authz.AuthzCache;
@@ -114,7 +113,7 @@ public class RolloverSeason {
     }
 
     private Season season(SeasonId id) {
-        return seasons.find(id).orElseThrow(() -> new NotFoundException("Season not found"));
+        return seasons.require(id);
     }
 
     /** State of one rollover. */

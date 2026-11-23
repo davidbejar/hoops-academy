@@ -53,7 +53,7 @@ public class EligibilityQueries {
     /** ADMIN or team staff; {@code asOf} defaults to today in the tenant's time zone. */
     @Transactional
     public CheckView check(TeamId teamId, PlayerId playerId, Optional<LocalDate> asOf) {
-        Team team = teams.find(teamId).orElseThrow(() -> new NotFoundException("Team not found"));
+        Team team = teams.require(teamId);
         authz.requireStaffOf(teamId);
         PlayerSummary player = player(playerId);
         LocalDate date = asOf.orElseGet(calendar::today);
@@ -65,7 +65,7 @@ public class EligibilityQueries {
     @RequiresTenantRole({TenantRole.ADMIN, TenantRole.COACH})
     public List<EligibleTeamView> eligibleTeams(PlayerId playerId, SeasonId seasonId) {
         PlayerSummary player = player(playerId);
-        Season season = seasons.find(seasonId).orElseThrow(() -> new NotFoundException("Season not found"));
+        Season season = seasons.require(seasonId);
         LocalDate today = calendar.today();
         EligibilityEvaluator evaluator = engine.evaluator();
         return views.of(teams.inSeasons(List.of(seasonId))).stream()

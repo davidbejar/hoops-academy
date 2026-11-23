@@ -61,7 +61,7 @@ public class InternalRoster {
     public TeamRosterView teamRoster(TenantId tenant, TeamId teamId) {
         return tenantScope.runAs(tenant, () -> {
             requireActiveTenant();
-            Team team = teams.find(teamId).orElseThrow(() -> new NotFoundException("Team not found"));
+            Team team = teams.require(teamId);
             List<TeamPlayer> open = assignments.openValidOfTeams(List.of(teamId));
             Map<PlayerId, PlayerSummary> summaries = players.summaries(open.stream().map(TeamPlayer::player).toList());
             List<RosterLine> lines = open.stream()

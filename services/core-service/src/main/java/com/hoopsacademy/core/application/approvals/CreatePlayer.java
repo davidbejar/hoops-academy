@@ -1,7 +1,6 @@
 package com.hoopsacademy.core.application.approvals;
 
 import com.hoopsacademy.common.authz.RequiresTenantRole;
-import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.players.PlayerAccess;
 import com.hoopsacademy.core.application.players.PlayerView;
@@ -86,7 +85,7 @@ public class CreatePlayer {
     @Transactional
     PlayerCommandResult create(Command command, boolean needsApproval, Optional<ProvisionedIdentity> login) {
         command.team().ifPresent(team -> {
-            teams.find(team).orElseThrow(() -> new NotFoundException("Team not found"));
+            teams.require(team);
             rosterAuthz.requireCoachOf(team);
         });
         PlayerId player = lifecycle.register(command.data(),

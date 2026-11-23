@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.application.port;
 
+import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.roster.AgeCategoryId;
@@ -23,6 +24,11 @@ public interface TeamRepository {
     void update(Team team);
 
     Optional<Team> find(TeamId id);
+
+    /** @throws NotFoundException "Team not found" (404) */
+    default Team require(TeamId id) {
+        return find(id).orElseThrow(() -> new NotFoundException("Team not found"));
+    }
 
     List<Team> findAll(Collection<TeamId> ids);
 

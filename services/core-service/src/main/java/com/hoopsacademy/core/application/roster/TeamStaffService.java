@@ -84,6 +84,6 @@ public class TeamStaffService {
     }
 
     private Team requireTeam(TeamId team) {
-        return teams.find(team).orElseThrow(() -> new NotFoundException("Team not found"));
+        return teams.require(team);
     }
 }
