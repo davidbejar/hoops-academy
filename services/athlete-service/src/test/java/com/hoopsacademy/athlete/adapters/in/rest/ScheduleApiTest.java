@@ -144,8 +144,10 @@ class ScheduleApiTest {
     void changingTheWeekdayMovesUntouchedSessionsButKeepsEditedOnes() {
         String team = "51000000-0000-4000-8000-0000000000c3";
         core.roster(TENANT, team);
-        String schedule = createSchedule(TENANT, team, "MONDAY", "17:00");
         LocalDate today = LocalDate.now(ZONE);
+        // weekdays after today: a session of today that has already started stays where it is (only future ones move),
+        // which made a fixed MONDAY fail on Mondays after 17:00
+        String schedule = createSchedule(TENANT, team, today.plusDays(1).getDayOfWeek().name(), "17:00");
         List<String> ids = api(TENANT).queryParam("teamId", team).queryParam("from", today.toString())
                 .queryParam("to", today.plusDays(60).toString()).get("/api/athlete/training-sessions")
                 .then().extract().path("items.id");
@@ -153,13 +155,14 @@ class ScheduleApiTest {
         api(TENANT).body(Map.of("notes", "Friendly vs Estudiantes")).patch("/api/athlete/training-sessions/" + edited)
                 .then().statusCode(200);
 
-        api(TENANT).body(Map.of("dayOfWeek", "FRIDAY")).patch("/api/athlete/training-schedules/" + schedule)
-                .then().statusCode(200).body("dayOfWeek", equalTo("FRIDAY"));
+        String movedTo = today.plusDays(3).getDayOfWeek().name();
+        api(TENANT).body(Map.of("dayOfWeek", movedTo)).patch("/api/athlete/training-schedules/" + schedule)
+                .then().statusCode(200).body("dayOfWeek", equalTo(movedTo));
 
         List<String> days = api(TENANT).queryParam("teamId", team).queryParam("from", today.toString())
                 .queryParam("to", today.plusDays(60).toString()).queryParam("size", 200)
                 .get("/api/athlete/training-sessions").then().extract().path("items.startsAt");
-        // 8 new Friday sessions plus the manually edited Monday one that stayed
+        // 8 sessions on the new weekday plus the manually edited one that stayed
         assertThat(days).hasSize(9);
         assertThat(ids).contains(edited);
         api(TENANT).get("/api/athlete/training-sessions/" + edited).then().body("notes", equalTo("Friendly vs Estudiantes"));
