@@ -22,8 +22,8 @@ source scripts/env.sh
 | `adapters.in.job` | `@Scheduled` nightly materialisation and replica retention. |
 | `adapters.out.persistence` | Hibernate entities (`@TenantId String tenantId`, ADR-0011) and repositories (`PagedQuery` for the filtered, paged searches, `LikePattern` for free-text terms); `TenantRegistryRepository` is plain JDBC. |
 | `adapters.out.client` | `CoreRosterAdapter` (RosterPort mapping over common-quarkus' shared `CoreRosterClient`; the REST membership resolver is common's `RosterAuthzResolver`). |
-| `application.replica`, `adapters.in.messaging` | roster replica (WP69, ADR-0037): `CoreRosterConsumer` (channel `core-roster`, seven `core.*` topics) -> `CoreEventDecoder` (contract validation, key check) -> `ApplyRosterEvent` (event's tenant, idempotent, `occurredAt`-ordered); `ReplicaAuthzResolver` (membership like core's `/internal/authz`). |
-| `adapters.out.persistence` (replica) | `RosterReplicaRepository` (upserts of `athlete.*_ref`, V6), `ReplicaRosterRepository` (RosterPort on the replica), `ReplicaMembershipRepository`, `ParkedEventRepository` (plain JDBC, insert only). |
+| `application.replica`, `adapters.in.messaging` | roster replica (WP69, ADR-0037): `CoreRosterConsumer` (channel `core-roster`, seven `core.*` topics) -> common's `ReplicaConsumer` and `CoreEventDecoder` (contract validation, key check, park, retries; WP130, ADR-0062) -> `CoreEventMapper` (payload to `RosterChange`) -> `ApplyRosterEvent` (event's tenant, idempotent, `occurredAt`-ordered); `ReplicaAuthzResolver` (membership like core's `/internal/authz`). |
+| `adapters.out.persistence` (replica) | `RosterReplicaRepository` (upserts of `athlete.*_ref`, V6), `ReplicaRosterRepository` (RosterPort on the replica), `ReplicaMembershipRepository`, `ReplicaBookkeepingProducer` (common's `JdbcReplicaHistory` and `JdbcParkedEvents` on schema `athlete`, WP130). |
 | `adapters.config` | `RosterSourceProducer`: `hoops.roster.source` picks the `RosterPort` and the tenant filter's `AuthzContextResolver`; the port keeps each team's roster for the rest of the request (`RequestMemoRosterPort`, WP127). |
 | `adapters.out.time` | `RegistryTenantClock` (zone of the caller's context on requests, of the registry in jobs), `Clock` producer. |
 
@@ -51,7 +51,7 @@ source scripts/env.sh
 | `hoops.athlete.materialise.cron` | `0 15 2 * * ?` | nightly job (`off` disables) |
 | `hoops.roster.source` | `replica` (`ATHLETE_ROSTER_SOURCE`; since WP98) | `replica` = local replica (needs the consumer); `rest` = core's `/internal` API, the fallback; the test profile pins `rest` |
 | `hoops.roster.consumer.enabled` | `true` (`ATHLETE_ROSTER_CONSUMER_ENABLED`) | the replica consumer (group `athlete-service.roster`); off in the default test profile |
-| `hoops.roster.replica.max-attempts` | `5` | tries per record on a database failure before the channel fails |
+| `hoops.roster.replica.max-attempts` | `5` | tries per record (apply or park) on a database failure, backoff from `first-backoff` (`PT0.5S`) doubling, before the channel fails; one policy with game (ADR-0062) |
 | `kafka.bootstrap.servers` | `KAFKA_BOOTSTRAP_SERVERS`, `localhost:19092` (prod) | broker; `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME` (`athlete-service`), `KAFKA_SASL_PASSWORD` for the chart |
 
 ## Materialisation

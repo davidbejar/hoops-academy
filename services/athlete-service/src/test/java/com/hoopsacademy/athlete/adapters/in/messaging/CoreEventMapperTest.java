@@ -4,16 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hoopsacademy.athlete.adapters.in.messaging.DecodedEvent.Invalid;
-import com.hoopsacademy.athlete.adapters.in.messaging.DecodedEvent.Valid;
 import com.hoopsacademy.athlete.application.replica.RosterChange;
 import com.hoopsacademy.athlete.application.replica.RosterEvent;
-import com.hoopsacademy.athlete.application.replica.RosterTopic;
 import com.hoopsacademy.athlete.domain.Gender;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.support.CoreEvents;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
+import com.hoopsacademy.common.replica.DecodedEvent;
+import com.hoopsacademy.common.replica.DecodedEvent.Invalid;
+import com.hoopsacademy.common.replica.DecodedEvent.Valid;
+import com.hoopsacademy.common.replica.RosterTopic;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import java.io.IOException;
@@ -32,19 +34,23 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Every record of the roster topics is validated against its libs/contracts/events schema before it becomes an event. */
-class CoreEventDecoderTest {
+/**
+ * Every record of the roster topics is validated against its libs/contracts/events schema (common's
+ * {@link CoreEventDecoder}, WP130) before athlete's {@link CoreEventMapper} turns it into an event; the envelope rules
+ * are common's (CoreEventDecoderTest there) and are checked here through athlete's mapper.
+ */
+class CoreEventMapperTest {
 
     static final ObjectMapper JSON = new ObjectMapper();
     static final TenantId TENANT = TenantId.parse("2b1c4e7a-3f6d-4c1e-9a0b-5d2e8f7c6a10");
 
-    final CoreEventDecoder decoder = new CoreEventDecoder(JSON);
+    final CoreEventDecoder<RosterEvent> decoder = new CoreEventDecoder<>(JSON, new CoreEventMapper());
 
     /** The contract's own examples (libs/contracts/events/examples) as (topic, key, value). */
     static Stream<String[]> contractExamples() throws IOException {
         List<String[]> records = new ArrayList<>();
         for (RosterTopic topic : RosterTopic.values()) {
-            try (InputStream in = CoreEventDecoderTest.class.getResourceAsStream(
+            try (InputStream in = CoreEventMapperTest.class.getResourceAsStream(
                     "/events/examples/" + topic.topicName() + ".valid.json")) {
                 for (JsonNode event : JSON.readTree(in)) {
                     records.add(new String[] {topic.topicName(),
@@ -58,10 +64,10 @@ class CoreEventDecoderTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("contractExamples")
     void everyContractExampleDecodes(String topic, String key, String value) {
-        DecodedEvent decoded = decoder.decode(topic, key, value);
+        DecodedEvent<RosterEvent> decoded = decoder.decode(topic, key, value);
 
         assertThat(decoded).isNotInstanceOf(DecodedEvent.Invalid.class);
-        if (decoded instanceof Valid valid) {
+        if (decoded instanceof Valid<RosterEvent> valid) {
             assertThat(valid.event().topic().topicName()).isEqualTo(topic);
             assertThat(valid.event().tenant()).isEqualTo(TENANT);
         }
@@ -94,7 +100,7 @@ class CoreEventDecoderTest {
     }
 
     private static JsonNode removalExample(String topic) throws IOException {
-        try (InputStream in = CoreEventDecoderTest.class.getResourceAsStream("/events/examples/" + topic + ".valid.json")) {
+        try (InputStream in = CoreEventMapperTest.class.getResourceAsStream("/events/examples/" + topic + ".valid.json")) {
             for (JsonNode event : JSON.readTree(in)) {
                 if (event.get("type").asText().endsWith(".removed")) {
                     return event;
@@ -187,7 +193,7 @@ class CoreEventDecoderTest {
         CoreEvents.Record record = CoreEvents.team(TenantId.random(), UUID.randomUUID(), "U12", LocalDate.of(2027, 6, 30));
         String broken = record.value().replace("\"name\":\"U12\"", "\"name\":\"\"");
 
-        DecodedEvent decoded = decoder.decode(record.topic(), record.key(), broken);
+        DecodedEvent<RosterEvent> decoded = decoder.decode(record.topic(), record.key(), broken);
 
         assertThat(decoded).isInstanceOf(Invalid.class);
         assertThat(((Invalid) decoded).eventId()).contains(record.eventId());
@@ -222,7 +228,7 @@ class CoreEventDecoderTest {
         CoreEvents.Record record = CoreEvents.tenant(TenantId.random(), "ACTIVE", "Europe/Madrid");
         String otherTenant = TenantId.random() + ":" + record.json().get("aggregateId").asText();
 
-        DecodedEvent decoded = decoder.decode(record.topic(), otherTenant, record.value());
+        DecodedEvent<RosterEvent> decoded = decoder.decode(record.topic(), otherTenant, record.value());
 
         assertThat(decoded).isInstanceOf(Invalid.class);
         assertThat(((Invalid) decoded).reason()).contains("key");
@@ -236,7 +242,7 @@ class CoreEventDecoderTest {
         CoreEvents.Record record = CoreEvents.tenant(tenant, "ACTIVE", "Europe/Madrid");
         String value = record.value().replace("\"aggregateId\":\"" + tenant + "\"", "\"aggregateId\":\"" + other + "\"");
 
-        DecodedEvent decoded = decoder.decode(record.topic(), tenant + ":" + other, value);
+        DecodedEvent<RosterEvent> decoded = decoder.decode(record.topic(), tenant + ":" + other, value);
 
         assertThat(decoded).isInstanceOf(Invalid.class);
         assertThat(((Invalid) decoded).reason()).contains("tenant event");
@@ -249,7 +255,7 @@ class CoreEventDecoderTest {
 
     @Test
     void malformedJsonIsInvalidWithoutAnEventId() {
-        DecodedEvent decoded = decoder.decode("core.person", "k", "{not json");
+        DecodedEvent<RosterEvent> decoded = decoder.decode("core.person", "k", "{not json");
 
         assertThat(decoded).isInstanceOf(Invalid.class);
         assertThat(((Invalid) decoded).eventId()).isEmpty();
@@ -286,20 +292,20 @@ class CoreEventDecoderTest {
         CoreEvents.Record record = CoreEvents.tenant(TenantId.random(), "ACTIVE", "Europe/Madrid");
         String value = record.value().replace(record.eventId().toString(), "not-a-uuid");
 
-        DecodedEvent decoded = decoder.decode(record.topic(), record.key(), value);
+        DecodedEvent<RosterEvent> decoded = decoder.decode(record.topic(), record.key(), value);
 
         assertThat(decoded).isInstanceOfSatisfying(Invalid.class, invalid -> assertThat(invalid.eventId()).isEmpty());
     }
 
     private RosterEvent valid(String topic, JsonNode event) {
-        DecodedEvent decoded = decoder.decode(topic,
+        DecodedEvent<RosterEvent> decoded = decoder.decode(topic,
                 event.get("tenantId").asText() + ":" + event.get("aggregateId").asText(), event.toString());
         assertThat(decoded).isInstanceOf(Valid.class);
-        return ((Valid) decoded).event();
+        return ((Valid<RosterEvent>) decoded).event();
     }
 
     private static JsonNode example(String topic, int index) throws IOException {
-        try (InputStream in = CoreEventDecoderTest.class.getResourceAsStream("/events/examples/" + topic + ".valid.json")) {
+        try (InputStream in = CoreEventMapperTest.class.getResourceAsStream("/events/examples/" + topic + ".valid.json")) {
             return JSON.readTree(in).get(index);
         }
     }

@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hoopsacademy.athlete.application.TenantRegistry;
-import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent.Outcome;
 import com.hoopsacademy.athlete.application.replica.RosterChange.GuardianLinkChanged;
 import com.hoopsacademy.athlete.application.replica.RosterChange.GuardianLinkRemoved;
 import com.hoopsacademy.athlete.application.replica.RosterChange.PersonChanged;
@@ -22,6 +21,8 @@ import com.hoopsacademy.athlete.application.replica.RosterChange.TenantChanged;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
+import com.hoopsacademy.common.replica.ReplicaOutcome;
+import com.hoopsacademy.common.replica.RosterTopic;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import java.time.Instant;
@@ -71,7 +72,7 @@ class ApplyRosterEventRulesTest {
         RosterEvent event = event(new TenantChanged("ACTIVE", JAKARTA));
         when(store.markApplied(event)).thenReturn(false);
 
-        assertThat(apply.apply(event)).isEqualTo(Outcome.DUPLICATE);
+        assertThat(apply.apply(event)).isEqualTo(ReplicaOutcome.DUPLICATE);
         verify(store, never()).tenant(any(), any());
         verifyNoInteractions(registry);
         assertThat(entered).containsExactly(TENANT);
@@ -80,7 +81,7 @@ class ApplyRosterEventRulesTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void everyChangeGoesToItsOwnWriteAndAnOlderOneIsStale(boolean written) {
-        Outcome expected = written ? Outcome.APPLIED : Outcome.STALE;
+        ReplicaOutcome expected = written ? ReplicaOutcome.APPLIED : ReplicaOutcome.STALE;
         PersonChanged person = new PersonChanged("Ana", Optional.empty(), Set.of(), true);
         PlayerChanged player = new PlayerChanged(PERSON, "Ana", "ACTIVE", Optional.empty(), Optional.empty());
         TeamChanged team = new TeamChanged(UUID.randomUUID(), DAY, "U12");
@@ -139,7 +140,7 @@ class ApplyRosterEventRulesTest {
         when(store.markApplied(event)).thenReturn(true);
         when(store.tenant(event, change)).thenReturn(true);
 
-        assertThat(apply.apply(event)).isEqualTo(Outcome.APPLIED);
+        assertThat(apply.apply(event)).isEqualTo(ReplicaOutcome.APPLIED);
         verify(registry).register(TENANT, JAKARTA);
     }
 
@@ -150,7 +151,7 @@ class ApplyRosterEventRulesTest {
         when(store.markApplied(event)).thenReturn(true);
         when(store.tenant(event, change)).thenReturn(false);
 
-        assertThat(apply.apply(event)).isEqualTo(Outcome.STALE);
+        assertThat(apply.apply(event)).isEqualTo(ReplicaOutcome.STALE);
         verifyNoInteractions(registry);
     }
 

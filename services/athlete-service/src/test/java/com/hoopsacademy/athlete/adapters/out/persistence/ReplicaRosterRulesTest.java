@@ -3,9 +3,9 @@ package com.hoopsacademy.athlete.adapters.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder;
 import com.hoopsacademy.athlete.application.TeamRoster;
 import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent;
+import com.hoopsacademy.athlete.application.replica.RosterEvent;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
@@ -13,9 +13,10 @@ import com.hoopsacademy.athlete.support.CoreEvents;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
 import com.hoopsacademy.common.problem.NotFoundException;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
+import com.hoopsacademy.common.testing.PostgresRlsResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -39,7 +40,7 @@ class ReplicaRosterRulesTest {
     static final LocalDate SEASON_END = LocalDate.now().plusMonths(6);
 
     @Inject ReplicaRosterRepository replica;
-    @Inject CoreEventDecoder decoder;
+    @Inject CoreEventDecoder<RosterEvent> decoder;
     @Inject ApplyRosterEvent apply;
     @Inject TenantScope tenantScope;
 

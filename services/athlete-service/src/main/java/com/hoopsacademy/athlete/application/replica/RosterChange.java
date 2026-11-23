@@ -4,6 +4,7 @@ import com.hoopsacademy.athlete.domain.Gender;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
+import com.hoopsacademy.common.replica.RosterTopic;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import java.time.LocalDate;
 import java.time.ZoneId;

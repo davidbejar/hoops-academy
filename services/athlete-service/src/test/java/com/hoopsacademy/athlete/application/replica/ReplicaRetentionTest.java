@@ -3,15 +3,15 @@ package com.hoopsacademy.athlete.application.replica;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder;
-import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent.Outcome;
 import com.hoopsacademy.athlete.support.CoreEvents;
 import com.hoopsacademy.athlete.support.CoreEvents.Record;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaDb;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.replica.ParkedPosition;
 import com.hoopsacademy.common.replica.ReplicaHistory;
+import com.hoopsacademy.common.replica.ReplicaOutcome;
 import com.hoopsacademy.common.replica.ReplicaRetention;
 import com.hoopsacademy.common.replica.ReplicaRetention.Report;
 import com.hoopsacademy.common.tenancy.TenantId;
@@ -49,7 +49,7 @@ class ReplicaRetentionTest {
 
     @Inject ReplicaHistory history;
     @Inject TenantScope tenantScope;
-    @Inject CoreEventDecoder decoder;
+    @Inject CoreEventDecoder<RosterEvent> decoder;
     @Inject ApplyRosterEvent apply;
 
     ReplicaFeed feed;
@@ -94,7 +94,7 @@ class ReplicaRetentionTest {
         retention(WEEK, MONTH, 100).prune();
 
         assertThat(appliedIds(tenant)).containsExactly(lions.eventId());
-        assertThat(feed.apply(u12)).as("a redelivery after the retention is stale, not applied").isEqualTo(Outcome.STALE);
+        assertThat(feed.apply(u12)).as("a redelivery after the retention is stale, not applied").isEqualTo(ReplicaOutcome.STALE);
         assertThat(ReplicaDb.column(tenant, "select name from athlete.team_ref")).containsExactly("U12 Lions");
     }
 

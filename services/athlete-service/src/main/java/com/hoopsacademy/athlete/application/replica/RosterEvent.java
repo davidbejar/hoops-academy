@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.application.replica;
 
+import com.hoopsacademy.common.replica.RosterTopic;
 import com.hoopsacademy.common.tenancy.TenantId;
 import java.time.Instant;
 import java.util.Objects;

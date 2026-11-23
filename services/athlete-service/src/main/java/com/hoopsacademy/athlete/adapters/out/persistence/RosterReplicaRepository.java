@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
+import com.hoopsacademy.athlete.application.replica.RosterChange;
 import com.hoopsacademy.athlete.application.replica.RosterChange.GuardianLinkChanged;
 import com.hoopsacademy.athlete.application.replica.RosterChange.GuardianLinkRemoved;
 import com.hoopsacademy.athlete.application.replica.RosterChange.PersonChanged;
@@ -9,10 +10,9 @@ import com.hoopsacademy.athlete.application.replica.RosterChange.TeamPlayerChang
 import com.hoopsacademy.athlete.application.replica.RosterChange.TeamStaffChanged;
 import com.hoopsacademy.athlete.application.replica.RosterChange.TeamStaffRemoved;
 import com.hoopsacademy.athlete.application.replica.RosterChange.TenantChanged;
-import com.hoopsacademy.athlete.application.replica.RosterChange;
 import com.hoopsacademy.athlete.application.replica.RosterEvent;
 import com.hoopsacademy.athlete.application.replica.RosterReplicaStore;
-import com.hoopsacademy.athlete.application.replica.RosterTopic;
+import com.hoopsacademy.common.replica.RosterTopic;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;

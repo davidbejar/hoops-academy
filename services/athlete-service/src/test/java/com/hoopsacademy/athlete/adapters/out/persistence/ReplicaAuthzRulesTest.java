@@ -2,16 +2,17 @@ package com.hoopsacademy.athlete.adapters.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder;
 import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent;
 import com.hoopsacademy.athlete.application.replica.ReplicaAuthzResolver;
+import com.hoopsacademy.athlete.application.replica.RosterEvent;
 import com.hoopsacademy.athlete.support.CoreEvents;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
+import com.hoopsacademy.common.testing.PostgresRlsResource;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -37,7 +38,7 @@ class ReplicaAuthzRulesTest {
     static final LocalDate PAST = LocalDate.now().minusMonths(2);
 
     @Inject ReplicaAuthzResolver resolver;
-    @Inject CoreEventDecoder decoder;
+    @Inject CoreEventDecoder<RosterEvent> decoder;
     @Inject ApplyRosterEvent apply;
     @Inject TenantScope tenantScope;
 

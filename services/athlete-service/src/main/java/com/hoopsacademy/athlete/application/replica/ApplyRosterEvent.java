@@ -10,6 +10,7 @@ import com.hoopsacademy.athlete.application.replica.RosterChange.TeamPlayerChang
 import com.hoopsacademy.athlete.application.replica.RosterChange.TeamStaffChanged;
 import com.hoopsacademy.athlete.application.replica.RosterChange.TeamStaffRemoved;
 import com.hoopsacademy.athlete.application.replica.RosterChange.TenantChanged;
+import com.hoopsacademy.common.replica.ReplicaOutcome;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -22,16 +23,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class ApplyRosterEvent {
 
-    /** What applying did. */
-    public enum Outcome {
-        /** The replica now holds the event's state. */
-        APPLIED,
-        /** The eventId was applied before (a redelivery); nothing changed. */
-        DUPLICATE,
-        /** The replica holds a newer state of the aggregate; nothing changed. */
-        STALE
-    }
-
     private final TenantScope tenantScope;
     private final RosterReplicaStore store;
     private final TenantRegistry registry;
@@ -42,12 +33,12 @@ public class ApplyRosterEvent {
         this.registry = registry;
     }
 
-    public Outcome apply(RosterEvent event) {
+    public ReplicaOutcome apply(RosterEvent event) {
         return tenantScope.runAs(event.tenant(), () -> {
             if (!store.markApplied(event)) {
-                return Outcome.DUPLICATE;
+                return ReplicaOutcome.DUPLICATE;
             }
-            return write(event) ? Outcome.APPLIED : Outcome.STALE;
+            return write(event) ? ReplicaOutcome.APPLIED : ReplicaOutcome.STALE;
         });
     }
 

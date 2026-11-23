@@ -2,20 +2,20 @@ package com.hoopsacademy.athlete.application.replica;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder;
 import com.hoopsacademy.athlete.adapters.out.persistence.ReplicaRosterRepository;
 import com.hoopsacademy.athlete.application.TenantRegistry;
-import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent.Outcome;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.support.CoreEvents;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
 import com.hoopsacademy.common.problem.NotFoundException;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.common.testing.RlsTestDatabase;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
+import com.hoopsacademy.common.replica.ReplicaOutcome;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
+import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.RlsTestDatabase;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -44,7 +44,7 @@ class ApplyRosterEventTest {
 
     static final LocalDate SEASON_END = LocalDate.now().plusMonths(6);
 
-    @Inject CoreEventDecoder decoder;
+    @Inject CoreEventDecoder<RosterEvent> decoder;
     @Inject ApplyRosterEvent apply;
     @Inject ReplicaRosterRepository replica;
     @Inject TenantScope tenantScope;
@@ -65,7 +65,7 @@ class ApplyRosterEventTest {
     @Test
     void aNewerEventReplacesTheAggregatesState() {
         assertThat(feed.apply(CoreEvents.team(tenant, team, "U12", SEASON_END),
-                CoreEvents.team(tenant, team, "U12 Lions", SEASON_END))).containsExactly(Outcome.APPLIED, Outcome.APPLIED);
+                CoreEvents.team(tenant, team, "U12 Lions", SEASON_END))).containsExactly(ReplicaOutcome.APPLIED, ReplicaOutcome.APPLIED);
 
         assertThat(roster().teamName()).isEqualTo("U12 Lions");
     }
@@ -75,7 +75,7 @@ class ApplyRosterEventTest {
         CoreEvents.Record first = CoreEvents.team(tenant, team, "U12", SEASON_END);
         CoreEvents.Record second = CoreEvents.team(tenant, team, "U14", SEASON_END);
 
-        assertThat(feed.apply(first, second, first)).containsExactly(Outcome.APPLIED, Outcome.APPLIED, Outcome.DUPLICATE);
+        assertThat(feed.apply(first, second, first)).containsExactly(ReplicaOutcome.APPLIED, ReplicaOutcome.APPLIED, ReplicaOutcome.DUPLICATE);
 
         assertThat(roster().teamName()).isEqualTo("U14");
         assertThat(count("select count(*) from athlete.applied_event where tenant_id = ?")).isEqualTo(3);
@@ -86,7 +86,7 @@ class ApplyRosterEventTest {
         CoreEvents.Record newer = CoreEvents.team(tenant, team, "Newer", SEASON_END);
         CoreEvents.Record older = CoreEvents.team(tenant, team, "Older", SEASON_END).at(newer.occurredAt().minusSeconds(5));
 
-        assertThat(feed.apply(newer, older)).containsExactly(Outcome.APPLIED, Outcome.STALE);
+        assertThat(feed.apply(newer, older)).containsExactly(ReplicaOutcome.APPLIED, ReplicaOutcome.STALE);
 
         assertThat(roster().teamName()).isEqualTo("Newer");
     }
@@ -96,7 +96,7 @@ class ApplyRosterEventTest {
         CoreEvents.Record newer = CoreEvents.team(tenant, team, "Newer", SEASON_END);
         CoreEvents.Record older = CoreEvents.team(tenant, team, "Older", SEASON_END).at(newer.occurredAt().minusSeconds(5));
 
-        assertThat(feed.apply(newer, older, older)).containsExactly(Outcome.APPLIED, Outcome.STALE, Outcome.DUPLICATE);
+        assertThat(feed.apply(newer, older, older)).containsExactly(ReplicaOutcome.APPLIED, ReplicaOutcome.STALE, ReplicaOutcome.DUPLICATE);
     }
 
     @Test
@@ -104,7 +104,7 @@ class ApplyRosterEventTest {
         CoreEvents.Record first = CoreEvents.team(tenant, team, "First", SEASON_END);
         CoreEvents.Record sameInstant = CoreEvents.team(tenant, team, "Same instant", SEASON_END).at(first.occurredAt());
 
-        assertThat(feed.apply(first, sameInstant)).containsExactly(Outcome.APPLIED, Outcome.APPLIED);
+        assertThat(feed.apply(first, sameInstant)).containsExactly(ReplicaOutcome.APPLIED, ReplicaOutcome.APPLIED);
 
         assertThat(roster().teamName()).isEqualTo("Same instant");
     }
@@ -117,7 +117,7 @@ class ApplyRosterEventTest {
         CoreEvents.Record removed = CoreEvents.teamStaffRemoved(tenant, team, coach);
 
         assertThat(feed.apply(added, removed, added.at(removed.occurredAt().minusSeconds(1))))
-                .containsExactly(Outcome.APPLIED, Outcome.APPLIED, Outcome.STALE);
+                .containsExactly(ReplicaOutcome.APPLIED, ReplicaOutcome.APPLIED, ReplicaOutcome.STALE);
 
         assertThat(roster().staff()).isEmpty();
     }
@@ -138,7 +138,7 @@ class ApplyRosterEventTest {
         CoreEvents.Record removed = CoreEvents.teamStaffRemoved(tenant, team, coach);
         CoreEvents.Record olderAdd = CoreEvents.teamStaff(tenant, team, coach, "COACH").at(removed.occurredAt().minusSeconds(1));
 
-        assertThat(feed.apply(removed, olderAdd)).containsExactly(Outcome.APPLIED, Outcome.STALE);
+        assertThat(feed.apply(removed, olderAdd)).containsExactly(ReplicaOutcome.APPLIED, ReplicaOutcome.STALE);
 
         assertThat(roster().staff()).isEmpty();
     }
@@ -158,9 +158,9 @@ class ApplyRosterEventTest {
                 CoreEvents.removed(tenant, "person", person), CoreEvents.removed(tenant, "player", player),
                 CoreEvents.removed(tenant, "team", team), CoreEvents.removed(tenant, "team-player", assignment));
 
-        assertThat(feed.apply(removals.toArray(CoreEvents.Record[]::new))).containsOnly(Outcome.APPLIED);
+        assertThat(feed.apply(removals.toArray(CoreEvents.Record[]::new))).containsOnly(ReplicaOutcome.APPLIED);
         assertThat(feed.apply(changes.toArray(CoreEvents.Record[]::new))).as("built before the removals: older")
-                .containsOnly(Outcome.STALE);
+                .containsOnly(ReplicaOutcome.STALE);
 
         assertThat(count("select count(*) from athlete.tenant_ref where tenant_id = ? and removed and status is null "
                 + "and timezone is null")).isEqualTo(1);
@@ -180,7 +180,7 @@ class ApplyRosterEventTest {
         feed.apply(CoreEvents.team(tenant, team, "U12", SEASON_END), CoreEvents.removed(tenant, "team", team));
         assertNotFound(this::roster);
 
-        assertThat(feed.apply(CoreEvents.team(tenant, team, "U12 again", SEASON_END))).isEqualTo(Outcome.APPLIED);
+        assertThat(feed.apply(CoreEvents.team(tenant, team, "U12 again", SEASON_END))).isEqualTo(ReplicaOutcome.APPLIED);
 
         assertThat(roster().teamName()).isEqualTo("U12 again");
     }
@@ -198,7 +198,7 @@ class ApplyRosterEventTest {
         UUID player = UUID.randomUUID();
         UUID assignment = UUID.randomUUID();
         UUID link = UUID.randomUUID();
-        List<Outcome> outcomes = feed.apply(
+        List<ReplicaOutcome> outcomes = feed.apply(
                 CoreEvents.person(tenant, person, "Pablo Player", "kc-" + person, List.of("PLAYER"), true),
                 CoreEvents.player(tenant, player, person, "Pablo Player", "ACTIVE", LocalDate.of(2014, 3, 9), "MALE"),
                 CoreEvents.team(tenant, team, "U12", SEASON_END),
@@ -207,7 +207,7 @@ class ApplyRosterEventTest {
                 CoreEvents.guardianLink(tenant, link, UUID.randomUUID(), player),
                 CoreEvents.guardianLinkRemoved(tenant, link, UUID.randomUUID(), player));
 
-        assertThat(outcomes).containsOnly(Outcome.APPLIED);
+        assertThat(outcomes).containsOnly(ReplicaOutcome.APPLIED);
         assertThat(roster().playerIds()).containsExactly(new PlayerId(player));
         assertThat(count("select count(*) from athlete.guardian_link_ref where tenant_id = ? and removed")).isEqualTo(1);
     }

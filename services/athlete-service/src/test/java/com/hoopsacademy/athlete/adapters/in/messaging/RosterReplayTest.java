@@ -35,9 +35,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Replay (ADR-0037, runbook "Replay the athlete replica"): with the replica emptied and the consumer group moved to the
- * start of the topics, the replica is rebuilt from the compacted topics alone and equals what it was before, including
- * removals, redeliveries and late older events in the stream.
+ * Replay (ADR-0037, runbook "Replay (rebuild a replica from the topics)"): with the replica emptied and the consumer
+ * group moved to the start of the topics, the replica is rebuilt from the compacted topics alone and equals what it was
+ * before, including removals, redeliveries and late older events in the stream.
  */
 @QuarkusTest
 @TestProfile(ReplicaProfile.class)

@@ -2,12 +2,13 @@ package com.hoopsacademy.athlete.adapters.in.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder;
 import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent;
+import com.hoopsacademy.athlete.application.replica.RosterEvent;
 import com.hoopsacademy.athlete.support.CoreEvents;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaDb;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import io.micrometer.core.instrument.Counter;
@@ -33,7 +34,7 @@ class ReplicaRetentionJobTest {
 
     @Inject ReplicaRetentionJob job;
     @Inject MeterRegistry metrics;
-    @Inject CoreEventDecoder decoder;
+    @Inject CoreEventDecoder<RosterEvent> decoder;
     @Inject ApplyRosterEvent apply;
 
     @Test
