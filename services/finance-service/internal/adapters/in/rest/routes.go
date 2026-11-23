@@ -102,7 +102,7 @@ func (h *handler) putSettings(w http.ResponseWriter, r *http.Request, caller dom
 		return
 	}
 	if body.Currency == nil {
-		writeProblem(w, r, validation, "VALIDATION_FAILED", "", []violation{{"currency", "REQUIRED", messageOf("REQUIRED")}})
+		writeProblem(w, r, validation, "VALIDATION_FAILED", "", []violation{missing("currency")})
 		return
 	}
 	view, err := h.Finance.UpdateSettings(r.Context(), caller, *body.Currency)
@@ -247,16 +247,8 @@ func (h *handler) createPlan(w http.ResponseWriter, r *http.Request, caller doma
 
 // input checks what the domain cannot: presence and the uuid format of the ids.
 func (b createPlanBody) input() (domain.FeePlanInput, []violation) {
-	var v []violation
-	required := func(field string, present bool) {
-		if !present {
-			v = append(v, violation{field, "REQUIRED", messageOf("REQUIRED")})
-		}
-	}
-	required("name", b.Name != nil)
-	required("seasonId", b.SeasonID != nil)
-	required("amountMinor", b.AmountMinor != nil)
-	required("cadence", b.Cadence != nil)
+	v := required(field{"name", b.Name != nil}, field{"seasonId", b.SeasonID != nil},
+		field{"amountMinor", b.AmountMinor != nil}, field{"cadence", b.Cadence != nil})
 	optionalID := func(field string, raw *string) *domain.UUID {
 		if raw == nil {
 			return nil

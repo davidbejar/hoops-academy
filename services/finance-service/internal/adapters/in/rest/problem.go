@@ -39,6 +39,26 @@ type violation struct {
 	Message string `json:"message"`
 }
 
+// field is a required property of a request and whether the request gave it.
+type field struct {
+	name    string
+	present bool
+}
+
+// missing is the REQUIRED violation of a property.
+func missing(name string) violation { return violation{name, "REQUIRED", messageOf("REQUIRED")} }
+
+// required names the absent fields, in the order given (the contract's).
+func required(fields ...field) []violation {
+	var v []violation
+	for _, f := range fields {
+		if !f.present {
+			v = append(v, missing(f.name))
+		}
+	}
+	return v
+}
+
 type problem struct {
 	Type       string      `json:"type"`
 	Title      string      `json:"title"`

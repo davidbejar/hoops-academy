@@ -163,7 +163,7 @@ func (h *handler) generateDues(w http.ResponseWriter, r *http.Request, caller do
 		return
 	}
 	if body.Period == nil {
-		writeProblem(w, r, validation, "VALIDATION_FAILED", "", []violation{{"period", "REQUIRED", messageOf("REQUIRED")}})
+		writeProblem(w, r, validation, "VALIDATION_FAILED", "", []violation{missing("period")})
 		return
 	}
 	preview := body.Preview != nil && *body.Preview
@@ -302,7 +302,7 @@ func reasonOf(w http.ResponseWriter, r *http.Request) (string, bool) {
 		return "", false
 	}
 	if body.Reason == nil {
-		writeProblem(w, r, validation, "VALIDATION_FAILED", "", []violation{{"reason", "REQUIRED", messageOf("REQUIRED")}})
+		writeProblem(w, r, validation, "VALIDATION_FAILED", "", []violation{missing("reason")})
 		return "", false
 	}
 	return *body.Reason, true
@@ -316,7 +316,7 @@ func (h *handler) changeDueAmount(w http.ResponseWriter, r *http.Request, caller
 	if !decode(w, r, &body) {
 		return
 	}
-	if v := required(map[string]bool{"amountMinor": body.AmountMinor != nil, "reason": body.Reason != nil}); len(v) > 0 {
+	if v := required(field{"amountMinor", body.AmountMinor != nil}, field{"reason", body.Reason != nil}); len(v) > 0 {
 		writeProblem(w, r, validation, "VALIDATION_FAILED", "", v)
 		return
 	}
@@ -340,7 +340,7 @@ func (h *handler) payDue(w http.ResponseWriter, r *http.Request, caller domain.M
 	if !decode(w, r, &body) {
 		return
 	}
-	v := required(map[string]bool{"paidOn": body.PaidOn != nil, "method": body.Method != nil})
+	v := required(field{"paidOn", body.PaidOn != nil}, field{"method", body.Method != nil})
 	var paidOn time.Time
 	if body.PaidOn != nil {
 		var err error
@@ -362,15 +362,4 @@ func (h *handler) voidPayment(w http.ResponseWriter, r *http.Request, caller dom
 		view, err := h.Finance.VoidPayment(r.Context(), caller, domain.PaymentID(id), reason)
 		h.answerDue(w, r, view, err)
 	}
-}
-
-// required names the absent properties of present (field -> given), in the order of the contract's lists.
-func required(present map[string]bool) []violation {
-	var v []violation
-	for _, field := range []string{"period", "amountMinor", "reason", "paidOn", "method"} {
-		if given, asked := present[field]; asked && !given {
-			v = append(v, violation{field, "REQUIRED", messageOf("REQUIRED")})
-		}
-	}
-	return v
 }

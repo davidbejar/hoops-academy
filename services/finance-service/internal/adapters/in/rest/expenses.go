@@ -92,16 +92,8 @@ func (h *handler) createExpense(w http.ResponseWriter, r *http.Request, caller d
 	if !decode(w, r, &body) {
 		return
 	}
-	var v []violation
-	for _, field := range []struct {
-		name    string
-		present bool
-	}{{"spentOn", body.SpentOn != nil}, {"category", body.Category != nil}, {"amountMinor", body.AmountMinor != nil},
-		{"description", body.Description != nil}} {
-		if !field.present {
-			v = append(v, violation{field.name, "REQUIRED", messageOf("REQUIRED")})
-		}
-	}
+	v := required(field{"spentOn", body.SpentOn != nil}, field{"category", body.Category != nil},
+		field{"amountMinor", body.AmountMinor != nil}, field{"description", body.Description != nil})
 	var spentOn time.Time
 	if body.SpentOn != nil {
 		var err error
@@ -202,7 +194,7 @@ func (h *handler) seasonBalance(w http.ResponseWriter, r *http.Request, caller d
 	q := newQuery(r)
 	season := q.uuid("seasonId")
 	if season == nil && q.values.Get("seasonId") == "" {
-		q.violations = append(q.violations, violation{"seasonId", "REQUIRED", messageOf("REQUIRED")})
+		q.violations = append(q.violations, missing("seasonId"))
 	}
 	if q.failed(w, r) {
 		return
