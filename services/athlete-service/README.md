@@ -1,8 +1,10 @@
 # athlete-service
 
-Training schedules, sessions, attendance and planned absences (WP8). Plans, completions, injuries, body measurements
-and physical tests follow in WP9 / WP10 (their operations exist in `libs/contracts/openapi/athlete.yaml` and are not
-implemented yet). Port 8083, schema `athlete`, app role `athlete_app`, migrations as `athlete_migrator`.
+Training and athlete data of an academy: schedules, sessions, attendance and planned absences (WP8), training plans,
+assignments, completions and the exercise catalogue (WP9, WP92), injuries, body measurements and physical tests with
+their norms (WP10). Contract `libs/contracts/openapi/athlete.yaml`. Port 8083, schema `athlete`, app role
+`athlete_app`, migrations as `athlete_migrator`. Roster and membership come from a local replica of core's events by
+default (ADR-0037), core's `/internal` REST API being the fallback.
 
 ```
 source scripts/env.sh
@@ -13,20 +15,17 @@ source scripts/env.sh
 ## Layout (`com.hoopsacademy.athlete`)
 | Package | Content |
 |---|---|
-| `domain` | `TrainingSchedule`, `TrainingSession`, `Attendance`, `PlannedAbsence`, `AttendanceSheet` (planned-absence overlay), `SessionMaterialiser` (pure, `ZonedDateTime` in the tenant zone), id value objects. No framework imports. |
-| `application` | use cases (`ManageSchedules`, `MaterialiseSessions`, `NightlyMaterialisation`, `ManageSessions`, `ManageAttendance`, `ManagePlannedAbsences`, `ReportUsage`), `TrainingAccess` (authz matrix), ports `ScheduleRepository`, `SessionRepository`, `AttendanceRepository`, `AbsenceRepository`, `RosterPort`, `TenantClock`, `TenantRegistry`. |
-| `adapters.in.rest` | JAX-RS resources, DTOs, `PatchBody` (absent vs null in PATCH), Problem mappers. |
+| `domain` | Training: `TrainingSchedule`, `TrainingSession`, `Attendance`, `PlannedAbsence`, `AttendanceSheet` (planned-absence overlay), `SessionMaterialiser` (pure, `ZonedDateTime` in the tenant zone). Plans: `TrainingPlan`, `PlanItem`, `PlanAssignment`, `PlanCompletion`, `Exercise`. Health: `Injury`, `BodyMeasurement`, `PhysicalTestType`, `PhysicalTestResult`, `PhysicalTestNorm`, `BandResolver`. Id value objects. No framework imports. |
+| `application` | use cases (`ManageSchedules`, `MaterialiseSessions`, `NightlyMaterialisation`, `ManageSessions`, `ManageAttendance`, `ManagePlannedAbsences`, `ManagePlans`, `ManageAssignments`, `ManageCompletions`, `ManageExercises`, `QuickAddItems`, `ManageInjuries`, `ManageMeasurements`, `ManageTestTypes`, `ManageTestResults`, `ManageNorms`, `ReportUsage`), the authz matrix (`TrainingAccess`, `PlanAccess`, `HealthAccess`, `PastSeasons`), ports (`*Repository`, `RosterPort`, `TenantClock`, `TenantRegistry`). |
+| `adapters.in.rest` | JAX-RS resources, DTOs, `PatchBody` (absent vs null in PATCH), `AcceptLanguage`, Problem mappers. |
 | `adapters.in.internal` | `GET /internal/usage/{tenantId}` (role `service`). |
-| `adapters.in.job` | `@Scheduled` nightly materialisation. |
-| `adapters.out.persistence` | Hibernate entities (`@TenantId String tenantId`, ADR-0011) and repositories; `TenantRegistryRepository` is plain JDBC. |
-| `adapters.out.client` | `CoreRosterAdapter` (RosterPort mapping over common-quarkus' shared `CoreRosterClient`; the membership resolver is common's `RosterAuthzResolver`). |
+| `adapters.in.job` | `@Scheduled` nightly materialisation and replica retention. |
+| `adapters.out.persistence` | Hibernate entities (`@TenantId String tenantId`, ADR-0011) and repositories (`PagedQuery` for the filtered, paged searches, `LikePattern` for free-text terms); `TenantRegistryRepository` is plain JDBC. |
+| `adapters.out.client` | `CoreRosterAdapter` (RosterPort mapping over common-quarkus' shared `CoreRosterClient`; the REST membership resolver is common's `RosterAuthzResolver`). |
 | `application.replica`, `adapters.in.messaging` | roster replica (WP69, ADR-0037): `CoreRosterConsumer` (channel `core-roster`, seven `core.*` topics) -> `CoreEventDecoder` (contract validation, key check) -> `ApplyRosterEvent` (event's tenant, idempotent, `occurredAt`-ordered); `ReplicaAuthzResolver` (membership like core's `/internal/authz`). |
 | `adapters.out.persistence` (replica) | `RosterReplicaRepository` (upserts of `athlete.*_ref`, V6), `ReplicaRosterRepository` (RosterPort on the replica), `ReplicaMembershipRepository`, `ParkedEventRepository` (plain JDBC, insert only). |
-| `adapters.config` | `RosterSourceProducer`: `hoops.roster.source` picks the `RosterPort` and the tenant filter's `AuthzContextResolver`. |
-| `adapters.out.time` | `RegistryTenantClock`, `Clock` producer. |
-
-New WP9/WP10 code adds sibling packages/classes in the same layers (e.g. `domain.plan`, `application.ManagePlans`,
-entities + `V2__...sql`) and reuses `TrainingAccess`, `RosterPort`, `CallerActor`, `PatchBody`, `PageDto`.
+| `adapters.config` | `RosterSourceProducer`: `hoops.roster.source` picks the `RosterPort` and the tenant filter's `AuthzContextResolver`; the port keeps each team's roster for the rest of the request (`RequestMemoRosterPort`, WP127). |
+| `adapters.out.time` | `RegistryTenantClock` (zone of the caller's context on requests, of the registry in jobs), `Clock` producer. |
 
 ## Operations (WP17)
 - `/q/health/live`, `/q/health/ready` (datasource check + `core-service` indicator), `/q/health/started`
@@ -47,7 +46,7 @@ entities + `V2__...sql`) and reuses `TrainingAccess`, `RosterPort`, `CallerActor
 | `quarkus.oidc.*` / `quarkus.oidc-client.*` | `KEYCLOAK_URL`, client `athlete-service`, `ATHLETE_SERVICE_CLIENT_SECRET` | end-user JWT validation / client credentials for `/internal` calls |
 | `hoops.core.url` | `http://localhost:8081` | core-service base URL |
 | `hoops.core.cache-ttl` | `30S` | cache of the shared core client (common-quarkus default) |
-| `hoops.athlete.default-timezone` | `Europe/Madrid` | tenant zone only when the caller's `AuthzContext` carries none (older core) |
+| `hoops.athlete.default-timezone` | `Europe/Madrid` | last-resort tenant zone, only for a zone this JVM does not know (requests use the caller's `AuthzContext.timezone`, jobs the registry) |
 | `hoops.athlete.horizon-weeks` | `8` | materialisation horizon |
 | `hoops.athlete.materialise.cron` | `0 15 2 * * ?` | nightly job (`off` disables) |
 | `hoops.roster.source` | `replica` (`ATHLETE_ROSTER_SOURCE`; since WP98) | `replica` = local replica (needs the consumer); `rest` = core's `/internal` API, the fallback; the test profile pins `rest` |
@@ -65,7 +64,8 @@ deletes its future PLANNED sessions without attendance.
 The nightly job needs the list of tenants. This service has no platform datasource, so it keeps the global table
 `athlete.tenant_registry (id, timezone)` (no `tenant_id` column, no RLS, declared in `RlsSchemaMetaTest.globalTables()`).
 A tenant is registered (with the zone from the caller's `AuthzContext.timezone`) when a schedule or ad-hoc session is
-created. The job runs under `TenantScope.runExclusive("athlete.materialisation", ...)` (one replica at a time, Postgres
+created or a schedule changed (the row is rewritten only when the zone changed), and by the replica on
+`core.tenant` events. The job runs under `TenantScope.runExclusive("athlete.materialisation", ...)` (one replica at a time, Postgres
 advisory lock) and each tenant through `TenantScope.runAs` so RLS applies.
 
 ## Training plans (WP9)
@@ -81,7 +81,9 @@ assignment is expanded against the CURRENT roster when read. `POST /training-pla
 status plus one line per visible target.
 
 ## Contract notes (WP2c closed the earlier gaps)
-1. **Tenant time zone** comes from `AuthzContext.timezone` (core); `hoops.athlete.default-timezone` is only a fallback.
+1. **Tenant time zone** comes from `AuthzContext.timezone` (core's contract requires it; the replica resolver sets it),
+   read on the request without a query; `hoops.athlete.default-timezone` is only the last resort for a zone the JVM
+   does not know.
 2. **Teams of a player**: `AuthzContext.playerTeamIds` (core). PARENT/PLAYER list calls without `teamId` return the
    sessions/schedules of those teams (empty when there are none); single-team access accepts a team in
    `playerTeamIds` and otherwise still looks for the caller's players in `GET /internal/teams/{id}/roster`.
@@ -94,8 +96,13 @@ status plus one line per visible target.
   `RosterAuthzResolver` (common-quarkus) in every `@QuarkusTest`; the production resolver is unit-tested in common and
   exercised here by `RealResolverApiTest` (`@TestProfile` that sets `quarkus.arc.exclude-types` for the test
   resolver, with membership served by WireMock).
-* core-service and the Keycloak token endpoint are WireMock (`CoreMockResource`, stubs via `CoreStubs`); the adapter
-  cache is cleared with `CoreRosterAdapter.clearCache()` between tests.
+* core-service and the Keycloak token endpoint are WireMock (`CoreMockResource`, stubs via `CoreStubs`);
+  `CoreStubs.reset()` also clears common's `CoreRosterClient` cache (`clearClientCache()` for a change within a test).
+  Every `@QuarkusTest` outside the Kafka and real-resolver profiles lists both `PostgresRlsResource` and
+  `CoreMockResource`, so they share one Quarkus boot.
+* `ApiSupport.member(...)` builds contexts with a tenant zone (`ApiSupport.ZONE`), as core always sends one;
+  `@TenantUser` without `timezone` exercises the last-resort zone. A test method runs in a request context, so the
+  request memo of `RosterPort` spans the whole method.
 * All REST Assured calls go through `ApiSupport.api(tenant)`, which validates request and response against
   `/openapi/athlete.yaml` (swagger-request-validator); `lenient(...)` validates only the response, for deliberately
   invalid requests.

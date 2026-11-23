@@ -11,7 +11,7 @@
   </parent>
   <artifactId>athlete-service</artifactId>
   <name>Hoops Academy :: athlete-service</name>
-  <description>Training schedules, sessions, attendance, planned absences (health and fitness follow in WP9/WP10)</description>
+  <description>Training (schedules, sessions, attendance, planned absences, plans, exercises) and athlete health and fitness (injuries, measurements, physical tests)</description>
 
   <properties>
     <!-- not managed by the parent / Quarkus BOM -->
