@@ -56,3 +56,54 @@ Not yours: generated clients; goldens change only if the seeded data must differ
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+- **Built** (all under `apps/web`; ADR-0070)
+  - **Seeding (scope 1).** `MockApiAdapter` takes `demo` (false: both academies and the platform start empty;
+    `MockAcademy.empty` makes the core, athlete and game mocks skip their seed), `tenantAId` (the test academy's id)
+    and `latency` (zero in tests). The mocks expose the collections the tests seed as `@visibleForTesting` (core:
+    `auditEvents`; platform: `tenants`, `admins`, `auditEvents`, `academyRequests`, `usageOf`, `historyOf`,
+    `logins`; the adapter: `academy(id)`, `platform`). `apiAdapterProvider` (`core/http/dio_provider.dart`) is the
+    one seam the app's Dio sends through. `test/support/mock_backend.dart`: `MockBackend`, the empty mock with
+    failure injection (`fail` status/code/once, `hang` released on demand, `networkDown`, `heal`), a request log
+    (`requestsTo`, `lastQuery`, `lastBody`) and the mock's answers (`lastAnswer`); `coreJson` turns generated models
+    into seeds. The `Harness` installs a `MockBackend` (roles, super admin and academy of the test user) behind every
+    repository it does not fake. Seed helpers: `audit_seed.dart`, `platform_seed.dart` (the former fixture builders).
+  - **Release (scope 1).** `tool/verify_no_mock.dart` (run by `build_web.sh` after the build) fails when
+    `main.dart.js` or a deferred part holds a string only the mock API has; `verify_no_mock_test.dart`. Checked on
+    real builds: the release build passes, a `HOOPS_MOCK_API=true` build fails on both markers.
+  - **Migrated (scope 2), one commit each, fake deleted:** activity log (`fake_audit.dart`, 3 test files), academy
+    requests (`fake_academy_requests.dart`, 5 files), platform console (`fake_platform.dart`, 11 files incl.
+    `platform_test.dart`, users, goldens, a provider unit test). Failures the mock can produce are produced by it
+    (taken slug, request decided meanwhile, invitation accepted meanwhile, last administrator removed meanwhile).
+  - **Mock and fake differed (decided against `core.yaml`, red test first, the fake was right each time, mock fixed):**
+    1. the academy trail ignored `action` / `from` / `to` (`listAuditEvents`): now filtered, 400 when `from` ≥ `to`;
+    2. an e-mail that already signs in still got a temporary password (`createTenant`, `addTenantAdmin`): now none,
+       invitation ACCEPTED; 3. the last administrator could be removed: now 409 `LAST_ADMIN` (`removeTenantAdmin`).
+- **Verified** (fresh, 2026-11-24): `flutter analyze` no issues; `just web-format-check` 527 files, 0 changed;
+  `just web-test` **1939 passed, 0 failed, 0 skipped** (baseline at the start 1921 passed). +18 tests, none removed: 1 trail filter, 3
+  administrator rules, 7 `mock_backend_test`, 7 `verify_no_mock_test`; every migrated file has the same test count as
+  before (audit 30, requests 63, platform files unchanged; whole suite 1939 after each feature commit, run on a copy
+  of the tree). Goldens re-recorded: the three `temporary_password_*` only (the dialog shows the mock's password,
+  which wraps on one line fewer); every other golden of the migrated screens passes as recorded.
+  - Fake lines (the seven files of the verification): 3,565 at the start (3,580 in the audit, `fake_finance.dart`
+    has shrunk since) → **2,937** left (`fake_repos` 825, `fake_athlete` 1,529, `fake_game` 326, `fake_finance`
+    257). Added: `mock_backend.dart` 237, `audit_seed.dart` 69, `platform_seed.dart` 162 (about 100 of them the
+    moved builders), `problems.dart` 19.
+- **Decisions/ADRs**: ADR-0070 (amends ADR-0030), appended to `docs/adr/README.md`.
+- **Open points / not done**
+  - **Core, athlete, game, finance keep their fakes** (2,937 lines): not done for time, in this order next. Core
+    first: the athlete and game mocks take authz (staff rows, guardian links, the own player) and rosters from the
+    core mock, so they need a `seedMembership` that makes the core mock's authz match the test membership
+    (`staffTeamIds`, `linkedPlayerIds`, `ownPlayerId`) before their tests can move; then roster/admin screens
+    (`fake_repos.dart`, 47 files), game (12), athlete (20). Finance: `FakeFinanceRepository` already wraps the real
+    repository over the mock (no second imitation of the rules), but over the *demo* seed; moving it means explicit
+    finance seeds in an empty academy.
+  - `MockAuthService` is compiled into the release bundle (unreachable: the guard refuses mock mode); the new check
+    covers the mock API only. Making it drop out needs a const guard that the tests' `appConfigProvider` override
+    would no longer reach (owner's call).
+  - The platform mock answers 409 `ALREADY_ADMIN` (not in the contract) for an e-mail that is already an
+    administrator; no test needs it, left as is.
+  - FOLLOW-UPS l.519 (mock 409 vs service 404 for the season balance) belongs to the finance move, still open.
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| WEB-02 | Done (part) | Tests on the seeded demo mock (ADR-0070); audit, academy-request and platform fakes deleted (628 lines); 3 mock/contract differences fixed; core, athlete, game and finance fakes (2,937 lines) left for follow-up WPs |
