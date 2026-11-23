@@ -25,11 +25,11 @@ throwaway_pg_start() {
 
 psql_in() { podman exec -i -e PGOPTIONS="-c client_min_messages=warning" "$CONTAINER" psql -X -q -v ON_ERROR_STOP=1 -U "$1" -d hoops "${@:2}"; }
 
+# shellcheck disable=SC2010 # file names are V<n>__<snake_case>.sql (CLAUDE.md), no odd characters
 apply_migrations() {
   local dir="$1" role="$2" f
   while IFS= read -r f; do
     psql_in "$role" < "$dir/$f" >/dev/null || { echo "$TPG_NAME: $f failed" >&2; return 1; }
-  # shellcheck disable=SC2010 # file names are V<n>__<snake_case>.sql (CLAUDE.md), no odd characters
   done < <({ ls "$dir" | grep -E '^V[0-9]+__' | sort -t_ -k1.2 -n; ls "$dir" | grep -E '^R__' | sort; })
 }
 
