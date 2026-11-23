@@ -96,6 +96,27 @@ class RosterReplicaSchemaTest {
                 .hasSize(1);
     }
 
+    /**
+     * WP130 (ADR-0062): {@code parked_event} has one shape in game and athlete, so the shared store and one runbook
+     * procedure serve both: the record's position in its topic is the primary key, no surrogate id.
+     */
+    @Test
+    void theParkingTableHasTheSharedShape() throws SQLException {
+        try (Connection owner = RlsTestDatabase.fromConfig().openAsMigrator();
+                PreparedStatement columns = owner.prepareStatement("""
+                        select column_name from information_schema.columns
+                         where table_schema = 'game' and table_name = 'parked_event' order by ordinal_position""");
+                PreparedStatement key = owner.prepareStatement("""
+                        select a.attname from pg_index i
+                          join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any (i.indkey)
+                         where i.indrelid = 'game.parked_event'::regclass and i.indisprimary
+                         order by array_position(i.indkey::smallint[], a.attnum)""")) {
+            assertThat(names(columns)).containsExactly("topic", "partition", "kafka_offset", "record_key", "event_id",
+                    "reason", "parked_at", "inspected_at");
+            assertThat(names(key)).containsExactly("topic", "partition", "kafka_offset");
+        }
+    }
+
     /** WP82: the global list of the replica's tenants is append-only for the app role. */
     @Test
     void theAppRoleMayListAndAddReplicaTenantsButNeverChangeThem() throws SQLException {

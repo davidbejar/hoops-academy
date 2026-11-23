@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hoopsacademy.common.client.CoreMembership.TenantStatus;
+import com.hoopsacademy.common.replica.CoreEventDecoder;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.game.adapters.in.messaging.RosterEventDecoder.Decoded;
@@ -202,7 +203,8 @@ class RosterEventDecoderTest {
         String aggregate = team.get("aggregateId").asText();
 
         assertThat(decoder.decode("core.team", aggregate, value)).isInstanceOfSatisfying(Decoded.Invalid.class,
-                invalid -> assertThat(invalid.reason()).contains("key"));
+                invalid -> assertThat(invalid.reason()).contains("key").as("no record value in a reason (ADR-0062)")
+                        .doesNotContain(aggregate));
         assertThat(decoder.decode("core.team", TenantId.random() + ":" + aggregate, value))
                 .isInstanceOf(Decoded.Invalid.class);
         assertThat(decoder.decode("core.team", null, value)).isInstanceOf(Decoded.Invalid.class);
@@ -227,7 +229,7 @@ class RosterEventDecoderTest {
         ((ObjectNode) tenant.get("payload")).put("timezone", "Mars/Olympus_Mons");
 
         assertThat(decode("core.tenant", tenant)).isInstanceOfSatisfying(Decoded.Invalid.class,
-                invalid -> assertThat(invalid.reason()).contains("time zone"));
+                invalid -> assertThat(invalid.reason()).startsWith("value outside the contract").doesNotContain("Mars"));
     }
 
     @Test
@@ -239,14 +241,18 @@ class RosterEventDecoderTest {
                 .isInstanceOfSatisfying(Decoded.Invalid.class, invalid -> assertThat(invalid.reason()).contains("topic"));
     }
 
+    /** ADR-0062: one reason policy for game and athlete: at most five schema errors, 500 characters, no values. */
     @Test
-    void aLongReasonIsCutToTheParkedRecordsLimit() {
+    void aReasonIsBoundedAndNamesNoValueOfTheRecord() {
         String topic = "core." + "x".repeat(2_000);
+        String everythingWrong = "{\"" + "a".repeat(300) + "\":1,\"" + "b".repeat(300) + "\":2,\"c\":3,\"d\":4,\"e\":5,"
+                + "\"f\":6}";
 
         assertThat(decoder.decode(topic, TENANT + ":x", "{}")).isInstanceOfSatisfying(Decoded.Invalid.class,
-                invalid -> assertThat(invalid.reason()).hasSize(1_000).startsWith("unknown topic core.xxx"));
-        assertThat(decoder.decode("core.unknown", TENANT + ":x", "{}")).isInstanceOfSatisfying(Decoded.Invalid.class,
-                invalid -> assertThat(invalid.reason()).isEqualTo("unknown topic core.unknown"));
+                invalid -> assertThat(invalid.reason()).isEqualTo("not a roster topic"));
+        assertThat(decoder.decode("core.team", TENANT + ":x", everythingWrong)).isInstanceOfSatisfying(
+                Decoded.Invalid.class, invalid -> assertThat(invalid.reason())
+                        .hasSize(CoreEventDecoder.MAX_REASON_LENGTH));
     }
 
     private RosterEvent event(String topic, int index) {
