@@ -39,9 +39,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * An event batch reads the match's events once and re-projects from them (GAME-01, WP126): no second read, no score
- * query under the lock, and only the {@code voided_by} marks that changed are written, in one batch statement (a VOID's
- * target may arrive after the VOID, so a batch without a VOID can change a mark too). Statements are counted on the
- * repositories' JDBC funnel, which the spies record.
+ * query under the lock, no bookkeeping row per event (GAME-02), and only the {@code voided_by} marks that changed are
+ * written, in one batch statement (a VOID's target may arrive after the VOID, so a batch without a VOID can change a
+ * mark too). Statements are counted on the repositories' JDBC funnel, which the spies record.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "game"))
@@ -75,9 +75,10 @@ class IngestBatchStatementsTest {
         post(match, script.subList(3, 4));
 
         verify(events, times(1)).findByMatch(any());
+        verify(events, times(2)).query(anyString(), any(), any()); // the read and the one insert
+        verify(events, never()).update(anyString(), any()); // no bookkeeping per event (GAME-02)
+        verify(events, never()).batch(anyString(), any());
         verify(matches, never()).query(anyString(), any(), any());
-        verify(events, never()).update(contains("voided_by"), any());
-        verify(events, never()).batch(contains("voided_by"), any());
         assertThat(voidedBy(match)).containsExactly(Map.entry(script.get(1).id().toString(),
                 script.get(2).id().toString()));
     }
