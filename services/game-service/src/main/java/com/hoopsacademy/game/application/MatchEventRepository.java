@@ -29,9 +29,6 @@ public interface MatchEventRepository {
     /** Writes the {@code voided_by} marks a re-projection changed (one statement). */
     void markVoided(MatchId matchId, VoidMarks changes);
 
-    /** Remembers the highest client sequence seen per device (sync bookkeeping). */
-    void recordReceipt(MatchId matchId, String deviceId, long clientSeq);
-
     long count();
 
     long countReceivedSince(Instant since);

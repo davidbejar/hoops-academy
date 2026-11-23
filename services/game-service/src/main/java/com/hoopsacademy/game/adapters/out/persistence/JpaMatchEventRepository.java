@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.UUID;
 
-/** {@code game.match_event} (and the {@code sync_receipt} bookkeeping) via JDBC. */
+/** {@code game.match_event} via JDBC. */
 @ApplicationScoped
 class JpaMatchEventRepository extends JdbcRepository implements MatchEventRepository {
 
@@ -144,20 +144,6 @@ class JpaMatchEventRepository extends JdbcRepository implements MatchEventReposi
             s.setObject(2, matchId.value());
             s.setObject(3, target.value());
         };
-    }
-
-    @Override
-    public void recordReceipt(MatchId matchId, String deviceId, long clientSeq) {
-        update("""
-                insert into game.sync_receipt (match_id, tenant_id, device_id, last_client_seq)
-                values (?, app.current_tenant(), ?, ?)
-                on conflict (match_id, device_id) do update
-                   set last_client_seq = greatest(game.sync_receipt.last_client_seq, excluded.last_client_seq),
-                       updated_at = now()""", s -> {
-            s.setObject(1, matchId.value());
-            s.setString(2, deviceId);
-            s.setLong(3, clientSeq);
-        });
     }
 
     @Override

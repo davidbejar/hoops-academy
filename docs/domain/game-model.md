@@ -14,7 +14,7 @@ long member lists are capped.
 
 <!-- BEGIN GENERATED: er -->
 <details open>
-<summary>match and 5 more</summary>
+<summary>match and 4 more</summary>
 
 ```mermaid
 erDiagram
@@ -43,7 +43,7 @@ erDiagram
         uuid id PK
         uuid tenant_id FK "RLS, not null"
         uuid match_id FK "not null"
-        bigint server_seq UK "not null"
+        bigint server_seq "not null"
         varchar device_id "not null"
         bigint client_seq "not null"
         varchar type "not null"
@@ -99,18 +99,10 @@ erDiagram
         bigint last_server_seq "not null"
         timestamptz updated_at "not null"
     }
-    sync_receipt {
-        uuid match_id PK,FK
-        uuid tenant_id FK "RLS, not null"
-        varchar device_id PK
-        bigint last_client_seq "not null"
-        timestamptz updated_at "not null"
-    }
     match ||--o{ match_event : "tenant_id, match_id"
     match ||--o{ match_player_stats : "tenant_id, match_id"
     match ||--o{ match_roster : "tenant_id, match_id"
     match ||--o{ match_summary : "tenant_id, match_id"
-    match ||--o{ sync_receipt : "tenant_id, match_id"
 ```
 
 </details>
@@ -529,10 +521,8 @@ classDiagram
         <<interface>>
         +findByMatch(MatchId) List~StoredEvent~
         +after(MatchId,PlayerVisibility,long,int) List~StoredEvent~
-        +lastServerSeq(MatchId) long
         +append(MatchId,MatchEvent,Recorder) OptionalLong
-        +markVoided(MatchId,Map~EventId,EventId~) void
-        +recordReceipt(MatchId,String,long) void
+        +markVoided(MatchId,VoidMarks) void
         +count() long
         +countReceivedSince(Instant) long
     }

@@ -112,7 +112,6 @@ public class IngestEventBatch {
             return Result.rejected(id, RejectionReason.EVENT_ID_REUSED, "The event id is already used by another match");
         }
         ledger.accept(event, serverSeq.getAsLong(), recorder.personId());
-        events.recordReceipt(match.id(), event.meta().deviceId(), event.meta().clientSeq());
         return Result.stored(id, Status.ACCEPTED, serverSeq.getAsLong());
     }
 }

@@ -34,7 +34,6 @@ class GameRlsIsolationTest extends GenericRlsIsolationTest {
         return Map.of(
                 "game.match", matchColumns,
                 "game.match_roster", parentMatch,
-                "game.sync_receipt", parentMatch,
                 "game.match_event", eventColumns,
                 "game.match_player_stats", parentMatch,
                 "game.match_summary", parentMatch,
