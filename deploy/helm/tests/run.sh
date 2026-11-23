@@ -43,6 +43,14 @@ standalone() { # a service sub-chart rendered alone: a copy with hoops-lib resol
   [ -d "$d/$1" ] || { cp -R "$CHART/charts/$1" "$d/"; helm dependency update --skip-refresh "$d/$1" >/dev/null; }
   echo "$d/$1"; }
 
+echo "== dependency versions (Helm does not compare a vendored chart's version with the one Chart.yaml names)"
+mismatch=$(for c in "$CHART" "${SERVICE_CHARTS[@]/#/$CHART/charts/}"; do
+  awk '/^  - name: / {n=$3} /^    version: / && n {print n, $2; n=""}' "$c/Chart.yaml" | while read -r n v; do
+    [ "$(sed -n 's/^version: //p' "$CHART/charts/$n/Chart.yaml")" = "$v" ] || printf '%s ' "$c: $n $v"
+  done; done)
+[ -z "$mismatch" ] && ok "every dependency names the version of the chart under charts/ (umbrella, service sub-charts)" \
+  || bad "dependency versions differ from the vendored charts: $mismatch"
+
 echo "== helm lint"
 for c in "$CHART" "$CHART"/charts/*/; do
   case " ${SERVICE_CHARTS[*]} " in *" $(basename "$c") "*) c=$(standalone "$(basename "$c")") ;; esac

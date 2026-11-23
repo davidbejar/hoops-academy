@@ -9,8 +9,8 @@
 # (CGO_ENABLED=0), trimmed paths, without VCS stamping; Go embeds the module list in the binary, so Trivy's image scan
 # and the SBOM see every module. Stage 2 is distroless static (Debian 13: CA certificates, tzdata, /etc/passwd only):
 # no shell, no libc, no package manager, user nonroot 65532, read-only root file system (the service writes nothing).
-# Both bases are pinned by the digest of their multi-arch index, resolved 2026-11-16; bump the tag and digest together
-# with go.mod's toolchain line.
+# Both bases are pinned by the digest of their multi-arch index (ADR-0054); bump the tag and digest together with go.mod's
+# toolchain line (ADR-0055).
 ARG BUILDER_IMAGE=docker.io/library/golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9
 ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931
 

@@ -9,7 +9,7 @@
 # cargo-auditable, which embeds the crate list in the binary: Trivy's image scan and SBOM then see every crate, not
 # only the OS packages. Stage 2 is distroless (Debian 13, glibc and libgcc only): no shell, no package manager, user
 # nonroot 65532, read-only root file system friendly (the service writes nothing). Both bases are pinned by the digest
-# of their multi-arch index, resolved 2026-11-16; bump the tag and digest together with rust-toolchain.toml.
+# of their multi-arch index (ADR-0054); bump the tag and digest together with rust-toolchain.toml (ADR-0052).
 ARG BUILDER_IMAGE=docker.io/library/rust:1.99.1-slim-trixie@sha256:f6c4a35d21dbb3c89d7a8d056c193e94fc09037f2b58dd858b09c39a47dd02d7
 ARG RUNTIME_IMAGE=gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2
 

@@ -12,6 +12,9 @@
 !e2e
 !e2e/pom.xml
 **/target
+# The Rust and Go services are not Maven modules (ADR-0051): their sources would only invalidate the Maven layer.
+services/pdf-service
+services/finance-service
 **/.idea
 **/*.iml
 **/.DS_Store

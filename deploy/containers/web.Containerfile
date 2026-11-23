@@ -3,12 +3,12 @@
 #
 #   WEB_SOURCE=host (default): `flutter build web` ran on the host (scripts/build-images.sh does it);
 #                              the context is only apps/web/build/web (see web.containerignore). Fast, native arm64.
-#   WEB_SOURCE=flutter:        builds inside ghcr.io/cirruslabs/flutter (hermetic, CI). Several GB image and,
-#                              on Apple silicon, slow under emulation if no arm64 variant is pulled.
+#   WEB_SOURCE=flutter:        builds inside ghcr.io/cirruslabs/flutter (hermetic; no pipeline uses it, images.yml
+#                              builds on the host too). Several GB image and, on Apple silicon, slow under emulation if
+#                              no arm64 variant is pulled.
 ARG WEB_SOURCE=host
 ARG FLUTTER_IMAGE=ghcr.io/cirruslabs/flutter:stable
-# 1.30 (stable): the 1.27-alpine tag is frozen on Alpine 3.21.3 (Trivy: 58 fixable HIGH/CRITICAL on 2026-11-02;
-# 1.30-alpine / Alpine 3.24.2: 3).
+# The stable nginx line (even minor); scripts/bump_pins.py moves it to the next even minor.
 ARG NGINX_IMAGE=docker.io/nginxinc/nginx-unprivileged:1.30-alpine
 
 FROM ${FLUTTER_IMAGE} AS web-flutter
