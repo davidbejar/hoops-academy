@@ -12,6 +12,7 @@ import com.hoopsacademy.core.application.authz.AuthzCache;
 import com.hoopsacademy.core.application.port.GuardianLinkRepository;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
+import com.hoopsacademy.core.application.port.PlayerRepository.PlayerSummary;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -24,12 +25,9 @@ import com.hoopsacademy.core.domain.membership.PlayerId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.time.Clock;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Guardian (PARENT) ↔ player links of the bound tenant. */
@@ -95,7 +93,8 @@ public class GuardianLinkService {
 
     private LinkView link(Person guardian, PlayerId playerId) {
         PersonId guardianId = guardian.id();
-        PersonId playerPerson = playerPerson(playerId);
+        PlayerSummary player = players.summary(playerId)
+                .orElseThrow(() -> new NotFoundException("Player not found"));
         if (!guardian.roles().contains(TenantRole.PARENT)) {
             throw new DomainRuleViolation("The guardian must hold the PARENT role", GUARDIAN_NOT_PARENT);
         }
@@ -107,7 +106,7 @@ public class GuardianLinkService {
         authzCache.invalidate(tenantContext.requireTenantId());
         audit.record(AuditEvent.of(AuditAction.GUARDIAN_LINK_CREATED, link.id().value(), Map.of(
                 "guardianPersonId", guardianId.value().toString(), "playerId", playerId.value().toString())));
-        return withNames(List.of(link), Map.of(playerId, playerPerson)).get(0);
+        return new LinkView(link, guardian.displayName(), player.displayName());
     }
 
     @Transactional
@@ -121,20 +120,21 @@ public class GuardianLinkService {
     @Transactional
     public PageResult<LinkView> list(Optional<PlayerId> player, Optional<PersonId> guardian, PageRequest page) {
         PageResult<GuardianLink> result = links.list(player, guardian, page);
-        Map<PlayerId, PersonId> playerPersons = new java.util.HashMap<>();
-        result.items().forEach(link -> players.personOf(link.player())
-                .ifPresent(person -> playerPersons.put(link.player(), person)));
-        List<LinkView> views = withNames(result.items(), playerPersons);
-        return new PageResult<>(views, page, result.totalElements());
+        return new PageResult<>(withNames(result.items()), page, result.totalElements());
     }
 
-    private List<LinkView> withNames(List<GuardianLink> found, Map<PlayerId, PersonId> playerPersons) {
-        Set<PersonId> ids = new HashSet<>(playerPersons.values());
-        found.forEach(link -> ids.add(link.guardian()));
-        Map<PersonId, String> names = persons.findAll(ids).stream()
-                .collect(Collectors.toMap(Person::id, Person::displayName, (a, b) -> a));
-        Function<PersonId, String> name = id -> names.getOrDefault(id, "");
-        return found.stream().map(link -> new LinkView(link, name.apply(link.guardian()),
-                name.apply(playerPersons.get(link.player())))).toList();
+    /** Two reads for any number of links, like the other view assemblers: the players, then the guardians. */
+    private List<LinkView> withNames(List<GuardianLink> found) {
+        if (found.isEmpty()) {
+            return List.of();
+        }
+        Map<PlayerId, PlayerSummary> playersById = players.summaries(
+                found.stream().map(GuardianLink::player).distinct().toList());
+        Map<PersonId, String> guardianNames = persons.findAll(
+                        found.stream().map(GuardianLink::guardian).distinct().toList())
+                .stream().collect(Collectors.toMap(Person::id, Person::displayName, (a, b) -> a));
+        return found.stream().map(link -> new LinkView(link, guardianNames.getOrDefault(link.guardian(), ""),
+                Optional.ofNullable(playersById.get(link.player())).map(PlayerSummary::displayName).orElse("")))
+                .toList();
     }
 }
