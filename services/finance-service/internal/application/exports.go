@@ -33,7 +33,7 @@ type Export[T any] struct {
 func (f *Finance) ExportDues(ctx context.Context, caller domain.Membership, filter DueFilter) (Export[DueRecord], error) {
 	return exportOf(ctx, f, caller, "dues.exported", dueFilterMetadata(filter),
 		func(ctx context.Context) ([]DueRecord, int64, error) {
-			return f.p.DueStore.List(ctx, filter, Page{Size: ExportRowLimit})
+			return f.p.Dues.List(ctx, filter, Page{Size: ExportRowLimit})
 		})
 }
 

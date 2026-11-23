@@ -55,12 +55,6 @@ type FeePlanStore interface {
 	Generating(ctx context.Context) ([]domain.FeePlan, error)
 }
 
-// DueQueries answers what the settings and plan rules need to know about dues.
-type DueQueries interface {
-	AnyDue(ctx context.Context) (bool, error)
-	PlansWithDues(ctx context.Context, ids []domain.FeePlanID) (map[domain.FeePlanID]bool, error)
-}
-
 // AuditEvent is one record of the audit trail (ADR-0017): ids, enum values and field names only, never personal
 // data, reasons or notes (P-12).
 type AuditEvent struct {
@@ -147,6 +141,10 @@ type DueRecord struct {
 
 // DueStore keeps the bound tenant's dues.
 type DueStore interface {
+	// AnyDue reports whether the bound tenant has a due (it fixes the currency).
+	AnyDue(ctx context.Context) (bool, error)
+	// PlansWithDues reports which of ids have dues (a plan with dues keeps its amount and cadence).
+	PlansWithDues(ctx context.Context, ids []domain.FeePlanID) (map[domain.FeePlanID]bool, error)
 	// Existing reports the players who have a due of plan and period.
 	Existing(ctx context.Context, plan domain.FeePlanID, period string) (map[domain.PlayerID]bool, error)
 	// Insert stores new dues, leaving out any whose (plan, player, period) exists meanwhile; it returns the stored ones.

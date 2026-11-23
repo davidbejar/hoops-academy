@@ -16,11 +16,10 @@ type Ports struct {
 	Transactions Transactions
 	Settings     SettingsStore
 	FeePlans     FeePlanStore
-	Dues         DueQueries
 	Audit        AuditLog
 	Members      MembershipSource
 	Roster       RosterReads
-	DueStore     DueStore
+	Dues         DueStore
 	Payments     PaymentStore
 	Expenses     ExpenseStore
 }

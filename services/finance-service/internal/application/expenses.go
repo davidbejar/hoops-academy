@@ -151,7 +151,7 @@ func (f *Finance) SeasonBalance(ctx context.Context, caller domain.Membership, s
 		if !chosen {
 			return domain.NotFound("no currency chosen yet")
 		}
-		income, err := f.p.DueStore.Income(ctx, season)
+		income, err := f.p.Dues.Income(ctx, season)
 		if err != nil {
 			return err
 		}

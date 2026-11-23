@@ -43,9 +43,9 @@ func randomID() domain.UUID {
 func financeOn(pool *pgxpool.Pool) *application.Finance {
 	return application.NewFinance(application.Ports{
 		Clock: fixedClock{}, IDs: ids.V7{}, Transactions: persistence.NewTransactions(pool),
-		Settings: persistence.SettingsStore{}, FeePlans: persistence.FeePlanStore{}, Dues: persistence.DueQueries{},
+		Settings: persistence.SettingsStore{}, FeePlans: persistence.FeePlanStore{},
 		Audit: persistence.AuditLog{IDs: ids.V7{}}, Members: persistence.MembershipStore{},
-		Roster: persistence.RosterStore{}, DueStore: persistence.DueStore{}, Payments: persistence.PaymentStore{},
+		Roster: persistence.RosterStore{}, Dues: persistence.DueStore{}, Payments: persistence.PaymentStore{},
 		Expenses: persistence.ExpenseStore{},
 	})
 }
@@ -205,9 +205,9 @@ func TestTheJobUsesEachAcademysTimeZone(t *testing.T) {
 	late := time.Date(2026, 11, 30, 20, 0, 0, 0, time.UTC)
 	job := application.NewDuesJob(application.NewFinance(application.Ports{
 		Clock: clockAt(late), IDs: ids.V7{}, Transactions: persistence.NewTransactions(database.App),
-		Settings: persistence.SettingsStore{}, FeePlans: persistence.FeePlanStore{}, Dues: persistence.DueQueries{},
+		Settings: persistence.SettingsStore{}, FeePlans: persistence.FeePlanStore{},
 		Audit: persistence.AuditLog{IDs: ids.V7{}}, Members: persistence.MembershipStore{},
-		Roster: persistence.RosterStore{}, DueStore: persistence.DueStore{}, Payments: persistence.PaymentStore{},
+		Roster: persistence.RosterStore{}, Dues: persistence.DueStore{}, Payments: persistence.PaymentStore{},
 		Expenses: persistence.ExpenseStore{},
 	}), persistence.TenantDirectory{Pool: database.App}, persistence.Exclusive{Pool: database.App})
 

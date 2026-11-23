@@ -112,7 +112,9 @@ func (f *fakePlans) List(_ context.Context, filter FeePlanFilter, page Page) ([]
 	return all[start:end], int64(len(all)), nil
 }
 
+// fakeDues only answers which dues exist; the rest of the store is tested through the API with Postgres.
 type fakeDues struct {
+	DueStore
 	any   bool
 	plans map[domain.FeePlanID]bool
 }

@@ -39,7 +39,7 @@ type stores struct {
 	tx       persistence.Transactions
 	settings persistence.SettingsStore
 	plans    persistence.FeePlanStore
-	dues     persistence.DueQueries
+	dues     persistence.DueStore
 	audit    persistence.AuditLog
 	members  persistence.MembershipStore
 }
@@ -206,7 +206,7 @@ func TestFeePlansAreListedByNameWithFiltersAndPages(t *testing.T) {
 	})
 }
 
-func TestDueQueriesSeeTheDuesOfTheBoundTenant(t *testing.T) {
+func TestTheDueStoreSeesTheDuesOfTheBoundTenant(t *testing.T) {
 	s := newStores(t)
 	tenant := newTenant(t)
 	team := domain.TeamID(randomUUID())

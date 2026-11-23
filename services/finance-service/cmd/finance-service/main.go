@@ -70,9 +70,9 @@ func run() error {
 	tx := persistence.NewTransactions(pool)
 	finance := application.NewFinance(application.Ports{
 		Clock: clock{}, IDs: ids.V7{}, Transactions: tx, Settings: persistence.SettingsStore{},
-		FeePlans: persistence.FeePlanStore{}, Dues: persistence.DueQueries{},
-		Audit: persistence.AuditLog{IDs: ids.V7{}, Log: log}, Members: persistence.MembershipStore{},
-		Roster: persistence.RosterStore{}, DueStore: persistence.DueStore{}, Payments: persistence.PaymentStore{},
+		FeePlans: persistence.FeePlanStore{},
+		Audit:    persistence.AuditLog{IDs: ids.V7{}, Log: log}, Members: persistence.MembershipStore{},
+		Roster: persistence.RosterStore{}, Dues: persistence.DueStore{}, Payments: persistence.PaymentStore{},
 		Expenses: persistence.ExpenseStore{},
 	})
 	if cfg.DuesJob.Enabled {

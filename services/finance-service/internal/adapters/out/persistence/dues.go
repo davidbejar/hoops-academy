@@ -443,6 +443,57 @@ func (r *paymentRow) payment() (domain.Payment, error) {
 	return p, nil
 }
 
+const (
+	anyDue        = "select exists (select 1 from finance.due where tenant_id = app.current_tenant())"
+	plansWithDues = `select distinct fee_plan_id from finance.due
+		where tenant_id = app.current_tenant() and fee_plan_id = any($1::uuid[])`
+)
+
+// AnyDue reports whether the bound tenant has a due.
+func (DueStore) AnyDue(ctx context.Context) (bool, error) {
+	q, err := txOf(ctx)
+	if err != nil {
+		return false, err
+	}
+	var exists bool
+	if err := q.QueryRow(ctx, anyDue).Scan(&exists); err != nil {
+		return false, fmt.Errorf("any due: %w", err)
+	}
+	return exists, nil
+}
+
+// PlansWithDues reports which of ids have dues.
+func (DueStore) PlansWithDues(ctx context.Context, ids []domain.FeePlanID) (map[domain.FeePlanID]bool, error) {
+	out := map[domain.FeePlanID]bool{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	q, err := txOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	texts := make([]string, len(ids))
+	for i, id := range ids {
+		texts[i] = id.String()
+	}
+	rows, err := q.Query(ctx, plansWithDues, texts)
+	if err != nil {
+		return nil, fmt.Errorf("plans with dues: %w", err)
+	}
+	found, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, fmt.Errorf("plans with dues: %w", err)
+	}
+	for _, text := range found {
+		id, err := domain.ParseUUID(text)
+		if err != nil {
+			return nil, fmt.Errorf("plan id %q: %w", text, err)
+		}
+		out[domain.FeePlanID(id)] = true
+	}
+	return out, nil
+}
+
 // TenantDirectory implements application.TenantDirectory on finance.replica_tenant: a global table of tenant ids
 // (no tenant content, ADR-0037 amendment WP82) that finance_app may read without a bound tenant.
 type TenantDirectory struct{ Pool *pgxpool.Pool }

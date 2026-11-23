@@ -94,7 +94,7 @@ func (f *Finance) generate(ctx context.Context, actor domain.Membership, plan do
 	if err != nil {
 		return Generation{}, err
 	}
-	existing, err := f.p.DueStore.Existing(ctx, plan.ID, window.Period.Key())
+	existing, err := f.p.Dues.Existing(ctx, plan.ID, window.Period.Key())
 	if err != nil {
 		return Generation{}, err
 	}
@@ -122,7 +122,7 @@ func (f *Finance) store(ctx context.Context, actor domain.Membership, generation
 	for i, g := range generation.Created {
 		dues[i] = g.Due
 	}
-	stored, err := f.p.DueStore.Insert(ctx, dues)
+	stored, err := f.p.Dues.Insert(ctx, dues)
 	if err != nil {
 		return Generation{}, err
 	}
@@ -149,7 +149,7 @@ func (f *Finance) store(ctx context.Context, actor domain.Membership, generation
 // ListDues reads a page of dues.
 func (f *Finance) ListDues(ctx context.Context, caller domain.Membership, filter DueFilter, page Page) (DuePage, error) {
 	return adminPage(ctx, f, caller, func(ctx context.Context) ([]DueRecord, int64, error) {
-		return f.p.DueStore.List(ctx, filter, page)
+		return f.p.Dues.List(ctx, filter, page)
 	})
 }
 
@@ -169,7 +169,7 @@ func (f *Finance) Due(ctx context.Context, caller domain.Membership, id domain.D
 }
 
 func (f *Finance) dueView(ctx context.Context, id domain.DueID) (DueView, error) {
-	record, found, err := f.p.DueStore.Record(ctx, id)
+	record, found, err := f.p.Dues.Record(ctx, id)
 	if err != nil {
 		return DueView{}, err
 	}
@@ -207,7 +207,7 @@ func (f *Finance) changeDue(ctx context.Context, caller domain.Membership, id do
 		if err != nil {
 			return err
 		}
-		if err := f.p.DueStore.Update(ctx, changed); err != nil {
+		if err := f.p.Dues.Update(ctx, changed); err != nil {
 			return err
 		}
 		if err := f.audit(ctx, caller, action, dueTarget, id.String(), dueMetadata(changed)); err != nil {
@@ -225,7 +225,7 @@ func dueMetadata(due domain.Due) map[string]any {
 }
 
 func (f *Finance) lockedDue(ctx context.Context, id domain.DueID) (domain.Due, error) {
-	due, found, err := f.p.DueStore.Lock(ctx, id)
+	due, found, err := f.p.Dues.Lock(ctx, id)
 	if err != nil {
 		return domain.Due{}, err
 	}
@@ -255,7 +255,7 @@ func (f *Finance) PayDue(ctx context.Context, caller domain.Membership, id domai
 		if err := f.p.Payments.Insert(ctx, payment); err != nil {
 			return err
 		}
-		if err := f.p.DueStore.Update(ctx, paid); err != nil {
+		if err := f.p.Dues.Update(ctx, paid); err != nil {
 			return err
 		}
 		if err := f.audit(ctx, caller, "payment.recorded", paymentTarget, payment.ID.String(), map[string]any{
@@ -295,7 +295,7 @@ func (f *Finance) VoidPayment(ctx context.Context, caller domain.Membership, id 
 		if err := f.p.Payments.Void(ctx, voided); err != nil {
 			return err
 		}
-		if err := f.p.DueStore.Update(ctx, reopened); err != nil {
+		if err := f.p.Dues.Update(ctx, reopened); err != nil {
 			return err
 		}
 		if err := f.audit(ctx, caller, "payment.voided", paymentTarget, id.String(), map[string]any{
@@ -354,7 +354,7 @@ func (f *Finance) TeamDueStatus(ctx context.Context, caller domain.Membership, t
 		for i, p := range players {
 			ids[i] = p.Player
 		}
-		behind, err := f.p.DueStore.Behind(ctx, ids, today)
+		behind, err := f.p.Dues.Behind(ctx, ids, today)
 		statuses = make([]PlayerStatus, len(players))
 		for i, p := range players {
 			statuses[i] = PlayerStatus{Player: p.Player, Name: p.Name, UpToDate: !behind[p.Player]}
@@ -379,7 +379,7 @@ func (f *Finance) PlayerDues(ctx context.Context, caller domain.Membership, play
 		if !domain.CanReadPlayerDues(caller, player) {
 			return domain.Forbidden(DeniedNotLinkedPlayer, "not linked to this player")
 		}
-		items, total, err := f.p.DueStore.OfPlayer(ctx, player, page)
+		items, total, err := f.p.Dues.OfPlayer(ctx, player, page)
 		if err != nil {
 			return err
 		}

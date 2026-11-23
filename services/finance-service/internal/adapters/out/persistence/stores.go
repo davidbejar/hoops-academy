@@ -67,60 +67,6 @@ func (SettingsStore) Save(ctx context.Context, settings domain.Settings) error {
 	return nil
 }
 
-// DueQueries implements application.DueQueries on finance.due.
-type DueQueries struct{}
-
-const (
-	anyDue        = "select exists (select 1 from finance.due where tenant_id = app.current_tenant())"
-	plansWithDues = `select distinct fee_plan_id from finance.due
-		where tenant_id = app.current_tenant() and fee_plan_id = any($1::uuid[])`
-)
-
-// AnyDue reports whether the bound tenant has a due.
-func (DueQueries) AnyDue(ctx context.Context) (bool, error) {
-	q, err := txOf(ctx)
-	if err != nil {
-		return false, err
-	}
-	var exists bool
-	if err := q.QueryRow(ctx, anyDue).Scan(&exists); err != nil {
-		return false, fmt.Errorf("any due: %w", err)
-	}
-	return exists, nil
-}
-
-// PlansWithDues reports which of ids have dues.
-func (DueQueries) PlansWithDues(ctx context.Context, ids []domain.FeePlanID) (map[domain.FeePlanID]bool, error) {
-	out := map[domain.FeePlanID]bool{}
-	if len(ids) == 0 {
-		return out, nil
-	}
-	q, err := txOf(ctx)
-	if err != nil {
-		return nil, err
-	}
-	texts := make([]string, len(ids))
-	for i, id := range ids {
-		texts[i] = id.String()
-	}
-	rows, err := q.Query(ctx, plansWithDues, texts)
-	if err != nil {
-		return nil, fmt.Errorf("plans with dues: %w", err)
-	}
-	found, err := pgx.CollectRows(rows, pgx.RowTo[string])
-	if err != nil {
-		return nil, fmt.Errorf("plans with dues: %w", err)
-	}
-	for _, text := range found {
-		id, err := domain.ParseUUID(text)
-		if err != nil {
-			return nil, fmt.Errorf("plan id %q: %w", text, err)
-		}
-		out[domain.FeePlanID(id)] = true
-	}
-	return out, nil
-}
-
 // AuditLog implements application.AuditLog on finance.audit_event, and writes each event as one line of the logger
 // `hoops.audit` (ADR-0017: ids, action, target, metadata; never personal data).
 type AuditLog struct {
