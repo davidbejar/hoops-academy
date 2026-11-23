@@ -134,7 +134,7 @@ class PlanJpaRepository implements PlanRepository {
                 PlanEntity.class).setParameter("language", search.language().code());
         var count = em.createQuery("select count(p) from PlanEntity p" + where, Long.class);
         search.query().ifPresent(q -> {
-            String pattern = "%" + q.toLowerCase().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+            String pattern = LikePattern.contains(q);
             select.setParameter("q", pattern);
             count.setParameter("q", pattern).setParameter("language", search.language().code());
         });

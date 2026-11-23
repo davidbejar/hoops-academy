@@ -11,7 +11,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -85,8 +84,7 @@ class ExerciseJpaRepository implements ExerciseRepository {
     public PageResult<Exercise> search(Search search) {
         // Constant JPQL: every filter is a bound parameter that switches its own condition off, never query text.
         String scope = search.scope().map(Enum::name).orElse(ANY_SCOPE);
-        String pattern = search.query().map(q -> "%" + q.toLowerCase(Locale.ROOT).replace("\\", "\\\\")
-                .replace("%", "\\%").replace("_", "\\_") + "%").orElse("%");
+        String pattern = search.query().map(LikePattern::contains).orElse("%");
         var select = em.createQuery(SEARCH_SELECT, ExerciseEntity.class);
         var count = em.createQuery(SEARCH_COUNT, Long.class);
         for (var query : List.of(select, count)) {
