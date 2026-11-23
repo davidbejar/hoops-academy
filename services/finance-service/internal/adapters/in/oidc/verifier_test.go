@@ -76,6 +76,24 @@ func TestTokensAreRefusedWithTheirReason(t *testing.T) {
 	}
 }
 
+// The clock leeway is the Java services' (X-11): none. They set no quarkus.oidc.token.lifespan-grace, and quarkus-oidc
+// then leaves jose4j's allowed clock skew at its default of 0 seconds; a token expired two seconds ago is refused.
+func TestTheClockLeewayIsTheJavaServicesZeroSeconds(t *testing.T) {
+	r := realm.Start(t)
+	now := time.Now()
+	claims := func(key string, at time.Time) jwt.MapClaims {
+		c := jwt.MapClaims{"sub": "s", "aud": realm.Audience, "iss": r.Issuer(), "exp": now.Add(time.Minute).Unix()}
+		c[key] = at.Unix()
+		return c
+	}
+	if got := reason(t, errOf(verifier(r).Verify(context.Background(), r.Sign(t, claims("exp", now.Add(-2*time.Second)))))); got != "expired" {
+		t.Errorf("expired two seconds ago: %s", got)
+	}
+	if got := reason(t, errOf(verifier(r).Verify(context.Background(), r.Sign(t, claims("nbf", now.Add(2*time.Second)))))); got != "not_yet_valid" {
+		t.Errorf("valid in two seconds: %s", got)
+	}
+}
+
 func TestARotatedKeyIsFetchedOnceForItsNewKeyID(t *testing.T) {
 	r := realm.Start(t)
 	v := NewVerifier(Config{AuthServerURL: r.URL(), Audience: realm.Audience, MinRefetch: time.Nanosecond})
