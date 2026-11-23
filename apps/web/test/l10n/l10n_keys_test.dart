@@ -46,4 +46,20 @@ void main() {
     final identical = id.keys.where((k) => id[k] == en[k]).length;
     expect(identical, lessThan(id.length ~/ 4));
   });
+
+  test('every key is used by the app (no dead translations)', () {
+    final generated = ['lib', 'l10n', 'gen'].join(Platform.pathSeparator);
+    final source = [
+      for (final f in Directory('lib').listSync(recursive: true))
+        if (f is File &&
+            f.path.endsWith('.dart') &&
+            !f.path.startsWith(generated))
+          f.readAsStringSync(),
+    ].join('\n');
+    final unused = [
+      for (final key in es.keys.where((k) => k != '@@locale'))
+        if (!RegExp('\\b$key\\b').hasMatch(source)) key,
+    ];
+    expect(unused, isEmpty, reason: 'keys no Dart file in lib/ refers to');
+  });
 }
