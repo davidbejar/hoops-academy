@@ -58,3 +58,44 @@ Not yours: every other WEB finding (WP135, WP138). Golden files: re-record only 
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+- **Built**
+  - **Lists (WEB-03).** `core/api/fetch_all.dart`: `fetchAll` reads pages of 200 until the server's last (or an empty)
+    page, at most 50 pages, then `ListTooLongError` (never a silent cut). All 20 first-page-only reads go through it:
+    players, teams (×2), approvals, cases, members, guardian links, training plans, assignments, completions, sessions,
+    planned absences, injuries, test results, matches, tenants, tenant admins, academy requests, fee plans, a player's
+    dues. `FinanceRepository.feePlans` / `playerDues` return lists now (the family tab and `playerDuesProvider` with
+    them). One kit `Pager` (`core/ui/pager.dart`, keys `<prefix>-previous/-next`, l10n `pageOf` / `pagePrevious` /
+    `pageNext`) replaces the dues, expenses, activity log and platform users copies and the `finance*` / `audit*`
+    duplicate keys; `AuditQueryNotifier.goToPage` replaces next/previous, `AuditPage.hasPrevious/hasNext` (unused) gone.
+    The activity log no longer shows "Página 1 de 1" on a single page, like the other three.
+  - **Mock.** `MockQuery.page` pages like the services (size 1..200, default 50, else 400; negative page 400); the core
+    mock's seven fixed one-page lists and the game mock's match list go through it (part of WEB-15).
+  - **Live match (WEB-01).** `liveMatchProvider` is `autoDispose`; `SyncWorker.unwatch(matchId)` stops only that match
+    (internal `_stopWatching` for `watch` and `dispose`).
+  - **Dead content (WEB-13).** `ModulePlaceholder`, 14 keys × 3 ARBs (`placeholderModule` + the 13 of the verification),
+    `cupertino_icons` (pubspec + lock). `l10n_keys_test` fails on a key no Dart file in `lib/` refers to.
+- **Verified** (fresh, 2026-11-23): `flutter analyze` no issues; `just web-format-check` 513 files, 0 changed;
+  `just web-test` **1861 passed, 0 failed** (baseline before the WP 1801). Red first, then green: `fetch_all_test`,
+  `lists_read_every_page_test` (18 cases over `ServerPagesAdapter`, 450 items, pages 0/1/2 of 200),
+  `finance_lists_every_page_test`, the guardian dialog's "101st guardian" test, `mock_paging_test` (25 list paths),
+  `pager_test`, the two "leaving the live match" widget tests (COACH: worker pull stops; PARENT: worker pull and
+  box-score poll stop, no feed or box-score call after 2 × 15 s of fake timers) and the guarded-unwatch test in
+  `sync_worker_test`, `l10n_keys_test`. Goldens: the three `audit_activity_*` re-recorded (the single-page pager row is
+  gone); new `kit/pager_light.png` / `pager_dark.png`; nothing else moved.
+  - Grep for the acceptance item: `rg -n "data!\.items" lib` → nothing; `rg -n "\.list[A-Z]\w+\(" lib` → every paged
+    operation is inside `fetchAll` except dues, expenses, the two audit trails, platform users (screens with `Pager`) and
+    exercises (catalogue "load more"); the rest are unpaged arrays or the match feed (cursor).
+- **Decisions/ADRs**: ADR-0061 (lists whole through `fetchAll` or paged with `Pager`; mock pages like the services);
+  ADR-0040 amendment (WP129): `ModulePlaceholder` deleted, `Pager` in the kit. Skill `flutter-feature`: paging rule and
+  provider-lifetime rule.
+- **Open points**
+  - `exerciseSearchProvider` (quick-add picker) still shows the first 50 matches of a typed search: a search's top
+    results, documented as "the first page"; left as is.
+  - FOLLOW-UPS l.582 "the family tab lists the first 50 dues (no paging)" is fixed by this WP (orchestrator: mark it).
+  - WEB-15's other parts (`_problem` copies, the game mock's hand-parsed `clear`) stay for WP135/WP138.
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| WEB-01 | Done | `liveMatchProvider` auto-dispose + `SyncWorker.unwatch(matchId)` guarded; widget tests for staff and non-staff |
+| WEB-03 | Done | 20 reads through `fetchAll`; one kit `Pager` and one key set; the demo mock pages like the services (ADR-0061) |
+| WEB-13 | Done | `ModulePlaceholder`, 14 keys × 3 ARBs and `cupertino_icons` deleted; `l10n_keys_test` fails on unused keys |
