@@ -235,3 +235,49 @@ func (l *lockedWriter) Write(p []byte) (int, error) {
 	defer l.mu.Unlock()
 	return l.w.Write(p)
 }
+
+// The replica retention runs at start and then on its interval: applied event ids older than seven days go, newer
+// ones stay, and the run is logged and counted (hoops_roster_replica_pruned_total{table="applied_event"}).
+func TestTheRetentionRunnerDeletesOldAppliedEventIDs(t *testing.T) {
+	database := pgtest.Start(t)
+	academy := newAcademy(t, database.App, "ACTIVE", "UTC", false)
+	countApplied := "select count(*) from finance.applied_event"
+	recent := academy.count(t, database.App, countApplied)
+	pgtest.Exec(t, database.App, academy.tenant.String(), `insert into finance.applied_event (tenant_id, event_id, topic,
+		applied_at) values ($1, $2, 'core.person', now() - interval '8 days')`, academy.tenant.String(), randomID().String())
+	logs := &bytes.Buffer{}
+	var mu sync.Mutex
+	var pruned int
+	runner := job.Retention{
+		Job: application.NewReplicaRetention(persistence.NewTransactions(database.App),
+			persistence.TenantDirectory{Pool: database.App}, persistence.Exclusive{Pool: database.App},
+			persistence.ReplicaStore{}, clockAt(time.Now())),
+		Interval: time.Hour, Log: slog.New(slog.NewJSONHandler(&lockedWriter{w: logs, mu: &mu}, nil)),
+		Pruned: func(n int) { mu.Lock(); pruned += n; mu.Unlock() },
+	}
+	ctx, stop := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { runner.Run(ctx); close(done) }()
+
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		mu.Lock()
+		text, counted := logs.String(), pruned
+		mu.Unlock()
+		if strings.Contains(text, "replica retention ran") {
+			if counted < 1 {
+				t.Errorf("pruned %d, want the old id counted", counted)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the retention did not run: %s", text)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	stop()
+	<-done
+	if left := academy.count(t, database.App, countApplied); left != recent {
+		t.Errorf("%d applied ids left, want the %d recent ones", left, recent)
+	}
+}

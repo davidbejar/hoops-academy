@@ -101,3 +101,46 @@ func TestParkedEventsAreWrittenWithoutTheirValue(t *testing.T) {
 		t.Errorf("parked: %s %v", reason, err)
 	}
 }
+
+// The retention deletes the bound academy's applied event ids recorded before the cut-off, at most limit at a time
+// (ADR-0037 amendment WP82, WP131); newer ids and other academies' ids stay.
+func TestAppliedEventIDsAreDeletedBeforeTheCutOffInBatches(t *testing.T) {
+	database := pgtest.Start(t)
+	tx := persistence.NewTransactions(database.App)
+	a, b := newTenant(t), newTenant(t)
+	cutOff := time.Now().Add(-7 * 24 * time.Hour)
+	record := func(tenant domain.TenantID, at time.Time) {
+		bound(t, database.App, tenant, `insert into finance.applied_event (tenant_id, event_id, topic, applied_at)
+			values ($1, $2, 'core.person', $3)`, tenant.String(), randomUUID().String(), at)
+	}
+	for range 3 {
+		record(a, cutOff.Add(-time.Hour))
+	}
+	record(a, cutOff.Add(time.Hour))
+	record(b, cutOff.Add(-time.Hour))
+	deleteBatch := func(tenant domain.TenantID) int {
+		var n int
+		if err := tx.InTenant(context.Background(), tenant, func(ctx context.Context) error {
+			var err error
+			n, err = persistence.ReplicaStore{}.DeleteAppliedBefore(ctx, cutOff, 2)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+
+	if got := []int{deleteBatch(a), deleteBatch(a), deleteBatch(a)}; got[0] != 2 || got[1] != 1 || got[2] != 0 {
+		t.Errorf("batches %v, want [2 1 0]", got)
+	}
+	count := "select count(*) from finance.applied_event"
+	if left := pgtest.Value[int](t, database.App, a.String(), count); left != 1 {
+		t.Errorf("academy A keeps %d ids, want the newer one", left)
+	}
+	if left := pgtest.Value[int](t, database.App, b.String(), count); left != 1 {
+		t.Errorf("academy B keeps %d ids, want its own", left)
+	}
+	if _, err := (persistence.ReplicaStore{}).DeleteAppliedBefore(context.Background(), cutOff, 2); err == nil {
+		t.Error("a delete outside a tenant transaction ran")
+	}
+}

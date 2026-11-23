@@ -1,6 +1,7 @@
 package application
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"testing"
@@ -21,10 +22,14 @@ func (f fakeTenants) Tenants(context.Context) ([]domain.TenantID, error) {
 	return out, f.err
 }
 
-type fakeExclusive struct{ busy bool }
+// fakeExclusive holds lock (DuesJobLock when empty) unless busy.
+type fakeExclusive struct {
+	lock string
+	busy bool
+}
 
 func (f fakeExclusive) Run(ctx context.Context, lock string, work func(context.Context) error) (bool, error) {
-	if lock != DuesJobLock {
+	if want := cmp.Or(f.lock, DuesJobLock); lock != want {
 		return false, errors.New("unexpected lock " + lock)
 	}
 	if f.busy {
