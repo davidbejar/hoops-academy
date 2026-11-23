@@ -1,4 +1,4 @@
-package com.hoopsacademy.core.adapters.out.persistence;
+package com.hoopsacademy.core.application.members;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.port.PersonRepository;
@@ -7,6 +7,7 @@ import com.hoopsacademy.core.application.port.UsageCounter;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -15,12 +16,12 @@ import java.util.Map;
  * {@code playersWithdrawn}). The contract's UsageReport counters are additive.
  */
 @ApplicationScoped
-class MembershipUsageCounter implements UsageCounter {
+public class MembershipUsageCounter implements UsageCounter {
 
     private final PersonRepository persons;
     private final PlayerRepository players;
 
-    MembershipUsageCounter(PersonRepository persons, PlayerRepository players) {
+    public MembershipUsageCounter(PersonRepository persons, PlayerRepository players) {
         this.persons = persons;
         this.players = players;
     }
@@ -47,7 +48,7 @@ class MembershipUsageCounter implements UsageCounter {
     private static String camel(String constant) {
         StringBuilder out = new StringBuilder();
         for (String word : constant.split("_")) {
-            out.append(word.charAt(0)).append(word.substring(1).toLowerCase(java.util.Locale.ROOT));
+            out.append(word.charAt(0)).append(word.substring(1).toLowerCase(Locale.ROOT));
         }
         return out.toString();
     }

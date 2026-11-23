@@ -68,10 +68,6 @@ public interface PlayerRepository {
     /** Stores the preferred number ({@code null} clears it); no roster event, which does not carry it. */
     void updatePreferredJersey(PlayerId player, JerseyNumber preferred);
 
-    long count();
-
-    long countByStatus(PlayerStatus status);
-
     /** Players per status (statuses without players are omitted). */
     Map<PlayerStatus, Long> countsByStatus();
 }

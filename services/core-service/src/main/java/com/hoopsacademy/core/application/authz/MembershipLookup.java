@@ -6,9 +6,9 @@ import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.port.GuardianLinkRepository;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
-import com.hoopsacademy.core.application.port.StaffTeamsQuery;
 import com.hoopsacademy.core.application.port.TeamPlayerRepository;
 import com.hoopsacademy.core.application.port.TeamRepository;
+import com.hoopsacademy.core.application.port.TeamStaffRepository;
 import com.hoopsacademy.core.application.port.TenantProfileRepository;
 import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PlayerId;
@@ -41,20 +41,20 @@ public class MembershipLookup {
     private final PersonRepository persons;
     private final PlayerRepository players;
     private final GuardianLinkRepository guardianLinks;
-    private final StaffTeamsQuery staffTeams;
+    private final TeamStaffRepository staff;
     private final TeamPlayerRepository assignments;
     private final TeamRepository teams;
     private final Clock clock;
 
     public MembershipLookup(TenantContext tenantContext, TenantProfileRepository profiles, PersonRepository persons,
-            PlayerRepository players, GuardianLinkRepository guardianLinks, StaffTeamsQuery staffTeams,
+            PlayerRepository players, GuardianLinkRepository guardianLinks, TeamStaffRepository staff,
             TeamPlayerRepository assignments, TeamRepository teams, Clock clock) {
         this.tenantContext = tenantContext;
         this.profiles = profiles;
         this.persons = persons;
         this.players = players;
         this.guardianLinks = guardianLinks;
-        this.staffTeams = staffTeams;
+        this.staff = staff;
         this.assignments = assignments;
         this.teams = teams;
         this.clock = clock;
@@ -78,7 +78,8 @@ public class MembershipLookup {
         Set<UUID> linkedPlayers = person.roles().contains(TenantRole.PARENT)
                 ? guardianLinks.playersOf(person.id()).stream().map(PlayerId::value).collect(Collectors.toSet())
                 : Set.of();
-        Set<UUID> staffTeamIds = staffTeams.staffTeamsOf(person.id());
+        // team_staff is the single source of truth for staffTeamIds (/internal/authz, /me, Authz.isStaffOf)
+        Set<UUID> staffTeamIds = staff.teamsOf(person.id()).stream().map(TeamId::value).collect(Collectors.toSet());
         Set<UUID> playerTeamIds = teamsOf(ownPlayer, linkedPlayers);
         Set<UUID> notEnded = seasonNotEnded(staffTeamIds, playerTeamIds, TenantCalendar.today(clock.instant(),
                 tenant.timezone()));

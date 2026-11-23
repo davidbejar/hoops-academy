@@ -13,8 +13,8 @@ import jakarta.transaction.Transactional;
 import java.time.Clock;
 
 /**
- * ADMIN rejects a PENDING request. A rejected ADD_PLAYER leaves the pending player WITHDRAWN (the contract's
- * PlayerStatus has no REJECTED; the rows are kept for the audit trail); a rejected WITHDRAW_PLAYER changes nothing.
+ * ADMIN rejects a PENDING request. A rejected ADD_PLAYER leaves the pending player REJECTED (V8; the rows are kept
+ * for the audit trail); a rejected WITHDRAW_PLAYER changes nothing.
  */
 @ApplicationScoped
 public class RejectRequest {

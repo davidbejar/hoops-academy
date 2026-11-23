@@ -167,17 +167,6 @@ class JpaPlayerRepository implements PlayerRepository {
     }
 
     @Override
-    public long count() {
-        return em.createQuery("select count(p) from PlayerEntity p", Long.class).getSingleResult();
-    }
-
-    @Override
-    public long countByStatus(PlayerStatus status) {
-        return em.createQuery("select count(p) from PlayerEntity p where p.status = :status", Long.class)
-                .setParameter("status", status.name()).getSingleResult();
-    }
-
-    @Override
     public Map<PlayerStatus, Long> countsByStatus() {
         Map<PlayerStatus, Long> counts = new java.util.EnumMap<>(PlayerStatus.class);
         em.createQuery("select p.status, count(p) from PlayerEntity p group by p.status", Object[].class)
