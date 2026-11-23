@@ -133,6 +133,20 @@ class RosterPortContractTest {
         coreAnswers(source, () -> CoreAnswers.teamRoster(core, tenant, expected));
 
         assertThat(inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team)))).isEqualTo(expected);
+        assertThat(inTenant(() -> port(source).team(tenant, TeamId.of(team))))
+                .isEqualTo(new TeamBrief(TeamId.of(team), SeasonId.of(season), "Big Lions", SEASON_END.plusDays(1)));
+    }
+
+    @ParameterizedTest
+    @EnumSource(Source.class)
+    void theTeamAloneIsItsNameSeasonAndSeasonEnd(Source source) {
+        given(source, events.tenant("ACTIVE", "Europe/Madrid"), lions(), player(UUID.randomUUID(), "Ana Ruiz", BORN,
+                "FEMALE"));
+        coreAnswers(source, () -> CoreAnswers.teamRoster(core, tenant, new TeamRoster(TeamId.of(team),
+                SeasonId.of(season), "Lions", List.of(), SEASON_END)));
+
+        assertThat(inTenant(() -> port(source).team(tenant, TeamId.of(team))))
+                .isEqualTo(new TeamBrief(TeamId.of(team), SeasonId.of(season), "Lions", SEASON_END));
     }
 
     @ParameterizedTest
@@ -143,6 +157,8 @@ class RosterPortContractTest {
         coreAnswers(source, () -> CoreAnswers.teamNotFound(core, unknown));
 
         assertThatThrownBy(() -> inTenant(() -> port(source).teamRoster(tenant, TeamId.of(unknown))))
+                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> inTenant(() -> port(source).team(tenant, TeamId.of(unknown))))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -159,6 +175,8 @@ class RosterPortContractTest {
 
         assertThatThrownBy(() -> inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team))))
                 .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> inTenant(() -> port(source).team(tenant, TeamId.of(team))))
+                .isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> inTenant(() -> port(source).players(tenant, List.of(PlayerId.of(ana)))))
                 .isInstanceOf(NotFoundException.class);
     }
@@ -170,6 +188,8 @@ class RosterPortContractTest {
         coreAnswers(source, () -> CoreAnswers.teamNotFound(core, team));
 
         assertThatThrownBy(() -> inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team))))
+                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> inTenant(() -> port(source).team(tenant, TeamId.of(team))))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -224,6 +244,8 @@ class RosterPortContractTest {
         coreAnswers(source, () -> CoreAnswers.teamNotFound(core, team));
 
         assertThatThrownBy(() -> inTenant(() -> port(source).teamRoster(tenant, TeamId.of(team))))
+                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> inTenant(() -> port(source).team(tenant, TeamId.of(team))))
                 .isInstanceOf(NotFoundException.class);
     }
 

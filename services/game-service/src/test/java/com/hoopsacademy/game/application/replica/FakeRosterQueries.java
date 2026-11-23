@@ -30,6 +30,7 @@ class FakeRosterQueries implements RosterReplicaQueries {
     final Map<PlayerId, Set<TeamId>> assignments = new HashMap<>();
     final List<Collection<PlayerId>> playerQueries = new ArrayList<>();
     final List<Collection<PlayerId>> teamQueries = new ArrayList<>();
+    final List<TeamId> rosterQueries = new ArrayList<>();
 
     @Override
     public Optional<ReplicaTenant> tenant(TenantId tenantId) {
@@ -43,6 +44,7 @@ class FakeRosterQueries implements RosterReplicaQueries {
 
     @Override
     public List<RosterLine> roster(TeamId teamId) {
+        rosterQueries.add(teamId);
         return rosters.getOrDefault(teamId, List.of());
     }
 

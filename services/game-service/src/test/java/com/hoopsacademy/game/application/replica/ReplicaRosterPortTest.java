@@ -7,6 +7,7 @@ import com.hoopsacademy.common.client.CoreMembership.TenantStatus;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.game.application.PlayerBrief;
+import com.hoopsacademy.game.application.TeamBrief;
 import com.hoopsacademy.game.application.TeamRoster;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.SeasonId;
@@ -53,6 +54,20 @@ class ReplicaRosterPortTest {
         active();
 
         assertThatThrownBy(() -> port.teamRoster(TENANT, lions)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> port.team(TENANT, lions)).isInstanceOf(NotFoundException.class);
+    }
+
+    /** GAME-03: the season end and the team's name need the team row only, never its roster. */
+    @Test
+    void theTeamAloneReadsNoRoster() {
+        active();
+        replica.teams.put(lions, new ReplicaTeam(lions, season, "Lions", LocalDate.parse("2027-06-30")));
+        replica.rosters.put(lions, List.of(new RosterLine(ana, Optional.of("7"))));
+
+        TeamBrief team = port.team(TENANT, lions);
+
+        assertThat(team).isEqualTo(new TeamBrief(lions, season, "Lions", LocalDate.parse("2027-06-30")));
+        assertThat(replica.rosterQueries).isEmpty();
     }
 
     @Test
@@ -65,6 +80,8 @@ class ReplicaRosterPortTest {
             status.ifPresentOrElse(s -> replica.tenants.put(TENANT, new ReplicaTenant(s, ZoneId.of("UTC"))),
                     () -> replica.tenants.remove(TENANT));
             assertThatThrownBy(() -> port.teamRoster(TENANT, lions)).as(status.toString())
+                    .isInstanceOf(NotFoundException.class);
+            assertThatThrownBy(() -> port.team(TENANT, lions)).as(status.toString())
                     .isInstanceOf(NotFoundException.class);
             assertThatThrownBy(() -> port.players(TENANT, List.of(ana.id()))).as(status.toString())
                     .isInstanceOf(NotFoundException.class);
