@@ -17,9 +17,12 @@ statistics on top of the same packages. Port 8082, schema `game`, contract `libs
 | submitMatchEvents | `POST /api/game/matches/{id}/events:batch` | per event: ADMIN / team staff any type; PARENT stat events of linked players + VOID of own events; others `NOT_AUTHORIZED` |
 | listMatchEvents | `GET /api/game/matches/{id}/events?after=&limit=` | any tenant member; filtered (WP33, ADR-0030): ADMIN/team staff every event, others team-level events + own/linked players' events (`StatVisibility` + `EventVisibility`, the box score's rule) |
 | getBoxScore | `GET /api/game/matches/{id}/box-score` | any member; player lines: ADMIN/team staff all, PARENT linked, PLAYER self |
+| getMatchSheetPdf | `GET /api/game/matches/{id}/box-score:pdf` | as getBoxScore (the same lines); rendered by pdf-service (WP117) |
 | getPlayerSeasonStats | `GET /api/game/players/{id}/season-stats?seasonId=` | ADMIN, COACH, ASSISTANT_COACH, linked PARENT, PLAYER self; others 404 |
 
-Ingest and projection semantics: ADR-0014. The projector is pure domain code (`domain/events`, `domain/projection`);
+Ingest and projection semantics: ADR-0014. A batch locks the match row, reads its events once and re-projects from
+them plus the accepted ones, writing only the `voided_by` marks that changed (WP126). The feed's `lastServerSeq` is
+read with the match (its projected summary), before the page, so it never passes an event the page did not hold. The projector is pure domain code (`domain/events`, `domain/projection`);
 shared test vectors live in `src/test/resources/vectors` and are copied to `libs/contracts/vectors`
 (`-Dvectors.write=true` on `ProjectionVectorsTest` regenerates both).
 
@@ -29,7 +32,7 @@ State machine: `SCHEDULED -> LIVE -> FINISHED`; `CANCELLED` from `SCHEDULED` or 
 ## Layout (`com.hoopsacademy.game`)
 ```
 domain/                  Match (state machine), MatchRoster, RosterEntry, value objects (MatchId, TeamId, PlayerId, SeasonId, JerseyNumber)
-application/             use cases (CreateMatch, StartMatch, ReplaceMatchRoster, ...), ports MatchRepository, RosterPort, UsageCounter
+application/             use cases (CreateMatch, ChangeMatchStatus, ReplaceMatchRoster, ...), ports MatchRepository, RosterPort, UsageCounter
 adapters/in/rest/        MatchResource, MatchRosterResource, DTOs (401/409/503 Problems come from common-quarkus)
 adapters/in/internal/    UsageResource (/internal/usage/{tenantId})
 adapters/out/persistence JPA entities (@TenantId), JpaMatchRepository, JpaUsageCounter
@@ -49,7 +52,22 @@ configKey `core`, base URL `hoops.core.url`, 2 s timeouts, client-credentials to
 member" are not cached; 404 -> `NotFoundException`, timeout / connection error / 5xx / 401 / 403 ->
 `UpstreamUnavailableException` -> `503` Problem `UPSTREAM_UNAVAILABLE`, declared in the contract) and
 `RosterAuthzResolver` (`@DefaultBean` for the common tenant filter; SUSPENDED / WITHDRAWN tenant -> no membership, 404).
-`RestRosterPort` implements game's `RosterPort{teamRoster, players}` by mapping the shared client's DTOs.
+`RestRosterPort` implements game's `RosterPort{teamRoster, team, players}` by mapping the shared client's DTOs.
+
+## Roster replica (WP68, WP82, WP98; ADR-0037)
+`hoops.roster.source` (`GAME_ROSTER_SOURCE`) picks where `RosterPort` and the tenant filter's authorisation context
+read core's roster: `replica` (the default since WP98) reads the local `*_ref` tables, `rest` (the fallback) core's
+`/internal` API above. The consumer (`adapters/in/messaging`, channel `core-roster` over core's seven roster topics,
+`GAME_ROSTER_CONSUMER_ENABLED`, default on) feeds the replica in both modes: schema-validated, applied in the event's
+tenant (known `eventId` skipped, older `occurredAt` never wins, removals soft), invalid records parked in
+`game.parked_event` (once per topic position, WP126). A daily job prunes old applied event ids and inspected parked
+records (`hoops.roster.replica.retention.*`). Operations: `docs/runbooks/events.md`.
+
+## Match sheet PDF (WP117; ADR-0051, ADR-0052)
+`GetMatchSheetPdf` reads the caller's box score, the team's name (`RosterPort.team`) and the academy's name, and asks
+the internal Rust pdf-service to render it (`adapters/out/client/PdfServiceMatchSheetRenderer`, game's service token;
+the answer must start with `%PDF-`). Without `PDF_SERVICE_URL` the endpoint answers 503 `UPSTREAM_UNAVAILABLE` and
+everything else works.
 
 ## Operations (WP17)
 - `/q/health/live`, `/q/health/ready` (datasource check + `core-service` indicator), `/q/health/started`
@@ -66,10 +84,13 @@ member" are not cached; 404 -> `NotFoundException`, timeout / connection error /
 | Key / env | Default | |
 |---|---|---|
 | `GAME_DB_URL` | `jdbc:postgresql://localhost:5432/hoops` | |
-| `GAME_APP_PASSWORD`, `GAME_MIGRATOR_PASSWORD` | `change-me` | roles `game_app` (runtime), `game_migrator` (Flyway) |
+| `GAME_APP_PASSWORD`, `GAME_MIGRATOR_PASSWORD` | none (required) | roles `game_app` (runtime), `game_migrator` (Flyway) |
 | `KEYCLOAK_URL` | `http://localhost:8180` | realm `academy` |
-| `GAME_SERVICE_CLIENT_SECRET` | `change-me` | OIDC client `game-service` (also used for service tokens) |
+| `GAME_SERVICE_CLIENT_SECRET` | none (required) | OIDC client `game-service` (also used for service tokens) |
 | `hoops.core.url` | `http://localhost:8081` | core-service base URL |
+| `GAME_ROSTER_SOURCE` (`hoops.roster.source`) | `replica` | `rest` reads core's `/internal` API instead |
+| `GAME_ROSTER_CONSUMER_ENABLED` | `true` | the roster consumer; `KAFKA_*` for the broker |
+| `PDF_SERVICE_URL` (`hoops.pdf.url`) | unset | pdf-service base URL; `hoops.pdf.connect-timeout` 2 s, `hoops.pdf.read-timeout` 10 s |
 | `hoops.game.overtime-minutes` | `5` | length of overtime periods (period > periodCount) |
 
 ## Tests
