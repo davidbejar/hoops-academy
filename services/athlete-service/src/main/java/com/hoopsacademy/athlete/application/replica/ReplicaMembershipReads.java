@@ -8,6 +8,7 @@ import com.hoopsacademy.common.tenancy.TenantRole;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -38,9 +39,6 @@ public interface ReplicaMembershipReads {
     /** Teams with an open, valid assignment of one of the players. */
     Set<TeamId> openValidTeamsOf(Collection<PlayerId> players);
 
-    /** The teams (of those known) whose season ends today or later. */
-    Set<TeamId> seasonNotEnded(Collection<TeamId> teams, LocalDate today);
-
-    /** The teams (of those known) whose season ended before {@code today} (ADR-0042). */
-    Set<TeamId> seasonEnded(Collection<TeamId> teams, LocalDate today);
+    /** The last day of the season of each known team among {@code teams}; unknown teams are absent. */
+    Map<TeamId, LocalDate> seasonEnds(Collection<TeamId> teams);
 }

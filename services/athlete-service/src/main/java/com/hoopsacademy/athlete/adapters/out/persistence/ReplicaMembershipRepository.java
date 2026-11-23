@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -86,29 +87,16 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
     }
 
     @Override
-    public Set<TeamId> seasonNotEnded(Collection<TeamId> teams, LocalDate today) {
+    public Map<TeamId, LocalDate> seasonEnds(Collection<TeamId> teams) {
         if (teams.isEmpty()) {
-            return Set.of();
+            return Map.of();
         }
-        List<?> rows = em.createNativeQuery(
-                        "select id from athlete.team_ref where id in (:teams) and not removed "
-                                + "and season_end_date >= cast(:today as date)")
-                .setParameter("teams", teams.stream().map(TeamId::value).toList())
-                .setParameter("today", today.toString()).getResultList();
-        return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());
-    }
-
-    @Override
-    public Set<TeamId> seasonEnded(Collection<TeamId> teams, LocalDate today) {
-        if (teams.isEmpty()) {
-            return Set.of();
-        }
-        List<?> rows = em.createNativeQuery(
-                        "select id from athlete.team_ref where id in (:teams) and not removed "
-                                + "and season_end_date < cast(:today as date)")
-                .setParameter("teams", teams.stream().map(TeamId::value).toList())
-                .setParameter("today", today.toString()).getResultList();
-        return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());
+        List<?> rows = em.createNativeQuery("""
+                        select id, season_end_date from athlete.team_ref
+                         where id in (:teams) and not removed and season_end_date is not null""")
+                .setParameter("teams", teams.stream().map(TeamId::value).toList()).getResultList();
+        return rows.stream().map(Object[].class::cast).collect(Collectors.toMap(
+                columns -> new TeamId(ReplicaRows.uuid(columns[0])), columns -> ReplicaRows.date(columns[1])));
     }
 
     private static Optional<Object[]> first(Query query) {

@@ -14,9 +14,11 @@ import jakarta.transaction.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -61,13 +63,20 @@ public class ReplicaAuthzResolver implements AuthzContextResolver {
         Set<TeamId> playerTeams = players.isEmpty() ? Set.of() : reads.openValidTeamsOf(players);
         Set<TeamId> candidates = new HashSet<>(staffTeams);
         candidates.addAll(playerTeams);
+        Map<TeamId, LocalDate> seasonEnds = reads.seasonEnds(candidates);
         LocalDate today = LocalDate.now(clock.withZone(tenant.timezone()));
-        Set<TeamId> running = candidates.isEmpty() ? Set.of() : reads.seasonNotEnded(candidates, today);
-        Set<TeamId> ended = staffTeams.isEmpty() ? Set.of() : reads.seasonEnded(staffTeams, today);
+        Set<TeamId> running = teamsWhere(seasonEnds, lastDay -> !lastDay.isBefore(today));
+        Set<TeamId> ended = teamsWhere(seasonEnds, lastDay -> lastDay.isBefore(today));
         return new AuthzContext(subject, member.personId().value(), tenantId, member.roles(),
                 teamIds(staffTeams, running), linked.stream().map(PlayerId::value).collect(Collectors.toSet()),
                 ownPlayer.map(PlayerId::value), teamIds(playerTeams, running), Optional.of(tenant.timezone()),
                 teamIds(staffTeams, ended));
+    }
+
+    /** The known teams whose season's last day passes {@code test}; one read serves running and ended teams. */
+    private static Set<TeamId> teamsWhere(Map<TeamId, LocalDate> seasonEnds, Predicate<LocalDate> test) {
+        return seasonEnds.entrySet().stream().filter(team -> test.test(team.getValue())).map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
     }
 
     private static Set<UUID> teamIds(Set<TeamId> teams, Set<TeamId> running) {
