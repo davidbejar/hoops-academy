@@ -4,7 +4,7 @@ import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/time/dates.dart';
-import '../../../core/export/server_csv_export.dart';
+import '../../../core/export/server_export_button.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/date_field.dart';
 import '../../../core/ui/kit.dart';
@@ -33,7 +33,7 @@ class ExpensesScreen extends ConsumerWidget {
       title: l.financeExpensesTitle,
       parentPath: '/admin/finance',
       actions: [
-        ServerCsvExportButton(
+        ServerExportButton.csv(
           key: const Key('expenses-export'),
           what: 'expenses',
           tooltip: l.financeExportExpensesTooltip,

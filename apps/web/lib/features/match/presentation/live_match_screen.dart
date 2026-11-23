@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../core/export/export_menu.dart';
-import '../../../core/export/server_pdf_export.dart';
+import '../../../core/export/server_export_button.dart';
 import '../../../core/export/export_runner.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
@@ -70,7 +70,7 @@ class _LiveMatchScreenState extends ConsumerState<LiveMatchScreen> {
             ),
           ),
         if (m != null && m.roster.isNotEmpty)
-          ServerPdfExportButton(
+          ServerExportButton.pdf(
             key: const Key('match-sheet-pdf'),
             what: 'match sheet ${m.match.opponentName}',
             tooltip: l.pdfSheetTooltip,

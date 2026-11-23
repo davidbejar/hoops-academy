@@ -5,6 +5,7 @@ import '../../l10n/gen/app_localizations.dart';
 import '../errors/app_error.dart';
 import '../ui/app_error_view.dart';
 import '../ui/kit.dart';
+import 'busy_icon_button.dart';
 import 'export_runner.dart';
 
 /// Builds what a screen exports, at the moment the person picks a format.
@@ -33,16 +34,12 @@ class _ExportMenuState extends ConsumerState<ExportMenu> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return IconButton(
+    return BusyIconButton(
       key: const Key('export-menu'),
+      icon: Icons.file_download_outlined,
+      busy: _busy,
       tooltip: l.exportTooltip,
-      icon: _busy
-          ? const SizedBox.square(
-              dimension: HoopsSpace.lg,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.file_download_outlined),
-      onPressed: _busy ? null : () => _open(context),
+      onPressed: () => _open(context),
     );
   }
 
@@ -67,7 +64,7 @@ class _ExportMenuState extends ConsumerState<ExportMenu> {
     try {
       final job = await widget.prepare(ref, l);
       final outcome = await ref.read(exportRunnerProvider).run(format, job);
-      _show(messenger, switch (outcome) {
+      showExportMessage(messenger, switch (outcome) {
         ExportSaved(:final fileName) => [
           l.exportSaved(fileName),
           if (job.notice != null) job.notice!,
@@ -75,16 +72,13 @@ class _ExportMenuState extends ConsumerState<ExportMenu> {
         ExportExcelUnavailable() => l.exportExcelUnavailable,
       });
     } on NothingToExport {
-      _show(messenger, l.exportNothing);
+      showExportMessage(messenger, l.exportNothing);
     } on Object catch (e) {
-      _show(messenger, AppError.of(e).message(l));
+      showExportMessage(messenger, AppError.of(e).message(l));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
-
-  void _show(ScaffoldMessengerState? messenger, String text) =>
-      messenger?.showSnackBar(SnackBar(content: Text(text)));
 
   static IconData _icon(ExportFormat f) => switch (f) {
     ExportFormat.csv => Icons.description_outlined,

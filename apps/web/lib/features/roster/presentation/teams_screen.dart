@@ -17,8 +17,7 @@ import '../../health/presentation/player_health_view.dart'
     show AvailabilityBadge;
 import '../../health/application/health_providers.dart'
     show openInjuriesProvider;
-import '../../../core/export/server_csv_export.dart';
-import '../../../core/export/server_pdf_export.dart';
+import '../../../core/export/server_export_button.dart';
 import '../application/roster_providers.dart';
 import '../application/roster_rights.dart';
 import '../application/season_view.dart' show historicTeamsProvider;
@@ -324,7 +323,7 @@ class TeamDetailScreen extends ConsumerWidget {
       parentPath: '/teams',
       actions: [
         if (caps.canExportRoster(teamId) && detail.hasValue)
-          ServerCsvExportButton(
+          ServerExportButton.csv(
             key: const Key('roster-export'),
             what: 'roster ${detail.value!.team.name}',
             tooltip: l.exportRosterTooltip,
@@ -333,7 +332,7 @@ class TeamDetailScreen extends ConsumerWidget {
                 .exportRoster(teamId, language: language),
           ),
         if (caps.canExportRoster(teamId) && detail.hasValue)
-          ServerPdfExportButton(
+          ServerExportButton.pdf(
             key: const Key('roster-export-pdf'),
             what: 'roster ${detail.value!.team.name}',
             tooltip: l.pdfRosterTooltip,

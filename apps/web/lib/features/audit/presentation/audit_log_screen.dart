@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
-import '../../../core/export/server_csv_export.dart';
+import '../../../core/export/server_export_button.dart';
 import '../../../core/ui/async_body.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
@@ -131,7 +131,7 @@ class AuditLogView extends ConsumerWidget {
                       if (picked != null) notifier.setActions(picked);
                     },
                   ),
-                  ServerCsvExportButton(
+                  ServerExportButton.csv(
                     key: const Key('audit-export'),
                     what: 'audit',
                     slug: scope.platform ? 'platform' : null,
