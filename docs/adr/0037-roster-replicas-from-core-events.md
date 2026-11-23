@@ -113,7 +113,9 @@ WP82 at the end.
 
 ## game-service (WP68)
 - Tables (`V4__roster_replica.sql`): `game.tenant_ref`, `person_ref`, `player_ref`, `team_ref`, `team_player_ref`,
-  `team_staff_ref`, `guardian_link_ref`, `applied_event`, `parked_event`.
+  `team_staff_ref`, `guardian_link_ref`, `applied_event`, `parked_event`. Since WP126 (`V8`, 2026-11-23)
+  `parked_event` has a unique key on `(topic, kafka_partition, kafka_offset)` and the insert is
+  `on conflict do nothing`, so a replay parks a record once, as in athlete (the identity `id` stays).
 - One incoming channel `core-roster` subscribed to the seven `core.*` topics, consumer group `game-service.roster`
   (ADR-0036 ACL prefix), `auto.offset.reset=earliest`, processing blocking and ordered. One channel and one group
   instead of one per topic: a single `rpk group seek` replays everything, and per-key order only needs each topic's

@@ -37,6 +37,11 @@ the caller's own or linked players; staff keep the full feed. Several details we
    query with it on random matches. A feed page costs four statements whatever the match size
    (`FeedPageStatementCountTest`); the existing `(match_id, server_seq)` index and the primary key serve it, no
    migration.
+   *Amendment (WP126, 2026-11-23): `lastServerSeq` from the summary.* It is read with the match (its `match_summary`
+   row, rewritten in the same transaction as every accepted batch), before the page, instead of a `max(server_seq)`
+   after it: under READ COMMITTED a batch committed between the two raised the cursor past events the page did not
+   hold, and a client following the contract ("the cursor when `hasMore` is false") skipped them (`FeedCursorTest`).
+   A page now costs three statements.
 5. **Clients of filtered callers take team figures from the server.** The feed no longer lets them rebuild the score.
    The web app (live match, not staff) shows `GET box-score`'s score, period scores and team totals, refreshed when the
    feed changes and every 15 s while the screen is open, plus the effect of the caller's events the snapshot does not
