@@ -81,6 +81,42 @@ void main() {
     },
   );
 
+  test('the activity trail filters by action and range like the server '
+      '(core: listAuditEvents `action`, `from`, `to`)', () async {
+    final audit = ApiAuditRepository(client);
+    final all = (await audit.academy(t, const AuditQuery())).items;
+    final invited = await audit.academy(
+      t,
+      const AuditQuery(actions: {api.AuditAction.memberPeriodInvited}),
+    );
+    expect(invited.items, isNotEmpty);
+    expect(invited.items.length, lessThan(all.length));
+    expect(
+      invited.items.map((e) => e.action),
+      everyElement(api.AuditAction.memberPeriodInvited),
+    );
+    final today = DateTime.now();
+    final none = await audit.academy(
+      t,
+      AuditQuery(
+        fromDay: today.add(const Duration(days: 2)),
+        toDay: today.add(const Duration(days: 3)),
+      ),
+    );
+    expect(none.items, isEmpty);
+    expect(
+      () => client.getAuditApi().listAuditEvents(
+        xTenantId: t,
+        from: today.toUtc(),
+        to: today.toUtc(),
+      ),
+      throwsA(
+        isA<DioException>().having((e) => e.response?.statusCode, '', 400),
+      ),
+      reason: '`from` must be before `to`',
+    );
+  });
+
   test('seasons, categories, rollover with orphans and opened cases', () async {
     final seasons = ApiSeasonsRepository(client, t);
     expect(
