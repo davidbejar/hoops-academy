@@ -28,6 +28,7 @@ class EventLedgerTest {
         assertThat(ledger.recorderOf(script.get(2).id())).isEmpty();
         assertThat(ledger.lastServerSeq()).as("the highest, whatever the order").isEqualTo(7);
         assertThat(ledger.changed()).isFalse();
+        assertThat(ledger.accepted()).as("stored events are not accepted ones").isEmpty();
     }
 
     @Test
@@ -40,11 +41,14 @@ class EventLedgerTest {
         EventLedger ledger = new EventLedger(List.of(stored(script.get(0), 3, ANA)));
 
         ledger.accept(script.get(1).event(), 4, BEA);
+        ledger.accept(script.get(2).event(), 5, ANA);
 
         assertThat(ledger.changed()).isTrue();
+        assertThat(ledger.accepted()).as("in acceptance order, with their sequence numbers").containsExactly(
+                new RecordedEvent(script.get(1).event(), 4), new RecordedEvent(script.get(2).event(), 5));
         assertThat(ledger.serverSeqOf(script.get(1).id())).hasValue(4);
         assertThat(ledger.recorderOf(script.get(1).id())).contains(BEA);
-        assertThat(ledger.lastServerSeq()).isEqualTo(4);
+        assertThat(ledger.lastServerSeq()).isEqualTo(5);
     }
 
     @Test

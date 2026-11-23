@@ -12,7 +12,10 @@ public interface MatchRepository {
 
     Optional<Match> findById(MatchId id);
 
-    /** Loads the match and locks its row until the transaction ends (serialises event ingest per match). */
+    /**
+     * Loads the match and locks its row until the transaction ends (serialises event ingest per match). Its score is
+     * not read ({@link com.hoopsacademy.game.domain.MatchScore#NONE}): ingest re-projects it.
+     */
     Optional<Match> lockById(MatchId id);
 
     MatchPage list(MatchFilter filter, int page, int size);

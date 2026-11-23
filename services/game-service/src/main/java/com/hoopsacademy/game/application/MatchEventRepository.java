@@ -2,11 +2,9 @@ package com.hoopsacademy.game.application;
 
 import com.hoopsacademy.game.domain.MatchId;
 import com.hoopsacademy.game.domain.PlayerVisibility;
-import com.hoopsacademy.game.domain.events.EventId;
 import com.hoopsacademy.game.domain.events.MatchEvent;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.OptionalLong;
 
 /** Append-only store of match events (bound tenant only). */
@@ -28,8 +26,8 @@ public interface MatchEventRepository {
      */
     OptionalLong append(MatchId matchId, MatchEvent event, Recorder recorder);
 
-    /** Sets {@code voided_by} from the latest projection (and clears it elsewhere). */
-    void markVoided(MatchId matchId, Map<EventId, EventId> voidedBy);
+    /** Writes the {@code voided_by} marks a re-projection changed (one statement). */
+    void markVoided(MatchId matchId, VoidMarks changes);
 
     /** Remembers the highest client sequence seen per device (sync bookkeeping). */
     void recordReceipt(MatchId matchId, String deviceId, long clientSeq);

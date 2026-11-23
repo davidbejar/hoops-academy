@@ -76,7 +76,8 @@ public class IngestEventBatch {
             throw new IllegalArgumentException("A batch holds 1 to " + MAX_BATCH + " events");
         }
         Match match = matches.lockById(matchId).orElseThrow(() -> new NotFoundException("Match " + matchId + " not found"));
-        EventLedger ledger = new EventLedger(events.findByMatch(matchId));
+        List<StoredEvent> stored = events.findByMatch(matchId);
+        EventLedger ledger = new EventLedger(stored);
         AuthzContext authz = caller.authz();
         Recorder recorder = new Recorder(authz.personId(), recorderName);
         EventAdmission admission = new EventAdmission(match, authz, pastSeasons.closedSince(match.teamId()));
@@ -85,7 +86,7 @@ public class IngestEventBatch {
             results.add(admit(match, submitted, ledger, admission, recorder));
         }
         if (ledger.changed()) {
-            reprojection.reproject(match);
+            reprojection.reproject(match, stored, ledger.accepted());
         }
         return new BatchResult(results, ledger.lastServerSeq());
     }

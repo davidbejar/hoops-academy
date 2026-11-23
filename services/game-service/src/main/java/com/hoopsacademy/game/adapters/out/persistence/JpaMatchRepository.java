@@ -77,7 +77,8 @@ class JpaMatchRepository extends JdbcRepository implements MatchRepository {
 
     @Override
     public Optional<Match> lockById(MatchId id) {
-        return Optional.ofNullable(em.find(MatchEntity.class, id.value(), LockModeType.PESSIMISTIC_WRITE)).map(this::toDomain);
+        return Optional.ofNullable(em.find(MatchEntity.class, id.value(), LockModeType.PESSIMISTIC_WRITE))
+                .map(e -> toDomain(e, MatchScore.NONE));
     }
 
     @Override

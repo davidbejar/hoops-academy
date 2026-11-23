@@ -7,6 +7,7 @@ import com.hoopsacademy.game.adapters.json.MatchEventJson;
 import com.hoopsacademy.game.application.MatchEventRepository;
 import com.hoopsacademy.game.application.Recorder;
 import com.hoopsacademy.game.application.StoredEvent;
+import com.hoopsacademy.game.application.VoidMarks;
 import com.hoopsacademy.game.domain.MatchId;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.PlayerVisibility;
@@ -19,8 +20,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.OptionalLong;
 import java.util.UUID;
 
@@ -130,17 +131,19 @@ class JpaMatchEventRepository extends JdbcRepository implements MatchEventReposi
     }
 
     @Override
-    public void markVoided(MatchId matchId, Map<EventId, EventId> voidedBy) {
-        update("update game.match_event set voided_by = null where match_id = ? and voided_by is not null",
-                s -> s.setObject(1, matchId.value()));
-        if (!voidedBy.isEmpty()) {
-            batch("update game.match_event set voided_by = ? where match_id = ? and id = ?",
-                    voidedBy.entrySet().stream().<Binder>map(e -> s -> {
-                        s.setObject(1, e.getValue().value());
-                        s.setObject(2, matchId.value());
-                        s.setObject(3, e.getKey().value());
-                    }).toList());
-        }
+    public void markVoided(MatchId matchId, VoidMarks changes) {
+        List<Binder> rows = new ArrayList<>();
+        changes.voided().forEach((target, by) -> rows.add(voidedBy(matchId, target, by.value())));
+        changes.cleared().forEach(target -> rows.add(voidedBy(matchId, target, null)));
+        batch("update game.match_event set voided_by = ? where match_id = ? and id = ?", rows);
+    }
+
+    private static Binder voidedBy(MatchId matchId, EventId target, UUID by) {
+        return s -> {
+            setUuid(s, 1, by);
+            s.setObject(2, matchId.value());
+            s.setObject(3, target.value());
+        };
     }
 
     @Override

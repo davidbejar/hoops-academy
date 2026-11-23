@@ -2,6 +2,8 @@ package com.hoopsacademy.game.application;
 
 import com.hoopsacademy.game.domain.events.EventId;
 import com.hoopsacademy.game.domain.events.MatchEvent;
+import com.hoopsacademy.game.domain.events.RecordedEvent;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +11,11 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
 
-/** The events of one match known while a batch is admitted: stored ones plus those accepted so far. */
+/**
+ * The events of one match known while a batch is admitted: stored ones plus those accepted so far. It keeps ids,
+ * sequence numbers and recorders of all, and the accepted events themselves (the re-projection needs them next to the
+ * stored list it was built from).
+ */
 final class EventLedger {
 
     private record Entry(long serverSeq, UUID recordedBy) {}
@@ -18,8 +24,8 @@ final class EventLedger {
 
     private final Map<EventId, Entry> byId = new HashMap<>();
     private final Map<DeviceSeq, EventId> byDeviceSeq = new HashMap<>();
+    private final List<RecordedEvent> accepted = new ArrayList<>();
     private long lastServerSeq;
-    private boolean changed;
 
     EventLedger(List<StoredEvent> stored) {
         stored.forEach(e -> remember(e.recorded().event(), e.recorded().serverSeq(), e.recordedBy().personId()));
@@ -41,11 +47,16 @@ final class EventLedger {
 
     void accept(MatchEvent event, long serverSeq, UUID recordedBy) {
         remember(event, serverSeq, recordedBy);
-        changed = true;
+        accepted.add(new RecordedEvent(event, serverSeq));
     }
 
     boolean changed() {
-        return changed;
+        return !accepted.isEmpty();
+    }
+
+    /** The events accepted so far, in acceptance order (which is server order: the match row is locked). */
+    List<RecordedEvent> accepted() {
+        return List.copyOf(accepted);
     }
 
     long lastServerSeq() {

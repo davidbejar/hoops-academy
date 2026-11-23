@@ -7,6 +7,7 @@ import com.hoopsacademy.game.domain.projection.MatchRules;
 import com.hoopsacademy.game.domain.projection.Projection;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
+import java.util.stream.Stream;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /** Re-projects a whole match from its roster and all its events; runs inside the caller's transaction. */
@@ -27,9 +28,22 @@ public class MatchReprojection {
     }
 
     public Projection reproject(Match match) {
-        Projection projection = project(match, events.findByMatch(match.id()).stream().map(StoredEvent::recorded).toList());
+        return reproject(match, events.findByMatch(match.id()), List.of());
+    }
+
+    /**
+     * Re-projects from events already read in this transaction (GAME-01): {@code stored}, every event of the match in
+     * server order with the marks its row carries, and {@code appended} since under the match's lock (higher sequence
+     * numbers, no marks yet). Writes only the {@code voided_by} marks that changed.
+     */
+    Projection reproject(Match match, List<StoredEvent> stored, List<RecordedEvent> appended) {
+        Projection projection = project(match,
+                Stream.concat(stored.stream().map(StoredEvent::recorded), appended.stream()).toList());
         projections.save(match.id(), projection);
-        events.markVoided(match.id(), projection.voidedBy());
+        VoidMarks changes = VoidMarks.between(stored, projection.voidedBy());
+        if (!changes.isEmpty()) {
+            events.markVoided(match.id(), changes);
+        }
         return projection;
     }
 
