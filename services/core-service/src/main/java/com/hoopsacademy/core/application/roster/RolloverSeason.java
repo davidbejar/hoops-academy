@@ -20,7 +20,9 @@ import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.roster.Season;
 import com.hoopsacademy.core.domain.roster.SeasonId;
 import com.hoopsacademy.core.domain.roster.Team;
+import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamPlayer;
+import com.hoopsacademy.core.domain.roster.TeamStaffMember;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
@@ -31,6 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * {@code POST /seasons/{target}/rollover} (contract semantics, ADR-0014): clones every team of the source season into
@@ -90,8 +93,19 @@ public class RolloverSeason {
         requireForward(source, target);
         LocalDate today = calendar.today();
         Run run = new Run(target, command, today, engine.evaluator());
-        for (Team team : teams.inSeasons(List.of(source.id()))) {
-            run.cloneTeam(team);
+        List<Team> sourceTeams = teams.inSeasons(List.of(source.id()));
+        List<TeamId> sourceIds = sourceTeams.stream().map(Team::id).toList();
+        // one read each for all source teams (CORE-02), grouped in the per-team order of ofTeam
+        Map<TeamId, List<TeamPlayer>> open = assignments.openOfTeams(sourceIds).stream()
+                .collect(Collectors.groupingBy(TeamPlayer::team));
+        Map<TeamId, List<TeamStaffMember>> staffOf = command.cloneStaff()
+                ? staff.ofTeams(sourceIds).stream().collect(Collectors.groupingBy(TeamStaffMember::team))
+                : Map.of();
+        Map<PlayerId, PlayerSummary> summaries = players.summaries(
+                open.values().stream().flatMap(List::stream).map(TeamPlayer::player).distinct().toList());
+        for (Team team : sourceTeams) {
+            run.cloneTeam(team, staffOf.getOrDefault(team.id(), List.of()), open.getOrDefault(team.id(), List.of()),
+                    summaries);
         }
         if (command.cloneStaff()) {
             authzCache.invalidate(tenantContext.requireTenantId());
@@ -139,15 +153,12 @@ public class RolloverSeason {
             this.evaluator = evaluator;
         }
 
-        void cloneTeam(Team team) {
+        void cloneTeam(Team team, List<TeamStaffMember> members, List<TeamPlayer> open,
+                Map<PlayerId, PlayerSummary> summaries) {
             Team clone = team.cloneInto(target.id());
             teams.insert(clone);
             cloned.add(clone);
-            if (command.cloneStaff()) {
-                staff.ofTeam(team.id()).forEach(member -> staff.save(member.forTeam(clone.id(), today)));
-            }
-            List<TeamPlayer> open = assignments.ofTeam(team.id(), false);
-            Map<PlayerId, PlayerSummary> summaries = players.summaries(open.stream().map(TeamPlayer::player).toList());
+            members.forEach(member -> staff.save(member.forTeam(clone.id(), today)));
             for (TeamPlayer assignment : open) {
                 PlayerSummary player = summaries.get(assignment.player());
                 if (player.candidate().isActive()) {

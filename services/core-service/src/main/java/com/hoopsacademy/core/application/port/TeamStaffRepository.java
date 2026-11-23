@@ -3,6 +3,7 @@ package com.hoopsacademy.core.application.port;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamStaffMember;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -11,6 +12,9 @@ import java.util.Set;
 public interface TeamStaffRepository {
 
     List<TeamStaffMember> ofTeam(TeamId team);
+
+    /** The staff of these teams, in {@link #ofTeam} order within each team. */
+    List<TeamStaffMember> ofTeams(Collection<TeamId> teams);
 
     Optional<TeamStaffMember> find(TeamId team, PersonId person);
 

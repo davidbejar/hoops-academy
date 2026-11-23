@@ -68,6 +68,19 @@ class JpaTeamPlayerRepository implements TeamPlayerRepository {
     }
 
     @Override
+    public List<TeamPlayer> openOfTeams(Collection<TeamId> teams) {
+        if (teams.isEmpty()) {
+            return List.of();
+        }
+        return em.createQuery("""
+                        select a from TeamPlayerEntity a
+                         where a.teamId in :teams and a.leftOn is null
+                         order by a.joinedOn, a.id""", TeamPlayerEntity.class)
+                .setParameter("teams", teams.stream().map(TeamId::value).toList())
+                .getResultStream().map(JpaTeamPlayerRepository::toDomain).toList();
+    }
+
+    @Override
     public List<TeamPlayer> openValidOfTeams(Collection<TeamId> teams) {
         if (teams.isEmpty()) {
             return List.of();

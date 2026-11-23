@@ -25,6 +25,9 @@ public interface TeamPlayerRepository {
     /** Open (valid or invalidated) assignments of a team, or all of its assignments with {@code includeLeft}. */
     List<TeamPlayer> ofTeam(TeamId team, boolean includeLeft);
 
+    /** Open (valid or invalidated) assignments of these teams, in {@link #ofTeam} order within each team. */
+    List<TeamPlayer> openOfTeams(Collection<TeamId> teams);
+
     List<TeamPlayer> openValidOfTeams(Collection<TeamId> teams);
 
     List<TeamPlayer> openOfPlayers(Collection<PlayerId> players);

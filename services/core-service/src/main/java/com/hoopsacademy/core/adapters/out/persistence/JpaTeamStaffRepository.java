@@ -8,6 +8,7 @@ import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamStaffMember;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,6 +31,17 @@ class JpaTeamStaffRepository implements TeamStaffRepository {
         return em.createQuery("select s from TeamStaffEntity s where s.teamId = :team order by s.role, s.since, s.personId",
                         TeamStaffEntity.class)
                 .setParameter("team", team.value()).getResultStream().map(JpaTeamStaffRepository::toDomain).toList();
+    }
+
+    @Override
+    public List<TeamStaffMember> ofTeams(Collection<TeamId> teams) {
+        if (teams.isEmpty()) {
+            return List.of();
+        }
+        return em.createQuery("select s from TeamStaffEntity s where s.teamId in :teams"
+                        + " order by s.role, s.since, s.personId", TeamStaffEntity.class)
+                .setParameter("teams", teams.stream().map(TeamId::value).toList())
+                .getResultStream().map(JpaTeamStaffRepository::toDomain).toList();
     }
 
     @Override
