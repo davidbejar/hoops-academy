@@ -7,14 +7,14 @@ import java.util.function.Supplier;
  * The transaction-local settings the RLS policies read ({@code app.tenant_id}, {@code app.subject}), for the few
  * adapters that rebind them with native SQL inside a transaction (ADR-0013, ADR-0026).
  */
-public final class SessionSettings {
+public final class SessionSettingsRepository {
 
     public static final String TENANT = "app.tenant_id";
     public static final String SUBJECT = "app.subject";
     /** Binds no academy: the standard tenant policy then matches nothing instead of raising. */
     public static final String NIL_TENANT = "00000000-0000-0000-0000-000000000000";
 
-    private SessionSettings() {}
+    private SessionSettingsRepository() {}
 
     /** The setting's value in this transaction, {@code ""} when unset. */
     public static String current(EntityManager em, String name) {

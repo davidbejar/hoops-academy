@@ -65,7 +65,7 @@ class JpaSharedLoginPersonRepository implements SharedLoginPersons {
             throw new IllegalArgumentException("Another tenant's person expected, got one of the bound tenant");
         }
         em.flush();
-        return SessionSettings.with(em, SessionSettings.TENANT, other.value().toString(), home.toString(),
-                statements);
+        return SessionSettingsRepository.with(em, SessionSettingsRepository.TENANT, other.value().toString(),
+                home.toString(), statements);
     }
 }

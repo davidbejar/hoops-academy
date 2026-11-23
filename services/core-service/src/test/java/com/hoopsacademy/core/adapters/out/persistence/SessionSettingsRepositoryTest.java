@@ -14,7 +14,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** CORE-05: one way to rebind an RLS setting for a few statements and put it back, also after a failure. */
-class SessionSettingsTest {
+class SessionSettingsRepositoryTest {
 
     private final List<String> bound = new ArrayList<>();
     private final EntityManager em = mock(EntityManager.class);
@@ -23,7 +23,8 @@ class SessionSettingsTest {
     void theStatementsRunUnderTheNewValueAndTheOldOneIsBoundAfterwards() {
         recordingBinds();
 
-        String seen = SessionSettings.with(em, SessionSettings.TENANT, "other", "home", () -> bound.getLast());
+        String seen = SessionSettingsRepository.with(em, SessionSettingsRepository.TENANT, "other", "home",
+                () -> bound.getLast());
 
         assertThat(seen).isEqualTo("app.tenant_id=other");
         assertThat(bound).containsExactly("app.tenant_id=other", "app.tenant_id=home");
@@ -34,9 +35,10 @@ class SessionSettingsTest {
         recordingBinds();
         IllegalStateException failure = new IllegalStateException("statement failed");
 
-        assertThatThrownBy(() -> SessionSettings.with(em, SessionSettings.SUBJECT, "sub", "", () -> {
-            throw failure;
-        })).isSameAs(failure);
+        assertThatThrownBy(() -> SessionSettingsRepository.with(em, SessionSettingsRepository.SUBJECT, "sub", "",
+                () -> {
+                    throw failure;
+                })).isSameAs(failure);
 
         assertThat(bound).containsExactly("app.subject=sub", "app.subject=");
     }
@@ -47,15 +49,16 @@ class SessionSettingsTest {
         IllegalStateException failure = new IllegalStateException("statement failed");
         PersistenceException aborted = new PersistenceException("current transaction is aborted");
 
-        assertThatThrownBy(() -> SessionSettings.with(em, SessionSettings.TENANT, "other", "home", () -> {
-            failNextBind(aborted);
-            throw failure;
-        })).isSameAs(failure).hasSuppressedException(aborted);
+        assertThatThrownBy(() -> SessionSettingsRepository.with(em, SessionSettingsRepository.TENANT, "other",
+                "home", () -> {
+                    failNextBind(aborted);
+                    throw failure;
+                })).isSameAs(failure).hasSuppressedException(aborted);
     }
 
     @Test
     void theNilTenantIsTheZeroUuid() {
-        assertThat(SessionSettings.NIL_TENANT).isEqualTo(new java.util.UUID(0, 0).toString());
+        assertThat(SessionSettingsRepository.NIL_TENANT).isEqualTo(new java.util.UUID(0, 0).toString());
     }
 
     private RuntimeException nextFailure;

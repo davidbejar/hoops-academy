@@ -4,7 +4,7 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.adapters.out.persistence.LikePattern;
 import com.hoopsacademy.core.adapters.out.persistence.NativeValues;
-import com.hoopsacademy.core.adapters.out.persistence.SessionSettings;
+import com.hoopsacademy.core.adapters.out.persistence.SessionSettingsRepository;
 import com.hoopsacademy.core.application.port.PlatformUsers;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -49,7 +49,7 @@ class PlatformUserRepository implements PlatformUsers {
 
     @Override
     public PageResult<Login> list(Optional<String> query, PageRequest page) {
-        SessionSettings.set(em, SessionSettings.TENANT, SessionSettings.NIL_TENANT);
+        SessionSettingsRepository.set(em, SessionSettingsRepository.TENANT, SessionSettingsRepository.NIL_TENANT);
         Optional<String> pattern = query.map(LikePattern::contains);
         String where = pattern.isPresent() ? MATCHES : "";
         Query count = em.createNativeQuery("select count(*) from core.app_user u " + where);

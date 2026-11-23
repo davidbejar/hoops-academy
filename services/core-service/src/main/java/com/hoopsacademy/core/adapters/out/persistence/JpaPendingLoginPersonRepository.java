@@ -40,12 +40,12 @@ class JpaPendingLoginPersonRepository implements PendingLoginPersons {
         if (boundTenant.isBound()) {
             throw new IllegalStateException("recordForEach must not run inside a tenant-bound transaction");
         }
-        String previousTenant = SessionSettings.current(em, SessionSettings.TENANT);
-        String previousSubject = SessionSettings.current(em, SessionSettings.SUBJECT);
+        String previousTenant = SessionSettingsRepository.current(em, SessionSettingsRepository.TENANT);
+        String previousSubject = SessionSettingsRepository.current(em, SessionSettingsRepository.SUBJECT);
         try {
             int written = 0;
             for (IndexedMembership membership : memberships.ofSubject(subject)) {
-                SessionSettings.set(em, SessionSettings.TENANT, membership.tenant().toString());
+                SessionSettingsRepository.set(em, SessionSettingsRepository.TENANT, membership.tenant().toString());
                 if (pending(membership.person(), login)) {
                     audit.recordFor(membership.tenant(), event.apply(membership.person()));
                     written++;
@@ -53,8 +53,8 @@ class JpaPendingLoginPersonRepository implements PendingLoginPersons {
             }
             return written;
         } finally {
-            SessionSettings.set(em, SessionSettings.TENANT, previousTenant);
-            SessionSettings.set(em, SessionSettings.SUBJECT, previousSubject);
+            SessionSettingsRepository.set(em, SessionSettingsRepository.TENANT, previousTenant);
+            SessionSettingsRepository.set(em, SessionSettingsRepository.SUBJECT, previousSubject);
         }
     }
 

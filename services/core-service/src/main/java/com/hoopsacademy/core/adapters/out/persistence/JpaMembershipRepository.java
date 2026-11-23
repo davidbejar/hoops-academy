@@ -75,8 +75,8 @@ class JpaMembershipRepository implements MembershipRepository {
 
     /** Runs {@code statement} with {@code app.subject} bound to {@code subject}, then puts the previous value back. */
     private <T> T asSubject(String subject, Supplier<T> statement) {
-        return SessionSettings.with(em, SessionSettings.SUBJECT, subject,
-                SessionSettings.current(em, SessionSettings.SUBJECT), statement);
+        return SessionSettingsRepository.with(em, SessionSettingsRepository.SUBJECT, subject,
+                SessionSettingsRepository.current(em, SessionSettingsRepository.SUBJECT), statement);
     }
 
     private static List<IndexedMembership> indexed(List<?> rows) {
@@ -92,7 +92,7 @@ class JpaMembershipRepository implements MembershipRepository {
             throw new IllegalStateException("ofSubject must not run inside a tenant-bound transaction");
         }
         em.createNativeQuery("select set_config('app.tenant_id', :nil, true), set_config('app.subject', :sub, true)")
-                .setParameter("nil", SessionSettings.NIL_TENANT)
+                .setParameter("nil", SessionSettingsRepository.NIL_TENANT)
                 .setParameter("sub", subject)
                 .getSingleResult();
         List<?> rows = em.createNativeQuery("""
