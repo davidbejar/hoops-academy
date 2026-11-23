@@ -29,6 +29,12 @@ This work package comes from the audit of 2026-11-23 (duplication and inefficien
 4. **Compose**: `mailhog` pinned (not `latest`); INF-04 (dev users once for compose and kind), INF-05 (nginx header
    blocks), INF-06 (hardening and OTel blocks through anchors or `extends`).
 5. **The rest**: every other INF finding of your scope.
+6. **Added at merge time of WP136 (2026-11-24)**: WP136's kind proof did not reach Ready (the Podman VM was
+   overloaded by parallel builds; the chart renders are proven unchanged by the snapshots). You run alone: your
+   `deploy/kind/up.sh --deploy`, `deploy/kind/seed-users.sh` and `deploy/kind/smoke.sh core game athlete` are also the
+   proof of chart 0.14.0, the library chart `hoops-lib` and the one pins file of WP136 (read its Handover and
+   ADR-0068). If it fails for a reason that is WP136's, fix it and say so. Also correct the comment in
+   `.github/dependabot.yml` that still names `up.sh` for the kind pins.
 
 Not yours: DEP-04 (the chart's copies of `infra/` files stay; run `scripts/sync-chart-files.sh` after changing a
 source and bump the chart version if a rendered value changes).
