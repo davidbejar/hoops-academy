@@ -467,7 +467,7 @@ compose, chart, properties and scripts and runs alone.
 | 3 | WP135 | Web: one home for dates, validators, export buttons, error messages, section states | Sonnet · high | Done (ADR-0067; shared dates, validators, export button, error table, section states; four small bugs fixed; web 1921 tests; no golden changed; six findings partly done with reasons) |
 | 3 | WP136 | Chart: library chart for the service sub-charts; one source for the kind and cloud install pins | Opus · high | Running |
 | 4 | WP137 | Common plumbing: Problem exceptions, paging, language, clock, shared properties, poms, test support, vectors | Opus · high | After wave 3 |
-| 4 | WP138 | Web: the tests run against the demo mock; the separate test fakes go | Opus · high | After wave 3 |
+| 4 | WP138 | Web: the tests run against the demo mock; the separate test fakes go | Opus · high | Running |
 | 5 | WP139 | One name for the realm URL everywhere; one login helper for the scripts; database roles from one list | Opus · high | Last but one, alone |
 | 6 | WP140 | Docs pass | Opus · medium | Last alone |
 
