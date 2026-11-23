@@ -32,9 +32,8 @@ class MatchStore {
   });
 
   /// PENDING or SENT events of every user and academy on this device.
-  Future<int> unsyncedTotal() async => (await (_db.select(
-    _db.pendingEvents,
-  )..where((e) => e.status.isIn(_unsynced))).get()).length;
+  Future<int> unsyncedTotal() =>
+      _count(_db.pendingEvents.status.isIn(_unsynced)).getSingle();
 
   // ------------------------------------------------------------- identity
 
@@ -146,16 +145,30 @@ class MatchStore {
 
   static final _unsynced = [EventStatus.pending.wire, EventStatus.sent.wire];
 
+  /// The caller's unanswered (PENDING or SENT) events.
+  Expression<bool> _inOutbox(String tenantId, String personId) {
+    final events = _db.pendingEvents;
+    return events.tenantId.equals(tenantId) &
+        events.personId.equals(personId) &
+        events.status.isIn(_unsynced);
+  }
+
   SimpleSelectStatement<$PendingEventsTable, PendingEventRow> _outboxQuery(
     String tenantId,
     String personId,
-  ) => _db.select(_db.pendingEvents)
-    ..where(
-      (e) =>
-          e.tenantId.equals(tenantId) &
-          e.personId.equals(personId) &
-          e.status.isIn(_unsynced),
-    );
+  ) =>
+      _db.select(_db.pendingEvents)
+        ..where((_) => _inOutbox(tenantId, personId));
+
+  /// How many events match [where], counted by the database: no row is read
+  /// or decoded (the outbox can hold hundreds of events during a match).
+  Selectable<int> _count(Expression<bool> where) {
+    final count = countAll();
+    return (_db.selectOnly(_db.pendingEvents)
+          ..addColumns([count])
+          ..where(where))
+        .map((row) => row.read(count)!);
+  }
 
   /// Unanswered (PENDING or SENT) events of the caller for one match, in
   /// clientSeq order.
@@ -176,8 +189,11 @@ class MatchStore {
     required String tenantId,
     required String personId,
   }) async {
-    final rows = await _outboxQuery(tenantId, personId).get();
-    return {for (final r in rows) r.matchId}.toList();
+    final match = _db.pendingEvents.matchId;
+    final query = _db.selectOnly(_db.pendingEvents, distinct: true)
+      ..addColumns([match])
+      ..where(_inOutbox(tenantId, personId));
+    return [for (final row in await query.get()) row.read(match)!];
   }
 
   /// Unsynced count (all matches when [matchId] is null).
@@ -186,23 +202,24 @@ class MatchStore {
     required String personId,
     String? matchId,
   }) async {
-    final q = _outboxQuery(tenantId, personId);
-    if (matchId != null) q.where((e) => e.matchId.equals(matchId));
-    return (await q.get()).length;
+    final inOutbox = _inOutbox(tenantId, personId);
+    return _count(
+      matchId == null
+          ? inOutbox
+          : inOutbox & _db.pendingEvents.matchId.equals(matchId),
+    ).getSingle();
   }
 
   Future<int> rejectedCount({
     required String tenantId,
     required String personId,
   }) async {
-    final q = _db.select(_db.pendingEvents)
-      ..where(
-        (e) =>
-            e.tenantId.equals(tenantId) &
-            e.personId.equals(personId) &
-            e.status.equals(EventStatus.rejected.wire),
-      );
-    return (await q.get()).length;
+    final events = _db.pendingEvents;
+    return _count(
+      events.tenantId.equals(tenantId) &
+          events.personId.equals(personId) &
+          events.status.equals(EventStatus.rejected.wire),
+    ).getSingle();
   }
 
   Future<void> markSent(List<String> ids) =>
@@ -271,7 +288,7 @@ class MatchStore {
   Stream<int> watchUnsyncedCount({
     required String tenantId,
     required String personId,
-  }) => _outboxQuery(tenantId, personId).watch().map((r) => r.length);
+  }) => _count(_inOutbox(tenantId, personId)).watchSingle();
 
   SimpleSelectStatement<$PendingEventsTable, PendingEventRow> _ownQuery(
     String matchId,
