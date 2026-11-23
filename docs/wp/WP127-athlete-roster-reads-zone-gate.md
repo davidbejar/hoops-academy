@@ -140,3 +140,4 @@ client as the fallback: leave).
 | ATH-02, ATH-05 | Skipped | WP130 |
 | ATH-06, ATH-08, ATH-09, ATH-13, ATH-17 | Skipped | WP137 |
 | ATH-15 | Skipped | ADR-0037 keeps the REST fallback |
+| Monday test (orchestrator) | Done | `ScheduleApiTest.changingTheWeekdayMovesUntouchedSessionsButKeepsEditedOnes`: the test was wrong, not production. A schedule change moves only untouched sessions that have not started (`MaterialiseSessions.reconcileExisting`, `startsAt.isAfter(now)`, unchanged since WP8 and documented in the README); the test fixed MONDAY 17:00 Madrid, so on a Monday after 17:00 today's session had started and stayed (10 sessions, not 9). It now schedules on tomorrow's weekday and moves to today + 3, so no session of the test is in the past. Failed in the full run at 23:2x (Monday, 17:2x Madrid), passed alone and in the fresh full run after the fix on the same Monday evening (commit `75de4ea5`) |
