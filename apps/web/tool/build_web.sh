@@ -8,6 +8,8 @@
 # 2. dart run tool/sw_manifest.dart: stamps sw.js with the build id and the file list (the deferred
 #    parts of the Excel library are left out: they are fetched when the person picks Excel)
 # 3. dart run tool/verify_deferred_excel.dart: fails the build unless that library is deferred and not precached
+# 4. dart run tool/verify_no_mock.dart: fails the build if it holds the demo mock API, and with it the seeding hooks
+#    of the widget tests (ADR-0070)
 # HOOPS_BUILD_GUARD_ONLY=1 stops after the guards (used by test/web/build_guard_test.dart).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -34,3 +36,4 @@ esac
 flutter build web --release --no-web-resources-cdn "$@"
 dart run tool/sw_manifest.dart build/web
 dart run tool/verify_deferred_excel.dart build/web
+dart run tool/verify_no_mock.dart build/web
