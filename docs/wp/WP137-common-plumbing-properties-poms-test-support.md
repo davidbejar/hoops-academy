@@ -39,6 +39,11 @@ CORE-08, CORE-15, CORE-18, CORET-07, GAME-07, GAME-09..12, ATH-06, ATH-08, ATH-0
    place (run the scan as `semgrep.yml` does, with the pinned image under Podman, and `scripts/sarif-gate.py`). A
    new call of core's `SessionSettingsRepository.set` / `.with` is flagged by `hoops-tenant-setting-rebound-by-hand`:
    do not add one.
+9. **Added at merge time of WP131 (2026-11-24)**: `finance.yaml` declares no 413 and no 415 on its JSON-body
+   operations although the service answers them (WP131 made the Go contract guard strict and found it). Add both
+   responses (bump `info.version`, regenerate only `apps/web/packages/finance` with `scripts/gen-api.sh finance`), then
+   remove the two `outside` marks in `TestInvalidRequestsAreProblemsNamingFieldsNeverValues` of
+   `services/finance-service` (the one finance file you may touch) and run `just test-go`.
 
 Not yours: X-08 / CORE-06 (`PatchBody` copies: FOLLOW-UPS and ADR-0053): leave. The realm variables (X-05) are WP139:
 do not rename them while moving properties.
