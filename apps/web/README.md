@@ -232,10 +232,10 @@ the PNGs in light and dark.
 
 ## Generated API clients
 ```bash
-just gen-api            # = scripts/gen-api.sh, writes apps/web/packages/{core,game,athlete}
+just gen-api            # = scripts/gen-api.sh, writes apps/web/packages/{core,game,athlete,finance}
 cd apps/web && flutter pub get
 ```
-Requires `openapi-generator` 7.26 on PATH. The clients are not under `lib/` because a package nested inside
+Requires `openapi-generator` on PATH at the version of `openapi-generator.version` in the root `pom.xml` (the script checks it). The clients are not under `lib/` because a package nested inside
 the app's `lib/` makes the package config invalid and the compiler fails ("language version override has to be
 the same"). `packages/**` is excluded from `analysis_options.yaml`.
 

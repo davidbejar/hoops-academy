@@ -17,7 +17,8 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SPEC_DIR="$REPO_ROOT/libs/contracts/openapi"
-EXPECTED_GENERATOR_VERSION="7.26.0" # keep in sync with openapi-generator.version in the root pom.xml
+# The generator version is the one the Maven validation of libs/contracts runs: openapi-generator.version in the root pom.
+EXPECTED_GENERATOR_VERSION="$(sed -n 's:.*<openapi-generator\.version>\(.*\)</openapi-generator\.version>.*:\1:p' "$REPO_ROOT/pom.xml" | head -n 1)"
 GENERATOR="${OPENAPI_GENERATOR:-openapi-generator}"
 BUILD="${GEN_API_BUILD:-1}"
 
@@ -29,9 +30,10 @@ if [[ $# -gt 0 ]]; then SERVICES=("$@"); else SERVICES=(core game athlete financ
 die() { echo "gen-api: $*" >&2; exit 1; }
 
 command -v "$GENERATOR" >/dev/null 2>&1 || die "'$GENERATOR' not found (brew install openapi-generator)"
+[[ -n "$EXPECTED_GENERATOR_VERSION" ]] || die "no <openapi-generator.version> in $REPO_ROOT/pom.xml"
 actual_version="$("$GENERATOR" version 2>/dev/null | tail -n 1)"
 [[ "$actual_version" == "$EXPECTED_GENERATOR_VERSION" ]] ||
-  echo "gen-api: warning: $GENERATOR $actual_version, contracts are validated with $EXPECTED_GENERATOR_VERSION" >&2
+  die "$GENERATOR is $actual_version, the contracts are validated with $EXPECTED_GENERATOR_VERSION (openapi-generator.version in the root pom.xml): install that version, or change the pom and regenerate"
 
 spec_version() { # info.version of a spec (first `version:` under `info:`)
   awk '/^info:/{in_info=1; next} in_info && /^[^ ]/{exit} in_info && $1=="version:"{print $2; exit}' "$1"

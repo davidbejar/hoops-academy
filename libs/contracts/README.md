@@ -6,6 +6,8 @@
 | `openapi/core.yaml` | core-service: `/platform/**`, `/api/core/**`, `/internal/**` |
 | `openapi/game.yaml` | game-service: `/api/game/**`, `/internal/usage/{tenantId}` |
 | `openapi/athlete.yaml` | athlete-service: `/api/athlete/**`, `/internal/usage/{tenantId}` |
+| `openapi/finance.yaml` | finance-service (Go): `/api/finance/**` |
+| `openapi/pdf.yaml` | pdf-service (Rust, internal): `/internal/pdf/**` |
 | `events/match-event.schema.json` | JSON Schema 2020-12 of a match event (`$defs` per type, dispatch on `type`) |
 | `events/examples/match-events.valid.json` | One valid event per type — shared test vectors |
 | `events/core.<aggregate>.schema.json` | JSON Schema 2020-12 of the roster events core publishes on topic `core.<aggregate>` (seven topics, section "Events") |
@@ -101,18 +103,20 @@ source scripts/env.sh
 ```
 
 `verify` runs the JUnit suite (swagger-parser, networknt json-schema-validator and swagger-request-validator) and then
-`openapi-generator-maven-plugin:validate` (strict) for `common`, `core`, `game` and `athlete`.
+`openapi-generator-maven-plugin:validate` (strict) for `core`, `game`, `athlete` and `finance` (`common` has no
+operations: its components are validated through those; `pdf.yaml` is not validated by the plugin).
 Quick check of one file: `openapi-generator validate -i libs/contracts/openapi/game.yaml`.
 
 ## Regenerating the Flutter clients
 
 ```
-just gen-api                       # = scripts/gen-api.sh → apps/web/packages/{core,game,athlete}
+just gen-api                       # = scripts/gen-api.sh → apps/web/packages/{core,game,athlete,finance}
 scripts/gen-api.sh game            # one service
 API_OUT_ROOT=/tmp/api scripts/gen-api.sh   # elsewhere (e.g. to inspect a change)
 ```
 
-Generator: brew `openapi-generator` **7.26.0** (same version as the Maven plugin; the script warns on mismatch),
+Generator: brew `openapi-generator` at exactly the version of `openapi-generator.version` in the root `pom.xml` (the
+Maven plugin validates with it; the script reads the pom and stops on any other version),
 `dart-dio` + `built_value` (json_serializable cannot handle the discriminated `oneOf`), `enumUnknownDefaultCase=true`.
 The script replaces each package directory, then runs `dart pub get` and `build_runner` (`GEN_API_BUILD=0` to skip).
 Generated code is never edited; `.openapi-generator/` metadata is git-ignored.
@@ -156,7 +160,7 @@ instead of failing the whole batch. Tests that exercise rejection on purpose the
 (`Contract.RESPONSES_ONLY`). Every `<Type>Event` fixes its `type` (`type: {allOf: [{$ref: MatchEventType}], enum:
 [<TYPE>]}`), so exactly one `oneOf` branch matches for any spec-compliant validator. The `allOf`-wrapped spelling is
 deliberate: a plain inline `{type: string, enum: [<TYPE>]}` makes dart-dio drop the `MatchEventType` import of every
-variant (135 analyzer errors, checked with openapi-generator 7.26.0).
+variant (135 analyzer errors with the 7.26 generator).
 
 ### Known validator quirks
 
