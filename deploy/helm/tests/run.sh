@@ -19,6 +19,24 @@ echo "== chart file copies (no symlinks, identical to their sources)"
 if scripts/sync-chart-files.sh --check; then ok "realm JSON, init SQL and login theme copies in sync"
 else bad "chart copies drifted: run scripts/sync-chart-files.sh"; fi
 
+echo "== library chart (ADR-0068: one copy of what the service sub-charts share)"
+LIB="$CHART/charts/hoops-lib"
+SERVICE_CHARTS=(hoops-service pdf-service finance-service)
+grep -qx 'type: library' "$LIB/Chart.yaml" 2>/dev/null && grep -A1 -- '- name: hoops-lib$' "$CHART/Chart.yaml" | grep -q 'version:' \
+  && ok "hoops-lib is a library chart and a dependency of the umbrella" || bad "hoops-lib library chart missing from the umbrella"
+for c in "${SERVICE_CHARTS[@]}"; do
+  grep -A2 -- '- name: hoops-lib$' "$CHART/charts/$c/Chart.yaml" | grep -q 'repository: file://../hoops-lib' \
+    || bad "$c does not declare hoops-lib (repository file://../hoops-lib)"
+done
+own=$(for c in "${SERVICE_CHARTS[@]}"; do
+  grep -lE 'define "[a-z-]+\.(fullname|selectorLabels|labels|image|parentRefs|ruleTimeouts|hostnames|eventsEnabled)"' \
+    "$CHART/charts/$c"/templates/*; done | tr "\n" " " || true)
+[ -z "$own" ] && ok "no service sub-chart defines its own fullname/labels/image/route helpers" || bad "helpers still copied in: $own"
+for f in "${SERVICE_CHARTS[@]/%//templates/service.yaml}" hoops-service/templates/httproute.yaml finance-service/templates/httproute.yaml; do
+  [ "$(grep -cv '^ *$' "$CHART/charts/$f")" = 1 ] && grep -q 'include "hoops-lib\.' "$CHART/charts/$f" || bad "$f is not one include of hoops-lib"
+done
+ok "service.yaml and httproute.yaml of the service sub-charts are one include of hoops-lib each (unless a FAIL above)"
+
 echo "== helm lint"
 for c in "$CHART" "$CHART"/charts/*/; do
   if quiet_helm lint --strict "$c" -f "$CHART/values-kind.yaml" >"$WORK/lint.txt" 2>&1 || quiet_helm lint --strict "$c" >"$WORK/lint.txt" 2>&1; then
