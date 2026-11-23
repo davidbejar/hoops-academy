@@ -24,6 +24,7 @@ accepted files, so they behave the same locally and in CI.
 | `hoops-no-tenant-check-bypass` | ERROR | fields, methods or calls named `skipTenantCheck`, `bypassTenantFilter`, `disableTenantIsolation`, … |
 | `hoops-no-rls-bypass-sql` | ERROR | SQL in Java that sets `row_security = off`, `SET ROLE`, `SESSION AUTHORIZATION` or mentions `BYPASSRLS` |
 | `hoops-tenant-switch-outside-tenancy` | ERROR | `set_config(…)` outside `libs/common-quarkus/…/tenancy` (rebinding the tenant by hand needs a reviewed acceptance) |
+| `hoops-tenant-setting-rebound-by-hand` | ERROR | a call of core's `SessionSettingsRepository.set` / `.with` (the one helper that runs `set_config`): each call site needs a reviewed acceptance |
 | `hoops-sql-concat-from-parameter` | ERROR | taint: a `String` method parameter reaching the text of `createQuery`, `createNativeQuery`, `prepareStatement`, `execute*`, `addBatch` |
 | `hoops-dart-window-open-without-noopener` | ERROR | `window.open(url, '_blank')` without `noopener` |
 | `hoops-dart-secret-in-preferences` | ERROR | tokens, passwords or secrets written to `SharedPreferences` (localStorage) |

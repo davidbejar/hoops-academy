@@ -1092,6 +1092,7 @@ classDiagram
 classDiagram
     class EventBroker {
         <<interface>>
+        +sendAll(List~Message~) void
         +send(String,String,String) void
     }
     class GuardianLinkRepository {
@@ -1197,7 +1198,7 @@ classDiagram
         +page(PlayerFilter,PageRequest) PageResult~PlayerRow~
         +updateStatus(PlayerId,PlayerStatus) void
         +updatePreferredJersey(PlayerId,JerseyNumber) void
-        and 3 more
+        and 1 more
     }
     class RemoteUsagePort {
         <<interface>>
@@ -1230,6 +1231,7 @@ classDiagram
         +insert(Season) void
         +update(Season) void
         +find(SeasonId) Optional~Season~
+        +require(SeasonId) Season
         +listNewestFirst() List~Season~
         +notEndedOn(LocalDate) List~Season~
         +count() long
@@ -1238,10 +1240,6 @@ classDiagram
         <<interface>>
         +emailTaken(IndexedMembership,String) boolean
         +changeEmail(IndexedMembership,UserId,String,AuditEvent) boolean
-    }
-    class StaffTeamsQuery {
-        <<interface>>
-        +staffTeamsOf(PersonId) Set~UUID~
     }
     class SubscriptionRepository {
         <<interface>>
@@ -1255,11 +1253,26 @@ classDiagram
         +find(TeamPlayerId) Optional~TeamPlayer~
         +findOpen(TeamId,PlayerId) Optional~TeamPlayer~
         +ofTeam(TeamId,boolean) List~TeamPlayer~
+        +openOfTeams(Collection~TeamId~) List~TeamPlayer~
         +openValidOfTeams(Collection~TeamId~) List~TeamPlayer~
         +openOfPlayers(Collection~PlayerId~) List~TeamPlayer~
         +ofPlayer(PlayerId) List~TeamPlayer~
         +jerseyTaken(TeamId,JerseyNumber,Optional~TeamPlayerId~) boolean
-        +countOpenValid(Collection~TeamId~) Map~TeamId,Long~
+        and 1 more
+    }
+    class TeamRepository {
+        <<interface>>
+        +insert(Team) void
+        +update(Team) void
+        +find(TeamId) Optional~Team~
+        +require(TeamId) Team
+        +findAll(Collection~TeamId~) List~Team~
+        +inSeasons(Collection~SeasonId~) List~Team~
+        +seasonNotEnded(Collection~TeamId~,LocalDate) Set~TeamId~
+        +list(TeamFilter,PageRequest) PageResult~Team~
+        +nameTaken(SeasonId,String,Optional~TeamId~) boolean
+        +usesCategory(AgeCategoryId) boolean
+        and 1 more
     }
 ```
 
@@ -1270,22 +1283,10 @@ classDiagram
 
 ```mermaid
 classDiagram
-    class TeamRepository {
-        <<interface>>
-        +insert(Team) void
-        +update(Team) void
-        +find(TeamId) Optional~Team~
-        +findAll(Collection~TeamId~) List~Team~
-        +inSeasons(Collection~SeasonId~) List~Team~
-        +seasonNotEnded(Collection~TeamId~,LocalDate) Set~TeamId~
-        +list(TeamFilter,PageRequest) PageResult~Team~
-        +nameTaken(SeasonId,String,Optional~TeamId~) boolean
-        +usesCategory(AgeCategoryId) boolean
-        +count() long
-    }
     class TeamStaffRepository {
         <<interface>>
         +ofTeam(TeamId) List~TeamStaffMember~
+        +ofTeams(Collection~TeamId~) List~TeamStaffMember~
         +find(TeamId,PersonId) Optional~TeamStaffMember~
         +save(TeamStaffMember) void
         +delete(TeamId,PersonId) void
@@ -1324,6 +1325,7 @@ classDiagram
         <<interface>>
         +create(TenantSettings) void
         +findCurrent() Optional~TenantSettings~
+        +requireCurrent() TenantSettings
         +save(TenantSettings) void
     }
     class UsageCounter {

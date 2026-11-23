@@ -61,30 +61,6 @@
       "expires": "2027-05-06"
     },
     {
-      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
-      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaMembershipRepository.java",
-      "line": 97,
-      "fingerprint": "449d9db2c19205b0",
-      "reason": "By design (ADR-0026): the login's membership index is read through the own_memberships subject policy (nil tenant + app.subject); refuses to run inside a tenant-bound transaction and restores app.subject.",
-      "expires": "2027-05-06"
-    },
-    {
-      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
-      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaMembershipRepository.java",
-      "line": 107,
-      "fingerprint": "2e1cd33a9eaa2068",
-      "reason": "By design (ADR-0026): the login's membership index is read through the own_memberships subject policy (nil tenant + app.subject); refuses to run inside a tenant-bound transaction and restores app.subject.",
-      "expires": "2027-05-06"
-    },
-    {
-      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
-      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaPendingLoginPersonRepository.java",
-      "line": 91,
-      "fingerprint": "de843d8aecc87df5",
-      "reason": "By design (ADR-0028): the temporary-password sweep runs with no tenant bound and sets app.tenant_id per academy (transaction-local) so each academy's RLS policies decide; both settings are restored, also on failure.",
-      "expires": "2027-05-06"
-    },
-    {
       "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
       "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaRosterStateRepository.java",
       "line": 161,
@@ -98,14 +74,6 @@
       "line": 165,
       "fingerprint": "6fea643942d0d708",
       "reason": "False positive (reviewed in WP83): a private/package helper whose SQL parameter every caller fills with a constant (text block, static column list, static fragment); every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
-      "expires": "2027-05-06"
-    },
-    {
-      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
-      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaSharedLoginPersonRepository.java",
-      "line": 90,
-      "fingerprint": "2a3ed1e1630dd139",
-      "reason": "By design (ADR-0026): person rows of another academy that shares the login are written with app.tenant_id set to that academy for native statements only, still as core_app so its RLS policies decide; the bound tenant is restored afterwards.",
       "expires": "2027-05-06"
     },
     {
@@ -165,19 +133,99 @@
       "expires": "2027-05-06"
     },
     {
-      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
-      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/platform/PlatformUserRepository.java",
-      "line": 53,
-      "fingerprint": "1e3af5068579288e",
-      "reason": "By design (WP91, ADR-0029 amendment, V18): the super admin's Users list runs on the platform persistence unit (core_platform, no BYPASSRLS) and binds the nil tenant transaction-locally so the tenant_isolation policies match nothing and only core_platform's own column-granted SELECT policies decide; reviewed by the orchestrator on 2026-11-10.",
-      "expires": "2027-05-06"
-    },
-    {
       "rule": "python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args",
       "path": "apps/web/tool/excel_on_demand_check.py",
       "line": 23,
       "fingerprint": "7ac0c9c664a4e828",
       "reason": "Developer test tool, not shipped (WP97): CHROMEDRIVER names the chromedriver binary to start, set by the developer (trusted environment), passed as an argv list without a shell; same pattern as offline_cold_start.py.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/SessionSettingsRepository.java",
+      "line": 28,
+      "fingerprint": "de843d8aecc87df5",
+      "reason": "By design (WP128, CORE-05): the one place in core that runs set_config for app.tenant_id / app.subject, transaction-local, name and value bound as parameters; it replaces the four copies accepted before. Every caller is flagged by hoops-tenant-setting-rebound-by-hand and accepted on its own.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-setting-rebound-by-hand",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaMembershipRepository.java",
+      "line": 78,
+      "fingerprint": "577d33ab4b67b159",
+      "reason": "By design (ADR-0026): the login's membership index is read through the own_memberships subject policy (nil tenant + app.subject); refuses to run inside a tenant-bound transaction and restores app.subject. Since WP128 the set_config statement itself lives once in SessionSettingsRepository; this call site is what was reviewed (re-reviewed by the orchestrator on 2026-11-24).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-setting-rebound-by-hand",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaPendingLoginPersonRepository.java",
+      "line": 48,
+      "fingerprint": "bc4849d2c6a9cefd",
+      "reason": "By design (ADR-0028): the temporary-password sweep runs with no tenant bound and sets app.tenant_id per academy (transaction-local) so each academy's RLS policies decide; both settings are restored, also on failure. Since WP128 the set_config statement itself lives once in SessionSettingsRepository; this call site is what was reviewed (re-reviewed by the orchestrator on 2026-11-24).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-setting-rebound-by-hand",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaPendingLoginPersonRepository.java",
+      "line": 56,
+      "fingerprint": "927a212a4ad9001c",
+      "reason": "By design (ADR-0028): the temporary-password sweep runs with no tenant bound and sets app.tenant_id per academy (transaction-local) so each academy's RLS policies decide; both settings are restored, also on failure. Since WP128 the set_config statement itself lives once in SessionSettingsRepository; this call site is what was reviewed (re-reviewed by the orchestrator on 2026-11-24).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-setting-rebound-by-hand",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaPendingLoginPersonRepository.java",
+      "line": 57,
+      "fingerprint": "27ae0fa58749e1d0",
+      "reason": "By design (ADR-0028): the temporary-password sweep runs with no tenant bound and sets app.tenant_id per academy (transaction-local) so each academy's RLS policies decide; both settings are restored, also on failure. Since WP128 the set_config statement itself lives once in SessionSettingsRepository; this call site is what was reviewed (re-reviewed by the orchestrator on 2026-11-24).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-setting-rebound-by-hand",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaSharedLoginPersonRepository.java",
+      "line": 68,
+      "fingerprint": "fa3ae5c08bf9056d",
+      "reason": "By design (ADR-0026): person rows of another academy that shares the login are written with app.tenant_id set to that academy for native statements only, still as core_app so its RLS policies decide; the bound tenant is restored afterwards. Since WP128 the set_config statement itself lives once in SessionSettingsRepository; this call site is what was reviewed (re-reviewed by the orchestrator on 2026-11-24).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-setting-rebound-by-hand",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/platform/PlatformUserRepository.java",
+      "line": 52,
+      "fingerprint": "a75d53317ddc8c7b",
+      "reason": "By design (WP91, ADR-0029 amendment, V18): the super admin's Users list runs on the platform persistence unit (core_platform, no BYPASSRLS) and binds the nil tenant transaction-locally so the tenant_isolation policies match nothing and only core_platform's own column-granted SELECT policies decide; reviewed by the orchestrator on 2026-11-10. Since WP128 the set_config statement itself lives once in SessionSettingsRepository; this call site is what was reviewed (re-reviewed by the orchestrator on 2026-11-24).",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "java.lang.security.audit.formatted-sql-string.formatted-sql-string",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/PagedQuery.java",
+      "line": 65,
+      "fingerprint": "a8d4372ea0fdbafc",
+      "reason": "False positive (reviewed by the orchestrator on 2026-11-24, WP128): the paged-query builder joins constant JPQL fragments (from clause, conditions, order by) that every caller writes as string literals; every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/PagedQuery.java",
+      "line": 65,
+      "fingerprint": "a8d4372ea0fdbafc",
+      "reason": "False positive (reviewed by the orchestrator on 2026-11-24, WP128): the paged-query builder joins constant JPQL fragments (from clause, conditions, order by) that every caller writes as string literals; every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
+      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/PagedQuery.java",
+      "line": 50,
+      "fingerprint": "cf05931d230ef6e6",
+      "reason": "False positive (reviewed by the orchestrator on 2026-11-24, WP127): the paged-query builder joins constant JPQL fragments (from clause, conditions, order by) that every caller writes as string literals; every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "expires": "2027-05-06"
+    },
+    {
+      "rule": "semgrep.rules.hoops-tenant-switch-outside-tenancy",
+      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/JpaMembershipRepository.java",
+      "line": 94,
+      "fingerprint": "2e1cd33a9eaa2068",
+      "reason": "By design (ADR-0026): the login's membership index is read through the own_memberships subject policy (nil tenant + app.subject); refuses to run inside a tenant-bound transaction and restores app.subject.",
       "expires": "2027-05-06"
     }
   ]

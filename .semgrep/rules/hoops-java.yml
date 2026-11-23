@@ -93,6 +93,26 @@ rules:
           metavariable: $SQL
           regex: (?is).*\bset_config\s*\(
 
+  - id: hoops-tenant-setting-rebound-by-hand
+    languages: [java]
+    severity: ERROR
+    message: >-
+      SessionSettingsRepository.set(...) / .with(...) rebinds app.tenant_id or app.subject for the rest of the
+      transaction. Only the tenancy interceptor binds the tenant; every call of this helper is a deliberate
+      cross-tenant path that must be reviewed and accepted in .semgrep/accepted.json with its reason (ADR-0026,
+      ADR-0028, ADR-0029).
+    paths:
+      exclude:
+        - "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/SessionSettingsRepository.java"
+    metadata:
+      category: security
+      cwe: ["CWE-639: Authorization Bypass Through User-Controlled Key"]
+      owasp: ["A01:2025 - Broken Access Control"]
+      confidence: HIGH
+    pattern-either:
+      - pattern: SessionSettingsRepository.set(...)
+      - pattern: SessionSettingsRepository.with(...)
+
   - id: hoops-sql-concat-from-parameter
     languages: [java]
     mode: taint

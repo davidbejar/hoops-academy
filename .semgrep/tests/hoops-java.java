@@ -75,6 +75,15 @@ class TenantBypass {
         // ok: hoops-tenant-switch-outside-tenancy
         em.createNativeQuery("select current_setting('app.tenant_id', true)");
     }
+
+    void tenantSettingByHand(EntityManager em, String tenant) {
+        // ruleid: hoops-tenant-setting-rebound-by-hand
+        SessionSettingsRepository.set(em, SessionSettingsRepository.TENANT, tenant);
+        // ruleid: hoops-tenant-setting-rebound-by-hand
+        SessionSettingsRepository.with(em, SessionSettingsRepository.SUBJECT, tenant, "", () -> 1);
+        // ok: hoops-tenant-setting-rebound-by-hand
+        SessionSettingsRepository.current(em, SessionSettingsRepository.TENANT);
+    }
 }
 
 class Queries {
