@@ -488,7 +488,7 @@ classDiagram
         +LocalDate validUntil
         +boolean active
         +changedTo(DayOfWeek,LocalTime,int,String,LocalDate,LocalDate) TrainingSchedule
-        and 3 more
+        and 2 more
     }
     class TrainingSession {
         <<record>>
@@ -552,7 +552,6 @@ classDiagram
         +Instant createdAt
         +changedTo(LocalDate,LocalDate,String) PlannedAbsence
         +covers(LocalDate) boolean
-        +overlaps(LocalDate,LocalDate) boolean
     }
     class PlayerAvailability {
         <<record>>
@@ -579,7 +578,6 @@ classDiagram
     class BandResolver {
         +resolve(Collection~PhysicalTestNorm~,Optional~Gender~,OptionalInt,BigDecimal) Resolution
         +effective(Collection~PhysicalTestNorm~) List~PhysicalTestNorm~
-        +bandsAreOrdered(Collection~PhysicalTestNorm~,boolean) boolean
     }
     class BodyMeasurement {
         <<record>>
@@ -893,6 +891,7 @@ classDiagram
         +teamRoster(TenantId,TeamId) TeamRoster
         +players(TenantId,Collection~PlayerId~) Map~PlayerId,PlayerBrief~
         +playerExists(TenantId,PlayerId) boolean
+        +teamsOf(TenantId,Collection~PlayerId~,Collection~TeamId~) Set~TeamId~
     }
     class ScheduleRepository {
         <<interface>>
@@ -904,7 +903,7 @@ classDiagram
     class SessionRepository {
         <<interface>>
         +save(TrainingSession) void
-        +saveAll(Collection~TrainingSession~) void
+        +insertAll(Collection~TrainingSession~) void
         +find(SessionId) Optional~TrainingSession~
         +delete(Collection~SessionId~) void
         +list(SessionQuery) PageResult~TrainingSession~
@@ -915,8 +914,9 @@ classDiagram
     class TenantClock {
         <<interface>>
         +now() Instant
+        +zoneOf(AuthzContext) ZoneId
         +zoneOf(TenantId) ZoneId
-        +today(TenantId) LocalDate
+        +today(AuthzContext) LocalDate
     }
 ```
 
@@ -930,7 +930,6 @@ classDiagram
     class TenantRegistry {
         <<interface>>
         +register(TenantId,ZoneId) void
-        +registerIfAbsent(TenantId,ZoneId) void
         +zoneOf(TenantId) Optional~ZoneId~
         +tenants() List~TenantId~
     }
@@ -973,8 +972,7 @@ classDiagram
         +guardedPlayers(PersonId) Set~PlayerId~
         +staffTeams(PersonId) Set~TeamId~
         +openValidTeamsOf(Collection~PlayerId~) Set~TeamId~
-        +seasonNotEnded(Collection~TeamId~,LocalDate) Set~TeamId~
-        +seasonEnded(Collection~TeamId~,LocalDate) Set~TeamId~
+        +seasonEnds(Collection~TeamId~) Map~TeamId,LocalDate~
     }
     class RosterChange {
         <<interface>>
