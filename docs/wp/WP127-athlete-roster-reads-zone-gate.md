@@ -62,4 +62,81 @@ client as the fallback: leave).
   not |` with one row per finding ID of your scope. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+- **Built**
+  - **Roster reads (ATH-01)**: the produced `RosterPort` (`RosterSourceProducer`) is wrapped in `RequestMemoRosterPort`:
+    each `teamRoster` answer (roster or "not found") is kept per tenant and team in a `@RequestScoped` map for the rest
+    of the request, on both sources; outside a request context (nightly job, consumer) every call reads the source; a
+    503 is not kept. New `RosterPort.teamsOf(tenant, players, candidates)`: the replica answers with one query that
+    follows its roster rules (open, valid assignments of complete players, known team, ACTIVE tenant); the default
+    (REST) fans out over the cached rosters. `ManageAssignments.forPlayers` (the parent's 160-statement case) and
+    `PlanAccess.isStaffOfPlayer` use it; `playerTeamIds` is not used (it hides ended seasons). The replica's
+    `teamRoster` folds the tenant check into the team query (4 -> 3 statements). Tests: `RequestMemoRosterPortTest`
+    (now in PIT scope), `RequestMemoWiringTest`, `RosterPortContract.teamsOfAreTheCandidatesWithOneOfThePlayersOnTheirRoster`
+    (both sources), `ReplicaRosterRulesTest.teamsOfFollowsTheRostersRules`.
+  - **Authz resolver (ATH-04)**: `ReplicaMembershipReads.seasonEnds(teams)` replaces `seasonNotEnded` + `seasonEnded`;
+    the resolver partitions in Java as game does. Rule unchanged (`ReplicaAuthzRulesTest`, `ReplicaMembershipContractTest`).
+  - **Tenant zone (ATH-03, a bug)**: `TenantClock.zoneOf(AuthzContext)` / `today(AuthzContext)` read the caller's zone
+    without a query; `zoneOf(TenantId)` (registry) is for the nightly job only; `hoops.athlete.default-timezone` is the
+    last resort for a zone the JVM does not know. `registerIfAbsent` and the "older core" branch are gone; `TenantZones`
+    registers the zone requests use, and the upsert writes nothing when the zone is unchanged. Materialisation after a
+    schedule change uses the caller's zone. `ApiSupport.member(...)` contexts carry `Europe/Madrid`, so the API suite
+    takes the real branch (`@TenantUser` without `timezone` takes the last resort). Red first:
+    `SessionApiTest.calendarDatesFollowTheZoneOfTheCallersContext` (a stale registry zone won),
+    `RegistryTenantClockTest`, `TenantRegistryRepositoryTest` (every create rewrote the row).
+  - **Domain gate (X-03)**: the pom appends game's PACKAGE rule (>= 90 % lines on `com.hoopsacademy.athlete.domain*`).
+    Domain coverage is 100 % today. Shown red once with an untested 80-method probe class in `domain` (not committed):
+    `Rule violated for package com.hoopsacademy.athlete.domain: lines covered ratio is 0.86, but expected minimum is
+    0.90`, BUILD FAILURE; before the rule the same probe passed. **`docs/conformance.md:163` ("JaCoCo gates (>= 80 %,
+    domain >= 90 %) met") was wrong for athlete until now**: nothing checked its domain.
+  - **Test groups (ATH-07)**: the 17 Postgres-only `@QuarkusTest` classes also list `CoreMockResource` (game's
+    precedent): Quarkus boots per module run 4 -> 3, module time 5:23 -> 3:47 min with the same 1003 tests.
+  - **Locale (CORE-09)**: `LikePattern.contains` (root locale, escaped) serves the plan and exercise searches. Red first:
+    `TrainingPlanApiTest.theSearchDoesNotDependOnTheJvmsDefaultLocale` (Turkish default locale).
+  - **The rest**: ATH-10 `PagedQuery` for five paged searches; ATH-11 one query for the stored attendance rows,
+    `SessionRepository.insertAll` without per-row lookups; ATH-12 dead methods removed, `bandsAreOrdered` moved into
+    `NormSeedTest`; ATH-16 `CoreStubs.reset()` clears common's client cache (27 classes lose the adapter injection and
+    the clear); ATH-18 `V11__plan_completion_player_index.sql` (red first: `ListingIndexSchemaTest`); ATH-19 module
+    README, pom description, `RosterPort` javadoc, properties comment. Model diagrams regenerated (`just diagrams`).
+  - Found on the way: `ScheduleApiTest.changingTheWeekdayMovesUntouchedSessionsButKeepsEditedOnes` failed on Mondays
+    after 17:00 Madrid (today's session had started, so it was not moved); its weekdays are now relative to today.
+- **Verified** (2026-11-23, on the last code commit `75de4ea5`)
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`: BUILD SUCCESS, 14:21 min, all coverage checks met.
+    Tests: contracts 346, common-quarkus 403, core 1225, game 541, athlete 1023 (was 1003), e2e 38 (32 skipped);
+    0 failures, 0 errors. athlete lines 97.7 %, domain 100 % (the new 90 % rule passes).
+  - `just mutation athlete-service`: 671/671 killed (100 %, baseline 100), 109 s.
+  - `just isolation-check` (by hand in the worktree): 6 tests + 4 Go tests passed. `just db-role-check`: 13 tests + 2
+    Go tests passed. (The commit hook's run during the first full build failed once: Keycloak's container did not
+    come up under load; the hand runs after the build were green.)
+  - `scripts/model-diagrams.sh --check`: pages up to date; strict Zensical docs build: no issues.
+  - A first full run had two athlete failures: the Monday-evening `ScheduleApiTest` flake (fixed, above) and a
+    broker publish timeout in `CoreRosterConsumerTest.setUp` under load (passed when re-run alone and in the fresh run).
+- **Decisions/ADRs**: ADR-0059 (per-request roster answers, `teamsOf`, the context's tenant zone), indexed in
+  `docs/adr/README.md`.
+- **Open points / follow-ups** (for the docs pass at merge time)
+  - `docs/conformance.md:163`: the athlete domain gate exists only since this WP.
+  - `docs/quality/mutation.md`: athlete 671/671 (100 %) on 2026-11-23, scope plus `RequestMemoRosterPort`, fewer
+    mutants because the dead domain methods went (recorded in the pom comment; the page is not edited here to avoid a
+    merge clash).
+  - A `@QuarkusTest` method runs in a request context, so the roster memo spans the whole test method (README testing
+    notes); tests of the REST cache use `CoreRosterAdapter` directly.
+  - The `@WithTestResource` meta-annotation (ATH-07/16 option) was not tried: unverified Quarkus support, two lines of
+    gain per class.
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| ATH-01 | Done | Request memo of `teamRoster` on both sources; `RosterPort.teamsOf` (one replica query); tenant check folded into the team query |
+| ATH-03 | Done | Zone from `AuthzContext`; registry for the jobs; last-resort default kept; no-op upsert; API tests on the real branch |
+| ATH-04 | Done | One `seasonEnds` query, partitioned in Java |
+| ATH-07 | Done | 17 classes join the main boot (4 -> 3 boots) |
+| ATH-10 | Done | `PagedQuery` (absence, injury, session, test result, completion) and `LikePattern`; plan (select-only parameter), exercise (constant JPQL by design) and assignment search (own tested clause builder) keep their shape |
+| ATH-11 | Done | Attendance: one read of the stored rows; materialised sessions persisted directly (`insertAll`) |
+| ATH-12 | Done | `uuids`, `isValidOn`, `overlaps`, `clearCache` removed; `bandsAreOrdered` moved into `NormSeedTest` |
+| ATH-14 | Skipped | Per the verification a deliberate symmetry with game (ADR-0037 WP82): marginal gain against a migration and the RLS meta tests' global-table list |
+| ATH-16 | Done (partly) | Cache clear in `CoreStubs.reset()`; resource meta-annotation not done (unverified support) |
+| ATH-18 | Done | `V11` index `(tenant_id, player_id, marked_at desc)` |
+| ATH-19 | Done | README, pom description, `RosterPort` javadoc, properties comment |
+| X-03 | Done | 90 % domain PACKAGE rule, shown red once |
+| CORE-09 (athlete) | Done | Root-locale lower-casing in the plan search |
+| ATH-02, ATH-05 | Skipped | WP130 |
+| ATH-06, ATH-08, ATH-09, ATH-13, ATH-17 | Skipped | WP137 |
+| ATH-15 | Skipped | ADR-0037 keeps the REST fallback |
