@@ -34,6 +34,11 @@ lib/
   `MockQuery.page`.
 - **Provider lifetime**: a provider whose `build` opens streams, timers or watches is `autoDispose`, so leaving the
   screen ends them (the live match, WEB-01).
+- **Shared helpers (ADR-0067)**: dates through `core/time/dates.dart`; field rules, `parseDecimal`, `blankToNull` and
+  `formatMeasure` from `core/ui/validators.dart`; a server error code is worded once in `AppError.message` (pass
+  `errorText` only for other words in your context); a block inside a page uses `AsyncSection`; a server CSV/PDF uses
+  `ServerExportButton`; a mutating notifier reloads with the `Reloading` mixin; a per-id provider family is
+  `autoDispose`. Tests: `pumpAsSuperAdmin`, `localizedApp`.
 - **Formatting**: `apps/web` uses the default `dart format` (80 columns); run `just web-format` before committing, CI fails on unformatted files.
 - **Mobile-first**: design for 360 px width; test goldens at 360×780 and 1024×768.
 
