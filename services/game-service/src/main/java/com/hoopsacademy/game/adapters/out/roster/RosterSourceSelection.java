@@ -44,8 +44,8 @@ class RosterSourceSelection {
 
     private final RosterSource source;
 
-    RosterSourceSelection(@ConfigProperty(name = "hoops.roster.source", defaultValue = "replica") RosterSource source,
-            @ConfigProperty(name = "hoops.roster.consumer.enabled", defaultValue = "true") boolean consume) {
+    RosterSourceSelection(@ConfigProperty(name = "hoops.roster.source") RosterSource source,
+            @ConfigProperty(name = "hoops.roster.consumer.enabled") boolean consume) {
         this.source = source.requireFed(consume);
         LOG.infof("Roster source: %s (replica consumer %s)", source.name().toLowerCase(java.util.Locale.ROOT),
                 consume ? "on" : "off");

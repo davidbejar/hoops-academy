@@ -2,6 +2,7 @@ package com.hoopsacademy.athlete.adapters.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hoopsacademy.common.replica.RosterTopic;
 import com.hoopsacademy.common.testing.ShippedConfig;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -56,5 +57,13 @@ class RosterSourceDefaultsTest {
         assertThat(test.value("hoops.roster.source")).contains("rest");
         assertThat(test.value("hoops.roster.consumer.enabled")).contains("false");
         assertThat(test.value("quarkus.kafka.devservices.enabled")).contains("false");
+    }
+
+    @Test
+    void theConsumerSubscribesToEveryRosterTopicTheDecoderReads() {
+        ShippedConfig prod = ShippedConfig.load("prod", Map.of());
+
+        assertThat(prod.value("mp.messaging.incoming.core-roster.topics"))
+                .contains(String.join(",", RosterTopic.topicNames()));
     }
 }

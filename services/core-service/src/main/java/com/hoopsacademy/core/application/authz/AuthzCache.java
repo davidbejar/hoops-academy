@@ -28,7 +28,7 @@ public class AuthzCache {
     private final Cache<Key, Optional<MemberAuthz>> entries;
 
     @Inject
-    public AuthzCache(@ConfigProperty(name = "hoops.authz.cache-ttl", defaultValue = "PT10S") Duration ttl, Clock clock) {
+    public AuthzCache(@ConfigProperty(name = "hoops.authz.cache-ttl") Duration ttl, Clock clock) {
         this(ttl, clock, MAX_ENTRIES);
     }
 

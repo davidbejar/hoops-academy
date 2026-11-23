@@ -29,8 +29,8 @@ public class RosterSourceProducer {
 
     private final RosterSource source;
 
-    RosterSourceProducer(@ConfigProperty(name = "hoops.roster.source", defaultValue = "replica") String source,
-            @ConfigProperty(name = "hoops.roster.consumer.enabled", defaultValue = "true") boolean consume) {
+    RosterSourceProducer(@ConfigProperty(name = "hoops.roster.source") String source,
+            @ConfigProperty(name = "hoops.roster.consumer.enabled") boolean consume) {
         this.source = RosterSource.of(source, consume);
         LOG.infof("Roster source: %s (replica consumer %s)", this.source, consume ? "on" : "off");
     }

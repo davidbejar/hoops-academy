@@ -55,7 +55,7 @@ public class PublishOutbox {
 
     public PublishOutbox(OutboxBacklog backlog, OutboxQueue queue, EventBroker broker, EventEnvelopes envelopes,
             TenantScope tenantScope, OutboxPublisherStatus status, Clock clock,
-            @ConfigProperty(name = "hoops.outbox.batch-size", defaultValue = "100") int batchSize) {
+            @ConfigProperty(name = "hoops.outbox.batch-size") int batchSize) {
         this.backlog = backlog;
         this.queue = queue;
         this.broker = broker;

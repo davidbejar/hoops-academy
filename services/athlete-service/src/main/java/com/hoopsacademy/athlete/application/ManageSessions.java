@@ -15,13 +15,13 @@ import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /** Training sessions: calendar listing, ad-hoc creation, edits and cancellation. */
 @ApplicationScoped
 public class ManageSessions {
 
     static final int MAX_RANGE_DAYS = 366;
-    private static final int DEFAULT_HORIZON_WEEKS = 8;
 
     public record NewSession(TeamId teamId, Instant startsAt, int durationMinutes, String location, UUID planId,
             String notes) {}
@@ -41,10 +41,14 @@ public class ManageSessions {
     private final TenantZones zones;
     private final TenantClock clock;
     private final PlanRepository plans;
+    /** The calendar's default window is the materialisation horizon: the sessions that exist ahead of today. */
+    private final int horizonWeeks;
 
     public ManageSessions(SessionRepository sessions, RosterPort roster, TrainingAccess access, TenantZones zones,
-            TenantClock clock, PlanRepository plans) {
+            TenantClock clock, PlanRepository plans,
+            @ConfigProperty(name = "hoops.athlete.horizon-weeks") int horizonWeeks) {
         this.plans = plans;
+        this.horizonWeeks = horizonWeeks;
         this.sessions = sessions;
         this.roster = roster;
         this.access = access;
@@ -68,7 +72,7 @@ public class ManageSessions {
         LocalDate today = clock.now().atZone(zone).toLocalDate();
         LocalDate from = calendar.from().orElseGet(() -> calendar.to().map(t -> t.minusDays(MAX_RANGE_DAYS - 1L)).orElse(today));
         LocalDate to = calendar.to().orElseGet(() -> calendar.from().isPresent()
-                ? from.plusDays(MAX_RANGE_DAYS - 1L) : today.plusWeeks(DEFAULT_HORIZON_WEEKS));
+                ? from.plusDays(MAX_RANGE_DAYS - 1L) : today.plusWeeks(horizonWeeks));
         if (to.isBefore(from)) {
             throw new InvalidRequestException("to", "INVALID_RANGE", "to must not be before from");
         }

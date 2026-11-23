@@ -46,7 +46,7 @@ public class ExpireTemporaryPasswords {
 
     public ExpireTemporaryPasswords(TemporaryPasswordLogins logins, PendingLoginPersons pendingPersons,
             IdentityProviderPort identityProvider, Clock clock,
-            @ConfigProperty(name = "hoops.temporary-password.ttl", defaultValue = "P3D") Duration ttl) {
+            @ConfigProperty(name = "hoops.temporary-password.ttl") Duration ttl) {
         this.logins = logins;
         this.pendingPersons = pendingPersons;
         this.identityProvider = identityProvider;

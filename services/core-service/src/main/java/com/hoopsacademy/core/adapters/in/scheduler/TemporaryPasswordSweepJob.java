@@ -43,7 +43,7 @@ public class TemporaryPasswordSweepJob implements TemporaryPasswordSweeps {
 
     public TemporaryPasswordSweepJob(ExpireTemporaryPasswords sweep, TenantScope tenantScope,
             TransactionSynchronizationRegistry transactions,
-            @ConfigProperty(name = "hoops.temporary-password.sweep-on-events", defaultValue = "true") boolean onEvents) {
+            @ConfigProperty(name = "hoops.temporary-password.sweep-on-events") boolean onEvents) {
         this.sweep = sweep;
         this.tenantScope = tenantScope;
         this.transactions = transactions;

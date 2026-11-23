@@ -40,7 +40,7 @@ public class TenantLifecycle {
 
     public TenantLifecycle(TenantRepository tenants, PlatformOutboxWriter outbox, AuthzCache authzCache,
             PlatformAuditLog audit, Clock clock,
-            @ConfigProperty(name = "hoops.tenant.withdrawn-retention", defaultValue = "P365D") String retention) {
+            @ConfigProperty(name = "hoops.tenant.withdrawn-retention") String retention) {
         this.tenants = tenants;
         this.outbox = outbox;
         this.authzCache = authzCache;

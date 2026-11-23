@@ -65,9 +65,9 @@ class KafkaEventBroker implements EventBroker {
 
     @Inject
     KafkaEventBroker(@Identifier("default-kafka-broker") Map<String, Object> kafka, MeterRegistry registry,
-            @ConfigProperty(name = "hoops.outbox.send-timeout", defaultValue = "PT10S") Duration timeout,
-            @ConfigProperty(name = "hoops.outbox.producer-reset-after", defaultValue = "3") int resetAfter,
-            @ConfigProperty(name = ENABLED, defaultValue = "true") boolean enabled) {
+            @ConfigProperty(name = "hoops.outbox.send-timeout") Duration timeout,
+            @ConfigProperty(name = "hoops.outbox.producer-reset-after") int resetAfter,
+            @ConfigProperty(name = ENABLED) boolean enabled) {
         this(() -> new KafkaProducer<>(producerConfig(kafka)), timeout, resetAfter, registry, enabled);
     }
 

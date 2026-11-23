@@ -38,8 +38,8 @@ class ReplicaPipelineProducer {
     @Singleton
     ReplicaConsumer<RosterEvent> replicaConsumer(CoreEventDecoder<RosterEvent> decoder, ApplyRosterEvent apply,
             ParkedEvents parked, MeterRegistry metrics, Clock clock,
-            @ConfigProperty(name = "hoops.roster.replica.max-attempts", defaultValue = "5") int maxAttempts,
-            @ConfigProperty(name = "hoops.roster.replica.first-backoff", defaultValue = "PT0.5S") Duration firstBackoff) {
+            @ConfigProperty(name = "hoops.roster.replica.max-attempts") int maxAttempts,
+            @ConfigProperty(name = "hoops.roster.replica.first-backoff") Duration firstBackoff) {
         return new ReplicaConsumer<>(decoder, apply::apply, parked, new ReplicaMetrics(metrics), clock,
                 new RetryPolicy(maxAttempts, firstBackoff));
     }
@@ -50,7 +50,7 @@ class ReplicaPipelineProducer {
      * does not consume shows no replica meters.
      */
     void createAtStartup(@Observes StartupEvent event,
-            @ConfigProperty(name = "hoops.roster.consumer.enabled", defaultValue = "true") boolean consumerEnabled,
+            @ConfigProperty(name = "hoops.roster.consumer.enabled") boolean consumerEnabled,
             Instance<ReplicaConsumer<RosterEvent>> consumer) {
         if (consumerEnabled) {
             consumer.get();

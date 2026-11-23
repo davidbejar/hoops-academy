@@ -23,11 +23,11 @@ class ReplicaRetentionProducer {
     @Singleton
     @Startup
     ReplicaRetention replicaRetention(ReplicaHistory history, TenantScope tenantScope, Clock clock,
-            @ConfigProperty(name = "hoops.roster.replica.retention.applied-events", defaultValue = "P7D")
+            @ConfigProperty(name = "hoops.roster.replica.retention.applied-events")
             Duration appliedEvents,
-            @ConfigProperty(name = "hoops.roster.replica.retention.parked-events", defaultValue = "P30D")
+            @ConfigProperty(name = "hoops.roster.replica.retention.parked-events")
             Duration parkedEvents,
-            @ConfigProperty(name = "hoops.roster.replica.retention.batch-size", defaultValue = "1000") int batchSize) {
+            @ConfigProperty(name = "hoops.roster.replica.retention.batch-size") int batchSize) {
         return new ReplicaRetention(history, tenantScope, clock, appliedEvents, parkedEvents, batchSize);
     }
 }

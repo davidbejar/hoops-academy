@@ -22,7 +22,7 @@ class RegistryTenantClock implements TenantClock {
     private final ZoneId lastResort;
 
     RegistryTenantClock(Clock clock, TenantRegistry registry,
-            @ConfigProperty(name = "hoops.athlete.default-timezone", defaultValue = "Europe/Madrid") String lastResort) {
+            @ConfigProperty(name = "hoops.athlete.default-timezone") String lastResort) {
         this.clock = clock;
         this.registry = registry;
         this.lastResort = ZoneId.of(lastResort);

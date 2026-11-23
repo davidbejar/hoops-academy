@@ -25,7 +25,7 @@ public class OutboxPublisherJob {
     private final boolean enabled;
 
     public OutboxPublisherJob(PublishOutbox publisher, OutboxPublisherStatus status, MeterRegistry registry,
-            @ConfigProperty(name = "hoops.outbox.enabled", defaultValue = "true") boolean enabled) {
+            @ConfigProperty(name = "hoops.outbox.enabled") boolean enabled) {
         this.publisher = publisher;
         this.registry = registry;
         this.enabled = enabled;

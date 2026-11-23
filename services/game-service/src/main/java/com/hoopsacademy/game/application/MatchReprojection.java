@@ -20,7 +20,7 @@ public class MatchReprojection {
     private final int overtimeMinutes;
 
     MatchReprojection(MatchRepository matches, MatchEventRepository events, ProjectionRepository projections,
-            @ConfigProperty(name = "hoops.game.overtime-minutes", defaultValue = "5") int overtimeMinutes) {
+            @ConfigProperty(name = "hoops.game.overtime-minutes") int overtimeMinutes) {
         this.matches = matches;
         this.events = events;
         this.projections = projections;

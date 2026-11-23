@@ -38,7 +38,7 @@ class KeycloakIdentityProvider implements IdentityProviderPort {
     private final String realm;
 
     KeycloakIdentityProvider(Keycloak keycloak,
-            @ConfigProperty(name = "hoops.keycloak.realm", defaultValue = "academy") String realm) {
+            @ConfigProperty(name = "hoops.keycloak.realm") String realm) {
         this.keycloak = keycloak;
         this.realm = realm;
     }

@@ -41,7 +41,7 @@ public class MaterialiseSessions {
 
     public MaterialiseSessions(ScheduleRepository schedules, SessionRepository sessions, AttendanceRepository attendance,
             TenantClock clock, TenantContext tenantContext,
-            @ConfigProperty(name = "hoops.athlete.horizon-weeks", defaultValue = "8") int horizonWeeks) {
+            @ConfigProperty(name = "hoops.athlete.horizon-weeks") int horizonWeeks) {
         this.schedules = schedules;
         this.sessions = sessions;
         this.attendance = attendance;

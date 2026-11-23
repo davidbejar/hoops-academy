@@ -37,8 +37,8 @@ public class RepairOnboarding {
 
     public RepairOnboarding(TenantRepository tenants, TenantSettingsRepository settings,
             TenantRegistration registration, TenantScope tenantScope, Clock clock,
-            @ConfigProperty(name = "hoops.core.onboarding-repair.grace", defaultValue = "PT15M") Duration grace,
-            @ConfigProperty(name = "hoops.core.onboarding-repair.look-back", defaultValue = "P7D") Duration lookBack) {
+            @ConfigProperty(name = "hoops.core.onboarding-repair.grace") Duration grace,
+            @ConfigProperty(name = "hoops.core.onboarding-repair.look-back") Duration lookBack) {
         this.tenants = tenants;
         this.settings = settings;
         this.registration = registration;
