@@ -5,17 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.SaslRedpandaResource;
-import com.hoopsacademy.core.testsupport.TopicReader;
 import com.hoopsacademy.core.testsupport.TopicReader.Event;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
+import com.hoopsacademy.core.testsupport.TopicReader;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -35,8 +33,7 @@ import org.junit.jupiter.api.Test;
  */
 @QuarkusTest
 @TestProfile(ProducerRecoveryTest.SaslBroker.class)
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @WithTestResource(SaslRedpandaResource.class)
 @TestSecurity(user = TenantUser.SUBJECT)
 class ProducerRecoveryTest {
@@ -60,7 +57,7 @@ class ProducerRecoveryTest {
         UUID season = RosterDb.currentSeason(tenant);
         Map<String, UUID> categories = RosterDb.defaultCategories(tenant);
         Members.signIn(tenant, TenantRole.ADMIN);
-        UUID lions = UUID.fromString(given().filter(Contract.CORE).header("X-Tenant-Id", tenant)
+        UUID lions = UUID.fromString(Contract.forTenant(tenant)
                 .contentType(ContentType.JSON).body("{\"seasonId\":\"" + season + "\",\"name\":\"Lions\",\"ageCategoryId\":\""
                         + categories.get("U12") + "\",\"genderPolicy\":\"MIXED\"}")
                 .post("/api/core/teams/").then().statusCode(201).extract().path("id"));

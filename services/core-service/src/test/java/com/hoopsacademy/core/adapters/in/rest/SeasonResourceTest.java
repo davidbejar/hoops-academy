@@ -6,14 +6,11 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -27,8 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class SeasonResourceTest {
 
@@ -106,20 +102,20 @@ class SeasonResourceTest {
         UUID foreign = RosterDb.season(tenant, "S", LocalDate.of(2040, 9, 1), LocalDate.of(2041, 6, 30), 2040);
         String other = Members.newTenant();
         Members.signIn(other, TenantRole.ADMIN);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(SEASONS + "/" + foreign).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON).body("{\"name\":\"x\"}")
+        Contract.forTenant(other).get(SEASONS + "/" + foreign).then().statusCode(404);
+        Contract.forTenant(other).contentType(ContentType.JSON).body("{\"name\":\"x\"}")
                 .patch(SEASONS + "/" + foreign).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(SEASONS).then().statusCode(200)
+        Contract.forTenant(other).get(SEASONS).then().statusCode(200)
                 .body("size()", equalTo(0));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(SEASONS).then().statusCode(404);
+        Contract.forTenant(tenant).get(SEASONS).then().statusCode(404);
         // the same dates are fine in another tenant
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body(body("S", LocalDate.of(2040, 9, 1), LocalDate.of(2041, 6, 30), 2040)).post(SEASONS)
                 .then().statusCode(201);
     }
 
     private io.restassured.specification.RequestSpecification request() {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant);
+        return Contract.forTenant(tenant);
     }
 
     private io.restassured.specification.RequestSpecification requestUnchecked() {

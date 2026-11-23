@@ -3,10 +3,7 @@ package com.hoopsacademy.core.adapters.out.keycloak;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.hoopsacademy.core.testsupport.RealmFiles;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -21,7 +18,7 @@ import org.junit.jupiter.params.provider.CsvSource;
  */
 class RealmTokenPolicyTest {
 
-    private final JsonNode realm = read("infra/keycloak/realm-academy.json");
+    private final JsonNode realm = RealmFiles.realmJson(RealmFiles.REALM);
 
     @Test
     void refreshTokensRotateAndAUsedOneIsNeverAcceptedAgain() {
@@ -69,20 +66,5 @@ class RealmTokenPolicyTest {
             }
         }
         throw new IllegalStateException("realm has no client " + clientId);
-    }
-
-    private static JsonNode read(String relative) {
-        for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
-            Path file = dir.resolve(relative);
-            if (Files.exists(file)) {
-                try {
-                    return new ObjectMapper().readTree(Files.readString(file)
-                            .replaceAll("\\$\\{[A-Z_]+}", "placeholder"));
-                } catch (IOException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-        }
-        throw new IllegalStateException(relative + " not found");
     }
 }

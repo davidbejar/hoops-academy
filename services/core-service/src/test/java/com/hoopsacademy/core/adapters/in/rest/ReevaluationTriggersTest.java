@@ -1,19 +1,15 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -25,8 +21,7 @@ import org.junit.jupiter.api.Test;
 
 /** Writes that change eligibility re-evaluate open assignments in the same transaction (invalidate + case). */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class ReevaluationTriggersTest {
 
@@ -104,7 +99,7 @@ class ReevaluationTriggersTest {
     }
 
     private ValidatableResponse send(String path, String method, String json) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON).body(json)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON).body(json)
                 .request(method, path).then();
     }
 }

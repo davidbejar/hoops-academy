@@ -8,20 +8,17 @@ import static org.hamcrest.Matchers.equalTo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
+import com.hoopsacademy.core.testsupport.Csv;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -37,8 +34,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * the JSON list, recorded as {@code audit.exported}, refused above 10,000 rows.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class AuditEventExportTest {
 
@@ -68,14 +64,14 @@ class AuditEventExportTest {
         Response response = export("from", T0.toString(), "to", T0.plusSeconds(120).toString());
 
         response.then().statusCode(200).header("Cache-Control", "no-store")
-                .header("Content-Disposition", "attachment; filename=\"hoops-" + slug() + "-audit-" + today()
+                .header("Content-Disposition", "attachment; filename=\"hoops-" + CoreDb.tenantSlug(tenant) + "-audit-" + today()
                         + ".csv\"");
-        List<String> lines = lines(response);
+        List<String> lines = Csv.lines(response);
         assertThat(lines).containsExactly(
                 "Date,Time,Time zone,Action,Action code,Actor,Actor name,Actor person id,Actor login,Target,"
                         + "Target id,Target name,Details",
                 "2026-03-01,11:01,Europe/Madrid,Academy suspended,tenant.suspended,Platform administrator,,,,Academy,"
-                        + tenant + "," + academyName() + ",reason==unpaid; status=SUSPENDED",
+                        + tenant + "," + CoreDb.tenantName(tenant) + ",reason==unpaid; status=SUSPENDED",
                 "2026-03-01,11:00,Europe/Madrid,Member invited,member.invited,Academy member,Ada Admin," + admin
                         + ",admin-sub,Person," + coach + ",Cora Coach,roles=[COACH]");
         assertThat(String.join("\n", lines)).doesNotContain("platform-admin").doesNotContain(invited.toString());
@@ -88,7 +84,7 @@ class AuditEventExportTest {
                 RosterDb.defaultCategories(tenant).get("U12"), "MIXED");
         event(T0, "admin-sub", admin, "team.roster_exported", "team", lions, "{\"rows\":4}");
 
-        List<String> lines = lines(export("action", "team.roster_exported", "from", T0.toString()));
+        List<String> lines = Csv.lines(export("action", "team.roster_exported", "from", T0.toString()));
 
         assertThat(lines).hasSize(2);
         assertThat(lines.get(1)).contains(",Team," + lions + ",U12 Lions,rows=4");
@@ -99,7 +95,7 @@ class AuditEventExportTest {
         event(T0, "admin-sub", admin, "member.invited", "person", coach, "{}");
         event(T0.plusSeconds(1), "admin-sub", admin, "member.updated", "person", coach, "{\"fields\":[\"phone\"]}");
 
-        List<String> lines = lines(exportIn("id", "action", "member.updated", "from", T0.toString()));
+        List<String> lines = Csv.lines(exportIn("id", "action", "member.updated", "from", T0.toString()));
 
         assertThat(lines).hasSize(2);
         assertThat(lines.get(0)).startsWith("Tanggal,");
@@ -110,9 +106,9 @@ class AuditEventExportTest {
     void everyExportIsAuditedWithItsRowCountAndFilterButNotInItsOwnFile() throws Exception {
         event(T0, "admin-sub", admin, "member.invited", "person", coach, "{}");
 
-        List<String> first = lines(export("action", "member.invited", "action", "audit.exported",
+        List<String> first = Csv.lines(export("action", "member.invited", "action", "audit.exported",
                 "from", T0.toString()));
-        List<String> second = lines(export("action", "member.invited", "action", "audit.exported",
+        List<String> second = Csv.lines(export("action", "member.invited", "action", "audit.exported",
                 "from", T0.toString()));
 
         assertThat(first).hasSize(2);
@@ -158,7 +154,7 @@ class AuditEventExportTest {
         Response response = given().filter(Contract.CORE).urlEncodingEnabled(false).header("X-Tenant-Id", other)
                 .get(EXPORT);
 
-        assertThat(lines(response)).hasSize(1);
+        assertThat(Csv.lines(response)).hasSize(1);
         given().filter(Contract.CORE).urlEncodingEnabled(false).header("X-Tenant-Id", tenant).get(EXPORT).then()
                 .statusCode(404);
     }
@@ -192,23 +188,9 @@ class AuditEventExportTest {
         return request.get(EXPORT);
     }
 
-    private static List<String> lines(Response response) {
-        String csv = new String(response.then().statusCode(200).extract().asByteArray(), StandardCharsets.UTF_8);
-        assertThat(csv).startsWith("﻿");
-        return List.of(csv.substring(1).split("\r\n"));
-    }
-
     private UUID event(Instant at, String actorSub, UUID actorPerson, String action, String targetType, Object target,
             String metadata) {
         return CoreDb.auditEvent(tenant, at, actorSub, actorPerson, action, targetType, target, metadata);
-    }
-
-    private String slug() {
-        return RosterDb.text(tenant, "select slug from core.tenant where id = ?::uuid", tenant);
-    }
-
-    private String academyName() {
-        return RosterDb.text(tenant, "select name from core.tenant where id = ?::uuid", tenant);
     }
 
     private static String today() {

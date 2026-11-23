@@ -18,18 +18,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.hoopsacademy.common.problem.ConflictException;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.application.port.IdentityProviderException;
 import com.hoopsacademy.core.application.port.IdentityProviderPort;
 import com.hoopsacademy.core.application.port.LoginUpdate;
 import com.hoopsacademy.core.application.port.NewIdentity;
 import com.hoopsacademy.core.domain.identity.TemporaryPassword;
 import com.hoopsacademy.core.domain.shared.AppLocale;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +34,7 @@ import org.junit.jupiter.api.Test;
 
 /** Error mapping of the Keycloak adapter against the WireMocked Admin API. */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class KeycloakIdentityProviderTest {
 
     private static final String FAKE_PASSWORD = "Fake-Temp-Value-7";

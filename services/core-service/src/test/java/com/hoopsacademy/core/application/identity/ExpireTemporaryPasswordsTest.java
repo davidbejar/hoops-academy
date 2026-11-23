@@ -5,16 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.tenancy.TenantScope;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import com.hoopsacademy.core.adapters.in.scheduler.TemporaryPasswordSweepJob;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.Members;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.sql.Connection;
@@ -29,8 +26,7 @@ import org.junit.jupiter.api.Test;
  * a login whose owner chose a password is only forgotten; Keycloak failures are retried by the next sweep.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class ExpireTemporaryPasswordsTest {
 
     private static final String EXPIRED = "member.temporary_password_expired";

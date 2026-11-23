@@ -18,19 +18,16 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.adapters.in.rest.TeamRosterExportTest.Relation;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.response.Response;
@@ -58,8 +55,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * audited, nothing of the roster logged.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class TeamRosterPdfTest {
 
@@ -109,7 +105,7 @@ class TeamRosterPdfTest {
         Response response = print(lions, null);
 
         response.then().statusCode(200).contentType(PDF).header("Cache-Control", "no-store")
-                .header("Content-Disposition", "attachment; filename=\"hoops-" + slug() + "-roster-u12-lions-"
+                .header("Content-Disposition", "attachment; filename=\"hoops-" + CoreDb.tenantSlug(tenant) + "-roster-u12-lions-"
                         + RosterDb.TODAY.format(DateTimeFormatter.BASIC_ISO_DATE) + ".pdf\"");
         assertThat(response.asByteArray()).isEqualTo(SHEET);
     }
@@ -127,7 +123,7 @@ class TeamRosterPdfTest {
         JsonNode body = JSON.readTree(sent.getBodyAsString());
         assertThat(body.get("locale").asText()).isEqualTo("es");
         assertThat(body.get("academy").get("name").asText()).isEqualTo(
-                RosterDb.text(tenant, "select name from core.tenant where id = ?::uuid", tenant));
+                CoreDb.tenantName(tenant));
         assertThat(body.get("academy").get("timeZone").asText()).isEqualTo(
                 RosterDb.text(tenant, "select timezone from core.tenant where id = ?::uuid", tenant));
         assertThat(body.get("team").get("name").asText()).isEqualTo("U12 Lions");
@@ -279,9 +275,5 @@ class TeamRosterPdfTest {
 
     private static String path(UUID team) {
         return "/api/core/teams/" + team + "/roster:export";
-    }
-
-    private String slug() {
-        return RosterDb.text(tenant, "select slug from core.tenant where id = ?::uuid", tenant);
     }
 }

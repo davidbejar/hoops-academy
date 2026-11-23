@@ -22,18 +22,15 @@ import static org.hamcrest.Matchers.nullValue;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.PasswordLeaks;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -48,8 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class MemberResourceTest {
 
@@ -145,7 +141,7 @@ class MemberResourceTest {
     @Test
     void keycloakFailuresLeaveNoMemberBehind() {
         KeycloakStubs.createUserFails(keycloak);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"givenName\":\"K\",\"familyName\":\"Down\",\"email\":\"kdown@example.com\",\"roles\":[\"COACH\"]}")
                 .post(MEMBERS).then().statusCode(502);
 
@@ -153,7 +149,7 @@ class MemberResourceTest {
         String sub = UUID.randomUUID().toString();
         KeycloakStubs.createdUserGets(keycloak, sub);
         KeycloakStubs.temporaryPasswordFails(keycloak);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"givenName\":\"M\",\"familyName\":\"Fail\",\"email\":\"mfail@example.com\",\"roles\":[\"COACH\"]}")
                 .post(MEMBERS).then().statusCode(502);
         keycloak.verify(1, userDeleted(sub));
@@ -180,18 +176,18 @@ class MemberResourceTest {
         UUID gone = CoreDb.person(tenant, "Gus", "Gone", null, TenantRole.COACH);
         deactivate(gone).statusCode(200);
 
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("role", "COACH")
+        Contract.forTenant(tenant).queryParam("role", "COACH")
                 .get(MEMBERS).then().statusCode(200)
                 .body("items.givenName", contains("Bea", "Gus"))
                 .body("page.totalElements", equalTo(2));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("active", true).queryParam("size", 1)
+        Contract.forTenant(tenant).queryParam("active", true).queryParam("size", 1)
                 .get(MEMBERS).then().statusCode(200)
                 .body("items", hasSize(1))
                 .body("page.totalElements", equalTo(2))
                 .body("page.totalPages", equalTo(2));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("q", "BEA@")
+        Contract.forTenant(tenant).queryParam("q", "BEA@")
                 .get(MEMBERS).then().statusCode(200).body("items.givenName", contains("Bea"));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("q", "%")
+        Contract.forTenant(tenant).queryParam("q", "%")
                 .get(MEMBERS).then().statusCode(200).body("items", hasSize(0));
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).queryParam("size", 201)
                 .get(MEMBERS).then().statusCode(400);
@@ -288,7 +284,7 @@ class MemberResourceTest {
         UUID coach = coachWithLogin(sub, "kept.coach@example.com");
         KeycloakStubs.loginUpdateFails(keycloak);
 
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"email\":\"lost.coach@example.com\"}").patch(MEMBERS + "/" + coach).then()
                 .statusCode(502).contentType("application/problem+json")
                 .body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
@@ -418,7 +414,7 @@ class MemberResourceTest {
         UUID coach = coachWithLogin(sub, "expired.coach@example.com", "PENDING");
         CoreDb.temporaryPasswordExpired(sub, "5 days");
         member(coach).statusCode(200).body("temporaryPasswordStatus", equalTo("EXPIRED"));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(MEMBERS).then().statusCode(200)
+        Contract.forTenant(tenant).get(MEMBERS).then().statusCode(200)
                 .body("items.find { it.personId == '" + coach + "' }.temporaryPasswordStatus", equalTo("EXPIRED"));
 
         issue(coach).statusCode(200).body("temporaryPasswordStatus", equalTo("ACTIVE"));
@@ -437,7 +433,7 @@ class MemberResourceTest {
         CoreDb.temporaryPasswordExpired(sub, "5 days");
         KeycloakStubs.loginUpdateFails(keycloak, sub);
 
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).post(MEMBERS + "/" + coach + "/temporary-password")
+        Contract.forTenant(tenant).post(MEMBERS + "/" + coach + "/temporary-password")
                 .then().statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
 
         assertThat(CoreDb.temporaryPassword(sub).get("expiredAt")).isNotNull();
@@ -560,7 +556,7 @@ class MemberResourceTest {
     void aKeycloakFailureLeavesNoAuditRow() {
         UUID coach = coachWithLogin(UUID.randomUUID().toString(), "kc.down@example.com", "PENDING");
         KeycloakStubs.temporaryPasswordFails(keycloak);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).post(MEMBERS + "/" + coach + "/temporary-password")
+        Contract.forTenant(tenant).post(MEMBERS + "/" + coach + "/temporary-password")
                 .then().statusCode(502).body("code", equalTo("IDENTITY_PROVIDER_UNAVAILABLE"));
         assertThat(CoreDb.auditActions(tenant)).doesNotContain("member.temporary_password_issued");
     }
@@ -572,7 +568,7 @@ class MemberResourceTest {
     void onlyAdminsManageMembers(Set<TenantRole> roles, boolean isAdmin) {
         Members.signIn(tenant, roles);
         int read = isAdmin ? 200 : 403;
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(MEMBERS).then().statusCode(read);
+        Contract.forTenant(tenant).get(MEMBERS).then().statusCode(read);
         member(admin).statusCode(read);
         invite("{\"givenName\":\"M\",\"familyName\":\"X\",\"roles\":[\"PARENT\"],\"sendInvitation\":false}")
                 .statusCode(isAdmin ? 201 : 403);
@@ -595,13 +591,13 @@ class MemberResourceTest {
                     "select person_id::text from core.player where id = ?", player)));
         }
 
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("size", 200).get(MEMBERS).then()
+        Contract.forTenant(tenant).queryParam("size", 200).get(MEMBERS).then()
                 .statusCode(200)
                 .body("items.personId", hasItems(people.get("ACTIVE").toString(), people.get("WITHDRAWN").toString()))
                 .body("items.personId", everyItem(org.hamcrest.Matchers.not(org.hamcrest.Matchers.oneOf(
                         people.get("PENDING_APPROVAL").toString(), people.get("REJECTED").toString()))))
                 .body("page.totalElements", equalTo(3));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("role", "PLAYER").get(MEMBERS).then()
+        Contract.forTenant(tenant).queryParam("role", "PLAYER").get(MEMBERS).then()
                 .body("page.totalElements", equalTo(2));
     }
 
@@ -614,10 +610,10 @@ class MemberResourceTest {
         roles(stranger, "[\"PARENT\"]").statusCode(404);
         deactivate(stranger).statusCode(404);
         issue(stranger).statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(MEMBERS).then()
+        Contract.forTenant(tenant).get(MEMBERS).then()
                 .body("items.personId", everyItem(org.hamcrest.Matchers.not(stranger.toString())))
                 .body("items.personId", hasItem(admin.toString()));
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(MEMBERS).then().statusCode(404);
+        Contract.forTenant(other).get(MEMBERS).then().statusCode(404);
     }
 
     /** An ACCEPTED coach whose login (core.app_user + Keycloak user) uses {@code email}. */
@@ -635,31 +631,31 @@ class MemberResourceTest {
     }
 
     private ValidatableResponse issue(UUID person) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant)
+        return Contract.forTenant(tenant)
                 .post(MEMBERS + "/" + person + "/temporary-password").then();
     }
 
     private ValidatableResponse invite(String body) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON).body(body)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON).body(body)
                 .post(MEMBERS).then();
     }
 
     private ValidatableResponse member(UUID person) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(MEMBERS + "/" + person).then();
+        return Contract.forTenant(tenant).get(MEMBERS + "/" + person).then();
     }
 
     private ValidatableResponse patch(UUID person, String body) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON).body(body)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON).body(body)
                 .patch(MEMBERS + "/" + person).then();
     }
 
     private ValidatableResponse roles(UUID person, String roles) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"roles\":" + roles + "}").put(MEMBERS + "/" + person + "/roles").then();
     }
 
     private ValidatableResponse deactivate(UUID person) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant)
+        return Contract.forTenant(tenant)
                 .post(MEMBERS + "/" + person + "/deactivate").then();
     }
 }

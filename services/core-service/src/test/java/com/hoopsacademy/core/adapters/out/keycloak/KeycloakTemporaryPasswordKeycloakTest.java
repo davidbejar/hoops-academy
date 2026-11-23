@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.keycloak;
 
+import static com.hoopsacademy.core.testsupport.KeycloakContainerResource.passwordGrant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -13,16 +14,7 @@ import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.Keycloak;
@@ -60,14 +52,14 @@ class KeycloakTemporaryPasswordKeycloakTest {
         identityProvider.setTemporaryPassword(login.subject(), temporary);
 
         assertThat(user(login).toRepresentation().getRequiredActions()).containsExactly("UPDATE_PASSWORD");
-        assertThat(directGrant(email, temporary.reveal())).as("correct temporary password").contains(NOT_SET_UP);
-        assertThat(directGrant(email, "Wrong-" + UUID.randomUUID())).as("wrong password").contains(INVALID);
+        assertThat(passwordGrant(email, temporary.reveal())).as("correct temporary password").contains(NOT_SET_UP);
+        assertThat(passwordGrant(email, "Wrong-" + UUID.randomUUID())).as("wrong password").contains(INVALID);
         assertThat(identityProvider.hasOwnPassword(login.subject())).as("temporary only").isFalse();
 
         String chosen = "Chosen-" + UUID.randomUUID();
         user(login).resetPassword(permanent(chosen)); // what the UPDATE_PASSWORD page does at the first sign-in
         assertThat(user(login).toRepresentation().getRequiredActions()).isEmpty();
-        assertThat(directGrant(email, chosen)).as("own password").contains("access_token");
+        assertThat(passwordGrant(email, chosen)).as("own password").contains("access_token");
         assertThat(identityProvider.hasOwnPassword(login.subject())).isTrue();
         identityProvider.delete(login.subject());
     }
@@ -82,7 +74,7 @@ class KeycloakTemporaryPasswordKeycloakTest {
         ProvisionedIdentity again = identityProvider.provision(new NewIdentity(email, "Ex", "Isting", AppLocale.ES));
 
         assertThat(again.created()).isFalse();
-        assertThat(directGrant(email, own)).contains("access_token");
+        assertThat(passwordGrant(email, own)).contains("access_token");
         assertThat(user(created).toRepresentation().getRequiredActions()).isEmpty();
         identityProvider.delete(created.subject());
     }
@@ -96,7 +88,7 @@ class KeycloakTemporaryPasswordKeycloakTest {
         TemporaryPassword repaired = TemporaryPassword.of("Repair-" + UUID.randomUUID().toString().substring(0, 12));
         identityProvider.setTemporaryPassword(stuck.subject(), repaired);
 
-        assertThat(directGrant(email, repaired.reveal())).contains(NOT_SET_UP);
+        assertThat(passwordGrant(email, repaired.reveal())).contains(NOT_SET_UP);
         identityProvider.delete(stuck.subject());
     }
 
@@ -114,18 +106,5 @@ class KeycloakTemporaryPasswordKeycloakTest {
 
     private static String unique(String prefix) {
         return prefix + "-" + UUID.randomUUID() + "@example.com";
-    }
-
-    /** The token endpoint's raw answer to a password grant (an error description or the tokens). */
-    private static String directGrant(String username, String password) throws Exception {
-        String url = ConfigProvider.getConfig().getValue(KeycloakContainerResource.TOKEN_URL, String.class);
-        String form = Map.of("grant_type", "password", "client_id", KeycloakContainerResource.DIRECT_GRANT_CLIENT,
-                        "username", username, "password", password, "scope", "openid").entrySet().stream()
-                .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
-                .collect(Collectors.joining("&"));
-        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(form)).build();
-        return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).body();
     }
 }

@@ -19,10 +19,10 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.LogCapture;
@@ -30,9 +30,6 @@ import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.PasswordLeaks;
 import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.RosterEvents;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -43,8 +40,7 @@ import org.junit.jupiter.api.Test;
 
 /** The super admin manages a tenant's administrators (WP22, ADR-0023). */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = "platform-admin", roles = "super_admin")
 class PlatformAdminResourceTest {
 
@@ -296,7 +292,7 @@ class PlatformAdminResourceTest {
         UUID parent = sharedWith(other);
         Members.signIn(tenant, TenantRole.ADMIN);
 
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"email\":\"takeover@example.com\"}").patch("/api/core/members/" + admin).then()
                 .statusCode(409).body("code", equalTo("LOGIN_SHARED"));
 

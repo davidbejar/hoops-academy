@@ -10,12 +10,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.oidc.Claim;
@@ -27,8 +24,7 @@ import org.junit.jupiter.api.Test;
 
 /** GET/PATCH /api/core/me: memberships across tenants through the subject-scoped index, never anyone else's. */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class MeResourceTest {
 
     private static final String ME = "/api/core/me";
@@ -36,10 +32,10 @@ class MeResourceTest {
     @Test
     @TestSecurity(user = "me-alice")
     void listsOwnMembershipsInActiveTenantsOnly() {
-        String a = tenant("ACTIVE");
-        String b = tenant("ACTIVE");
-        String suspended = tenant("SUSPENDED");
-        String leftTenant = tenant("ACTIVE");
+        String a = CoreDb.newTenant("ACTIVE");
+        String b = CoreDb.newTenant("ACTIVE");
+        String suspended = CoreDb.newTenant("SUSPENDED");
+        String leftTenant = CoreDb.newTenant("ACTIVE");
         UUID alice = CoreDb.login("me-alice");
         UUID bob = CoreDb.login("me-bob-" + UUID.randomUUID());
         UUID aliceInA = CoreDb.person(a, alice, "Alice", "A", null, null, null, TenantRole.ADMIN, TenantRole.COACH);
@@ -52,7 +48,7 @@ class MeResourceTest {
         UUID gone = CoreDb.person(leftTenant, alice, "Alice", "A", null, null, null, TenantRole.COACH);
         CoreDb.inTenant(leftTenant, c -> CoreDb.update(c, "update core.person set active = false where id = ?", gone));
         CoreDb.person(a, bob, "Bob", "B", null, null, null, TenantRole.ADMIN);
-        CoreDb.person(tenant("ACTIVE"), bob, "Bob", "B", null, null, null, TenantRole.COACH);
+        CoreDb.person(CoreDb.newTenant("ACTIVE"), bob, "Bob", "B", null, null, null, TenantRole.COACH);
 
         given().filter(Contract.CORE).get(ME).then().statusCode(200)
                 .body("sub", equalTo("me-alice"))
@@ -73,8 +69,8 @@ class MeResourceTest {
     @Test
     @TestSecurity(user = "me-names")
     void eachMembershipCarriesTheGivenAndFamilyNameAsThatAcademyStoresThem() {
-        String a = tenant("ACTIVE");
-        String b = tenant("ACTIVE");
+        String a = CoreDb.newTenant("ACTIVE");
+        String b = CoreDb.newTenant("ACTIVE");
         UUID login = CoreDb.login("me-names");
         CoreDb.person(a, login, "Ana María", "de la Cruz", null, null, null, TenantRole.COACH);
         CoreDb.person(b, login, "Ana", "Cruz", null, null, null, TenantRole.PARENT);
@@ -90,7 +86,7 @@ class MeResourceTest {
     @Test
     @TestSecurity(user = "me-coach")
     void reportsTheTeamsTheCallerIsStaffOf() {
-        String t = tenant("ACTIVE");
+        String t = CoreDb.newTenant("ACTIVE");
         UUID coach = CoreDb.person(t, CoreDb.login("me-coach"), "Cora", "C", null, null, null, TenantRole.COACH);
         java.util.Map<String, UUID> categories = com.hoopsacademy.core.testsupport.RosterDb.defaultCategories(t);
         UUID season = com.hoopsacademy.core.testsupport.RosterDb.currentSeason(t);
@@ -105,7 +101,7 @@ class MeResourceTest {
     @Test
     @TestSecurity(user = "me-old-coach")
     void leavesOutTheTeamsOfEndedSeasons() {
-        String t = tenant("ACTIVE");
+        String t = CoreDb.newTenant("ACTIVE");
         UUID coach = CoreDb.person(t, CoreDb.login("me-old-coach"), "Olga", "C", null, null, null, TenantRole.COACH);
         java.util.Map<String, UUID> categories = com.hoopsacademy.core.testsupport.RosterDb.defaultCategories(t);
         java.time.LocalDate today = com.hoopsacademy.core.testsupport.RosterDb.TODAY;
@@ -126,7 +122,7 @@ class MeResourceTest {
     @Test
     @TestSecurity(user = "me-parent")
     void reportsTheTenantZoneAndTheTeamsOfOwnAndLinkedPlayers() {
-        String t = tenant("ACTIVE");
+        String t = CoreDb.newTenant("ACTIVE");
         com.hoopsacademy.core.testsupport.RosterDb.timezone(t, "Asia/Jakarta");
         UUID parent = CoreDb.person(t, CoreDb.login("me-parent"), "Pia", "P", null, null, null, TenantRole.PARENT);
         UUID child = CoreDb.player(t, CoreDb.person(t, "Kid", "P", null));
@@ -146,7 +142,7 @@ class MeResourceTest {
     @Test
     @TestSecurity(user = "me-pending")
     void firstMeCallAcceptsAPendingInvitation() {
-        String t = tenant("ACTIVE");
+        String t = CoreDb.newTenant("ACTIVE");
         UUID person = CoreDb.person(t, CoreDb.login("me-pending"), "Pia", "P", null, null, null, TenantRole.COACH);
         CoreDb.inTenant(t, c -> CoreDb.update(c, "update core.person set invitation_status = 'PENDING' where id = ?", person));
 
@@ -166,7 +162,7 @@ class MeResourceTest {
     @Test
     @TestSecurity(user = "me-first-sign-in")
     void theFirstSignInWithATemporaryPasswordLeavesNothingToExpire() {
-        String t = tenant("ACTIVE");
+        String t = CoreDb.newTenant("ACTIVE");
         UUID person = CoreDb.person(t, CoreDb.login("me-first-sign-in"), "Fi", "Rst", null, null, null, TenantRole.COACH);
         CoreDb.inTenant(t, c -> CoreDb.update(c, "update core.person set invitation_status = 'PENDING' where id = ?", person));
         CoreDb.temporaryPasswordIssued("me-first-sign-in", "1 day");
@@ -199,7 +195,7 @@ class MeResourceTest {
     @Test
     @TestSecurity(user = "me-locale")
     void patchStoresTheLocalePreference() {
-        String t = tenant("ACTIVE");
+        String t = CoreDb.newTenant("ACTIVE");
         CoreDb.person(t, CoreDb.login("me-locale"), "Lu", "L", null, null, null, TenantRole.PARENT);
 
         given().filter(Contract.CORE).contentType(ContentType.JSON).body("{\"locale\":\"id\"}").patch(ME)
@@ -226,11 +222,5 @@ class MeResourceTest {
     @Test
     void anonymousIsUnauthorized() {
         given().filter(Contract.CORE).get(ME).then().statusCode(401);
-    }
-
-    private static String tenant(String status) {
-        String id = UUID.randomUUID().toString();
-        CoreDb.tenant(id, status);
-        return id;
     }
 }

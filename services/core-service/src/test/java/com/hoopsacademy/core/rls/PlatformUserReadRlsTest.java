@@ -1,14 +1,13 @@
 package com.hoopsacademy.core.rls;
 
+import static com.hoopsacademy.core.testsupport.Sql.count;
+import static com.hoopsacademy.core.testsupport.Sql.sqlState;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.TestDatabases;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,8 +28,7 @@ import org.junit.jupiter.api.Test;
  */
 @Tag("rls")
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class PlatformUserReadRlsTest {
 
     private static final String INSUFFICIENT_PRIVILEGE = "42501";
@@ -121,13 +119,6 @@ class PlatformUserReadRlsTest {
         return platform;
     }
 
-    private static long count(Connection connection, String sql) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
-            rs.next();
-            return rs.getLong(1);
-        }
-    }
-
     private static List<UUID> ids(Connection connection, String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
             List<UUID> ids = new java.util.ArrayList<>();
@@ -135,20 +126,6 @@ class PlatformUserReadRlsTest {
                 ids.add(rs.getObject(1, UUID.class));
             }
             return ids;
-        }
-    }
-
-    private static String sqlState(Connection connection, String sql) throws SQLException {
-        var savepoint = connection.getAutoCommit() ? null : connection.setSavepoint();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.execute();
-            return "no error";
-        } catch (SQLException e) {
-            return e.getSQLState();
-        } finally {
-            if (savepoint != null) {
-                connection.rollback(savepoint);
-            }
         }
     }
 }

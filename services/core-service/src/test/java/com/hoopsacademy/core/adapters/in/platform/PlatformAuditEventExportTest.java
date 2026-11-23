@@ -5,19 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
+import com.hoopsacademy.core.testsupport.Csv;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -36,8 +33,7 @@ import org.junit.jupiter.api.Test;
  * Rows of other tests share the database, so each test works in its own time window.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = "platform-admin", roles = "super_admin")
 class PlatformAuditEventExportTest {
 
@@ -67,15 +63,15 @@ class PlatformAuditEventExportTest {
         Response response = window("tenantId", academyA);
 
         response.then().statusCode(200).header("Cache-Control", "no-store").header("Content-Disposition",
-                "attachment; filename=\"hoops-" + slug(academyA) + "-audit-" + RosterDb.TODAY
+                "attachment; filename=\"hoops-" + CoreDb.tenantSlug(academyA) + "-audit-" + RosterDb.TODAY
                         .format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv\"");
-        List<String> lines = lines(response);
+        List<String> lines = Csv.lines(response);
         assertThat(lines.get(0)).isEqualTo("Academy,Academy id,Date,Time,Time zone,Action,Action code,Actor,"
                 + "Actor name,Actor person id,Actor login,Target,Target id,Target name,Details");
         assertThat(lines).hasSize(2);
         String local = t0.atZone(java.time.ZoneId.of("Europe/Madrid")).format(DateTimeFormatter.ofPattern(
                 "yyyy-MM-dd,HH:mm"));
-        assertThat(lines.get(1)).isEqualTo(name(academyA) + "," + academyA + "," + local + ",Europe/Madrid,"
+        assertThat(lines.get(1)).isEqualTo(CoreDb.tenantName(academyA) + "," + academyA + "," + local + ",Europe/Madrid,"
                 + "Member invited,member.invited,Academy member,Ada Admin," + admin + ",ada,Person," + coach + ",,");
 
         Map<String, String> audit = CoreDb.auditRow(academyA, "audit.exported");
@@ -95,11 +91,11 @@ class PlatformAuditEventExportTest {
         Response response = window();
         response.then().header("Content-Disposition", "attachment; filename=\"hoops-platform-audit-"
                 + LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv\"");
-        List<String> lines = lines(response);
+        List<String> lines = Csv.lines(response);
 
         assertThat(lines).hasSize(4);
-        assertThat(lines.get(1)).startsWith(name(academyB) + "," + academyB + ",").contains(",Asia/Jakarta,");
-        assertThat(lines.get(3)).startsWith(name(academyA) + "," + academyA + ",").contains(",Europe/Madrid,");
+        assertThat(lines.get(1)).startsWith(CoreDb.tenantName(academyB) + "," + academyB + ",").contains(",Asia/Jakarta,");
+        assertThat(lines.get(3)).startsWith(CoreDb.tenantName(academyA) + "," + academyA + ",").contains(",Europe/Madrid,");
         assertThat(JSON.readTree(CoreDb.auditRow(academyA, "audit.exported").get("metadata")).get("rows").asInt())
                 .isEqualTo(1);
         assertThat(JSON.readTree(CoreDb.auditRow(academyB, "audit.exported").get("metadata")).get("rows").asInt())
@@ -111,7 +107,7 @@ class PlatformAuditEventExportTest {
         Response spanish = request().header("Accept-Language", "es").queryParam("tenantId", academyA)
                 .queryParam("from", t0.toString()).get(EXPORT);
 
-        assertThat(lines(spanish).get(0)).startsWith("Academia,Id de la academia,Fecha,Hora,Zona horaria,");
+        assertThat(Csv.lines(spanish).get(0)).startsWith("Academia,Id de la academia,Fecha,Hora,Zona horaria,");
         request().queryParam("tenantId", UUID.randomUUID().toString()).get(EXPORT).then().statusCode(404);
     }
 
@@ -138,19 +134,5 @@ class PlatformAuditEventExportTest {
 
     private static RequestSpecification request() {
         return given().filter(Contract.CORE).urlEncodingEnabled(false);
-    }
-
-    private static List<String> lines(Response response) {
-        String csv = new String(response.then().statusCode(200).extract().asByteArray(), StandardCharsets.UTF_8);
-        assertThat(csv).startsWith("﻿");
-        return List.of(csv.substring(1).split("\r\n"));
-    }
-
-    private static String name(String tenant) {
-        return RosterDb.text(tenant, "select name from core.tenant where id = ?::uuid", tenant);
-    }
-
-    private static String slug(String tenant) {
-        return RosterDb.text(tenant, "select slug from core.tenant where id = ?::uuid", tenant);
     }
 }

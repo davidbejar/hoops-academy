@@ -1,20 +1,17 @@
 package com.hoopsacademy.core.rls;
 
+import static com.hoopsacademy.core.testsupport.Sql.count;
+import static com.hoopsacademy.core.testsupport.Sql.sqlState;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.tenancy.TenantId;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.TestDatabases;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,8 +24,7 @@ import org.junit.jupiter.api.Test;
  */
 @Tag("rls")
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class TenantRegistryRlsTest {
 
     private static final String INSUFFICIENT_PRIVILEGE = "42501";
@@ -103,27 +99,6 @@ class TenantRegistryRlsTest {
                     values (gen_random_uuid(), ?, 'tenant.suspended', 'tenant', ?, '{}')""",
                     UUID.fromString(tenantA), tenantA)).isEqualTo(1);
             assertThat(sqlState(platform, "select payload from core.outbox")).isEqualTo(INSUFFICIENT_PRIVILEGE);
-        }
-    }
-
-    private static long count(Connection connection, String sql) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
-            rs.next();
-            return rs.getLong(1);
-        }
-    }
-
-    private static String sqlState(Connection connection, String sql) throws SQLException {
-        var savepoint = connection.getAutoCommit() ? null : connection.setSavepoint();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.execute();
-            return "no error";
-        } catch (SQLException e) {
-            return e.getSQLState();
-        } finally {
-            if (savepoint != null) {
-                connection.rollback(savepoint);
-            }
         }
     }
 }

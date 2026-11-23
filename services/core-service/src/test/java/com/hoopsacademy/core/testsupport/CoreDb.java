@@ -59,6 +59,23 @@ public final class CoreDb {
         });
     }
 
+    /** A new tenant in {@code status} with default settings; its id. */
+    public static String newTenant(String status) {
+        String id = UUID.randomUUID().toString();
+        tenant(id, status);
+        return id;
+    }
+
+    /** The tenant's slug as the registry stores it (export file names, platform views). */
+    public static String tenantSlug(String tenant) {
+        return RosterDb.text(tenant, "select slug from core.tenant where id = ?::uuid", tenant);
+    }
+
+    /** The tenant's display name as the registry stores it. */
+    public static String tenantName(String tenant) {
+        return RosterDb.text(tenant, "select name from core.tenant where id = ?::uuid", tenant);
+    }
+
     /** Inserts the registry row only (fixture helper usable inside a migrator transaction). */
     public static void insertTenantRow(Connection c, UUID id, String status) throws SQLException {
         update(c, """

@@ -1,6 +1,5 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -9,16 +8,13 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.RosterEvents;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -36,8 +32,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class EligibilityCaseResourceTest {
 
@@ -93,7 +88,7 @@ class EligibilityCaseResourceTest {
         assertThat(CoreDb.count(tenant, "select count(*) from core.team_player where id = ? and left_on is null "
                 + "and invalidated_at is not null", assignment)).isEqualTo(1);
         resolve("{\"resolution\":\"DISMISSED\"}").statusCode(409).body("code", equalTo("ELIGIBILITY_CASE_NOT_OPEN"));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"resolution\":\"DISMISSED\"}").post(CASES + "/" + UUID.randomUUID() + "/resolve")
                 .then().statusCode(404);
     }
@@ -156,16 +151,16 @@ class EligibilityCaseResourceTest {
     void anotherTenantsCasesAreNotFound() {
         String other = Members.newTenant();
         Members.signIn(other, TenantRole.ADMIN);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(CASES + "/" + caseId).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).get(CASES + "/" + caseId).then().statusCode(404);
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body("{\"resolution\":\"DISMISSED\"}").post(CASES + "/" + caseId + "/resolve").then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(CASES).then().statusCode(200).body("items", hasSize(0));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(CASES).then().statusCode(404);
+        Contract.forTenant(other).get(CASES).then().statusCode(200).body("items", hasSize(0));
+        Contract.forTenant(tenant).get(CASES).then().statusCode(404);
         assertThat(CoreDb.count(tenant, "select count(*) from core.eligibility_case where status = 'OPEN'")).isEqualTo(1);
     }
 
     private RequestSpecification request() {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant);
+        return Contract.forTenant(tenant);
     }
 
     private ValidatableResponse resolve(String json) {

@@ -9,16 +9,13 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.RosterEvents;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -40,8 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * player is one year older, so U12 players born in Y−12 become too old while those born in Y−11 stay eligible.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class RolloverResourceTest {
 
@@ -159,10 +155,10 @@ class RolloverResourceTest {
         String other = Members.newTenant();
         UUID otherSeason = RosterDb.currentSeason(other);
         Members.signIn(other, TenantRole.ADMIN);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body("{\"fromSeasonId\":\"" + last + "\"}").post("/api/core/seasons/" + otherSeason + "/rollover")
                 .then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body("{\"fromSeasonId\":\"" + last + "\"}").post("/api/core/seasons/" + current + "/rollover")
                 .then().statusCode(404);
         assertThat(CoreDb.count(tenant, "select count(*) from core.team where season_id = ?", current)).isZero();
@@ -186,7 +182,7 @@ class RolloverResourceTest {
     }
 
     private ValidatableResponse rollover(UUID target, String json) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON).body(json)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON).body(json)
                 .post("/api/core/seasons/" + target + "/rollover").then();
     }
 }

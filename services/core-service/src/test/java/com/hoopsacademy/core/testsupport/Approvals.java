@@ -17,7 +17,7 @@ public final class Approvals {
     }
 
     public RequestSpecification request() {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant);
+        return Contract.forTenant(tenant);
     }
 
     /** For requests the contract forbids on purpose (invalid bodies / parameters); responses are still validated. */

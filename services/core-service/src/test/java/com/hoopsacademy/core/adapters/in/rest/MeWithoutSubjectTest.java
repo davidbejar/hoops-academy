@@ -3,18 +3,14 @@ package com.hoopsacademy.core.adapters.in.rest;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.CoreDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.OidcSecurity;
-import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -23,16 +19,24 @@ import org.junit.jupiter.api.Test;
  * 401 Problem; the realm export adds {@code basic} to every client.
  */
 @QuarkusTest
-@TestProfile(MeWithoutSubjectTest.RequireSub.class)
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class MeWithoutSubjectTest {
 
-    public static class RequireSub implements QuarkusTestProfile {
-        @Override
-        public Map<String, String> getConfigOverrides() {
-            return Map.of("hoops.security.require-sub", "true");
-        }
+    /**
+     * {@code CallerSubject} reads {@code hoops.security.require-sub} on every call, so a system property (above the
+     * {@code %test} value of application.properties) turns it on for these tests without a profile of their own, which
+     * would cost a Quarkus restart with a new database (CORET-01).
+     */
+    private static final String REQUIRE_SUB = "hoops.security.require-sub";
+
+    @BeforeEach
+    void requireSub() {
+        System.setProperty(REQUIRE_SUB, "true");
+    }
+
+    @AfterEach
+    void defaultRequireSub() {
+        System.clearProperty(REQUIRE_SUB);
     }
 
     @Test

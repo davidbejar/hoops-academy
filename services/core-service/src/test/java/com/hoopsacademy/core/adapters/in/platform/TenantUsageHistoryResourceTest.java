@@ -7,17 +7,14 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.TestDatabases;
 import com.hoopsacademy.core.testsupport.UsageStubs;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import java.sql.Connection;
@@ -30,8 +27,7 @@ import org.junit.jupiter.api.Test;
 
 /** {@code GET /platform/tenants/{id}/usage/history}: the daily snapshots of one tenant, ascending, in a date range. */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = "platform-admin", roles = "super_admin")
 class TenantUsageHistoryResourceTest {
 

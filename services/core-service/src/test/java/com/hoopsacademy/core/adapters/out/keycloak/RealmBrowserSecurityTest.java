@@ -3,9 +3,7 @@ package com.hoopsacademy.core.adapters.out.keycloak;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
+import com.hoopsacademy.core.testsupport.RealmFiles;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,7 +21,7 @@ class RealmBrowserSecurityTest {
     /** The Flutter dev server (compose only): the chart rewrites it to its public URL, which is {@code 'self'}. */
     private static final String DEV_SERVER = "http://localhost:5173";
 
-    private final JsonNode realm = read();
+    private final JsonNode realm = RealmFiles.realmJson(RealmFiles.REALM);
 
     @Test
     void theContentSecurityPolicyDefinesEveryDirectiveWithoutWildcardsOrEval() {
@@ -97,15 +95,5 @@ class RealmBrowserSecurityTest {
             }
         }
         return out;
-    }
-
-    private static JsonNode read() {
-        try {
-            return new ObjectMapper().readTree(Files.readString(
-                    RealmPasswordPolicyTest.locate("infra/keycloak/realm-academy.json"))
-                    .replaceAll("\\$\\{[A-Z_]+}", "placeholder"));
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

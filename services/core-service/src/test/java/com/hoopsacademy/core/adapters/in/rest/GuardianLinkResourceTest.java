@@ -1,20 +1,16 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -28,8 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class GuardianLinkResourceTest {
 
@@ -60,9 +55,9 @@ class GuardianLinkResourceTest {
         String id = created.path("id");
         assertThat(created.header("Location")).endsWith(LINKS + "/" + id);
 
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("playerId", player.toString())
+        Contract.forTenant(tenant).queryParam("playerId", player.toString())
                 .get(LINKS).then().statusCode(200).body("items.id", contains(id)).body("page.totalElements", equalTo(1));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).queryParam("guardianPersonId", UUID.randomUUID().toString())
+        Contract.forTenant(tenant).queryParam("guardianPersonId", UUID.randomUUID().toString())
                 .get(LINKS).then().statusCode(200).body("items", hasSize(0));
         delete(UUID.fromString(id)).statusCode(204);
         delete(UUID.fromString(id)).statusCode(404);
@@ -86,7 +81,7 @@ class GuardianLinkResourceTest {
         UUID existing = CoreDb.guardianLink(tenant, parent, player);
         Members.signIn(tenant, roles);
         int expected = admin ? 200 : 403;
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LINKS).then().statusCode(expected);
+        Contract.forTenant(tenant).get(LINKS).then().statusCode(expected);
         delete(existing).statusCode(admin ? 204 : 403);
         create(parent, player).statusCode(admin ? 201 : 403);
     }
@@ -96,22 +91,22 @@ class GuardianLinkResourceTest {
         UUID foreignLink = CoreDb.guardianLink(tenant, parent, player);
         String other = Members.newTenant();
         Members.signIn(other, TenantRole.ADMIN);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).delete(LINKS + "/" + foreignLink).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).delete(LINKS + "/" + foreignLink).then().statusCode(404);
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body("{\"guardianPersonId\":\"" + parent + "\",\"playerId\":\"" + player + "\"}")
                 .post(LINKS).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(LINKS).then().statusCode(200).body("items", hasSize(0));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LINKS).then().statusCode(404);
+        Contract.forTenant(other).get(LINKS).then().statusCode(200).body("items", hasSize(0));
+        Contract.forTenant(tenant).get(LINKS).then().statusCode(404);
         assertThat(CoreDb.count(tenant, "select count(*) from core.guardian_link where id = ?", foreignLink)).isEqualTo(1);
     }
 
     private ValidatableResponse create(UUID guardian, UUID playerId) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"guardianPersonId\":\"" + guardian + "\",\"playerId\":\"" + playerId + "\"}")
                 .post(LINKS).then();
     }
 
     private ValidatableResponse delete(UUID id) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).delete(LINKS + "/" + id).then();
+        return Contract.forTenant(tenant).delete(LINKS + "/" + id).then();
     }
 }

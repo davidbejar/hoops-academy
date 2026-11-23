@@ -8,15 +8,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.response.ValidatableResponse;
@@ -32,8 +29,7 @@ import org.junit.jupiter.params.provider.EnumSource;
  * for its own marker.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = "platform-admin", roles = "super_admin")
 class PlatformUserResourceTest {
 
@@ -68,7 +64,7 @@ class PlatformUserResourceTest {
                 .body("items[0].email", equalTo("ada." + marker + "@example.com"))
                 .body("items[0].memberships.tenantId", contains(academyA, academyB))
                 .body("items[0].memberships[0].tenantName", equalTo("Alpha " + marker))
-                .body("items[0].memberships[0].tenantSlug", equalTo(slug(academyA)))
+                .body("items[0].memberships[0].tenantSlug", equalTo(CoreDb.tenantSlug(academyA)))
                 .body("items[0].memberships[0].tenantStatus", equalTo("ACTIVE"))
                 .body("items[0].memberships[0].personId", equalTo(inA.toString()))
                 .body("items[0].memberships[0].givenName", equalTo("Ada"))
@@ -174,10 +170,5 @@ class PlatformUserResourceTest {
 
     private static void named(String tenant, String name) {
         CoreDb.inTenant(null, c -> CoreDb.update(c, "update core.tenant set name = ? where id = ?::uuid", name, tenant));
-    }
-
-    private static String slug(String tenant) {
-        return com.hoopsacademy.core.testsupport.RosterDb.text(tenant, "select slug from core.tenant where id = ?::uuid",
-                tenant);
     }
 }

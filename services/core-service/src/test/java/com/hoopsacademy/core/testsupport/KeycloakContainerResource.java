@@ -2,10 +2,12 @@ package com.hoopsacademy.core.testsupport;
 
 import com.hoopsacademy.common.testing.ContainerStarts;
 import com.hoopsacademy.common.testing.RealmKeycloakResource;
+import com.hoopsacademy.common.testing.RealmTokens;
 import com.hoopsacademy.common.testing.TestRealm;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import org.testcontainers.containers.GenericContainer;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.testcontainers.containers.Network;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +30,8 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
     public static final String TOKEN_URL = "test.keycloak.token-url";
     public static final String MAILHOG_URL = "test.mailhog.url";
     private static final String IMPORT = "keycloak-it/realm-academy.json";
-    private static final String MAILHOG_IMAGE = "docker.io/mailhog/mailhog:latest";
+    /** Pinned like the other test images; v1.0.1 is the last MailHog release (the image {@code latest} pointed at). */
+    private static final String MAILHOG_IMAGE = "docker.io/mailhog/mailhog:v1.0.1";
     private static final int MAILHOG_API = 8025;
 
     private boolean withMail;
@@ -64,6 +67,15 @@ public class KeycloakContainerResource implements QuarkusTestResourceLifecycleMa
                 "quarkus.oidc-client.credentials.secret", SECRET,
                 TOKEN_URL, server + "/realms/academy/protocol/openid-connect/token"));
         return config;
+    }
+
+    /**
+     * A password grant of {@code username} with {@value #DIRECT_GRANT_CLIENT} at the running Keycloak: the token
+     * endpoint's raw answer (the tokens, or an error description such as "Account is not fully set up").
+     */
+    public static String passwordGrant(String username, String password) {
+        String tokenUrl = ConfigProvider.getConfig().getValue(TOKEN_URL, String.class);
+        return new RealmTokens(tokenUrl).passwordAttempt(DIRECT_GRANT_CLIENT, username, password).body();
     }
 
     @Override

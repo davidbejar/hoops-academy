@@ -6,17 +6,14 @@ import static org.hamcrest.Matchers.equalTo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.SecurityEventCapture;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.response.Response;
@@ -42,8 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * CURRENT coach only; a former coach of an ended season keeps its screens (ADR-0042) but not the export.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class TeamRosterExportTest {
 
@@ -90,7 +86,7 @@ class TeamRosterExportTest {
         Response response = export(lions, null);
 
         response.then().statusCode(200).header("Cache-Control", "no-store")
-                .header("Content-Disposition", "attachment; filename=\"hoops-" + slug() + "-roster-u12-lions-"
+                .header("Content-Disposition", "attachment; filename=\"hoops-" + CoreDb.tenantSlug(tenant) + "-roster-u12-lions-"
                         + today() + ".csv\"");
         assertThat(response.contentType().toLowerCase(java.util.Locale.ROOT).replace(" ", ""))
                 .isEqualTo("text/csv;charset=utf-8");
@@ -226,10 +222,6 @@ class TeamRosterExportTest {
             request = request.header("Accept-Language", language);
         }
         return request.get("/api/core/teams/" + team + "/roster:export");
-    }
-
-    private String slug() {
-        return RosterDb.text(tenant, "select slug from core.tenant where id = ?::uuid", tenant);
     }
 
     private static String today() {

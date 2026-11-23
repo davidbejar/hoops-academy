@@ -10,15 +10,12 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -37,8 +34,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class TeamPlayerResourceTest {
 
@@ -233,16 +229,16 @@ class TeamPlayerResourceTest {
         String other = Members.newTenant();
         Members.signIn(other, TenantRole.ADMIN);
         UUID otherSeason = RosterDb.currentSeason(other);
-        RequestSpecification asOther = given().filter(Contract.CORE).header("X-Tenant-Id", other);
+        RequestSpecification asOther = Contract.forTenant(other);
         asOther.get(TEAMS + lions + "/players").then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body("{\"playerId\":\"" + uma + "\"}").post(TEAMS + lions + "/players").then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body("{\"jerseyNumber\":\"1\"}").patch(TEAMS + lions + "/players/" + uma).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).delete(TEAMS + lions + "/players/" + uma).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(TEAMS + lions + "/players/" + uma + "/eligibility")
+        Contract.forTenant(other).delete(TEAMS + lions + "/players/" + uma).then().statusCode(404);
+        Contract.forTenant(other).get(TEAMS + lions + "/players/" + uma + "/eligibility")
                 .then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).queryParam("seasonId", otherSeason.toString())
+        Contract.forTenant(other).queryParam("seasonId", otherSeason.toString())
                 .get("/api/core/players/" + uma + "/eligible-teams").then().statusCode(404);
         assertThat(CoreDb.count(tenant, "select count(*) from core.team_player where left_on is null")).isEqualTo(1);
     }
@@ -260,7 +256,7 @@ class TeamPlayerResourceTest {
     }
 
     private RequestSpecification request() {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant);
+        return Contract.forTenant(tenant);
     }
 
     private ValidatableResponse assign(UUID team, UUID player, String extra) {

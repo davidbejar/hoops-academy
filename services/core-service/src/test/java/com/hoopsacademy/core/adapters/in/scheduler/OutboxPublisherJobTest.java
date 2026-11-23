@@ -9,21 +9,18 @@ import static org.mockito.Mockito.doThrow;
 
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.application.port.OutboxQueue;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.DevServicesBroker;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.RosterEvents;
-import com.hoopsacademy.core.testsupport.TopicReader;
 import com.hoopsacademy.core.testsupport.TopicReader.Event;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
+import com.hoopsacademy.core.testsupport.TopicReader;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectSpy;
 import io.quarkus.test.security.TestSecurity;
@@ -46,8 +43,7 @@ import org.junit.jupiter.api.Test;
  * working, health says degraded) and the backlog drains when the broker is back.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class OutboxPublisherJobTest {
 
@@ -219,6 +215,6 @@ class OutboxPublisherJobTest {
     }
 
     private RequestSpecification request() {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant);
+        return Contract.forTenant(tenant);
     }
 }

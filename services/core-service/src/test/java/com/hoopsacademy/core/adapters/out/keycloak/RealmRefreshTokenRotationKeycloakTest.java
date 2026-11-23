@@ -3,13 +3,10 @@ package com.hoopsacademy.core.adapters.out.keycloak;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hoopsacademy.common.testing.RealmKeycloakResource;
 import com.hoopsacademy.common.testing.RealmTokens;
 import com.hoopsacademy.common.testing.TestRealm;
-import dasniko.testcontainers.keycloak.KeycloakContainer;
+import com.hoopsacademy.core.testsupport.RealmKeycloak;
 import java.net.http.HttpResponse;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -21,20 +18,7 @@ import org.junit.jupiter.api.Test;
 @Tag("keycloak")
 class RealmRefreshTokenRotationKeycloakTest {
 
-    private static KeycloakContainer keycloak;
-    private static RealmTokens tokens;
-
-    @BeforeAll
-    static void realm() {
-        keycloak = RealmKeycloakResource.start(TestRealm.patched(), "realm-rotation/realm-academy.json");
-        tokens = new RealmTokens(keycloak.getAuthServerUrl() + "/realms/" + TestRealm.REALM
-                + "/protocol/openid-connect/token");
-    }
-
-    @AfterAll
-    static void stop() {
-        keycloak.stop();
-    }
+    private final RealmTokens tokens = RealmKeycloak.tokens();
 
     @Test
     void everyRefreshAnswersANewRefreshToken() {
@@ -73,7 +57,7 @@ class RealmRefreshTokenRotationKeycloakTest {
         assertThat(RealmTokens.json(afterReuse).path("error").asText()).isEqualTo("invalid_grant");
     }
 
-    private static String signIn() {
+    private String signIn() {
         String refresh = tokens.password(TestRealm.WEB_DIRECT_GRANT, TestRealm.USER, TestRealm.USER_PASSWORD)
                 .path("refresh_token").asText();
         assertThat(refresh).isNotBlank();

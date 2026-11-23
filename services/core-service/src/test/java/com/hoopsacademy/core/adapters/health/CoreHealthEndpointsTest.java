@@ -7,10 +7,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 
 import com.hoopsacademy.common.client.CoreReachabilityCheck;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
@@ -19,8 +16,7 @@ import org.junit.jupiter.api.Test;
  * common-quarkus (meant for game/athlete) is switched off at build time, so core never probes itself.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class CoreHealthEndpointsTest {
 
     @Test

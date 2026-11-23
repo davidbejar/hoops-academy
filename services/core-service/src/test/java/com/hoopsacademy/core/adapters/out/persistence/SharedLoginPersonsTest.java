@@ -6,11 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.tenancy.TenantScope;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
-import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.port.MembershipRepository.IndexedMembership;
+import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.SharedLoginPersons;
 import com.hoopsacademy.core.domain.identity.UserId;
@@ -18,11 +17,9 @@ import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PersonalDataChanges;
 import com.hoopsacademy.core.domain.shared.Patch;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -39,8 +36,7 @@ import org.junit.jupiter.api.Test;
  */
 @Tag("rls")
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class SharedLoginPersonsTest {
 
     @Inject

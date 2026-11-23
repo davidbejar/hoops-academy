@@ -3,7 +3,8 @@ package com.hoopsacademy.core.adapters.out.keycloak;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hoopsacademy.common.testing.TestRealm;
+import com.hoopsacademy.core.testsupport.RealmFiles;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,7 +24,7 @@ class RealmPasswordPolicyTest {
     private static final int MIN_LENGTH = 12;
     private static final int MAX_LENGTH = 128;
 
-    private final JsonNode realm = read("infra/keycloak/realm-academy.json");
+    private final JsonNode realm = RealmFiles.realmJson(RealmFiles.REALM);
 
     @Test
     void thePasswordPolicyIsTheOneTheGeneratorMeetsAndBlocksCommonPasswords() {
@@ -35,7 +36,7 @@ class RealmPasswordPolicyTest {
     @Test
     void theBlocklistHoldsAtLeastTheTop3000PasswordsThePolicyWouldOtherwiseAccept() throws IOException {
         // ASVS 5.0 6.2.4: shorter or longer entries would never be reached (the length rules reject them first)
-        List<String> entries = Files.readAllLines(locate(BLOCKLIST), StandardCharsets.UTF_8);
+        List<String> entries = Files.readAllLines(TestRealm.locate(BLOCKLIST), StandardCharsets.UTF_8);
 
         assertThat(entries).hasSizeGreaterThanOrEqualTo(3000).doesNotHaveDuplicates()
                 .allSatisfy(entry -> assertThat(entry.length()).isBetween(MIN_LENGTH, MAX_LENGTH))
@@ -45,7 +46,7 @@ class RealmPasswordPolicyTest {
 
     @Test
     void theChartShipsTheSameBlocklist() {
-        assertThat(locate(CHART_BLOCKLIST)).hasSameBinaryContentAs(locate(BLOCKLIST));
+        assertThat(TestRealm.locate(CHART_BLOCKLIST)).hasSameBinaryContentAs(TestRealm.locate(BLOCKLIST));
     }
 
     @Test
@@ -53,24 +54,5 @@ class RealmPasswordPolicyTest {
         assertThat(realm.path("bruteForceProtected").asBoolean()).isTrue();
         assertThat(realm.path("verifyEmail").asBoolean()).isFalse();
         assertThat(realm.path("registrationEmailAsUsername").asBoolean()).isTrue();
-    }
-
-    private static JsonNode read(String relative) {
-        try {
-            return new ObjectMapper().readTree(Files.readString(locate(relative))
-                    .replaceAll("\\$\\{[A-Z_]+}", "placeholder"));
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    static Path locate(String relative) {
-        for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
-            Path file = dir.resolve(relative);
-            if (Files.exists(file)) {
-                return file;
-            }
-        }
-        throw new IllegalStateException(relative + " not found");
     }
 }

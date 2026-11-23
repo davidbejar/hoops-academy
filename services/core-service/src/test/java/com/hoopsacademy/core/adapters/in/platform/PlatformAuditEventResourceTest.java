@@ -10,12 +10,9 @@ import static org.hamcrest.Matchers.nullValue;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.response.ValidatableResponse;
@@ -32,8 +29,7 @@ import org.junit.jupiter.api.Test;
  * policy, ADR-0029). Rows of other tests share the database, so each test works in its own time window.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = "platform-admin", roles = "super_admin")
 class PlatformAuditEventResourceTest {
 
@@ -60,14 +56,14 @@ class PlatformAuditEventResourceTest {
         window().statusCode(200)
                 .body("items.id", contains(b.toString(), a.toString()))
                 .body("items.tenantId", contains(academyB, academyA))
-                .body("items[0].tenantName", equalTo(name(academyB)))
-                .body("items[0].target.displayName", equalTo(name(academyB)))
+                .body("items[0].tenantName", equalTo(CoreDb.tenantName(academyB)))
+                .body("items[0].target.displayName", equalTo(CoreDb.tenantName(academyB)))
                 .body("items[0].actor.kind", equalTo("PLATFORM"))
                 // the super admin's own view is not masked (WP38)
                 .body("items[0].actor.subject", equalTo("platform-admin"))
                 .body("items[0].metadata.status", equalTo("SUSPENDED"))
                 .body("items[0].metadata.reason", equalTo("Unpaid fees"))
-                .body("items[1].tenantName", equalTo(name(academyA)))
+                .body("items[1].tenantName", equalTo(CoreDb.tenantName(academyA)))
                 .body("page.totalElements", equalTo(2));
     }
 
@@ -160,9 +156,5 @@ class PlatformAuditEventResourceTest {
             request = request.queryParam(query[i], query[i + 1]);
         }
         return request.get(AUDIT).then();
-    }
-
-    private static String name(String tenant) {
-        return RosterDb.text(tenant, "select name from core.tenant where id = ?::uuid", tenant);
     }
 }

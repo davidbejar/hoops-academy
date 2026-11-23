@@ -1,9 +1,12 @@
 package com.hoopsacademy.core.testsupport;
 
+import static io.restassured.RestAssured.given;
+
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.atlassian.oai.validator.report.LevelResolver;
 import com.atlassian.oai.validator.report.ValidationReport;
 import com.atlassian.oai.validator.restassured.OpenApiValidationFilter;
+import io.restassured.specification.RequestSpecification;
 
 /**
  * Validates every REST-assured exchange against {@code libs/contracts/openapi/core.yaml} (loaded from the jar) with
@@ -42,4 +45,9 @@ public final class Contract {
                     .build());
 
     private Contract() {}
+
+    /** A request in the academy {@code tenant} ({@code X-Tenant-Id}), validated against the contract ({@link #CORE}). */
+    public static RequestSpecification forTenant(Object tenant) {
+        return given().filter(CORE).header("X-Tenant-Id", tenant);
+    }
 }

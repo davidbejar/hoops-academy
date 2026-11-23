@@ -8,15 +8,12 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RecordingSettingsListener;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -28,8 +25,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class TenantResourceTest {
 
@@ -49,13 +45,13 @@ class TenantResourceTest {
     @Test
     void anyMemberReadsTheProfileAndSettings() {
         Members.signIn(tenant, TenantRole.PLAYER);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(PROFILE).then().statusCode(200)
+        Contract.forTenant(tenant).get(PROFILE).then().statusCode(200)
                 .body("id", equalTo(tenant))
                 .body("timezone", equalTo("Europe/Madrid"))
                 .body("defaultLocale", equalTo("es"))
                 .body("hasLogo", equalTo(false))
                 .body("logoEtag", nullValue());
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(SETTINGS).then().statusCode(200)
+        Contract.forTenant(tenant).get(SETTINGS).then().statusCode(200)
                 .body("ageRule", equalTo("BIRTH_YEAR"))
                 .body("maxPlayUpLevels", nullValue())
                 .body("attendanceLateThresholdMinutes", equalTo(10));
@@ -110,14 +106,14 @@ class TenantResourceTest {
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"clear\":[\"name\"]}").patch(PROFILE).then().statusCode(400)
                 .body("violations.field", hasItem("clear"));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"websiteUrl\":\"https://x.example.com\",\"clear\":[\"websiteUrl\"]}").patch(PROFILE).then()
                 .statusCode(400).body("violations.code", hasItem("CLEAR_CONFLICT"));
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"websiteUrl\":\"javascript:alert(1)\"}").patch(PROFILE).then().statusCode(400);
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
                 .body("{\"contactEmail\":\"not-an-email\"}").patch(PROFILE).then().statusCode(400);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"timezone\":\"Mars/Olympus\"}").patch(PROFILE).then().statusCode(422)
                 .body("code", equalTo("INVALID_TIMEZONE"));
     }
@@ -142,8 +138,8 @@ class TenantResourceTest {
     @MethodSource("com.hoopsacademy.core.testsupport.Members#roleSetsWithAdminFlag")
     void onlyAdminsWriteTheProfileAndSettings(Set<TenantRole> roles, boolean admin) {
         Members.signIn(tenant, roles);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(PROFILE).then().statusCode(200);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(SETTINGS).then().statusCode(200);
+        Contract.forTenant(tenant).get(PROFILE).then().statusCode(200);
+        Contract.forTenant(tenant).get(SETTINGS).then().statusCode(200);
         patchProfile("{\"name\":\"Matrix\"}").statusCode(admin ? 200 : 403);
         putSettings("{\"ageRule\":\"BIRTH_YEAR\",\"maxPlayUpLevels\":2}").statusCode(admin ? 200 : 403);
     }
@@ -152,11 +148,11 @@ class TenantResourceTest {
     void nonMembersGetNotFoundAndNeverSeeAnotherTenantsProfile() {
         String other = Members.newTenant();
         Members.signIn(other, TenantRole.ADMIN);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(PROFILE).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(SETTINGS).then().statusCode(404);
+        Contract.forTenant(tenant).get(PROFILE).then().statusCode(404);
+        Contract.forTenant(tenant).get(SETTINGS).then().statusCode(404);
         patchProfile("{\"name\":\"Hijack\"}").statusCode(404);
         putSettings("{\"ageRule\":\"BIRTHDAY\",\"maxPlayUpLevels\":0}").statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(PROFILE).then().statusCode(200)
+        Contract.forTenant(other).get(PROFILE).then().statusCode(200)
                 .body("id", equalTo(other));
     }
 
@@ -169,12 +165,12 @@ class TenantResourceTest {
     }
 
     private io.restassured.response.ValidatableResponse patchProfile(String body) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON).body(body)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON).body(body)
                 .patch(PROFILE).then();
     }
 
     private io.restassured.response.ValidatableResponse putSettings(String body) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON).body(body)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON).body(body)
                 .put(SETTINGS).then();
     }
 }

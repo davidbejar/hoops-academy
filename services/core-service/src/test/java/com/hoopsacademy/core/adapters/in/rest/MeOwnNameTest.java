@@ -6,13 +6,10 @@ import static org.hamcrest.Matchers.equalTo;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.RosterEvents;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -28,8 +25,7 @@ import org.junit.jupiter.params.provider.EnumSource;
  * (audit {@code member.updated}, a {@code core.person} event); the e-mail stays with the administrators.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class MeOwnNameTest {
 
     private static final String ME = "/api/core/me";
@@ -39,8 +35,8 @@ class MeOwnNameTest {
     @EnumSource(TenantRole.class)
     @TestSecurity(user = "me-own-matrix")
     void everyRoleRenamesItsOwnPersonInTheNamedAcademyOnly(TenantRole role) {
-        String academy = tenant("ACTIVE");
-        String other = tenant("ACTIVE");
+        String academy = CoreDb.newTenant("ACTIVE");
+        String other = CoreDb.newTenant("ACTIVE");
         UUID login = CoreDb.login("me-own-matrix");
         // a PLAYER always has a birth date and a gender (Person's invariant, checked again on every edit)
         UUID mine = CoreDb.person(academy, login, "Old", "Name", null, BORN, "FEMALE", role);
@@ -67,7 +63,7 @@ class MeOwnNameTest {
     @Test
     @TestSecurity(user = "me-own-one")
     void oneNameAloneAndTheLocaleInTheSameCall() {
-        String academy = tenant("ACTIVE");
+        String academy = CoreDb.newTenant("ACTIVE");
         UUID mine = CoreDb.person(academy, CoreDb.login("me-own-one"), "Grace", "Old", null, null, null,
                 TenantRole.COACH);
 
@@ -82,7 +78,7 @@ class MeOwnNameTest {
     @Test
     @TestSecurity(user = "me-own-same")
     void theSameNameWritesNothing() {
-        String academy = tenant("ACTIVE");
+        String academy = CoreDb.newTenant("ACTIVE");
         UUID mine = CoreDb.person(academy, CoreDb.login("me-own-same"), "Same", "Name", null, null, null,
                 TenantRole.PARENT);
         long events = RosterEvents.count(academy);
@@ -98,7 +94,7 @@ class MeOwnNameTest {
     @Test
     @TestSecurity(user = "me-own-email")
     void theEmailAndMalformedBodiesAreRejected() {
-        String academy = tenant("ACTIVE");
+        String academy = CoreDb.newTenant("ACTIVE");
         UUID mine = CoreDb.person(academy, CoreDb.login("me-own-email"), "Eve", "Mail", "eve@example.com", null, null,
                 TenantRole.PLAYER);
         String t = ", \"tenantId\": \"" + academy + "\"";
@@ -123,15 +119,15 @@ class MeOwnNameTest {
     @TestSecurity(user = "me-own-outsider")
     void anAcademyWhereTheCallerIsNotAnActiveMemberIsNotFoundAndNothingIsStored() {
         UUID login = CoreDb.login("me-own-outsider");
-        String home = tenant("ACTIVE");
+        String home = CoreDb.newTenant("ACTIVE");
         CoreDb.person(home, login, "Out", "Sider", null, null, null, TenantRole.COACH);
-        String foreign = tenant("ACTIVE");
+        String foreign = CoreDb.newTenant("ACTIVE");
         UUID stranger = CoreDb.person(foreign, CoreDb.login("me-own-stranger-" + UUID.randomUUID()), "Str", "Anger",
                 null, null, null, TenantRole.ADMIN);
-        String left = tenant("ACTIVE");
+        String left = CoreDb.newTenant("ACTIVE");
         UUID gone = CoreDb.person(left, login, "Gone", "Away", null, null, null, TenantRole.PARENT);
         CoreDb.inTenant(left, c -> CoreDb.update(c, "update core.person set active = false where id = ?", gone));
-        String suspended = tenant("SUSPENDED");
+        String suspended = CoreDb.newTenant("SUSPENDED");
         UUID paused = CoreDb.person(suspended, login, "Paused", "Member", null, null, null, TenantRole.COACH);
 
         for (String academy : new String[] {foreign, left, suspended, UUID.randomUUID().toString()}) {
@@ -148,7 +144,7 @@ class MeOwnNameTest {
     @Test
     @TestSecurity(user = "me-own-root", roles = "super_admin")
     void aSuperAdminWithoutMembershipIsNotFound() {
-        String academy = tenant("ACTIVE");
+        String academy = CoreDb.newTenant("ACTIVE");
 
         rename("{\"givenName\": \"Root\", \"tenantId\": \"" + academy + "\"}").statusCode(404);
     }
@@ -172,11 +168,5 @@ class MeOwnNameTest {
     private static String name(String tenant, UUID person) {
         return com.hoopsacademy.core.testsupport.RosterDb.text(tenant,
                 "select given_name || ' ' || family_name from core.person where id = ?", person);
-    }
-
-    private static String tenant(String status) {
-        String id = UUID.randomUUID().toString();
-        CoreDb.tenant(id, status);
-        return id;
     }
 }

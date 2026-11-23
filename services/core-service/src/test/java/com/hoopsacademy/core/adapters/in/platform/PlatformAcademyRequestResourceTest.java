@@ -13,19 +13,16 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.PasswordLeaks;
 import com.hoopsacademy.core.testsupport.Slugs;
-import com.hoopsacademy.core.testsupport.WireMockResource;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MockMailbox;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -38,8 +35,7 @@ import org.junit.jupiter.api.Test;
 
 /** Invitation-only sign-up (WP90, ADR-0044): the public request and the super admin's decisions. */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = "platform-admin", roles = "super_admin")
 class PlatformAcademyRequestResourceTest {
 

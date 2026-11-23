@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.out.keycloak;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hoopsacademy.common.testing.TestRealm;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -28,12 +29,12 @@ class LoginThemeMessagesTest {
             "es | Tu contraseña temporal ha caducado. Pide una nueva al administrador de tu academia.",
             "id | Kata sandi sementara Anda sudah kedaluwarsa. Mintalah yang baru kepada administrator akademi Anda."})
     void aDisabledLoginIsToldThatItsTemporaryPasswordExpired(String locale, String message) throws IOException {
-        Path theme = locate(THEME.formatted(locale));
+        Path theme = TestRealm.locate(THEME.formatted(locale));
 
         assertThat(load(theme).getProperty("accountDisabledMessage")).isEqualTo(message);
         assertThat(Files.readString(theme, StandardCharsets.ISO_8859_1)).as("ASCII only, \\u escapes")
                 .matches("\\p{ASCII}*");
-        assertThat(locate(CHART.formatted(locale))).hasSameBinaryContentAs(theme);
+        assertThat(TestRealm.locate(CHART.formatted(locale))).hasSameBinaryContentAs(theme);
     }
 
     @ParameterizedTest
@@ -43,7 +44,7 @@ class LoginThemeMessagesTest {
             "id | Kata sandi ini terlalu umum dan mudah ditebak. Pilih kata sandi lain."})
     void aPasswordOnTheBlocklistIsRefusedInTheAppLanguages(String locale, String message) throws IOException {
         // the key of Keycloak's passwordBlacklist policy (ADR-0038); its default text calls the password "blacklisted"
-        assertThat(load(locate(THEME.formatted(locale))).getProperty("invalidPasswordBlacklistedMessage"))
+        assertThat(load(TestRealm.locate(THEME.formatted(locale))).getProperty("invalidPasswordBlacklistedMessage"))
                 .isEqualTo(message);
     }
 
@@ -53,14 +54,5 @@ class LoginThemeMessagesTest {
             properties.load(reader);
         }
         return properties;
-    }
-
-    private static Path locate(String relative) {
-        for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
-            if (Files.exists(dir.resolve(relative))) {
-                return dir.resolve(relative);
-            }
-        }
-        throw new AssertionError(relative + " not found");
     }
 }

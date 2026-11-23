@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.keycloak;
 
+import static com.hoopsacademy.core.testsupport.KeycloakContainerResource.passwordGrant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -66,7 +67,7 @@ class KeycloakLoginUpdateKeycloakTest {
         assertThat(users().searchByEmail(old, true)).isEmpty();
         assertThat(users().searchByUsername(moved, true)).extracting(UserRepresentation::getId)
                 .containsExactly(login.subject());
-        assertThat(directGrant(moved, temporary.reveal())).as("same temporary password under the new username")
+        assertThat(passwordGrant(moved, temporary.reveal())).as("same temporary password under the new username")
                 .contains("Account is not fully set up");
         assertThat(mailsTo(moved)).as("no mail to the new address").contains("\"total\":0");
         assertThat(mailsTo(old)).as("no mail to the old address").contains("\"total\":0");
@@ -107,17 +108,5 @@ class KeycloakLoginUpdateKeycloakTest {
                 + URLEncoder.encode(address, StandardCharsets.UTF_8))).timeout(Duration.ofSeconds(5)).build();
         Thread.sleep(3_000);
         return http.send(request, HttpResponse.BodyHandlers.ofString()).body();
-    }
-
-    /** The token endpoint's raw answer to a password grant of the test-only direct-grant client. */
-    private static String directGrant(String username, String password) throws Exception {
-        String url = ConfigProvider.getConfig().getValue(KeycloakContainerResource.TOKEN_URL, String.class);
-        String form = "grant_type=password&client_id=" + KeycloakContainerResource.DIRECT_GRANT_CLIENT
-                + "&username=" + URLEncoder.encode(username, StandardCharsets.UTF_8)
-                + "&password=" + URLEncoder.encode(password, StandardCharsets.UTF_8);
-        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(form)).build();
-        return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).body();
     }
 }

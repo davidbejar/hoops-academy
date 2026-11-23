@@ -11,15 +11,12 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -35,8 +32,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /** WP34: an academy's ADMIN reads its audit trail (ADR-0017, ADR-0029); nobody reads another academy's trail. */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class AuditEventResourceTest {
 
@@ -88,8 +84,7 @@ class AuditEventResourceTest {
                 .body("items[5].metadata.roles", contains("COACH"))
                 // a player is named after its person; the academy by its name
                 .body("items[4].target.displayName", equalTo("Pia Player"))
-                .body("items[3].target.displayName", equalTo(RosterDb.text(tenant,
-                        "select name from core.tenant where id = ?::uuid", tenant)))
+                .body("items[3].target.displayName", equalTo(CoreDb.tenantName(tenant)))
                 // a background job, about a person that no longer exists
                 .body("items[2].actor.kind", equalTo("SYSTEM"))
                 .body("items[2].actor.personId", nullValue())
@@ -164,7 +159,7 @@ class AuditEventResourceTest {
         list("to", T0.plus(1, ChronoUnit.HOURS).toString()).statusCode(200)
                 .body("items.id", contains(first.toString()));
         list("action", "member.invited").statusCode(200).body("items.id", contains(first.toString()));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant)
+        Contract.forTenant(tenant)
                 .queryParam("action", "member.invited", "member.roles_replaced").get(AUDIT).then().statusCode(200)
                 .body("items.id", contains(third.toString(), first.toString()))
                 .body("page.totalElements", equalTo(2));
@@ -199,12 +194,12 @@ class AuditEventResourceTest {
                 .body("items.id", everyItem(not(theirs.toString())))
                 .body("items.find { it.id == '" + forged + "' }.actor.displayName", nullValue())
                 .body("items.find { it.id == '" + forged + "' }.target.displayName", nullValue());
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(AUDIT).then().statusCode(404);
+        Contract.forTenant(other).get(AUDIT).then().statusCode(404);
     }
 
     @Test
     void writtenActionsAreReadBack() {
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("{\"givenName\":\"Nia\",\"familyName\":\"New\",\"roles\":[\"PARENT\"],\"sendInvitation\":false}")
                 .post("/api/core/members").then().statusCode(201);
 
@@ -242,9 +237,9 @@ class AuditEventResourceTest {
 
     @Test
     void invalidFiltersAreBadRequests() {
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant)
+        Contract.forTenant(tenant)
                 .queryParam("from", T0.toString()).queryParam("to", T0.toString()).get(AUDIT).then().statusCode(400);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant)
+        Contract.forTenant(tenant)
                 .queryParam("from", T0.toString()).queryParam("to", T0.minusSeconds(1).toString()).get(AUDIT).then()
                 .statusCode(400);
         invalid().queryParam("action", "member.hacked").get(AUDIT).then().statusCode(400);
@@ -259,7 +254,7 @@ class AuditEventResourceTest {
     }
 
     private io.restassured.response.ValidatableResponse list(String... query) {
-        RequestSpecification request = given().filter(Contract.CORE).header("X-Tenant-Id", tenant);
+        RequestSpecification request = Contract.forTenant(tenant);
         for (int i = 0; i < query.length; i += 2) {
             request = request.queryParam(query[i], query[i + 1]);
         }

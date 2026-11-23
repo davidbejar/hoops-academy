@@ -9,17 +9,14 @@ import static org.hamcrest.Matchers.nullValue;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.common.testing.TenantUserRegistry;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.RosterEvents;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -41,8 +38,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * PLAYER for themselves as a wish; everyone who reads the player reads it.
  */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class PlayerPreferredJerseyTest {
 
@@ -137,7 +133,7 @@ class PlayerPreferredJerseyTest {
         String other = Members.newTenant();
         Members.signIn(other, TenantRole.ADMIN);
 
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body("{\"preferredJerseyNumber\":\"5\"}").patch(PLAYERS + uma).then().statusCode(404);
         assertThat(RosterDb.text(tenant, "select preferred_jersey_number from core.player where id = ?", uma)).isNull();
     }
@@ -152,7 +148,7 @@ class PlayerPreferredJerseyTest {
     }
 
     private RequestSpecification request() {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant);
+        return Contract.forTenant(tenant);
     }
 
     private ValidatableResponse patch(UUID player, String body) {

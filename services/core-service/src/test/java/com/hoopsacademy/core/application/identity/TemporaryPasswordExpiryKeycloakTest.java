@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.application.identity;
 
+import static com.hoopsacademy.core.testsupport.KeycloakContainerResource.passwordGrant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.common.tenancy.TenantId;
@@ -77,24 +78,24 @@ class TemporaryPasswordExpiryKeycloakTest {
     void anUnusedTemporaryPasswordIssuedFourDaysAgoStopsSigningInUntilANewOneIsIssued() throws Exception {
         Pending pending = pendingPerson("late");
         String first = issue(pending);
-        assertThat(directGrant(pending.email(), first)).as("valid, update pending").contains(NOT_SET_UP);
+        assertThat(passwordGrant(pending.email(), first)).as("valid, update pending").contains(NOT_SET_UP);
         CoreDb.temporaryPasswordIssued(pending.login().subject(), "4 days");
 
         sweep.run();
 
         assertThat(user(pending).toRepresentation().isEnabled()).isFalse();
-        assertThat(directGrant(pending.email(), first)).contains(DISABLED);
+        assertThat(passwordGrant(pending.email(), first)).contains(DISABLED);
         assertThat(CoreDb.auditRow(pending.tenant(), "member.temporary_password_expired"))
                 .containsEntry("targetId", pending.person().value().toString());
 
         String renewed = issue(pending);
 
         assertThat(user(pending).toRepresentation().isEnabled()).isTrue();
-        assertThat(directGrant(pending.email(), renewed)).as("Keycloak asks for a new password").contains(NOT_SET_UP);
-        assertThat(directGrant(pending.email(), first)).as("the old one is gone").contains(INVALID);
+        assertThat(passwordGrant(pending.email(), renewed)).as("Keycloak asks for a new password").contains(NOT_SET_UP);
+        assertThat(passwordGrant(pending.email(), first)).as("the old one is gone").contains(INVALID);
         String chosen = "Chosen-" + UUID.randomUUID();
         user(pending).resetPassword(permanent(chosen)); // what the update-password page does at the first sign-in
-        assertThat(directGrant(pending.email(), chosen)).contains("access_token");
+        assertThat(passwordGrant(pending.email(), chosen)).contains("access_token");
         identityProvider.delete(pending.login().subject());
     }
 
@@ -109,7 +110,7 @@ class TemporaryPasswordExpiryKeycloakTest {
         sweep.run();
 
         assertThat(user(pending).toRepresentation().isEnabled()).isTrue();
-        assertThat(directGrant(pending.email(), chosen)).contains("access_token");
+        assertThat(passwordGrant(pending.email(), chosen)).contains("access_token");
         assertThat(CoreDb.temporaryPassword(pending.login().subject())).containsEntry("issuedAt", null);
         identityProvider.delete(pending.login().subject());
     }
@@ -162,18 +163,6 @@ class TemporaryPasswordExpiryKeycloakTest {
         credential.setTemporary(false);
         credential.setValue(value);
         return credential;
-    }
-
-    /** The token endpoint's raw answer to a password grant (an error description or the tokens). */
-    private static String directGrant(String username, String password) throws Exception {
-        String url = ConfigProvider.getConfig().getValue(KeycloakContainerResource.TOKEN_URL, String.class);
-        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(form(Map.of("grant_type", "password",
-                        "client_id", KeycloakContainerResource.DIRECT_GRANT_CLIENT, "username", username,
-                        "password", password, "scope", "openid"))))
-                .build();
-        return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString()).body();
     }
 
     /**

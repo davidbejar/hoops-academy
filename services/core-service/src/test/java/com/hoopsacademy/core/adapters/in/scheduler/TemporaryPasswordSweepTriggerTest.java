@@ -6,19 +6,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.tenancy.TenantScope;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
 import com.hoopsacademy.core.testsupport.Members;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
+import com.hoopsacademy.core.testsupport.SideEffectsProfile;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -27,7 +24,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,19 +36,17 @@ import org.junit.jupiter.api.Test;
  * {@code hoops.temporary-password.sweep-on-events=false} and call the sweep directly.
  */
 @QuarkusTest
-@TestProfile(TemporaryPasswordSweepTriggerTest.SweepOnEvents.class)
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@TestProfile(SideEffectsProfile.class)
+@CoreTestResources
 class TemporaryPasswordSweepTriggerTest {
 
-    private static final Duration PATIENCE = Duration.ofSeconds(20);
-
-    public static class SweepOnEvents implements QuarkusTestProfile {
-        @Override
-        public Map<String, String> getConfigOverrides() {
-            return Map.of("hoops.temporary-password.sweep-on-events", "true");
-        }
-    }
+    /**
+     * How long a positive wait may take before it fails. Generous on purpose: the waits end as soon as their condition
+     * holds, so the bound only decides when a broken trigger is reported, and parallel builds slow the sweep down.
+     */
+    private static final Duration PATIENCE = Duration.ofSeconds(90);
+    /** The Keycloak answer the sweep waits for in the "request does not wait" test. */
+    private static final Duration SLOW_KEYCLOAK = Duration.ofSeconds(10);
 
     @InjectWireMock
     WireMockServer keycloak;
@@ -97,7 +91,7 @@ class TemporaryPasswordSweepTriggerTest {
 
         given().filter(Contract.CORE).get("/api/core/me").then().statusCode(200);
 
-        Thread.sleep(1500);
+        Thread.sleep(1500); // guards a negative assertion (no sweep started): a poll could not end it earlier
         assertThat(expired(due)).isFalse();
         keycloak.verify(0, KeycloakStubs.credentialsRead(due));
     }
@@ -106,7 +100,7 @@ class TemporaryPasswordSweepTriggerTest {
     @TestSecurity(user = TenantUser.SUBJECT)
     void theRequestNeitherWaitsForTheSweepNorFailsBecauseOfIt() {
         String slow = dueLogin();
-        KeycloakStubs.slowCredentials(keycloak, slow, 4000);
+        KeycloakStubs.slowCredentials(keycloak, slow, (int) SLOW_KEYCLOAK.toMillis());
         String broken = dueLogin();
         KeycloakStubs.login(keycloak, broken, "broken.sweep@example.com");
         KeycloakStubs.loginUpdateFails(keycloak, broken);
@@ -115,7 +109,8 @@ class TemporaryPasswordSweepTriggerTest {
         invite("slow.trigger@example.com").statusCode(201);
         Duration took = Duration.ofNanos(System.nanoTime() - started);
 
-        assertThat(took).isLessThan(Duration.ofSeconds(3));
+        // a request that waited for the sweep would take at least the slow Keycloak answer, whatever the load
+        assertThat(took).isLessThan(SLOW_KEYCLOAK);
         await("the sweep started", () -> !keycloak.findAll(KeycloakStubs.credentialsRead(slow)).isEmpty());
         await("the sweep finished", TemporaryPasswordSweepTriggerTest::sweepLockFree);
         assertThat(expired(slow)).isTrue();
@@ -126,7 +121,7 @@ class TemporaryPasswordSweepTriggerTest {
         String tenant = Members.newTenant();
         Members.signIn(tenant, TenantRole.ADMIN);
         KeycloakStubs.createdUserGets(keycloak, UUID.randomUUID().toString());
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(ContentType.JSON)
+        return Contract.forTenant(tenant).contentType(ContentType.JSON)
                 .body("""
                         {"givenName":"Tri","familyName":"Gger","email":"%s","roles":["PARENT"]}""".formatted(email))
                 .post("/api/core/members").then();

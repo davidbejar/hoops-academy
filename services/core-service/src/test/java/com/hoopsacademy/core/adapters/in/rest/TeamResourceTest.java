@@ -9,15 +9,12 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -33,8 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class TeamResourceTest {
 
@@ -190,21 +186,21 @@ class TeamResourceTest {
         UUID coach = CoreDb.person(tenant, "Cora", "Coach", null, TenantRole.COACH);
         String other = Members.newTenant();
         Members.signIn(other, TenantRole.ADMIN);
-        RequestSpecification asOther = given().filter(Contract.CORE).header("X-Tenant-Id", other);
+        RequestSpecification asOther = Contract.forTenant(other);
         asOther.get(TEAMS + "/" + foreign).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON).body("{\"name\":\"x\"}")
+        Contract.forTenant(other).contentType(ContentType.JSON).body("{\"name\":\"x\"}")
                 .patch(TEAMS + "/" + foreign).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(TEAMS + "/" + foreign + "/staff").then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON).body("{\"role\":\"COACH\"}")
+        Contract.forTenant(other).get(TEAMS + "/" + foreign + "/staff").then().statusCode(404);
+        Contract.forTenant(other).contentType(ContentType.JSON).body("{\"role\":\"COACH\"}")
                 .put(TEAMS + "/" + foreign + "/staff/" + coach).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).contentType(ContentType.JSON)
+        Contract.forTenant(other).contentType(ContentType.JSON)
                 .body(body(season, "Steal", categories.get("U12"), "MIXED", "")).post(TEAMS).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(TEAMS).then().statusCode(200).body("items", hasSize(0));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(TEAMS).then().statusCode(404);
+        Contract.forTenant(other).get(TEAMS).then().statusCode(200).body("items", hasSize(0));
+        Contract.forTenant(tenant).get(TEAMS).then().statusCode(404);
     }
 
     private RequestSpecification request() {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant);
+        return Contract.forTenant(tenant);
     }
 
     private ValidatableResponse create(String name, String category, String policy, String extra) {

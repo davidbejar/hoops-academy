@@ -6,15 +6,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.domain.logo.LogoImage;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.Members;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.response.ValidatableResponse;
@@ -28,8 +25,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 @TestSecurity(user = TenantUser.SUBJECT)
 class TenantLogoResourceTest {
 
@@ -56,7 +52,7 @@ class TenantLogoResourceTest {
                 .header("ETag", matchesPattern("\"[0-9a-f]{64}\""))
                 .body("contentType", equalTo(mediaType))
                 .body("sizeBytes", equalTo(content.length));
-        byte[] served = given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LOGO).then().statusCode(200)
+        byte[] served = Contract.forTenant(tenant).get(LOGO).then().statusCode(200)
                 .contentType(mediaType)
                 .header("Cache-Control", "private, max-age=86400")
                 .header("X-Content-Type-Options", "nosniff")
@@ -68,7 +64,7 @@ class TenantLogoResourceTest {
     void theStoredTypeComesFromTheMagicBytesNotFromTheDeclaredType() {
         Members.signIn(tenant, TenantRole.ADMIN);
         put(JPEG, "image/png").statusCode(200).body("contentType", equalTo("image/jpeg"));
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LOGO).then().statusCode(200)
+        Contract.forTenant(tenant).get(LOGO).then().statusCode(200)
                 .contentType("image/jpeg");
     }
 
@@ -81,7 +77,7 @@ class TenantLogoResourceTest {
                 .put(LOGO).then().statusCode(415).contentType("application/problem+json");
         given().filter(Contract.RESPONSES_ONLY).header("X-Tenant-Id", tenant).contentType("image/gif").body(GIF)
                 .put(LOGO).then().statusCode(415);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LOGO).then().statusCode(404);
+        Contract.forTenant(tenant).get(LOGO).then().statusCode(404);
     }
 
     @Test
@@ -97,13 +93,13 @@ class TenantLogoResourceTest {
         Members.signIn(tenant, TenantRole.ADMIN);
         String etag = put(PNG, "image/png").extract().header("ETag");
         Members.signIn(tenant, TenantRole.PARENT);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).header("If-None-Match", etag).get(LOGO)
+        Contract.forTenant(tenant).header("If-None-Match", etag).get(LOGO)
                 .then().statusCode(304).header("ETag", etag);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).header("If-None-Match", "W/" + etag).get(LOGO)
+        Contract.forTenant(tenant).header("If-None-Match", "W/" + etag).get(LOGO)
                 .then().statusCode(304);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).header("If-None-Match", "\"stale\"").get(LOGO)
+        Contract.forTenant(tenant).header("If-None-Match", "\"stale\"").get(LOGO)
                 .then().statusCode(200);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get("/api/core/tenant").then().statusCode(200)
+        Contract.forTenant(tenant).get("/api/core/tenant").then().statusCode(200)
                 .body("hasLogo", equalTo(true)).body("logoEtag", equalTo(etag));
     }
 
@@ -111,9 +107,9 @@ class TenantLogoResourceTest {
     void adminDeletesTheLogo() {
         Members.signIn(tenant, TenantRole.ADMIN);
         put(WEBP, "image/webp").statusCode(200);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).delete(LOGO).then().statusCode(204);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LOGO).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).delete(LOGO).then().statusCode(404);
+        Contract.forTenant(tenant).delete(LOGO).then().statusCode(204);
+        Contract.forTenant(tenant).get(LOGO).then().statusCode(404);
+        Contract.forTenant(tenant).delete(LOGO).then().statusCode(404);
         assertThat(CoreDb.auditActions(tenant)).containsExactly("tenant.logo_replaced", "tenant.logo_removed");
         assertThat(CoreDb.auditRow(tenant, "tenant.logo_replaced").get("metadata")).contains("image/webp");
     }
@@ -134,9 +130,9 @@ class TenantLogoResourceTest {
         Members.signIn(tenant, TenantRole.ADMIN);
         put(PNG, "image/png").statusCode(200);
         Members.signIn(tenant, roles);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LOGO).then().statusCode(200);
+        Contract.forTenant(tenant).get(LOGO).then().statusCode(200);
         put(JPEG, "image/jpeg").statusCode(admin ? 200 : 403);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).delete(LOGO).then().statusCode(admin ? 204 : 403);
+        Contract.forTenant(tenant).delete(LOGO).then().statusCode(admin ? 204 : 403);
     }
 
     @Test
@@ -145,16 +141,16 @@ class TenantLogoResourceTest {
         put(PNG, "image/png").statusCode(200);
         String other = Members.newTenant();
         Members.signIn(other, TenantRole.ADMIN);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LOGO).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).delete(LOGO).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).get(LOGO).then().statusCode(404);
-        given().filter(Contract.CORE).header("X-Tenant-Id", other).delete(LOGO).then().statusCode(404);
+        Contract.forTenant(tenant).get(LOGO).then().statusCode(404);
+        Contract.forTenant(tenant).delete(LOGO).then().statusCode(404);
+        Contract.forTenant(other).get(LOGO).then().statusCode(404);
+        Contract.forTenant(other).delete(LOGO).then().statusCode(404);
         Members.signIn(tenant, TenantRole.PARENT);
-        given().filter(Contract.CORE).header("X-Tenant-Id", tenant).get(LOGO).then().statusCode(200);
+        Contract.forTenant(tenant).get(LOGO).then().statusCode(200);
     }
 
     private ValidatableResponse put(byte[] content, String mediaType) {
-        return given().filter(Contract.CORE).header("X-Tenant-Id", tenant).contentType(mediaType)
+        return Contract.forTenant(tenant).contentType(mediaType)
                 .body(content).put(LOGO).then();
     }
 

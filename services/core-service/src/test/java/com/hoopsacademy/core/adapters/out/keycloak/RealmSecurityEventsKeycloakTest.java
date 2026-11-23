@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hoopsacademy.common.testing.RealmKeycloakResource;
 import com.hoopsacademy.common.testing.RealmTokens;
 import com.hoopsacademy.common.testing.TestRealm;
+import com.hoopsacademy.core.testsupport.RealmKeycloak;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import java.io.IOException;
 import java.net.URI;
@@ -19,8 +19,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -37,19 +35,11 @@ class RealmSecurityEventsKeycloakTest {
 
     private static final String ACADEMY_CLIENT = "clientId=\"" + TestRealm.WEB_DIRECT_GRANT + "\"";
 
-    private static KeycloakContainer keycloak;
-    private static RealmTokens tokens;
+    /** Shared with the other realm tests: the lines below are picked by this test's own user and values. */
+    private static final String OWN_USER = "username=\"" + TestRealm.USER + "\"";
 
-    @BeforeAll
-    static void realm() {
-        keycloak = RealmKeycloakResource.start(TestRealm.patched(), "realm-events/realm-academy.json");
-        tokens = new RealmTokens(realmUrl() + "/protocol/openid-connect/token");
-    }
-
-    @AfterAll
-    static void stop() {
-        keycloak.stop();
-    }
+    private final KeycloakContainer keycloak = RealmKeycloak.container();
+    private final RealmTokens tokens = RealmKeycloak.tokens();
 
     @Test
     void aFailedLoginIsLoggedAndStoredWithoutThePassword() throws Exception {
@@ -58,7 +48,7 @@ class RealmSecurityEventsKeycloakTest {
         assertThat(refused.statusCode()).as(refused.body()).isBetween(400, 401);
         assertThat(RealmTokens.json(refused).path("error").asText()).isEqualTo("invalid_grant");
 
-        String line = awaitLogLine("type=\"LOGIN_ERROR\"", ACADEMY_CLIENT);
+        String line = awaitLogLine("type=\"LOGIN_ERROR\"", ACADEMY_CLIENT, OWN_USER);
         assertThat(line).contains("WARN", "error=\"invalid_user_credentials\"");
         assertThat(keycloak.getLogs()).doesNotContain(wrong);
         assertThat(admin("/events?type=LOGIN_ERROR")).isNotEmpty();
@@ -68,7 +58,7 @@ class RealmSecurityEventsKeycloakTest {
     void aSuccessfulLoginIsLoggedAtInfoAndStored() throws Exception {
         tokens.password(TestRealm.WEB_DIRECT_GRANT, TestRealm.USER, TestRealm.USER_PASSWORD);
 
-        String line = awaitLogLine("type=\"LOGIN\"", ACADEMY_CLIENT);
+        String line = awaitLogLine("type=\"LOGIN\"", ACADEMY_CLIENT, OWN_USER);
         assertThat(line).contains("INFO");
         assertThat(keycloak.getLogs()).doesNotContain(TestRealm.USER_PASSWORD);
         assertThat(admin("/events?type=LOGIN")).isNotEmpty();
@@ -108,7 +98,7 @@ class RealmSecurityEventsKeycloakTest {
     }
 
     /** The first Keycloak log line that contains every one of {@code parts} (waits for the asynchronous log). */
-    private static String awaitLogLine(String... parts) throws InterruptedException {
+    private String awaitLogLine(String... parts) throws InterruptedException {
         Instant deadline = Instant.now().plusSeconds(10);
         while (Instant.now().isBefore(deadline)) {
             for (String line : keycloak.getLogs().split("\n")) {
@@ -121,18 +111,18 @@ class RealmSecurityEventsKeycloakTest {
         throw new AssertionError("no Keycloak log line contains all of " + Arrays.toString(parts));
     }
 
-    private static JsonNode admin(String path) throws IOException, InterruptedException {
+    private JsonNode admin(String path) throws IOException, InterruptedException {
         HttpResponse<String> answer = send(HttpRequest.newBuilder(URI.create(adminUrl() + path)).GET());
         assertThat(answer.statusCode()).as(answer.body()).isEqualTo(200);
         return JSON.readTree(answer.body());
     }
 
-    private static HttpResponse<String> send(HttpRequest.Builder request) throws IOException, InterruptedException {
+    private HttpResponse<String> send(HttpRequest.Builder request) throws IOException, InterruptedException {
         return HTTP.send(request.header("Authorization", "Bearer " + adminToken()).build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 
-    private static String adminToken() throws IOException, InterruptedException {
+    private String adminToken() throws IOException, InterruptedException {
         String form = "grant_type=password&client_id=admin-cli&username="
                 + URLEncoder.encode(keycloak.getAdminUsername(), StandardCharsets.UTF_8)
                 + "&password=" + URLEncoder.encode(keycloak.getAdminPassword(), StandardCharsets.UTF_8);
@@ -143,11 +133,7 @@ class RealmSecurityEventsKeycloakTest {
         return JSON.readTree(answer.body()).path("access_token").asText();
     }
 
-    private static String realmUrl() {
-        return keycloak.getAuthServerUrl() + "/realms/" + TestRealm.REALM;
-    }
-
-    private static String adminUrl() {
+    private String adminUrl() {
         return keycloak.getAuthServerUrl() + "/admin/realms/" + TestRealm.REALM;
     }
 }

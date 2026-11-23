@@ -3,12 +3,9 @@ package com.hoopsacademy.core.rls;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.common.tenancy.TenantId;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import com.hoopsacademy.core.testsupport.CoreDb;
-import com.hoopsacademy.core.testsupport.WireMockResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.common.WithTestResource;
+import com.hoopsacademy.core.testsupport.CoreTestResources;
 import io.quarkus.test.junit.QuarkusTest;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -19,8 +16,7 @@ import org.junit.jupiter.api.Test;
 
 /** Database-level roster invariants as the runtime role core_app (ADR-0014). */
 @QuarkusTest
-@WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "core"))
-@WithTestResource(WireMockResource.class)
+@CoreTestResources
 class RosterSchemaTest {
 
     private String tenant;
