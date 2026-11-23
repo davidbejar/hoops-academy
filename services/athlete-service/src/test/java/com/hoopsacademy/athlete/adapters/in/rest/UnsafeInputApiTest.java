@@ -6,7 +6,6 @@ import static com.hoopsacademy.athlete.support.ApiSupport.member;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -40,12 +39,10 @@ class UnsafeInputApiTest {
     static final String TEAM = "84000000-0000-4000-8000-0000000000a1";
     static final String CHILD = "84000000-0000-4000-8000-0000000000b1";
 
-    @Inject CoreRosterAdapter rosterAdapter;
 
     @BeforeEach
     void setUp() {
         new CoreStubs().reset().roster(TENANT, TEAM, CHILD).knownPlayers(TENANT, CHILD);
-        rosterAdapter.clearCache();
         member(TENANT, TenantRole.ADMIN);
     }
 

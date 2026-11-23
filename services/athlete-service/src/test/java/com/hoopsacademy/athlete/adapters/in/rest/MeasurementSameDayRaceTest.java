@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.application.MeasurementRepository;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
@@ -40,13 +39,11 @@ class MeasurementSameDayRaceTest {
     static final String PLAYER = "67000000-0000-4000-8000-0000000000b7";
     static final String M = "/api/athlete/body-measurements";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     @InjectSpy MeasurementRepository measurements;
 
     @BeforeEach
     void setUp() {
         new CoreStubs().reset().roster(TENANT, TEAM, PLAYER).knownPlayers(TENANT, PLAYER);
-        rosterAdapter.clearCache();
         member(TENANT, TenantRole.ADMIN);
         doReturn(false).when(measurements).existsOn(any(), any(), any());
     }

@@ -18,7 +18,6 @@ import static com.hoopsacademy.athlete.support.ApiSupport.unvalidated;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.athlete.adapters.in.rest.RoleMatrixTest.Caller;
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -61,14 +60,12 @@ class HealthRoleMatrixTest {
     static final String RESULTS = "/api/athlete/physical-test-results";
     static final AtomicInteger DAYS = new AtomicInteger();
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
     String testType;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, CHILD).roster(TENANT, OTHER_TEAM, OTHER).knownPlayers(TENANT, CHILD, OTHER);
         act(ADMIN);
         testType = lenient(TENANT).get("/api/athlete/physical-test-types").then().extract().path("find { it.code == 'COOPER_12MIN' }.id");

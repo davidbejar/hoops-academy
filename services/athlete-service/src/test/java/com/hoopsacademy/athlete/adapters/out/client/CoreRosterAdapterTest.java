@@ -45,7 +45,6 @@ class CoreRosterAdapterTest {
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        adapter.clearCache();
         team = UUID.randomUUID().toString();
     }
 
@@ -116,12 +115,12 @@ class CoreRosterAdapterTest {
     }
 
     @Test
-    void clearCacheForcesANewCall() {
+    void clearingTheClientCacheForcesANewCall() {
         core.roster(TENANT.toString(), team);
         var id = new TeamId(UUID.fromString(team));
         adapter.teamRoster(TENANT, id);
 
-        adapter.clearCache();
+        coreClient.clearCache();
         adapter.teamRoster(TENANT, id);
 
         assertThat(core.rosterCalls(team)).isEqualTo(2);

@@ -8,7 +8,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -42,13 +41,11 @@ class BodyMeasurementApiTest {
     static final String SIBLING = "67000000-0000-4000-8000-0000000000b2";
     static final String M = "/api/athlete/body-measurements";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, CHILD).knownPlayers(TENANT, CHILD, SIBLING);
         member(TENANT, TenantRole.ADMIN);
     }

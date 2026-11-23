@@ -57,8 +57,4 @@ public record TrainingSchedule(
                 && !date.isBefore(validFrom)
                 && (validUntil == null || !date.isAfter(validUntil));
     }
-
-    public boolean isValidOn(LocalDate date) {
-        return active && !date.isBefore(validFrom) && (validUntil == null || !date.isAfter(validUntil));
-    }
 }

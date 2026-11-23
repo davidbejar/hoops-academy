@@ -5,7 +5,6 @@ import static com.hoopsacademy.athlete.support.ApiSupport.lenient;
 import static com.hoopsacademy.athlete.support.ApiSupport.member;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -44,7 +43,6 @@ class RoleMatrixTest {
     static final String CHILD = "55000000-0000-4000-8000-0000000000b1";
     static final String OTHER = "55000000-0000-4000-8000-0000000000b2";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     /** A caller definition: roles plus relations. */
@@ -71,7 +69,6 @@ class RoleMatrixTest {
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, CHILD).roster(TENANT, OTHER_TEAM, OTHER).knownPlayers(TENANT, CHILD, OTHER);
     }
 

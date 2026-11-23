@@ -9,7 +9,6 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -44,13 +43,11 @@ class SessionQuickAddApiTest {
     static final String SESSIONS = "/api/athlete/training-sessions";
     static final String PLANS = "/api/athlete/training-plans";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, "78000000-0000-4000-8000-0000000000b1").roster(TENANT, OTHER_TEAM);
     }
 

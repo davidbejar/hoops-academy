@@ -9,6 +9,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.hoopsacademy.common.client.CoreRosterClient;
+import io.quarkus.arc.Arc;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -25,13 +27,23 @@ public final class CoreStubs {
         wireMock = new WireMock("localhost", port);
     }
 
-    /** Clears all stubs and journal, then re-adds the token endpoint (client credentials). */
+    /**
+     * Clears all stubs, the journal and the answers common's core client cached, then re-adds the token endpoint
+     * (client credentials).
+     */
     public CoreStubs reset() {
         wireMock.resetMappings();
         wireMock.resetRequests();
+        clearClientCache();
         wireMock.register(post(urlPathEqualTo("/token")).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
                 .withBody("{\"access_token\":\"athlete-service-token\",\"expires_in\":300,\"token_type\":\"Bearer\"}")));
+        return this;
+    }
+
+    /** Drops what common's {@link CoreRosterClient} cached (30 s), so the next call sees the stubs registered now. */
+    public CoreStubs clearClientCache() {
+        Arc.container().instance(CoreRosterClient.class).get().clearCache();
         return this;
     }
 

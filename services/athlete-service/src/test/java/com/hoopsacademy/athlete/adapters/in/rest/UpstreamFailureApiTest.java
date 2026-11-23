@@ -3,7 +3,6 @@ package com.hoopsacademy.athlete.adapters.in.rest;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -25,13 +24,11 @@ class UpstreamFailureApiTest {
     static final String TENANT = "58000000-0000-4000-8000-000000000001";
     static final String TEAM = "58000000-0000-4000-8000-0000000000a1";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
     }
 
     private io.restassured.specification.RequestSpecification request() {

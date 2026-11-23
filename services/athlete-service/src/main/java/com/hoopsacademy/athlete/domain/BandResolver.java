@@ -59,26 +59,4 @@ public final class BandResolver {
                 .forEach(result::add);
         return result;
     }
-
-    /**
-     * Sanity check of the bands of one table (same test, gender and age): the lower bound of each band, taken from
-     * POOR to EXCELLENT, never decreases when higher is better and never increases when lower is better.
-     */
-    public static boolean bandsAreOrdered(Collection<PhysicalTestNorm> bands, boolean higherIsBetter) {
-        List<PhysicalTestNorm> sorted = bands.stream().sorted(Comparator.comparing(PhysicalTestNorm::band)).toList();
-        BigDecimal previous = null;
-        for (PhysicalTestNorm norm : sorted) {
-            BigDecimal reference = higherIsBetter ? norm.minValue().orElse(null) : norm.maxValue().orElse(null);
-            if (previous != null && reference != null) {
-                int cmp = reference.compareTo(previous);
-                if (higherIsBetter ? cmp < 0 : cmp > 0) {
-                    return false;
-                }
-            }
-            if (reference != null) {
-                previous = reference;
-            }
-        }
-        return true;
-    }
 }

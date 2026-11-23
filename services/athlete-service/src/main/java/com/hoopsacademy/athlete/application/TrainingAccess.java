@@ -9,7 +9,6 @@ import com.hoopsacademy.common.tenancy.TenantRole;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * The training part of the authorization matrix ({@code docs/domain/authz-matrix.md}), applied to a resolved
@@ -96,9 +95,5 @@ public class TrainingAccess {
         if (!mayHandleAbsencesOf(caller, player)) {
             throw new AccessDeniedException("Not allowed to handle absences of this player");
         }
-    }
-
-    public static Set<java.util.UUID> uuids(Set<PlayerId> ids) {
-        return ids.stream().map(PlayerId::value).collect(Collectors.toSet());
     }
 }

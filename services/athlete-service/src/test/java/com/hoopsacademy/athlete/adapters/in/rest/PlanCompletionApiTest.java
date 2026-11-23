@@ -8,7 +8,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -37,13 +36,11 @@ class PlanCompletionApiTest {
     static final String ASSIGNMENTS = "/api/athlete/plan-assignments";
     static final String COMPLETIONS = "/api/athlete/plan-completions";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, P1, P2).roster(TENANT, TEAM2, P3).knownPlayers(TENANT, P1, P2, P3);
     }
 

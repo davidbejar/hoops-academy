@@ -8,7 +8,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.ApiSupport;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
@@ -37,13 +36,11 @@ class SessionApiTest {
     static final String STRANGER_PLAYER = "52000000-0000-4000-8000-0000000000b2";
     static final String SESSIONS = "/api/athlete/training-sessions";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, PLAYER).roster(TENANT, OTHER_TEAM, STRANGER_PLAYER);
     }
 

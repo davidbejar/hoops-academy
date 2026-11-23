@@ -29,7 +29,6 @@ class RestRosterPortContractTest extends RosterPortContract {
     @BeforeEach
     void resetCore() {
         stubs = new CoreStubs().reset();
-        adapter.clearCache();
     }
 
     @Override

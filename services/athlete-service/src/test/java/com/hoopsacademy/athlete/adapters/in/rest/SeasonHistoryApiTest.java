@@ -10,7 +10,6 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -53,20 +52,18 @@ class SeasonHistoryApiTest {
     static final LocalDate TODAY = LocalDate.now(ZoneId.of("Europe/Madrid"));
     static final LocalDate LAST_DAY = TODAY.minusDays(30);
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         seasonOfThePastTeamEndsOn(null);
         core.roster(TENANT, TEAM, P2).knownPlayers(TENANT, P1, P2);
     }
 
     /** {@code null}: core sends no end (an open season, as an older core); otherwise the season's last day. */
     void seasonOfThePastTeamEndsOn(LocalDate lastDay) {
-        rosterAdapter.clearCache();
+        core.clearClientCache();
         core.rosterOf(TENANT, PAST_TEAM, "Lions", List.<String[]>of(new String[] {P1, "Ana", "2012-05-01", "FEMALE",
                 "ACTIVE"}), List.of(), lastDay);
     }

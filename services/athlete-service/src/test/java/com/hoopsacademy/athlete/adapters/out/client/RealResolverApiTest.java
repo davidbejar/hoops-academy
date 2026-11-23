@@ -35,13 +35,11 @@ class RealResolverApiTest {
     static final String TEAM = "59000000-0000-4000-8000-0000000000a1";
     static final String URL = "/api/athlete/training-schedules";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
     }
 
     @Test

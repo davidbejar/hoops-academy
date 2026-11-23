@@ -16,7 +16,6 @@ import static com.hoopsacademy.athlete.support.ApiSupport.member;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.athlete.adapters.in.rest.RoleMatrixTest.Caller;
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -55,14 +54,12 @@ class PlanRoleMatrixTest {
     static final String OTHER_TEAM = "55000000-0000-4000-8000-0000000000a2";
     static final String ASSIGNMENTS = "/api/athlete/plan-assignments";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
     String plan;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, CHILD).roster(TENANT, OTHER_TEAM, OTHER).knownPlayers(TENANT, CHILD, OTHER);
         act(ADMIN);
         plan = api(TENANT).body(Map.of("name", "Matrix plan")).post("/api/athlete/training-plans")

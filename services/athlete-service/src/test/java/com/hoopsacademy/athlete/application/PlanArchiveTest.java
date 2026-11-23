@@ -6,7 +6,6 @@ import static com.hoopsacademy.athlete.support.ApiSupport.member;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.equalTo;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
@@ -37,13 +36,11 @@ class PlanArchiveTest {
 
     @Inject ManagePlans plans;
     @Inject TenantScope tenantScope;
-    @Inject CoreRosterAdapter rosterAdapter;
 
     @Test
     @TenantUser(tenant = TENANT, roles = TenantRole.ADMIN)
     void archivedPlansAreHiddenFromTheListAndCannotBeAssigned() {
         new CoreStubs().reset().roster(TENANT, TEAM, UUID.randomUUID().toString());
-        rosterAdapter.clearCache();
         AuthzContext admin = member(TENANT, TenantRole.ADMIN);
         String id = api(TENANT).body(Map.of("name", "Old plan")).post("/api/athlete/training-plans").then().statusCode(201)
                 .extract().path("id");

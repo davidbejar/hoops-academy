@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -34,12 +33,10 @@ class UsageAndInternalApiTest {
     static final String TEAM = "57000000-0000-4000-8000-0000000000a1";
     static final String PLAYER = "57000000-0000-4000-8000-0000000000b1";
 
-    @Inject CoreRosterAdapter rosterAdapter;
 
     @BeforeEach
     void setUp() {
         new CoreStubs().reset().roster(TENANT, TEAM, PLAYER).knownPlayers(TENANT, PLAYER);
-        rosterAdapter.clearCache();
     }
 
     @Test

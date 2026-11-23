@@ -18,7 +18,6 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -49,13 +48,11 @@ class ExerciseQuickAddApiTest {
     static final String OTHER_TENANT = "92000000-0000-4000-8000-000000000012";
     static final String TEAM = "92000000-0000-4000-8000-0000000000a1";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, "92000000-0000-4000-8000-0000000000b1");
     }
 

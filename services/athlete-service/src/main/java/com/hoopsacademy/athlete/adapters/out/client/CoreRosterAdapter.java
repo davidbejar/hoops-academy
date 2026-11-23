@@ -52,11 +52,6 @@ public class CoreRosterAdapter implements RosterPort {
         return found;
     }
 
-    /** Drops every cached core answer (tests, and a hook for invalidation events in v2). */
-    public void clearCache() {
-        core.clearCache();
-    }
-
     private static Optional<Gender> genderOf(String gender) {
         if (gender == null || gender.isBlank()) {
             return Optional.empty();

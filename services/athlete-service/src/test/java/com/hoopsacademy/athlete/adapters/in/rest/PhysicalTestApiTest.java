@@ -13,7 +13,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -54,13 +53,11 @@ class PhysicalTestApiTest {
     static final String RESULTS = "/api/athlete/physical-test-results";
     static final String NORMS = "/api/athlete/physical-test-norms";
 
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         stubPlayers(TENANT);
         core.roster(TENANT, TEAM, GIRL, BOY, NO_BIRTH, NO_GENDER);
         member(TENANT, TenantRole.ADMIN);

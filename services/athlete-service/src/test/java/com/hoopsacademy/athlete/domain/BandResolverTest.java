@@ -153,56 +153,6 @@ class BandResolverTest {
         assertThat(resolve(globalBoys12to13(false), Gender.MALE, 12, "2100").referencePending()).isFalse();
     }
 
-    // ---- ordering (higher / lower is better only matters for checking that a table is sane)
-    @Test
-    void aHigherIsBetterTableAscendsFromPoorToExcellent() {
-        assertThat(BandResolver.bandsAreOrdered(globalBoys12to13(false), true)).isTrue();
-        assertThat(BandResolver.bandsAreOrdered(globalBoys12to13(false), false)).isFalse();
-    }
-
-    @Test
-    void aLowerIsBetterTableDescendsFromPoorToExcellent() {
-        var sprint = List.of(
-                norm(true, Gender.MALE, 12, 12, NormBand.EXCELLENT, null, "3.6", false),
-                norm(true, Gender.MALE, 12, 12, NormBand.ABOVE_AVERAGE, "3.6", "3.8", false),
-                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, "3.8", "4.0", false),
-                norm(true, Gender.MALE, 12, 12, NormBand.BELOW_AVERAGE, "4.0", "4.3", false),
-                norm(true, Gender.MALE, 12, 12, NormBand.POOR, "4.3", null, false));
-
-        assertThat(BandResolver.bandsAreOrdered(sprint, false)).isTrue();
-        assertThat(BandResolver.bandsAreOrdered(sprint, true)).isFalse();
-    }
-
-    @Test
-    void ordersCompareTheReferenceEdgeOfEachBandAndAllowEqualEdges() {
-        // higher is better reads the minimums: ascending here although the maximums are not
-        var byMinimum = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "2.0", "4.0", false),
-                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, "2.0", "3.0", false));
-        // lower is better reads the maximums: ascending here, which is out of order, although the minimums descend
-        var byMaximum = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "4.0", "5.0", false),
-                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, "3.5", "5.5", false));
-
-        var equalMaximums = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "4.0", "5.0", false),
-                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, "3.0", "5.0", false));
-
-        assertThat(BandResolver.bandsAreOrdered(byMinimum, true)).isTrue();
-        assertThat(BandResolver.bandsAreOrdered(byMaximum, false)).isFalse();
-        assertThat(BandResolver.bandsAreOrdered(equalMaximums, false)).isTrue();
-    }
-
-    @Test
-    void bandsWithoutAReferenceEdgeAreSkippedWhenCheckingTheOrder() {
-        var ordered = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "1", null, false),
-                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, null, null, false),
-                norm(true, Gender.MALE, 12, 12, NormBand.EXCELLENT, "3", null, false));
-        var unordered = List.of(norm(true, Gender.MALE, 12, 12, NormBand.POOR, "3", null, false),
-                norm(true, Gender.MALE, 12, 12, NormBand.AVERAGE, null, null, false),
-                norm(true, Gender.MALE, 12, 12, NormBand.EXCELLENT, "1", null, false));
-
-        assertThat(BandResolver.bandsAreOrdered(ordered, true)).isTrue();
-        assertThat(BandResolver.bandsAreOrdered(unordered, true)).isFalse();
-    }
-
     @Test
     void aNormContainsValuesFromItsMinimumUpToButExcludingItsMaximum() {
         var bounded = norm(false, Gender.MALE, 12, 12, NormBand.AVERAGE, "10", "20", false);

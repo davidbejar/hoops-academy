@@ -75,7 +75,7 @@ class NormSeedTest {
                             .collect(Collectors.groupingBy(PhysicalTestNorm::band, () -> new EnumMap<>(NormBand.class), Collectors.counting()));
                     assertThat(perBand.keySet()).as(where).containsExactlyInAnyOrder(NormBand.values());
                     assertThat(perBand.values()).as(where).containsOnly(1L);
-                    assertThat(BandResolver.bandsAreOrdered(atAge, TYPES.get(code))).as(where + " ordered").isTrue();
+                    assertThat(bandsAreOrdered(atAge, TYPES.get(code))).as(where + " ordered").isTrue();
                     assertThat(contiguous(atAge, TYPES.get(code))).as(where + " contiguous").isTrue();
                 }
             }
@@ -258,6 +258,29 @@ class NormSeedTest {
             rs.next();
             assertThat(rs.getInt(1)).as("FORCE restored on both tables").isEqualTo(2);
         }
+    }
+
+    /**
+     * The bands of one table (same test, gender and age), taken from POOR to EXCELLENT: the reference edge (the minimum
+     * when higher is better, else the maximum) never decreases, respectively never increases; bands without it are
+     * skipped.
+     */
+    private static boolean bandsAreOrdered(List<PhysicalTestNorm> bands, boolean higherIsBetter) {
+        List<PhysicalTestNorm> sorted = bands.stream().sorted(java.util.Comparator.comparing(PhysicalTestNorm::band)).toList();
+        java.math.BigDecimal previous = null;
+        for (PhysicalTestNorm norm : sorted) {
+            java.math.BigDecimal reference = higherIsBetter ? norm.minValue().orElse(null) : norm.maxValue().orElse(null);
+            if (previous != null && reference != null) {
+                int cmp = reference.compareTo(previous);
+                if (higherIsBetter ? cmp < 0 : cmp > 0) {
+                    return false;
+                }
+            }
+            if (reference != null) {
+                previous = reference;
+            }
+        }
+        return true;
     }
 
     private static boolean contiguous(List<PhysicalTestNorm> atAge, boolean higherIsBetter) {

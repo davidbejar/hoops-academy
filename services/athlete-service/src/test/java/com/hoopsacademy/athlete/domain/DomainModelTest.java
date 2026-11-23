@@ -40,14 +40,14 @@ class DomainModelTest {
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31));
 
         assertThat(s.startTime()).isEqualTo(LocalTime.of(18, 0));
-        assertThat(s.isValidOn(LocalDate.of(2026, 1, 31))).isTrue();
-        assertThat(s.isValidOn(LocalDate.of(2026, 2, 1))).isFalse();
-        assertThat(s.isValidOn(LocalDate.of(2025, 12, 31))).isFalse();
         assertThat(s.occursOn(LocalDate.of(2026, 1, 5))).isTrue();   // a Monday
         assertThat(s.occursOn(LocalDate.of(2026, 1, 6))).isFalse();
-        assertThat(s.ended().isValidOn(LocalDate.of(2026, 1, 5))).isFalse();
+        assertThat(s.occursOn(LocalDate.of(2026, 1, 26))).isTrue();  // the last Monday before validUntil
+        assertThat(s.occursOn(LocalDate.of(2026, 2, 2))).isFalse();  // after validUntil
+        assertThat(s.occursOn(LocalDate.of(2025, 12, 29))).isFalse(); // before validFrom
+        assertThat(s.ended().occursOn(LocalDate.of(2026, 1, 5))).isFalse();
         assertThat(s.changedTo(s.dayOfWeek(), s.startTime(), 60, null, s.validFrom(), null)
-                .isValidOn(LocalDate.of(2099, 1, 1))).isTrue();
+                .occursOn(LocalDate.of(2099, 1, 5))).isTrue();
         assertThat(s.changedTo(DayOfWeek.FRIDAY, LocalTime.NOON, 45, "Gym", s.validFrom(), null).id()).isEqualTo(s.id());
     }
 
@@ -146,10 +146,7 @@ class DomainModelTest {
         assertThat(absence.covers(LocalDate.of(2026, 11, 3))).isTrue();
         assertThat(absence.covers(LocalDate.of(2026, 11, 5))).isTrue();
         assertThat(absence.covers(LocalDate.of(2026, 11, 6))).isFalse();
-        assertThat(absence.overlaps(LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 9))).isTrue();
-        assertThat(absence.overlaps(LocalDate.of(2026, 11, 6), LocalDate.of(2026, 11, 9))).isFalse();
-        assertThat(absence.overlaps(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 3))).isTrue();
-        assertThat(absence.overlaps(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 2))).isFalse();
+        assertThat(absence.covers(LocalDate.of(2026, 11, 2))).isFalse();
         assertThat(absence.changedTo(absence.fromDate(), absence.fromDate(), null).toDate()).isEqualTo(absence.fromDate());
         assertThatThrownBy(() -> PlannedAbsence.announce(player, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 4), null, COACH, T0))
                 .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("INVALID_DATE_RANGE");

@@ -3,7 +3,6 @@ package com.hoopsacademy.athlete.application;
 import static com.hoopsacademy.athlete.support.ApiSupport.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.domain.TrainingSession;
 import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.CoreStubs;
@@ -39,14 +38,12 @@ class NightlyMaterialisationTest {
     @Inject TenantRegistry registry;
     @Inject TenantScope tenantScope;
     @Inject SessionRepository sessions;
-    @Inject CoreRosterAdapter rosterAdapter;
     @Inject com.hoopsacademy.athlete.adapters.in.job.NightlyMaterialisationJob nightlyJob;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
     }
 
     private List<TrainingSession> sessionsOf(String tenant, String team) {

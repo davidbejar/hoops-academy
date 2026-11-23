@@ -38,8 +38,4 @@ public record PlannedAbsence(
     public boolean covers(LocalDate date) {
         return !date.isBefore(fromDate) && !date.isAfter(toDate);
     }
-
-    public boolean overlaps(LocalDate from, LocalDate to) {
-        return !toDate.isBefore(from) && !fromDate.isAfter(to);
-    }
 }

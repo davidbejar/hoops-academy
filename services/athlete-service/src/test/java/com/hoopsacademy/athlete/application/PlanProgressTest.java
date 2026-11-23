@@ -5,7 +5,6 @@ import static com.hoopsacademy.athlete.support.ApiSupport.member;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hoopsacademy.athlete.adapters.out.client.CoreRosterAdapter;
 import com.hoopsacademy.athlete.domain.AssignmentId;
 import com.hoopsacademy.athlete.domain.CompletionStatus;
 import com.hoopsacademy.athlete.domain.PlanProgress;
@@ -43,13 +42,11 @@ class PlanProgressTest {
 
     @Inject ManageCompletions completions;
     @Inject TenantScope tenantScope;
-    @Inject CoreRosterAdapter rosterAdapter;
     CoreStubs core;
 
     @BeforeEach
     void setUp() {
         core = new CoreStubs().reset();
-        rosterAdapter.clearCache();
         core.roster(TENANT, TEAM, P1, P2).knownPlayers(TENANT, P1, P2, P3);
     }
 
@@ -86,7 +83,7 @@ class PlanProgressTest {
     void newRosterMembersAppearAtReadTime() {
         String assignment = assignedWithAnswers();
         core.roster(TENANT, TEAM, P1, P2, P3);
-        rosterAdapter.clearCache();
+        core.clearClientCache();
 
         PlanProgress progress = progressAs(member(TENANT, TenantRole.ADMIN), assignment);
 
