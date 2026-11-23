@@ -54,6 +54,7 @@ class MockApiAdapter implements HttpClientAdapter {
     this.demo = true,
     this.tenantAId = mockTenantAId,
     this.latency = const Duration(milliseconds: 150),
+    this.selfId = 'a1',
   }) : _roles = roles ?? _rolesFromEnvironment() ?? const ['ADMIN', 'COACH'],
        _norteRoles = norteRoles ?? _rolesFromEnvironment() ?? const ['PARENT'],
        _superAdmin = superAdmin ?? _superAdminFromEnvironment(),
@@ -69,6 +70,9 @@ class MockApiAdapter implements HttpClientAdapter {
 
   /// How long every answer takes, so the demo shows its loading states.
   final Duration latency;
+
+  /// The signed-in user's person in both academies.
+  final String selfId;
 
   void _build() {
     _platform = MockPlatformApi(
@@ -88,8 +92,12 @@ class MockApiAdapter implements HttpClientAdapter {
     _academies = {
       tenantAId: _Academy(
         demo
-            ? MockCoreApi(initialLogo: _logoPng, roles: _roles)
-            : MockCoreApi(academy: MockAcademy.empty, roles: _roles),
+            ? MockCoreApi(initialLogo: _logoPng, roles: _roles, selfId: selfId)
+            : MockCoreApi(
+                academy: MockAcademy.empty,
+                roles: _roles,
+                selfId: selfId,
+              ),
         MockStateLog(_store, _logKey(tenantAId, _roles)),
         tenantAId,
       ),
@@ -97,6 +105,7 @@ class MockApiAdapter implements HttpClientAdapter {
         MockCoreApi(
           academy: demo ? MockAcademy.norte : MockAcademy.empty,
           roles: _norteRoles,
+          selfId: selfId,
         ),
         MockStateLog(_store, _logKey(mockTenantBId, _norteRoles)),
         mockTenantBId,
@@ -318,7 +327,7 @@ class MockApiAdapter implements HttpClientAdapter {
       'status': 'ACTIVE',
       'hasLogo': hasLogo,
     },
-    'personId': 'a1',
+    'personId': _academies[id]!.core.selfId,
     'givenName': _academies[id]!.core.selfNames.given,
     'familyName': _academies[id]!.core.selfNames.family,
     'roles': roles,

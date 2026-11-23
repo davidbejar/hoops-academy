@@ -27,7 +27,10 @@ class MockAthleteApi {
   final DateTime Function() _now;
   final TenantZone _zone;
 
-  static const _recorder = {'personId': 'a1', 'displayName': 'Casey Coach'};
+  Map<String, Object?> get _recorder => {
+    'personId': core.selfId,
+    'displayName': 'Casey Coach',
+  };
 
   MockAuthz get _az => core.authz;
 

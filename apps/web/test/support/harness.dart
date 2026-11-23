@@ -31,6 +31,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'fake_athlete.dart';
 import 'fake_game.dart';
 import 'fake_repos.dart';
+import 'core_seed.dart';
 import 'mock_backend.dart';
 
 class FakeMeRepository implements MeRepository {
@@ -132,7 +133,13 @@ class Harness {
                  : AuthStatus.unauthenticated,
            ),
        tenant = tenant ?? FakeTenantRepository(),
-       initialPrefs = prefs;
+       initialPrefs = prefs {
+    core?.seed(this.backend);
+    final first = me.user.memberships.firstOrNull;
+    if (first != null && first.tenantId == this.backend.tenantAId) {
+      this.backend.seedMembership(first);
+    }
+  }
 
   final FakeMeRepository me;
 
@@ -146,6 +153,7 @@ class Harness {
       roles: first?.roles ?? const {TenantRole.admin},
       superAdmin: user.superAdmin,
       tenantAId: first?.tenantId ?? MockBackend.testTenantId,
+      selfId: first?.personId ?? MockBackend.testPersonId,
     );
   }
 
@@ -216,7 +224,6 @@ class Harness {
         onlineProvider.overrideWith((ref) => online.stream),
         ...backend.overrides,
         if (core != null) ...[
-          academyRepositoryProvider.overrideWithValue(core!.academy),
           membersRepositoryProvider.overrideWithValue(core!.members),
           seasonsRepositoryProvider.overrideWithValue(core!.seasons),
           ageCategoriesRepositoryProvider.overrideWithValue(core!.categories),

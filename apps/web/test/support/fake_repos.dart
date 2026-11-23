@@ -6,7 +6,6 @@ import 'package:dio/dio.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/export/server_file.dart';
-import 'package:hoops_app/features/admin/data/academy_repository.dart';
 import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
 import 'package:hoops_app/features/admin/data/members_repository.dart';
 import 'package:hoops_app/features/admin/data/seasons_repository.dart';
@@ -16,6 +15,8 @@ import 'package:hoops_app/features/roster/data/players_repository.dart';
 import 'package:hoops_app/features/roster/data/teams_repository.dart';
 
 import 'core_fixtures.dart';
+import 'core_seed.dart';
+import 'mock_backend.dart';
 
 /// Every fake can be told to fail (any exception) or hang, to cover the
 /// error and loading states of the screens.
@@ -30,73 +31,6 @@ mixin Faulty {
     if (failWith != null) throw failWith!;
     return body();
   }
-}
-
-class FakeAcademyRepository with Faulty implements AcademyRepository {
-  FakeAcademyRepository({
-    api.TenantProfile? profile0,
-    api.TenantSettings? settings0,
-  }) : _profile = profile0 ?? profileFixture(),
-       _settings = settings0 ?? settingsFixture();
-  api.TenantProfile _profile;
-  api.TenantSettings _settings;
-  Uint8List? uploadedBytes;
-  String? uploadedMime;
-  bool logoDeleted = false;
-
-  /// The profile request of the last `save`, as the form built it (contact fields cleared by name in `clear`).
-  api.UpdateTenantProfileRequest? lastProfileRequest;
-
-  @override
-  Future<api.TenantProfile> profile() => run('profile', () => _profile);
-  @override
-  Future<api.TenantSettings> settings() => run('settings', () => _settings);
-  @override
-  Future<api.TenantProfile> save({
-    required api.UpdateTenantProfileRequest profile,
-    required api.TenantSettings settings,
-  }) => run('save', () {
-    lastProfileRequest = profile;
-    _settings = settings;
-    final clear = profile.clear?.toSet() ?? const {};
-    _profile = _profile.rebuild(
-      (b) => b
-        ..contactEmail =
-            clear.contains(api.UpdateTenantProfileRequestClearEnum.contactEmail)
-            ? null
-            : profile.contactEmail ?? _profile.contactEmail
-        ..websiteUrl =
-            clear.contains(api.UpdateTenantProfileRequestClearEnum.websiteUrl)
-            ? null
-            : profile.websiteUrl ?? _profile.websiteUrl
-        ..name = profile.name ?? _profile.name
-        ..timezone = profile.timezone ?? _profile.timezone
-        ..defaultLocale = profile.defaultLocale ?? _profile.defaultLocale,
-    );
-    return _profile;
-  });
-  @override
-  Future<api.TenantLogo> uploadLogo({
-    required Uint8List bytes,
-    required String mimeType,
-    required String fileName,
-  }) => run('uploadLogo', () {
-    uploadedBytes = bytes;
-    uploadedMime = mimeType;
-    _profile = _profile.rebuild((b) => b.hasLogo = true);
-    return api.TenantLogo(
-      (b) => b
-        ..contentType = api.TenantLogoContentTypeEnum.valueOf(mimeType)
-        ..sizeBytes = bytes.length
-        ..etag = 'etag-${bytes.length}'
-        ..updatedAt = DateTime.utc(2026, 11, 1),
-    );
-  });
-  @override
-  Future<void> deleteLogo() => run('deleteLogo', () {
-    logoDeleted = true;
-    _profile = _profile.rebuild((b) => b.hasLogo = false);
-  });
 }
 
 class FakeMembersRepository with Faulty implements MembersRepository {
@@ -792,10 +726,12 @@ class FakeCasesRepository with Faulty implements CasesRepository {
   });
 }
 
-/// One bundle of fakes with sensible demo data.
+/// The academy's core data of a test: seeded into the backend (ADR-0070) for
+/// what is migrated, in-memory fakes for the rest.
 class FakeCore {
   FakeCore({
-    FakeAcademyRepository? academy,
+    api.TenantProfile? profile,
+    api.TenantSettings? settings,
     FakeMembersRepository? members,
     FakeSeasonsRepository? seasons,
     FakeAgeCategoriesRepository? categories,
@@ -803,7 +739,8 @@ class FakeCore {
     FakePlayersRepository? players,
     FakeApprovalsRepository? approvals,
     FakeCasesRepository? cases,
-  }) : academy = academy ?? FakeAcademyRepository(),
+  }) : profile = profile ?? profileFixture(),
+       settings = settings ?? settingsFixture(),
        members = members ?? FakeMembersRepository([]),
        seasons =
            seasons ??
@@ -814,7 +751,9 @@ class FakeCore {
        approvals = approvals ?? FakeApprovalsRepository([]),
        cases = cases ?? FakeCasesRepository([]);
 
-  final FakeAcademyRepository academy;
+  /// The academy's profile and settings (`/api/core/tenant`).
+  final api.TenantProfile profile;
+  final api.TenantSettings settings;
   final FakeMembersRepository members;
   final FakeSeasonsRepository seasons;
   final FakeAgeCategoriesRepository categories;
@@ -822,4 +761,13 @@ class FakeCore {
   final FakePlayersRepository players;
   final FakeApprovalsRepository approvals;
   final FakeCasesRepository cases;
+
+  /// Seeds the migrated data into [backend]; the teams of the fakes too, so
+  /// what the mock lets the user do (staff of a team) matches.
+  void seed(MockBackend backend) {
+    backend
+      ..seedProfile(profile)
+      ..seedSettings(settings)
+      ..seedTeams(teams.teams);
+  }
 }

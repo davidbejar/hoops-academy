@@ -77,6 +77,7 @@ class MockCoreApi {
     Uint8List? initialLogo,
     this.roles = const ['ADMIN', 'COACH'],
     this.academy = MockAcademy.demo,
+    this.selfId = 'a1',
   }) : _logo = initialLogo {
     _seed();
   }
@@ -84,6 +85,9 @@ class MockCoreApi {
   /// Roles of the signed-in demo user in this academy (`/me` and the mock's own authz).
   final List<String> roles;
   final MockAcademy academy;
+
+  /// The signed-in user's person in this academy (the tests use their membership's).
+  final String selfId;
 
   // ------------------------------------------------------------------ state
   Uint8List? _logo;
@@ -110,6 +114,40 @@ class MockCoreApi {
   final List<Map<String, Object?>> _approvals = [];
   final List<Map<String, Object?>> _cases = [];
   final Map<String, List<Map<String, Object?>>> _staff = {};
+
+  // Seeding for the tests (ADR-0070): the academy's data in the shapes the service sends.
+  @visibleForTesting
+  Map<String, Object?> get profile => _profile;
+  @visibleForTesting
+  Map<String, Object?> get settings => _settings;
+  @visibleForTesting
+  List<Map<String, Object?>> get seasons => _seasons;
+  @visibleForTesting
+  List<Map<String, Object?>> get categories => _categories;
+  @visibleForTesting
+  List<Map<String, Object?>> get teams => _teams;
+
+  /// Players with their team assignments in `teams` (the rosters are read from them).
+  @visibleForTesting
+  List<Map<String, Object?>> get players => _players;
+  @visibleForTesting
+  List<Map<String, Object?>> get members => _members;
+  @visibleForTesting
+  List<Map<String, Object?>> get guardianLinks => _links;
+  @visibleForTesting
+  List<Map<String, Object?>> get approvals => _approvals;
+  @visibleForTesting
+  List<Map<String, Object?>> get cases => _cases;
+
+  /// Staff rows by team id.
+  @visibleForTesting
+  Map<String, List<Map<String, Object?>>> get staff => _staff;
+
+  /// The stored logo (null: none).
+  @visibleForTesting
+  Uint8List? get logo => _logo;
+  @visibleForTesting
+  set logo(Uint8List? bytes) => _logo = bytes;
   var _seq = 100;
 
   /// `Accept-Language` of the call being handled (the CSV exports follow it).
@@ -289,7 +327,7 @@ class MockCoreApi {
           : [team(norteTeamId, 'Norte A', 'Osos', 'cat-u12', 'MIXED')],
     );
     _members.addAll([
-      _member('a1', 'Casey', 'Coach', roles),
+      _member(selfId, 'Casey', 'Coach', roles),
       if (demo) ...[
         _member('m-ana', 'Alicia', 'Admin', ['ADMIN']),
         _member('m-tom', 'Tomás', 'Entrenador', ['COACH']),
@@ -308,7 +346,7 @@ class MockCoreApi {
       // the demo user's own staff row, so the team staff list and `/me` agree (COACH wins over ASSISTANT_COACH)
       if (roles.contains('COACH') || roles.contains('ASSISTANT_COACH'))
         {
-          'person': _person('a1', 'Casey Coach'),
+          'person': _person(selfId, 'Casey Coach'),
           'role': roles.contains('COACH') ? 'COACH' : 'ASSISTANT_COACH',
           'since': '2026-09-01',
         },
@@ -317,7 +355,7 @@ class MockCoreApi {
         (roles.contains('COACH') || roles.contains('ASSISTANT_COACH'))) {
       _staff[pastTeamId] = [
         {
-          'person': _person('a1', 'Casey Coach'),
+          'person': _person(selfId, 'Casey Coach'),
           'role': roles.contains('COACH') ? 'COACH' : 'ASSISTANT_COACH',
           'since': '2025-09-01',
         },
@@ -347,7 +385,7 @@ class MockCoreApi {
       final isSelf = id == _selfPlayerId && roles.contains('PLAYER');
       _players.add({
         'id': id,
-        'personId': isSelf ? 'a1' : 'person-$id',
+        'personId': isSelf ? selfId : 'person-$id',
         'givenName': given,
         'familyName': family,
         'displayName': '$given $family',
@@ -373,7 +411,7 @@ class MockCoreApi {
           : _ref('p-nora', 'Nora Vega');
       _links.add({
         'id': 'link-me',
-        'guardian': _person('a1', 'Casey Coach'),
+        'guardian': _person(selfId, 'Casey Coach'),
         'player': child,
         'createdAt': _now(),
       });
@@ -455,7 +493,7 @@ class MockCoreApi {
     'status': status,
     'player': _ref(pid, pname),
     'payload': {'note': ?note, 'reason': ?reason},
-    'requestedBy': by ?? _person('a1', 'Casey Coach'),
+    'requestedBy': by ?? _person(selfId, 'Casey Coach'),
     'requestedAt': _now(),
   };
 
@@ -501,7 +539,9 @@ class MockCoreApi {
       roles.contains('COACH') || roles.contains('ASSISTANT_COACH')
       ? {
           for (final e in _staff.entries)
-            if (e.value.any((s) => (s['person']! as Map)['personId'] == 'a1') &&
+            if (e.value.any(
+                  (s) => (s['person']! as Map)['personId'] == selfId,
+                ) &&
                 _teams.any(
                   (t) => t['id'] == e.key && t['seasonEnded'] == ended,
                 ))
@@ -517,12 +557,12 @@ class MockCoreApi {
     linkedPlayerIds: {
       for (final l in _links)
         if (roles.contains('PARENT') &&
-            (l['guardian']! as Map)['personId'] == 'a1')
+            (l['guardian']! as Map)['personId'] == selfId)
           (l['player']! as Map)['id']! as String,
     },
     selfPlayerIds: {
       for (final p in _players)
-        if (roles.contains('PLAYER') && p['personId'] == 'a1')
+        if (roles.contains('PLAYER') && p['personId'] == selfId)
           p['id']! as String,
     },
     teamsOf: _teamsOf,
@@ -929,7 +969,8 @@ class MockCoreApi {
                   (query['guardianPersonId'] == null ||
                       (l['guardian']! as Map)['personId'] ==
                           query['guardianPersonId']) &&
-                  (authz.admin || (l['guardian']! as Map)['personId'] == 'a1'))
+                  (authz.admin ||
+                      (l['guardian']! as Map)['personId'] == selfId))
                 l,
           ]);
         }
@@ -1013,7 +1054,7 @@ class MockCoreApi {
 
   /// A coach reads the approval requests he asked for; the admin all of them.
   bool _mayReadApproval(Map<String, Object?> a) =>
-      authz.admin || (a['requestedBy']! as Map)['personId'] == 'a1';
+      authz.admin || (a['requestedBy']! as Map)['personId'] == selfId;
 
   /// A coach reads the eligibility cases of his teams; the admin all of them.
   bool _mayReadCase(Map<String, Object?> c) =>
@@ -1050,12 +1091,13 @@ class MockCoreApi {
 
   /// The demo user's own name in this academy (what `/me` reports as `displayName`).
   String get selfName =>
-      _members.firstWhere((m) => m['personId'] == 'a1')['displayName']!
-          as String;
+      _members.where((m) => m['personId'] == selfId).firstOrNull?['displayName']
+          as String? ??
+      'Casey Coach';
 
   /// The demo user's own given and family name in this academy (`/me` memberships, core 3.6.0).
   ({String given, String family}) get selfNames {
-    final me = _members.firstWhere((m) => m['personId'] == 'a1');
+    final me = _members.firstWhere((m) => m['personId'] == selfId);
     return (
       given: me['givenName']! as String,
       family: me['familyName']! as String,
@@ -1065,7 +1107,7 @@ class MockCoreApi {
   /// `PATCH /api/core/me` with a name (core 3.4.0): the caller's own person gets the new first / last name; the
   /// member list shows it afterwards.
   MockResult _renameSelf(Map<String, Object?> b) {
-    final me = _members.firstWhere((m) => m['personId'] == 'a1');
+    final me = _members.firstWhere((m) => m['personId'] == selfId);
     for (final key in const ['givenName', 'familyName']) {
       final value = b[key];
       if (value is String) me[key] = value;
@@ -1074,7 +1116,7 @@ class MockCoreApi {
     for (final staff in _staff.values) {
       for (final row in staff) {
         final person = row['person']! as Map<String, Object?>;
-        if (person['personId'] == 'a1')
+        if (person['personId'] == selfId)
           person['displayName'] = me['displayName'];
       }
     }
@@ -1534,7 +1576,7 @@ class MockCoreApi {
       default:
         return null;
     }
-    a['decidedBy'] = _person('a1', 'Casey Coach');
+    a['decidedBy'] = _person(selfId, 'Casey Coach');
     a['decidedAt'] = _now();
     return MockResult.json(200, a);
   }

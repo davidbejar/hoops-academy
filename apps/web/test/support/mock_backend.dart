@@ -23,6 +23,7 @@ class MockBackend extends MockApiAdapter {
     Set<TenantRole> roles = const {TenantRole.admin},
     super.superAdmin = true,
     super.tenantAId = testTenantId,
+    super.selfId = testPersonId,
   }) : super(
          demo: false,
          latency: Duration.zero,
@@ -32,6 +33,9 @@ class MockBackend extends MockApiAdapter {
 
   /// The academy of `membershipWithRoles` (fixtures.dart).
   static const testTenantId = '33333333-3333-4333-8333-333333333333';
+
+  /// The test user's person there (`membershipWithRoles`).
+  static const testPersonId = 'person-me';
 
   /// Every request the app sent, in order (failed and hung ones too).
   final List<RequestOptions> requests = [];

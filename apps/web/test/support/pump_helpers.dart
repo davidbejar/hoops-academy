@@ -28,6 +28,7 @@ Future<Harness> pumpAs(
   String? ownPlayerId,
   String? timezone,
   MockBackend? backend,
+  void Function(MockBackend backend)? prepare,
   List<Override> overrides = const [],
 }) async {
   final h = Harness(
@@ -50,6 +51,7 @@ Future<Harness> pumpAs(
     tenant: tenant,
     extraOverrides: overrides,
   );
+  prepare?.call(h.backend);
   await h.pump(tester, size: size);
   if (location != null) {
     settle ? await h.go(tester, location) : await h.goAndPump(tester, location);

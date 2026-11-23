@@ -31,7 +31,7 @@ class MockGameApi {
   final String liveId;
   final String scheduledId;
   final String finishedId;
-  static const personId = 'a1';
+  String get personId => core.selfId;
 
   static const ownTeamId = MockCoreApi.ownTeamId;
   static const liveMatchId = '0190b6a0-0000-7000-8000-00000000c001';

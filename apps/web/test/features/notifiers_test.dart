@@ -6,16 +6,25 @@ import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/admin/application/admin_providers.dart';
 import 'package:hoops_app/features/admin/application/logo_revision.dart';
+import 'package:hoops_app/features/admin/data/academy_repository.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart';
 
 import '../support/core_fixtures.dart';
 import '../support/fake_repos.dart';
+import '../support/mock_backend.dart';
 
-ProviderContainer containerFor(FakeCore core) {
+/// The providers over [core]: the migrated repositories are the app's own on a
+/// backend seeded with it (ADR-0070), the rest still fakes.
+ProviderContainer containerFor(FakeCore core, {MockBackend? backend}) {
+  final b = backend ?? MockBackend();
+  core.seed(b);
+  const tenant = MockBackend.testTenantId;
   final c = ProviderContainer(
     retry: (_, _) => null,
     overrides: [
-      academyRepositoryProvider.overrideWithValue(core.academy),
+      academyRepositoryProvider.overrideWithValue(
+        ApiAcademyRepository(b.coreApi(), tenant),
+      ),
       membersRepositoryProvider.overrideWithValue(core.members),
       seasonsRepositoryProvider.overrideWithValue(core.seasons),
       ageCategoriesRepositoryProvider.overrideWithValue(core.categories),

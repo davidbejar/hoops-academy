@@ -281,7 +281,7 @@ class MockFinanceApi {
   }
 
   Map<String, Object?> get _me => {
-    'personId': 'a1',
+    'personId': core.selfId,
     'displayName': core.selfName,
   };
 
