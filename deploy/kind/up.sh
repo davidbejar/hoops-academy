@@ -110,7 +110,7 @@ fi
 
 if [ "$DEPLOY" = 1 ]; then
   step "images -> kind"
-  KIND_CLUSTER="$CLUSTER" scripts/build-images.sh "${BUILD_FLAGS[@]}" --kind-load
+  KIND_CLUSTER="$CLUSTER" scripts/build-images.sh ${BUILD_FLAGS[@]+"${BUILD_FLAGS[@]}"} --kind-load
   step "helm upgrade --install hoops"
   scripts/sync-chart-files.sh   # realm JSON + init SQL copies inside the charts (no symlinks; helm package works)
   VALUES=(-f deploy/helm/hoops/values-kind.yaml)
