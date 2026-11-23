@@ -45,7 +45,10 @@ FakeGame liveGame() => FakeGame(
   ),
 );
 
+/// Opens the match the way its screen does: watched, so the auto-dispose
+/// provider lives until the container goes.
 Future<LiveMatch> settle(ProviderContainer c) async {
+  c.listen(liveMatchProvider(m1), (_, _) {});
   await c.read(liveMatchProvider(m1).future);
   await pumpEventQueue();
   return c.read(liveMatchProvider(m1)).requireValue;

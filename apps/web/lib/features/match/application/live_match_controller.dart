@@ -217,7 +217,7 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
         unawaited(s.cancel());
       }
       poll?.cancel();
-      worker.unwatch();
+      worker.unwatch(matchId);
     });
     return _compose();
   }
@@ -467,7 +467,7 @@ class LiveMatchController extends AsyncNotifier<LiveMatch> {
   }
 }
 
-final liveMatchProvider =
-    AsyncNotifierProvider.family<LiveMatchController, LiveMatch, String>(
-      LiveMatchController.new,
-    );
+/// Lives while the live match screen watches it: its streams, the worker's watch and the box-score poll end when
+/// the screen is left (WEB-01).
+final liveMatchProvider = AsyncNotifierProvider.autoDispose
+    .family<LiveMatchController, LiveMatch, String>(LiveMatchController.new);

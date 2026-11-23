@@ -118,15 +118,21 @@ class SyncWorker {
     return syncNow();
   }
 
-  /// Keeps [matchId] fresh while its screen is open.
+  /// Keeps [matchId] fresh while its screen is open (one match at a time: watching another replaces it).
   void watch(String matchId, {Duration every = const Duration(seconds: 15)}) {
-    unwatch();
+    _stopWatching();
     _watched = matchId;
     _periodic = _timers.every(every, () => syncNow(matchId: matchId));
     unawaited(syncNow(matchId: matchId));
   }
 
-  void unwatch() {
+  /// Stops keeping [matchId] fresh; nothing when another match is watched by now (its screen replaced this one's
+  /// before this one was disposed).
+  void unwatch(String matchId) {
+    if (_watched == matchId) _stopWatching();
+  }
+
+  void _stopWatching() {
     _periodic?.cancel();
     _periodic = null;
     _watched = null;
@@ -149,7 +155,7 @@ class SyncWorker {
   void dispose() {
     _disposed = true;
     _retry?.cancel();
-    unwatch();
+    _stopWatching();
     status.dispose();
     serverRevision.dispose();
   }
