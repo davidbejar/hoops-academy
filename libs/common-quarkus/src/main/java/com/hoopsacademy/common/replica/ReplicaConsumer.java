@@ -72,15 +72,15 @@ public final class ReplicaConsumer<E> {
     }
 
     private void park(ReplicaRecord record, Invalid<E> invalid) {
-        LOG.warnf("Parking %s (event %s): %s", position(record), invalid.eventId().map(Object::toString).orElse("unknown"),
-                invalid.reason());
-        ParkedEvent event = new ParkedEvent(record.topic(), record.partition(), record.offset(),
-                Optional.ofNullable(record.key()), invalid.eventId(), invalid.reason());
-        withRetries(record, () -> {
-            parked.park(event);
-            return event;
+        LOG.warnf("Parking %s-%d@%d (event %s): %s", record.topic(), record.partition(), record.offset(),
+                invalid.eventId().map(Object::toString).orElse("unknown"), invalid.reason());
+        ParkedEvent event = withRetries(record, () -> {
+            ParkedEvent parkedEvent = new ParkedEvent(record.topic(), record.partition(), record.offset(),
+                    Optional.ofNullable(record.key()), invalid.eventId(), invalid.reason());
+            parked.park(parkedEvent);
+            return parkedEvent;
         });
-        metrics.parked(record.topic());
+        metrics.parked(event.topic());
     }
 
     private <T> T withRetries(ReplicaRecord record, Supplier<T> work) {
@@ -89,12 +89,12 @@ public final class ReplicaConsumer<E> {
                 return work.get();
             } catch (RuntimeException e) {
                 if (attempt >= retries.maxAttempts()) {
-                    LOG.errorf("Giving up on %s after %d attempts, stopping the consumer: %s", position(record), attempt,
-                            e.toString());
+                    LOG.errorf("Giving up on %s-%d@%d after %d attempts, stopping the consumer: %s", record.topic(),
+                            record.partition(), record.offset(), attempt, e.toString());
                     throw e;
                 }
-                LOG.warnf("Processing %s failed (attempt %d of %d), retrying: %s", position(record), attempt,
-                        retries.maxAttempts(), e.toString());
+                LOG.warnf("Processing %s-%d@%d failed (attempt %d of %d), retrying: %s", record.topic(),
+                        record.partition(), record.offset(), attempt, retries.maxAttempts(), e.toString());
                 pause(retries.backoffAfter(attempt));
             }
         }
@@ -107,9 +107,5 @@ public final class ReplicaConsumer<E> {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("interrupted while retrying a roster record", e);
         }
-    }
-
-    private static String position(ReplicaRecord record) {
-        return record.topic() + "-" + record.partition() + "@" + record.offset();
     }
 }

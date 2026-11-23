@@ -231,7 +231,9 @@
       <properties>
         <pit.skip>false</pit.skip>
         <!-- baseline (docs/quality/mutation.md): 100 % (690/690) on 2026-11-10 (WP98); 100 % (671/671) on 2026-11-23
-             (WP127: dead domain methods gone, RequestMemoRosterPort added); the score rounded down to a whole percent -->
+             (WP127: dead domain methods gone, RequestMemoRosterPort added); 100 % (644/644) on 2026-11-24 (WP130:
+             CoreEventMapper replaces CoreEventDecoder, RosterTopic moved to common); the score rounded down to a whole
+             percent -->
         <pit.mutationThreshold>100</pit.mutationThreshold>
       </properties>
     </profile>

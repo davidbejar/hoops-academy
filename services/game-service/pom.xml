@@ -239,8 +239,8 @@
       </activation>
       <properties>
         <pit.skip>false</pit.skip>
-        <!-- baseline (docs/quality/mutation.md): 99.6 % (525/527) on 2026-11-10 (WP98), the score rounded down to a whole
-             percent -->
+        <!-- baseline (docs/quality/mutation.md): 99.6 % (525/527) on 2026-11-10 (WP98); 99.6 % (551/553) on 2026-11-24
+             (WP130: RosterEventMapper replaces RosterEventDecoder); the score rounded down to a whole percent -->
         <pit.mutationThreshold>99</pit.mutationThreshold>
       </properties>
     </profile>
