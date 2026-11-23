@@ -1,13 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
+import 'package:hoops_app/features/admin/application/admin_providers.dart';
+import 'package:hoops_app/features/admin/data/members_repository.dart';
 import 'package:hoops_app/features/roster/data/guardians_repository.dart';
+import 'package:hoops_app/features/roster/presentation/guardian_dialog.dart';
 
 import '../../support/core_fixtures.dart';
 import '../../support/fake_repos.dart';
+import '../../support/kit_harness.dart';
 import '../../support/pump_helpers.dart';
+import '../../support/server_pages.dart';
 import 'players_test.dart' show coreWithPlayers;
 
 /// What `POST /api/core/guardians` and the guardian's first login return (WP58, core 2.8.0).
@@ -217,6 +223,45 @@ void main() {
       ).rebuild((b) => b..email = null);
       await openPlayer(tester);
       expect(find.byKey(const Key('guardian-login-m2')), findsNothing);
+    });
+
+    testWidgets('the 101st guardian of the academy has the action too', (
+      tester,
+    ) async {
+      final parent = member('g', 'Gil Parent', roles: {api.TenantRole.PARENT});
+      final server = ServerPagesAdapter(
+        count: 250,
+        template:
+            (api.standardSerializers.serializeWith(
+                      api.Member.serializer,
+                      parent,
+                    )!
+                    as Map)
+                .cast(),
+      );
+      final client = api.HoopsCoreApi(
+        dio: Dio(
+          BaseOptions(
+            baseUrl: 'http://mock',
+            headers: {'Authorization': 'Bearer x'},
+          ),
+        )..httpClientAdapter = server,
+        interceptors: [],
+      );
+      await pumpKit(
+        tester,
+        ProviderScope(
+          overrides: [
+            membersRepositoryProvider.overrideWithValue(
+              ApiMembersRepository(client, 't'),
+            ),
+          ],
+          child: const GuardianLoginButton(personId: 'g~100', name: 'Gil'),
+        ),
+      );
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('guardian-login-g~100')), findsOneWidget);
     });
   });
 }
