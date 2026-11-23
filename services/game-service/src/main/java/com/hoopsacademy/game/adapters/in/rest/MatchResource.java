@@ -1,12 +1,10 @@
 package com.hoopsacademy.game.adapters.in.rest;
 
-import com.hoopsacademy.game.application.CancelMatch;
+import com.hoopsacademy.game.application.ChangeMatchStatus;
 import com.hoopsacademy.game.application.CreateMatch;
-import com.hoopsacademy.game.application.FinishMatch;
 import com.hoopsacademy.game.application.GetMatch;
 import com.hoopsacademy.game.application.ListMatches;
 import com.hoopsacademy.game.application.MatchFilter;
-import com.hoopsacademy.game.application.StartMatch;
 import com.hoopsacademy.game.application.UpdateMatch;
 import com.hoopsacademy.game.domain.MatchId;
 import com.hoopsacademy.game.domain.MatchStatus;
@@ -43,20 +41,16 @@ public class MatchResource {
     private final GetMatch getMatch;
     private final ListMatches listMatches;
     private final UpdateMatch updateMatch;
-    private final StartMatch startMatch;
-    private final FinishMatch finishMatch;
-    private final CancelMatch cancelMatch;
+    private final ChangeMatchStatus changeStatus;
 
     public MatchResource(
             CreateMatch createMatch, GetMatch getMatch, ListMatches listMatches, UpdateMatch updateMatch,
-            StartMatch startMatch, FinishMatch finishMatch, CancelMatch cancelMatch) {
+            ChangeMatchStatus changeStatus) {
         this.createMatch = createMatch;
         this.getMatch = getMatch;
         this.listMatches = listMatches;
         this.updateMatch = updateMatch;
-        this.startMatch = startMatch;
-        this.finishMatch = finishMatch;
-        this.cancelMatch = cancelMatch;
+        this.changeStatus = changeStatus;
     }
 
     @GET
@@ -107,19 +101,19 @@ public class MatchResource {
     @POST
     @Path("/{matchId}/start")
     public MatchDto start(@PathParam("matchId") UUID matchId) {
-        return MatchDto.from(startMatch.handle(MatchId.of(matchId)));
+        return MatchDto.from(changeStatus.start(MatchId.of(matchId)));
     }
 
     @POST
     @Path("/{matchId}/finish")
     public MatchDto finish(@PathParam("matchId") UUID matchId) {
-        return MatchDto.from(finishMatch.handle(MatchId.of(matchId)));
+        return MatchDto.from(changeStatus.finish(MatchId.of(matchId)));
     }
 
     @POST
     @Path("/{matchId}/cancel")
     @Consumes(MediaType.APPLICATION_JSON)
     public MatchDto cancel(@PathParam("matchId") UUID matchId, @Valid CancelMatchRequest request) {
-        return MatchDto.from(cancelMatch.handle(MatchId.of(matchId), request.reason()));
+        return MatchDto.from(changeStatus.cancel(MatchId.of(matchId), request.reason()));
     }
 }
