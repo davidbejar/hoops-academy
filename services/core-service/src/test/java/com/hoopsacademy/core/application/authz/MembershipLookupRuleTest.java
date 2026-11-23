@@ -1,6 +1,5 @@
 package com.hoopsacademy.core.application.authz;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,12 +29,13 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * The membership rule table (ADR-0066) against core's tenant filter path: {@link CoreAuthzContextResolver} over
- * {@link MembershipLookup}, with core's repositories answering what the world holds.
+ * {@link MembershipLookup}, with core's repositories answering what the world holds. Core differed from the replicas
+ * on one case (a staff row of a team it does not know counted as history, ADR-0066); with the rule in common it
+ * answers the table as it stands.
  */
 class MembershipLookupRuleTest extends MembershipRuleContract {
 
@@ -69,27 +69,14 @@ class MembershipLookupRuleTest extends MembershipRuleContract {
                     .toList();
         });
         TeamRepository teams = mock(TeamRepository.class);
-        when(teams.seasonNotEnded(anyCollection(), any())).thenAnswer(call -> {
+        when(teams.seasonEnds(anyCollection())).thenAnswer(call -> {
             Collection<TeamId> asked = call.getArgument(0);
-            LocalDate today = call.getArgument(1);
-            return asked.stream().filter(team -> world.seasonEnd(team.value()).filter(end -> !end.isBefore(today))
-                    .isPresent()).collect(Collectors.toSet());
+            return asked.stream().filter(team -> world.seasonEnd(team.value()).isPresent())
+                    .collect(Collectors.toMap(team -> team, team -> world.seasonEnd(team.value()).orElseThrow()));
         });
         MembershipLookup lookup = new MembershipLookup(tenantContext, profiles, persons, players, links, staff,
                 assignments, teams, MembershipWorld.CLOCK);
         return new CoreAuthzContextResolver(lookup, new AuthzCache(Duration.ofSeconds(10), MembershipWorld.CLOCK))
                 .resolve(MembershipWorld.SUBJECT, MembershipWorld.TENANT);
-    }
-
-    /**
-     * Difference 1 of ADR-0066: core counted every staff team not "not ended" as ended, so a staff row of a team it
-     * does not know became history. Unreachable in core (team_staff has a foreign key to team).
-     */
-    @Override
-    protected Optional<AuthzContext> expected(MembershipCase row) {
-        if (row.name().equals(UNKNOWN_STAFF_TEAM)) {
-            return row.expected().map(context -> context.withHistoricStaffTeamIds(Set.of(MembershipWorld.UNKNOWN_TEAM)));
-        }
-        return row.expected();
     }
 }
