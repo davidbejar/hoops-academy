@@ -60,15 +60,24 @@ public class MembershipLookup {
         this.clock = clock;
     }
 
+    /** A membership with the person and the tenant profile it was read from (GET/PATCH /me need both). */
+    public record Found(MemberAuthz authz, Person person, TenantProfile tenant) {}
+
     /** @return empty when the tenant does not exist or the subject has no active person in it */
     @Transactional
     public Optional<MemberAuthz> find(String subject) {
+        return findWithPerson(subject).map(Found::authz);
+    }
+
+    /** Like {@link #find}, keeping the person and the profile it loaded. */
+    @Transactional
+    public Optional<Found> findWithPerson(String subject) {
         Optional<TenantProfile> tenant = profiles.findCurrent();
         if (tenant.isEmpty()) {
             return Optional.empty();
         }
-        return persons.findActiveByLogin(subject)
-                .map(person -> new MemberAuthz(contextOf(subject, person, tenant.get()), tenant.get().status()));
+        return persons.findActiveByLogin(subject).map(person -> new Found(
+                new MemberAuthz(contextOf(subject, person, tenant.get()), tenant.get().status()), person, tenant.get()));
     }
 
     private AuthzContext contextOf(String subject, Person person, TenantProfile tenant) {

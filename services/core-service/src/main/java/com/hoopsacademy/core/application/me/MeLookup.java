@@ -1,7 +1,6 @@
 package com.hoopsacademy.core.application.me;
 
 import com.hoopsacademy.common.problem.NotFoundException;
-import com.hoopsacademy.core.application.authz.MemberAuthz;
 import com.hoopsacademy.core.application.authz.MembershipLookup;
 import com.hoopsacademy.core.application.port.AppUserRepository;
 import com.hoopsacademy.core.application.port.AuditAction;
@@ -13,7 +12,6 @@ import com.hoopsacademy.core.application.port.MembershipRepository.IndexedMember
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.TemporaryPasswordLogins;
 import com.hoopsacademy.core.application.port.TemporaryPasswordSweeps;
-import com.hoopsacademy.core.application.port.TenantProfileRepository;
 import com.hoopsacademy.core.application.shared.ChangedFields;
 import com.hoopsacademy.core.domain.identity.AppUser;
 import com.hoopsacademy.core.domain.membership.InvitationStatus;
@@ -34,7 +32,6 @@ public class MeLookup {
     private final AppUserRepository appUsers;
     private final MembershipRepository memberships;
     private final MembershipLookup membershipLookup;
-    private final TenantProfileRepository profiles;
     private final LogoRepository logos;
     private final PersonRepository persons;
     private final TemporaryPasswordLogins temporaryPasswords;
@@ -42,12 +39,11 @@ public class MeLookup {
     private final AuditLog audit;
 
     public MeLookup(AppUserRepository appUsers, MembershipRepository memberships, MembershipLookup membershipLookup,
-            TenantProfileRepository profiles, LogoRepository logos, PersonRepository persons,
-            TemporaryPasswordLogins temporaryPasswords, TemporaryPasswordSweeps sweeps, AuditLog audit) {
+            LogoRepository logos, PersonRepository persons, TemporaryPasswordLogins temporaryPasswords,
+            TemporaryPasswordSweeps sweeps, AuditLog audit) {
         this.appUsers = appUsers;
         this.memberships = memberships;
         this.membershipLookup = membershipLookup;
-        this.profiles = profiles;
         this.logos = logos;
         this.persons = persons;
         this.temporaryPasswords = temporaryPasswords;
@@ -83,9 +79,8 @@ public class MeLookup {
      */
     @Transactional
     public void renameOwnPerson(String subject, PersonalDataChanges changes) {
-        membershipLookup.find(subject).filter(MemberAuthz::tenantActive)
-                .orElseThrow(() -> new NotFoundException("Membership not found"));
-        Person current = persons.findActiveByLogin(subject)
+        Person current = membershipLookup.findWithPerson(subject).filter(found -> found.authz().tenantActive())
+                .map(MembershipLookup.Found::person)
                 .orElseThrow(() -> new NotFoundException("Membership not found"));
         Person changed = current.withData(changes);
         ChangedFields fields = ChangedFields.of(current.data(), changed.data());
@@ -109,17 +104,18 @@ public class MeLookup {
      */
     @Transactional
     public Optional<MeView.Membership> membershipInBoundTenant(String subject) {
-        Optional<MemberAuthz> authz = membershipLookup.find(subject).filter(MemberAuthz::tenantActive);
-        if (authz.isEmpty()) {
+        Optional<MembershipLookup.Found> found = membershipLookup.findWithPerson(subject)
+                .filter(membership -> membership.authz().tenantActive());
+        if (found.isEmpty()) {
             return Optional.empty();
         }
-        Person person = persons.findActiveByLogin(subject).orElseThrow();
+        Person person = found.get().person();
         acceptPendingInvitation(subject, person);
-        TenantProfile profile = profiles.findCurrent().orElseThrow();
+        TenantProfile profile = found.get().tenant();
         MeView.TenantSummary tenant = new MeView.TenantSummary(profile.id(), profile.slug(), profile.name(),
                 profile.status(), profile.defaultLocale(), logos.findEtag().isPresent());
         MeView.OwnName name = new MeView.OwnName(person.data().givenName(), person.data().familyName());
-        return Optional.of(new MeView.Membership(tenant, authz.get().context(), name));
+        return Optional.of(new MeView.Membership(tenant, found.get().authz().context(), name));
     }
 
     /**

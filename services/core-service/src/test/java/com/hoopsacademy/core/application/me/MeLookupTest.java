@@ -20,7 +20,6 @@ import com.hoopsacademy.core.application.port.MembershipRepository;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.TemporaryPasswordLogins;
 import com.hoopsacademy.core.application.port.TemporaryPasswordSweeps;
-import com.hoopsacademy.core.application.port.TenantProfileRepository;
 import com.hoopsacademy.core.domain.membership.Person;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PersonalData;
@@ -38,7 +37,8 @@ import org.mockito.ArgumentCaptor;
 
 /**
  * CORE-14 (audit 2026-11-23): /me builds each academy's membership from what the membership lookup already loaded
- * (the person and the tenant profile) instead of reading them a second time.
+ * (the person and the tenant profile) instead of reading them a second time: MeLookup has no
+ * repository of its own for either read any more.
  */
 class MeLookupTest {
 
@@ -51,12 +51,11 @@ class MeLookupTest {
             Instant.parse("2026-11-01T00:00:00Z"));
 
     private final MembershipLookup membershipLookup = mock(MembershipLookup.class);
-    private final TenantProfileRepository profiles = mock(TenantProfileRepository.class);
     private final LogoRepository logos = mock(LogoRepository.class);
     private final PersonRepository persons = mock(PersonRepository.class);
     private final AuditLog audit = mock(AuditLog.class);
     private final MeLookup lookup = new MeLookup(mock(AppUserRepository.class), mock(MembershipRepository.class),
-            membershipLookup, profiles, logos, persons, mock(TemporaryPasswordLogins.class),
+            membershipLookup, logos, persons, mock(TemporaryPasswordLogins.class),
             mock(TemporaryPasswordSweeps.class), audit);
 
     @Test
@@ -70,7 +69,6 @@ class MeLookupTest {
         assertThat(membership.tenant()).isEqualTo(new MeView.TenantSummary(TENANT, "club", "Club",
                 TenantStatus.ACTIVE, AppLocale.ES, true));
         verify(persons, never()).findActiveByLogin(anyString());
-        verify(profiles, never()).findCurrent();
     }
 
     @Test
